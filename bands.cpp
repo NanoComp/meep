@@ -656,6 +656,7 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
     mag1 += norm(data1[i]); // norm(a) is actually sqr(abs(a))
   for (int i=0;i<n;i++)
     mag2 += norm(data2[i]); // norm(a) is actually sqr(abs(a))
+  int times_through = 0;
   do {
     complex<double> shift = polar(2.0,phi);
     complex<double> unshift = polar(0.5,-phi);
@@ -713,6 +714,8 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
     delete[] dp;
     delete[] dm;
     phi += 0.1;
+    times_through++;
+    if (times_through > 50) return 0;
   } while (numfound == 0);
   return numfound;
 }
