@@ -133,6 +133,7 @@ class volume {
   int nr() const { return num[0]; }
 
   int has_field(component) const;
+  int has_boundary(boundary_side,direction) const;
 
   vec dr() const;
   vec dx() const;

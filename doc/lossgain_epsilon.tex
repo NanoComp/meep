@@ -37,9 +37,7 @@ int main(int argc, char **argv) {
   master_printf("Using pml of %lg thickness.\n", pml);
   master_printf("Using an rmax of %lg\n", rmax);
   mat ma(volcyl(rmax + pml, zsize, a), eps);
-  ma.use_pml_right(pml);
-  ma.use_pml_left(pml);
-  ma.use_pml_radial(pml);
+  ma.use_pml_everywhere(pml);
   ma.set_output_directory(dirname);
 \end{comment}
 

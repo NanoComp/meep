@@ -71,15 +71,16 @@ void mat::use_pml(direction d, boundary_side b, double dx) {
       chunks[i]->use_pml(d, dx, v.boundary_location(b,d));
 }
 
-void mat::use_pml_left(double dx) {
-  use_pml(Z, Low, dx);
+void mat::use_pml_everywhere(double dx) {
+  for (int b=0;b<2;b++) for (int d=0;d<5;d++)
+    if (v.has_boundary((boundary_side)b, (direction)d))
+      for (int i=0;i<num_chunks;i++)
+        if (chunks[i]->is_mine())
+          chunks[i]->use_pml((direction)d, dx,
+                             v.boundary_location((boundary_side)b,
+                                                 (direction)d));
 }
-void mat::use_pml_right(double dx) {
-  use_pml(Z, High, dx);
-}
-void mat::use_pml_radial(double dx) {
-  use_pml(R, High, dx);
-}
+
 void mat::mix_with(const mat *oth, double f) {
   if (num_chunks != oth->num_chunks)
     abort("You can't phase materials with different chunk topologies...\n");

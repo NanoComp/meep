@@ -218,6 +218,15 @@ int volume::has_field(component c) const {
   }
 }
 
+int volume::has_boundary(boundary_side b,direction d) const {
+  switch (dim) {
+  case dcyl: return d == Z || (d == R && b == High);
+  case d1: return d == Z;
+  case d2: return d == X || d == Y;
+  case d3: return d == X || d == Y || d == Z;
+  }
+}
+
 int volume::index(component c, const vec &p) const {
   const vec offset = p - origin - yee_shift(c);
   int theindex = -1;

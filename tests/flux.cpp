@@ -53,8 +53,7 @@ int flux_1d(const double zmax,
 
   volume v = volone(zmax,a);
   mat ma(v, eps);
-  ma.use_pml_left(zmax/6);
-  ma.use_pml_right(zmax/6);
+  ma.use_pml_everywhere(zmax/6);
 
   fields f(&ma);
   f.use_real_fields();
@@ -100,8 +99,7 @@ int cavity_1d(const double boxwidth, const double timewait,
 
   volume v = volone(zmax,a);
   mat ma(v, eps);
-  ma.use_pml_left(2.0);
-  ma.use_pml_right(2.0);
+  ma.use_pml_everywhere(2.0);
 
   fields f(&ma);
   f.use_real_fields();

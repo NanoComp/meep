@@ -53,8 +53,7 @@ int main(int argc, char **argv) {
 Altough in this calculation the polaritonic material will not be within the
 PML, it is all right to have polaritonic material within PML regions.
 \begin{verbatim}
-  ma.use_pml_right(pml_thickness);
-  ma.use_pml_left(pml_thickness);
+  ma.use_pml_everywhere(pml_thickness);
   ma.add_polarizability(one_in_middle, 0.4, 0.01, 27.63);
 \end{verbatim}
 \begin{comment}

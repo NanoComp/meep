@@ -60,8 +60,7 @@ bench bench_flux_1d(const double zmax,
 
   volume v = volone(zmax,a);
   mat ma(v, eps);
-  ma.use_pml_left(zmax/6);
-  ma.use_pml_right(zmax/6);
+  ma.use_pml_everywhere(zmax/6);
 
   fields f(&ma);
   f.use_real_fields();

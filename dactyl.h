@@ -77,9 +77,7 @@ class mat {
 
   void make_average_eps();
   void use_pml(direction d, boundary_side b, double dx);
-  void use_pml_left(double dx);
-  void use_pml_right(double dx);
-  void use_pml_radial(double dx);
+  void use_pml_everywhere(double dx);
 
   void output_slices(const char *name = "") const;
   void output_slices(const volume &what, const char *name = "") const;
