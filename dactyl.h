@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include "vec.h"
+#include "mympi.h"
 
 const double c = 0.5;
 const double pi = 3.141592653589793238462643383276L;
@@ -430,25 +431,5 @@ extern int interrupt;
 int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL);
-
-// MPI helper routines!
-
-void initialize(int argc, char **argv);
-void finished();
-void abort(char *fmt, ...);
-void all_wait();
-int count_processors();
-int my_rank();
-inline int am_master() { return my_rank() == 0; };
-void master_printf(const char *fmt, ...);
-void debug_printf(const char *fmt, ...);
-
-void send(int from, int to, double *data, int size);
-void broadcast(int from, double *data, int size);
-void broadcast(int from, complex<double> *data, int size);
-double max_to_master(double); // Only returns the correct value to proc 0.
-double max_to_all(double);
-double sum_to_master(double); // Only returns the correct value to proc 0.
-double sum_to_all(double);
 
 #endif

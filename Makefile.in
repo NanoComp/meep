@@ -33,11 +33,8 @@ uninstall: dactyl-uninstall
 
 ###########################################################################
 
-$(OBJ_dactyl): dactyl.h dactyl_internals.h vec.h
-bands.o: dactyl.h dactyl_internals.h
-bands_example.o: bands_example.cpp dactyl.h
-convergence_testing.o: convergence_testing.cpp dactyl.h
-example.o: example.cpp dactyl.h
+$(OBJ_dactyl): dactyl.h dactyl_internals.h vec.h mympi.h
+example.o: example.cpp dactyl.h vec.h mympi.h
 
 libdactyl.a: $(OBJ_dactyl)
 	ar cru libdactyl.a $(OBJ_dactyl)
@@ -74,12 +71,7 @@ dactyl-uninstall:
 uninstall: $(UNINSTALL_TARGETS)
 
 dist:
-	mkdir dactyl-$(VERSION) \
-	&& cp -a Makefile configure step.cpp dactyl.h \
-	bands.cpp example.cpp config.h check.h \
-	harminv.cpp harminv.h  dactyl-$(VERSION) \
-	&& GZIP="--best" tar chozf dactyl-$(VERSION).tar.gz dactyl-$(VERSION) \
-	&& rm -rf dactyl-$(VERSION)
+	darcs dist -d $(VERSION)
 
 bench: libdactyl.a
 	cd tests && make bench
