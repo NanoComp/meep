@@ -221,7 +221,7 @@ inline double expi(int cmp, double x) {
 }
 
 void fields::initialize_with_nth_te(int np0) {
-  const int n = np0 - 0;
+  const int n = (m==0) ? np0 - 0 : np0 - 1;
   double rmax = Jmax(m,n);
   double ktrans = rmax/nr;
   double kk = k*2*pi*inva;
