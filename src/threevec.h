@@ -4,7 +4,8 @@ namespace meep {
 
 class threevec {
 public:
-  threevec() {};
+  threevec() {}
+  threevec(double x, double y, double z) { val[0]=x; val[1]=y; val[2]=z;}
   double operator*(const threevec &a) const {
     double out = 0.0;
     FOR3(i) out += val[i]*a.val[i];

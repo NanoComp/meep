@@ -131,8 +131,7 @@ static tensor doaverage_inveps(material_function &eps, const geometric_volume &v
 #endif
   mean = mean*(1.0/count_quadrants(vol));
   meaninv = meaninv*(1.0/count_quadrants(vol));
-  threevec normdir;
-  FOR3(i) normdir.val[i] = 0.0;
+  threevec normdir(0.0,0.0,0.0);
   LOOP_OVER_DIRECTIONS(vol.dim, d) normdir.val[d%3] = gradient.in_direction(d);
   if (abs(normdir)) normdir /= abs(normdir);
   else return meaninv;
