@@ -190,8 +190,7 @@ AC_SUBST(MEEPLIBS)
 # subsequent libraries are only for libctl front end
 meep_save_LIBS=$LIBS
 
-
-AC_ARG_WITH(libctl, [AC_HELP_STRING([--with-libctl=<dir>],[specify libctl directory])], with_libctl=$withval, with_libctl=yes)
+AC_ARG_WITH(libctl, [AC_HELP_STRING([--with-libctl=<dir>],[specify libctl directory])], with_libctl=$withval, with_libctl=no)
 if test "x$with_libctl" = "xno"; then
         :
 elif test "x$with_libctl" != "xyes"; then
