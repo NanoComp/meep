@@ -1,7 +1,8 @@
 \begin{code}
 module StepGen ( Code, Expression, gencode,
-                 doexp, docode, doline, doblock,
-                 if_, ifelse_, (|?|), (|:|),
+                 --EXPRESSION, expression,
+                 doexp, docode, doline, doblock, dodebug, comment,
+                 if_, ifelse_, (|?|), (|:|), ifdef,
                  whether_or_not, declare, for_loop,
                  for_true_false, for_any_one_of, sum_for_any_one_of,
                  (|+|), (|-|), (|*|), (|+=|), (|-=|), (|=|), (<<),
@@ -36,6 +37,7 @@ for_true_false s x = do check <- istrueCC s
 
 for_any_one_of :: CODE a => [String] -> a -> Code
 for_any_one_of [] x = docode x
+for_any_one_of [b] x = withCC b True $ docode x
 for_any_one_of (b:bs) x =
     do check <- istrueCC b
        if check == Just False
@@ -45,6 +47,7 @@ for_any_one_of (b:bs) x =
 
 sum_for_any_one_of :: EXPRESSION a => [String] -> a -> Expression
 sum_for_any_one_of [] e = expression "0"
+sum_for_any_one_of [b] e = withCC b True $ expression e
 sum_for_any_one_of (b:bs) e =
     do check <- istrueCC b
        if check == Just False
@@ -74,6 +77,12 @@ if_ b thendo = ifelseCC b (docode thendo) (return []) $ \thethen _ ->
                             doline "}"
                            ]
 
+ifdef :: CODE a => String -> a -> Code
+ifdef b thendo = do check <- istrueCC b
+                    if check == Just True
+                       then docode thendo
+                       else return []
+
 ifelse_ :: (CODE a, CODE b) => String -> a -> b -> Code
 ifelse_ b thendo elsedo =
     ifelseCC b (docode thendo) (docode elsedo) $ \thethen theelse ->
@@ -83,7 +92,7 @@ ifelse_ b thendo elsedo =
     (_,True) -> return thethen
     _ -> docode [doline $ "if (" ++ b ++ ") {",
                  return $ map ("  "++) thethen,
-                 doline "} else {",
+                 doline $ "} else { // not "++b,
                  return $ map ("  "++) theelse,
                  doline "}"
                 ]
@@ -171,6 +180,16 @@ instance EXPRESSION Expression where
     expression x = x
 instance EXPRESSION String where
     expression s = return s
+
+dodebug :: EXPRESSION a => a -> Code
+dodebug e = do o <- expression e
+               d <- deb
+               return ["// "++o,
+                       "// "++d]
+  where deb = CC $ \st -> (st, show $ fmToList st)
+
+comment :: CODE a => String -> a -> Code
+comment c x = docode [return ["// "++c], docode x]
 
 doline :: EXPRESSION a => a -> Code
 doline e = do o <- expression e

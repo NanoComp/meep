@@ -16,7 +16,7 @@ if (have_m) {
                 the_f_m_pml[ind] += m_change;
                 the_f[ind] += m_change + p_change;
               }
-          } else {
+          } else { // not s2==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
                 const double em = the_f_m_pml[ind];
@@ -30,7 +30,7 @@ if (have_m) {
                 the_f[ind] += m_change + p_change;
               }
           }
-        } else {
+        } else { // not n3==1
           if (s3==1) {
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
@@ -45,7 +45,7 @@ if (have_m) {
                   the_f_m_pml[ind] += m_change;
                   the_f[ind] += m_change + p_change;
                 }
-          } else {
+          } else { // not s3==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
                 for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
@@ -61,7 +61,7 @@ if (have_m) {
                 }
           }
         }
-      } else {
+      } else { // not have_p_pml
         if (n3==1) {
           if (s2==1) {
             for (int i1=0; i1<n1; i1++)
@@ -74,7 +74,7 @@ if (have_m) {
                 the_f_m_pml[ind] += m_change;
                 the_f[ind] += m_change + p_change;
               }
-          } else {
+          } else { // not s2==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
                 const double em = the_f_m_pml[ind];
@@ -86,7 +86,7 @@ if (have_m) {
                 the_f[ind] += m_change + p_change;
               }
           }
-        } else {
+        } else { // not n3==1
           if (s3==1) {
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
@@ -99,7 +99,7 @@ if (have_m) {
                   the_f_m_pml[ind] += m_change;
                   the_f[ind] += m_change + p_change;
                 }
-          } else {
+          } else { // not s3==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
                 for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
@@ -114,7 +114,7 @@ if (have_m) {
           }
         }
       }
-    } else {
+    } else { // not have_m_pml
       if (have_p_pml) {
         if (n3==1) {
           if (s2==1) {
@@ -128,7 +128,7 @@ if (have_m) {
                 the_f_p_pml[ind] += p_change;
                 the_f[ind] += m_change + p_change;
               }
-          } else {
+          } else { // not s2==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
                 const double ep = the_f_p_pml[ind];
@@ -140,7 +140,7 @@ if (have_m) {
                 the_f[ind] += m_change + p_change;
               }
           }
-        } else {
+        } else { // not n3==1
           if (s3==1) {
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
@@ -153,7 +153,7 @@ if (have_m) {
                   the_f_p_pml[ind] += p_change;
                   the_f[ind] += m_change + p_change;
                 }
-          } else {
+          } else { // not s3==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
                 for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
@@ -167,7 +167,7 @@ if (have_m) {
                 }
           }
         }
-      } else {
+      } else { // not have_p_pml
         if (n3==1) {
           if (s2==1) {
             for (int i1=0; i1<n1; i1++)
@@ -176,7 +176,7 @@ if (have_m) {
                 const double deriv_p = f_p[ind+stride_p]-f_p[ind];
                 the_f[ind] += c*(m_deriv_m + deriv_p);
               }
-          } else {
+          } else { // not s2==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
                 const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
@@ -184,7 +184,7 @@ if (have_m) {
                 the_f[ind] += c*(m_deriv_m + deriv_p);
               }
           }
-        } else {
+        } else { // not n3==1
           if (s3==1) {
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
@@ -193,7 +193,7 @@ if (have_m) {
                   const double deriv_p = f_p[ind+stride_p]-f_p[ind];
                   the_f[ind] += c*(m_deriv_m + deriv_p);
                 }
-          } else {
+          } else { // not s3==1
             for (int i1=0; i1<n1; i1++)
               for (int i2=0; i2<n2; i2++)
                 for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
@@ -205,7 +205,7 @@ if (have_m) {
         }
       }
     }
-  } else {
+  } else { // not have_p
     if (have_m_pml) {
       if (n3==1) {
         if (s2==1) {
@@ -216,7 +216,7 @@ if (have_m) {
               const double m_change = decay_m[ind]*(c*m_deriv_m - C_m[ind]*em);
               the_f[ind] += m_change;
             }
-        } else {
+        } else { // not s2==1
           for (int i1=0; i1<n1; i1++)
             for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
               const double em = the_f[ind];
@@ -225,7 +225,7 @@ if (have_m) {
               the_f[ind] += m_change;
             }
         }
-      } else {
+      } else { // not n3==1
         if (s3==1) {
           for (int i1=0; i1<n1; i1++)
             for (int i2=0; i2<n2; i2++)
@@ -235,7 +235,7 @@ if (have_m) {
                 const double m_change = decay_m[ind]*(c*m_deriv_m - C_m[ind]*em);
                 the_f[ind] += m_change;
               }
-        } else {
+        } else { // not s3==1
           for (int i1=0; i1<n1; i1++)
             for (int i2=0; i2<n2; i2++)
               for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
@@ -246,7 +246,7 @@ if (have_m) {
               }
         }
       }
-    } else {
+    } else { // not have_m_pml
       if (n3==1) {
         if (s2==1) {
           for (int i1=0; i1<n1; i1++)
@@ -254,14 +254,14 @@ if (have_m) {
               const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
               the_f[ind] += c*m_deriv_m;
             }
-        } else {
+        } else { // not s2==1
           for (int i1=0; i1<n1; i1++)
             for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
               const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
               the_f[ind] += c*m_deriv_m;
             }
         }
-      } else {
+      } else { // not n3==1
         if (s3==1) {
           for (int i1=0; i1<n1; i1++)
             for (int i2=0; i2<n2; i2++)
@@ -269,7 +269,7 @@ if (have_m) {
                 const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
                 the_f[ind] += c*m_deriv_m;
               }
-        } else {
+        } else { // not s3==1
           for (int i1=0; i1<n1; i1++)
             for (int i2=0; i2<n2; i2++)
               for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
@@ -280,7 +280,7 @@ if (have_m) {
       }
     }
   }
-} else {
+} else { // not have_m
   if (have_p_pml) {
     if (n3==1) {
       if (s2==1) {
@@ -291,7 +291,7 @@ if (have_m) {
             const double p_change = decay_p[ind]*(c*deriv_p - C_p[ind]*ep);
             the_f[ind] += p_change;
           }
-      } else {
+      } else { // not s2==1
         for (int i1=0; i1<n1; i1++)
           for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
             const double ep = the_f[ind];
@@ -300,7 +300,7 @@ if (have_m) {
             the_f[ind] += p_change;
           }
       }
-    } else {
+    } else { // not n3==1
       if (s3==1) {
         for (int i1=0; i1<n1; i1++)
           for (int i2=0; i2<n2; i2++)
@@ -310,7 +310,7 @@ if (have_m) {
               const double p_change = decay_p[ind]*(c*deriv_p - C_p[ind]*ep);
               the_f[ind] += p_change;
             }
-      } else {
+      } else { // not s3==1
         for (int i1=0; i1<n1; i1++)
           for (int i2=0; i2<n2; i2++)
             for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
@@ -321,7 +321,7 @@ if (have_m) {
             }
       }
     }
-  } else {
+  } else { // not have_p_pml
     if (n3==1) {
       if (s2==1) {
         for (int i1=0; i1<n1; i1++)
@@ -329,14 +329,14 @@ if (have_m) {
             const double deriv_p = f_p[ind+stride_p]-f_p[ind];
             the_f[ind] += c*deriv_p;
           }
-      } else {
+      } else { // not s2==1
         for (int i1=0; i1<n1; i1++)
           for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
             const double deriv_p = f_p[ind+stride_p]-f_p[ind];
             the_f[ind] += c*deriv_p;
           }
       }
-    } else {
+    } else { // not n3==1
       if (s3==1) {
         for (int i1=0; i1<n1; i1++)
           for (int i2=0; i2<n2; i2++)
@@ -344,7 +344,7 @@ if (have_m) {
               const double deriv_p = f_p[ind+stride_p]-f_p[ind];
               the_f[ind] += c*deriv_p;
             }
-      } else {
+      } else { // not s3==1
         for (int i1=0; i1<n1; i1++)
           for (int i2=0; i2<n2; i2++)
             for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {

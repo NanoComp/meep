@@ -23,7 +23,7 @@ if (pol) {
           f[ec][0][i] = (ma->inveps[ec][component_direction(ec)][i])*d_minus_p[i];
         }
       }
-    } else {
+    } else { // not is_real
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
           for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
@@ -60,7 +60,7 @@ if (pol) {
         }
       }
     }
-  } else {
+  } else { // not e_sources
     if (is_real) {
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
@@ -80,7 +80,7 @@ if (pol) {
           f[ec][0][i] = (ma->inveps[ec][component_direction(ec)][i])*d_minus_p[i];
         }
       }
-    } else {
+    } else { // not is_real
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
           for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
@@ -113,7 +113,7 @@ if (pol) {
     }
   }
   delete[] d_minus_p;
-} else {
+} else { // not pol
   if (e_sources) {
     double *d_minus_p = new double[ntot];
     if (is_real) {
@@ -128,7 +128,7 @@ if (pol) {
           f[ec][0][i] = (ma->inveps[ec][component_direction(ec)][i])*d_minus_p[i];
         }
       }
-    } else {
+    } else { // not is_real
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
           d_minus_p[i] = f[dc][0][i];
@@ -151,14 +151,14 @@ if (pol) {
       }
     }
     delete[] d_minus_p;
-  } else {
+  } else { // not e_sources
     if (is_real) {
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
           f[ec][0][i] = (ma->inveps[ec][component_direction(ec)][i])*f[dc][0][i];
         }
       }
-    } else {
+    } else { // not is_real
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
           f[ec][0][i] = (ma->inveps[ec][component_direction(ec)][i])*f[dc][0][i];

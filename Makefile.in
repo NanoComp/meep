@@ -45,16 +45,16 @@ step_d.o: step_d.cpp step_d.h \
 step_h.o: step_h.cpp step_h.h \
 		meep.h meep_internals.h vec.h mympi.h
 
-step_h.h: step_h.hs StepGen.lhs
-	ghc -fglasgow-exts -package data --make -o step_h step_h.hs && ./step_h > step_h.h
-update_e_from_d.h: update_e_from_d.hs StepGen.lhs
-	ghc -fglasgow-exts -package data --make -o update_e_from_d update_e_from_d.hs && \
-		./update_e_from_d > update_e_from_d.h
-update_from_e.h: update_from_e.hs StepGen.lhs
-	ghc -fglasgow-exts -package data --make -o update_from_e update_from_e.hs && \
-		./update_from_e > update_from_e.h
-step_d.h: step_d.hs StepGen.lhs
-	ghc -fglasgow-exts -package data --make -o step_d step_d.hs && ./step_d > step_d.h
+step_h.h: step_h_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o step_h_gen step_h_gen.hs && ./step_h_gen > step_h.h
+update_e_from_d.h: update_e_from_d_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o update_e_from_d_gen update_e_from_d_gen.hs && \
+		./update_e_from_d_gen > update_e_from_d.h
+update_from_e.h: update_from_e_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o update_from_e_gen update_from_e_gen.hs && \
+		./update_from_e_gen > update_from_e.h
+step_d.h: step_d_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o step_d_gen step_d_gen.hs && ./step_d_gen > step_d.h
 
 libmeep.a: $(OBJ_meep)
 	ar cru libmeep.a $(OBJ_meep)
