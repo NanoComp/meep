@@ -251,7 +251,7 @@ fields::~fields() {
     delete[] hzw[cmp];
   }
   for (int i=0;i<numpols;i++) delete[] pol[i];
-  delete[] freqs;
+  if (nfreq) delete[] freqs;
 }
 
 void fields::use_bloch(double tk) {
@@ -347,6 +347,7 @@ fields::fields(const mat *the_ma, int tm) {
         PMLZ(z_epz,r) = 0.0;
     }
   }
+  nfreq = 0;
   nzflux = 0;
   nrflux = 0;
   setifreqmax_and_iposmax(0, 0);
