@@ -135,11 +135,15 @@ void mat::use_pml(int numpmlr, int numpmlz) {
     printf("Big sig(Hz)[%d  ] is %10lg, little sig is %10lg\n", r, Crhz[r], Cphz[r]);
   }
   for (int z=0;z<npmlz;z++) {
-    double rr = (z)/(1.0+npmlz);
-    double rp = (1+z)/(1.0+npmlz);
-    Czer[z] = Czep[z] = Cmax*sig(rp);
-    Czhr[z] = Czhp[z] = Cmax*0.5*(sig(rp)+sig(rr));
+    double rr = (z)/(double)npmlz;
+    double rp = (1+z)/(double)npmlz;
+    Czer[z] = Czep[z] = Cmax*0.5*(sig(rp)+sig(rr));
+    Czhr[z] = Czhp[z] = Cmax*sig(rp);
   }
+}
+
+static double sig(double r) {
+  return pow(r, 2);
 }
 
 mat::mat(double feps(double r, double z),
@@ -215,11 +219,6 @@ mat::mat(double feps(double r, double z),
   // Allocate the conductivity arrays:
   Crez = Crep = Crhz = Crhp = Cper = Cpez = Cphr = Cphz = NULL;
   Czer = Czep = Czhr = Czhp = NULL;
-}
-
-static double sig(double r) {
-  return pow(r, 2);
-  return exp((r-1)*3);
 }
 
 fields::~fields() {
@@ -585,7 +584,7 @@ void fields::step_h_pml() {
         for (int iz=0;iz<npmlz;iz++,z+=lr) {
           const int r=0;
           double Czhr = ma->Czhr[iz];
-          double dhrp = c*(-IT(ez,r,z)*m/* /1.0 */);
+          double dhrp = c*(-IT(ez,r+1,z)*m/* /1.0 */);
           double hrz = CM(hr,r,z) - PMLZ(z_hrp,r);
           PMLZ(z_hrp,r) += dhrp;
           CM(hr,r,z)+= dhrp +
@@ -767,8 +766,8 @@ void fields::step_e_pml() {
       }
       if (npmlz) {
         const int z=0; // False boundary layer!
-        CM(ez,r,z)+= MA(ma->invepsez,r,z)*
-          (c*(CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor - IT(hr,r,z)*mor);
+        CM(ez,r,z)+= c*MA(ma->invepsez,r,z)*
+          ((CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor - IT(hr,r,z)*mor);
       }
     }
     if (npmlz) { // Added Monday Feb 10 -- looks good.
