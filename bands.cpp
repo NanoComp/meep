@@ -394,7 +394,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
             int best_match=-1;
             double err_best = 1e300;
             for (int i=0;i<num_match;i++) {
-              double errf = (abs(tf[i]-reff[n])+abs(td[i]-refd[n]))/abs(reff[n]);
+              double errf = (abs(tf[i]-reff[n])+0.1*abs(td[i]-refd[n]))/abs(reff[n]);
               double erra = abs(ta[i]-refa[n])/abs(refa[n]);
               double err = sqrt(errf*errf + erra*erra);
               if (err > 10*errf) err = 10*errf;
