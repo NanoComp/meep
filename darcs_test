@@ -4,6 +4,6 @@ set -ev
 
 sh autogen.sh
 
-./configure
 make
-make test
+make check
+
