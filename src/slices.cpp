@@ -612,7 +612,7 @@ void fields::output_slices(const char *name) {
   output_slices(v.surroundings(), name);
 }
 void fields::output_slices(const geometric_volume &what, const char *name) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -656,7 +656,7 @@ void fields::eps_energy_slice(const char *name) {
 }
 
 void fields::eps_energy_slice(const geometric_volume &what, const char *name) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -709,7 +709,7 @@ void fields::eps_energy_slice(const polarizability_identifier &p, const char *na
 
 void fields::eps_energy_slice(const polarizability_identifier &p,
                               const geometric_volume &what, const char *name) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -762,7 +762,7 @@ void fields::eps_polarization_slice(const polarizability_identifier &p, const ch
 
 void fields::eps_polarization_slice(const polarizability_identifier &p,
                                     const geometric_volume &what, const char *name) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -821,7 +821,7 @@ void fields::eps_envelope(const char *name) {
 }
 
 void fields::eps_envelope(const geometric_volume &what, const char *name) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -878,7 +878,7 @@ void fields::eps_slices(const char *name) {
 
 void fields::eps_slices(const vec &origin, const vec &xside, const vec &yside,
                         const double dx, const char *name) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -963,7 +963,7 @@ bool fields::has_eps_interface(vec *loc) const {
 }
 
 void fields::eps_slices(const geometric_volume &what, const char *name) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);

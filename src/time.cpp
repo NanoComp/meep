@@ -47,7 +47,7 @@ static const char *ts2n(time_sink s) {
   case Connecting: return "connnecting chunks";
   case Boundaries: return "copying borders";
   case MpiTime: return "communicating";
-  case Slicing: return "outputting fields";
+  case FieldOutput: return "outputting fields";
   case Other: break;
   }
   return "everything else";

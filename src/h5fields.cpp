@@ -194,7 +194,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
 			 void *fun_data_,
 			 bool append_data,
                          bool single_precision) {
-  am_now_working_on(Slicing);
+  am_now_working_on(FieldOutput);
   h5_output_data data;
 
   data.file = file;
