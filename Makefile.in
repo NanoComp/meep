@@ -85,6 +85,13 @@ dist:
 test: libdactyl.a
 	cd doc && make testclean && make test
 
+test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
+	rm -rf d_k_0.1pi_pml_m_1-out
+	./d_k_0.1pi_pml_m_1.dac
+	cp reference_slices/d_k_0.1pi_pml_m_1-out/*.sli d_k_0.1pi_pml_m_1-out/
+	cd d_k_0.1pi_pml_m_1-out/ && \
+	    ../diff_slice d_k_0.1pi_pml_m_1-out M_k_0.1pi_pml_m_1 1e-5
+
 doc : documentation
 
 documentation: libdactyl.a plot modes

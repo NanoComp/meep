@@ -24,27 +24,26 @@ double eps(double r, double z) {
   return 1.0;
 }
 
-int main() {
-  const char *name = "d_k_0.1pi_pml_m_1";
-  printf("Running %s!\n", name);
-
+int main(int argc, char **argv) {
   const int a=1;
   const int m=1;
   const double pi = 3.14159265;
   const double k=0.1*pi;
   mat ma(eps, 10.0, 10.0, a);
+  const char *dirname = make_output_directory(argv[0]);
+  ma.set_output_directory(dirname);
   ma.use_pml(2,0);
-  ma.output_slices(name);
+  ma.output_slices(dirname);
   fields f(&ma, m);
   f.use_bloch(k);
 
   f.ep[0][3+(f.nz+1)*3] = 1;
   f.ez[0][3+(f.nz+1)*3] = 0.7;
 
-  f.output_real_imaginary_slices(name);
+  f.output_real_imaginary_slices(dirname);
   for (int t=0; t < 40; t++) {
     f.step();
-    f.output_real_imaginary_slices(name);
+    f.output_real_imaginary_slices(dirname);
   }
   printf("t is %d\n", f.t);
 }
