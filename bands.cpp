@@ -468,11 +468,11 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
               }
               if (err_best < 0.025) {
                 refnum[best_match] = n;
-                //printf("Got a best err of %lg (%lg) on an f of %lg %d\n",
-                //       err_best, best_erra, reff[n], n);
-              } else {
-                //printf("Got a best err of %lg (%lg) on an f of %lg %d\n",
-                //       err_best, best_erra, reff[n], n);
+                //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
+                //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
+              } else if (err_best < 1e299) {
+                //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
+                //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
               }
             }
             for (int i=0;i<num_here;i++) {
