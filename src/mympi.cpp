@@ -241,6 +241,22 @@ complex<double> sum_to_all(complex<double> in) {
   return out;
 }
 
+bool or_to_all(bool in) {
+  int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+#endif
+  return (bool) out;
+}
+
+bool and_to_all(bool in) {
+  int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_LAND,MPI_COMM_WORLD);
+#endif
+  return (bool) out;
+}
+
 void all_wait() {
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);

@@ -67,7 +67,7 @@ fields::fields(const structure *s, int tm) :
   for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
     if (v.has_boundary((boundary_side)b, d)) boundaries[b][d] = Metallic;
     else boundaries[b][d] = None;
-  connect_chunks();
+  chunk_connections_valid = false;
 }
 
 fields::fields(const fields &thef) :
@@ -110,7 +110,7 @@ fields::fields(const fields &thef) :
   }
   for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
     boundaries[b][d] = thef.boundaries[b][d];
-  connect_chunks();
+  chunk_connections_valid = false;
 }
 
 fields::~fields() {
@@ -132,7 +132,7 @@ void fields::use_real_fields() {
       abort("Can't use real fields_chunk with bloch boundary conditions!\n");
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
-  connect_chunks();
+  chunk_connections_valid = false;
 }
 
 bool fields::have_component(component c) {

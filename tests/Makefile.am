@@ -19,6 +19,8 @@ noinst_PROGRAMS = bench
 bench_SOURCES = bench.cpp
 bench_LDADD = $(LIBMEEP)
 
+compile-tests: $(DAC)
+
 check-local: $(DONE)
 
 # Note: this requires GNU make

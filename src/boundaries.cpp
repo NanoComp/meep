@@ -26,24 +26,24 @@
 namespace meep {
 
 void fields::set_boundary(boundary_side b,direction d,
-                          boundary_condition cond, bool autoconnect,
+                          boundary_condition cond,
                           complex<double> kcomponent) {
   UNUSED(kcomponent);
   boundaries[b][d] = cond;
-  if (autoconnect) connect_chunks();
+  chunk_connections_valid = false;
 }
 
-void fields::use_bloch(direction d, complex<double> kk, bool autoconnect) {
+void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
   for (int b=0;b<2;b++) boundaries[b][d] = Periodic;
   const complex<double> I = complex<double>(0.0,1.0);
   eikna[d] = exp(I*kk*((2*pi)*inva*v.num_direction(d)));
   coskna[d] = real(eikna[d]);
   sinkna[d] = imag(eikna[d]);
-  if (autoconnect) connect_chunks();
+  chunk_connections_valid = false;
 }
 
-void fields::use_bloch(const vec &k, bool autoconnect) {
+void fields::use_bloch(const vec &k) {
   // Note that I allow a 1D k input when in cylindrical, since in that case
   // it is unambiguous.
   if (k.dim != v.dim && !(k.dim == D1 && v.dim == Dcyl))
@@ -51,9 +51,9 @@ void fields::use_bloch(const vec &k, bool autoconnect) {
   for (int dd=0;dd<5;dd++) {
     const direction d = (direction) dd;
     if (v.has_boundary(Low,d) && d != R)
-      use_bloch(d, k.in_direction(d), false);
+      use_bloch(d, k.in_direction(d));
   }
-  if (autoconnect) connect_chunks();
+  chunk_connections_valid = false;
 }
 
 ivec fields::ilattice_vector(direction d) const {
@@ -82,6 +82,7 @@ vec fields::lattice_vector(direction d) const {
 }
 
 void fields::disconnect_chunks() {
+  chunk_connections_valid = false;
   for (int i=0;i<num_chunks;i++) {
     DOCMP {
       FOR_FIELD_TYPES(f)
@@ -107,11 +108,14 @@ void fields::disconnect_chunks() {
 }
 
 void fields::connect_chunks() {
-  am_now_working_on(Connecting);
-  disconnect_chunks();
-  find_metals();
-  connect_the_chunks();
-  finished_working();
+  if (!chunk_connections_valid) {
+    am_now_working_on(Connecting);
+    disconnect_chunks();
+    find_metals();
+    connect_the_chunks();
+    finished_working();
+    chunk_connections_valid = true;
+  }
 }
 
 inline bool fields::on_metal_boundary(const ivec &here) {

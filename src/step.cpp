@@ -127,6 +127,7 @@ void fields_chunk::phase_material(int phasein_time) {
 }
 
 void fields::step_boundaries(field_type ft) {
+  connect_chunks(); // re-connect if !chunk_connections_valid
   am_now_working_on(MpiTime);
   // Do the metals first!
   for (int i=0;i<num_chunks;i++)

@@ -292,7 +292,7 @@ void fields::add_volume_source(component c, const src_time &src,
       chunks[i]->alloc_f(c);
       need_to_reconnect++;
     }
-  if (sum_to_all(need_to_reconnect)) connect_chunks();
+  if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
 }
 
 } // namespace meep

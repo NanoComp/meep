@@ -76,39 +76,44 @@ static complex<double> JP(const vec &v) {
 }
 
 void fields::initialize_with_nth_te(int np0) {
+  bool reconnect = false;
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->initialize_with_nth_te(np0, real(k[Z]));
+    reconnect = reconnect || chunks[i]->initialize_with_nth_te(np0, real(k[Z]));
+  chunk_connections_valid = chunk_connections_valid && !or_to_all(reconnect);
 }
 
-void fields_chunk::initialize_with_nth_te(int np0, double kz) {
+bool fields_chunk::initialize_with_nth_te(int np0, double kz) {
   if (v.dim == Dcyl) {
     const int n = (m==0) ? np0 - 0 : np0 - 1;
     const double rmax = Jmax(m,n);
     ktrans = rmax/(v.nr()*inva);
     kax = kz*2*pi*inva;
     m_for_J = m;
-    initialize_field(Hz, JJ);
+    return initialize_field(Hz, JJ);
   } else {
     printf("Can't initialize with TE in this dimension.\n");
+    return false;
   }
 }
 
 void fields::initialize_with_nth_tm(int np0) {
+  bool reconnect = false;
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->initialize_with_nth_tm(np0, real(k[Z]));
+    reconnect = reconnect || chunks[i]->initialize_with_nth_tm(np0, real(k[Z]));
+  chunk_connections_valid = chunk_connections_valid && !or_to_all(reconnect);
 }
 
-void fields_chunk::initialize_with_nth_tm(int np1, double kz) {
+bool fields_chunk::initialize_with_nth_tm(int np1, double kz) {
   if (v.dim == Dcyl) {
     const int n = np1 - 1;
     const double rroot = Jroot(m,n);
     ktrans = rroot/(v.nr()*inva);
     kax = kz*2*pi*inva;
     m_for_J = m;
-    initialize_field(Ez, JJ);
-    initialize_field(Hp, JP);
+    return initialize_field(Ez, JJ) || initialize_field(Hp, JP);
   } else {
     printf("Can't initialize with TM in this dimension.\n");
+    return false;
   }
 }
 
@@ -121,25 +126,30 @@ void fields::initialize_with_n_tm(int ntot) {
 }
 
 void fields::initialize_field(component c, complex<double> func(const vec &)) {
+  bool reconnect = false;
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->initialize_field(c, func);
-  connect_chunks();
+    reconnect = reconnect || chunks[i]->initialize_field(c, func);
+  chunk_connections_valid = chunk_connections_valid && !or_to_all(reconnect);
   step_boundaries(H_stuff);
   step_boundaries(E_stuff);
   step_boundaries(D_stuff);
 }
 
-void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
+bool fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
+  bool reconnect = false;
   LOOP_OVER_VOL(v, c, i) {
     IVEC_LOOP_LOC(v, here);
     complex<double> val = func(here);
     if (val != 0.0) {
-      if (!f[c][0])
+      if (!f[c][0]) {
 	alloc_f(c);
+	reconnect = true;
+      }
       f[c][0][i] += real(val);
       f[c][1][i] += imag(val);
     }
   }
+  return reconnect;
 }
 
 static complex<double> (*A_static)(component, const vec &);

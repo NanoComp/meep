@@ -583,10 +583,10 @@ class fields_chunk {
   void calc_sources(double time);
 
   // initialize.cpp
-  void initialize_field(component, complex<double> f(const vec &));
+  bool initialize_field(component, complex<double> f(const vec &));
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
-  void initialize_with_nth_te(int n, double kz);
-  void initialize_with_nth_tm(int n, double kz);
+  bool initialize_with_nth_te(int n, double kz);
+  bool initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
   void alloc_extra_connections(field_type, in_or_out, int);
   // dft.cpp
@@ -640,13 +640,10 @@ class fields {
   void print_times();
   // boundaries.cpp
   void set_boundary(boundary_side,direction,
-                    boundary_condition, bool autoconnect=true,
-                    complex<double> kcomponent=0.0);
-  void use_bloch(direction d, double k, bool autoconnect=true) {
-    use_bloch(d, (complex<double>) k, autoconnect);
-  }
-  void use_bloch(direction, complex<double> kz, bool autoconnect=true);
-  void use_bloch(const vec &k, bool autoconnect=true);
+                    boundary_condition, complex<double> kcomponent=0.0);
+  void use_bloch(direction d, double k) { use_bloch(d, (complex<double>) k); }
+  void use_bloch(direction, complex<double> kz);
+  void use_bloch(const vec &k);
   vec lattice_vector(direction) const;
   // slices.cpp methods:
   void output_slices(const char *name = "");
@@ -788,6 +785,7 @@ class fields {
   void finished_working() { return; }
 #endif
   // boundaries.cpp
+  bool chunk_connections_valid;
   void find_metals();
   void disconnect_chunks();
   void connect_chunks();

@@ -62,6 +62,8 @@ void sum_to_all(const double *in, double *out, int size);
 long double sum_to_all(long double);
 int sum_to_all(int);
 complex<double> sum_to_all(complex<double>);
+bool or_to_all(bool in);
+bool and_to_all(bool in);
 
 // IO routines:
 void master_printf(const char *fmt, ...) PRINTF_ATTR(1,2);
