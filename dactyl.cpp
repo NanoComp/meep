@@ -239,16 +239,16 @@ void fields::initialize_with_nth_te(int np0) {
       double kzph = -kk*(z+0.5);
       DOCMP {
         CM(hz,r,z) += Jm*expi(cmp, kz);
-        CM(hr,r,z) += (-kk*c/om)*(-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
-          *expi(cmp, kzph+pi/2);
-        CM(hp,r,z) += (kk*c/om)*(-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))
-          *Jm*expi(cmp, kzph);
+        //CM(hr,r,z) += (-kk*c/om)*(-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
+        //  *expi(cmp, kzph+pi/2);
+        //CM(hp,r,z) += (kk*c/om)*(-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))
+        //  *Jm*expi(cmp, kzph);
         
-        if (r >= rmin_bulk(m) || m == 1)
-          CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
-            *expi(cmp, kz-omt+pi/2);
-        if (r >= rmin_bulk(m) || m < 2)
-          CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
+        //if (r >= rmin_bulk(m) || m == 1)
+        //  CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
+        //    *expi(cmp, kz-omt+pi/2);
+        //if (r >= rmin_bulk(m) || m < 2)
+        //  CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
       }
     }
     DOCMP {
@@ -257,11 +257,11 @@ void fields::initialize_with_nth_te(int np0) {
       double kzph = -kk*(z+0.5);
       CM(hz,r,z) += Jm*expi(cmp, kz);
 
-      if (r >= rmin_bulk(m) || m == 1)
-        CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
-          *expi(cmp, kz-omt+pi/2);
-      if (r >= rmin_bulk(m) || m < 2)
-        CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
+      //if (r >= rmin_bulk(m) || m == 1)
+      //  CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
+      //    *expi(cmp, kz-omt+pi/2);
+      //if (r >= rmin_bulk(m) || m < 2)
+      //  CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
     }
   }
 }
@@ -287,29 +287,29 @@ void fields::initialize_with_nth_tm(int np1) {
       DOCMP {
         if (r >= rmin_bulk(m) || m == 0)
           CM(ez,r,z) += Jm*expi(cmp, kz);
-        if (r >= rmin_bulk(m))
-          CM(hr,r,z) += (m*c/r*om/(ktrans*ktrans))*Jm*expi(cmp, kz+omt);
-        if (r == 0 && m == 1)
-          CM(hr,r,z) += (-m*c*om/(ktrans*ktrans))*ktrans*Jmp*expi(cmp, kz+omt);
-        CM(hp,r,z) += (c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
-                      *expi(cmp, kz+omt+pi/2);
+        //if (r >= rmin_bulk(m))
+        //  CM(hr,r,z) += (m*c/r*om/(ktrans*ktrans))*Jm*expi(cmp, kz+omt);
+        //if (r == 0 && m == 1)
+        //  CM(hr,r,z) += (-m*c*om/(ktrans*ktrans))*ktrans*Jmp*expi(cmp, kz+omt);
+        //CM(hp,r,z) += (c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
+        //              *expi(cmp, kz+omt+pi/2);
         
-        if (r >= rmin_bulk(m))
-          CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
-            *expi(cmp, kzmh);
-        CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
-                      *expi(cmp, kzmh+pi/2);
+        //if (r >= rmin_bulk(m))
+        //  CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
+        //    *expi(cmp, kzmh);
+        //CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
+        //              *expi(cmp, kzmh+pi/2);
       }
     }
     DOCMP {
       const int z=nz;
       double kz = kk*z;
       double kzmh = kk*(z-0.5);
-      if (r >= rmin_bulk(m))
-        CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
-          *expi(cmp, kzmh);
-      CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
-        *expi(cmp, kzmh+pi/2);
+      //if (r >= rmin_bulk(m))
+      //  CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
+      //    *expi(cmp, kzmh);
+      //CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
+      //  *expi(cmp, kzmh+pi/2);
     }
   }
 }
