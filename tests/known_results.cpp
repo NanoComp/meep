@@ -23,6 +23,16 @@
 
 double one(const vec &) { return 1.0; }
 
+double rods(const vec &r) {
+  vec p = r;
+  while (p.x() < -0.5) p.set_direction(X, p.x() + 1.0);
+  while (p.x() >  0.5) p.set_direction(X, p.x() - 1.0);
+  while (p.y() < -0.5) p.set_direction(Y, p.y() + 1.0);
+  while (p.y() >  0.5) p.set_direction(Y, p.y() - 1.0);
+  if (p.x()*p.x() + p.y()*p.y() < 0.3) return 12.0;
+  return 1.0;
+}
+
 void compare(double a, double b, const char *n) {
   if (fabs(a-b) > fabs(b)*1e-5) {
     master_printf("Differs by\t%lg out of\t%lg\n", a-b, b);
@@ -113,29 +123,25 @@ int main(int argc, char **argv) {
 
   compare(0.294573, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
-
   compare(0.816553, using_pml_ez(voltwo(3.0, 3.0, a), one),
           "1x1 PML 2D TM");
-
-  compare(0.738015, x_periodic(voltwo(1.0, 1.0, a), one),
+  compare(-0.0443493, x_periodic(voltwo(1.0, 1.0, a), one),
           "1x1 X periodic 2D TM");
-
-  compare(0.355215, periodic_ez(voltwo(1.0, 1.0, a), one),
+  compare(0.139809, periodic_ez(voltwo(1.0, 3.0, a), rods),
+          "1x1 fully periodic 2D TM rods");
+  compare(0.333574, periodic_ez(voltwo(1.0, 3.0, a), one),
           "1x1 fully periodic 2D TM");
-
-  compare(-7.59226, x_periodic_y_pml(voltwo(1.0, 2.0, a), one),
+  compare(1.25203, x_periodic_y_pml(voltwo(1.0, 2.0, a), one),
           "1x1 X periodic Y PML 2D TM");
-
   compare(-26.3698, metallic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 metallic 3D");
-
-  compare(-212.001, x_periodic(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-222.593, x_periodic(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 X periodic 3D");
-
-  compare(-298.293, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
+  compare(-210.372, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
           "1x1x1 X periodic Y PML 3D");
-
-  compare(-220.687, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-188.611, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
+          "1x1x1 fully periodic 3D rods");
+  compare(-223.131, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 fully periodic 3D");
 
   return 0;

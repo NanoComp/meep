@@ -894,7 +894,7 @@ void fields::step_boundaries(field_type ft) {
           const double phi = imag(chunks[i]->connection_phases[ft][wh/2]);
           *(chunks[i]->connections[ft][Incoming][wh]) =
             phr*comm_blocks[ft][pair][n] - phi*comm_blocks[ft][pair][n+1];
-          *(chunks[i]->connections[ft][Incoming][wh]) =
+          *(chunks[i]->connections[ft][Incoming][wh+1]) =
             phr*comm_blocks[ft][pair][n+1] + phi*comm_blocks[ft][pair][n];
           wh += 2;
         }
