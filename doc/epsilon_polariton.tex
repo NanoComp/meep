@@ -4,20 +4,6 @@
 #include <signal.h>
 
 #include "dactyl.h"
-
-const char header[] = "# Grace project file
-#
-@page size 792, 612
-@page scroll 5%
-@page inout 5%
-@default symbol size 0.330000\n
-@    s0 line color 1
-@    s0 symbol color 1
-@    s0 legend  \"\\x\\e\\s1\\N\"
-@    s1 line color 2
-@    s1 symbol color 2
-@    s1 legend  \"\\x\\e\\s2\\N\"
-";
 \end{comment}
 
 \section{Computing epsilon of a polaritonic material}
@@ -27,7 +13,7 @@ polaritonic material.
 
 \begin{figure}
 \label{epsilon_polariton}
-\caption{Epsilong of a polaritonic material.}
+\caption{Epsilon of a polaritonic material.}
 \epsfig{file=epsilon_polariton.eps,width=8.8cm}
 \end{figure}
 
@@ -118,8 +104,7 @@ monitor point linked list.
 \begin{comment}
     f.step();
   }
-  FILE *epsfile = create_output_file(dirname, "eps");
-  fprintf(epsfile, header);
+  grace g("eps", dirname);
   complex<double> *al, *ar, *freqs;
   int numl, numr;
   printf("Working on left fourier transform...\n");
@@ -138,7 +123,8 @@ at the two monitor points.
 \end{verbatim}
 \begin{comment}
   if (numl != numr) printf("Aaack you need both nums to be the same!\n");
-  fprintf(epsfile, "@target G0.S0\n@type xy\n");
+  g.new_set();
+  g.set_legend("\\x\\e\\s2\\N");
 \end{comment}
 Finally we calculate the complex index of refraction using the equation
 \begin{equation*}
@@ -148,23 +134,17 @@ i \omega \Delta x n(\omega) = \log \left(\frac{E'(\omega)}{E(\omega)}\right)
   for (int i=0;i<numl;i++) {
     complex<double> I = complex<double>(0,1);
     complex<double> n = (log(ar[i]/al[i]))/(I*(1.0/rad)*2*pi*freqs[i]);
-    fprintf(epsfile, "%lg\t%lg\n",
-            real(freqs[i]), real(n*n));
+    g.output_point(real(freqs[i]), real(n*n));
   }
 \end{verbatim}
 \begin{comment}
-  fprintf(epsfile, "@target G0.S1\n@type xy\n");
+  g.new_set();
+  g.set_legend("\\x\\e\\s2\\N");
   for (int i=0;i<numl;i++) {
     complex<double> I = complex<double>(0,1);
     complex<double> n = (log(ar[i]/al[i]))/(I*(1.0/rad)*2*pi*freqs[i]);
-    fprintf(epsfile, "%lg\t%lg\n",
-            real(freqs[i]), imag(n*n));
+    g.output_point(real(freqs[i]), imag(n*n));
   }
-  fclose(epsfile);
-  char gracecmd[500];
-  snprintf(gracecmd, 500, "gracebat -hdevice EPS -printfile %s/eps.eps -hardcopy %s/eps",
-           dirname, dirname);
-  system(gracecmd);
 }
 \end{comment}
 
