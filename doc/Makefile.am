@@ -8,7 +8,7 @@ EPSGEN = polaritonbands-out/bands.eps epsilon_polariton_1d-out/eps.eps \
 	omniguide-out/bands.eps lossgain_epsilon-out/eps.eps \
 	energy_cons_1d-out/energy.eps energy_cons-out/energy.eps \
 	energy_cons-out/energy.eps simple-out/ez-000200-00.eps \
-	nonlinear-out/field.eps
+	nonlinear-out/field.eps nonlinear-out/ez-000400-00.eps
 
 EPS = $(EPSGEN) Yee_bulk.eps
 
@@ -110,9 +110,10 @@ check-local: simplebands.dac complicated.dac polaritonbands.dac \
 	epsilon_polariton_1d.dac omniguide.dac lossgain_epsilon.dac \
 	energy_cons_1d.dac energy_cons.dac simple.dac
 
-nonlinear-out/field.eps : nonlinear.dac
+nonlinear-out/field.eps nonlinear-out/ez-000400-00.eps: nonlinear.dac
 	rm -rf nonlinear-out/
 	$(RUNCODE) ./nonlinear.dac
+	mv nonlinear-out/ez-000400.00.eps nonlinear-out/ez-000400-00.eps
 
 clean-local:
 	rm -rf *.o *.hi *.dac *-out *-out-* *.ps *.dvi *.doc *.log *.hi *.dac $(PDF) $(EPSGEN)
