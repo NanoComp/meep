@@ -44,6 +44,7 @@ inline field_type type(component c) {
 }
 const char *component_name(component c);
 const char *direction_name(direction);
+const char *dimension_name(ndim);
 inline direction component_direction(component c) {
   switch (c) {
   case Ex: case Hx: return X;
@@ -209,6 +210,7 @@ class volume {
 
   double dv(component c, int index) const;
   volume dV(component c, int index) const;
+  volume dV(const vec &) const;
   double intersection(const volume &) const;
   double rmin() const;
   double rmax() const;
@@ -259,6 +261,7 @@ class symmetry {
  private:
   signed_direction S[5];
   vec symmetry_point;
+  double a, inva;
   int g; // g is the multiplicity of the symmetry.
 };
 

@@ -24,6 +24,42 @@
 
 void abort(char *fmt, ...);  // Since we don't want to include dactyl.h...
 
+static inline double int_to_lattice(int n, double a, double inva=0.0) {
+  if (inva == 0.0) inva = 1.0/a;
+  return (2*n)*(0.5*inva);
+}
+
+static inline int lattice_to_int(double x, double a, double inva=0.0) {
+  if (inva == 0.0) inva = 1.0/a;
+  return (int)(x*(2.0*a) + 0.5)/2;
+}
+
+static inline double yee_to_lattice(int n, double a, double inva=0.0) {
+  if (inva == 0.0) inva = 1.0/a;
+  return n*(0.5*inva);
+}
+
+static inline int lattice_to_yee(double x, double a, double inva=0.0) {
+  if (inva == 0.0) inva = 1.0/a;
+  return (int)(x*(2.0*a) + 0.5);
+}
+
+static inline double rtl(double x, double a, double inva=0.0) {
+  // Rounds to a value somewhere on the yee lattice.
+  return ((int)(x*(2.0*a) + 0.5))*(0.5*inva);
+}
+
+static inline vec round_to_lattice(const vec &p, double a, double inva=0.0) {
+  // Rounds to a value somewhere on the yee lattice.
+  if (inva == 0.0) inva = 1.0/a;
+  switch (p.dim) {
+  case d1: return vec(rtl(p.z(),a,inva));
+  case d2: return vec2d(rtl(p.x(),a,inva), rtl(p.y(),a,inva));
+  case d3: return vec(rtl(p.x(),a,inva), rtl(p.y(),a,inva), rtl(p.z(),a,inva));
+  case dcyl: return vec(rtl(p.r(),a,inva), rtl(p.z(),a,inva));
+  }
+}
+
 const char *dimension_name(ndim dim) {
   switch (dim) {
   case d1: return "1D";
@@ -562,9 +598,7 @@ void volume::interpolate_two(component c, const vec &p,
   }
 }
 
-volume volume::dV(component c, int ind) const {
-  if (!owns(loc(c, ind))) return volume(dim, a, 0, 0, 0);
-  const vec here = loc(c,ind);
+volume volume::dV(const vec &here) const {
   const double thqinva = 0.75*inva;
   volume out;
   switch (dim) {
@@ -583,6 +617,11 @@ volume volume::dV(component c, int ind) const {
     return out;
   }
   abort("Aaaack can't do dV in this number of dimensions\n");
+}
+
+volume volume::dV(component c, int ind) const {
+  if (!owns(loc(c, ind))) return volume(dim, a, 0, 0, 0);
+  return dV(loc(c,ind));
 }
 
 double volume::xmax() const {
@@ -728,31 +767,32 @@ vec volume::loc(component c, int ind) const {
   switch (dim) {
   case dcyl:
     {
-      const int oz = (int)(origin.z()*a+0.5);
-      const int o_r = (int)(origin.r()*a+0.5);
-      return yee_shift(c) + vec(inva*(o_r+ind/(nz()+1)),
-                              inva*(oz+(ind%(nz()+1))));
+      const int oz = lattice_to_int(origin.z(),a);
+      const int o_r = lattice_to_int(origin.r(),a);
+      return yee_shift(c) + vec(int_to_lattice(o_r+ind/(nz()+1),a),
+                                int_to_lattice(oz+(ind%(nz()+1)),a));
     }
   case d3:
     {
-      const int ox = (int)(origin.x()*a+0.5);
-      const int oy = (int)(origin.y()*a+0.5);
-      const int oz = (int)(origin.z()*a+0.5);
-      return yee_shift(c) + vec(inva*(ox+ind/((nz()+1)*(ny()+1))),
-                                inva*(oy+(ind%((nz()+1)*(ny()+1)))/(nz()+1)),
-                                inva*(oz+(ind%(nz()+1))));
+      const int ox = lattice_to_int(origin.x(),a);
+      const int oy = lattice_to_int(origin.y(),a);
+      const int oz = lattice_to_int(origin.z(),a);
+      return yee_shift(c)
+        + vec(int_to_lattice(ox+ind/((nz()+1)*(ny()+1)),a),
+              int_to_lattice(oy+(ind%((nz()+1)*(ny()+1)))/(nz()+1),a),
+              int_to_lattice(oz+(ind%(nz()+1)),a));
     }
   case d2:
     {
-      const int ox = (int)(origin.x()*a+0.5);
-      const int oy = (int)(origin.y()*a+0.5);
-      return yee_shift(c) + vec2d(inva*(ox+ind/((ny()+1))),
-                                  inva*(oy+(ind%(ny()+1))));
+      const int ox = lattice_to_int(origin.x(),a);
+      const int oy = lattice_to_int(origin.y(),a);
+      return yee_shift(c) + vec2d(int_to_lattice(ox+ind/((ny()+1)),a),
+                                  int_to_lattice(oy+(ind%(ny()+1)),a));
     }
   case d1:
     {
-      const int oz = (int)(origin.z()*a+0.5);
-      return yee_shift(c) + vec(inva*(oz+ind));
+      const int oz = lattice_to_int(origin.z(),a);
+      return yee_shift(c) + vec(int_to_lattice(oz+ind,a));
     }
   }
 }
@@ -913,6 +953,8 @@ symmetry rotate4(direction axis, const volume &v) {
   s.S[(axis+1)%3].flipped = true;
   s.S[(axis+2)%3].d = (direction)((axis+1)%3);
   s.symmetry_point = v.center();
+  s.a = v.a;
+  s.inva = 1.0/v.a;
   return s;
 }
 
@@ -925,6 +967,8 @@ symmetry rotate2(direction axis, const volume &v) {
   s.S[(axis+2)%3].d = (direction)((axis+1)%3);
   s.S[(axis+2)%3].flipped = true;
   s.symmetry_point = v.center();
+  s.a = v.a;
+  s.inva = 1.0/v.a;
   return s;
 }
 
@@ -933,6 +977,8 @@ symmetry mirror(direction axis, const volume &v) {
   s.g = 2;
   s.S[axis].flipped = true;
   s.symmetry_point = v.center();
+  s.a = v.a;
+  s.inva = 1.0/v.a;
   return s;
 }
 
@@ -956,25 +1002,30 @@ signed_direction symmetry::transform(direction d, int n) const {
 
 vec symmetry::transform(const vec &ov, int n) const {
   if (n == 0) return ov;
-  const vec v = ov - symmetry_point;
-  vec out = v;
+  vec out = ov;
   int ddmin = X, ddmax = 4;
-  if (v.dim == d2) {
+  if (ov.dim == d2) {
     ddmin = X; ddmax = Y;
-  } else if (v.dim == d3) {
+  } else if (ov.dim == d3) {
     ddmin = X; ddmax = Z;
-  } else if (v.dim == d1) {
+  } else if (ov.dim == d1) {
     ddmin = ddmax = Z;
-  } else if (v.dim == dcyl) {
+  } else if (ov.dim == dcyl) {
     ddmin = Z; ddmax = R;
   }
   for (int dd=ddmin;dd<=ddmax;dd++) {
     const direction d = (direction) dd;
     const signed_direction s = transform(d,n);
-    if (s.flipped) out.set_direction(s.d, -v.in_direction(d));
-    else out.set_direction(s.d, v.in_direction(d));
+    int sym_yee_d = lattice_to_yee(symmetry_point.in_direction(d),a,inva);
+    int yeed = lattice_to_yee(ov.in_direction(d),a,inva) - sym_yee_d;
+    double deltad = ov.in_direction(d) - yee_to_lattice(yeed+sym_yee_d,a,inva);
+    int sym_yee_sd = lattice_to_yee(symmetry_point.in_direction(s.d),a,inva);
+    if (s.flipped)
+      out.set_direction(s.d, yee_to_lattice(sym_yee_sd - yeed,a,inva) - deltad);
+    else
+      out.set_direction(s.d, yee_to_lattice(sym_yee_sd + yeed,a,inva) + deltad);
   }
-  return out + symmetry_point;
+  return out;
 }
 
 component symmetry::transform(component c, int n) const {
@@ -1006,6 +1057,7 @@ complex<double> symmetry::phase_shift(component c, int n) const {
 }
 
 bool symmetry::is_primitive(const vec &p) const {
+  // This is only correct if p is somewhere on the yee lattice.
   if (multiplicity() == 1) return true;
   for (int i=1;i<multiplicity();i++) {
     const vec pp = transform(p,i);

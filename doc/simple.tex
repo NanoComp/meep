@@ -1,0 +1,111 @@
+\begin{comment}
+/*
+\end{comment}
+\section{A simple 2D system.}
+\begin{comment}
+*/
+\end{comment}
+
+This example is intended to let you quickly get started using dactyl to run
+a simple calculation.  As such, it will include within it the complete code
+of the example itself.  Dactyl is a C++ library, so your control file is a
+small C++ program.
+
+At the beginning of your control file, you have to include the ``dactyl.h''
+header...
+\begin{verbatim}
+#include "dactyl.h"
+\end{verbatim}
+
+Next we create a function to define epsilon.  This function accepts a
+``vec'' argument, and returns a double, which is the value of epsilon.  For
+this example, we use an index-guided waveguide with some air slits cut in
+it.  You can choose whatever units you like in which to define your
+structure.  In this case we choose to make the grating periodicity our unit
+of distance.
+
+\begin{verbatim}
+const double half_cavity_width = 0.6001, air_slit_width = 0.2,
+             half_waveguide_width = 0.40001,
+             num_air_slits = 4.0,
+             high_dielectric = 12.0, low_dielectric = 4.0;
+const double x_center = 6.0, y_center = 6.0;
+double eps(const vec &rr) {
+  // Displacement from center of cavity is r:
+  const vec r = rr - vec2d(x_center, y_center);
+  // First the air slits:
+  double dx = fabs(r.x()) - half_cavity_width;
+  if (dx < num_air_slits && dx > 0.0) {
+    while (dx > 1.0) dx -= 1.0;
+    if (dx < air_slit_width) return 1.0;
+  }
+  // Now check if the y value is within the waveguide:
+  if (fabs(r.y()) < half_waveguide_width) return high_dielectric;
+  // Otherwise we must be in the surrounding low dielectric:
+  return low_dielectric;
+}
+\end{verbatim}
+\begin{figure}
+\label{simple_figure}
+\caption{$E_z$}
+\begin{center}
+\epsfig{file=simple-out/ez-000128.20.eps,width=4.8cm}
+\end{center}
+\end{figure}
+The main function should always start with a call to the initialize
+subroutine.  This subroutine is responsible for setting up MPI if we are
+running on multiple processors.
+\begin{verbatim}
+int main(int argc, char *argv[]) {
+  initialize(argc, argv);
+\end{verbatim}
+The ``mat'' structure defines the contents of the unit cell.  It needs a
+volume, which includes the size of the grid and the resolution, as well as
+the epsilon function we defined earlier.  Here we also choose to use PML
+absorbing boundary conditions in all directions, since we are interested in
+the high Q mode in the cavity.
+\begin{verbatim}
+  const double a = 10;
+  mat ma(voltwo(2*x_center, 2*y_center, a), eps);
+  ma.use_pml_everywhere(1.0);
+\end{verbatim}
+To avoid clutter, we'll create a directory to hold the output.  The
+function \verb!make_output_directory! creates a directory based on the name
+of the example program along with an extension.  It also backs up the C++
+source file if it can find it.  If the directory already exists, then it
+reuses it, unless the C++ control file has changed, in which case it
+creates a new one.
+\begin{verbatim}
+  const char *dirname = make_output_directory(argv[0]);
+  ma.set_output_directory(dirname);
+\end{verbatim}
+The mat structure only holds the epsilon.  We will also need a ``fields''
+object to hold our electric and magnetic fields.  We add a point source
+oriented in the $E_z$ direction, located in the center of our cavity.  We
+use metal boundary conditions (behind the PML) everywhere to avoid a
+decrease in symmetry that I don't want to bother explaining here.
+\begin{verbatim}
+  fields f(&ma);
+  f.add_point_source(Ez, 0.2, 1.6, 0.0, 8.0, vec2d(x_center,y_center));
+  f.use_metal_everywhere();
+\end{verbatim}
+I'm not interested in seeing the source itself, so I'll keep time stepping
+until the current time is greater than the last time at which the source is
+running.
+\begin{verbatim}
+  while (f.time() < f.find_last_source()) f.step();
+\end{verbatim}
+Now we'll take a snapshot of the fields in encapsulated postscript format.
+\begin{verbatim}
+  f.eps_slices();
+\end{verbatim}
+And now we're done, although you might wonder if we've done anything
+worthwhile, since all we got out of this was a picture... All that is left
+is to call ``finished'' which shuts down MPI properly.  We also want (as a
+matter of principle) to delete the string containing the directory name of
+our output directory.
+\begin{verbatim}
+  delete[] dirname;
+  finished();
+}
+\end{verbatim}

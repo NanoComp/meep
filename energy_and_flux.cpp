@@ -128,11 +128,11 @@ double fields_chunk::electric_energy_in_box(const volume &otherv,
       if (f[c][cmp] && is_electric((component)c))
         for (int i=0;i<v.ntot();i++) {
           const vec p0 = v.loc((component)c,i);
-          if (S.is_primitive(p0))
+          if (S.is_primitive(p0) && v.owns(p0))
             for (int sn=0;sn<S.multiplicity();sn++) {
               const vec pn = S.transform(p0,sn);
               if ((pn!=p0 || sn==0) && otherv.owns(pn))
-                energy += otherv.intersection(v.dV((component)c,i))*
+                energy += otherv.intersection(v.dV(pn))*
                   f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
             }
         }
@@ -147,11 +147,11 @@ double fields_chunk::magnetic_energy_in_box(const volume &otherv,
       if (f[c][cmp] && is_magnetic((component)c))
         for (int i=0;i<v.ntot();i++) {
           const vec p0 = v.loc((component)c,i);
-          if (S.is_primitive(p0))
+          if (S.is_primitive(p0) && v.owns(p0))
             for (int sn=0;sn<S.multiplicity();sn++) {
               const vec pn = S.transform(p0,sn);
               if ((pn!=p0 || sn==0) && otherv.owns(pn))
-                energy += otherv.intersection(v.dV((component)c,i))*
+                energy += otherv.intersection(v.dV(pn))*
                   f[c][cmp][i]*f[c][cmp][i];
             }
         }

@@ -42,8 +42,8 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
   if (S.multiplicity() > 1) {
     // Have to work out the symmetry point and volume to use.
     if (!(thev.dim == d2 /* || thev.dim == d3 */))
-      abort("I don't support symmetries except in cartesian.  %d\n",
-            (int) thev.dim);
+      abort("I don't support symmetries except in cartesian.  %s\n",
+            dimension_name(thev.dim));
     bool break_this[3];
     for (int dd=0;dd<3;dd++) {
       const direction d = (direction) dd;
