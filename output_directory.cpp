@@ -79,13 +79,14 @@ static bool is_ok_dir(const char *dirname, const char *sourcename,
   const int buflen = 300;
 
   DIR *dir;
-  if ((dir = opendir(dirname)) != NULL) {
-    closedir(dir);
-    return false;
-  } else {
-    mkdir(dirname, 00777);
-    return true;
+  bool direxists;
+  if (am_master()) {
+    direxists = (dir = opendir(dirname)) != NULL;
+    if (direxists) closedir(dir);
+    else mkdir(dirname, 00777);
   }
+  direxists = broadcast(0, direxists);
+  return !direxists;
 
 //   char drsrcn[buflen];
 //   snprintf(drsrcn, buflen, "%s/%s", dirname, sourcename);
@@ -131,7 +132,6 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   else {
     snprintf(basename, buflen, "%s", stripped_name);
   }
-  
 
   char outdirname[buflen];
   snprintf(outdirname, buflen, "%s-out", basename);
@@ -153,5 +153,5 @@ const char *make_output_directory(const char *exename, const char *jobname) {
 }
 
 void trash_output_directory(const char *dirname) {
-  mkdir(dirname, 00777);
+  if (am_master()) mkdir(dirname, 00777);
 }
