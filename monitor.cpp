@@ -212,3 +212,30 @@ void monitor_point::fourier_transform(component w,
     }
   }
 }
+
+void monitor_point::harminv(component w,
+                            complex<double> **a, double **f_re, double **f_im,
+                            int *numout, double fmin, double fmax,
+                            int maxbands) {
+  int n = 1;
+  monitor_point *p = next;
+  double tmax = t, tmin = t;
+  while (p) {
+    n++;
+    if (p->t > tmax) tmax = p->t;
+    if (p->t < tmin) tmin = p->t;
+    p = p->next;
+  }
+  p = this;
+  complex<double> *d = new complex<double>[n];
+  for (int i=0;i<n;i++,p=p->next) {
+    d[i] = p->get_component(w);
+  }
+  *a = new complex<double>[n];
+  *f_re = new double[n];
+  *f_im = new double[n];
+  printf("using an a of %lg\n", (n-1)/(tmax-tmin)*c);
+  *numout = do_harminv(d, n, 1, (n-1)/(tmax-tmin)*c, fmin, fmax, maxbands,
+                       *a, *f_re, *f_im, NULL);
+  delete[] d;
+}

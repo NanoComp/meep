@@ -110,13 +110,15 @@ class monitor_point {
   //
   // Note that in either case, fourier_transform assumes that the monitor
   // points are all equally spaced in time.
-  //
-  // When fourier_transform is called with the other arguments as well,
-  // harminv is run, with its output amplitudes and frequencies being
-  // stored in a and f.
   void fourier_transform(component w,
                          complex<double> **a, complex<double> **f, int *numout,
                          double fmin=0.0, double fmax=0.0, int maxbands=100);
+  // harminv works much like fourier_transform, except that it is not yet
+  // implemented.
+  void harminv(component w,
+               complex<double> **a, double **f_re, double **f_im,
+               int *numout, double fmin, double fmax,
+               int maxbands);
 };
 
 class fields {
