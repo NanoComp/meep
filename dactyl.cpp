@@ -73,6 +73,7 @@ void fields::use_bloch(double tk) {
   k = tk;
   cosknz = cos(k*inva*nz);
   sinknz = sin(k*inva*nz);
+  eiknz = complex<double>(cosknz, sinknz);
 }
 
 fields::fields(const mat *the_ma, int tm) {
@@ -320,7 +321,7 @@ void fields::phase_in_material(const mat *newma, double num_periods) {
 }
 
 void fields::add_src_pt(int r, int z,
-                        double Pr, double Pp, double Pz,
+                        complex<double> Pr, complex<double> Pp, complex<double> Pz,
                         double freq, double width, double peaktime,
                         double cutoff, int is_h) {
   const double pi=3.14159265;
@@ -351,179 +352,151 @@ void fields::add_src_pt(int r, int z,
   if (peaktime <= 0.0) tmp->peaktime = tmp->cutoff;
 }
 
-void fields::find_source_z_position(double z, double shift, int *z1, int *z2, double *amp1, double *amp2) 
-{
+void fields::find_source_z_position(double z, double shift, int *z1, int *z2,
+                                    complex<double> *amp1, complex<double> *amp2) {
+    
+  int z_floor = (int)floor(z - shift);
+  int z_ceil = z_floor + 1;
+  
+  // The bulk case:
+  *z1 = z_floor;
+  *amp1 = (z_ceil + shift) - z;
+  *z2 = z_ceil;
+  *amp2 = z - (z_floor + shift);
+
   if (npmlz > 0) { 
     if (z == 0.0) { // place source on first lattice point that's not in the PML
       *z1 = npmlz + 1 - (int) (2.0*shift);
       *amp1 = 1.0;
       *z2 = 0;
       *amp2 = 0.0;
-      return;
-    }
-    if (z == nz) {
+    } else if (z == nz) {
       *z1 = nz - 1 - npmlz;
       *amp1 = 1.0;
       *z2 = 0;
       *amp2 = 0.0;
-      return;
     }
-  }
-
-  if (k >= 0.0) 
-    if (z == 0.0) { // place source on first lattice point starting from the left
-      printf("Temporary solution. Need to wrap source around and apply phase shift\n");
-      *z1 = 0;
-      *amp1 = 1.0;
-      *z2 = 0;
-      *amp2 = 0.0;
-      return;
+  } else if (k >= 0.0) { // Periodic boundary conditions...
+    while (*z1 < 0) {
+      *amp1 *= eiknz;
+      *z1 += nz;
     }
-    
-  int z_floor = (int)floor(z - shift);
-  int z_ceil = z_floor + 1;
-
-  if (k >= 0.0) {
-    if (z_floor < 0) {
-      printf("Temporary solution. Need to wrap source around and apply phase shift\n");
-      *z1 = 0;
-      *amp1 = 1.0;
-      *z2 = 0;
-      *amp2 = 0.0;
-      return;
+    while (*z2 < 0) {
+      *amp2 *= eiknz;
+      *z2 += nz;
     }
-    if (z_ceil >= nz) {
-      printf("Temporary solution. Need to wrap source around and apply phase shift\n");
-      *z1 = nz-1;
-      *amp1 = 1.0;
-      *z2 = 0;
-      *amp2 = 0.0;
-      return;
+    while (*z1 >= nz) {
+      *z1 -= nz;
+      *amp1 /= eiknz;
     }
-  }
-  
-  if (k < 0) { // metal
+    while (*z2 >= nz) {
+      *z2 -= nz;
+      *amp2 /= eiknz;
+    }
+  } else if (k < 0) { // metal
     if (z <= (1 - shift)) { // if z_floor is on metal or out of the cell
       *z1 = z_ceil;
       *amp1 = 1.0;
       *z2 = 0;
       *amp2 = 0.0;
-      return;
-    }
-
-    if (z >= (nz - 1 + shift)) { // if z_ceil is on metal or out of the cell
+    } else if (z >= (nz - 1 + shift)) { // if z_ceil is on metal or out of the cell
       *z1 = z_floor;
       *amp1 = 1.0;
       *z2 = 0;
       *amp2 = 0.0;
-      return;
     }
   }
-  
-  // The bulk case:
-  *z1 = z_floor;
-  *amp1 = (z_ceil + shift) - z;
-  *z2 = z_ceil;
-  *amp2 = z - (z_floor + shift) ;
 }
 
 
 void fields::add_hr_source(double freq, double width, double peaktime,
-                   double cutoff, double z, double amp(double r)) {
+                           double cutoff, double z, complex<double> amp(double r)) {
   int r;
   int z1, z2;
-  double amp1, amp2;
+  complex<double> amp1, amp2;
   find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
     if (amp(r*inva) != 0.0) {
       if (amp1 != 0.0)
-	add_src_pt(r, z1, amp1*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
+        add_src_pt(r, z1, amp1*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
       if (amp2 != 0.0)
-	add_src_pt(r, z2, amp2*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
+        add_src_pt(r, z2, amp2*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
     }
 }
 
 void fields::add_hp_source(double freq, double width, double peaktime,
-                   double cutoff, double z, double amp(double r)) {
+                           double cutoff, double z, complex<double> amp(double r)) {
   int r;
   int z1, z2;
-  double amp1, amp2;
+  complex<double> amp1, amp2;
   find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
     if (amp((r+0.5)*inva) != 0.0) {
       if (amp1 != 0.0)
-	add_src_pt(r, z1, 0.0 , amp1*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
+        add_src_pt(r, z1, 0.0 , amp1*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
       if (amp2 != 0.0)
-	add_src_pt(r, z2, 0.0 , amp2*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
+        add_src_pt(r, z2, 0.0 , amp2*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
     }
 }
 
 void fields::add_hz_source(double freq, double width, double peaktime,
-                   double cutoff, double z, double amp(double r)) {
+                           double cutoff, double z, complex<double> amp(double r)) {
   int r;
   int z1, z2;
-  double amp1, amp2;
+  complex<double> amp1, amp2;
   find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
     if (amp((r+0.5)*inva) != 0.0) {
       if (amp1 != 0.0)
-	add_src_pt(r, z1, 0.0 , 0.0, amp1*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
+        add_src_pt(r, z1, 0.0 , 0.0, amp1*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
       if (amp2 != 0.0)
-	add_src_pt(r, z2, 0.0 , 0.0, amp2*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
+        add_src_pt(r, z2, 0.0 , 0.0, amp2*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
     }
-
-  //add_src_pt(r, z, 0.0, 0.0, amp(r*inva), freq, width, peaktime, cutoff, 1);
 }
 
 void fields::add_er_source(double freq, double width, double peaktime,
-                   double cutoff, double z, double amp(double r)) {
+                           double cutoff, double z, complex<double> amp(double r)) {
   int r;
   int z1, z2;
-  double amp1, amp2;
+  complex<double> amp1, amp2;
   find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
     if (amp((r+0.5)*inva) != 0.0) {
       if (amp1 != 0.0)
-	add_src_pt(r, z1, amp1*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
+        add_src_pt(r, z1, amp1*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
       if (amp2 != 0.0)
-	add_src_pt(r, z2, amp2*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
+        add_src_pt(r, z2, amp2*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
     }
-
-      //add_src_pt(r, z, amp((r+0.5)*inva), 0.0, 0.0, freq, width, peaktime, cutoff);
 }
 
 void fields::add_ep_source(double freq, double width, double peaktime,
-                   double cutoff, double z, double amp(double r)) {
+                           double cutoff, double z, complex<double> amp(double r)) {
   int r;
   int z1, z2;
-  double amp1, amp2;
+  complex<double> amp1, amp2;
   find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
     if (amp(r*inva) != 0.0) {
       if (amp1 != 0.0)
-	add_src_pt(r, z1, 0.0, amp1*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
+        add_src_pt(r, z1, 0.0, amp1*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
       if (amp2 != 0.0)
-	add_src_pt(r, z2, 0.0, amp2*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
+        add_src_pt(r, z2, 0.0, amp2*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
     }
-
-      //add_src_pt(r, z, 0.0 , amp(r*inva), 0.0, freq, width, peaktime, cutoff);
 }
 
 void fields::add_ez_source(double freq, double width, double peaktime,
-                   double cutoff, double z, double amp(double r)) {
+                           double cutoff, double z, complex<double> amp(double r)) {
   int r;
   int z1, z2;
-  double amp1, amp2;
+  complex<double> amp1, amp2;
   find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
     if (amp(r*inva) != 0.0) {
       if (amp1 != 0.0)
-	add_src_pt(r, z1, 0.0 , 0.0, amp1*amp(r*inva), freq, width, peaktime, cutoff);
+        add_src_pt(r, z1, 0.0 , 0.0, amp1*amp(r*inva), freq, width, peaktime, cutoff);
       if (amp2 != 0.0)
-	add_src_pt(r, z2, 0.0 , 0.0, amp2*amp(r*inva), freq, width, peaktime, cutoff);
+        add_src_pt(r, z2, 0.0 , 0.0, amp2*amp(r*inva), freq, width, peaktime, cutoff);
     }
-
-      //add_src_pt(r, z, 0.0, 0.0, amp(r*inva), freq, width, peaktime, cutoff);
 }
 
 void fields::step() {
@@ -1051,20 +1024,18 @@ void fields::step_h_source(const src *s) {
     step_h_source(s->next);
     return;
   }
-  const double pi = 3.14159265358979323846;
   double envelope = exp(-tt*tt/(2*s->width*s->width));
-  Ar = cos(2*pi*s->freq*tt)*envelope;
-  if (s->is_real) Ai = 0;
-  else Ai = -sin(2*pi*s->freq*tt)*envelope;
-  IM(hr,s->r,s->z) += Ai*s->er;
-  IM(hp,s->r,s->z) += Ai*s->ep;
-  IM(hz,s->r,s->z) += Ai*s->ez;
-  RE(hr,s->r,s->z) += Ar*s->er;
-  RE(hp,s->r,s->z) += Ar*s->ep;
-  RE(hz,s->r,s->z) += Ar*s->ez;
+  complex<double> A = polar(1.0,-2*pi*s->freq*tt)*envelope;
+  if (s->is_real) A = real(A);
+  IM(hr,s->r,s->z) += imag(A*s->er);
+  IM(hp,s->r,s->z) += imag(A*s->ep);
+  IM(hz,s->r,s->z) += imag(A*s->ez);
+  RE(hr,s->r,s->z) += real(A*s->er);
+  RE(hp,s->r,s->z) += real(A*s->ep);
+  RE(hz,s->r,s->z) += real(A*s->ez);
   if (s->z == 0) {
-    IM(hz,s->r,nz) += s->ez*(Ai*cosknz + Ar*sinknz);
-    RE(hz,s->r,nz) += s->ez*(Ar*cosknz - Ai*sinknz);
+    IM(hz,s->r,nz) += imag(eiknz*A*s->ez);
+    RE(hz,s->r,nz) += real(eiknz*A*s->ez);
   }
   step_h_source(s->next);
 }
@@ -1078,21 +1049,20 @@ void fields::step_e_source(const src *s) {
     step_e_source(s->next);
     return;
   }
-  const double pi = 3.14159265358979323846;
   double envelope = exp(-tt*tt/(2*s->width*s->width));
-  Ar = cos(2*pi*s->freq*tt)*envelope;
-  Ai = -sin(2*pi*s->freq*tt)*envelope;
-  IM(er,s->r,s->z) += Ai*s->er;
-  IM(ep,s->r,s->z) += Ai*s->ep;
-  IM(ez,s->r,s->z) += Ai*s->ez;
-  RE(er,s->r,s->z) += Ar*s->er;
-  RE(ep,s->r,s->z) += Ar*s->ep;
-  RE(ez,s->r,s->z) += Ar*s->ez;
+  complex<double> A = polar(1.0,-2*pi*s->freq*tt)*envelope;
+  if (s->is_real) A = real(A);
+  IM(er,s->r,s->z) += imag(A*s->er);
+  IM(ep,s->r,s->z) += imag(A*s->ep);
+  IM(ez,s->r,s->z) += imag(A*s->ez);
+  RE(er,s->r,s->z) += real(A*s->er);
+  RE(ep,s->r,s->z) += real(A*s->ep);
+  RE(ez,s->r,s->z) += real(A*s->ez);
   if (s->z == 0) {
-    IM(er,s->r,nz) += s->er*(Ai*cosknz + Ar*sinknz);
-    IM(ep,s->r,nz) += s->ep*(Ai*cosknz + Ar*sinknz);
-    RE(er,s->r,nz) += s->er*(Ar*cosknz - Ai*sinknz);
-    RE(ep,s->r,nz) += s->ep*(Ar*cosknz - Ai*sinknz);
+    IM(er,s->r,nz) += imag(eiknz*A*s->er);
+    RE(er,s->r,nz) += real(eiknz*A*s->er);
+    IM(ep,s->r,nz) += imag(eiknz*A*s->ep);
+    RE(ep,s->r,nz) += real(eiknz*A*s->ep);
   }
   step_e_source(s->next);
 }

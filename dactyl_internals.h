@@ -69,7 +69,7 @@ class polarization {
 class src {
  public:
   double freq, width, peaktime;
-  double ez, ep, er;
+  complex<double> ez, ep, er;
   int r, z, cutoff;
   int is_real;
   src *next;

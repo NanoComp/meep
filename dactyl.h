@@ -64,6 +64,7 @@ class fields {
   int npmlr, npmlz; // Amount of pml
   int m, t, phasein_time;
   double k, cosknz, sinknz;
+  complex<double> eiknz;
   bandsdata *bands;
   src *e_sources, *h_sources;
   const mat *new_ma;
@@ -80,19 +81,18 @@ class fields {
   void step();
 
   void use_real_sources();
-  void find_source_z_position(double z, double shift, int *z1, int *z2, double *amp1, double *amp2);
-    void add_er_source(double freq, double width, double peaktime,
-                     double cutoff, double z, double amp(double r));
+  void add_er_source(double freq, double width, double peaktime,
+                     double cutoff, double z, complex<double> amp(double r));
   void add_ep_source(double freq, double width, double peaktime,
-                     double cutoff, double z, double amp(double r));
+                     double cutoff, double z, complex<double> amp(double r));
   void add_ez_source(double freq, double width, double peaktime,
-                     double cutoff, double z, double amp(double r));
+                     double cutoff, double z, complex<double> amp(double r));
   void add_hr_source(double freq, double width, double peaktime,
-                     double cutoff, double z, double amp(double r));
+                     double cutoff, double z, complex<double> amp(double r));
   void add_hp_source(double freq, double width, double peaktime,
-                     double cutoff, double z, double amp(double r));
+                     double cutoff, double z, complex<double> amp(double r));
   void add_hz_source(double freq, double width, double peaktime,
-                     double cutoff, double z, double amp(double r));
+                     double cutoff, double z, complex<double> amp(double r));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
@@ -122,6 +122,8 @@ class fields {
   int iposmax, ifreqmax, nfreq, nzflux, *(nzfluxplane[MAXFLUXPLANES]);
   int nrflux, *(nrfluxplane[MAXFLUXPLANES]);
   double *freqs;
+  void find_source_z_position(double z, double shift, int *z1, int *z2,
+                              complex<double> *amp1, complex<double> *amp2);
   void phase_material();
   void step_h_bulk();
   void step_h_pml();
@@ -134,7 +136,7 @@ class fields {
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *);
   void add_src_pt(int r, int z,
-                  double Pr, double Pp, double Pz,
+                  complex<double> Pr, complex<double> Pp, complex<double> Pz,
                   double freq, double width, double peaktime,
                   double cutoff, int is_h = 0);
   int setifreqmax_and_iposmax(int ifreq, int ipos);

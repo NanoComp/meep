@@ -42,7 +42,7 @@ double guided_eps(double r, double z) {
 
 static double rsource = 0.15;
 
-double source_sharp(double r) {
+complex<double> source_sharp(double r) {
   if (r == 0) return 0;
   double dr = r - 0.6;
   double sig = 0.15;
