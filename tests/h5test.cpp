@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "meep.h"
+#include "meep_internals.h"
 #include "h5io.h"
 using namespace meep;
 
