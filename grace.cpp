@@ -26,7 +26,6 @@
 
 const char grace_header[] = "# Grace project file
 #
-@version 1
 @page size 792, 612
 @default symbol size 0.330000
 @g0 on
@@ -78,6 +77,7 @@ void grace::new_set(grace_type pt) {
 }
 
 void grace::set_range(double xmin, double xmax, double ymin, double ymax) {
+  fprintf(f, "@ version 1\n"); // Stupid nasty hack to make grace recognize the range.
   fprintf(f, "@    world xmin %lg\n", xmin);
   fprintf(f, "@    world xmax %lg\n", xmax);
   fprintf(f, "@    world ymin %lg\n", ymin);
@@ -113,6 +113,7 @@ void grace::output_point(double x, double y, double dy, double extra) {
 }
 
 void grace::output_out_of_order(int n, double x, double y, double dy, double extra) {
+  if (set_num == -1) new_set();
   grace_point *gp = new grace_point;
   gp->n = n;
   gp->x = x;

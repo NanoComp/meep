@@ -17,7 +17,7 @@ frequency of 0.7 and a transverse phonon frequency of 0.4.
 \begin{figure}
 \label{polaritonbands}
 \caption{Polariton band structure.}
-\epsfig{file=polaritonbands.eps,width=8.8cm}
+\epsfig{file=polaritonbands-out/bands.eps,width=8.8cm}
 \end{figure}
 
 \begin{verbatim}
@@ -38,8 +38,10 @@ int main(int argc, char **argv) {
   mat ma(eps, rmax, 0.0, a);
   const char *dirname = make_output_directory(argv[0]);
   printf("Storing output in directory %s/\n", dirname);
-  FILE *ban = create_output_file(dirname, "bands");
+  //FILE *ban = create_output_file(dirname, "bands");
   ma.set_output_directory(dirname);
+  grace g("bands", dirname);
+  g.set_range(0.0, 4.0, 0.0, 1.1);
 \end{comment}
 
 To create the polaritonic material, we add the polarizability to the
@@ -51,7 +53,7 @@ material after we have created it.
 \end{verbatim}
 
 \begin{verbatim}
-  for (k=0.0;k<30.01 && !interrupt;k+=2.5) {
+  for (k=0.0;k<4.01 && !interrupt;k+=.5) {
     printf("Working on k of %g and m = %d...\n", k, m);
     fields f(&ma, m);
     f.use_bloch(k);
@@ -68,18 +70,19 @@ remember to excite along with it the phonon with which it couples.
 Finally, we compute the band structure as usual.
 
 \begin{verbatim}
-    f.prepare_for_bands(0, ttot, .7+1.5*k/30.0, 40);
+    f.prepare_for_bands(0, ttot, .7+.15*k/3.0, 40, 1e-4);
     
     for (int t=0; t < ttot+1 && !interrupt; t++) {
       f.record_bands();
       f.step();
     }
-    f.output_bands(ban, "band", 16);
+    //f.output_bands(ban, "band", 16);
+    f.grace_bands(&g, 16);
 \end{verbatim}
 \begin{comment}
-    fflush(ban);
+    //fflush(ban);
   }
-  fclose(ban);
+  //fclose(ban);
 }
 \end{comment}
 

@@ -18,7 +18,8 @@ all: dactyl.ps dactyl/dactyl.html preproc
 
 ###########################################################################
 
-TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex polaritonbands.eps \
+TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
+	polaritonbands-out/bands.eps \
 	epsilon_polariton.tex epsilon_polariton.eps omniguide.tex \
 	omniguide-out/bands.eps
 
@@ -41,11 +42,7 @@ dactyl/dactyl.html : $(TEXFILES)
 dactyl.dvi : $(TEXFILES)
 	latex dactyl.tex
 
-polaritonbands.eps : polaritonbands-out/bands
-	../plot polaritonbands-out/bands band && \
-	mv polaritonbands-out/bands.eps polaritonbands.eps
-
-polaritonbands-out/bands : preproc polaritonbands.dac
+polaritonbands-out/bands.eps : preproc polaritonbands.dac
 	rm -rf polaritonbands-out/ && ./polaritonbands.dac
 
 epsilon_polariton.eps : epsilon_polariton-out/eps.eps
@@ -61,7 +58,7 @@ omniguide-out/bands.eps : preproc omniguide.dac
 test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac \
 	epsilon_polariton.dac omniguide.dac
 
-doc: doc/dactyl.ps
+doc: dactyl.ps
 
 testclean:
 	rm -rf *.o *.hi *.cpp *.dac *-out *-out-*
