@@ -41,7 +41,7 @@ void test_convergence_without_averaging() {
     f.use_bloch(0.1);
     f.set_boundary(High, R, Metallic);
     f.add_point_source(Hr, w0, 2.0, 0.0, 5.0, vec(0.2,0.0));
-    while (f.time() < f.find_last_source()) f.step();
+    while (f.time() < f.last_source_time()) f.step();
     int t_harminv_max = 2500; // try increasing this in case of failure
     complex<double> *mon_data = new complex<double>[t_harminv_max];
     int t = 0;
@@ -101,7 +101,7 @@ void test_convergence_with_averaging() {
     f.use_bloch(0.1);
     f.set_boundary(High, R, Metallic);
     f.add_point_source(Hr, w0, 2.0, 0.0, 5.0, vec(0.2,0.0));
-    while (f.time() < f.find_last_source()) f.step();
+    while (f.time() < f.last_source_time()) f.step();
     int t_harminv_max = 2500; // try increasing this in case of failure
     complex<double> *mon_data = new complex<double>[t_harminv_max];
     int t = 0;

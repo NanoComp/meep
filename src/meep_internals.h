@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include "meep.h"
+
 namespace meep {
 
 #define DOCMP for (int cmp=0;cmp<2-is_real;cmp++)
@@ -70,26 +72,27 @@ class polarization {
   void initialize_energy(double energy(const vec &));
 };
 
-class src {
+class src_pt {
  public:
-  src();
-  ~src();
-  double freq, width, peaktime, cutoff;
-  complex<double> A[NUM_FIELD_COMPONENTS], pol_now;
-  int i, is_continuous;
-  src *next;
-  double find_last_source(double guess=0);
-  void use_real_sources();
-  complex<double> get_dPdt_at_time(double t, double dt) const;
-  complex<double> get_dipole_at_time(double t) const;
-  void update_dipole(double time);
-  complex<double> get_dipole_now() const { return pol_now; };
-  double get_envelope_at_time(double t) const;
-  src *add_to(src *others) const;
+  src_pt(src_time *st) { t = st; next = NULL; }
+  ~src_pt() { delete next; }
+
+  src_time *t;
+  int i; // location of source in grid
+  component c; // field component the source applies to
+  complex<double> A; // amplitude of the source at this point/component
+
+  complex<double> current() { return A * t->current(); }
+  complex<double> current(double time) { return A * t->current(time); }
+  complex<double> update_current(double time) {
+    return A * t->update_current(time);
+  }
+
+  src_pt *add_to(src_pt *others) const;
+  src_pt *next;
 };
 
 const int num_bandpts = 32;
-class fields_chunk;
 
 class bandsdata {
  public:

@@ -99,7 +99,7 @@ I'm not interested in seeing the source itself, so I'll keep time stepping
 until the current time is greater than the last time at which the source is
 running.
 \begin{verbatim}
-  while (f.time() < f.find_last_source()) f.step();
+  while (f.time() < f.last_source_time()) f.step();
 \end{verbatim}
 Now we'll wait a bit (to let the low-Q modes die off) and then take a
 snapshot of the fields in encapsulated postscript format.

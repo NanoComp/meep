@@ -42,32 +42,23 @@ bandsdata::~bandsdata() {
   delete[] P;
 }
 
-double src::find_last_source(double sofar) {
-  if (peaktime + cutoff > sofar) sofar = peaktime + cutoff;
-  if (next == NULL) return sofar;
-  return next->find_last_source(sofar);
-}
-
-double fields::find_last_source() {
-  double last_source = 0;
+double fields::last_source_time() {
+  double last_time = 0;
+    if (sources != NULL)
+      last_time = max(last_time, sources->last_time_max());
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      last_source = max(last_source,chunks[i]->find_last_source());
-  return max_to_all(last_source);
+      last_time = max(last_time,chunks[i]->last_source_time());
+  return max_to_all(last_time);
 }
 
-double fields_chunk::find_last_source() {
-  double last_source = 0;
-  if (e_sources != NULL)
-    last_source = e_sources->find_last_source();
-  if (h_sources != NULL)
-    last_source = max(last_source, h_sources->find_last_source());
-  return last_source;  
+double fields_chunk::last_source_time() {
+  return 0;
 }
 
 void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
                                double qmin, double frac_pow_min) {
-  int last_source = (int)(find_last_source()*a*(1.0/c)+0.5);
+  int last_source = (int)(last_source_time()*a*(1.0/c)+0.5);
   last_source = max(last_source, t + phasein_time);
   if (!bands) bands = new bandsdata;
   bands->tstart = last_source+1;

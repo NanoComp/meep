@@ -33,8 +33,9 @@ namespace meep {
 
 void fields::step() {
   am_now_working_on(Stepping);
-  calc_source_phases();
   phase_material();
+
+  calc_sources(time() - 0.5 * inva*c); // for H sources
 
   //for (int i=0;i<num_chunks;i++)
   //  master_printf("Field is now %g\n", chunks[i]->peek_field(Ex,vec2d(1.55,0.6)));
@@ -43,6 +44,8 @@ void fields::step() {
   step_boundaries(H_stuff);
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
+
+  calc_sources(time()); // for E sources
 
   step_d();
   step_boundaries(D_stuff);
@@ -214,30 +217,26 @@ void fields::step_h_source() {
       chunks[i]->step_h_source(chunks[i]->h_sources, tim);
 }
 
-void fields_chunk::step_h_source(const src *s, double time) {
-  if (s == NULL) return;
-  complex<double> A = s->get_dPdt_at_time(time, inva*c);
-  if (A == 0.0) {
-    step_h_source(s->next, time);
-    return;
+void fields_chunk::step_h_source(src_pt *spt, double time) {
+  if (spt == NULL) return;
+  component c = spt->c;
+  if (f[c][0] && is_magnetic(c)) {
+    complex<double> A = spt->current();
+    int i = spt->i;
+    f[c][0][i] += real(A);
+    if (!is_real) f[c][1][i] += imag(A);
   }
-  FOR_COMPONENTS(c)
-    if (f[c][0] && is_magnetic(c)) {
-      f[c][0][s->i] += real(A*s->A[c]);
-      if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
-    }
-  step_h_source(s->next, time);
+  step_h_source(spt->next, time);
 }
 
-void fields::calc_source_phases() {
+void fields::calc_sources(double tim) {
+  for (src_time *s = sources; s; s = s->next) s->update_current(tim);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->calc_source_phases(time());
+      chunks[i]->calc_sources(tim);
 }
 
-void fields_chunk::calc_source_phases(double time) {
-  for (src *s = e_sources; s; s = s->next) s->update_dipole(time);
-  for (src *s = h_sources; s; s = s->next) s->update_dipole(time-0.5*inva*c);
+void fields_chunk::calc_sources(double time) {
 }
 
 } // namespace meep

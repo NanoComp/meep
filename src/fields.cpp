@@ -39,6 +39,7 @@ fields::fields(const structure *s, int tm) :
   a = v.a;
   inva = 1.0/a;
   t = 0;
+  sources = NULL;
   fluxes = NULL;
   // Time stuff:
   was_working_on = working_on = Other;
@@ -82,6 +83,7 @@ fields::fields(const fields &thef) :
   a = v.a;
   inva = 1.0/a;
   t = thef.t;
+  sources = NULL;
   fluxes = NULL;
   // Time stuff:
   was_working_on = working_on = Other;
@@ -120,6 +122,7 @@ fields::~fields() {
     delete[] comm_blocks[ft];
     delete[] comm_sizes[ft];
   }
+  delete sources;
   delete fluxes;
   delete bands;
 }

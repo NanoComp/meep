@@ -70,7 +70,7 @@ bench bench_flux_1d(const double zmax,
   flux_plane *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
   flux_plane *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
 
-  while (f.time() <= f.find_last_source()) f.step();
+  while (f.time() <= f.last_source_time()) f.step();
 
   volume mid = volone(zmax/3,a);
   mid.origin = vec(zmax/3);
@@ -99,7 +99,7 @@ bench bench_2d(const double xmax, const double ymax,
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
   f.add_point_source(Hz, 0.8, 0.7, 0.0, 4.0, vec2d(0.431, 0.2));
 
-  while (f.time() < f.find_last_source()) f.step();
+  while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
   clock_t start = clock();
   while (f.time() < tend) f.step();
@@ -123,7 +123,7 @@ bench bench_2d_tm(const double xmax, const double ymax,
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
 
-  while (f.time() < f.find_last_source()) f.step();
+  while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
   clock_t start = clock();
   while (f.time() < tend) f.step();
@@ -146,7 +146,7 @@ bench bench_2d_te(const double xmax, const double ymax,
   f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
   f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec2d(0.7, 0.5));
 
-  while (f.time() < f.find_last_source()) f.step();
+  while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
   clock_t start = clock();
   while (f.time() < tend) f.step();
@@ -183,7 +183,7 @@ bench bench_3d_periodic(const double xmax, const double ymax, const double zmax,
   if (ymax==0) f.use_bloch(Z,0.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(xmax*.5, ymax*.5, zmax*.5));
 
-  while (f.time() < f.find_last_source()) f.step();
+  while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
   clock_t start = clock();
   while (f.time() < tend) f.step();
@@ -205,7 +205,7 @@ bench bench_3d(const double xmax, const double ymax, const double zmax,
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(xmax*.5, ymax*.5, zmax*.5));
 
-  while (f.time() < f.find_last_source()) f.step();
+  while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
   clock_t start = clock();
   while (f.time() < tend) f.step();

@@ -57,7 +57,7 @@ void spherical_quadrature_points(double *x, double *y, double *z,
 
 	     This code was written with the help of example code by
 	     John Burkardt: 
-	           http://www.psc.edu/~burkardt/src/stroud/stroud.html */
+	           http://www.psc.edu/~burkardt/src_pt/stroud/stroud.html */
      
 	  x0 = 1; y0 = z0 = 0;
 	  w = 9216 / 725760.0;

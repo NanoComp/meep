@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 We add an additional check below ``\verb!&& !interrupt!'' so that when the
 user hits cntl-C we exit the loop.
 \begin{verbatim}
-  while (f.time() < f.find_last_source() && !interrupt) f.step();
+  while (f.time() < f.last_source_time() && !interrupt) f.step();
   f.eps_slices();
   while (f.time() < 400.0 && !interrupt) f.step();
 \end{verbatim}

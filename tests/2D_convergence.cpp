@@ -46,7 +46,7 @@ double freq_at_resolution(double e(const vec &), double a) {
   f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(1.5,0.5),-1.0);
   f.use_real_fields();
 
-  while (f.time() <= f.find_last_source() + 10.0 && !interrupt) f.step();
+  while (f.time() <= f.last_source_time() + 10.0 && !interrupt) f.step();
   const double fourier_timesteps = 2000.0;
   const double ttot = fourier_timesteps/a + f.time();
   monitor_point *p = NULL;

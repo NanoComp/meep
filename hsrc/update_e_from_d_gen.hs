@@ -10,6 +10,7 @@ job = with_d_minus_p $ whether_or_not "e_sources" $ consider_electric_polarizati
           prepare_polarizations,
           for_complex $ calc_d_minus_p
         ],
+	calc_d_minus_p_sources,
         loop_electric_fields $ regardless_of_inveps $ for_complex $ update_e_from_d_minus_p
       ]
 
@@ -42,11 +43,18 @@ calc_d_minus_p = if_ "have_nonzero_polarization" $
       -- First we look at the contribution from polarization fields.
       loop_points $ docode [
         doexp $ d_minus_p "ec" "i" |=| "f[dc]["<<cmp<<"][i]",
-        loop_polarizations $ doexp $ d_minus_p "ec" "i" |-=| "p->P[ec]["<<cmp<<"][i]"],
-      -- The following code calculates the polarization from sources.
-      loop_sources "e_sources" "s" $
-        doexp $ d_minus_p "ec" "s->i" |-=| get_cmp_part "s->get_dipole_now()*s->A[ec]"
+        loop_polarizations $ doexp $ d_minus_p "ec" "i" |-=| "p->P[ec]["<<cmp<<"][i]"]
     ]
+
+calc_d_minus_p_sources = if_ "have_nonzero_polarization" $
+    -- The following code calculates the polarization from sources.
+    loop_sources "e_sources" "spt" $
+      doblock "if (f[spt->c][0])" $ 
+	docode [
+	  doexp "const complex<double> A = spt->current()",
+          for_complex $
+	    doexp $ d_minus_p "spt->c" "spt->i" |-=| get_cmp_part "A"
+	]
 
 {- Half-step polarization energy.
 
@@ -98,5 +106,5 @@ loop_polarizations job =
 loop_new_and_old_polarizations job = if_ "pol" $ doblock
     "for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next)" job
 loop_sources start svar job =
-    if_ start $ doblock ("for (src *"++svar++" = "++start++"; "++
+    if_ start $ doblock ("for (src_pt *"++svar++" = "++start++"; "++
                                svar++"; "++svar++" = "++svar++"->next)") job

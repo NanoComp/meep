@@ -184,7 +184,7 @@ int test_pml(double eps(const vec &), const char *dirname) {
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
 
-  while (f.time() < f.find_last_source()) f.step();
+  while (f.time() < f.last_source_time()) f.step();
 
   double last_energy = f.total_energy();
   while (f.time() < ttot) {

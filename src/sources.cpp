@@ -25,58 +25,111 @@
 
 namespace meep {
 
-complex<double> src::get_dPdt_at_time(double time, double dt) const {
-  return (get_dipole_at_time(time) - get_dipole_at_time(time - dt))/dt;
+/*********************************************************************/
+
+src_time *src_time::add_to(src_time *others) const
+{
+  src_time *t = clone();
+  t->next = others;
+  return t;
 }
 
-complex<double> src::get_dipole_at_time(double time) const {
-  double envelope = get_envelope_at_time(time);
-  if (envelope == 0.0)
+double src_time::last_time_max(double after)
+{
+  after = max(last_time(), after);
+  if (next)
+    return next->last_time_max(after);
+  else
+    return after;
+}
+
+gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
+{
+  freq = f;
+  width = w;
+  peak_time = 0.5 * (st + et);
+  cutoff = (et - st) * 0.5;
+
+  // TODO: why bother with this?
+  while (exp(-cutoff*cutoff / (2*width*width)) == 0.0)
+    cutoff *= 0.9;
+}
+
+complex<double> gaussian_src_time::current(double time) const
+{
+  double tt = time - peak_time;
+  if (fabs(tt) > cutoff)
     return 0.0;
-  double tt = time - peaktime;
-  return polar(1.0,-2*pi*freq*tt)*envelope;
+  return exp(-tt*tt / (2*width*width)) * polar(1.0, -2*pi*freq*tt);
 }
 
-void src::update_dipole(double time) {
-  pol_now = get_dipole_at_time(time);
+continuous_src_time::continuous_src_time(double f, double w, double st, double et, double s)
+{
+  freq = f;
+  width = w;
+  start_time = st;
+  end_time = et;
+  slowness = s;
 }
 
-double src::get_envelope_at_time(double time) const {
-  double tt = time - peaktime;
-  if (is_continuous && tt > 0) {
-    return 1.0;
-  } else if (fabs(tt) > cutoff) {
+complex<double> continuous_src_time::current(double time) const
+{
+  if (time < start_time || time > end_time)
     return 0.0;
-  } else {
-    return exp(-tt*tt/(2*width*width));
-    return 2.0/(exp(-tt/width) + exp(tt/width));
-  }
+
+  double ts = (time - start_time - slowness * width) / width;
+  double te = (end_time - time - slowness * width) / width;
+
+  return polar(1.0, -2*pi*freq*time) 
+    * (1.0 + tanh(ts))  // goes from 0 to 2
+    * (1.0 + tanh(te))  // goes from 2 to 0
+    * 0.25;
 }
 
-src::src() {
-  next = NULL;
+/*********************************************************************/
+
+src_pt *src_pt::add_to(src_pt *others) const {
+  src_pt *t = new src_pt(*this);
+  t->next = others;
+  return t;
 }
 
-src::~src() {
-  delete next;
-}
+/*********************************************************************/
 
 void fields::add_point_source(component whichf, double freq,
                               double width, double peaktime,
                               double cutoff, const vec &p,
                               complex<double> amp, int is_c) {
+  if (is_c) { /* constant CW source, no slow turn-on (TODO: why not?) */
+    continuous_src_time src(freq, 0.0, -infinity, infinity);
+    add_point_source(whichf, src, p, amp);
+  }
+  else {
+    width /= freq;
+
+    cutoff = c * inva + cutoff * width;
+
+    if (peaktime <= 0.0)
+      peaktime = time() + cutoff;
+
+    gaussian_src_time src(freq, width,
+			     peaktime - cutoff, peaktime + cutoff);
+    add_point_source(whichf, src, p, amp);
+  }
+}
+
+void fields::add_point_source(component whichf, const src_time &src,
+			      const vec &p, complex<double> amp) {
   ivec ilocs[8];
   double w[8];
   v.interpolate(whichf, p, ilocs, w);
   for (int argh=0;argh<8&&w[argh];argh++)
-    add_point_source(whichf, freq, width, peaktime,
-                     cutoff, ilocs[argh], w[argh]*amp, is_c);
+    add_point_source(whichf, src, ilocs[argh], w[argh]*amp);
 }
 
-void fields::add_point_source(component whichf, double freq,
-                              double width, double peaktime,
-                              double cutoff, const ivec &p,
-                              complex<double> amp, int is_c) {
+void fields::add_point_source(component whichf, const src_time &src,
+                              const ivec &p, complex<double> amp) {
+  int added_src = 0;
   const double invmul = 1.0/S.multiplicity();
   int need_to_connect = 0;
   ivec iloc = p;
@@ -87,19 +140,20 @@ void fields::add_point_source(component whichf, double freq,
     complex<double> ph = S.phase_shift(whichf,sn);
     const ivec pp = S.transform(iloc,sn);
     for (int i=0;i<num_chunks;i++)
-      if (chunks[i]->is_mine())
+      if (chunks[i]->is_mine()) {
+	if (!added_src) {
+	  sources = src.add_to(sources);
+	  added_src = 1;
+	}
         need_to_connect += 
-          chunks[i]->add_point_source(cc, freq, width, peaktime,
-                                      cutoff, pp, invmul*ph*amp/kphase, is_c,
-                                      time());
+	    chunks[i]->add_point_source(cc, sources, pp, invmul*ph*amp/kphase);
+      }
   }
   if (sum_to_all(need_to_connect)) connect_chunks();
 }
 
-int fields_chunk::add_point_source(component whichf, double freq,
-                                   double width, double peaktime,
-                                   double cutoff, const ivec &p,
-                                   complex<double> amp, int is_c, double tim) {
+int fields_chunk::add_point_source(component whichf, src_time *src,
+                                   const ivec &p, complex<double> amp) {
   if (p.dim != v.dim)
     abort("Error:  source doesn't have right dimensions! %s %s\n",
 	  dimension_name(p.dim), dimension_name(v.dim));
@@ -120,53 +174,22 @@ int fields_chunk::add_point_source(component whichf, double freq,
   case D1: prefac = 1; break;
   }
   if (v.owns(p))
-    add_indexed_source(whichf, freq, width, peaktime, cutoff, v.index(whichf,p),
-                       amp*prefac, is_c, tim);
+    add_indexed_source(whichf, src, v.index(whichf,p), amp*prefac);
   return need_reconnection;
 }
 
-void fields_chunk::add_indexed_source(component whichf, double freq, double width,
-                                      double peaktime, double cutoff, int theindex, 
-                                      complex<double> amp, int is_c, double time) {
+void fields_chunk::add_indexed_source(component whichf, src_time *src,
+                                      int theindex, complex<double> amp) {
   if (theindex >= v.ntot() || theindex < 0)
     abort("Error:  source is outside of cell! (%d)\n", theindex);
-  src tmp;
-  tmp.freq = freq;
-  tmp.width = width/tmp.freq; // this is now time width
-  for (int com=0;com<10;com++) tmp.A[com] = 0;
-  tmp.A[whichf] = amp;
+  src_pt tmp(src);
+  tmp.A = amp * (inva * c); // multiply by dt for time-stepping
+  tmp.c = whichf;
   tmp.i = theindex;
-  tmp.is_continuous = is_c;
-  tmp.cutoff = inva+ cutoff*tmp.width;
-  while (exp(-tmp.cutoff*tmp.cutoff/(2*tmp.width*tmp.width)) == 0.0)
-    tmp.cutoff *= 0.9;
-  tmp.peaktime = peaktime;
-  if (peaktime <= 0.0) tmp.peaktime = time+tmp.cutoff;
-  // Apply a shift so that we won't end up with a static polarization when
-  // the source is gone:  (FIXME: is there a bug here?)
   if (is_magnetic(whichf)) {
     h_sources = tmp.add_to(h_sources);
   } else {
     e_sources = tmp.add_to(e_sources);
-  }
-}
-
-src *src::add_to(src *others) const {
-  if (!others) {
-    src *t = new src(*this);
-    t->next = NULL;
-    return t;
-  }
-  if (others->i == i &&
-      others->is_continuous == is_continuous &&
-      others->cutoff == cutoff &&
-      others->peaktime == peaktime) {
-    for (int com=0;com<10;com++)
-      others->A[com] += A[com];
-    return others;
-  } else {
-    others->next = add_to(others->next);
-    return others;
   }
 }
 

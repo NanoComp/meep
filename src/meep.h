@@ -27,6 +27,10 @@ namespace meep {
 const double c = 0.5;
 const double pi = 3.141592653589793238462643383276L;
 
+// FIXME: silence stupid gcc warning about division by zero.
+const double infinity = 1.0 / 0.0;
+const double nan = 0.0 / 0.0;
+
 class polarizability_identifier {
  public:
   double gamma, omeganot;
@@ -46,9 +50,9 @@ class grace;
    it is likely that complicated implementations will share state between
    properties. */
 class material_function {
+     material_function(const material_function &ef) {} // prevent copying
  public:
      material_function() {}
-     material_function(const material_function &ef) {}
 
      virtual ~material_function() {}
 
@@ -74,7 +78,6 @@ class simple_material_function : public material_function {
      double (*f)(const vec &);
      
  public:
-     simple_material_function(const simple_material_function &ef) : material_function(ef) { f = ef.f; }
      simple_material_function(double (*func)(const vec &)) { f = func; }
 
      virtual ~simple_material_function() {}
@@ -177,9 +180,72 @@ class structure {
  private:
 };
 
-class src;
+class src_pt;
 class bandsdata;
 class fields_chunk;
+
+class src_time {
+ public:
+  src_time() { current_time = nan; current_current = 0.0; next = NULL; }
+  virtual ~src_time() { delete next; }
+  src_time(const src_time &t) { 
+       current_time = t.current_time;
+       current_current = t.current_current;
+       if (t.next) next = t.next->clone(); else next = NULL;
+  }
+  
+  complex<double> current() const { return current_current; }
+  complex<double> update_current(double time) {
+    if (time != current_time)
+      current_current = current(current_time = time);
+    return current_current;
+  }
+
+  double last_time_max() { return last_time_max(0.0); }
+  double last_time_max(double after);
+  
+  src_time *add_to(src_time *others) const;
+  src_time *next;
+
+  // subclasses should override these three methods:
+  virtual complex<double> current(double time) const { (void)time; return 0; }
+  virtual double last_time() const { return 0.0; }
+  virtual src_time *clone() const { return new src_time(*this); }
+
+ private:
+  double current_time;
+  complex<double> current_current;
+};
+
+// Gaussian-envelope source with given frequency, width, peak-time, cutoff
+class gaussian_src_time : public src_time {
+ public:
+  gaussian_src_time(double f, double w, double start_time, double end_time);
+  virtual ~gaussian_src_time() {}
+  
+  virtual complex<double> current(double time) const;
+  virtual double last_time() const { return peak_time + cutoff; };
+  virtual src_time *clone() const { return new gaussian_src_time(*this); }
+  
+ private:
+  double freq, width, peak_time, cutoff;
+};
+
+// Continuous (CW) source with (optional) slow turn-on and/or turn-off.
+class continuous_src_time : public src_time {
+ public:
+  continuous_src_time(double f, double w, 
+		      double st = 0.0, double et = infinity,
+		      double s = 3.0);
+  virtual ~continuous_src_time() {}
+  
+  virtual complex<double> current(double time) const;
+  virtual double last_time() const { return end_time; };
+  virtual src_time *clone() const { return new continuous_src_time(*this); }
+  
+ private:
+  double freq, width, start_time, end_time, slowness;
+};
 
 class monitor_point {
  public:
@@ -252,7 +318,7 @@ class fields_chunk {
   geometric_volume gv;
   int m, is_real;
   bandsdata *bands;
-  src *e_sources, *h_sources;
+  src_pt *e_sources, *h_sources;
   const structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
@@ -266,7 +332,7 @@ class fields_chunk {
   double peek_field(component, const vec &);
 
   void use_real_fields();
-  double find_last_source();
+  double last_source_time();
   // monitor.cpp
   complex<double> get_field(component, const ivec &) const;
   complex<double> get_polarization_field(const polarizability_identifier &p,
@@ -330,11 +396,11 @@ class fields_chunk {
   void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
   void step_h();
-  void step_h_source(const src *, double);
+  void step_h_source(src_pt *, double);
   void step_d();
   void update_e_from_d();
   void update_from_e();
-  void calc_source_phases(double time);
+  void calc_sources(double time);
   // fields.cpp
   void alloc_f(component c);
   void zero_fields();
@@ -344,12 +410,10 @@ class fields_chunk {
   // add_point_source returns 1 if the connections between chunks need to
   // be recalculated.  This allows us to avoid allocating TE or TM fields
   // until we know which is desired.
-  int add_point_source(component whichf, double freq, double width, double peaktime,
-                       double cutoff, const ivec &, complex<double> amp,
-                       int is_continuous, double time);
-  void add_indexed_source(component whichf, double freq, double width,
-                          double peaktime, double cutoff, int theindex, 
-                          complex<double> amp, int is_c, double time);
+  int add_point_source(component whichf, src_time *src,
+		       const ivec &, complex<double> amp);
+  void add_indexed_source(component whichf, src_time *src,
+                          int theindex, complex<double> amp);
   // initialize.cpp
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
@@ -369,6 +433,7 @@ class fields {
  public:
   int num_chunks;
   fields_chunk **chunks;
+  src_time *sources;
   flux_plane *fluxes;
   symmetry S;
   // The following is an array that is num_chunks by num_chunks.  Actually
@@ -435,10 +500,12 @@ class fields {
   void step();
   inline double time() const { return t*inva*c; };
 
-  double find_last_source();
+  double last_source_time();
   void add_point_source(component whichf, double freq, double width, double peaktime,
                         double cutoff, const vec &, complex<double> amp = 1.0,
                         int is_continuous = 0);
+  void add_point_source(component whichf, const src_time &src,
+                        const vec &, complex<double> amp = 1.0);
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_A(complex<double> A(component, const vec &), double freq);
   void initialize_with_nth_te(int n);
@@ -514,15 +581,15 @@ class fields {
   void update_e_from_d();
   void update_from_e();
   void step_boundaries(field_type);
-  void calc_source_phases();
+  void calc_sources(double tim);
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);
   void out_bands(file *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
   // sources.cpp
-  void add_point_source(component whichf, double freq, double width, double peaktime,
-                        double cutoff, const ivec &p, complex<double> amp, int is_c);
+  void add_point_source(component whichf, const src_time &src,
+                        const ivec &p, complex<double> amp);
   // slices.cpp
   void outline_chunks(file *name);
   bool has_eps_interface(vec *loc) const;

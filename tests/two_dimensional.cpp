@@ -212,8 +212,8 @@ int test_pml(double eps(const vec &), int splitting, const char *dirname) {
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
 
-  while (f.time() < f.find_last_source()) f.step();
-  while (f1.time() < f1.find_last_source()) f1.step();
+  while (f.time() < f.last_source_time()) f.step();
+  while (f1.time() < f1.last_source_time()) f1.step();
 
   double last_energy = f.total_energy();
   while (f.time() < ttot) {
@@ -259,8 +259,8 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *dirname) {
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
 
-  while (f.time() < f.find_last_source()) f.step();
-  while (f1.time() < f1.find_last_source()) f1.step();
+  while (f.time() < f.last_source_time()) f.step();
+  while (f1.time() < f1.last_source_time()) f1.step();
 
   double last_energy = f.total_energy();
   while (f.time() < ttot) {
@@ -308,8 +308,8 @@ int test_pml_te(double eps(const vec &), int splitting, const char *dirname) {
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
 
-  while (f.time() < f.find_last_source()) f.step();
-  while (f1.time() < f1.find_last_source()) f1.step();
+  while (f.time() < f.last_source_time()) f.step();
+  while (f1.time() < f1.last_source_time()) f1.step();
 
   double last_energy = f.total_energy();
   while (f.time() < ttot) {
