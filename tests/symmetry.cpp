@@ -295,10 +295,60 @@ int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
+int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 30.0;
+
+  const volume v = voltwo(3.0, 3.0, a);
+  const symmetry S = rotate2(X,v);
+
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  ma.use_pml_everywhere(1.0);
+  ma1.use_pml_everywhere(1.0);
+  master_printf("Testing X twofold rotational symmetry with PML...\n");
+
+  fields f1(&ma1);
+  f1.use_metal_everywhere();
+  f1.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec2d(0.01 ,  1.5))) return 0;
+    if (!compare_point(f, f1, vec2d(1.21 ,  1.5))) return 0;
+    if (!compare_point(f, f1, vec2d(1.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec2d(1.2  , 1.2 ))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  // Just to make sure slice output doesn't actually crash...
+  f.output_real_imaginary_slices("multi");
+  f1.output_real_imaginary_slices("single");
+  f.eps_slices("multi");
+  f1.eps_slices("single");
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize(argc, argv);
   const char *dirname = make_output_directory(argv[0]);
-  master_printf("Testing with symmetry...\n");
+  master_printf("Testing with various kinds of symmetry...\n");
+
+  if (!exact_pml_rot2x_tm(one, dirname))
+    abort("error in exact_pml_rot2x_tm vacuum\n");
 
   if (!test_metal_xmirror(one, dirname))
     abort("error in test_metal_xmirror vacuum\n");

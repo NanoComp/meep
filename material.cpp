@@ -96,16 +96,13 @@ void mat::make_average_eps() {
 
 void mat::use_pml(direction d, boundary_side b, double dx) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->use_pml(d, dx, v.boundary_location(b,d));
+    chunks[i]->use_pml(d, dx, user_volume.boundary_location(b,d));
 }
 
 void mat::use_pml_everywhere(double dx) {
   for (int b=0;b<2;b++) for (int d=0;d<5;d++)
-    if (v.has_boundary((boundary_side)b, (direction)d))
-      for (int i=0;i<num_chunks;i++)
-        chunks[i]->use_pml((direction)d, dx,
-                           v.boundary_location((boundary_side)b,
-                                               (direction)d));
+    if (user_volume.has_boundary((boundary_side)b, (direction)d))
+      use_pml((direction)d, (boundary_side)b, dx);
 }
 
 void mat::mix_with(const mat *oth, double f) {
@@ -222,11 +219,9 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
           C[d][c] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
         }
-        const double loborder = bloc - dx;
-        const double hiborder = bloc + dx;
         for (int i=0;i<v.ntot();i++) {
-          const double x = dx -
-            fabs(bloc - v.loc((component)c,i).in_direction(d));
+          const double x = dx - (0.5/a)*
+            ((int)(2*a*fabs(bloc-v.loc((component)c,i).in_direction(d))+0.5));
           if (x > 0) C[d][c][i] = prefac*x*x;
         }
       }
