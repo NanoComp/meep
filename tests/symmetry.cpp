@@ -72,6 +72,87 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
+int test_cyl_metal_mirror(double eps(const vec &), const char *dirname) {
+  master_printf("Testing Z mirror symmetry in Cylindrical...\n");
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = volcyl(1.0, 1.0, a);
+  the_center = v.center();
+  const symmetry S = mirror(Z,v);
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+
+  fields f1(&ma1);
+  f1.use_metal_everywhere();
+  f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.01,  0.5  ))) return 0;
+    if (!compare_point(f, f1, vec(0.21,  0.5  ))) return 0;
+    if (!compare_point(f, f1, vec(0.501, 0.5  ))) return 0;
+    if (!compare_point(f, f1, vec(0.33,  0.46 ))) return 0;
+    if (!compare_point(f, f1, vec(0.2,   0.2  ))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int test_origin_shift(const char *dirname) {
+  master_printf("Testing origin shift in 2D...\n");
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = voltwo(1.0, 1.0, a);
+  volume vcentered = v;
+  vcentered.origin -= v.center();
+  mat ma(vcentered, one);
+  mat ma1(v, one);
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+
+  fields f1(&ma1);
+  fields f(&ma);
+  f1.use_metal_everywhere();
+  f.use_metal_everywhere();
+  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, v.center());
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, v.center());
+  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.0,0.0));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.0,0.0));
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare(f.total_energy(), f1.total_energy(), "   total energy")) {
+      master_printf("Time is %lg\n", f.time());
+      f1.output_real_imaginary_slices("unshifted");
+      f.output_real_imaginary_slices("shifted");
+      f1.eps_slices("unshifted");
+      f.eps_slices("shifted");
+      return 0;
+    }
+  }
+  return 1;
+}
+
 int test_metal_xmirror(double eps(const vec &), const char *dirname) {
   master_printf("Testing X mirror symmetry...\n");
   double a = 10.0;
