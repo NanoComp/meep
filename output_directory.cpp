@@ -134,7 +134,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   char outdirname[buflen];
   snprintf(outdirname, buflen, "%s-out", basename);
   if (!is_ok_dir(outdirname, sourcename, basename)) {
-    for (int i=1;i<100;i++) {
+    for (int i=1;i<1000;i++) {
       printf("Source files %s  and %s/%s differ!\n", sourcename, outdirname, sourcename);  
       snprintf(outdirname, buflen, "%s-out-%d", basename, i);
       if (is_ok_dir(outdirname, sourcename, basename)) break;
