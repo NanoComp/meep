@@ -20,9 +20,7 @@
 #include <math.h>
 #include <complex>
 
-#include "vec.h"
 #include "meep.h"
-#include "mympi.h"
 
 namespace meep {
 

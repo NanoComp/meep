@@ -21,7 +21,6 @@
 
 #include "meep.h"
 
-#include "mympi.h"
 #define CHECK(condition, message) do { \
      if (!(condition))  { \
           abort("error on line %d of " __FILE__ ": " \
