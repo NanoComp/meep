@@ -94,6 +94,7 @@ fields::fields(const mat *the_ma, int tm) {
                         // order of your frequency).
   t = 0;
   pol = polarization::set_up_polarizations(ma);
+  olpol = polarization::set_up_polarizations(ma);
   h_sources = e_sources = NULL;
   hr[0] = new double[(nr+1)*(nz+1)];
   hp[0] = new double[nr*(nz+1)];
@@ -412,6 +413,9 @@ void fields::step() {
   step_e_pml();
   step_e_boundaries();
   step_e_source(e_sources);
+
+  step_e_polarization();
+  step_polarization_itself();
 }
 
 void fields::phase_material() {

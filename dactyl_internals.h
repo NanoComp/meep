@@ -46,7 +46,8 @@ inline int max(int a, int b) { return (a > b) ? a : b; }
 class polarizability {
  public:
   int nr, nz;
-  polarizability(const mat *, double sig(double,double), double om, double ga);
+  polarizability(const mat *, double sig(double,double),
+                 double om, double ga, double sigscale);
   polarizability(const polarizability *);
   ~polarizability();
   double gamma, omeganot, *sigma, *sr, *sp, *sz;
@@ -62,6 +63,7 @@ class polarization {
   polarization *next;
 
   static polarization *set_up_polarizations(const mat *ma);
+  void step_polarization(const polarization *newer_pol);
 };
 
 class src {

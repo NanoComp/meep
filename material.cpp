@@ -41,6 +41,7 @@ mat::~mat() {
   delete[] Czep;
   delete[] Czhr;
   delete[] Czhp;
+  if (pb) delete pb;
 }
 
 static double sig(double r);
@@ -116,6 +117,17 @@ void mat::mix_with(const mat *n, double f) {
     invepser[i] += f*(n->invepser[i] - invepser[i]);
     invepsep[i] += f*(n->invepsep[i] - invepsep[i]);
     invepsez[i] += f*(n->invepsez[i] - invepsez[i]);
+  }
+  // Mix in the polarizability...
+  polarizability *po = pb, *pn = n->pb;
+  while (po && pn) {
+    for (int i=0;i<nr*(nz+1);i++) {
+      po->sr[i] += f*(pn->sr[i] - po->sr[i]);
+      po->sp[i] += f*(pn->sp[i] - po->sp[i]);
+      po->sz[i] += f*(pn->sz[i] - po->sz[i]);
+    }
+    po = po->next;
+    pn = pn->next;
   }
 }
 

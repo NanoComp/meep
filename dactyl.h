@@ -43,6 +43,9 @@ class mat {
   void output_slices(const char *name);
   void set_output_directory(const char *name);
   void mix_with(const mat *, double);
+
+  void add_polarizability(double sigma(double,double), double omega, double gamma,
+                          double delta_epsilon = 1.0);
  private:
   void output_sigma_slice(const char *name);
 };
@@ -55,7 +58,7 @@ class fields {
   double *(hr[2]), *(hp[2]), *(hz[2]), *(er[2]), *(ep[2]), *(ez[2]);
   double *(hrp[2]), *(hpz[2]), *(hzr[2]), *(erp[2]), *(epz[2]), *(ezr[2]);
   double *(z_hrp[2][2]), *(z_hpz[2][2]), *(z_erp[2][2]), *(z_epz[2][2]);
-  polarization *pol;
+  polarization *pol, *olpol;
   double a, inva; // The "lattice constant" and its inverse!
   int nr, nz;
   int npmlr, npmlz; // Amount of pml
@@ -93,6 +96,7 @@ class fields {
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
+  void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
   void phase_in_material(const mat *ma, double num_periods);
 
   void output_point(FILE *, double r, double z, const char *name);
@@ -125,6 +129,8 @@ class fields {
   void step_e_bulk();
   void step_e_pml();
   void step_e_boundaries();
+  void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
+  void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *);
   void add_src_pt(int r, int z,
                   double Pr, double Pp, double Pz,
