@@ -37,6 +37,30 @@ class polarizability;
 class polarization;
 class grace;
 
+class epsilon_function {
+ public:
+     epsilon_function() {}
+     epsilon_function(const epsilon_function &ef) {}
+
+     virtual ~epsilon_function() {}
+
+     virtual void set_volume(const geometric_volume &gv) {}
+
+     virtual double eps(const vec &r) { return 1.0; }
+};
+
+class simple_epsilon_function : public epsilon_function {
+     double (*f)(const vec &);
+     
+ public:
+     simple_epsilon_function(const simple_epsilon_function &ef) { f = ef.f; }
+     simple_epsilon_function(double (*func)(const vec &)) { f = func; }
+
+     virtual ~simple_epsilon_function() {}
+
+     virtual double eps(const vec &r) { return f(r); }
+};
+
 class structure_chunk {
  public:
   double *eps, a;
@@ -48,10 +72,10 @@ class structure_chunk {
   polarizability *pb;
 
   ~structure_chunk();
-  structure_chunk(const volume &v, double eps(const vec &),
+  structure_chunk(const volume &v, epsilon_function &eps,
             const geometric_volume &vol_limit, int proc_num=0);
   structure_chunk(const structure_chunk *);
-  void set_epsilon(double eps(const vec &), double minvol,
+  void set_epsilon(epsilon_function &eps, double minvol,
                    bool use_anisotropic_averaging);
   void make_average_eps();
   void use_pml(direction, double dx, double boundary_loc);
@@ -90,17 +114,19 @@ class structure {
 
   ~structure();
   structure();
+  structure(const volume &v, epsilon_function &eps, int num_chunks = 0,
+      const symmetry &s = identity());
   structure(const volume &v, double eps(const vec &), int num_chunks = 0,
       const symmetry &s = identity());
   structure(const structure *);
   structure(const structure &);
-  void set_epsilon(double eps(const vec &), double minvol = 0.0,
+  void set_epsilon(epsilon_function &eps, double minvol = 0.0,
                    bool use_anisotropic_averaging=true);
   void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
   void redefine_chunks(const int Nv, const volume *new_volumes, const int *procs);
   void optimize_volumes(int *Nv, volume *new_volumes, int *procs);
   void optimize_chunks();
-  void choose_chunkdivision(const volume &v, double eps(const vec &),
+  void choose_chunkdivision(const volume &v, epsilon_function &eps,
                             int num_chunks = 1,
                             const symmetry &s = identity());
   void make_average_eps();

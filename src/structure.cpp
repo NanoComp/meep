@@ -24,6 +24,8 @@
 
 namespace meep {
 
+static double one_function(const vec &r) { return 1.0; }
+
 structure::structure()
   : gv(D1) // Aaack, this is very hokey.
 {
@@ -38,13 +40,29 @@ structure::structure()
 
 typedef structure_chunk *structure_chunk_ptr;
 
-structure::structure(const volume &thev, double eps(const vec &), int num, const symmetry &s)
+structure::structure(const volume &thev, epsilon_function &eps, int num, const symmetry &s)
   : gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   if (num == 0) num = count_processors();
   desired_num_chunks = num;
   choose_chunkdivision(thev, eps, num, s);
+  num_effort_volumes = 1;
+  effort_volumes = new volume[num_effort_volumes];
+  effort_volumes[0] = v;
+  effort = new double[num_effort_volumes];
+  effort[0] = 1.0;
+}
+
+structure::structure(const volume &thev, double eps(const vec &), 
+	 int num, const symmetry &s)
+  : gv(D1) // Aaack, this is very hokey.
+{
+  outdir = ".";
+  if (num == 0) num = count_processors();
+  desired_num_chunks = num;
+  simple_epsilon_function epsilon(eps);
+  choose_chunkdivision(thev, epsilon, num, s);
   num_effort_volumes = 1;
   effort_volumes = new volume[num_effort_volumes];
   effort_volumes[0] = v;
@@ -96,7 +114,7 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
                           const int *procs) {
   // First check that the new_volumes do not intersect and that they add
   // up to the total volume
-  
+
   volume vol_intersection;
   for (int i=0; i<Nv; i++)
     for (int j=i+1; j<Nv; j++)
@@ -121,7 +139,8 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
     for (int i=0; i<num_chunks; i++)
       if (chunks[i]->v.intersect_with(new_volumes[j], &vol_intersection)) {
         if (new_chunks[j] == NULL) {
-          new_chunks[j] = new structure_chunk(new_volumes[j], zero_function,
+	  simple_epsilon_function eps_zero(zero_function);
+          new_chunks[j] = new structure_chunk(new_volumes[j], eps_zero,
                                         gv, procs[j]);
           // the above happens even if chunk not owned by proc
         }
@@ -235,7 +254,7 @@ void structure::add_to_effort_volumes(const volume &new_effort_volume,
   num_effort_volumes = counter;
 }
 
-void structure::choose_chunkdivision(const volume &thev, double eps(const vec &),
+void structure::choose_chunkdivision(const volume &thev, epsilon_function &eps,
                                int num, const symmetry &s) {
   num_chunks = num;
   user_volume = thev;
@@ -323,7 +342,7 @@ void structure::make_average_eps() {
       chunks[i]->make_average_eps(); // FIXME
 }
 
-void structure::set_epsilon(double eps(const vec &), double minvol,
+void structure::set_epsilon(epsilon_function &eps, double minvol,
                       bool use_anisotropic_averaging) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -567,10 +586,10 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
 }
 
 // The following is defined in anisotropic_averaging.cpp:
-double anisoaverage(component ec, direction d, double eps(const vec &),
+double anisoaverage(component ec, direction d, epsilon_function &eps,
                     const geometric_volume &vol, double minvol);
 
-void structure_chunk::set_epsilon(double feps(const vec &), double minvol,
+void structure_chunk::set_epsilon(epsilon_function &epsilon, double minvol,
                             bool use_anisotropic_averaging) {
   if (!is_mine()) return;
   if (!use_anisotropic_averaging) {
@@ -589,15 +608,15 @@ void structure_chunk::set_epsilon(double feps(const vec &), double minvol,
                     vec dxb = zero_vec(v.dim);
                     dxb.set_direction(db,0.5/a);
                     inveps[c][component_direction(c)][i] =
-                      4.0/(feps(here + dxa + dxb) +
-                           feps(here + dxa - dxb) +
-                           feps(here - dxa + dxb) +
-                           feps(here - dxa - dxb));
+                      4.0/(epsilon.eps(here + dxa + dxb) +
+                           epsilon.eps(here + dxa - dxb) +
+                           epsilon.eps(here - dxa + dxb) +
+                           epsilon.eps(here - dxa - dxb));
                     have_other_direction = true;
                   }
                 if (!have_other_direction)
                   inveps[c][component_direction(c)][i] =
-                    2.0/(feps(here + dxa) + feps(here - dxa));
+                    2.0/(epsilon.eps(here + dxa) + epsilon.eps(here - dxa));
                 break;
               }
           }
@@ -610,12 +629,12 @@ void structure_chunk::set_epsilon(double feps(const vec &), double minvol,
         if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
         if (!inveps[c][d]) abort("Memory allocation error.\n");
         for (int i=0;i<v.ntot();i++)
-          inveps[c][d][i] = anisoaverage(c, d, feps, v.dV(v.iloc(c,i)), minvol);
+          inveps[c][d][i] = anisoaverage(c, d, epsilon, v.dV(v.iloc(c,i)), minvol);
       }
   }
 }
 
-structure_chunk::structure_chunk(const volume &thev, double feps(const vec &),
+structure_chunk::structure_chunk(const volume &thev, epsilon_function &epsilon,
                      const geometric_volume &vol_limit, int pr)
   : gv(thev.surroundings() & vol_limit) {
   pml_fmin = 0.2;
@@ -627,7 +646,8 @@ structure_chunk::structure_chunk(const volume &thev, double feps(const vec &),
   if (is_mine()) {
     eps = new double[v.ntot()];
     if (eps == NULL) abort("Out of memory!\n");
-    for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(v.eps_component(),i));
+    for (int i=0;i<v.ntot();i++)
+	 eps[i] = epsilon.eps(v.loc(v.eps_component(),i));
   } else {
     eps = NULL;
   }
@@ -640,7 +660,7 @@ structure_chunk::structure_chunk(const volume &thev, double feps(const vec &),
     } else {
       inveps[c][d] = NULL;
     }
-  if (is_mine()) set_epsilon(feps, 0.0, false);
+  if (is_mine()) set_epsilon(epsilon, 0.0, false);
   // Allocate the conductivity arrays:
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
   FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;
