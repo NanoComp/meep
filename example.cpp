@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   //ma.use_pml(8,8);
   ma.output_slices("");
   for (m=0;m<2 && !stopnow;m++) {
-    for (k=0.0;k<0.31 && !stopnow;k+=0.1) {
+    for (k=0.0;k<5.1 && !stopnow;k+=1.0) {
       char k_and_m[10];
       snprintf(k_and_m, 10, "%g-%d", k, m);
       printf("Working on k of %g and m = %d with a=%d...\n", k, m, rad);
