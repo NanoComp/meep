@@ -32,7 +32,7 @@ uninstall: dactyl-uninstall
 
 ###########################################################################
 
-dactyl.o: dactyl.h dactyl_internals.h
+$(OBJ_dactyl): dactyl.h dactyl_internals.h
 bands.o: dactyl.h dactyl_internals.h
 bands_example.o: bands_example.cpp dactyl.h
 convergence_testing.o: convergence_testing.cpp dactyl.h
