@@ -21,6 +21,9 @@
 
 enum component { Er=0, Ep, Ez, Hr, Hp, Hz };
 
+const double c = 0.5;
+const double pi = 3.141592653589793238462643383276L;
+
 class polarizability;
 class polarization;
 class grace;
@@ -139,7 +142,7 @@ class fields {
   void output_slices(const char *name = "");
   void output_real_imaginary_slices(const char *name = "");
   void step();
-  inline double time() { return t*inva; };
+  inline double time() { return t*inva*c; };
 
   void use_real_sources();
   // Note that the following plane source only works if m == 1.
@@ -221,9 +224,6 @@ class fields {
   void out_bands(FILE *, const char *, int maxbands, int outmodes);
   complex<double> *get_the_bands(int maxbands, double *approx_power = NULL);
 };
-
-const double c = 0.5;
-const double pi = 3.141592653589793238462643383276L;
 
 class grace_point;
 enum grace_type { XY, ERROR_BARS };
