@@ -79,11 +79,9 @@ if test $have_harminv = no; then
 	AC_CHECK_LIB(harminv, harminv_get_freq_error, [have_harminv=yes; LIBS="-lharminv $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
 fi
 
-ACX_BLAS
-ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK libraries are required])])
-
-# just use lapack/blas in default libs since we always need them
-LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
+if test $have_harminv = yes; then
+	AC_DEFINE([HAVE_HARMINV],[1],[Define if you have libharminv])
+fi
 
 ##############################################################################
 # GNU Scientific Library
