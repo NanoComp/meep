@@ -165,17 +165,16 @@ bool fields::locate_component_point(component *c, ivec *there,
 
   // Check if nothing tricky is needed...
   *phase = 1.0;
-  if (v.owns(*there)) return true;
   bool try_again = false;
   do {
     try_again = false;
     // Check if a rotation or inversion brings the point in...
-    if (S.multiplicity() > 1 && user_volume.owns(*there))
-      for (int sn=1;sn<S.multiplicity();sn++) {
+    if (user_volume.owns(*there))
+      for (int sn=0;sn<S.multiplicity();sn++) {
         const ivec here=S.transform(*there,sn);
         if (v.owns(here)) {
           *there = here;
-          *phase = S.phase_shift(*c,sn);
+          *phase *= S.phase_shift(*c,sn);
           *c = direction_component(*c,
                                    S.transform(component_direction(*c),sn).d);
           return true;
