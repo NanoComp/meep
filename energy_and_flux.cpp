@@ -49,7 +49,7 @@ double fields::rflux(int zl, int zu, int r) {
 }
 
 flux_plane::flux_plane(double the_ymin, double the_ymax, double the_xconst, int the_is_rflux, double a)  {
-  verbosity = 1;
+  verbosity = 0;
   if (the_ymin <= the_ymax) {
     ymin = the_ymin*a;
     ymax = the_ymax*a;
@@ -129,7 +129,7 @@ complex<double> flux_plane::flux(fields *f) {
   complex<double> fl = 0.0;
   for (int j=0;j<num_wf;j++)
     fl += weights[j] * wf[j]->flux(f);
-  return fl;
+  return fl * 2*pi/(f->a*f->a) * (1.0/(4.0*pi));
 }
 
 complex<double> weighted_flux_plane::flux(fields *f) {
@@ -271,6 +271,7 @@ double fields::magnetic_energy() {
       }
     }
   }
-  return energy/norm/(8*pi);
+  //return energy/norm/(8*pi);
+  return energy/(8*pi) * 2*pi/(a*a*a);
 }
 
