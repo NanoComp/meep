@@ -92,37 +92,51 @@ double *h5io::read(const char *filename, const char *dataname,
 		   int *rank, int *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
-     int i, N;
-     hid_t file_id, space_id, data_id;
      double *data;
+     if (am_master()) {
+	  int i, N;
+	  hid_t file_id, space_id, data_id;
+	  
+	  file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	  CHECK(file_id >= 0, "error opening HDF5 input file");
+	  
+	  if (!dataset_exists(file_id, dataname))
+	       return NULL;
+	  
+	  data_id = H5Dopen(file_id, dataname);
+	  space_id = H5Dget_space(data_id);
+	  
+	  *rank = H5Sget_simple_extent_ndims(space_id);
+	  CHECK(*rank <= maxrank, "input array rank is too big");
+	  
+	  hsize_t *dims_copy = new hsize_t[*rank];
+	  hsize_t *maxdims = new hsize_t[*rank];
+	  H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
+	  delete[] maxdims;
+	  for (N = 1, i = 0; i < *rank; ++i)
+	       N *= (dims[i] = dims_copy[i]);
+	  delete[] dims_copy;
+	  H5Sclose(space_id);
+	  
+	  data = new double[N];
+	  H5Dread(data_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+		  (void *) data);
+	  
+	  H5Dclose(data_id);
+	  H5Fclose(file_id);
+     }
 
-     file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-     CHECK(file_id >= 0, "error opening HDF5 input file");
+     *rank = broadcast(0, *rank);
+     broadcast(0, dims, *rank);
+     int N = 1;
+     for (int i = 0; i < *rank; ++i)
+	  N *= dims[i];
+     if (!am_master())
+	  data = new double[N];
+     broadcast(0, data, N);
 
-     if (!dataset_exists(file_id, dataname))
-	  return NULL;
-
-     data_id = H5Dopen(file_id, dataname);
-     space_id = H5Dget_space(data_id);
-
-     *rank = H5Sget_simple_extent_ndims(space_id);
-     CHECK(*rank <= maxrank, "input array rank is too big");
-
-     hsize_t *dims_copy = new hsize_t[*rank];
-     hsize_t *maxdims = new hsize_t[*rank];
-     H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
-     delete[] maxdims;
-     for (N = 1, i = 0; i < *rank; ++i)
-	  N *= (dims[i] = dims_copy[i]);
-     delete[] dims_copy;
-     H5Sclose(space_id);
-     
-     data = new double[N];
-     H5Dread(data_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-	     (void *) data);
-
-     H5Dclose(data_id);
-     H5Fclose(file_id);
+     if (N == 1)
+	  *rank = 0;
 
      return data;
 #else
@@ -142,9 +156,15 @@ double *h5io::read(const char *filename, const char *dataname,
 
    If parallel is true, then all processes must call this routine
    simultaneously to write (non-overlapping) chunks in parallel, at
-   the same dindex.  If parallel is false, then this routine should
-   only be called from a single process (with filesystem access). 
+   the same dindex.  It should even be called from processes that have
+   no data to write (i.e. chunk_dims[i] == 0).  If parallel is false,
+   then this routine should only be called from a single process (with
+   filesystem access).
 
+   In the special case of rank == 0 (writing a single datum), chunk_dims[0]
+   should still be initialized to 1 (if the given process is writing data)
+   or 0 (if it is not).
+   
    first_chunk should be set to true on the *first* chunk (or set of
    parallel chunks) written for *any* dindex.
 
@@ -152,7 +172,7 @@ double *h5io::read(const char *filename, const char *dataname,
    using single precision; otherwise, double precision is used.
 
    If append_file is true, then the file can have pre-existing datasets
-   with different names, which are not modified. */
+   with different names, which are not modified.  */
 void h5io::write_chunk(const char *filename, const char *dataname,
 		       int rank, const int *dims,
 		       double *data,
@@ -166,9 +186,15 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      int i;
      bool do_write = true;
      hid_t file_id, space_id, mem_space_id, data_id;
+     int rank1;
 
      CHECK(!append_data || dindex >= 0, "invalid dindex");
-     CHECK(rank > 0, "non-positive rank");
+     CHECK(rank >= 0, "negative rank");
+     CHECK(rank > 0 || chunk_dims[0] == 0 || chunk_dims[0] == 1,
+	   "invalid chunk_dims[0] for rank 0");
+
+     // stupid HDF5 has problems with rank 0
+     rank1 = rank == 0 ? 1 : rank;
 
      hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
 #  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
@@ -201,15 +227,17 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      }
      
      if (first_chunk || (IF_EXCLUSIVE(!parallel || am_master(), 1))) {
-	  hsize_t *dims_copy = new hsize_t[rank + append_data];
-	  hsize_t *maxdims = new hsize_t[rank + append_data];
+	  hsize_t *dims_copy = new hsize_t[rank1 + append_data];
+	  hsize_t *maxdims = new hsize_t[rank1 + append_data];
 	  for (i = 0; i < rank; ++i)
 	       maxdims[i] = dims_copy[i] = dims[i];
+	  if (!rank)
+	       maxdims[0] = dims_copy[0] = 1;
 	  if (append_data) {
-	       dims_copy[rank] = 1;
-	       maxdims[rank] = H5S_UNLIMITED;
+	       dims_copy[rank1] = 1;
+	       maxdims[rank1] = H5S_UNLIMITED;
 	  }
-	  space_id = H5Screate_simple(rank + append_data, dims_copy, maxdims);
+	  space_id = H5Screate_simple(rank1 + append_data, dims_copy, maxdims);
 	  delete[] maxdims;
 
 	  /* For unlimited datasets, we need to specify the size of the
@@ -217,7 +245,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	     set the chunk size to the dataset dimensions (dims_copy). */
 	  hid_t prop_id = H5Pcreate(H5P_DATASET_CREATE);
 	  if (append_data)
-	       H5Pset_chunk(prop_id, rank + 1, dims_copy);
+	       H5Pset_chunk(prop_id, rank1 + 1, dims_copy);
 
 	  delete[] dims_copy;
 	  
@@ -232,22 +260,24 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	  data_id = H5Dopen(file_id, dataname);
 	  space_id = H5Dget_space(data_id);
 	  
-	  CHECK(rank + append_data == H5Sget_simple_extent_ndims(space_id),
+	  CHECK(rank1 + append_data == H5Sget_simple_extent_ndims(space_id),
 		"file data is inconsistent rank for subsequent chunk");
 	  
-	  hsize_t *dims_copy = new hsize_t[rank];
-	  hsize_t *maxdims = new hsize_t[rank];
+	  hsize_t *dims_copy = new hsize_t[rank1];
+	  hsize_t *maxdims = new hsize_t[rank1];
 	  H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
-	  CHECK(!append_data || maxdims[rank] == H5S_UNLIMITED,
+	  CHECK(!append_data || maxdims[rank1] == H5S_UNLIMITED,
 		"file data is missing unlimited dimension for append_data");
 	  delete[] maxdims;
 	  for (i = 0; i < rank; ++i)
 	       CHECK(dims[i] == (int) dims_copy[i],
 		     "file data is inconsistent size for subsequent chunk");
+	  if (!rank)
+	       CHECK(dims_copy[0] == 1, "rank-0 data is incorrect size");
 
 	  // Allocate more space along unlimited direction, if needed:
-	  if (append_data && dindex >= (int) dims_copy[rank]) {
-	       dims_copy[rank] = dindex + 1;
+	  if (append_data && dindex >= (int) dims_copy[rank1]) {
+	       dims_copy[rank1] = dindex + 1;
 	       H5Dextend(data_id, dims_copy);
 	       H5Sclose(space_id); // I'm not sure if old space_id still valid
 	       space_id = H5Dget_space(data_id);
@@ -260,8 +290,8 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      /* Before we can write the data to the data set, we must define
 	the dimensions and "selections" of the arrays to be read & written: */
 
-     hssize_t *start = new hssize_t[rank + append_data];
-     hsize_t *count = new hsize_t[rank + append_data];
+     hssize_t *start = new hssize_t[rank1 + append_data];
+     hsize_t *count = new hsize_t[rank1 + append_data];
 
      int count_prod = 1;
      for (i = 0; i < rank; ++i) {
@@ -269,15 +299,20 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	  count[i] = chunk_dims[i];
 	  count_prod *= count[i];
      }
+     if (!rank) {
+	  start[0] = 0;
+	  count[0] = chunk_dims[0]; // see comment at top
+	  count_prod *= count[0];
+     }
      if (append_data) {
-	  start[rank] = dindex;
-	  count[rank] = 1;
+	  start[rank1] = dindex;
+	  count[rank1] = 1;
      }
 
      if (count_prod > 0) {
 	  H5Sselect_hyperslab(space_id, H5S_SELECT_SET,
 			      start, NULL, count, NULL);
-	  mem_space_id = H5Screate_simple(rank, count, NULL);
+	  mem_space_id = H5Screate_simple(rank1, count, NULL);
 	  H5Sselect_all(mem_space_id);
      }
      else { /* this can happen on leftover processes in MPI */
@@ -315,7 +350,8 @@ void h5io::write(const char *filename, const char *dataname,
 		 bool single_precision,
 		 bool append_file)
 {
-     int *start = new int[rank];
+     int *start = new int[rank + 1];
+     for (int i = 0; i < rank; i++) start[i] = 0;
      h5io::write_chunk(filename, dataname, rank, dims, data, start, dims,
 		       false,-1, false, true, single_precision, append_file);
      delete[] start;

@@ -104,14 +104,15 @@ void broadcast(int from, complex<double> *data, int size) {
 #endif
 }
 
-bool broadcast(int from, bool b) {
-  int bi = b;
+void broadcast(int from, int *data, int size) {
 #ifdef HAVE_MPI
-  MPI_Bcast(&bi, 2, MPI_INT, from, MPI_COMM_WORLD);
+  if (size == 0) return;
+  MPI_Bcast(data, size, MPI_INT, from, MPI_COMM_WORLD);
 #else
   UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
 #endif
-  return bi;
 }
 
 complex<double> broadcast(int from, complex<double> data) {
@@ -130,6 +131,19 @@ double broadcast(int from, double data) {
   UNUSED(from);
 #endif
   return data;
+}
+
+int broadcast(int from, int data) {
+#ifdef HAVE_MPI
+  MPI_Bcast(&data, 1, MPI_INT, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
+#endif
+  return data;
+}
+
+bool broadcast(int from, bool b) {
+  return broadcast(from, (int) b);
 }
 
 double max_to_master(double in) {
