@@ -24,6 +24,11 @@
 #include <mpi.h>
 #endif
 
+#if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
+#  include <fenv.h>
+// extern "C" int feenableexcept (int EXCEPTS);
+#endif
+
 #define UNUSED(x) (void) x // silence compiler warnings
 
 namespace meep {
@@ -37,6 +42,9 @@ initialize::initialize(int argc, char **argv) {
 #else
   UNUSED(argc);
   UNUSED(argv);
+#endif
+#if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
+  feenableexcept(FE_INVALID); // crash if a NaN is created
 #endif
 }
 

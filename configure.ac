@@ -53,6 +53,8 @@ AC_SUBST(LATEX2HTML)
 
 AC_CHECK_LIB(m, sqrt)
 
+AC_CHECK_FUNCS(feenableexcept) dnl GNU libc fp exception control function
+
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 	[AC_CHECK_LIB(fftw, fftw_create_plan)])
 
