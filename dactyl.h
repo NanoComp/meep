@@ -219,6 +219,7 @@ class fields_chunk {
   void record_bands(int tcount);
   // step.cpp
   void step_h_old();
+  void step_e_old();
   void phase_in_material(const mat_chunk *ma);
   void phase_material(int phasein_time);
   void step_h();
@@ -384,6 +385,7 @@ class fields {
   void step_h_old();
   void step_h_source();
   void step_e();
+  void step_e_old();
   void step_boundaries(field_type);
   void step_polarization_itself();
   void step_e_polarization();

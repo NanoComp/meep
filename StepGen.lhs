@@ -115,7 +115,7 @@ infixr 6 |*|
                  (_,"0") -> return "0"
                  ("1",_) -> return ye
                  (_,"1") -> return xe
-                 _ -> return $ padd xe++" * "++padd ye
+                 _ -> return $ padd xe++"*"++padd ye
 p s | '?' `elem` s = "("++s++")"
 p s = s
 padd s | '+' `elem` s = "("++s++")"
@@ -139,7 +139,7 @@ doexp :: EXPRESSION a => a -> Code
 doexp e = do o <- expression e
              if o == "" then return []
                         else return $ linebreak $ o++";"
-linebreak s | length (dropWhile (==' ') s) < 70 = [s]
+linebreak s | length (dropWhile (==' ') s) < 40 = [s]
 linebreak s = let spaces = takeWhile (==' ') s
                   body = dropWhile (==' ') s in -- (
     case break (==' ') $ drop 55 body of

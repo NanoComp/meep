@@ -46,8 +46,14 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %lg\n",
                abs(v1 - v2)/abs(v2));
-        master_printf("Right now I'm looking at %lg %lg, time %lg\n",
-                      p.x(), p.y(), f1.time());
+        switch (p.dim) {
+        case D2: master_printf("Right now I'm looking at %lg %lg, time %lg\n",
+                               p.x(), p.y(), f1.time());
+          break;
+        case D1: master_printf("Right now I'm looking at %lg, time %lg\n",
+                               p.z(), f1.time());
+          break;
+        }
         f1.output_real_imaginary_slices("new");
         f2.output_real_imaginary_slices("old");
         f1.eps_slices("new");
@@ -55,6 +61,64 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
         return 0;
       }
     }
+  }
+  return 1;
+}
+
+bool step_metal_1d(const char *dirname) {
+  double a = 10.0;
+  double ttot = 2.0;
+  const volume v = volone(1.0, a);
+  mat ma(v, eps);
+  mat ma_old(v, eps);
+  ma.set_output_directory(dirname);
+  ma_old.set_output_directory(dirname);
+  master_printf("Testing step algorithm in 1D...\n");
+
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(.3));
+  fields f_old(&ma);
+  f_old.use_metal_everywhere();
+  f_old.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(.3));
+  while (f.time() < ttot) {
+    f.step();
+    f_old.step_old();
+    if (!compare_point(f, f_old, vec(0.01))) return 0;
+    if (!compare_point(f, f_old, vec(.301))) return 0;
+    if (!compare_point(f, f_old, vec(.46 ))) return 0;
+    if (!compare(f.electric_energy_in_box(v.surroundings()),
+                 f_old.electric_energy_in_box(v.surroundings()),
+                 "electric energy")) return 0;
+  }
+  return 1;
+}
+
+bool step_metal_1d_pml(const char *dirname) {
+  double a = 10.0;
+  double ttot = 10.0;
+  const volume v = volone(2.0, a);
+  mat ma(v, eps);
+  mat ma_old(v, eps);
+  ma.set_output_directory(dirname);
+  ma_old.set_output_directory(dirname);
+  ma.use_pml_everywhere(0.4);
+  ma_old.use_pml_everywhere(0.4);
+  master_printf("Testing step algorithm in 1D with PML...\n");
+
+  fields f(&ma);
+  f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(.6));
+  fields f_old(&ma);
+  f_old.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(.6));
+  while (f.time() < ttot) {
+    f.step();
+    f_old.step_old();
+    if (!compare_point(f, f_old, vec(0.01))) return 0;
+    if (!compare_point(f, f_old, vec(.301))) return 0;
+    if (!compare_point(f, f_old, vec(.46 ))) return 0;
+    if (!compare(f.electric_energy_in_box(v.surroundings()),
+                 f_old.electric_energy_in_box(v.surroundings()),
+                 "electric energy")) return 0;
   }
   return 1;
 }
@@ -148,9 +212,9 @@ bool step_pml_2d_tm(const char *dirname) {
   master_printf("Testing step algorithm in 2D with TM PML...\n");
 
   fields f(&ma);
-  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(.4,.5));
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(.4,.503));
   fields f_old(&ma);
-  f_old.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(.4,.5));
+  f_old.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(.4,.503));
   while (f.time() < ttot) {
     f.step();
     f_old.step_old();
@@ -208,6 +272,12 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   const char *dirname = "step_algorithm-out";
   trash_output_directory(dirname);
+
+  if (!step_metal_1d(dirname))
+    abort("error in step_metal_1d\n");
+
+  if (!step_metal_1d_pml(dirname))
+    abort("error in step_metal_1d_pml\n");
 
   if (!step_metal_2d_tm(dirname))
     abort("error in step_metal_2d_tm\n");

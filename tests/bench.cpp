@@ -49,7 +49,7 @@ bench bench_periodic(const double rmax, const double zmax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
-  f.print_times();
+  //f.print_times();
   return b;
 }
 
@@ -82,7 +82,40 @@ bench bench_flux_1d(const double zmax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
-  f.print_times();
+  //f.print_times();
+  return b;
+}
+
+bench bench_flux_1d_old(const double zmax,
+                        double eps(const vec &)) {
+  const double a = 10.0;
+  const double gridpts = a*zmax;
+  const double ttot = 10.0 + 1e5/zmax;
+
+  volume v = volone(zmax,a);
+  mat ma(v, eps);
+  ma.use_pml_everywhere(zmax/6);
+
+  fields f(&ma);
+  f.use_real_fields();
+  f.add_point_source(Ex, 0.7, 2.5, 0.0, 3.0, vec(zmax/2+0.3), 1.0);
+  flux_plane *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
+  flux_plane *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
+
+  while (f.time() <= f.find_last_source()) f.step_old();
+
+  volume mid = volone(zmax/3,a);
+  mid.origin = vec(zmax/3);
+  double flux_energy=0.0;
+  clock_t start = clock();
+  while (f.time() < ttot) {
+    f.step_old();
+    flux_energy += (c/a)*(right->flux() - left->flux());
+  }
+  bench b;
+  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.gridsteps = ttot*a*2*gridpts;
+  //f.print_times();
   return b;
 }
 
@@ -106,7 +139,7 @@ bench bench_2d(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
-  f.print_times();
+  //f.print_times();
   return b;
 }
 
@@ -131,7 +164,7 @@ bench bench_2d_tm(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
-  f.print_times();
+  //f.print_times();
   return b;
 }
 
@@ -154,7 +187,7 @@ bench bench_2d_tm_old(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
-  f.print_times();
+  //f.print_times();
   return b;
 }
 
@@ -178,7 +211,7 @@ bench bench_2d_te(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
-  f.print_times();
+  //f.print_times();
   return b;
 }
 
@@ -202,7 +235,7 @@ bench bench_2d_te_old(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
-  f.print_times();
+  //f.print_times();
   return b;
 }
 
@@ -230,6 +263,8 @@ int main(int argc, char **argv) {
   showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
   width = 300.0;
   showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
+  width = 300.0;
+  showbench("Flux 1D 100 old", bench_flux_1d_old(100.0, bump));
 
   showbench("2D 6x4 ", bench_2d(6.0, 4.0, one));
   showbench("2D 12x12 ", bench_2d(12.0, 12.0, one));

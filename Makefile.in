@@ -35,10 +35,12 @@ uninstall: dactyl-uninstall
 
 $(OBJ_dactyl): dactyl.h dactyl_internals.h vec.h mympi.h
 example.o: example.cpp dactyl.h vec.h mympi.h
-step.o: step.cpp step_h.h dactyl.h dactyl_internals.h vec.h mympi.h
+step.o: step.cpp step_h.h step_e.h dactyl.h dactyl_internals.h vec.h mympi.h
 
 step_h.h: step_h.hs StepGen.lhs
 	ghc -fglasgow-exts --make -o step_h step_h.hs && ./step_h > step_h.h
+step_e.h: step_e.hs StepGen.lhs
+	ghc -fglasgow-exts --make -o step_e step_e.hs && ./step_e > step_e.h
 
 libdactyl.a: $(OBJ_dactyl)
 	ar cru libdactyl.a $(OBJ_dactyl)
@@ -81,8 +83,8 @@ bench: libdactyl.a
 	cd tests && make bench
 
 test: libdactyl.a
-	cd doc && make test
 	cd tests && make test
+	cd doc && make test
 
 test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
 	rm -rf d_k_0.1pi_pml_m_1-out

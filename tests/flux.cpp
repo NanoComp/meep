@@ -73,8 +73,8 @@ int flux_1d(const double zmax,
                 f.electric_energy_in_box(mid.surroundings()));
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  (c/a)*left->flux();
-    flux_right +=  (c/a)*right->flux();
+    flux_left  +=  -(c/a)*left->flux();
+    flux_right +=  -(c/a)*right->flux();
   }
   delta_energy -= f.energy_in_box(mid.surroundings());
   master_printf("Final energy is %lg\n", f.energy_in_box(mid.surroundings()));
@@ -85,16 +85,6 @@ int flux_1d(const double zmax,
   master_printf("  Delta E:\t%lg\n  Flux left:\t%lg\n  Flux right:\t%lg\n  Ratio:\t%lg\n",
                 delta_energy, del, der, del/der);
   return compare(del, der, 0.05, "Flux");
-}
-
-double oned_flux(const fields &f, const vec &loc) {
-  monitor_point p;
-  f.get_point(&p, loc);
-  master_printf("Ex is %lg\n", real(p.get_component(Ex)));
-  master_printf("Hy is %lg\n", real(p.get_component(Hy)));
-  return (real(p.get_component(Ex))*real(p.get_component(Hy)) +
-          imag(p.get_component(Ex))*imag(p.get_component(Hy)))
-    *(1.0/pi/8/c);
 }
 
 int split_1d(double eps(const vec &), int splitting) {
@@ -157,8 +147,8 @@ int cavity_1d(const double boxwidth, const double timewait,
   master_printf("  Energy starts at\t%lg\n", start_energy);
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  (c/a)*left->flux();
-    flux_right +=  (c/a)*right->flux();
+    flux_left  +=  -(c/a)*left->flux();
+    flux_right +=  -(c/a)*right->flux();
   }
   const double delta_energy = start_energy - f.energy_in_box(mid.surroundings());
   const double defl = flux_right - flux_left;

@@ -206,7 +206,7 @@ component volume::eps_component() const {
   abort("Unsupported dimensionality eps.\n");
 }
 
-inline vec volume::yee_shift(component c) const {
+vec volume::yee_shift(component c) const {
   return operator[](iyee_shift(c));
 }
 
