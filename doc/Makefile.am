@@ -39,6 +39,9 @@ meep.pdf: $(TEX) $(PDF) $(FREQS)
 	pdflatex meep
 	pdflatex meep
 
+meep.ps.gz: meep.ps
+	gzip --force --best meep.ps
+
 meep.ps: meep.dvi
 	dvips -o meep.ps meep.dvi
 
