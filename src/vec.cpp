@@ -102,7 +102,7 @@ const char *component_name(component c) {
   case Dz: return "dz";
   case Dr: return "dr";
   case Dp: return "dp";
-  case Dielectric: return "epsilon";
+  case Dielectric: return "eps";
   }
   return "Error in component_name";
 }
@@ -1087,6 +1087,17 @@ ivec symmetry::transform(const ivec &ov, int n) const {
     const int delta = ov.in_direction(d) - sp_d;
     if (s.flipped) out.set_direction(s.d, sp_sd - delta);
     else out.set_direction(s.d, sp_sd + delta);
+  }
+  return out;
+}
+
+ivec symmetry::transform_unshifted(const ivec &ov, int n) const {
+  if (n == 0) return ov;
+  ivec out(ov.dim);
+  LOOP_OVER_DIRECTIONS(ov.dim, d) {
+    const signed_direction s = transform(d,n);
+    if (s.flipped) out.set_direction(s.d, -ov.in_direction(d));
+    else out.set_direction(s.d, ov.in_direction(d));
   }
   return out;
 }

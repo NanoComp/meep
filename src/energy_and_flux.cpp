@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "meep.h"
 #include "meep_internals.h"
@@ -74,7 +75,7 @@ struct dot_integrand_data {
   long double sum;
 };
 
-static void dot_integrand(fields_chunk *fc,
+static void dot_integrand(fields_chunk *fc, component cgrid,
 			  ivec is, ivec ie,
 			  vec s0, vec s1, vec e0, vec e1,
 			  double dV0, double dV1,
@@ -91,14 +92,10 @@ static void dot_integrand(fields_chunk *fc,
 
   // We're integrating c1 * c2*, and we assume that
   // S.phase_shift(c1,sn) == S.phase_shift(c2,sn), so the phases all cancel
-  if (S.phase_shift(c1,sn) != S.phase_shift(c2,sn))
-       abort("unsupported component combination in dot_integrand (bad phase)");
 
-  int off1a, off1b, off2a, off2b;
-  fc->v.yee2diel_offsets(c1, off1a, off1b);
-  fc->v.yee2diel_offsets(c2, off2a, off2b);
-  if (off1a != off2a || off1b != off2b)
-       abort("unsupported component combination in dot_integrand");
+  // We also assume that cgrid is the same yee grid as that for c1 and c2,
+  // so that no averaging is needed.
+  (void) cgrid;
 
   for (int cmp = 0; cmp < 2; ++cmp)
     if (fc->f[c1][cmp] && fc->f[c2][cmp])
@@ -107,19 +104,7 @@ static void dot_integrand(fields_chunk *fc,
 	double dV = dV0 + dV1 * loop_i2;
 	double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
 	double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-	if (off1b) {
-	  data->sum += w123 * 0.25 *
-	   (fc->f[c1][cmp][idx]             * fc->f[c2][cmp][idx] +
-	    fc->f[c1][cmp][idx+off1a]       * fc->f[c2][cmp][idx+off1a] +
-	    fc->f[c1][cmp][idx+off1b]       * fc->f[c2][cmp][idx+off1b] +
-	    fc->f[c1][cmp][idx+off1a+off1b] * fc->f[c2][cmp][idx+off1a+off1b]);
-	}
-	else if (off1a)
-	  data->sum += w123 * 0.5 *
-	    (fc->f[c1][cmp][idx]         * fc->f[c2][cmp][idx] +
-	     fc->f[c1][cmp][idx + off1a] * fc->f[c2][cmp][idx + off1a]);
-	else
-	  data->sum += w123 * (fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx]);
+	data->sum += w123 * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx];;
 	(void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
     }
 }
@@ -141,7 +126,7 @@ double fields::field_energy_in_box(component c,
     abort("invalid field component in field_energy_in_box");
 
   data.sum = 0.0;
-  integrate(dot_integrand, (void *) &data, otherv);
+  integrate(dot_integrand, (void *) &data, otherv, c);
   return sum_to_all(data.sum) / (8*pi);
 }
 
@@ -169,29 +154,29 @@ double fields::thermo_energy_in_box(const geometric_volume &otherv) {
 
 void fields_chunk::backup_h() {
   DOCMP FOR_MAGNETIC_COMPONENTS(c)
-      if (f[c][cmp]) {
-        if (f_backup[c][cmp] == NULL)
-          f_backup[c][cmp] = new double[v.ntot()];
-        if (f_backup_m_pml[c][cmp] == NULL)
-          f_backup_m_pml[c][cmp] = new double[v.ntot()];
-        if (f_backup_p_pml[c][cmp] == NULL)
-          f_backup_p_pml[c][cmp] = new double[v.ntot()];
-      }
+    if (f[c][cmp]) {
+      if (f_backup[c][cmp] == NULL)
+	f_backup[c][cmp] = new double[v.ntot()];
+      if (f_backup_m_pml[c][cmp] == NULL)
+	f_backup_m_pml[c][cmp] = new double[v.ntot()];
+      if (f_backup_p_pml[c][cmp] == NULL)
+	f_backup_p_pml[c][cmp] = new double[v.ntot()];
+    }
   DOCMP FOR_MAGNETIC_COMPONENTS(c)
-      if (f[c][cmp]) {
-        for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = f[c][cmp][i];
-        for (int i=0;i<v.ntot();i++) f_backup_p_pml[c][cmp][i] = f_p_pml[c][cmp][i];
-        for (int i=0;i<v.ntot();i++) f_backup_m_pml[c][cmp][i] = f_m_pml[c][cmp][i];
-      }
+    if (f[c][cmp]) {
+      memcpy(f_backup[c][cmp], f[c][cmp], v.ntot()*sizeof(double));
+      memcpy(f_backup_p_pml[c][cmp], f_p_pml[c][cmp], v.ntot()*sizeof(double));
+      memcpy(f_backup_m_pml[c][cmp], f_m_pml[c][cmp], v.ntot()*sizeof(double));
+    }
 }
-
+  
 void fields_chunk::restore_h() {
   DOCMP FOR_MAGNETIC_COMPONENTS(c)
-      if (f[c][cmp]) {
-        for (int i=0;i<v.ntot();i++) f[c][cmp][i] = f_backup[c][cmp][i];
-        for (int i=0;i<v.ntot();i++) f_p_pml[c][cmp][i] = f_backup_p_pml[c][cmp][i];
-        for (int i=0;i<v.ntot();i++) f_m_pml[c][cmp][i] = f_backup_m_pml[c][cmp][i];
-      }
+    if (f[c][cmp]) {
+      memcpy(f[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(double));
+      memcpy(f_p_pml[c][cmp], f_backup_p_pml[c][cmp], v.ntot()*sizeof(double));
+      memcpy(f_m_pml[c][cmp], f_backup_m_pml[c][cmp], v.ntot()*sizeof(double));
+    }
 }
 
 double fields_chunk::thermo_energy_in_box(const geometric_volume &otherv,

@@ -91,7 +91,7 @@ dft_chunk::~dft_chunk() {
     fc->dft_chunks = next_in_chunk;
 }
 
-static void add_dft_integrand(fields_chunk *fc,
+static void add_dft_integrand(fields_chunk *fc, component cgrid,
 			      ivec is, ivec ie,
 			      vec s0, vec s1, vec e0, vec e1,
 			      double dV0, double dV1,
@@ -101,6 +101,8 @@ static void add_dft_integrand(fields_chunk *fc,
 {
   dft_chunk_data *data = (dft_chunk_data *) integrand_data;
   (void) shift; // unused
+
+  if (cgrid != Dielectric) abort("dft chunks should use the Dielectric grid");
   
   component c = S.transform(data->c, -sn);
   if (!fc->f[c][0]) return; // this chunk doesn't have component c

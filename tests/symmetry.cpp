@@ -41,7 +41,8 @@ static const double eps_compare = 7e-15;
 static const double thresh_compare = 1e-16;
 
 int compare(double a, double b, const char *n) {
-  if (fabs(a-b) > fabs(b)*eps_compare && fabs(b) > thresh_compare) {
+  if (fabs(a-b) > fabs(b)*eps_compare
+      && max(fabs(a),fabs(b)) > thresh_compare) {
     master_printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;

@@ -560,6 +560,7 @@ class symmetry {
   signed_direction transform(direction d, int n) const;
   ivec transform(const ivec &, int n) const;
   vec transform(const vec &, int n) const;
+  ivec transform_unshifted(const ivec &, int n) const;
   geometric_volume transform(const geometric_volume &, int n) const;
   component transform(component, int n) const;
   complex<double> phase_shift(component, int n) const;

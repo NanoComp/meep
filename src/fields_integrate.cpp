@@ -192,6 +192,8 @@ static ivec vec2diel_ceil(const vec &v, double a, const ivec &equal_shift) {
   return iv;
 }
 
+static inline int iabs(int i) { return (i < 0 ? -i : i); }
+
 /* Generic function for computing integrals of fields, and
    integral-like things, over a volume WHERE.  The job of this
    function is to call INTEGRAND() for each chunk that intersects
@@ -211,13 +213,11 @@ static ivec vec2diel_ceil(const vec &v, double a, const ivec &equal_shift) {
    unit corresponding to the dimensionality of WHERE (e.g. an area
    if WHERE is 2d, etc.)
 
-   In particular, the integration coordinates are on the odd-indexed
-   "epsilon grid", which has the virtue that it is disjoint for each
-   chunk and each chunk has enough information to interpolate all of
-   its field components onto this grid without communication.  Another
-   virtue of this grid is that it is invariant under all of our symmetry
-   transformations, so we can uniquely decide which transformed chunk
-   gets to integrate which grid point.
+   In particular, the integration coordinates are calculated on the
+   Yee grid for component cgrid.  cgrid == Dielectric is a good choice
+   if you want to integrate a combination of multiple field components,
+   because all of the field components can be interpolated onto this
+   grid without communication between chunks.
 
    The integration weights are chosen to correspond to integrating the
    linear interpolation of the function values from these grid points.
@@ -225,30 +225,44 @@ static ivec vec2diel_ceil(const vec &v, double a, const ivec &equal_shift) {
    For a simple example of an integrand routine, see the
    tests/integrate.cpp file. */
 void fields::integrate(field_integrand integrand, void *integrand_data,
-		       const geometric_volume &where)
+		       const geometric_volume &where, 
+		       component cgrid,
+		       bool use_symmetry)
 {
-  // Argument checks:
+  if (coordinate_mismatch(v.dim, component_direction(cgrid)))
+    abort("Invalid fields::integrate grid type %s for dimensions %s\n",
+	  component_name(cgrid), dimension_name(v.dim));
   if (where.dim != v.dim)
     abort("Invalid dimensions %d for WHERE in fields::integrate", where.dim);
-  LOOP_OVER_DIRECTIONS(v.dim, d) 
-    if (where.in_direction_max(d) - where.in_direction_min(d) >
-        user_volume.boundary_location(High, d)
-	- user_volume.boundary_location(Low, d)) 
-      abort("Cannot handle integration width larger than cell width in %s direction!\n", direction_name(d));
+  
+  /*
+    We handle integration on an arbitrary component grid by shifting
+    to the dielectric grid and then shifting back.  The integration
+    coordinates are internally calculated on the odd-indexed
+    "dielectric grid", which has the virtue that it is disjoint for
+    each chunk and each chunk has enough information to interpolate all
+    of its field components onto this grid without communication.
+    Another virtue of this grid is that it is invariant under all of
+    our symmetry transformations, so we can uniquely decide which
+    transformed chunk gets to integrate which grid point. 
+  */
+  vec yee_c(v.yee_shift(Dielectric) - v.yee_shift(cgrid));
+  ivec iyee_c(v.iyee_shift(Dielectric) - v.iyee_shift(cgrid));
+  geometric_volume wherec(where + yee_c);
 
 
   /* Find the corners (is and ie) of the smallest bounding box for
-     where, on the grid of odd-coordinate ivecs (i.e. the
+     wherec, on the grid of odd-coordinate ivecs (i.e. the
      "epsilon grid"). */
-  ivec is(vec2diel_floor(where.get_min_corner(), v.a, zero_ivec(v.dim)));
-  ivec ie(vec2diel_ceil(where.get_max_corner(), v.a, zero_ivec(v.dim)));
+  ivec is(vec2diel_floor(wherec.get_min_corner(), v.a, zero_ivec(v.dim)));
+  ivec ie(vec2diel_ceil(wherec.get_max_corner(), v.a, zero_ivec(v.dim)));
   
   /* Integration weights at boundaries (c.f. long comment at top). */
   vec s0(v.dim), e0(v.dim), s1(v.dim), e1(v.dim);
   LOOP_OVER_DIRECTIONS(v.dim, d) {
     double w0, w1;
-    w0 = 1. - where.in_direction_min(d)*v.a + 0.5*is.in_direction(d);
-    w1 = 1. + where.in_direction_max(d)*v.a - 0.5*ie.in_direction(d);
+    w0 = 1. - wherec.in_direction_min(d)*v.a + 0.5*is.in_direction(d);
+    w1 = 1. + wherec.in_direction_max(d)*v.a - 0.5*ie.in_direction(d);
     if (ie.in_direction(d) >= is.in_direction(d) + 3*2) {
       s0.set_direction(d, w0*w0 / 2);
       s1.set_direction(d, 1 - (1-w0)*(1-w0) / 2);
@@ -261,7 +275,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
       e0.set_direction(d, w1*w1 / 2);
       e1.set_direction(d, s1.in_direction(d));
     }
-    else if (where.in_direction_min(d) == where.in_direction_max(d)) {
+    else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
       s0.set_direction(d, w0);
       s1.set_direction(d, w1);
       e0.set_direction(d, w1);
@@ -279,27 +293,30 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 
 
   // loop over symmetry transformations of the chunks:
-  for (int sn = 0; sn < S.multiplicity(); ++sn) {
+  for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
+    component cS = S.transform(cgrid, -sn);
+    ivec iyee_cS(S.transform_unshifted(iyee_c, -sn));
+
     geometric_volume vS = S.transform(v.surroundings(), sn);
     vec L(v.dim);
     ivec iL(v.dim);
 
-    // n.b. we can't just S.transform(lattice_vector,sn), 'cause of origin
+    // n.b. we can't just S.transform(lattice_vector,sn), 'cause of signs
     LOOP_OVER_DIRECTIONS(v.dim, d) {
       direction dS = S.transform(d, -sn).d;
-      L.set_direction(d, lattice_vector(dS).in_direction(dS));
-      iL.set_direction(d, ilattice_vector(dS).in_direction(dS));
+      L.set_direction(d, fabs(lattice_vector(dS).in_direction(dS)));
+      iL.set_direction(d, iabs(ilattice_vector(dS).in_direction(dS)));
     }
 
-    // figure out range of lattice shifts for which vS intersects where:
+    // figure out range of lattice shifts for which vS intersects wherec:
     ivec min_ishift(v.dim), max_ishift(v.dim);
     LOOP_OVER_DIRECTIONS(v.dim, d) {
       if (boundaries[High][S.transform(d, -sn).d] == Periodic) {
 	min_ishift.set_direction(d, 
-	 int(floor((where.in_direction_min(d) - vS.in_direction_max(d))
+	 int(floor((wherec.in_direction_min(d) - vS.in_direction_max(d))
 		   / L.in_direction(d))));
 	max_ishift.set_direction(d,
-	 int(ceil((where.in_direction_max(d) - vS.in_direction_min(d))
+	 int(ceil((wherec.in_direction_max(d) - vS.in_direction_min(d))
 		  / L.in_direction(d))));
       }
       else {
@@ -310,7 +327,6 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
     
     // loop over lattice shifts
     ivec ishift(min_ishift);
-    int ishiftn = 0;
     do {
       complex<double> ph = 1.0;
       vec shift(v.dim);
@@ -385,16 +401,16 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	  // Determine integration "volumes" dV0 and dV1;
 	  double dV0 = 1.0, dV1 = 0.0;
 	  LOOP_OVER_DIRECTIONS(v.dim, d)
-	    if (where.in_direction_max(d) > where.in_direction_min(d))
+	    if (wherec.in_direction_max(d) > wherec.in_direction_min(d))
 	      dV0 *= v.inva;
 	  if (v.dim == Dcyl) {
 	    dV1 = dV0 * 2*pi * v.inva;
-	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->v[isc], sn) + shift)
-			       .in_direction(R));
+	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->v[isc], sn) + shift
+				- yee_c).in_direction(R));
 	  }
 	 
-	  integrand(chunks[i], 
-		    isc, iec,
+	  integrand(chunks[i], cS,
+		    isc - iyee_cS, iec - iyee_cS,
 		    s0c, s1c, e0c, e1c,
 		    dV0, dV1,
 		    shift, ph,
@@ -404,7 +420,6 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
       }
       
       
-      ++ishiftn;
       LOOP_OVER_DIRECTIONS(v.dim, d) {
 	if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
 	  ishift.set_direction(d, ishift.in_direction(d) + 1);

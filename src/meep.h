@@ -530,7 +530,7 @@ enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
 enum time_sink { Connecting, Stepping, Boundaries, MpiTime,
                  Slicing, Other };
 
-typedef void (*field_integrand)(fields_chunk *fc,
+typedef void (*field_integrand)(fields_chunk *fc, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,
@@ -649,7 +649,9 @@ class fields {
 
   // fields_integrate.cpp
   void integrate(field_integrand integrand, void *integrand_data,
-		 const geometric_volume &where);
+		 const geometric_volume &where,
+		 component cgrid = Dielectric,
+		 bool use_symmetry = true);
   
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,

@@ -39,7 +39,7 @@ typedef struct {
 } linear_integrand_data;
 
 /* integrand for integrating c + ax*x + ay*y + az*z. */
-static void linear_integrand(fields_chunk *fc,
+static void linear_integrand(fields_chunk *fc, component cgrid,
 			     ivec is, ivec ie,
 			     vec s0, vec s1, vec e0, vec e1,
 			     double dV0, double dV1,
@@ -52,6 +52,9 @@ static void linear_integrand(fields_chunk *fc,
   /* we don't use the Bloch phase here, but it's important for
      integrating fields, obviously */
   (void) shift_phase;
+
+  /* the code should be correct regardless of cgrid */
+  (void) cgrid;
 
   vec loc(fc->v.dim, 0.0);
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
@@ -175,7 +178,8 @@ static geometric_volume random_gv(ndim dim)
 }
 
 void check_integral(fields &f,
-		    linear_integrand_data &d, const geometric_volume &gv)
+		    linear_integrand_data &d, const geometric_volume &gv,
+		    component cgrid)
 {
   double x1 = gv.in_direction_min(X);
   double x2 = gv.in_direction_max(X);
@@ -190,8 +194,9 @@ void check_integral(fields &f,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
 		  d.c, d.ax,d.ay,d.az, d.axy,d.ayz,d.axz, d.axyz);
   else
-    master_printf("Checking %d-dim. integral in %s cell with %s integrand...",
+    master_printf("Check %d-dim. %s integral in %s cell with %s integrand...",
 		  (x2 - x1 > 0) + (y2 - y1 > 0) + (z2 - z1 > 0), 
+		  component_name(cgrid),
 		  gv.dim == D3 ? "3d" : (gv.dim == D2 ? "2d" : "1d"),
 		  (d.c == 1.0 && !d.axy && !d.ax && !d.ay && !d.az
 		   && !d.axy && !d.ayz && !d.axz) ? "unit" : "linear");
@@ -224,17 +229,22 @@ void check_splitsym(const volume &v, int splitting,
   for (int i = 0; i < num_random_trials; ++i) {
     geometric_volume gv(random_gv(v.dim));
     linear_integrand_data d;
+    component cgrid;
+
+    do {
+      cgrid = component(rand() % (Dielectric + 1));
+    } while (coordinate_mismatch(v.dim, component_direction(cgrid)));
 
     // try integral of 1 first (easier to debug, I hope)
     d.c = 1.0;
     d.ax = d.ay = d.az = d.axy = d.ayz = d.axz = d.axyz = 0.0;
-    check_integral(f, d, gv);
+    check_integral(f, d, gv, cgrid);
 
     d.c = urand(-1,1);
     d.ax = urand(-1,1); d.ay = urand(-1,1); d.az = urand(-1,1);
     d.axy = urand(-1,1); d.ayz = urand(-1,1); d.axz = urand(-1,1);
     d.axyz = urand(-1,1);
-    check_integral(f, d, gv);
+    check_integral(f, d, gv, cgrid);
   }
 }
 
