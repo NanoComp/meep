@@ -1012,9 +1012,9 @@ signed_direction signed_direction::operator*(complex<double> p) {
 }
 
 signed_direction symmetry::transform(direction d, int n) const {
-  // Returns direction or if opposite, 
-  const int nme = n % g;
-  const int nrest = n / g;
+  // Returns transformed direction + phase/flip; -n indicates inverse transform
+  const int nme = n < 0 ? (g - (-n) % g) % g : n % g;
+  const int nrest = n < 0 ? -((-n) / g) : n / g;
   if (nme == 0) {
     if (nrest == 0) return signed_direction(d);
     else return next->transform(d,nrest);
