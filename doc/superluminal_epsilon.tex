@@ -1,0 +1,172 @@
+\section{Dielectric function of a superluminal material}
+
+\begin{comment}
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+
+#include "dactyl.h"
+
+const int rad = 10;
+const int m = 0;
+const double eps_value = 2.25;
+const double fmin = 0.05;
+
+const double pml = 1.0;
+const int npml = (int)(0.5+pml*rad);
+const double zsize = 2*pml+10/(double)rad;//+1.0/freq;
+const double rmax  = 6/(double)rad;
+const double zmiddle = zsize/2;
+const double sourceloc = zmiddle - 4/(double)rad;
+
+const double r_look = 1.5/rad, z_look = zmiddle, d = 1.0/rad;
+
+complex<double> source_sharp(double r) {
+  double sig = 1.0/rad;
+  double dr = r - rmax*.5;
+  if (fabs(r) >= rmax) return 0.0;
+  return exp(-dr*dr/(2*sig*sig))/sqrt(sig);
+}
+double eps(double r, double z) { return eps_value; }
+double one_in_middle(double r, double z) {
+  const double midmax = r_look+2.0/(double)rad;
+  const double midwid = 2/(double)rad;
+  if (r <= midmax && z >= zmiddle-midwid && z < zmiddle+midwid) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int main(int argc, char **argv) {
+  deal_with_ctrl_c();
+  const char *dirname = make_output_directory(argv[0]);
+  printf("Using pml of %lg thickness.\n", pml);
+  printf("Using an rmax of %lg\n", rmax);
+  mat ma(eps, rmax + pml, zsize, rad);
+  printf("I expect %g reflection off pml\n", ma.use_pml(pml,pml,fmin));
+  ma.set_output_directory(dirname);
+\end{comment}
+
+In this section, we demonstrate a better way to calculate the dielectric
+function, and illustrate it by computing the dielectric function of a
+superluminal material.  The superluminal material consists of a gain line
+together with an absorption.  Gain in the PML is a bad idea, so we restrict
+the polarizabilities to exist only in the middle of the system (which is
+surrounded by PML).
+
+\begin{figure}
+\label{superluminal_epsilon}
+\caption{Dielectric function of a superluminal material.}
+\epsfig{file=superluminal_epsilon-out/eps.eps,width=8.8cm}
+\end{figure}
+
+\begin{verbatim}
+  ma.add_polarizability(one_in_middle, 0.195, 0.03, 0.25*.25/.195);
+  ma.add_polarizability(one_in_middle, 0.25, 0.03,-0.25);
+\end{verbatim}
+
+\begin{comment}
+  ma.output_slices();
+
+  fields f(&ma, m);
+\end{comment}
+
+For sources, we use a series of broad point sources covering the frequency
+range of interest.
+
+\begin{verbatim}
+  f.add_source(Ep, 0.13, 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
+  f.add_source(Ep, 0.21, 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
+  f.add_source(Ep, 0.3 , 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
+  f.add_source(Ep, 0.43, 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
+\end{verbatim}
+\begin{comment}
+  printf("Working with a=%d...\n", rad);
+  monitor_point *left = NULL, *right = NULL, *middle = NULL,
+                *top = NULL, *bottom = NULL;
+  double next_printtime = 10;
+  while (f.time() < 110 && !interrupt) {
+    if (f.time() >= next_printtime) {
+      next_printtime += 10;
+      printf("Working on time %lg...  ", f.time());
+      printf("energy is %lg\n", f.total_energy());
+      if (f.time() > -90) f.output_slices();
+    }
+    f.step();
+\end{comment}
+
+The calculation proceeds as usual, except that we now keep track of a set
+of monitor points that will allow us to take a laplacian of the $H_z$ field
+component.  We choose $m=0$, so we won't have to deal with the $\phi$
+derivative.
+
+\begin{verbatim}
+    left   = f.get_new_point(r_look    , z_look - d, left);
+    middle = f.get_new_point(r_look    , z_look    , middle);
+    top    = f.get_new_point(r_look + d, z_look    , top);
+    bottom = f.get_new_point(r_look - d, z_look    , bottom);
+    right  = f.get_new_point(r_look    , z_look + d, right);
+\end{verbatim}
+\begin{comment}
+  }
+
+  grace g("eps", dirname);
+  complex<double> *al, *ar, *am, *at, *ab, *freqs;
+  int numl, numr;
+  printf("Working on left fourier transform...\n");
+\end{comment}
+
+We fourier transform $H_z$ at each point:
+
+\begin{verbatim}
+  left->fourier_transform(Hz, &al, &freqs, &numl, 0.101, 0.5, 1000);
+\end{verbatim}
+\begin{comment}
+  delete[] freqs;
+  printf("Working on middle fourier transform...\n");
+  middle->fourier_transform(Hz, &am, &freqs, &numr, 0.101, 0.5, 1000);
+  delete[] freqs;
+  printf("Working on top fourier transform...\n");
+  top->fourier_transform(Hz, &at, &freqs, &numr, 0.101, 0.5, 1000);
+  delete[] freqs;
+  printf("Working on bottom fourier transform...\n");
+  bottom->fourier_transform(Hz, &ab, &freqs, &numr, 0.101, 0.5, 1000);
+  delete[] freqs;
+  printf("Working on right fourier transform...\n");
+  right->fourier_transform(Hz, &ar, &freqs, &numr, 0.101, 0.5, 1000);
+  if (numl != numr) printf("Aaack you need both nums to be the same!\n");
+  g.new_set();
+  g.set_legend("\\x\\e\\s1\\N");
+  complex<double> *epsilon = new complex<double>[numl];
+\end{comment}
+
+Finally, we calculate the laplacian of $H_z(\omega)$, which is equal to
+$-k^2 H_z(\omega)$, from which we extract epsilon.
+
+\begin{verbatim}
+  for (int i=0;i<numl;i++) {
+    complex<double> ksqr = -(ar[i]+al[i]-2*am[i]
+                             + at[i]+ab[i]-2*am[i]
+                             + (at[i]-ab[i])/2/r_look/rad
+                             )*rad*rad/am[i];
+    epsilon[i] = ksqr/freqs[i]/freqs[i]/(2*pi*2*pi);
+  }
+\end{verbatim}
+
+I've left out the bulk of this example from the manual itself, since it
+is pretty much the same as the previous examples.  Among other features, we
+use the grace functions to plot the result, which can be seen in
+Figure~\ref{superluminal_epsilon}.
+
+\begin{comment}
+  for (int i=0;i<numl;i++) {
+    g.output_point(real(freqs[i]), real(epsilon[i]));
+  }
+  g.new_set();
+  g.set_legend("\\x\\e\\s2\\N");
+  for (int i=0;i<numl;i++) {
+    g.output_point(real(freqs[i]), imag(epsilon[i]));
+  }
+}
+\end{comment}

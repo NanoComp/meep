@@ -21,7 +21,8 @@ all: dactyl.ps dactyl/dactyl.html preproc
 TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
 	polaritonbands-out/bands.eps \
 	epsilon_polariton.tex epsilon_polariton.eps omniguide.tex \
-	omniguide-out/bands.eps
+	omniguide-out/bands.eps \
+	superluminal_epsilon.tex superluminal_epsilon-out/eps.eps
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
@@ -44,19 +45,29 @@ dactyl.dvi : $(TEXFILES)
 
 polaritonbands-out/bands.eps : preproc polaritonbands.dac
 	rm -rf polaritonbands-out/ && ./polaritonbands.dac
+	mv $@ $@-tmp
+	sed -e 's/fill//' $@-tmp > $@
 
 epsilon_polariton.eps : epsilon_polariton-out/eps.eps
 	cp $< $@
 epsilon_polariton-out/eps.eps : preproc epsilon_polariton.dac
 	rm -rf epsilon_polariton-out/
 	./epsilon_polariton.dac
+	mv $@ $@-tmp
+	sed -e 's/fill//' $@-tmp > $@
 
 omniguide-out/bands.eps : preproc omniguide.dac
 	rm -rf omniguide-out/*
 	./omniguide.dac
 
+superluminal_epsilon-out/eps.eps : preproc superluminal_epsilon.dac
+	rm -rf superluminal_epsilon-out/*
+	./superluminal_epsilon.dac
+	mv $@ $@-tmp
+	sed -e 's/fill//' $@-tmp > $@
+
 test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac \
-	epsilon_polariton.dac omniguide.dac
+	epsilon_polariton.dac omniguide.dac superluminal_epsilon.dac
 
 doc: dactyl.ps
 
