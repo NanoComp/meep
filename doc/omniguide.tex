@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
   deal_with_ctrl_c();
   printf("Running omniguide!\n");
 
-  int ttot = 15000;
+  const double ttot = 1000.0;
   mat ma(guided_eps, rcore + num_layers + 0.3, 0.0, a);
   const char *dirname = make_output_directory(argv[0]);
 \end{comment}
@@ -45,7 +45,6 @@ plot.
 \end{verbatim}
 \begin{comment}
   ma.set_output_directory(dirname);
-  ma.output_slices("");
   mat vac(&ma);
   vac.make_average_eps();
 \end{comment}
@@ -73,21 +72,11 @@ straight to the TE modes.
       f.initialize_with_n_tm(9);
       double next_slice_time = 0.0;
       while (f.is_phasing() && !interrupt) {
-        if (f.time() >= next_slice_time && 0) {
-          next_slice_time += 100.0;
-          printf("Phasing in time %lg...  ", f.time());
-          printf("energy is %lg\n", f.total_energy());
-          f.output_slices(k_and_m);
-        }
         f.step();
       }
-      f.prepare_for_bands(0, ttot, .35, 10000, 1e-4);
-      for (int t=0; t < ttot+1 && !interrupt; t++) {
-        if (t % (500*a) == 0) {
-          printf("Working on time %lg...  ", f.time());
-          printf("energy is %lg\n", f.total_energy());
-          f.output_slices(k_and_m);
-        }
+      f.prepare_for_bands(0, ttot, .40, 10000, 1e-4);
+      const double stoptime = f.time() + ttot;
+      while (f.time() < stoptime && !interrupt) {
         f.record_bands();
         f.step();
       }
@@ -133,12 +122,9 @@ large $Q_{min}$, to help dactyl to distinguish between real modes and
 spurious noise.  Note that we are using metallic boundary conditions, so
 all physical modes should have infinite lifetime.
 \begin{verbatim}
-      f.prepare_for_bands(0, ttot, .35, 10000, 1e-4);
-      for (int t=0; t < ttot+1 && !interrupt; t++) {
-        if (t % (500*a) == 0) {
-          printf("Working on time %lg...  ", f.time());
-          printf("energy is %lg\n", f.total_energy());
-        }
+      f.prepare_for_bands(0, ttot, .35, 300, 0.0);
+      const double stoptime = f.time() + ttot;
+      while (f.time() < stoptime && !interrupt) {
         f.record_bands();
         f.step();
       }

@@ -193,7 +193,7 @@ class fields {
   flux_plane create_zflux_plane(double rmin, double rmax, double zconst);
   complex<double> get_flux(flux_plane *fp);
   
-  void prepare_for_bands(int z, int ttot, double fmax=0,
+  void prepare_for_bands(int z, double total_time, double fmax=0,
                          double qmin=1e300, double frac_pow_min=0.0);
   void record_bands();
   complex<double> get_band(int n, int maxbands=100);
@@ -239,9 +239,13 @@ class fields {
                   complex<double> Pr, complex<double> Pp, complex<double> Pz,
                   double freq, double width, double peaktime,
                   double cutoff, int is_h = 0, int is_continuous = 0);
+  int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
+                                  int num_freqs, int fields_considered, int maxbands,
+                                  complex<double> *fad, double *approx_power);
   int setifreqmax_and_iposmax(int ifreq, int ipos);
   void out_bands(FILE *, const char *, int maxbands, int outmodes);
   complex<double> *get_the_bands(int maxbands, double *approx_power = NULL);
+  complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
 };
 
 class grace_point;

@@ -59,7 +59,7 @@ int fields::find_last_source() {
   return last_source;  
 }
 
-void fields::prepare_for_bands(int z, int ttot, double fmax,
+void fields::prepare_for_bands(int z, double endtime, double fmax,
                                double qmin, double frac_pow_min) {
   int last_source = find_last_source();
   last_source = max(last_source, t + phasein_time);
@@ -68,7 +68,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax,
   if (!bands) bands = new bandsdata;
   bands->tstart = last_source+1;
   if (bands->tstart < t) bands->tstart = t;
-  bands->tend = t + ttot-1;
+  bands->tend = t + (int)(endtime*a/c) - 1;
 
   if (z >= nz) {
     printf("Specify a lower z for your band structure! (%d > %d)\n",
@@ -320,7 +320,8 @@ void fields::output_bands_and_modes(FILE *o, const char *name, int maxbands) {
 
 void fields::grace_bands(grace *g, int maxbands) {
   double *approx_power = new double[maxbands];
-  complex<double> *fad = get_the_bands(maxbands, approx_power);
+  //complex<double> *fad = get_the_bands(maxbands, approx_power);
+  complex<double> *fad = clever_cluster_bands(maxbands, approx_power);
 
   int num_found = 0;
   for (int i=0;i<maxbands;i++) if (fad[i] != 0) num_found = i+1;
@@ -530,6 +531,249 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
     delete[] hered;
   }
   return numref;
+}
+
+static inline int get_closest(double f[], int fmax) {
+  double deltamin = 1e300;
+  for (int i=0;i<fmax-1;i++) {
+    if (f[i+1]-f[i] < deltamin) deltamin = f[i+1]-f[i];
+  }
+  for (int i=0;i<fmax-1;i++) {
+    if (f[i+1]-f[i] == deltamin) return i;
+  }
+  return 0;
+}
+
+static inline int go_higher(double f[], int fmax, int lo, int hi) {
+  if (lo == 0) return 1;
+  if (hi == fmax-1) return 0;
+  if (f[lo]-f[lo-1] > f[hi+1]-f[hi]) return 1;
+  else return 0;
+}
+
+static inline int am_done(double f[], int fmax, int lo, int hi) {
+  double wid = f[hi]-f[lo] + 0.001;
+  return f[lo]-f[lo-1] > wid && f[hi+1]-f[hi] > wid;
+}
+
+static void get_cluster(double f[], int fmax, int maxsize, double maxwid,
+                        int *out_lo, int *out_hi) {
+  int lo = get_closest(f,fmax);
+  int hi = lo+1;
+  int minsize = maxsize/2+1;
+  if (minsize < 3) minsize = 3;
+  for (int i=0;i<minsize-2;i++) {
+    if (go_higher(f,fmax,lo,hi)) hi++;
+    else lo--;
+  }
+  while (hi + 1 - lo < maxsize) {
+    if (am_done(f,fmax,lo,hi)) break;
+    if (go_higher(f,fmax,lo,hi)) {
+      if (f[hi+1]-f[lo] > maxwid) break;
+      hi++;
+    } else {
+      if (f[hi]-f[lo-1] > maxwid) break;
+      lo--;
+    }
+  }
+  *out_lo = lo;
+  *out_hi = hi;
+}
+
+int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
+                                        int num_freqs, int fields_considered, int maxbands,
+                                        complex<double> *fad, double *approx_power) {
+  const double total_time = (bands->tend-bands->tstart)*c/a;
+  const double deltaf = 1.0/total_time;
+  int freqs_so_far = num_freqs;
+  printf("About to sort by frequency... (%d frequencies)\n", freqs_so_far);
+  // Sort by frequency...
+  for (int i = 1; i < freqs_so_far; i++) {
+    for (int j=i; j>0;j--) {
+      if (tf[j]<tf[j-1]) {
+        double t1 = tf[j], t2 = td[j];
+        tf[j] = tf[j-1];
+        td[j] = td[j-1];
+        tf[j-1] = t1;
+        td[j-1] = t2;
+        complex<double> temp = ta[j];
+        ta[j] = ta[j-1];
+        ta[j-1] = temp;
+      }
+    }
+  }
+  printf("Looking for clusters...\n");
+  int num_found = 0;
+  double totwid = 0.001;
+  while (freqs_so_far >= fields_considered/2 + 1) {
+    int hi, lo;
+    get_cluster(tf,freqs_so_far,fields_considered,deltaf,&lo,&hi);
+    int mid = lo + (hi-lo)/2;
+    if (tf[hi]-tf[lo] < deltaf) {
+      printf("Got a cluster from %lg to %lg (%d freqs)\n", tf[lo], tf[hi], 1+hi-lo);
+      fad[num_found] = complex<double>(tf[mid],td[mid]);
+      if (approx_power) {
+        approx_power[num_found] = 0;
+        for (int i=lo;i<=hi;i++) {
+          if (abs(ta[i])*abs(ta[i]) > approx_power[num_found]) {
+            approx_power[num_found] = abs(ta[i])*abs(ta[i]);
+          }
+        }
+      }
+      totwid += tf[hi]-tf[lo];
+      num_found++;
+      if (num_found >= maxbands) num_found--;
+    } else {
+      printf("Rejected a cluster from %lg to %lg (%d freqs)\n", tf[lo], tf[hi], 1+hi-lo);
+      if (verbosity > 1) printf("width is %g vs %g\n", tf[hi] - tf[lo], deltaf);
+      lo = get_closest(tf,freqs_so_far);
+      hi = lo+1;
+      if (verbosity > 1) printf("dropping %g and %g\n", tf[hi], tf[lo]);
+    }
+    freqs_so_far -= 1 + hi - lo;
+    for (int i=lo;i<freqs_so_far;i++) {
+      tf[i] = tf[i + 1 + hi - lo];
+      td[i] = td[i + 1 + hi - lo];
+      ta[i] = ta[i + 1 + hi - lo];
+    }
+  }
+  for (int i=0;i<freqs_so_far;i++) {
+    if (verbosity > 1) printf("Have a leftover freq: %g\n", tf[i]);
+  }
+  return num_found;
+}
+
+complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power) {
+  const double total_time = (bands->tend-bands->tstart)*c/a;
+  const double deltaf = 1.0/total_time;
+  bands->maxbands = maxbands;
+  const int max_harminvs = 120;
+  const int max_freqs = max_harminvs*maxbands;
+  double *tf = new double[max_freqs];
+  double *td = new double[max_freqs];
+  cmplx *ta = new cmplx[max_freqs];
+  const int ntime = bands->ntime;
+  cmplx *simple_data = new cmplx[ntime];
+  if (!simple_data || !ta) {
+    printf("Error allocating...\n");
+    exit(1);
+  }
+  /*
+  freqs_here = bands->get_freqs(bands->P, ntime,
+                               ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+  if (freqs_here) {
+    fields_considered++;
+    freqs_so_far += freqs_here;
+  }
+  */
+  int num_found = 0;
+  complex<double> *fad = new complex<double>[maxbands];
+  for (int i=0;i<maxbands;i++) fad[i] = 0.0;
+  if (k==0.0 && nz == 1) {
+    // Treat special case when we're looking at pure TE/TM
+    int freqs_so_far = 0;
+    int fields_considered = 0;
+
+    for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*1.99)) {
+      for (int t=0;t<ntime;t++) simple_data[t] = BAND(bands->er,r,t);
+      int freqs_here = bands->get_freqs(simple_data, ntime,
+                                        ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+      if (freqs_here) {
+        fields_considered++;
+        freqs_so_far += freqs_here;
+      }
+      for (int t=0;t<ntime;t++) simple_data[t] = BAND(bands->ep,r,t);
+      freqs_here = bands->get_freqs(simple_data, ntime,
+                                    ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+      if (freqs_here) {
+        fields_considered++;
+        freqs_so_far += freqs_here;
+      }
+      for (int t=0;t<ntime;t++) simple_data[t] = BAND(bands->hz,r,t);
+      freqs_here = bands->get_freqs(simple_data, ntime,
+                                    ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+      if (freqs_here) {
+        fields_considered++;
+        freqs_so_far += freqs_here;
+      }
+    }
+    num_found = cluster_some_bands_cleverly(tf, td, ta, freqs_so_far, fields_considered,
+                                            maxbands, fad, approx_power);
+    freqs_so_far = 0;
+    fields_considered = 0;
+    for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*1.99)) {
+      for (int t=0;t<ntime;t++) simple_data[t] = BAND(bands->hr,r,t);
+      int freqs_here = bands->get_freqs(simple_data, ntime,
+                                        ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+      if (freqs_here) {
+        fields_considered++;
+        freqs_so_far += freqs_here;
+      }
+      for (int t=0;t<ntime;t++) simple_data[t] = BAND(bands->hp,r,t);
+      freqs_here = bands->get_freqs(simple_data, ntime,
+                                    ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+      if (freqs_here) {
+        fields_considered++;
+        freqs_so_far += freqs_here;
+      }
+      for (int t=0;t<ntime;t++) simple_data[t] = BAND(bands->ez,r,t);
+      freqs_here = bands->get_freqs(simple_data, ntime,
+                                    ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+      if (freqs_here) {
+        fields_considered++;
+        freqs_so_far += freqs_here;
+      }
+    }
+    num_found += cluster_some_bands_cleverly(tf, td, ta, freqs_so_far, fields_considered,
+                                             maxbands-num_found,
+                                             fad+num_found, approx_power+num_found);
+  } else {
+    int freqs_so_far = 0;
+    int fields_considered = 0;
+
+    for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*1.99)) {
+      cmplx *bdata;
+      for (int whichf = 0; whichf < 6; whichf++) {
+        if (verbosity>1) printf("Looking at r == %lg, field %d\n", r*inva, whichf);
+        switch (whichf) {
+        case 0: bdata = bands->er; break;
+        case 1: bdata = bands->ep; break;
+        case 2: bdata = bands->ez; break;
+        case 3: bdata = bands->hr; break;
+        case 4: bdata = bands->hp; break;
+        case 5: bdata = bands->hz; break;
+        }
+        for (int t=0;t<ntime;t++) simple_data[t] = BAND(bdata,r,t);
+        int freqs_here = bands->get_freqs(simple_data, ntime,
+                                          ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
+        if (freqs_here) {
+          fields_considered++;
+          freqs_so_far += freqs_here;
+        }
+        if (freqs_so_far + maxbands > max_freqs) break;
+      }
+    }
+    num_found = cluster_some_bands_cleverly(tf, td, ta, freqs_so_far, fields_considered,
+                                            maxbands, fad, approx_power);
+  }
+    
+  delete[] ta;
+  delete[] tf;
+  delete[] td;
+  // Sorting by frequency again...
+  for (int i=0;i<num_found;i++) {
+    for (int j=i; j>0;j--) {
+      if (real(fad[j])<real(fad[j-1])) {
+        complex<double> t1 = fad[j];
+        fad[j] = fad[j-1];
+        fad[j-1] = t1;
+        double temp = approx_power[j];
+        approx_power[j] = approx_power[j-1];
+        approx_power[j-1] = temp;
+      }
+    }
+  }
+  return fad;
 }
 
 complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {

@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
   const int a = 10;
   const int m = 0;
   double k;
-  const int ttot = 1000*a;  
+  const double ttot = 1000;  
 \end{comment}
 
 \begin{comment}
@@ -72,7 +72,7 @@ Finally, we compute the band structure as usual.
 \begin{verbatim}
     f.prepare_for_bands(0, ttot, .7+.15*k/3.0, 40, 1e-4);
     
-    for (int t=0; t < ttot+1 && !interrupt; t++) {
+    while (f.time() < ttot && !interrupt) {
       f.record_bands();
       f.step();
     }
