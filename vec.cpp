@@ -814,45 +814,49 @@ volume volume::split(int n, int which) const {
   }
 }
 
+volume volume::split_specifically(int n, int which, direction d) const {
+  volume retval(dim, a,1);
+  for (int i=0;i<3;i++) retval.num[i] = num[i];
+  switch (dim) {
+  case d1:
+    retval.origin = origin + vec(nz()/n*which/a);
+    break;
+  case d2:
+    if (d==X) { // split on x
+      retval.origin = origin + vec2d(nx()/n*which/a,0);
+    } else { // split on y
+      retval.origin = origin + vec2d(0,ny()/n*which/a);
+    }
+    break;
+  case d3:
+    if (d==X) { // split on x
+      retval.origin = origin + vec(nx()/n*which/a,0,0);
+    } else if (d==Y) { // split on y
+      retval.origin = origin + vec(0,ny()/n*which/a,0);
+    } else { // split on z
+      retval.origin = origin + vec(0,0,nz()/n*which/a);
+    }
+    break;
+  case dcyl:
+    if (d == Z) { // split on z
+      retval.origin = origin + vec(0.0,nz()/n*which/a);
+    } else { // split on r
+      retval.origin = origin + vec(nr()/n*which/a,0.0);
+    }
+    break;
+    abort("Can't split in this dimensionality!\n");
+  }
+  retval.num[d % 3] /= n;
+  retval.the_ntot = right_ntot(dim, retval.num);
+  return retval;  
+}
+
 volume volume::split_once(int n, int which) const {
   if (n == 1) return *this;
   int cse = can_split_evenly(n);
   if (cse) {
-    int bestd = cse-1;
-    volume retval(dim, a,1);
-    for (int i=0;i<3;i++) retval.num[i] = num[i];
-    switch (dim) {
-    case d1:
-      retval.origin = origin + vec(nz()/n*which/a);
-      break;
-    case d2:
-      if (bestd==0) { // split on x
-        retval.origin = origin + vec2d(nx()/n*which/a,0);
-      } else { // split on y
-        retval.origin = origin + vec2d(0,ny()/n*which/a);
-      }
-      break;
-    case d3:
-      if (bestd==0) { // split on x
-        retval.origin = origin + vec(nx()/n*which/a,0,0);
-      } else if (bestd==1) { // split on y
-        retval.origin = origin + vec(0,ny()/n*which/a,0);
-      } else { // split on z
-        retval.origin = origin + vec(0,0,nz()/n*which/a);
-      }
-      break;
-    case dcyl:
-      if (bestd == 0) { // split on r
-        retval.origin = origin + vec(nr()/n*which/a,0.0);
-      } else { // split on z
-        retval.origin = origin + vec(0.0,nz()/n*which/a);
-      }
-      break;
-      abort("Can't split in this dimensionality!\n");
-    }
-    retval.num[bestd] /= n;
-    retval.the_ntot = right_ntot(dim, retval.num);
-    return retval;
+    const int bestd = cse-1;
+    return split_specifically(n, which, (direction) bestd);
   } else {
     abort("Can't split when dimensions don't work out right\n");
   }

@@ -40,70 +40,70 @@ inline direction component_direction(component c) {
 
 class vec {
  public:
-  vec() { dim = d2; tx = ty = 0; };
-  vec(double zz) { dim = d1; tz = zz; };
-  vec(double rr, double zz) { dim = dcyl; tr = rr; tz = zz; };
+  vec() { dim = d2; t[X] = t[Y] = 0; };
+  vec(double zz) { dim = d1; t[Z] = zz; };
+  vec(double rr, double zz) { dim = dcyl; t[R] = rr; t[Z] = zz; };
   vec(double xx, double yy, double zz) {
-    dim = d3; tx = xx; ty = yy; tz = zz; };
+    dim = d3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
   friend vec vec2d(double xx, double yy);
   ~vec() {};
 
   vec operator+(const vec &a) const {
     switch (dim) {
-    case dcyl: return vec(tr+a.tr,tz+a.tz);
-    case d3: return vec(tx+a.tx,ty+a.ty,tz+a.tz);
-    case d2: return vec2d(tx+a.tx,ty+a.ty);
-    case d1: return vec(tz+a.tz);
+    case dcyl: return vec(t[R]+a.t[R],t[Z]+a.t[Z]);
+    case d3: return vec(t[X]+a.t[X],t[Y]+a.t[Y],t[Z]+a.t[Z]);
+    case d2: return vec2d(t[X]+a.t[X],t[Y]+a.t[Y]);
+    case d1: return vec(t[Z]+a.t[Z]);
     }
   };
   vec operator+=(const vec &a) {
     switch (dim) {
-    case dcyl: tr += a.tr; tz += a.tz; return *this;
-    case d3: tx += a.tx; ty += a.ty; tz += a.tz; return *this;
-    case d2: tx += a.tx; ty += a.ty; return *this;
-    case d1: tz += a.tz; return vec(tz+a.tz);
+    case dcyl: t[R] += a.t[R]; t[Z] += a.t[Z]; return *this;
+    case d3: t[X] += a.t[X]; t[Y] += a.t[Y]; t[Z] += a.t[Z]; return *this;
+    case d2: t[X] += a.t[X]; t[Y] += a.t[Y]; return *this;
+    case d1: t[Z] += a.t[Z]; return vec(t[Z]+a.t[Z]);
     }
   };
   vec operator-(const vec &a) const {
     switch (dim) {
-    case dcyl: return vec(tr-a.tr,tz-a.tz);
-    case d3: return vec(tx-a.tx,ty-a.ty,tz-a.tz);
-    case d2: return vec2d(tx-a.tx,ty-a.ty);
-    case d1: return vec(tz-a.tz);
+    case dcyl: return vec(t[R]-a.t[R],t[Z]-a.t[Z]);
+    case d3: return vec(t[X]-a.t[X],t[Y]-a.t[Y],t[Z]-a.t[Z]);
+    case d2: return vec2d(t[X]-a.t[X],t[Y]-a.t[Y]);
+    case d1: return vec(t[Z]-a.t[Z]);
     }
   };
   vec operator==(const vec &a) const;
   vec operator*(double s) const {
     switch (dim) {
-    case dcyl: return vec(tr*s,tz*s);
-    case d3: return vec(tx*s,ty*s,tz*s);
-    case d2: return vec2d(tx*s,ty*s);
-    case d1: return vec(tz*s);
+    case dcyl: return vec(t[R]*s,t[Z]*s);
+    case d3: return vec(t[X]*s,t[Y]*s,t[Z]*s);
+    case d2: return vec2d(t[X]*s,t[Y]*s);
+    case d1: return vec(t[Z]*s);
     }
   };
   ndim dim;
 
-  double r() const { return tr; };
-  double x() const { return tx; };
-  double y() const { return ty; };
-  double z() const { return tz; };
-  double in_direction(direction d) const {
-    switch (d) {
-    case X: return tx;
-    case Y: return ty;
-    case Z: return tz;
-    case R: return tr;
-    }
-  };
+  double r() const { return t[R]; };
+  double x() const { return t[X]; };
+  double y() const { return t[Y]; };
+  double z() const { return t[Z]; };
+  double in_direction(direction d) const { return t[d]; };
+  double set_direction(direction d, double val) { t[d] = val; };
 
   double project_to_boundary(direction, double boundary_loc);
   void print(FILE *) const;
+  friend vec zero_vec(ndim);
  private:
-  double tx, ty, tz, tr;
+  double t[5];
 };
 
+inline vec zero_vec(ndim di) {
+  vec v; v.dim = di; for (int d=0;d<5;d++) v.set_direction((direction)d,0.0);
+  return v;
+}
+
 inline vec vec2d(double xx, double yy) {
-  vec v; v.tx = xx; v.ty = yy; return v;
+  vec v; v.t[X] = xx; v.t[Y] = yy; return v;
 }
 
 class plane {
@@ -186,6 +186,7 @@ class volume {
   int can_split_evenly(int num) const;
   volume split(int num, int which) const;
   volume split_once(int num, int which) const;
+  volume split_specifically(int num, int which, direction d) const;
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);
   int num[3];
