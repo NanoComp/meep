@@ -119,7 +119,7 @@ void fields::get_point(monitor_point *pt, double r, double z) {
   }
   pt->r = r;
   pt->z = z;
-  pt->t = t*inva;
+  pt->t = t*inva*c;
   pt->e.r = interpolate(er,r*a-0.5,z*a    ,nr,nz,m==1,eiknz);
   pt->e.p = interpolate(ep,r*a    ,z*a    ,nr,nz,m==1,eiknz);
   pt->e.z = interpolate(ez,r*a    ,z*a-0.5,nr,nz,0   ,eiknz);
