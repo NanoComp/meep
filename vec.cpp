@@ -665,6 +665,8 @@ double volume::intersection(const volume &o) const {
     const double r_max = min(rmax(), o.rmax());
     const double z_min = max(zmin(), o.zmin());
     const double z_max = min(zmax(), o.zmax());
+    if (z_max <= z_min) return 0.0;
+    if (r_max <= r_min) return 0.0;
     return (z_max-z_min)*inva*pi*(r_max*r_max-r_min*r_min);
   }
   case d3: {
@@ -674,6 +676,9 @@ double volume::intersection(const volume &o) const {
     const double x_max = min(xmax(), o.xmax());
     const double y_min = max(ymin(), o.ymin());
     const double y_max = min(ymax(), o.ymax());
+    if (x_max <= x_min) return 0.0;
+    if (y_max <= y_min) return 0.0;
+    if (z_max <= z_min) return 0.0;
     return (z_max-z_min)*(x_max-x_min)*(y_max-y_min);
   }
   case d2: {
@@ -681,11 +686,14 @@ double volume::intersection(const volume &o) const {
     const double x_max = min(xmax(), o.xmax());
     const double y_min = max(ymin(), o.ymin());
     const double y_max = min(ymax(), o.ymax());
+    if (x_max <= x_min) return 0.0;
+    if (y_max <= y_min) return 0.0;
     return (x_max-x_min)*(y_max-y_min);
   }
   case d1:
     const double z_min = max(zmin(), o.zmin());
     const double z_max = min(zmax(), o.zmax());
+    if (z_max <= z_min) return 0.0;
     return z_max-z_min;
   }
 }
