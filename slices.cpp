@@ -86,7 +86,7 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
            (xmax-xmin)*default_eps_size/size, (ymax-ymin)*default_eps_size/size);
   i_fprintf(out, "gsave\n");
   i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
-  i_fprintf(out, "%lg %lg translate\n", xmin, ymin);
+  i_fprintf(out, "%lg %lg translate\n", -xmin, -ymin);
   i_fprintf(out, "/Times-Roman findfont 20 scalefont setfont\n");
   i_fprintf(out, "newpath 140 280 moveto (%s) show\n", name);
   i_fprintf(out, "/max %lg def\n", fmax);
