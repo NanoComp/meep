@@ -479,49 +479,51 @@ void fields::step_boundaries(field_type ft) {
 
   for (int i=0;i<num_chunks;i++) wh[i] = 0;
   for (int i=0;i<num_chunks;i++)
-    for (int j=0;j<num_chunks;j++) {
-      const int pair = j+i*num_chunks;
-      for (int n=0;n<comm_sizes[ft][pair];n++) {
-         if (chunks[j]->is_mine()) {
-           DOCMP {
-             double stupid = *(chunks[j]->connections[ft][Outgoing][cmp][wh[j]]);
-             comm_blocks[ft][pair][n*2+cmp] = stupid;
-           }
-         } else {
-           DOCMP comm_blocks[ft][pair][n*2+cmp] = 0.0;
-         }
-         wh[j]++;
+    for (int j=0;j<num_chunks;j++)
+      if (chunks[j]->is_mine()) {
+        const int pair = j+i*num_chunks;
+        for (int n=0;n<comm_sizes[ft][pair];n++) {
+          DOCMP {
+            double stupid = *(chunks[j]->connections[ft][Outgoing][cmp][wh[j]]);
+            comm_blocks[ft][pair][n*2+cmp] = stupid;
+          }
+          wh[j]++;
+        }
       }
-    }
   // Communicate the data around!
-/*for (int i=0;i<num_chunks;i++)
+#if 0
+  for (int noti=0;noti<num_chunks;noti++)
     for (int j=0;j<num_chunks;j++) {
+      const int i = (noti+j)%num_chunks;
       const int pair = j+i*num_chunks;
       DOCMP {
         send(chunks[j]->n_proc(), chunks[i]->n_proc(),
              comm_blocks[ft][pair], comm_sizes[ft][pair]*2);
       }
-    }*/
+    }
+#endif
 #ifdef HAVE_MPI
   MPI_Request *reqs = new MPI_Request[num_chunks*4];
   MPI_Status *stats = new MPI_Status[num_chunks*4];
   int reqnum = 0;
-  for (int i=0;i<num_chunks;i++)
-    for (int j=0;j<num_chunks;j++)
+  for (int noti=0;noti<num_chunks;noti++)
+    for (int j=0;j<num_chunks;j++) {
+      const int i = (noti+j)%num_chunks;
       if (chunks[j]->n_proc() != chunks[i]->n_proc()) {
         const int pair = j+i*num_chunks;
-        DOCMP {
-          if (my_rank() == chunks[j]->n_proc())
+        if (comm_sizes[ft][pair] > 0) {
+          if (chunks[j]->is_mine())
             MPI_Isend(comm_blocks[ft][pair], comm_sizes[ft][pair]*2,
-                      MPI_DOUBLE, chunks[i]->n_proc(), 0,
+                      MPI_DOUBLE, chunks[i]->n_proc(), pair,
                       MPI_COMM_WORLD, &reqs[reqnum++]);
-          if (my_rank() == chunks[i]->n_proc())
+          if (chunks[i]->is_mine())
             MPI_Irecv(comm_blocks[ft][pair], comm_sizes[ft][pair]*2,
-                      MPI_DOUBLE, chunks[j]->n_proc(), 0,
+                      MPI_DOUBLE, chunks[j]->n_proc(), pair,
                       MPI_COMM_WORLD, &reqs[reqnum++]);
         }
       }
-  MPI_Waitall(reqnum, reqs, stats);
+    }
+  if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
   delete[] reqs;
   delete[] stats;
 #endif
@@ -529,10 +531,10 @@ void fields::step_boundaries(field_type ft) {
   // Finally, copy incoming data to the fields themselves!
   for (int i=0;i<num_chunks;i++) wh[i] = 0;
   for (int i=0;i<num_chunks;i++)
-    for (int j=0;j<num_chunks;j++) {
-      const int pair = j+i*num_chunks;
-      for (int n=0;n<comm_sizes[ft][pair];n++)
-        if (chunks[i]->is_mine()) {
+    if (chunks[i]->is_mine())
+      for (int j=0;j<num_chunks;j++) {
+        const int pair = j+i*num_chunks;
+        for (int n=0;n<comm_sizes[ft][pair];n++) {
           complex<double> val = chunks[i]->connection_phases[ft][wh[i]]*
             complex<double>(comm_blocks[ft][pair][n*2],
                             comm_blocks[ft][pair][n*2+1]);
@@ -540,7 +542,7 @@ void fields::step_boundaries(field_type ft) {
           *(chunks[i]->connections[ft][Incoming][1][wh[i]]) = imag(val);
           wh[i]++;
         }
-    }
+      }
   delete[] wh;
 }
 
