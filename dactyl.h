@@ -34,10 +34,12 @@ class mat {
   ~mat();
   mat(double eps(double r, double z),
       double rmax, double zmax, double a=1.0);
+  mat(const mat *);
   void use_pml(int npmlr=16, int npmlz=16);
 
   void output_slices(const char *name);
   void set_output_directory(const char *name);
+  void mix_with(const mat *, double);
  private:
   void output_sigma_slice(const char *name);
 };
@@ -81,12 +83,14 @@ class fields {
   double a, inva; // The "lattice constant" and its inverse!
   int nr, nz, numpols;
   int npmlr, npmlz; // Amount of pml
-  int m, t;
+  int m, t, phasein_time;
   double k, cosknz, sinknz;
   bandsdata bands;
   src *e_sources, *h_sources;
-  const mat *ma;
+  const mat *new_ma;
+  mat *ma;
   const char *outdir;
+  double preferred_fmax;
 
   fields(const mat *, int m);
   void use_bloch(double kz);
@@ -109,12 +113,15 @@ class fields {
                      double cutoff, int z, double amp(double r));
   void add_hz_source(double freq, double width, double peaktime,
                      double cutoff, int z, double amp(double r));
+  void initialize_with_n_te(int n);
+  void initialize_with_n_tm(int n);
+  void phase_in_material(const mat *ma, double num_periods);
 
   void output_point(FILE *, double r, double z, const char *name);
 
-  void prepare_for_bands(int z, int ttot, double fmax, double qmin=1e300);
+  void prepare_for_bands(int z, int ttot, double fmax=0, double qmin=1e300);
   void record_bands();
-  double get_band(int n, double fmax, int maxbands=100);
+  double get_band(int n, double fmax=0, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
   void output_bands_and_modes(FILE *, const char *, int maxbands=100);
   double total_energy();
@@ -132,6 +139,7 @@ class fields {
   int iposmax, ifreqmax, nfreq, nzflux, *(nzfluxplane[MAXFLUXPLANES]);
   int nrflux, *(nrfluxplane[MAXFLUXPLANES]);
   double *freqs;
+  void phase_material();
   void step_h_bulk();
   void step_h_pml();
   void step_h_boundaries();

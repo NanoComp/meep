@@ -32,172 +32,6 @@ inline int rmin_bulk(int m) {
   return r;
 }
 
-mat::~mat() {
-  delete[] invepser;
-  delete[] invepsep;
-  delete[] invepsez;
-  delete[] eps;
-
-  delete[] Crez;
-  delete[] Crep;
-  delete[] Crhz;
-  delete[] Crhp;
-  delete[] Cper;
-  delete[] Cpez;
-  delete[] Cphr;
-  delete[] Cphz;
-
-  delete[] Czer;
-  delete[] Czep;
-  delete[] Czhr;
-  delete[] Czhp;
-}
-
-static double sig(double r);
-
-void mat::use_pml(int numpmlr, int numpmlz) {
-  npmlz = numpmlz;
-  npmlr = numpmlr;
-  // Delete any previously allocated conductivity arrays...
-  delete[] Crez;
-  delete[] Crep;
-  delete[] Crhz;
-  delete[] Crhp;
-  delete[] Cper;
-  delete[] Cpez;
-  delete[] Cphr;
-  delete[] Cphz;
-
-  delete[] Czer;
-  delete[] Czep;
-  delete[] Czhr;
-  delete[] Czhp;
-  // Allocate the conductivity arrays:
-  Crez = new double[npmlr];
-  Crep = new double[npmlr];
-  Crhz = new double[npmlr];
-  Crhp = new double[npmlr];
-  Cper = new double[npmlr];
-  Cpez = new double[npmlr];
-  Cphr = new double[npmlr];
-  Cphz = new double[npmlr];
-
-  Czer = new double[npmlz];
-  Czep = new double[npmlz];
-  Czhr = new double[npmlz];
-  Czhp = new double[npmlz];
-  // Initialize them... (for now I'm setting them to zero...)
-  const double Cmax = 0.5;
-  for (int r=0;r<npmlr;r++) {
-    double rr = (r)/(double)npmlr;
-    double rp = (1+r)/(double)npmlr;
-    Crez[r] = Crep[r] = Cmax*0.5*(sig(rp)+sig(rr));
-    Crhz[r] = Crhp[r] = Cmax*sig(rp);
-  }
-  double sigintegrated = 0.0;
-  for (int r=0;r<npmlr;r++) {
-    double rr = (r)/(double)npmlr;
-    double rp = (1+r)/(double)npmlr;
-    sigintegrated += Cmax*0.5*(sig(rp)+sig(rr));
-    Cper[r] = Cphz[r] = sigintegrated/(nr-npmlr+r+0.5);
-    if (r==0) Cpez[r] = Cphr[r] = 0.5*Cper[r];
-    else Cpez[r] = Cphr[r] = 0.5*(Cper[r]+Cper[r-1]);
-
-    Cphz[r] = 0.0;
-    Cper[r] = 0.0;
-    Cphr[r] = 0.0;
-    Cpez[r] = 0.0;
-    printf("Big sig(Ez)[%d  ] is %10lg, little sig is %10lg\n", r, Crez[r], Cpez[r]);
-    printf("Big sig(Hz)[%d  ] is %10lg, little sig is %10lg\n", r, Crhz[r], Cphz[r]);
-  }
-  for (int z=0;z<npmlz;z++) {
-    double rr = (z)/(double)npmlz;
-    double rp = (1+z)/(double)npmlz;
-    Czer[z] = Czep[z] = Cmax*0.5*(sig(rp)+sig(rr));
-    Czhr[z] = Czhp[z] = Cmax*sig(rp);
-  }
-}
-
-static double sig(double r) {
-  return pow(r, 2);
-}
-
-mat::mat(double feps(double r, double z),
-         double rmax, double zmax, double ta) {
-  int r,z;
-  outdir = ".";
-  numpols = 0;
-  a = ta;
-  nr = (int) (rmax*a);
-  nz = (int) (zmax*a);
-  npmlz = 0;
-  npmlr = 0;
-  if (nz == 0) nz = 1;
-  eps = new double[nr*(nz+1)];
-  if (eps == NULL) {
-    printf("Out of memory!\n");
-    exit(1);
-  }
-  for (r=0;r<nr;r++) {
-    for (z=0;z<nz+1;z++) {
-      MA(eps,r,z) = feps((r+0.5)/a,(z+0.5));
-    }
-  }
-  invepser = new double[nr*(nz+1)];
-  invepsep = new double[nr*(nz+1)];
-  invepsez = new double[nr*(nz+1)];
-
-  // Initialize eps to NaNs so we'll notice if we don't set it properly.
-  for (int i=0;i<nr*(nz+1);i++)
-    invepser[i] = invepsep[i] = invepsez[i] = sqrt(-1);
-  for (r=1;r<nr;r++) {
-    for (z=1;z<=nz;z++) {
-      MA(invepser,r,z) = 2./(MA(eps,r,z)+MA(eps,r,z-1));
-      MA(invepsep,r,z) = 4./(MA(eps,r,z)+MA(eps,r-1,z)+
-                            MA(eps,r,z-1)+MA(eps,r-1,z-1));
-      MA(invepsez,r,z) = 2./(MA(eps,r-1,z)+MA(eps,r,z));
-    }
-  }
-  for (r=1;r<nr;r++) {
-    {
-      const int z=0;
-      MA(invepser,r,z) = 2./(MA(eps,r,z)+MA(eps,r,nz-1));
-      MA(invepsep,r,z) = 4./(MA(eps,r,z)+MA(eps,r-1,z)+
-                          MA(eps,r,nz-1)+MA(eps,r-1,nz-1));
-      MA(invepsez,r,z) = 2./(MA(eps,r-1,z)+MA(eps,r,z));
-    }
-    {
-      const int z=nz;
-      MA(invepser,r,z) = 2./(MA(eps,r,0)+MA(eps,r,z-1));
-      MA(invepsep,r,z) = 4./(MA(eps,r,0)+MA(eps,r-1,0)+
-                          MA(eps,r,z-1)+MA(eps,r-1,z-1));
-    }
-  }
-  for (z=1;z<=nz;z++) {
-    {
-      const int r=0;
-      MA(invepser,r,z) = 2./(MA(eps,r,z)+MA(eps,r,z-1));
-      MA(invepsep,r,z) = 2./(MA(eps,r,z)+ MA(eps,r,z-1));
-      MA(invepsez,r,z) = 1./MA(eps,r,z);
-    }
-  }
-  {
-    const int r=0,z=0;
-    MA(invepser,r,z) = 2./(MA(eps,r,z)+MA(eps,r,nz-1));
-    MA(invepsep,r,z) = 2./(MA(eps,r,z)+MA(eps,r,nz-1));
-    MA(invepsez,r,z) = 1./MA(eps,r,z);
-  }
-  {
-    const int r=0,z=nz;
-    MA(invepser,r,z) = 2./(MA(eps,r,0)+MA(eps,r,nz-1));
-    MA(invepsep,r,z) = 2./(MA(eps,r,0)+MA(eps,r,z-1));
-    MA(invepsez,r,z) = 1./MA(eps,r,0);
-  }
-  // Allocate the conductivity arrays:
-  Crez = Crep = Crhz = Crhp = Cper = Cpez = Cphr = Cphz = NULL;
-  Czer = Czep = Czhr = Czhp = NULL;
-}
-
 fields::~fields() {
   DOCMP {
     delete[] hr[cmp];
@@ -240,14 +74,19 @@ void fields::use_bloch(double tk) {
 
 fields::fields(const mat *the_ma, int tm) {
   int r, z;
-  ma = the_ma;
+  ma = new mat(the_ma);
   nr = ma->nr;
   nz = ma->nz;
   outdir = ma->outdir;
   m = tm;
+  phasein_time = 0;
+  new_ma = NULL;
   k = -1;
   a = ma->a;
   inva = 1.0/a;
+  preferred_fmax = 2.5; // Some sort of reasonable maximum
+                        // frequency... (assuming a has a value on the
+                        // order of your frequency).
   t = 0;
   numpols = ma->numpols;
   h_sources = e_sources = NULL;
@@ -341,6 +180,108 @@ void src::use_real_sources() {
   if (next) next->use_real_sources();
 }
 
+#define EIKZR (cmp? coskz : sinkz)
+#define IEIKZR (cmp? -sinkz : coskz)
+#define EIKZRH (cmp? hcoskz : hsinkz)
+#define IEIKZRH (cmp? -hsinkz : hcoskz)
+
+#include <gsl/gsl_sf_bessel.h>
+
+double J(int m, double kr) { return gsl_sf_bessel_Jn(m, kr); }
+double Jprime(int m, double kr) { 
+  if (m) return 0.5*(J(m-1,kr)-J(m+1,kr));
+  else return 0.5*J(1,kr);
+}
+double Jroot(int m, int n) { return gsl_sf_bessel_zero_Jnu(m, n+1); }
+double Jmax(int m, int n) {
+  double rlow, rhigh = Jroot(m,n), rtry;
+  if (n == 0) rlow = 0;
+  else rlow = Jroot(m, n-1);
+  double jplow = Jprime(m,rlow), jptry;
+  do {
+    rtry = rlow + (rlow - rhigh)*0.5;
+    jptry = Jprime(m,rtry);
+    if (jplow*jptry < 0) rhigh = rtry;
+    else rlow = rtry;
+  } while (rlow != rhigh);
+}
+
+void fields::initialize_with_n_te(int ntot) {
+  for (int n=0;n<ntot;n++) {
+    double rmax = Jmax(m,n);
+    double ktrans = nr/rmax;
+    double freq = sqrt(ktrans*ktrans + k*k);
+    if (freq > preferred_fmax) preferred_fmax = freq;
+    for (int r=0;r<nr;r++) {
+      double Jm = J(m,ktrans*r);
+      double Jmp1 = J(m+1,ktrans*r);
+      double Jmm1 = J(m-1,ktrans*r);
+      double Jm_h = J(m,ktrans*(r+0.5));
+      double Jmp1_h = J(m+1,ktrans*(r+0.5));
+      double Jmm1_h = J(m-1,ktrans*(r+0.5));
+      double f2ok2c2 = freq*freq/(k*k*c*c);
+      for (int z=0;z<nz;z++) {
+        double coskz = 1.0, sinkz = 0.0;
+        if (z > 0) {
+          coskz = cos(k*inva*z);
+          sinkz = sin(k*inva*z);
+        }
+        double hcoskz = cos(k*inva*z-freq*0.5);
+        double hsinkz = sin(k*inva*z-freq*0.5);
+        DOCMP { // FIXME this is TM, not TE!!!
+          CM(ez,r,z) += EIKZR*Jm;
+          if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
+          CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+
+          if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
+          CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+        }
+      }
+    }
+  }
+}
+
+void fields::initialize_with_n_tm(int ntot) {
+  for (int n=0;n<ntot;n++) {
+    double rroot = Jroot(m,n);
+    double ktrans = rroot/nr;
+    double freq = sqrt(ktrans*ktrans + k*k);
+    if (freq > preferred_fmax) preferred_fmax = freq;
+    for (int r=0;r<nr;r++) {
+      double Jm = J(m,ktrans*r);
+      double Jmp1 = J(m+1,ktrans*r);
+      double Jmm1 = J(m-1,ktrans*r);
+      double Jm_h = J(m,ktrans*(r+0.5));
+      double Jmp1_h = J(m+1,ktrans*(r+0.5));
+      double Jmm1_h = J(m-1,ktrans*(r+0.5));
+      double f2ok2c2 = freq*freq/(k*k*c*c);
+      for (int z=0;z<nz;z++) {
+        double coskz = 1.0, sinkz = 0.0;
+        if (z > 0) {
+          coskz = cos(k*inva*z);
+          sinkz = sin(k*inva*z);
+        }
+        double hcoskz = cos(k*inva*z-freq*0.5);
+        double hsinkz = sin(k*inva*z-freq*0.5);
+        DOCMP {
+          CM(ez,r,z) += EIKZR*Jm;
+          if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
+          CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+
+          if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
+          CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+        }
+      }
+    }
+  }
+}
+
+void fields::phase_in_material(const mat *newma, double num_periods) {
+  double period = a/(preferred_fmax*c);
+  new_ma = newma;
+  phasein_time = 1 + (int) (period*num_periods);
+}
+
 void fields::add_src_pt(int r, int z,
                         double Pr, double Pp, double Pz,
                         double freq, double width, double peaktime,
@@ -424,6 +365,8 @@ void fields::add_ez_source(double freq, double width, double peaktime,
 void fields::step() {
   t += 1;
 
+  phase_material();
+
   step_h_bulk();
   step_h_pml();
   step_h_boundaries();
@@ -433,6 +376,13 @@ void fields::step() {
   step_e_pml();
   step_e_boundaries();
   step_e_source(e_sources);
+}
+
+void fields::phase_material() {
+  if (new_ma && phasein_time) {
+    ma->mix_with(new_ma, 1.0/phasein_time);
+    phasein_time--;
+  }
 }
 
 void fields::step_h_bulk() {

@@ -4,7 +4,7 @@ CXX = @DACTYL_CXX@
 CXXFLAGS = @DACTYL_CXXFLAGS@
 CPPFLAGS = @CPPFLAGS@
 DEFS = @DEFS@
-LIBS = @LIBS@
+LIBS = @LIBS@ -lgsl
 LDFLAGS = @LDFLAGS@
 INSTALL = @INSTALL@
 prefix = @prefix@
@@ -18,7 +18,7 @@ distdir = $(package)-$(VERSION)
 
 ###########################################################################
 
-OBJ_dactyl = dactyl.o harminv.o bands.o output_directory.o
+OBJ_dactyl = dactyl.o harminv.o bands.o output_directory.o material.o
 OBJ_example = example.o libdactyl.a
 
 ###########################################################################
