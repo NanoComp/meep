@@ -40,7 +40,7 @@ structure::structure()
 
 typedef structure_chunk *structure_chunk_ptr;
 
-structure::structure(const volume &thev, epsilon_function &eps, int num, const symmetry &s)
+structure::structure(const volume &thev, material_function &eps, int num, const symmetry &s)
   : gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
@@ -61,7 +61,7 @@ structure::structure(const volume &thev, double eps(const vec &),
   outdir = ".";
   if (num == 0) num = count_processors();
   desired_num_chunks = num;
-  simple_epsilon_function epsilon(eps);
+  simple_material_function epsilon(eps);
   choose_chunkdivision(thev, epsilon, num, s);
   num_effort_volumes = 1;
   effort_volumes = new volume[num_effort_volumes];
@@ -139,7 +139,7 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
     for (int i=0; i<num_chunks; i++)
       if (chunks[i]->v.intersect_with(new_volumes[j], &vol_intersection)) {
         if (new_chunks[j] == NULL) {
-	  simple_epsilon_function eps_zero(zero_function);
+	  simple_material_function eps_zero(zero_function);
           new_chunks[j] = new structure_chunk(new_volumes[j], eps_zero,
                                         gv, procs[j]);
           // the above happens even if chunk not owned by proc
@@ -254,7 +254,7 @@ void structure::add_to_effort_volumes(const volume &new_effort_volume,
   num_effort_volumes = counter;
 }
 
-void structure::choose_chunkdivision(const volume &thev, epsilon_function &eps,
+void structure::choose_chunkdivision(const volume &thev, material_function &eps,
                                int num, const symmetry &s) {
   num_chunks = num;
   user_volume = thev;
@@ -342,7 +342,7 @@ void structure::make_average_eps() {
       chunks[i]->make_average_eps(); // FIXME
 }
 
-void structure::set_epsilon(epsilon_function &eps, double minvol,
+void structure::set_epsilon(material_function &eps, double minvol,
                       bool use_anisotropic_averaging) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -586,14 +586,15 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
 }
 
 // The following is defined in anisotropic_averaging.cpp:
-double anisoaverage(component ec, direction d, epsilon_function &eps,
+double anisoaverage(component ec, direction d, material_function &eps,
                     const geometric_volume &vol, double minvol);
 
-void structure_chunk::set_epsilon(epsilon_function &epsilon, double minvol,
+void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
                             bool use_anisotropic_averaging) {
   if (!is_mine()) return;
   if (!use_anisotropic_averaging) {
-    if (is_mine())
+    if (is_mine()) {
+      epsilon.set_volume(gv);
       for (int i=0;i<v.ntot();i++) {
         FOR_ELECTRIC_COMPONENTS(c)
           if (v.has_field(c)) {
@@ -621,6 +622,7 @@ void structure_chunk::set_epsilon(epsilon_function &epsilon, double minvol,
               }
           }
       }
+    }
   } else {
     if (minvol == 0.0) minvol = v.dV(zero_ivec(v.dim)).full_volume()/100.0;
     FOR_ELECTRIC_COMPONENTS(c)
@@ -634,7 +636,7 @@ void structure_chunk::set_epsilon(epsilon_function &epsilon, double minvol,
   }
 }
 
-structure_chunk::structure_chunk(const volume &thev, epsilon_function &epsilon,
+structure_chunk::structure_chunk(const volume &thev, material_function &epsilon,
                      const geometric_volume &vol_limit, int pr)
   : gv(thev.surroundings() & vol_limit) {
   pml_fmin = 0.2;
@@ -646,6 +648,7 @@ structure_chunk::structure_chunk(const volume &thev, epsilon_function &epsilon,
   if (is_mine()) {
     eps = new double[v.ntot()];
     if (eps == NULL) abort("Out of memory!\n");
+    epsilon.set_volume(gv);
     for (int i=0;i<v.ntot();i++)
 	 eps[i] = epsilon.eps(v.loc(v.eps_component(),i));
   } else {

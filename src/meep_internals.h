@@ -37,7 +37,7 @@ inline int rmin_bulk(int m) {
 class polarizability {
  public:
   volume v;
-  polarizability(const structure_chunk *, double sig(const vec &),
+  polarizability(const structure_chunk *, material_function &sig,
                  double om, double ga, double sigscale,
                  double energy_saturation = 0.0, bool mine = true);
   polarizability(const polarizability *);

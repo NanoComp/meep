@@ -37,28 +37,50 @@ class polarizability;
 class polarization;
 class grace;
 
-class epsilon_function {
+/* This class is used to compute position-dependent material properties
+   like the dielectric function, polarizability sigma, 
+   nonlinearities, et cetera.  Simple cases of stateless functions are
+   handled by canned subclasses below, but more complicated cases
+   can be handled by creating a user-defined subclass of material_function.
+   It is useful to group different properties into one class because
+   it is likely that complicated implementations will share state between
+   properties. */
+class material_function {
  public:
-     epsilon_function() {}
-     epsilon_function(const epsilon_function &ef) {}
+     material_function() {}
+     material_function(const material_function &ef) {}
 
-     virtual ~epsilon_function() {}
+     virtual ~material_function() {}
 
+     /* Specify a restricted volume: all subsequent eps/sigma/etc
+	calls will be for points inside gv, until the next set_volume. */
      virtual void set_volume(const geometric_volume &gv) {}
+     virtual void unset_volume(void) {} // unrestrict the volume
 
+     /* scalar dielectric function */
      virtual double eps(const vec &r) { return 1.0; }
+
+     /* polarizability sigma function */
+     virtual double sigma(const vec &r) { return 0.0; }
+     /* specify polarizability used for subsequent calls to sigma(r) */
+     virtual void set_polarizability(double omega, double gamma,
+				     double delta_epsilon,
+				     double energy_saturation) {}
+
+     // TODO: Kerr coefficient, dielectric tensor, ...
 };
 
-class simple_epsilon_function : public epsilon_function {
+class simple_material_function : public material_function {
      double (*f)(const vec &);
      
  public:
-     simple_epsilon_function(const simple_epsilon_function &ef) { f = ef.f; }
-     simple_epsilon_function(double (*func)(const vec &)) { f = func; }
+     simple_material_function(const simple_material_function &ef) : material_function(ef) { f = ef.f; }
+     simple_material_function(double (*func)(const vec &)) { f = func; }
 
-     virtual ~simple_epsilon_function() {}
+     virtual ~simple_material_function() {}
 
      virtual double eps(const vec &r) { return f(r); }
+     virtual double sigma(const vec &r) { return f(r); }
 };
 
 class structure_chunk {
@@ -72,10 +94,10 @@ class structure_chunk {
   polarizability *pb;
 
   ~structure_chunk();
-  structure_chunk(const volume &v, epsilon_function &eps,
+  structure_chunk(const volume &v, material_function &eps,
             const geometric_volume &vol_limit, int proc_num=0);
   structure_chunk(const structure_chunk *);
-  void set_epsilon(epsilon_function &eps, double minvol,
+  void set_epsilon(material_function &eps, double minvol,
                    bool use_anisotropic_averaging);
   void make_average_eps();
   void use_pml(direction, double dx, double boundary_loc);
@@ -86,6 +108,8 @@ class structure_chunk {
   void mix_with(const structure_chunk *, double);
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
+                          double delta_epsilon = 1.0, double energy_saturation = 0.0);
+  void add_polarizability(material_function &sigma, double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
   int n_proc() const { return the_proc; } // Says which proc owns me!
   int is_mine() const { return the_is_mine; }
@@ -114,19 +138,19 @@ class structure {
 
   ~structure();
   structure();
-  structure(const volume &v, epsilon_function &eps, int num_chunks = 0,
+  structure(const volume &v, material_function &eps, int num_chunks = 0,
       const symmetry &s = identity());
   structure(const volume &v, double eps(const vec &), int num_chunks = 0,
       const symmetry &s = identity());
   structure(const structure *);
   structure(const structure &);
-  void set_epsilon(epsilon_function &eps, double minvol = 0.0,
+  void set_epsilon(material_function &eps, double minvol = 0.0,
                    bool use_anisotropic_averaging=true);
   void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
   void redefine_chunks(const int Nv, const volume *new_volumes, const int *procs);
   void optimize_volumes(int *Nv, volume *new_volumes, int *procs);
   void optimize_chunks();
-  void choose_chunkdivision(const volume &v, epsilon_function &eps,
+  void choose_chunkdivision(const volume &v, material_function &eps,
                             int num_chunks = 1,
                             const symmetry &s = identity());
   void make_average_eps();
@@ -140,6 +164,9 @@ class structure {
 
   polarizability_identifier
      add_polarizability(double sigma(const vec &), double omega, double gamma,
+                        double delta_epsilon = 1.0, double energy_saturation = 0.0);
+  polarizability_identifier
+     add_polarizability(material_function &sigma, double omega, double gamma,
                         double delta_epsilon = 1.0, double energy_saturation = 0.0);
 
   // monitor.cpp

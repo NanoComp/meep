@@ -137,7 +137,7 @@ polarizability::polarizability(const polarizability *pb) {
   else next = NULL;
 }
 
-polarizability::polarizability(const structure_chunk *sc, double sig(const vec &),
+polarizability::polarizability(const structure_chunk *sc, material_function &sig,
                                double om, double ga, double sigscale,
                                double energy_sat, bool mine) {
   v = sc->v;
@@ -148,6 +148,7 @@ polarizability::polarizability(const structure_chunk *sc, double sig(const vec &
   energy_saturation = energy_sat;
   saturated_sigma = sigscale;
 
+  sig.set_volume(sc->gv);
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
     sigma = new double[v.ntot()];
@@ -156,7 +157,7 @@ polarizability::polarizability(const structure_chunk *sc, double sig(const vec &
     if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
     for (int i=0;i<v.ntot();i++)
-      sigma[i] = sigscale*sig(v.loc(v.eps_component(),i));
+      sigma[i] = sigscale*sig.sigma(v.loc(v.eps_component(),i));
     FOR_COMPONENTS(c) if (s[c])
       for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
     // Average out sigma over the grid...
@@ -165,10 +166,10 @@ polarizability::polarizability(const structure_chunk *sc, double sig(const vec &
       const vec dz = v.dz()*0.5; // The distance between Yee field components
       for (int i=0;i<v.ntot();i++) {
         const vec here = v.loc(Ep,i);
-        s[Er][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here+dr-dz));
-        s[Ep][i] = 0.25*sigscale*(sig(here+dr+dz) + sig(here-dr+dz) +
-                                  sig(here+dr-dz) + sig(here-dr-dz));
-        s[Ez][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
+        s[Er][i] = 0.5*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here+dr-dz));
+        s[Ep][i] = 0.25*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz) +
+                                  sig.sigma(here+dr-dz) + sig.sigma(here-dr-dz));
+        s[Ez][i] = 0.5*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz));
       }
     } else if (v.dim == D1) {
       // There's just one field point...
@@ -177,7 +178,7 @@ polarizability::polarizability(const structure_chunk *sc, double sig(const vec &
       // FIXME:  should we be doing clever averaging here?
       FOR_ELECTRIC_COMPONENTS(c) if (s[c])
         for (int i=0;i<v.ntot();i++)
-          s[c][i] = sigscale*sig(v.loc(c,i));
+          s[c][i] = sigscale*sig.sigma(v.loc(c,i));
     }
   } else { // Not mine, don't store arrays...
     sigma = 0;
@@ -226,13 +227,21 @@ complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
   return broadcast(n_proc(), epsi);
 }
 
-polarizability_identifier structure::add_polarizability(double sigma(const vec &),
+polarizability_identifier structure::add_polarizability(material_function &sigma,
                                                   double omega, double gamma,
                                                   double delta_epsilon,
                                                   double energy_saturation) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->add_polarizability(sigma, omega, gamma, delta_epsilon, energy_saturation);
   return chunks[0]->pb->get_identifier();
+}
+
+polarizability_identifier structure::add_polarizability(double sigma(const vec &),
+                                                  double omega, double gamma,
+                                                  double delta_epsilon,
+                                                  double energy_saturation) {
+  simple_material_function sig(sigma);
+  return add_polarizability(sig, omega,gamma,delta_epsilon,energy_saturation);
 }
 
 polarizability_identifier polarizability::get_identifier() const {
@@ -249,9 +258,10 @@ bool polarizability_identifier::operator==(const polarizability_identifier &a) {
     energy_saturation == a.energy_saturation && saturated_sigma == a.saturated_sigma;
 }
 
-void structure_chunk::add_polarizability(double sigma(const vec &),
+void structure_chunk::add_polarizability(material_function &sigma,
                              double omega, double gamma, double delta_epsilon,
                              double energy_sat) {
+  sigma.set_polarizability(omega, gamma, delta_epsilon, energy_sat);
   const double freq_conversion = 2*pi*c/a;
   double sigma_scale  = freq_conversion*freq_conversion*omega*omega*delta_epsilon;
   polarizability *npb = new polarizability(this, sigma,
@@ -261,6 +271,13 @@ void structure_chunk::add_polarizability(double sigma(const vec &),
                                            is_mine());
   npb->next = pb;
   pb = npb;
+}
+
+void structure_chunk::add_polarizability(double sigma(const vec &),
+                             double omega, double gamma, double delta_epsilon,
+                             double energy_sat) {
+  simple_material_function sig(sigma);
+  add_polarizability(sig, omega,gamma,delta_epsilon,energy_sat);
 }
 
 inline double expi(int cmp, double x) {

@@ -10,7 +10,7 @@ using namespace ctlio;
 
 /***********************************************************************/
 
-class geom_epsilon : public meep::epsilon_function {
+class geom_epsilon : public meep::material_function {
      geometric_object_list geometry;
      geom_box_tree geometry_tree;
      geom_box_tree restricted_tree;
@@ -20,6 +20,7 @@ public:
      virtual ~geom_epsilon();
 
      virtual void set_volume(const meep::geometric_volume &gv);
+     virtual void unset_volume(void);
      virtual double eps(const meep::vec &r);
      
 };
@@ -59,9 +60,8 @@ geom_epsilon::geom_epsilon(geometric_object_list g)
 
 geom_epsilon::~geom_epsilon()
 {
+     unset_volume();
      destroy_geom_box_tree(geometry_tree);
-     if (restricted_tree != geometry_tree)
-	  destroy_geom_box_tree(restricted_tree);
 }
 
 static vector3 vec2vector3(const meep::vec &v)
@@ -93,16 +93,23 @@ static vector3 vec2vector3(const meep::vec &v)
      return v3;
 }
 
+void geom_epsilon::unset_volume(void)
+{
+  if (restricted_tree != geometry_tree) {
+    destroy_geom_box_tree(restricted_tree);
+    restricted_tree = geometry_tree;
+  }
+}
+
 void geom_epsilon::set_volume(const meep::geometric_volume &gv)
 {
-     if (restricted_tree != geometry_tree)
-	  destroy_geom_box_tree(restricted_tree);
-
-     geom_box box;
-     box.low = vec2vector3(gv.get_min_corner());
-     box.high = vec2vector3(gv.get_max_corner());
-
-     restricted_tree = restrict_geom_box_tree(geometry_tree, &box);
+  unset_volume();
+  
+  geom_box box;
+  box.low = vec2vector3(gv.get_min_corner());
+  box.high = vec2vector3(gv.get_max_corner());
+  
+  restricted_tree = restrict_geom_box_tree(geometry_tree, &box);
 }
 
 static material_type eval_material_func(function material_func, vector3 p)

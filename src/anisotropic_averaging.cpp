@@ -25,7 +25,7 @@ static geometric_volume nth_quadrant(const geometric_volume &v, int n) {
   return o;
 }
 
-static tensor doaverage_inveps(epsilon_function &eps, const geometric_volume &vol,
+static tensor doaverage_inveps(material_function &eps, const geometric_volume &vol,
                                double minvol) {
   if (vol.full_volume() <= minvol) return tensor(1.0/eps.eps(geo_center(vol)));
   tensor averages[8]; // averages hold local averages of *inveps*
@@ -50,7 +50,7 @@ static tensor doaverage_inveps(epsilon_function &eps, const geometric_volume &vo
   return 1.0/mean + meaninv;
 }
 
-double anisoaverage(component ec, direction d, epsilon_function &eps,
+double anisoaverage(component ec, direction d, material_function &eps,
                     const geometric_volume &vol, double minvol) {
   tensor avg = doaverage_inveps(eps, vol, minvol);
   int rownum = component_direction(ec) % 3;
