@@ -53,12 +53,12 @@ int main(int argc, const char *argv[]) {
 
   char *lookfor = new char[strlen(name1)+1+5];
   strcpy(lookfor,name1);
-  strcat(lookfor,"-hzr-");
+  strcat(lookfor,"-hz-re-");
 
   struct dirent **namelist;
   int nfiles;
   nfiles = scandir(".", &namelist, 0, alphasort);
-  if (nfiles < 0) ack("Problem reading directory.");
+  if (nfiles <= 0) ack("Problem reading directory.");
   else {
     for (int n=0;n<nfiles;n++) {
       char *name = namelist[n]->d_name;
@@ -68,47 +68,47 @@ int main(int argc, const char *argv[]) {
         int err = 0;
         hey("Checking time %s", time);
         // Check Hr:
-        sprintf(n1, "%s-hrr-%s.sli", name1, time);
-        sprintf(n2, "%s-hrr-%s.sli", name2, time);
+        sprintf(n1, "%s-hr-re-%s.sli", name1, time);
+        sprintf(n2, "%s-hr-re-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
-        sprintf(n1, "%s-hri-%s.sli", name1, time);
-        sprintf(n2, "%s-hri-%s.sli", name2, time);
+        sprintf(n1, "%s-hr-im-%s.sli", name1, time);
+        sprintf(n2, "%s-hr-im-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
         // Check Hp:
-        sprintf(n1, "%s-hpr-%s.sli", name1, time);
-        sprintf(n2, "%s-hpr-%s.sli", name2, time);
+        sprintf(n1, "%s-hp-re-%s.sli", name1, time);
+        sprintf(n2, "%s-hp-re-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
-        sprintf(n1, "%s-hpi-%s.sli", name1, time);
-        sprintf(n2, "%s-hpi-%s.sli", name2, time);
+        sprintf(n1, "%s-hp-im-%s.sli", name1, time);
+        sprintf(n2, "%s-hp-im-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
         // Check Hz:
-        sprintf(n1, "%s-hzr-%s.sli", name1, time);
-        sprintf(n2, "%s-hzr-%s.sli", name2, time);
+        sprintf(n1, "%s-hz-re-%s.sli", name1, time);
+        sprintf(n2, "%s-hz-re-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
-        sprintf(n1, "%s-hzi-%s.sli", name1, time);
-        sprintf(n2, "%s-hzi-%s.sli", name2, time);
+        sprintf(n1, "%s-hz-im-%s.sli", name1, time);
+        sprintf(n2, "%s-hz-im-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
         if (err) ack("We found problems in %d H components at time %s.", err, time);        
         // Check Er:
-        sprintf(n1, "%s-err-%s.sli", name1, time);
-        sprintf(n2, "%s-err-%s.sli", name2, time);
+        sprintf(n1, "%s-er-re-%s.sli", name1, time);
+        sprintf(n2, "%s-er-re-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
-        sprintf(n1, "%s-eri-%s.sli", name1, time);
-        sprintf(n2, "%s-eri-%s.sli", name2, time);
+        sprintf(n1, "%s-er-im-%s.sli", name1, time);
+        sprintf(n2, "%s-er-im-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
         // Check Ep:
-        sprintf(n1, "%s-epr-%s.sli", name1, time);
-        sprintf(n2, "%s-epr-%s.sli", name2, time);
+        sprintf(n1, "%s-ep-re-%s.sli", name1, time);
+        sprintf(n2, "%s-ep-re-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
-        sprintf(n1, "%s-epi-%s.sli", name1, time);
-        sprintf(n2, "%s-epi-%s.sli", name2, time);
+        sprintf(n1, "%s-ep-im-%s.sli", name1, time);
+        sprintf(n2, "%s-ep-im-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
         // Check Ez:
-        sprintf(n1, "%s-ezr-%s.sli", name1, time);
-        sprintf(n2, "%s-ezr-%s.sli", name2, time);
+        sprintf(n1, "%s-ez-re-%s.sli", name1, time);
+        sprintf(n2, "%s-ez-re-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
-        sprintf(n1, "%s-ezi-%s.sli", name1, time);
-        sprintf(n2, "%s-ezi-%s.sli", name2, time);
+        sprintf(n1, "%s-ez-im-%s.sli", name1, time);
+        sprintf(n2, "%s-ez-im-%s.sli", name2, time);
         err += compare_files(n1, n2, little);
         if (err) ack("We found problems in %d E components at time %s.", err, time);
       }

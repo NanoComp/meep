@@ -1204,28 +1204,28 @@ void fields::output_real_imaginary_slices(const char *name) {
     printf("Allocation failure!\n");
     exit(1);
   }
-  char r_or_i = 'r';
+  char *r_or_i = "-re";
   for (int cmp=0;cmp<2;cmp++) {
-    if (a == 1) sprintf(n, "%s-hr%c-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-hr%c-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) sprintf(n, "%s-hr%s-%06.0f.sli", name, r_or_i, t*inva);
+    else sprintf(n, "%s-hr%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(hr[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-hp%c-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-hp%c-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) sprintf(n, "%s-hp%s-%06.0f.sli", name, r_or_i, t*inva);
+    else sprintf(n, "%s-hp%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(hp[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-hz%c-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-hz%c-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) sprintf(n, "%s-hz%s-%06.0f.sli", name, r_or_i, t*inva);
+    else sprintf(n, "%s-hz%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(hz[cmp], nr, nz, n);
     
-    if (a == 1) sprintf(n, "%s-er%c-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-er%c-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) sprintf(n, "%s-er%s-%06.0f.sli", name, r_or_i, t*inva);
+    else sprintf(n, "%s-er%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(er[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-ep%c-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-ep%c-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) sprintf(n, "%s-ep%s-%06.0f.sli", name, r_or_i, t*inva);
+    else sprintf(n, "%s-ep%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(ep[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-ez%c-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-ez%c-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) sprintf(n, "%s-ez%s-%06.0f.sli", name, r_or_i, t*inva);
+    else sprintf(n, "%s-ez%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(ez[cmp], nr, nz, n);
-    r_or_i = 'i';
+    r_or_i = "-im";
   }
 
   free(n);
