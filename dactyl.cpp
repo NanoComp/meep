@@ -500,19 +500,6 @@ void fields::step_h_pml() {
           }
         }
       }
-      /* if (npmlz != 0) { // False boundary layer!
-        const int z=0, iz=npmlz, lr=-1;
-        double Czhr = ma->Czhr[iz];
-        double dhrp = c*(-IT(ez,r,z)*mor);
-        double hrz = CM(hr,r,z) - PMLZ(z_hrp,r);
-        PMLZ(z_hrp,r) += dhrp;
-        CM(hr,r,z)+= dhrp + c*((CM(ep,r,z+1)-CM(ep,r,z))*(1-0.5*Czhr) - Czhr*hrz);
-
-        double Czhp = ma->Czhp[iz];
-        double dhpz = c*(-(CM(er,r,z+1)-CM(er,r,z))*(1-0.5*Czhp)-Czhp*PMLZ(z_hpz,r));
-        PMLZ(z_hpz,r) += dhpz;
-        CM(hp,r,z)+= dhpz + c*(CM(ez,r+1,z)-CM(ez,r,z));
-        }*/
     }
     if (npmlz) { // update r minimum and z high and low pml regions.
       int r=rmin_bulk(m)-1;
