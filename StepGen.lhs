@@ -3,7 +3,7 @@ module StepGen ( Code, Expression, gencode,
                  doexp, docode, doline, doblock,
                  if_, ifelse_, (|?|), (|:|),
                  whether_or_not, declare, for_loop,
-                 for_true_false,
+                 for_true_false, for_any_one_of, sum_for_any_one_of,
                  (|+|), (|-|), (|*|), (|+=|), (|-=|), (|=|), (<<),
                ) where
 
@@ -33,6 +33,27 @@ for_true_false s x = do check <- istrueCC s
                            then do docode [withCC s False $ docode x,
                                            withCC s True $ docode x]
                            else docode x
+
+for_any_one_of :: CODE a => [String] -> a -> Code
+for_any_one_of [] x = docode x
+for_any_one_of (b:bs) x =
+    do check <- istrueCC b
+       if check == Just False
+          then for_any_one_of bs $ docode x
+          else docode [withCC b True $ with_all_false bs $ docode x,
+                       withCC b False $ for_any_one_of bs $ docode x]
+
+sum_for_any_one_of :: EXPRESSION a => [String] -> a -> Expression
+sum_for_any_one_of [] e = expression "0"
+sum_for_any_one_of (b:bs) e =
+    do check <- istrueCC b
+       if check == Just False
+          then sum_for_any_one_of bs $ expression e
+          else (withCC b True $ with_all_false bs $ expression e)
+              |+| (withCC b False $ sum_for_any_one_of bs e)
+
+with_all_false [] x = x
+with_all_false (b:bs) x = withCC b False $ with_all_false bs x
 
 for_loop :: CODE a => String -> String -> a -> Code
 for_loop i num inside =
