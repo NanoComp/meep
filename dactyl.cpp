@@ -374,6 +374,16 @@ void fields::add_src_pt(int r, int z,
   if (m!=0 && r < rmin_bulk(m)-1) return;
   if (r >= nr - npmlr) return;
   if (Pr == 0 && Pp == 0 && Pz == 0) return;
+  if (m == 0 && r == 0 && (Pp != 0 || Pr != 0)) {
+    return; // Can't have these sources at r == 0 if m == 0.
+  } else if (m ==1 && r == 0 && Pz != 0) {
+    return;
+  } else if (m > 1 && r < rmin_bulk(m) - 1) {
+    return;
+  } else if (m > 1 && r == rmin_bulk(m) - 1 &&
+             ((is_h && Pr != 0) || (!is_h && Pp != 0) || (!is_h && Pz != 0))) {
+    return;
+  }
   if (z >= nz || z < 0) {
     printf("Error:  source is outside of cell!\n");
     exit(1);
