@@ -39,7 +39,7 @@ initialize::~initialize() {
 #endif
 }
 
-void abort(char *fmt, ...) {
+void abort(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   vfprintf(stderr, fmt, ap);

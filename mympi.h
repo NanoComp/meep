@@ -25,7 +25,7 @@ class initialize {
   ~initialize();
 };
 
-void abort(char *fmt, ...);
+void abort(const char *fmt, ...);
 void all_wait();
 int count_processors();
 int my_rank();
