@@ -346,7 +346,7 @@ int count_processors() {
 void master_printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  if (am_master()) vprintf(fmt, ap);
+  if (am_master()) { vprintf(fmt, ap); fflush(stdout); }
   va_end(ap);
 }
 
