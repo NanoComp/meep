@@ -22,7 +22,7 @@ check-local: $(DONE)
 
 # Note: this requires GNU make
 
-.o.dac:
+.o.dac: $(LIBMEEP)
 	$(CXXLINK) $< $(LIBMEEP) $(LIBS)
 
 .dac.done:
