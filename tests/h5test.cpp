@@ -5,7 +5,6 @@
 
 #include "meep.h"
 #include "meep_internals.h"
-#include "h5io.h"
 #include "config.h"
 using namespace meep;
 
@@ -95,17 +94,19 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   while (f.time() <= 3.0 && !interrupt)
     f.step();
 
-  char fname[1024];
-  snprintf(fname, 1024, "%s.h5", name);
-  f.output_hdf5(fname, file_c, file_gv, file_res, false, -1, false, false);
+  h5file *file = f.open_h5file(name);
+  f.output_hdf5(file, file_c, file_gv, file_res, false, false);
 
-  sync(); // flush the filesystem buffers before we read back
+  file->write("stringtest", "Hello, world!\n");
+
+  delete file;
   all_wait();
+  sync();
+  file = f.open_h5file(name, h5file::READONLY);
 
-  h5io::write(fname, "stringtest", "Hello, world!\n", true);
-  char *str = h5io::read(fname, "stringtest");
+  char *str = file->read("stringtest");
   if (strcmp(str, "Hello, world!\n"))
-       abort("Failed to read back string test from %s...", fname);
+       abort("Failed to read back string test from %s...", name);
 
   // compute corner coordinate of file data
   double resinv = 1.0 / file_res;
@@ -126,13 +127,12 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     snprintf(dataname, 256, "%s%s", component_name(file_c),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
-    double *h5data = h5io::read(fname, dataname,
-				&rank, dims, 2);
+    double *h5data = file->read(dataname, &rank, dims, 2);
     if (!h5data)
-	 abort("failed to read dataset %s:%s\n", fname, dataname);
+	 abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
 	 abort("incorrect rank (%d instead of %d) in %s:%s\n",
-	       rank, expected_rank, fname, dataname);
+	       rank, expected_rank, name, dataname);
     if (expected_rank == 1 && 
 	file_gv.in_direction_min(X) == file_gv.in_direction_max(X)) {
       dims[1] = dims[0];
@@ -178,7 +178,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     delete[] h5data;
   }
 
-  remove(fname);
+  file->remove();
+  delete file;
 
   master_printf("Passed %s (%g..%g), err=%g\n", name,
 		data_min, data_max,
@@ -204,18 +205,20 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   while (f.time() <= 3.0 && !interrupt)
     f.step();
 
-  char fname[1024];
-  snprintf(fname, 1024, "%s.h5", name);
+  h5file *file = f.open_h5file(name);
   double res = 0.54321 * a;
-  f.output_hdf5(fname, file_c, file_gv, res, false, -1, false, false);
+  f.output_hdf5(file, file_c, file_gv, res, false, false);
 
-  sync(); // flush the filesystem buffers before we read back
+  file->write("stringtest", "Hello, world!\n");
+
+  delete file;
   all_wait();
+  sync();
+  file = f.open_h5file(name, h5file::READONLY);
 
-  h5io::write(fname, "stringtest", "Hello, world!\n", true);
-  char *str = h5io::read(fname, "stringtest");
+  char *str = file->read("stringtest");
   if (strcmp(str, "Hello, world!\n"))
-       abort("Failed to read back string test from %s...", fname);
+       abort("Failed to read back string test from %s...", name);
 
   // compute corner coordinate of file data
   double resinv = 1.0 / res;
@@ -236,13 +239,12 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     snprintf(dataname, 256, "%s%s", component_name(file_c),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
-    double *h5data = h5io::read(fname, dataname,
-				&rank, dims, 3);
+    double *h5data = file->read(dataname, &rank, dims, 3);
     if (!h5data)
-	 abort("failed to read dataset %s:%s\n", fname, dataname);
+	 abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
 	 abort("incorrect rank (%d instead of %d) in %s:%s\n",
-	       rank, expected_rank, fname, dataname);
+	       rank, expected_rank, name, dataname);
     vec loc(loc0.dim);
     for (int i0 = 0; i0 < dims[0]; ++i0) {
       for (int i1 = 0; i1 < dims[1]; ++i1) {
@@ -286,7 +288,8 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     delete[] h5data;
   }
 
-  remove(fname);
+  file->remove();
+  delete file;
 
   master_printf("Passed %s (%g..%g), err=%g\n", name,
 		data_min, data_max,
@@ -310,26 +313,21 @@ bool check_2d_monitor(double eps(const vec &),
 
   if (file_c == Dielectric) real_fields = true;
 
-  char fname[1024];
-  snprintf(fname, 1024, "%s.h5", name);
+  h5file *file = f.open_h5file(name);
 
   const double T = 3.0;
   int NT = int(T / (f.inva * c)) + 2;
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
-    f.output_hdf5(fname, file_c, geometric_volume(pt, pt), a,
-		  true, f.t, false, false);
+    f.output_hdf5(file, file_c, geometric_volume(pt, pt), a, true, false);
     mon[f.t] = f.get_field(file_c, pt);
     f.step();
   }
 
-  sync(); // flush the filesystem buffers before we read back
+  delete file;
   all_wait();
-
-  h5io::write(fname, "stringtest", "Hello, world!\n", true);
-  char *str = h5io::read(fname, "stringtest");
-  if (strcmp(str, "Hello, world!\n"))
-       abort("Failed to read back string test from %s...", fname);
+  sync();
+  file = f.open_h5file(name, h5file::READONLY);
 
   double data_min = infinity, data_max = -infinity;
   double err_max = 0;
@@ -341,9 +339,9 @@ bool check_2d_monitor(double eps(const vec &),
     snprintf(dataname, 256, "%s%s", component_name(file_c),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
-    double *h5data = h5io::read(fname, dataname, &rank, dims, 2);
+    double *h5data = file->read(dataname, &rank, dims, 2);
     if (!h5data)
-	 abort("failed to read dataset %s:%s\n", fname, dataname);
+	 abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
     if (rank != 1)
       abort("monitor-point data is not one-dimensional");
     if (dims[0] != f.t)
@@ -360,7 +358,8 @@ bool check_2d_monitor(double eps(const vec &),
 
   delete[] mon;
 
-  remove(fname);
+  file->remove();
+  delete file;
 
   master_printf("Passed %s (%g..%g), err=%g\n", name,
 		data_min, data_max,

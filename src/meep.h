@@ -50,6 +50,63 @@ class polarizability;
 class polarization;
 class grace;
 
+// h5file.cpp: HDF5 file I/O.  Most users, if they use this
+// class at all, will only use the constructor to open the file, and
+// will otherwise use the fields::output_hdf5 functions.
+class h5file {
+public:
+  typedef enum {
+    READONLY, READWRITE, WRITE
+  } access_mode;
+  
+  h5file(const char *filename_, access_mode m=READWRITE, bool parallel_=true);
+  ~h5file(); // closes the files (and any open dataset)
+  
+  bool ok() const;
+  
+  double *read(const char *dataname, int *rank, int *dims, int maxrank);
+  void write(const char *dataname, int rank, const int *dims, double *data,
+	     bool single_precision = true);
+  
+  char *read(const char *dataname);
+  void write(const char *dataname, const char *data);
+  
+  void create_data(const char *dataname, int rank, const int *dims,
+		   bool append_data = false,
+		   bool single_precision = true);
+  void extend_data(const char *dataname, int rank, const int *dims);
+  void create_or_extend_data(const char *dataname, int rank,
+			     const int *dims,
+			     bool append_data, bool single_precision);
+  void write_chunk(int rank, const int *chunk_start, const int *chunk_dims,
+		   double *data);
+  
+  void read_size(const char *dataname, int *rank, int *dims, int maxrank);
+  void read_chunk(int rank, const int *chunk_start, const int *chunk_dims,
+		  double *data);
+  
+  void remove();
+  void remove_data(const char *dataname);
+  
+  const char *file_name() const { return filename; }
+
+private:
+  char *filename;
+  bool parallel;
+
+  bool is_cur(const char *dataname);
+  void unset_cur();
+  void set_cur(const char *dataname, void *data_id);
+  char *cur_dataname;
+  bool cur_append_data;
+  int cur_dindex;
+  
+  /* store hid_t values as hid_t* cast to void*, so that
+     files including meep.h don't need hdf5.h */
+  void *id; /* file */
+  void *cur_id; /* dataset, if any */
+};
+
 /* This class is used to compute position-dependent material properties
    like the dielectric function, polarizability sigma, 
    nonlinearities, et cetera.  Simple cases of stateless functions are
@@ -359,10 +416,8 @@ private:
   int avg1, avg2; // index offsets for average to get epsilon grid
 };
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
-		   bool append_file = false, const char *prefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
-		   bool in_appended_file = false, const char *prefix = 0);
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file);
 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
@@ -374,10 +429,8 @@ public:
   dft_flux(const dft_flux &f);
 
   double *flux();
-  void save_hdf5(const char *outdir = ".",
-		 bool append_file = false, const char *prefix = 0);
-  void load_hdf5(const char *outdir = ".",
-		 bool in_appended = false, const char *prefix = 0);
+  void save_hdf5(h5file *file);
+  void load_hdf5(h5file *file);
 
   void negate_dfts();
 
@@ -601,23 +654,23 @@ class fields {
                                     const char *name = "");
 
   // h5fields.cpp
-  void output_hdf5(const char *filename, const char *dataname,
+  void output_hdf5(h5file *file, const char *dataname,
 		   component c, int reim,
 		   const geometric_volume &where, double res,
-		   bool append_data = false, int dindex = -1,
-		   bool append_file = false,
+		   bool append_data = false,
 		   bool single_precision = true);
-  void output_hdf5(const char *filename, component c,
+  void output_hdf5(h5file *file, component c,
 		   const geometric_volume &where, double res,
-		   bool append_data = false, int dindex = -1,
-		   bool append_file = false,
+		   bool append_data = false,
 		   bool single_precision = true);
   void output_hdf5(component c,
 		   const geometric_volume &where, double res,
-		   bool append_data = false, int dindex = -1,
-		   bool append_file = false,
-		   bool single_precision = true, 
-		   const char *prefix = 0);
+		   bool append_data = false,
+		   bool single_precision = true,
+		   const char *prefix = NULL);
+  h5file *open_h5file(const char *name, 
+		      h5file::access_mode mode = h5file::WRITE,
+		      const char *prefix = NULL, bool timestamp = false);
 
   double maxfieldmag_to_master(component) const;
   double minpolenergy_to_master() const;

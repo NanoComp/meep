@@ -21,7 +21,6 @@
 
 #include "meep.h"
 #include "meep_internals.h"
-#include "h5io.h"
 
 namespace meep {
 
@@ -184,85 +183,44 @@ void dft_chunk::negate_dft() {
     next_in_dft->negate_dft();
 }
 
-static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *nchunks_p) {
-  int n = 0, nchunks = 0;
-  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++nchunks)
+static int dft_chunks_Ntotal(dft_chunk *dft_chunks) {
+  int n = 0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
     n += cur->N * cur->Nomega * 2;
-  if (nchunks_p) *nchunks_p = max_to_all(nchunks);
   return sum_to_all(n);
 }
 
-static void dft_filename(char *s, int slen, component c, const char *outdir,
-			 bool append_file, const char *prefix) {
-  snprintf(s, slen, "%s/" "%s%s" "dft-%s.h5",
-           outdir,
-           prefix ? prefix : "", prefix && prefix[0] ? "-" : "",
-           append_file ? "fields" : component_name(c));
+// Note: the file must have been created in parallel mode, typically via fields::open_h5file.
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file) {
+  int n = dft_chunks_Ntotal(dft_chunks);
+
+  char dataname[128];
+  snprintf(dataname, 128, "%s_dft", component_name(c));
+  file->create_data(dataname, 1, &n);
+
+  int ichunk = 0, istart = 0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
+    int Nchunk = cur->N * cur->Nomega * 2;
+    file->write_chunk(1, &istart, &Nchunk, (double *) cur->dft);
+    istart += Nchunk;
+  }
 }
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, const char *outdir,
-		   bool append_file, const char *prefix) {
-  int n, nchunks;
-  n = dft_chunks_Ntotal(dft_chunks, &nchunks);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file) {
+  int n = dft_chunks_Ntotal(dft_chunks);
 
-  const int buflen = 1024;
-  char filename[buflen];
-  dft_filename(filename, buflen, c, outdir, append_file, prefix);
+  char dataname[128];
+  snprintf(dataname, 128, "%s_dft", component_name(c));
+  int file_rank, file_dims;
+  file->read_size(dataname, &file_rank, &file_dims, 1);
+  if (file_rank != 1 || file_dims != n)
+    abort("incorrect dataset size in load_dft_hdf5");
   
   int ichunk = 0, istart = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
     int Nchunk = cur->N * cur->Nomega * 2;
-    h5io::write_chunk(filename, component_name(c),
-		      1, &n,
-		      (double *) cur->dft,
-		      &istart, &Nchunk,
-		      true, ichunk == 0,
-		      false, -1, 
-		      append_file, false);
+    file->read_chunk(1, &istart, &Nchunk, (double *) cur->dft);
     istart += Nchunk;
-  }
-  /* All processes need to call write_chunk in parallel, even if
-     some processes have nothing to write. */
-  for (; ichunk < nchunks; ++ichunk) {
-    int Nchunk = 0;
-    h5io::write_chunk(filename, component_name(c),
-		      1, &n,
-		      (double *) 0,
-		      &istart, &Nchunk,
-		      true, ichunk == 0,
-		      false, -1, 
-		      append_file, false);
-  }
-}
-
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, const char *outdir,
-		   bool in_appended_file, const char *prefix) {
-  int n, nchunks;
-  n = dft_chunks_Ntotal(dft_chunks, &nchunks);
-
-  const int buflen = 1024;
-  char filename[buflen];
-  dft_filename(filename, buflen, c, outdir, in_appended_file, prefix);
-  
-  int ichunk = 0, istart = 0;
-  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
-    int Nchunk = cur->N * cur->Nomega * 2;
-    h5io::read_chunk(filename, component_name(c),
-		     1, &n,
-		     (double *) cur->dft,
-		     &istart, &Nchunk,
-		     true);
-    istart += Nchunk;
-  }
-  /* All processes need to call read_chunk in parallel, even if
-     some processes have nothing to write. */
-  for (; ichunk < nchunks; ++ichunk) {
-    int Nchunk = 0;
-    h5io::read_chunk(filename, component_name(c),
-		     1, &n,
-		     (double *) 0,
-		     &istart, &Nchunk,
-		     true);
   }
 }
 
@@ -303,19 +261,17 @@ double *dft_flux::flux() {
   return Fsum;
 }
 
-void dft_flux::save_hdf5(const char *outdir,
-			 bool append_file, const char *prefix) {
+void dft_flux::save_hdf5(h5file *file) {
   for (int i = 0; i < 2; ++i) {
-    save_dft_hdf5(E[i], cE[i], outdir, append_file, prefix);
-    save_dft_hdf5(H[i], cH[i], outdir, append_file, prefix);
+    save_dft_hdf5(E[i], cE[i], file);
+    save_dft_hdf5(H[i], cH[i], file);
   }
 }
 
-void dft_flux::load_hdf5(const char *outdir,
-			 bool in_appended_file, const char *prefix) {
+void dft_flux::load_hdf5(h5file *file) {
   for (int i = 0; i < 2; ++i) {
-    load_dft_hdf5(E[i], cE[i], outdir, in_appended_file, prefix);
-    load_dft_hdf5(H[i], cH[i], outdir, in_appended_file, prefix);
+    load_dft_hdf5(E[i], cE[i], file);
+    load_dft_hdf5(H[i], cH[i], file);
   }
 }
 
