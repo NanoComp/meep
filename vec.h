@@ -101,19 +101,12 @@ class volume {
   double dv(component c, int index) const;
   vec loc(component, int index) const;
   vec yee_shift(component) const;
+  component eps_component() const;
 
   int contains(const vec &) const;
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);
-
-  component eps_component() const {
-    switch (dim) {
-    case dcyl: return Hp;
-    case d1: return Ex;
-    }
-    exit(1);
-  };
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);
 

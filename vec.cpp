@@ -22,6 +22,15 @@
 
 #include "vec.h"
 
+const char *dimension_name(ndim dim) {
+  switch (dim) {
+  case d1: return "1D";
+  case dcyl: return "Cylindrical";
+  }
+  printf("Unsupported dimensionality name.\n");
+  exit(1);
+}
+
 const char *component_name(component c) {
   switch (c) {
   case Er: return "er";
@@ -75,6 +84,15 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
   }
 }
 
+component volume::eps_component() const {
+  switch (dim) {
+  case d1: return Ex;
+  case dcyl: return Hp;
+  }
+  printf("Unsupported dimensionality eps.\n");
+  exit(1);
+}
+
 vec volume::yee_shift(component c) const {
   if (dim == dcyl) {
     vec offset(0,0);
@@ -95,7 +113,8 @@ vec volume::yee_shift(component c) const {
     printf("Invalid component!\n");
     exit(1);
   }
-  printf("Unsupported dimension!\n");
+  printf("Unsupported dimension! yee shift of %s in %s\n",
+         component_name(c), dimension_name(dim));
   exit(1);
 }
 
@@ -151,8 +170,14 @@ void volume::interpolate(component c, const vec &p,
     if (indices[0] < nz()) {
       indices[1] = indices[0] + 1;
       const double lowfrac = offset.z()*a - indices[0];
-      weights[0] = lowfrac;
-      weights[1] = 1.0 - lowfrac;
+      if (lowfrac < 1e-15) {
+        indices[0] = indices[1];
+        weights[0] = 1.0;
+        weights[1] = 0.0;
+      } else {
+        weights[0] = lowfrac;
+        weights[1] = 1.0 - lowfrac;
+      }
     } else {
       weights[0] = 1.0;
       weights[1] = 0.0;
