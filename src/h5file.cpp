@@ -62,7 +62,7 @@ typedef int hid_t;
 #  define IF_EXCLUSIVE(yes,no) yes
 #endif
 
-static int matrixio_critical_section_tag = 0;
+static int h5io_critical_section_tag = 0;
 
 /*****************************************************************************/
 /* Normally, HDF5 prints out all sorts of error messages, e.g. if a dataset
@@ -108,7 +108,7 @@ void *h5file::get_id() {
       H5Pset_fapl_mpio(access_props, MPI_COMM_WORLD, MPI_INFO_NULL);
 #  else
     if (parallel)
-      begin_critical_section(matrixio_critical_section_tag);
+      begin_critical_section(h5io_critical_section_tag);
 #  endif
     
     if (mode != WRITE || IF_EXCLUSIVE(parallel && !am_master(), 1))
@@ -131,6 +131,10 @@ void h5file::close_id() {
     H5Fclose(HID(id));
   HID(id) = -1;
 #endif
+  IF_EXCLUSIVE(if (parallel)
+	       end_critical_section(h5io_critical_section_tag++),
+	       (void) 0);
+  if (mode == WRITE) mode = READWRITE; // don't re-create on re-open
 }
 
 /* note: if parallel is true, then *all* processes must call this,
@@ -157,10 +161,6 @@ h5file::~h5file() {
     delete cur;
     cur = next;
   }
-
-  IF_EXCLUSIVE(if (parallel)
-	       end_critical_section(matrixio_critical_section_tag++),
-	       (void) 0);
 }
 
 bool h5file::ok() {
@@ -653,7 +653,8 @@ void h5file::done_writing_chunks() {
      I'm assuming(?) that non-extensible datasets will use different
      files, etcetera, for different timesteps.  All of this hackery
      goes away if we just use an MPI-compiled version of HDF5. */
-  IF_EXCLUSIVE(if (cur_dataname && get_extending(cur_dataname)) close_id(),
+  IF_EXCLUSIVE(if (parallel
+		   && cur_dataname && get_extending(cur_dataname)) close_id(),
 	       0);
 }
 
