@@ -430,10 +430,10 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
   }
 
 #if 0
-  // debugging: save data file and arguments for standalone harminv program,
+  // debugging: save data file and arguments for standalone harminv program
   {
     FILE *f = fopen("harminv.dat", "w");
-    fprintf(f, "# -f %d -t %g %g-%g -Q %e -e %e -E %e -a %e -A %e\n",
+    fprintf(f, "# -f %d -t %g %g-%g -Q %e -e %e -E %e -a %e -A %e -F\n",
 	    numfreqs, sampling_rate*c/a, fmin, fmax,
 	    Q_thresh, rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
     for (int i = 0; i < n; ++i)
@@ -518,8 +518,8 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
     nf = j;
   }
   
-  if (nf > numfreqs)
-    nf = numfreqs;
+  if (nf > maxbands)
+    nf = maxbands;
   
   // sort again, this time in increasing order of freq:
   for (int i = 0; i < nf; ++i) // simple O(nf^2) sort
