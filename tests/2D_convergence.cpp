@@ -43,10 +43,10 @@ double freq_at_resolution(double e(const vec &), double a, component c) {
   s.set_epsilon(e);
 
   fields f(&s);
+  f.use_real_fields();
   f.use_bloch(vec(0,0));
   f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(0.5,0.5), 1.0);
   f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(1.5,0.5),-1.0);
-  f.use_real_fields();
 
   while (f.time() <= f.last_source_time() + 10.0 && !interrupt) f.step();
   const double fourier_timesteps = 2000.0;

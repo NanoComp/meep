@@ -36,11 +36,17 @@ void fields::set_boundary(boundary_side b,direction d,
 void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
   for (int b=0;b<2;b++) boundaries[b][d] = Periodic;
-  const complex<double> I = complex<double>(0.0,1.0);
-  eikna[d] = exp(I*kk*((2*pi/a)*v.num_direction(d)));
+  if (real(kk) * v.num_direction(d) == 0.5 * a) // check b.z. edge exactly
+    eikna[d] = -exp(-imag(kk) * ((2*pi/a)*v.num_direction(d)));
+  else {
+    const complex<double> I = complex<double>(0.0,1.0);
+    eikna[d] = exp(I*kk*((2*pi/a)*v.num_direction(d)));
+  }
   coskna[d] = real(eikna[d]);
   sinkna[d] = imag(eikna[d]);
-  chunk_connections_valid = false;
+  if (is_real && kk != 0.0) // FIXME: allow real phases (c.f. CONNECT_PHASE)
+    abort("Can't use real fields with bloch boundary conditions!\n");
+  chunk_connections_valid = false; // FIXME: we don't always need to invalidate
 }
 
 void fields::use_bloch(const vec &k) {
@@ -48,12 +54,9 @@ void fields::use_bloch(const vec &k) {
   // it is unambiguous.
   if (k.dim != v.dim && !(k.dim == D1 && v.dim == Dcyl))
     abort("Aaaack, k has wrong dimensions!\n");
-  for (int dd=0;dd<5;dd++) {
-    const direction d = (direction) dd;
+  LOOP_OVER_DIRECTIONS(v.dim, d)
     if (v.has_boundary(Low,d) && d != R)
       use_bloch(d, k.in_direction(d));
-  }
-  chunk_connections_valid = false;
 }
 
 ivec fields::ilattice_vector(direction d) const {
@@ -295,7 +298,7 @@ void fields::connect_the_chunks() {
 	  IVEC_LOOP_ILOC(vi, here);
 	  component c = corig;
 	  // We're looking at a border element...
-	  complex<double> thephase = 1.0;
+	  complex<double> thephase;
 	  if (locate_component_point(&c,&here,&thephase)
 	      && !on_metal_boundary(here))
 	    for (int j=0;j<num_chunks;j++) {
@@ -385,7 +388,7 @@ void fields::connect_the_chunks() {
   	  IVEC_LOOP_ILOC(vi, here);
 	  component c = corig;
 	  // We're looking at a border element...
-	  complex<double> thephase = 1.0;
+	  complex<double> thephase;
 	  if (locate_component_point(&c,&here,&thephase)
 	      && !on_metal_boundary(here))
 	    for (int j=0;j<num_chunks;j++) {

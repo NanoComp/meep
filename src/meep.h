@@ -638,10 +638,10 @@ class fields_chunk {
   void calc_sources(double time);
 
   // initialize.cpp
-  bool initialize_field(component, complex<double> f(const vec &));
+  void initialize_field(component, complex<double> f(const vec &));
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
-  bool initialize_with_nth_te(int n, double kz);
-  bool initialize_with_nth_tm(int n, double kz);
+  void initialize_with_nth_te(int n, double kz);
+  void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
   void alloc_extra_connections(field_type, connect_phase, in_or_out, int);
   // dft.cpp

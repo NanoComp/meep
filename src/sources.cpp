@@ -274,6 +274,9 @@ static void src_vol_chunkloop(fields_chunk *fc, component c,
 }
 
 void fields::require_component(component c) {
+  if (!v.has_field(c))
+    abort("cannot require a %s component in a %s grid",
+	  component_name(c), dimension_name(v.dim));
   // allocate fields if they haven't been allocated yet for this component
   int need_to_reconnect = 0;
   for (int i = 0; i < num_chunks; ++i)
@@ -281,7 +284,8 @@ void fields::require_component(component c) {
       chunks[i]->alloc_f(c);
       need_to_reconnect++;
     }
-  if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
+  if (chunk_connections_valid && sum_to_all(need_to_reconnect)) 
+    chunk_connections_valid = false;
 }
 
 void fields::add_volume_source(component c, const src_time &src,

@@ -21,6 +21,7 @@
 namespace meep {
 
 #define DOCMP for (int cmp=0;cmp<2-is_real;cmp++)
+#define DOCMP2 for (int cmp=0;cmp<2;cmp++)
 
 inline double max(double a, double b) { return (a > b) ? a : b; }
 inline double min(double a, double b) { return (a < b) ? a : b; }

@@ -124,7 +124,7 @@ fields::~fields() {
   delete bands;
 }
 void fields::use_real_fields() {
-  for (int d=0;d<5;d++)
+  LOOP_OVER_DIRECTIONS(v.dim, d)
     if (boundaries[High][d] == Periodic && k[d] != 0.0)
       abort("Can't use real fields_chunk with bloch boundary conditions!\n");
   is_real = 1;
@@ -133,7 +133,6 @@ void fields::use_real_fields() {
 }
 
 bool fields::have_component(component c) {
-  if (v.dim != D2) return v.has_field(c);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       return chunks[i]->f[c][0] != NULL;
@@ -143,13 +142,13 @@ bool fields::have_component(component c) {
 fields_chunk::~fields_chunk() {
   delete s;
   is_real = 0; // So that we can make sure to delete everything...
-  DOCMP {
-    FOR_COMPONENTS(i) delete[] f[i][cmp];
-    FOR_COMPONENTS(i) delete[] f_backup[i][cmp];
-    FOR_COMPONENTS(i) delete[] f_p_pml[i][cmp];
-    FOR_COMPONENTS(i) delete[] f_m_pml[i][cmp];
-    FOR_COMPONENTS(i) delete[] f_backup_p_pml[i][cmp];
-    FOR_COMPONENTS(i) delete[] f_backup_m_pml[i][cmp];
+  DOCMP2 FOR_COMPONENTS(c) {
+    delete[] f[c][cmp];
+    delete[] f_backup[c][cmp];
+    delete[] f_p_pml[c][cmp];
+    delete[] f_m_pml[c][cmp];
+    delete[] f_backup_p_pml[c][cmp];
+    delete[] f_backup_m_pml[c][cmp];
   }
   FOR_FIELD_TYPES(ft)
     for (int ip=0;ip<3;ip++)
@@ -180,46 +179,24 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);
   h_sources = e_sources = NULL;
-  DOCMP {
-    FOR_COMPONENTS(i) f[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_backup[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_p_pml[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_m_pml[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_backup_p_pml[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_backup_m_pml[i][cmp] = NULL;
-
-    if (is_mine()) {
-      FOR_COMPONENTS(i) if (v.dim != D2 && v.has_field(i))
-	f[i][cmp] = new double[v.ntot()];
-      FOR_COMPONENTS(i) if (f[i][cmp] && !is_electric(i)) {
-	f_p_pml[i][cmp] = new double[v.ntot()];
-	f_m_pml[i][cmp] = new double[v.ntot()];
-	if (f_m_pml[i][cmp] == NULL) abort("Out of memory!\n");
-      }
-    }
+  FOR_COMPONENTS(c) DOCMP2 {
+    f[c][cmp] = NULL;
+    f_backup[c][cmp] = NULL;
+    f_p_pml[c][cmp] = NULL;
+    f_m_pml[c][cmp] = NULL;
+    f_backup_p_pml[c][cmp] = NULL;
+    f_backup_m_pml[c][cmp] = NULL;
   }
-  DOCMP {
-    FOR_COMPONENTS(c)
-      if (f[c][cmp])
-        for (int i=0;i<v.ntot();i++)
-          f[c][cmp][i] = 0.0;
-    // Now for pml extra fields_chunk...
-    FOR_COMPONENTS(c)
-      if (f_p_pml[c][cmp])
-        for (int i=0;i<v.ntot();i++)
-          f_p_pml[c][cmp][i] = 0.0;
-    FOR_COMPONENTS(c)
-      if (f_m_pml[c][cmp])
-        for (int i=0;i<v.ntot();i++)
-          f_m_pml[c][cmp][i] = 0.0;
+  FOR_FIELD_TYPES(ft) {
+    for (int ip=0;ip<3;ip++)
+      num_connections[ft][ip][Incoming] 
+	= num_connections[ft][ip][Outgoing] = 0;
+    connection_phases[ft] = 0;
+    for (int ip=0;ip<3;ip++) for (int io=0;io<2;io++)
+      connections[ft][ip][io] = NULL;
+    zeroes[ft] = NULL;
+    num_zeroes[ft] = 0;
   }
-  FOR_FIELD_TYPES(ft) for (int ip=0;ip<3;ip++)
-    num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
-  FOR_FIELD_TYPES(ft) connection_phases[ft] = 0;
-  FOR_FIELD_TYPES(f)  for (int ip=0;ip<3;ip++) for (int io=0;io<2;io++)
-      connections[f][ip][io] = NULL;
-  FOR_FIELD_TYPES(ft) zeroes[ft] = NULL;
-  FOR_FIELD_TYPES(ft) num_zeroes[ft] = 0;
   figure_out_step_plan();
 }
 
@@ -239,44 +216,42 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);
   h_sources = e_sources = NULL;
-  DOCMP {
-    FOR_COMPONENTS(i) f[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_backup[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_p_pml[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_m_pml[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_backup_p_pml[i][cmp] = NULL;
-    FOR_COMPONENTS(i) f_backup_m_pml[i][cmp] = NULL;
-
-    FOR_COMPONENTS(i) if (thef.f[i][cmp])
-      f[i][cmp] = new double[v.ntot()];
-    FOR_COMPONENTS(i) if (thef.f_p_pml[i][cmp]) {
-      f_p_pml[i][cmp] = new double[v.ntot()];
-      f_m_pml[i][cmp] = new double[v.ntot()];
-      if (f_m_pml[i][cmp] == NULL) abort("Out of memory!\n");      
+  FOR_COMPONENTS(c) DOCMP2 {
+    f[c][cmp] = NULL;
+    f_backup[c][cmp] = NULL;
+    f_p_pml[c][cmp] = NULL;
+    f_m_pml[c][cmp] = NULL;
+    f_backup_p_pml[c][cmp] = NULL;
+    f_backup_m_pml[c][cmp] = NULL;
+  }
+  FOR_COMPONENTS(c) DOCMP {
+    if (thef.f[c][cmp])
+      f[c][cmp] = new double[v.ntot()];
+    if (thef.f_p_pml[c][cmp]) {
+      f_p_pml[c][cmp] = new double[v.ntot()];
+      f_m_pml[c][cmp] = new double[v.ntot()];
     }
-  }
-  DOCMP {
-    FOR_COMPONENTS(c)
-      if (f[c][cmp])
-        for (int i=0;i<v.ntot();i++)
-          f[c][cmp][i] = thef.f[c][cmp][i];
+    if (f[c][cmp])
+      for (int i=0;i<v.ntot();i++)
+	f[c][cmp][i] = thef.f[c][cmp][i];
     // Now for pml extra fields_chunk...
-    FOR_COMPONENTS(c)
-      if (f_p_pml[c][cmp])
-        for (int i=0;i<v.ntot();i++)
-          f_p_pml[c][cmp][i] = thef.f_p_pml[c][cmp][i];
-    FOR_COMPONENTS(c)
-      if (f_m_pml[c][cmp])
-        for (int i=0;i<v.ntot();i++)
-          f_m_pml[c][cmp][i] = thef.f_m_pml[c][cmp][i];
+    if (f_p_pml[c][cmp])
+      for (int i=0;i<v.ntot();i++)
+	f_p_pml[c][cmp][i] = thef.f_p_pml[c][cmp][i];
+    if (f_m_pml[c][cmp])
+      for (int i=0;i<v.ntot();i++)
+	f_m_pml[c][cmp][i] = thef.f_m_pml[c][cmp][i];
   }
-  FOR_FIELD_TYPES(ft) for (int ip=0;ip<3;ip++)
-    num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
-  FOR_FIELD_TYPES(ft) connection_phases[ft] = 0;
-  FOR_FIELD_TYPES(f)  for (int ip=0;ip<3;ip++) for (int io=0;io<2;io++)
-      connections[f][ip][io] = NULL;
-  FOR_FIELD_TYPES(ft) zeroes[ft] = NULL;
-  FOR_FIELD_TYPES(ft) num_zeroes[ft] = 0;
+  FOR_FIELD_TYPES(ft) {
+    for (int ip=0;ip<3;ip++)
+      num_connections[ft][ip][Incoming] 
+	= num_connections[ft][ip][Outgoing] = 0;
+    connection_phases[ft] = 0;
+    for (int ip=0;ip<3;ip++) for (int io=0;io<2;io++)
+      connections[ft][ip][io] = NULL;
+    zeroes[ft] = NULL;
+    num_zeroes[ft] = 0;
+  }
   figure_out_step_plan();
 }
 
@@ -395,6 +370,10 @@ void fields::zero_fields() {
 
 void fields_chunk::use_real_fields() {
   is_real = 1;
+  FOR_COMPONENTS(c) if (f[c][1]) {
+    delete[] f[c][1];
+    f[c][1] = 0;
+  }
   if (is_mine() && pol) pol->use_real_fields();
   if (is_mine() && olpol) olpol->use_real_fields();
 }

@@ -85,8 +85,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   f.use_bloch(X, real_fields ? 0.0 : kx);
   f.use_bloch(Y, real_fields ? 0.0 : ky);
 
-  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
 
   if (file_c >= int(Dielectric)) real_fields = true;
 
@@ -201,8 +201,8 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
-  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
 
   if (file_c >= Dielectric) real_fields = true;
 
@@ -316,8 +316,8 @@ bool check_2d_monitor(double eps(const vec &),
   structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
-  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
 
   if (file_c >= Dielectric) real_fields = true;
 

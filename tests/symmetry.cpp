@@ -823,11 +823,11 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   s.add_polarizability(one, 0.3, 0.1, 7.63);
   sS.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&s);
+  f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   fields fS(&s);
-  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_real_fields();
   fS.use_real_fields();
+  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   while (f.time() < ttot) {
@@ -850,11 +850,11 @@ double nonlinear_ex(const volume &v, double eps(const vec &)) {
   s.set_kerr(one);
   sS.set_kerr(one);
   fields f(&s);
+  f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   fields fS(&s);
-  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_real_fields();
   fS.use_real_fields();
+  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   while (f.time() < ttot) {
@@ -877,11 +877,11 @@ double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   sS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   fields f(&s);
+  f.use_real_fields();
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   fields fS(&s);
-  fS.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_real_fields();
   fS.use_real_fields();
+  fS.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   while (f.time() < ttot) {
@@ -904,11 +904,11 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
   s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   sS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   fields f(&s);
+  f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   fields fS(&s);
-  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_real_fields();
   fS.use_real_fields();
+  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   while (f.time() < ttot) {

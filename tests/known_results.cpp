@@ -135,8 +135,8 @@ double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
   structure s(v, eps);
   polarizability_identifier thep = s.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
   fields f(&s);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());

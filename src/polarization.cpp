@@ -32,8 +32,10 @@ polarization *polarization::set_up_polarizations(const structure_chunk *sc, int 
 
 void polarization::use_real_fields() {
   is_real = 1;
-  FOR_COMPONENTS(c) delete[] P[c][1];
-  FOR_COMPONENTS(c) P[c][1] = NULL;
+  FOR_COMPONENTS(c) {
+    delete[] P[c][1];
+    P[c][1] = NULL;
+  }
   if (next) next->use_real_fields();
 }
 
