@@ -1109,16 +1109,16 @@ complex<double> symmetry::phase_shift(component c, int n) const {
     // inversion... to do this we'll figure out what happens when we
     // transform the two other directions.
     const direction d0 = component_direction(c);
-    const direction D1 = (direction) ((d0+1)%3);
-    const direction D2 = (direction) ((d0+2)%3);
+    const direction d1 = (direction) ((d0+1)%3);
+    const direction d2 = (direction) ((d0+2)%3);
     // Note that according to the above definition, c1 and c2 are in
     // cyclical permutation order, i.e. (c2 - c1)%3 == 1.  If the
     // transformation of these two directions is no longer cyclical, then
     // we need to flip the sign of this component of H.
     bool flip = false;
-    if (((3+transform(D2,n).d - transform(D1,n).d)%3) == 2) flip = !flip;
-    if (transform(D1,n).flipped) flip = !flip;
-    if (transform(D2,n).flipped) flip = !flip;
+    if (((3+transform(d2,n).d - transform(d1,n).d)%3) == 2) flip = !flip;
+    if (transform(d1,n).flipped) flip = !flip;
+    if (transform(d2,n).flipped) flip = !flip;
     if (flip) return -1.0;
     else return 1.0;
   } else {
