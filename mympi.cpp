@@ -205,6 +205,23 @@ file *everyone_open_write(const char *name) {
 #endif
 }
 
+file *everyone_open_write(const char *filename, const char *directory) {
+  char name[500];
+  snprintf(name, 500, "%s/%s", directory, filename);
+#ifdef HAVE_MPI
+  const int buflen = strlen(name)+1;
+  char *buf = new char[buflen];
+  strcpy(buf,name);
+  MPI_File myf;
+  MPI_File_open(MPI_COMM_WORLD, buf,
+                MPI_MODE_WRONLY | MPI_MODE_CREATE,
+                NULL, &myf);
+  return (file *)myf;
+#else
+  return (file *)fopen(name,"w");
+#endif
+}
+
 void everyone_close(file *f) {
 #ifdef HAVE_MPI
   MPI_File_close((MPI_File *)&f);

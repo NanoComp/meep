@@ -52,6 +52,7 @@ void debug_printf(const char *fmt, ...);
 class file;
 
 file *everyone_open_write(const char *);
+file *everyone_open_write(const char *filename, const char *directory);
 void everyone_close(file *);
 void i_flush(file *f);
 void i_fprintf(file *, const char *fmt, ...);
