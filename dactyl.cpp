@@ -122,9 +122,14 @@ void mat::use_pml(int numpmlr, int numpmlz) {
     double rr = (r)/(double)npmlr;
     double rp = (1+r)/(double)npmlr;
     sigintegrated += Cmax*0.5*(sig(rp)+sig(rr));
-    Cper[r] = Cphz[r] = sigintegrated/(nr-npmlr+r+0.5);//Cmax*sig(rp);//
-    if (r==0) Cpez[r] = Cphr[r] = 0.5*Cper[r];//Cmax*0.5*(sig(rp)+sig(rr));//
-    else Cpez[r] = Cphr[r] = 0.5*(Cper[r]+Cper[r-1]);//Cmax*0.5*(sig(rp)+sig(rr));//
+    Cper[r] = Cphz[r] = sigintegrated/(nr-npmlr+r+0.5);
+    if (r==0) Cpez[r] = Cphr[r] = 0.5*Cper[r];
+    else Cpez[r] = Cphr[r] = 0.5*(Cper[r]+Cper[r-1]);
+
+    Cphz[r] = 0.0;
+    Cper[r] = 0.0;
+    Cphr[r] = 0.0;
+    Cpez[r] = 0.0;
     printf("Big sig(Ez)[%d  ] is %10lg, little sig is %10lg\n", r, Crez[r], Cpez[r]);
     printf("Big sig(Hz)[%d  ] is %10lg, little sig is %10lg\n", r, Crhz[r], Cphz[r]);
   }
