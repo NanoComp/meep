@@ -139,24 +139,28 @@ vec min(const vec &vec1, const vec &vec2) {
   vec m(vec1.dim);
   LOOP_OVER_DIRECTIONS(vec1.dim, d)
     m.set_direction(d, min(vec1.in_direction(d), vec2.in_direction(d)));
+  return m;
 }
 
 vec max(const vec &vec1, const vec &vec2) {
   vec m(vec1.dim);
   LOOP_OVER_DIRECTIONS(vec1.dim, d)
     m.set_direction(d, max(vec1.in_direction(d), vec2.in_direction(d)));
+  return m;
 }
 
 ivec min(const ivec &ivec1, const ivec &ivec2) {
   ivec m(ivec1.dim);
   LOOP_OVER_DIRECTIONS(ivec1.dim, d)
     m.set_direction(d, min(ivec1.in_direction(d), ivec2.in_direction(d)));
+  return m;
 }
 
 ivec max(const ivec &ivec1, const ivec &ivec2) {
   ivec m(ivec1.dim);
   LOOP_OVER_DIRECTIONS(ivec1.dim, d)
     m.set_direction(d, max(ivec1.in_direction(d), ivec2.in_direction(d)));
+  return m;
 }
 
 geometric_volume::geometric_volume(const vec &vec1, const vec &vec2) {
