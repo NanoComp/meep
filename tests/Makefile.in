@@ -1,0 +1,38 @@
+.SUFFIXES: .dac .tex
+.PHONY: all clean
+
+CXX = @DACTYL_CXX@
+CXXFLAGS = @DACTYL_CXXFLAGS@
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@
+LIBS = @LIBS@ -lgsl -lfftw -lm
+LDFLAGS = @LDFLAGS@
+INSTALL = @INSTALL@
+prefix = @prefix@
+# c.f. AC_ARG_PROGRAM autoconf docs:
+transform=@program_transform_name@
+@SET_MAKE@
+
+VERSION = @VERSION@
+
+all: dactyl.ps dactyl/dactyl.html preproc
+
+###########################################################################
+
+OBJFILES = cylindrical.o
+TESTFILES = cylindrical.dac
+
+$(OBJFILES): ../dactyl.h
+$(TESTFILES): ../libdactyl.a
+
+.cpp.o:
+	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
+.o.dac:
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
+
+test: $(TESTFILES)
+	set -e
+	./cylindrical.dac
+
+clean:
+	rm -rf *.o *.dac

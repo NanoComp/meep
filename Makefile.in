@@ -81,7 +81,8 @@ dist:
 	&& rm -rf dactyl-$(VERSION)
 
 test: libdactyl.a
-	cd doc && make testclean && make test
+	cd doc && make test && cd ..
+	cd tests && make test
 
 test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
 	rm -rf d_k_0.1pi_pml_m_1-out

@@ -122,4 +122,4 @@ AC_CHECK_FUNC(CGEEV,,AC_CHECK_LIB(lapack, main))
 
 ###########################################################################
 
-AC_OUTPUT(Makefile doc/Makefile)
+AC_OUTPUT(Makefile doc/Makefile tests/Makefile)
