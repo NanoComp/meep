@@ -26,8 +26,7 @@ check-local: $(DONE)
 	$(CXXLINK) $< $(LIBMEEP) $(LIBS)
 
 .dac.done:
-	$(RUNCODE) ./$<
-	touch $@
+	$(RUNCODE) ./$< | tee $@
 
 benchmark: bench
 	$(RUNCODE) ./bench
