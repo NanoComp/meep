@@ -32,23 +32,28 @@ class vec {
   vec() { dim = d2; tx = ty = 0; };
   vec(double zz) { dim = d1; tz = zz; };
   vec(double rr, double zz) { dim = dcyl; tr = rr; tz = zz; };
+  vec(double xx, double yy, double zz) {
+    dim = d3; tx = xx; ty = yy; tz = zz; };
   ~vec() {};
 
   vec operator+(const vec &a) const {
     switch (dim) {
     case dcyl: return vec(tr+a.tr,tz+a.tz);
+    case d3: return vec(tx+a.tx,ty+a.ty,tz+a.tz);
     case d1: return vec(tz+a.tz);
     }
   };
   vec operator+=(const vec &a) {
     switch (dim) {
     case dcyl: tr += a.tr; tz += a.tz; return *this;
+    case d3: tx += a.tx; ty += a.ty; tz += a.tz; return *this;
     case d1: tz += a.tz; return vec(tz+a.tz);
     }
   };
   vec operator-(const vec &a) const {
     switch (dim) {
     case dcyl: return vec(tr-a.tr,tz-a.tz);
+    case d3: return vec(tx-a.tx,ty-a.ty,tz-a.tz);
     case d1: return vec(tz-a.tz);
     }
   };
@@ -56,6 +61,7 @@ class vec {
   vec operator*(double s) const {
     switch (dim) {
     case dcyl: return vec(tr*s,tz*s);
+    case d3: return vec(tx*s,ty*s,tz*s);
     case d1: return vec(tz*s);
     }
   };
@@ -100,6 +106,8 @@ class volume {
   int has_field(component) const;
 
   vec dr() const;
+  vec dx() const;
+  vec dy() const;
   vec dz() const;
 
   int ntot() const { return the_ntot; }
@@ -116,6 +124,10 @@ class volume {
   double intersection(const volume &) const;
   double rmin() const;
   double rmax() const;
+  double xmin() const;
+  double xmax() const;
+  double ymin() const;
+  double ymax() const;
   double zmin() const;
   double zmax() const;
   vec loc(component, int index) const;
