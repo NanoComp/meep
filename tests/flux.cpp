@@ -97,6 +97,39 @@ double oned_flux(const fields &f, const vec &loc) {
     *(1.0/pi/8/c);
 }
 
+int split_1d(double eps(const vec &), int splitting) {
+  const double boxwidth = 5.0, timewait = 1.0;
+  const double zmax = 15.0, a = 10.0, gridpts = a*zmax;
+
+  volume v = volone(zmax,a);
+  mat ma1(v, eps, 1);
+  mat ma(v, eps, splitting);
+  ma1.use_pml_everywhere(2.0);
+  ma.use_pml_everywhere(2.0);
+
+  fields f1(&ma1);
+  fields f(&ma);
+  f1.use_real_fields();
+  f.use_real_fields();
+  f1.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
+  f.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
+  flux_plane *left1  = f1.add_flux_plane(vec(zmax*.5-boxwidth),
+                                         vec(zmax*.5-boxwidth));
+  flux_plane *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
+                                       vec(zmax*.5-boxwidth));
+  volume mid = volone(2*boxwidth,a);
+  mid.origin = vec(zmax*.5-boxwidth-0.25/a);
+
+  const double ttot = f.find_last_source() + timewait;
+  while (f.time() < ttot) {
+    f1.step();
+    f.step();
+    if (!compare((c/a)*left1->flux(), (c/a)*left->flux(), 0.0, "Flux"))
+      return 0;
+  }
+  return 1;
+}
+
 int cavity_1d(const double boxwidth, const double timewait,
               double eps(const vec &)) {
   const double zmax = 15.0;
@@ -147,6 +180,9 @@ void attempt(const char *name, int allright) {
 int main(int argc, char **argv) {
   initialize(argc, argv);
   master_printf("Trying out the fluxes...\n");
+
+  attempt("Split flux plane split by 7...", split_1d(cavity, 7));
+  attempt("Split flux plane split by 137...", split_1d(cavity, 137));
 
   attempt("Cavity 1D 6.01 73", cavity_1d(6.01, 137.0, cavity));
   attempt("Cavity 1D 5.0   1", cavity_1d(5.0, 1.0, cavity));

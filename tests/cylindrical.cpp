@@ -262,7 +262,7 @@ int test_pattern(double eps(const vec &), int splitting,
 
 int main(int argc, char **argv) {
   initialize(argc, argv);
-  const char *dirname = make_output_directory(argv[0]);
+  const char *dirname = "cylindrical-out";
   master_printf("Testing cylindrical coords under different splittings...\n");
   
   for (int s=2;s<6;s++)
@@ -287,7 +287,6 @@ int main(int argc, char **argv) {
   if (!test_simple_metallic(one, 120, dirname))
     abort("error in crazy test_simple_metallic\n");
 
-  delete[] dirname;
   finished();
   exit(0);
 }

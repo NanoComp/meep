@@ -391,7 +391,7 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
 
 int main(int argc, char **argv) {
   initialize(argc, argv);
-  const char *dirname = make_output_directory(argv[0]);
+  const char *dirname = "symmetry-out";
   master_printf("Testing with various kinds of symmetry...\n");
 
   if (!pml_twomirrors(one, dirname))
@@ -415,7 +415,6 @@ int main(int argc, char **argv) {
   if (!exact_metal_rot4z(one, dirname))
     abort("error in exact_metal_rot4z vacuum\n");
 
-  delete[] dirname;
   finished();
   exit(0);
 }
