@@ -350,11 +350,13 @@ void h5io::write(const char *filename, const char *dataname,
 		 bool single_precision,
 		 bool append_file)
 {
-     int *start = new int[rank + 1];
-     for (int i = 0; i < rank; i++) start[i] = 0;
-     h5io::write_chunk(filename, dataname, rank, dims, data, start, dims,
-		       false,-1, false, true, single_precision, append_file);
-     delete[] start;
+  if (am_master()) {
+    int *start = new int[rank + 1];
+    for (int i = 0; i < rank; i++) start[i] = 0;
+    h5io::write_chunk(filename, dataname, rank, dims, data, start, dims,
+		      false,-1, false, true, single_precision, append_file);
+    delete[] start;
+  }
 }
 
 } // namespace meep
