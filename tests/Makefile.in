@@ -1,4 +1,4 @@
-.SUFFIXES: .dac .tex
+.SUFFIXES: .dac .tex .done
 .PHONY: all clean bench
 
 CXX = @DACTYL_CXX@
@@ -22,6 +22,8 @@ OBJFILES = two_dimensional.o cylindrical.o one_dimensional.o \
 		bench.o flux.o
 TESTFILES = two_dimensional.dac cylindrical.dac one_dimensional.dac \
 		bench.dac flux.dac
+DONEFILES = cylindrical.done one_dimensional.done two_dimensional.done \
+	bench.done flux.done
 
 $(OBJFILES): ../dactyl.h
 $(TESTFILES): ../libdactyl.a
@@ -30,19 +32,16 @@ $(TESTFILES): ../libdactyl.a
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
 .o.dac:
 	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
+.dac.done:
+	$(RUNCODE) ./$< && touch $@
 
 all: $(TESTFILES)
 
-test: $(TESTFILES) bench
-	set -e
-	$(RUNCODE) ./two_dimensional.dac
-	$(RUNCODE) ./one_dimensional.dac
-	$(RUNCODE) ./cylindrical.dac
-	$(RUNCODE) ./flux.dac
+test: $(DONEFILES)
 
 bench: $(TESTFILES)
 	set -e
 	$(RUNCODE) ./bench.dac
 
 clean:
-	rm -rf *.o *.dac *-out/ *-out-*/ debug_out_*
+	rm -rf *.o *.dac *-out/ *-out-*/ debug_out_* *.done
