@@ -165,7 +165,6 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
   v = ma->v;
   outdir = ma->outdir;
   m = tm;
-  phasein_time = 0;
   new_ma = NULL;
   bands = NULL;
   k = -1;
@@ -284,23 +283,17 @@ int fields::phase_in_material(const mat *newma, double time) {
     exit(1);
   }
   for (int i=0;i<num_chunks;i++)
-    phasein_time = chunks[i]->phase_in_material(newma->chunks[i], time);
+    chunks[i]->phase_in_material(newma->chunks[i]);
+  phasein_time = (int) (time*a/c);
   printf("I'm going to take %d time steps to phase in the material.\n",
          phasein_time);
   return phasein_time;
 }
 
-int fields_chunk::phase_in_material(const mat_chunk *newma, double time) {
+void fields_chunk::phase_in_material(const mat_chunk *newma) {
   new_ma = newma;
-  phasein_time = (int) (time*a/c);
-  if (phasein_time == 0) phasein_time = 1;
-  return phasein_time;
 }
 
 int fields::is_phasing() {
-  return phasein_time > 0;
-}
-
-int fields_chunk::is_phasing() {
   return phasein_time > 0;
 }

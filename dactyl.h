@@ -149,7 +149,7 @@ class fields_chunk {
   polarization *pol, *olpol;
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
-  int m, t, phasein_time, is_real;
+  int m, t, is_real;
   double k, cosknz, sinknz;
   complex<double> eiknz;
   bandsdata *bands;
@@ -178,8 +178,6 @@ class fields_chunk {
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
-  int phase_in_material(const mat_chunk *ma, double time);
-  int is_phasing();
 
   void get_point(monitor_point *p, const vec &);
   void output_point(FILE *, const vec &, const char *name);
@@ -197,7 +195,8 @@ class fields_chunk {
   friend class fields;
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
-  void phase_material();
+  void phase_in_material(const mat_chunk *ma);
+  void phase_material(int phasein_time);
   void step_h();
   void step_h_right();
   void step_h_boundaries();

@@ -67,34 +67,13 @@ void fields::step() {
   step_polarization_itself();
 }
 
-void fields_chunk::step() {
-  t += 1;
-
-  phase_material();
-
-  step_h();
-  step_h_source(h_sources);
-  step_h_boundaries();
-
-  prepare_step_polarization_energy();
-  half_step_polarization_energy();
-  step_e();
-  step_e_source(e_sources);
-  step_e_polarization();
-  step_e_boundaries();
-  half_step_polarization_energy();
-
-  update_polarization_saturation();
-  step_polarization_itself();
-}
-
 void fields::phase_material() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->phase_material();
-  phasein_time = chunks[0]->phasein_time;
+    chunks[i]->phase_material(phasein_time);
+  phasein_time--;
 }
 
-void fields_chunk::phase_material() {
+void fields_chunk::phase_material(int phasein_time) {
   if (new_ma && phasein_time > 0) {
     // First multiply the electric field by epsilon...
     DOCMP {
@@ -109,7 +88,6 @@ void fields_chunk::phase_material() {
     }
     // Then change epsilon...
     ma->mix_with(new_ma, 1.0/phasein_time);
-    phasein_time--;
     // Finally divide the electric field by the new epsilon...
     DOCMP {
       for (int c=0;c<10;c++)
