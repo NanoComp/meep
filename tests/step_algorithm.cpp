@@ -157,6 +157,7 @@ bool step_pml_2d_tm(const char *dirname) {
     if (!compare_point(f, f_old, vec2d(0.01 ,  0.5))) return 0;
     if (!compare_point(f, f_old, vec2d(.401 ,  .5))) return 0;
     if (!compare_point(f, f_old, vec2d(.46 , 0.33))) return 0;
+    if (!compare_point(f, f_old, vec2d(.2  , .5 ))) return 0;
     if (!compare_point(f, f_old, vec2d(.2  , .2 ))) return 0;
     if (!compare(f.electric_energy_in_box(v.surroundings()),
                  f_old.electric_energy_in_box(v.surroundings()),
@@ -215,10 +216,10 @@ int main(int argc, char **argv) {
     abort("error in step_metal_2d_te\n");
 
   if (!step_pml_2d_tm(dirname))
-    abort("error in step_metal_2d_tm\n");
+    abort("error in step_pml_2d_tm\n");
 
   if (!step_pml_2d_te(dirname))
-    abort("error in step_metal_2d_te\n");
+    abort("error in step_pml_2d_te\n");
 
   exit(0);
 }

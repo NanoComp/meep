@@ -110,7 +110,7 @@ bench bench_2d(const double xmax, const double ymax,
   return b;
 }
 
-const double te_tm_2d_time = 1e6;
+const double te_tm_2d_time = 2e5;
 
 bench bench_2d_tm(const double xmax, const double ymax,
                double eps(const vec &)) {

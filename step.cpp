@@ -195,8 +195,7 @@ void fields_chunk::step_h_old() {
         const int ix = x*(v.ny()+1);
         for (int y=0;y<v.ny();y++) {
           const double Cyhx = ma->C[Y][Hx][y+ix];
-          const double ooop_Cyhx = (ma->Cdecay[Y][Hx][X]) ?
-            ma->Cdecay[Y][Hx][X][y+ix] : 1.0;
+          const double ooop_Cyhx = ma->Cdecay[Y][Hx][X][y+ix];
           f[Hx][cmp][y+ix] += ooop_Cyhx*
             (c*(f[Ez][cmp][y+ix+1] - f[Ez][cmp][y+ix]) - Cyhx*f[Hx][cmp][y+ix]);
         }
@@ -214,8 +213,7 @@ void fields_chunk::step_h_old() {
         const int ixp1 = (x+1)*(v.ny()+1);
         for (int y=1;y<=v.ny();y++) {
           const double Cxhy = ma->C[X][Hy][y+ix];
-          const double ooop_Cxhy = (ma->Cdecay[X][Hy]) ?
-            ma->Cdecay[X][Hy][Y][y+ix] : 1.0;
+          const double ooop_Cxhy = ma->Cdecay[X][Hy][Y][y+ix];
           f[Hy][cmp][y+ix] += ooop_Cxhy*
             (c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix])) - Cxhy*f[Hy][cmp][y+ix]);
         }
@@ -263,17 +261,17 @@ void fields_chunk::step_h() {
         const direction d_deriv_m = minus_deriv_direction[cc];
         const bool have_p = have_plus_deriv[cc];
         const bool have_m = have_minus_deriv[cc];
-        const bool have_pml_p = have_p && have_pml_in_direction[d_deriv_p];
-        const bool have_pml_m = have_m && have_pml_in_direction[d_deriv_m];
+        const bool have_p_pml = have_p && have_pml_in_direction[d_deriv_p];
+        const bool have_m_pml = have_m && have_pml_in_direction[d_deriv_m];
         const int stride_p = (have_p)?v.stride(d_deriv_p):0;
         const int stride_m = (have_m)?v.stride(d_deriv_m):0;
         // The following lines "promise" the compiler that the values of
         // these arrays won't change during this loop.
-        const double *C_m = (have_pml_m)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
-        const double *C_p = (have_pml_p)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
-        const double *decay_m = (!have_pml_m)?NULL:
+        const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
+        const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
+        const double *decay_m = (!have_m_pml)?NULL:
           ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
-        const double *decay_p = (!have_pml_p)?NULL:
+        const double *decay_p = (!have_p_pml)?NULL:
           ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
         const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
         const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
@@ -285,14 +283,15 @@ void fields_chunk::step_h() {
         const int s1 = stride_each_direction[0];
         const int s2 = stride_each_direction[1];
         const int s3 = stride_each_direction[2];
-        for (int i1 = 0; i1 < n1; i1++)
+#include "stepgen.h"
+        /*for (int i1 = 0; i1 < n1; i1++)
         for (int i2 = 0; i2 < n2; i2++)
         for (int i3 = 0, ind = i1*s1+i2*s2; i3 < n3; i3++, ind += s3) {
         //LOOP_OVER_OWNED(v, ind) {
           double dh = 0.0;
           if (have_m) {
             const double deriv_m = c*(f_m[ind]-f_m[ind-stride_m]);
-            if (have_pml_m) {
+            if (have_m_pml) {
               const double h_minus =
                 the_f[ind] - the_f_pml[ind];
               dh += decay_m[ind]*
@@ -303,18 +302,18 @@ void fields_chunk::step_h() {
           }
           if (have_p) {
             const double m_deriv_p = c*(f_p[ind-stride_p]-f_p[ind]);
-            if (have_pml_p) {
+            if (have_p_pml) {
               const double delta_p = decay_p[ind]*
                 (m_deriv_p - C_p[ind]*the_f_pml[ind]);
               the_f_pml[ind] += delta_p;
               dh += delta_p;
             } else {
-              if (have_pml_m) the_f_pml[ind] += m_deriv_p;
+              if (have_m_pml) the_f_pml[ind] += m_deriv_p;
               dh += m_deriv_p;
             }
           }
           the_f[ind] += dh;
-        }
+        }*/
       }
   } else if (v.dim == Dcyl) {
     DOCMP {
