@@ -237,7 +237,9 @@ static inline int go_higher(double f[], int fmax, int lo, int hi) {
 
 static inline int am_done(double f[], int fmax, int lo, int hi) {
   double wid = f[hi]-f[lo] + 0.001;
-  return f[lo]-f[lo-1] > wid && f[hi+1]-f[hi] > wid;
+  int lodone = lo == 0 || f[lo]-f[lo-1] > wid;
+  int hidone = hi == fmax-1 || f[hi+1]-f[hi] > wid;
+  return lodone && hidone;
 }
 
 static void get_cluster(double f[], int fmax, int maxsize, double maxwid,
