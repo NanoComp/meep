@@ -176,7 +176,8 @@ class fields {
   flux_plane create_zflux_plane(double rmin, double rmax, double zconst);
   complex<double> get_flux(flux_plane *fp);
   
-  void prepare_for_bands(int z, int ttot, double fmax=0, double qmin=1e300);
+  void prepare_for_bands(int z, int ttot, double fmax=0,
+                         double qmin=1e300, double frac_pow_min=1e-7);
   void record_bands();
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);

@@ -106,7 +106,7 @@ class bandsdata {
   // phonon bands).
   complex<double> *P;
   int tstart, tend, z, nr, maxbands, scale_factor;
-  double a, inva, fmin, fmax, qmin;
+  double a, inva, fmin, fmax, qmin, fpmin;
   int ntime;
   int verbosity;
 

@@ -50,7 +50,8 @@ int src::find_last_source(int sofar) {
   return next->find_last_source(sofar);
 }
 
-void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
+void fields::prepare_for_bands(int z, int ttot, double fmax,
+                               double qmin, double frac_pow_min) {
   int last_source = 0;
   if (e_sources != NULL)
     last_source = e_sources->find_last_source();
@@ -69,6 +70,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
            z, nz);
     exit(1);
   }
+  bands->fpmin = frac_pow_min;
   bands->z = z;
   bands->nr = nr;
 
@@ -725,6 +727,24 @@ int bandsdata::get_freqs(cmplx *data, int n,
                freq_re[i], freq_im[i], qminhere);
         printf("qminhere is %lg (with %lg)\n", qminhere, freq_re[i]);
       }
+      for (int j=i;j<num;j++) {
+        freq_re[j] = freq_re[j+1];
+        freq_im[j] = freq_im[j+1];
+        amps[j] = amps[j+1];
+      }
+    }
+  }
+  // Now get rid of any really low power solutions...
+  double powmax = 0.0;
+  for (int i=0;i<num;i++)
+    powmax = max(powmax,abs(amps[i]*amps[i]));
+  double powmin = powmax*fpmin;
+  for (int i=num-1;i>=0;i--) {
+    if (abs(amps[i]*amps[i]) < powmin) {
+      num--;
+      if (verbosity > 2)
+        printf("Trashing a spurious low power solution with freq %lg %lg (%lg vs %lg)\n",
+               freq_re[i], freq_im[i], amps[i], powmin);
       for (int j=i;j<num;j++) {
         freq_re[j] = freq_re[j+1];
         freq_im[j] = freq_im[j+1];
