@@ -22,8 +22,6 @@
 #include "dactyl.h"
 #include "harminv.h"
 
-#include <valgrind.h>
-
 #define EP(e,r,z) ((e)[(z)+(r)*(nz+1)])
 #define DOCMP for (int cmp=0;cmp<2;cmp++)
 
