@@ -7,7 +7,9 @@ Cylindrical coordinates (for waveguide bend problems):
                 -- allows computation of bended photonic-crystal waveguides
 
 HDF5 output:
-        should support epsilon, energy density, and Poynting vector.
+        should support energy density and Poynting vector.
+		-- add new component types to support these in
+		   get_field, etc. ... HDF5 then follows automatically
         support periodic boundaries, outputting supercell
         give simple way to output "whole" cell, centered on v.center
 
