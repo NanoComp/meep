@@ -573,51 +573,22 @@ void mat_chunk::set_epsilon(double feps(const vec &), double minvol,
   if (!is_mine()) return;
   if (!use_anisotropic_averaging) {
     if (is_mine())
-      if (v.dim == Dcyl) {
-        const vec dr = v.dr()*0.5; // The distance between Yee field components
-        const vec dz = v.dz()*0.5; // The distance between Yee field components
-        for (int i=0;i<v.ntot();i++) {
-          const vec here = v.loc(Ep,i);
-          inveps[Er][R][i] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
-          inveps[Ep][P][i] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
-                                 feps(here+dr-dz) + feps(here-dr-dz));
-          inveps[Ez][Z][i] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
-        }
-      } else if (v.dim == D1) {
-        for (int i=0;i<v.ntot();i++) inveps[Ex][X][i] = 1.0/eps[i];
-      } else if (v.dim == D2) {
-        if (inveps[Ez][Z])
-          for (int i=0;i<v.ntot();i++) inveps[Ez][Z][i] = 1.0/eps[i];
-        const vec hdx = v.dx()*0.5;;
-        if (inveps[Ex][X])
-          for (int i=0;i<v.ntot();i++) {
-            const vec here = v.loc(Ex,i);
-            inveps[Ex][X][i] = 2.0/(feps(here+hdx)+feps(here-hdx));
+      for (int i=0;i<v.ntot();i++) {
+        FOR_ELECTRIC_COMPONENTS(c)
+          if (v.has_field(c)) {
+            const vec here = v.loc(c,i);
+            int num_avg = 0;
+            double temp = 0.0;
+            LOOP_OVER_DIRECTIONS(v.dim,d)
+              if (d != component_direction(c)) {
+                num_avg += 2;
+                vec dx = zero_vec(v.dim);
+                dx.set_direction(d,0.5/a);
+                temp += feps(here + dx);
+                temp += feps(here - dx);
+              }
+            inveps[c][component_direction(c)][i] = num_avg/temp;
           }
-        const vec hdy = v.dy()*0.5;;
-        if (inveps[Ey][Y])
-          for (int i=0;i<v.ntot();i++) {
-            const vec here = v.loc(Ey,i);
-            inveps[Ey][Y][i] = 2.0/(feps(here+hdy)+feps(here-hdy));
-          }
-      } else {
-        for (int i=0;i<v.ntot();i++) {
-          FOR_ELECTRIC_COMPONENTS(c)
-            if (v.has_field(c)) {
-              const vec here = v.loc(c,i);
-              int num_avg = 0;
-              double temp = 0.0;
-              LOOP_OVER_DIRECTIONS(v.dim,d)
-                if (d != component_direction(c)) {
-                  num_avg += 2;
-                  vec dx = zero_vec(v.dim);
-                  dx.set_direction(d,0.5/a);
-                  temp += feps(here + dx);
-                  temp += feps(here - dx);
-                }
-              inveps[c][component_direction(c)][i] = num_avg/temp;
-            }
-        }
       }
   } else {
     if (minvol == 0.0) minvol = v.dV(zero_ivec(v.dim)).full_volume()/100.0;

@@ -213,8 +213,8 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
 
 component volume::eps_component() const {
   switch (dim) {
-  case D1: return Ex;
-  case D2: return Ez;
+  case D1: return Hy;
+  case D2: return Hz;
   case D3: return Dielectric;
   case Dcyl: return Hp;
   }

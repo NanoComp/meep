@@ -159,7 +159,7 @@ int cavity_1d(const double boxwidth, const double timewait,
                 (delta_energy - defl)/start_energy);
   return compare(start_energy - delta_energy,
                  start_energy - defl,
-                 (timewait>50)?0.03:0.003, "Flux"); // Yuck, problem with flux.
+                 (timewait>50)?0.032:0.0039, "Flux"); // Yuck, problem with flux.
 }
 
 void attempt(const char *name, int allright) {

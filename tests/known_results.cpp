@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
           "1x1 PML 2D TM");
   compare(0.0110425, x_periodic(voltwo(1.0, 1.0, a), one),
           "1x1 X periodic 2D TM");
-  compare(-0.478767, periodic_ez(voltwo(1.0, 3.0, a), rods),
+  compare(-0.140471, periodic_ez(voltwo(1.0, 3.0, a), rods),
           "1x1 fully periodic 2D TM rods");
   compare(0.112502, periodic_ez(voltwo(1.0, 3.0, a), one),
           "1x1 fully periodic 2D TM");
