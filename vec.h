@@ -56,12 +56,8 @@ inline signed_direction flip(signed_direction d) {
 }
 
 inline bool has_direction(ndim dim, direction d) {
-  switch (dim) {
-  case D2: return d == X || d == Y;
-  case D1: return d == Z;
-  case D3: return d == X || d == Y || d == Z;
-  case Dcyl: return d == Z || d == R;
-  }
+  LOOP_OVER_DIRECTIONS(dim, dd) if (dd == d) return true;
+  return false;
 }
 
 inline int is_electric(component c) { return (int) c < 5; }
@@ -211,7 +207,7 @@ class ivec {
   };
 
   vec operator*(double s) const {
-    vec result = zero_vec(dim);
+    vec result(dim);
     LOOP_OVER_DIRECTIONS(dim, d) result.set_direction(d, t[d] * s);
     return result;
   };
@@ -246,18 +242,13 @@ class volume {
   vec origin;
   double a, inva;
 
-  int nz() const { return num[2]; }
-  int ny() const { return num[1]; }
-  int nx() const { return num[0]; }
-  int nr() const { return num[0]; }
   int num_direction(direction d) const {
-    switch (d) {
-    case X: return nx();
-    case Y: return ny();
-    case Z: return nz();
-    case R: return nr();
-    }
+    return num[((int) d) % 3];
   };
+  int nr() const { return num_direction(R); }
+  int nx() const { return num_direction(X); }
+  int ny() const { return num_direction(Y); }
+  int nz() const { return num_direction(Z); }
 
   int has_field(component) const;
   int has_boundary(boundary_side,direction) const;

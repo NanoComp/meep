@@ -44,16 +44,9 @@ static inline int lattice_to_yee(double x, double a, double inva=0.0) {
 }
 
 inline ivec volume::round_vec(const vec &p) const {
-  switch (dim) {
-  case D1: return ivec(lattice_to_yee(p.z(),a,inva));
-  case D2: return ivec2d(lattice_to_yee(p.x(),a,inva),
-                         lattice_to_yee(p.y(),a,inva));
-  case D3: return ivec(lattice_to_yee(p.x(),a,inva),
-                       lattice_to_yee(p.y(),a,inva),
-                       lattice_to_yee(p.z(),a,inva));
-  case Dcyl: return ivec(lattice_to_yee(p.r(),a,inva),
-                         lattice_to_yee(p.z(),a,inva));
-  }
+  ivec result(dim);
+  LOOP_OVER_DIRECTIONS(dim, d) result.set_direction(d, lattice_to_yee(p.in_direction(d),a,inva));
+  return result;
 }
 
 ivec volume::io() const {
@@ -67,13 +60,9 @@ static inline double rtl(double x, double a, double inva=0.0) {
 
 static inline vec round_to_lattice(const vec &p, double a, double inva=0.0) {
   // Rounds to a value somewhere on the yee lattice.
-  if (inva == 0.0) inva = 1.0/a;
-  switch (p.dim) {
-  case D1: return vec(rtl(p.z(),a,inva));
-  case D2: return vec2d(rtl(p.x(),a,inva), rtl(p.y(),a,inva));
-  case D3: return vec(rtl(p.x(),a,inva), rtl(p.y(),a,inva), rtl(p.z(),a,inva));
-  case Dcyl: return vec(rtl(p.r(),a,inva), rtl(p.z(),a,inva));
-  }
+  vec result(p.dim);
+  LOOP_OVER_DIRECTIONS(p.dim, d) result.set_direction(d, rtl(p.in_direction(d),a,inva));
+  return result;
 }
 
 const char *dimension_name(ndim dim) {
