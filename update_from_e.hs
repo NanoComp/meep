@@ -49,7 +49,7 @@ update_polarization_saturation = if_ "fac" $
 
 step_polarization_itself =
     doexp $ "op->P[ec][cmp][i] = funinv*((2-om*om)*np->P[ec][cmp][i] + "++
-            "(0.5*g-1)*op->P[ec][cmp][i]) + np->s[ec][i]*f[ec][cmp][i]"
+            "(0.5*g-1)*op->P[ec][cmp][i] + np->s[ec][i]*f[ec][cmp][i])"
 {- Stuff below is more sort of general-use functions -}
 
 get_cmp_part num = ("cmp==0")|?| ("real("<<num<<")") |:| ("imag("<<num<<")")

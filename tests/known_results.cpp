@@ -158,11 +158,11 @@ int main(int argc, char **argv) {
   master_printf("Testing with some known results...\n");
   const double a = 10.0;
 
-  compare(-0.0131064, polariton_ex(volone(1.0, a), one),
+  compare(-0.00894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
-  compare(-0.0104927, saturated_polariton_ex(volone(1.0, a), one),
+  compare(-0.00592748, saturated_polariton_ex(volone(1.0, a), one),
           "1D saturated polariton");
-  compare(0.000252279, polariton_energy(volone(1.0, a), one),
+  compare(0.000265566, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(0.520605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");

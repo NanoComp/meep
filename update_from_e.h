@@ -13,7 +13,7 @@ FOR_E_AND_D(ec,dc) if (f[ec][0]) {
             }
             np->s[ec][i] = max(-np->energy[ec][i]*fac, 0.0);
             DOCMP {
-              op->P[ec][cmp][i] = funinv*((2-om*om)*np->P[ec][cmp][i] + (0.5*g-1)*op->P[ec][cmp][i]) + np->s[ec][i]*f[ec][cmp][i];
+              op->P[ec][cmp][i] = funinv*((2-om*om)*np->P[ec][cmp][i] + (0.5*g-1)*op->P[ec][cmp][i] + np->s[ec][i]*f[ec][cmp][i]);
             }
           }
         } else {
@@ -23,7 +23,7 @@ FOR_E_AND_D(ec,dc) if (f[ec][0]) {
             }
             np->s[ec][i] = np->energy[ec][i]*fac;
             DOCMP {
-              op->P[ec][cmp][i] = funinv*((2-om*om)*np->P[ec][cmp][i] + (0.5*g-1)*op->P[ec][cmp][i]) + np->s[ec][i]*f[ec][cmp][i];
+              op->P[ec][cmp][i] = funinv*((2-om*om)*np->P[ec][cmp][i] + (0.5*g-1)*op->P[ec][cmp][i] + np->s[ec][i]*f[ec][cmp][i]);
             }
           }
         }
@@ -33,7 +33,7 @@ FOR_E_AND_D(ec,dc) if (f[ec][0]) {
             np->energy[ec][i] += 0.5*(np->P[ec][cmp][i] - op->P[ec][cmp][i])*f[ec][cmp][i];
           }
           DOCMP {
-            op->P[ec][cmp][i] = funinv*((2-om*om)*np->P[ec][cmp][i] + (0.5*g-1)*op->P[ec][cmp][i]) + np->s[ec][i]*f[ec][cmp][i];
+            op->P[ec][cmp][i] = funinv*((2-om*om)*np->P[ec][cmp][i] + (0.5*g-1)*op->P[ec][cmp][i] + np->s[ec][i]*f[ec][cmp][i]);
           }
         }
       }
