@@ -170,7 +170,7 @@ void fields::output_hdf5(const char *filename, const char *dataname,
 	      break;
 	  }
 	  if (j < rank)
-	    continue;
+	    goto next_shift;
 
 	  loc0 -= shift;
 	  
@@ -233,6 +233,7 @@ void fields::output_hdf5(const char *filename, const char *dataname,
 			    append_file, single_precision);
 	  ++chunks_written;
 	}
+      next_shift:
 	LOOP_OVER_DIRECTIONS(gvS.dim, d) {
 	  if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
 	    ishift.set_direction(d, ishift.in_direction(d) + 1);
