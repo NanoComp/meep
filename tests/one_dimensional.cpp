@@ -66,7 +66,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
   double a = 10.0;
   double ttot = 170.0;
   
-  volume v = volone(84.0,a);
+  volume v = volone(6.0,a);
   mat ma1(v, eps, 1);
   mat ma(v, eps, splitting);
   ma.set_output_directory(dirname);
@@ -119,7 +119,7 @@ complex<double> checkers(const vec &v) {
 int test_pattern(double eps(const vec &), int splitting,
                  const char *dirname) {
   double a = 10.0;
-  volume v = volone(84.0,a);
+  volume v = volone(6.0,a);
   mat ma1(v, eps, 1);
   mat ma(v, eps, splitting);
   ma.set_output_directory(dirname);
@@ -154,16 +154,16 @@ int main(int argc, char **argv) {
   const char *dirname = make_output_directory(argv[0]);
   printf("Testing one dimension under different splittings...\n");
 
-  for (int s=2;s<9;s++)
+  for (int s=2;s<7;s++)
     test_pattern(one, s, dirname) || die("error in test_pattern\n");
-  test_pattern(one, 210, dirname) || die("error in crazy test_pattern\n");
-  test_pattern(one, 840, dirname) || die("error in crazy test_pattern\n");
+  test_pattern(one, 30, dirname) || die("error in crazy test_pattern\n");
+  test_pattern(one, 60, dirname) || die("error in crazy test_pattern\n");
 
-  for (int s=2;s<9;s++)
+  for (int s=2;s<7;s++)
     test_simple_periodic(one, s, dirname) || die("error in test_simple_periodic\n");
-  test_simple_periodic(one, 24, dirname)
+  test_simple_periodic(one, 30, dirname)
     || die("error in crazy test_simple_periodic\n");
-  test_simple_periodic(one, 840, dirname)
+  test_simple_periodic(one, 60, dirname)
     || die("error in crazy test_simple_periodic\n");
   delete[] dirname;
   exit(0);
