@@ -673,7 +673,7 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
   }
 
   harminv_data hd = 
-    harminv_data_create(n, data, fmin*sampling_rate, fmax*sampling_rate, maxbands);
+    harminv_data_create(n, data, fmin*sampling_rate*c/a, fmax*sampling_rate*c/a, maxbands);
 
   int prev_nf, cur_nf;
   harminv_solve(hd);
