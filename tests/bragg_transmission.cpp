@@ -135,7 +135,8 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
 				       freq_min, freq_max, nfreq);
 
   int dindex = 0;
-  f.output_hdf5(Dielectric, f0.v.surroundings(), a, true, dindex, false, true, "f");
+  if (0)
+    f.output_hdf5(Dielectric, f0.v.surroundings(), a, true, dindex, false, true, "f");
   while (f.time() < nfreq / fabs(freq_max - freq_min) / 2) {
     f.step();
     f0.step();
