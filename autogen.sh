@@ -16,6 +16,9 @@ while test $# -ge 1; do
     shift
 done
 
+# paranoia: sometimes autoconf doesn't get things right the first time
+autoreconf --verbose --install --symlink --force
+autoreconf --verbose --install --symlink --force
 autoreconf --verbose --install --symlink --force
 
 config=good # hackery so darcs_test still outputs config.log w/failed configure
