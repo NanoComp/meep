@@ -186,20 +186,20 @@ mat::mat(double feps(double r, double z),
       const int r=0;
       MA(invepser,r,z) = 2./(MA(eps,r,z)+MA(eps,r,z-1));
       MA(invepsep,r,z) = 2./(MA(eps,r,z)+ MA(eps,r,z-1));
-      MA(invepsez,r,z) = MA(eps,r,z);
+      MA(invepsez,r,z) = 1./MA(eps,r,z);
     }
   }
   {
     const int r=0,z=0;
     MA(invepser,r,z) = 2./(MA(eps,r,z)+MA(eps,r,nz-1));
     MA(invepsep,r,z) = 2./(MA(eps,r,z)+MA(eps,r,nz-1));
-    MA(invepsez,r,z) = MA(eps,r,z);
+    MA(invepsez,r,z) = 1./MA(eps,r,z);
   }
   {
     const int r=0,z=nz;
     MA(invepser,r,z) = 2./(MA(eps,r,0)+MA(eps,r,nz-1));
     MA(invepsep,r,z) = 2./(MA(eps,r,0)+MA(eps,r,z-1));
-    MA(invepsez,r,z) = MA(eps,r,0);
+    MA(invepsez,r,z) = 1./MA(eps,r,0);
   }
   // Allocate the conductivity arrays:
   Crez = Crep = Crhz = Crhp = Cper = Cpez = Cphr = Cphz = NULL;
