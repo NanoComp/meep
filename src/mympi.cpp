@@ -25,8 +25,10 @@
 #endif
 
 #if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
+#  ifndef _GNU_SOURCE
+#    define _GNU_SOURCE 1
+#  endif
 #  include <fenv.h>
-// extern "C" int feenableexcept (int EXCEPTS);
 #endif
 
 #define UNUSED(x) (void) x // silence compiler warnings
