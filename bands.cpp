@@ -350,7 +350,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   cmplx *bdata;
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
     for (int whichf = 0; whichf < 10; whichf++)
-      if (v.has_field((component)whichf)) {
+      if (v.has_field((component)whichf) && maxbands < max_freqs - freqs_so_far) {
         if (verbosity>1) master_printf("Looking at field %d\n", whichf);
         int freqs_here = bands->get_freqs(bands->f[p][whichf], ntime,
                                           ta+freqs_so_far,
@@ -401,11 +401,11 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   return fad;
 }
 
-int bandsdata::get_freqs(cmplx *data, int n,
-                         cmplx *amps, double *freq_re, double *freq_im) {
+int bandsdata::get_freqs(cmplx *data, int n, cmplx *amps,
+                         double *freq_re, double *freq_im) {
   
-  int num = do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands, amps, 
-		       freq_re, freq_im);
+  int num = do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands,
+                       amps,  freq_re, freq_im);
   // First deal with any negative frequency solutions.
   const double total_time = n*scale_factor*c/a;
   for (int i=0;i<num-1;i++) {
