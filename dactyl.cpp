@@ -26,62 +26,112 @@
 fields::~fields() {
   delete ma;
   DOCMP {
-    delete[] hr[cmp];
-    delete[] hp[cmp];
-    delete[] hz[cmp];
-    delete[] er[cmp];
-    delete[] ep[cmp];
-    delete[] ez[cmp];
-    delete[] backup_hr[cmp];
-    delete[] backup_hp[cmp];
-    delete[] backup_hz[cmp];
-    delete[] hrp[cmp];
-    delete[] hpz[cmp];
-    delete[] hzr[cmp];
-    delete[] erp[cmp];
-    delete[] epz[cmp];
-    delete[] ezr[cmp];
-    delete[] z_hrp[cmp][0];
-    delete[] z_hrp[cmp][1];
-    delete[] z_hpz[cmp][0];
-    delete[] z_hpz[cmp][1];
-    delete[] z_erp[cmp][0];
-    delete[] z_erp[cmp][1];
-    delete[] z_epz[cmp][0];
-    delete[] z_epz[cmp][1];
-    delete[] erw[cmp];
-    delete[] epw[cmp];
-    delete[] ezw[cmp];
-    delete[] hrw[cmp];
-    delete[] hpw[cmp];
-    delete[] hzw[cmp];
+    for (int i=0;i<10;i++) delete[] f[i][cmp];
+    for (int i=0;i<10;i++) delete[] f_backup[i][cmp];
+    for (int i=0;i<10;i++) delete[] f_pml[i][cmp];
+    for (int i=0;i<10;i++) delete[] f_backup_pml[i][cmp];
+    delete[] e_connection_sinks[cmp];
+    delete[] e_connection_sources[cmp];
+    delete[] h_connection_sinks[cmp];
+    delete[] h_connection_sources[cmp];
   }
-  if (nfreq) delete[] freqs;
-  if (bands) delete bands;
+  delete[] e_phases;
+  delete[] h_phases;
+  delete h_sources;
+  delete e_sources;
+  delete bands;
   delete pol;
   delete olpol;
 }
 
 void fields::use_bloch(double tk) {
-  if (npmlz) npmlz = 0;
   k = tk;
-  cosknz = cos(k*2*pi*inva*nz);
-  sinknz = sin(k*2*pi*inva*nz);
+  cosknz = cos(k*2*pi*inva*v.nz());
+  sinknz = sin(k*2*pi*inva*v.nz());
   eiknz = complex<double>(cosknz, sinknz);
+  complex<double> emiknz = complex<double>(cosknz, -sinknz);
+  if (v.dim == d1) {
+    delete[] e_phases;
+    delete[] h_phases;
+    num_h_connections = 0;
+    num_e_connections = 1;
+    e_phases = new complex<double>[num_e_connections];
+    e_phases[0] = eiknz;
+    DOCMP {
+      delete[] e_connection_sinks[cmp];
+      delete[] e_connection_sources[cmp];
+      e_connection_sinks[cmp] = new (double *)[num_e_connections];
+      e_connection_sources[cmp] = new (double *)[num_e_connections];
+      e_connection_sources[cmp][0] = &f[Ex][cmp][0];
+      e_connection_sinks[cmp][0] = &f[Ex][cmp][v.nz()];
+    }
+  } else if (v.dim == dcyl) {
+    num_e_connections = 3*(v.nr()+1);
+    num_h_connections = 3*(v.nr()+1);
+    delete[] e_phases;
+    delete[] h_phases;
+    e_phases = new complex<double>[num_e_connections];
+    h_phases = new complex<double>[num_h_connections];
+    DOCMP {
+      delete[] e_connection_sinks[cmp];
+      delete[] e_connection_sources[cmp];
+      delete[] h_connection_sinks[cmp];
+      delete[] h_connection_sources[cmp];
+      e_connection_sinks[cmp] = new (double *)[num_e_connections];
+      h_connection_sinks[cmp] = new (double *)[num_h_connections];
+      e_connection_sources[cmp] = new (double *)[num_e_connections];
+      h_connection_sources[cmp] = new (double *)[num_h_connections];
+      int econ = 0;
+      int hcon = 0;
+      for (int r=0;r<=v.nr();r++) {
+        int right = v.nz() + r*(v.nz()+1);
+        int left = 0 + r*(v.nz()+1);
+        e_connection_sources[cmp][econ] = &f[Ep][cmp][right];
+        e_connection_sinks[cmp][econ] = &f[Ep][cmp][left];
+        e_phases[econ] = emiknz;
+        econ++;
+        e_connection_sources[cmp][econ] = &f[Er][cmp][right];
+        e_connection_sinks[cmp][econ] = &f[Er][cmp][left];
+        e_phases[econ] = emiknz;
+        econ++;
+        e_connection_sources[cmp][econ] = &f[Ez][cmp][left];
+        e_connection_sinks[cmp][econ] = &f[Ez][cmp][right];
+        e_phases[econ] = eiknz;
+        econ++;
+
+        h_connection_sources[cmp][hcon] = &f[Hz][cmp][right];
+        h_connection_sinks[cmp][hcon] = &f[Hz][cmp][left];
+        h_phases[hcon] = emiknz;
+        hcon++;
+        h_connection_sources[cmp][hcon] = &f[Hr][cmp][left];
+        h_connection_sinks[cmp][hcon] = &f[Hr][cmp][right];
+        h_phases[hcon] = eiknz;
+        hcon++;
+        h_connection_sources[cmp][hcon] = &f[Hp][cmp][left];
+        h_connection_sinks[cmp][hcon] = &f[Hp][cmp][right];
+        h_phases[hcon] = eiknz;
+        hcon++;
+        // FIXME: Need to add PML connections here!
+      }
+    }
+  } else {
+    printf("Unsupported dimension?!\n");
+    exit(1);
+  }
 }
+
+double zero = 0.0;
 
 fields::fields(const mat *the_ma, int tm) {
   int r, z;
   ma = new mat(the_ma);
   verbosity = 0;
-  nr = ma->nr;
-  nz = ma->nz;
+  v = ma->v;
   outdir = ma->outdir;
   m = tm;
   phasein_time = 0;
   new_ma = NULL;
   bands = NULL;
-  freqs = NULL;
   k = -1;
   a = ma->a;
   inva = 1.0/a;
@@ -93,82 +143,95 @@ fields::fields(const mat *the_ma, int tm) {
   olpol = polarization::set_up_polarizations(ma);
   h_sources = e_sources = NULL;
   DOCMP {
-    hr[cmp] = new double[(nr+1)*(nz+1)];
-    hp[cmp] = new double[(nr+1)*(nz+1)];
-    hz[cmp] = new double[(nr+1)*(nz+1)];
-    er[cmp] = new double[(nr+1)*(nz+1)];
-    ep[cmp] = new double[(nr+1)*(nz+1)];
-    ez[cmp] = new double[(nr+1)*(nz+1)];
-    backup_hr[cmp] = NULL;
-    backup_hp[cmp] = NULL;
-    backup_hz[cmp] = NULL;
-  }
-  if (ez[1] == NULL) {
-    printf("Out of memory!\n");
-    exit(1);
-  }
-  npmlz = ma->npmlz;
-  npmlr = ma->npmlr;
-  // Note: some of the following sizes are wrong...
-  DOCMP {
-    hrp[cmp] = new double[npmlr*(nz+1)];
-    hpz[cmp] = new double[npmlr*(nz+1)];
-    hzr[cmp] = new double[npmlr*(nz+1)];
-    erp[cmp] = new double[npmlr*(nz+1)];
-    epz[cmp] = new double[npmlr*(nz+1)];
-    ezr[cmp] = new double[npmlr*(nz+1)];
-    z_hrp[cmp][0] = new double[npmlz*(nr+1)];
-    z_hrp[cmp][1] = new double[npmlz*(nr+1)];
-    z_hpz[cmp][0] = new double[npmlz*(nr+1)];
-    z_hpz[cmp][1] = new double[npmlz*(nr+1)];
-    z_erp[cmp][0] = new double[npmlz*(nr+1)];
-    z_erp[cmp][1] = new double[npmlz*(nr+1)];
-    z_epz[cmp][0] = new double[npmlz*(nr+1)];
-    z_epz[cmp][1] = new double[npmlz*(nr+1)];
+    for (int i=0;i<10;i++) f[i][cmp] = NULL;
+    for (int i=0;i<10;i++) f_backup[i][cmp] = NULL;
+    for (int i=0;i<10;i++) f_pml[i][cmp] = NULL;
+    for (int i=0;i<10;i++) f_backup_pml[i][cmp] = NULL;
+
+    for (int i=0;i<10;i++) if (v.has_field((component)i))
+      f[i][cmp] = new double[v.ntot()];
+    for (int i=0;i<10;i++) if (v.has_field((component)i)) {
+      f_pml[i][cmp] = new double[v.ntot()];
+      if (f_pml[i][cmp] == NULL) {
+        printf("Out of memory!\n");
+        exit(1);
+      }
+    }
   }
   DOCMP {
-    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
-      CM(hr,r,z) = 0.0;
-    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
-      CM(hp,r,z) = 0.0;
-    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
-      CM(hz,r,z) = 0.0;
-    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
-      CM(er,r,z) = 0.0;
-    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
-      CM(ep,r,z) = 0.0;
-    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
-      CM(ez,r,z) = 0.0;
+    for (int c=0;c<10;c++)
+      if (v.has_field((component)c))
+        for (int i=0;i<v.ntot();i++)
+          f[c][cmp][i] = 0.0;
     // Now for pml extra fields...
-    if (npmlr) {
-      for (r=nr-npmlr;r<nr;r++) for (z=0;z<nz+1;z++)
-        PMLR(hrp,r,z) = 0.0;
-      for (r=nr-npmlr;r<nr;r++) for (z=0;z<nz+1;z++)
-        PMLR(hpz,r,z) = 0.0;
-      for (r=nr-npmlr;r<nr;r++) for (z=0;z<nz+1;z++)
-        PMLR(hzr,r,z) = 0.0;
-      for (r=nr-npmlr;r<nr;r++) for (z=0;z<nz+1;z++)
-        PMLR(erp,r,z) = 0.0;
-      for (r=nr-npmlr;r<nr;r++) for (z=0;z<nz+1;z++)
-        PMLR(epz,r,z) = 0.0;
-      for (r=nr-npmlr;r<nr;r++) for (z=0;z<nz+1;z++)
-        PMLR(ezr,r,z) = 0.0;
+    for (int c=0;c<10;c++)
+      if (v.has_field((component)c))
+        for (int i=0;i<v.ntot();i++)
+          f_pml[c][cmp][i] = 0.0;
+  }
+  if (v.dim == d1) {
+    // Set up by default with metallic boundary conditions.
+    num_h_connections = 0;
+    num_e_connections = 1;
+    e_phases = new complex<double>[num_e_connections];
+    e_phases[0] = 0.0;
+    h_phases = NULL;
+    DOCMP {
+      e_connection_sinks[cmp] = new (double *)[num_e_connections];
+      e_connection_sources[cmp] = new (double *)[num_e_connections];
+      e_connection_sources[cmp][0] = &zero;
+      e_connection_sinks[cmp][0] = &f[Ex][cmp][v.nz()];
+      h_connection_sinks[cmp] = NULL;
+      h_connection_sources[cmp] = NULL;
     }
-    if (npmlz) {
-      for (int lr=-1;lr<2;lr+=2) for (int r=0;r<nr+1;r++) for (int iz=0;iz<npmlz;iz++)
-        PMLZ(z_hrp,r) = 0.0;
-      for (int lr=-1;lr<2;lr+=2) for (int r=0;r<nr+1;r++) for (int iz=0;iz<npmlz;iz++)
-        PMLZ(z_hpz,r) = 0.0;
-      for (int lr=-1;lr<2;lr+=2) for (int r=0;r<nr+1;r++) for (int iz=0;iz<npmlz;iz++)
-        PMLZ(z_erp,r) = 0.0;
-      for (int lr=-1;lr<2;lr+=2) for (int r=0;r<nr+1;r++) for (int iz=0;iz<npmlz;iz++)
-        PMLZ(z_epz,r) = 0.0;
+  } else if (v.dim == dcyl) {
+    // Set up by default with metallic boundary conditions.
+    num_e_connections = 2*(v.nr()+1);
+    num_h_connections =   (v.nr()+1);
+    if (f_pml[Ep][0]) num_e_connections += v.nr()+1;
+    if (f_pml[Er][0]) num_e_connections += v.nr()+1;
+    if (f_pml[Hz][0]) num_h_connections += v.nr()+1;
+    e_phases = new complex<double>[num_e_connections];
+    h_phases = new complex<double>[num_h_connections];
+    DOCMP {
+      e_connection_sinks[cmp] = new (double *)[num_e_connections];
+      h_connection_sinks[cmp] = new (double *)[num_h_connections];
+      e_connection_sources[cmp] = new (double *)[num_e_connections];
+      h_connection_sources[cmp] = new (double *)[num_h_connections];
+      int econ = 0;
+      int hcon = 0;
+      for (int i=0;i<num_e_connections;i++) e_phases[i] = 1.0;
+      for (int i=0;i<num_h_connections;i++) h_phases[i] = 1.0;
+      for (int r=0;r<=v.nr();r++) {
+        int i = v.nz() + r*(v.nz()+1);
+        e_connection_sources[cmp][econ] = &zero;
+        e_connection_sinks[cmp][econ] = &f[Ep][cmp][i];
+        econ++;
+        e_connection_sources[cmp][econ] = &zero;
+        e_connection_sinks[cmp][econ] = &f[Er][cmp][i];
+        econ++;
+        h_connection_sources[cmp][hcon] = &zero;
+        h_connection_sinks[cmp][hcon] = &f[Hz][cmp][i];
+        hcon++;
+        // I have to add PML connections here too:
+        if (f_pml[Ep][cmp]) {
+          e_connection_sources[cmp][econ] = &zero;
+          e_connection_sinks[cmp][econ] = &f_pml[Ep][cmp][i];
+          econ++;
+        }
+        if (f_pml[Er][cmp]) {
+          e_connection_sources[cmp][econ] = &zero;
+          e_connection_sinks[cmp][econ] = &f_pml[Er][cmp][i];
+          econ++;
+        }
+        if (f_pml[Hz][0]) {
+          h_connection_sources[cmp][hcon] = &zero;
+          h_connection_sinks[cmp][hcon] = &f_pml[Hz][cmp][i];
+          hcon++;
+        }
+      }
     }
   }
-  nfreq = 0;
-  nzflux = 0;
-  nrflux = 0;
-  setifreqmax_and_iposmax(0, 0);
 }
 
 void fields::use_real_sources() {
@@ -182,136 +245,11 @@ void src::use_real_sources() {
 }
 
 void fields::initialize_with_n_te(int ntot) {
-  for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
+  //for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
 }
 
 void fields::initialize_with_n_tm(int ntot) {
-  for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
-}
-
-#define EIKZR (cmp? coskz : sinkz)
-#define IEIKZR (cmp? -sinkz : coskz)
-#define EIKZRH (cmp? hcoskz : hsinkz)
-#define IEIKZRH (cmp? -hsinkz : hcoskz)
-
-#include <gsl/gsl_sf_bessel.h>
-
-double J(int m, double kr) { return gsl_sf_bessel_Jn(m, kr); }
-double Jprime(int m, double kr) { 
-  if (m) return 0.5*(J(m-1,kr)-J(m+1,kr));
-  else return -J(1,kr);
-}
-double Jroot(int m, int n) { return gsl_sf_bessel_zero_Jnu(m, n+1); }
-double Jmax(int m, int n) {
-  double rlow, rhigh = Jroot(m,n), rtry;
-  if (n == 0) rlow = 0;
-  else rlow = Jroot(m, n-1);
-  double jplow = Jprime(m,rlow), jptry;
-  do {
-    rtry = rlow + (rhigh - rlow)*0.5;
-    jptry = Jprime(m,rtry);
-    if (jplow*jptry < 0) rhigh = rtry;
-    else rlow = rtry;
-  } while (rhigh - rlow > rhigh*1e-15);
-  return rtry;
-}
-
-inline double expi(int cmp, double x) {
-  return (cmp) ? cos(x) : sin(x);
-}
-
-void fields::initialize_with_nth_te(int np0) {
-  const int n = (m==0) ? np0 - 0 : np0 - 1;
-  double rmax = Jmax(m,n);
-  double ktrans = rmax/nr;
-  double kk = k*2*pi*inva;
-  double eps = ma->eps[1];
-  double inveps = 1.0/eps;
-  double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
-  double omt = om*0.5;
-  if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
-  for (int r=rmin_bulk(m)-1;r<nr;r++) {
-    double Jm = J(m,ktrans*(r+0.5));
-    double Jmp_h = (Jm-J(m,ktrans*(r-0.5)))/ktrans;//Jprime(m,ktrans*r);//
-    if (!r) Jmp_h = 2.0*Jm/ktrans;
-    for (int z=0;z<nz;z++) {
-      double kz = -kk*z;
-      double kzph = -kk*(z+0.5);
-      DOCMP {
-        CM(hz,r,z) += Jm*expi(cmp, kz);
-        //CM(hr,r,z) += (-kk*c/om)*(-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
-        //  *expi(cmp, kzph+pi/2);
-        //CM(hp,r,z) += (kk*c/om)*(-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))
-        //  *Jm*expi(cmp, kzph);
-        
-        //if (r >= rmin_bulk(m) || m == 1)
-        //  CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
-        //    *expi(cmp, kz-omt+pi/2);
-        //if (r >= rmin_bulk(m) || m < 2)
-        //  CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
-      }
-    }
-    DOCMP {
-      const int z=nz;
-      double kz = -kk*z;
-      double kzph = -kk*(z+0.5);
-      CM(hz,r,z) += Jm*expi(cmp, kz);
-
-      //if (r >= rmin_bulk(m) || m == 1)
-      //  CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
-      //    *expi(cmp, kz-omt+pi/2);
-      //if (r >= rmin_bulk(m) || m < 2)
-      //  CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
-    }
-  }
-}
-
-void fields::initialize_with_nth_tm(int np1) {
-  const int n = np1 - 1;
-  double rroot = Jroot(m,n);
-  double ktrans = rroot/nr;
-  double kk = k*2*pi*inva;
-  double eps = ma->eps[1];
-  double inveps = 1.0/eps;
-  double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
-  double omt = om*0.5;
-  if (abs(om/(2*pi)) > preferred_fmax) preferred_fmax = om/(2*pi);
-  for (int r=rmin_bulk(m)-1;r<nr;r++) {
-    double Jm = J(m,ktrans*r);
-    double Jmp = Jprime(m,ktrans*r);
-    double Jm_h = J(m,ktrans*(r+0.5));
-    double Jmp_h = Jprime(m,ktrans*(r+0.5));
-    for (int z=0;z<nz;z++) {
-      double kz = kk*z;
-      double kzmh = kk*(z-0.5);
-      DOCMP {
-        if (r >= rmin_bulk(m) || m == 0)
-          CM(ez,r,z) += Jm*expi(cmp, kz);
-        //if (r >= rmin_bulk(m))
-        //  CM(hr,r,z) += (m*c/r*om/(ktrans*ktrans))*Jm*expi(cmp, kz+omt);
-        //if (r == 0 && m == 1)
-        //  CM(hr,r,z) += (-m*c*om/(ktrans*ktrans))*ktrans*Jmp*expi(cmp, kz+omt);
-        //CM(hp,r,z) += (c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
-        //              *expi(cmp, kz+omt+pi/2);
-        
-        //if (r >= rmin_bulk(m))
-        //  CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
-        //    *expi(cmp, kzmh);
-        //CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
-        //              *expi(cmp, kzmh+pi/2);
-      }
-    }
-    DOCMP {
-      const int z=nz;
-      double kz = kk*z;
-      double kzmh = kk*(z-0.5);
-      //if (r >= rmin_bulk(m))
-      //  CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
-      //    *expi(cmp, kzmh);
-      //CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
-      //  *expi(cmp, kzmh+pi/2);
-    }
-  }
+  //for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
 }
 
 int fields::phase_in_material(const mat *newma, double time) {
@@ -376,40 +314,38 @@ static complex<double> integrate_source(const src *s) {
   return sofar;
 }
 
-void fields::add_src_pt(int r, int z,
-                        complex<double> Pr, complex<double> Pp, complex<double> Pz,
-                        double freq, double width, double peaktime,
-                        double cutoff, int is_h, int is_contin) {
-  const double pi=3.14159265;
-  if (m!=0 && r < rmin_bulk(m)-1) return;
-  if (r >= nr - npmlr) return;
-  if (Pr == 0 && Pp == 0 && Pz == 0) return;
-  if (m == 0 && r == 0 && (Pp != 0 || Pr != 0)) {
-    return; // Can't have these sources at r == 0 if m == 0.
-  } else if (m ==1 && r == 0 && Pz != 0) {
-    return;
-  } else if (m > 1 && r < rmin_bulk(m) - 1) {
-    return;
-  } else if (m > 1 && r == rmin_bulk(m) - 1 &&
-             ((is_h && Pr != 0) || (!is_h && Pp != 0) || (!is_h && Pz != 0))) {
-    return;
+void fields::add_point_source(component whichf, double freq, double width, double peaktime,
+                              double cutoff, const vec &p, complex<double> amp,
+                              int is_c) {
+  // FIXME this really should call an interpolation routine...
+  if (p.dim != v.dim) {
+    printf("Error:  source doesn't have right dimensions!\n");
+    exit(1);
+  } else if (!v.has_field(whichf)) {
+    printf("Error:  source component %s is invalid.\n", component_name(whichf));
+    exit(1);
   }
-  if (z >= nz || z < 0) {
-    printf("Error:  source is outside of cell!\n");
+  int theindex = v.index(whichf, p);
+  add_indexed_source(whichf, freq, width, peaktime, cutoff, theindex, amp, is_c);
+}
+
+void fields::add_indexed_source(component whichf, double freq, double width,
+                                double peaktime, int cutoff, int theindex, 
+                                complex<double> amp, int is_c) {
+  if (theindex >= v.ntot() || theindex < 0) {
+    printf("Error:  source is outside of cell! (%d)\n", theindex);
     exit(1);
   }
   src *tmp = new src;
   tmp->freq = freq*c*inva;
   tmp->width = width/tmp->freq; // this is now time width
-  tmp->ez = Pz;
-  tmp->er = Pr;
-  tmp->ep = Pp;
-  tmp->r = r;
-  tmp->z = z;
+  for (int com=0;com<10;com++) tmp->A[com] = 0;
+  tmp->A[whichf] = amp;
+  tmp->i = theindex;
   tmp->amp_shift = 0.0;
   tmp->is_real = 0;
-  tmp->is_continuous = is_contin;
-  if (is_h) {
+  tmp->is_continuous = is_c;
+  if (whichf == Hz || whichf == Hr || whichf == Hp) {
     tmp->next = h_sources;
     h_sources = tmp;
   } else {
@@ -421,214 +357,8 @@ void fields::add_src_pt(int r, int z,
   if (peaktime <= 0.0) tmp->peaktime = t+tmp->cutoff;
   // Apply a shift so that we won't end up with a static polarization when
   // the source is gone:
-  if (is_contin) tmp->amp_shift = 0.0;
+  if (is_c) tmp->amp_shift = 0.0;
   else tmp->amp_shift = integrate_source(tmp)/integrate_envelope(tmp);
-}
-
-void fields::find_source_z_position(double z, double shift, int *z1, int *z2,
-                                    complex<double> *amp1, complex<double> *amp2) {
-    
-  int z_floor = (int)floor(z - shift);
-  int z_ceil = z_floor + 1;
-  
-  // The bulk case:
-  *z1 = z_floor;
-  *amp1 = (z_ceil + shift) - z;
-  *z2 = z_ceil;
-  *amp2 = z - (z_floor + shift);
-
-  if (npmlz > 0) { 
-    if (z == 0.0) { // place source on first lattice point that's not in the PML
-      *z1 = npmlz + 1 - (int) (2.0*shift);
-      *amp1 = 1.0;
-      *z2 = 0;
-      *amp2 = 0.0;
-    } else if (z == nz) {
-      *z1 = nz - 1 - npmlz;
-      *amp1 = 1.0;
-      *z2 = 0;
-      *amp2 = 0.0;
-    }
-  } else if (k >= 0.0) { // Periodic boundary conditions...
-    while (*z1 < 0) {
-      *amp1 *= eiknz;
-      *z1 += nz;
-    }
-    while (*z2 < 0) {
-      *amp2 *= eiknz;
-      *z2 += nz;
-    }
-    while (*z1 >= nz) {
-      *z1 -= nz;
-      *amp1 /= eiknz;
-    }
-    while (*z2 >= nz) {
-      *z2 -= nz;
-      *amp2 /= eiknz;
-    }
-  } else if (k < 0) { // metal
-    if (z <= (1 - shift)) { // if z_floor is on metal or out of the cell
-      *z1 = z_ceil;
-      *amp1 = 1.0;
-      *z2 = 0;
-      *amp2 = 0.0;
-    } else if (z >= (nz - 1 + shift)) { // if z_ceil is on metal or out of the cell
-      *z1 = z_floor;
-      *amp1 = 1.0;
-      *z2 = 0;
-      *amp2 = 0.0;
-    }
-  }
-}
-
-void fields::add_plane_source(double freq, double width, double peaktime,
-                              double cutoff, double z, complex<double> amp(double r),
-                              int is_c) {
-  int thez = (int) (z*a + 0.5);
-  const complex<double> I = complex<double>(0,1);
-  complex<double> eiomt = exp(-I*freq*2*pi*inva/c*0.5);
-  if (z == 0.0 && npmlz) thez = npmlz+1;
-  for (int r=0;r<nr;r++) {
-    double rh = r+0.5, rmh = r-0.5, rp = r+1;
-    complex<double> A = amp(r*inva), Ah = amp(rh*inva),
-      Ap = amp(rp*inva), Amh = amp(rmh*inva);;
-
-    double eps = sqrt(MA(ma->eps, r, thez));
-    if (A != 0.0) {
-      // E_phi
-      add_src_pt(r, thez, 0.0, A, 0.0, freq, width, peaktime, cutoff, 0, is_c);
-      // iH_r = d(rH_phi)/dr
-      complex<double> A_Hr = -(rh*Ah - rmh*Amh)*eps;
-      if (r == 0) A_Hr = Ah*eps;
-      add_src_pt(r, thez, -A*eps, 0.0, 0.0, freq, width, peaktime, cutoff, 1, is_c);
-    }
-    if (Ah != 0.0) {
-      // iE_r = d(rE_phi)/dr
-      complex<double> A_Er = -I*0.5*(Ap + A);
-      add_src_pt(r, thez, A_Er, 0.0, 0.0, freq, width, peaktime, cutoff, 0, is_c);
-      // H_phi
-      add_src_pt(r, thez, 0.0, -(Ap+A)*0.5*I*eps, 0.0, freq, width, peaktime, cutoff, 1, is_c);
-    }
-  }
-}
-
-void fields::add_continuous_plane_source(double freq, double width, double peaktime,
-                                         double cutoff, double z, complex<double> amp(double r)) {
-  add_plane_source(freq, width, peaktime, cutoff, z, amp, 1);
-}
-
-void fields::add_source(component whichf, double freq, double width, double peaktime,
-                        double cutoff, double z, complex<double> amp(double r),
-                        int is_c) {
-  double zshift = 0.0;
-  if (whichf == Hr || whichf == Hp || whichf == Ez) zshift = 0.5;
-  int is_h = 0;
-  if (whichf == Hr || whichf == Hp || whichf == Hz) is_h = 1;
-  int z1, z2;
-  complex<double> amp1, amp2;
-  find_source_z_position(z*a, zshift, &z1, &z2, &amp1, &amp2);
-  for (int r=0;r<nr;r++) {
-    switch (whichf) {
-    case Er:
-    case Hr:
-      add_src_pt(r, z1, amp1*amp(r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
-      add_src_pt(r, z2, amp2*amp(r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
-      break;
-    case Ep:
-    case Hp:
-      add_src_pt(r, z1, 0.0, amp1*amp(r*inva), 0.0, freq, width, peaktime, cutoff, is_h, is_c);
-      add_src_pt(r, z2, 0.0, amp2*amp(r*inva), 0.0, freq, width, peaktime, cutoff, is_h, is_c);
-      if (m == 1) {
-        // Also add in a bit of Er/Hr so that the boundary condition at r ==0 is satisfied.
-        const complex<double> I = complex<double>(0,1);
-        add_src_pt(r, z1, -I*amp1*amp(-r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
-        add_src_pt(r, z2, -I*amp2*amp(-r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
-      }
-      break;
-    case Ez:
-    case Hz:
-      add_src_pt(r, z1, 0.0, 0.0, amp1*amp(r*inva), freq, width, peaktime, cutoff, is_h, is_c);
-      add_src_pt(r, z2, 0.0, 0.0, amp2*amp(r*inva), freq, width, peaktime, cutoff, is_h, is_c);
-      break;
-    }
-  }
-}
-
-void fields::add_continuous_source(component whichf, double freq, double width, double peaktime,
-                                   double cutoff, double z, complex<double> amp(double r)) {
-  add_source(whichf, freq, width, peaktime, cutoff, z, amp, 1);
-}
-
-void fields::add_hr_source(double freq, double width, double peaktime,
-                           double cutoff, double z, complex<double> amp(double r)) {
-  int z1, z2;
-  complex<double> amp1, amp2;
-  find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
-  for (int r=0;r<nr;r++)
-    if (amp(r*inva) != 0.0) {
-      add_src_pt(r, z1, amp1*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
-      add_src_pt(r, z2, amp2*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
-    }
-}
-
-void fields::add_hp_source(double freq, double width, double peaktime,
-                           double cutoff, double z, complex<double> amp(double r)) {
-  int z1, z2;
-  complex<double> amp1, amp2;
-  find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
-  for (int r=0;r<nr;r++)
-    if (amp((r+0.5)*inva) != 0.0) {
-      add_src_pt(r, z1, 0.0 , amp1*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
-      add_src_pt(r, z2, 0.0 , amp2*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
-    }
-}
-
-void fields::add_hz_source(double freq, double width, double peaktime,
-                           double cutoff, double z, complex<double> amp(double r)) {
-  int z1, z2;
-  complex<double> amp1, amp2;
-  find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
-  for (int r=0;r<nr;r++)
-    if (amp((r+0.5)*inva) != 0.0) {
-      add_src_pt(r, z1, 0.0 , 0.0, amp1*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
-      add_src_pt(r, z2, 0.0 , 0.0, amp2*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
-    }
-}
-
-void fields::add_er_source(double freq, double width, double peaktime,
-                           double cutoff, double z, complex<double> amp(double r)) {
-  int z1, z2;
-  complex<double> amp1, amp2;
-  find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
-  for (int r=0;r<nr;r++)
-    if (amp((r+0.5)*inva) != 0.0) {
-      add_src_pt(r, z1, amp1*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
-      add_src_pt(r, z2, amp2*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
-    }
-}
-
-void fields::add_ep_source(double freq, double width, double peaktime,
-                           double cutoff, double z, complex<double> amp(double r)) {
-  int z1, z2;
-  complex<double> amp1, amp2;
-  find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
-  for (int r=0;r<nr;r++)
-    if (amp(r*inva) != 0.0) {
-      add_src_pt(r, z1, 0.0, amp1*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
-      add_src_pt(r, z2, 0.0, amp2*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
-    }
-}
-
-void fields::add_ez_source(double freq, double width, double peaktime,
-                           double cutoff, double z, complex<double> amp(double r)) {
-  int z1, z2;
-  complex<double> amp1, amp2;
-  find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
-  for (int r=0;r<nr;r++)
-    if (amp(r*inva) != 0.0) {
-      add_src_pt(r, z1, 0.0 , 0.0, amp1*amp(r*inva), freq, width, peaktime, cutoff);
-      add_src_pt(r, z2, 0.0 , 0.0, amp2*amp(r*inva), freq, width, peaktime, cutoff);
-    }
 }
 
 void fields::step() {
@@ -636,297 +366,154 @@ void fields::step() {
 
   phase_material();
 
-  step_h_bulk();
-  step_h_pml();
-  step_h_boundaries();
+  step_h();
   step_h_source(h_sources);
+  step_h_boundaries();
 
-  step_e_bulk();
-  step_e_pml();
-  step_e_boundaries();
+  step_e();
   step_e_source(e_sources);
+  step_e_boundaries();
 
   step_e_polarization();
-  step_e_pml_polarization();
   step_polarization_itself();
-  step_polarization_pml();
 }
 
 void fields::phase_material() {
   if (new_ma && phasein_time > 0) {
     // First multiply the electric field by epsilon...
     DOCMP {
-      for (int i=0;i<(nr+1)*(nz+1);i++) er[cmp][i] /= ma->invepser[i];
-      for (int i=0;i<(nr+1)*(nz+1);i++) ep[cmp][i] /= ma->invepsep[i];
-      for (int i=0;i<(nr+1)*(nz+1);i++) ez[cmp][i] /= ma->invepsez[i];
-      if (npmlr) {
-        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
-          PMLR(erp,r,z) /= MA(ma->invepser,r,z);
-        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
-          PMLR(epz,r,z) /= MA(ma->invepsep,r,z);
-        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
-          PMLR(ezr,r,z) /= MA(ma->invepsez,r,z);
-      }
-      if (npmlz) {
-        for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-          int z0 = npmlz;
-          for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-            int z = z0;
-            for (int iz=0;iz<npmlz;iz++,z+=lr) {
-              PMLZ(z_erp,r) /= MA(ma->invepser,r,z);
-              PMLZ(z_epz,r) /= MA(ma->invepsep,r,z);
-            }
-          }
-        }
-      }
+      for (int c=0;c<10;c++)
+        if (v.has_field((component)c) && is_electric((component)c))
+          for (int i=0;i<v.ntot();i++)
+            f[c][cmp][i] /= ma->inveps[c][i];
+      for (int c=0;c<10;c++)
+        if (v.has_field((component)c) && is_electric((component)c))
+          for (int i=0;i<v.ntot();i++)
+            f_pml[c][cmp][i] /= ma->inveps[c][i];
     }
     // Then change epsilon...
     ma->mix_with(new_ma, 1.0/phasein_time);
     phasein_time--;
     // Finally divide the electric field by the new epsilon...
     DOCMP {
-      for (int i=0;i<(nr+1)*(nz+1);i++) er[cmp][i] *= ma->invepser[i];
-      for (int i=0;i<(nr+1)*(nz+1);i++) ep[cmp][i] *= ma->invepsep[i];
-      for (int i=0;i<(nr+1)*(nz+1);i++) ez[cmp][i] *= ma->invepsez[i];
-      if (npmlr) {
-        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
-          PMLR(erp,r,z) *= MA(ma->invepser,r,z);
-        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
-          PMLR(epz,r,z) *= MA(ma->invepsep,r,z);
-        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
-          PMLR(ezr,r,z) *= MA(ma->invepsez,r,z);
-      }
-      if (npmlz) {
-        for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-          int z0 = npmlz;
-          for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-            int z = z0;
-            for (int iz=0;iz<npmlz;iz++,z+=lr) {
-              PMLZ(z_erp,r) *= MA(ma->invepser,r,z);
-              PMLZ(z_epz,r) *= MA(ma->invepsep,r,z);
-            }
-          }
-        }
-      }
+      for (int c=0;c<10;c++)
+        if (v.has_field((component)c) && is_electric((component)c))
+          for (int i=0;i<v.ntot();i++)
+            f[c][cmp][i] *= ma->inveps[c][i];
+      for (int c=0;c<10;c++)
+        if (v.has_field((component)c) && is_electric((component)c))
+          for (int i=0;i<v.ntot();i++)
+            f_pml[c][cmp][i] *= ma->inveps[c][i];
     }
   }
 }
 
-void fields::step_h_bulk() {
-  DOCMP {
-    for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-      double oorph = 1/(r+0.5);
-      double oor = 1.0/(double)r;
-      double morph = m*oorph;
-      double mor = m*oor;
-      for (int z=1+npmlz;z<nz-npmlz;z++) {
-        CM(hr,r,z)+= c*
-          ((CM(ep,r,z+1)-CM(ep,r,z)) - IT(ez,r,z)*mor);
-        CM(hp,r,z)+= c*
-          ((CM(ez,r+1,z)-CM(ez,r,z)) - (CM(er,r,z+1)-CM(er,r,z)));
-        CM(hz,r,z)+= c*
-          (IT(er,r,z)*morph - (CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph);
-      }
-    }
-    for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-      const int z=npmlz; // False boundary layer.
-      double mor = m/(double)r;
-      double oorph = 1/(r+0.5);
-      CM(hr,r,z)+= c*
-        ((CM(ep,r,z+1)-CM(ep,r,z)) - IT(ez,r,z)*mor);
-      CM(hp,r,z)+= c*
-        ((CM(ez,r+1,z)-CM(ez,r,z)) - (CM(er,r,z+1)-CM(er,r,z)));
-    }
-    {
-      int r=rmin_bulk(m)-1, z=npmlz;
-      double oorph = 1/(r+0.5);
-      CM(hp,r,z)+= c* /* false boundary layer */
-        ((CM(ez,r+1,z)-CM(ez,r,z)) - (CM(er,r,z+1)-CM(er,r,z)));
-    }
-    for (int z=1+npmlz;z<nz-npmlz;z++) {
-      int r=rmin_bulk(m)-1;
-      double oorph = 1.0/(r+0.5);
-      double morph = m*oorph;
-      CM(hp,r,z)+= c* /* false boundary layer */
-        ((CM(ez,r+1,z)-CM(ez,r,z)) - (CM(er,r,z+1)-CM(er,r,z)));
-      CM(hz,r,z)+= c* /* false boundary layer */
-        (IT(er,r,z)*morph - (CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph);
-    }
-  }
+inline double it(int cmp, double *(f[2]), int ind) { return (1-2*cmp)*f[1-cmp][ind]; }
+
+inline int rstart_0(const volume &v, int m) {
+  return (int) max(0.0, m - v.origin.r()*v.a - 1);
+}
+inline int rstart_1(const volume &v, int m) {
+  return (int) max(1.0, m - v.origin.r()*v.a);
 }
 
-void fields::step_h_pml() {
-  DOCMP {
-    for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-      double oorph = 1/(r+0.5);
-      double oor = 1.0/(double)r;
-      double morph = m*oorph;
-      double mor = m*oor;
-      if (npmlz) {
-        { // Do update in low r low z pml region.
-          int z0 = npmlz;
-          for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-            int z = z0;
-            for (int iz=0;iz<npmlz;iz++,z+=lr) {
-              CM(hz,r,z)+= c*(IT(er,r,z)*morph -
-                              (CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph);
+void fields::step_h() {
+  const volume v = this->v;
+  if (v.dim == d1) {
+    DOCMP {
+      for (int z=0;z<v.nz();z++)
+        f[Hy][cmp][z] += -c*(f[Ex][cmp][z+1] - f[Ex][cmp][z]);
+    }
+  } else if (v.dim == dcyl) {
+    for (int cmp=0;cmp<=1;cmp++) {
+      // Propogate Hr
+      if (ma->Cother[Hr])
+        for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            double oor = 1.0/(v.origin.r() + r);
+            double mor = m*oor;
+            const int ir = r*(v.nz()+1);
+            for (int z=0;z<v.nz();z++) {
+              const double Czhr = ma->Cother[Hr][z+ir];
+              const double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
+              double dhrp = c*(-it(cmp,f[Ez],z+ir)*mor);
+              double hrz = f[Hr][cmp][z+ir] - f_pml[Hr][cmp][z+ir];
+              f_pml[Hr][cmp][z+ir] += dhrp;
+              f[Hr][cmp][z+ir] += dhrp +
+                ooop_Czhr*(c*(f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - Czhr*hrz);
             }
           }
-        }
-        { // Do update in low r high z pml region.
-          int z0 = npmlz-1;
-          for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-            int z = z0;
-            for (int iz=0;iz<npmlz;iz++,z+=lr) {
-              double Czhr = ma->Czhr[iz];
-              double Czhp = ma->Czhp[iz];
-              double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
-              double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
-              double dhrp = c*(-IT(ez,r,z)*mor);
-              double hrz = CM(hr,r,z) - PMLZ(z_hrp,r);
-              PMLZ(z_hrp,r) += dhrp;
-              CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
-              
-              double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLZ(z_hpz,r));
-              PMLZ(z_hpz,r) += dhpz;
-              CM(hp,r,z)+= dhpz + c*(CM(ez,r+1,z)-CM(ez,r,z));
+      else
+        for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            double oor = 1.0/(v.origin.r() + r);
+            double mor = m*oor;
+            const int ir = r*(v.nz()+1);
+            for (int z=0;z<v.nz();z++)
+              f[Hr][cmp][z+ir] += c*
+                ((f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - it(cmp,f[Ez],z+ir)*mor);
+          }
+      // Propogate Hp
+      if (ma->Cmain[Hp])
+        for (int r=rstart_0(v,m);r<v.nr();r++) {
+            double oorph = 1/(v.origin.r() + r+0.5);
+            double morph = m*oorph;
+            const int ir = r*(v.nz()+1);
+            const int irp1 = (r+1)*(v.nz()+1);
+            for (int z=0;z<v.nz();z++) {
+              const double Czhp = ma->Cmain[Hp][z+ir];
+              const double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
+              const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
+                                             - Czhp*f_pml[Hp][cmp][z+ir]);
+              const double hpr = f[Hp][cmp][z+ir]-f_pml[Hp][cmp][z+ir];
+              f_pml[Hp][cmp][z+ir] += dhpz;
+              f[Hp][cmp][z+ir] += dhpz + c*(f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir]);
             }
           }
-        }
-      }
-    }
-    if (npmlz) { // update r minimum and z high and low pml regions.
-      int r=rmin_bulk(m)-1;
-      double oorph = 1/(r+0.5);
-      double morph = m*oorph;
-      int z0 = npmlz;
-      for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-        int z = z0;
-        for (int iz=0;iz<npmlz;iz++,z+=lr) { // False boundary layer!
-          CM(hz,r,z)+= c*(IT(er,r,z)*morph -(CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph);
-        }
-      }
-    }
-    if (npmlz) { // update r minimum and z high and low pml regions.
-      int r=rmin_bulk(m)-1;
-      double oorph = 1/(r+0.5);
-      double morph = m*oorph;
-      int z0 = npmlz-1;
-      for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-        int z = z0;
-        for (int iz=0;iz<npmlz;iz++,z+=lr) { // False boundary layer!
-          double Czhp = ma->Czhp[iz];
-          double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
-          double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLZ(z_hpz,r));
-          PMLZ(z_hpz,r) += dhpz;
-          CM(hp,r,z)+= dhpz + c*(CM(ez,r+1,z)-CM(ez,r,z));
-        }
-      }
-    }
-    if (m==1 && npmlz) {
-      int z0 = npmlz-1;
-      for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-        int z = z0;
-        for (int iz=0;iz<npmlz;iz++,z+=lr) {
-          const int r=0;
-          double Czhr = ma->Czhr[iz];
-          double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
-          double dhrp = c*(-IT(ez,r+1,z)*m/* /1.0 */);
-          double hrz = CM(hr,r,z) - PMLZ(z_hrp,r);
-          PMLZ(z_hrp,r) += dhrp;
-          CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
-        }
-      }
-    }
-    // Now update all the large r pml region (except boundaries)...
-    if (npmlr) {
-      for (int r=nr-npmlr;r<nr;r++) {
-        double oorph = 1/(r+0.5);
-        double oor = 1.0/(double)r;
-        double morph = m*oorph;
-        double mor = m*oor;
-        
-        double Cphr = ma->Cphr[r-nr+npmlr];
-        double Crhp = ma->Crhp[r-nr+npmlr];
-        double Crhz = ma->Crhz[r-nr+npmlr];
-        double Cphz = ma->Cphz[r-nr+npmlr];
-        double ooop_Cphr = 1.0/(1.0+0.5*Cphr);
-        double ooop_Crhp = 1.0/(1.0+0.5*Crhp);
-        double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
-        double ooop_Cphz = 1.0/(1.0+0.5*Cphz);
-        for (int z=1;z<nz;z++) {
-          double Czhp, Czhr;
-          if (z < npmlz) {
-            Czhr = ma->Czhr[npmlz - z - 1];
-            Czhp = ma->Czhp[npmlz - z - 1];
-          } else if (z >= nz - npmlz) {
-            Czhr = ma->Czhr[z+npmlz-nz];
-            Czhp = ma->Czhp[z+npmlz-nz];
-          } else {
-            Czhr = 0;
-            Czhp = 0;
+      else 
+        for (int r=rstart_0(v,m);r<v.nr();r++) {
+            double oorph = 1/(v.origin.r() + r+0.5);
+            double morph = m*oorph;
+            const int ir = r*(v.nz()+1);
+            const int irp1 = (r+1)*(v.nz()+1);
+            for (int z=0;z<v.nz();z++)
+              f[Hp][cmp][z+ir] += c*
+                ((f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir])
+                 - (f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir]));
           }
-          double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
-          double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
-
-          double dhrp = ooop_Cphr*(- c*IT(ez,r,z)*mor-Cphr*PMLR(hrp,r,z) );
-          double hrz = CM(hr,r,z) - PMLR(hrp,r,z);
-          PMLR(hrp,r,z) += dhrp;
-          CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
-          double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLR(hpz,r,z));
-          double hpr = CM(hp,r,z)-PMLR(hpz,r,z);
-          PMLR(hpz,r,z) += dhpz;
-          CM(hp,r,z)+= dhpz + ooop_Crhp*(c*(CM(ez,r+1,z)-CM(ez,r,z)) - Crhp*hpr);
-          double dhzr = ooop_Crhz*(-c*(CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph
-                                   - Crhz*PMLR(hzr,r,z));
-          double hzp = CM(hz,r,z) - PMLR(hzr,r,z);
-          PMLR(hzr,r,z) += dhzr;
-          CM(hz,r,z)+= dhzr + ooop_Cphz*(c*IT(er,r,z)*morph - Cphz*hzp);
-        }
-      }
-      for (int r=nr-npmlr;r<nr;r++) {
-        const int z=0, iz=npmlz-1, lr=-1; // False boundary layer.
-        double Czhr;
-        double Czhp;
-        if (npmlz) {
-          Czhr = ma->Czhr[iz];
-          Czhp = ma->Czhp[iz];
-        } else {
-          Czhr = 0;
-          Czhp = 0;
-        }
-        double mor = m/(double)r;
-        double oorph = 1/(r+0.5);
-        double Cphr = ma->Cphr[r-nr+npmlr];
-        double Crhp = ma->Crhp[r-nr+npmlr];
-        double ooop_Cphr = 1.0/(1.0+0.5*Cphr);
-        double ooop_Crhp = 1.0/(1.0+0.5*Crhp);
-        double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
-        double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
-        double dhrp = ooop_Cphr*(- c*IT(ez,r,z)*mor-Cphr*PMLR(hrp,r,z) );
-        double hrz = CM(hr,r,z) - PMLR(hrp,r,z);
-        PMLR(hrp,r,z) += dhrp;
-        CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
-        double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLR(hpz,r,z));
-        double hpr = CM(hp,r,z)-PMLR(hpz,r,z);
-        PMLR(hpz,r,z) += dhpz;
-        CM(hp,r,z)+= dhpz + ooop_Crhp*(c*(CM(ez,r+1,z)-CM(ez,r,z)) - Crhp*hpr);
-      }
-    }
-    if (k >= 0.0 && npmlr) { // k < 0 indicates metallic axial boundaries.
-      for (int z=0;z<=nz;z+=nz) { // z=0,nz
-        for (int r=nr-npmlr;r<nr;r++) {
-          double oorph = 1.0/(r+0.5);
+      // Propogate Hz
+      for (int r=rstart_0(v,m);r<v.nr();r++) {
+          double oorph = 1/(v.origin.r() + r+0.5);
           double morph = m*oorph;
-          double Crhz = ma->Crhz[r-nr+npmlr];
-          double Cphz = ma->Cphz[r-nr+npmlr];
-          double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
-          double ooop_Cphz = 1.0/(1.0+0.5*Cphz);
-          double dhzr = ooop_Crhz*(-c*(CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph
-                                   - Crhz*PMLR(hzr,r,z));
-          double hzp = CM(hz,r,z) - PMLR(hzr,r,z);
-          PMLR(hzr,r,z) += dhzr;
-          CM(hz,r,z)+= dhzr + ooop_Cphz*(c*IT(er,r,z)*morph - Cphz*hzp);
+          const int ir = r*(v.nz()+1);
+          const int irp1 = (r+1)*(v.nz()+1);
+          for (int z=1;z<=v.nz();z++)
+            f[Hz][cmp][z+ir] += c*
+              (it(cmp,f[Er],z+ir)*morph
+               - (f[Ep][cmp][z+irp1]*(r+1.)-f[Ep][cmp][z+ir]*r)*oorph);
+        }
+      // Deal with annoying r==0 boundary conditions...
+      if (m == 0) {
+        // Nothing needed for H.
+      } else if (m == 1) {
+        if (ma->Cmain[Hr])
+          for (int z=0;z<v.nz();z++) {
+            const double Czhr = ma->Cmain[Hr][z];
+            const double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
+            const double dhrp = c*(-it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
+            const double hrz = f[Hr][cmp][z] - f_pml[Hr][cmp][z];
+            f_pml[Hr][cmp][z] += dhrp;
+            f[Hr][cmp][z] += dhrp +
+              ooop_Czhr*(c*(f[Ep][cmp][z+1]-f[Ep][cmp][z]) - Czhr*hrz);
+          }
+        else
+          for (int z=0;z<v.nz();z++)
+            f[Hr][cmp][z] += c*
+              ((f[Ep][cmp][z+1]-f[Ep][cmp][z]) - it(cmp,f[Ez],1)/* /1.0 */);
+      } else {
+        for (int r=0;r<=v.nr() && v.origin.r() + r < m;r++) {
+          const int ir = r*(v.nz()+1);
+          for (int z=0;z<=v.nz();z++) f[Hr][cmp][z+ir] = 0;
+          if (f_pml[Hr][cmp])
+            for (int z=0;z<=v.nz();z++) f_pml[Hr][cmp][z+ir] = 0;
         }
       }
     }
@@ -934,283 +521,137 @@ void fields::step_h_pml() {
 }
 
 void fields::step_h_boundaries() {
-  DOCMP {
-    if (k >= 0.0) { // k < 0 indicates metallic axial boundaries.
-      for (int z=0;z<=nz;z+=nz) { // z=0,nz
-        for (int r=rmin_bulk(m)-1;r<nr-npmlr;r++) {
-          double oorph = 1.0/(r+0.5);
-          double morph = m*oorph;
-          CM(hz,r,z)+= c*
-            (IT(er,r,z)*morph - (CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph);
-        }
-      }
-    }
-    if (m==1) {
-      for (int z=npmlz;z<nz-npmlz;z++) {
-        const int r=0;
-        CM(hr,r,z)+= c*
-          ((CM(ep,r,z+1)-CM(ep,r,z)) - IT(ez,r+1,z)*m/* /1.0 */);
-      }
-    }
+  for (int i=0;i<num_h_connections;i++) {
+    complex<double> val = h_phases[i]*
+      complex<double>(*h_connection_sources[0][i],*h_connection_sources[1][i]);
+    *h_connection_sinks[0][i] = real(val);
+    *h_connection_sinks[1][i] = imag(val);
   }
 }
 
-void fields::step_e_bulk() {
-  DOCMP {
-    for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-      double oorph = 1/(r+0.5);
-      double oor = 1.0/(double)r;
-      double morph = m*oorph;
-      double mor = m*oor;
-      for (int z=1+npmlz;z<nz-npmlz;z++) {
-        CM(er,r,z)+= c*MA(ma->invepser,r,z)*
-          (IT(hz,r,z)*morph - (CM(hp,r,z)-CM(hp,r,z-1)));
-        CM(ep,r,z)+= c*MA(ma->invepsep,r,z)*
-          ((CM(hr,r,z)-CM(hr,r,z-1)) - (CM(hz,r,z)-CM(hz,r-1,z)));
-        CM(ez,r,z)+= c*MA(ma->invepsez,r,z)*
-          ((CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor - IT(hr,r,z)*mor);
-      }
+void fields::step_e() {
+  const volume v = this->v;
+  if (v.dim == d1) {
+    DOCMP {
+      for (int z=1;z<=v.nz();z++)
+        f[Ex][cmp][z] += -c*ma->inveps[Ex][z]*(f[Hy][cmp][z] - f[Hy][cmp][z-1]);
     }
-    if (npmlz==0) {
-      for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-        const int z=npmlz;
-        double oor = 1.0/(double)r;
-        double mor = m*oor;
-        CM(ez,r,z)+= c*MA(ma->invepsez,r,z)* /* false boundary layer */
-          ((CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor - IT(hr,r,z)*mor);
-      }
-    }
-    for (int z=1+npmlz;z<nz-npmlz;z++) {
-      const int r=rmin_bulk(m)-1;
-      double oorph = 1/(r+0.5);
-      double morph = m*oorph;
-      CM(er,r,z)+= c*MA(ma->invepser,r,z)* /* false boundary layer */
-        (IT(hz,r,z)*morph - (CM(hp,r,z)-CM(hp,r,z-1)));
-    }
-  }
-}
-
-void fields::step_e_pml() {
-  DOCMP {
-    for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-      double oorph = 1/(r+0.5);
-      double oor = 1.0/(double)r;
-      double morph = m*oorph;
-      double mor = m*oor;
-      if (npmlz) {
-        int z0 = npmlz;
-        for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-          int z = z0;
-          for (int iz=0;iz<npmlz;iz++,z+=lr) {
-            double Czer = ma->Czer[iz];
-            double Czep = ma->Czep[iz];
-            double inveps_plus_Czer = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Czer);
-            double inveps_plus_Czep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Czep);
-            double derp = c*MA(ma->invepser,r,z)*(IT(hz,r,z)*morph);
-            double erz = CM(er,r,z) - PMLZ(z_erp,r);
-            PMLZ(z_erp,r) += derp;
-            CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-CM(hp,r,z-1)) - Czer*erz);
-            double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-CM(hr,r,z-1)) - Czep*PMLZ(z_epz,r));
-            double epr = CM(ep,r,z) - PMLZ(z_epz,r);
-            PMLZ(z_epz,r) += depz;
-            CM(ep,r,z)+= depz + MA(ma->invepsep,r,z)*
-              (-c*(CM(hz,r,z)-CM(hz,r-1,z)));
-            CM(ez,r,z)+= c*MA(ma->invepsez,r,z)*
-              ((CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor - IT(hr,r,z)*mor);
+  } else if (v.dim == dcyl) {
+    for (int cmp=0;cmp<=1;cmp++) {
+      // Propogate Ep
+      if (ma->Cmain[Ep])
+        for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            const double oor = 1.0/(v.origin.r() + r);
+            const double mor = m*oor;
+            const int ir = r*(v.nz()+1);
+            const int irm1 = (r-1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++) {
+              const double Czep = ma->Cmain[Ep][z+ir];
+              const double inveps_plus_Czep = ma->inveps[Ep][z+ir]/
+                (1+.5*ma->inveps[Ep][z+ir]*Czep);
+              const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
+                                                    - Czep*f_pml[Ep][cmp][z+ir]);
+              const double epr = f[Ep][cmp][z+ir] - f_pml[Ep][cmp][z+ir];
+              f_pml[Ep][cmp][z+ir] += depz;
+              f[Ep][cmp][z+ir] += depz +
+                c*ma->inveps[Ep][z+ir]*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
+            }
           }
+      else
+        for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            double oor = 1.0/(v.origin.r() + r);
+            double mor = m*oor;
+            const int ir = r*(v.nz()+1);
+            const int irm1 = (r-1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++)
+              f[Ep][cmp][z+ir] += c*ma->inveps[Ep][z+ir]*
+                ((f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
+                 - (f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
+          }
+      // Propogate Ez
+      for (int r=rstart_1(v,m);r<=v.nr();r++) {
+          double oor = 1.0/(v.origin.r() + r);
+          double mor = m*oor;
+          const int ir = r*(v.nz()+1);
+          const int irm1 = (r-1)*(v.nz()+1);
+          for (int z=0;z<v.nz();z++)
+            f[Ez][cmp][z+ir] += c*ma->inveps[Ez][z+ir]*
+              ((f[Hp][cmp][z+ir]*(r+0.5)-f[Hp][cmp][z+irm1]*(r-0.5))*oor
+               - it(cmp,f[Hr],z+ir)*mor);
         }
-      }
-      if (npmlz) {
-        const int z=0; // False boundary layer!
-        CM(ez,r,z)+= c*MA(ma->invepsez,r,z)*
-          ((CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor - IT(hr,r,z)*mor);
-      }
-    }
-    if (npmlz) { // Added Monday Feb 10 -- looks good.
-      int z0 = npmlz;
-      for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-        int z = z0;
-        for (int iz=0;iz<npmlz;iz++,z+=lr) {
-          const int r=rmin_bulk(m)-1;
-          double oorph = 1/(r+0.5);
-          double morph = m*oorph; /* false boundary layer */
-          double Czer = ma->Czer[iz];
-          double inveps_plus_Czer = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Czer);
-          double derp = c*MA(ma->invepser,r,z)*(IT(hz,r,z)*morph);
-          double erz = CM(er,r,z) - PMLZ(z_erp,r);
-          PMLZ(z_erp,r) += derp;
-          CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-CM(hp,r,z-1)) - Czer*erz);
-        }
-      }
-    }
-    if (m==1 && npmlz) {
-      int z0 = npmlz;
-      for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-        int z = z0;
-        for (int iz=0;iz<npmlz;iz++,z+=lr) {
-          const int r=0;
-          double Czep = ma->Czep[iz];
-          double inveps_plus_Czep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Czep);
-          double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-CM(hr,r,z-1)) - Czep*PMLZ(z_epz,r));
-          PMLZ(z_epz,r) += depz;
-          CM(ep,r,z)+= depz + c*MA(ma->invepsep,r,z)*(-(CM(hz,r,z)*2.0));
-        }
-      }
-    }
-    // update large r pml for all z (except actual boundary)...
-    for (int r=nr-npmlr;r<nr;r++) {
-      double oorph = 1/(r+0.5);
-      double oor = 1.0/(double)r;
-      double morph = m*oorph;
-      double mor = m*oor;
-
-      double Cper = ma->Cper[r-nr+npmlr];
-      double Crep = ma->Crep[r-nr+npmlr];
-      double Crez = ma->Crez[r-nr+npmlr];
-      double Cpez = ma->Cpez[r-nr+npmlr];
-      for (int z=1;z<nz;z++) {
-        double Czep, Czer;
-        if (z <= npmlz) {
-          Czer = ma->Czer[npmlz - z];
-          Czep = ma->Czep[npmlz - z];
-        } else if (z >= nz - npmlz) {
-          Czer = ma->Czer[z+npmlz-nz];
-          Czep = ma->Czep[z+npmlz-nz];
-        } else {
-          Czer = 0;
-          Czep = 0;
-        }
-        double inveps_plus_Cper = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Cper);
-        double inveps_plus_Czer = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Czer);
-        double derp = inveps_plus_Cper*(c*IT(hz,r,z)*morph - Cper*PMLR(erp,r,z));
-        double erz = CM(er,r,z) - PMLR(erp,r,z);
-        PMLR(erp,r,z) += derp;
-        CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-CM(hp,r,z-1)) - Czer*erz);
-
-        double inveps_plus_Czep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Czep);
-        double inveps_plus_Crep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Crep);
-        double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-CM(hr,r,z-1)) - Czep*PMLR(epz,r,z));
-        double epr = CM(ep,r,z) - PMLR(epz,r,z);
-        PMLR(epz,r,z) += depz;
-        CM(ep,r,z)+= depz + inveps_plus_Crep*(-c*(CM(hz,r,z)-CM(hz,r-1,z)) - Crep*epr);
-
-        double inveps_plus_Crez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Crez);
-        double inveps_plus_Cpez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Cpez);
-        double dezr = inveps_plus_Crez*(c*(CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor
-                                        - Crez*PMLR(ezr,r,z));
-        double ezp = CM(ez,r,z)- PMLR(ezr,r,z);
-        PMLR(ezr,r,z) += dezr;
-        CM(ez,r,z)+= dezr + inveps_plus_Cpez*(-c*IT(hr,r,z)*mor - Cpez*ezp);
-      }
-    }
-    for (int r=nr-npmlr;r<nr;r++) {
-      int z = 0; // False boundary layer.
-      double oorph = 1/(r+0.5);
-      double oor = 1.0/(double)r;
-      double morph = m*oorph;
-      double mor = m*oor;
-      double Crez = ma->Crez[r-nr+npmlr];
-      double Cpez = ma->Cpez[r-nr+npmlr];
-
-      double inveps_plus_Crez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Crez);
-      double inveps_plus_Cpez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Cpez);
-      double dezr = inveps_plus_Crez*(c*(CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor
-                                      - Crez*PMLR(ezr,r,z));
-      double ezp = CM(ez,r,z)- PMLR(ezr,r,z);
-      PMLR(ezr,r,z) += dezr;
-      CM(ez,r,z)+= dezr + inveps_plus_Cpez*(-c*IT(hr,r,z)*mor - Cpez*ezp);
-    }
-    if (k >= 0.0) { // k < 0 indicates metallic axial boundaries.
-      for (int r=nr-npmlr;r<nr;r++) {
-        double oor = 1.0/(double)r;
-        double mor = m*oor;
-        double oorph = 1/(r+0.5);
-        double morph = m*oorph;
-        double Cper = ma->Cper[r-nr+npmlr];
-        double Czer = 0;
-        double Czep = 0;
-        double Crep = ma->Crep[r-nr+npmlr];
-        double inveps_plus_Cper = MA(ma->invepser,r,0)/(1+.5*MA(ma->invepser,r,0)*Cper);
-        double inveps_plus_Czer = MA(ma->invepser,r,0)/(1+.5*MA(ma->invepser,r,0)*Czer);
-        double inveps_plus_Czep = MA(ma->invepsep,r,0)/(1+.5*MA(ma->invepsep,r,0)*Czep);
-        double inveps_plus_Crep = MA(ma->invepsep,r,0)/(1+.5*MA(ma->invepsep,r,0)*Crep);
-        {
-          int z=0;
-          double derp = inveps_plus_Cper*(c*IT(hz,r,z)*morph - Cper*PMLR(erp,r,z));
-          double erz = CM(er,r,z) - PMLR(erp,r,z);
-          PMLR(erp,r,z) += derp;
-          CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-EMIKZ(hp,r,nz-1)) - Czer*erz);
-
-          double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-EMIKZ(hr,r,nz-1)) - Czep*PMLR(epz,r,z));
-          double epr = CM(ep,r,z) - PMLR(epz,r,z);
-          PMLR(epz,r,z) += depz;
-          CM(ep,r,z)+= depz + inveps_plus_Crep*(-c*(CM(hz,r,z)-CM(hz,r-1,z)) - Crep*epr);
-        }
-        { // z=nz
-          int z=nz;
-          double derp = inveps_plus_Cper*(c*IT(hz,r,z)*morph - Cper*PMLR(erp,r,z));
-          double erz = CM(er,r,z) - PMLR(erp,r,z);
-          PMLR(erp,r,z) += derp;
-          CM(er,r,z)+= derp + inveps_plus_Czep*(-c*(EIKZ(hp,r,0)-CM(hp,r,z-1)) - Czer*erz);
-          double depz = inveps_plus_Czep*(c*(EIKZ(hr,r,0)-CM(hr,r,z-1)) - Czep*PMLR(epz,r,z));
-          double epr = CM(ep,r,z) - PMLR(epz,r,z);
-          PMLR(epz,r,z) += depz;
-          CM(ep,r,z)+= depz + inveps_plus_Crep*(-c*(CM(hz,r,z)-CM(hz,r-1,z))-Crep*epr);
+      // Propogate Er
+      if (ma->Cother[Er])
+        for (int r=rstart_0(v,m);r<v.nr();r++) {
+            double oorph = 1/(v.origin.r() + r+0.5);
+            double morph = m*oorph;
+            const int ir = r*(v.nz()+1);
+            const int irp1 = (r+1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++) {
+              const double Czer = ma->Cother[Er][z+ir];
+              const double inveps_plus_Czer = ma->inveps[Er][z+ir]/
+                (1+.5*ma->inveps[Er][z+ir]*Czer);
+              double derp = c*ma->inveps[Er][z+ir]*(it(cmp,f[Hz],z+ir)*morph);
+              double erz = f[Er][cmp][z+ir] - f_pml[Er][cmp][z+ir];
+              f_pml[Er][cmp][z+ir] += derp;
+              f[Er][cmp][z+ir] += derp + inveps_plus_Czer*
+                (-c*(f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]) - Czer*erz);
+            }
+          }
+      else
+        for (int r=rstart_0(v,m);r<v.nr();r++) {
+            double oorph = 1/(v.origin.r() + r+0.5);
+            double morph = m*oorph;
+            const int ir = r*(v.nz()+1);
+            const int irp1 = (r+1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++)
+              f[Er][cmp][z+ir] += c*ma->inveps[Er][z+ir]*
+                (it(cmp,f[Hz],z+ir)*morph - (f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]));
+          }
+      // Deal with annoying r==0 boundary conditions...
+      if (m == 0) {
+        for (int z=1;z<=v.nz();z++)
+          f[Ez][cmp][z] += c*ma->inveps[Ez][z]*(f[Hp][cmp][z] + it(cmp,f[Hr],z)*m);
+      } else if (m == 1) {
+        if (ma->Cmain[Ep])
+          for (int z=1;z<=v.nz();z++) {
+            const double Czep = ma->Cmain[Ep][z];
+            const double inveps_plus_Czep = ma->inveps[Ep][z]/
+              (1+.5*ma->inveps[Ep][z]*Czep);
+            const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
+                                                  - Czep*f_pml[Ep][cmp][z]);
+            const double epr = f[Ep][cmp][z] - f_pml[Ep][cmp][z];
+            f_pml[Ep][cmp][z] += depz;
+            f[Ep][cmp][z] += depz +
+              c*ma->inveps[Ep][z]*(-f[Hz][cmp][z]*2.0);
+          }
+        else
+          for (int z=1;z<=v.nz();z++)
+            f[Ep][cmp][z] += c*ma->inveps[Ep][z]*
+              ((f[Hr][cmp][z]-f[Hr][cmp][z-1]) - f[Hz][cmp][z]*2.0);
+      } else {
+        for (int r=0;r<=v.nr() && v.origin.r() + r < m;r++) {
+          const int ir = r*(v.nz()+1);
+          for (int z=0;z<=v.nz();z++) f[Ep][cmp][z+ir] = 0;
+          if (f_pml[Ep][cmp])
+            for (int z=0;z<=v.nz();z++) f_pml[Ep][cmp][z+ir] = 0;
+          for (int z=0;z<=v.nz();z++) f[Ez][cmp][z+ir] = 0;
+          if (f_pml[Ez][cmp])
+            for (int z=0;z<=v.nz();z++) f_pml[Ez][cmp][z+ir] = 0;
         }
       }
     }
+  } else {
+    printf("Unsupported dimension.\n");
+    exit(1);
   }
 }
 
 void fields::step_e_boundaries() {
-  DOCMP {
-    if (k >= 0.0 && npmlz == 0) { // k < 0 indicates metallic axial boundaries.
-      for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
-        const int z=0;
-        double oor = 1.0/(double)r;
-        double mor = m*oor;
-        double oorph = 1/(r+0.5);
-        double morph = m*oorph;
-        CM(er,r,z)+= c*MA(ma->invepser,r,z)*
-          (IT(hz,r,z)*morph - (CM(hp,r,z)-EMIKZ(hp,r,nz-1)));
-        CM(er,r,nz)+= c*MA(ma->invepser,r,z)*
-          (IT(hz,r,nz)*morph - (EIKZ(hp,r,0)-CM(hp,r,nz-1)));
-
-        CM(ep,r, 0)+= c*MA(ma->invepsep,r,z)*
-          ((CM(hr,r,0)-EMIKZ(hr,r,nz-1)) - (CM(hz,r, 0)-CM(hz,r-1, 0)));
-        CM(ep,r,nz)+= c*MA(ma->invepsep,r,z)*
-          (( EIKZ(hr,r,0)-CM(hr,r,nz-1)) - (CM(hz,r,nz)-CM(hz,r-1,nz)));
-      }
-      {
-        const int r=rmin_bulk(m)-1, z=0;
-        double oorph = 1/(r+0.5);
-        double morph = m*oorph; /* false boundary layer */
-        CM(er,r,z)+= c*MA(ma->invepser,r,z)*
-          (IT(hz,r,z)*morph - (CM(hp,r,z)-EMIKZ(hp,r,nz-1)));
-        CM(er,r,nz)+= c*MA(ma->invepser,r,z)*
-          (IT(hz,r,nz)*morph - (EIKZ(hp,r,0)-CM(hp,r,nz-1)));
-      }
-      if (m==1) { // corner case...
-        const int r=0;
-        CM(ep,r, 0)+= c*MA(ma->invepsep,r,0)*
-          ((CM(hr,r,0)-EMIKZ(hr,r,nz-1)) - (CM(hz,r, 0)*2.0));
-        CM(ep,r,nz)+= c*MA(ma->invepsep,r,0)*
-          (( EIKZ(hr,r,0)-CM(hr,r,nz-1)) - (CM(hz,r,nz)*2.0));
-      }
-    }
-    if (m==0) {
-      for (int z=0;z<nz;z++) { // Works also in PML!  :)
-        const int r=0;
-        CM(ez,r,z)+= c*MA(ma->invepsez,r,z)*
-          (CM(hp,r,z) - IT(hr,r+1,z)*m)/* /1.0 */;
-      }
-    } else if (m==1) {
-      for (int z=1+npmlz;z<nz-npmlz;z++) {
-        const int r=0;
-        CM(ep,r,z)+= c*MA(ma->invepsep,r,z)*
-          ((CM(hr,r,z)-CM(hr,r,z-1)) - (CM(hz,r,z)*2.0));
-      }
-    }
+  for (int i=0;i<num_e_connections;i++) {
+    complex<double> val = e_phases[i]*
+      complex<double>(*e_connection_sources[0][i],*e_connection_sources[1][i]);
+    *e_connection_sinks[0][i] = real(val);
+    *e_connection_sinks[1][i] = imag(val);
   }
 }
 
@@ -1221,16 +662,11 @@ void fields::step_h_source(const src *s) {
     step_h_source(s->next);
     return;
   }
-  IM(hr,s->r,s->z) += imag(A*s->er);
-  IM(hp,s->r,s->z) += imag(A*s->ep);
-  IM(hz,s->r,s->z) += imag(A*s->ez);
-  RE(hr,s->r,s->z) += real(A*s->er);
-  RE(hp,s->r,s->z) += real(A*s->ep);
-  RE(hz,s->r,s->z) += real(A*s->ez);
-  if (s->z == 0) {
-    IM(hz,s->r,nz) += imag(eiknz*A*s->ez);
-    RE(hz,s->r,nz) += real(eiknz*A*s->ez);
-  }
+  for (int c=0;c<10;c++)
+    if (v.has_field((component)c) && is_magnetic((component)c)) {
+      f[c][0][s->i] += imag(A*s->A[c]);
+      f[c][1][s->i] += real(A*s->A[c]);
+    }
   step_h_source(s->next);
 }
 
@@ -1238,20 +674,13 @@ void fields::step_e_source(const src *s) {
   if (s == NULL) return;
   complex<double> A = s->get_amplitude_at_time(t);
   if (A == 0.0) {
-    step_h_source(s->next);
+    step_e_source(s->next);
     return;
   }
-  IM(er,s->r,s->z) += imag(A*s->er);
-  IM(ep,s->r,s->z) += imag(A*s->ep);
-  IM(ez,s->r,s->z) += imag(A*s->ez);
-  RE(er,s->r,s->z) += real(A*s->er);
-  RE(ep,s->r,s->z) += real(A*s->ep);
-  RE(ez,s->r,s->z) += real(A*s->ez);
-  if (s->z == 0) {
-    IM(er,s->r,nz) += imag(eiknz*A*s->er);
-    RE(er,s->r,nz) += real(eiknz*A*s->er);
-    IM(ep,s->r,nz) += imag(eiknz*A*s->ep);
-    RE(ep,s->r,nz) += real(eiknz*A*s->ep);
-  }
+  for (int c=0;c<10;c++)
+    if (v.has_field((component)c) && is_electric((component)c)) {
+      f[c][0][s->i] += imag(A*s->A[c]);
+      f[c][1][s->i] += real(A*s->A[c]);
+    }
   step_e_source(s->next);
 }

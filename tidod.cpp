@@ -20,8 +20,8 @@
 #include <math.h>
 #include <complex>
 
-#include "tidod.h"
-#include "tidod_internals.h"
+#include "dactyl.h"
+#include "dactyl_internals.h"
 
 fields_1d::~fields_1d() {
   delete ma;

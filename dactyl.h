@@ -19,9 +19,7 @@
 
 #include <complex>
 
-#define MAXFLUXPLANES 20
-
-enum component { Er=0, Ep, Ez, Hr, Hp, Hz };
+#include "vec.h"
 
 const double c = 0.5;
 const double pi = 3.141592653589793238462643383276L;
@@ -32,31 +30,31 @@ class grace;
 
 class mat {
  public:
-  double *eps, *invepser, *invepsez, *invepsep, a;
-  double *Crez, *Crep, *Crhz, *Crhp;
-  double *Cper, *Cpez, *Cphr, *Cphz;
-  double *Czer, *Czep, *Czhr, *Czhp;
-  int nr, nz;
-  int npmlr, npmlz; // Amount of pml
+  double *eps, a;
+  double *inveps[10];
+  double *Cmain[10];
+  double *Cother[10];
+  volume v;
   polarizability *pb;
   const char *outdir;
 
   ~mat();
-  mat(double eps(double r, double z),
-      double rmax, double zmax, double a=1.0);
+  mat(const volume &v, double eps(const vec &));
   mat(const mat *);
+  mat(const mat &);
   void make_average_eps();
-  double use_integer_pml(int npmlr=16, int npmlz=16, double fmin=0.2);
-  double use_pml(double pmlr=2.0, double pmlz=2.0, double fmin=0.2);
+  void use_pml_left(double dx);
+  void use_pml_right(double dx);
 
   void output_slices(const char *name = "");
+  void output_slices(const volume &what, const char *name = "");
   void set_output_directory(const char *name);
   void mix_with(const mat *, double);
 
-  void add_polarizability(double sigma(double,double), double omega, double gamma,
+  void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0);
  private:
-  void output_sigma_slice(const char *name);
+  void output_sigma_slice(const volume &what, const char *name);
   double pml_fmin;
 };
 
@@ -80,23 +78,14 @@ class flux_plane {
   complex<double> flux(fields *f);
 };
 
-class a_field {
- public:
-  a_field();
-  ~a_field();
-  a_field(complex<double>, complex<double>, complex<double>);
-  void another_field(complex<double>, complex<double>, complex<double>);
-  complex<double> r, p, z;
-  a_field *next;
-};
-
 class monitor_point {
  public:
   monitor_point();
   monitor_point(double r, double z, const fields *f);
   ~monitor_point();
-  double r, z, t;
-  a_field h, e, *p;
+  vec loc;
+  double t;
+  complex<double> f[10];
   monitor_point *next;
 
   complex<double> get_component(component);
@@ -123,16 +112,21 @@ class monitor_point {
 
 class fields {
  public:
-  double *(hr[2]), *(hp[2]), *(hz[2]), *(er[2]), *(ep[2]), *(ez[2]);
-  double *(backup_hr[2]), *(backup_hp[2]), *(backup_hz[2]);
-  double *(hrp[2]), *(hpz[2]), *(hzr[2]), *(erp[2]), *(epz[2]), *(ezr[2]);
-  double *(backup_hrp[2]), *(backup_hpz[2]), *(backup_hzr[2]);
-  double *(z_hrp[2][2]), *(z_hpz[2][2]), *(z_erp[2][2]), *(z_epz[2][2]);
-  double *(backup_z_hrp[2][2]), *(backup_z_hpz[2][2]);
+  double *(f[10][2]);
+  double *(f_backup[10][2]);
+  double *(f_pml[10][2]);
+  double *(f_backup_pml[10][2]);
+
+  double **(h_connection_sources[2]), **(h_connection_sinks[2]);
+  int num_h_connections;
+  complex<double> *h_phases;
+  double **(e_connection_sources[2]), **(e_connection_sinks[2]);
+  int num_e_connections;
+  complex<double> *e_phases;
+
   polarization *pol, *olpol;
   double a, inva; // The "lattice constant" and its inverse!
-  int nr, nz;
-  int npmlr, npmlz; // Amount of pml
+  volume v;
   int m, t, phasein_time;
   double k, cosknz, sinknz;
   complex<double> eiknz;
@@ -144,107 +138,72 @@ class fields {
   double preferred_fmax;
 
   fields(const mat *, int m);
+  fields(const mat &, int m);
   void use_bloch(double kz);
   ~fields();
 
   void output_slices(const char *name = "");
-  void output_real_imaginary_slices(const char *name = "");
+  void output_slices(const volume &what, const char *name = "");
+  void eps_slices(const char *name = "");
+  void eps_slices(const volume &what, const char *name = "");
+  void output_real_imaginary_slices(const volume &what, const char *name = "");
   void step();
   inline double time() { return t*inva*c; };
 
   void use_real_sources();
-  int find_last_source();
-  // Note that the following plane source only works if m == 1.
-  void add_plane_source(double freq, double width, double peaktime,
-                        double cutoff, double z, complex<double> amp(double r),
-                        int is_continuous = 0);
-  void add_continuous_plane_source(double freq, double width, double peaktime,
-                                   double cutoff, double z, complex<double> amp(double r));
+  double find_last_source();
   void add_source(component whichf, double freq, double width, double peaktime,
-                  double cutoff, double z, complex<double> amp(double r),
+                  double cutoff, complex<double> amp(const vec &),
                   int is_continuous = 0);
-  void add_continuous_source(component whichf, double freq, double width, double peaktime,
-                             double cutoff, double z, complex<double> amp(double r));
-  void add_er_source(double freq, double width, double peaktime,
-                     double cutoff, double z, complex<double> amp(double r));
-  void add_ep_source(double freq, double width, double peaktime,
-                     double cutoff, double z, complex<double> amp(double r));
-  void add_ez_source(double freq, double width, double peaktime,
-                     double cutoff, double z, complex<double> amp(double r));
-  void add_hr_source(double freq, double width, double peaktime,
-                     double cutoff, double z, complex<double> amp(double r));
-  void add_hp_source(double freq, double width, double peaktime,
-                     double cutoff, double z, complex<double> amp(double r));
-  void add_hz_source(double freq, double width, double peaktime,
-                     double cutoff, double z, complex<double> amp(double r));
-  void initialize_with_nth_te(int n);
-  void initialize_with_nth_tm(int n);
+  void add_point_source(component whichf, double freq, double width, double peaktime,
+                        double cutoff, const vec &, complex<double> amp, int is_continuous = 0);
+  //void initialize_with_nth_te(int n);
+  //void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
   int phase_in_material(const mat *ma, double time);
   int is_phasing();
 
-  void get_point(monitor_point *p, double r, double z);
-  monitor_point *get_new_point(double r, double z, monitor_point *p=NULL);
-  void output_point(FILE *, double r, double z, const char *name);
+  void get_point(monitor_point *p, const vec &);
+  monitor_point *get_new_point(const vec &, monitor_point *p=NULL);
+  void output_point(FILE *, const vec &, const char *name);
 
-  flux_plane create_rflux_plane(double zmin, double zmax, double rconst);
-  flux_plane create_zflux_plane(double rmin, double rmax, double zconst);
+  flux_plane create_flux_plane(const vec &corner1, const vec &corner2);
   complex<double> get_flux(flux_plane *fp);
   
-  void prepare_for_bands(int z, double total_time, double fmax=0,
+  void prepare_for_bands(const vec &, double end_time, double fmax=0,
                          double qmin=1e300, double frac_pow_min=0.0);
   void record_bands();
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
   void output_bands_and_modes(FILE *, const char *, int maxbands=100);
-  double energy_in_box(double rmin, double rmax, double zmin, double zmax);
-  double electric_energy_in_box(double rmin, double rmax, double zmin, double zmax);
-  double magnetic_energy_in_box(double rmin, double rmax, double zmin, double zmax);
-  double total_energy() {return energy_in_box(0.0, nr*inva, 0.0, nz*inva);};
-  double zflux(int ri, int ro, int z);
-  double rflux(int zl, int zu, int r);
-  void dft_flux();
-  int add_zfluxplane(int ri, int ro, int z);
-  int add_rfluxplane(int zl, int zu, int r);
-  int set_frequency_range(double wl, double wu, double deltaw);
-  void ttow(complex<double> field, double *retarget, double *imtarget, double time);
-  void fluxw_output(FILE *outpf, char *header);
+  double energy_in_box(const volume &);
+  double electric_energy_in_box(const volume &);
+  double magnetic_energy_in_box(const volume &);
+  double total_energy();
+
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
-  double *(erw[2]), *(epw[2]), *(ezw[2]), *(hrw[2]), *(hpw[2]), *(hzw[2]);
-  int iposmax, ifreqmax, nfreq, nzflux, *(nzfluxplane[MAXFLUXPLANES]);
-  int nrflux, *(nrfluxplane[MAXFLUXPLANES]);
-  double *freqs;
-  void find_source_z_position(double z, double shift, int *z1, int *z2,
-                              complex<double> *amp1, complex<double> *amp2);
   void phase_material();
-  void step_h_bulk();
-  void step_h_pml();
+  void step_h();
   void step_h_boundaries();
   void step_h_source(const src *);
-  void step_e_bulk();
-  void step_e_pml();
+  void step_e();
   void step_e_boundaries();
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
-  void step_polarization_pml(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
-  void step_e_pml_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *);
-  void add_src_pt(int r, int z,
-                  complex<double> Pr, complex<double> Pp, complex<double> Pz,
-                  double freq, double width, double peaktime,
-                  double cutoff, int is_h = 0, int is_continuous = 0);
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);
-  int setifreqmax_and_iposmax(int ifreq, int ipos);
-  void out_bands(FILE *, const char *, int maxbands, int outmodes);
-  complex<double> *get_the_bands(int maxbands, double *approx_power = NULL);
+  void add_indexed_source(component whichf, double freq, double width,
+                          double peaktime, int cutoff, int theindex, 
+                          complex<double> amp, int is_c);
+  void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
 };
 

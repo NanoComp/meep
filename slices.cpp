@@ -22,26 +22,22 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-static double get_phase(double *f[2], int nr, int nz) {
+static double get_phase(component c, double *f[2],
+                        const volume &v, const volume &what) {
   complex<double> mean=0;
-  for (int r=0;r<nr;r++) {
-    for (int z=0;z<nz;z++) {
-      mean += complex<double>(RE(f,r,z), IM(f,r,z));
-    }
-  }
+  for (int i=0;i<v.ntot();i++)
+    mean += v.dv(c,i)*complex<double>(f[0][i],f[1][i]);
   complex<double> meanr=0;
-  for (int r=0;r<nr;r++) {
-    for (int z=0;z<nz;z++) {
-      if (RE(f,r,z) > 0) meanr += complex<double>(RE(f,r,z), IM(f,r,z));
-      else meanr += complex<double>(-RE(f,r,z), -IM(f,r,z));
-    }
+  for (int i=0;i<v.ntot();i++) {
+    complex<double> val = v.dv(c,i)*complex<double>(f[0][i],f[1][i]);
+    if (f[0][i] > 0) meanr += val;
+    else meanr -= val;
   }
   complex<double> meani=0;
-  for (int r=0;r<nr;r++) {
-    for (int z=0;z<nz;z++) {
-      if (IM(f,r,z) > 0) meani += complex<double>(RE(f,r,z), IM(f,r,z));
-      else meani += complex<double>(-RE(f,r,z), -IM(f,r,z));
-    }
+  for (int i=0;i<v.ntot();i++) {
+    complex<double> val = v.dv(c,i)*complex<double>(f[0][i],f[1][i]);
+    if (f[1][i] > 0) meani += val;
+    else meani -= val;
   }
   if (abs(mean) > abs(meanr) && abs(mean) > abs(meani)) return arg(mean);
   if (abs(meanr) > abs(meani)) return arg(meanr);
@@ -49,92 +45,233 @@ static double get_phase(double *f[2], int nr, int nz) {
   return 0;
 }
 
-static void output_complex_slice(double *f[2], int nr, int nz, 
-                                 const char *name) {
-  int r, z;
+static void output_complex_slice(component m, double *f[2], const volume &v,
+                                 const volume &what, const char *name) {
   FILE *out = fopen(name, "w");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
     return;
   }
-  double phase = get_phase(f, nr, nz);
+  double phase = get_phase(m, f, v, what);
   double c = cos(phase), s = sin(phase);
-  for (r=0;r<nr;r++) {
-    for (z=0;z<nz;z++) {
-      fprintf(out, "%d\t%d\t%lg\n", z, r, c*RE(f,r,z)+s*IM(f,r,z));
+  for (int i=0;i<v.ntot();i++) {
+    if (what.contains(v.loc(m,i))) {
+      v.loc(m,i).print(out);
+      fprintf(out, "\t%lg\n", c*f[0][i]+s*f[1][i]);
     }
   }
   fclose(out);
 }
 
-static void output_slice(const double *f, int nr, int nz, const char *name) {
-  int r, z;
+static void output_slice(component m, const double *f, const volume &v,
+                         const volume &what, const char *name) {
   FILE *out = fopen(name, "w");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
     return;
   }
-  for (r=0;r<nr;r++) {
-    for (z=0;z<nz;z++) {
-      fprintf(out, "%d\t%d\t%lg\n", z, r, MA(f,r,z));
+  for (int i=0;i<v.ntot();i++) {
+    if (what.contains(v.loc(m,i))) {
+      v.loc(m,i).print(out);
+      fprintf(out, "\t%lg\n", f[i]);
     }
   }
   fclose(out);
 }
 
-void mat::output_sigma_slice(const char *filename) {
-  double *sigma = new double[nr*(nz+1)];
-  for (int r=0;r<nr;r++) {
-    for (int z=0;z<nz;z++) {
-      MA(sigma,r,z) = 0.0;
-    }
-  }
-  if (npmlz) {
-    for (int r=0;r<nr;r++) {
-      int z0 = npmlz-1;
-      for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
-        int z = z0;
-        for (int iz=0;iz<npmlz;iz++,z+=lr) {
-          MA(sigma,r,z) += Czhp[iz]*Czhp[iz];
-        }
+static void eps_header(double xmin, double ymin, double xmax, double ymax,
+                       double fmax, double a, FILE *out, const char *name) {
+  fprintf(out, "%%!PS-Adobe-3.0 EPSF\n");
+  double size = xmax - xmin + ymax - ymin;
+  fprintf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
+          xmin*500/size, ymin*500/size, xmax*500/size, ymax*500/size);
+  fprintf(out, "gsave\n");
+  fprintf(out, "%lg %lg scale\n", 500/size, 500/size);
+  fprintf(out, "/Times-Roman findfont 20 scalefont setfont\n");
+  fprintf(out, "newpath 140 280 moveto (%s) show\n", name);
+  fprintf(out, "/max %lg def\n", fmax);
+  const double dx = 1.0/a;
+  fprintf(out, "/dx %lg def\n", dx);
+  fprintf(out, "/hdx %lg def\n", dx*0.5);
+  fprintf(out, "dx 10 div setlinewidth\n");
+  fprintf(out, "1 setlinecap\n");
+  fprintf(out, "/P {
+    max div
+    dup 0 lt {
+        1 add
+        dup 1
+    }{
+        neg 1 add
+        dup 1 3 1 roll
+    } ifelse
+    setrgbcolor
+    newpath
+    moveto\n");
+  fprintf(out, "    %lg %lg rmoveto\n", dx*0.5, dx*0.5);
+  fprintf(out, "    0 %lg rlineto\n", -dx);
+  fprintf(out, "    %lg 0 rlineto\n", -dx);
+  fprintf(out, "    0 dx rlineto\n", dx);
+  fprintf(out, "    dx 0 rlineto\n", dx);
+  fprintf(out, "    gsave
+    fill
+    grestore\n");
+  fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  fprintf(out, "    stroke
+} def
+/LV {
+    0 0 0 setrgbcolor
+    moveto\n");
+  fprintf(out, "    %lg setlinewidth", dx*0.1);
+  fprintf(out, "    0 %lg rmoveto", dx*0.5);
+  fprintf(out, "    0 %lg rlineto", -dx);
+  fprintf(out, "    stroke
+} def
+/LH {\n");
+  fprintf(out, "    %lg setlinewidth", dx*0.1);
+  fprintf(out, "    0 0 0 setrgbcolor
+    moveto\n");
+  fprintf(out, "    %lg 0 rmoveto", dx*0.5);
+  fprintf(out, "    %lg 0 rlineto", -dx);
+  fprintf(out, "    stroke
+} def\n");
+}
+
+static void eps_trailer(FILE *out) {
+  fprintf(out, "grestore\n");
+  fprintf(out, "%%%%Trailer\n");
+  fprintf(out, "%%%%EOF\n");
+}
+
+static void eps_outline(FILE *out, component m, const double *f, const volume &v,
+                        const volume &what) {
+  for (int i=0;i<v.ntot();i++)
+    if (what.contains(v.loc(m,i)))
+      switch (v.dim) {
+      case dcyl:
+        vec next = v.loc(m,i)+v.dr();
+        if (v.contains(next) && f[i] != f[v.index(m,next)])
+          fprintf(out, "%lg\t%lg\tLH\n", next.z(), next.r() - 0.5/v.a);
+        next = v.loc(m,i)+v.dz();
+        if (v.contains(next) && f[i] != f[v.index(m,next)])
+          fprintf(out, "%lg\t%lg\tLV\n", next.z() - 0.5/v.a, next.r());
+        break;
       }
-    }
+}
+
+static void output_eps(component m, const double *f, const volume &v,
+                       const volume &what, const char *name,
+                       component om = Hx, const double *overlay = NULL) {
+  FILE *out = fopen(name, "w");
+  if (!out) {
+    printf("Unable to open file '%s' for slice output.\n", name);
+    return;
   }
-  if (npmlr) {
-    for (int r=nr-npmlr;r<nr;r++) {
-      for (int z=0;z<nz;z++) {
-        MA(sigma,r,z) += Cphz[r-nr+npmlr]*Cphz[r-nr+npmlr];
-        MA(sigma,r,z) += Crhz[r-nr+npmlr]*Crhz[r-nr+npmlr];
+  double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300, fmax = 0.0;
+  switch (v.dim) {
+  case dcyl:
+    xmin = what.origin.z();
+    xmax = what.origin.z() + what.nz()*what.inva;
+    ymin = ymax = what.origin.r();
+    ymax = what.origin.r() + what.nr()*what.inva;
+    break;
+  case d1:
+    ymin = -v.inva*0.5;
+    ymax = v.inva*0.5;
+    xmin = what.origin.z();
+    xmax = what.origin.z() + what.nz()*what.inva;
+    break;
+  }
+  for (int i=0;i<v.ntot();i++)
+    if (what.contains(v.loc(m,i)))
+      fmax = max(fmax, fabs(f[i]));
+  if (fmax == 0.0) fmax = 0.0001;
+  eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
+  for (int i=0;i<v.ntot();i++) {
+    if (what.contains(v.loc(m,i))) {
+      double x = 0, y = 0;
+      switch (v.dim) {
+      case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
+      case d1: x = v.loc(m,i).z(); break;
+      case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
       }
+      fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[i]);
     }
   }
-  for (int r=0;r<nr;r++) {
-    for (int z=0;z<nz;z++) {
-      MA(sigma,r,z) = sqrt(MA(sigma,r,z));
+  if (overlay) eps_outline(out, om, overlay, v, what);
+  eps_trailer(out);
+  fclose(out);
+}
+
+static void output_complex_eps(component m, double *f[2], const volume &v,
+                               const volume &what, const char *name,
+                               component om = Hx, const double *overlay = NULL) {
+  FILE *out = fopen(name, "w");
+  if (!out) {
+    printf("Unable to open file '%s' for slice output.\n", name);
+    return;
+  }
+  double phase = get_phase(m, f, v, what);
+  double c = cos(phase), s = sin(phase);
+
+  double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300, fmax = 0.0;
+  switch (v.dim) {
+  case dcyl:
+    xmin = what.origin.z();
+    xmax = what.origin.z() + what.nz()*what.inva;
+    ymin = ymax = what.origin.r();
+    ymax = what.origin.r() + what.nr()*what.inva;
+    break;
+  case d1:
+    ymin = -v.inva*0.5;
+    ymax = v.inva*0.5;
+    xmin = what.origin.z();
+    xmax = what.origin.z() + what.nz()*what.inva;
+    break;
+  }
+  for (int i=0;i<v.ntot();i++)
+    if (what.contains(v.loc(m,i)))
+      fmax = max(fmax, fabs(c*f[0][i]+s*f[1][i]));
+  if (ymax == ymin) ymax = ymin + 1.0/v.a;
+  if (fmax == 0.0) fmax = 0.0001;
+  eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
+  for (int i=0;i<v.ntot();i++) {
+    if (what.contains(v.loc(m,i))) {
+      double x = 0, y = 0;
+      switch (v.dim) {
+      case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
+      case d1: x = v.loc(m,i).z(); break;
+      case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
+      }
+      fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, c*f[0][i]+s*f[1][i]);
     }
   }
-  output_slice(sigma, nr, nz, filename);
-  delete[] sigma;
+  if (overlay) eps_outline(out, om, overlay, v, what);
+  eps_trailer(out);
+  fclose(out);
 }
 
 void mat::output_slices(const char *name) {
+  output_slices(v, name);
+}
+
+void mat::output_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
   else *nname = 0; // No additional name!
-  char *n = (char *)malloc(buflen);
+  char *n = new char[buflen];
   if (!n) {
     printf("Allocation failure!\n");
     exit(1);
   }
   snprintf(n, buflen, "%s/%sepsilon.sli", outdir, nname);
-  output_slice(eps, nr, nz, n);
-  snprintf(n, buflen, "%s/%ssigma.sli", outdir, nname);
-  output_sigma_slice(n);
-  free(n);
+  output_slice(v.eps_component(), eps, v, what, n);
+  //snprintf(n, buflen, "%s/%ssigma.sli", outdir, nname);
+  //output_sigma_slice(n);
+  delete[] n;
 }
 
-void fields::output_real_imaginary_slices(const char *name) {
+void fields::output_real_imaginary_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -147,25 +284,16 @@ void fields::output_real_imaginary_slices(const char *name) {
   }
   char *r_or_i = "-re";
   for (int cmp=0;cmp<2;cmp++) {
-    if (a == 1) snprintf(n, buflen, "%s/%shr%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
-    else snprintf(n, buflen, "%s/%shr%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
-    output_slice(hr[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%shp%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
-    else snprintf(n, buflen, "%s/%shp%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
-    output_slice(hp[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%shz%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
-    else snprintf(n, buflen, "%s/%shz%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
-    output_slice(hz[cmp], nr, nz, n);
-    
-    if (a == 1) snprintf(n, buflen, "%s/%ser%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
-    else snprintf(n, buflen, "%s/%ser%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
-    output_slice(er[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%sep%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
-    else snprintf(n, buflen, "%s/%sep%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
-    output_slice(ep[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%sez%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
-    else snprintf(n, buflen, "%s/%sez%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
-    output_slice(ez[cmp], nr, nz, n);
+    for (int c=0;c<10;c++)
+      if (v.has_field((component)c)) {
+        if (a == 1) snprintf(n, buflen, "%s/%s%s%s-%08.0f.sli",
+                             outdir, nname, component_name((component)c),
+                             r_or_i, t*inva*c);
+        else snprintf(n, buflen, "%s/%shr%s-%09.2f.sli",
+                      outdir, nname, component_name((component)c),
+                      r_or_i, t*inva*c);
+        output_slice((component)c, f[c][cmp], v, what, n);
+      }
     r_or_i = "-im";
   }
 
@@ -173,6 +301,14 @@ void fields::output_real_imaginary_slices(const char *name) {
 }
 
 void fields::output_slices(const char *name) {
+  output_slices(v, name);
+}
+
+void fields::eps_slices(const char *name) {
+  eps_slices(v, name);
+}
+
+void fields::output_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -192,250 +328,72 @@ void fields::output_slices(const char *name) {
     polarization *p = pol;
     int polnum = 0;
     while (p) {
-      snprintf(n, buflen, "%s/%sp%dr-%s.sli", outdir, nname, polnum, time_step_string);
-      output_complex_slice(p->Pr, nr, nz, n);
-      snprintf(n, buflen, "%s/%sp%dp-%s.sli", outdir, nname, polnum, time_step_string);
-      output_complex_slice(p->Pp, nr, nz, n);
-      snprintf(n, buflen, "%s/%sp%dz-%s.sli", outdir, nname, polnum, time_step_string);
-      output_complex_slice(p->Pz, nr, nz, n);
+      for (int c=0;c<10;c++)
+        if (v.has_field((component)c) && is_electric((component)c)) {
+          snprintf(n, buflen, "%s/%sp%d%s-%s.sli", outdir, nname, polnum,
+                   component_name((component)c), time_step_string);
+          output_complex_slice((component)c, p->P[c], v, what, n);
+        }
       polnum++;
       p = p->next;
     }
   }
-  snprintf(n, buflen, "%s/%shr-%s.sli", outdir, nname, time_step_string);
-  output_complex_slice(hr, nr, nz, n);
-  snprintf(n, buflen, "%s/%shp-%s.sli", outdir, nname, time_step_string);
-  output_complex_slice(hp, nr, nz, n);
-  snprintf(n, buflen, "%s/%shz-%s.sli", outdir, nname, time_step_string);
-  output_complex_slice(hz, nr, nz, n);
-  
-  snprintf(n, buflen, "%s/%ser-%s.sli", outdir, nname, time_step_string);
-  output_complex_slice(er, nr, nz, n);
-  snprintf(n, buflen, "%s/%sep-%s.sli", outdir, nname, time_step_string);
-  output_complex_slice(ep, nr, nz, n);
-  snprintf(n, buflen, "%s/%sez-%s.sli", outdir, nname, time_step_string);
-  output_complex_slice(ez, nr, nz, n);
+  for (int c=0;c<10;c++)
+    if (v.has_field((component)c)) {
+      snprintf(n, buflen, "%s/%s%s-%s.sli", outdir, nname,
+               component_name((component)c), time_step_string);
+      output_complex_slice((component)c, f[c], v, what, n);
+    }
   
   if (new_ma) {
     snprintf(n, buflen, "%s/%sepsilon-%s.sli", outdir, nname, time_step_string);
-    output_slice(ma->eps, nr, nz, n);
+    output_slice(Hp, ma->eps, v, what, n);
   }
   
   free(n);
 }
 
-int fields::setifreqmax_and_iposmax(int ifreq, int ipos) {
-  int j, arraysize;
-
-  if (t==0) {
-    if (ifreq >= 0)
-      ifreqmax = ifreq;
-    else if (ifreqmax < 0) {
-      printf("Illegal value of ifreqmax (ifreqmax = %d).\n", ifreqmax);
-      return 1;
-    }
-    if (ipos >= 0)
-      iposmax  = ipos;
-    else if (iposmax < 0) {
-      printf("Illegal value of iposmax (iposmax = %d).\n", iposmax);
-      return 1;
-    }
-    arraysize = ifreqmax*iposmax;
-    DOCMP {
-      erw[cmp] = new double[arraysize];
-      for (j=0; j<arraysize;j++) erw[cmp][j] = 0.0;
-      epw[cmp] = new double[arraysize];
-      for (j=0; j<arraysize;j++) epw[cmp][j] = 0.0;
-      ezw[cmp] = new double[arraysize];
-      for (j=0; j<arraysize;j++) ezw[cmp][j] = 0.0;
-      hrw[cmp] = new double[arraysize];
-      for (j=0; j<arraysize;j++) hrw[cmp][j] = 0.0;
-      hpw[cmp] = new double[arraysize];
-      for (j=0; j<arraysize;j++) hpw[cmp][j] = 0.0;
-      hzw[cmp] = new double[arraysize];
-      for (j=0; j<arraysize;j++) hzw[cmp][j] = 0.0;
-    }
-    return 0;
-  } else {
-    printf("Can't reset ifreqmax now (on timestep t=%d)!\n", t);
-    return 1;
+void fields::eps_slices(const volume &what, const char *name) {
+  const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
+  char *n = (char *)malloc(buflen);
+  int i;
+  if (!n) {
+    printf("Allocation failure!\n");
+    exit(1);
   }
-}
-
-int fields::set_frequency_range(double wl, double wu, double deltaw) {
-  double wrange, wtemp;
-
-  wrange = wu - wl;
-  if (wrange < 0) {
-    wtemp = wl;
-    wl = wu;
-    wu = wtemp;
-    wrange = -wrange;
-  }
-  /*
-    if ((int)(wrange / deltaw + 1) > ifreqmax) {
-    printf("Warning, number of desired frequencies exceeds ifreqmax.\n");
-    deltaw = wrange / ((double) (ifreqmax-1));
-    printf("Resetting delta omega to %g.\n", deltaw);
-    }
-  */
-  nfreq = (int) (wrange / deltaw + 1.000001);
-  freqs = new double[nfreq];
-  for (int i=0;i<nfreq;i++)
-    freqs[i] = wl + ((double) i) * deltaw;
-  setifreqmax_and_iposmax(nfreq, -1);
-  return 0;
-}
-
-int fields::add_zfluxplane(int ri, int ro, int z) {
-  nzfluxplane[nzflux] = new int[3];
-  nzfluxplane[nzflux][0] = ri;
-  nzfluxplane[nzflux][1] = ro;
-  nzfluxplane[nzflux][2] = z;
-  nzflux++;
-  setifreqmax_and_iposmax(-1,iposmax+(ro-ri+1));
-  return 0;
-}
-
-int fields::add_rfluxplane(int zl, int zu, int r) {
-  nrfluxplane[nrflux] = new int[3];
-  if (zl > zu) SWAP(zl,zu)
-  nrfluxplane[nrflux][0] = zl;
-  nrfluxplane[nrflux][1] = zu;
-  nrfluxplane[nrflux][2] = r;
-  nrflux++;
-  setifreqmax_and_iposmax(-1,iposmax+(zu-zl+1));
-  return 0;
-}
-
-
-
-void fields::dft_flux() {
-  int n, r, ri, ro, z, zl, zu;
-  int ipos;
-  complex<double> cer, cep, cez, chr, chp, chz;
-
-  ipos = 0;
-  for (n=0;n<nzflux;n++) {
-    ri = nzfluxplane[n][0];
-    ro = nzfluxplane[n][1];
-    z  = nzfluxplane[n][2];
-    for (r = ri; r <= ro; r++) {
-      //may want to average as appropriate over Yee-type lattice
-	cer = complex<double>(RE(er,r,z),IM(er,r,z));
-	cep = complex<double>(RE(ep,r,z),IM(ep,r,z));
-	cez = complex<double>(RE(ez,r,z),IM(ez,r,z));
-	chr = complex<double>(RE(hr,r,z),IM(hr,r,z));
-	chp = complex<double>(RE(hp,r,z),IM(hp,r,z));
-	chz = complex<double>(RE(hz,r,z),IM(hz,r,z));
-	ttow(cer, FW(erw,ipos), ((double) t));
-	ttow(cep, FW(epw,ipos), ((double) t));
-	ttow(cez, FW(ezw,ipos), ((double) t));
-	ttow(chr, FW(hrw,ipos), ((double)t)+0.5);
-	ttow(chp, FW(hpw,ipos), ((double)t)+0.5);
-	ttow(chz, FW(hzw,ipos), ((double)t)+0.5);
-	ipos++;
+  char time_step_string[buflen];
+  if (a == 1)
+    snprintf(time_step_string, buflen, "%08.0f", time());
+  else
+    snprintf(time_step_string, buflen, "%09.2f", time());
+  {
+    polarization *p = pol;
+    int polnum = 0;
+    while (p) {
+      for (int c=0;c<10;c++)
+        if (v.has_field((component)c) && is_electric((component)c)) {
+          snprintf(n, buflen, "%s/%sp%d%s-%s.eps", outdir, nname, polnum,
+                   component_name((component)c), time_step_string);
+          output_complex_eps((component)c, p->P[c], v, what, n);
+        }
+      polnum++;
+      p = p->next;
     }
   }
-  for (n=0;n<nrflux;n++) {
-    zl = nrfluxplane[n][0];
-    zu = nrfluxplane[n][1];
-    r  = nrfluxplane[n][2];
-    for (z = zl; z <= zu; z++) {
-      //may want to average as appropriate over Yee-type lattice
-      cer = complex<double>(RE(er,r,z),IM(er,r,z));
-      cep = complex<double>(RE(ep,r,z),IM(ep,r,z));
-      cez = complex<double>(RE(ez,r,z),IM(ez,r,z));
-      chr = complex<double>(RE(hr,r,z),IM(hr,r,z));
-      chp = complex<double>(RE(hp,r,z),IM(hp,r,z));
-      chz = complex<double>(RE(hz,r,z),IM(hz,r,z));
-      ttow(cer, FW(erw,ipos), ((double) t));
-      ttow(cep, FW(epw,ipos), ((double) t));
-      ttow(cez, FW(ezw,ipos), ((double) t));
-      ttow(chr, FW(hrw,ipos), ((double)t)+0.5);
-      ttow(chp, FW(hpw,ipos), ((double)t)+0.5);
-      ttow(chz, FW(hzw,ipos), ((double)t)+0.5);
-      ipos++;
+  for (int c=0;c<10;c++)
+    if (v.has_field((component)c)) {
+      snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
+               component_name((component)c), time_step_string);
+      output_complex_eps((component)c, f[c], v, what, n, Hp, ma->eps);
     }
+  
+  if (new_ma) {
+    snprintf(n, buflen, "%s/%sepsilon-%s.eps", outdir, nname, time_step_string);
+    output_eps(Hp, ma->eps, v, what, n);
   }
-  return;
-}
-
-
-void fields::ttow(complex<double> field, double *retarget, double *imtarget, double time) {
-  const double twopi=6.283185307;  // = 2 * 3.141592654
-  double twopi_c_over_a, phase;
-  double *targetptr[2];
-
-  twopi_c_over_a = twopi * c * inva;
-  targetptr[0] = retarget;
-  targetptr[1] = imtarget;
-  for (int i=0;i<nfreq;i++) {
-    phase = twopi_c_over_a * freqs[i] * time;
-    DOCMP {
-      *(targetptr[cmp]) += FIPHI(field,phase);
-      targetptr[cmp]++;
-    }
-  }
-}
-
-void fields::fluxw_output(FILE *outpf, char *header) {
-  int r, ri, ro, z, zl, zu, ipos, freq;
-  double rph, *(sr[nzflux]), *(s[nrflux]);
-  int nz, nr;
-  int i, j;
-
-  ipos = 0;
-  for (i=0;i<nzflux;i++) {
-    sr[i] = new double[nfreq];
-    for (j=0;j<nfreq;j++) sr[i][j] = 0.0;
-  }
-  for (i=0;i<nrflux;i++) {
-    s[i] = new double[nfreq];
-    for (j=0;j<nfreq;j++) s[i][j] = 0.0;
-  }
-  for (nz=0;nz<nzflux;nz++) {
-    ri = nzfluxplane[nz][0];
-    ro = nzfluxplane[nz][1];
-    z  = nzfluxplane[nz][2];
-    for (r=ri;r<=ro;r++) {
-      rph = ((double) r) + 0.5;
-      for (freq=0;freq<nfreq;freq++) {
-        if (abs(FPW(erw,ipos,freq))>1000) printf("large erw at %d.\n",freq);
-        if (abs(FPW(hpw,ipos,freq))>1000) printf("large hpw at %d.\n",freq);
-        if (abs(FPW(epw,ipos,freq))>1000) printf("large epw at %d.\n",freq);
-        if (abs(FPW(hrw,ipos,freq))>1000) printf("large hrw at %d.\n",freq);
-	sr[nz][freq] +=rph * real(conj(FPW(erw,ipos,freq))*FPW(hpw,ipos,freq)) 
-	  - r * real(conj(FPW(epw,ipos,freq))*FPW(hrw,ipos,freq));
-      }
-      ipos++;
-    }
-  }
-  for (nr=0;nr<nrflux;nr++) {
-    zl = nrfluxplane[nr][0];
-    zu = nrfluxplane[nr][1];
-    r  = nrfluxplane[nr][2];
-    for (z=zl;z<=zu;z++) {
-      for (freq=0;freq<nfreq;freq++) {
-        s[nr][freq] += real(conj(FPW(epw,ipos,freq))*FPW(hzw,ipos,freq))
-	  - real(conj(FPW(hpw,ipos,freq))*FPW(ezw,ipos,freq));
-      }
-      ipos++;
-    }
-    for (freq=0;freq<nfreq;freq++)
-      s[nr][freq] *= sqrt( ((double) r) * ((double) (r+0.5)) );
-  }
-  for (freq=0;freq<nfreq;freq++) {
-    fprintf(outpf, "%s: %10.6g, ", header, freqs[freq]);
-    for (nz=0;nz<nzflux;nz++)
-      fprintf(outpf, "%10.6g ", sr[nz][freq]);
-    for (nr=0;nr<nrflux;nr++)
-      fprintf(outpf, "%10.6g ", s[nr][freq]);
-    fprintf(outpf, "\n");
-  }
-  for (nr=0;nr<nrflux;nr++)
-    delete[] s[nr];
-  for (nz=0;nz<nzflux;nz++)
-    delete[] sr[nz];
-  return;
+  
+  free(n);
 }

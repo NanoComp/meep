@@ -38,7 +38,6 @@
 #define FW(f,ipos) &((f)[0][ipos*ifreqmax]), &((f)[1][ipos*ifreqmax])
 #define FPW(f,ipos,freq) (complex<double>((f)[0][(ipos)*ifreqmax+(freq)], \
                                   (f)[1][(ipos)*ifreqmax+(freq)]))
-#define SWAP(a,b) {(a) += (b); (b) = (a)-(b); (a) -= (b); }
 
 inline double max(double a, double b) { return (a > b) ? a : b; }
 inline double min(double a, double b) { return (a < b) ? a : b; }
@@ -57,25 +56,22 @@ inline int rmin_bulk(int m) {
 
 class polarizability {
  public:
-  int nr, nz, npmlr, npmlz;
-  polarizability(const mat *, double sig(double,double),
+  volume v;
+  polarizability(const mat *, double sig(const vec &),
                  double om, double ga, double sigscale);
   polarizability(const polarizability *);
   ~polarizability();
-  double gamma, omeganot, *sigma, *sr, *sp, *sz;
+  double gamma, omeganot, *sigma, *s[10];
   polarizability *next;
 
-  void use_integer_pml(int npmlr, int npmlz);
+  void use_pml();
 };
 
 class polarization {
  public:
   polarization(const polarizability *the_pb);
   ~polarization();
-  double *(Pr[2]), *(Pp[2]), *(Pz[2]);
-  // The PML split polarization fields:
-  double *(Prp[2]), *(Ppz[2]), *(Pzr[2]);
-  double *(z_Prp[2][2]), *(z_Ppz[2][2]);
+  double *(P[10][2]), *(P_pml[10][2]);
   const polarizability *pb;
   polarization *next;
 
@@ -85,8 +81,8 @@ class polarization {
 class src {
  public:
   double freq, width, peaktime;
-  complex<double> ez, ep, er, amp_shift;
-  int r, z, cutoff;
+  complex<double> A[10], amp_shift;
+  int i, cutoff;
   int is_real, is_continuous;
   src *next;
   int find_last_source(int guess=0);
@@ -100,21 +96,16 @@ class bandsdata {
   bandsdata();
   ~bandsdata();
 
-  complex<double> *hr, *hp, *hz, *er, *ep, *ez;
+  complex<double> *f[10];
   // The following is the polarization at just one point, with Pz and Pp
   // added together (a crude compromize for speed, while still observing the
   // phonon bands).
   complex<double> *P;
-  int tstart, tend, z, nr, maxbands, scale_factor;
+  int tstart, tend, index, maxbands, scale_factor;
   double a, inva, fmin, fmax, qmin, fpmin;
   int ntime;
   int verbosity;
 
-  void get_fields(complex<double> *eigen, complex<double> *f_and_d,
-                  int nbands, int n);
-  int get_both_freqs(complex<double> *data1, complex<double> *data2, int n,
-                     complex<double> *amps1, complex<double> *amps2, 
-                     double *freqs, double *decays);
   int get_freqs(complex<double> *data, int n,
                 complex<double> *amps, double *freqs, double *decays);
   int look_for_more_bands(complex<double> *simple_data,

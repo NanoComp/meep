@@ -20,9 +20,8 @@ distdir = $(package)-$(VERSION)
 ###########################################################################
 
 OBJ_dactyl = dactyl.o harminv.o bands.o output_directory.o material.o \
-	slices.o polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
-	tidod.o monitor_1d.o polarization_1d.o material_1d.o bands_1d.o \
-	slices_1d.o
+	polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
+	vec.o slices.o
 OBJ_example = example.o libdactyl.a
 
 ###########################################################################
@@ -33,7 +32,6 @@ uninstall: dactyl-uninstall
 
 ###########################################################################
 
-tidod.o: tidod.h
 dactyl.o: dactyl.h dactyl_internals.h
 bands.o: dactyl.h dactyl_internals.h
 bands_example.o: bands_example.cpp dactyl.h
