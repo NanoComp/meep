@@ -34,6 +34,7 @@ fields::fields(const mat *ma, int tm=0) {
   is_real = 0;
   a = v.a;
   inva = 1.0/a;
+  t = 0;
 
   num_chunks = ma->num_chunks;
   chunks = new (fields_chunk *)[num_chunks];
