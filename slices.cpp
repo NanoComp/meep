@@ -47,6 +47,7 @@ static double get_phase(component c, double *f[2],
 
 static void output_complex_slice(component m, double *f[2], const volume &v,
                                  const volume &what, const char *name) {
+  if (!f[0] || ! f[1]) return; // Field doesn't exist...
   FILE *out = fopen(name, "a");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
@@ -65,6 +66,7 @@ static void output_complex_slice(component m, double *f[2], const volume &v,
 
 static void output_slice(component m, const double *f, const volume &v,
                          const volume &what, const char *name) {
+  if (!f) return; // Field doesn't exist...
   FILE *out = fopen(name, "a");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
@@ -189,6 +191,7 @@ static void eps_trailer(FILE *out) {
 
 static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
                        const volume &what) {
+  if (!f) return; // Field doesn't exist...
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
       switch (v.dim) {
@@ -221,6 +224,7 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
 
 static void eps_outline(FILE *out, component m, const double *f, const volume &v,
                         const volume &what) {
+  if (!f) return; // Field doesn't exist...
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
       switch (v.dim) {
@@ -266,6 +270,7 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
                                     const volume &what, const char *name,
                                     component om = Hx, const double *overlay = NULL,
                                     const double *dashed = NULL) {
+  if (!f[0] || !f[1]) return; // Field doesn't exist...
   FILE *out = fopen(name, "a");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
