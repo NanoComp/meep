@@ -347,7 +347,7 @@ void fields_chunk::step_e() {
             const int irm1 = (r-1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++) {
               const double Czep = (ma->Cmain[Ep])?ma->Cmain[Ep][z+ir]:0;
-              const double Crep = (ma->Cmain[Er])?ma->Cmain[Er][z+ir]:0;
+              const double Crep = (ma->Cother[Ep])?ma->Cother[Ep][z+ir]:0;
               const double inveps_plus_Czep = ma->inveps[Ep][z+ir]/
                 (1+.5*ma->inveps[Ep][z+ir]*Czep);
               const double inveps_plus_Crep = ma->inveps[Ep][z+ir]/
