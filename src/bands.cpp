@@ -417,6 +417,7 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 #else
   double dt = sampling_rate * c / a;
   int numfreqs = fabs(fmax-fmin)*dt*n*spectral_density; // c.f. 'man harminv'
+  if (numfreqs > 300) numfreqs = 300; // prevent matrices from getting too big
   if (numfreqs < 2) numfreqs = 2;
 
   if (maxbands > numfreqs)
