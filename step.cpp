@@ -260,7 +260,8 @@ void fields_chunk::step_h() {
             const double Crhz = ma->Cother[Hz][z+ir];
             const double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
             const double dhzr =
-              ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*(r+1.)-f[Ep][cmp][z+ir]*r)*oorph
+              ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*(v.origin.r() + r+1.)-
+                             f[Ep][cmp][z+ir]*(v.origin.r() + r))*oorph
                          - Crhz*f_pml[Hz][cmp][z+ir]);
             const double hzp = f[Hz][cmp][z+ir] - f_pml[Hz][cmp][z+ir];
             f_pml[Hz][cmp][z+ir] += dhzr;
@@ -276,12 +277,13 @@ void fields_chunk::step_h() {
           for (int z=1;z<=v.nz();z++)
             f[Hz][cmp][z+ir] += c*
               (it(cmp,f[Er],z+ir)*morph
-               - (f[Ep][cmp][z+irp1]*(r+1.)-f[Ep][cmp][z+ir]*r)*oorph);
+               - (f[Ep][cmp][z+irp1]*(v.origin.r() + r+1.)-
+                  f[Ep][cmp][z+ir]*(v.origin.r() + r))*oorph);
         }
       // Deal with annoying r==0 boundary conditions...
       if (m == 0) {
         // Nothing needed for H.
-      } else if (m == 1) {
+      } else if (m == 1 && v.origin.r() == 0.0) {
         if (ma->Cmain[Hr])
           for (int z=0;z<v.nz();z++) {
             const double Czhr = ma->Cmain[Hr][z];
@@ -297,7 +299,7 @@ void fields_chunk::step_h() {
             f[Hr][cmp][z] += c*
               ((f[Ep][cmp][z+1]-f[Ep][cmp][z]) - it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
       } else {
-        for (int r=0;r<=v.nr() && v.origin.r() + r < m;r++) {
+        for (int r=0;r<=v.nr() && v.origin.r()*v.a + r < m;r++) {
           const int ir = r*(v.nz()+1);
           for (int z=0;z<=v.nz();z++) f[Hr][cmp][z+ir] = 0;
           if (f_pml[Hr][cmp])
@@ -390,7 +392,8 @@ void fields_chunk::step_e() {
               (1+.5*ma->inveps[Ez][z+ir]*Crez);
 
             const double dezr = inveps_plus_Crez*
-              (c*(f[Hp][cmp][z+ir]*(r+0.5)-f[Hp][cmp][z+irm1]*(r-0.5))*oor
+              (c*(f[Hp][cmp][z+ir]*(v.origin.r() + r+0.5)-
+                  f[Hp][cmp][z+irm1]*(v.origin.r() + r-0.5))*oor
                - Crez*f_pml[Ez][cmp][z+ir]);
             const double ezp = f[Ez][cmp][z+ir]-f_pml[Ez][cmp][z+ir];
             f_pml[Ez][cmp][z+ir] += dezr;
@@ -406,7 +409,8 @@ void fields_chunk::step_e() {
           const int irm1 = (r-1)*(v.nz()+1);
           for (int z=0;z<v.nz();z++)
             f[Ez][cmp][z+ir] += c*ma->inveps[Ez][z+ir]*
-              ((f[Hp][cmp][z+ir]*(r+0.5)-f[Hp][cmp][z+irm1]*(r-0.5))*oor
+              ((f[Hp][cmp][z+ir]*(v.origin.r() + r+0.5)-
+                f[Hp][cmp][z+irm1]*(v.origin.r() + r-0.5))*oor
                - it(cmp,f[Hr],z+ir)*mor);
         }
       // Propogate Er
@@ -438,10 +442,10 @@ void fields_chunk::step_e() {
                 (it(cmp,f[Hz],z+ir)*morph - (f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]));
           }
       // Deal with annoying r==0 boundary conditions...
-      if (m == 0) {
+      if (m == 0 && v.origin.r() == 0.0) {
         for (int z=1;z<=v.nz();z++)
           f[Ez][cmp][z] += c*ma->inveps[Ez][z]*(f[Hp][cmp][z] + it(cmp,f[Hr],z)*m);
-      } else if (m == 1) {
+      } else if (m == 1 && v.origin.r() == 0.0) {
         if (ma->Cmain[Ep])
           for (int z=1;z<=v.nz();z++) {
             const double Czep = ma->Cmain[Ep][z];
@@ -459,7 +463,7 @@ void fields_chunk::step_e() {
             f[Ep][cmp][z] += c*ma->inveps[Ep][z]*
               ((f[Hr][cmp][z]-f[Hr][cmp][z-1]) - f[Hz][cmp][z]*2.0);
       } else {
-        for (int r=0;r<=v.nr() && v.origin.r() + r < m;r++) {
+        for (int r=0;r<=v.nr() && v.origin.r()*v.a + r < m;r++) {
           const int ir = r*(v.nz()+1);
           for (int z=0;z<=v.nz();z++) f[Ep][cmp][z+ir] = 0;
           if (f_pml[Ep][cmp])
