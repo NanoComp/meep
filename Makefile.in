@@ -24,7 +24,7 @@ OBJ_example = example.o libdactyl.a
 
 ###########################################################################
 
-all: libdactyl.a example plot modes doc
+all: libdactyl.a example plot modes
 install: dactyl-install
 uninstall: dactyl-uninstall
 
