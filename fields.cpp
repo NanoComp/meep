@@ -391,8 +391,6 @@ int fields::phase_in_material(const mat *newma, double time) {
     if (chunks[i]->is_mine())
       chunks[i]->phase_in_material(newma->chunks[i]);
   phasein_time = (int) (time*a/c);
-  printf("I'm going to take %d time steps to phase in the material.\n",
-         phasein_time);
   return phasein_time;
 }
 
