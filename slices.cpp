@@ -788,34 +788,33 @@ void fields::eps_slices(const geometric_volume &what, const char *name) {
   if (!n) abort("Allocation failure!\n");
   char time_step_string[buflen];
   snprintf(time_step_string, buflen, "%09.2f", time());
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c)) {
+  FOR_COMPONENTS(c)
+    if (v.has_field(c)) {
       snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
-               component_name((component)c), time_step_string);
-      const double fmax = maxfieldmag_to_master((component)c);
+               component_name(c), time_step_string);
+      const double fmax = maxfieldmag_to_master(c);
       file *out = everyone_open_write(n);
       if (!out) {
         printf("Unable to open file '%s' for slice output.\n", n);
         return;
       }
       if (am_master())
-        output_complex_eps_header((component)c, fmax,
-                                  user_volume, what,
+        output_complex_eps_header(c, fmax, user_volume, what,
                                   out, n, v.eps_component());
       all_wait();
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
           for (int sn=0;sn<S.multiplicity();sn++)
-            for (int otherc=0;otherc<10;otherc++)
-              if (S.transform((component)otherc,sn) == c)
-                chunks[i]->output_eps_body((component)otherc,
+            FOR_COMPONENTS(otherc)
+              if (S.transform(otherc,sn) == c)
+                chunks[i]->output_eps_body(otherc,
                                            S, sn, what, out);
       all_wait();
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
           for (int sn=0;sn<S.multiplicity();sn++)
-            for (int otherc=0;otherc<10;otherc++)
-              if (S.transform((component)otherc,sn) == c)
+            FOR_COMPONENTS(otherc)
+              if (S.transform(otherc,sn) == c)
                 eps_outline(v.eps_component(), chunks[i]->ma->eps,
                             chunks[i]->v, what, S, sn, out);
       all_wait();
