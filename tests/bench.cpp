@@ -193,7 +193,6 @@ int main(int argc, char **argv) {
 
   master_printf("\nnote: 1 Mgs = 1 million grid point time steps\n");
 
-  finished();
   exit(0);
 }
 
