@@ -275,7 +275,7 @@ void fields::initialize_with_nth_tm(int np1) {
   double rootinveps = sqrt(inveps);
   double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
   double omt = om*0.5;
-  if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
+  if (abs(om/(2*pi)) > preferred_fmax) preferred_fmax = om/(2*pi);
   double funky = 1-kk*kk*c*c/(eps*om*om);
   for (int r=0;r<nr;r++) {
     double Jm = J(m,ktrans*r);
@@ -291,7 +291,8 @@ void fields::initialize_with_nth_tm(int np1) {
         CM(hp,r,z) += (c/om/funky)*(ktrans*Jmp_h)
                       *expi(cmp, kz+omt+pi/2);
         
-        if (r > 0) CM(ep,r,z) += (-kk*c*rootinveps/om)*(m*c/(r*om)/funky)*Jm*expi(cmp, kzmh);
+        if (r > 0) CM(ep,r,z) += (-kk*c*rootinveps/om)*(m*c/(r*om)/funky)*Jm
+                     *expi(cmp, kzmh);
         CM(er,r,z) += (kk*c*rootinveps/om)*(c/om/funky)*(ktrans*Jmp_h)
                       *expi(cmp, kzmh+pi/2);
       }

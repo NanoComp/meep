@@ -89,7 +89,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
     // for when there are too many data points...
     double decayconst = bands->fmax*(c*inva)/qmin*8.0;
     double smalltime = 1./(decayconst + bands->fmax*(c*inva));
-    bands->scale_factor = (int)(0.06*smalltime);
+    bands->scale_factor = (int)(0.12*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
     if (verbosity) printf("scale_factor is %d (%lg,%lg)\n",
                           bands->scale_factor, bands->fmax*(c*inva), decayconst);
@@ -446,6 +446,9 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
     }
     int num_here = get_freqs(simple_data, ntime, herea, heref, hered);
     if (num_here > numref || 1) {
+      double total_time = (tend-tstart)*c/a;
+      double deltaf = 2.0/total_time;
+      if (verbosity > 1) printf("Deltaf here is %lg\n", deltaf);
       // It looks like we see a new mode at this point...
       int *refnum = new int[maxbands];
       for (int i=0;i<num_here;i++) refnum[i] = -1;
@@ -462,9 +465,7 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
             err_best = err;
           }
         }
-        double total_time = (tend-tstart)*a/c;
-        //printf("Extra err here is %lg\n", 100.0/total_time/reff[n]);
-        if (err_best < 0.025+100.0/total_time/reff[n]) {
+        if (err_best < 0.025+deltaf/reff[n]) {
           refnum[best_match] = n;
           if (verbosity > 1)
             printf("Matched %d: %10lg Got a best err of %8lg on an f of %lg %d (%lg)\n",
@@ -589,7 +590,7 @@ complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
 int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
                               cmplx *amps1, cmplx *amps2, 
                               double *freqs, double *decays) {
-  double phi = (rand()%1000)/1000.0;
+  double phi = 0.5;
   int numfound = 0;
   double mag1 = 0, mag2 = 0;
   for (int i=0;i<n;i++)
@@ -597,9 +598,9 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
   for (int i=0;i<n;i++)
     mag2 += norm(data2[i]); // norm(a) is actually sqr(abs(a))
   do {
-    complex<double> shift = polar(1.0,phi);
-    complex<double> unshift = polar(1.0,-phi);
-    //if (phi != 0.0) printf("CHANGING PHI! (1.0,%lg)\n",phi);
+    complex<double> shift = polar(2.0,phi);
+    complex<double> unshift = polar(0.5,-phi);
+    if (verbosity > 3 && phi != 0.5) printf("CHANGING PHI! (1.0,%lg)\n",phi);
     cmplx *plus = new complex<double>[n];
     cmplx *minus = new complex<double>[n];
     cmplx *Ap = new complex<double>[n];
@@ -634,8 +635,9 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
         for (int i=0;i<numfound;i++) {
           freqs[i] = 0.5*(fp[i]+fm[i]);
           if (0.5*(fp[i]-fm[i]) > 0.1*freqs[i]) {
-            //printf("We've got some weird frequencies: %lg and %lg\n",
-            //       fp[i], fm[i]);
+            numplus--; // Try another phi...
+            if (verbosity > 3)
+              printf("We've got some weird frequencies: %lg and %lg\n",fp[i],fm[i]);
           }
           decays[i] = 0.5*(dp[i]+dm[i]);
           amps1[i] = 0.5*(Ap[i]+Am[i]);
@@ -652,7 +654,7 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
     delete[] dp;
     delete[] dm;
     phi += 0.1;
-  } while (numfound == 0 && 0);
+  } while (numfound == 0);
   return numfound;
 }
 
@@ -661,7 +663,41 @@ int bandsdata::get_freqs(cmplx *data, int n,
   
   int num = do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands, amps, 
 		       freq_re, freq_im);
-
+  // First deal with any negative frequency solutions.
+  const double total_time = n*scale_factor*c/a;
+  for (int i=0;i<num-1;i++) {
+    if (freq_re[i] < 0) {
+      for (int j=i+1;j<num;j++) {
+        if (abs(freq_re[j]+freq_re[i]) < 2.0/total_time) {
+          if (verbosity > 2 && freq_re[i] != 0.0) {
+            printf("Got a plus/minus freq match at %lg\n",freq_re[j]); 
+            printf("Total time: %lg and delta freq limit %lg\n",
+                   total_time, 2.0/total_time);
+          }
+          freq_re[i] = -0.0; // It will get cleaned up later...
+        }
+      }
+      freq_re[i] = -freq_re[i];
+      if (verbosity > 2 && freq_re[i] != 0.0)
+        printf("Flipping sign of a negative freq:  %lg %lg\n", freq_re[i], freq_im[i]);
+    }
+  }
+  // Now sort the silly solutions again...
+  for (int i=0;i<num-1;i++) { // This is a really bad sort algorithm...
+    for (int j=i+1;j<num;j++) {
+      if (freq_re[i] > freq_re[j]) {
+        double t = freq_re[i];
+        freq_re[i] = freq_re[j];
+        freq_re[j] = t;
+        t = freq_im[i];
+        freq_im[i] = freq_im[j];
+        freq_im[j] = t;
+        complex<double> tc = amps[i];
+        amps[i] = amps[j];
+        amps[j] = tc;
+      }
+    }
+  }
   // Now get rid of any spurious low frequency solutions...
   int orignum = num;
   for (int i=0;i<orignum;i++) {
@@ -681,7 +717,8 @@ int bandsdata::get_freqs(cmplx *data, int n,
   }
   // Now get rid of any spurious transient solutions...
   for (int i=num-1;i>=0;i--) {
-    if (0.5*fabs(freq_re[i]/freq_im[i]) < qmin) {
+    double qminhere = 1.0/(1.0/qmin + 0.25/(freq_re[i]*total_time));
+    if (0.5*fabs(fabs(freq_re[i])/freq_im[i]) < qminhere) {
       num--;
       if (verbosity > 2) {
         printf("Trashing a spurious low Q solution with freq %lg %lg (vs %lg)\n",
@@ -743,13 +780,13 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
         double t1 = freq_re[j], t2 = freq_im[j], e = tmperrors[j];
         cmplx a = tmpamps[j];
         tmpamps[j] = tmpamps[j-1];
-	tmperrors[j] = tmperrors[j-1];
+        tmperrors[j] = tmperrors[j-1];
         freq_re[j] = freq_re[j-1];
         freq_im[j] = freq_im[j-1];
         freq_re[j-1] = t1;
         freq_im[j-1] = t2;
         tmpamps[j-1] = a;
-	tmperrors[j-1] = e;
+        tmperrors[j-1] = e;
       }
     }
   }
