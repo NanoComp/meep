@@ -94,10 +94,8 @@ complex<double> fields::get_field(component c, const ivec &origloc) const {
 
 complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
   complex<double> res = 0.0;
-  if (is_mine()) {
-    if (f[c][0] && f[c][1]) res = getcm(f[c], v.index(c, iloc));
-    else if (f[c][0]) res = f[c][0][v.index(c,iloc)];
-  }
+  if (f[c][0] && f[c][1]) res = getcm(f[c], v.index(c, iloc));
+  else if (f[c][0]) res = f[c][0][v.index(c,iloc)];
   return broadcast(n_proc(), res);
 }
 
