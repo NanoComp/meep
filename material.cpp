@@ -292,17 +292,8 @@ void mat::use_pml(direction d, boundary_side b, double dx, bool recalculate_chun
 
 void mat::use_pml_everywhere(double dx, bool recalculate_chunks) {
   for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
-    if (user_volume.has_boundary((boundary_side)b, d)) {
+    if (user_volume.has_boundary((boundary_side)b, d))
       use_pml(d, (boundary_side)b, dx, false);
-  
-      for (int i=0;i<num_chunks;i++)
-	if (chunks[i]->Cdecay[Z][Hp][P])
-	  for (int l=0; l<chunks[i]->v.ntot(); l++)
-	    if (chunks[i]->Cdecay[Z][Hp][P][l] == 0.0) {
-	      chunks[i]->v.print();
-	      abort("i=%d, l=%d, r=%lg, z=%lg\n",i,l,chunks[i]->v.loc(Hp, l).r(), chunks[i]->v.loc(Hp, l).z());
-	    }
-    }
   if (recalculate_chunks) optimize_chunks();
 }
 
