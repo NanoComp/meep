@@ -274,7 +274,7 @@ complex<double> *fields_1d::clever_cluster_bands(int maxbands, double *approx_po
   int freqs_so_far = 0;
   int fields_considered = 0;
 
-  for (int z=1;z<nz;z+=1+(int)(bands->scale_factor/c*3.99)) {
+  for (int z=0;z<nz;z+=1+(int)(bands->scale_factor/c*3.99)) {
     cmplx *bdata;
     for (int whichf = 0; whichf < 1; whichf++) {
       switch (whichf) {
@@ -293,7 +293,7 @@ complex<double> *fields_1d::clever_cluster_bands(int maxbands, double *approx_po
   }
   int num_found = cluster_some_bands_cleverly(tf, td, ta, freqs_so_far, fields_considered,
                                               maxbands, fad, approx_power);
-    
+
   delete[] ta;
   delete[] tf;
   delete[] td;

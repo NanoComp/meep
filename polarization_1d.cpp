@@ -112,7 +112,9 @@ void fields_1d::step_polarization_itself(polarization_1d *op, polarization_1d *n
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
     step_polarization_itself(olpol, pol);
-    // The two polarizations get switched during the pml step...
+    polarization_1d *temp = olpol;
+    olpol = pol;
+    pol = temp; // They got switched....
   } else if (olpol != NULL && pol != NULL) {
     const double g = op->pb->gamma;
     const double om = op->pb->omeganot;

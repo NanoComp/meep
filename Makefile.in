@@ -20,7 +20,8 @@ distdir = $(package)-$(VERSION)
 
 OBJ_dactyl = dactyl.o harminv.o bands.o output_directory.o material.o \
 	slices.o polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
-	tidod.o monitor_1d.o polarization_1d.o material_1d.o bands_1d.o
+	tidod.o monitor_1d.o polarization_1d.o material_1d.o bands_1d.o \
+	slices_1d.o
 OBJ_example = example.o libdactyl.a
 
 ###########################################################################

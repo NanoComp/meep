@@ -86,7 +86,7 @@ double mat_1d::use_integer_pml(int numpmlz, double fmin) {
       oldrefl = reflection;
     }
   }
-  reverse(Czhy, npmlz);
+  //reverse(Czhy, npmlz);
   for (int z=0;z<npmlz;z++) Czex[z] = Czhy[z];
   return reflection;
 }
@@ -201,7 +201,7 @@ mat_1d::mat_1d(double feps(double z),double zmax, double ta) {
     MA(eps,z) = (feps) ? feps(z/a) : 1.0; // Null feps means vacuum.
   MA(eps,nz) = MA(eps,0);
   inveps = new double[nz+1];
-  for (int z=0;z<nz+1;z++) inveps[z] = eps[z];
+  for (int z=0;z<nz+1;z++) inveps[z] = 1/eps[z];
   // Allocate the conductivity arrays:
   Czex = Czhy = NULL;
 }
