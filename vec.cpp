@@ -123,7 +123,7 @@ void vec::print(file *f) const {
 }
 
 geometric_volume::geometric_volume(const vec &vec1, const vec &vec2) {
-  dim = vec1.dim; 
+  min_corner.dim = max_corner.dim = dim = vec1.dim; 
   LOOP_OVER_DIRECTIONS(dim, d) {
     set_direction_min(d, min(vec1.in_direction(d), vec2.in_direction(d)));
     set_direction_max(d, max(vec1.in_direction(d), vec2.in_direction(d)));
@@ -135,7 +135,7 @@ double geometric_volume::computational_volume() {
   return vol;
 };
 
-double geometric_volume::full_volume() {
+double geometric_volume::full_volume() const {
   double vol = 1.0; 
   LOOP_OVER_DIRECTIONS(dim, d) vol *= (in_direction_max(d) - in_direction_min(d));
   if (dim == Dcyl) vol *= pi * (in_direction_max(R) + in_direction_min(R));
@@ -143,6 +143,7 @@ double geometric_volume::full_volume() {
 };
 
 geometric_volume geometric_volume::intersect_with(const geometric_volume &a) const {
+  if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
   geometric_volume result(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
     double minval = max(in_direction_min(d), a.in_direction_min(d));
@@ -174,8 +175,8 @@ direction volume::yucky_direction(int n) const {
 geometric_volume volume::surroundings() const {
   geometric_volume res(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
-    res.set_direction_min(d, operator[](little_corner()).in_direction(d));
-    res.set_direction_max(d, operator[](big_corner()).in_direction(d));
+    res.set_direction_min(d, operator[](little_corner()).in_direction(d)+0.0/a);
+    res.set_direction_max(d, operator[](big_corner()).in_direction(d)-0.0/a);
   }
   return res;
 }
@@ -401,8 +402,7 @@ void volume::interpolate_fancy(component c, const vec &pc,
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
-    //middle.set_direction(d, ((int) floor(p.in_direction(d)))*2+1);
-    middle.set_direction(d, ((int) p.in_direction(d))*2+1);
+    middle.set_direction(d, ((int) floor(p.in_direction(d)))*2+1);
   middle += iyee_shift(c);
   const vec midv = operator[](middle);
   const vec dv = (pc - midv)*(2*a);
@@ -649,8 +649,11 @@ vec volume::loc(component c, int ind) const {
 
 ivec volume::iloc(component c, int ind) const {
   ivec out(dim);
-  LOOP_OVER_DIRECTIONS(dim,d)
-    out.set_direction(d, 2*((ind/stride(d))%(num_direction(d)+1)));
+  LOOP_OVER_DIRECTIONS(dim,d) {
+    int ind_over_stride = ind/stride(d);
+    while (ind_over_stride < 0) ind_over_stride += num_direction(d)+1;
+    out.set_direction(d, 2*(ind_over_stride%(num_direction(d)+1)));
+  }
   return out + iyee_shift(c) + io();
 }
 
@@ -849,7 +852,10 @@ volume volume::split_specifically(int n, int which, direction d) const {
 
 volume volume::pad(direction d) const {
   volume v = *this;
-  v.num[d%3]++;
+  v.num[d%3]+=2; // Pad in both directions by one grid point.
+  ivec temp = io();
+  temp.set_direction(d, io().in_direction(d) - 2);
+  v.origin = v[temp];
   v.the_ntot = right_ntot(dim, v.num);
   v.set_strides();
   return v;
@@ -1027,6 +1033,11 @@ vec symmetry::transform(const vec &ov, int n) const {
     else delta.set_direction(s.d, deltad);
   }
   return symmetry_point + delta;
+}
+
+geometric_volume symmetry::transform(const geometric_volume &gv, int n) const {
+  return geometric_volume(transform(gv.get_min_corner(),n),
+                          transform(gv.get_max_corner(),n));
 }
 
 component symmetry::transform(component c, int n) const {

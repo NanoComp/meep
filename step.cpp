@@ -87,20 +87,17 @@ void fields::step() {
 }
 
 double fields_chunk::peek_field(component c, const vec &where) {
-  int inds[8];
   double w[8];
-  v.interpolate(c,where,inds,w);
-  const int ind = inds[0];
-  if (ind >= 0 && ind < v.ntot() && w[0]) {
+  ivec ilocs[8];
+  v.interpolate(c,where, ilocs, w);
+  if (v.contains(ilocs[0]) && f[c][0]) {
     double hello = 0.0;
-    if (is_mine()) {
-      hello = f[c][0][ind];
-    }
-    //master_printf("Found the field here at %lg %lg!\n",
-    //              v.loc(c,ind).x(), v.loc(c,ind).y());
+    if (is_mine()) hello = f[c][0][v.index(c,ilocs[0])];
     broadcast(n_proc(), &hello, 1);
     return hello;
   }
+  //abort("Got no such %s field at %lg %lg!\n",
+  //      component_name(c), v[ilocs[0]].x(), v[ilocs[0]].y());
   return 0.0;
 }
 
@@ -898,7 +895,7 @@ void fields::step_boundaries(field_type ft) {
             phr*comm_blocks[ft][pair][n+1] + phi*comm_blocks[ft][pair][n];
           wh += 2;
         }
-        for (;n<comm_num_negate[ft][pair];n++) {
+        for (;n<comm_num_complex[ft][pair]+comm_num_negate[ft][pair];n++) {
           *(chunks[i]->connections[ft][Incoming][wh]) = -comm_blocks[ft][pair][n];
           wh++;
         }

@@ -79,12 +79,24 @@ void fields::add_point_source(component whichf, double freq,
                               double width, double peaktime,
                               double cutoff, const vec &p,
                               complex<double> amp, int is_c) {
+  ivec ilocs[8];
+  double w[8];
+  v.interpolate(whichf, p, ilocs, w);
+  for (int argh=0;argh<8&&w[argh];argh++)
+    add_point_source(whichf, freq, width, peaktime,
+                     cutoff, ilocs[argh], w[argh]*amp, is_c);
+}
+
+void fields::add_point_source(component whichf, double freq,
+                              double width, double peaktime,
+                              double cutoff, const ivec &p,
+                              complex<double> amp, int is_c) {
   const double invmul = 1.0/S.multiplicity();
   int need_to_connect = 0;
   for (int sn=0;sn<S.multiplicity();sn++) {
     component cc = S.transform(whichf,sn);
     complex<double> ph = S.phase_shift(whichf,sn);
-    const vec pp = S.transform(p,sn);
+    const ivec pp = S.transform(p,sn);
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->is_mine())
         need_to_connect += 
@@ -97,7 +109,7 @@ void fields::add_point_source(component whichf, double freq,
 
 int fields_chunk::add_point_source(component whichf, double freq,
                                    double width, double peaktime,
-                                   double cutoff, const vec &p,
+                                   double cutoff, const ivec &p,
                                    complex<double> amp, int is_c, double tim) {
   if (p.dim != v.dim)
     abort("Error:  source doesn't have right dimensions! %s %s\n",
@@ -115,10 +127,7 @@ int fields_chunk::add_point_source(component whichf, double freq,
     }
     need_reconnection = 1;
   }
-  int ind[8];
-  double w[8];
-  v.interpolate(whichf, p, ind, w);
-  if (w[0] == 0.0) return need_reconnection; // No source here...
+  if (amp == 0.0) return need_reconnection; // No source here...
   double prefac = 1.0;
   switch (v.dim) {
   case Dcyl: prefac = a; break;
@@ -126,74 +135,10 @@ int fields_chunk::add_point_source(component whichf, double freq,
   case D2: prefac = a; break; // FIXME: verify that this works right.
   case D1: prefac = 1; break;
   }
-  for (int i=0;i<8 && w[i];i++) {
-    //printf("Adding %s source at %.19lg %.19lg %.19lg with weight %.19lg (%lg)\n",
-    //       component_name(whichf),
-    //       v.loc(whichf,ind[i]).x(),
-    //       v.loc(whichf,ind[i]).y(),
-    //       v.loc(whichf,ind[i]).z(),
-    //       real(amp*w[i]*prefac), prefac);
-    add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i],
-                       amp*w[i]*prefac, is_c, tim);
-  }
+  if (v.owns(p))
+    add_indexed_source(whichf, freq, width, peaktime, cutoff, v.index(whichf,p),
+                       amp*prefac, is_c, tim);
   return need_reconnection;
-}
-
-void fields::add_plane_source(double freq, double width, double peaktime,
-                              double cutoff, double envelope (const vec &),
-                              const vec &p, const vec &norm,
-                              int is_c) {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->add_plane_source(freq, width, peaktime,
-                                  cutoff, envelope, p, norm, is_c, time());
-}
-
-void fields_chunk::add_plane_source(double freq, double width, double peaktime,
-                                    double cutoff, double envelope (const vec &),
-                                    const vec &p, const vec &norm,
-                                    int is_c, double time) {
-  if (v.dim == Dcyl) {
-    // We ignore norm in this case...
-    if (m != 1) abort("Can only use plane source with m == 1!\n");
-    const complex<double> I = complex<double>(0,1);
-    const double z = p.z();
-    const double eps = sqrt(ma->eps[(int)(z+0.5)]);
-    for (int ir=0;ir<v.nr();ir++) {
-      {
-        const double r = ir*inva;
-        // E_phi
-        add_point_source(Ep, freq, width, peaktime, cutoff, vec(r,z),
-                         envelope(vec(r,z)), is_c, time);
-        // iH_r = d(rH_phi)/dr
-        const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
-                              (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
-        add_point_source(Hr, freq, width, peaktime, cutoff, vec(r,z),
-                         -eps*slope, is_c, time);
-      }
-      {
-        const double r = (ir+0.5)*inva;
-        const double sc = (ir == 0)?0.5:1.0;
-        // iE_r = d(rE_phi)/dr
-        const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
-                              (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
-        add_point_source(Er, freq, width, peaktime, cutoff, vec(r,z),
-                         -I*sc*slope, is_c, time);
-        // H_phi
-        add_point_source(Hp, freq, width, peaktime, cutoff, vec(r,z),
-                         -I*eps*sc*envelope(vec(r,z)), is_c, time);
-      }
-    }
-  } else if (v.dim == D1) {
-    const double z = p.z();
-    const double eps = sqrt(ma->eps[(int)(z+0.5)]);
-    add_point_source(Ex, freq, width, peaktime, cutoff, vec(z),
-                     envelope(vec(z)), is_c, time);
-    add_point_source(Hy, freq, width, peaktime, cutoff, vec(z),
-                     envelope(vec(z))*eps, is_c, time);
-  } else {
-    abort("Can't use plane source in this number of dimensions.\n");
-  }
 }
 
 void fields_chunk::add_indexed_source(component whichf, double freq, double width,

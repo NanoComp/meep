@@ -289,16 +289,21 @@ inline ivec ivec2d(int xx, int yy) {
 class geometric_volume {
  public:
   ndim dim;
-  geometric_volume(ndim di) { dim = di; };
+  geometric_volume(ndim di) { dim = di; min_corner.dim = di; max_corner.dim = di; };
   geometric_volume(const vec &vec1, const vec &vec2);
   void set_direction_min(direction d, double val) { min_corner.set_direction(d, val); };
   void set_direction_max(direction d, double val) { max_corner.set_direction(d, val); };
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };
   double in_direction_max(direction d) const { return max_corner.in_direction(d); };
   double computational_volume(); 
-  double full_volume(); 
+  double full_volume() const;
   bool contains(const vec &h) const;
   geometric_volume intersect_with(const geometric_volume &a) const;
+  geometric_volume operator&(const geometric_volume &a) const {
+    return intersect_with(a);
+  };
+  vec get_min_corner() const { return min_corner; };
+  vec get_max_corner() const { return max_corner; };
  private:
   vec min_corner, max_corner;
 };
@@ -428,6 +433,7 @@ class symmetry {
   signed_direction transform(direction d, int n) const;
   ivec transform(const ivec &, int n) const;
   vec transform(const vec &, int n) const;
+  geometric_volume transform(const geometric_volume &, int n) const;
   component transform(component, int n) const;
   complex<double> phase_shift(component, int n) const;
   int multiplicity() const;

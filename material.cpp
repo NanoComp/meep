@@ -22,7 +22,9 @@
 #include "meep.h"
 #include "meep_internals.h"
 
-mat::mat() {
+mat::mat()
+  : gv(D1) // Aaack, this is very hokey.
+{
   num_chunks = 0;
   desired_num_chunks = 0;
   num_effort_volumes = 0;
@@ -32,7 +34,9 @@ mat::mat() {
   S = identity();
 }
 
-mat::mat(const volume &thev, double eps(const vec &), int num, const symmetry &s) {
+mat::mat(const volume &thev, double eps(const vec &), int num, const symmetry &s)
+  : gv(D1) // Aaack, this is very hokey.
+{
   outdir = ".";
   if (num == 0) num = count_processors();
   desired_num_chunks = num;
@@ -114,7 +118,7 @@ void mat::redefine_chunks(const int Nv, const volume *new_volumes,
       if (chunks[i]->v.intersect_with(new_volumes[j], &vol_intersection)) {
         if (new_chunks[j] == NULL) {
           new_chunks[j] = new mat_chunk(new_volumes[j], zero_function,
-                                        procs[j]);
+                                        gv, procs[j]);
           // the above happens even if chunk not owned by proc
         }
         // chunk "printing" is parallelized below
@@ -230,6 +234,7 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
   num_chunks = num;
   user_volume = thev;
   v = thev;
+  gv = v.surroundings();
   S = s;
   if (S.multiplicity() > 1) {
     // Have to work out the symmetry point and volume to use.
@@ -250,6 +255,8 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
     }
     for (int d=0;d<3;d++)
       if (break_this[d]) v = v.split_specifically(2,0,(direction)d);
+    // Before padding, find the corresponding geometric volume.
+    gv = v.surroundings();
     // Pad the little cell in any direction that we've shrunk:
     for (int d=0;d<3;d++)
       if (break_this[d]) v = v.pad((direction)d);
@@ -257,11 +264,11 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) {
     const int proc = i*count_processors()/num_chunks;
-    chunks[i] = new mat_chunk( v.split(num_chunks,i), eps, proc);
+    chunks[i] = new mat_chunk( v.split(num_chunks,i), eps, gv, proc);
   }
 }
 
-mat::mat(const mat *m) {
+mat::mat(const mat *m) : gv(m->gv) {
   num_chunks = m->num_chunks;
   desired_num_chunks = m->desired_num_chunks;
   outdir = m->outdir;
@@ -279,7 +286,7 @@ mat::mat(const mat *m) {
   }
 }
 
-mat::mat(const mat &m) {
+mat::mat(const mat &m) : gv(m.gv) {
   num_chunks = m.num_chunks;
   desired_num_chunks = m.desired_num_chunks;
   outdir = m.outdir;
@@ -501,7 +508,7 @@ void mat_chunk::update_Cdecay() {
 	}
 }
 
-mat_chunk::mat_chunk(const mat_chunk *o) {
+mat_chunk::mat_chunk(const mat_chunk *o) : gv(o->gv) {
   if (o->pb) pb = new polarizability(o->pb);
   else pb = NULL;
   a = o->a;
@@ -541,7 +548,9 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
       }
 }
 
-mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
+mat_chunk::mat_chunk(const volume &thev, double feps(const vec &),
+                     const geometric_volume &vol_limit, int pr)
+  : gv(thev.surroundings() & vol_limit) {
   pml_fmin = 0.2;
   pb = NULL;
   v = thev;

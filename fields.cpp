@@ -23,15 +23,15 @@
 #include "meep.h"
 #include "meep_internals.h"
 
-fields::fields(const mat *ma, int tm) {
+fields::fields(const mat *ma, int tm) :
+  v(ma->v), gv(ma->gv), user_volume(ma->user_volume),
+  S(ma->S)
+{
   verbosity = 0;
-  v = ma->v;
-  user_volume = ma->user_volume;
   outdir = ma->outdir;
   m = tm;
   phasein_time = 0;
   bands = NULL;
-  S = ma->S;
   for (int d=0;d<5;d++) k[d] = 0.0;
   is_real = 0;
   a = v.a;
@@ -115,10 +115,10 @@ fields_chunk::~fields_chunk() {
   delete[] zeroes[1];
 }
 
-fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
+fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm)
+  : v(the_ma->v), gv(the_ma->gv) {
   ma = new mat_chunk(the_ma);
   verbosity = 0;
-  v = ma->v;
   outdir = od;
   m = tm;
   new_ma = NULL;

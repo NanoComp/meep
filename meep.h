@@ -36,10 +36,12 @@ class mat_chunk {
   double *C[5][10];
   double *Cdecay[5][10][5];
   volume v;
+  geometric_volume gv;
   polarizability *pb;
 
   ~mat_chunk();
-  mat_chunk(const volume &v, double eps(const vec &), int proc_num=0);
+  mat_chunk(const volume &v, double eps(const vec &),
+            const geometric_volume &vol_limit, int proc_num=0);
   mat_chunk(const mat_chunk *);
   void make_average_eps();
   void use_pml(direction, double dx, double boundary_loc);
@@ -69,6 +71,7 @@ class mat {
   int num_chunks;
   int desired_num_chunks;
   volume v, user_volume;
+  geometric_volume gv;
   symmetry S;
   const char *outdir;
   volume *effort_volumes;
@@ -176,6 +179,7 @@ class fields_chunk {
   partial_flux_plane *fluxes;
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
+  geometric_volume gv;
   int m, is_real;
   bandsdata *bands;
   src *e_sources, *h_sources;
@@ -256,12 +260,8 @@ class fields_chunk {
   // be recalculated.  This allows us to avoid allocating TE or TM fields
   // until we know which is desired.
   int add_point_source(component whichf, double freq, double width, double peaktime,
-                       double cutoff, const vec &, complex<double> amp,
+                       double cutoff, const ivec &, complex<double> amp,
                        int is_continuous, double time);
-  void add_plane_source(double freq, double width, double peaktime,
-                        double cutoff, double envelope (const vec &),
-                        const vec &p, const vec &norm,
-                        int is_continuous, double time);
   void add_indexed_source(component whichf, double freq, double width,
                           double peaktime, double cutoff, int theindex, 
                           complex<double> amp, int is_c, double time);
@@ -296,6 +296,7 @@ class fields {
   int *comm_num_negate[2];
   double a, inva; // The "lattice constant" and its inverse!
   volume v, user_volume;
+  geometric_volume gv;
   int m, t, phasein_time, is_real;
   complex<double> k[5], eikna[5];
   double coskna[5], sinkna[5];
@@ -339,10 +340,6 @@ class fields {
   double find_last_source();
   void add_point_source(component whichf, double freq, double width, double peaktime,
                         double cutoff, const vec &, complex<double> amp = 1.0,
-                        int is_continuous = 0);
-  void add_plane_source(double freq, double width, double peaktime,
-                        double cutoff, double envelope (const vec &),
-                        const vec &p, const vec &norm = vec(0),
                         int is_continuous = 0);
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
@@ -425,6 +422,9 @@ class fields {
                                   complex<double> *fad, double *approx_power);
   void out_bands(file *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
+  // sources.cpp
+  void add_point_source(component whichf, double freq, double width, double peaktime,
+                        double cutoff, const ivec &p, complex<double> amp, int is_c);
   // slices.cpp
   void outline_chunks(file *name);
   bool has_eps_interface(vec *loc) const;

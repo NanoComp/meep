@@ -89,6 +89,7 @@ complex<double> fields::get_field(component c, const ivec &origloc) const {
       if (chunks[i]->v.contains(S.transform(iloc,sn)))
         return S.phase_shift(c,sn)*kphase*
           chunks[i]->get_field(S.transform(c,sn),S.transform(iloc,sn));
+  return 0.0;
 }
 
 complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {

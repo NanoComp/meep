@@ -132,20 +132,12 @@ double fields_chunk::electric_energy_in_box(const geometric_volume &otherv,
       if (f[c][cmp])
         for (int i=0;i<v.ntot();i++) {
           const ivec p0 = v.iloc(c,i);
-          if (S.is_primitive(p0) && v.owns(p0)) {
-            int num_times_mapped_to_self = 0;
-            for (int sn=0;sn<S.multiplicity();sn++)
-              if (S.transform(p0,sn)==p0) num_times_mapped_to_self++;
-            for (int sn=0;sn<S.multiplicity();sn++) {
-              const ivec pn = S.transform(p0,sn);
-              // FIXME I need to rewrite this to deal with anisotropic
-              // dielectric stuff.
-              energy += otherv.intersect_with(v.dV(pn)).full_volume()*
-                f[c][cmp][i]*
-                (1./ma->inveps[c][component_direction(c)][i]*f[c][cmp][i])
-                /num_times_mapped_to_self;
-            }
-          }
+          for (int sn=0;sn<S.multiplicity();sn++)
+            // FIXME I need to rewrite this to deal with anisotropic
+            // dielectric stuff.
+            energy += (otherv & S.transform(gv & v.dV(p0),sn)).full_volume()*
+              f[c][cmp][i]*
+              (1./ma->inveps[c][component_direction(c)][i]*f[c][cmp][i]);
         }
   return energy*(1.0/(8*pi));
 }
@@ -158,16 +150,9 @@ double fields_chunk::magnetic_energy_in_box(const geometric_volume &otherv,
       if (f[c][cmp])
         for (int i=0;i<v.ntot();i++) {
           const ivec p0 = v.iloc(c,i);
-          if (S.is_primitive(p0) && v.owns(p0)) {
-            int num_times_mapped_to_self = 0;
-            for (int sn=0;sn<S.multiplicity();sn++)
-              if (S.transform(p0,sn)==p0) num_times_mapped_to_self++;
-            for (int sn=0;sn<S.multiplicity();sn++) {
-              const ivec pn = S.transform(p0,sn);
-              energy += otherv.intersect_with(v.dV(pn)).full_volume()*
-                f[c][cmp][i]*f[c][cmp][i]/num_times_mapped_to_self;
-            }
-          }
+          for (int sn=0;sn<S.multiplicity();sn++)
+            energy += (otherv & S.transform(gv & v.dV(p0),sn)).full_volume()*
+              f[c][cmp][i]*f[c][cmp][i];
         }
   return energy*(1.0/(8*pi));
 }
