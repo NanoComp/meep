@@ -37,11 +37,13 @@ html: $(TEX) $(EPS) $(FREQS)
 
 meep.pdf: $(TEX) $(PDF) $(FREQS)
 	pdflatex meep
+	pdflatex meep
 
 meep.ps: meep.dvi
 	dvips -o meep.ps meep.dvi
 
 meep.dvi: $(TEX) $(EPS) $(FREQS)
+	latex meep.tex
 	latex meep.tex
 
 ###########################################################################
