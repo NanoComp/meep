@@ -337,6 +337,8 @@ void begin_critical_section(int tag)
 		   MPI_COMM_WORLD, &status);
 	  if (recv_tag != tag) abort("invalid tag received in begin_critical_section");
      }
+#else
+     UNUSED(tag);
 #endif
 }
 
@@ -350,6 +352,8 @@ void end_critical_section(int tag)
 	  MPI_Send(&tag, 1, MPI_INT, process_rank + 1, tag, 
 		   MPI_COMM_WORLD);
      }
+#else
+     UNUSED(tag);
 #endif
 }
 
