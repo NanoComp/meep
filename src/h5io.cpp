@@ -347,6 +347,8 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      IF_EXCLUSIVE(if (parallel)
 		    end_critical_section(matrixio_critical_section_tag++),
 		  (void) 0);
+#else
+     abort("not compiled with HDF5, required for HDF5 output");
 #endif
 }
 
