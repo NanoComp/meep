@@ -16,7 +16,7 @@ while test $# -ge 1; do
     shift
 done
 
-if test $verbose = yes; then
+if test x$verbose = xyes; then
     autoreconf --verbose --install --symlink
 else
     autoreconf --install --symlink
