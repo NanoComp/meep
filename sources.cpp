@@ -90,7 +90,6 @@ void fields_chunk::add_point_source(component whichf, double freq,
                                     double width, double peaktime,
                                     double cutoff, const vec &p,
                                     complex<double> amp, int is_c, double tim) {
-  // FIXME this really should call an interpolation routine...
   if (p.dim != v.dim) {
     printf("Error:  source doesn't have right dimensions!\n");
     exit(1);

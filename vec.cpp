@@ -256,16 +256,15 @@ void volume::interpolate(component c, const vec &p,
 
 void volume::interpolate_cyl(component c, const vec &p, int m,
                              int indices[8], double weights[8]) const {
-  if (p.z() == 0.701 && c == Ez && 0)
-    printf("\nDoing cylindrical interp of %lg %lg\n", p.r(), p.z());
-  const double ir = (p.r() - yee_shift(c).r())*a, iz = (p.z() - yee_shift(c).z())*a;
+  const double ir = (p.r() - yee_shift(c).r())*a;
+  const double iz = (p.z() - yee_shift(c).z())*a;
   // (0,0) must be on grid!
-  const int ioriginr = (int) floor((origin.r() + yee_shift(c).r())*a + 0.5);
-  const int ioriginz = (int) floor((origin.z() + yee_shift(c).z())*a + 0.5);
-  int irlo = (int) floor(ir) - ioriginr, izlo = (int) floor(iz) - ioriginz,
+  const int ioriginr = (int) (origin.r()*a + 0.5);
+  const int ioriginz = (int) (origin.z()*a + 0.5);
+  int irlo = (int)ir - ioriginr, izlo = (int)iz - ioriginz,
     irhi = irlo+1, izhi = izlo+1;
-  //printf("In integer terms, I am at %lg %lg\n", ir, iz);
-  const double dr = ir - (ioriginr + irlo + 0.5), dz = iz - (ioriginz + izlo + 0.5);
+  const double dr = p.r()*a - (ioriginr + irlo + 0.5) - yee_shift(c).r()*a;
+  const double dz = p.z()*a - (ioriginz + izlo + 0.5) - yee_shift(c).z()*a;
   for (int i=0;i<8;i++) indices[i] = 0;
   for (int i=0;i<8;i++) weights[i] = 0;
   // Tabulate the actual weights:
@@ -371,20 +370,22 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
     if (!owns(loc(c, indices[i])))
       weights[i] = 0.0;
   stupidsort(indices, weights, 4);
-  if (!contains(p)) {
-    if (weights[0]) {
-      printf("Error made in cyl interpolation--fix this bug!!!\n");
-      printf("Point is at %lg %lg\n", ir, iz);
-      for (int i=0;i<8&&weights[i];i++) {
-        printf("  Point %lg %lg Weight %lg\n",
-               loc(c, indices[i]).r(), loc(c, indices[i]).z(), weights[i]);
-        if (!owns(loc(c, indices[i]))) {
-          printf("  ...we don't own this index!\n");
-          weights[i] = 0.0;
-        }
+  if (!contains(p) && weights[0]) {
+    printf("Error made in cyl interpolation--fix this bug!!!\n");
+    printf("%s irlo %d irhi %d izlo %d izhi %d\n",
+           component_name(c), irlo, irhi, izlo, izhi);
+    printf("Point is at %lg %lg -- in real space this is %lg %lg\n",
+           ir, iz, p.r(), p.z());
+    printf("  dr %.20lg dz %.20lg\n", dr, dz);
+    for (int i=0;i<8 &&weights[i];i++) {
+      printf("  Point %lg %lg Weight %.25lg\n",
+             loc(c, indices[i]).r(), loc(c, indices[i]).z(), weights[i]);
+      if (!owns(loc(c, indices[i]))) {
+        printf("  ...we don't own this index!\n");
+        weights[i] = 0.0;
       }
-      //exit(1);
     }
+    exit(1);
   }
 }
 
@@ -403,10 +404,12 @@ double volume::dv(component c, int ind) const {
 }
 
 vec volume::loc(component c, int ind) const {
-  const vec offset = origin + yee_shift(c);
+  const int or = (int)(origin.r()*a+0.5);
+  const int oz = (int)(origin.z()*a+0.5);
   switch (dim) {
-  case dcyl: return offset + vec(inva*(ind/(nz()+1)), inva*(ind%(nz()+1)));
-  case d1: return offset + vec(inva*ind);
+  case dcyl: return yee_shift(c) + vec(inva*(or+ind/(nz()+1)),
+                                       inva*(oz+(ind%(nz()+1))));
+  case d1: return yee_shift(c) + vec(inva*(oz+ind));
   }
 }
 
