@@ -404,23 +404,24 @@ double fields::modal_volume_in_box(const geometric_volume &where) {
 
 /************************************************************************/
 
-  /* compute integral (delta epsilon) * |E|^2 / (8*pi), which is useful for
-     perturbation theory, etcetera */
+  /* compute integral f(x) * Re[conj(f1)*f2] / (8*pi), which is useful for
+     perturbation theory, etcetera, where f1 and f2 are two field components
+     on the same Yee lattice (e.g. Hx and Hx or Ex and Dx). */
 
-struct dot_deps_integrand_data {
+struct dot_weight_integrand_data {
   component c1, c2;
-  double (*deps)(const vec &);
+  double (*f)(const vec &);
   long double sum;
 };
 
-static void dot_deps_integrand(fields_chunk *fc, component cgrid,
+static void dot_weight_integrand(fields_chunk *fc, component cgrid,
 			       ivec is, ivec ie,
 			       vec s0, vec s1, vec e0, vec e1,
 			       double dV0, double dV1,
 			       ivec shift, complex<double> shift_phase,
 			       const symmetry &S, int sn,
 			       void *data_) {
-  dot_deps_integrand_data *data = (dot_deps_integrand_data *) data_;
+  dot_weight_integrand_data *data = (dot_weight_integrand_data *) data_;
 
   (void) shift_phase; // unused
 
@@ -442,23 +443,39 @@ static void dot_deps_integrand(fields_chunk *fc, component cgrid,
         vec locS(S.transform(loc, sn) + shift * (0.5*inva));
 
         data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
-	  * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx] * data->deps(locS);
+	  * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx] * data->f(locS);
     }
 }
 
 double fields::electric_deps_integral_in_box(double (*deps)(const vec &),
 					     const geometric_volume &where) {
-  dot_deps_integrand_data data;
-  data.deps = deps;
+  dot_weight_integrand_data data;
+  data.f = deps;
   data.sum = 0.0;
 
   FOR_ELECTRIC_COMPONENTS(c) 
     if (!coordinate_mismatch(v.dim, component_direction(c))) {
       data.c1 = direction_component(Ex, component_direction(c));
       data.c2 = direction_component(Ex, component_direction(c));
-      integrate(dot_deps_integrand, (void *) &data, where, c);
+      integrate(dot_weight_integrand, (void *) &data, where, c);
     }
   return sum_to_all(data.sum) / (8*pi);
+}
+
+/* computes integral of f(x) * epsilon*|E|^2 / integral epsilon*|E|^2 */
+double fields::electric_energy_weighted_integral(double (*f)(const vec &),
+					     const geometric_volume &where) {
+  dot_weight_integrand_data data;
+  data.f = f;
+  data.sum = 0.0;
+
+  FOR_ELECTRIC_COMPONENTS(c) 
+    if (!coordinate_mismatch(v.dim, component_direction(c))) {
+      data.c1 = direction_component(Ex, component_direction(c));
+      data.c2 = direction_component(Dx, component_direction(c));
+      integrate(dot_weight_integrand, (void *) &data, where, c);
+    }
+  return sum_to_all(data.sum) / (8*pi) / electric_energy_in_box(where);
 }
 
 } // namespace meep
