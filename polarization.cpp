@@ -79,7 +79,7 @@ double polarization::total_energy(const volume &what) {
     if (energy[c])
       for (int i=0;i<v.ntot();i++)
         if (what.contains(v.loc((component)c,i)))
-          e += energy[c][i];
+          e += v.dv((component)c,i)*energy[c][i];
   if (next) e += next->total_energy(what);
   return e;
 }

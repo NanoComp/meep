@@ -438,10 +438,10 @@ void fields::step() {
   half_step_polarization_energy();
   step_e();
   step_e_source(e_sources);
+  step_e_polarization();
   step_e_boundaries();
   half_step_polarization_energy();
 
-  step_e_polarization();
   step_polarization_itself();
 }
 

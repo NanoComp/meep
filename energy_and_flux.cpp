@@ -80,7 +80,7 @@ double fields::electric_energy_in_box(const volume &otherv) {
         for (int i=0;i<v.ntot();i++)
           energy += v.dv((component)c,i)*f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
   }
-  return energy/(8*pi) * 2*pi/(a*a*a);
+  return energy/(8*pi);
 }
 
 double fields::magnetic_energy_in_box(const volume &otherv) {
@@ -91,12 +91,12 @@ double fields::magnetic_energy_in_box(const volume &otherv) {
         for (int i=0;i<v.ntot();i++)
           energy += v.dv((component)c,i)*f[c][cmp][i]*f[c][cmp][i];
   }
-  return energy/(8*pi) * 2*pi/(a*a*a);
+  return energy/(8*pi);
 }
 
 double fields::thermo_energy_in_box(const volume &otherv) {
   if (pol) {
-    return pol->total_energy(otherv)/(4*pi) * 2*pi/(a*a*a);
+    return pol->total_energy(otherv)/(4*pi);
   } else {
     return 0.0;
   }
