@@ -353,6 +353,24 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   delete[] ta;
   delete[] tf;
   delete[] td;
+  // Get rid of bands with too little power in them...
+  {
+    double maxp = 0.0;
+    for (int i=0;i<num_found;i++)
+      maxp = max(maxp, approx_power[i]);
+    double minp = maxp*bands->fpmin;
+    printf("Maxp is %lg and minp is %lg\n", maxp, minp);
+    for (int i=0;i<num_found;i++)
+      if (approx_power[i] < minp) {
+        for (int j=i; j<num_found-1;j++) {
+          fad[j] = fad[j+1];
+          approx_power[j] = approx_power[j+1];
+        }
+        num_found--;
+        i--;
+        fad[num_found] = 0.0;
+      }
+  }
   // Sorting by frequency again...
   for (int i=0;i<num_found;i++) {
     for (int j=i; j>0;j--) {
