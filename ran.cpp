@@ -70,3 +70,9 @@ double gaussian() {
     return gset;
   }
 }
+
+double exponential() {
+  double dum;
+  do { dum = ran(); } while (dum == 0.0);
+  return -log(dum);
+}
