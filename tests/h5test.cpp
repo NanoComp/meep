@@ -5,9 +5,9 @@
 #include "h5io.h"
 using namespace meep;
 
-const double xsize = 3.0;
-const double ysize = 3.0;
-const double zsize = 2.6;
+const double xsize = 2.0;
+const double ysize = 2.0;
+const double zsize = 0.6;
 
 const double r = 0.5;
 const double eps_k = 2*pi / 1.0;
