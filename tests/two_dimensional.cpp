@@ -333,7 +333,7 @@ int test_pml_te(double eps(const vec &), int splitting, const char *dirname) {
 }
 
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   const char *dirname = "two_dimentional-out";
   master_printf("Testing 2D...\n");
 
@@ -366,7 +366,6 @@ int main(int argc, char **argv) {
     if (!test_periodic_tm(one, s, dirname))
       abort("error in test_periodic_tm vacuum\n");
 
-  finished();
   exit(0);
 }
 

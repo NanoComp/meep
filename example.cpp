@@ -46,7 +46,7 @@ complex<double> checkers(const vec &v) {
 }
 
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   master_printf("I've got %d processors!\n", count_processors());
   deal_with_ctrl_c();
   master_printf("Running example program!\n");
@@ -85,6 +85,5 @@ int main(int argc, char **argv) {
     }
   }
   delete[] dirname;
-  finished();
 }
 

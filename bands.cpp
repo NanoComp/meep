@@ -90,10 +90,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   bands->fpmin = frac_pow_min;
 
   // Set fmin properly...
-  double epsmax = 1;
-  for (int h=0;h<num_chunks;h++)
-    for (int i=0;i<chunks[h]->v.ntot();i++)
-      epsmax = max(epsmax, chunks[h]->ma->eps[i]);
+  const double epsmax = max_eps();
 
   double cutoff_freq = 0.0;
   if (v.dim == Dcyl) {
@@ -112,7 +109,8 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     bands->scale_factor = (int)(0.06*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
     if (verbosity) master_printf("scale_factor is %d (%lg,%lg)\n",
-                                 bands->scale_factor, bands->fmax*(c*inva), decayconst);
+                                 bands->scale_factor, bands->fmax*(c*inva),
+                                 decayconst);
   }
 
   if (bands->tend <= bands->tstart) {
@@ -153,9 +151,9 @@ void fields_chunk::record_bands(int tcount) {
       for (int c=0;c<10;c++)
         if (v.has_field((component)c)) {
           complex<double> tmp;
-          if (is_mine()) tmp = complex<double>(f[c][0][bands->index[p]],
-                                               f[c][1][bands->index[p]]);
-          bands->f[p][c][thet] = broadcast(my_rank(), tmp);
+          if (f[c][0] && f[c][1]) tmp = complex<double>(f[c][0][bands->index[p]],
+                                                        f[c][1][bands->index[p]]);
+          bands->f[p][c][thet] = broadcast(n_proc(), tmp);
         }
 }
 
@@ -176,7 +174,6 @@ void fields::grace_bands(grace *g, int maxbands) {
 
   int num_found = 0;
   for (int i=0;i<maxbands;i++) if (fad[i] != 0.0) num_found = i+1;
-
   for (int i = 0; i < num_found; ++i) {
     g->output_out_of_order(i, abs(k[Z]), fabs(real(fad[i])), fabs(imag(fad[i])),
                            approx_power[i]); // FIXME

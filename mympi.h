@@ -19,8 +19,12 @@
 
 // MPI helper routines!
 
-void initialize(int argc, char **argv);
-void finished();
+class initialize {
+ public:
+  initialize(int argc, char **argv);
+  ~initialize();
+};
+
 void abort(char *fmt, ...);
 void all_wait();
 int count_processors();

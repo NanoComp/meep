@@ -54,6 +54,7 @@ class mat_chunk {
 
   // monitor.cpp
   void interpolate_eps(const vec &loc, double val[8]) const;
+  double max_eps() const;
  private:
   double pml_fmin;
   int the_proc;
@@ -92,6 +93,7 @@ class mat {
 
   // monitor.cpp
   double get_eps(const vec &loc) const;
+  double max_eps() const;
  private:
 };
 
@@ -354,6 +356,8 @@ class fields {
   double times_spent[Other+1];
   // field.cpp
   bool have_component(component);
+  // material.cpp
+  double max_eps() const;
   // time.cpp
   void am_now_working_on(time_sink);
   void finished_working();
@@ -408,7 +412,7 @@ class grace {
                            double dy = -1.0, double extra= -1.0);
  private:
   void flush_pts();
-  FILE *f;
+  file *f;
   char *fn, *dn;
   grace_point *pts;
   int set_num,sn;

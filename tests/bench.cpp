@@ -166,7 +166,7 @@ bench bench_2d_te(const double xmax, const double ymax,
   }
 
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   master_printf("Benchmarking...\n");
 
   showbench("Periodic 6x4 ", bench_periodic(6.0, 4.0, one));

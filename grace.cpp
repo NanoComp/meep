@@ -51,71 +51,71 @@ grace::grace(const char *fname, const char *dirname) {
     buf[strlen(buf)-4] = 0;
     fn[strlen(fn)-4] = 0;
   }
-  f = fopen(buf, "w");
+  f = everyone_open_write(buf);
   if (!f) abort("Unable to open file %s\n", buf);
   set_num = -1;
   sn = -1;
   pts = NULL;
-  fprintf(f,"%s", grace_header);
+  master_fprintf(f,"%s", grace_header);
 }
 
 grace::~grace() {
   flush_pts();
-  fclose(f);
+  everyone_close(f);
   char gracecmd[500];
   snprintf(gracecmd, 500, "gracebat -hdevice EPS -printfile %s/%s.eps -hardcopy %s/%s",
            dn, fn, dn, fn);
-  system(gracecmd);
+  if (my_rank() == 0) system(gracecmd);
   delete[] dn;
   delete[] fn;
+  all_wait();
 }
 
 void grace::new_set(grace_type pt) {
   flush_pts();
   set_num++;
   sn++;
-  fprintf(f, "@    s%d line color %d\n", sn, set_num+1);
-  fprintf(f, "@    s%d symbol color %d\n", sn, set_num+1);
-  fprintf(f, "@    s%d errorbar color %d\n", sn, set_num+1);
-  fprintf(f, "@    target G0.S%d\n", sn);
-  if (pt == ERROR_BARS) fprintf(f, "@    type xydy\n");
-  else fprintf(f, "@    type xy\n");
+  master_fprintf(f, "@    s%d line color %d\n", sn, set_num+1);
+  master_fprintf(f, "@    s%d symbol color %d\n", sn, set_num+1);
+  master_fprintf(f, "@    s%d errorbar color %d\n", sn, set_num+1);
+  master_fprintf(f, "@    target G0.S%d\n", sn);
+  if (pt == ERROR_BARS) master_fprintf(f, "@    type xydy\n");
+  else master_fprintf(f, "@    type xy\n");
 }
 
 void grace::set_range(double xmin, double xmax, double ymin, double ymax) {
-  fprintf(f, "@ version 1\n"); // Stupid nasty hack to make grace recognize the range.
-  fprintf(f, "@    world xmin %lg\n", xmin);
-  fprintf(f, "@    world xmax %lg\n", xmax);
-  fprintf(f, "@    world ymin %lg\n", ymin);
-  fprintf(f, "@    world ymax %lg\n", ymax);
-  fprintf(f, "@    view xmin 0.15\n");
-  fprintf(f, "@    view xmax 0.95\n");
-  fprintf(f, "@    view ymin 0.15\n");
-  fprintf(f, "@    view ymax 0.85\n");
+  master_fprintf(f, "@ version 1\n"); // Stupid nasty hack to make grace recognize the range.
+  master_fprintf(f, "@    world xmin %lg\n", xmin);
+  master_fprintf(f, "@    world xmax %lg\n", xmax);
+  master_fprintf(f, "@    world ymin %lg\n", ymin);
+  master_fprintf(f, "@    world ymax %lg\n", ymax);
+  master_fprintf(f, "@    view xmin 0.15\n");
+  master_fprintf(f, "@    view xmax 0.95\n");
+  master_fprintf(f, "@    view ymin 0.15\n");
+  master_fprintf(f, "@    view ymax 0.85\n");
 }
 
 void grace::set_legend(const char *l) {
-  fprintf(f, "@    s%d legend  \"%s\"\n", sn, l);
+  master_fprintf(f, "@    s%d legend  \"%s\"\n", sn, l);
 }
 
 void grace::new_curve() {
   if (set_num == -1) new_set();
   else sn++;
-  fprintf(f, "@    s%d line color %d\n", sn, set_num+1);
-  fprintf(f, "@    s%d symbol color %d\n", sn, set_num+1);
-  fprintf(f, "@    s%d errorbar color %d\n", sn, set_num+1);
-  fprintf(f, "\n");
+  master_fprintf(f, "@    s%d line color %d\n", sn, set_num+1);
+  master_fprintf(f, "@    s%d symbol color %d\n", sn, set_num+1);
+  master_fprintf(f, "@    s%d errorbar color %d\n", sn, set_num+1);
+  master_fprintf(f, "\n");
 }
 
 void grace::output_point(double x, double y, double dy, double extra) {
   if (dy >= 0 && extra != -1) {
-    fprintf(f, "%lg\t%lg\t%lg\t%lg\n", x, y, dy, extra);
+    master_fprintf(f, "%lg\t%lg\t%lg\t%lg\n", x, y, dy, extra);
   } else if (dy >= 0) {
-    fprintf(f, "%lg\t%lg\t%lg\n", x, y, dy);
+    master_fprintf(f, "%lg\t%lg\t%lg\n", x, y, dy);
   } else {
-    fprintf(f, "%lg\t%lg\n", x, y);
+    master_fprintf(f, "%lg\t%lg\n", x, y);
   }
-  fflush(f);
 }
 
 void grace::output_out_of_order(int n, double x, double y, double dy, double extra) {

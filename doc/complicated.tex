@@ -46,8 +46,8 @@ If you really want to exit, just hit cntl-C again, and when
 \verb!interrupt! reaches 2, the program will exit.
 \begin{verbatim}
 int main(int argc, char *argv[]) {
+  initialize mpi(argc, argv);
   deal_with_ctrl_c();
-  initialize(argc, argv);
   const double amicron = 10; // a micron is this many grid points.
   const volume vol = voltwo(2*x_center, 2*y_center, amicron);
   const symmetry S = mirror(Y, vol) + rotate2(Y, vol);
@@ -171,6 +171,5 @@ Figure~\ref{complicated_figure}).
   master_fprintf(myfreqs, "%cend{verbatim}\n", '\\');
   everyone_close(myfreqs);
   delete[] dirname;
-  finished();
 }
 \end{verbatim}

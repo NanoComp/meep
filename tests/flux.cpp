@@ -178,7 +178,7 @@ void attempt(const char *name, int allright) {
 }
 
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   master_printf("Trying out the fluxes...\n");
 
   attempt("Split flux plane split by 7...", split_1d(cavity, 7));
@@ -195,7 +195,6 @@ int main(int argc, char **argv) {
   width = 300.0;
   attempt("Flux 1D 300", flux_1d(100.0, bump));
 
-  finished();
   exit(0);
 }
 

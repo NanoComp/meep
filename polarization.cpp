@@ -206,17 +206,19 @@ complex<double> fields::analytic_epsilon(double f, const vec &p) const {
 }
 
 complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
-  const double freq_conversion = 2*pi*c/a;
-  double freq = f*freq_conversion;
-  const component c = v.eps_component();
-  int in[8];
-  double w[8];
-  v.interpolate(c,p,in,w);
   complex<double> epsi = 0.0;
-  for (int i=0;i<8 && w[i];i++)
-    epsi += ma->eps[in[i]]*w[i];
-  if (pol) epsi += pol->analytic_epsilon(freq, p);
-  return epsi;
+  if (is_mine()) {
+    const double freq_conversion = 2*pi*c/a;
+    double freq = f*freq_conversion;
+    const component c = v.eps_component();
+    int in[8];
+    double w[8];
+    v.interpolate(c,p,in,w);
+    for (int i=0;i<8 && w[i];i++)
+      epsi += ma->eps[in[i]]*w[i];
+    if (pol) epsi += pol->analytic_epsilon(freq, p);
+  }
+  return broadcast(n_proc(), epsi);
 }
 
 void mat::add_polarizability(double sigma(const vec &), double omega, double gamma,
@@ -371,7 +373,8 @@ void fields_chunk::step_polarization_itself(polarization *op, polarization *np) 
 
 void fields::step_e_polarization() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_e_polarization();
+    if (chunks[i]->is_mine())
+      chunks[i]->step_e_polarization();
 }
 
 void fields_chunk::step_e_polarization(polarization *op, polarization *np) {
@@ -381,7 +384,7 @@ void fields_chunk::step_e_polarization(polarization *op, polarization *np) {
   } else if (olpol != NULL && pol != NULL) {
     DOCMP {
       for (int cc=0;cc<10;cc++)
-        if (op->P[cc][cmp]) {
+        if (op->P[cc][cmp] && f[cc][cmp]) {
           for (int i=0;i<v.ntot();i++)
             f[cc][cmp][i] -= ma->inveps[cc][i]*(np->P[cc][cmp][i]-op->P[cc][cmp][i]);
           if (f_pml[cc][cmp])

@@ -55,12 +55,13 @@ double eps(const vec &rr) {
 \epsfig{file=simple-out/ez-000200.00.eps,width=4.8cm}
 \end{center}
 \end{figure}
-The main function should always start with a call to the initialize
-subroutine.  This subroutine is responsible for setting up MPI if we are
-running on multiple processors.
+The main function should always start by creating an initialize object.
+This object is responsible for setting up MPI if we are running on multiple
+processors, and cleaning up properly when it is deleted (which means we are
+done).
 \begin{verbatim}
 int main(int argc, char *argv[]) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
 \end{verbatim}
 The ``mat'' structure defines the contents of the unit cell.  It needs a
 volume, which includes the size of the grid and the resolution, as well as
@@ -110,11 +111,9 @@ snapshot of the fields in encapsulated postscript format.
 \end{verbatim}
 And now we're done, although you might wonder if we've done anything
 worthwhile, since all we got out of this was a picture... All that is left
-is to call ``finished'' which shuts down MPI properly.  We also want (as a
-matter of principle) to delete the string containing the directory name of
-our output directory.
+is (as a matter of principle) to delete the string containing the directory
+name of our output directory.
 \begin{verbatim}
   delete[] dirname;
-  finished();
 }
 \end{verbatim}

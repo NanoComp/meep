@@ -33,7 +33,7 @@ double one(const vec &p) { return (p.z() > 15.0)?1:0; }
 \end{verbatim}
 \begin{comment}
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const double ttot = 600.0;
 \end{comment}
@@ -77,7 +77,6 @@ gain system) perhaps is stored in a population inversion.
     }
     f.step();
   }
-  finished();
 }
 \end{comment}
 

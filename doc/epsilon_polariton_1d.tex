@@ -31,7 +31,7 @@ const double middlesize = 5.0/a;
 const double zsize = middlesize + 2*pml_thickness;
 \end{verbatim}
 
-For our example polaritonic material, we'll use an $\epsilon(0)$ of 13.4.
+For our example polaritonic material, we'll use an $\epsilon(0)$ of 13.4. %'
 
 \begin{verbatim}
 double eps(const vec &) { return 13.4; }
@@ -43,7 +43,7 @@ double one_in_middle(const vec &p) {
 }
 
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const double ttot =1180.0;
   mat ma(volone(zsize, a), eps, 5);
@@ -74,8 +74,8 @@ We use a couple of monitor points to determine epsilon.
   while (f.time() < ttot && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 50;
-      printf("Working on time %lg...  ", f.time());
-      printf("energy is %lg\n", f.field_energy());
+      master_printf("Working on time %lg...  ", f.time());
+      master_printf("energy is %lg\n", f.field_energy());
     }
 \end{comment}
 The monitor points are located one grid spacing from one another.  The
@@ -92,7 +92,7 @@ monitor point linked list.
   grace g("eps", dirname);
   complex<double> *al, *ar, *am, *freqs;
   int numl, numr;
-  printf("Working on left fourier transform...\n");
+  master_printf("Working on left fourier transform...\n");
 \end{comment}
 When the time stepping is over, we take a fourier transform of the fields
 at the two monitor points.
@@ -101,12 +101,13 @@ at the two monitor points.
 \end{verbatim}
 \begin{comment}
   delete[] freqs;
-  printf("Working on middle fourier transform...\n");
+  master_printf("Working on middle fourier transform...\n");
   middle->fourier_transform(Ex, &am, &freqs, &numr, 0.301, 0.5, 300);
   delete[] freqs;
-  printf("Working on right fourier transform...\n");
+  master_printf("Working on right fourier transform...\n");
   right->fourier_transform(Ex, &ar, &freqs, &numr, 0.301, 0.5, 300);
-  if (numl != numr) printf("Aaack you need both nums to be the same!\n");
+  if (numl != numr)
+     master_printf("Aaack you need both nums to be the same!\n");
   g.new_set();
   g.set_legend("\\x\\e\\s1\\N");
 \end{comment}
@@ -130,17 +131,17 @@ Finally we calculate epsilon from the second derivative of the field using
 \begin{comment}
   g.new_set();
   g.set_legend("analytic \\x\\e\\s1\\N");
-  for (int i=0;i<numl;i++) {
+  for (int i=0;i<numl;i++)
     g.output_point(real(freqs[i]),
                    real(f.analytic_epsilon(real(freqs[i]),vec(sourceloc+3.0/a))));
-  }
   g.new_set();
   g.set_legend("analytic \\x\\e\\s2\\N");
-  for (int i=0;i<numl;i++) {
+  for (int i=0;i<numl;i++)
     g.output_point(real(freqs[i]),
                    imag(f.analytic_epsilon(real(freqs[i]),vec(sourceloc+3.0/a))));
-  }
-  finished();
 }
 \end{comment}
+
+
+
 

@@ -143,7 +143,7 @@ int test_pattern(double eps(const vec &), int splitting,
 }
 
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   const char *dirname = "one_dimensional-out";
   master_printf("Testing one dimension under different splittings...\n");
 
@@ -158,7 +158,6 @@ int main(int argc, char **argv) {
     abort("error in crazy test_simple_periodic\n");
   if (!test_simple_periodic(one, 60, dirname))
     abort("error in crazy test_simple_periodic\n");
-  finished();
   exit(0);
 }
 

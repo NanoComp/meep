@@ -27,7 +27,7 @@ double one(const vec &) { return 1; }
 
 \begin{comment}
 int main(int argc, char **argv) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const int a = 10;
   const int m = 0;
@@ -38,8 +38,6 @@ int main(int argc, char **argv) {
 \begin{comment}
   mat ma(volcyl(rmax, 0.0, a), eps);
   const char *dirname = make_output_directory(argv[0]);
-  printf("Storing output in directory %s/\n", dirname);
-  //FILE *ban = create_output_file(dirname, "bands");
   ma.set_output_directory(dirname);
   grace g("bands", dirname);
   g.set_range(0.0, 4.0, 0.0, 1.1);
@@ -55,7 +53,7 @@ material after we have created it.
 
 \begin{verbatim}
   for (k=0.0;k<4.01 && !interrupt;k+=.5) {
-    printf("Working on k of %g and m = %d...\n", k, m);
+    master_printf("Working on k of %g and m = %d...\n", k, m);
     fields f(&ma, m);
     f.use_bloch(k);
 \end{verbatim}
@@ -78,14 +76,10 @@ Finally, we compute the band structure as usual.
       f.record_bands();
       f.step();
     }
-    //f.output_bands(ban, "band", 16);
     f.grace_bands(&g, 16);
 \end{verbatim}
 \begin{comment}
-    //fflush(ban);
   }
-  //fclose(ban);
-  finished();
 }
 \end{comment}
 

@@ -343,3 +343,25 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
   for (int d=0;d<5;d++) for (int c=0;c<10;c++) C[d][c] = NULL;
   for (int d=0;d<5;d++) for (int c=0;c<10;c++) Cdecay[d][c] = NULL;
 }
+
+double mat::max_eps() const {
+  double themax = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      themax = max(themax,chunks[i]->max_eps());
+  return max_to_all(themax);
+}
+
+double fields::max_eps() const {
+  double themax = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      themax = max(themax,chunks[i]->ma->max_eps());
+  return max_to_all(themax);
+}
+
+double mat_chunk::max_eps() const {
+  double themax = 0.0;
+  for (int i=0;i<v.ntot();i++) themax = max(themax,eps[i]);
+  return themax;
+}

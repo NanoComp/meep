@@ -24,7 +24,7 @@
 #include <mpi.h>
 #endif
 
-void initialize(int argc, char **argv) {
+initialize::initialize(int argc, char **argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
   int major, minor;
@@ -33,7 +33,7 @@ void initialize(int argc, char **argv) {
 #endif
 }
 
-void finished() {
+initialize::~initialize() {
 #ifdef HAVE_MPI
   MPI_Finalize();
 #endif

@@ -23,7 +23,7 @@ metallic waveguide of radius one.
 
 \begin{verbatim}
 int main(int argc, char *argv[]) {
-  initialize(argc, argv);
+  initialize mpi(argc, argv);
   FILE *ban = fopen("bands", "w");
   mat ma(volcyl(1.0, 0.0, rad), eps);
   for (int m=0;m<3;m++) {
@@ -80,6 +80,5 @@ frequency mode).
     }
   }
   fclose(ban);
-  finished();
 }
 \end{verbatim}
