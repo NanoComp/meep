@@ -654,12 +654,7 @@ double volume::rmin() const {
 }
 
 double vec::project_to_boundary(direction d, double boundary_loc) {
-  switch (d) {
-  case X: return fabs(boundary_loc - x());
-  case Y: return fabs(boundary_loc - y());
-  case Z: return fabs(boundary_loc - z());
-  case R: return fabs(boundary_loc - r());
-  }
+  return fabs(boundary_loc - in_direction(d));
 }
 
 double volume::boundary_location(boundary_side b, direction d) const {
@@ -929,35 +924,11 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
 volume volume::split_specifically(int n, int which, direction d) const {
   volume retval(dim, a,1);
   for (int i=0;i<3;i++) retval.num[i] = num[i];
-  switch (dim) {
-  case D1:
-    retval.origin = origin + vec(nz()/n*which/a);
-    break;
-  case D2:
-    if (d==X) { // split on x
-      retval.origin = origin + vec2d(nx()/n*which/a,0);
-    } else { // split on y
-      retval.origin = origin + vec2d(0,ny()/n*which/a);
-    }
-    break;
-  case D3:
-    if (d==X) { // split on x
-      retval.origin = origin + vec(nx()/n*which/a,0,0);
-    } else if (d==Y) { // split on y
-      retval.origin = origin + vec(0,ny()/n*which/a,0);
-    } else { // split on z
-      retval.origin = origin + vec(0,0,nz()/n*which/a);
-    }
-    break;
-  case Dcyl:
-    if (d == Z) { // split on z
-      retval.origin = origin + vec(0.0,nz()/n*which/a);
-    } else { // split on r
-      retval.origin = origin + vec(nr()/n*which/a,0.0);
-    }
-    break;
-    abort("Can't split in this dimensionality!\n");
-  }
+
+  vec shift = zero_vec(dim);
+  shift.set_direction(d, num_direction(d)/n*which/a);
+  retval.origin = origin + shift;
+
   retval.num[d % 3] /= n;
   retval.the_ntot = right_ntot(dim, retval.num);
   return retval;
@@ -1105,18 +1076,7 @@ signed_direction symmetry::transform(direction d, int n) const {
 ivec symmetry::transform(const ivec &ov, int n) const {
   if (n == 0) return ov;
   ivec out = ov;
-  int ddmin = X, ddmax = 4;
-  if (ov.dim == D2) {
-    ddmin = X; ddmax = Y;
-  } else if (ov.dim == D3) {
-    ddmin = X; ddmax = Z;
-  } else if (ov.dim == D1) {
-    ddmin = ddmax = Z;
-  } else if (ov.dim == Dcyl) {
-    ddmin = Z; ddmax = R;
-  }
-  for (int dd=ddmin;dd<=ddmax;dd++) {
-    const direction d = (direction) dd;
+  LOOP_OVER_DIRECTIONS(ov.dim, d) {
     const signed_direction s = transform(d,n);
     const int sp_d  = lattice_to_yee(symmetry_point.in_direction(d),a,inva);
     const int sp_sd = lattice_to_yee(symmetry_point.in_direction(s.d),a,inva);
@@ -1129,19 +1089,8 @@ ivec symmetry::transform(const ivec &ov, int n) const {
 
 vec symmetry::transform(const vec &ov, int n) const {
   if (n == 0) return ov;
-  int ddmin = X, ddmax = 4;
-  if (ov.dim == D2) {
-    ddmin = X; ddmax = Y;
-  } else if (ov.dim == D3) {
-    ddmin = X; ddmax = Z;
-  } else if (ov.dim == D1) {
-    ddmin = ddmax = Z;
-  } else if (ov.dim == Dcyl) {
-    ddmin = Z; ddmax = R;
-  }
   vec delta = ov;
-  for (int dd=ddmin;dd<=ddmax;dd++) {
-    const direction d = (direction) dd;
+  LOOP_OVER_DIRECTIONS(ov.dim, d) {
     const signed_direction s = transform(d,n);
     double deltad = ov.in_direction(d) - symmetry_point.in_direction(d);
     if (s.flipped) delta.set_direction(s.d, -deltad);
