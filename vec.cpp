@@ -123,13 +123,10 @@ volume::volume() {
   origin = vec(0);
 }
 
-inline int right_ntot(ndim d, const int num[3]) {
-  switch (d) {
-  case D1: return num[2] + 1;
-  case D2: return (num[0]+1)*(num[1]+1);
-  case D3: return (num[0]+1)*(num[1]+1)*(num[2]+1);
-  case Dcyl: return (num[0]+1)*(num[2]+1);
-  }
+inline int right_ntot(ndim di, const int num[3]) {
+  int result = 1;
+  LOOP_OVER_DIRECTIONS(di, d) result *= num[d%3]+1;
+  return result;
 }
 
 volume::volume(ndim d, double ta, int na, int nb, int nc) {
@@ -183,55 +180,30 @@ inline vec volume::yee_shift(component c) const {
   return operator[](iyee_shift(c));
 }
 
-int volume::contains(const ivec &p) const {
+bool volume::contains(const ivec &p) const {
   // containts returns true if the volume has information about this grid
   // point.
   const ivec o = p - io();
-  if (dim == Dcyl) {
-    return o.r() >= 0 && o.z() >= 0 &&
-      o.r() < (nr()+1)*2 + inva && o.z() < (nz()+1)*2;
-  } else if (dim == D3) {
-    return
-      o.x() >= 0 && o.x() < (nx()+1)*2 &&
-      o.y() >= 0 && o.y() < (ny()+1)*2 &&
-      o.z() >= 0 && o.z() < (nz()+1)*2;
-  } else if (dim == D2) {
-    return o.x() >= 0 && o.x() <= (nx()+1)*2 &&
-           o.y() >= 0 && o.y() <= (ny()+1)*2;
-  } else if (dim == D1) {
-    return o.z() >= 0 && o.z() <= (nz()+1)*2;
-  } else {
-    abort("Unsupported dimension in contains.\n");
-  }
+  LOOP_OVER_DIRECTIONS(dim, d)
+    if (o.in_direction(d) < 0 || o.in_direction(d) >= (num_direction(d)+1)*2)
+      return false;
+  return true;
 }
 
-int volume::contains(const vec &p) const {
+bool volume::contains(const vec &p) const {
   // containts returns true if the volume has any information in it
   // relevant to the point p.  Basically has is like owns (see below)
   // except it is more lenient, in that more than one lattice may contain a
   // given point.
   const double inva = 1.0/a;
   const vec o = p - origin;
-  if (dim == Dcyl) {
-    return o.r() >= -inva && o.z() >= -inva &&
-      o.r() <= nr()*inva + inva && o.z() <= nz()*inva + inva;
-  } else if (dim == D3) {
-    return
-      o.x() >= -inva && o.x() <= nx()*inva + inva &&
-      o.y() >= -inva && o.y() <= ny()*inva + inva &&
-      o.z() >= -inva && o.z() <= nz()*inva + inva;
-  } else if (dim == D2) {
-    return
-      o.x() >= -inva && o.x() <= nx()*inva + inva &&
-      o.y() >= -inva && o.y() <= ny()*inva + inva;
-  } else if (dim == D1) {
-    return o.z() >= -inva && o.z() <= nz()*inva + inva;
-  } else {
-    abort("Unsupported dimension in contains.\n");
-  }
+  LOOP_OVER_DIRECTIONS(dim, d)
+    if (o.in_direction(d) < -inva || o.in_direction(d) > num_direction(d)*inva+inva)
+      return false;
+  return true;
 }
 
-int volume::owns(const ivec &p) const {
+bool volume::owns(const ivec &p) const {
   // owns returns true if the point "owned" by this volume, meaning that it
   // is the volume that would timestep the point.
   const ivec o = p - io();

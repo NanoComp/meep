@@ -297,9 +297,9 @@ class volume {
   ivec big_corner() const;
   ivec little_corner() const { return io(); };
 
-  int contains(const vec &) const;
-  int contains(const ivec &) const;
-  int owns(const ivec &) const;
+  bool contains(const vec &) const;
+  bool contains(const ivec &) const;
+  bool owns(const ivec &) const;
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);
