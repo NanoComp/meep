@@ -190,8 +190,7 @@ class fields_chunk {
   void use_real_fields();
   double find_last_source();
   // monitor.cpp
-  void interpolate_field(component, const vec &, complex<double> val[8],
-                         complex<double> phase = 1.0) const;
+  complex<double> get_field(component, const ivec &) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   // slices.cpp
@@ -244,9 +243,7 @@ class fields_chunk {
   void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
   // fields.cpp
   void alloc_f(component c);
-  // monitory.cpp
-  void interpolate_field_private(component, const vec &, complex<double> val[8],
-                                 complex<double> phase = 1.0) const;
+  // monitor.cpp
   // sources.cpp
 
   // add_point_source returns 1 if the connections between chunks need to

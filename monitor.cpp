@@ -61,51 +61,35 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
   for (int i=0;i<10;i++) pt->f[i] = 0.0;
   pt->loc = loc;
   pt->t = time();
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c)) {
+  FOR_COMPONENTS(c)
+    if (v.has_field(c)) {
+      ivec ilocs[8];
+      double w[8];
       complex<double> val[8];
       for (int i=0;i<8;i++) val[i] = 0.0;
-      for (int i=0;i<num_chunks;i++) {
-        if (chunks[i]->v.contains(loc))
-          chunks[i]->interpolate_field((component)c, loc, val);
-        if (0)
-          for (int i=0;i<num_chunks;i++) {
-            if (chunks[i]->v.contains(loc + lattice_vector(Z)))
-              chunks[i]->interpolate_field((component)c,
-                                           loc - lattice_vector(Z),
-                                           val, conj(eikna[Z]));
-            if (chunks[i]->v.contains(loc - lattice_vector(Z)))
-              chunks[i]->interpolate_field((component)c,
-                                           loc - lattice_vector(Z),
-                                           val, eikna[Z]);
-          }
+      v.interpolate(c, loc, ilocs, w);
+      for (int argh=0;argh<8&&w[argh];argh++) {
+        bool got_it = false;
+        for (int sn=0;sn<S.multiplicity() && !got_it;sn++)
+          for (int i=0;i<num_chunks && !got_it;i++)
+            if (chunks[i]->v.contains(S.transform(ilocs[argh],sn))) {
+              got_it = true;
+              val[argh] = w[argh]*S.phase_shift(c,sn)*
+                chunks[i]->get_field(S.transform(c,sn),S.transform(ilocs[argh],sn));
+            }
       }
       dumbsort(val);
       for (int i=0;i<8;i++) pt->f[c] += val[i];
     }
 }
 
-void fields_chunk::interpolate_field_private(component c, const vec &loc,
-                                             complex<double> val[8],
-                                             complex<double> phase) const {
-  if (is_mine() && f[c][0]) {
-    int ind[8];
-    double w[8];
-    v.interpolate((component)c,loc,ind,w);
-    int startingat = 0;
-    for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
-    for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
-      val[i+startingat] = phase*w[i]*getcm(f[c],ind[i]);
-      if (val[i+startingat] == 0.0) startingat--;
-    }
+complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
+  complex<double> res = 0.0;
+  if (is_mine()) {
+    if (f[c][0] && f[c][1]) res = getcm(f[c], v.index(c, iloc));
+    else if (f[c][0]) res = f[c][0][v.index(c,iloc)];
   }
-}
-
-void fields_chunk::interpolate_field(component c, const vec &loc,
-                                     complex<double> val[8],
-                                     complex<double> phase) const {
-  interpolate_field_private(c,loc,val,phase);
-  broadcast(n_proc(), val, 8);
+  return broadcast(n_proc(), res);
 }
 
 double fields::get_eps(const vec &loc) const {

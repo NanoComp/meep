@@ -338,11 +338,13 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
           case D1: x = there.z(); break;
           case D2: x = there.x(); y = there.y(); break;
           }
-          complex<double> val[8];
-          for (int j=0;j<8;j++) val[j] = 0.0;
-          interpolate_field_private(c, here, val, ph);
+          ivec ilocs[8];
+          double w[8];
           double fhere = 0.0;
-          for (int j=0;j<8;j++) fhere += real(val[j]);
+          v.interpolate(c, here, ilocs, w);
+          for (int i=0;i<8&&w[i];i++)
+            if (v.contains(S.transform(ilocs[i],sn)))
+              fhere += w[i]*real(get_field(c,ilocs[i]));
           i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
         }
       }
