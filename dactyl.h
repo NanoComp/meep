@@ -116,6 +116,7 @@ class fields {
   void record_bands();
   double get_band(int n, double fmax, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
+  void output_bands_and_modes(FILE *, const char *, int maxbands=100);
   double total_energy();
   double zflux(int ri, int ro, int z);
   double rflux(int zl, int zu, int r);
@@ -144,6 +145,7 @@ class fields {
                   double freq, double width, double peaktime,
                   double cutoff, int is_h = 0);
   int setifreqmax_and_iposmax(int ifreq, int ipos);
+  void out_bands(FILE *, const char *, int maxbands, int outmodes);
 };
 
 const double c = 0.5;

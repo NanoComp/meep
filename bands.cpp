@@ -352,7 +352,15 @@ void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
   }
 }
 
+void fields::output_bands_and_modes(FILE *o, const char *name, int maxbands) {
+  out_bands(o, name, maxbands, 1);
+}
+
 void fields::output_bands(FILE *o, const char *name, int maxbands) {
+  out_bands(o, name, maxbands, 0);
+}
+
+void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
   const double pi = 3.14159;
 
   bands.maxbands = maxbands;
@@ -542,7 +550,7 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
     }
   }
 
-  bands.get_fields(eigen,reff,refd,numref,ntime);
+  if (and_modes) bands.get_fields(eigen,reff,refd,numref,ntime);
 
   for (int i = 0; i < numref; ++i) {
     //printf("Nice mode with freq %lg %lg\n", freqs[i], decays[i]);
@@ -550,13 +558,15 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
     fprintf(o, "%s %lg %d %d %lg %lg %lg\n", name,
             k, m, i, fabs(reff[i]), refd[i],
             (2*pi)*fabs(reff[i]) / (2 * refd[i]));
-    for (int r=0;r<nr;r++) {
-      fprintf(o, "%s-fields %lg %d %d %lg", name, k, m, i, r*inva);
-      for (int whichf = 0; whichf < 6; whichf++) {
-        fprintf(o, " %lg %lg", real(HARMOUT(eigen,r,i,whichf)),
-                imag(HARMOUT(eigen,r,i,whichf)));
+    if (and_modes) {
+      for (int r=0;r<nr;r++) {
+        fprintf(o, "%s-fields %lg %d %d %lg", name, k, m, i, r*inva);
+        for (int whichf = 0; whichf < 6; whichf++) {
+          fprintf(o, " %lg %lg", real(HARMOUT(eigen,r,i,whichf)),
+                  imag(HARMOUT(eigen,r,i,whichf)));
+        }
+        fprintf(o, "\n");
       }
-      fprintf(o, "\n");
     }
   } 
   delete[] reff;
