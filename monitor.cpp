@@ -46,6 +46,16 @@ static void dumbsort(complex<double> val[8]) {
   }
 }
 
+static void dumbsort(double val[8]) {
+  for (int i=0;i<7;i++) {
+    int lowest = i;
+    for (int j=i+1;j<8;j++) if (abs(val[j]) < abs(val[lowest])) lowest = j;
+    double tmp = val[i];
+    val[i] = val[lowest];
+    val[lowest] = tmp;
+  }
+}
+
 void fields::get_point(monitor_point *pt, const vec &loc) const {
   if (pt == NULL) abort("Error:  get_point passed a null pointer!\n");
   for (int i=0;i<10;i++) pt->f[i] = 0.0;
@@ -86,6 +96,47 @@ void fields_chunk::interpolate_field(component c, const vec &loc,
     for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
     for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
       val[i+startingat] = phase*getcm(f[c],ind[i]);
+      if (val[i+startingat] == 0.0) startingat--;
+    }
+  }
+  broadcast(n_proc(), val, 8);
+}
+
+double fields::get_eps(const vec &loc) const {
+  double theeps = 0.0;
+  double val[8];
+  for (int i=0;i<8;i++) val[i] = 0.0;
+  for (int i=0;i<num_chunks;i++) {
+    if (chunks[i]->v.contains(loc))
+      chunks[i]->ma->interpolate_eps(loc, val);
+      dumbsort(val);
+      for (int i=0;i<8;i++) theeps += val[i];
+    }
+  return theeps;
+}
+
+double mat::get_eps(const vec &loc) const {
+  double theeps = 0.0;
+  double val[8];
+  for (int i=0;i<8;i++) val[i] = 0.0;
+  for (int i=0;i<num_chunks;i++) {
+    if (chunks[i]->v.contains(loc))
+      chunks[i]->interpolate_eps(loc, val);
+      dumbsort(val);
+      for (int i=0;i<8;i++) theeps += val[i];
+    }
+  return theeps;
+}
+
+void mat_chunk::interpolate_eps(const vec &loc, double val[8]) const {
+  if (is_mine()) {
+    int ind[8];
+    double w[8];
+    v.interpolate(v.eps_component(),loc,ind,w);
+    int startingat = 0;
+    for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
+    for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
+      val[i+startingat] = eps[ind[i]];
       if (val[i+startingat] == 0.0) startingat--;
     }
   }

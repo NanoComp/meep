@@ -55,6 +55,9 @@ class mat_chunk {
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
   int n_proc() const { return the_proc; } // Says which proc owns me!
   int is_mine() const { return the_is_mine; }
+
+  // monitor.cpp
+  void interpolate_eps(const vec &loc, double val[8]) const;
  private:
   double pml_fmin;
   int the_proc;
@@ -87,6 +90,9 @@ class mat {
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
+
+  // monitor.cpp
+  double get_eps(const vec &loc) const;
  private:
 };
 
@@ -284,6 +290,8 @@ class fields {
   int phase_in_material(const mat *ma, double time);
   int is_phasing();
 
+  // monitor.cpp
+  double get_eps(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
   void output_point(FILE *, const vec &, const char *name);
