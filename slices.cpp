@@ -468,10 +468,10 @@ void fields::output_real_imaginary_slices(const geometric_volume &what,
   if (!n) abort("Allocation failure!\n");
   char *r_or_i = "-re";
   DOCMP {
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c)) {
+    FOR_COMPONENTS(c)
+      if (v.has_field(c)) {
         snprintf(n, buflen, "%s/%s%s%s-%09.2f.sli",
-                 outdir, nname, component_name((component)c),
+                 outdir, nname, component_name(c),
                  r_or_i, time());
         file *out = everyone_open_write(n);
         if (!out) {
@@ -480,7 +480,7 @@ void fields::output_real_imaginary_slices(const geometric_volume &what,
         }
         for (int i=0;i<num_chunks;i++)
           if (chunks[i]->is_mine())
-            output_slice((component)c, chunks[i]->f[c][cmp],
+            output_slice(c, chunks[i]->f[c][cmp],
                          chunks[i]->v, what, out);
         everyone_close(out);
       }
