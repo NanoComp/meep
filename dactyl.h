@@ -149,7 +149,7 @@ class fields_chunk {
   polarization *pol, *olpol;
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
-  int m, t, is_real;
+  int m, is_real;
   double k, cosknz, sinknz;
   complex<double> eiknz;
   bandsdata *bands;
@@ -163,31 +163,22 @@ class fields_chunk {
   ~fields_chunk();
 
   void step();
-  inline double time() { return t*inva*c; };
 
   void use_real_fields();
   double find_last_source();
-  void add_point_source(component whichf, double freq, double width, double peaktime,
-                        double cutoff, const vec &, complex<double> amp = 1.0,
-                        int is_continuous = 0);
-  void add_plane_source(double freq, double width, double peaktime,
-                        double cutoff, double envelope (const vec &),
-                        const vec &p, const vec &norm = vec(0),
-                        int is_continuous = 0);
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
 
-  void get_point(monitor_point *p, const vec &);
-  void output_point(FILE *, const vec &, const char *name);
+  void get_point(monitor_point *p, const vec &, double time);
+  void output_point(FILE *, const vec &, const char *name, double time);
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
-  void record_bands();
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);
   double thermo_energy_in_box(const volume &);
-  double field_energy_in_box(const volume &);
+  double field_energy_in_box(const volume &, double time);
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
@@ -195,24 +186,33 @@ class fields_chunk {
   friend class fields;
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
+  void record_bands(int tcount);
   void phase_in_material(const mat_chunk *ma);
   void phase_material(int phasein_time);
   void step_h();
   void step_h_right();
   void step_h_boundaries();
-  void step_h_source(const src *);
+  void step_h_source(const src *, double);
   void step_e();
   void step_e_right();
   void step_e_boundaries();
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
-  void step_e_source(const src *);
+  void step_e_source(const src *, double);
   void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
+  // sources.cpp
+  void add_point_source(component whichf, double freq, double width, double peaktime,
+                        double cutoff, const vec &, complex<double> amp,
+                        int is_continuous, double time);
+  void add_plane_source(double freq, double width, double peaktime,
+                        double cutoff, double envelope (const vec &),
+                        const vec &p, const vec &norm,
+                        int is_continuous, double time);
   void add_indexed_source(component whichf, double freq, double width,
                           double peaktime, int cutoff, int theindex, 
-                          complex<double> amp, int is_c);
+                          complex<double> amp, int is_c, double time);
 };
 
 class fields {

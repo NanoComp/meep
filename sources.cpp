@@ -23,16 +23,16 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-complex<double> src::get_amplitude_at_time(int t) const {
-  double envelope = get_envelope_at_time(t);
+complex<double> src::get_amplitude_at_time(double time) const {
+  double envelope = get_envelope_at_time(time);
   if (envelope == 0.0)
     return 0.0;
-  double tt = t - peaktime;
+  double tt = time - peaktime;
   return (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope;
 }
 
-double src::get_envelope_at_time(int t) const {
-  double tt = t - peaktime;
+double src::get_envelope_at_time(double time) const {
+  double tt = time - peaktime;
   if (is_continuous && tt > 0) {
     return 1.0;
   } else if (fabs(tt) > cutoff) {
@@ -47,34 +47,34 @@ src::~src() {
   delete next;
 }
 
-static double integrate_envelope(const src *s) {
+static double integrate_envelope(const src *s, const double inva) {
   if (s == NULL) {
     printf("Bad arg to integrate_envelope!\n");
     exit(1);
   }
   double sofar = 0.0;
-  for (int t=(int)s->peaktime-s->cutoff;t<(1<<30);t++) {
-    double e = s->get_envelope_at_time(t);
+  for (int t=(int)((s->peaktime-s->cutoff)/inva);t<(1<<30);t++) {
+    double e = s->get_envelope_at_time(t*inva);
     sofar += e;
     if (e == 0) break; // Bug here if there is a source that starts late,
                        // or a source that never stops.
   }
-  return sofar;
+  return sofar*inva;
 }
 
-static complex<double> integrate_source(const src *s) {
+static complex<double> integrate_source(const src *s, const double inva) {
   if (s == NULL) {
     printf("Bad arg to integrate_source!\n");
     exit(1);
   }
   complex<double> sofar = 0.0;
-  for (int t=0;1<<30;t++) {
-    complex<double> A = s->get_amplitude_at_time(t);
+  for (int t=(int)((s->peaktime-s->cutoff)/inva);t<(1<<30);t++) {
+    complex<double> A = s->get_amplitude_at_time(t*inva);
     sofar += A;
     if (A == 0) break; // Bug here if there is a source that starts late,
                        // or a source that never stops.
   }
-  return sofar;
+  return sofar*inva;
 }
 
 void fields::add_point_source(component whichf, double freq,
@@ -83,13 +83,13 @@ void fields::add_point_source(component whichf, double freq,
                               complex<double> amp, int is_c) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->add_point_source(whichf, freq, width, peaktime,
-                                cutoff, p, amp, is_c);
+                                cutoff, p, amp, is_c, time());
 }
 
 void fields_chunk::add_point_source(component whichf, double freq,
                                     double width, double peaktime,
                                     double cutoff, const vec &p,
-                                    complex<double> amp, int is_c) {
+                                    complex<double> amp, int is_c, double tim) {
   // FIXME this really should call an interpolation routine...
   if (p.dim != v.dim) {
     printf("Error:  source doesn't have right dimensions!\n");
@@ -107,7 +107,8 @@ void fields_chunk::add_point_source(component whichf, double freq,
   case d1: prefac = 1; break;
   }
   for (int i=0;i<8 && w[i];i++)
-    add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i], amp*prefac*w[i], is_c);
+    add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i],
+                       amp*prefac*w[i], is_c, tim);
 }
 
 void fields::add_plane_source(double freq, double width, double peaktime,
@@ -116,13 +117,13 @@ void fields::add_plane_source(double freq, double width, double peaktime,
                               int is_c) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->add_plane_source(freq, width, peaktime,
-                                cutoff, envelope, p, norm, is_c);
+                                cutoff, envelope, p, norm, is_c, time());
 }
 
 void fields_chunk::add_plane_source(double freq, double width, double peaktime,
                                     double cutoff, double envelope (const vec &),
                                     const vec &p, const vec &norm,
-                                    int is_c) {
+                                    int is_c, double time) {
   if (v.dim == dcyl) {
     // We ignore norm in this case...
     if (m != 1) {
@@ -137,11 +138,12 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
         const double r = ir*inva;
         // E_phi
         add_point_source(Ep, freq, width, peaktime, cutoff, vec(r,z),
-                         envelope(vec(r,z)), is_c);        
+                         envelope(vec(r,z)), is_c, time);
         // iH_r = d(rH_phi)/dr
         const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
                               (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
-        add_point_source(Hr, freq, width, peaktime, cutoff, vec(r,z), -eps*slope, is_c);
+        add_point_source(Hr, freq, width, peaktime, cutoff, vec(r,z),
+                         -eps*slope, is_c, time);
       }
       {
         const double r = (ir+0.5)*inva;
@@ -149,17 +151,20 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
         // iE_r = d(rE_phi)/dr
         const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
                               (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
-        add_point_source(Er, freq, width, peaktime, cutoff, vec(r,z), -I*sc*slope, is_c);
+        add_point_source(Er, freq, width, peaktime, cutoff, vec(r,z),
+                         -I*sc*slope, is_c, time);
         // H_phi
         add_point_source(Hp, freq, width, peaktime, cutoff, vec(r,z),
-                         -I*eps*sc*envelope(vec(r,z)), is_c);
+                         -I*eps*sc*envelope(vec(r,z)), is_c, time);
       }
     }
   } else if (v.dim == d1) {
     const double z = p.z();
     const double eps = sqrt(ma->eps[(int)(z+0.5)]);
-    add_point_source(Ex, freq, width, peaktime, cutoff, vec(z), envelope(vec(z)), is_c);
-    add_point_source(Hy, freq, width, peaktime, cutoff, vec(z), envelope(vec(z))*eps, is_c);
+    add_point_source(Ex, freq, width, peaktime, cutoff, vec(z),
+                     envelope(vec(z)), is_c, time);
+    add_point_source(Hy, freq, width, peaktime, cutoff, vec(z),
+                     envelope(vec(z))*eps, is_c, time);
   } else {
     printf("Can't use plane source in this number of dimensions.\n");
     exit(1);
@@ -168,13 +173,13 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
 
 void fields_chunk::add_indexed_source(component whichf, double freq, double width,
                                 double peaktime, int cutoff, int theindex, 
-                                complex<double> amp, int is_c) {
+                                complex<double> amp, int is_c, double time) {
   if (theindex >= v.ntot() || theindex < 0) {
     printf("Error:  source is outside of cell! (%d)\n", theindex);
     exit(1);
   }
   src *tmp = new src;
-  tmp->freq = freq*c*inva;
+  tmp->freq = freq;
   tmp->width = width/tmp->freq; // this is now time width
   for (int com=0;com<10;com++) tmp->A[com] = 0;
   tmp->A[whichf] = amp;
@@ -188,11 +193,11 @@ void fields_chunk::add_indexed_source(component whichf, double freq, double widt
     tmp->next = e_sources;
     e_sources = tmp;
   }
-  tmp->cutoff = 1+ (int)(cutoff*tmp->width);
-  tmp->peaktime = peaktime*a/c;
-  if (peaktime <= 0.0) tmp->peaktime = t+tmp->cutoff;
+  tmp->cutoff = inva+ (int)(cutoff*tmp->width);
+  tmp->peaktime = peaktime;
+  if (peaktime <= 0.0) tmp->peaktime = time+tmp->cutoff;
   // Apply a shift so that we won't end up with a static polarization when
   // the source is gone:
   if (is_c) tmp->amp_shift = 0.0;
-  else tmp->amp_shift = integrate_source(tmp)/integrate_envelope(tmp);
+  else tmp->amp_shift = integrate_source(tmp, inva)/integrate_envelope(tmp, inva);
 }

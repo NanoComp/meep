@@ -40,8 +40,8 @@ bandsdata::~bandsdata() {
   delete[] P;
 }
 
-int src::find_last_source(int sofar) {
-  if (peaktime + cutoff > sofar) sofar = (int)peaktime + cutoff;
+double src::find_last_source(double sofar) {
+  if (peaktime + cutoff > sofar) sofar = peaktime + cutoff;
   if (next == NULL) return sofar;
   return next->find_last_source(sofar);
 }
@@ -144,11 +144,11 @@ void fields::record_bands() {
   if (t > bands->tend || t < bands->tstart) return;
   if (t % bands->scale_factor != 0) return;
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->record_bands();
+    chunks[i]->record_bands(t);
 }
 
-void fields_chunk::record_bands() {
-  int thet = (t-bands->tstart)/bands->scale_factor;
+void fields_chunk::record_bands(int tcount) {
+  int thet = (tcount-bands->tstart)/bands->scale_factor;
   if (thet >= bands->ntime) return;
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
     if (this == bands->chunk[p])

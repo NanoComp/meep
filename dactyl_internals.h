@@ -66,15 +66,14 @@ class polarization {
 class src {
  public:
   ~src();
-  double freq, width, peaktime;
+  double freq, width, peaktime, cutoff;
   complex<double> A[10], amp_shift;
-  int i, cutoff;
-  int is_continuous;
+  int i, is_continuous;
   src *next;
-  int find_last_source(int guess=0);
+  double find_last_source(double guess=0);
   void use_real_sources();
-  complex<double> get_amplitude_at_time(int t) const;
-  double get_envelope_at_time(int t) const;
+  complex<double> get_amplitude_at_time(double t) const;
+  double get_envelope_at_time(double t) const;
 };
 
 const int num_bandpts = 32;

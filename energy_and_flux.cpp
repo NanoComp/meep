@@ -37,9 +37,10 @@ double fields::energy_in_box(const volume &otherv) {
 }
 
 double fields::field_energy_in_box(const volume &otherv) {
+  const double tim = time();
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
-    energy += chunks[i]->field_energy_in_box(otherv);
+    energy += chunks[i]->field_energy_in_box(otherv, tim);
   return energy;
 }
 
@@ -64,8 +65,7 @@ double fields::thermo_energy_in_box(const volume &otherv) {
   return energy;
 }
 
-double fields_chunk::field_energy_in_box(const volume &otherv) 
-{
+double fields_chunk::field_energy_in_box(const volume &otherv, double time) {
   DOCMP {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && is_magnetic((component)c)) {
@@ -85,7 +85,7 @@ double fields_chunk::field_energy_in_box(const volume &otherv)
 
   step_h();
   step_h_boundaries();
-  step_h_source(h_sources);
+  step_h_source(h_sources, time);
   double next_step_magnetic_energy = magnetic_energy_in_box(otherv);
 
   DOCMP {

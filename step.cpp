@@ -24,9 +24,6 @@
 #include "dactyl_internals.h"
 
 void fields::step_right() {
-  t += 1;
-  for (int i=0;i<num_chunks;i++) chunks[i]->t++;
-
   phase_material();
 
   step_h_right();
@@ -43,12 +40,11 @@ void fields::step_right() {
 
   update_polarization_saturation();
   step_polarization_itself();
+
+  t += 1;
 }
 
 void fields::step() {
-  t += 1;
-  for (int i=0;i<num_chunks;i++) chunks[i]->t++;
-
   phase_material();
 
   step_h();
@@ -65,6 +61,8 @@ void fields::step() {
 
   update_polarization_saturation();
   step_polarization_itself();
+
+  t += 1;
 }
 
 void fields::phase_material() {
@@ -493,15 +491,16 @@ void fields_chunk::step_e_boundaries() {
 }
 
 void fields::step_h_source() {
+  const double tim = time();
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_h_source(chunks[i]->h_sources);
+    chunks[i]->step_h_source(chunks[i]->h_sources, tim);
 }
 
-void fields_chunk::step_h_source(const src *s) {
+void fields_chunk::step_h_source(const src *s, double time) {
   if (s == NULL) return;
-  complex<double> A = s->get_amplitude_at_time(t);
+  complex<double> A = s->get_amplitude_at_time(time);
   if (A == 0.0) {
-    step_h_source(s->next);
+    step_h_source(s->next, time);
     return;
   }
   for (int c=0;c<10;c++)
@@ -509,19 +508,20 @@ void fields_chunk::step_h_source(const src *s) {
       f[c][0][s->i] += real(A*s->A[c]);
       if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }
-  step_h_source(s->next);
+  step_h_source(s->next, time);
 }
 
 void fields::step_e_source() {
+  const double tim = time()+0.5*inva*c;
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_e_source(chunks[i]->e_sources);
+    chunks[i]->step_e_source(chunks[i]->e_sources, tim);
 }
 
-void fields_chunk::step_e_source(const src *s) {
+void fields_chunk::step_e_source(const src *s, double time) {
   if (s == NULL) return;
-  complex<double> A = s->get_amplitude_at_time(t);
+  complex<double> A = s->get_amplitude_at_time(time);
   if (A == 0.0) {
-    step_e_source(s->next);
+    step_e_source(s->next, time);
     return;
   }
   for (int c=0;c<10;c++)
@@ -529,5 +529,5 @@ void fields_chunk::step_e_source(const src *s) {
       f[c][0][s->i] += real(A*s->A[c]);
       if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }
-  step_e_source(s->next);
+  step_e_source(s->next, time);
 }
