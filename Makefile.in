@@ -41,7 +41,8 @@ plot: plot.hs
 modes: modes.hs
 	ghc -package data -package text -o modes modes.hs
 libdactyl.a: $(OBJ_dactyl)
-	libtool $(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJ_dactyl) $(LIBS) -o $@
+	ar cru libdactyl.a $(OBJ_dactyl)
+	ranlib libdactyl.a
 
 example: $(OBJ_example)
 	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ_example) $(LIBS) -o $@
