@@ -66,7 +66,9 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
   // Deal with saturation stuff.
   if (pb->energy_saturation != 0.0) {
     saturation_factor = pb->saturated_sigma/pb->energy_saturation;
-    const double isf = 1.0/fabs(saturation_factor);
+    double num_components = 0.0;
+    FOR_ELECTRIC_COMPONENTS(c) if (s[c]) num_components += 1.0;
+    const double isf = 1.0/fabs(saturation_factor)/num_components;
     FOR_COMPONENTS(c)
       if (pb->s[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = -isf*s[c][i];
   } else {
@@ -155,12 +157,6 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
       sigma[i] = sigscale*sig(v.loc(v.eps_component(),i));
     FOR_COMPONENTS(c) if (s[c])
       for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
-    double inv_num_components = 1.0;
-    if (energy_saturation) {
-      inv_num_components = 0.0;
-      FOR_ELECTRIC_COMPONENTS(c) if (s[c]) inv_num_components += 1.0;
-      inv_num_components = 1.0/inv_num_components;
-    }
     // Average out sigma over the grid...
     if (v.dim == Dcyl) {
       const vec dr = v.dr()*0.5; // The distance between Yee field components

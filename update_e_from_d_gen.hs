@@ -57,7 +57,7 @@ prepare_polarizations =
 prepare_polarization_energy = doexp "np->energy[ec][i] = op->energy[ec][i]"
 
 half_step_polarization_energy =
-    doexp $ "np->energy[ec][i] += 0.5*(np->P[ec]["<<cmp<<"][i] - op->P[ec]["<<cmp<<"][i])"
+    doexp $ "np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec]["<<cmp<<"][i] - op->P[ec]["<<cmp<<"][i])"
               <<" * f[ec]["<<cmp<<"][i]"
 
 {- Here is where we compute E from D - P -}

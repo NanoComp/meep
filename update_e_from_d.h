@@ -6,7 +6,7 @@ if (pol) {
         for (int i=0;i<ntot;i++) {
           for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
             np->energy[ec][i] = op->energy[ec][i];
-            np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])
+            np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])
                * f[ec][0][i];
           }
         }
@@ -28,9 +28,9 @@ if (pol) {
         for (int i=0;i<ntot;i++) {
           for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
             np->energy[ec][i] = op->energy[ec][i];
-            np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])
+            np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])
                * f[ec][0][i];
-            np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])
+            np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])
                * f[ec][1][i];
           }
         }
@@ -66,7 +66,7 @@ if (pol) {
         for (int i=0;i<ntot;i++) {
           for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
             np->energy[ec][i] = op->energy[ec][i];
-            np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])
+            np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])
                * f[ec][0][i];
           }
         }
@@ -85,9 +85,9 @@ if (pol) {
         for (int i=0;i<ntot;i++) {
           for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
             np->energy[ec][i] = op->energy[ec][i];
-            np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])
+            np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])
                * f[ec][0][i];
-            np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])
+            np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])
                * f[ec][1][i];
           }
         }

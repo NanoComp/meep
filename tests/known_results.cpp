@@ -154,11 +154,11 @@ int main(int argc, char **argv) {
 
   compare(-0.00894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
-  compare(-25.3439, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
+  compare(-23.8806, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
           "3D saturated polariton");
-  compare(-0.00370281, saturated_polariton_ex(volone(1.0, a), one),
+  compare(-0.00369358, saturated_polariton_ex(volone(1.0, a), one),
           "1D saturated polariton");
-  compare(-0.810025, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
+  compare(-0.78361, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
           "2D saturated polariton");
   compare(0.000265566, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");

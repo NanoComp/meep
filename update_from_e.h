@@ -21,7 +21,7 @@ if (f[Er][0]) {
           if (fac) {
             if (fac > 0) {
               for (int i=0;i<ntot;i++) {
-                np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
               }
               if (num_any_direction[Z]==1) {
                 if (num_any_direction[R]==1) {
@@ -78,7 +78,7 @@ if (f[Er][0]) {
               }
             } else { // not fac > 0
               for (int i=0;i<ntot;i++) {
-                np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
               }
               if (num_any_direction[Z]==1) {
                 if (num_any_direction[R]==1) {
@@ -136,7 +136,7 @@ if (f[Er][0]) {
             }
           } else { // not fac
             for (int i=0;i<ntot;i++) {
-              np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+              np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                  + np->s[ec][i]*f[ec][0][i]);
             }
@@ -154,8 +154,8 @@ if (f[Er][0]) {
           if (fac) {
             if (fac > 0) {
               for (int i=0;i<ntot;i++) {
-                np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
               }
               if (num_any_direction[Z]==1) {
                 if (num_any_direction[R]==1) {
@@ -220,8 +220,8 @@ if (f[Er][0]) {
               }
             } else { // not fac > 0
               for (int i=0;i<ntot;i++) {
-                np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
               }
               if (num_any_direction[Z]==1) {
                 if (num_any_direction[R]==1) {
@@ -287,8 +287,8 @@ if (f[Er][0]) {
             }
           } else { // not fac
             for (int i=0;i<ntot;i++) {
-              np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-              np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+              np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+              np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                  + np->s[ec][i]*f[ec][0][i]);
               op->P[ec][1][i] = funinv*((2-om*om)*np->P[ec][1][i] + (0.5*g-1)*op->P[ec][1][i]
@@ -329,7 +329,7 @@ if (f[Er][0]) {
                 if (fac) {
                   if (fac > 0) {
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                     }
                     if (num_any_direction[Z]==1) {
                       if (num_any_direction[X]==1) {
@@ -451,7 +451,7 @@ if (f[Er][0]) {
                     }
                   } else { // not fac > 0
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                     }
                     if (num_any_direction[Z]==1) {
                       if (num_any_direction[X]==1) {
@@ -574,7 +574,7 @@ if (f[Er][0]) {
                   }
                 } else { // not fac
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
                   }
@@ -592,8 +592,8 @@ if (f[Er][0]) {
                 if (fac) {
                   if (fac > 0) {
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                      np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                     }
                     if (num_any_direction[Z]==1) {
                       if (num_any_direction[X]==1) {
@@ -731,8 +731,8 @@ if (f[Er][0]) {
                     }
                   } else { // not fac > 0
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                      np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                     }
                     if (num_any_direction[Z]==1) {
                       if (num_any_direction[X]==1) {
@@ -871,8 +871,8 @@ if (f[Er][0]) {
                   }
                 } else { // not fac
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
                     op->P[ec][1][i] = funinv*((2-om*om)*np->P[ec][1][i] + (0.5*g-1)*op->P[ec][1][i]
@@ -910,7 +910,7 @@ if (f[Er][0]) {
                 if (fac) {
                   if (fac > 0) {
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                     }
                     if (num_any_direction[X]==1) {
                       if (num_any_direction[Y]==1) {
@@ -967,7 +967,7 @@ if (f[Er][0]) {
                     }
                   } else { // not fac > 0
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                     }
                     if (num_any_direction[X]==1) {
                       if (num_any_direction[Y]==1) {
@@ -1025,7 +1025,7 @@ if (f[Er][0]) {
                   }
                 } else { // not fac
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
                   }
@@ -1043,8 +1043,8 @@ if (f[Er][0]) {
                 if (fac) {
                   if (fac > 0) {
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                      np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                     }
                     if (num_any_direction[X]==1) {
                       if (num_any_direction[Y]==1) {
@@ -1109,8 +1109,8 @@ if (f[Er][0]) {
                     }
                   } else { // not fac > 0
                     for (int i=0;i<ntot;i++) {
-                      np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                      np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                      np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                     }
                     if (num_any_direction[X]==1) {
                       if (num_any_direction[Y]==1) {
@@ -1176,8 +1176,8 @@ if (f[Er][0]) {
                   }
                 } else { // not fac
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
                     op->P[ec][1][i] = funinv*((2-om*om)*np->P[ec][1][i] + (0.5*g-1)*op->P[ec][1][i]
@@ -1213,7 +1213,7 @@ if (f[Er][0]) {
               if (fac) {
                 if (fac > 0) {
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1262,7 +1262,7 @@ if (f[Er][0]) {
                   }
                 } else { // not fac > 0
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1312,7 +1312,7 @@ if (f[Er][0]) {
                 }
               } else { // not fac
                 for (int i=0;i<ntot;i++) {
-                  np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
                 }
@@ -1330,8 +1330,8 @@ if (f[Er][0]) {
               if (fac) {
                 if (fac > 0) {
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1388,8 +1388,8 @@ if (f[Er][0]) {
                   }
                 } else { // not fac > 0
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1447,8 +1447,8 @@ if (f[Er][0]) {
                 }
               } else { // not fac
                 for (int i=0;i<ntot;i++) {
-                  np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                  np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
                   op->P[ec][1][i] = funinv*((2-om*om)*np->P[ec][1][i] + (0.5*g-1)*op->P[ec][1][i]
@@ -1482,7 +1482,7 @@ if (f[Er][0]) {
               if (fac) {
                 if (fac > 0) {
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   }
                   if (num_any_direction[Z]==1) {
                     const int i = yee_idx;
@@ -1501,7 +1501,7 @@ if (f[Er][0]) {
                   }
                 } else { // not fac > 0
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   }
                   if (num_any_direction[Z]==1) {
                     const int i = yee_idx;
@@ -1521,7 +1521,7 @@ if (f[Er][0]) {
                 }
               } else { // not fac
                 for (int i=0;i<ntot;i++) {
-                  np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
                 }
@@ -1539,8 +1539,8 @@ if (f[Er][0]) {
               if (fac) {
                 if (fac > 0) {
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   }
                   if (num_any_direction[Z]==1) {
                     const int i = yee_idx;
@@ -1563,8 +1563,8 @@ if (f[Er][0]) {
                   }
                 } else { // not fac > 0
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   }
                   if (num_any_direction[Z]==1) {
                     const int i = yee_idx;
@@ -1588,8 +1588,8 @@ if (f[Er][0]) {
                 }
               } else { // not fac
                 for (int i=0;i<ntot;i++) {
-                  np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                  np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
                   op->P[ec][1][i] = funinv*((2-om*om)*np->P[ec][1][i] + (0.5*g-1)*op->P[ec][1][i]
@@ -1621,7 +1621,7 @@ if (f[Er][0]) {
               if (fac) {
                 if (fac > 0) {
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1662,7 +1662,7 @@ if (f[Er][0]) {
                   }
                 } else { // not fac > 0
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1704,7 +1704,7 @@ if (f[Er][0]) {
                 }
               } else { // not fac
                 for (int i=0;i<ntot;i++) {
-                  np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
                 }
@@ -1722,8 +1722,8 @@ if (f[Er][0]) {
               if (fac) {
                 if (fac > 0) {
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1772,8 +1772,8 @@ if (f[Er][0]) {
                   }
                 } else { // not fac > 0
                   for (int i=0;i<ntot;i++) {
-                    np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                    np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                    np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   }
                   if (num_any_direction[X]==1) {
                     if (num_any_direction[Y]==1) {
@@ -1823,8 +1823,8 @@ if (f[Er][0]) {
                 }
               } else { // not fac
                 for (int i=0;i<ntot;i++) {
-                  np->energy[ec][i] += 0.5*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
-                  np->energy[ec][i] += 0.5*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][0][i] - op->P[ec][0][i])*f[ec][0][i];
+                  np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec][1][i] - op->P[ec][1][i])*f[ec][1][i];
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
                   op->P[ec][1][i] = funinv*((2-om*om)*np->P[ec][1][i] + (0.5*g-1)*op->P[ec][1][i]
