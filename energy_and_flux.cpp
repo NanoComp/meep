@@ -24,16 +24,44 @@
 
 /* Energy calculation */
 
-double fields_chunk::total_energy() {
+double fields::total_energy() {
   return energy_in_box(v);
 }
 
-double fields_chunk::field_energy() {
+double fields::field_energy() {
   return field_energy_in_box(v);
 }
 
-double fields_chunk::energy_in_box(const volume &otherv) {
+double fields::energy_in_box(const volume &otherv) {
   return thermo_energy_in_box(otherv) + field_energy_in_box(otherv);
+}
+
+double fields::field_energy_in_box(const volume &otherv) {
+  double energy = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    energy += chunks[i]->field_energy_in_box(otherv);
+  return energy;
+}
+
+double fields::electric_energy_in_box(const volume &otherv) {
+  double energy = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    energy += chunks[i]->electric_energy_in_box(otherv);
+  return energy;
+}
+
+double fields::magnetic_energy_in_box(const volume &otherv) {
+  double energy = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    energy += chunks[i]->magnetic_energy_in_box(otherv);
+  return energy;
+}
+
+double fields::thermo_energy_in_box(const volume &otherv) {
+  double energy = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    energy += chunks[i]->thermo_energy_in_box(otherv);
+  return energy;
 }
 
 double fields_chunk::field_energy_in_box(const volume &otherv) 

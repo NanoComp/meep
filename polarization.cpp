@@ -228,6 +228,13 @@ complex<double> polarization::analytic_epsilon(double freq, const vec &p) const 
   return epsi;
 }
 
+complex<double> fields::analytic_epsilon(double f, const vec &p) const {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->v.contains(p))
+      return chunks[i]->analytic_epsilon(f,p);
+  return 0.0;
+}
+
 complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
   const double freq_conversion = 2*pi*c/a;
   double freq = f*freq_conversion;
@@ -240,6 +247,12 @@ complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
     epsi += ma->eps[in[i]]*w[i];
   if (pol) epsi += pol->analytic_epsilon(freq, p);
   return epsi;
+}
+
+void mat::add_polarizability(double sigma(const vec &), double omega, double gamma,
+                             double delta_epsilon, double energy_saturation) {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->add_polarizability(sigma, omega, gamma, delta_epsilon, energy_saturation);
 }
 
 void mat_chunk::add_polarizability(double sigma(const vec &),
@@ -257,6 +270,11 @@ void mat_chunk::add_polarizability(double sigma(const vec &),
 
 inline double expi(int cmp, double x) {
   return (cmp) ? cos(x) : sin(x);
+}
+
+void fields::initialize_polarizations() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->initialize_polarizations();
 }
 
 void fields_chunk::initialize_polarizations(polarization *op, polarization *np) {
@@ -279,6 +297,11 @@ void fields_chunk::initialize_polarizations(polarization *op, polarization *np) 
   }
 }
 
+void fields::prepare_step_polarization_energy() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->prepare_step_polarization_energy();
+}
+
 void fields_chunk::prepare_step_polarization_energy(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
@@ -290,6 +313,11 @@ void fields_chunk::prepare_step_polarization_energy(polarization *op, polarizati
           np->energy[c][i] = op->energy[c][i];
     if (op->next && np->next) prepare_step_polarization_energy(op->next, np->next);
   }
+}
+
+void fields::half_step_polarization_energy() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->half_step_polarization_energy();
 }
 
 void fields_chunk::half_step_polarization_energy(polarization *op, polarization *np) {
@@ -304,6 +332,11 @@ void fields_chunk::half_step_polarization_energy(polarization *op, polarization 
             np->energy[c][i] += 0.5*(np->P[c][cmp][i] - op->P[c][cmp][i])*f[c][cmp][i];
     if (op->next && np->next) half_step_polarization_energy(op->next, np->next);
   }
+}
+
+void fields::update_polarization_saturation() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->update_polarization_saturation();
 }
 
 void fields_chunk::update_polarization_saturation(polarization *op, polarization *np) {
@@ -333,6 +366,11 @@ void fields_chunk::update_polarization_saturation(polarization *op, polarization
   }
 }
 
+void fields::step_polarization_itself() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_polarization_itself();
+}
+
 void fields_chunk::step_polarization_itself(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
@@ -360,6 +398,11 @@ void fields_chunk::step_polarization_itself(polarization *op, polarization *np) 
     }
     if (op->next && np->next) step_polarization_itself(op->next, np->next);
   }
+}
+
+void fields::step_e_polarization() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_e_polarization();
 }
 
 void fields_chunk::step_e_polarization(polarization *op, polarization *np) {

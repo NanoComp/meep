@@ -22,6 +22,52 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
+mat::mat(const volume &thev, double eps(const vec &)) {
+  num_chunks = 1;
+  v = thev;
+  chunks = new (mat_chunk *)[num_chunks];
+  chunks[0] = new mat_chunk(v,eps);
+}
+
+mat::mat(const mat *m) {
+  num_chunks = m->num_chunks;
+  v = m->v;
+  chunks = new (mat_chunk *)[num_chunks];
+  for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m->chunks[i]);
+}
+
+mat::~mat() {
+  for (int i=0;i<num_chunks;i++) {
+    delete chunks[i];
+  }
+  delete[] chunks;
+}
+
+void mat::make_average_eps() {
+  for (int i=0;i<num_chunks;i++) chunks[i]->make_average_eps();
+}
+
+void mat::use_pml_left(double dx) { // FIXME
+  for (int i=0;i<num_chunks;i++) chunks[i]->use_pml_left(dx);
+}
+void mat::use_pml_right(double dx) { // FIXME
+  for (int i=0;i<num_chunks;i++) chunks[i]->use_pml_right(dx);
+}
+void mat::use_pml_radial(double dx) { // FIXME
+  for (int i=0;i<num_chunks;i++) chunks[i]->use_pml_radial(dx);
+}
+void mat::set_output_directory(const char *name) {
+  outdir = name;
+  for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(name);
+}
+void mat::mix_with(const mat *oth, double f) {
+  if (num_chunks != oth->num_chunks) {
+    printf("You can't phase materials with different chunk topologies...\n");
+    exit(1);
+  }
+  for (int i=0;i<num_chunks;i++) chunks[i]->mix_with(oth->chunks[i], f);
+}
+
 mat_chunk::~mat_chunk() {
   for (int c=0;c<10;c++) delete[] inveps[c];
   delete[] eps;

@@ -12,8 +12,8 @@ const int m = 0;
 const double eps_value = 2.25;
 
 const double pml = 1.0;
-const double zsize = 2*pml+10.0/a;
 const double rmax  = 6.0/a;
+const double zsize = 2*pml+10.0/a;
 const double zmiddle = zsize/2.0;
 const double sourceloc = zmiddle - 4.0/a;
 
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
   const char *dirname = make_output_directory(argv[0]);
   printf("Using pml of %lg thickness.\n", pml);
   printf("Using an rmax of %lg\n", rmax);
-  mat_chunk ma(volcyl(rmax + pml, zsize, a), eps);
+  mat ma(volcyl(rmax + pml, zsize, a), eps);
   ma.use_pml_right(pml);
   ma.use_pml_left(pml);
   ma.use_pml_radial(pml);
@@ -62,7 +62,7 @@ middle of the system (which is surrounded by PML).
 \begin{comment}
   ma.output_slices();
 
-  fields_chunk f(&ma, m);
+  fields f(&ma, m);
 \end{comment}
 
 For sources, we use a series of broad point sources covering the frequency

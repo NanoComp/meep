@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 We create a 1D system by making the volume with the ``\verb!volone!''
 function, and making sure any vecs we use are one dimensional.
 \begin{verbatim}
-  mat_chunk ma(volone(20.0, a), eps);
+  mat ma(volone(20.0, a), eps);
 \end{verbatim}
 \begin{comment}
   const char *dirname = make_output_directory(argv[0]);
@@ -48,7 +48,7 @@ The polarizability is added as usual... in this case we use a very sharp
 resonance, which means that our energy will only be very slowly absorbed.
 \begin{verbatim}
   ma.add_polarizability(one, 0.25, 0.0001, 3.0);
-  fields_chunk f(&ma);
+  fields f(&ma);
   grace g("energy", dirname);
 \end{verbatim}
 We use several point sources, to cover a broad frequency range, just for

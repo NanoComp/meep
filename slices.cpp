@@ -47,7 +47,7 @@ static double get_phase(component c, double *f[2],
 
 static void output_complex_slice(component m, double *f[2], const volume &v,
                                  const volume &what, const char *name) {
-  FILE *out = fopen(name, "w");
+  FILE *out = fopen(name, "a");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
     return;
@@ -65,7 +65,7 @@ static void output_complex_slice(component m, double *f[2], const volume &v,
 
 static void output_slice(component m, const double *f, const volume &v,
                          const volume &what, const char *name) {
-  FILE *out = fopen(name, "w");
+  FILE *out = fopen(name, "a");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
     return;
@@ -237,17 +237,43 @@ static void output_eps(component m, const double *f, const volume &v,
   }
 }
 
-static void output_complex_eps(component m, double *f[2], const volume &v,
-                               const volume &what, const char *name,
-                               component om = Hx, const double *overlay = NULL,
-                               const double *dashed = NULL) {
-  double phase = 1.0;
-  double c = 1.0, s = 0.0;
-  if (f[1]) {
-    phase = get_phase(m, f, v, what);
-    c = cos(phase), s = sin(phase);
+static void output_complex_eps_body(component m, double *f[2], const volume &v,
+                                    const volume &what, const char *name,
+                                    component om = Hx, const double *overlay = NULL,
+                                    const double *dashed = NULL) {
+  if (v.dim == d1 && 0) {
+    // Make a 1D line plot!
+    //grace g(name);
+    //for (int i=1;i<v.ntot()-1;i++)
+    //  if (what.contains(v.loc(m,i)) && f[0][i] > f[0][i-1] && f[0][i] > f[0][i+1])
+    //    g.output_point(v.loc(m,i).z(), c*f[0][i]+((f[1])?s*f[1][i]:0));
+  } else {
+    // Make a 2D color plot!
+    FILE *out = fopen(name, "a");
+    if (!out) {
+      printf("Unable to open file '%s' for slice output.\n", name);
+      return;
+    }
+    for (int i=0;i<v.ntot();i++) {
+      if (what.contains(v.loc(m,i))) {
+        double x = 0, y = 0;
+        switch (v.dim) {
+        case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
+        case d1: x = v.loc(m,i).z(); break;
+        case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
+        }
+        fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[0][i]);
+      }
+    }
+    if (overlay) eps_outline(out, om, overlay, v, what);
+    if (dashed) eps_dotted(out, om, dashed, v, what);
+    fclose(out);
   }
+}
 
+static void output_complex_eps_header(component m, double *f[2], const volume &v,
+                                      const volume &what, const char *name,
+                                      component om = Hx) {
   double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300, fmax = 0.0;
   switch (v.dim) {
   case dcyl:
@@ -265,49 +291,42 @@ static void output_complex_eps(component m, double *f[2], const volume &v,
   }
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
-      fmax = max(fmax, fabs(c*f[0][i]+((f[1])?s*f[1][i]:0)));
+      fmax = max(fmax, fabs(f[0][i]));
   if (ymax == ymin) ymax = ymin + 1.0/v.a;
   if (fmax == 0.0) fmax = 0.0001;
-  if (v.dim == d1) {
-    // Make a 1D line plot!
-    grace g(name);
-    //for (int i=0;i<v.ntot();i++)
-    //  if (what.contains(v.loc(m,i)))
-    //    g.output_point(v.loc(m,i).z(), c*f[0][i]+((f[1])?s*f[1][i]:0));
-    for (int i=1;i<v.ntot()-1;i++)
-      if (what.contains(v.loc(m,i)) && f[0][i] > f[0][i-1] && f[0][i] > f[0][i+1])
-        g.output_point(v.loc(m,i).z(), c*f[0][i]+((f[1])?s*f[1][i]:0));
+  if (v.dim == d1 && 0) {
   } else {
     // Make a 2D color plot!
-    FILE *out = fopen(name, "w");
+    FILE *out = fopen(name, "a");
     if (!out) {
       printf("Unable to open file '%s' for slice output.\n", name);
       return;
     }
     eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
-    for (int i=0;i<v.ntot();i++) {
-      if (what.contains(v.loc(m,i))) {
-        double x = 0, y = 0;
-        switch (v.dim) {
-        case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
-        case d1: x = v.loc(m,i).z(); break;
-        case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
-        }
-        fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, c*f[0][i]+((f[1])?s*f[1][i]:0));
-      }
+    fclose(out);
+  }
+}
+
+static void output_complex_eps_tail(component m, const volume &v,
+                                    const volume &what, const char *name) {
+  if (v.dim == d1 && 0) {
+    // Make a 1D line plot!
+  } else {
+    // Make a 2D color plot!
+    FILE *out = fopen(name, "a");
+    if (!out) {
+      printf("Unable to open file '%s' for slice output.\n", name);
+      return;
     }
-    if (overlay) eps_outline(out, om, overlay, v, what);
-    if (dashed) eps_dotted(out, om, dashed, v, what);
     eps_trailer(out);
     fclose(out);
   }
 }
 
-void mat_chunk::output_slices(const char *name) {
-  output_slices(v, name);
+void mat::output_slices(const char *name) {
+  output_slices(v,name);
 }
-
-void mat_chunk::output_slices(const volume &what, const char *name) {
+void mat::output_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -318,17 +337,18 @@ void mat_chunk::output_slices(const volume &what, const char *name) {
     exit(1);
   }
   snprintf(n, buflen, "%s/%sepsilon.sli", outdir, nname);
-  output_slice(v.eps_component(), eps, v, what, n);
+  for (int i=0;i<num_chunks;i++)
+    output_slice(v.eps_component(), chunks[i]->eps, chunks[i]->v, what, n);
   //snprintf(n, buflen, "%s/%ssigma.sli", outdir, nname);
   //output_sigma_slice(n);
   delete[] n;
 }
 
-void fields_chunk::output_real_imaginary_slices(const char *name) {
+void fields::output_real_imaginary_slices(const char *name) {
   output_real_imaginary_slices(v,name);
 }
 
-void fields_chunk::output_real_imaginary_slices(const volume &what, const char *name) {
+void fields::output_real_imaginary_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -346,7 +366,8 @@ void fields_chunk::output_real_imaginary_slices(const volume &what, const char *
         snprintf(n, buflen, "%s/%s%s%s-%09.2f.sli",
                  outdir, nname, component_name((component)c),
                  r_or_i, time());
-        output_slice((component)c, f[c][cmp], v, what, n);
+        for (int i=0;i<num_chunks;i++)
+          output_slice((component)c, chunks[i]->f[c][cmp], chunks[i]->v, what, n);
       }
     r_or_i = "-im";
   }
@@ -354,15 +375,10 @@ void fields_chunk::output_real_imaginary_slices(const volume &what, const char *
   free(n);
 }
 
-void fields_chunk::output_slices(const char *name) {
+void fields::output_slices(const char *name) {
   output_slices(v, name);
 }
-
-void fields_chunk::eps_slices(const char *name) {
-  eps_slices(v, name);
-}
-
-void fields_chunk::output_slices(const volume &what, const char *name) {
+void fields::output_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -379,35 +395,38 @@ void fields_chunk::output_slices(const volume &what, const char *name) {
   else
     snprintf(time_step_string, buflen, "%09.2f", time());
   {
-    polarization *p = pol;
-    int polnum = 0;
-    while (p) {
-      for (int c=0;c<10;c++)
-        if (v.has_field((component)c) && is_electric((component)c)) {
-          snprintf(n, buflen, "%s/%sp%d%s-%s.sli", outdir, nname, polnum,
-                   component_name((component)c), time_step_string);
-          output_complex_slice((component)c, p->P[c], v, what, n);
-        }
-      polnum++;
-      p = p->next;
-    }
+    //polarization *p = pol;
+    //int polnum = 0;
+    //while (p) {
+    //  for (int c=0;c<10;c++)
+    //    if (v.has_field((component)c) && is_electric((component)c)) {
+    //      snprintf(n, buflen, "%s/%sp%d%s-%s.sli", outdir, nname, polnum,
+    //               component_name((component)c), time_step_string);
+    //      output_complex_slice((component)c, p->P[c], v, what, n);
+    //    }
+    //  polnum++;
+    //  p = p->next;
+    //}
   }
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.sli", outdir, nname,
                component_name((component)c), time_step_string);
-      output_complex_slice((component)c, f[c], v, what, n);
+      for (int i=0;i<num_chunks;i++)
+        output_complex_slice((component)c, chunks[i]->f[c], chunks[i]->v, what, n);
     }
-  
-  if (new_ma) {
-    snprintf(n, buflen, "%s/%sepsilon-%s.sli", outdir, nname, time_step_string);
-    output_slice(v.eps_component(), ma->eps, v, what, n);
-  }
-  
+  //if (new_ma) {
+  //  snprintf(n, buflen, "%s/%sepsilon-%s.sli", outdir, nname, time_step_string);
+  //  output_slice(v.eps_component(), ma->eps, v, what, n);
+  //}
   free(n);
 }
 
-void fields_chunk::eps_slices(const volume &what, const char *name) {
+void fields::eps_slices(const char *name) {
+  eps_slices(v, name);
+}
+
+void fields::eps_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -420,7 +439,7 @@ void fields_chunk::eps_slices(const volume &what, const char *name) {
   }
   char time_step_string[buflen];
   snprintf(time_step_string, buflen, "%09.2f", time());
-  {
+  /*{
     polarization *p = pol;
     int polnum = 0;
     while (p) {
@@ -436,27 +455,17 @@ void fields_chunk::eps_slices(const volume &what, const char *name) {
       polnum++;
       p = p->next;
     }
-  }
-  double *sig = new double[v.ntot()];
-  for (int i=0;i<v.ntot();i++) {
-    sig[i] = 0;
-    for (int c=0;c<10;c++) { // FIXME: should really interpolate here!
-      if (ma->Cmain[c]) sig[i] += ma->Cmain[c][i];
-      if (ma->Cother[c]) sig[i] += ma->Cother[c][i];
-    }
-  }
+  }*/
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
                component_name((component)c), time_step_string);
-      output_complex_eps((component)c, f[c], v, what, n, v.eps_component(), ma->eps, sig);
+      output_complex_eps_header((component)c, chunks[0]->f[c], v,
+                                what, n, v.eps_component());
+      for (int i=0;i<num_chunks;i++)
+        output_complex_eps_body((component)c, chunks[i]->f[c], chunks[i]->v, what, n,
+                                v.eps_component(), chunks[i]->ma->eps);
+      output_complex_eps_tail((component)c, v, what, n);
     }
-  
-  if (new_ma) {
-    snprintf(n, buflen, "%s/%sepsilon-%s.eps", outdir, nname, time_step_string);
-    output_eps(v.eps_component(), ma->eps, v, what, n);
-  }
-  
-  delete[] sig;
   free(n);
 }

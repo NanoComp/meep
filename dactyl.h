@@ -41,7 +41,30 @@ class mat_chunk {
   ~mat_chunk();
   mat_chunk(const volume &v, double eps(const vec &));
   mat_chunk(const mat_chunk *);
-  mat_chunk(const mat_chunk &);
+  void make_average_eps();
+  void use_pml_left(double dx);
+  void use_pml_right(double dx);
+  void use_pml_radial(double dx);
+
+  void set_output_directory(const char *name);
+  void mix_with(const mat_chunk *, double);
+
+  void add_polarizability(double sigma(const vec &), double omega, double gamma,
+                          double delta_epsilon = 1.0, double energy_saturation = 0.0);
+ private:
+  double pml_fmin;
+};
+
+class mat {
+ public:
+  mat_chunk **chunks;
+  int num_chunks;
+  volume v;
+  const char *outdir;
+
+  ~mat();
+  mat(const volume &v, double eps(const vec &));
+  mat(const mat *);
   void make_average_eps();
   void use_pml_left(double dx);
   void use_pml_right(double dx);
@@ -50,13 +73,11 @@ class mat_chunk {
   void output_slices(const char *name = "");
   void output_slices(const volume &what, const char *name = "");
   void set_output_directory(const char *name);
-  void mix_with(const mat_chunk *, double);
+  void mix_with(const mat *, double);
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
  private:
-  void output_sigma_slice(const volume &what, const char *name);
-  double pml_fmin;
 };
 
 class src;
@@ -139,25 +160,15 @@ class fields_chunk {
   double preferred_fmax;
 
   fields_chunk(const mat_chunk *, int m=0);
-  fields_chunk(const mat_chunk &, int m=0);
   void use_bloch(double kz);
   ~fields_chunk();
 
-  void output_slices(const char *name = "");
-  void output_slices(const volume &what, const char *name = "");
-  void eps_slices(const char *name = "");
-  void eps_slices(const volume &what, const char *name = "");
-  void output_real_imaginary_slices(const char *name = "");
-  void output_real_imaginary_slices(const volume &what, const char *name = "");
   void step();
   void step_right();
   inline double time() { return t*inva*c; };
 
   void use_real_fields();
   double find_last_source();
-  void add_source(component whichf, double freq, double width, double peaktime,
-                  double cutoff, complex<double> amp(const vec &),
-                  int is_continuous = 0);
   void add_point_source(component whichf, double freq, double width, double peaktime,
                         double cutoff, const vec &, complex<double> amp = 1.0,
                         int is_continuous = 0);
@@ -175,12 +186,99 @@ class fields_chunk {
   int is_phasing();
 
   void get_point(monitor_point *p, const vec &);
+  void output_point(FILE *, const vec &, const char *name);
+  complex<double> analytic_epsilon(double freq, const vec &) const;
+  
+  void prepare_for_bands(const vec &, double end_time, double fmax=0,
+                         double qmin=1e300, double frac_pow_min=0.0);
+  void record_bands();
+  complex<double> get_band(int n, int maxbands=100);
+  void grace_bands(grace *, int maxbands=100);
+  void output_bands(FILE *, const char *, int maxbands=100);
+  double electric_energy_in_box(const volume &);
+  double magnetic_energy_in_box(const volume &);
+  double thermo_energy_in_box(const volume &);
+  double field_energy_in_box(const volume &);
+
+  void set_output_directory(const char *name);
+  void verbose(int v=1) { verbosity = v; }
+
+  friend class fields;
+ private: 
+  int verbosity; // Turn on verbosity for debugging purposes...
+  void phase_material();
+  void step_h();
+  void step_h_right();
+  void step_h_boundaries();
+  void step_h_source(const src *);
+  void step_e();
+  void step_e_right();
+  void step_e_boundaries();
+  void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
+  void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
+  void step_e_source(const src *);
+  void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
+  void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
+  void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
+  int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
+                                  int num_freqs, int fields_considered, int maxbands,
+                                  complex<double> *fad, double *approx_power);
+  void add_indexed_source(component whichf, double freq, double width,
+                          double peaktime, int cutoff, int theindex, 
+                          complex<double> amp, int is_c);
+  void out_bands(FILE *, const char *, int maxbands);
+  complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
+};
+
+class fields {
+ public:
+  int num_chunks;
+  fields_chunk **chunks;
+  double a, inva; // The "lattice constant" and its inverse!
+  volume v;
+  int m, t, phasein_time, is_real;
+  double k, cosknz, sinknz;
+  complex<double> eiknz;
+  bandsdata *bands;
+  const char *outdir;
+  // fields.cpp methods:
+  fields(const mat *, int m=0);
+  ~fields();
+  void use_bloch(double kz);
+  void use_real_fields();
+  // slices.cpp methods:
+  void output_slices(const char *name = "");
+  void output_slices(const volume &what, const char *name = "");
+  void eps_slices(const char *name = "");
+  void eps_slices(const volume &what, const char *name = "");
+  void output_real_imaginary_slices(const char *name = "");
+  void output_real_imaginary_slices(const volume &what, const char *name = "");
+  // step.cpp methods:
+  void step();
+  void step_right();
+  inline double time() { return t*inva*c; };
+
+  double find_last_source();
+  void add_point_source(component whichf, double freq, double width, double peaktime,
+                        double cutoff, const vec &, complex<double> amp = 1.0,
+                        int is_continuous = 0);
+  void add_plane_source(double freq, double width, double peaktime,
+                        double cutoff, double envelope (const vec &),
+                        const vec &p, const vec &norm = vec(0),
+                        int is_continuous = 0);
+  void initialize_field(component, complex<double> f(const vec &));
+  void initialize_with_nth_te(int n);
+  void initialize_with_nth_tm(int n);
+  void initialize_with_n_te(int n);
+  void initialize_with_n_tm(int n);
+  void initialize_polarizations();
+  int phase_in_material(const mat_chunk *ma, double time);
+  int is_phasing();
+
+  void get_point(monitor_point *p, const vec &);
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL);
   void output_point(FILE *, const vec &, const char *name);
   complex<double> analytic_epsilon(double freq, const vec &) const;
-
-  flux_plane create_flux_plane(const vec &corner1, const vec &corner2);
-  complex<double> get_flux(flux_plane *fp);
   
   void prepare_for_bands(const vec &, double end_time, double fmax=0,
                          double qmin=1e300, double frac_pow_min=0.0);
@@ -204,16 +302,16 @@ class fields_chunk {
   void step_h();
   void step_h_right();
   void step_h_boundaries();
-  void step_h_source(const src *);
+  void step_h_source();
   void step_e();
   void step_e_right();
   void step_e_boundaries();
-  void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
-  void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
-  void step_e_source(const src *);
-  void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
-  void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
-  void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
+  void step_polarization_itself();
+  void step_e_polarization();
+  void step_e_source();
+  void prepare_step_polarization_energy();
+  void half_step_polarization_energy();
+  void update_polarization_saturation();
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);

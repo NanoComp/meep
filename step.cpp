@@ -23,399 +23,25 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-fields_chunk::~fields_chunk() {
-  delete ma;
-  is_real = 0; // So that we can make sure to delete everything...
-  DOCMP {
-    for (int i=0;i<10;i++) delete[] f[i][cmp];
-    for (int i=0;i<10;i++) delete[] f_backup[i][cmp];
-    for (int i=0;i<10;i++) delete[] f_pml[i][cmp];
-    for (int i=0;i<10;i++) delete[] f_backup_pml[i][cmp];
-    delete[] e_connection_sinks[cmp];
-    delete[] e_connection_sources[cmp];
-    delete[] h_connection_sinks[cmp];
-    delete[] h_connection_sources[cmp];
-  }
-  delete[] e_phases;
-  delete[] h_phases;
-  delete h_sources;
-  delete e_sources;
-  delete bands;
-  delete pol;
-  delete olpol;
-}
+void fields::step_right() {
+  t += 1;
 
-void fields_chunk::use_bloch(double tk) {
-  if (is_real) {
-    printf("Can't do bloch boundaries with real fields_chunk!\n");
-    // Note that I *could* implement bloch boundary conditions, at least
-    // for gamma point and zone edge situations.
-    exit(1);
-  }
-  k = tk;
-  cosknz = cos(k*2*pi*inva*v.nz());
-  sinknz = sin(k*2*pi*inva*v.nz());
-  eiknz = complex<double>(cosknz, sinknz);
-  complex<double> emiknz = complex<double>(cosknz, -sinknz);
-  if (v.dim == d1) {
-    delete[] e_phases;
-    delete[] h_phases;
-    num_h_connections = 0;
-    num_e_connections = 1;
-    e_phases = new complex<double>[num_e_connections];
-    e_phases[0] = eiknz;
-    DOCMP {
-      delete[] e_connection_sinks[cmp];
-      delete[] e_connection_sources[cmp];
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp][0] = &f[Ex][cmp][0];
-      e_connection_sinks[cmp][0] = &f[Ex][cmp][v.nz()];
-    }
-  } else if (v.dim == dcyl) {
-    num_e_connections = 3*(v.nr()+1);
-    num_h_connections = 3*(v.nr()+1);
-    delete[] e_phases;
-    delete[] h_phases;
-    e_phases = new complex<double>[num_e_connections];
-    h_phases = new complex<double>[num_h_connections];
-    DOCMP {
-      delete[] e_connection_sinks[cmp];
-      delete[] e_connection_sources[cmp];
-      delete[] h_connection_sinks[cmp];
-      delete[] h_connection_sources[cmp];
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      h_connection_sinks[cmp] = new (double *)[num_h_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      h_connection_sources[cmp] = new (double *)[num_h_connections];
-      int econ = 0;
-      int hcon = 0;
-      for (int r=0;r<=v.nr();r++) {
-        int right = v.nz() + r*(v.nz()+1);
-        int left = 0 + r*(v.nz()+1);
-        e_connection_sources[cmp][econ] = &f[Ep][cmp][right];
-        e_connection_sinks[cmp][econ] = &f[Ep][cmp][left];
-        e_phases[econ] = emiknz;
-        econ++;
-        e_connection_sources[cmp][econ] = &f[Er][cmp][right];
-        e_connection_sinks[cmp][econ] = &f[Er][cmp][left];
-        e_phases[econ] = emiknz;
-        econ++;
-        e_connection_sources[cmp][econ] = &f[Ez][cmp][left];
-        e_connection_sinks[cmp][econ] = &f[Ez][cmp][right];
-        e_phases[econ] = eiknz;
-        econ++;
+  phase_material();
 
-        h_connection_sources[cmp][hcon] = &f[Hz][cmp][right];
-        h_connection_sinks[cmp][hcon] = &f[Hz][cmp][left];
-        h_phases[hcon] = emiknz;
-        hcon++;
-        h_connection_sources[cmp][hcon] = &f[Hr][cmp][left];
-        h_connection_sinks[cmp][hcon] = &f[Hr][cmp][right];
-        h_phases[hcon] = eiknz;
-        hcon++;
-        h_connection_sources[cmp][hcon] = &f[Hp][cmp][left];
-        h_connection_sinks[cmp][hcon] = &f[Hp][cmp][right];
-        h_phases[hcon] = eiknz;
-        hcon++;
-        // FIXME: Need to add PML connections here!
-      }
-    }
-  } else {
-    printf("Unsupported dimension?!\n");
-    exit(1);
-  }
-}
+  step_h_right();
+  step_h_source();
+  step_h_boundaries();
 
-double zero = 0.0;
+  prepare_step_polarization_energy();
+  half_step_polarization_energy();
+  step_e_right();
+  step_e_source();
+  step_e_polarization();
+  step_e_boundaries();
+  half_step_polarization_energy();
 
-fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
-  int r, z;
-  ma = new mat_chunk(the_ma);
-  verbosity = 0;
-  v = ma->v;
-  outdir = ma->outdir;
-  m = tm;
-  phasein_time = 0;
-  new_ma = NULL;
-  bands = NULL;
-  k = -1;
-  is_real = 0;
-  a = ma->a;
-  inva = 1.0/a;
-  preferred_fmax = 2.5; // Some sort of reasonable maximum
-                        // frequency... (assuming a has a value on the
-                        // order of your frequency).
-  t = 0;
-  pol = polarization::set_up_polarizations(ma, is_real);
-  olpol = polarization::set_up_polarizations(ma, is_real);
-  h_sources = e_sources = NULL;
-  DOCMP {
-    for (int i=0;i<10;i++) f[i][cmp] = NULL;
-    for (int i=0;i<10;i++) f_backup[i][cmp] = NULL;
-    for (int i=0;i<10;i++) f_pml[i][cmp] = NULL;
-    for (int i=0;i<10;i++) f_backup_pml[i][cmp] = NULL;
-
-    for (int i=0;i<10;i++) if (v.has_field((component)i))
-      f[i][cmp] = new double[v.ntot()];
-    for (int i=0;i<10;i++) if (v.has_field((component)i)) {
-      f_pml[i][cmp] = new double[v.ntot()];
-      if (f_pml[i][cmp] == NULL) {
-        printf("Out of memory!\n");
-        exit(1);
-      }
-    }
-  }
-  DOCMP {
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c))
-        for (int i=0;i<v.ntot();i++)
-          f[c][cmp][i] = 0.0;
-    // Now for pml extra fields_chunk...
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c))
-        for (int i=0;i<v.ntot();i++)
-          f_pml[c][cmp][i] = 0.0;
-  }
-  if (v.dim == d1) {
-    // Set up by default with metallic boundary conditions.
-    num_h_connections = 0;
-    num_e_connections = 1;
-    e_phases = new complex<double>[num_e_connections];
-    e_phases[0] = 0.0;
-    h_phases = NULL;
-    DOCMP {
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp][0] = &zero;
-      e_connection_sinks[cmp][0] = &f[Ex][cmp][v.nz()];
-      h_connection_sinks[cmp] = NULL;
-      h_connection_sources[cmp] = NULL;
-    }
-  } else if (v.dim == dcyl) {
-    // Set up by default with metallic boundary conditions.
-    num_e_connections = 2*(v.nr()+1);
-    num_h_connections =   (v.nr()+1);
-    if (f_pml[Ep][0]) num_e_connections += v.nr()+1;
-    if (f_pml[Er][0]) num_e_connections += v.nr()+1;
-    if (f_pml[Hz][0]) num_h_connections += v.nr()+1;
-    e_phases = new complex<double>[num_e_connections];
-    h_phases = new complex<double>[num_h_connections];
-    DOCMP {
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      h_connection_sinks[cmp] = new (double *)[num_h_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      h_connection_sources[cmp] = new (double *)[num_h_connections];
-      int econ = 0;
-      int hcon = 0;
-      for (int i=0;i<num_e_connections;i++) e_phases[i] = 1.0;
-      for (int i=0;i<num_h_connections;i++) h_phases[i] = 1.0;
-      for (int r=0;r<=v.nr();r++) {
-        int i = v.nz() + r*(v.nz()+1);
-        e_connection_sources[cmp][econ] = &zero;
-        e_connection_sinks[cmp][econ] = &f[Ep][cmp][i];
-        econ++;
-        e_connection_sources[cmp][econ] = &zero;
-        e_connection_sinks[cmp][econ] = &f[Er][cmp][i];
-        econ++;
-        h_connection_sources[cmp][hcon] = &zero;
-        h_connection_sinks[cmp][hcon] = &f[Hz][cmp][i];
-        hcon++;
-        // I have to add PML connections here too:
-        if (f_pml[Ep][cmp]) {
-          e_connection_sources[cmp][econ] = &zero;
-          e_connection_sinks[cmp][econ] = &f_pml[Ep][cmp][i];
-          econ++;
-        }
-        if (f_pml[Er][cmp]) {
-          e_connection_sources[cmp][econ] = &zero;
-          e_connection_sinks[cmp][econ] = &f_pml[Er][cmp][i];
-          econ++;
-        }
-        if (f_pml[Hz][0]) {
-          h_connection_sources[cmp][hcon] = &zero;
-          h_connection_sinks[cmp][hcon] = &f_pml[Hz][cmp][i];
-          hcon++;
-        }
-      }
-    }
-  }
-}
-
-void fields_chunk::use_real_fields() {
-  if (k >= 0.0) {
-    printf("Can't use real fields_chunk with bloch boundary conditions!\n");
-    exit(1);
-  }
-  is_real = 1;
-  if (pol) pol->use_real_fields();
-  if (olpol) olpol->use_real_fields();
-}
-
-int fields_chunk::phase_in_material(const mat_chunk *newma, double time) {
-  new_ma = newma;
-  phasein_time = (int) (time*a/c);
-  if (phasein_time == 0) phasein_time = 1;
-  printf("I'm going to take %d time steps to phase in the material.\n", phasein_time);
-  return phasein_time;
-}
-
-int fields_chunk::is_phasing() {
-  return phasein_time > 0;
-}
-
-complex<double> src::get_amplitude_at_time(int t) const {
-  double envelope = get_envelope_at_time(t);
-  if (envelope == 0.0)
-    return 0.0;
-  double tt = t - peaktime;
-  return (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope;
-}
-
-double src::get_envelope_at_time(int t) const {
-  double tt = t - peaktime;
-  if (is_continuous && tt > 0) {
-    return 1.0;
-  } else if (fabs(tt) > cutoff) {
-    return 0.0;
-  } else {
-    return exp(-tt*tt/(2*width*width));
-  }
-}
-
-src::~src() {
-  delete next;
-}
-
-static double integrate_envelope(const src *s) {
-  if (s == NULL) {
-    printf("Bad arg to integrate_envelope!\n");
-    exit(1);
-  }
-  double sofar = 0.0;
-  for (int t=(int)s->peaktime-s->cutoff;t<(1<<30);t++) {
-    double e = s->get_envelope_at_time(t);
-    sofar += e;
-    if (e == 0) break; // Bug here if there is a source that starts late,
-                       // or a source that never stops.
-  }
-  return sofar;
-}
-
-static complex<double> integrate_source(const src *s) {
-  if (s == NULL) {
-    printf("Bad arg to integrate_source!\n");
-    exit(1);
-  }
-  complex<double> sofar = 0.0;
-  for (int t=0;1<<30;t++) {
-    complex<double> A = s->get_amplitude_at_time(t);
-    sofar += A;
-    if (A == 0) break; // Bug here if there is a source that starts late,
-                       // or a source that never stops.
-  }
-  return sofar;
-}
-
-void fields_chunk::add_point_source(component whichf, double freq, double width, double peaktime,
-                              double cutoff, const vec &p, complex<double> amp,
-                              int is_c) {
-  // FIXME this really should call an interpolation routine...
-  if (p.dim != v.dim) {
-    printf("Error:  source doesn't have right dimensions!\n");
-    exit(1);
-  } else if (!v.has_field(whichf)) {
-    printf("Error:  source component %s is invalid.\n", component_name(whichf));
-    exit(1);
-  }
-  int ind[8];
-  double w[8];
-  v.interpolate(whichf, p, ind, w);
-  double prefac = 1.0;
-  switch (v.dim) {
-  case dcyl: prefac = a; break;
-  case d1: prefac = 1; break;
-  }
-  for (int i=0;i<8 && w[i];i++)
-    add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i], amp*prefac*w[i], is_c);
-}
-
-void fields_chunk::add_plane_source(double freq, double width, double peaktime,
-                              double cutoff, double envelope (const vec &),
-                              const vec &p, const vec &norm,
-                              int is_c) {
-  if (v.dim == dcyl) {
-    // We ignore norm in this case...
-    if (m != 1) {
-      printf("Can only use plane source with m == 1!\n");
-      exit(1);
-    }
-    const complex<double> I = complex<double>(0,1);
-    const double z = p.z();
-    const double eps = sqrt(ma->eps[(int)(z+0.5)]);
-    for (int ir=0;ir<v.nr();ir++) {
-      {
-        const double r = ir*inva;
-        // E_phi
-        add_point_source(Ep, freq, width, peaktime, cutoff, vec(r,z),
-                         envelope(vec(r,z)), is_c);        
-        // iH_r = d(rH_phi)/dr
-        const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
-                              (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
-        add_point_source(Hr, freq, width, peaktime, cutoff, vec(r,z), -eps*slope, is_c);
-      }
-      {
-        const double r = (ir+0.5)*inva;
-        const double sc = (ir == 0)?0.5:1.0;
-        // iE_r = d(rE_phi)/dr
-        const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
-                              (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
-        add_point_source(Er, freq, width, peaktime, cutoff, vec(r,z), -I*sc*slope, is_c);
-        // H_phi
-        add_point_source(Hp, freq, width, peaktime, cutoff, vec(r,z),
-                         -I*eps*sc*envelope(vec(r,z)), is_c);
-      }
-    }
-  } else if (v.dim == d1) {
-    const double z = p.z();
-    const double eps = sqrt(ma->eps[(int)(z+0.5)]);
-    add_point_source(Ex, freq, width, peaktime, cutoff, vec(z), envelope(vec(z)), is_c);
-    add_point_source(Hy, freq, width, peaktime, cutoff, vec(z), envelope(vec(z))*eps, is_c);
-  } else {
-    printf("Can't use plane source in this number of dimensions.\n");
-    exit(1);
-  }
-}
-
-void fields_chunk::add_indexed_source(component whichf, double freq, double width,
-                                double peaktime, int cutoff, int theindex, 
-                                complex<double> amp, int is_c) {
-  if (theindex >= v.ntot() || theindex < 0) {
-    printf("Error:  source is outside of cell! (%d)\n", theindex);
-    exit(1);
-  }
-  src *tmp = new src;
-  tmp->freq = freq*c*inva;
-  tmp->width = width/tmp->freq; // this is now time width
-  for (int com=0;com<10;com++) tmp->A[com] = 0;
-  tmp->A[whichf] = amp;
-  tmp->i = theindex;
-  tmp->amp_shift = 0.0;
-  tmp->is_continuous = is_c;
-  if (is_magnetic(whichf)) {
-    tmp->next = h_sources;
-    h_sources = tmp;
-  } else {
-    tmp->next = e_sources;
-    e_sources = tmp;
-  }
-  tmp->cutoff = 1+ (int)(cutoff*tmp->width);
-  tmp->peaktime = peaktime*a/c;
-  if (peaktime <= 0.0) tmp->peaktime = t+tmp->cutoff;
-  // Apply a shift so that we won't end up with a static polarization when
-  // the source is gone:
-  if (is_c) tmp->amp_shift = 0.0;
-  else tmp->amp_shift = integrate_source(tmp)/integrate_envelope(tmp);
+  update_polarization_saturation();
+  step_polarization_itself();
 }
 
 void fields_chunk::step_right() {
@@ -427,11 +53,36 @@ void fields_chunk::step_right() {
   step_h_source(h_sources);
   step_h_boundaries();
 
+  prepare_step_polarization_energy();
+  half_step_polarization_energy();
   step_e_right();
   step_e_source(e_sources);
-  step_e_boundaries();
-
   step_e_polarization();
+  step_e_boundaries();
+  half_step_polarization_energy();
+
+  update_polarization_saturation();
+  step_polarization_itself();
+}
+
+void fields::step() {
+  t += 1;
+
+  phase_material();
+
+  step_h();
+  step_h_source();
+  step_h_boundaries();
+
+  prepare_step_polarization_energy();
+  half_step_polarization_energy();
+  step_e();
+  step_e_source();
+  step_e_polarization();
+  step_e_boundaries();
+  half_step_polarization_energy();
+
+  update_polarization_saturation();
   step_polarization_itself();
 }
 
@@ -454,6 +105,11 @@ void fields_chunk::step() {
 
   update_polarization_saturation();
   step_polarization_itself();
+}
+
+void fields::phase_material() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->phase_material();
 }
 
 void fields_chunk::phase_material() {
@@ -495,6 +151,11 @@ inline int rstart_1(const volume &v, int m) {
   return (int) max(1.0, m - v.origin.r()*v.a);
 }
 
+void fields::step_h_right() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_h_right();
+}
+
 void fields_chunk::step_h_right() {
   const volume v = this->v;
   if (v.dim == d1) {
@@ -521,6 +182,11 @@ void fields_chunk::step_h_right() {
   }
 }
 
+void fields::step_e_right() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_e_right();
+}
+
 void fields_chunk::step_e_right() {
   const volume v = this->v;
   if (v.dim == d1) {
@@ -545,6 +211,11 @@ void fields_chunk::step_e_right() {
       }
     }
   }
+}
+
+void fields::step_h() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_h();
 }
 
 void fields_chunk::step_h() {
@@ -679,6 +350,11 @@ void fields_chunk::step_h() {
   }
 }
 
+void fields::step_h_boundaries() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_h_boundaries();
+}
+
 void fields_chunk::step_h_boundaries() {
   for (int i=0;i<num_h_connections;i++) {
     complex<double> val = h_phases[i]*
@@ -686,6 +362,11 @@ void fields_chunk::step_h_boundaries() {
     *h_connection_sinks[0][i] = real(val);
     *h_connection_sinks[1][i] = imag(val);
   }
+}
+
+void fields::step_e() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_e();
 }
 
 void fields_chunk::step_e() {
@@ -837,6 +518,11 @@ void fields_chunk::step_e() {
   }
 }
 
+void fields::step_e_boundaries() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_e_boundaries();
+}
+
 void fields_chunk::step_e_boundaries() {
   for (int i=0;i<num_e_connections;i++) {
     complex<double> val = e_phases[i]*
@@ -844,6 +530,11 @@ void fields_chunk::step_e_boundaries() {
     *e_connection_sinks[0][i] = real(val);
     *e_connection_sinks[1][i] = imag(val);
   }
+}
+
+void fields::step_h_source() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_h_source(chunks[i]->h_sources);
 }
 
 void fields_chunk::step_h_source(const src *s) {
@@ -859,6 +550,11 @@ void fields_chunk::step_h_source(const src *s) {
       if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }
   step_h_source(s->next);
+}
+
+void fields::step_e_source() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->step_e_source(chunks[i]->e_sources);
 }
 
 void fields_chunk::step_e_source(const src *s) {

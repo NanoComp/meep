@@ -1,4 +1,5 @@
 .SUFFIXES: .dac .tex
+.PHONY: all clean
 
 CXX = @DACTYL_CXX@
 CXXFLAGS = @DACTYL_CXXFLAGS@
@@ -76,8 +77,14 @@ lossgain_epsilon-out/eps.eps : preproc lossgain_epsilon.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
 
-test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac \
-	epsilon_polariton_1d.dac omniguide.dac lossgain_epsilon.dac
+OBJFILES = omniguide.o simplebands.o epsilon_polariton_1d.o \
+	polaritonbands.o lossgain_epsilon.o energy_cons.o \
+	energy_cons_1d.o
+$(OBJFILES): ../libdactyl.a
+
+test: preproc simplebands.dac polaritonbands.dac \
+	epsilon_polariton_1d.dac omniguide.dac lossgain_epsilon.dac \
+	energy_cons_1d.dac energy_cons.dac
 
 doc: dactyl.ps
 

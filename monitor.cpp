@@ -46,6 +46,12 @@ inline complex<double> getcm(double *f[2], int i) {
   return complex<double>(f[0][i],f[1][i]);
 }
 
+void fields::get_point(monitor_point *pt, const vec &loc) {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->v.contains(loc))
+      chunks[i]->get_point(pt, loc);
+}
+
 void fields_chunk::get_point(monitor_point *pt, const vec &loc) {
   if (pt == NULL) {
     printf("Error:  get_point passed a null pointer!\n");
@@ -64,7 +70,7 @@ void fields_chunk::get_point(monitor_point *pt, const vec &loc) {
     }
 }
 
-monitor_point *fields_chunk::get_new_point(const vec &loc, monitor_point *the_list) {
+monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) {
   monitor_point *p = new monitor_point();
   get_point(p, loc);
   p->next = the_list;
