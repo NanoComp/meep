@@ -154,6 +154,8 @@ int volume::owns(const vec &p) const {
   const double qinva = 0.25*inva;
   const vec o = p - origin;
   if (dim == dcyl) {
+    if (origin.r() == 0.0 && o.z() >= qinva && o.z() <= nz()*inva + qinva &&
+        o.r() < qinva) return true;
     return o.r() >= qinva && o.z() >= qinva &&
       o.r() <= nr()*inva + qinva && o.z() <= nz()*inva + qinva;
   } else if (dim == d1) {
