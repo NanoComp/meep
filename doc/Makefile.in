@@ -22,7 +22,7 @@ TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
 	polaritonbands-out/bands.eps \
 	epsilon_polariton.tex epsilon_polariton.eps omniguide.tex \
 	omniguide-out/bands.eps \
-	superluminal_epsilon.tex superluminal_epsilon-out/eps.eps
+	lossgain_epsilon.tex lossgain_epsilon-out/eps.eps
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
@@ -62,14 +62,14 @@ omniguide-out/bands.eps : preproc omniguide.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
 
-superluminal_epsilon-out/eps.eps : preproc superluminal_epsilon.dac
-	rm -rf superluminal_epsilon-out/*
-	./superluminal_epsilon.dac
+lossgain_epsilon-out/eps.eps : preproc lossgain_epsilon.dac
+	rm -rf lossgain_epsilon-out/*
+	./lossgain_epsilon.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
 
 test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac \
-	epsilon_polariton.dac omniguide.dac superluminal_epsilon.dac
+	epsilon_polariton.dac omniguide.dac lossgain_epsilon.dac
 
 doc: dactyl.ps
 

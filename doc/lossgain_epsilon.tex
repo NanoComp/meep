@@ -1,4 +1,4 @@
-\section{Dielectric function of a superluminal material}
+\section{Dielectric function of a material with loss and gain}
 
 \begin{comment}
 #include <stdio.h>
@@ -50,15 +50,14 @@ int main(int argc, char **argv) {
 
 In this section, we demonstrate a better way to calculate the dielectric
 function, and illustrate it by computing the dielectric function of a
-superluminal material.  The superluminal material consists of a gain line
-together with an absorption.  Gain in the PML is a bad idea, so we restrict
-the polarizabilities to exist only in the middle of the system (which is
-surrounded by PML).
+material with a normal lossy resonance as well as a gain line.  Gain in the
+PML is a bad idea, so we restrict the polarizabilities to exist only in the
+middle of the system (which is surrounded by PML).
 
 \begin{figure}
-\label{superluminal_epsilon}
-\caption{Dielectric function of a superluminal material.}
-\epsfig{file=superluminal_epsilon-out/eps.eps,width=8.8cm}
+\label{lossgain_epsilon}
+\caption{Dielectric function of a material with loss and gain.}
+\epsfig{file=lossgain_epsilon-out/eps.eps,width=8.8cm}
 \end{figure}
 
 \begin{verbatim}
@@ -157,7 +156,7 @@ $-k^2 H_z(\omega)$, from which we extract epsilon.
 I've left out the bulk of this example from the manual itself, since it
 is pretty much the same as the previous examples.  Among other features, we
 use the grace functions to plot the result, which can be seen in
-Figure~\ref{superluminal_epsilon}.
+Figure~\ref{lossgain_epsilon}.
 
 \begin{comment}
   for (int i=0;i<numl;i++) {
