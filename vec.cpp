@@ -422,7 +422,7 @@ double volume::zmin() const {
 double volume::rmax() const {
   const double inva = 1.0/a, qinva = 0.25*inva;
   if (dim == dcyl) return origin.r() + nr()*inva + qinva;
-  abort("No rmin in these dimensions.\n");
+  abort("No rmax in these dimensions.\n");
 }
 
 double volume::rmin() const {
