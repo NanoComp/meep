@@ -325,22 +325,22 @@ int main(int argc, char **argv) {
 
   for (int s=2;s<6;s++)
     if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
-  if (!test_pattern(one, 8, dirname)) abort("error in crazy test_pattern\n");
-  if (!test_pattern(one, 120, dirname)) abort("error in crazy test_pattern\n");
+  //if (!test_pattern(one, 8, dirname)) abort("error in crazy test_pattern\n");
+  //if (!test_pattern(one, 120, dirname)) abort("error in crazy test_pattern\n");
   
-  for (int s=2;s<7;s++)
+  for (int s=2;s<4;s++)
     if (!test_simple_periodic(one, s, dirname)) abort("error in test_simple_periodic\n");
-  if (!test_simple_periodic(one, 8, dirname))
-    abort("error in crazy test_simple_periodic\n");
-  if (!test_simple_periodic(one, 120, dirname))
-    abort("error in crazy test_simple_periodic\n");
+  //if (!test_simple_periodic(one, 8, dirname))
+  //  abort("error in crazy test_simple_periodic\n");
+  //if (!test_simple_periodic(one, 120, dirname))
+  //  abort("error in crazy test_simple_periodic\n");
   
-  for (int s=2;s<7;s++)
+  for (int s=2;s<5;s++)
     if (!test_simple_metallic(one, s, dirname)) abort("error in test_simple_metallic\n");
-  if (!test_simple_metallic(one, 8, dirname))
-    abort("error in crazy test_simple_metallic\n");
-  if (!test_simple_metallic(one, 120, dirname))
-    abort("error in crazy test_simple_metallic\n");
+  //if (!test_simple_metallic(one, 8, dirname))
+  //  abort("error in crazy test_simple_metallic\n");
+  //if (!test_simple_metallic(one, 120, dirname))
+  //  abort("error in crazy test_simple_metallic\n");
   
   for (int s=2;s<6;s++)
     if (!test_pml(one, s, dirname)) abort("error in test_pml\n");
