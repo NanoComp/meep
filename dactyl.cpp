@@ -23,16 +23,6 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-inline int small_r_metal(int m) {
-  return m-1;
-}
-
-inline int rmin_bulk(int m) {
-  int r = 1 + small_r_metal(m);
-  if (r < 1) r = 1;
-  return r;
-}
-
 fields::~fields() {
   delete ma;
   DOCMP {

@@ -43,6 +43,16 @@
 inline double max(double a, double b) { return (a > b) ? a : b; }
 inline int max(int a, int b) { return (a > b) ? a : b; }
 
+inline int small_r_metal(int m) {
+  return m-1;
+}
+
+inline int rmin_bulk(int m) {
+  int r = 1 + small_r_metal(m);
+  if (r < 1) r = 1;
+  return r;
+}
+
 class polarizability {
  public:
   int nr, nz;
