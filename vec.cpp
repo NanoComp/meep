@@ -23,6 +23,11 @@
 #include "vec.h"
 #include "dactyl.h"
 
+static inline int min(int a, int b) { return (a<b)?a:b; };
+static inline int max(int a, int b) { return (a>b)?a:b; };
+static inline double min(double a, double b) { return (a<b)?a:b; };
+static inline double max(double a, double b) { return (a>b)?a:b; };
+
 static inline double int_to_lattice(int n, double a, double inva=0.0) {
   if (inva == 0.0) inva = 1.0/a;
   return (2*n)*(0.5*inva);
@@ -708,19 +713,6 @@ ivec volume::big_corner() const {
   case D3: return io() + ivec(nx(),ny(),nz())*2;
   case Dcyl: return io() + ivec(nr(),nz())*2;
   }
-}
-
-static inline int max(int a, int b) {
-  return (a>b)?a:b;
-}
-
-
-static inline double max(double a, double b) {
-  return (a>b)?a:b;
-}
-
-static inline double min(double a, double b) {
-  return (a<b)?a:b;
 }
 
 double volume::intersection(const volume &o) const {
