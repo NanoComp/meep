@@ -386,7 +386,7 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
                                     symmetry S, int symnum,
                                     const geometric_volume &what, file *out) {
   bufprint buf(out);
-  if (!f[0] || !f[1]) return; // Field doesn't exist...
+  if (!f[0]) return; // Field doesn't exist...
   const complex<double> ph = S.phase_shift(m, symnum);
   for (int i=0;i<v.ntot();i++) {
     const vec here = S.transform(v.loc(m,i),symnum);
