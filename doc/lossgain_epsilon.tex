@@ -31,10 +31,11 @@ double one_in_middle(const vec &v) {
 }
 
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   deal_with_ctrl_c();
   const char *dirname = make_output_directory(argv[0]);
-  printf("Using pml of %lg thickness.\n", pml);
-  printf("Using an rmax of %lg\n", rmax);
+  master_printf("Using pml of %lg thickness.\n", pml);
+  master_printf("Using an rmax of %lg\n", rmax);
   mat ma(volcyl(rmax + pml, zsize, a), eps);
   ma.use_pml_right(pml);
   ma.use_pml_left(pml);
@@ -72,15 +73,15 @@ range of interest.
   f.add_point_source(Ep, 0.3,  0.8, 0.0, 8.0, vec(rmax*0.5,sourceloc));
 \end{verbatim}
 \begin{comment}
-  printf("Working with a=%lg...\n", a);
+  master_printf("Working with a=%lg...\n", a);
   monitor_point *left = NULL, *right = NULL, *middle = NULL,
                 *top = NULL, *bottom = NULL;
   double next_printtime = 10;
   while (f.time() < 130 && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 10;
-      printf("Working on time %lg...  ", f.time());
-      printf("energy is %lg\n", f.field_energy());
+      master_printf("Working on time %lg...  ", f.time());
+      master_printf("energy is %lg\n", f.field_energy());
       //if (f.time() > -90) f.eps_slices();
     }
     f.step();
@@ -104,7 +105,7 @@ derivative.
   grace g("eps", dirname);
   complex<double> *al, *ar, *am, *at, *ab, *freqs;
   int numl, numr;
-  printf("Working on left fourier transform...\n");
+  master_printf("Working on left fourier transform...\n");
   double minfreq = 0.101, maxfreq = 0.5;
   int numfreqs = 300;
 \end{comment}
@@ -116,18 +117,19 @@ We fourier transform $H_z$ at each point:
 \end{verbatim}
 \begin{comment}
   delete[] freqs;
-  printf("Working on middle fourier transform...\n");
+  master_printf("Working on middle fourier transform...\n");
   middle->fourier_transform(Hz, &am, &freqs, &numr, minfreq, maxfreq, numfreqs);
   delete[] freqs;
-  printf("Working on top fourier transform...\n");
+  master_printf("Working on top fourier transform...\n");
   top->fourier_transform(Hz, &at, &freqs, &numr, minfreq, maxfreq, numfreqs);
   delete[] freqs;
-  printf("Working on bottom fourier transform...\n");
+  master_printf("Working on bottom fourier transform...\n");
   bottom->fourier_transform(Hz, &ab, &freqs, &numr, minfreq, maxfreq, numfreqs);
   delete[] freqs;
-  printf("Working on right fourier transform...\n");
+  master_printf("Working on right fourier transform...\n");
   right->fourier_transform(Hz, &ar, &freqs, &numr, minfreq, maxfreq, numfreqs);
-  if (numl != numr) printf("Aaack you need both nums to be the same!\n");
+  if (numl != numr)
+    master_printf("Aaack you need both nums to be the same!\n");
   g.new_set();
   g.set_legend("\\x\\e\\s1\\N");
   complex<double> *epsilon = new complex<double>[numl];
@@ -174,5 +176,6 @@ Figure~\ref{lossgain_epsilon}.
     g.output_point(real(freqs[i]),
                    imag(f.analytic_epsilon(real(freqs[i]),vec(r_look, z_look))));
   }
+  finished();
 }
 \end{comment}
