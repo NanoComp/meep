@@ -85,7 +85,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
     // for when there are too many data points...
     double decayconst = bands->fmax/qmin*8.0;
     double smalltime = 1./(decayconst + bands->fmax);
-    bands->scale_factor = (int)(0.16*smalltime);
+    bands->scale_factor = (int)(0.12*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
     printf("scale_factor is %d (%lg,%lg)\n",
            bands->scale_factor, bands->fmax, decayconst);
