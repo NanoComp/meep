@@ -222,7 +222,8 @@ complex<double> polarization::analytic_epsilon(double freq, const vec &p) const 
   pb->v.interpolate(pb->v.eps_component(), p, in, w);
   complex<double> epsi = 0.0;
   for (int i=0;i<8 && w[i];i++)
-    epsi += pb->sigma[in[i]]/(pb->omeganot*pb->omeganot - freq*freq - freq*pb->gamma*I);
+    epsi += w[i]*pb->sigma[in[i]]/
+      (pb->omeganot*pb->omeganot - freq*freq - freq*pb->gamma*I);
   if (next) epsi += next->analytic_epsilon(freq, p);
   return epsi;
 }
