@@ -40,6 +40,8 @@ double rods_2d(const vec &pp) {
 static const double eps_compare = 7e-15;
 static const double thresh_compare = 1e-16;
 
+static inline double max(double a, double b) { return a > b ? a : b; }
+
 int compare(double a, double b, const char *n) {
   if (fabs(a-b) > fabs(b)*eps_compare
       && max(fabs(a),fabs(b)) > thresh_compare) {
