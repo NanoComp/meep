@@ -352,7 +352,7 @@ static double integrate_envelope(const src *s) {
     exit(1);
   }
   double sofar = 0.0;
-  for (int t=0;t<(1<<30);t++) {
+  for (int t=(int)s->peaktime-s->cutoff;t<(1<<30);t++) {
     double e = s->get_envelope_at_time(t);
     sofar += e;
     if (e == 0) break; // But here if there is a source that starts late,
@@ -418,7 +418,7 @@ void fields::add_src_pt(int r, int z,
   }
   tmp->cutoff = 1+ (int)(cutoff*tmp->width);
   tmp->peaktime = peaktime*a;
-  if (peaktime <= 0.0) tmp->peaktime = tmp->cutoff;
+  if (peaktime <= 0.0) tmp->peaktime = t+tmp->cutoff;
   // Apply a shift so that we won't end up with a static polarization when
   // the source is gone:
   if (is_contin) tmp->amp_shift = 0.0;
