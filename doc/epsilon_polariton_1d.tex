@@ -25,8 +25,8 @@ of 40.
 
 
 \begin{comment}
-const double a = 40;
-const double pml_thickness = 1.0;
+const double a = 10;
+const double pml_thickness = 160.0/a;
 const double middlesize = 5.0/a;
 const double zsize = middlesize + 2*pml_thickness;
 \end{verbatim}
@@ -38,13 +38,13 @@ double eps(const vec &) { return 13.4; }
 \end{verbatim}
 \begin{comment}
 double one_in_middle(const vec &p) {
-  if (p.z() > pml_thickness && p.z() < pml_thickness + middlesize) return 1;
+  if (p.z() > pml_thickness && p.z() <= pml_thickness + middlesize) return 1;
   else return 0;
 }
 
 int main(int argc, char **argv) {
   deal_with_ctrl_c();
-  const double ttot = 300.0;
+  const double ttot =1180.0;
   mat ma(volone(zsize, a), eps);
   const char *dirname = make_output_directory(argv[0]);
   printf("Storing output in directory %s/\n", dirname);
@@ -133,13 +133,13 @@ Finally we calculate epsilon from the second derivative of the field using
   g.set_legend("analytic \\x\\e\\s1\\N");
   for (int i=0;i<numl;i++) {
     g.output_point(real(freqs[i]),
-                   real(f.analytic_epsilon(real(freqs[i]),vec(sourceloc))));
+                   real(f.analytic_epsilon(real(freqs[i]),vec(sourceloc+3.0/a))));
   }
   g.new_set();
   g.set_legend("analytic \\x\\e\\s2\\N");
   for (int i=0;i<numl;i++) {
     g.output_point(real(freqs[i]),
-                   imag(f.analytic_epsilon(real(freqs[i]),vec(sourceloc))));
+                   imag(f.analytic_epsilon(real(freqs[i]),vec(sourceloc+3.0/a))));
   }
 }
 \end{comment}
