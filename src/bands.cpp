@@ -21,7 +21,11 @@
 
 #include "meep.h"
 #include "meep_internals.h"
-#include "harminv.h"
+
+#include "config.h"
+#ifdef HAVE_HARMINV
+#  include <harminv.h>
+#endif
 
 namespace meep {
 
@@ -117,12 +121,12 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     for (int i=0;i<num_bandpts;i++)
       if (v.has_field((component)c)) {
         delete[] bands->f[i][c];
-        bands->f[i][c] = new cmplx[bands->ntime];
+        bands->f[i][c] = new complex<double>[bands->ntime];
         if (bands->f[i][c] == NULL)
           abort("Unable to allocate bandstructure array!\n");
         for (int j=0;j<bands->ntime;j++) bands->f[i][c][j] = 0.0;
       }
-  bands->P = new cmplx[bands->ntime];
+  bands->P = new complex<double>[bands->ntime];
   for (int i=0;i<bands->ntime;i++) bands->P[i] = 0.0;
   bands->verbosity = verbosity;
   for (int h=0;h<num_chunks;h++)
@@ -185,7 +189,7 @@ void fields::out_bands(file *o, const char *name, int maxbands) {
   //complex<double> *fad = get_the_bands(maxbands, approx_power);
   complex<double> *fad = clever_cluster_bands(maxbands, approx_power);
 
-  cmplx *eigen = new cmplx[maxbands*6];
+  complex<double> *eigen = new complex<double>[maxbands*6];
   if (!eigen) abort("Error allocating...\n");
 
   for (int whichf = 0; whichf < 6; whichf++) {
@@ -332,7 +336,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   const int max_freqs = max_harminvs*maxbands;
   double *tf = new double[max_freqs];
   double *td = new double[max_freqs];
-  cmplx *ta = new cmplx[max_freqs];
+  complex<double> *ta = new complex<double>[max_freqs];
   const int ntime = bands->ntime;
   if (!ta) abort("Error allocating...\n");
   int num_found = 0;
@@ -394,7 +398,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   return fad;
 }
 
-int bandsdata::get_freqs(cmplx *data, int n, cmplx *amps,
+int bandsdata::get_freqs(complex<double> *data, int n, complex<double> *amps,
                          double *freq_re, double *freq_im) {
   
   int num = do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands,
@@ -472,9 +476,13 @@ int bandsdata::get_freqs(cmplx *data, int n, cmplx *amps,
   return num;
 }
 
-int do_harminv(cmplx *data, int n, int sampling_rate, double a, 
+int do_harminv(complex<double> *data, int n, int sampling_rate, double a, 
 	       double fmin, double fmax, int maxbands,
-	       cmplx *amps, double *freq_re, double *freq_im, double *errors) {
+	       complex<double> *amps, double *freq_re, double *freq_im, double *errors) {
+#ifndef HAVE_HARMINV
+  abort("compiled without Harminv library, required for do_harminv");
+  return 0;
+#else
   // data is a size n array.
 
   // check for all zeros in input
@@ -487,24 +495,13 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
   }
 
   harminv_data hd = 
-    harminv_data_create(n, data, fmin*sampling_rate*c/a, fmax*sampling_rate*c/a, maxbands);
+    harminv_data_create(n, data, 
+			fmin*sampling_rate*c/a, 
+			fmax*sampling_rate*c/a, maxbands);
 
-  int prev_nf, cur_nf;
   harminv_solve(hd);
-  prev_nf = cur_nf = harminv_get_num_freqs(hd);
-
-  /* keep re-solving as long as spurious solutions are eliminated */
-  do {
-    prev_nf = cur_nf;
-    harminv_solve_again(hd);
-    cur_nf = harminv_get_num_freqs(hd);
-  } while (cur_nf < prev_nf);
-  if (cur_nf > prev_nf)
-    fprintf(stderr,
-            "harminv: warning, number of solutions increased from %d to %d!\n",
-            prev_nf, cur_nf);
   
-  cmplx *tmpamps = harminv_compute_amplitudes(hd);
+  complex<double> *tmpamps = harminv_compute_amplitudes(hd);
   double *tmperrors = harminv_compute_frequency_errors(hd);
 
   freq_re[0] = a*harminv_get_freq(hd, 0)/c/sampling_rate;
@@ -515,7 +512,7 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
     for (int j=i; j>0;j--) {
       if (freq_re[j]<freq_re[j-1]) {
         double t1 = freq_re[j], t2 = freq_im[j], e = tmperrors[j];
-        cmplx a = tmpamps[j];
+        complex<double> a = tmpamps[j];
         tmpamps[j] = tmpamps[j-1];
         tmperrors[j] = tmperrors[j-1];
         freq_re[j] = freq_re[j-1];
@@ -537,6 +534,7 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
   free(tmperrors);
   harminv_data_destroy(hd);
   return num;
+#endif
 }
 
 } // namespace meep

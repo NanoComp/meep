@@ -11,6 +11,8 @@ else
 LIBCTL =
 endif
 
+ACLOCAL_AMFLAGS=-I ./m4
+
 SUBDIRS = $(HSRC) src $(LIBCTL) doc tests
 
 EXTRA_DIST = COPYRIGHT m4 meep.pc.in

@@ -1,5 +1,6 @@
 #include "meep.h"
 using namespace meep;
+#include "config.h"
 
 const double diameter = 0.8;
 const double r = diameter*0.5;
@@ -61,6 +62,7 @@ double freq_at_resolution(double e(const vec &), double a) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+#ifdef HAVE_HARMINV
   master_printf("Running square holes resolution convergence test.\n");
   const double amin = 5.0, amax = 30.0, adelta = 5.0;
   double best_guess = 0.0;
@@ -96,5 +98,6 @@ int main(int argc, char **argv) {
       abort("Frequency difference = doesn't converge properly with a.\n");
   }
   master_printf("Passed 2D resolution convergence test!\n");
+#endif
   return 0;
 }

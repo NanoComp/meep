@@ -51,27 +51,37 @@ if test -z "$LATEX2HTML"; then
 fi
 AC_SUBST(LATEX2HTML)
 
-AC_CHECK_LIB(m, sqrt)
+AC_CHECK_LIB(m, sin)
 
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 	[AC_CHECK_LIB(fftw, fftw_create_plan, [],
 		[AC_MSG_WARN([Missing FFTW library...slow DFT will be used for monitor-point Fourier transform])])])
 
 ###########################################################################
+# Harminv library
 
-# Checks for BLAS/LAPACK libraries:
+# First, try pkg-config, if it is installed.  Note that, annoyingly,
+# pkg-config doesn't look in /usr/local by default, so we have to
+# add this to the path for that common case.  It also doesn't give
+# us a way to print its default path, grr, so we have to assume that this
+# is /usr/lib/pkgconfig.
+PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
+export PKG_CONFIG_PATH
+PKG_CHECK_MODULES(HARMINV, harminv, [CFLAGS="$CFLAGS $HARMINV_CFLAGS"; LIBS="$HARMINV_LIBS $LIBS"; have_harminv=yes], [have_harminv=no])
 
-AC_F77_WRAPPERS
+# As a fallback, check manually for BLAS/LAPACK and harminv libraries:
+if test $have_harminv = no; then
+	AC_F77_WRAPPERS
+	ACX_BLAS
+	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
 
-sinclude(m4/acx_blas.m4)
-sinclude(m4/acx_lapack.m4)
+	# just use lapack/blas in default libs since we always need them
+	AC_CHECK_LIB(harminv, harminv_solve, [have_harminv=yes; LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
+fi
 
-ACX_BLAS
-ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK libraries are required])])
-
-# just use lapack/blas in default libs since we always need them
-LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
-
+if test $have_harminv = yes; then
+	AC_DEFINE([HAVE_HARMINV],[1],[Define if you have libharminv])
+fi
 ##############################################################################
 # GNU Scientific Library
 
@@ -82,8 +92,6 @@ AC_CHECK_LIB(gsl, gsl_sf_bessel_Jn, [],
 
 ##############################################################################
 # Check for MPI library
-
-sinclude(m4/acx_mpi.m4)
 
 AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
                   with_mpi=$withval, with_mpi=no)

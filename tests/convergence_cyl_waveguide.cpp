@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <meep.h>
 using namespace meep;
+#include "config.h"
 
 double eps(const vec &v) { return ((v.r() < 0.5+1e-6) ? 9.0 : 1.0); }
 
@@ -146,7 +147,10 @@ void test_convergence_with_averaging() {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+#ifdef HAVE_HARMINV
   master_printf("Testing convergence of a waveguide mode frequency...\n");
   test_convergence_without_averaging();
   test_convergence_with_averaging();
+#endif
+  return 0;
 }
