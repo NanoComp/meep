@@ -164,6 +164,8 @@ class fields {
   void ttow(complex<double> field, double *retarget, double *imtarget, double time);
   void fluxw_output(FILE *outpf, char *header);
   void set_output_directory(const char *name);
+  int do_harminv(complex<double> *data, int n, int sampling_rate, double fmin, double fmax, int maxbands,
+		 complex<double> *amps, double *freqs, double *decays, double *errors);
  private: 
   double *(erw[2]), *(epw[2]), *(ezw[2]), *(hrw[2]), *(hpw[2]), *(hzw[2]);
   int iposmax, ifreqmax, nfreq, nzflux, *(nzfluxplane[MAXFLUXPLANES]);

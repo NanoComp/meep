@@ -625,7 +625,7 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
 
 int bandsdata::get_freqs(cmplx *data, int n,
                          cmplx *amps, double *freqs, double *decays) {
-  // data, amps and freqs are size n arrays.
+  // data is a size n array. 
   harminv_data hd = 
     harminv_data_create(n, data, fmin*scale_factor, 
                         fmax*scale_factor, maxbands);
@@ -698,3 +698,63 @@ int bandsdata::get_freqs(cmplx *data, int n,
   harminv_data_destroy(hd);
   return num;
 }
+
+int fields::do_harminv(cmplx *data, int n, int sampling_rate, double fmin, double fmax, int maxbands,
+			cmplx *amps, double *freqs, double *decays, double *errors) {
+  // check for zero input
+
+
+// data is a size n array.
+  harminv_data hd = 
+    harminv_data_create(n, data, fmin, fmax, maxbands);
+
+  int prev_nf, cur_nf;
+  harminv_solve(hd);
+  prev_nf = cur_nf = harminv_get_num_freqs(hd);
+
+  /* keep re-solving as long as spurious solutions are eliminated */
+  do {
+    prev_nf = cur_nf;
+    harminv_solve_again(hd);
+    cur_nf = harminv_get_num_freqs(hd);
+  } while (cur_nf < prev_nf);
+  if (cur_nf > prev_nf)
+    fprintf(stderr,
+            "harminv: warning, number of solutions increased from %d to %d!\n",
+            prev_nf, cur_nf);
+  
+  cmplx *tmpamps = harminv_compute_amplitudes(hd);
+  double *tmperrors = harminv_compute_frequency_errors(hd);
+
+  freqs[0] = a*harminv_get_freq(hd, 0)/c/sampling_rate;
+  decays[0] = a*harminv_get_decay(hd, 0)/c/sampling_rate;
+  for (int i = 1; i < harminv_get_num_freqs(hd); ++i) {
+    freqs[i] = a*harminv_get_freq(hd, i)/c/sampling_rate;
+    decays[i] = a*harminv_get_decay(hd, i)/c/sampling_rate;
+    for (int j=i; j>0;j--) {
+      if (freqs[j]<freqs[j-1]) {
+        double t1 = freqs[j], t2 = decays[j], e = tmperrors[j];
+        cmplx a = tmpamps[j];
+        tmpamps[j] = tmpamps[j-1];
+	tmperrors[j] = tmperrors[j-1];
+        freqs[j] = freqs[j-1];
+        decays[j] = decays[j-1];
+        freqs[j-1] = t1;
+        decays[j-1] = t2;
+        tmpamps[j-1] = a;
+	tmperrors[j-1] = e;
+      }
+    }
+  }
+  int num = harminv_get_num_freqs(hd);
+  for (int i = 0; i < num; ++i) {
+    amps[i] = tmpamps[i];
+    errors[i] = tmperrors[i];
+  }
+  free(tmpamps);
+  free(tmperrors);
+  harminv_data_destroy(hd);
+  return num;
+}
+
+
