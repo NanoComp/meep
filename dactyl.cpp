@@ -590,8 +590,61 @@ void fields::step() {
 
 void fields::phase_material() {
   if (new_ma && phasein_time > 0) {
+    // First multiply the electric field by epsilon...
+    DOCMP {
+      for (int i=0;i<(nr+1)*(nz+1);i++) er[cmp][i] /= ma->invepser[i];
+      for (int i=0;i<(nr+1)*(nz+1);i++) ep[cmp][i] /= ma->invepsep[i];
+      for (int i=0;i<(nr+1)*(nz+1);i++) ez[cmp][i] /= ma->invepsez[i];
+      if (npmlr) {
+        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
+          PMLR(erp,r,z) /= MA(ma->invepser,r,z);
+        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
+          PMLR(epz,r,z) /= MA(ma->invepsep,r,z);
+        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
+          PMLR(ezr,r,z) /= MA(ma->invepsez,r,z);
+      }
+      if (npmlz) {
+        for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
+          int z0 = npmlz;
+          for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
+            int z = z0;
+            for (int iz=0;iz<npmlz;iz++,z+=lr) {
+              PMLZ(z_erp,r) /= MA(ma->invepser,r,z);
+              PMLZ(z_epz,r) /= MA(ma->invepsep,r,z);
+            }
+          }
+        }
+      }
+    }
+    // Then change epsilon...
     ma->mix_with(new_ma, 1.0/phasein_time);
     phasein_time--;
+    // Finally divide the electric field by the new epsilon...
+    DOCMP {
+      for (int i=0;i<(nr+1)*(nz+1);i++) er[cmp][i] *= ma->invepser[i];
+      for (int i=0;i<(nr+1)*(nz+1);i++) ep[cmp][i] *= ma->invepsep[i];
+      for (int i=0;i<(nr+1)*(nz+1);i++) ez[cmp][i] *= ma->invepsez[i];
+      if (npmlr) {
+        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
+          PMLR(erp,r,z) *= MA(ma->invepser,r,z);
+        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
+          PMLR(epz,r,z) *= MA(ma->invepsep,r,z);
+        for (int r=nr-npmlr;r<nr;r++) for (int z=0;z<nz+1;z++)
+          PMLR(ezr,r,z) *= MA(ma->invepsez,r,z);
+      }
+      if (npmlz) {
+        for (int r=rmin_bulk(m);r<nr-npmlr;r++) {
+          int z0 = npmlz;
+          for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
+            int z = z0;
+            for (int iz=0;iz<npmlz;iz++,z+=lr) {
+              PMLZ(z_erp,r) *= MA(ma->invepser,r,z);
+              PMLZ(z_epz,r) *= MA(ma->invepsep,r,z);
+            }
+          }
+        }
+      }
+    }
   }
 }
 
