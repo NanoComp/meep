@@ -3,78 +3,37 @@ import Monad ( liftM )
 
 main = putStr $ gencode $ job
 
-job = in_any_case $ loop_over $
-      docode [store_e_minus,
-              store_e_plus,
-              store_derivs,
-              update_f_pml,
-              update_f
-             ]
+job = whether_or_not "pol" $ loop_fields $
+      docode [
+        find_inveps,
+        loop_complex $ loop_points $
+        docode [
+          find_polarization,
+          doexp $ "f[ec][cmp][i]" |=|
+                      "the_inveps[i]" |*| ("f[dc][cmp][i]" |-| the_polarization)
+        ]
+      ]
 
-store_e_minus = if_ "have_m_pml" $ doexp $
-               "const double em" |=| ("have_p")|?|"the_f_m_pml[ind]"|:|"the_f[ind]"
-store_e_plus = if_ "have_p_pml" $ doexp $
-               "const double ep" |=| ("have_m")|?|"the_f_p_pml[ind]"|:|"the_f[ind]"
-store_derivs =
-    docode [if_ "have_m" (doexp "const double m_deriv_m = f_m[ind]-f_m[ind+stride_m]"),
-            if_ "have_p" (doexp "const double deriv_p = f_p[ind+stride_p]-f_p[ind]"),
-            if_ "have_m" (doexp ("const double m_change"|=|
-                                 decay_m |*| ("c" |*| m_deriv_m |-| sig_m |*| "em"))),
-            if_ "have_p" (doexp ("const double p_change"|=|
-                                 decay_p |*| ("c" |*| deriv_p |-| sig_p |*| "ep")))
-           ]
-update_f_pml :: Code
-update_f_pml = docode [if_ "have_p_pml" $ if_ "have_m" $
-                       doexp $ "the_f_p_pml[ind]" |+=| p_update,
-                       if_ "have_m_pml" $ if_ "have_p" $
-                       doexp $ "the_f_m_pml[ind]" |+=| m_update]
-update_f :: Code
-update_f = doexp $ "the_f[ind]" |+=| m_p_update
+the_polarization = ("pol")|?|"the_polarization"|:|"0"
 
-p_update = ("have_p")|?|"p_change"|:|"0"
-m_update = ("have_m")|?|"m_change"|:|"0"
-m_p_update =
-    ("have_p_pml")
-        |?| (m_update |+| p_update)
-        |:| ("have_m_pml")
-            |?| (m_update |+| p_update)
-            |:| ("inveps[ind]*c" |*| (m_deriv_m |+| deriv_p))
+find_inveps =
+    doexp "const double *the_inveps = ma->inveps[ec][component_direction(ec)]"
 
-decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "inveps[ind]"
-decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "inveps[ind]"
-sig_m = ("have_m_pml") |?| "C_m[ind]" |:| "0"
-sig_p = ("have_p_pml") |?| "C_p[ind]" |:| "0"
-m_deriv_m = ("have_m") |?| "m_deriv_m" |:| "0"
-deriv_p = ("have_p") |?| "deriv_p" |:| "0"
+find_polarization =
+    if_ "pol" $
+    docode [doexp "double the_polarization = 0.0",
+            doexp "FOR_POLARIZATIONS(pol, p) the_polarization += p->P[ec][cmp][i]"]
 
-if_have_p_else x y = ifelse_ "have_p" x
-                     (declare "have_p_pml" False $ declare "have_m" True y)
-if_have_m_else x y = ifelse_ "have_m" x
-                     (declare "have_m_pml" False $ declare "have_p" True y)
-any_have_p x = if_have_p_else x x
-any_have_m x = if_have_m_else x x
+loop_fields job = docode [doline "FOR_E_AND_D(ec,dc) if (f[ec][0]) {",
+                          indent job,
+                          doline "}"]
 
-in_any_case x = any_have_m $ any_have_p $
-                whether_or_not "have_m_pml" $
-                whether_or_not "have_p_pml" x
+loop_complex job = docode [doline "DOCMP {",
+                           indent job,
+                           doline "}"]
 
-loop_over inside =
-    whether_or_not "n3==1" $
-    whether_or_not "s2==1" $
-    whether_or_not "s3==1" $
-    ifelse_ "n3==1" (
-      docode [doline "for (int i1=0; i1<n1; i1++)",
-              doline $ "  for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+="<<s2<<") {",
-              liftM (map ("    "++)) inside,
-              doline "  }"]
-    ) (
-      docode [doline "for (int i1=0; i1<n1; i1++)",
-              doline "  for (int i2=0; i2<n2; i2++)",
-              doline $ "    for (int i3=0, ind=i1*s1+i2*s2; i3<n3;"<<
-                               " i3++, ind+="<<s3<<") {",
-              liftM (map ("      "++)) inside,
-              doline "    }"]
-    )
+loop_points job = docode [doline "for (int i=0;i<ntot;i++) {",
+                          indent job,
+                          doline "}"]
 
-s2 = ("s2==1")|?|"1"|:|"s2"
-s3 = ("s3==1")|?|"1"|:|"s3"
+indent = liftM (map ("  "++))

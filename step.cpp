@@ -474,14 +474,7 @@ void fields::update_e_from_d() {
 
 void fields_chunk::update_e_from_d() {
   const int ntot = ma->v.ntot();
-  FOR_E_AND_D(ec,dc) DOCMP
-    if (f[ec][cmp])
-      for (int i=0;i<ntot;i++) {
-        double phere = 0.0;
-        FOR_POLARIZATIONS(pol, p) phere += p->P[ec][cmp][i];
-        f[ec][cmp][i] = ma->inveps[ec][component_direction(ec)][i]*
-          (f[dc][cmp][i] - phere);
-      }
+#include "step_e.h"
 }
 
 #include "config.h"
