@@ -249,7 +249,7 @@ void fields::outline_chunks(const char *name) {
       x1 = chunks[i]->v.zmin(); y1 = chunks[i]->v.rmin();
       x2 = chunks[i]->v.zmin(); y2 = chunks[i]->v.rmax();
       x3 = chunks[i]->v.zmax(); y3 = chunks[i]->v.rmax();
-      x4 = chunks[i]->v.zmin(); y4 = chunks[i]->v.rmin();
+      x4 = chunks[i]->v.zmax(); y4 = chunks[i]->v.rmin();
     break;
     case D2:
       x1 = chunks[i]->v.xmin(); y1 = chunks[i]->v.ymin();
