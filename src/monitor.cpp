@@ -108,6 +108,40 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
   return broadcast(n_proc(), res);
 }
 
+/* Bounding box for zero-communication get_field, below.  This is the
+   largest box in which you can interpolate the fields without communication.
+   It is *not* necessarily non-overlapping with other chunks. */
+geometric_volume fields_chunk::get_field_gv(component c) const {
+  return geometric_volume(v.loc(c, 0), v.loc(c, v.ntot() - 1));
+}
+
+/* Non-collective, zero-communication get_field... loc *must*
+   be in get_field_gv(c). */
+double fields_chunk::get_field(component c, const vec &loc, int reim) const {
+  if (!f[c][reim]) return 0.0;
+  ivec ilocs[8];
+  double w[8];
+  v.interpolate(c, loc, ilocs, w);
+  double res = 0.0;
+  for (int i = 0; i < 8; ++i) {
+    if (!v.contains(ilocs[i])) abort("invalid loc in chunk get_field");
+    res += f[c][reim][v.index(c,ilocs[i])] * w[i];
+  }
+  return res;
+}
+complex<double> fields_chunk::get_field(component c, const vec &loc) const {
+  ivec ilocs[8];
+  double w[8];
+  v.interpolate(c, loc, ilocs, w);
+  complex<double> res = 0.0;
+  for (int i = 0; i < 8; ++i) {
+    if (!v.contains(ilocs[i])) abort("invalid loc in chunk get_field");
+    if (f[c][0] && f[c][1]) res += getcm(f[c], v.index(c, ilocs[i])) * w[i];
+    else if (f[c][0]) res += f[c][0][v.index(c,ilocs[i])] * w[i];
+  }
+  return res;
+}
+
 complex<double> fields_chunk::get_polarization_field(const polarizability_identifier &p,
                                                      component c, const ivec &iloc) const {
   complex<double> res = 0.0;

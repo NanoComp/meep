@@ -369,6 +369,12 @@ class fields_chunk {
   double last_source_time();
   // monitor.cpp
   complex<double> get_field(component, const ivec &) const;
+
+  // for non-collective interpolation:
+  geometric_volume get_field_gv(component) const;
+  double get_field(component, const vec &, int reim) const;
+  complex<double> get_field(component, const vec &) const;
+
   complex<double> get_polarization_field(const polarizability_identifier &p,
                                          component c, const ivec &iloc) const;
   double get_polarization_energy(const ivec &) const;
