@@ -99,22 +99,6 @@ class mat {
 class src;
 class bandsdata;
 class fields_chunk;
-class weighted_flux_plane;
-
-class flux_plane {
- public:
-  double ymin, ymax, xconst;
-  int is_rflux;
-  int num_wf;
-  double weights[2];
-  int xpos[2];
-  int verbosity;
-  weighted_flux_plane *wf[2];
-  flux_plane(double ymin, double ymax, double xconst, int is_rflux, double a);
-  flux_plane(const flux_plane &fp);
-  ~flux_plane();
-  complex<double> flux(fields_chunk *f);
-};
 
 class monitor_point {
  public:
@@ -303,6 +287,8 @@ class fields {
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
+  // energy_and_flux.cpp
+  complex<double> flux(const vec &end1, const vec &end2);
   double energy_in_box(const volume &);
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);
@@ -340,6 +326,8 @@ class fields {
                                   complex<double> *fad, double *approx_power);
   void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
+  // energy_and_flux.cpp
+  complex<double> oned_flux(const vec &end1);
 };
 
 class grace_point;

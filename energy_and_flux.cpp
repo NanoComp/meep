@@ -153,3 +153,16 @@ double fields_chunk::thermo_energy_in_box(const volume &otherv) {
     return 0.0;
   }
 }
+
+complex<double> fields::flux(const vec &end1, const vec &end2) {
+  switch (v.dim) {
+  case d1: return oned_flux(end1); // assume end1 and end2 are identical
+  }
+  abort("Don't yet support flux planes in this dimensionality!\n");
+}
+
+complex<double> fields::oned_flux(const vec &loc) {
+  monitor_point p;
+  get_point(&p, loc);
+  return p.get_component(Ex)*p.get_component(Hy)*(1.0/pi/8/c);
+}

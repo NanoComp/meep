@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include "dactyl.h"
 
@@ -25,35 +24,18 @@ double one(const vec &) { return 1.0; }
 static double width = 20.0;
 double bump(const vec &v) { return (fabs(v.z()-50.0) > width)?1.0:12.0; }
 
-struct bench {
-  double time; // In seconds.
-  double gridsteps;
-};
-
-bench bench_periodic(const double rmax, const double zmax,
-                     double eps(const vec &)) {
-  const double a = 10.0;
-  const double gridpts = (zmax==0.0)?a*rmax:a*a*rmax*zmax;
-  const double ttot = 5.0 + 1e5/gridpts;
-  const int m = 0;
-
-  volume v = volcyl(rmax,zmax,a);
-  mat ma(v, eps);
-  fields f(&ma, m);
-  f.use_bloch(0.0);
-  f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
-
-  clock_t start = clock();
-  while (f.time() < ttot) f.step();
-  bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
-  b.gridsteps = ttot*a*2*gridpts;
-  return b;
+int compare(double a, double b, double eps, const char *n) {
+  if (fabs(a-b) > fabs(b)*eps) {
+    printf("%s differs by\t%lg out of\t%lg\n", n, a-b, b);
+    printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
+    return 0;
+  } else {
+    return 1;
+  }
 }
 
-bench bench_flux_1d(const double zmax,
-                    double eps(const vec &)) {
+int flux_1d(const double zmax,
+                  double eps(const vec &)) {
   const double a = 10.0;
   const double gridpts = a*zmax;
   const double ttot = 10.0 + 1e5/zmax;
@@ -72,41 +54,33 @@ bench bench_flux_1d(const double zmax,
   volume mid = volone(zmax/3,a);
   mid.origin = vec(zmax/3);
   double flux_energy=0.0;
-  clock_t start = clock();
+  double delta_energy = f.energy_in_box(mid);
   while (f.time() < ttot) {
     f.step();
     flux_energy += -(c/a)*real(f.flux(vec(zmax/3.0),vec(zmax/3.0)) -
                                f.flux(vec(zmax*2.0/3.0),vec(zmax*2.0/3.0)));
   }
-  bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
-  b.gridsteps = ttot*a*2*gridpts;
-  return b;
+  delta_energy -= f.energy_in_box(mid);
+  master_printf("  Energy change:  \t%lg\n  Integrated flux:\t%lg\n  Ratio:\t%lg\n",
+                delta_energy, flux_energy, flux_energy/delta_energy);
+  return compare(delta_energy, flux_energy, 0.15, "Flux");
 }
 
-void showbench(const char *name, const bench &b) {
-  master_printf("%s\n  total time:    \t%lg s\n  normalized time:\t%lg s/Mgs\n",
-                name, b.time, b.time*1e6/b.gridsteps);
+void attempt(const char *name, int allright) {
+  if (allright) master_printf("Passed %s\n", name);
+  else abort("Failed %s!\n", name);
 }
 
 int main(int argc, char **argv) {
   initialize(argc, argv);
-  master_printf("Benchmarking...\n");
-
-  showbench("Periodic 6x4 ", bench_periodic(6.0, 4.0, one));
-  showbench("Periodic 12x1", bench_periodic(12.0, 1.0, one));
-  showbench("Periodic 1x12", bench_periodic(1.0, 12.0, one));
-  showbench("Periodic 12x0", bench_periodic(12.0, 0.0, one));
-  showbench("Periodic 12x12", bench_periodic(12.0, 12.0, one));
+  master_printf("Trying out the fluxes...\n");
 
   width = 20.0;
-  showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
+  attempt("Flux 1D 100", flux_1d(100.0, bump));
   width = 10.0;
-  showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
+  attempt("Flux 1D 100", flux_1d(100.0, bump));
   width = 300.0;
-  showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
-
-  master_printf("\nnote: 1 Mgs = 1 million grid point time steps\n");
+  attempt("Flux 1D 100", flux_1d(100.0, bump));
 
   finished();
   exit(0);
