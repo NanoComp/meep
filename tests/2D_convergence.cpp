@@ -49,7 +49,7 @@ double freq_at_resolution(double e(const vec &), double a) {
   while (f.time() <= f.find_last_source() + 10.0 && !interrupt) f.step();
   const double fourier_timesteps = 2000.0;
   const double ttot = fourier_timesteps/a + f.time();
-  monitor_point *p = NULL, *p_shifted = NULL;
+  monitor_point *p = NULL;
   while (f.time() <= ttot) {
     f.step();
     p = f.get_new_point(vec2d(0.5,0.5), p);
