@@ -204,23 +204,23 @@ int flux_2d(const double xmax, const double ymax,
   return compare(del_energy, flux, 0.06, "Flux");
 }
 
-int flux_cyl(const double xmax, const double ymax,
+int flux_cyl(const double rmax, const double zmax,
             double eps(const vec &), int m) {
   const double a = 8.0;
 
-  master_printf("\nFlux_cyl(%g,%g) test...\n", xmax, ymax);
+  master_printf("\nFlux_cyl(%g,%g) test...\n", rmax, zmax);
 
-  volume v = volcyl(xmax,ymax,a);
+  volume v = volcyl(rmax,zmax,a);
   structure s(v, eps);
-  s.use_pml_everywhere((xmax > ymax ? xmax : ymax)/6);
+  s.use_pml_everywhere((rmax > zmax ? rmax : zmax)/6);
 
   fields f(&s, m);
   // f.use_real_fields();
-  f.add_point_source(Ep, 0.25, 3.5, 0., 8., vec(xmax/6+0.1, ymax/6+0.3), 1.);
+  f.add_point_source(Ep, 0.25, 3.5, 0., 8., vec(rmax/6+0.1, zmax/6+0.3), 1.);
   
   // corners of flux planes and energy box:
-  vec lb(vec(xmax/3, ymax/3)), rb(vec(2*xmax/3, ymax/3));
-  vec lt(vec(xmax/3, 2*ymax/3)), rt(vec(2*xmax/3, 2*ymax/3));
+  vec lb(vec(-rmax/3, zmax/3)), rb(vec(2*rmax/3, zmax/3));
+  vec lt(vec(-rmax/3, 2*zmax/3)), rt(vec(2*rmax/3, 2*zmax/3));
 
   flux_box *left = f.add_flux_plane(lb, lt);
   flux_box *right = f.add_flux_plane(rb, rt);
