@@ -923,6 +923,7 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
   trash_output_directory(mydirname);
   master_printf("Testing with various kinds of symmetry...\n");
 

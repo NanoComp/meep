@@ -44,7 +44,7 @@ fields::fields(const structure *s, int tm) :
   // Time stuff:
   was_working_on = working_on = Other;
   for (int i=0;i<=Other;i++) times_spent[i] = 0.0;
-  last_wall_time = -1;
+  last_wall_time = last_step_output_wall_time = -1;
   am_now_working_on(Other);
 
   num_chunks = s->num_chunks;
@@ -122,11 +122,12 @@ fields::~fields() {
   delete sources;
   delete fluxes;
   delete bands;
+  if (!quiet) print_times();
 }
 void fields::use_real_fields() {
   LOOP_OVER_DIRECTIONS(v.dim, d)
     if (boundaries[High][d] == Periodic && k[d] != 0.0)
-      abort("Can't use real fields_chunk with bloch boundary conditions!\n");
+      abort("Can't use real fields with bloch boundary conditions!\n");
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
   chunk_connections_valid = false;

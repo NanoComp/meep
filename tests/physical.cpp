@@ -131,6 +131,7 @@ void attempt(const char *name, int allright) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
   master_printf("Trying out some physical tests...\n");
 
   attempt("radiating source should decay spatially as 1/sqrt(r) in 2D.", radiating_2D(8.0));

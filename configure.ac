@@ -199,16 +199,6 @@ fi
  
 ##############################################################################
 
-AC_ARG_WITH(timings, [AC_HELP_STRING([--with-timings],[calculate timings of various operations])],with_timings=$withval,with_timings=no)
-
-AC_MSG_CHECKING([calculate timings of various operations])
-AC_MSG_RESULT($with_timings)
-if test "x$with_timings" = "xyes"; then
-    CPPFLAGS="$CPPFLAGS -DWITH_TIMINGS"
-fi
-
-##############################################################################
-
 AC_CHECK_PROG(HC, ghc, ghc)
 if test x"$HC" = x && test "$USE_MAINTAINER_MODE" = yes; then
 	AC_MSG_ERROR([the ghc Haskell compiler is required in maintainer mode])

@@ -240,6 +240,7 @@ int test_pml_splitting(double eps(const vec &), int splitting, const char *mydir
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
   const char *mydirname = "three_d-out";
   trash_output_directory(mydirname);
   master_printf("Testing 3D...\n");

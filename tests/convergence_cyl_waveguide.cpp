@@ -147,6 +147,7 @@ void test_convergence_with_averaging() {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
 #ifdef HAVE_HARMINV
   master_printf("Testing convergence of a waveguide mode frequency...\n");
   test_convergence_without_averaging();

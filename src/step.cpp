@@ -29,16 +29,23 @@
 
 #define RESTRICT
 
+#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
+
 namespace meep {
 
 void fields::step() {
   am_now_working_on(Stepping);
+  if (!t) last_step_output_wall_time = wall_time();
+
+  if (!quiet && wall_time() > last_step_output_wall_time + MIN_OUTPUT_TIME) {
+    master_printf("on time step %d (time=%g)\n", t, time());
+    last_step_output_wall_time = wall_time();
+  }
+
   phase_material();
 
   calc_sources(time() - 0.5 * dt); // for H sources
 
-  //for (int i=0;i<num_chunks;i++)
-  //  master_printf("Field is now %g\n", chunks[i]->peek_field(Ex,vec(1.55,0.6)));
   step_h();
   step_h_source();
   step_boundaries(H_stuff);

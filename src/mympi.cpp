@@ -60,12 +60,14 @@ extern "C" int feenableexcept (int EXCEPTS);
 
 namespace meep {
 
+bool quiet = false; // defined in meep.h
+
 initialize::initialize(int argc, char **argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
   int major, minor;
   MPI_Get_version(&major, &minor);
-  master_printf("Using MPI... version %d.%d\n", major, minor);
+  if (!quiet) master_printf("Using MPI... version %d.%d\n", major, minor);
 #else
   UNUSED(argc);
   UNUSED(argv);
@@ -80,7 +82,7 @@ initialize::initialize(int argc, char **argv) {
 }
 
 initialize::~initialize() {
-  master_printf("Elapsed run time = %g s\n", elapsed_time());
+  if (!quiet) master_printf("\nElapsed run time = %g s\n", elapsed_time());
 #ifdef HAVE_MPI
   MPI_Finalize();
 #endif

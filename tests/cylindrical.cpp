@@ -311,6 +311,7 @@ int test_pattern(double eps(const vec &), int splitting,
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
   const char *mydirname = "cylindrical-out";
   trash_output_directory(mydirname);
   master_printf("Testing cylindrical coords under different splittings...\n");

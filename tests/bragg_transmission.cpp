@@ -201,6 +201,7 @@ int main(int argc, char **argv) {
   const int nfreq = 100;
   const double freq_min = 0.1, freq_max = 0.5;
   initialize mpi(argc, argv);
+  quiet = true;
 
   double *T = new double[nfreq];
   double *R = new double[nfreq];

@@ -149,6 +149,7 @@ int test_pattern(double eps(const vec &), int splitting,
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
   const char *mydirname = "one_dimensional-out";
   master_printf("Testing one dimension under different splittings...\n");
 

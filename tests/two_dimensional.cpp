@@ -327,6 +327,7 @@ int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
   const char *mydirname = "two_dimensional-out";
   trash_output_directory(mydirname);
   master_printf("Testing 2D...\n");

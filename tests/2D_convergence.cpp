@@ -103,6 +103,7 @@ void check_convergence(component c, double best_guess)
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
 #ifdef HAVE_HARMINV
   master_printf("Running holes square-lattice resolution convergence test.\n");
   double best_guess = 0.0;

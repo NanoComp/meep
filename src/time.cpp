@@ -19,7 +19,6 @@
 
 namespace meep {
 
-#ifdef WITH_TIMINGS
 void fields::finished_working() {
   double now = wall_time();
   if (last_wall_time >= 0)
@@ -37,31 +36,32 @@ void fields::am_now_working_on(time_sink s) {
   was_working_on = working_on;
   working_on = s;
 }
-#endif
 
 double fields::time_spent_on(time_sink s) {
   return times_spent[s];
 }
 
-const char *ts2n(time_sink s) {
+static const char *ts2n(time_sink s) {
   switch (s) {
   case Stepping: return "time stepping";
   case Connecting: return "connnecting chunks";
   case Boundaries: return "copying borders";
   case MpiTime: return "communicating";
-  case Slicing: return "outputting slices";
+  case Slicing: return "outputting fields";
   case Other: break;
   }
   return "everything else";
 }
 
-static inline void pt(double ts[], time_sink s) {
-  if (ts[s]) master_printf("    %18s:\t%g s\n", ts2n(s), ts[s]);
+static void pt(double ts[], time_sink s) {
+  if (ts[s]) master_printf("    %18s:, %g s\n", ts2n(s), ts[s]);
 }
 
 void fields::print_times() {
+  master_printf("\nField time usage:\n");
   for (int i=0;i<=Other;i++)
     pt(times_spent, (time_sink) i);
+  master_printf("\n");
 }
 
 } // namespace meep

@@ -26,6 +26,8 @@
 
 namespace meep {
 
+extern bool quiet; // if true, suppress all non-error messages from Meep
+
 const double pi = 3.141592653589793238462643383276;
 
 #ifdef INFINITY
@@ -781,6 +783,7 @@ class fields {
   double maxpolenergy_to_master() const;
   complex<double> optimal_phase_shift(component) const;
   // step.cpp methods:
+  double last_step_output_wall_time;
   void step();
   inline double time() const { return t*dt; };
 
@@ -903,13 +906,8 @@ class fields {
   // material.cpp
   double max_eps() const;
   // time.cpp
-#ifdef WITH_TIMINGS
   void am_now_working_on(time_sink);
   void finished_working();
-#else
-  void am_now_working_on(time_sink) { return; }
-  void finished_working() { return; }
-#endif
   // boundaries.cpp
   bool chunk_connections_valid;
   void find_metals();

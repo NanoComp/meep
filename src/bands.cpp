@@ -269,7 +269,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
   const double total_time = (bands->tend-bands->tstart)*dt;
   const double deltaf = 1.0/total_time;
   int freqs_so_far = num_freqs;
-  master_printf("About to sort by frequency... (%d frequencies)\n", freqs_so_far);
+  if (!quiet) master_printf("About to sort by frequency... (%d frequencies)\n", freqs_so_far);
   // Sort by frequency...
   for (int i = 1; i < freqs_so_far; i++) {
     for (int j=i; j>0;j--) {
@@ -285,7 +285,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
       }
     }
   }
-  master_printf("Looking for clusters...\n");
+  if (!quiet) master_printf("Looking for clusters...\n");
   int num_found = 0;
   double totwid = 0.001;
   while (freqs_so_far >= fields_considered/2 + 1) {
@@ -293,8 +293,8 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
     get_cluster(tf,freqs_so_far,fields_considered,deltaf,&lo,&hi);
     int mid = lo + (hi-lo)/2;
     if (tf[hi]-tf[lo] < deltaf) {
-      master_printf("Got a cluster from %g to %g (%d freqs)\n",
-                    tf[lo], tf[hi], 1+hi-lo);
+      if (!quiet) master_printf("Got a cluster from %g to %g (%d freqs)\n",
+				tf[lo], tf[hi], 1+hi-lo);
       fad[num_found] = complex<double>(tf[mid],td[mid]);
       if (approx_power) {
         approx_power[num_found] = 0;
@@ -308,8 +308,9 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
       num_found++;
       if (num_found >= maxbands) num_found--;
     } else {
-      master_printf("Rejected a cluster from %g to %g (%d freqs out of %d)\n",
-                    tf[lo], tf[hi], 1+hi-lo, fields_considered);
+      if (!quiet)
+	master_printf("Rejected a cluster from %g to %g (%d/%d freqs)\n",
+		      tf[lo], tf[hi], 1+hi-lo, fields_considered);
       if (verbosity > 1) master_printf("width is %g vs %g\n",
                                        tf[hi] - tf[lo], deltaf);
       lo = get_closest(tf,freqs_so_far);

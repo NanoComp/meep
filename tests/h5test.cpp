@@ -393,6 +393,7 @@ int main(int argc, char **argv)
 {
   const double a = 10.0;
   initialize mpi(argc, argv);
+  quiet = true;
 #ifdef HAVE_HDF5
   const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.1;
 

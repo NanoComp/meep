@@ -345,6 +345,7 @@ int main(int argc, char **argv)
 {
   const double a = 10.0;
   initialize mpi(argc, argv);
+  quiet = true;
   const volume v3d = vol3d(size[0], size[1], size[2], a);
   const volume v3d0 = vol3d(size[0], size[1], 0, a);
   const volume v3d00 = vol3d(size[0], 0, 0, a);

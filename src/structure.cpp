@@ -287,9 +287,12 @@ void structure::set_materials(material_function &mat,
 
 void structure::set_epsilon(material_function &eps, 
 			    bool use_anisotropic_averaging, double minvol) {
+  double tstart = wall_time();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->set_epsilon(eps, use_anisotropic_averaging, minvol);
+  if (!quiet)
+    master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
 }
 
 void structure::set_epsilon(double eps(const vec &),

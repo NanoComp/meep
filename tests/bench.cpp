@@ -261,6 +261,7 @@ bench bench_3d(const double xmax, const double ymax, const double zmax,
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
+  quiet = true;
   master_printf("Benchmarking...\n");
 
   master_printf("bench:, test, total time (s), normalized time (s/Mgs)\n");

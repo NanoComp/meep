@@ -194,6 +194,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
 			 void *fun_data_,
 			 bool append_data,
                          bool single_precision) {
+  am_now_working_on(Slicing);
   h5_output_data data;
 
   data.file = file;
@@ -265,6 +266,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   delete[] data.cS;
   delete[] data.buf;
   file->done_writing_chunks();
+  finished_working();
 }
 
 /***************************************************************************/
