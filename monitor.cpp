@@ -179,13 +179,14 @@ void monitor_point::fourier_transform(component w,
   for (int i=0;i<n;i++,p=p->next) {
     d[i] = p->get_component(w);
   }
-  if ((fmin > 0.0 || fmax > 0.0) && maxbands > 1) {
+  if ((fmin > 0.0 || fmax > 0.0) && maxbands > 0) {
     *a = new complex<double>[maxbands];
     *f = new complex<double>[maxbands];
     *numout = maxbands;
     delete[] d;
     for (int i = 0;i<maxbands;i++) {
-      (*f)[i] = fmin + i*(fmax-fmin)/(maxbands-1);
+      double df = (maxbands == 1) ? 0.0 : (fmax-fmin)/(maxbands-1);
+      (*f)[i] = fmin + i*df;
       (*a)[i] = 0.0;
       p = this;
       while (p) {
