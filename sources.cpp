@@ -83,7 +83,7 @@ void fields::add_point_source(component whichf, double freq,
   for (int sn=0;sn<S.multiplicity();sn++) {
     component cc = S.transform(whichf,sn);
     complex<double> ph = S.phase_shift(whichf,sn);
-    const ivec pp = S.transform(p,sn);
+    const ivec pp = S.transform(iloc,sn);
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->is_mine())
         need_to_connect += 
