@@ -22,6 +22,8 @@
 #include <meep.h>
 using namespace meep;
 
+const char *dirname = "symmetry-out";
+
 double one(const vec &) { return 1.0; }
 vec the_center;
 double rods_2d(const vec &pp) {
@@ -76,7 +78,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int test_cyl_metal_mirror(double eps(const vec &), const char *dirname) {
+int test_cyl_metal_mirror(double eps(const vec &)) {
   master_printf("Testing Z mirror symmetry in Cylindrical...\n");
   double a = 10.0;
   double ttot = 3.0;
@@ -86,8 +88,6 @@ int test_cyl_metal_mirror(double eps(const vec &), const char *dirname) {
   const symmetry S = mirror(Z,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
 
   fields f1(&s1);
   f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
@@ -119,7 +119,50 @@ int test_cyl_metal_mirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_1d_periodic_mirror(double eps(const vec &), const char *dirname) {
+int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
+  master_printf("Testing Z mirror symmetry in Cylindrical...\n");
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = volcyl(1.0, 1.0, a);
+  the_center = v.center();
+  const symmetry S = mirror(Z,v);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_kerr(one);
+  s1.set_kerr(one);
+
+  fields f1(&s1);
+  f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  fields f(&s);
+  f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.01,  0.5  ))) return 0;
+    if (!compare_point(f, f1, vec(0.21,  0.5  ))) return 0;
+    if (!compare_point(f, f1, vec(0.501, 0.5  ))) return 0;
+    if (!compare_point(f, f1, vec(0.33,  0.46 ))) return 0;
+    if (!compare_point(f, f1, vec(0.2,   0.2  ))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int test_1d_periodic_mirror(double eps(const vec &)) {
   master_printf("Testing Z mirror symmetry in 1D...\n");
   double a = 10.0;
   double ttot = 3.0;
@@ -129,8 +172,6 @@ int test_1d_periodic_mirror(double eps(const vec &), const char *dirname) {
   const symmetry S = mirror(Z,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
 
   fields f1(&s1);
   f1.use_bloch(0.0);
@@ -194,7 +235,7 @@ int test_origin_shift(const char *dirname) {
   return 1;
 }
 
-int test_metal_xmirror(double eps(const vec &), const char *dirname) {
+int test_metal_xmirror(double eps(const vec &)) {
   master_printf("Testing X mirror symmetry...\n");
   double a = 10.0;
   double ttot = 3.0;
@@ -204,8 +245,6 @@ int test_metal_xmirror(double eps(const vec &), const char *dirname) {
   const symmetry S = mirror(X,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
 
   fields f1(&s1);
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
@@ -237,7 +276,7 @@ int test_metal_xmirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_3D_metal_xmirror(double eps(const vec &), const char *dirname) {
+int test_3D_metal_xmirror(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 3.0;
 
@@ -245,8 +284,6 @@ int test_3D_metal_xmirror(double eps(const vec &), const char *dirname) {
   const symmetry S = mirror(X,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing X mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -277,7 +314,7 @@ int test_3D_metal_xmirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_3D_metal_zmirror(double eps(const vec &), const char *dirname) {
+int test_3D_metal_zmirror(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 3.0;
 
@@ -285,8 +322,6 @@ int test_3D_metal_zmirror(double eps(const vec &), const char *dirname) {
   const symmetry S = mirror(Z,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing Z mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -317,7 +352,7 @@ int test_3D_metal_zmirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_3D_metal_odd_zmirror(double eps(const vec &), const char *dirname) {
+int test_3D_metal_odd_zmirror(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 3.0;
 
@@ -325,8 +360,6 @@ int test_3D_metal_odd_zmirror(double eps(const vec &), const char *dirname) {
   const symmetry S = mirror(Z,v)*(-1.0);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing odd Z mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -357,7 +390,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_3D_metal_rot4z(double eps(const vec &), const char *dirname) {
+int test_3D_metal_rot4z(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 3.0;
 
@@ -365,8 +398,6 @@ int test_3D_metal_rot4z(double eps(const vec &), const char *dirname) {
   const symmetry S = rotate4(Z,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing Z fourfold rotational symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -397,7 +428,7 @@ int test_3D_metal_rot4z(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_3D_metal_rot4z_mirror(double eps(const vec &), const char *dirname) {
+int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 3.0;
 
@@ -405,8 +436,6 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &), const char *dirname) {
   const symmetry S = rotate4(Z,v) + mirror(Z,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing Z fourfold rotational symmetry in 3D with horizontal mirror...\n");
 
   fields f1(&s1);
@@ -437,7 +466,7 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_metal_ymirror(double eps(const vec &), const char *dirname) {
+int test_metal_ymirror(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 5.0;
 
@@ -446,8 +475,6 @@ int test_metal_ymirror(double eps(const vec &), const char *dirname) {
   const symmetry S = mirror(Y,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing Y mirror symmetry...\n");
 
   fields f1(&s1);
@@ -479,7 +506,7 @@ int test_metal_ymirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_yperiodic_ymirror(double eps(const vec &), const char *dirname) {
+int test_yperiodic_ymirror(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 5.0;
 
@@ -528,7 +555,7 @@ int test_yperiodic_ymirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_metal_rot2y(double eps(const vec &), const char *dirname) {
+int test_metal_rot2y(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 5.0;
 
@@ -537,8 +564,6 @@ int test_metal_rot2y(double eps(const vec &), const char *dirname) {
   const symmetry S = rotate2(Y,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -574,7 +599,7 @@ int test_metal_rot2y(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
+int exact_metal_rot2y(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 5.0;
 
@@ -583,8 +608,6 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
   const symmetry S = rotate2(Y,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing exact Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -616,7 +639,7 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int pml_twomirrors(double eps(const vec &), const char *dirname) {
+int pml_twomirrors(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 10.0;
 
@@ -628,10 +651,8 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
   structure s1(v, eps, 0, identity());
   structure ss[2] = { s1, s_mm };
 
-  for (int i=0;i<2;i++) {
-    ss[i].set_output_directory(dirname);
+  for (int i=0;i<2;i++)
     ss[i].use_pml_everywhere(0.5);
-  }
   master_printf("Testing two mirrors with PML...\n");
 
   fields fs[2] = { fields(&ss[0]), fields(&ss[1]) };
@@ -661,7 +682,7 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
+int exact_metal_rot4z(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 5.0;
 
@@ -671,8 +692,6 @@ int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
 
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
   master_printf("Testing Z fourfold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -704,7 +723,50 @@ int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
+int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
+  double a = 10.0;
+  double ttot = 5.0;
+
+  const volume v = voltwo(1.0, 1.0, a);
+  the_center = v.center();
+  const symmetry S = rotate4(Z,v);
+
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_kerr(one);
+  s1.set_kerr(one);
+  master_printf("Testing nonlinear Z fourfold rotational symmetry...\n");
+
+  fields f1(&s1);
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
+  f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
+  fields f(&s);
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
+  f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int exact_pml_rot2x_tm(double eps(const vec &)) {
   double a = 10.0;
   double ttot = 30.0;
 
@@ -835,7 +897,6 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  const char *dirname = "symmetry-out";
   trash_output_directory(dirname);
   master_printf("Testing with various kinds of symmetry...\n");
 
@@ -857,64 +918,72 @@ int main(int argc, char **argv) {
   if (!saturated_gain_te(vol2d(0.6, 1.2, 10.0), one))
     abort("error in 2D TE saturated gain\n");
 
-  if (!test_1d_periodic_mirror(one, dirname))
+  if (!test_1d_periodic_mirror(one))
     abort("error in test_1d_periodic_mirror vacuum\n");
 
-  if (!test_cyl_metal_mirror(one, dirname))
+  if (!test_cyl_metal_mirror(one))
     abort("error in test_cyl_metal_mirror vacuum\n");
 
-  if (!test_yperiodic_ymirror(one, dirname))
+  if (!test_cyl_metal_mirror(one))
+    abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
+
+  if (!test_yperiodic_ymirror(one))
     abort("error in test_yperiodic_ymirror vacuum\n");
 
-  if (!pml_twomirrors(one, dirname))
+  if (!pml_twomirrors(one))
     abort("error in pml_twomirrors vacuum\n");
 
   if (!test_origin_shift(dirname))
     abort("error in test_origin_shift\n");
 
-  if (!exact_pml_rot2x_tm(one, dirname))
+  if (!exact_pml_rot2x_tm(one))
     abort("error in exact_pml_rot2x_tm vacuum\n");
 
-  if (!test_metal_xmirror(one, dirname))
+  if (!test_metal_xmirror(one))
     abort("error in test_metal_xmirror vacuum\n");
-  if (!test_metal_xmirror(rods_2d, dirname))
+  if (!test_metal_xmirror(rods_2d))
     abort("error in test_metal_xmirror rods_2d\n");
 
-  if (!test_metal_ymirror(one, dirname))
+  if (!test_metal_ymirror(one))
     abort("error in test_metal_ymirror vacuum\n");
-  if (!test_metal_ymirror(rods_2d, dirname))
+  if (!test_metal_ymirror(rods_2d))
     abort("error in test_metal_ymirror rods_2d\n");
 
-  if (!test_metal_rot2y(one, dirname))
+  if (!test_metal_rot2y(one))
     abort("error in test_metal_rot2y vacuum\n");
-  if (!test_metal_rot2y(rods_2d, dirname))
+  if (!test_metal_rot2y(rods_2d))
     abort("error in test_metal_rot2y rods_2d\n");
 
-  if (!exact_metal_rot2y(one, dirname))
+  if (!exact_metal_rot2y(one))
     abort("error in exact_metal_rot2y vacuum\n");
-  if (!exact_metal_rot2y(rods_2d, dirname))
+  if (!exact_metal_rot2y(rods_2d))
     abort("error in exact_metal_rot2y rods_2d\n");
 
-  if (!exact_metal_rot4z(one, dirname))
+  if (!exact_metal_rot4z(one))
     abort("error in exact_metal_rot4z vacuum\n");
-  if (!exact_metal_rot4z(rods_2d, dirname))
+  if (!exact_metal_rot4z(rods_2d))
     abort("error in exact_metal_rot4z rods_2d\n");
 
-  if (!test_3D_metal_xmirror(one, dirname))
+  if (!exact_metal_rot4z_nonlinear(one))
+    abort("error in exact_metal_rot4z nonlinear vacuum\n");
+  if (!exact_metal_rot4z_nonlinear(rods_2d))
+    abort("error in exact_metal_rot4z nonlinear rods_2d\n");
+
+  if (!test_3D_metal_xmirror(one))
     abort("error in test_3D_metal_xmirror vacuum\n");
 
-  if (!test_3D_metal_zmirror(one, dirname))
+  if (!test_3D_metal_zmirror(one))
     abort("error in test_3D_metal_zmirror vacuum\n");
 
-  if (!test_3D_metal_odd_zmirror(one, dirname))
+  if (!test_3D_metal_odd_zmirror(one))
     abort("error in test_3D_metal_odd_zmirror vacuum\n");
 
-  if (!test_3D_metal_rot4z(one, dirname)) {
+  if (!test_3D_metal_rot4z(one)) {
     all_wait();
     abort("error in test_3D_metal_rot4z vacuum\n");
   }
 
-  if (!test_3D_metal_rot4z_mirror(one, dirname))
+  if (!test_3D_metal_rot4z_mirror(one))
     abort("error in test_3D_metal_rot4z_mirror vacuum\n");
 
   return 0;
