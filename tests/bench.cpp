@@ -67,8 +67,8 @@ bench bench_flux_1d(const double zmax,
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 3.0, vec(zmax/2+0.3), 1.0);
-  flux_plane *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
-  flux_plane *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
+  flux_box *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
+  flux_box *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
 
   while (f.time() <= f.last_source_time()) f.step();
 

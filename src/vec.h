@@ -398,6 +398,7 @@ class geometric_volume {
   void set_direction_max(direction d, double val) { max_corner.set_direction(d, val); };
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };
   double in_direction_max(direction d) const { return max_corner.in_direction(d); };
+  double in_direction(direction d) const { return in_direction_max(d) - in_direction_min(d); }
   double computational_volume(); 
   double full_volume() const;
   bool contains(const vec &h) const;

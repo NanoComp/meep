@@ -162,7 +162,6 @@ fields_chunk::~fields_chunk() {
   delete e_sources;
   delete pol;
   delete olpol;
-  delete fluxes;
   delete[] zeroes[0];
   delete[] zeroes[1];
 }
@@ -179,7 +178,6 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
   a = s->a;
   inva = 1.0/a;
   dft_chunks = NULL;
-  fluxes = NULL;
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);
   h_sources = e_sources = NULL;
@@ -237,7 +235,6 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   a = s->a;
   inva = 1.0/a;
   dft_chunks = NULL;
-  fluxes = NULL;
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);
   h_sources = e_sources = NULL;

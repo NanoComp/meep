@@ -59,8 +59,8 @@ int flux_1d(const double zmax,
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.25, 3.5, 0.0, 8.0, vec(zmax/6+0.3), 1.0);
-  flux_plane *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
-  flux_plane *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
+  flux_box *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
+  flux_box *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
 
   const double ttot = min(10.0 + 1e5/zmax,f.last_source_time());
 
@@ -104,9 +104,9 @@ int split_1d(double eps(const vec &), int splitting) {
   f.use_real_fields();
   f1.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
   f.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
-  flux_plane *left1  = f1.add_flux_plane(vec(zmax*.5-boxwidth),
+  flux_box *left1  = f1.add_flux_plane(vec(zmax*.5-boxwidth),
                                          vec(zmax*.5-boxwidth));
-  flux_plane *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
+  flux_box *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
                                        vec(zmax*.5-boxwidth));
   volume mid = volone(2*boxwidth,a);
   mid.origin = vec(zmax*.5-boxwidth-0.25/a);
@@ -134,9 +134,9 @@ int cavity_1d(const double boxwidth, const double timewait,
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
-  flux_plane *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
+  flux_box *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
                                        vec(zmax*.5-boxwidth));
-  flux_plane *right = f.add_flux_plane(vec(zmax*.5+boxwidth),
+  flux_box *right = f.add_flux_plane(vec(zmax*.5+boxwidth),
                                        vec(zmax*.5+boxwidth));
   volume mid = volone(2*boxwidth,a);
   mid.origin = vec(zmax*.5-boxwidth-0.25/a);
@@ -160,7 +160,7 @@ int cavity_1d(const double boxwidth, const double timewait,
                 (delta_energy - defl)/start_energy);
   return compare(start_energy - delta_energy,
                  start_energy - defl,
-                 (timewait>50)?0.032:0.0039, "Flux"); // Yuck, problem with flux.
+                 (timewait>50)?0.032:0.004, "Flux"); // Yuck, problem with flux.
 }
 
 void attempt(const char *name, int allright) {

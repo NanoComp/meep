@@ -45,6 +45,8 @@ void fields::step() {
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
 
+  if (fluxes) fluxes->update_half();
+
   calc_sources(time()); // for E sources
 
   step_d();
@@ -59,7 +61,7 @@ void fields::step() {
   update_from_e();
   step_boundaries(P_stuff);
 
-  update_fluxes();
+  if (fluxes) fluxes->update();
   t += 1;
   update_dfts();
   finished_working();

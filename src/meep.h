@@ -202,6 +202,7 @@ class structure {
 class src_vol;
 class bandsdata;
 class fields_chunk;
+class flux_box;
 
 // Time-dependence of a current source, intended to be overridden by
 // subclasses.  current() and dipole() are be related by
@@ -363,19 +364,6 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
 void load_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
 		   bool in_appended_file = false, const char *prefix = 0);
 
-class partial_flux_plane;
-
-class flux_plane {
- public:
-  partial_flux_plane *partials;
-  flux_plane *next;
-
-  flux_plane(partial_flux_plane *);
-  ~flux_plane();
-
-  double flux();
-};
-
 enum in_or_out { Incoming=0, Outgoing=1 };
 
 class fields_chunk {
@@ -397,7 +385,6 @@ class fields_chunk {
   double *connection_factors[NUM_FIELD_TYPES];
 
   polarization *pol, *olpol;
-  partial_flux_plane *fluxes;
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
   geometric_volume gv;
@@ -469,9 +456,6 @@ class fields_chunk {
   int is_mine() const { return s->is_mine(); };
   // boundaries.cpp
   void zero_metal(field_type);
-  // fluxes.cpp
-  partial_flux_plane *new_flux_plane(const vec &p1, const vec &p2);
-  void update_fluxes();
   // polarization.cpp
   void initialize_polarization_energy(const polarizability_identifier &,
                                       double energy(const vec &));
@@ -518,8 +502,6 @@ class fields_chunk {
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
   void alloc_extra_connections(field_type, in_or_out, int);
-  // fluxes.cpp
-  partial_flux_plane *nfp_1d(const vec &);
   // dft.cpp
   void update_dfts(double timeE, double timeH);
 };
@@ -541,7 +523,7 @@ class fields {
   int num_chunks;
   fields_chunk **chunks;
   src_time *sources;
-  flux_plane *fluxes;
+  flux_box *fluxes;
   symmetry S;
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
@@ -682,12 +664,13 @@ class fields {
   double field_energy();
   double flux_in_box_wrongH(direction d, const geometric_volume &);
   double flux_in_box(direction d, const geometric_volume &);
+  flux_box *add_flux_box(direction d, const geometric_volume &where);
+  flux_box *add_flux_plane(const geometric_volume &where);
+  flux_box *add_flux_plane(const vec &p1, const vec &p2);
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
   double count_volume(component);
-  // fluxes.cpp
-  flux_plane *add_flux_plane(const vec &, const vec &);
   // polarization.cpp
   void initialize_polarization_energy(const polarizability_identifier &,
                                       double energy(const vec &));
@@ -741,9 +724,6 @@ class fields {
   bool has_eps_interface(vec *loc) const;
   complex<double> field_mean(component c, bool abs_real = false,
                              bool abs_imag = false) const;
-  // energy_and_flux.cpp
-  // fluxes.cpp
-  void update_fluxes();
   // monitor.cpp
   complex<double> get_field(component c, const ivec &iloc) const;
   double get_polarization_energy(const ivec &) const;
@@ -751,6 +731,30 @@ class fields {
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double get_polarization_energy(const polarizability_identifier &, const vec &) const;
   double get_eps(const ivec &iloc) const;
+};
+
+class flux_box {
+ public:
+  flux_box(fields *f_, direction d_, const geometric_volume &where_) : where(where_) {
+    f = f_; d = d_; cur_flux = cur_flux_half = 0; 
+    next = f->fluxes; f->fluxes = this;
+  }
+  ~flux_box() { delete next; }
+
+  void update_half() { cur_flux_half = flux_wrongE(); 
+                       if (next) next->update_half(); }
+  void update() { cur_flux = (flux_wrongE() + cur_flux_half) * 0.5;
+                  if (next) next->update(); }
+
+  double flux() { return cur_flux; }
+
+  flux_box *next;
+ private:
+  double flux_wrongE() { return f->flux_in_box_wrongH(d, where); }
+  fields *f;
+  direction d;
+  geometric_volume where;
+  double cur_flux, cur_flux_half;
 };
 
 class grace_point;

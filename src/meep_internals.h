@@ -138,37 +138,6 @@ class bandsdata {
                           int numref);
 };
 
-class partial_flux_plane {
- public:
-  partial_flux_plane(fields_chunk *, int);
-  ~partial_flux_plane();
-
-  component cE, cH;
-  double *weights;
-  int *indE, *indH, numpts;
-  partial_flux_plane *next, *next_in_chunk;
-  fields_chunk *f;
-
-  double *oldE[2];
-
-  void append(partial_flux_plane *);
-  void append_in_chunk(partial_flux_plane *);
- private:
-};
-
-class weighted_flux_plane {
- public:
-  int ymin, ymax, xconst;
-  double dy_min, dy_max;
-  int is_rflux;
-  int verbosity;
-  weighted_flux_plane() {};
-  weighted_flux_plane(int ymin, int ymax, int xconst, 
-	    double dy_min, double dy_max, int is_rflux);
-  ~weighted_flux_plane() {};
-  complex<double> flux(fields_chunk *f);  
-};
-
 symmetry r_to_minus_r_symmetry(int m);
 
 } // namespace meep
