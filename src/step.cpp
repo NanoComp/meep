@@ -38,7 +38,7 @@ void fields::step() {
   calc_sources(time() - 0.5 * dt); // for H sources
 
   //for (int i=0;i<num_chunks;i++)
-  //  master_printf("Field is now %g\n", chunks[i]->peek_field(Ex,vec2d(1.55,0.6)));
+  //  master_printf("Field is now %g\n", chunks[i]->peek_field(Ex,vec(1.55,0.6)));
   step_h();
   step_h_source();
   step_boundaries(H_stuff);

@@ -36,7 +36,7 @@ const double x_center = 7.7 + pml_thickness;
 const double y_center = 10.5 + pml_thickness;
 double eps(const vec &rr) {
   // Displacement from center of cavity is r:
-  const vec r = rr - vec2d(x_center, y_center);
+  const vec r = rr - vec(x_center, y_center);
   // First the air slits:
   double dx = fabs(r.x()) - half_cavity_width;
   if (dx < num_air_slits*grating_periodicity && dx > 0.0) {
@@ -93,7 +93,7 @@ oriented in the $E_z$ direction, located in the center of our cavity.
   fields f(&s);
   const double wavelength = 1.72;
   const double freq = 1.0/wavelength;
-  f.add_point_source(Hy, freq, 10.0, 0.0, 5.0, vec2d(x_center,y_center));
+  f.add_point_source(Hy, freq, 10.0, 0.0, 5.0, vec(x_center,y_center));
 \end{verbatim}
 I'm not interested in seeing the source itself, so I'll keep time stepping
 until the current time is greater than the last time at which the source is

@@ -79,18 +79,18 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
 
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&s);
-  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5), 1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   fields f1(&s1);
-  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5), 1.0);
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   double total_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(1.0  , 1.0 ))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -118,20 +118,20 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
 
   master_printf("Periodic test using %d chunks...\n", splitting);
   fields f(&s);
-  f.use_bloch(vec2d(0.1,0.7));
-  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f.use_bloch(vec(0.1,0.7));
+  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5), 1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   fields f1(&s1);
-  f1.use_bloch(vec2d(0.1,0.7));
-  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f1.use_bloch(vec(0.1,0.7));
+  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5), 1.0);
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   double total_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(1.0  , 1.0 ))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -159,18 +159,18 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
 
   master_printf("Periodic 2D TM test using %d chunks...\n", splitting);
   fields f(&s);
-  f.use_bloch(vec2d(0.1,0.7));
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f.use_bloch(vec(0.1,0.7));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   fields f1(&s1);
-  f1.use_bloch(vec2d(0.1,0.7));
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f1.use_bloch(vec(0.1,0.7));
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   double total_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(1.0  , 1.0 ))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -203,11 +203,11 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
 
   master_printf("Testing pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
-  f.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.5,0.5), 1.0);
-  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec(1.5,0.5), 1.0);
+  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   fields f1(&s1);
-  f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.5,0.5), 1.0);
-  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec(1.5,0.5), 1.0);
+  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   const double deltaT = 100.0;
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
@@ -220,9 +220,9 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
     f.step();
     f1.step();
     if (f.time() >= total_energy_check_time) {
-      if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
-      if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-      if (!compare_point(f, f1, vec2d(1.0  , 1.0 ))) return 0;
+      if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
+      if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+      if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
       const double new_energy = f.total_energy();
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
@@ -252,9 +252,9 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
 
   master_printf("Testing TM pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
-  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,1.401), 1.0);
+  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,1.401), 1.0);
   fields f1(&s1);
-  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,1.401), 1.0);
+  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,1.401), 1.0);
   const double deltaT = 100.0;
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
@@ -267,9 +267,9 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
     f.step();
     f1.step();
     if (f.time() >= total_energy_check_time) {
-      if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
-      if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-      if (!compare_point(f, f1, vec2d(1.0  , 1.0 ))) return 0;
+      if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
+      if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+      if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
       const double new_energy = f.total_energy();
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
@@ -299,11 +299,11 @@ int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
 
   master_printf("Testing TE pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
-  f.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.5,1.5), 1.0);
-  f.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.37,1.27), 1.0);
+  f.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec(1.5,1.5), 1.0);
+  f.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec(1.37,1.27), 1.0);
   fields f1(&s1);
-  f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.5,1.5), 1.0);
-  f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.37,1.27), 1.0);
+  f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec(1.5,1.5), 1.0);
+  f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec(1.37,1.27), 1.0);
   const double deltaT = 100.0;
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
@@ -316,9 +316,9 @@ int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
     f.step();
     f1.step();
     if (f.time() >= total_energy_check_time) {
-      if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
-      if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-      if (!compare_point(f, f1, vec2d(1.0  , 1.0 ))) return 0;
+      if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
+      if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+      if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
       const double new_energy = f.total_energy();
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;

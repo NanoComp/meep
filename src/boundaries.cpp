@@ -58,11 +58,12 @@ void fields::use_bloch(const vec &k) {
 
 ivec fields::ilattice_vector(direction d) const {
   switch (user_volume.dim) {
-  case Dcyl: case D1: return ivec(0,2*user_volume.nz()); // Only Z direction here...
+  case D1: return ivec(2*user_volume.nz());
+  case Dcyl: return iveccyl(0,2*user_volume.nz()); // Only Z direction here
   case D2:
     switch (d) {
-    case X: return ivec2d(user_volume.nx()*2,0);
-    case Y: return ivec2d(0,user_volume.ny()*2);
+    case X: return ivec(user_volume.nx()*2,0);
+    case Y: return ivec(0,user_volume.ny()*2);
     case Z: case R: case P: case NO_DIRECTION: break;
     }
   case D3:

@@ -42,8 +42,8 @@ bench bench_periodic(const double rmax, const double zmax,
   structure s(v, eps);
   fields f(&s, m);
   f.use_bloch(0.0);
-  f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+  f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
 
   clock_t start = clock();
   while (f.time() < ttot) f.step();
@@ -96,8 +96,8 @@ bench bench_2d(const double xmax, const double ymax,
   volume v = voltwo(xmax,ymax,a);
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
-  f.add_point_source(Hz, 0.8, 0.7, 0.0, 4.0, vec2d(0.431, 0.2));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
+  f.add_point_source(Hz, 0.8, 0.7, 0.0, 4.0, vec(0.431, 0.2));
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
@@ -122,7 +122,7 @@ bench bench_2d_tm_nonlinear(const double xmax, const double ymax,
   structure s(v, eps);
   s.set_kerr(eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
@@ -144,7 +144,7 @@ bench bench_2d_tm(const double xmax, const double ymax,
   volume v = voltwo(xmax,ymax,a);
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
@@ -166,8 +166,8 @@ bench bench_2d_te(const double xmax, const double ymax,
   volume v = voltwo(xmax,ymax,a);
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
-  f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec2d(0.7, 0.5));
+  f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
+  f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec(0.7, 0.5));
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
@@ -190,8 +190,8 @@ bench bench_2d_te_nonlinear(const double xmax, const double ymax,
   structure s(v, eps);
   s.set_kerr(eps);
   fields f(&s);
-  f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
-  f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec2d(0.7, 0.5));
+  f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
+  f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec(0.7, 0.5));
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;

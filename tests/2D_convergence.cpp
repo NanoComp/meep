@@ -8,16 +8,16 @@ const double r = diameter*0.5;
 double holey_2d(const vec &xx) {
   const volume v = vol2d(2.0,1.0,100.0);
   vec p = xx - v.center();
-  while (p.x() <-0.5) p += vec2d(1.0,0);
-  while (p.x() > 0.5) p -= vec2d(1.0,0);
-  while (p.y() <-0.5) p += vec2d(0,1.0);
-  while (p.y() > 0.5) p -= vec2d(0,1.0);
+  while (p.x() <-0.5) p += vec(1.0,0);
+  while (p.x() > 0.5) p -= vec(1.0,0);
+  while (p.y() <-0.5) p += vec(0,1.0);
+  while (p.y() > 0.5) p -= vec(0,1.0);
   if (fabs(p & p) < r*r) return 1.0;
   return 12.0;
 }
 
 double holey_shifted_2d(const vec &xx) {
-  return holey_2d(xx + vec2d(pi*0.01, 3 - pi)*0.5);
+  return holey_2d(xx + vec(pi*0.01, 3 - pi)*0.5);
 }
 
 double get_the_freq(monitor_point *p) {
@@ -43,9 +43,9 @@ double freq_at_resolution(double e(const vec &), double a) {
   s.set_epsilon(e, 0.0, true);
 
   fields f(&s);
-  f.use_bloch(vec2d(0,0));
-  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(0.5,0.5), 1.0);
-  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(1.5,0.5),-1.0);
+  f.use_bloch(vec(0,0));
+  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec(0.5,0.5), 1.0);
+  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec(1.5,0.5),-1.0);
   f.use_real_fields();
 
   while (f.time() <= f.last_source_time() + 10.0 && !interrupt) f.step();
@@ -54,7 +54,7 @@ double freq_at_resolution(double e(const vec &), double a) {
   monitor_point *p = NULL;
   while (f.time() <= ttot) {
     f.step();
-    p = f.get_new_point(vec2d(0.5,0.5), p);
+    p = f.get_new_point(vec(0.5,0.5), p);
   }
   const double freq = get_the_freq(p);
   delete p;

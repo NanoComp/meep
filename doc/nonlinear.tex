@@ -79,7 +79,7 @@ complex fields are incorrect for nonlinear materials.
   for (double amp = 0.05; amp <= 1.01 && !interrupt; amp += 0.01) {
     fields f(&s, m);
     f.use_real_fields();
-    f.add_point_source(Ez, my_source, vec2d(xmax*0.5,ymax*0.5), amp);
+    f.add_point_source(Ez, my_source, vec(xmax*0.5,ymax*0.5), amp);
 \end{verbatim}
 
 \begin{figure}
@@ -101,11 +101,11 @@ versus source amplitude.
         //master_printf("Working on time %g...  ", f.time());
         //master_printf("energy is %g\n", f.field_energy());
         f.eps_slices();
-        //f.eps_slices(geometric_volume(vec2d(xmax/2+1.0,0), vec2d(xmax,ymax)));
+        //f.eps_slices(geometric_volume(vec(xmax/2+1.0,0), vec(xmax,ymax)));
       }
       f.step();
     }
-    g.output_point(amp, real(f.get_field(Ez,vec2d(1.2*pml,ymax/2))));
+    g.output_point(amp, real(f.get_field(Ez,vec(1.2*pml,ymax/2))));
   }
 }
 \end{comment}

@@ -214,10 +214,10 @@ class vec {
   vec(ndim di) { dim = di; };
   vec(ndim di, double val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
   vec(double zz) { dim = D1; t[Z] = zz; };
-  vec(double rr, double zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
+  vec(double xx, double yy) { dim = D2; t[X] = xx; t[Y] = yy; };
   vec(double xx, double yy, double zz) {
     dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
-  friend vec vec2d(double xx, double yy);
+  friend vec veccyl(double rr, double zz);
   ~vec() {};
 
   vec operator+(const vec &a) const {
@@ -311,8 +311,8 @@ inline vec clean_vec(const vec &v, double val_unused = 0.0) {
   return vc;
 }
 
-inline vec vec2d(double xx, double yy) {
-  vec v; v.dim = D2; v.t[X] = xx; v.t[Y] = yy; return v;
+inline vec veccyl(double rr, double zz) {
+  vec v(Dcyl); v.t[R] = rr; v.t[Z] = zz; return v;
 }
 
 class ivec {
@@ -321,10 +321,10 @@ class ivec {
   ivec(ndim di) { dim = di; };
   ivec(ndim di, int val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
   ivec(int zz) { dim = D1; t[Z] = zz; };
-  ivec(int rr, int zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
+  ivec(int xx, int yy) { dim = D2; t[X] = xx; t[Y] = yy; };
   ivec(int xx, int yy, int zz) {
     dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
-  friend ivec ivec2d(int xx, int yy);
+  friend ivec iveccyl(int xx, int yy);
   ~ivec() {};
 
   // Only an idiot (or a macro) would use a yucky function.  Don't be an
@@ -432,8 +432,8 @@ inline ivec unit_ivec(ndim di, direction d) {
   return v;
 }
 
-inline ivec ivec2d(int xx, int yy) {
-  ivec v; v.t[X] = xx; v.t[Y] = yy; return v;
+inline ivec iveccyl(int rr, int zz) {
+  ivec v(Dcyl); v.t[R] = rr; v.t[Z] = zz; return v;
 }
 
 class geometric_volume {

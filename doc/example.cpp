@@ -68,9 +68,9 @@ int main(int argc, char **argv) {
     master_printf("Working on m = %d with a=%g...\n", m, a);
     fields f(&s, m);
     f.use_bloch(0.0);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 2.2), 1.0);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 3.2), 1.0);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 0.2), 1.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.6, 2.2), 1.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.6, 3.2), 1.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.6, 0.2), 1.0);
     //f.initialize_field(Ep, checkers);
 
     double next_print = 0.0;

@@ -16,7 +16,7 @@ const double r = 0.5;
 const double eps_k = 2*pi / 1.0;
 
 double funky_eps_2d(const vec &p_) {
-  vec p = p_ - vec2d(xsize / 2, ysize / 2);
+  vec p = p_ - vec(xsize / 2, ysize / 2);
   if (fabs(p & p) < r * r)
     return 1.0;
   return 2.0 + cos(p.x() * eps_k) * cos(p.y() * eps_k);
@@ -376,10 +376,10 @@ int main(int argc, char **argv)
   const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.1;
 
   geometric_volume gv_2d[4] = {
-       geometric_volume(vec2d(pad1,pad2), vec2d(xsize-pad2,ysize-pad1)),
-       geometric_volume(vec2d(-pad1,-pad2), vec2d(2*xsize-pad2,2*ysize-pad1)),
-       geometric_volume(vec2d(pad1,pad2), vec2d(xsize-pad2,pad2)),
-       geometric_volume(vec2d(pad1,pad2), vec2d(pad1,pad2)),
+       geometric_volume(vec(pad1,pad2), vec(xsize-pad2,ysize-pad1)),
+       geometric_volume(vec(-pad1,-pad2), vec(2*xsize-pad2,2*ysize-pad1)),
+       geometric_volume(vec(pad1,pad2), vec(xsize-pad2,pad2)),
+       geometric_volume(vec(pad1,pad2), vec(pad1,pad2)),
   };
   char gv_2d_name[4][20] = {"plane", "plane-supercell", "line", "point"};
   int gv_2d_rank[4] = {2,2,1,0};
@@ -419,7 +419,7 @@ int main(int argc, char **argv)
 		   component_name(tm_c[ic]), use_real ? "_r" : "");
 	  master_printf("Checking %s...\n", name);
 	  if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, 
-				tm_c[ic], vec2d(pad1,pad2), use_real, name))
+				tm_c[ic], vec(pad1,pad2), use_real, name))
 	    return 1;
 	}
   

@@ -39,7 +39,7 @@ int radiating_2D(const double xmax) {
   fields f(&s);
   double w = 0.30;
   double dx = 2.0;
-  f.add_point_source(Ez, w, 3.0, 0.0, 2.0, vec2d(xmax/2 - dx, ymax/2), 1.0, 1); //continuous
+  f.add_point_source(Ez, w, 3.0, 0.0, 2.0, vec(xmax/2 - dx, ymax/2), 1.0, 1); //continuous
   const double t1 = 15 / w + dx;
 
   // let the source reach steady state
@@ -48,8 +48,8 @@ int radiating_2D(const double xmax) {
     f.step();
     if (f.time() > next_print_time) {
       monitor_point p1, p2;
-      f.get_point(&p1, vec2d(xmax/2, ymax/2));
-      f.get_point(&p2, vec2d(xmax/2 + dx, ymax/2));
+      f.get_point(&p1, vec(xmax/2, ymax/2));
+      f.get_point(&p2, vec(xmax/2 + dx, ymax/2));
       complex<double> amp1 = p1.get_component(Ez);
       complex<double> amp2 = p2.get_component(Ez);
       double ratio = (abs(amp1) == 0.0 && abs(amp2) == 0.0) ? 1.0 :
@@ -61,8 +61,8 @@ int radiating_2D(const double xmax) {
   }
 
   monitor_point p1, p2;
-  f.get_point(&p1, vec2d(xmax/2, ymax/2));
-  f.get_point(&p2, vec2d(xmax/2 + dx, ymax/2));
+  f.get_point(&p1, vec(xmax/2, ymax/2));
+  f.get_point(&p2, vec(xmax/2 + dx, ymax/2));
 
   complex<double> amp1 = p1.get_component(Ez);
   complex<double> amp2 = p2.get_component(Ez);

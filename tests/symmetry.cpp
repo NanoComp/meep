@@ -28,10 +28,10 @@ double one(const vec &) { return 1.0; }
 vec the_center;
 double rods_2d(const vec &pp) {
   vec p = pp - the_center;
-  while (p.x() > 0.5) p -= vec2d(1.0,0);
-  while (p.x() <-0.5) p += vec2d(1.0,0);
-  while (p.y() > 0.5) p -= vec2d(0,1.0);
-  while (p.y() <-0.5) p += vec2d(0,1.0);
+  while (p.x() > 0.5) p -= vec(1.0,0);
+  while (p.x() <-0.5) p += vec(1.0,0);
+  while (p.y() > 0.5) p -= vec(0,1.0);
+  while (p.y() <-0.5) p += vec(0,1.0);
   if (fabs(p.x()) < 0.314) return 12.0;
   if (fabs(p.y()) < 0.314) return 12.0;
   return 1.0;
@@ -93,20 +93,20 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
   structure s1(v, eps, 0, identity());
 
   fields f1(&s1);
-  f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
-  f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
+  f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   fields f(&s);
-  f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
-  f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
+  f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec(0.01,  0.5  ))) return 0;
-    if (!compare_point(f, f1, vec(0.21,  0.5  ))) return 0;
-    if (!compare_point(f, f1, vec(0.501, 0.5  ))) return 0;
-    if (!compare_point(f, f1, vec(0.33,  0.46 ))) return 0;
-    if (!compare_point(f, f1, vec(0.2,   0.2  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.01,  0.5  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.21,  0.5  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.501, 0.5  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -136,20 +136,20 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   s1.set_kerr(one);
 
   fields f1(&s1);
-  f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
-  f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
+  f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   fields f(&s);
-  f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
-  f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
+  f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec(0.01,  0.5  ))) return 0;
-    if (!compare_point(f, f1, vec(0.21,  0.5  ))) return 0;
-    if (!compare_point(f, f1, vec(0.501, 0.5  ))) return 0;
-    if (!compare_point(f, f1, vec(0.33,  0.46 ))) return 0;
-    if (!compare_point(f, f1, vec(0.2,   0.2  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.01,  0.5  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.21,  0.5  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.501, 0.5  ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
+    if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -221,8 +221,8 @@ int test_origin_shift(const char *mydirname) {
   fields f(&s);
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, v.center());
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, v.center());
-  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.0,0.0));
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.0,0.0));
+  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.0,0.0));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.0,0.0));
   while (f.time() < ttot) {
     f.step();
     f1.step();
@@ -250,20 +250,20 @@ int test_metal_xmirror(double eps(const vec &)) {
   structure s1(v, eps, 0, identity());
 
   fields f1(&s1);
-  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.401));
+  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401));
   fields f(&s);
-  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.401));
+  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
-    if (!compare_point(f, f1, vec2d(0.5  , 0.21))) return 0;
-    if (!compare_point(f, f1, vec2d(0.5  , 0.501))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.21))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.501))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -481,19 +481,19 @@ int test_metal_ymirror(double eps(const vec &)) {
   master_printf("Testing Y mirror symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
+  f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   fields f(&s);
-  f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
+  f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -523,22 +523,22 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   master_printf("Testing Y periodic with mirror symmetry...\n");
 
   fields f1(&s1);
-  f1.use_bloch(vec2d(0.1*pi/2,0.0));
-  //f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
+  f1.use_bloch(vec(0.1*pi/2,0.0));
+  //f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   fields f(&s);
-  f.use_bloch(vec2d(0.1*pi/2,0.0));
-  //f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
+  f.use_bloch(vec(0.1*pi/2,0.0));
+  //f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.951 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.951 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -570,23 +570,23 @@ int test_metal_rot2y(double eps(const vec &)) {
   master_printf("Testing Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25, 0.875), 1.0);
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.375), 1.0);
-  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75, 0.875),-1.0);
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.375),-1.0);
+  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.25, 0.875), 1.0);
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.25,0.375), 1.0);
+  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.75, 0.875),-1.0);
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.75,0.375),-1.0);
   fields f(&s);
-  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.875 ), 1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.375), 1.0);
-  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.875 ),-1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.375),-1.0);
+  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.25,0.875 ), 1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.25,0.375), 1.0);
+  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.75,0.875 ),-1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.75,0.375),-1.0);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -614,19 +614,19 @@ int exact_metal_rot2y(double eps(const vec &)) {
   master_printf("Testing exact Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.875));
-  f1.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.375));
+  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.875));
+  f1.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.375));
   fields f(&s);
-  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.875));
-  f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.375));
+  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.875));
+  f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.375));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -660,19 +660,19 @@ int pml_twomirrors(double eps(const vec &)) {
 
   fields fs[2] = { fields(&ss[0]), fields(&ss[1]) };
   for (int i=0;i<2;i++) {
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.0,1.0),-1.5);
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.75));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,1.25));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.25,0.75));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.25,1.25));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.0,1.0),-1.5);
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,0.75));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,1.25));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,0.75));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,1.25));
   }
   double total_energy_check_time = 3.0;
   while (fs[0].time() < ttot) {
     for (int i=0;i<2;i++) fs[i].step();
-    if (!compare_point(fs[1], fs[0], vec2d(0.01 ,  0.5))) return 0;
-    if (!compare_point(fs[1], fs[0], vec2d(0.21 ,  0.5))) return 0;
-    if (!compare_point(fs[1], fs[0], vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(fs[1], fs[0], vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(fs[1], fs[0], vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(fs[1], fs[0], vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(fs[1], fs[0], vec(0.46 , 0.33))) return 0;
+    if (!compare_point(fs[1], fs[0], vec(0.2  , 0.2 ))) return 0;
     if (fs[0].time() >= total_energy_check_time) {
       if (!compare(fs[0].electric_energy_in_box(v.surroundings()),
                    fs[1].electric_energy_in_box(v.surroundings()),
@@ -698,19 +698,19 @@ int exact_metal_rot4z(double eps(const vec &)) {
   master_printf("Testing Z fourfold rotational symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
-  f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   fields f(&s);
-  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
-  f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -741,19 +741,19 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   master_printf("Testing nonlinear Z fourfold rotational symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
-  f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   fields f(&s);
-  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
-  f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
-    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -786,17 +786,17 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   master_printf("Testing X twofold rotational symmetry with PML...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
+  f1.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec(1.3,1.5));
   fields f(&s);
-  f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
+  f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec(1.3,1.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec2d(0.01 ,  1.5))) return 0;
-    if (!compare_point(f, f1, vec2d(1.21 ,  1.5))) return 0;
-    if (!compare_point(f, f1, vec2d(1.46 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec2d(1.2  , 1.2 ))) return 0;
+    if (!compare_point(f, f1, vec(0.01 ,  1.5))) return 0;
+    if (!compare_point(f, f1, vec(1.21 ,  1.5))) return 0;
+    if (!compare_point(f, f1, vec(1.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec(1.2  , 1.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),

@@ -61,7 +61,8 @@ static vec sphere_pt(const geometric_volume &v, int n, double &weight) {
 	 case D2:
 	 {
 	      weight = sphere_quad[1][n][3];
-	      return cent + vec2d(sphere_quad[1][n][0], sphere_quad[1][n][1]) * R;
+	      vec pt(sphere_quad[1][n][0], sphere_quad[1][n][1]);
+	      return cent + pt * R;
 	 }
 	 case D3:
 	 {
@@ -73,8 +74,8 @@ static vec sphere_pt(const geometric_volume &v, int n, double &weight) {
 	 case Dcyl:
 	 {
 	      weight = sphere_quad[1][n][3];
-	      vec pt(sphere_quad[1][n][0], sphere_quad[1][n][1]);
-	      return cent + pt * R;
+	      return cent 
+		+ veccyl(sphere_quad[1][n][0], sphere_quad[1][n][1]) * R;
 	 }
      }
 }

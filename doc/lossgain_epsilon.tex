@@ -69,7 +69,7 @@ For sources, we use a series of broad point sources covering the frequency
 range of interest.
 
 \begin{verbatim}
-  f.add_point_source(Ep, 0.3,  0.8, 0.0, 8.0, vec(rmax*0.5,sourceloc));
+  f.add_point_source(Ep, 0.3,  0.8, 0.0, 8.0, veccyl(rmax*0.5,sourceloc));
 \end{verbatim}
 \begin{comment}
   master_printf("Working with a=%g...\n", a);
@@ -92,11 +92,11 @@ component.  We choose $m=0$, so we won't have to deal with the $\phi$
 derivative.
 
 \begin{verbatim}
-    left   = f.get_new_point(vec(r_look    , z_look - d), left);
-    middle = f.get_new_point(vec(r_look    , z_look    ), middle);
-    top    = f.get_new_point(vec(r_look + d, z_look    ), top);
-    bottom = f.get_new_point(vec(r_look - d, z_look    ), bottom);
-    right  = f.get_new_point(vec(r_look    , z_look + d), right);
+    left   = f.get_new_point(veccyl(r_look    , z_look - d), left);
+    middle = f.get_new_point(veccyl(r_look    , z_look    ), middle);
+    top    = f.get_new_point(veccyl(r_look + d, z_look    ), top);
+    bottom = f.get_new_point(veccyl(r_look - d, z_look    ), bottom);
+    right  = f.get_new_point(veccyl(r_look    , z_look + d), right);
 \end{verbatim}
 \begin{comment}
   }
@@ -167,13 +167,13 @@ Figure~\ref{lossgain_epsilon}.
   g.set_legend("analytic \\x\\e\\s1\\N");
   for (int i=0;i<numl;i++) {
     g.output_point(real(freqs[i]),
-                   real(f.analytic_epsilon(real(freqs[i]),vec(r_look, z_look))));
+                   real(f.analytic_epsilon(real(freqs[i]),veccyl(r_look, z_look))));
   }
   g.new_set();
   g.set_legend("analytic \\x\\e\\s2\\N");
   for (int i=0;i<numl;i++) {
     g.output_point(real(freqs[i]),
-                   imag(f.analytic_epsilon(real(freqs[i]),vec(r_look, z_look))));
+                   imag(f.analytic_epsilon(real(freqs[i]),veccyl(r_look, z_look))));
   }
 }
 \end{comment}

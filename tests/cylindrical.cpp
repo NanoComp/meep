@@ -74,12 +74,12 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
                   m, splitting);
     fields f(&s, m);
     f.use_bloch(0.0);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
-    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
+    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     fields f1(&s1, m);
     f1.use_bloch(0.0);
-    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
-    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
+    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
     master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
@@ -87,11 +87,11 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
     while (f.time() < ttot) {
       f.step();
       f1.step();
-      if (!compare_point(f, f1, vec(0.5, 0.4))) return 0;
-      if (!compare_point(f, f1, vec(0.46, 0.36))) return 0;
-      if (!compare_point(f, f1, vec(1.0, 0.4))) return 0;
-      if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
-      if (!compare_point(f, f1, vec(0.601, 0.701))) return 0;
+      if (!compare_point(f, f1, veccyl(0.5, 0.4))) return 0;
+      if (!compare_point(f, f1, veccyl(0.46, 0.36))) return 0;
+      if (!compare_point(f, f1, veccyl(1.0, 0.4))) return 0;
+      if (!compare_point(f, f1, veccyl(0.01, 0.02))) return 0;
+      if (!compare_point(f, f1, veccyl(0.601, 0.701))) return 0;
       if (f.time() >= total_energy_check_time) {
         if (!compare(f.total_energy(), f1.total_energy(),
                      "   total energy")) return 0;
@@ -124,11 +124,11 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
     master_printf("Metallic with m = %d and a splitting into %d chunks...\n",
                   m, splitting);
     fields f(&s, m);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
-    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
+    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     fields f1(&s1, m);
-    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
-    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
+    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
     master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
@@ -136,11 +136,11 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
     while (f.time() < ttot) {
       f.step();
       f1.step();
-      if (!compare_point(f, f1, vec(0.5, 0.4))) return 0;
-      if (!compare_point(f, f1, vec(0.46, 0.36))) return 0;
-      if (!compare_point(f, f1, vec(1.0, 0.4))) return 0;
-      if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
-      if (!compare_point(f, f1, vec(0.601, 0.701))) return 0;
+      if (!compare_point(f, f1, veccyl(0.5, 0.4))) return 0;
+      if (!compare_point(f, f1, veccyl(0.46, 0.36))) return 0;
+      if (!compare_point(f, f1, veccyl(1.0, 0.4))) return 0;
+      if (!compare_point(f, f1, veccyl(0.01, 0.02))) return 0;
+      if (!compare_point(f, f1, veccyl(0.601, 0.701))) return 0;
       if (f.time() >= total_energy_check_time) {
         if (!compare(f.total_energy(), f1.total_energy(),
                      "   total energy")) return 0;
@@ -169,11 +169,11 @@ int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
     snprintf(m_str, 10, "%d", m);
     master_printf("Checking at r == 0 with m = %d...\n", m);
     fields f(&s, m);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
-    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
+    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     while (f.time() < ttot) f.step();
     monitor_point p;
-    f.get_point(&p, vec(0.0, 0.5));
+    f.get_point(&p, veccyl(0.0, 0.5));
     if (p.get_component(Ez) != 0.0 && (m & 1)) {
       printf("Got non-zero Ez with m == %d\n", m);
       return 0;
@@ -221,11 +221,11 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
     master_printf("PML with m = %d and a splitting into %d chunks...\n",
                   m, splitting);
     fields f(&s, m);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
-    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
+    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
     fields f1(&s1, m);
-    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
-    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
+    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
+    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
     f.eps_slices("multi");
     f1.eps_slices("single");
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume", 3e-14)) return 0;
@@ -237,11 +237,11 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
       f1.step();
       //f.output_real_imaginary_slices("multi");
       //f1.output_real_imaginary_slices("single");
-      if (!compare_point(f, f1, vec(0.5, 7.0))) return 0;
-      if (!compare_point(f, f1, vec(0.46, 0.36))) return 0;
-      if (!compare_point(f, f1, vec(1.0, 0.4))) return 0;
-      if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
-      if (!compare_point(f, f1, vec(0.601, 0.701))) return 0;
+      if (!compare_point(f, f1, veccyl(0.5, 7.0))) return 0;
+      if (!compare_point(f, f1, veccyl(0.46, 0.36))) return 0;
+      if (!compare_point(f, f1, veccyl(1.0, 0.4))) return 0;
+      if (!compare_point(f, f1, veccyl(0.01, 0.02))) return 0;
+      if (!compare_point(f, f1, veccyl(0.601, 0.701))) return 0;
       if (f.time() >= total_energy_check_time) {
         if (!compare(f.total_energy(), f1.total_energy(),
                      "pml total energy", 1e-13)) return 0;
@@ -296,9 +296,9 @@ int test_pattern(double eps(const vec &), int splitting,
 
     f.step();
     f1.step();
-    if (!compare_point(f, f1, vec(0.751, 0.401))) return 0;
-    if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
-    if (!compare_point(f, f1, vec(1.0, 0.7))) return 0;
+    if (!compare_point(f, f1, veccyl(0.751, 0.401))) return 0;
+    if (!compare_point(f, f1, veccyl(0.01, 0.02))) return 0;
+    if (!compare_point(f, f1, veccyl(1.0, 0.7))) return 0;
     if (!compare(f.total_energy(), f1.total_energy(),
                  "   total energy")) return 0;
     if (!compare(f.electric_energy_in_box(v.surroundings()),

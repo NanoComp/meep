@@ -175,11 +175,11 @@ int flux_2d(const double xmax, const double ymax,
 
   fields f(&s);
   f.use_real_fields();
-  f.add_point_source(Ez, 0.25, 3.5, 0., 8., vec2d(xmax/6+0.1, ymax/6+0.3), 1.);
+  f.add_point_source(Ez, 0.25, 3.5, 0., 8., vec(xmax/6+0.1, ymax/6+0.3), 1.);
   
   // corners of flux planes and energy box:
-  vec lb(vec2d(xmax/3, ymax/3)), rb(vec2d(2*xmax/3, ymax/3));
-  vec lt(vec2d(xmax/3, 2*ymax/3)), rt(vec2d(2*xmax/3, 2*ymax/3));
+  vec lb(vec(xmax/3, ymax/3)), rb(vec(2*xmax/3, ymax/3));
+  vec lt(vec(xmax/3, 2*ymax/3)), rt(vec(2*xmax/3, 2*ymax/3));
   geometric_volume box(lb, rt);
 
   flux_vol *left = f.add_flux_plane(lb, lt);
@@ -189,10 +189,10 @@ int flux_2d(const double xmax, const double ymax,
 
   /* measure flux spectra through two concentric flux boxes
      around the source...should be positive and equal */
-  geometric_volume box1(vec2d(xmax/6-0.4, ymax/6-0.2),
-			vec2d(xmax/6+0.6, ymax/6+0.8));
-  geometric_volume box2(vec2d(xmax/6-0.9, ymax/6-0.7),
-			vec2d(xmax/6+1.1, ymax/6+1.3));
+  geometric_volume box1(vec(xmax/6-0.4, ymax/6-0.2),
+			vec(xmax/6+0.6, ymax/6+0.8));
+  geometric_volume box2(vec(xmax/6-0.9, ymax/6-0.7),
+			vec(xmax/6+1.1, ymax/6+1.3));
   double fmin = 0.23, fmax = 0.27;
   int Nfreq = 10;
   dft_flux flux1 = f.add_dft_flux_box(box1, fmin, fmax, Nfreq);
@@ -248,19 +248,19 @@ int flux_cyl(const double rmax, const double zmax,
 
   fields f(&s, m);
   // f.use_real_fields();
-  f.add_point_source(Ep, 0.25, 3.5, 0., 8., vec(rmax*5/6+0.1, zmax/6+0.3), 1.);
+  f.add_point_source(Ep, 0.25, 3.5, 0., 8., veccyl(rmax*5/6+0.1, zmax/6+0.3), 1.);
   
   // corners of flux planes and energy box:
-  vec lb(vec(-rmax/3, zmax/3)), rb(vec(2*rmax/3, zmax/3));
-  vec lt(vec(-rmax/3, 2*zmax/3)), rt(vec(2*rmax/3, 2*zmax/3));
+  vec lb(veccyl(-rmax/3, zmax/3)), rb(veccyl(2*rmax/3, zmax/3));
+  vec lt(veccyl(-rmax/3, 2*zmax/3)), rt(veccyl(2*rmax/3, 2*zmax/3));
   geometric_volume box(lb, rt);
 
   /* measure flux spectra through two concentric flux boxes
      around the source...should be positive and equal */
-  geometric_volume box1(vec(rmax*5/6-0.4, zmax/6-0.2),
-			vec(rmax*5/6+0.6, zmax/6+0.8));
-  geometric_volume box2(vec(rmax*5/6-0.9, zmax/6-0.7),
-			vec(rmax*5/6+1.1, zmax/6+1.3));
+  geometric_volume box1(veccyl(rmax*5/6-0.4, zmax/6-0.2),
+			veccyl(rmax*5/6+0.6, zmax/6+0.8));
+  geometric_volume box2(veccyl(rmax*5/6-0.9, zmax/6-0.7),
+			veccyl(rmax*5/6+1.1, zmax/6+1.3));
   double fmin = 0.23, fmax = 0.27;
   int Nfreq = 10;
   dft_flux flux1 = f.add_dft_flux_box(box1, fmin, fmax, Nfreq);

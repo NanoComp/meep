@@ -674,9 +674,9 @@ double volume::boundary_location(boundary_side b, direction d) const {
 ivec volume::big_corner() const {
   switch (dim) {
   case D1: return io + ivec(nz())*2;
-  case D2: return io + ivec2d(nx(),ny())*2;
+  case D2: return io + ivec(nx(),ny())*2;
   case D3: return io + ivec(nx(),ny(),nz())*2;
-  case Dcyl: return io + ivec(nr(),nz())*2;
+  case Dcyl: return io + iveccyl(nr(),nz())*2;
   }
   return ivec(0); // This is never reached.
 }
@@ -799,7 +799,7 @@ ivec volume::iloc(component c, int ind) const {
 
 vec volume::dr() const {
   switch (dim) {
-  case Dcyl: return vec(inva, 0.0);
+  case Dcyl: return veccyl(inva, 0.0);
   case D1: case D2: case D3: abort("Error in dr\n");
   }
   return vec(0); // This is never reached.
@@ -808,7 +808,7 @@ vec volume::dr() const {
 vec volume::dx() const {
   switch (dim) {
   case D3: return vec(inva,0,0);
-  case D2: return vec2d(inva,0);
+  case D2: return vec(inva,0);
   case D1: case Dcyl: abort("Error in dx.\n");
   }
   return vec(0); // This is never reached.
@@ -817,7 +817,7 @@ vec volume::dx() const {
 vec volume::dy() const {
   switch (dim) {
   case D3: return vec(0,inva,0);
-  case D2: return vec2d(0,inva);
+  case D2: return vec(0,inva);
   case D1: case Dcyl: abort("Error in dy.\n");
   }
   return vec(0); // This is never reached.
@@ -825,7 +825,7 @@ vec volume::dy() const {
 
 vec volume::dz() const {
   switch (dim) {
-  case Dcyl: return vec(0.0,inva);
+  case Dcyl: return veccyl(0.0,inva);
   case D3: return vec(0,0,inva);
   case D1: return vec(inva);
   case D2: abort("dz doesn't exist in 2D\n");
@@ -1024,9 +1024,9 @@ ivec volume::icenter() const {
   // point):
   switch (dim) {
   case D1: return io + ivec(nz());
-  case D2: return io + ivec2d(nx(), ny());
+  case D2: return io + ivec(nx(), ny());
   case D3: return io + ivec(nx(), ny(), nz());
-  case Dcyl: return io + ivec(0, nz());
+  case Dcyl: return io + iveccyl(0, nz());
   }
   abort("Can't do symmetry with these dimensions.\n");
   return ivec(0); // This is never reached.

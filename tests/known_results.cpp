@@ -89,9 +89,9 @@ double periodic_ez(const volume &v, double eps(const vec &)) {
   vec k;
   switch (v.dim) {
   case D1: k = vec(0.3); break;
-  case D2: k = vec2d(0.3,0.4); break;
+  case D2: k = vec(0.3,0.4); break;
   case D3: k = vec(0.3,0.5,0.8); break;
-  case Dcyl: k = vec(0.3,0.2); break;
+  case Dcyl: k = veccyl(0.3,0.2); break;
   }
   f.use_bloch(k);
   while (f.time() < ttot) f.step();

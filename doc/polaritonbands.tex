@@ -70,8 +70,8 @@ remember to excite along with it the phonon with which it couples.
 Finally, we compute the band structure as usual.
 
 \begin{verbatim}
-    f.prepare_for_bands(vec(0.501,0.0), ttot, .7+.15*k/3.0, 50, 1e-4);
-    f.prepare_for_bands(vec(0.301,0.0), ttot, .7+.15*k/3.0, 50, 1e-4);
+    f.prepare_for_bands(veccyl(0.501,0.0), ttot, .7+.15*k/3.0, 50, 1e-4);
+    f.prepare_for_bands(veccyl(0.301,0.0), ttot, .7+.15*k/3.0, 50, 1e-4);
     
     while (f.time() < ttot && !interrupt) {
       f.record_bands();

@@ -74,9 +74,9 @@ straight to the TE modes.
       f.initialize_with_n_tm(9);
       double next_slice_time = 0.0;
       while (f.is_phasing() && !interrupt) f.step();
-      f.prepare_for_bands(vec(4.801,0.0), ttot, .40, 300, 0.0);
-      f.prepare_for_bands(vec(3.801,0.0), ttot, .40, 300, 0.0);
-      f.prepare_for_bands(vec(3.301,0.0), ttot, .40, 300, 0.0);
+      f.prepare_for_bands(veccyl(4.801,0.0), ttot, .40, 300, 0.0);
+      f.prepare_for_bands(veccyl(3.801,0.0), ttot, .40, 300, 0.0);
+      f.prepare_for_bands(veccyl(3.301,0.0), ttot, .40, 300, 0.0);
       const double stoptime = f.time() + ttot;
       while (f.time() < stoptime && !interrupt) {
         f.record_bands();
@@ -125,9 +125,9 @@ large $Q_{min}$, to help meep to distinguish between real modes and
 spurious noise.  Note that we are using metallic boundary conditions, so
 all physical modes should have infinite lifetime.
 \begin{verbatim}
-      f.prepare_for_bands(vec(4.801,0.0), ttot, .35, 300, 0.0);
-      f.prepare_for_bands(vec(1.801,0.0), ttot, .35, 300, 0.0);
-      f.prepare_for_bands(vec(2.801,0.0), ttot, .35, 300, 0.0);
+      f.prepare_for_bands(veccyl(4.801,0.0), ttot, .35, 300, 0.0);
+      f.prepare_for_bands(veccyl(1.801,0.0), ttot, .35, 300, 0.0);
+      f.prepare_for_bands(veccyl(2.801,0.0), ttot, .35, 300, 0.0);
       const double stoptime = f.time() + ttot;
       while (f.time() < stoptime && !interrupt) {
         f.record_bands();
