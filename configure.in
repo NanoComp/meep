@@ -1,0 +1,125 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT(dactyl.cpp)
+AC_CONFIG_HEADER(config.h)
+
+VERSION=0.2
+AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define to the version number string.])
+AC_SUBST(VERSION)
+
+# Fortran libraries are (probably) required for BLAS and LAPACK:
+AC_F77_LIBRARY_LDFLAGS
+LIBS="$LIBS $FLIBS"
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_MAKE_SET
+AC_PROG_INSTALL
+
+# Add lots of compiler warnings to check for if we are using gcc:
+# (The variable $GCC is set to "yes" by AC_PROG_CC if we are using gcc.)
+if test "$GCC" = "yes"; then
+	CXXFLAGS="$CXXFLAGS -Wall -W -Wbad-function-cast -Wcast-qual -Wpointer-arith -Wcast-align -pedantic"
+fi
+
+DACTYL_CXX="$CXX"
+DACTYL_CXXFLAGS="$CXXFLAGS"
+AC_SUBST(DACTYL_CXX)
+AC_SUBST(DACTYL_CXXFLAGS)
+
+# check how to transform the name of the installed program:
+AC_ARG_PROGRAM
+
+# Checks for header files.
+#AC_CHECK_HEADERS(unistd.h getopt.h)
+
+AC_CHECK_LIB(m, sqrt)
+
+###########################################################################
+
+# Checks for BLAS libraries:
+
+save_LIBS0="$LIBS"
+
+# Generic BLAS:
+# FIXME: what libs need -lblas in addition to accelerated blas?
+AC_CHECK_LIB(blas, main)
+
+# remember current libs, so we can check if any libs were found below.
+save_LIBS="$LIBS"
+
+AC_ARG_WITH(fastblas, [  --without-fastblas      don't use accelerated BLAS], ok=$withval, ok=yes)
+if test "$ok" = "no"; then
+	save_LIBS="xxxxxxxx"
+elif test "$ok" != "yes"; then
+	# user specified a BLAS library to try on the command line
+	AC_CHECK_LIB($ok, main)
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# BLAS in Cray libsci?  Don't use -lblas if so.
+	AC_CHECK_LIB(sci, CGEMM, LIBS="-lsci $save_LIBS0")
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# BLAS in Alpha CXML library?
+	AC_CHECK_LIB(cxml, dgemm_)
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# BLAS in Alpha DXML library? (now called CXML, see above)
+	AC_CHECK_LIB(dxml, dgemm_)
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# Check for BLAS in Sun Performance library:
+	# old: AC_CHECK_LIB(SUNWPro_lic, __lsp_rethread_mn_ph_)
+	AC_CHECK_LIB(sunmath, acosp)
+	AC_CHECK_LIB(sunperf, dgemm_,
+        	[LIBS="-xlic_lib=sunperf $LIBS"])
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# Check for BLAS in SCSL and SGIMATH libraries (prefer SCSL):
+	AC_CHECK_LIB(scs, dgemm_,
+	             LIBS="-lscs $LIBS", 
+		     AC_CHECK_LIB(complib.sgimath, dgemm_))
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# Checks for BLAS in IBM ESSL library
+	AC_CHECK_LIB(essl, dgemm)
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# Checks for ATLAS BLAS library:
+	AC_CHECK_LIB(atlas, ATL_xerbla)
+	if test "$save_LIBS" != "$LIBS"; then
+		# check for other atlas libs:
+		AC_CHECK_LIB(cblas, cblas_dgemm)
+		AC_CHECK_LIB(f77blas, main)
+	fi
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# Checks for BLAS dgemm/sgemm libraries (produced by PhiPACK):
+	AC_CHECK_LIB(dgemm, main)
+	AC_CHECK_LIB(sgemm, main)
+fi
+
+if test "$save_LIBS" = "$LIBS"; then
+	# Optimized BLAS for Pentium Pro (from ASCII Red project):
+	# (see http://www.cs.utk.edu/~ghenry/distrib/)
+	AC_CHECK_LIB(blasppro1.1o,main)
+fi
+
+###########################################################################
+
+# Checks for LAPACK library.
+
+# First, for Cray, see if library is available without -llapack, then
+# try -llapack.
+AC_CHECK_FUNC(CGEEV,,AC_CHECK_LIB(lapack, main))
+
+###########################################################################
+
+AC_OUTPUT(Makefile)

@@ -1,0 +1,62 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define if you have the carg function.  */
+#undef HAVE_CARG
+
+/* Define if you have the <getopt.h> header file.  */
+#undef HAVE_GETOPT_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Define if you have the atlas library (-latlas).  */
+#undef HAVE_LIBATLAS
+
+/* Define if you have the blas library (-lblas).  */
+#undef HAVE_LIBBLAS
+
+/* Define if you have the blasppro1.1o library (-lblasppro1.1o).  */
+#undef HAVE_LIBBLASPPRO1_1O
+
+/* Define if you have the cblas library (-lcblas).  */
+#undef HAVE_LIBCBLAS
+
+/* Define if you have the complib.sgimath library (-lcomplib.sgimath).  */
+#undef HAVE_LIBCOMPLIB_SGIMATH
+
+/* Define if you have the cxml library (-lcxml).  */
+#undef HAVE_LIBCXML
+
+/* Define if you have the dgemm library (-ldgemm).  */
+#undef HAVE_LIBDGEMM
+
+/* Define if you have the dxml library (-ldxml).  */
+#undef HAVE_LIBDXML
+
+/* Define if you have the essl library (-lessl).  */
+#undef HAVE_LIBESSL
+
+/* Define if you have the f77blas library (-lf77blas).  */
+#undef HAVE_LIBF77BLAS
+
+/* Define if you have the lapack library (-llapack).  */
+#undef HAVE_LIBLAPACK
+
+/* Define if you have the m library (-lm).  */
+#undef HAVE_LIBM
+
+/* Define if you have the sgemm library (-lsgemm).  */
+#undef HAVE_LIBSGEMM
+
+/* Define if you have the sunmath library (-lsunmath).  */
+#undef HAVE_LIBSUNMATH
+
+/* Define to the version number string. */
+#undef VERSION
+
+/* Define to equivalent of C99 complex keyword.  Do not define if complex is supported directly. */
+#undef complex
+
+/* Define to equivalent of C99 complex I constant.  Do not define if I is supported directly. */
+#undef I
+

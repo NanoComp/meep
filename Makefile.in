@@ -1,0 +1,93 @@
+.SUFFIXES: .dac
+
+CXX = @DACTYL_CXX@
+CXXFLAGS = @DACTYL_CXXFLAGS@
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@
+LIBS = @LIBS@
+LDFLAGS = @LDFLAGS@
+INSTALL = @INSTALL@
+prefix = @prefix@
+# c.f. AC_ARG_PROGRAM autoconf docs:
+transform=@program_transform_name@
+@SET_MAKE@
+
+VERSION = @VERSION@
+package = dactyl
+distdir = $(package)-$(VERSION)
+
+###########################################################################
+
+OBJ_dactyl = dactyl.o harminv.o bands.o
+OBJ_example = example.o libdactyl.a
+
+###########################################################################
+
+all: libdactyl.a example plot
+install: dactyl-install
+uninstall: dactyl-uninstall
+
+###########################################################################
+
+dactyl.o: dactyl.h
+bands_example.o: bands_example.cpp dactyl.h
+convergence_testing.o: convergence_testing.cpp dactyl.h
+example.o: example.cpp dactyl.h
+
+plot: plot.hs
+	ghc -package data -package text -o plot plot.hs
+modes: modes.hs
+	ghc -package data -package text -o modes modes.hs
+libdactyl.a: $(OBJ_dactyl)
+	libtool $(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJ_dactyl) $(LIBS) -o $@
+
+example: $(OBJ_example)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ_example) $(LIBS) -o $@
+
+bands_example: bands_example.o libdactyl.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) bands_example.o libdactyl.a $(LIBS) -o $@
+
+convergence_testing: convergence_testing.o libdactyl.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) convergence_testing.o libdactyl.a $(LIBS) -o $@
+
+.cpp.o:
+	$(CXX) -c $(DEFS) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
+.o.dac: libdactyl.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< libdactyl.a $(LIBS) -o $@
+
+###########################################################################
+
+dactyl-install: dactyl
+	$(INSTALL) -d $(prefix)/bin
+	$(INSTALL) -d $(prefix)/man/man1
+	$(INSTALL) -m 0755 -s dactyl $(prefix)/bin/`echo dactyl|sed '$(transform)'`
+	$(INSTALL) -m 0644 dactyl.1 $(prefix)/man/man1
+
+dactyl-uninstall:
+	rm -f $(prefix)/bin/dactyl
+	rm -f $(prefix)/man/man1/dactyl.1
+
+###########################################################################
+
+uninstall: $(UNINSTALL_TARGETS)
+
+dist:
+	mkdir dactyl-$(VERSION) \
+	&& cp -a Makefile configure dactyl.cpp dactyl.h \
+	bands.cpp plot.hs example.cpp config.h check.h \
+	harminv.cpp harminv.h  dactyl-$(VERSION) \
+	&& GZIP="--best" tar chozf dactyl-$(VERSION).tar.gz dactyl-$(VERSION) \
+	&& rm -rf dactyl-$(VERSION)
+
+test: libdactyl.a d_metal_m_1.dac d_rpml_m_1.dac
+	./d_metal_m_1.dac && mv d_metal_m_1-*.sli test_results/ && \
+	./d_rpml_m_1.dac && mv d_rpml_m_1-*.sli test_results/
+
+clean:
+	rm -f $(OBJ_dactyl) *.o libdactyl.a example core bands_example *.dac
+
+distclean: clean
+	rm -f config.cache Makefile config.log config.status config.h dactyl
+
+maintainer-clean: distclean
+	rm -f configure config.h
