@@ -52,7 +52,8 @@ int radiating_2D(const double xmax) {
       f.get_point(&p2, vec2d(xmax/2 + dx, ymax/2));
       complex<double> amp1 = p1.get_component(Ez);
       complex<double> amp2 = p2.get_component(Ez);
-      double ratio = pow(abs(amp1)/abs(amp2), 2.0) ;
+      double ratio = (abs(amp1) == 0.0 && abs(amp2) == 0.0) ? 1.0 :
+	pow(abs(amp1)/abs(amp2), 2.0) ;
       master_printf("At time %g ratio^2 is %g from %g and %g\n",
 		    f.time(), ratio, abs(amp1), abs(amp2));
       next_print_time += 1.0;
