@@ -179,11 +179,22 @@ void monitor_point::fourier_transform(component w,
   for (int i=0;i<n;i++,p=p->next) {
     d[i] = p->get_component(w);
   }
-  if (fmin > 0.0 || fmax > 0.0) {
-    printf("I haven't yet trained the code to use harminv.\n");
-    *a = NULL;
-    *f = NULL;
-    *numout = 0;
+  if ((fmin > 0.0 || fmax > 0.0) && maxbands > 1) {
+    *a = new complex<double>[maxbands];
+    *f = new complex<double>[maxbands];
+    *numout = maxbands;
+    delete[] d;
+    for (int i = 0;i<maxbands;i++) {
+      (*f)[i] = fmin + i*(fmax-fmin)/(maxbands-1);
+      (*a)[i] = 0.0;
+      p = this;
+      while (p) {
+        double inside = 2*pi*real((*f)[i])*p->t;
+        (*a)[i] += p->get_component(w)*complex<double>(cos(inside),sin(inside));
+        p = p->next;
+      }
+      (*a)[i] /= (tmax-tmin);
+    }
   } else {
     *numout = n;
     *a = new complex<double>[n];
