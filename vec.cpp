@@ -415,11 +415,14 @@ double volume::dv(component c, int ind) const {
 }
 
 vec volume::loc(component c, int ind) const {
-  const int or = (int)(origin.r()*a+0.5);
   const int oz = (int)(origin.z()*a+0.5);
   switch (dim) {
-  case dcyl: return yee_shift(c) + vec(inva*(or+ind/(nz()+1)),
-                                       inva*(oz+(ind%(nz()+1))));
+  case dcyl:
+    {
+      const int or = (int)(origin.r()*a+0.5);
+      return yee_shift(c) + vec(inva*(or+ind/(nz()+1)),
+                              inva*(oz+(ind%(nz()+1))));
+    }
   case d1: return yee_shift(c) + vec(inva*(oz+ind));
   }
 }
