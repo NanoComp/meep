@@ -68,8 +68,8 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
-    printf("Trying with m = %d and a splitting into %d chunks...\n",
-           m, splitting);
+    master_printf("Trying with m = %d and a splitting into %d chunks...\n",
+                  m, splitting);
     fields f(&ma, m);
     f.use_bloch(0.0);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
@@ -79,8 +79,8 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
-    printf("Chunks are %lg by %lg\n",
-           f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+    master_printf("Chunks are %lg by %lg\n",
+                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 29.0;
     while (f.time() < ttot) {
       f.step();
@@ -99,18 +99,6 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
                      "magnetic energy")) return 0;
 
         total_energy_check_time += 5.0;
-        if (splitting == 2 && 0) {
-          monitor_point m;
-          f.get_point(&m, vec(0.0, 0.45));
-          printf("Ez broken is %lg %lg\n",
-                 real(m.get_component(Ez)), imag(m.get_component(Ez)));
-          f1.get_point(&m, vec(0.0, 0.45));
-          printf("Ez should be %lg %lg\n",
-                 real(m.get_component(Ez)), imag(m.get_component(Ez)));
-          f.output_real_imaginary_slices("split");
-          f1.output_real_imaginary_slices("hello");
-          return 0;
-        }
       }
     }
   }
@@ -140,15 +128,15 @@ int test_pattern(double eps(const vec &), int splitting,
   for (int m=0;m<1;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
-    printf("Trying test pattern with m = %d and %d chunks...\n",
-           m, splitting);
+    master_printf("Trying test pattern with m = %d and %d chunks...\n",
+                  m, splitting);
     fields f(&ma, m);
     f.use_bloch(0.0);
     fields f1(&ma1, m);
     f1.use_bloch(0.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
-    printf("Chunks are %lg by %lg\n",
-           f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+    master_printf("Chunks are %lg by %lg\n",
+                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     f1.initialize_field(Hp, checkers);
     f.initialize_field(Hp, checkers);
 
@@ -170,7 +158,7 @@ int test_pattern(double eps(const vec &), int splitting,
 int main(int argc, char **argv) {
   initialize(argc, argv);
   const char *dirname = make_output_directory(argv[0]);
-  printf("Testing cylindrical coords under different splittings...\n");
+  master_printf("Testing cylindrical coords under different splittings...\n");
 
   for (int s=2;s<7;s++)
     if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
