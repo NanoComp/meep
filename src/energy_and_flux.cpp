@@ -330,22 +330,14 @@ static void max_integrand(fields_chunk *fc, component cgrid,
   max_integrand_data *data = (max_integrand_data *) data_;
 
   (void) shift; // unused
-  (void) shift_phase; // unused
   (void) cgrid; // == Dielectric
-  (void) s0;
-  (void) s1;
-  (void) e0;
-  (void) e1;
-  (void) dV0;
-  (void) dV1;
-  (void) S;
-  (void) sn;
+  (void) s0; (void) s1; (void) e0; (void) e1; (void) dV0; (void) dV1; // unused
 
   // We're taking the maximum of E * D*, and we assume that
   // S.phase_shift(E,sn) == S.phase_shift(D,sn), so the phases all cancel
+  (void) shift_phase; (void) S; (void) sn; // unused
 
-
-  // offsets to average E and D components onto the Dielectric grid
+  // offsets to average c1 and c2 (e.g. E and D) onto the Dielectric grid
   // (assume c1 and c2 are stored at the same grid point, so have same offset)
   int oA[3], oB[3];
   for (int i = 0; i < 3; ++i)
@@ -358,19 +350,16 @@ static void max_integrand(fields_chunk *fc, component cgrid,
 	component c1i, c2i;
 	if (fc->f[c1i = data->c1[i]][cmp] && fc->f[c2i = data->c2[i]][cmp]) {
 	  if (oB[i]) // average over 4 points:
-	    dot += 0.0625 *
-	      (fc->f[c1i][cmp][idx] +
-	       fc->f[c1i][cmp][idx + oA[i]] +
-	       fc->f[c1i][cmp][idx + oB[i]] +
-	       fc->f[c1i][cmp][idx + oA[i] + oB[i]]) *
-	      (fc->f[c2i][cmp][idx] +
-	       fc->f[c2i][cmp][idx + oA[i]] +
-	       fc->f[c2i][cmp][idx + oB[i]] +
-	       fc->f[c2i][cmp][idx + oA[i] + oB[i]]);
-	  else if (oA[i]) // average over 2 points:
 	    dot += 0.25 *
-	      (fc->f[c1i][cmp][idx] + fc->f[c1i][cmp][idx + oA[i]]) *
-	      (fc->f[c2i][cmp][idx] + fc->f[c2i][cmp][idx + oA[i]]);
+	      (fc->f[c1i][cmp][idx] * fc->f[c2i][cmp][idx] +
+	       fc->f[c1i][cmp][idx + oA[i]] * fc->f[c2i][cmp][idx + oA[i]] +
+	       fc->f[c1i][cmp][idx + oB[i]] * fc->f[c2i][cmp][idx + oB[i]] +
+	       fc->f[c1i][cmp][idx + oA[i] + oB[i]] 
+	       * fc->f[c2i][cmp][idx + oA[i] + oB[i]]);
+	  else if (oA[i]) // average over 2 points:
+	    dot += 0.5 *
+	      (fc->f[c1i][cmp][idx] * fc->f[c2i][cmp][idx] +
+	       fc->f[c1i][cmp][idx + oA[i]] * fc->f[c2i][cmp][idx + oA[i]]);
 	  else // no average
 	    dot += fc->f[c1i][cmp][idx] * fc->f[c2i][cmp][idx];
 	}
@@ -379,8 +368,6 @@ static void max_integrand(fields_chunk *fc, component cgrid,
     if (dot > data->max)
       data->max = dot;
   }
-
-
 }
 
 double fields::electric_energy_max_in_box(const geometric_volume &where) {
