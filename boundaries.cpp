@@ -213,8 +213,6 @@ void fields::connect_metallic_bigr_chunks() {
           }
         }
     // Now allocate the connection arrays...
-    printf("I found %ld %ld extra connections!\n",
-           num_e_connections, num_h_connections);
     chunks[i]->alloc_extra_connections(num_e_connections, num_h_connections);
     // Next start setting up the connections...
     int which_h = 0, which_e = 0;
