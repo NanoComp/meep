@@ -14,7 +14,9 @@ tar xzf $tarfile
 rm $tarfile
 
 pushd $distdir
-./configure --disable-static --enable-shared
+mkdir OBJ
+cd OBJ
+../configure --disable-static --enable-shared
 make
 make check
 popd
