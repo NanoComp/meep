@@ -494,7 +494,8 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
             err_best = err;
           }
         }
-        if (err_best < 0.025*reff[n]+deltaf) {
+        const double err_limit = deltaf;
+        if (err_best < err_limit) {
           refnum[best_match] = n;
           if (verbosity > 1)
             printf("Matched %d: %10lg Got a best err of %8lg on an f of %lg %d (%lg)\n",
@@ -691,13 +692,13 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
         //         0.5*(Ap[i]+Am[i]), 0.5*(Ap[i]-Am[i])*unshift);
         //}
         for (int i=0;i<numfound;i++) {
-          freqs[i] = 0.5*(fp[i]+fm[i]);
-          if (0.5*(fp[i]-fm[i]) > 0.2*deltaf) {
+          if (0.5*(fp[i]-fm[i]) > 0.01*deltaf) {
             numplus--; // Try another phi...
             if (verbosity > 3)
               printf("We've got some weird frequencies: %lg and %lg\n",fp[i],fm[i]);
           }
-          decays[i] = 0.5*(dp[i]+dm[i]);
+          freqs[i]  = (abs(Ap[i])>abs(Am[i]))?fp[i]:fm[i];//0.5*(fp[i]+fm[i]);
+          decays[i] = (abs(Ap[i])>abs(Am[i]))?dp[i]:dm[i];//0.5*(dp[i]+dm[i]);
           amps1[i] = 0.5*(Ap[i]+Am[i]);
           amps2[i] = 0.5*(Ap[i]-Am[i])*unshift;
         }
