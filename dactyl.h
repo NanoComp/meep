@@ -188,7 +188,6 @@ class fields {
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
-  void output_bands_and_modes(FILE *, const char *, int maxbands=100);
   double energy_in_box(const volume &);
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);

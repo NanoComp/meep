@@ -28,14 +28,15 @@
 bandsdata::bandsdata() {
   verbosity = 0;
   maxbands = -1;
-  tstart = index = 0;
+  tstart = 0;
+  for (int i=0;i<num_bandpts;i++) index[i] = -1;
   tend = -1;
-  for (int c=0;c<10;c++) f[c] = NULL;
+  for (int i=0;i<num_bandpts;i++) for (int c=0;c<10;c++) f[i][c] = NULL;
   P = NULL;
 }
 
 bandsdata::~bandsdata() {
-  for (int c=0;c<10;c++) delete[] f[c];
+  for (int i=0;i<num_bandpts;i++) for (int c=0;c<10;c++) delete[] f[i][c];
   delete[] P;
 }
 
@@ -65,13 +66,20 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   if (bands->tstart < t) bands->tstart = t;
   bands->tend = t + (int)(endtime*a/c) - 1;
 
-  int ind = v.index(Ez,p); // FIXME bug here!
-  if (ind < 0) {
-    printf("Band structure point is not in your volume!\n");
-    exit(1);
+  {
+    int ind[8];
+    double w[8];
+    v.interpolate(v.eps_component(), p, ind, w);
+    int indind = 0;
+    while (bands->index[indind] != -1 && indind < num_bandpts) indind++;
+    for (int i=0;i<8&&w[i]&&indind<num_bandpts;i++)
+      bands->index[indind++] = ind[i];
+    if (w[0] == 0.0) {
+      printf("Band structure point is not in your volume!\n");
+      exit(1);
+    }
   }
   bands->fpmin = frac_pow_min;
-  bands->index = ind;
 
   // Set fmin properly...
   double epsmax = 1;
@@ -104,14 +112,16 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   bands->a = a;
   bands->inva = inva;
   for (int c=0;c<10;c++)
-    if (v.has_field((component)c)) {
-      bands->f[c] = new cmplx[bands->ntime];
-      if (bands->f[c] == NULL) {
-        printf("Unable to allocate bandstructure array!\n");
-        exit(1);
+    for (int i=0;i<num_bandpts;i++)
+      if (v.has_field((component)c)) {
+        delete[] bands->f[i][c];
+        bands->f[i][c] = new cmplx[bands->ntime];
+        if (bands->f[i][c] == NULL) {
+          printf("Unable to allocate bandstructure array!\n");
+          exit(1);
+        }
+        for (int j=0;j<bands->ntime;j++) bands->f[i][c][j] = 0.0;
       }
-      for (int i=0;i<bands->ntime;i++) bands->f[c][i] = 0.0;
-    }
   bands->P = new cmplx[bands->ntime];
   for (int i=0;i<bands->ntime;i++) bands->P[i] = 0.0;
   bands->verbosity = verbosity;
@@ -122,9 +132,11 @@ void fields::record_bands() {
   if (t % bands->scale_factor != 0) return;
   int thet = (t-bands->tstart)/bands->scale_factor;
   if (thet >= bands->ntime) return;
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c))
-      bands->f[c][thet] = cmplx(f[c][0][bands->index], f[c][1][bands->index]);
+  for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
+    for (int c=0;c<10;c++)
+      if (v.has_field((component)c))
+        bands->f[p][c][thet] = cmplx(f[c][0][bands->index[p]],
+                                     f[c][1][bands->index[p]]);
 }
 
 #define HARMOUT(o,n,f) ((o)[(n)+(f)*maxbands])
@@ -234,7 +246,8 @@ static void get_cluster(double f[], int fmax, int maxsize, double maxwid,
 }
 
 int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
-                                        int num_freqs, int fields_considered, int maxbands,
+                                        int num_freqs, int fields_considered,
+                                        int maxbands,
                                         complex<double> *fad, double *approx_power) {
   const double total_time = (bands->tend-bands->tstart)*c/a;
   const double deltaf = 1.0/total_time;
@@ -277,7 +290,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
       num_found++;
       if (num_found >= maxbands) num_found--;
     } else {
-      printf("Rejected a cluster from %lg to %lg (%d freqs)\n", tf[lo], tf[hi], 1+hi-lo);
+      printf("Rejected a cluster from %lg to %lg (%d freqs out of %d)\n", tf[lo], tf[hi], 1+hi-lo, fields_considered);
       if (verbosity > 1) printf("width is %g vs %g\n", tf[hi] - tf[lo], deltaf);
       lo = get_closest(tf,freqs_so_far);
       hi = lo+1;
@@ -317,18 +330,21 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   int fields_considered = 0;
 
   cmplx *bdata;
-  for (int whichf = 0; whichf < 10; whichf++) {
-    if (v.has_field((component)whichf)) {
-      if (verbosity>1) printf("Looking at field %d\n", whichf);
-      int freqs_here = bands->get_freqs(bands->f[whichf], ntime,
-                                        ta+freqs_so_far,tf+freqs_so_far,td+freqs_so_far);
-      if (freqs_here) {
-        fields_considered++;
-        freqs_so_far += freqs_here;
+  for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
+    for (int whichf = 0; whichf < 10; whichf++)
+      if (v.has_field((component)whichf)) {
+        if (verbosity>1) printf("Looking at field %d\n", whichf);
+        int freqs_here = bands->get_freqs(bands->f[p][whichf], ntime,
+                                          ta+freqs_so_far,
+                                          tf+freqs_so_far,
+                                          td+freqs_so_far);
+        if (freqs_here) {
+          fields_considered++;
+          freqs_so_far += freqs_here;
+        }
+        if (freqs_so_far + maxbands > max_freqs) break;
       }
-      if (freqs_so_far + maxbands > max_freqs) break;
-    }
-  }
+  if (k == 0 && v.dim == dcyl && m != 0) fields_considered /= 2;
   num_found = cluster_some_bands_cleverly(tf, td, ta, freqs_so_far, fields_considered,
                                           maxbands, fad, approx_power);
   delete[] ta;

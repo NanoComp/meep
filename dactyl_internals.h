@@ -77,17 +77,19 @@ class src {
   double get_envelope_at_time(int t) const;
 };
 
+const int num_bandpts = 16;
+
 class bandsdata {
  public:
   bandsdata();
   ~bandsdata();
 
-  complex<double> *f[10];
+  complex<double> *f[num_bandpts][10];
   // The following is the polarization at just one point, with Pz and Pp
   // added together (a crude compromize for speed, while still observing the
   // phonon bands).
   complex<double> *P;
-  int tstart, tend, index, maxbands, scale_factor;
+  int tstart, tend, index[num_bandpts], maxbands, scale_factor;
   double a, inva, fmin, fmax, qmin, fpmin;
   int ntime;
   int verbosity;
