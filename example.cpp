@@ -35,6 +35,17 @@ double guided_eps(const vec &x) {
   return 1.6*1.6;             // in the low dielectric
 }
 
+complex<double> checkers(const vec &v) {
+  if (v.z() > 0.5) return 0.0;
+  int z = (int) (v.z()*5.0);
+  int r = (int) (v.r()*5.0);
+  int zz = (int) (v.z()*10.0);
+  int rr = (int) (v.r()*10.0);
+  if ((r & 1) ^ (z & 1)) return -1.0;
+  if ((rr & 1) ^ (zz & 1)) return 1.0;
+  return 0.0;
+}
+
 int main(int argc, char **argv) {
   deal_with_ctrl_c();
   printf("Running example program!\n");
@@ -53,8 +64,9 @@ int main(int argc, char **argv) {
     snprintf(m_str, 10, "%d", m);
     printf("Working on m = %d with a=%d...\n", m, rad);
     fields f(&ma, m);
-    f.add_point_source(Ep, 0.7, 2.5, 0.0, 8.0, vec(0.5, 1.2), 1.0);
-    //f.use_bloch(k);
+    f.use_bloch(0.0);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 1.2), 1.0);
+    //f.initialize_field(Ep, checkers);
 
     double next_print = 0.0;
     while (f.time() < ttot) {
@@ -65,6 +77,7 @@ int main(int argc, char **argv) {
         next_print += 10.0;
       }
       f.step();
+      //f.step_right();
     }
   }
   delete[] dirname;
