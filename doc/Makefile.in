@@ -72,13 +72,13 @@ epsilon_polariton_1d-out/eps.eps : epsilon_polariton_1d.dac
 	sed -e 's/fill//' $@-tmp > $@
 
 omniguide-out/bands.eps : omniguide.dac
-	rm -rf omniguide-out/*
+	rm -rf omniguide-out/
 	$(RUNCODE) ./omniguide.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
 
 lossgain_epsilon-out/eps.eps : lossgain_epsilon.dac
-	rm -rf lossgain_epsilon-out/*
+	rm -rf lossgain_epsilon-out/
 	$(RUNCODE) ./lossgain_epsilon.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
