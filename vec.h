@@ -345,6 +345,9 @@ class volume {
 
 class symmetry {
  public:
+  symmetry();
+  symmetry(const symmetry &);
+  ~symmetry();
   friend symmetry identity();
   friend symmetry rotate4(direction,const volume &);
   friend symmetry rotate2(direction,const volume &);
@@ -355,13 +358,17 @@ class symmetry {
   vec transform(const vec &, int n) const;
   component transform(component, int n) const;
   complex<double> phase_shift(component, int n) const;
-  int multiplicity() const { return g; };
+  int multiplicity() const;
   bool is_primitive(const ivec &) const;
+
+  symmetry operator+(const symmetry &) const;
+  void operator=(const symmetry &);
  private:
   signed_direction S[5];
   vec symmetry_point;
   double a, inva;
   int g; // g is the multiplicity of the symmetry.
+  symmetry *next;
 };
 
 symmetry identity();

@@ -128,13 +128,18 @@ double fields_chunk::electric_energy_in_box(const volume &otherv,
       if (f[c][cmp] && is_electric((component)c))
         for (int i=0;i<v.ntot();i++) {
           const ivec p0 = v.iloc((component)c,i);
-          if (S.is_primitive(p0) && v.owns(p0))
+          if (S.is_primitive(p0) && v.owns(p0)) {
+            int num_times_mapped_to_self = 0;
+            for (int sn=0;sn<S.multiplicity();sn++)
+              if (S.transform(p0,sn)==p0) num_times_mapped_to_self++;
             for (int sn=0;sn<S.multiplicity();sn++) {
               const ivec pn = S.transform(p0,sn);
-              if ((pn!=p0 || sn==0) && otherv.owns(pn))
-                  energy += otherv.intersection(v.dV(pn))*
-                    f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
+              if (otherv.owns(pn))
+                energy += otherv.intersection(v.dV(pn))*
+                  f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i])
+                  /num_times_mapped_to_self;
             }
+          }
         }
   return energy*(1.0/(8*pi));
 }
@@ -147,13 +152,17 @@ double fields_chunk::magnetic_energy_in_box(const volume &otherv,
       if (f[c][cmp] && is_magnetic((component)c))
         for (int i=0;i<v.ntot();i++) {
           const ivec p0 = v.iloc((component)c,i);
-          if (S.is_primitive(p0) && v.owns(p0))
+          if (S.is_primitive(p0) && v.owns(p0)) {
+            int num_times_mapped_to_self = 0;
+            for (int sn=0;sn<S.multiplicity();sn++)
+              if (S.transform(p0,sn)==p0) num_times_mapped_to_self++;
             for (int sn=0;sn<S.multiplicity();sn++) {
               const ivec pn = S.transform(p0,sn);
               if ((pn!=p0 || sn==0) && otherv.owns(pn))
                 energy += otherv.intersection(v.dV(pn))*
                   f[c][cmp][i]*f[c][cmp][i];
             }
+          }
         }
   return energy*(1.0/(8*pi));
 }

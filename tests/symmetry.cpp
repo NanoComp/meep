@@ -253,6 +253,50 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
+int pml_twomirrors(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 5.0;
+
+  const volume v = voltwo(1.0, 1.0, a);
+  const symmetry S = mirror(X,v) + mirror(Y,v);
+
+  mat ma_mm(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  mat mas[2] = { ma1, ma_mm };
+
+  for (int i=0;i<2;i++) mas[i].set_output_directory(dirname);
+  master_printf("Testing two mirrors...\n");
+
+  fields fs[2] = { fields(&mas[0]), fields(&mas[1]) };
+  for (int i=0;i<2;i++) {
+    fs[i].use_metal_everywhere();
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5),-1.5);
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.25));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.25));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.75));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.75));
+  }
+  double total_energy_check_time = 1.0;
+  while (fs[0].time() < ttot) {
+    for (int i=0;i<2;i++) fs[i].step();
+    fs[0].eps_slices("single");
+    fs[1].eps_slices("multi");
+    fs[0].output_real_imaginary_slices("single");
+    fs[1].output_real_imaginary_slices("multi");
+    if (!compare_point(fs[1], fs[0], vec2d(0.01 ,  0.5))) return 0;
+    if (!compare_point(fs[1], fs[0], vec2d(0.21 ,  0.5))) return 0;
+    if (!compare_point(fs[1], fs[0], vec2d(0.46 , 0.33))) return 0;
+    if (!compare_point(fs[1], fs[0], vec2d(0.2  , 0.2 ))) return 0;
+    if (fs[0].time() >= total_energy_check_time) {
+      if (!compare(fs[0].electric_energy_in_box(v),
+                   fs[1].electric_energy_in_box(v),
+                   "electric energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
 int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
   double a = 10.0;
   double ttot = 5.0;
@@ -335,10 +379,10 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
     }
   }
   // Just to make sure slice output doesn't actually crash...
-  f.output_real_imaginary_slices("multi");
-  f1.output_real_imaginary_slices("single");
-  f.eps_slices("multi");
-  f1.eps_slices("single");
+  f.output_real_imaginary_slices("hello");
+  f1.output_real_imaginary_slices("world");
+  f.eps_slices("hello");
+  f1.eps_slices("world");
   return 1;
 }
 
@@ -346,6 +390,9 @@ int main(int argc, char **argv) {
   initialize(argc, argv);
   const char *dirname = make_output_directory(argv[0]);
   master_printf("Testing with various kinds of symmetry...\n");
+
+  if (!pml_twomirrors(one, dirname))
+    abort("error in pml_twomirrors vacuum\n");
 
   if (!exact_pml_rot2x_tm(one, dirname))
     abort("error in exact_pml_rot2x_tm vacuum\n");

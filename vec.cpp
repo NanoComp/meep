@@ -1072,21 +1072,81 @@ symmetry mirror(direction axis, const volume &v) {
 }
 
 symmetry identity() {
-  symmetry s;
-  s.g = 1;
+  return symmetry();
+}
+
+symmetry::symmetry() {
+  g = 1;
   for (int d=0;d<5;d++) {
-    s.S[d].d = (direction)d;
-    s.S[d].flipped = false;
+    S[d].d = (direction)d;
+    S[d].flipped = false;
   }
+  // Set these to NaN just to make sure I don't use them.
+  a = inva = sqrt(-1.0);
+  next = NULL;
+}
+
+symmetry::symmetry(const symmetry &s) {
+  g = s.g;
+  for (int d=0;d<5;d++) {
+    S[d].d = s.S[d].d;
+    S[d].flipped = s.S[d].flipped;
+  }
+  symmetry_point = s.symmetry_point;
+  if (s.next) next = new symmetry(*s.next);
+  else next = NULL;
+  a = s.a;
+  inva = s.inva;
+}
+
+void symmetry::operator=(const symmetry &s) {
+  g = s.g;
+  for (int d=0;d<5;d++) {
+    S[d].d = s.S[d].d;
+    S[d].flipped = s.S[d].flipped;
+  }
+  symmetry_point = s.symmetry_point;
+  if (s.next) next = new symmetry(*s.next);
+  else next = NULL;
+  a = s.a;
+  inva = s.inva;
+}
+
+symmetry::~symmetry() {
+  delete next;
+}
+
+int symmetry::multiplicity() const {
+  if (next) return g*next->multiplicity();
+  else return g;
+}
+
+symmetry symmetry::operator+(const symmetry &b) const {
+  symmetry s = *this;
+  s.next = new symmetry(b);
   return s;
 }
 
 signed_direction symmetry::transform(direction d, int n) const {
   // Returns direction or if opposite, 
-  if (n == 0) return signed_direction(d);
-  if (n == 1) return S[d];
-  if (S[d].flipped) return flip(transform(S[d].d, n-1));
-  return transform(S[d].d, n-1);
+  const int nme = n % g;
+  const int nrest = n / g;
+  if (nme == 0) {
+    if (nrest == 0) return signed_direction(d);
+    else return next->transform(d,nrest);
+  } else {
+    signed_direction sd;
+    if (nme == 1) sd = S[d];
+    if (S[d].flipped) sd = flip(transform(S[d].d, nme-1));
+    else sd = transform(S[d].d, nme-1);
+
+    if (next && nrest) {
+      if (sd.flipped) return flip(next->transform(sd.d, nrest));
+      else return next->transform(sd.d, nrest);
+    } else {
+      return sd;
+    }
+  }
 }
 
 ivec symmetry::transform(const ivec &ov, int n) const {
