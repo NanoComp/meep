@@ -306,6 +306,9 @@ class fields {
                     boundary_condition, bool autoconnect=true,
                     complex<double> kcomponent=0.0);
   void use_metal_everywhere();
+  void use_bloch(direction d, double k, bool autoconnect=true) {
+    use_bloch(d, (complex<double>) k, autoconnect);
+  }
   void use_bloch(direction, complex<double> kz, bool autoconnect=true);
   void use_bloch(const vec &k, bool autoconnect=true);
   vec lattice_vector(direction) const;
