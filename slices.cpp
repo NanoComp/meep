@@ -25,7 +25,42 @@
 /* Below are the output routines. */
 
 double fields::total_energy() {
-  double energy = 0, norm = 0, pi=3.14159265;
+  
+  if (backup_hr[0] == NULL) {
+    DOCMP {
+      backup_hr[cmp] = new double[(nr+1)*(nz+1)];
+      backup_hp[cmp] = new double[nr*(nz+1)];
+      backup_hz[cmp] = new double[nr*(nz+1)];
+    }
+  }
+
+  DOCMP {
+    for (int j=0; j<(nr+1)*(nz+1); j++)
+      backup_hr[cmp][j] = hr[cmp][j];
+    for (int j=0; j<nr*(nz+1); j++)
+      backup_hp[cmp][j] = hp[cmp][j];
+    for (int j=0; j<nr*(nz+1); j++)
+      backup_hz[cmp][j] = hz[cmp][j];
+  }
+
+  step_h_bulk();
+  step_h_boundaries();
+  double next_step_magnetic_energy = magnetic_energy();
+
+  DOCMP {
+    for (int j=0; j<(nr+1)*(nz+1); j++)
+      hr[cmp][j] = backup_hr[cmp][j];
+    for (int j=0; j<nr*(nz+1); j++)
+      hp[cmp][j] = backup_hp[cmp][j];
+    for (int j=0; j<nr*(nz+1); j++)
+      hz[cmp][j] = backup_hz[cmp][j];
+  }
+
+ return electric_energy() + 0.5*next_step_magnetic_energy + 0.5*magnetic_energy();
+}
+
+double fields::electric_energy() {
+  double energy = 0, norm = 0;
   DOCMP {
     for (int r=0;r<nr;r++) {
       double rph = r+0.5;
@@ -33,6 +68,19 @@ double fields::total_energy() {
         energy += rph*(1./MA(ma->invepser,r,z))*CM(er,r,z)*CM(er,r,z);
         energy += r*(1./MA(ma->invepsep,r,z))*CM(ep,r,z)*CM(ep,r,z);
         energy += r*(1./MA(ma->invepsez,r,z))*CM(ez,r,z)*CM(ez,r,z);
+        norm += (r + rph)/2;
+      }
+    }
+  }
+  return energy/norm/(8*pi);
+}
+
+double fields::magnetic_energy() {
+  double energy = 0, norm = 0;
+  DOCMP {
+    for (int r=0;r<nr;r++) {
+      double rph = r+0.5;
+      for (int z=0;z<nz;z++) {
         energy += r*CM(hr,r,z)*CM(hr,r,z);
         energy += rph*CM(hp,r,z)*CM(hp,r,z);
         energy += rph*CM(hz,r,z)*CM(hz,r,z);

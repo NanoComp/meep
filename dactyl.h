@@ -98,6 +98,7 @@ class monitor_point {
 class fields {
  public:
   double *(hr[2]), *(hp[2]), *(hz[2]), *(er[2]), *(ep[2]), *(ez[2]);
+  double *(backup_hr[2]), *(backup_hp[2]), *(backup_hz[2]);
   double *(hrp[2]), *(hpz[2]), *(hzr[2]), *(erp[2]), *(epz[2]), *(ezr[2]);
   double *(z_hrp[2][2]), *(z_hpz[2][2]), *(z_erp[2][2]), *(z_epz[2][2]);
   polarization *pol, *olpol;
@@ -156,6 +157,8 @@ class fields {
   void output_bands(FILE *, const char *, int maxbands=100);
   void output_bands_and_modes(FILE *, const char *, int maxbands=100);
   double total_energy();
+  double electric_energy();
+  double magnetic_energy();
   double zflux(int ri, int ro, int z);
   double rflux(int zl, int zu, int r);
   void dft_flux();

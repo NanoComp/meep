@@ -42,6 +42,9 @@ fields::~fields() {
     delete[] er[cmp];
     delete[] ep[cmp];
     delete[] ez[cmp];
+    delete[] backup_hr[cmp];
+    delete[] backup_hp[cmp];
+    delete[] backup_hz[cmp];
     delete[] hrp[cmp];
     delete[] hpz[cmp];
     delete[] hzr[cmp];
@@ -98,18 +101,17 @@ fields::fields(const mat *the_ma, int tm) {
   pol = polarization::set_up_polarizations(ma);
   olpol = polarization::set_up_polarizations(ma);
   h_sources = e_sources = NULL;
-  hr[0] = new double[(nr+1)*(nz+1)];
-  hp[0] = new double[nr*(nz+1)];
-  hz[0] = new double[nr*(nz+1)];
-  er[0] = new double[nr*(nz+1)];
-  ep[0] = new double[(nr+1)*(nz+1)];
-  ez[0] = new double[(nr+1)*(nz+1)];
-  hr[1] = new double[(nr+1)*(nz+1)];
-  hp[1] = new double[nr*(nz+1)];
-  hz[1] = new double[nr*(nz+1)];
-  er[1] = new double[nr*(nz+1)];
-  ep[1] = new double[(nr+1)*(nz+1)];
-  ez[1] = new double[(nr+1)*(nz+1)];
+  DOCMP {
+    hr[cmp] = new double[(nr+1)*(nz+1)];
+    hp[cmp] = new double[nr*(nz+1)];
+    hz[cmp] = new double[nr*(nz+1)];
+    er[cmp] = new double[nr*(nz+1)];
+    ep[cmp] = new double[(nr+1)*(nz+1)];
+    ez[cmp] = new double[(nr+1)*(nz+1)];
+    backup_hr[cmp] = NULL;
+    backup_hp[cmp] = NULL;
+    backup_hz[cmp] = NULL;
+  }
   if (ez[1] == NULL) {
     printf("Out of memory!\n");
     exit(1);
@@ -132,6 +134,10 @@ fields::fields(const mat *the_ma, int tm) {
     z_erp[cmp][1] = new double[npmlz*(nr+1)];
     z_epz[cmp][0] = new double[npmlz*(nr+1)];
     z_epz[cmp][1] = new double[npmlz*(nr+1)];
+  }
+  if ( z_epz[1][1] == NULL) {
+    printf("Out of memory!\n");
+    exit(1);
   }
   DOCMP {
     for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
