@@ -156,6 +156,56 @@ bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) co
   return user_volume.owns(*there);
 }
 
+void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
+                                                  complex<double> kphase[8], int &ncopies) const {
+  // For periodic boundary conditions, 
+  // this function locates up to 8 translated copies of the initial volume specified by (p1,p2)
+  // First bring center of volume inside
+  ncopies = 1;
+  newp1[0] = p1;
+  newp2[0] = p2;
+  kphase[0] = 1;
+  vec cen = (newp1[0] + newp2[0]) * 0.5;
+  LOOP_OVER_DIRECTIONS(v.dim, d) 
+    if (boundaries[High][d] == Periodic)  {
+      while (cen.in_direction(d) < v.boundary_location(Low, d)) {
+        newp1[0] += lattice_vector(d);
+        newp2[0] += lattice_vector(d);
+        kphase[0] *= conj(eikna[d]);
+        cen = (newp1[0] + newp2[0]) * 0.5;
+      }
+      while (cen.in_direction(d) > v.boundary_location(High, d)) {
+        newp1[0] -= lattice_vector(d);
+        newp2[0] -= lattice_vector(d);
+        kphase[0] *= eikna[d];
+        cen = (newp1[0] + newp2[0]) * 0.5;
+      }
+    }
+  
+  // if volume extends outside user_volume in any direction, we need to duplicate already existing copies
+  LOOP_OVER_DIRECTIONS(v.dim, d) 
+    if (boundaries[High][d] == Periodic) {
+      if (newp1[0].in_direction(d) < v.boundary_location(Low, d) ||
+          newp2[0].in_direction(d) < v.boundary_location(Low, d)) {
+        for (int j=0; j<ncopies; j++) {
+          newp1[ncopies+j] = newp1[j] + lattice_vector(d);
+          newp2[ncopies+j] = newp2[j] + lattice_vector(d);
+          kphase[ncopies+j] = kphase[j] * conj(eikna[d]);
+        }
+        ncopies *= 2;
+      }
+      else if (newp1[0].in_direction(d) > v.boundary_location(High, d) ||
+               newp2[0].in_direction(d) > v.boundary_location(High, d)) {
+        for (int j=0; j<ncopies; j++) {
+          newp1[ncopies+j] = newp1[j] - lattice_vector(d);
+          newp2[ncopies+j] = newp2[j] - lattice_vector(d);
+          kphase[ncopies+j] = kphase[j] * eikna[d];
+        }
+        ncopies *= 2;
+      }
+    }
+}
+
 bool fields::locate_component_point(component *c, ivec *there,
                                     complex<double> *phase) const {
   // returns true if this point and component exist in the user_volume.  If

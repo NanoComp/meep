@@ -72,26 +72,30 @@ class polarization {
   void initialize_energy(double energy(const vec &));
 };
 
-class src_pt {
+class src_vol {
  public:
-  src_pt(src_time *st) { t = st; next = NULL; }
-  ~src_pt() { delete next; }
+  src_vol(component cc, src_time *st, int n, const int *ind, const complex<double> *amps);
+  src_vol(const src_vol &sv);
+  ~src_vol() { delete next; delete[] index; delete[] A;}
 
   src_time *t;
-  int i; // location of source in grid
+  int *index; // list of locations of sources in grid (indices)
+  int npts; // number of points in list
   component c; // field component the source applies to
-  complex<double> A; // amplitude of the source at this point/component
+  complex<double> *A; // list of amplitudes
 
-  complex<double> dipole() { return A * t->dipole(); }
-  complex<double> dipole(double time) { return A * t->dipole(time); }
-  complex<double> current() { return A * t->current(); }
-  complex<double> current(double T, double dt) { return A * t->current(T,dt); }
+  complex<double> dipole(int j) { return A[j] * t->dipole(); }
+  complex<double> dipole(int j, double time) { return A[j] * t->dipole(time); }
+  complex<double> current(int j) { return A[j] * t->current(); }
+  complex<double> current(int j, double T, double dt) { return A[j] * t->current(T,dt); }
   void update(double time, double dt) { t->update(time, dt); }
 
-  bool operator==(const src_pt &p) const {return p.i==i && p.c==c && p.t==t;}
+  bool operator==(const src_vol &sv) const {
+    return sv.index[0]==index[0] && sv.index[sv.npts-1]==index[npts-1] && sv.c==c && sv.t==t;
+  }
 
-  src_pt *add_to(src_pt *others) const;
-  src_pt *next;
+  src_vol *add_to(src_vol *others) const;
+  src_vol *next;
 };
 
 const int num_bandpts = 32;

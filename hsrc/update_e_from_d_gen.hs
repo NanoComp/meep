@@ -40,13 +40,15 @@ calc_d_minus_p = if_ "have_d_minus_p" $
 
 calc_d_minus_p_sources = if_ "have_d_minus_p" $
     -- The following code calculates the polarization from sources.
-    loop_sources "e_sources" "spt" $
-      doblock "if (f[spt->c][0])" $ 
-	docode [
-	  doexp "const complex<double> A = spt->dipole()",
-          for_complex $
-	    doexp $ d_minus_p "spt->c" "spt->i" |-=| get_cmp_part "A"
-	]
+    loop_sources "e_sources" "sv" $
+      doblock "if (f[sv->c][0])" $ 
+        doblock "for (int j=0; j<sv->npts; j++)" $ 
+	  docode
+          [
+	   doexp "const complex<double> A = sv->dipole(j)",
+           for_complex $
+	     doexp $ d_minus_p "sv->c" "sv->index[j]" |-=| get_cmp_part "A"
+	  ]
 
 {- Half-step polarization energy.
 
@@ -112,5 +114,5 @@ loop_polarizations job =
 loop_new_and_old_polarizations job = if_ "pol" $ doblock
     "for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next)" job
 loop_sources start svar job =
-    if_ start $ doblock ("for (src_pt *"++svar++" = "++start++"; "++
+    if_ start $ doblock ("for (src_vol *"++svar++" = "++start++"; "++
                                svar++"; "++svar++" = "++svar++"->next)") job

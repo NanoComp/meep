@@ -31,16 +31,6 @@ static inline int max(int a, int b) { return (a>b)?a:b; };
 static inline double min(double a, double b) { return (a<b)?a:b; };
 static inline double max(double a, double b) { return (a>b)?a:b; };
 
-static inline double int_to_lattice(int n, double a, double inva=0.0) {
-  if (inva == 0.0) inva = 1.0/a;
-  return (2*n)*(0.5*inva);
-}
-
-static inline int lattice_to_int(double x, double a, double inva=0.0) {
-  if (inva == 0.0) inva = 1.0/a;
-  return (int)floor(x*(2.0*a) + 0.5)/2;
-}
-
 static inline double yee_to_lattice(int n, double a, double inva=0.0) {
   if (inva == 0.0) inva = 1.0/a;
   return n*(0.5*inva);
@@ -544,6 +534,14 @@ ivec volume::big_corner() const {
   case Dcyl: return io() + ivec(nr(),nz())*2;
   }
   return ivec(0); // This is never reached.
+}
+
+vec volume::corner(boundary_side b) const { 
+  if (b == Low) return origin; // Low corner
+  vec tmp = origin;
+  LOOP_OVER_DIRECTIONS(dim, d)
+    tmp.set_direction(d, tmp.in_direction(d) + num_direction(d) * inva);
+  return tmp; // High corner
 }
 
 void volume::print() const {

@@ -217,16 +217,17 @@ void fields::step_h_source() {
       chunks[i]->step_h_source(chunks[i]->h_sources, tim);
 }
 
-void fields_chunk::step_h_source(src_pt *spt, double time) {
-  if (spt == NULL) return;
-  component c = spt->c;
-  if (f[c][0] && is_magnetic(c)) {
-    complex<double> A = spt->current();
-    int i = spt->i;
-    f[c][0][i] += real(A);
-    if (!is_real) f[c][1][i] += imag(A);
-  }
-  step_h_source(spt->next, time);
+void fields_chunk::step_h_source(src_vol *sv, double time) {
+  if (sv == NULL) return;
+  component c = sv->c;
+  if (f[c][0] && is_magnetic(c))
+    for (int j=0; j<sv->npts; j++) {
+      const complex<double> A = sv->current(j);
+      const int i = sv->index[j];
+      f[c][0][i] += real(A);
+      if (!is_real) f[c][1][i] += imag(A);
+    }
+  step_h_source(sv->next, time);
 }
 
 void fields::calc_sources(double tim) {

@@ -413,6 +413,7 @@ class volume {
   double boundary_location(boundary_side, direction) const;
   ivec big_corner() const;
   ivec little_corner() const { return io(); };
+  vec corner(boundary_side b) const;
 
   bool contains(const vec &) const;
   bool contains(const ivec &) const;

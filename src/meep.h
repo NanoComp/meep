@@ -107,7 +107,7 @@ class structure_chunk {
   double *inveps[NUM_FIELD_COMPONENTS][5];
   double *C[5][NUM_FIELD_COMPONENTS];
   double *Cdecay[5][NUM_FIELD_COMPONENTS][5];
-  volume v;
+  volume v;  // integer volume that could be bigger than non-overlapping gv below
   geometric_volume gv;
   polarizability *pb;
 
@@ -198,7 +198,7 @@ class structure {
  private:
 };
 
-class src_pt;
+class src_vol;
 class bandsdata;
 class fields_chunk;
 
@@ -352,7 +352,7 @@ class fields_chunk {
   geometric_volume gv;
   int m, is_real;
   bandsdata *bands;
-  src_pt *e_sources, *h_sources;
+  src_vol *e_sources, *h_sources;
   const structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
@@ -435,7 +435,7 @@ class fields_chunk {
   void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
   void step_h();
-  void step_h_source(src_pt *, double);
+  void step_h_source(src_vol *, double);
   void step_d();
   void update_e_from_d_prepare(double *d_minus_p[5][2], bool have_d_minus_p);
   void update_e_from_d_sources(double *d_minus_p[5][2], bool have_d_minus_p);
@@ -449,13 +449,12 @@ class fields_chunk {
   // monitor.cpp
   // sources.cpp
 
-  // add_point_source returns 1 if the connections between chunks need to
+  // add_volume_source returns 1 if the connections between chunks need to
   // be recalculated.  This allows us to avoid allocating TE or TM fields
   // until we know which is desired.
-  int add_point_source(component whichf, src_time *src,
-		       const ivec &, complex<double> amp);
-  void add_indexed_source(component whichf, src_time *src,
-                          int theindex, complex<double> amp);
+  // add_volume_source - amp is an overall amplitude by which A() is multiplied
+  int add_volume_source(component whichf, src_time *src, const vec &, const vec &,
+                        complex<double> A(const vec &), complex<double> amp, symmetry S, int sn);
   // initialize.cpp
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
@@ -561,6 +560,8 @@ class fields {
                         int is_continuous = 0);
   void add_point_source(component whichf, const src_time &src,
                         const vec &, complex<double> amp = 1.0);
+  void add_volume_source(component whichf, const src_time &src,
+                        const vec &, const vec &, complex<double> A(const vec &), complex<double> amp);
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_A(complex<double> A(component, const vec &), double freq);
   void initialize_with_nth_te(int n);
@@ -628,6 +629,8 @@ class fields {
   ivec ilattice_vector(direction) const;
   bool locate_component_point(component *, ivec *, complex<double> *) const;
   bool locate_point_in_user_volume(ivec *, complex<double> *phase) const;
+  void locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
+                                           complex<double> kphase[8], int &ncopies) const;
   // step.cpp
   void phase_material();
   void step_h();

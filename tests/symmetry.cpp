@@ -37,7 +37,7 @@ double rods_2d(const vec &pp) {
   return 1.0;
 }
 
-static const double eps_compare = 1.9e-14;
+static const double eps_compare = 7e-15;
 static const double thresh_compare = 1e-16;
 
 int compare(double a, double b, const char *n) {
@@ -80,7 +80,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
 
 int test_cyl_metal_mirror(double eps(const vec &)) {
   master_printf("Testing Z mirror symmetry in Cylindrical...\n");
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = volcyl(1.0, 1.0, a);
@@ -237,7 +237,7 @@ int test_origin_shift(const char *dirname) {
 
 int test_metal_xmirror(double eps(const vec &)) {
   master_printf("Testing X mirror symmetry...\n");
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = voltwo(1.0, 1.0, a);
@@ -277,7 +277,7 @@ int test_metal_xmirror(double eps(const vec &)) {
 }
 
 int test_3D_metal_xmirror(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
@@ -353,7 +353,7 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
 }
 
 int test_3D_metal_odd_zmirror(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = vol3d(1.1, 0.6, 1.0, a);
@@ -429,7 +429,7 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
 }
 
 int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
@@ -507,7 +507,7 @@ int test_metal_ymirror(double eps(const vec &)) {
 }
 
 int test_yperiodic_ymirror(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
@@ -556,7 +556,7 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
 }
 
 int test_metal_rot2y(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 16.0;
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
@@ -640,7 +640,7 @@ int exact_metal_rot2y(double eps(const vec &)) {
 }
 
 int pml_twomirrors(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 16.0;
   double ttot = 10.0;
 
   const volume v = voltwo(2.0, 2.0, a);
@@ -767,7 +767,7 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
 }
 
 int exact_pml_rot2x_tm(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 30.0;
 
   const volume v = voltwo(3.0, 3.0, a);
@@ -972,11 +972,11 @@ int main(int argc, char **argv) {
   if (!exact_pml_rot2x_tm(one))
     abort("error in exact_pml_rot2x_tm vacuum\n");
 
-  if (!test_metal_xmirror(one))
-    abort("error in test_metal_xmirror vacuum\n");
   if (!test_metal_xmirror(rods_2d))
     abort("error in test_metal_xmirror rods_2d\n");
 
+  if (!test_metal_xmirror(one))
+    abort("error in test_metal_xmirror vacuum\n");
   if (!test_metal_ymirror(one))
     abort("error in test_metal_ymirror vacuum\n");
   if (!test_metal_ymirror(rods_2d))
