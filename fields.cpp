@@ -139,7 +139,7 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm)
     FOR_COMPONENTS(i) f_backup_p_pml[i][cmp] = NULL;
     FOR_COMPONENTS(i) f_backup_m_pml[i][cmp] = NULL;
 
-    FOR_COMPONENTS(i) if (v.dim != D2 && v.has_field((component)i))
+    FOR_COMPONENTS(i) if (v.dim != D2 && v.has_field(i))
       f[i][cmp] = new double[v.ntot()];
     FOR_COMPONENTS(i) if (f[i][cmp]) {
       f_p_pml[i][cmp] = new double[v.ntot()];
