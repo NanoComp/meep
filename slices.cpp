@@ -142,6 +142,9 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
 } def\n");
   fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
   fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
+  fprintf(out, "    /D { moveto\n\
+    0 1 0 setrgbcolor [0 %lg] 0 setdash\n\
+    lineto stroke } def\n", dx);
 }
 
 static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
@@ -186,6 +189,9 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
   fprintf(out, "    stroke\n\
 } def\n");
   fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
+  fprintf(out, "    /D { moveto\n\
+    0 1 0 setrgbcolor [0 %lg] 0 setdash\n\
+    lineto stroke } def\n", dx);
 }
 
 static void eps_trailer(FILE *out) {
@@ -226,6 +232,37 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
           break;
         }
       }
+}
+
+void fields::outline_chunks(const char *name) {
+  if (v.dim == D1) return;
+  if (my_rank()) return;
+  FILE *out = fopen(name, "a");
+  if (!out) {
+    printf("Unable to open file '%s' for epsilon border output.\n", name);
+    return;
+  }
+  for (int i=0;i<num_chunks;i++) {
+    double x1, y1, x2, y2, x3, y3, x4, y4;
+    switch (v.dim) {
+    case Dcyl:
+      x1 = chunks[i]->v.zmin(); y1 = chunks[i]->v.rmin();
+      x2 = chunks[i]->v.zmin(); y2 = chunks[i]->v.rmax();
+      x3 = chunks[i]->v.zmax(); y3 = chunks[i]->v.rmax();
+      x4 = chunks[i]->v.zmin(); y4 = chunks[i]->v.rmin();
+    break;
+    case D2:
+      x1 = chunks[i]->v.xmin(); y1 = chunks[i]->v.ymin();
+      x2 = chunks[i]->v.xmin(); y2 = chunks[i]->v.ymax();
+      x3 = chunks[i]->v.xmax(); y3 = chunks[i]->v.ymax();
+      x4 = chunks[i]->v.xmax(); y4 = chunks[i]->v.ymin();
+    }
+    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x1, y1, x2, y2);
+    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x2, y2, x3, y3);
+    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x3, y3, x4, y4);
+    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x4, y4, x1, y1);
+  }
+  fclose(out);
 }
 
 static void eps_outline(component m, const double *f,
@@ -530,6 +567,8 @@ void fields::eps_slices(const volume &what, const char *name) {
               if (S.transform((component)otherc,sn) == c)
                 eps_outline(v.eps_component(), chunks[i]->ma->eps,
                             chunks[i]->v, what, S, sn, n);
+      all_wait();
+      outline_chunks(n);
       all_wait();
       if (am_master()) output_complex_eps_tail(n);
     }

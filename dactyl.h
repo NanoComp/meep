@@ -380,6 +380,8 @@ class fields {
                                   complex<double> *fad, double *approx_power);
   void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
+  // slices.cpp
+  void outline_chunks(const char *name);
   // energy_and_flux.cpp
   // fluxes.cpp
   void update_fluxes();
