@@ -35,6 +35,12 @@ class vec {
     case d1: return vec(tz+a.tz);
     }
   };
+  vec operator+=(const vec &a) {
+    switch (dim) {
+    case dcyl: tr += a.tr; tz += a.tz; return *this;
+    case d1: tz += a.tz; return vec(tz+a.tz);
+    }
+  };
   vec operator-(const vec &a) const {
     switch (dim) {
     case dcyl: return vec(tr-a.tr,tz-a.tz);
