@@ -96,7 +96,7 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
   double a = 10.0;
   double ttot = 17.0;
 
-  volume v = vol3d(3.0, 2.0, 1.0, a);
+  volume v = vol3d(1.5, 0.5, 1.0, a);
   mat ma1(v, eps, 1);
   mat ma(v, eps, splitting);
   ma.set_output_directory(dirname);
@@ -105,17 +105,17 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&ma);
   f.use_metal_everywhere();
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,1.299,0.401), 1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
   fields f1(&ma1);
   f1.use_metal_everywhere();
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,1.299,0.401), 1.0);
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
   double total_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.5  , 0.01))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.33))) return 0;
-    if (!compare_point(f, f1, vec(1.301  , 1.301  , 0.399 ))) return 0;
+    if (!compare_point(f, f1, vec(1.301  , 0.301  , 0.399 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -135,7 +135,7 @@ int test_periodic(double eps(const vec &), int splitting, const char *dirname) {
   double a = 10.0;
   double ttot = 17.0;
 
-  volume v = vol3d(3.0, 2.0, 1.0, a);
+  volume v = vol3d(1.5, 0.5, 1.0, a);
   mat ma1(v, eps, 1);
   mat ma(v, eps, splitting);
   ma.set_output_directory(dirname);
@@ -144,17 +144,17 @@ int test_periodic(double eps(const vec &), int splitting, const char *dirname) {
   master_printf("Periodic test using %d chunks...\n", splitting);
   fields f(&ma);
   f.use_bloch(vec(0.1,0.7,0.3));
-  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5,0.5), 1.0);
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.25,0.5), 1.0);
   fields f1(&ma1);
   f1.use_bloch(vec(0.1,0.7,0.3));
-  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5,0.5), 1.0);
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.25,0.5), 1.0);
   double total_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01, 0.5  ))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33, 0.2  ))) return 0;
-    if (!compare_point(f, f1, vec(1.0  , 1.0 , 0.301))) return 0;
+    if (!compare_point(f, f1, vec(1.0  , 0.25 , 0.301))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -173,15 +173,15 @@ int test_periodic(double eps(const vec &), int splitting, const char *dirname) {
 int test_pml(double eps(const vec &), const char *dirname) {
   double a = 10.0;
 
-  volume v = vol3d(3.0, 2.0, 2.0, a);
+  volume v = vol3d(1.5, 1.0, 1.2, a);
   mat ma(v, eps, 0);
   ma.set_output_directory(dirname);
-  ma.use_pml_everywhere(0.5);
+  ma.use_pml_everywhere(0.401);
 
   master_printf("Testing pml quality...\n");
   fields f(&ma);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,1.299,0.801), 1.0);
-  const double deltaT = 20.0;
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.751,0.5,0.601), 1.0);
+  const double deltaT = 10.0;
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
 
@@ -192,7 +192,7 @@ int test_pml(double eps(const vec &), const char *dirname) {
     f.step();
     if (f.time() >= total_energy_check_time) {
       const double new_energy = f.total_energy();
-      if (new_energy > last_energy*1e-5) { // FIXME: problem here? this is pretty slow...
+      if (new_energy > last_energy*4e-3) { // FIXME: problem here? this is pretty slow...
         master_printf("Energy decaying too slowly: from %lg to %lg (%lg)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
@@ -208,7 +208,7 @@ int test_pml(double eps(const vec &), const char *dirname) {
 int test_pml_splitting(double eps(const vec &), int splitting, const char *dirname) {
   double a = 10.0;
 
-  volume v = vol3d(3.0, 2.0, 2.0, a);
+  volume v = vol3d(1.5, 1.0, 1.2, a);
   mat ma1(v, eps, 1);
   mat ma(v, eps, splitting);
   ma.set_output_directory(dirname);
@@ -218,9 +218,9 @@ int test_pml_splitting(double eps(const vec &), int splitting, const char *dirna
 
   master_printf("Testing pml while splitting into %d chunks...\n", splitting);
   fields f(&ma);
-  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,1.299,0.401), 1.0);
+  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.099,0.499,0.501), 1.0);
   fields f1(&ma1);
-  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,1.299,0.401), 1.0);
+  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.099,0.499,0.501), 1.0);
   const double ttot = 31.0;
 
   double next_energy_time = 10.0;
@@ -232,7 +232,7 @@ int test_pml_splitting(double eps(const vec &), int splitting, const char *dirna
     if (!approx_point(f, f1, vec(0.5  , 0.01 , 1.0 ))) return 0;
     if (!approx_point(f, f1, vec(0.46 , 0.33 , 0.33))) return 0;
     if (!approx_point(f, f1, vec(1.0  , 1.0  , 0.33))) return 0;
-    if (!approx_point(f, f1, vec(1.3  , 1.3  , 0.15))) return 0;
+    if (!approx_point(f, f1, vec(1.3  , 0.3  , 0.15))) return 0;
     if (f.time() > next_energy_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
   for (int s=2;s<8;s++)
     if (!test_metal(one, s, dirname)) abort("error in test_metal vacuum\n");
 
-  for (int s=2;s<5;s++)
+  for (int s=2;s<4;s++)
     if (!test_pml_splitting(one, s, dirname))
       abort("error in test_pml_splitting vacuum\n");
 

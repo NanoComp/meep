@@ -62,15 +62,16 @@ int radiating_2D(const double xmax) {
 
 int radiating_3D() {
   const double a = 10.0;
-  const double ymax = 3.0;
+  const double pml_thickness = 1.0;
+  const double ymax = 0.4 + 2*pml_thickness;
   const double w = 0.30;
-  const double xmax = 12.0;
-  const double dx = 2.0;
+  const double xmax = 8.0;
+  const double dx = (xmax/2 - pml_thickness)/2 - 2/a;
 
   volume v = vol3d(xmax,ymax,ymax,a);
   symmetry S = mirror(X,v) + mirror(Y,v) + mirror(Z,v)*(-1.0);
   mat ma(v, one, 0, S);
-  ma.use_pml_everywhere(ymax/3);
+  ma.use_pml_everywhere(pml_thickness);
 
   fields f(&ma);
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0,
