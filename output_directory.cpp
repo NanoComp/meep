@@ -27,10 +27,13 @@
 
 void mat::set_output_directory(const char *name) {
   outdir = name;
+  printf("Using output directory %s/\n", name);
 }
 
 void fields::set_output_directory(const char *name) {
   outdir = name;
+  if (strcmp(name, ma->outdir) != 0)
+    printf("Using output directory %s/ for these fields.\n", name);    
 }
 
 static int is_same_file(const char *a, const char *b) {
@@ -71,7 +74,7 @@ static int is_ok_dir(const char *dirname, const char *sourcename, const char *ba
   }
 
   char drsrcn[buflen];
-  snprintf(drsrcn, buflen, "%s/%s.cpp", dirname, basename);
+  snprintf(drsrcn, buflen, "%s/%s", dirname, sourcename);
   if (is_same_file(drsrcn, sourcename)) return 1;
   
   FILE *f;
@@ -92,34 +95,44 @@ FILE *create_output_file(const char *dirname, const char *fname) {
   return o;
 }
 
-const char *make_output_directory(const char *exename) {
+const char *make_output_directory(const char *exename, const char *jobname) {
   const int buflen = 300;
   char basename[buflen];
-  const char *bnp = exename; // basename holds the actual name of the
+  char stripped_name[buflen];
+  const char *bnp = exename; // stripped_name holds the actual name of the
                                   // executable (dirs removed).
   const char *t;
   for (t=exename;*t;t++) {
     if (*t == '/') bnp = t+1;
   }
-  snprintf(basename, buflen, "%s", bnp);
-  if (strcmp(basename + strlen(basename) - 4, ".dac") == 0) {
-    basename[strlen(basename) - 4] = (char)0;
+  
+  snprintf(stripped_name, buflen, "%s", bnp);
+  if (strcmp(stripped_name + strlen(stripped_name) - 4, ".dac") == 0) {
+    stripped_name[strlen(stripped_name) - 4] = (char)0;
   }
 
   char sourcename[buflen]; // Holds the "example.cpp" filename.
-  snprintf(sourcename, buflen, "%s.cpp", exename);
+  snprintf(sourcename, buflen, "%s.cpp", stripped_name);
+
+  if (jobname != NULL) {
+    snprintf(basename, buflen, "%s", jobname);
+  }
+  else {
+    snprintf(basename, buflen, "%s", stripped_name);
+  }
+  
 
   char outdirname[buflen];
   snprintf(outdirname, buflen, "%s-out", basename);
   if (!is_ok_dir(outdirname, sourcename, basename)) {
     for (int i=1;i<100;i++) {
+      printf("Source files %s  and %s/%s differ!\n", sourcename, outdirname, sourcename);  
       snprintf(outdirname, buflen, "%s-out-%d", basename, i);
       if (is_ok_dir(outdirname, sourcename, basename)) break;
     }
   }
-  
   char outsrcname[buflen];
-  snprintf(outsrcname, buflen, "%s/%s.cpp", outdirname, basename);
+  snprintf(outsrcname, buflen, "%s/%s", outdirname, sourcename);
   cp(sourcename, outsrcname);
 
   char *dirname = new char[strlen(outdirname)+1];

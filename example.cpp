@@ -64,7 +64,6 @@ int main(int argc, char **argv) {
   
   mat ma(guided_eps, 1.0, 0.0, rad);
   const char *dirname = make_output_directory(argv[0]);
-  printf("Storing output in directory %s/\n", dirname);
   FILE *ban = create_output_file(dirname, "bands");
   //FILE *fluxf = create_output_file(dirname, "flux");
   ma.set_output_directory(dirname);
