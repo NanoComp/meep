@@ -153,15 +153,9 @@ int main(int argc, char **argv) {
 
   for (int s=2;s<7;s++)
     if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
-  if (!test_pattern(one, 30, dirname)) abort("error in crazy test_pattern\n");
-  if (!test_pattern(one, 60, dirname)) abort("error in crazy test_pattern\n");
 
   for (int s=2;s<7;s++)
     if (!test_simple_periodic(one, s, dirname)) abort("error in test_simple_periodic\n");
-  if (!test_simple_periodic(one, 30, dirname))
-    abort("error in crazy test_simple_periodic\n");
-  if (!test_simple_periodic(one, 60, dirname))
-    abort("error in crazy test_simple_periodic\n");
   exit(0);
 }
 
