@@ -351,52 +351,179 @@ void fields::add_src_pt(int r, int z,
   if (peaktime <= 0.0) tmp->peaktime = tmp->cutoff;
 }
 
+void fields::find_source_z_position(double z, double shift, int *z1, int *z2, double *amp1, double *amp2) 
+{
+  if (npmlz > 0) { 
+    if (z == 0.0) { // place source on first lattice point that's not in the PML
+      *z1 = npmlz + 1 - (int) (2.0*shift);
+      *amp1 = 1.0;
+      *z2 = 0;
+      *amp2 = 0.0;
+      return;
+    }
+    if (z == nz) {
+      *z1 = nz - 1 - npmlz;
+      *amp1 = 1.0;
+      *z2 = 0;
+      *amp2 = 0.0;
+      return;
+    }
+  }
+
+  if (k >= 0.0) 
+    if (z == 0.0) { // place source on first lattice point starting from the left
+      printf("Temporary solution. Need to wrap source around and apply phase shift\n");
+      *z1 = 0;
+      *amp1 = 1.0;
+      *z2 = 0;
+      *amp2 = 0.0;
+      return;
+    }
+    
+  int z_floor = (int)floor(z - shift);
+  int z_ceil = z_floor + 1;
+
+  if (k >= 0.0) {
+    if (z_floor < 0) {
+      printf("Temporary solution. Need to wrap source around and apply phase shift\n");
+      *z1 = 0;
+      *amp1 = 1.0;
+      *z2 = 0;
+      *amp2 = 0.0;
+      return;
+    }
+    if (z_ceil >= nz) {
+      printf("Temporary solution. Need to wrap source around and apply phase shift\n");
+      *z1 = nz-1;
+      *amp1 = 1.0;
+      *z2 = 0;
+      *amp2 = 0.0;
+      return;
+    }
+  }
+  
+  if (k < 0) { // metal
+    if (z <= (1 - shift)) { // if z_floor is on metal or out of the cell
+      *z1 = z_ceil;
+      *amp1 = 1.0;
+      *z2 = 0;
+      *amp2 = 0.0;
+      return;
+    }
+
+    if (z >= (nz - 1 + shift)) { // if z_ceil is on metal or out of the cell
+      *z1 = z_floor;
+      *amp1 = 1.0;
+      *z2 = 0;
+      *amp2 = 0.0;
+      return;
+    }
+  }
+  
+  // The bulk case:
+  *z1 = z_floor;
+  *amp1 = (z_ceil + shift) - z;
+  *z2 = z_ceil;
+  *amp2 = z - (z_floor + shift) ;
+}
+
+
 void fields::add_hr_source(double freq, double width, double peaktime,
-                   double cutoff, int z, double amp(double r)) {
+                   double cutoff, double z, double amp(double r)) {
   int r;
+  int z1, z2;
+  double amp1, amp2;
+  find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
-    if (amp(r*inva) != 0.0)
-      add_src_pt(r, z, amp((r+0.5)*inva), 0.0, 0.0, freq, width, peaktime, cutoff, 1);
+    if (amp(r*inva) != 0.0) {
+      if (amp1 != 0.0)
+	add_src_pt(r, z1, amp1*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
+      if (amp2 != 0.0)
+	add_src_pt(r, z2, amp2*amp(r*inva), 0.0 , 0.0, freq, width, peaktime, cutoff, 1);
+    }
 }
 
 void fields::add_hp_source(double freq, double width, double peaktime,
-                   double cutoff, int z, double amp(double r)) {
+                   double cutoff, double z, double amp(double r)) {
   int r;
+  int z1, z2;
+  double amp1, amp2;
+  find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
-    if (amp((r+0.5)*inva) != 0.0)
-      add_src_pt(r, z, 0.0 , amp(r*inva), 0.0, freq, width, peaktime, cutoff, 1);
+    if (amp((r+0.5)*inva) != 0.0) {
+      if (amp1 != 0.0)
+	add_src_pt(r, z1, 0.0 , amp1*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
+      if (amp2 != 0.0)
+	add_src_pt(r, z2, 0.0 , amp2*amp((r+0.5)*inva), 0.0, freq, width, peaktime, cutoff, 1);
+    }
 }
 
 void fields::add_hz_source(double freq, double width, double peaktime,
-                   double cutoff, int z, double amp(double r)) {
+                   double cutoff, double z, double amp(double r)) {
   int r;
+  int z1, z2;
+  double amp1, amp2;
+  find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
-    if (amp((r+0.5)*inva) != 0.0)
-      add_src_pt(r, z, 0.0, 0.0, amp(r*inva), freq, width, peaktime, cutoff, 1);
+    if (amp((r+0.5)*inva) != 0.0) {
+      if (amp1 != 0.0)
+	add_src_pt(r, z1, 0.0 , 0.0, amp1*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
+      if (amp2 != 0.0)
+	add_src_pt(r, z2, 0.0 , 0.0, amp2*amp((r+0.5)*inva), freq, width, peaktime, cutoff, 1);
+    }
+
+  //add_src_pt(r, z, 0.0, 0.0, amp(r*inva), freq, width, peaktime, cutoff, 1);
 }
 
 void fields::add_er_source(double freq, double width, double peaktime,
-                   double cutoff, int z, double amp(double r)) {
+                   double cutoff, double z, double amp(double r)) {
   int r;
+  int z1, z2;
+  double amp1, amp2;
+  find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
-    if (amp((r+0.5)*inva) != 0.0)
-      add_src_pt(r, z, amp((r+0.5)*inva), 0.0, 0.0, freq, width, peaktime, cutoff);
+    if (amp((r+0.5)*inva) != 0.0) {
+      if (amp1 != 0.0)
+	add_src_pt(r, z1, amp1*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
+      if (amp2 != 0.0)
+	add_src_pt(r, z2, amp2*amp((r+0.5)*inva), 0.0 , 0.0, freq, width, peaktime, cutoff);
+    }
+
+      //add_src_pt(r, z, amp((r+0.5)*inva), 0.0, 0.0, freq, width, peaktime, cutoff);
 }
 
 void fields::add_ep_source(double freq, double width, double peaktime,
-                   double cutoff, int z, double amp(double r)) {
+                   double cutoff, double z, double amp(double r)) {
   int r;
+  int z1, z2;
+  double amp1, amp2;
+  find_source_z_position(z*a, 0.0, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
-    if (amp(r*inva) != 0.0)
-      add_src_pt(r, z, 0.0 , amp(r*inva), 0.0, freq, width, peaktime, cutoff);
+    if (amp(r*inva) != 0.0) {
+      if (amp1 != 0.0)
+	add_src_pt(r, z1, 0.0, amp1*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
+      if (amp2 != 0.0)
+	add_src_pt(r, z2, 0.0, amp2*amp(r*inva), 0.0, freq, width, peaktime, cutoff);
+    }
+
+      //add_src_pt(r, z, 0.0 , amp(r*inva), 0.0, freq, width, peaktime, cutoff);
 }
 
 void fields::add_ez_source(double freq, double width, double peaktime,
-                   double cutoff, int z, double amp(double r)) {
+                   double cutoff, double z, double amp(double r)) {
   int r;
+  int z1, z2;
+  double amp1, amp2;
+  find_source_z_position(z*a, 0.5, &z1, &z2, &amp1, &amp2);
   for (r=0;r<nr;r++)
-    if (amp(r*inva) != 0.0)
-      add_src_pt(r, z, 0.0, 0.0, amp(r*inva), freq, width, peaktime, cutoff);
+    if (amp(r*inva) != 0.0) {
+      if (amp1 != 0.0)
+	add_src_pt(r, z1, 0.0 , 0.0, amp1*amp(r*inva), freq, width, peaktime, cutoff);
+      if (amp2 != 0.0)
+	add_src_pt(r, z2, 0.0 , 0.0, amp2*amp(r*inva), freq, width, peaktime, cutoff);
+    }
+
+      //add_src_pt(r, z, 0.0, 0.0, amp(r*inva), freq, width, peaktime, cutoff);
 }
 
 void fields::step() {

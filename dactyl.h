@@ -80,18 +80,19 @@ class fields {
   void step();
 
   void use_real_sources();
-  void add_er_source(double freq, double width, double peaktime,
-                     double cutoff, int z, double amp(double r));
+  void find_source_z_position(double z, double shift, int *z1, int *z2, double *amp1, double *amp2);
+    void add_er_source(double freq, double width, double peaktime,
+                     double cutoff, double z, double amp(double r));
   void add_ep_source(double freq, double width, double peaktime,
-                     double cutoff, int z, double amp(double r));
+                     double cutoff, double z, double amp(double r));
   void add_ez_source(double freq, double width, double peaktime,
-                     double cutoff, int z, double amp(double r));
+                     double cutoff, double z, double amp(double r));
   void add_hr_source(double freq, double width, double peaktime,
-                     double cutoff, int z, double amp(double r));
+                     double cutoff, double z, double amp(double r));
   void add_hp_source(double freq, double width, double peaktime,
-                     double cutoff, int z, double amp(double r));
+                     double cutoff, double z, double amp(double r));
   void add_hz_source(double freq, double width, double peaktime,
-                     double cutoff, int z, double amp(double r));
+                     double cutoff, double z, double amp(double r));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
