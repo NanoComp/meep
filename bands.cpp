@@ -78,14 +78,14 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
   }
   const double cutoff_freq = 1.84*c/(2*pi)/nr/epsmax;
   bands->fmin = sqrt(cutoff_freq*cutoff_freq + k*k*c*c);
-  bands->fmin = cutoff_freq;
+  bands->fmin = cutoff_freq/(c*inva);
   bands->qmin = qmin;
   // Set fmax and determine how many timesteps to skip over...
-  bands->fmax = fmax*(c*inva);
+  bands->fmax = fmax;
   {
     // for when there are too many data points...
-    double decayconst = bands->fmax/qmin*8.0;
-    double smalltime = 1./(decayconst + bands->fmax);
+    double decayconst = bands->fmax*(c*inva)/qmin*8.0;
+    double smalltime = 1./(decayconst + bands->fmax*(c*inva));
     bands->scale_factor = (int)(0.12*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
     printf("scale_factor is %d (%lg,%lg)\n",
@@ -157,7 +157,7 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
   // eigen has dimensions of nr*maxbands*6
   // n here is the total time
   double unitconvert = (2*pi)*c*scale_factor*inva;
-  double lowpass_time = 0.2/(scale_factor*fmax);
+  double lowpass_time = 0.2/(scale_factor*fmax*(c*inva));
   printf("Lowpass time is %lg\n", lowpass_time);
   int passtime = (int)(lowpass_time*8);
   double *filter = new double[passtime+1];
@@ -633,7 +633,12 @@ int bandsdata::get_freqs(cmplx *data, int n,
   // Now get rid of any spurious low frequency solutions...
   int orignum = num;
   for (int i=0;i<orignum;i++) {
-    if (freq_re[0] < a/c*fmin*.9) {
+    if (freq_re[0] < fmin*.9) {
+      if (freq_re[0] > 0) {
+        //printf("Trashing a spurious low frequency solution with freq %lg %lg\n",
+        //       freq_re[0], freq_im[0]);
+        //printf("For your info, fmin is %lg\n", fmin);
+      }
       for (int j=0;j<num-1;j++) {
         freq_re[j]=freq_re[j+1];
         freq_im[j]=freq_im[j+1];
