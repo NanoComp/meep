@@ -22,7 +22,7 @@
    without it.  Alternatively, use the complex<double> STL class in
    C++. */
 
-#include <complex.h>
+#include <complex>
 
 #include "config.h"
 
