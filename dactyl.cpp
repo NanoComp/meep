@@ -327,11 +327,10 @@ int fields::is_phasing() {
 }
 
 complex<double> src::get_amplitude_at_time(int t) const {
-  double tt = t - peaktime;
-  if (fabs(tt) > cutoff) {
+  double envelope = get_envelope_at_time(t);
+  if (envelope == 0.0)
     return 0.0;
-  }
-  double envelope = exp(-tt*tt/(2*width*width));
+  double tt = t - peaktime;
   if (is_real) return real( (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope );
   else return (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope;
 }
