@@ -15,6 +15,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/* This file is compiled into a program sphere_quad that is used to
+   generate the file sphere-quad.h, which is a table of quadrature
+   points and weights for integrating on spheres in 1d/2d/3d. */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -213,4 +217,6 @@ int main(void)
      printf("    }\n");
 
      printf("};\n");
+     
+     return 0;
 }
