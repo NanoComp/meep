@@ -16,11 +16,7 @@ while test $# -ge 1; do
     shift
 done
 
-if test x$verbose = xyes; then
-    autoreconf --verbose --install --symlink
-else
-    autoreconf --install --symlink
-fi
+autoreconf --verbose --install --symlink --force
 
 config=good # hackery so darcs_test still outputs config.log w/failed configure
 
