@@ -94,7 +94,7 @@ double fields::thermo_energy_in_box(const volume &otherv) {
 double fields_chunk::backup_h() {
   DOCMP {
     for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && is_magnetic((component)c)) {
+      if (f[c][cmp] && is_magnetic((component)c)) {
         if (f_backup[c][cmp] == NULL)
           f_backup[c][cmp] = new double[v.ntot()];
         if (f_backup_pml[c][cmp] == NULL)
@@ -103,7 +103,7 @@ double fields_chunk::backup_h() {
   }
   DOCMP {
     for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && is_magnetic((component)c)) {
+      if (f[c][cmp] && is_magnetic((component)c)) {
         for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = f[c][cmp][i];
         for (int i=0;i<v.ntot();i++) f_backup_pml[c][cmp][i] = f_pml[c][cmp][i];
       }

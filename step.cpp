@@ -95,11 +95,11 @@ void fields_chunk::phase_material(int phasein_time) {
     // First multiply the electric field by epsilon...
     DOCMP {
       for (int c=0;c<10;c++)
-        if (v.has_field((component)c) && is_electric((component)c))
+        if (f[c][cmp] && is_electric((component)c))
           for (int i=0;i<v.ntot();i++)
             f[c][cmp][i] /= ma->inveps[c][i];
       for (int c=0;c<10;c++)
-        if (v.has_field((component)c) && is_electric((component)c))
+        if (f[c][cmp] && is_electric((component)c))
           for (int i=0;i<v.ntot();i++)
             f_pml[c][cmp][i] /= ma->inveps[c][i];
     }
@@ -108,11 +108,11 @@ void fields_chunk::phase_material(int phasein_time) {
     // Finally divide the electric field by the new epsilon...
     DOCMP {
       for (int c=0;c<10;c++)
-        if (v.has_field((component)c) && is_electric((component)c))
+        if (f[c][cmp] && is_electric((component)c))
           for (int i=0;i<v.ntot();i++)
             f[c][cmp][i] *= ma->inveps[c][i];
       for (int c=0;c<10;c++)
-        if (v.has_field((component)c) && is_electric((component)c))
+        if (f[c][cmp] && is_electric((component)c))
           for (int i=0;i<v.ntot();i++)
             f_pml[c][cmp][i] *= ma->inveps[c][i];
     }
@@ -724,7 +724,7 @@ void fields_chunk::step_h_source(const src *s, double time) {
     return;
   }
   for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_magnetic((component)c)) {
+    if (f[c][0] && is_magnetic((component)c)) {
       f[c][0][s->i] += real(A*s->A[c]);
       if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }
@@ -746,7 +746,7 @@ void fields_chunk::step_e_source(const src *s, double time) {
     return;
   }
   for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c)) {
+    if (f[c][0] && is_electric((component)c)) {
       f[c][0][s->i] += real(A*s->A[c]);
       if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }

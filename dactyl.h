@@ -215,10 +215,16 @@ class fields_chunk {
   void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
+  // fields.cpp
+  void alloc_f(component c);
   // sources.cpp
-  void add_point_source(component whichf, double freq, double width, double peaktime,
-                        double cutoff, const vec &, complex<double> amp,
-                        int is_continuous, double time);
+
+  // add_point_source returns 1 if the connections between chunks need to
+  // be recalculated.  This allows us to avoid allocating TE or TM fields
+  // until we know which is desired.
+  int add_point_source(component whichf, double freq, double width, double peaktime,
+                       double cutoff, const vec &, complex<double> amp,
+                       int is_continuous, double time);
   void add_plane_source(double freq, double width, double peaktime,
                         double cutoff, double envelope (const vec &),
                         const vec &p, const vec &norm,

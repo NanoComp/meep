@@ -80,30 +80,44 @@ void fields::add_point_source(component whichf, double freq,
                               double cutoff, const vec &p,
                               complex<double> amp, int is_c) {
   const double invmul = 1.0/S.multiplicity();
+  int need_to_connect = 0;
   for (int sn=0;sn<S.multiplicity();sn++) {
     component cc = S.transform(whichf,sn);
     complex<double> ph = S.phase_shift(whichf,sn);
     const vec pp = S.transform(p,sn);
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->is_mine())
-        chunks[i]->add_point_source(cc, freq, width, peaktime,
-                                    cutoff, pp, invmul*ph*amp, is_c,
-                                    time());
+        need_to_connect += 
+          chunks[i]->add_point_source(cc, freq, width, peaktime,
+                                      cutoff, pp, invmul*ph*amp, is_c,
+                                      time());
   }
+  if (sum_to_all(need_to_connect)) connect_chunks();
 }
 
-void fields_chunk::add_point_source(component whichf, double freq,
-                                    double width, double peaktime,
-                                    double cutoff, const vec &p,
-                                    complex<double> amp, int is_c, double tim) {
+int fields_chunk::add_point_source(component whichf, double freq,
+                                   double width, double peaktime,
+                                   double cutoff, const vec &p,
+                                   complex<double> amp, int is_c, double tim) {
   if (p.dim != v.dim)
     abort("Error:  source doesn't have right dimensions!\n");
   if (!v.has_field(whichf))
     abort("Error:  source component %s is invalid.\n", component_name(whichf));
+  // Allocate fields if they haven't already been allocated:
+  int need_reconnection = 0;
+  if (v.dim == d2 && !f[whichf][0]) {
+    switch (whichf) {
+    case Ex: case Ey: case Hz:
+      alloc_f(Ex); alloc_f(Ey); alloc_f(Hz); break;
+    case Hx: case Hy: case Ez:
+      alloc_f(Hx); alloc_f(Hy); alloc_f(Ez); break;
+    }
+    need_reconnection = 1;
+  }
   int ind[8];
   double w[8];
   v.interpolate(whichf, p, ind, w);
-  if (w[0] == 0.0) return; // No source here...
+  if (w[0] == 0.0) return need_reconnection; // No source here...
   double prefac = 1.0;
   switch (v.dim) {
   case dcyl: prefac = a; break;
@@ -113,6 +127,7 @@ void fields_chunk::add_point_source(component whichf, double freq,
   for (int i=0;i<8 && w[i];i++)
     add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i],
                        amp*prefac*w[i], is_c, tim);
+  return need_reconnection;
 }
 
 void fields::add_plane_source(double freq, double width, double peaktime,

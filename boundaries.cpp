@@ -208,7 +208,7 @@ void fields::connect_the_chunks() {
         new_comm_sizes[ft][j] = comm_sizes[ft][j+i*num_chunks];
     for (int j=0;j<num_chunks;j++)
       for (int corig=0;corig<10;corig++)
-        if (vi.has_field((component)corig))
+        if (chunks[i]->f[corig][0])
           for (int n=0;n<vi.ntot();n++) {
             component c = (component)corig;
             vec here = vi.loc(c, n);
@@ -257,7 +257,7 @@ void fields::connect_the_chunks() {
     const volume vi = chunks[i]->v;
     for (int j=0;j<num_chunks;j++)
       for (int corig=0;corig<10;corig++)
-        if (vi.has_field((component)corig))
+        if (chunks[i]->f[corig][0])
           for (int n=0;n<vi.ntot();n++) {
             component c = (component)corig;
 #define FT (type(c))

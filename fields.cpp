@@ -115,21 +115,21 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
     for (int i=0;i<10;i++) f_pml[i][cmp] = NULL;
     for (int i=0;i<10;i++) f_backup_pml[i][cmp] = NULL;
 
-    for (int i=0;i<10;i++) if (v.has_field((component)i))
+    for (int i=0;i<10;i++) if (v.dim != d2 && v.has_field((component)i))
       f[i][cmp] = new double[v.ntot()];
-    for (int i=0;i<10;i++) if (v.has_field((component)i)) {
+    for (int i=0;i<10;i++) if (f[i][cmp]) {
       f_pml[i][cmp] = new double[v.ntot()];
       if (f_pml[i][cmp] == NULL) abort("Out of memory!\n");
     }
   }
   DOCMP {
     for (int c=0;c<10;c++)
-      if (v.has_field((component)c))
+      if (f[c][cmp])
         for (int i=0;i<v.ntot();i++)
           f[c][cmp][i] = 0.0;
     // Now for pml extra fields_chunk...
     for (int c=0;c<10;c++)
-      if (v.has_field((component)c))
+      if (f[c][cmp])
         for (int i=0;i<v.ntot();i++)
           f_pml[c][cmp][i] = 0.0;
   }
@@ -140,6 +140,17 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
     for (int io=0;io<2;io++)
       for (int cmp=0;cmp<2;cmp++)
         connections[f][io][cmp] = 0;
+}
+
+void fields_chunk::alloc_f(component c) {
+  DOCMP {
+    f[c][cmp] = new double[v.ntot()];
+    f_pml[c][cmp] = new double[v.ntot()];
+    for (int i=0;i<v.ntot();i++) {
+      f[c][cmp][i] = 0.0;
+      f_pml[c][cmp][i] = 0.0;
+    }
+  }
 }
 
 void fields_chunk::use_real_fields() {

@@ -84,6 +84,51 @@ bench bench_flux_1d(const double zmax,
   return b;
 }
 
+bench bench_2d(const double xmax, const double ymax,
+               double eps(const vec &)) {
+  const double a = 10.0;
+  const double gridpts = a*a*xmax*ymax;
+  const double ttot = 5.0 + 1e5/gridpts;
+
+  volume v = voltwo(xmax,ymax,a);
+  mat ma(v, eps);
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
+  f.add_point_source(Hz, 0.8, 0.7, 0.0, 4.0, vec2d(0.431, 0.2));
+
+  while (f.time() < f.find_last_source()) f.step();
+  const double tend = f.time() + ttot;
+  clock_t start = clock();
+  while (f.time() < tend) f.step();
+  bench b;
+  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.gridsteps = ttot*a*2*gridpts;
+  return b;
+}
+
+bench bench_2d_tm(const double xmax, const double ymax,
+               double eps(const vec &)) {
+  const double a = 10.0;
+  const double gridpts = a*a*xmax*ymax;
+  const double ttot = 5.0 + 1e5/gridpts;
+
+  volume v = voltwo(xmax,ymax,a);
+  mat ma(v, eps);
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
+
+  while (f.time() < f.find_last_source()) f.step();
+  const double tend = f.time() + ttot;
+  clock_t start = clock();
+  while (f.time() < tend) f.step();
+  bench b;
+  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.gridsteps = ttot*a*2*gridpts;
+  return b;
+}
+
 void showbench(const char *name, const bench &b) {
   master_printf("%s\n  total time:    \t%lg s\n  normalized time:\t%lg s/Mgs\n",
                 name, b.time, b.time*1e6/b.gridsteps);
@@ -105,6 +150,12 @@ int main(int argc, char **argv) {
   showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
   width = 300.0;
   showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
+
+  showbench("2D 6x4 ", bench_2d(6.0, 4.0, one));
+  showbench("2D 12x12 ", bench_2d(12.0, 12.0, one));
+
+  showbench("2D TM 6x4 ", bench_2d_tm(6.0, 4.0, one));
+  showbench("2D TM 12x12 ", bench_2d_tm(12.0, 12.0, one));
 
   master_printf("\nnote: 1 Mgs = 1 million grid point time steps\n");
 
