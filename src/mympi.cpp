@@ -44,7 +44,7 @@ initialize::initialize(int argc, char **argv) {
   UNUSED(argv);
 #endif
 #if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
-  feenableexcept(FE_INVALID); // crash if a NaN is created
+  feenableexcept(FE_INVALID | FE_OVERFLOW); //crash if NaN created, or overflow
 #endif
 }
 
