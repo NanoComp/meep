@@ -22,7 +22,7 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-#define RESTRICT __restrict__
+#define RESTRICT
 
 void fields::step_old() {
   am_now_working_on(Stepping);
