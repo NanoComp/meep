@@ -21,6 +21,11 @@ SUFFIXES = .o .hs .lhs .hi
 .lhs.o:
 	$(HC) -c -o $@ $(HC_FLAGS) $<
 
+step_h_gen.o : StepGen.o YeeLattice.o
+step_d_gen.o : StepGen.o YeeLattice.o
+update_from_e_gen.o : StepGen.o YeeLattice.o
+update_e_from_d_gen.o : StepGen.o YeeLattice.o Complex.o
+
 STEP_H_GEN_OBJ = step_h_gen.o StepGen.o YeeLattice.o
 step_h_gen: $(STEP_H_GEN_OBJ)
 	$(HC) -o $@ $(HC_FLAGS) $(STEP_H_GEN_OBJ)
