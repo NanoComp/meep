@@ -21,8 +21,6 @@
 
 #include "dactyl.h"
 
-int rad;
-
 double guided_eps(const vec &x) {
   return 1.0;
   if (x.z() < 1.0) return 1.0;
@@ -50,19 +48,20 @@ int main(int argc, char **argv) {
   deal_with_ctrl_c();
   printf("Running example program!\n");
 
-  rad = 10;
+  double a = 10;
   int m=1;
   double ttot = 100;
   
-  mat ma(volcyl(3.0,3.5,rad), guided_eps);
+  mat ma(volcyl(4.0,3.5,a), guided_eps);
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
-  //ma.use_pml_right(1.0);
-  //ma.use_pml_left(1.0);
+  ma.use_pml_right(1.0);
+  ma.use_pml_left(1.0);
+  ma.use_pml_radial(1.0);
   for (m=0;m<4 && !interrupt;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
-    printf("Working on m = %d with a=%d...\n", m, rad);
+    printf("Working on m = %d with a=%lg...\n", m, a);
     fields f(&ma, m);
     f.use_bloch(0.0);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 1.2), 1.0);
@@ -73,7 +72,7 @@ int main(int argc, char **argv) {
       if (f.time() >= next_print) {
         printf("Working on time %lg...  ", f.time());
         f.eps_slices(m_str);
-        printf("energy is %lg\n", f.total_energy());
+        printf("energy is %lg\n", f.field_energy());
         next_print += 10.0;
       }
       f.step();
