@@ -74,7 +74,7 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
           }
       }
       dumbsort(val);
-      for (int i=0;i<8 && val[i]!=0.0;i++) pt->f[c] += val[i];
+      for (int i=0;i<8;i++) pt->f[c] += val[i];
     }
 }
 
