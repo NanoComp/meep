@@ -82,8 +82,8 @@ dist:
 	&& rm -rf dactyl-$(VERSION)
 
 test: libdactyl.a
-	cd tests && make test && cd ..
-	cd doc && make test && cd ..
+	cd tests && make test
+	cd doc && make test
 
 test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
 	rm -rf d_k_0.1pi_pml_m_1-out
@@ -99,8 +99,8 @@ documentation: libdactyl.a
 
 clean:
 	rm -f $(OBJ_dactyl) *.o libdactyl.a example core bands_example *.dac
-	cd doc && make clean && cd ..
-	cd tests && make clean && cd ..
+	cd doc && make clean
+	cd tests && make clean
 
 distclean: clean
 	rm -f config.cache Makefile config.log config.status config.h dactyl
