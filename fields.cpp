@@ -42,6 +42,7 @@ fields::fields(const mat *ma, int tm=0) {
     chunks[i] = new fields_chunk(ma->chunks[i], m);
 }
 void fields::use_bloch(double kz) { // FIXME
+  k = kz;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_bloch(kz);
 }
 fields::~fields() {
