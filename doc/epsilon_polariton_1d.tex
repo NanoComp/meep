@@ -15,9 +15,7 @@ purposes.
 One thing to be aware of when using polaritonic materials, is that
 generally you will be needing a rather higher grid resolution than you may
 be used to in order to properly model the material.  Here I am using an $a$
-of just 20, and if you look at figure~\ref{epsilon_polariton}, you can see
-that the curve deviates significantly from the predicted result, which
-would be essentially symmetric around the resonant frequency of $0.4$.
+of 40.
 
 \begin{figure}
 \label{epsilon_polariton}
@@ -27,10 +25,10 @@ would be essentially symmetric around the resonant frequency of $0.4$.
 
 
 \begin{comment}
-const double rmax  = 2.0;
-const double a = 20;
-const double pml_thickness = 2.0;
-const double zsize = 4/a + 2*pml_thickness;
+const double a = 40;
+const double pml_thickness = 1.0;
+const double middlesize = 5.0/a;
+const double zsize = middlesize + 2*pml_thickness;
 \end{verbatim}
 
 For our example polaritonic material, we'll use an $\epsilon(0)$ of 13.4.
@@ -39,7 +37,10 @@ For our example polaritonic material, we'll use an $\epsilon(0)$ of 13.4.
 double eps(const vec &) { return 13.4; }
 \end{verbatim}
 \begin{comment}
-double one(const vec &) { return 1; }
+double one_in_middle(const vec &p) {
+  if (p.z() > pml_thickness && p.z() < pml_thickness + middlesize) return 1;
+  else return 0;
+}
 
 int main(int argc, char **argv) {
   deal_with_ctrl_c();
@@ -49,26 +50,25 @@ int main(int argc, char **argv) {
   printf("Storing output in directory %s/\n", dirname);
   ma.set_output_directory(dirname);
 \end{comment}
-Notice that the polaritonic material will be within the PML.  This is fine.
-Polaritons and PML are friends.
+Altough in this calculation the polaritonic material will not be within the
+PML, it is all right to have polaritonic material within PML regions.
 \begin{verbatim}
   ma.use_pml_right(pml_thickness);
   ma.use_pml_left(pml_thickness);
-  ma.add_polarizability(one, 0.4, 0.01, 27.63);
+  ma.add_polarizability(one_in_middle, 0.4, 0.01, 27.63);
 \end{verbatim}
 \begin{comment}
   fields f(&ma);
   double sourceloc = pml_thickness+1.0/(double)a;
 \end{comment}
-We use a single rather high frequency (and very broad) plane wave source,
-to cover a broad frequency range.  For a plane source in 1D we don't really
-need a source profile.
+We use a single rather high frequency (and very broad) point source, to
+cover a broad frequency range.
 \begin{verbatim}
-  f.add_plane_source(0.9 , 0.8, 0.0, 8.0, one, vec(sourceloc));
+  f.add_point_source(Ex, 0.9, 0.8, 0.0, 8.0, vec(sourceloc));
 \end{verbatim}
 We use a couple of monitor points to determine epsilon.
 \begin{verbatim}
-  monitor_point *left = NULL, *right = NULL;
+  monitor_point *left = NULL, *right = NULL, *middle = NULL;
 \end{verbatim}
 \begin{comment}
   double next_printtime = 50;
@@ -84,13 +84,14 @@ The monitor points are located one grid spacing from one another.  The
 monitor point linked list.
 \begin{verbatim}
     left  = f.get_new_point(vec(sourceloc+1.0/a), left );
-    right = f.get_new_point(vec(sourceloc+2.0/a), right);
+    middle = f.get_new_point(vec(sourceloc+2.0/a), middle);
+    right = f.get_new_point(vec(sourceloc+3.0/a), right);
 \end{verbatim}
 \begin{comment}
     f.step();
   }
   grace g("eps", dirname);
-  complex<double> *al, *ar, *freqs;
+  complex<double> *al, *ar, *am, *freqs;
   int numl, numr;
   printf("Working on left fourier transform...\n");
 \end{comment}
@@ -101,31 +102,33 @@ at the two monitor points.
 \end{verbatim}
 \begin{comment}
   delete[] freqs;
+  printf("Working on middle fourier transform...\n");
+  middle->fourier_transform(Ex, &am, &freqs, &numr, 0.301, 0.5, 1000);
+  delete[] freqs;
   printf("Working on right fourier transform...\n");
   right->fourier_transform(Ex, &ar, &freqs, &numr, 0.301, 0.5, 1000);
   if (numl != numr) printf("Aaack you need both nums to be the same!\n");
   g.new_set();
-  g.set_legend("\\x\\e\\s2\\N");
+  g.set_legend("\\x\\e\\s1\\N");
 \end{comment}
-Finally we calculate the complex index of refraction using the equation
+Finally we calculate epsilon from the second derivative of the field using
 \begin{equation*}
-i \omega \Delta x n(\omega) = \log \left(\frac{E'(\omega)}{E(\omega)}\right)
+-k^2 H_z(\omega) = \nabla^2 H_z(\omega) = \nabla^2
 \end{equation*}
 \begin{verbatim}
+  complex<double> *epsilon = new complex<double>[numl];
   for (int i=0;i<numl;i++) {
-    complex<double> I = complex<double>(0,1);
-    complex<double> n = (log(ar[i]/al[i]))/(I*(1.0/a)*2*pi*freqs[i]);
-    g.output_point(real(freqs[i]), real(n*n));
-  }
-\end{verbatim}
-\begin{comment}
+    complex<double> ksqr = -(ar[i]+al[i]-2*am[i])*a*a/am[i];
+    epsilon[i] = ksqr/freqs[i]/freqs[i]/(2*pi*2*pi);
+  } 
+  for (int i=0;i<numl;i++)
+    g.output_point(real(freqs[i]), real(epsilon[i]));
   g.new_set();
   g.set_legend("\\x\\e\\s2\\N");
-  for (int i=0;i<numl;i++) {
-    complex<double> I = complex<double>(0,1);
-    complex<double> n = (log(ar[i]/al[i]))/(I*(1.0/a)*2*pi*freqs[i]);
-    g.output_point(real(freqs[i]), imag(n*n));
-  }
+  for (int i=0;i<numl;i++)
+    g.output_point(real(freqs[i]), imag(epsilon[i]));
+\end{verbatim}
+\begin{comment}
 }
 \end{comment}
 
