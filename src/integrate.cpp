@@ -138,8 +138,7 @@ complex<double> fields::integrate(int num_fields, const component *components,
   data.integrand = integrand;
   data.integrand_data_ = integrand_data_;
 
-  /* compute inverse-epsilon directions and averaging offsets for
-     computing Dielectric fields */
+  /* compute inverse-epsilon directions for computing Dielectric fields */
   data.ninveps = 0;
   bool needs_dielectric = false;
   for (int i = 0; i < num_fields; ++i)

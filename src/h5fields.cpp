@@ -239,8 +239,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   data.fun = fun;
   data.fun_data_ = fun_data_;
 
-  /* compute inverse-epsilon directions and averaging offsets for
-     computing Dielectric fields */
+  /* compute inverse-epsilon directions for computing Dielectric fields */
   data.ninveps = 0;
   bool needs_dielectric = false;
   for (int i = 0; i < num_fields; ++i)
