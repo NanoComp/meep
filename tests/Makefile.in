@@ -29,12 +29,12 @@ DONEFILES = known_results.done step_algorithm.done symmetry.done \
 	three_d.done bench.done flux.done physical.done
 
 $(OBJFILES): ../meep.h ../vec.h
-$(TESTFILES): ../libdactyl.a
+$(TESTFILES): ../libmeep.a
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
 .o.dac:
-	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libmeep.a $(LIBS) -o $@
 .dac.done:
 	$(RUNCODE) ./$< && touch $@
 

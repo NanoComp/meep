@@ -46,7 +46,9 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const double ttot =2000.0;
-  mat ma(volone(zsize, a), eps, 5);
+  const volume v = volone(zsize, a);
+  const symmetry S = mirror(Z, v);
+  mat ma(v, eps, 0, S);
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
 \end{comment}

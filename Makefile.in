@@ -14,26 +14,26 @@ transform=@program_transform_name@
 @SET_MAKE@
 
 VERSION = @VERSION@
-package = dactyl
+package = meep
 distdir = $(package)-$(VERSION)
 
 ###########################################################################
 
-OBJ_dactyl = step.o harminv.o bands.o output_directory.o material.o \
+OBJ_meep = step.o harminv.o bands.o output_directory.o material.o \
 	polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
 	vec.o slices.o initialize.o sources.o fields.o boundaries.o \
 	mympi.o fluxes.o time.o
-OBJ_example = example.o libdactyl.a
+OBJ_example = example.o libmeep.a
 
 ###########################################################################
 
-all: libdactyl.a example
-install: dactyl-install
-uninstall: dactyl-uninstall
+all: libmeep.a example
+install: meep-install
+uninstall: meep-uninstall
 
 ###########################################################################
 
-$(OBJ_dactyl): meep.h meep_internals.h vec.h mympi.h
+$(OBJ_meep): meep.h meep_internals.h vec.h mympi.h
 example.o: example.cpp meep.h vec.h mympi.h
 step.o: step.cpp step_h.h step_e.h meep.h meep_internals.h vec.h mympi.h
 
@@ -42,35 +42,35 @@ step_h.h: step_h.hs StepGen.lhs
 step_e.h: step_e.hs StepGen.lhs
 	ghc -fglasgow-exts -package data --make -o step_e step_e.hs && ./step_e > step_e.h
 
-libdactyl.a: $(OBJ_dactyl)
-	ar cru libdactyl.a $(OBJ_dactyl)
-	ranlib libdactyl.a
+libmeep.a: $(OBJ_meep)
+	ar cru libmeep.a $(OBJ_meep)
+	ranlib libmeep.a
 
 example: $(OBJ_example)
 	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ_example) $(LIBS) -o $@
 
-bands_example: bands_example.o libdactyl.a
-	$(CXX) $(CFLAGS) $(LDFLAGS) bands_example.o libdactyl.a $(LIBS) -o $@
+bands_example: bands_example.o libmeep.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) bands_example.o libmeep.a $(LIBS) -o $@
 
-convergence_testing: convergence_testing.o libdactyl.a
-	$(CXX) $(CFLAGS) $(LDFLAGS) convergence_testing.o libdactyl.a $(LIBS) -o $@
+convergence_testing: convergence_testing.o libmeep.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) convergence_testing.o libmeep.a $(LIBS) -o $@
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
-.o.dac: libdactyl.a
-	$(CXX) $(CFLAGS) $(LDFLAGS) $< libdactyl.a $(LIBS) -o $@
+.o.dac: libmeep.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< libmeep.a $(LIBS) -o $@
 
 ###########################################################################
 
-dactyl-install: dactyl
+meep-install: meep
 	$(INSTALL) -d $(prefix)/bin
 	$(INSTALL) -d $(prefix)/man/man1
-	$(INSTALL) -m 0755 -s dactyl $(prefix)/bin/`echo dactyl|sed '$(transform)'`
-	$(INSTALL) -m 0644 dactyl.1 $(prefix)/man/man1
+	$(INSTALL) -m 0755 -s meep $(prefix)/bin/`echo meep|sed '$(transform)'`
+	$(INSTALL) -m 0644 meep.1 $(prefix)/man/man1
 
-dactyl-uninstall:
-	rm -f $(prefix)/bin/dactyl
-	rm -f $(prefix)/man/man1/dactyl.1
+meep-uninstall:
+	rm -f $(prefix)/bin/meep
+	rm -f $(prefix)/man/man1/meep.1
 
 ###########################################################################
 
@@ -79,10 +79,10 @@ uninstall: $(UNINSTALL_TARGETS)
 dist:
 	darcs dist -d $(VERSION)
 
-bench: libdactyl.a
+bench: libmeep.a
 	cd tests && make bench
 
-test: libdactyl.a
+test: libmeep.a
 	cd tests && make test
 	cd doc && make test
 
@@ -95,16 +95,16 @@ test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
 
 doc : documentation
 
-documentation: libdactyl.a
+documentation: libmeep.a
 	cd doc && make
 
 clean:
-	rm -f $(OBJ_dactyl) *.o libdactyl.a example core bands_example *.dac debug_out_*
+	rm -f $(OBJ_meep) *.o libmeep.a example core bands_example *.dac debug_out_*
 	cd doc && make clean
 	cd tests && make clean
 
 distclean: clean
-	rm -f config.cache Makefile config.log config.status config.h dactyl
+	rm -f config.cache Makefile config.log config.status config.h meep
 
 maintainer-clean: distclean
 	rm -f configure config.h

@@ -16,7 +16,7 @@ transform=@program_transform_name@
 VERSION = @VERSION@
 RUNCODE = @RUNCODE@
 
-all: dactyl.ps dactyl/dactyl.html
+all: meep.ps meep/meep.html
 
 ###########################################################################
 
@@ -32,18 +32,18 @@ TEXFILES = meep.tex simplebands.tex polaritonbands.tex \
 
 .cpp.o: ../meep.h ../vec.h ../meep_internals.h
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
-.o.dac: ../libdactyl.a
-	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
+.o.dac: ../libmeep.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libmeep.a $(LIBS) -o $@
 .tex.cpp:
 	perl ./preproc.pl $< > $@
 
-dactyl.ps : dactyl.dvi
-	dvips -o dactyl.ps dactyl.dvi
+meep.ps : meep.dvi
+	dvips -o meep.ps meep.dvi
 
-dactyl/dactyl.html : $(TEXFILES)
+meep/meep.html : $(TEXFILES)
 	@LATEX2HTML@ -split +1 -local_icons meep.tex
 
-dactyl.dvi : $(TEXFILES)
+meep.dvi : $(TEXFILES)
 	latex meep.tex
 
 simple-out/ez-000200.00.eps: simple.dac
@@ -86,16 +86,16 @@ lossgain_epsilon-out/eps.eps : lossgain_epsilon.dac
 OBJFILES = omniguide.o simplebands.o epsilon_polariton_1d.o \
 	polaritonbands.o lossgain_epsilon.o energy_cons.o \
 	energy_cons_1d.o complicated.o
-$(OBJFILES): ../libdactyl.a
+$(OBJFILES): ../libmeep.a
 
 test: simplebands.dac complicated.dac polaritonbands.dac \
 	epsilon_polariton_1d.dac omniguide.dac lossgain_epsilon.dac \
 	energy_cons_1d.dac energy_cons.dac simple.dac
 
-doc: dactyl.ps
+doc: meep.ps
 
 testclean:
 	rm -rf *.o *.hi *.dac *-out *-out-*
 
 clean:
-	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.dac dactyl/
+	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.dac meep/
