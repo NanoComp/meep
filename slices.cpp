@@ -303,11 +303,11 @@ static void output_complex_eps(component m, double *f[2], const volume &v,
   }
 }
 
-void mat::output_slices(const char *name) {
+void mat_chunk::output_slices(const char *name) {
   output_slices(v, name);
 }
 
-void mat::output_slices(const volume &what, const char *name) {
+void mat_chunk::output_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -324,11 +324,11 @@ void mat::output_slices(const volume &what, const char *name) {
   delete[] n;
 }
 
-void fields::output_real_imaginary_slices(const char *name) {
+void fields_chunk::output_real_imaginary_slices(const char *name) {
   output_real_imaginary_slices(v,name);
 }
 
-void fields::output_real_imaginary_slices(const volume &what, const char *name) {
+void fields_chunk::output_real_imaginary_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -354,15 +354,15 @@ void fields::output_real_imaginary_slices(const volume &what, const char *name) 
   free(n);
 }
 
-void fields::output_slices(const char *name) {
+void fields_chunk::output_slices(const char *name) {
   output_slices(v, name);
 }
 
-void fields::eps_slices(const char *name) {
+void fields_chunk::eps_slices(const char *name) {
   eps_slices(v, name);
 }
 
-void fields::output_slices(const volume &what, const char *name) {
+void fields_chunk::output_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -407,7 +407,7 @@ void fields::output_slices(const volume &what, const char *name) {
   free(n);
 }
 
-void fields::eps_slices(const volume &what, const char *name) {
+void fields_chunk::eps_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);

@@ -46,7 +46,7 @@ int src::find_last_source(int sofar) {
   return next->find_last_source(sofar);
 }
 
-double fields::find_last_source() {
+double fields_chunk::find_last_source() {
   double last_source = 0;
   if (e_sources != NULL)
     last_source = inva*c*e_sources->find_last_source();
@@ -55,7 +55,7 @@ double fields::find_last_source() {
   return last_source;  
 }
 
-void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
+void fields_chunk::prepare_for_bands(const vec &p, double endtime, double fmax,
                                double qmin, double frac_pow_min) {
   int last_source = (int)(find_last_source()*a*(1.0/c)+0.5);
   last_source = max(last_source, t + phasein_time);
@@ -130,7 +130,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   bands->verbosity = verbosity;
 }
 
-void fields::record_bands() {
+void fields_chunk::record_bands() {
   if (t > bands->tend || t < bands->tstart) return;
   if (t % bands->scale_factor != 0) return;
   int thet = (t-bands->tstart)/bands->scale_factor;
@@ -144,7 +144,7 @@ void fields::record_bands() {
 
 #define HARMOUT(o,n,f) ((o)[(n)+(f)*maxbands])
 
-complex<double> fields::get_band(int nn, int maxbands) {
+complex<double> fields_chunk::get_band(int nn, int maxbands) {
   //complex<double> *fad = get_the_bands(maxbands, approx_power);
   complex<double> *fad = clever_cluster_bands(maxbands);
   complex<double> thef = fad[nn-1];
@@ -152,7 +152,7 @@ complex<double> fields::get_band(int nn, int maxbands) {
   return thef;
 }
 
-void fields::grace_bands(grace *g, int maxbands) {
+void fields_chunk::grace_bands(grace *g, int maxbands) {
   double *approx_power = new double[maxbands];
   //complex<double> *fad = get_the_bands(maxbands, approx_power);
   complex<double> *fad = clever_cluster_bands(maxbands, approx_power);
@@ -168,11 +168,11 @@ void fields::grace_bands(grace *g, int maxbands) {
   delete[] approx_power;
 }
 
-void fields::output_bands(FILE *o, const char *name, int maxbands) {
+void fields_chunk::output_bands(FILE *o, const char *name, int maxbands) {
   out_bands(o, name, maxbands);
 }
 
-void fields::out_bands(FILE *o, const char *name, int maxbands) {
+void fields_chunk::out_bands(FILE *o, const char *name, int maxbands) {
   double *approx_power = new double[maxbands];
   //complex<double> *fad = get_the_bands(maxbands, approx_power);
   complex<double> *fad = clever_cluster_bands(maxbands, approx_power);
@@ -248,7 +248,7 @@ static void get_cluster(double f[], int fmax, int maxsize, double maxwid,
   *out_hi = hi;
 }
 
-int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
+int fields_chunk::cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                         int num_freqs, int fields_considered,
                                         int maxbands,
                                         complex<double> *fad, double *approx_power) {
@@ -312,7 +312,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
   return num_found;
 }
 
-complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power) {
+complex<double> *fields_chunk::clever_cluster_bands(int maxbands, double *approx_power) {
   const double total_time = (bands->tend-bands->tstart)*c/a;
   const double deltaf = 1.0/total_time;
   bands->maxbands = maxbands;

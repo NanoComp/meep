@@ -23,7 +23,7 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-fields::~fields() {
+fields_chunk::~fields_chunk() {
   delete ma;
   is_real = 0; // So that we can make sure to delete everything...
   DOCMP {
@@ -45,9 +45,9 @@ fields::~fields() {
   delete olpol;
 }
 
-void fields::use_bloch(double tk) {
+void fields_chunk::use_bloch(double tk) {
   if (is_real) {
-    printf("Can't do bloch boundaries with real fields!\n");
+    printf("Can't do bloch boundaries with real fields_chunk!\n");
     // Note that I *could* implement bloch boundary conditions, at least
     // for gamma point and zone edge situations.
     exit(1);
@@ -129,9 +129,9 @@ void fields::use_bloch(double tk) {
 
 double zero = 0.0;
 
-fields::fields(const mat *the_ma, int tm) {
+fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
   int r, z;
-  ma = new mat(the_ma);
+  ma = new mat_chunk(the_ma);
   verbosity = 0;
   v = ma->v;
   outdir = ma->outdir;
@@ -171,7 +171,7 @@ fields::fields(const mat *the_ma, int tm) {
       if (v.has_field((component)c))
         for (int i=0;i<v.ntot();i++)
           f[c][cmp][i] = 0.0;
-    // Now for pml extra fields...
+    // Now for pml extra fields_chunk...
     for (int c=0;c<10;c++)
       if (v.has_field((component)c))
         for (int i=0;i<v.ntot();i++)
@@ -242,9 +242,9 @@ fields::fields(const mat *the_ma, int tm) {
   }
 }
 
-void fields::use_real_fields() {
+void fields_chunk::use_real_fields() {
   if (k >= 0.0) {
-    printf("Can't use real fields with bloch boundary conditions!\n");
+    printf("Can't use real fields_chunk with bloch boundary conditions!\n");
     exit(1);
   }
   is_real = 1;
@@ -252,7 +252,7 @@ void fields::use_real_fields() {
   if (olpol) olpol->use_real_fields();
 }
 
-int fields::phase_in_material(const mat *newma, double time) {
+int fields_chunk::phase_in_material(const mat_chunk *newma, double time) {
   new_ma = newma;
   phasein_time = (int) (time*a/c);
   if (phasein_time == 0) phasein_time = 1;
@@ -260,7 +260,7 @@ int fields::phase_in_material(const mat *newma, double time) {
   return phasein_time;
 }
 
-int fields::is_phasing() {
+int fields_chunk::is_phasing() {
   return phasein_time > 0;
 }
 
@@ -317,7 +317,7 @@ static complex<double> integrate_source(const src *s) {
   return sofar;
 }
 
-void fields::add_point_source(component whichf, double freq, double width, double peaktime,
+void fields_chunk::add_point_source(component whichf, double freq, double width, double peaktime,
                               double cutoff, const vec &p, complex<double> amp,
                               int is_c) {
   // FIXME this really should call an interpolation routine...
@@ -340,7 +340,7 @@ void fields::add_point_source(component whichf, double freq, double width, doubl
     add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i], amp*prefac*w[i], is_c);
 }
 
-void fields::add_plane_source(double freq, double width, double peaktime,
+void fields_chunk::add_plane_source(double freq, double width, double peaktime,
                               double cutoff, double envelope (const vec &),
                               const vec &p, const vec &norm,
                               int is_c) {
@@ -387,7 +387,7 @@ void fields::add_plane_source(double freq, double width, double peaktime,
   }
 }
 
-void fields::add_indexed_source(component whichf, double freq, double width,
+void fields_chunk::add_indexed_source(component whichf, double freq, double width,
                                 double peaktime, int cutoff, int theindex, 
                                 complex<double> amp, int is_c) {
   if (theindex >= v.ntot() || theindex < 0) {
@@ -418,7 +418,7 @@ void fields::add_indexed_source(component whichf, double freq, double width,
   else tmp->amp_shift = integrate_source(tmp)/integrate_envelope(tmp);
 }
 
-void fields::step_right() {
+void fields_chunk::step_right() {
   t += 1;
 
   phase_material();
@@ -435,7 +435,7 @@ void fields::step_right() {
   step_polarization_itself();
 }
 
-void fields::step() {
+void fields_chunk::step() {
   t += 1;
 
   phase_material();
@@ -456,7 +456,7 @@ void fields::step() {
   step_polarization_itself();
 }
 
-void fields::phase_material() {
+void fields_chunk::phase_material() {
   if (new_ma && phasein_time > 0) {
     // First multiply the electric field by epsilon...
     DOCMP {
@@ -495,7 +495,7 @@ inline int rstart_1(const volume &v, int m) {
   return (int) max(1.0, m - v.origin.r()*v.a);
 }
 
-void fields::step_h_right() {
+void fields_chunk::step_h_right() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
@@ -521,7 +521,7 @@ void fields::step_h_right() {
   }
 }
 
-void fields::step_e_right() {
+void fields_chunk::step_e_right() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
@@ -547,7 +547,7 @@ void fields::step_e_right() {
   }
 }
 
-void fields::step_h() {
+void fields_chunk::step_h() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
@@ -679,7 +679,7 @@ void fields::step_h() {
   }
 }
 
-void fields::step_h_boundaries() {
+void fields_chunk::step_h_boundaries() {
   for (int i=0;i<num_h_connections;i++) {
     complex<double> val = h_phases[i]*
       complex<double>(*h_connection_sources[0][i],*h_connection_sources[1][i]);
@@ -688,7 +688,7 @@ void fields::step_h_boundaries() {
   }
 }
 
-void fields::step_e() {
+void fields_chunk::step_e() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
@@ -837,7 +837,7 @@ void fields::step_e() {
   }
 }
 
-void fields::step_e_boundaries() {
+void fields_chunk::step_e_boundaries() {
   for (int i=0;i<num_e_connections;i++) {
     complex<double> val = e_phases[i]*
       complex<double>(*e_connection_sources[0][i],*e_connection_sources[1][i]);
@@ -846,7 +846,7 @@ void fields::step_e_boundaries() {
   }
 }
 
-void fields::step_h_source(const src *s) {
+void fields_chunk::step_h_source(const src *s) {
   if (s == NULL) return;
   complex<double> A = s->get_amplitude_at_time(t);
   if (A == 0.0) {
@@ -861,7 +861,7 @@ void fields::step_h_source(const src *s) {
   step_h_source(s->next);
 }
 
-void fields::step_e_source(const src *s) {
+void fields_chunk::step_e_source(const src *s) {
   if (s == NULL) return;
   complex<double> A = s->get_amplitude_at_time(t);
   if (A == 0.0) {

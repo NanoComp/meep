@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
   const char *dirname = make_output_directory(argv[0]);
   printf("Using pml of %lg thickness.\n", pml);
   printf("Using an rmax of %lg\n", rmax);
-  mat ma(volcyl(rmax + pml, zsize, a), eps);
+  mat_chunk ma(volcyl(rmax + pml, zsize, a), eps);
   ma.use_pml_right(pml);
   ma.use_pml_left(pml);
   ma.use_pml_radial(pml);
@@ -62,7 +62,7 @@ middle of the system (which is surrounded by PML).
 \begin{comment}
   ma.output_slices();
 
-  fields f(&ma, m);
+  fields_chunk f(&ma, m);
 \end{comment}
 
 For sources, we use a series of broad point sources covering the frequency

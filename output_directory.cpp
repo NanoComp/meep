@@ -28,7 +28,7 @@
 
 const char symlink_name[] = "latest_output";
 
-void mat::set_output_directory(const char *name) {
+void mat_chunk::set_output_directory(const char *name) {
   char buf[300];
   outdir = name;
   printf("Using output directory %s/\n", name);
@@ -39,10 +39,10 @@ void mat::set_output_directory(const char *name) {
   symlink(name, symlink_name);
 }
 
-void fields::set_output_directory(const char *name) {
+void fields_chunk::set_output_directory(const char *name) {
   outdir = name;
   if (strcmp(name, ma->outdir) != 0)
-    printf("Using output directory %s/ for these fields.\n", name);    
+    printf("Using output directory %s/ for these fields_chunk.\n", name);    
 }
 
 static int is_same_file(const char *a, const char *b) {

@@ -24,19 +24,19 @@
 
 /* Energy calculation */
 
-double fields::total_energy() {
+double fields_chunk::total_energy() {
   return energy_in_box(v);
 }
 
-double fields::field_energy() {
+double fields_chunk::field_energy() {
   return field_energy_in_box(v);
 }
 
-double fields::energy_in_box(const volume &otherv) {
+double fields_chunk::energy_in_box(const volume &otherv) {
   return thermo_energy_in_box(otherv) + field_energy_in_box(otherv);
 }
 
-double fields::field_energy_in_box(const volume &otherv) 
+double fields_chunk::field_energy_in_box(const volume &otherv) 
 {
   DOCMP {
     for (int c=0;c<10;c++)
@@ -72,7 +72,7 @@ double fields::field_energy_in_box(const volume &otherv)
     0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(otherv);
 }
 
-double fields::electric_energy_in_box(const volume &otherv) {
+double fields_chunk::electric_energy_in_box(const volume &otherv) {
   double energy = 0;
   DOCMP {
     for (int c=0;c<10;c++)
@@ -83,7 +83,7 @@ double fields::electric_energy_in_box(const volume &otherv) {
   return energy/(8*pi);
 }
 
-double fields::magnetic_energy_in_box(const volume &otherv) {
+double fields_chunk::magnetic_energy_in_box(const volume &otherv) {
   double energy = 0;
   DOCMP {
     for (int c=0;c<10;c++)
@@ -94,7 +94,7 @@ double fields::magnetic_energy_in_box(const volume &otherv) {
   return energy/(8*pi);
 }
 
-double fields::thermo_energy_in_box(const volume &otherv) {
+double fields_chunk::thermo_energy_in_box(const volume &otherv) {
   if (pol) {
     return pol->total_energy(otherv)/(4*pi);
   } else {

@@ -56,7 +56,7 @@ static complex<double> JP(const vec &v) {
   return polar(Jprime(m_for_J, ktrans*v.r()),kax*v.r());
 }
 
-void fields::initialize_with_nth_te(int np0) {
+void fields_chunk::initialize_with_nth_te(int np0) {
   if (v.dim == dcyl) {
     const int n = (m==0) ? np0 - 0 : np0 - 1;
     const double rmax = Jmax(m,n);
@@ -69,7 +69,7 @@ void fields::initialize_with_nth_te(int np0) {
   }
 }
 
-void fields::initialize_with_nth_tm(int np1) {
+void fields_chunk::initialize_with_nth_tm(int np1) {
   if (v.dim == dcyl) {
     const int n = np1 - 1;
     const double rroot = Jroot(m,n);
@@ -83,15 +83,15 @@ void fields::initialize_with_nth_tm(int np1) {
   }
 }
 
-void fields::initialize_with_n_te(int ntot) {
+void fields_chunk::initialize_with_n_te(int ntot) {
   for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
 }
 
-void fields::initialize_with_n_tm(int ntot) {
+void fields_chunk::initialize_with_n_tm(int ntot) {
   for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
 }
 
-void fields::initialize_field(component c, complex<double> func(const vec &)) {
+void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
   for (int i=0;i<v.ntot();i++) {
     complex<double> val = func(v.loc(c,i));
     f[c][0][i] += real(val);

@@ -32,7 +32,7 @@ monitor_point::~monitor_point() {
   if (next) delete next;
 }
 
-void fields::output_point(FILE *o, const vec &loc, const char *name) {
+void fields_chunk::output_point(FILE *o, const vec &loc, const char *name) {
   monitor_point tmp;
   get_point(&tmp, loc);
   fprintf(o, "%s\t%8lg", name, t*inva);
@@ -46,7 +46,7 @@ inline complex<double> getcm(double *f[2], int i) {
   return complex<double>(f[0][i],f[1][i]);
 }
 
-void fields::get_point(monitor_point *pt, const vec &loc) {
+void fields_chunk::get_point(monitor_point *pt, const vec &loc) {
   if (pt == NULL) {
     printf("Error:  get_point passed a null pointer!\n");
     exit(1);
@@ -64,7 +64,7 @@ void fields::get_point(monitor_point *pt, const vec &loc) {
     }
 }
 
-monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) {
+monitor_point *fields_chunk::get_new_point(const vec &loc, monitor_point *the_list) {
   monitor_point *p = new monitor_point();
   get_point(p, loc);
   p->next = the_list;
@@ -95,7 +95,7 @@ void monitor_point::fourier_transform(component w,
   for (int i=0;i<n;i++,p=p->next) {
     d[i] = p->get_component(w);
   }
-  if (fmin > 0.0) { // Get rid of any static fields!
+  if (fmin > 0.0) { // Get rid of any static fields_chunk!
     complex<double> mean = 0.0;
     for (int i=0;i<n;i++) mean += d[i];
     mean /= n;

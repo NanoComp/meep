@@ -101,7 +101,7 @@ void monitor_point_1d::fourier_transform(component_1d w,
   for (int i=0;i<n;i++,p=p->next) {
     d[i] = p->get_component(w);
   }
-  if (fmin > 0.0) { // Get rid of any static fields!
+  if (fmin > 0.0) { // Get rid of any static fields_chunk!
     complex<double> mean = 0.0;
     for (int i=0;i<n;i++) mean += d[i];
     mean /= n;

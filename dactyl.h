@@ -28,7 +28,7 @@ class polarizability;
 class polarization;
 class grace;
 
-class mat {
+class mat_chunk {
  public:
   double *eps, a;
   double *inveps[10];
@@ -38,10 +38,10 @@ class mat {
   polarizability *pb;
   const char *outdir;
 
-  ~mat();
-  mat(const volume &v, double eps(const vec &));
-  mat(const mat *);
-  mat(const mat &);
+  ~mat_chunk();
+  mat_chunk(const volume &v, double eps(const vec &));
+  mat_chunk(const mat_chunk *);
+  mat_chunk(const mat_chunk &);
   void make_average_eps();
   void use_pml_left(double dx);
   void use_pml_right(double dx);
@@ -50,7 +50,7 @@ class mat {
   void output_slices(const char *name = "");
   void output_slices(const volume &what, const char *name = "");
   void set_output_directory(const char *name);
-  void mix_with(const mat *, double);
+  void mix_with(const mat_chunk *, double);
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
@@ -61,7 +61,7 @@ class mat {
 
 class src;
 class bandsdata;
-class fields;
+class fields_chunk;
 class weighted_flux_plane;
 
 class flux_plane {
@@ -76,13 +76,13 @@ class flux_plane {
   flux_plane(double ymin, double ymax, double xconst, int is_rflux, double a);
   flux_plane(const flux_plane &fp);
   ~flux_plane();
-  complex<double> flux(fields *f);
+  complex<double> flux(fields_chunk *f);
 };
 
 class monitor_point {
  public:
   monitor_point();
-  monitor_point(double r, double z, const fields *f);
+  monitor_point(double r, double z, const fields_chunk *f);
   ~monitor_point();
   vec loc;
   double t;
@@ -111,7 +111,7 @@ class monitor_point {
                int maxbands);
 };
 
-class fields {
+class fields_chunk {
  public:
   double *(f[10][2]);
   double *(f_backup[10][2]);
@@ -133,15 +133,15 @@ class fields {
   complex<double> eiknz;
   bandsdata *bands;
   src *e_sources, *h_sources;
-  const mat *new_ma;
-  mat *ma;
+  const mat_chunk *new_ma;
+  mat_chunk *ma;
   const char *outdir;
   double preferred_fmax;
 
-  fields(const mat *, int m=0);
-  fields(const mat &, int m=0);
+  fields_chunk(const mat_chunk *, int m=0);
+  fields_chunk(const mat_chunk &, int m=0);
   void use_bloch(double kz);
-  ~fields();
+  ~fields_chunk();
 
   void output_slices(const char *name = "");
   void output_slices(const volume &what, const char *name = "");
@@ -171,7 +171,7 @@ class fields {
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
-  int phase_in_material(const mat *ma, double time);
+  int phase_in_material(const mat_chunk *ma, double time);
   int is_phasing();
 
   void get_point(monitor_point *p, const vec &);

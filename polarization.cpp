@@ -23,7 +23,7 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-polarization *polarization::set_up_polarizations(const mat *ma, int is_r) {
+polarization *polarization::set_up_polarizations(const mat_chunk *ma, int is_r) {
   if (ma->pb == NULL) return NULL;
   return new polarization(ma->pb, is_r);
 }
@@ -45,7 +45,7 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
       if (v.has_field((component)c) && is_electric((component)c)) {
         P[c][cmp] = new double[v.ntot()];
         for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0.0;
-        // FIXME perhaps shouldn't allocate the PML split fields if we don't
+        // FIXME perhaps shouldn't allocate the PML split fields_chunk if we don't
         // have pml...
         P_pml[c][cmp] = new double[v.ntot()];
         if (P_pml[c][cmp] == NULL) {
@@ -140,7 +140,7 @@ void polarizability::use_pml() {
   if (next) next->use_pml();
 }
 
-polarizability::polarizability(const mat *ma, double sig(const vec &),
+polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
                                double om, double ga, double sigscale,
                                double energy_sat) {
   v = ma->v;
@@ -228,7 +228,7 @@ complex<double> polarization::analytic_epsilon(double freq, const vec &p) const 
   return epsi;
 }
 
-complex<double> fields::analytic_epsilon(double f, const vec &p) const {
+complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
   const double freq_conversion = 2*pi*c/a;
   double freq = f*freq_conversion;
   const component c = v.eps_component();
@@ -242,7 +242,7 @@ complex<double> fields::analytic_epsilon(double f, const vec &p) const {
   return epsi;
 }
 
-void mat::add_polarizability(double sigma(const vec &),
+void mat_chunk::add_polarizability(double sigma(const vec &),
                              double omega, double gamma, double delta_epsilon,
                              double energy_sat) {
   const double freq_conversion = 2*pi*c/a;
@@ -259,7 +259,7 @@ inline double expi(int cmp, double x) {
   return (cmp) ? cos(x) : sin(x);
 }
 
-void fields::initialize_polarizations(polarization *op, polarization *np) {
+void fields_chunk::initialize_polarizations(polarization *op, polarization *np) {
   // Set up polarizations so we'll have them nicely excited, which should
   // give us a handy way of getting all the modes out of a polaritonic
   // material.
@@ -279,7 +279,7 @@ void fields::initialize_polarizations(polarization *op, polarization *np) {
   }
 }
 
-void fields::prepare_step_polarization_energy(polarization *op, polarization *np) {
+void fields_chunk::prepare_step_polarization_energy(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
     prepare_step_polarization_energy(olpol, pol);
@@ -292,7 +292,7 @@ void fields::prepare_step_polarization_energy(polarization *op, polarization *np
   }
 }
 
-void fields::half_step_polarization_energy(polarization *op, polarization *np) {
+void fields_chunk::half_step_polarization_energy(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
     half_step_polarization_energy(olpol, pol);
@@ -306,7 +306,7 @@ void fields::half_step_polarization_energy(polarization *op, polarization *np) {
   }
 }
 
-void fields::update_polarization_saturation(polarization *op, polarization *np) {
+void fields_chunk::update_polarization_saturation(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
     update_polarization_saturation(olpol, pol);
@@ -333,7 +333,7 @@ void fields::update_polarization_saturation(polarization *op, polarization *np) 
   }
 }
 
-void fields::step_polarization_itself(polarization *op, polarization *np) {
+void fields_chunk::step_polarization_itself(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
     step_polarization_itself(olpol, pol);
@@ -362,7 +362,7 @@ void fields::step_polarization_itself(polarization *op, polarization *np) {
   }
 }
 
-void fields::step_e_polarization(polarization *op, polarization *np) {
+void fields_chunk::step_e_polarization(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
     step_e_polarization(olpol, pol);

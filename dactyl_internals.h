@@ -35,7 +35,7 @@ inline int rmin_bulk(int m) {
 class polarizability {
  public:
   volume v;
-  polarizability(const mat *, double sig(const vec &),
+  polarizability(const mat_chunk *, double sig(const vec &),
                  double om, double ga, double sigscale,
                  double energy_saturation = 0.0);
   polarizability(const polarizability *);
@@ -59,7 +59,7 @@ class polarization {
 
   complex<double> analytic_epsilon(double freq, const vec &) const;
   double total_energy(const volume &);
-  static polarization *set_up_polarizations(const mat *ma, int is_real);
+  static polarization *set_up_polarizations(const mat_chunk *ma, int is_real);
   void use_real_fields();
 };
 
@@ -113,5 +113,5 @@ class weighted_flux_plane {
   weighted_flux_plane(int ymin, int ymax, int xconst, 
 	    double dy_min, double dy_max, int is_rflux);
   ~weighted_flux_plane() {};
-  complex<double> flux(fields *f);  
+  complex<double> flux(fields_chunk *f);  
 };

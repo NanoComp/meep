@@ -22,7 +22,7 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-mat::~mat() {
+mat_chunk::~mat_chunk() {
   for (int c=0;c<10;c++) delete[] inveps[c];
   delete[] eps;
 
@@ -85,7 +85,7 @@ static double sig(double r, double power) {
   return pow(r, power);
 }
 
-void mat::mix_with(const mat *n, double f) {
+void mat_chunk::mix_with(const mat_chunk *n, double f) {
   for (int i=0;i<v.ntot();i++)
     eps[i] = 1.0/(1.0/eps[i] + f*(1.0/n->eps[i]-1.0/eps[i]));
   for (int c=0;c<10;c++)
@@ -104,7 +104,7 @@ void mat::mix_with(const mat *n, double f) {
   }
 }
 
-void mat::make_average_eps() {
+void mat_chunk::make_average_eps() {
   double meaneps = 0;
   for (int i=0;i<v.ntot();i++) {
     meaneps += eps[i]; // This isn't quite correct as some points are counted twice...
@@ -120,7 +120,7 @@ void mat::make_average_eps() {
 
 const double Cmax = 0.5;
 
-void mat::use_pml_right(double dx) {
+void mat_chunk::use_pml_right(double dx) {
   if (v.dim == d1) {
     const double border = v.nz()/v.a + v.origin.z() - dx;
     const double prefac = Cmax/(dx*dx);
@@ -185,7 +185,7 @@ void mat::use_pml_right(double dx) {
   }
 }
 
-void mat::use_pml_left(double dx) {
+void mat_chunk::use_pml_left(double dx) {
   if (v.dim == d1) {
     const double border = dx + v.origin.z();
     const double prefac = Cmax/(dx*dx);
@@ -250,7 +250,7 @@ void mat::use_pml_left(double dx) {
   }
 }
 
-void mat::use_pml_radial(double dx) {
+void mat_chunk::use_pml_radial(double dx) {
   if (v.dim == dcyl) {
     const double border = dx + v.origin.z();
     const double prefac = Cmax/(dx*dx);
@@ -296,7 +296,7 @@ void mat::use_pml_radial(double dx) {
   }
 }
 
-mat::mat(const mat *o) {
+mat_chunk::mat_chunk(const mat_chunk *o) {
   outdir = o->outdir;
   if (o->pb) pb = new polarizability(o->pb);
   else pb = NULL;
@@ -334,7 +334,7 @@ mat::mat(const mat *o) {
     }
 }
 
-mat::mat(const volume &thev, double feps(const vec &)) {
+mat_chunk::mat_chunk(const volume &thev, double feps(const vec &)) {
   pml_fmin = 0.2;
   outdir = ".";
   pb = NULL;

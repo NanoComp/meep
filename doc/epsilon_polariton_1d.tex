@@ -45,7 +45,7 @@ double one_in_middle(const vec &p) {
 int main(int argc, char **argv) {
   deal_with_ctrl_c();
   const double ttot =1180.0;
-  mat ma(volone(zsize, a), eps);
+  mat_chunk ma(volone(zsize, a), eps);
   const char *dirname = make_output_directory(argv[0]);
   printf("Storing output in directory %s/\n", dirname);
   ma.set_output_directory(dirname);
@@ -58,7 +58,7 @@ PML, it is all right to have polaritonic material within PML regions.
   ma.add_polarizability(one_in_middle, 0.4, 0.01, 27.63);
 \end{verbatim}
 \begin{comment}
-  fields f(&ma);
+  fields_chunk f(&ma);
   double sourceloc = pml_thickness+1.0/(double)a;
 \end{comment}
 We use a single rather high frequency (and very broad) point source, to
@@ -80,7 +80,7 @@ We use a couple of monitor points to determine epsilon.
     }
 \end{comment}
 The monitor points are located one grid spacing from one another.  The
-\verb*|get_new_point| method appends the fields at a given time to a
+\verb*|get_new_point| method appends the fields_chunk at a given time to a
 monitor point linked list.
 \begin{verbatim}
     left  = f.get_new_point(vec(sourceloc+1.0/a), left );
@@ -95,7 +95,7 @@ monitor point linked list.
   int numl, numr;
   printf("Working on left fourier transform...\n");
 \end{comment}
-When the time stepping is over, we take a fourier transform of the fields
+When the time stepping is over, we take a fourier transform of the fields_chunk
 at the two monitor points.
 \begin{verbatim}
   left->fourier_transform(Ex, &al, &freqs, &numl, 0.301, 0.5, 300);
