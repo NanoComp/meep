@@ -242,8 +242,10 @@ class grace {
   void new_curve();
   void set_legend(const char *);
   void set_range(double xmin, double xmax, double ymin, double ymax);
-  void output_point(double x, double y, double dy = -1.0);
-  void output_out_of_order(int n, double x, double y, double dy = -1.0);
+  void output_point(double x, double y,
+                    double dy = -1.0, double extra = -1.0);
+  void output_out_of_order(int n, double x, double y,
+                                  double dy = -1.0, double extra= -1.0);
  private:
   void flush_pts();
   FILE *f;

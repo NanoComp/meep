@@ -36,7 +36,7 @@ const char grace_header[] = "# Grace project file
 class grace_point {
 public:
   int n;
-  double x, y, dy;
+  double x, y, dy, extra;
   grace_point *next;
 };
 
@@ -101,18 +101,24 @@ void grace::new_curve() {
   fprintf(f, "\n");
 }
 
-void grace::output_point(double x, double y, double dy) {
-  if (dy >= 0) fprintf(f, "%lg\t%lg\t%lg\n", x, y, dy);
-  else fprintf(f, "%lg\t%lg\n", x, y);
+void grace::output_point(double x, double y, double dy, double extra) {
+  if (dy >= 0 && extra != -1) {
+    fprintf(f, "%lg\t%lg\t%lg\t%lg\n", x, y, dy, extra);
+  } else if (dy >= 0) {
+    fprintf(f, "%lg\t%lg\t%lg\n", x, y, dy);
+  } else {
+    fprintf(f, "%lg\t%lg\n", x, y);
+  }
   fflush(f);
 }
 
-void grace::output_out_of_order(int n, double x, double y, double dy) {
+void grace::output_out_of_order(int n, double x, double y, double dy, double extra) {
   grace_point *gp = new grace_point;
   gp->n = n;
   gp->x = x;
   gp->y = y;
   gp->dy = dy;
+  gp->extra = extra;
   gp->next = pts;
   pts = gp;
 }
@@ -133,7 +139,7 @@ void grace::flush_pts() {
     while (p) {
       if (p->n <= 0) {
         *last = p->next;
-        output_point(p->x,p->y,p->dy);
+        output_point(p->x,p->y,p->dy,p->extra);
         delete p;
         p = *last;
       } else {
