@@ -50,14 +50,16 @@ partial_flux_plane *fields_chunk::nfp_1d(const vec &p1) {
   double w[8];
   v.interpolate(Hy,p1,inds,w);
   const int indhy = inds[0];
+  const bool havehy = w[0] != 0.0;
   v.interpolate(Ex,p1,inds,w);
   const int index = inds[0];
+  const bool haveEx = w[0] != 0.0;
   const vec lochy = v.loc(Hy,indhy);
   const vec locex = v.loc(Ex,index);
   const double why = fabs(locex.z() - p1.z())/fabs(locex.z() - lochy.z());
   const double wex = 1.0 - why;
   partial_flux_plane *out = NULL;
-  if (v.owns(v.iloc(Hy,indhy))) {
+  if (v.owns(v.iloc(Hy,indhy)) && havehy) {
     partial_flux_plane *temp = new partial_flux_plane(this, 2);
     temp->weights[0] = temp->weights[1] = 0.5*why;
     temp->indH[0] = temp->indH[1] = indhy;
@@ -69,7 +71,7 @@ partial_flux_plane *fields_chunk::nfp_1d(const vec &p1) {
     temp->next_in_chunk = out;
     out = temp;
   }
-  if (v.owns(v.iloc(Ex,index))) {
+  if (v.owns(v.iloc(Ex,index)) && haveEx) {
     partial_flux_plane *temp = new partial_flux_plane(this, 2);
     temp->weights[0] = temp->weights[1] = 0.5*wex;
     temp->indE[0] = temp->indE[1] = index;
