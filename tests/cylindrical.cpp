@@ -97,14 +97,12 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
       compare_point(f, f1, vec(0.01, 0.02)) || die("");
       compare_point(f, f1, vec(0.601, 0.701)) || die("");
       if (f.time() >= total_energy_check_time) {
-        //compare(f.total_energy(), f1.total_energy(),
-        //        "   total energy") || die("");
-        //compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
-        //        "electric energy") || die("");
+        compare(f.total_energy(), f1.total_energy(),
+                "   total energy") || die("");
+        compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+                "electric energy") || die("");
         compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
                 "magnetic energy") || die("");
-        //compare(f.thermo_energy_in_box(v), f1.thermo_energy_in_box(v),
-        //        "thermo energy") || die("");
 
         total_energy_check_time += 5.0;
         if (splitting == 2 && 0) {
