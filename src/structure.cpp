@@ -168,7 +168,12 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
         FOR_COMPONENTS(c)
           FOR_DIRECTIONS(d)
             if (broadcast(chunks[i]->n_proc(),
-                          chunks[i]->inveps[c][d] != NULL))
+                          chunks[i]->inveps[c][d] != NULL)) {
+              if (new_chunks[j]->is_mine() && ! new_chunks[j]->inveps[c][d]) {
+                new_chunks[j]->inveps[c][d] = new double[new_chunks[j]->v.ntot()];
+                for (int i=0;i<new_chunks[j]->v.ntot();i++)
+                  new_chunks[j]->inveps[c][d][i] = 0.0;
+              }
               for (int l=0; l<vol_intersection.ntot(); l++) {
                 ivec iv = vol_intersection.iloc(c, l);
                 int index_old = chunks[i]->v.index(c, iv);
@@ -177,6 +182,7 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
                           &chunks[i]->inveps[c][d][index_old],
                           &new_chunks[j]->inveps[c][d][index_new]);
               }
+            }
         FOR_DIRECTIONS(d)
           FOR_COMPONENTS(c) {
             // C
