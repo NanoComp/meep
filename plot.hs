@@ -41,8 +41,8 @@ write_bands bls = foldl (++) header [plot_band m n bls | m <- get_ms bls, n <- g
 plot_band m n bls = case get_ks m n bls of
   [] -> ""
   ks ->
-    color m (1+setstart)++
-    "@target G0.S"++show (0+setstart)++"\n@type xy\n"++
+    color (1+m) setstart++
+    "@target G0.S"++show setstart++"\n@type xy\n"++
     (foldl (++) "" $ map (\ k-> show k++" "++show (get_freq bls m n k)++"\n") ks)
     where setstart = m*1000+n
 color c set = "@    s"++show set++" line color "++show c++"\n"++
