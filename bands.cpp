@@ -110,8 +110,8 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     double smalltime = 1./(decayconst + bands->fmax*(c*inva));
     bands->scale_factor = (int)(0.06*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
-    if (verbosity) printf("scale_factor is %d (%lg,%lg)\n",
-                          bands->scale_factor, bands->fmax*(c*inva), decayconst);
+    if (verbosity) master_printf("scale_factor is %d (%lg,%lg)\n",
+                                 bands->scale_factor, bands->fmax*(c*inva), decayconst);
   }
 
   if (bands->tend <= bands->tstart) {
@@ -267,7 +267,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
   const double total_time = (bands->tend-bands->tstart)*c/a;
   const double deltaf = 1.0/total_time;
   int freqs_so_far = num_freqs;
-  printf("About to sort by frequency... (%d frequencies)\n", freqs_so_far);
+  master_printf("About to sort by frequency... (%d frequencies)\n", freqs_so_far);
   // Sort by frequency...
   for (int i = 1; i < freqs_so_far; i++) {
     for (int j=i; j>0;j--) {
@@ -283,7 +283,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
       }
     }
   }
-  printf("Looking for clusters...\n");
+  master_printf("Looking for clusters...\n");
   int num_found = 0;
   double totwid = 0.001;
   while (freqs_so_far >= fields_considered/2 + 1) {
@@ -291,7 +291,8 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
     get_cluster(tf,freqs_so_far,fields_considered,deltaf,&lo,&hi);
     int mid = lo + (hi-lo)/2;
     if (tf[hi]-tf[lo] < deltaf) {
-      printf("Got a cluster from %lg to %lg (%d freqs)\n", tf[lo], tf[hi], 1+hi-lo);
+      master_printf("Got a cluster from %lg to %lg (%d freqs)\n",
+                    tf[lo], tf[hi], 1+hi-lo);
       fad[num_found] = complex<double>(tf[mid],td[mid]);
       if (approx_power) {
         approx_power[num_found] = 0;
@@ -305,11 +306,13 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
       num_found++;
       if (num_found >= maxbands) num_found--;
     } else {
-      printf("Rejected a cluster from %lg to %lg (%d freqs out of %d)\n", tf[lo], tf[hi], 1+hi-lo, fields_considered);
-      if (verbosity > 1) printf("width is %g vs %g\n", tf[hi] - tf[lo], deltaf);
+      master_printf("Rejected a cluster from %lg to %lg (%d freqs out of %d)\n",
+                    tf[lo], tf[hi], 1+hi-lo, fields_considered);
+      if (verbosity > 1) master_printf("width is %g vs %g\n",
+                                       tf[hi] - tf[lo], deltaf);
       lo = get_closest(tf,freqs_so_far);
       hi = lo+1;
-      if (verbosity > 1) printf("dropping %g and %g\n", tf[hi], tf[lo]);
+      if (verbosity > 1) master_printf("dropping %g and %g\n", tf[hi], tf[lo]);
     }
     freqs_so_far -= 1 + hi - lo;
     for (int i=lo;i<freqs_so_far;i++) {
@@ -319,7 +322,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
     }
   }
   for (int i=0;i<freqs_so_far;i++) {
-    if (verbosity > 1) printf("Have a leftover freq: %g\n", tf[i]);
+    if (verbosity > 1) master_printf("Have a leftover freq: %g\n", tf[i]);
   }
   return num_found;
 }
@@ -345,7 +348,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
     for (int whichf = 0; whichf < 10; whichf++)
       if (v.has_field((component)whichf)) {
-        if (verbosity>1) printf("Looking at field %d\n", whichf);
+        if (verbosity>1) master_printf("Looking at field %d\n", whichf);
         int freqs_here = bands->get_freqs(bands->f[p][whichf], ntime,
                                           ta+freqs_so_far,
                                           tf+freqs_so_far,
@@ -407,8 +410,8 @@ int bandsdata::get_freqs(cmplx *data, int n,
       for (int j=i+1;j<num;j++) {
         if (abs(freq_re[j]+freq_re[i]) < 2.0/total_time) {
           if (verbosity > 2 && freq_re[i] != 0.0) {
-            printf("Got a plus/minus freq match at %lg\n",freq_re[j]); 
-            printf("Total time: %lg and delta freq limit %lg\n",
+            master_printf("Got a plus/minus freq match at %lg\n",freq_re[j]); 
+            master_printf("Total time: %lg and delta freq limit %lg\n",
                    total_time, 2.0/total_time);
           }
           freq_re[i] = -0.0; // It will get cleaned up later...
@@ -416,7 +419,8 @@ int bandsdata::get_freqs(cmplx *data, int n,
       }
       freq_re[i] = -freq_re[i];
       if (verbosity > 2 && freq_re[i] != 0.0)
-        printf("Flipping sign of a negative freq:  %lg %lg\n", freq_re[i], freq_im[i]);
+        master_printf("Flipping sign of a negative freq:  %lg %lg\n",
+                      freq_re[i], freq_im[i]);
     }
   }
   // Now sort the silly solutions again...
@@ -440,9 +444,9 @@ int bandsdata::get_freqs(cmplx *data, int n,
   for (int i=0;i<orignum;i++) {
     if (freq_re[0] < fmin*.9) {
       if (verbosity > 2 && freq_re[0] != 0.0) {
-        printf("Trashing a spurious low frequency solution with freq %lg %lg\n",
+        master_printf("Trashing a spurious low frequency solution with freq %lg %lg\n",
                freq_re[0], freq_im[0]);
-        //printf("For your info, fmin is %lg\n", fmin);
+        //master_printf("For your info, fmin is %lg\n", fmin);
       }
       for (int j=0;j<num-1;j++) {
         freq_re[j]=freq_re[j+1];
@@ -459,8 +463,8 @@ int bandsdata::get_freqs(cmplx *data, int n,
     if (qhere < qminhere) {
       num--;
       if (verbosity > 2) {
-        printf("Trashing a spurious low Q solution with freq %lg %lg (%lg vs %lg)\n",
-               freq_re[i], freq_im[i], qhere, qminhere);
+        master_printf("Trashing a spurious low Q solution with freq %lg %lg (%lg vs %lg)\n",
+                      freq_re[i], freq_im[i], qhere, qminhere);
       }
       for (int j=i;j<num;j++) {
         freq_re[j] = freq_re[j+1];

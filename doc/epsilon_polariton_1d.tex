@@ -43,6 +43,7 @@ double one_in_middle(const vec &p) {
 }
 
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   deal_with_ctrl_c();
   const double ttot =1180.0;
   mat ma(volone(zsize, a), eps, 5);
@@ -140,6 +141,7 @@ Finally we calculate epsilon from the second derivative of the field using
     g.output_point(real(freqs[i]),
                    imag(f.analytic_epsilon(real(freqs[i]),vec(sourceloc+3.0/a))));
   }
+  finished();
 }
 \end{comment}
 

@@ -15,7 +15,7 @@ transform=@program_transform_name@
 
 VERSION = @VERSION@
 
-all: dactyl.ps dactyl/dactyl.html preproc
+all: dactyl.ps dactyl/dactyl.html
 
 ###########################################################################
 
@@ -31,11 +31,8 @@ TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
 .o.dac: ../libdactyl.a
 	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
-.tex.cpp: preproc
-	./preproc $< > $@
-
-preproc: preproc.hs
-	ghc -o preproc -package text preproc.hs
+.tex.cpp:
+	perl ./preproc.pl $< > $@
 
 dactyl.ps : dactyl.dvi
 	dvips -o dactyl.ps dactyl.dvi
@@ -46,32 +43,32 @@ dactyl/dactyl.html : $(TEXFILES)
 dactyl.dvi : $(TEXFILES)
 	latex dactyl.tex
 
-energy_cons_1d-out/energy.eps : preproc energy_cons_1d.dac
+energy_cons_1d-out/energy.eps : energy_cons_1d.dac
 	rm -rf energy_cons_1d-out/ && ./energy_cons_1d.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
-energy_cons-out/energy.eps : preproc energy_cons.dac
+energy_cons-out/energy.eps : energy_cons.dac
 	rm -rf energy_cons-out/ && ./energy_cons.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
-polaritonbands-out/bands.eps : preproc polaritonbands.dac
+polaritonbands-out/bands.eps : polaritonbands.dac
 	rm -rf polaritonbands-out/ && ./polaritonbands.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
 
-epsilon_polariton_1d-out/eps.eps : preproc epsilon_polariton_1d.dac
+epsilon_polariton_1d-out/eps.eps : epsilon_polariton_1d.dac
 	rm -rf epsilon_polariton_1d-out/
 	./epsilon_polariton_1d.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
 
-omniguide-out/bands.eps : preproc omniguide.dac
+omniguide-out/bands.eps : omniguide.dac
 	rm -rf omniguide-out/*
 	./omniguide.dac
 	mv $@ $@-tmp
 	sed -e 's/fill//' $@-tmp > $@
 
-lossgain_epsilon-out/eps.eps : preproc lossgain_epsilon.dac
+lossgain_epsilon-out/eps.eps : lossgain_epsilon.dac
 	rm -rf lossgain_epsilon-out/*
 	./lossgain_epsilon.dac
 	mv $@ $@-tmp
@@ -82,7 +79,7 @@ OBJFILES = omniguide.o simplebands.o epsilon_polariton_1d.o \
 	energy_cons_1d.o
 $(OBJFILES): ../libdactyl.a
 
-test: preproc simplebands.dac polaritonbands.dac \
+test: simplebands.dac polaritonbands.dac \
 	epsilon_polariton_1d.dac omniguide.dac lossgain_epsilon.dac \
 	energy_cons_1d.dac energy_cons.dac
 

@@ -33,6 +33,7 @@ double one(const vec &p) { return (p.z() > 15.0)?1:0; }
 \end{verbatim}
 \begin{comment}
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   deal_with_ctrl_c();
   const double ttot = 600.0;
 \end{comment}
@@ -56,12 +57,12 @@ the heck of it.
   f.add_point_source(Ep, 0.33, 1.8, 0.0, 8.0, vec(0.5,2.0));
 \end{verbatim}
 \begin{comment}
-  double next_printtime = 10;
+  double next_printtime = 50;
   while (f.time() < ttot && !interrupt) {
     if (f.time() >= next_printtime) {
-      next_printtime += 10;
-      printf("Working on time %lg...  ", f.time());
-      printf("energy is %lg\n", f.total_energy());
+      next_printtime += 50;
+      master_printf("Working on time %lg...  ", f.time());
+      master_printf("energy is %lg\n", f.total_energy());
 \end{comment}
 We plot the total energy, the electromagnetic energy and the
 ``thermodynamic energy'' which is the energy that is either stored in the
@@ -76,6 +77,7 @@ gain system) perhaps is stored in a population inversion.
     }
     f.step();
   }
+  finished();
 }
 \end{comment}
 

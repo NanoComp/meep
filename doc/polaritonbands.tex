@@ -27,6 +27,7 @@ double one(const vec &) { return 1; }
 
 \begin{comment}
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   deal_with_ctrl_c();
   const int a = 10;
   const int m = 0;
@@ -84,6 +85,7 @@ Finally, we compute the band structure as usual.
     //fflush(ban);
   }
   //fclose(ban);
+  finished();
 }
 \end{comment}
 

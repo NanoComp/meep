@@ -22,12 +22,14 @@ In this example we calculate the lowest four TE modes of a simple hollow
 metallic waveguide of radius one.
 
 \begin{verbatim}
-int main() {
+int main(int argc, char *argv[]) {
+  initialize(argc, argv);
   FILE *ban = fopen("bands", "w");
   mat ma(volcyl(1.0, 0.0, rad), eps);
   for (int m=0;m<3;m++) {
     for (double k=0.0; k<= 1.01; k += 0.25) {
-      printf("Working on k of %g and m = %d with a=%d...\n", k, m, rad);
+      master_printf("Working on k of %g and m = %d with a=%d...\n",
+                    k, m, rad);
       fields f(&ma, m);
       f.use_bloch(k);
 \end{verbatim}
@@ -78,5 +80,6 @@ frequency mode).
     }
   }
   fclose(ban);
+  finished();
 }
 \end{verbatim}

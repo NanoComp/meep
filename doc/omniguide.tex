@@ -29,6 +29,7 @@ double guided_eps(const vec &v) {
 
 \begin{comment}
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   deal_with_ctrl_c();
   printf("Running omniguide!\n");
 
@@ -144,5 +145,6 @@ The band is actually printed to disk only when the grace object is
 destroyed, which in this case happens just before the program exits.
 \begin{comment}
   }
+  finished();
 }
 \end{comment}

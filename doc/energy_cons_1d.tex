@@ -32,6 +32,7 @@ double one(const vec &p) { return (p.z() > 15.0)?1:0; }
 \end{verbatim}
 \begin{comment}
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   deal_with_ctrl_c();
   const double ttot = 600.0;
 \end{comment}
@@ -60,15 +61,13 @@ the heck of it.
 \end{verbatim}
 \begin{comment}
   const double ezero = f.total_energy();
-  double next_printtime = 1;
+  double next_printtime = 10;
   while (f.time() < ttot && !interrupt) {
     if (f.time() >= next_printtime) {
-      next_printtime += 1;
-      printf("Working on time %lg...  ", f.time());
-      printf("energy is %lg\n", f.total_energy() - ezero);
-      //printf("magnetic energy is %lg\n", f.magnetic_energy_in_box(f.v));
-      //printf("electric energy is %lg\n", f.electric_energy_in_box(f.v));
-      printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v) - ezero);
+      next_printtime += 10;
+      master_printf("Working on time %lg...  ", f.time());
+      master_printf("energy is %lg\n", f.total_energy() - ezero);
+      master_printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v) - ezero);
       //f.eps_slices();
 \end{comment}
 We plot the total energy, the electromagnetic energy and the
@@ -87,6 +86,7 @@ gain system) perhaps is stored in a population inversion.
     }
     f.step();
   }
+  finished();
 }
 \end{comment}
 
