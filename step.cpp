@@ -633,7 +633,6 @@ void fields_chunk::step_e() {
 void fields::step_boundaries(field_type ft) {
   // First copy outgoing data to buffers...
   int *wh = new int[num_chunks];
-
   for (int i=0;i<num_chunks;i++) wh[i] = 0;
   for (int i=0;i<num_chunks;i++)
     for (int j=0;j<num_chunks;j++)

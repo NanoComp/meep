@@ -218,7 +218,7 @@ void fields::connect_the_chunks() {
               if (locate_component_point(&c,&here,&thephase))
                 if (chunks[j]->v.owns(here) && !is_metal(here)) {
                   // Adjacent, periodic or rotational...
-                  nc[type(c)][Incoming][i]++;
+                  nc[type((component)corig)][Incoming][i]++;
                   nc[type(c)][Outgoing][j]++;
                   new_comm_sizes[type(c)][j]++;
                 }
@@ -272,7 +272,7 @@ void fields::connect_the_chunks() {
                   const int m = chunks[j]->v.index(c, here);
                   DOCMP {
                     chunks[i]->connections[FT][Incoming][cmp][wh[FT][Incoming][i]]
-                      = chunks[i]->f[c][cmp] + n;
+                      = chunks[i]->f[corig][cmp] + n;
                     chunks[j]->connections[FT][Outgoing][cmp][wh[FT][Outgoing][j]]
                       = chunks[j]->f[c][cmp] + m;
                   }

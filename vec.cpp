@@ -962,9 +962,7 @@ symmetry rotate2(direction axis, const volume &v) {
   symmetry s = identity();
   if (axis > 2) abort("Can only rotate2 in 2D or 3D.\n");
   s.g = 2;
-  s.S[(axis+1)%3].d = (direction)((axis+2)%3);
   s.S[(axis+1)%3].flipped = true;
-  s.S[(axis+2)%3].d = (direction)((axis+1)%3);
   s.S[(axis+2)%3].flipped = true;
   s.symmetry_point = v.center();
   s.a = v.a;
@@ -1045,7 +1043,7 @@ complex<double> symmetry::phase_shift(component c, int n) const {
     // transformation of these two directions is no longer cyclical, then
     // we need to flip the sign of this component of H.
     bool flip = false;
-    if (((transform(d2,n).d - transform(d1,n).d)%3) == 2) flip = !flip;
+    if (((3+transform(d2,n).d - transform(d1,n).d)%3) == 2) flip = !flip;
     if (transform(d1,n).flipped) flip = !flip;
     if (transform(d2,n).flipped) flip = !flip;
     if (flip) return -1.0;
@@ -1063,10 +1061,16 @@ bool symmetry::is_primitive(const vec &p) const {
     const vec pp = transform(p,i);
     switch (p.dim) {
     case d2:
-      if (pp.x() < p.x() || pp.y() < p.y()) return false;
+      if (pp.x()+pp.y() < p.x()+p.y()) return false;
+      if (pp.x()+pp.y() == p.x()+p.y() &&
+          p.y() > p.x() && pp.y() <= pp.x()) return false;
       break;
     case d3:
-      if (pp.x() < p.x() || pp.y() < p.y()) return false;
+      if (pp.x()+pp.y()+pp.z() < p.x()+p.y()+p.z()) return false;
+      if (pp.x()+pp.y()+pp.z() == p.x()+p.y()+p.z() &&
+          pp.y() > pp.x() && p.y() <= p.x()) return false;
+      abort("there is a known bug in 3d is_primitive!\n");// FIXME!
+      break;
     case d1: case dcyl:
       if (pp.z() < p.z()) return false;
       break;

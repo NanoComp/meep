@@ -191,7 +191,7 @@ void fields_chunk::add_indexed_source(component whichf, double freq, double widt
   tmp.peaktime = peaktime;
   if (peaktime <= 0.0) tmp.peaktime = time+tmp.cutoff;
   // Apply a shift so that we won't end up with a static polarization when
-  // the source is gone:
+  // the source is gone:  (FIXME: is there a bug here?)
   if (is_c) tmp.amp_shift = 0.0;
   else tmp.amp_shift = integrate_source(&tmp, inva)/integrate_envelope(&tmp, inva);
   if (is_magnetic(whichf)) {

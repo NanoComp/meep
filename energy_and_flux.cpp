@@ -132,8 +132,8 @@ double fields_chunk::electric_energy_in_box(const volume &otherv,
             for (int sn=0;sn<S.multiplicity();sn++) {
               const vec pn = S.transform(p0,sn);
               if ((pn!=p0 || sn==0) && otherv.owns(pn))
-                energy += otherv.intersection(v.dV(pn))*
-                  f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
+                  energy += otherv.intersection(v.dV(pn))*
+                    f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
             }
         }
   return energy*(1.0/(8*pi));
