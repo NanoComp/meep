@@ -48,6 +48,13 @@ polarization::polarization(const polarizability *the_pb) {
         P_pml[c][cmp] = NULL;
       }
   }
+  for (int c=0;c<10;c++)
+    if (v.has_field((component)c) && is_electric((component)c)) {
+      energy[c] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) energy[c][i] = 0.0;
+    } else {
+      energy[c] = NULL;
+    }
   pb = the_pb;
   if (pb->next == NULL) {
     next = NULL;
@@ -61,7 +68,20 @@ polarization::~polarization() {
     for (int c=0;c<10;c++) delete[] P[c][cmp];
     for (int c=0;c<10;c++) delete[] P_pml[c][cmp];
   }
+  for (int c=0;c<10;c++) delete[] energy[c];
   if (next) delete next;
+}
+
+double polarization::total_energy(const volume &what) {
+  const volume v = pb->v;
+  double e = 0.0;
+  for (int c=0;c<10;c++)
+    if (energy[c])
+      for (int i=0;i<v.ntot();i++)
+        if (what.contains(v.loc((component)c,i)))
+          e += energy[c][i];
+  if (next) e += next->total_energy(what);
+  return e;
 }
 
 polarizability::polarizability(const polarizability *pb) {
@@ -143,8 +163,9 @@ polarizability::polarizability(const mat *ma, double sig(const vec &),
                              sig(here+dr-dz) + sig(here-dr-dz));
       s[Ez][z] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
     }
-  } else if (v.dim == dcyl) {
+  } else if (v.dim == d1) {
     // There's just one field point...
+    for (int i=0;i<v.ntot();i++) s[Ex][i] = sigma[i];
   } else {
     printf("Unsupported dimensionality!\n");
     exit(1);
@@ -192,6 +213,33 @@ void fields::initialize_polarizations(polarization *op, polarization *np) {
   }
 }
 
+void fields::prepare_step_polarization_energy(polarization *op, polarization *np) {
+  if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
+    // This is the initial call... so I should start running from olpol and pol.
+    prepare_step_polarization_energy(olpol, pol);
+  } else if (op != NULL && np != NULL) {
+    for (int c=0;c<10;c++)
+      if (op->energy[c])
+        for (int i=0;i<v.ntot();i++)
+          op->energy[c][i] = np->energy[c][i];
+    if (op->next && np->next) prepare_step_polarization_energy(op->next, np->next);
+  }
+}
+
+void fields::half_step_polarization_energy(polarization *op, polarization *np) {
+  if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
+    // This is the initial call... so I should start running from olpol and pol.
+    half_step_polarization_energy(olpol, pol);
+  } else if (op != NULL && np != NULL) {
+    DOCMP
+      for (int c=0;c<10;c++)
+        if (op->energy[c])
+          for (int i=0;i<v.ntot();i++)
+            op->energy[c][i] += 0.5*(np->P[c][cmp][i] - op->P[c][cmp][i])*f[c][cmp][i];
+    if (op->next && np->next) half_step_polarization_energy(op->next, np->next);
+  }
+}
+
 void fields::step_polarization_itself(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
@@ -228,11 +276,12 @@ void fields::step_e_polarization(polarization *op, polarization *np) {
   } else if (olpol != NULL && pol != NULL) {
     DOCMP {
       for (int cc=0;cc<10;cc++)
-        if (v.has_field((component)cc) && is_electric((component)cc)) {
+        if (op->P[cc][cmp]) {
           for (int i=0;i<v.ntot();i++)
-            f[cc][cmp][i] -= ma->inveps[cc][i]*(np->P[cc][i]-op->P[cc][i]);
+            f[cc][cmp][i] -= ma->inveps[cc][i]*(np->P[cc][cmp][i]-op->P[cc][cmp][i]);
           for (int i=0;i<v.ntot();i++)
-            f_pml[cc][cmp][i] -= ma->inveps[cc][i]*(np->P_pml[cc][i]-op->P_pml[cc][i]);
+            f_pml[cc][cmp][i] -=
+              ma->inveps[cc][i]*(np->P_pml[cc][cmp][i]-op->P_pml[cc][cmp][i]);
         }
     }
     if (op->next && np->next) step_e_polarization(op->next, np->next);

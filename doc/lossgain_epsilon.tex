@@ -7,31 +7,25 @@
 
 #include "dactyl.h"
 
-const int rad = 10;
+const int a = 10;
 const int m = 0;
 const double eps_value = 2.25;
 const double fmin = 0.05;
 
 const double pml = 1.0;
-const int npml = (int)(0.5+pml*rad);
-const double zsize = 2*pml+10/(double)rad;//+1.0/freq;
-const double rmax  = 6/(double)rad;
+const int npml = (int)(0.5+pml*a);
+const double zsize = 2*pml+10/(double)a;//+1.0/freq;
+const double rmax  = 6/(double)a;
 const double zmiddle = zsize/2;
-const double sourceloc = zmiddle - 4/(double)rad;
+const double sourceloc = zmiddle - 4/(double)a;
 
-const double r_look = 1.5/rad, z_look = zmiddle, d = 1.0/rad;
+const double r_look = 1.5/a, z_look = zmiddle, d = 1.0/a;
 
-complex<double> source_sharp(double r) {
-  double sig = 1.0/rad;
-  double dr = r - rmax*.5;
-  if (fabs(r) >= rmax) return 0.0;
-  return exp(-dr*dr/(2*sig*sig))/sqrt(sig);
-}
-double eps(double r, double z) { return eps_value; }
-double one_in_middle(double r, double z) {
-  const double midmax = r_look+2.0/(double)rad;
-  const double midwid = 2/(double)rad;
-  if (r <= midmax && z >= zmiddle-midwid && z < zmiddle+midwid) {
+double eps(const vec &) { return eps_value; }
+double one_in_middle(const vec &v) {
+  const double midmax = r_look+2.0/(double)a;
+  const double midwid = 2/(double)a;
+  if (v.r() <= midmax && v.z() >= zmiddle-midwid && v.z() < zmiddle+midwid) {
     return 1;
   } else {
     return 0;
@@ -43,8 +37,9 @@ int main(int argc, char **argv) {
   const char *dirname = make_output_directory(argv[0]);
   printf("Using pml of %lg thickness.\n", pml);
   printf("Using an rmax of %lg\n", rmax);
-  mat ma(eps, rmax + pml, zsize, rad);
-  printf("I expect %g reflection off pml\n", ma.use_pml(pml,pml,fmin));
+  mat ma(volcyl(rmax + pml, zsize, a), eps);
+  ma.use_pml_right(pml);
+  ma.use_pml_left(pml);
   ma.set_output_directory(dirname);
 \end{comment}
 
@@ -75,22 +70,22 @@ For sources, we use a series of broad point sources covering the frequency
 range of interest.
 
 \begin{verbatim}
-  f.add_source(Ep, 0.13, 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
-  f.add_source(Ep, 0.21, 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
-  f.add_source(Ep, 0.3 , 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
-  f.add_source(Ep, 0.43, 0.8, 0.0, 8.0, sourceloc+0.0, source_sharp);
+  f.add_point_source(Ep, 0.13, 0.8, 0.0, 8.0, vec(rmax,sourceloc));
+  f.add_point_source(Ep, 0.21, 0.8, 0.0, 8.0, vec(rmax,sourceloc));
+  f.add_point_source(Ep, 0.3 , 0.8, 0.0, 8.0, vec(rmax,sourceloc));
+  f.add_point_source(Ep, 0.43, 0.8, 0.0, 8.0, vec(rmax,sourceloc));
 \end{verbatim}
 \begin{comment}
-  printf("Working with a=%d...\n", rad);
+  printf("Working with a=%d...\n", a);
   monitor_point *left = NULL, *right = NULL, *middle = NULL,
                 *top = NULL, *bottom = NULL;
   double next_printtime = 10;
-  while (f.time() < 110 && !interrupt) {
+  while (f.time() < 510 && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 10;
       printf("Working on time %lg...  ", f.time());
-      printf("energy is %lg\n", f.total_energy());
-      if (f.time() > -90) f.output_slices();
+      printf("energy is %lg\n", f.field_energy());
+      //if (f.time() > -90) f.output_slices();
     }
     f.step();
 \end{comment}
@@ -101,11 +96,11 @@ component.  We choose $m=0$, so we won't have to deal with the $\phi$
 derivative.
 
 \begin{verbatim}
-    left   = f.get_new_point(r_look    , z_look - d, left);
-    middle = f.get_new_point(r_look    , z_look    , middle);
-    top    = f.get_new_point(r_look + d, z_look    , top);
-    bottom = f.get_new_point(r_look - d, z_look    , bottom);
-    right  = f.get_new_point(r_look    , z_look + d, right);
+    left   = f.get_new_point(vec(r_look    , z_look - d), left);
+    middle = f.get_new_point(vec(r_look    , z_look    ), middle);
+    top    = f.get_new_point(vec(r_look + d, z_look    ), top);
+    bottom = f.get_new_point(vec(r_look - d, z_look    ), bottom);
+    right  = f.get_new_point(vec(r_look    , z_look + d), right);
 \end{verbatim}
 \begin{comment}
   }
@@ -147,8 +142,8 @@ $-k^2 H_z(\omega)$, from which we extract epsilon.
   for (int i=0;i<numl;i++) {
     complex<double> ksqr = -(ar[i]+al[i]-2*am[i]
                              + at[i]+ab[i]-2*am[i]
-                             + (at[i]-ab[i])/2/r_look/rad
-                             )*rad*rad/am[i];
+                             + (at[i]-ab[i])/2/r_look/a
+                             )*a*a/am[i];
     epsilon[i] = ksqr/freqs[i]/freqs[i]/(2*pi*2*pi);
   }
 \end{verbatim}

@@ -21,8 +21,8 @@ frequency of 0.7 and a transverse phonon frequency of 0.4.
 \end{figure}
 
 \begin{verbatim}
-double eps(double r, double z) { return 13.4; }
-double one(double r, double z) { return 1; }
+double eps(const vec &) { return 13.4; }
+double one(const vec &) { return 1; }
 \end{verbatim}
 
 \begin{comment}
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 \end{comment}
 
 \begin{comment}
-  mat ma(eps, rmax, 0.0, a);
+  mat ma(volcyl(rmax, 0.0, a), eps);
   const char *dirname = make_output_directory(argv[0]);
   printf("Storing output in directory %s/\n", dirname);
   //FILE *ban = create_output_file(dirname, "bands");
@@ -70,7 +70,7 @@ remember to excite along with it the phonon with which it couples.
 Finally, we compute the band structure as usual.
 
 \begin{verbatim}
-    f.prepare_for_bands(0, ttot, .7+.15*k/3.0, 40, 1e-4);
+    f.prepare_for_bands(vec(0.5,0.0), ttot, .7+.15*k/3.0, 40, 1e-4);
     
     while (f.time() < ttot && !interrupt) {
       f.record_bands();

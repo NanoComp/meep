@@ -17,8 +17,8 @@ program is shown in Figure~\ref{omniguidebands}.
 const int num_layers = 3;
 const double rcore = 3.0;
 
-double guided_eps(double r, double z) {
-  double rr = r - rcore;
+double guided_eps(const vec &v) {
+  double rr = v.r() - rcore;
   if (rr > num_layers + 0.3) return 1.0; // outside the entire waveguide
   if (rr < 0.0) return 1.0;   // vacuum in the core
   while (rr > 1.0) rr -= 1.0; // calculate (r - rcore) % 1
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
   printf("Running omniguide!\n");
 
   const double ttot = 1000.0;
-  mat ma(guided_eps, rcore + num_layers + 0.3, 0.0, a);
+  mat ma(volcyl(rcore + num_layers + 0.3, 0.0, a), guided_eps);
   const char *dirname = make_output_directory(argv[0]);
 \end{comment}
 
@@ -74,7 +74,7 @@ straight to the TE modes.
       while (f.is_phasing() && !interrupt) {
         f.step();
       }
-      f.prepare_for_bands(0, ttot, .40, 10000, 1e-4);
+      f.prepare_for_bands(vec(4.8,0.0), ttot, .40, 10000, 1e-4);
       const double stoptime = f.time() + ttot;
       while (f.time() < stoptime && !interrupt) {
         f.record_bands();
@@ -122,7 +122,7 @@ large $Q_{min}$, to help dactyl to distinguish between real modes and
 spurious noise.  Note that we are using metallic boundary conditions, so
 all physical modes should have infinite lifetime.
 \begin{verbatim}
-      f.prepare_for_bands(0, ttot, .35, 300, 0.0);
+      f.prepare_for_bands(vec(4.8,0.0), ttot, .35, 300, 0.0);
       const double stoptime = f.time() + ttot;
       while (f.time() < stoptime && !interrupt) {
         f.record_bands();

@@ -8,7 +8,7 @@
 
 In this example, we compute the total energy over time for a polaritonic
 material in one dimension to verify that it is indeed conserved.  This also
-demostrates the support for 1D systems.
+demostrates how to use a 1D system.
 
 \begin{figure}
 \label{econs_1d}
@@ -16,30 +16,27 @@ demostrates the support for 1D systems.
 \epsfig{file=energy_cons_1d-out/energy.eps,width=8.8cm}
 \end{figure}
 
-To begin with, to use a 1D system, we include ``tidod.h'' rather than
-``dactyl.h.''  ``tidod'' stands for TIme Domain One Dimensional.  
+\begin{comment}
+#include "dactyl.h"
 
-\begin{verbatim}
-#include "tidod.h"
-
-const int rad = 10;
-\end{verbatim}
+const int a = 10;
+\end{comment}
 
 For our example polaritonic material, we'll use an $\epsilon(0)$ of 13.4.
 
 \begin{verbatim}
-double eps(double z) { return 13.4; }
-double one(double z) { return 1; }
+double eps(const vec &) { return 13.4; }
+double one(const vec &) { return 1; }
 \end{verbatim}
 \begin{comment}
 int main(int argc, char **argv) {
   deal_with_ctrl_c();
   const double ttot = 600.0;
 \end{comment}
-In various places we will need to add a ``\verb!_1d!'' as we make the
-change from a cylindrical system to a 1D system.
+We create a 1D system by making the volume with the ``\verb!volone!''
+function, and making sure any vecs we use are one dimensional.
 \begin{verbatim}
-  mat_1d ma(eps, 10.0, rad);
+  mat ma(volone(10.0, a), eps);
 \end{verbatim}
 \begin{comment}
   const char *dirname = make_output_directory(argv[0]);
@@ -48,15 +45,15 @@ change from a cylindrical system to a 1D system.
 The polarizability is added as usual...
 \begin{verbatim}
   ma.add_polarizability(one, 0.25, 0.01, 3.0);
-  fields_1d f(&ma);
+  fields f(&ma);
   grace g("energy", dirname);
 \end{verbatim}
 We use several plane wave sources, to cover a broad frequency range, just
 for the heck of it.
 \begin{verbatim}
-  f.add_source(Ex, 0.6 , 0.8, 0.0, 8.0, 2.0);
-  f.add_source(Ex, 0.4 , 0.8, 0.0, 8.0, 2.0);
-  f.add_source(Ex, 0.33, 0.8, 0.0, 8.0, 2.0);
+  f.add_point_source(Ex, 0.6 , 0.8, 0.0, 8.0, vec(2.0));
+  f.add_point_source(Ex, 0.4 , 0.8, 0.0, 8.0, vec(2.0));
+  f.add_point_source(Ex, 0.33, 0.8, 0.0, 8.0, vec(2.0));
 \end{verbatim}
 \begin{comment}
   double next_printtime = 10;
@@ -65,6 +62,9 @@ for the heck of it.
       next_printtime += 10;
       printf("Working on time %lg...  ", f.time());
       printf("energy is %lg\n", f.total_energy());
+      printf("magnetic energy is %lg\n", f.magnetic_energy_in_box(f.v));
+      printf("electric energy is %lg\n", f.electric_energy_in_box(f.v));
+      printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v));
 \end{comment}
 We plot the total energy, the electromagnetic energy and the
 ``thermodynamic energy'' which is the energy that is either stored in the
@@ -73,10 +73,10 @@ gain system) perhaps is stored in a population inversion.
 \begin{verbatim}
       g.output_out_of_order(0, f.time(), f.total_energy());
       g.output_out_of_order(1, f.time(),
-                            f.electric_energy_in_box(0.0,10.0)
-                          + f.magnetic_energy_in_box(0.0,10.0));
+                            f.electric_energy_in_box(f.v)
+                          + f.magnetic_energy_in_box(f.v));
       g.output_out_of_order(2, f.time(),
-                            f.thermo_energy_in_box(0.0,10.0));
+                            f.thermo_energy_in_box(f.v));
 \end{verbatim}
 \begin{comment}
     }

@@ -137,8 +137,8 @@ class fields {
   const char *outdir;
   double preferred_fmax;
 
-  fields(const mat *, int m);
-  fields(const mat &, int m);
+  fields(const mat *, int m=0);
+  fields(const mat &, int m=0);
   void use_bloch(double kz);
   ~fields();
 
@@ -158,11 +158,11 @@ class fields {
                   double cutoff, complex<double> amp(const vec &),
                   int is_continuous = 0);
   void add_point_source(component whichf, double freq, double width, double peaktime,
-                        double cutoff, const vec &, complex<double> amp,
+                        double cutoff, const vec &, complex<double> amp = 1.0,
                         int is_continuous = 0);
   void initialize_field(component, complex<double> f(const vec &));
-  //void initialize_with_nth_te(int n);
-  //void initialize_with_nth_tm(int n);
+  void initialize_with_nth_te(int n);
+  void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
@@ -186,7 +186,10 @@ class fields {
   double energy_in_box(const volume &);
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);
+  double thermo_energy_in_box(const volume &);
   double total_energy();
+  double field_energy_in_box(const volume &);
+  double field_energy();
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
@@ -203,6 +206,8 @@ class fields {
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *);
+  void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
+  void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);

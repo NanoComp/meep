@@ -244,6 +244,12 @@ void src::use_real_sources() {
   if (next) next->use_real_sources();
 }
 
+void fields::initialize_with_nth_te(int n) {
+}
+
+void fields::initialize_with_nth_tm(int n) {
+}
+
 void fields::initialize_with_n_te(int ntot) {
   //for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
 }
@@ -387,9 +393,12 @@ void fields::step() {
   step_h_source(h_sources);
   step_h_boundaries();
 
+  prepare_step_polarization_energy();
+  half_step_polarization_energy();
   step_e();
   step_e_source(e_sources);
   step_e_boundaries();
+  half_step_polarization_energy();
 
   step_e_polarization();
   step_polarization_itself();
