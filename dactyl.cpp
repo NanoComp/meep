@@ -538,6 +538,12 @@ void fields::add_source(component whichf, double freq, double width, double peak
     case Hp:
       add_src_pt(r, z1, 0.0, amp1*amp(r*inva), 0.0, freq, width, peaktime, cutoff, is_h, is_c);
       add_src_pt(r, z2, 0.0, amp2*amp(r*inva), 0.0, freq, width, peaktime, cutoff, is_h, is_c);
+      if (m == 1) {
+        // Also add in a bit of Er/Hr so that the boundary condition at r ==0 is satisfied.
+        const complex<double> I = complex<double>(0,1);
+        add_src_pt(r, z1, -I*amp1*amp(-r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
+        add_src_pt(r, z2, -I*amp2*amp(-r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
+      }
       break;
     case Ez:
     case Hz:

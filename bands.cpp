@@ -858,6 +858,8 @@ complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
   }
 
   // Now get rid of any really low power solutions...
+  for (int i=0;i<numref;i++)
+    refa[i] *= sqrt((refd[i]<0)?exp(refd[i]*2*pi*ntime/a*c):1);
   double powmax = 0.0;
   for (int i=0;i<numref;i++)
     powmax = max(powmax,abs(refa[i]*refa[i]));

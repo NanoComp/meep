@@ -1,4 +1,5 @@
 .SUFFIXES: .dac
+.PHONY: doc clean all test check uninstall
 
 CXX = @DACTYL_CXX@
 CXXFLAGS = @DACTYL_CXXFLAGS@

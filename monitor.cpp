@@ -179,6 +179,12 @@ void monitor_point::fourier_transform(component w,
   for (int i=0;i<n;i++,p=p->next) {
     d[i] = p->get_component(w);
   }
+  if (fmin > 0.0) { // Get rid of any static fields!
+    complex<double> mean = 0.0;
+    for (int i=0;i<n;i++) mean += d[i];
+    mean /= n;
+    for (int i=0;i<n;i++) d[i] -= mean;
+  }
   if ((fmin > 0.0 || fmax > 0.0) && maxbands > 0) {
     *a = new complex<double>[maxbands];
     *f = new complex<double>[maxbands];

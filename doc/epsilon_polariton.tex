@@ -35,7 +35,7 @@ would be essentially symmetric around the resonant frequency of $0.4$.
 \begin{verbatim}
 const double rmax  = 2.0;
 const int rad = 20;
-const int npml = 16;
+const int npml = 40;
 const double pml_thickness = npml/(double)rad;
 const double zsize = (4+2*npml)/(double)rad;
 const int m = 1;
@@ -57,7 +57,7 @@ double one(double r, double z) { return 1; }
 int main(int argc, char **argv) {
   deal_with_ctrl_c();
   const double ttot = 600.0;
-  mat ma(eps, rmax + npml/(double)rad, zsize, rad);
+  mat ma(eps, rmax + pml_thickness, zsize, rad);
   const char *dirname = make_output_directory(argv[0]);
   printf("Storing output in directory %s/\n", dirname);
   ma.set_output_directory(dirname);
@@ -74,7 +74,7 @@ within the PML.  This is fine.
 We use several plane wave sources, to cover a broad frequency range
 (probably we really only need one).
 \begin{verbatim}
-  double sourceloc = (npml+1.0)/(double)rad;
+  double sourceloc = pml_thickness+1.0/(double)rad;
   f.add_plane_source(0.6 , 0.8, 0.0, 8.0, sourceloc+0.0, source_broad);
   f.add_plane_source(0.4 , 0.8, 0.0, 8.0, sourceloc+0.0, source_broad);
   f.add_plane_source(0.33, 0.8, 0.0, 8.0, sourceloc+0.0, source_broad);
