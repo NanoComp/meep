@@ -271,7 +271,13 @@ class vec {
 inline double abs(const vec &v) { return sqrt(v & v); }
 
 inline vec zero_vec(ndim di) {
-  vec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0.0);
+  vec v(di); LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0.0);
+  return v;
+}
+
+inline vec unit_vec(ndim di, direction d) {
+  vec v(zero_vec(di));
+  v.set_direction(d, 1.0);
   return v;
 }
 
