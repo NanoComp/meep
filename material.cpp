@@ -577,17 +577,27 @@ void mat_chunk::set_epsilon(double feps(const vec &), double minvol,
         FOR_ELECTRIC_COMPONENTS(c)
           if (v.has_field(c)) {
             const vec here = v.loc(c,i);
-            int num_avg = 0;
-            double temp = 0.0;
-            LOOP_OVER_DIRECTIONS(v.dim,d)
-              if (d != component_direction(c)) {
-                num_avg += 2;
-                vec dx = zero_vec(v.dim);
-                dx.set_direction(d,0.5/a);
-                temp += feps(here + dx);
-                temp += feps(here - dx);
+            LOOP_OVER_DIRECTIONS(v.dim,da)
+              if (da != component_direction(c)) {
+                vec dxa = zero_vec(v.dim);
+                dxa.set_direction(da,0.5/a);
+                bool have_other_direction = false;
+                LOOP_OVER_DIRECTIONS(v.dim,db)
+                  if (db != component_direction(c) && db != da) {
+                    vec dxb = zero_vec(v.dim);
+                    dxb.set_direction(db,0.5/a);
+                    inveps[c][component_direction(c)][i] =
+                      4.0/(feps(here + dxa + dxb) +
+                           feps(here + dxa - dxb) +
+                           feps(here - dxa + dxb) +
+                           feps(here - dxa - dxb));
+                    have_other_direction = true;
+                  }
+                if (!have_other_direction)
+                  inveps[c][component_direction(c)][i] =
+                    2.0/(feps(here + dxa) + feps(here - dxa));
+                break;
               }
-            inveps[c][component_direction(c)][i] = num_avg/temp;
           }
       }
   } else {
