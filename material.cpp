@@ -238,8 +238,9 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
           for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
         }
         for (int i=0;i<v.ntot();i++) {
-          const double x = dx - (0.5/a)*
-            ((int)(2*a*fabs(bloc-v.loc((component)c,i).in_direction(d))+0.5));
+          const double x =
+            0.5/a*((int)(dx*(2*a)+0.5) -
+                   (int)(2*a*fabs(bloc-v.loc((component)c,i).in_direction(d))+0.5));
           if (x > 0) C[d][c][i] = prefac*x*x;
         }
       }
