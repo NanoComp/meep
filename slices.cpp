@@ -232,43 +232,43 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
       switch (v.dim) {
       case dcyl: {
         vec next = v.loc(m,i)+v.dr();
-        vec nextrot = S.transform(next,symnum);
+        vec nextrot = S.transform(next - vec(0.5/v.a,0),symnum);
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          fprintf(out, "%lg\t%lg\tLH\n", nextrot.z(), nextrot.r() - 0.5/v.a);
+          fprintf(out, "%lg\t%lg\tLH\n", nextrot.z(), nextrot.r());
         next = v.loc(m,i)+v.dz();
-        nextrot = S.transform(next,symnum);
+        nextrot = S.transform(next - vec(0,0.5/v.a),symnum);
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          fprintf(out, "%lg\t%lg\tLV\n", nextrot.z() - 0.5/v.a, nextrot.r());
+          fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), nextrot.r());
         break;
       }
       case d2: {
         vec next = v.loc(m,i)+v.dy();
-        vec nextrot = S.transform(next,symnum);
+        vec nextrot = S.transform(next - vec2d(0,0.5/v.a),symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y() - 0.5/v.a);
+            fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
         next = v.loc(m,i)-v.dy();
-        nextrot = S.transform(next,symnum);
+        nextrot = S.transform(next + vec2d(0,0.5/v.a),symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y() + 0.5/v.a);
+            fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
         next = v.loc(m,i)+v.dx();
-        nextrot = S.transform(next,symnum);
+        nextrot = S.transform(next - vec2d(0.5/v.a,0),symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLV\n", nextrot.x() - 0.5/v.a, nextrot.y());
+            fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         next = v.loc(m,i)-v.dx();
-        nextrot = S.transform(next,symnum);
+        nextrot = S.transform(next + vec2d(0.5/v.a,0),symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLV\n", nextrot.x() + 0.5/v.a, nextrot.y());
+            fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         break;
       }
       case d1: {
         const vec next = v.loc(m,i)+v.dz();
-        const vec nextrot = S.transform(next,symnum);
+        const vec nextrot = S.transform(next - vec(0.5/v.a),symnum);
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          fprintf(out, "%lg\t%lg\tLV\n", nextrot.z() - 0.5/v.a, 0.0);
+          fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), 0.0);
         break;
       }
       }
