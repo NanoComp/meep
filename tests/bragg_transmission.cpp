@@ -134,7 +134,6 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
   dft_flux fp0 = f0.add_dft_flux_plane(geometric_volume(fluxpt, fluxpt),
 				       freq_min, freq_max, nfreq);
 
-  int dindex = 0;
   if (0)
     f.output_hdf5(Dielectric, f0.v.surroundings(), a, false, true, "f");
   while (f.time() < nfreq / fabs(freq_max - freq_min) / 2) {
@@ -144,7 +143,6 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
     if (0 && f.t % 20 == 0) { // output fields for debugging
       f.output_hdf5(Ex, f0.v.surroundings(), a, true, true, "f");
       f0.output_hdf5(Ex, f0.v.surroundings(), a, true, true, "f0");
-      dindex++;
     }
   }
 
