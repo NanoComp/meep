@@ -601,7 +601,7 @@ typedef void (*field_integrand)(fields_chunk *fc, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,
-				vec shift, complex<double> shift_phase, 
+				ivec shift, complex<double> shift_phase, 
 				const symmetry &S, int sn,
 				void *integrand_data);
 

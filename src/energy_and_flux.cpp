@@ -79,7 +79,7 @@ static void dot_integrand(fields_chunk *fc, component cgrid,
 			  ivec is, ivec ie,
 			  vec s0, vec s1, vec e0, vec e1,
 			  double dV0, double dV1,
-			  vec shift, complex<double> shift_phase,
+			  ivec shift, complex<double> shift_phase,
 			  const symmetry &S, int sn,
 			  void *data_) {
   dot_integrand_data *data = (dot_integrand_data *) data_;
@@ -170,7 +170,7 @@ static void thermo_integrand(fields_chunk *fc, component cgrid,
 			     ivec is, ivec ie,
 			     vec s0, vec s1, vec e0, vec e1,
 			     double dV0, double dV1,
-			     vec shift, complex<double> shift_phase,
+			     ivec shift, complex<double> shift_phase,
 			     const symmetry &S, int sn,
 			     void *sum_) {
   long double *sum = (long double *) sum_;
@@ -199,7 +199,7 @@ static void flux_integrand(fields_chunk *fc, component cgrid,
 			  ivec is, ivec ie,
 			  vec s0, vec s1, vec e0, vec e1,
 			  double dV0, double dV1,
-			  vec shift, complex<double> shift_phase,
+			  ivec shift, complex<double> shift_phase,
 			  const symmetry &S, int sn,
 			  void *data_) {
   flux_integrand_data *data = (flux_integrand_data *) data_;

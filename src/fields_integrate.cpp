@@ -329,8 +329,8 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
     ivec ishift(min_ishift);
     do {
       complex<double> ph = 1.0;
-      vec shift(v.dim);
-      ivec shifti(v.dim);
+      vec shift(v.dim, 0.0);
+      ivec shifti(v.dim, 0);
       LOOP_OVER_DIRECTIONS(v.dim, d) {
 	shift.set_direction(d, L.in_direction(d) * ishift.in_direction(d));
 	shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
@@ -428,7 +428,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 		    isc - iyee_cS, iec - iyee_cS,
 		    s0c, s1c, e0c, e1c,
 		    dV0, dV1,
-		    shift, ph,
+		    shifti, ph,
 		    S, sn,
 		    integrand_data);
 	}

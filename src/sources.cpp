@@ -224,12 +224,12 @@ struct src_vol_integrand_data {
    with the untransformed chunks (since the transformed versions are
    implicit). */
 static void src_vol_integrand(fields_chunk *fc, component c,
-			     ivec is, ivec ie,
-			     vec s0, vec s1, vec e0, vec e1,
-			     double dV0, double dV1,
-			     vec shift, complex<double> shift_phase, 
-			     const symmetry &S, int sn,
-			     void *data_)
+			      ivec is, ivec ie,
+			      vec s0, vec s1, vec e0, vec e1,
+			      double dV0, double dV1,
+			      ivec shift, complex<double> shift_phase, 
+			      const symmetry &S, int sn,
+			      void *data_)
 {
   src_vol_integrand_data *data = (src_vol_integrand_data *) data_;
   
@@ -251,7 +251,7 @@ static void src_vol_integrand(fields_chunk *fc, component c,
     loc.set_direction(direction(loop_d1), (loop_is1*0.5 + loop_i1) * inva);
     loc.set_direction(direction(loop_d2), (loop_is2*0.5 + loop_i2) * inva);
     loc.set_direction(direction(loop_d3), (loop_is3*0.5 + loop_i3) * inva);
-    loc += shift - data->center;
+    loc += shift * (0.5*inva) - data->center;
 
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
     index_array[idx_vol++] = idx;

@@ -43,7 +43,7 @@ static void linear_integrand(fields_chunk *fc, component cgrid,
 			     ivec is, ivec ie,
 			     vec s0, vec s1, vec e0, vec e1,
 			     double dV0, double dV1,
-			     vec shift, complex<double> shift_phase, 
+			     ivec shift, complex<double> shift_phase, 
 			     const symmetry &S, int sn,
 			     void *data_)
 {
@@ -64,7 +64,7 @@ static void linear_integrand(fields_chunk *fc, component cgrid,
     loc.set_direction(direction(loop_d3), loop_is3*0.5*inva + loop_i3*inva);
 
     // clean_vec is only necessary because we reference X/Y/Z for any v.dim
-    vec locS(clean_vec(S.transform(loc, sn) + shift));
+    vec locS(clean_vec(S.transform(loc, sn) + shift * (0.5*inva)));
     if (0) master_printf("at (%g,%g,%g) with weight*dV = %g*%g\n",
 			 locS.in_direction(X),
 			 locS.in_direction(Y),
