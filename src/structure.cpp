@@ -24,10 +24,8 @@
 
 namespace meep {
 
-static double one_function(const vec &) { return 1.0; }
-
 structure::structure()
-  : gv(D1) // Aaack, this is very hokey.
+  : Courant(0.5), gv(D1) // Aaack, this is very hokey.
 {
   num_chunks = 0;
   desired_num_chunks = 0;
@@ -36,12 +34,13 @@ structure::structure()
   effort = NULL;
   outdir = ".";
   S = identity();
+  a = 1; dt = Courant/a;
 }
 
 typedef structure_chunk *structure_chunk_ptr;
 
-structure::structure(const volume &thev, material_function &eps, int num, const symmetry &s)
-  : gv(D1) // Aaack, this is very hokey.
+structure::structure(const volume &thev, material_function &eps, int num, const symmetry &s, double Courant)
+  : Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   if (num == 0) num = count_processors();
@@ -52,11 +51,13 @@ structure::structure(const volume &thev, material_function &eps, int num, const 
   effort_volumes[0] = v;
   effort = new double[num_effort_volumes];
   effort[0] = 1.0;
+  a = v.a;
+  dt = Courant/a;
 }
 
 structure::structure(const volume &thev, double eps(const vec &), 
-	 int num, const symmetry &s)
-  : gv(D1) // Aaack, this is very hokey.
+	 int num, const symmetry &s, double Courant)
+  : Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   if (num == 0) num = count_processors();
@@ -68,6 +69,8 @@ structure::structure(const volume &thev, double eps(const vec &),
   effort_volumes[0] = v;
   effort = new double[num_effort_volumes];
   effort[0] = 1.0;
+  a = v.a;
+  dt = Courant/a;
 }
 
 void structure::optimize_volumes(int *Nv, volume *new_volumes, int *procs) {
@@ -142,7 +145,7 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
         if (new_chunks[j] == NULL) {
 	  simple_material_function eps_zero(zero_function);
           new_chunks[j] = new structure_chunk(new_volumes[j], eps_zero,
-                                        gv, procs[j]);
+					      gv, Courant, procs[j]);
           // the above happens even if chunk not owned by proc
         }
         // chunk "printing" is parallelized below
@@ -295,7 +298,7 @@ void structure::choose_chunkdivision(const volume &thev, material_function &eps,
   chunks = new structure_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++) {
     const int proc = i*count_processors()/num_chunks;
-    chunks[i] = new structure_chunk( v.split(num_chunks,i), eps, gv, proc);
+    chunks[i] = new structure_chunk( v.split(num_chunks,i), eps, gv, Courant, proc);
   }
 }
 
@@ -315,6 +318,9 @@ structure::structure(const structure *s) : gv(s->gv) {
     effort_volumes[i] = s->effort_volumes[i];
     effort[i] = s->effort[i];
   }
+  a = s->a;
+  Courant = s->Courant;
+  dt = s->dt;
 }
 
 structure::structure(const structure &s) : gv(s.gv) {
@@ -333,6 +339,9 @@ structure::structure(const structure &s) : gv(s.gv) {
     effort_volumes[i] = s.effort_volumes[i];
     effort[i] = s.effort[i];
   }  
+  a = s.a;
+  Courant = s.Courant;
+  dt = s.dt;
 }
 
 structure::~structure() {
@@ -579,6 +588,8 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
   if (o->pb) pb = new polarizability(o->pb);
   else pb = NULL;
   a = o->a;
+  Courant = o->Courant;
+  dt = o->dt;
   v = o->v;
   the_proc = o->the_proc;
   the_is_mine = my_rank() == n_proc();
@@ -709,12 +720,13 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
 }
 
 structure_chunk::structure_chunk(const volume &thev, material_function &epsilon,
-                     const geometric_volume &vol_limit, int pr)
-  : gv(thev.surroundings() & vol_limit) {
+                     const geometric_volume &vol_limit, double Courant, int pr)
+  : Courant(Courant), gv(thev.surroundings() & vol_limit) {
   pml_fmin = 0.2;
   pb = NULL;
   v = thev;
   a = thev.a;
+  dt = Courant/a;
   the_proc = pr;
   the_is_mine = n_proc() == my_rank();
   eps = NULL;

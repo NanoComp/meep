@@ -86,8 +86,8 @@ bool fields_chunk::initialize_with_nth_te(int np0, double kz) {
   if (v.dim == Dcyl) {
     const int n = (m==0) ? np0 - 0 : np0 - 1;
     const double rmax = Jmax(m,n);
-    ktrans = rmax/(v.nr()*inva);
-    kax = kz*2*pi*inva;
+    ktrans = rmax*a/v.nr();
+    kax = kz*2*pi/a;
     m_for_J = m;
     return initialize_field(Hz, JJ);
   } else {
@@ -107,8 +107,8 @@ bool fields_chunk::initialize_with_nth_tm(int np1, double kz) {
   if (v.dim == Dcyl) {
     const int n = np1 - 1;
     const double rroot = Jroot(m,n);
-    ktrans = rroot/(v.nr()*inva);
-    kax = kz*2*pi*inva;
+    ktrans = rroot*a/v.nr();
+    kax = kz*2*pi/a;
     m_for_J = m;
     return initialize_field(Ez, JJ) || initialize_field(Hp, JP);
   } else {
@@ -173,7 +173,6 @@ void fields::initialize_A(complex<double> A(component, const vec &), double freq
   }
   tmp.step();
   f_static = &tmp;
-  // const double dt = inva*c;
   const complex<double> I = complex<double>(0.0,1.0);
   const complex<double> h_prefac = sqrt(a);
   const complex<double> d_prefac = h_prefac / (I*freq*(2*pi));

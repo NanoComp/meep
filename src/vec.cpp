@@ -260,26 +260,22 @@ geometric_volume volume::surroundings() const {
   return res;
 }
 
-inline int right_ntot(ndim di, const int num[3]) {
-  int result = 1;
-  LOOP_OVER_DIRECTIONS(di, d) result *= num[d%3]+1;
-  return result;
+void volume::update_ntot() {
+  the_ntot = 1;
+  LOOP_OVER_DIRECTIONS(dim, d) the_ntot *= num[d%3] + 1;
 }
 
 void volume::set_num_direction(direction d, int value) {
-  num[d%3] = value; the_ntot = right_ntot(dim, num);
+  num[d%3] = value; num_changed();
 }
 
-volume::volume(ndim d, double ta, int na, int nb, int nc) {
-  dim = d;
-  a = ta;
-  inva = 1.0/a;
+volume::volume(ndim td, double ta, int na, int nb, int nc) {
+  dim = td; a = ta; inva = 1.0 / ta;
   num[0] = na;
   num[1] = nb;
   num[2] = nc;
+  num_changed();
   set_origin(zero_vec(dim));
-  the_ntot = right_ntot(d, num);
-  set_strides();
 }
 
 component volume::eps_component() const {
@@ -336,7 +332,6 @@ bool volume::contains(const vec &p) const {
   // relevant to the point p.  Basically has is like owns (see below)
   // except it is more lenient, in that more than one lattice may contain a
   // given point.
-  const double inva = 1.0/a;
   const vec o = p - origin;
   LOOP_OVER_DIRECTIONS(dim, d)
     if (o.in_direction(d) < -inva || o.in_direction(d) > num_direction(d)*inva+inva)
@@ -600,44 +595,44 @@ geometric_volume volume::dV(component c, int ind) const {
 }
 
 double volume::xmax() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   return origin.x() + nx()*inva + qinva;
 }
 
 double volume::xmin() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   return origin.x() + qinva;
 }
 
 double volume::ymax() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   return origin.y() + ny()*inva + qinva;
 }
 
 double volume::ymin() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   return origin.y() + qinva;
 }
 
 double volume::zmax() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   return origin.z() + nz()*inva + qinva;
 }
 
 double volume::zmin() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   return origin.z() + qinva;
 }
 
 double volume::rmax() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   if (dim == Dcyl) return origin.r() + nr()*inva + qinva;
   abort("No rmax in these dimensions.\n");
   return 0.0; // This is never reached.
 }
 
 double volume::rmin() const {
-  const double inva = 1.0/a, qinva = 0.25*inva;
+  const double qinva = 0.25*inva;
   if (dim == Dcyl) {
     if (origin.r() == 0.0) {
       return 0.0;
@@ -981,7 +976,7 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
     for (int i=0;i<3;i++) printf("num[%d] = %d\n", i, num[i]);
     abort("Crazy weird splitting error.\n");
   }
-  volume retval(dim, a,1);
+  volume retval(dim, a, 1,1,1);
   for (int i=0;i<3;i++) retval.num[i] = num[i];
   if (numer >= num[bestd])
     abort("Aaack bad bug in split_at_fraction.\n");
@@ -993,13 +988,12 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
 
   if (want_high) retval.num[bestd] -= numer;
   else retval.num[bestd] = numer;
-  retval.the_ntot = right_ntot(dim, retval.num);
-  retval.set_strides();
+  retval.num_changed();
   return retval;
 }
 
 volume volume::split_specifically(int n, int which, direction d) const {
-  volume retval(dim, a,1);
+  volume retval(dim, a, 1,1,1);
   for (int i=0;i<3;i++) retval.num[i] = num[i];
 
   vec shift = zero_vec(dim);
@@ -1007,20 +1001,22 @@ volume volume::split_specifically(int n, int which, direction d) const {
   retval.set_origin(origin + shift);
 
   retval.num[d % 3] /= n;
-  retval.the_ntot = right_ntot(dim, retval.num);
-  retval.set_strides();
+  retval.num_changed();
   return retval;
 }
 
 volume volume::pad(direction d) const {
-  volume v = *this;
-  v.num[d%3]+=2; // Pad in both directions by one grid point.
+  volume v(*this);
+  v.pad_self(d);
+  return v;
+}
+
+void volume::pad_self(direction d) {
+  num[d%3]+=2; // Pad in both directions by one grid point.
   ivec temp = io;
   temp.set_direction(d, io.in_direction(d) - 2);
-  v.set_origin(v[temp]);
-  v.the_ntot = right_ntot(dim, v.num);
-  v.set_strides();
-  return v;
+  num_changed();
+  set_origin(operator[](temp));
 }
 
 ivec volume::icenter() const {

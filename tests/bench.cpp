@@ -78,7 +78,7 @@ bench bench_flux_1d(const double zmax,
   clock_t start = clock();
   while (f.time() < ttot) {
     f.step();
-    flux_energy += (c/a)*(right->flux() - left->flux());
+    flux_energy += f.dt*(right->flux() - left->flux());
   }
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);

@@ -316,7 +316,7 @@ bool check_2d_monitor(double eps(const vec &),
   h5file *file = f.open_h5file(name);
 
   const double T = 3.0;
-  int NT = int(T / (f.inva * c)) + 2;
+  int NT = int(T / f.dt) + 2;
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
     f.output_hdf5(file, file_c, geometric_volume(pt, pt), a, true, false);

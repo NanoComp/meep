@@ -458,7 +458,7 @@ void monitor_point::harminv(component w,
   *a = new complex<double>[n];
   double *f_re = new double[n];
   double *f_im = new double[n];
-  *numout = do_harminv(d, n, 1, (n-1)/(tmax-tmin)*c, fmin, fmax, maxbands,
+  *numout = do_harminv(d, n, (tmax-tmin)/(n-1), fmin, fmax, maxbands,
                        *a, f_re, f_im, NULL);
   *f = new complex<double>[*numout];
   for (int i=0;i<*numout;i++)

@@ -62,12 +62,12 @@ double fields_chunk::last_source_time() {
 
 void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
                                double qmin, double frac_pow_min) {
-  int last_source = (int)(last_source_time()*a*(1.0/c)+0.5);
+  int last_source = (int)(last_source_time()/dt+0.5);
   last_source = max(last_source, t + phasein_time);
   if (!bands) bands = new bandsdata;
   bands->tstart = last_source+1;
   if (bands->tstart < t) bands->tstart = t;
-  bands->tend = t + (int)(endtime*a/c) - 1;
+  bands->tend = t + (int)(endtime/dt) - 1;
 
   {
     int ind[8];
@@ -91,22 +91,22 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
 
   double cutoff_freq = 0.0;
   if (v.dim == Dcyl) {
-    cutoff_freq = 1.84*c/(2*pi)/v.nr()/sqrt(epsmax);
+    cutoff_freq = 1.84*a*dt/(2*pi)/v.nr()/sqrt(epsmax);
     if (m == 0) cutoff_freq *= 0.5;
   }
-  bands->fmin = sqrt(cutoff_freq*cutoff_freq + abs(k[Z])*abs(k[Z])*c*c/epsmax); // FIXME
-  bands->fmin = cutoff_freq*a/c;
+  bands->fmin = sqrt(cutoff_freq*cutoff_freq + abs(k[Z])*abs(k[Z])*(a*dt)*(a*dt)/epsmax); // FIXME
+  bands->fmin = cutoff_freq/dt;
   bands->qmin = qmin;
   // Set fmax and determine how many timesteps to skip over...
   bands->fmax = fmax;
   {
     // for when there are too many data points...
-    double decayconst = bands->fmax*(c*inva)/qmin*8.0;
-    double smalltime = 1./(decayconst + bands->fmax*(c*inva));
+    double decayconst = bands->fmax*dt/qmin*8.0;
+    double smalltime = 1./(decayconst + bands->fmax*dt);
     bands->scale_factor = (int)(0.06*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
     if (verbosity) master_printf("scale_factor is %d (%g,%g)\n",
-                                 bands->scale_factor, bands->fmax*(c*inva),
+                                 bands->scale_factor, bands->fmax*dt,
                                  decayconst);
   }
 
@@ -115,8 +115,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     abort("FT start is %d and end is %d\n", bands->tstart, bands->tend);
   }
   bands->ntime = (1+(bands->tend-bands->tstart)/bands->scale_factor);
-  bands->a = a;
-  bands->inva = inva;
+  bands->dt = dt * bands->scale_factor;
   for (int c=0;c<10;c++)
     for (int i=0;i<num_bandpts;i++)
       if (v.has_field((component)c)) {
@@ -267,7 +266,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
                                         int num_freqs, int fields_considered,
                                         int maxbands,
                                         complex<double> *fad, double *approx_power) {
-  const double total_time = (bands->tend-bands->tstart)*c/a;
+  const double total_time = (bands->tend-bands->tstart)*dt;
   const double deltaf = 1.0/total_time;
   int freqs_so_far = num_freqs;
   master_printf("About to sort by frequency... (%d frequencies)\n", freqs_so_far);
@@ -401,13 +400,13 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
 int bandsdata::get_freqs(complex<double> *data, int n, complex<double> *amps,
                          double *freq_re, double *freq_im) {
   
-  const double total_time = n*scale_factor*c/a;
+  const double total_time = n*dt;
   const double qminhere = 1.0/(1.0/qmin + 0.25/(fmin*total_time));
-  return do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands,
+  return do_harminv(data, n, dt, fmin, fmax, maxbands,
 		    amps,  freq_re, freq_im, NULL, 1.1, qminhere);
 }
 
-int do_harminv(complex<double> *data, int n, int sampling_rate, double a, 
+int do_harminv(complex<double> *data, int n, double dt, 
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors,
 	       double spectral_density, double Q_thresh, double rel_err_thresh, double err_thresh, double rel_amp_thresh, double amp_thresh) {
@@ -415,7 +414,6 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
   abort("compiled without Harminv library, required for do_harminv");
   return 0;
 #else
-  double dt = sampling_rate * c / a;
   int numfreqs = int(fabs(fmax-fmin)*dt*n*spectral_density); // c.f. harminv
   if (numfreqs > 150) numfreqs = 150; // prevent matrices from getting too big
   if (numfreqs < 2) numfreqs = 2;
@@ -438,7 +436,7 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
   {
     FILE *f = fopen("harminv.dat", "w");
     fprintf(f, "# -f %d -t %g %g-%g -Q %e -e %e -E %e -a %e -A %e -F\n",
-	    numfreqs, sampling_rate*c/a, fmin, fmax,
+	    numfreqs, dt, fmin, fmax,
 	    Q_thresh, rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
     for (int i = 0; i < n; ++i)
       fprintf(f, "%g%+gi\n", real(data[i]), imag(data[i]));

@@ -37,7 +37,7 @@ fields::fields(const structure *s, int tm) :
   for (int d=0;d<5;d++) k[d] = 0.0;
   is_real = 0;
   a = v.a;
-  inva = 1.0/a;
+  dt = s->dt;
   t = 0;
   sources = NULL;
   fluxes = NULL;
@@ -80,8 +80,8 @@ fields::fields(const fields &thef) :
   bands = NULL;
   for (int d=0;d<5;d++) k[d] = thef.k[d];
   is_real = thef.is_real;
-  a = v.a;
-  inva = 1.0/a;
+  a = thef.a;
+  dt = thef.dt;
   t = thef.t;
   sources = NULL;
   fluxes = NULL;
@@ -176,7 +176,8 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
   bands = NULL;
   is_real = 0;
   a = s->a;
-  inva = 1.0/a;
+  Courant = s->Courant;
+  dt = s->dt;
   dft_chunks = NULL;
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);
@@ -232,8 +233,9 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   new_s = NULL;
   bands = NULL;
   is_real = thef.is_real;
-  a = s->a;
-  inva = 1.0/a;
+  a = thef.a;
+  Courant = thef.Courant;
+  dt = thef.dt;
   dft_chunks = NULL;
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);
@@ -393,7 +395,7 @@ int fields::phase_in_material(const structure *snew, double time) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->phase_in_material(snew->chunks[i]);
-  phasein_time = (int) (time*a/c);
+  phasein_time = (int) (time/dt);
   return phasein_time;
 }
 

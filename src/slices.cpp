@@ -690,7 +690,7 @@ void fields::eps_energy_slice(const geometric_volume &what, const char *name) {
     if (chunks[i]->is_mine())
       for (int sn=0;sn<S.multiplicity();sn++)
         for (int otherc=0;otherc<10;otherc++)
-          if (S.transform((component)otherc,sn) == c)
+          if (S.transform((component)otherc,sn) == 0.5) // fixme -- what is this?
             eps_outline(v.eps_component(), chunks[i]->s->eps,
                         chunks[i]->v, what, S, sn, out);
   all_wait();
@@ -743,7 +743,7 @@ void fields::eps_energy_slice(const polarizability_identifier &p,
     if (chunks[i]->is_mine())
       for (int sn=0;sn<S.multiplicity();sn++)
         for (int otherc=0;otherc<10;otherc++)
-          if (S.transform((component)otherc,sn) == c)
+          if (S.transform((component)otherc,sn) == 0.5) // fixme -- what is this?
             eps_outline(v.eps_component(), chunks[i]->s->eps,
                         chunks[i]->v, what, S, sn, out);
   all_wait();
@@ -844,11 +844,11 @@ void fields::eps_envelope(const geometric_volume &what, const char *name) {
         output_complex_eps_header(c, fmax,
                                   user_volume, what,
                                   out, n, v.eps_component());
-      for (double z = 0.0 + inva; z < user_volume.ntot(); z += inva)
+      for (double z = 0.0 + v.inva; z < user_volume.ntot(); z += v.inva)
         if (what.contains(vec(z))) {
           const double fhere = real(get_field(c, vec(z)));
-          if (fhere > 0.0 && fhere > real(get_field(c, vec(z)-inva)) &&
-              fhere > real(get_field(c, vec(z)+inva)))
+          if (fhere > 0.0 && fhere > real(get_field(c, vec(z)-v.inva)) &&
+              fhere > real(get_field(c, vec(z)+v.inva)))
             master_fprintf(out, "%g\t0\t%g\tP\n", z, fhere);
         }
       all_wait();

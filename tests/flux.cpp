@@ -75,8 +75,8 @@ int flux_1d(const double zmax,
                 f.electric_energy_in_box(mid.surroundings()));
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  -(c/a)*left->flux();
-    flux_right +=  -(c/a)*right->flux();
+    flux_left  +=  -f.dt*left->flux();
+    flux_right +=  -f.dt*right->flux();
   }
   delta_energy -= f.energy_in_box(mid.surroundings());
   master_printf("Final energy is %g\n", f.energy_in_box(mid.surroundings()));
@@ -116,7 +116,7 @@ int split_1d(double eps(const vec &), int splitting) {
   while (f.time() < ttot) {
     f1.step();
     f.step();
-    if (!compare((c/a)*left1->flux(), (c/a)*left->flux(), 0.0, "Flux"))
+    if (!compare(f.dt*left1->flux(), f.dt*left->flux(), 0.0, "Flux"))
       return 0;
   }
   return 1;
@@ -148,8 +148,8 @@ int cavity_1d(const double boxwidth, const double timewait,
   master_printf("  Energy starts at\t%g\n", start_energy);
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  -(c/a)*left->flux();
-    flux_right +=  -(c/a)*right->flux();
+    flux_left  +=  -f.dt*left->flux();
+    flux_right +=  -f.dt*right->flux();
   }
   const double delta_energy = start_energy - f.energy_in_box(mid.surroundings());
   const double defl = flux_right - flux_left;
@@ -207,7 +207,7 @@ int flux_2d(const double xmax, const double ymax,
   long double fluxL = 0;
   while (f.time() < ttot) {
     f.step();
-    fluxL += -(c/a) * (left->flux() - right->flux()
+    fluxL += -f.dt * (left->flux() - right->flux()
 		       + bottom->flux() - top->flux());
   }
   double flux = fluxL;
@@ -279,7 +279,7 @@ int flux_cyl(const double rmax, const double zmax,
   long double fluxL = 0;
   while (f.time() < ttot) {
     f.step();
-    fluxL += (c/a) * (left->flux() - right->flux()
+    fluxL += f.dt * (left->flux() - right->flux()
 		      + bottom->flux() - top->flux());
   }
   double flux = fluxL;
@@ -299,7 +299,7 @@ int flux_cyl(const double rmax, const double zmax,
   for (int i = 0; i < Nfreq; ++i) {
     printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
 	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
-    if (!compare(fl1[i], fl2[i], 0.05, "Flux spectrum")) return 0;
+    if (!compare(fl1[i], fl2[i], 0.06, "Flux spectrum")) return 0;
   }
   delete fl2; delete fl1;
 

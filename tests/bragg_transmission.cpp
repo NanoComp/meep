@@ -189,6 +189,14 @@ int main(int argc, char **argv) {
 
   double dfreq = (freq_max - freq_min) / (nfreq - 1);
 
+  if (0) { // output transmissions for debugging
+    master_printf("transmission:, freq (c/a), T\n");
+    for (int i = 0; i < nfreq; ++i)
+      master_printf("transmission:, %g, %g, %g\n",
+		    freq_min + i * dfreq,
+		    T[i], T0[i]);
+  }
+
   double maxerr = 0;
   for (int i = 0; i < nfreq; ++i) {
     double err = distance_from_curve(nfreq, dfreq, T0, i * dfreq, T[i])
@@ -199,14 +207,6 @@ int main(int argc, char **argv) {
 	    err, freq_min + i*dfreq, T[i], T0[i]);
   }
   master_printf("Done (max. err = %e)\n", maxerr);
-
-  if (0) { // output transmissions for debugging
-    master_printf("transmission:, freq (c/a), T\n");
-    for (int i = 0; i < nfreq; ++i)
-      master_printf("transmission:, %g, %g, %g\n",
-		    freq_min + i * dfreq,
-		    T[i], T0[i]);
-  }
 
   delete[] T0;
   delete[] T;

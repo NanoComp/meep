@@ -56,7 +56,7 @@ step_saturable_polarization =
                sum_over_components (\c i-> sqr_complex $
                ("np->P["<<c<<"]["<<cmp<<"]["<<i<<"]") |-| ("op->P["<<c<<"]["<<cmp<<"]["<<i<<"]")),
    doexp $ "const double energy_P_here" |=| ("om_sqr" |*| "P_sqr" |+|
-                                             "(1.0/c/c)" |*| "Pdot_sqr")|*|"oo_ep_om_psqr",
+                                             "(1.0/(Courant*Courant))" |*| "Pdot_sqr")|*|"oo_ep_om_psqr",
    doexp $ "np->s[ec][i] = -(energy_here - energy_P_here)*(om_psqr*oo_e_sat)",
    loop_complex $ step_polarization_itself
   ]

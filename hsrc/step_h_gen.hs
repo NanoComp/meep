@@ -27,14 +27,14 @@ update_f_pml = docode [if_ "have_p_pml" $ if_ "have_m" $
 update_f :: Code
 update_f = doexp $ "the_f[ind]" |+=| m_p_update
 
-m_update = decay_m |*| ("c" |*| deriv_m |-| sig_m |*| "hm")
-p_update = decay_p |*| ("c" |*| m_deriv_p |-| sig_p |*| "hp")
+m_update = decay_m |*| ("Courant" |*| deriv_m |-| sig_m |*| "hm")
+p_update = decay_p |*| ("Courant" |*| m_deriv_p |-| sig_p |*| "hp")
 m_p_update =
     ("have_p_pml")
         |?| (m_update |+| p_update)
         |:| ("have_m_pml")
             |?| (m_update |+| p_update)
-            |:| ("c" |*| (deriv_m |+| m_deriv_p))
+            |:| ("Courant" |*| (deriv_m |+| m_deriv_p))
 
 decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "1"
 decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "1"

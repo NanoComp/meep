@@ -484,7 +484,7 @@ class volume {
   volume() {};
 
   ndim dim;
-  double a, inva;
+  double a, inva /* = 1/a */;
 
   void print() const;
   int stride(direction d) const { return the_stride[d]; };
@@ -574,11 +574,12 @@ class volume {
   volume split_once(int num, int which) const;
   volume split_at_fraction(bool want_high, int numer) const;
   volume split_specifically(int num, int which, direction d) const;
+  void pad_self(direction d);
   volume pad(direction d) const;
   volume pad() const {
-       volume v = *this;
+       volume v(*this);
        LOOP_OVER_DIRECTIONS(dim,d)
-	    v = v.pad(d);
+	    v.pad_self(d);
        return v;
   }
   ivec iyee_shift(component c) const {
@@ -604,11 +605,13 @@ class volume {
   double origin_z() const { return origin.z(); }
 
  private:
-  volume(ndim, double a, int na, int nb=1, int nc=1);
+  volume(ndim d, double ta, int na, int nb, int nc);
   vec origin; // never change this without calling update_io() !!
   ivec io; // cache of round_vec(origin), for performance
   void update_io();
+  void update_ntot();
   void set_strides();
+  void num_changed() { update_ntot(); set_strides(); }
   int num[3];
   int the_stride[5];
   int the_ntot;

@@ -207,7 +207,7 @@ complex<double> fields::analytic_epsilon(double f, const vec &p) const {
 complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
   complex<double> epsi = 0.0;
   if (is_mine()) {
-    const double freq_conversion = 2*pi*c/a;
+    const double freq_conversion = 2*pi*dt;
     double freq = f*freq_conversion;
     const component c = v.eps_component();
     int in[8];
@@ -255,7 +255,7 @@ void structure_chunk::add_polarizability(material_function &sigma,
                              double omega, double gamma, double delta_epsilon,
                              double energy_sat) {
   sigma.set_polarizability(omega, gamma, delta_epsilon, energy_sat);
-  const double freq_conversion = 2*pi*c/a;
+  const double freq_conversion = 2*pi*dt;
   double sigma_scale  = freq_conversion*freq_conversion*omega*omega*delta_epsilon;
   polarizability *npb = new polarizability(this, sigma,
                                            freq_conversion*omega,

@@ -125,7 +125,7 @@ class bandsdata {
   complex<double> *P;
   int tstart, tend, index[num_bandpts], maxbands, scale_factor;
   fields_chunk *chunk[num_bandpts];
-  double a, inva, fmin, fmax, qmin, fpmin;
+  double dt, fmin, fmax, qmin, fpmin;
   int ntime;
   int verbosity;
 

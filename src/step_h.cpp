@@ -89,11 +89,11 @@ void fields_chunk::step_h() {
             for (int z=0;z<v.nz();z++) {
               const double Czhr = s->C[Z][Hr][z+ir];
               const double ooop_Czhr = s->Cdecay[Z][Hr][R][z+ir];
-              double dhrp = c*(-it(cmp,f[Ez],z+ir)*mor);
+              double dhrp = Courant*(-it(cmp,f[Ez],z+ir)*mor);
               double hrz = f[Hr][cmp][z+ir] - f_p_pml[Hr][cmp][z+ir];
               f_p_pml[Hr][cmp][z+ir] += dhrp;
               f[Hr][cmp][z+ir] += dhrp +
-                ooop_Czhr*(c*(f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - Czhr*hrz);
+                ooop_Czhr*(Courant*(f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - Czhr*hrz);
             }
           }
       else
@@ -102,7 +102,7 @@ void fields_chunk::step_h() {
             double mor = m*oor;
             const int ir = r*(v.nz()+1);
             for (int z=0;z<v.nz();z++)
-              f[Hr][cmp][z+ir] += c*
+              f[Hr][cmp][z+ir] += Courant*
                 ((f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - it(cmp,f[Ez],z+ir)*mor);
           }
       // Propogate Hp
@@ -115,12 +115,12 @@ void fields_chunk::step_h() {
               const double Crhp = (s->C[R][Hp])?s->C[R][Hp][z+ir]:0;
               const double ooop_Czhp = (s->Cdecay[Z][Hp][P]) ?
                 s->Cdecay[Z][Hp][P][z+ir]:1.0;
-              const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
+              const double dhpz = ooop_Czhp*(-Courant*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
                                              - Czhp*f_p_pml[Hp][cmp][z+ir]);
               const double hpr = f[Hp][cmp][z+ir]-f_p_pml[Hp][cmp][z+ir];
               f_p_pml[Hp][cmp][z+ir] += dhpz;
               f[Hp][cmp][z+ir] += dhpz +
-                ooop_Czhp*(c*(f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir]) - Crhp*hpr);
+                ooop_Czhp*(Courant*(f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir]) - Crhp*hpr);
             }
           }
       else 
@@ -128,7 +128,7 @@ void fields_chunk::step_h() {
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++)
-              f[Hp][cmp][z+ir] += c*
+              f[Hp][cmp][z+ir] += Courant*
                 ((f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir])
                  - (f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir]));
         }
@@ -143,11 +143,11 @@ void fields_chunk::step_h() {
             const double Crhz = s->C[R][Hz][z+ir];
             const double ooop_Crhz = s->Cdecay[R][Hz][Z][z+ir];
             const double dhzr =
-              ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*((int)(v.origin_r()*v.a+0.5) + r+1.)-
+              ooop_Crhz*(-Courant*(f[Ep][cmp][z+irp1]*((int)(v.origin_r()*v.a+0.5) + r+1.)-
                              f[Ep][cmp][z+ir]*((int)(v.origin_r()*v.a+0.5) + r))*oorph
                          - Crhz*f_p_pml[Hz][cmp][z+ir]);
             f_p_pml[Hz][cmp][z+ir] += dhzr;
-            f[Hz][cmp][z+ir] += dhzr + c*(it(cmp,f[Er],z+ir)*morph);
+            f[Hz][cmp][z+ir] += dhzr + Courant*(it(cmp,f[Er],z+ir)*morph);
           }
         }
       else
@@ -157,7 +157,7 @@ void fields_chunk::step_h() {
           const int ir = r*(v.nz()+1);
           const int irp1 = (r+1)*(v.nz()+1);
           for (int z=1;z<=v.nz();z++)
-            f[Hz][cmp][z+ir] += c*
+            f[Hz][cmp][z+ir] += Courant*
               (it(cmp,f[Er],z+ir)*morph
                - (f[Ep][cmp][z+irp1]*((int)(v.origin_r()*v.a+0.5) + r+1.)-
                   f[Ep][cmp][z+ir]*((int)(v.origin_r()*v.a+0.5) + r))*oorph);
@@ -170,15 +170,15 @@ void fields_chunk::step_h() {
           for (int z=0;z<v.nz();z++) {
             const double Czhr = s->C[Z][Hr][z];
             const double ooop_Czhr = s->Cdecay[Z][Hr][R][z];
-            const double dhrp = c*(-it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
+            const double dhrp = Courant*(-it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
             const double hrz = f[Hr][cmp][z] - f_p_pml[Hr][cmp][z];
             f_p_pml[Hr][cmp][z] += dhrp;
             f[Hr][cmp][z] += dhrp +
-              ooop_Czhr*(c*(f[Ep][cmp][z+1]-f[Ep][cmp][z]) - Czhr*hrz);
+              ooop_Czhr*(Courant*(f[Ep][cmp][z+1]-f[Ep][cmp][z]) - Czhr*hrz);
           }
         else
           for (int z=0;z<v.nz();z++)
-            f[Hr][cmp][z] += c*
+            f[Hr][cmp][z] += Courant*
               ((f[Ep][cmp][z+1]-f[Ep][cmp][z]) - it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
       } else {
         for (int r=0;r<=v.nr() && (int)(v.origin_r()*v.a+0.5) + r < m;r++) {

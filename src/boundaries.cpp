@@ -37,7 +37,7 @@ void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
   for (int b=0;b<2;b++) boundaries[b][d] = Periodic;
   const complex<double> I = complex<double>(0.0,1.0);
-  eikna[d] = exp(I*kk*((2*pi)*inva*v.num_direction(d)));
+  eikna[d] = exp(I*kk*((2*pi/a)*v.num_direction(d)));
   coskna[d] = real(eikna[d]);
   sinkna[d] = imag(eikna[d]);
   chunk_connections_valid = false;

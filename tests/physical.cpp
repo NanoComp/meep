@@ -40,7 +40,7 @@ int radiating_2D(const double xmax) {
   double w = 0.30;
   double dx = 2.0;
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0, vec2d(xmax/2 - dx, ymax/2), 1.0, 1); //continuous
-  const double t1 = 15 / w + dx / c;
+  const double t1 = 15 / w + dx;
 
   // let the source reach steady state
   double next_print_time = 1.0;
@@ -91,7 +91,7 @@ int radiating_3D() {
   fields f(&s);
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0,
                      vec(xmax/2, ymax/2, ymax/2), 1.0, 1); //continuous
-  const double t1 = 12 / w + dx / c;
+  const double t1 = 12 / w + dx;
 
   // let the source reach steady state
   double next_print_time = 1.0;

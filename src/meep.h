@@ -25,7 +25,6 @@
 
 namespace meep {
 
-const double c = 0.5;
 const double pi = 3.141592653589793238462643383276;
 
 #ifdef INFINITY
@@ -174,7 +173,8 @@ class simple_material_function : public material_function {
 
 class structure_chunk {
  public:
-  double *eps, a, *kerr[NUM_FIELD_COMPONENTS];
+  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
+  double *eps, *kerr[NUM_FIELD_COMPONENTS];
   double *inveps[NUM_FIELD_COMPONENTS][5];
   double *C[5][NUM_FIELD_COMPONENTS];
   double *Cdecay[5][NUM_FIELD_COMPONENTS][5];
@@ -184,7 +184,7 @@ class structure_chunk {
 
   ~structure_chunk();
   structure_chunk(const volume &v, material_function &eps,
-            const geometric_volume &vol_limit, int proc_num=0);
+            const geometric_volume &vol_limit, double Courant, int proc_num);
   structure_chunk(const structure_chunk *);
   void set_epsilon(material_function &eps, double minvol,
                    bool use_anisotropic_averaging);
@@ -218,6 +218,7 @@ class structure {
   int num_chunks;
   int desired_num_chunks;
   volume v, user_volume;
+  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   geometric_volume gv;
   symmetry S;
   const char *outdir;
@@ -228,9 +229,9 @@ class structure {
   ~structure();
   structure();
   structure(const volume &v, material_function &eps, int num_chunks = 0,
-      const symmetry &s = meep::identity());
+      const symmetry &s = meep::identity(), double Courant = 0.5);
   structure(const volume &v, double eps(const vec &), int num_chunks = 0,
-      const symmetry &s = meep::identity());
+      const symmetry &s = meep::identity(), double Courant = 0.5);
   structure(const structure *);
   structure(const structure &);
   void set_epsilon(material_function &eps, double minvol = 0.0,
@@ -475,7 +476,7 @@ class fields_chunk {
   double *connection_factors[NUM_FIELD_TYPES];
 
   polarization *pol, *olpol;
-  double a, inva; // The "lattice constant" and its inverse!
+  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   volume v;
   geometric_volume gv;
   int m, is_real;
@@ -485,7 +486,7 @@ class fields_chunk {
   structure_chunk *s;
   const char *outdir;
 
-  fields_chunk(const structure_chunk *, const char *outdir, int m=0);
+  fields_chunk(const structure_chunk *, const char *outdir, int m);
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
@@ -616,7 +617,7 @@ class fields {
   int *comm_sizes[NUM_FIELD_TYPES];
   int *comm_num_complex[NUM_FIELD_TYPES];
   int *comm_num_negate[NUM_FIELD_TYPES];
-  double a, inva; // The "lattice constant" and its inverse!
+  double a, dt; // The resolution a and timestep dt=Courant/a
   volume v, user_volume;
   geometric_volume gv;
   int m, t, phasein_time, is_real;
@@ -687,7 +688,7 @@ class fields {
   complex<double> optimal_phase_shift(component) const;
   // step.cpp methods:
   void step();
-  inline double time() const { return t*inva*c; };
+  inline double time() const { return t*dt; };
 
   double last_source_time();
   void add_point_source(component c, double freq, double width, double peaktime,
@@ -895,7 +896,7 @@ void deal_with_ctrl_c(int stop_now = 2);
 // zero value) is incremented.
 extern int interrupt;
 
-int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
+int do_harminv(complex<double> *data, int n, double dt,
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im,
 	       double *errors = NULL,

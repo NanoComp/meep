@@ -20,10 +20,10 @@ store_derivs =
             if_ "have_p" (doexp "const double deriv_p = f_p[ind+stride_p]-f_p[ind]"),
             if_ "have_m" $ if_have_pml $
                 (doexp ("const double m_change"|=|
-                        decay_m |*| ("c" |*| m_deriv_m |-| sig_m |*| "em"))),
+                        decay_m |*| ("Courant" |*| m_deriv_m |-| sig_m |*| "em"))),
             if_ "have_p" $ if_have_pml $
                 (doexp ("const double p_change"|=|
-                        decay_p |*| ("c" |*| deriv_p |-| sig_p |*| "ep")))
+                        decay_p |*| ("Courant" |*| deriv_p |-| sig_p |*| "ep")))
            ]
 update_f_pml :: Code
 update_f_pml = docode [if_ "have_p_pml" $ if_ "have_m" $
@@ -43,7 +43,7 @@ m_p_update =
         |?| (m_update |+| p_update)
         |:| ("have_m_pml")
             |?| (m_update |+| p_update)
-            |:| ("c" |*| (m_deriv_m |+| deriv_p))
+            |:| ("Courant" |*| (m_deriv_m |+| deriv_p))
 
 decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "1"
 decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "1"

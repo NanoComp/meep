@@ -132,7 +132,7 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
   data.Nomega = Nfreq;
   data.include_dV = include_dV;
   data.dft_chunks = chunk_next;
-  data.weight = weight * (inva*c/sqrt(2*pi));
+  data.weight = weight * (dt/sqrt(2*pi));
   integrate(add_dft_integrand, (void *) &data, where);
 
   return data.dft_chunks;
@@ -158,7 +158,7 @@ dft_chunk *fields::add_dft_pt(component c, const vec &where,
 void fields::update_dfts() {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      chunks[i]->update_dfts(time(), time() - 0.5 * inva*c);
+      chunks[i]->update_dfts(time(), time() - 0.5 * dt);
 }
 
 void fields_chunk::update_dfts(double timeE, double timeH) {

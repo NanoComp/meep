@@ -57,7 +57,7 @@ void test_convergence_without_averaging() {
     complex<double> *amps = new complex<double>[maxbands]; ;
     double *freq_re = new double[maxbands], *freq_im = new double[maxbands];
     double *errors  = new double[maxbands];
-    nfreq = do_harminv(mon_data, t_harminv_max - 1, 1, a, 0.10, 0.50, maxbands,
+    nfreq = do_harminv(mon_data, t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands,
                        amps, freq_re, freq_im, errors);
     double w = 0.0;
     for (int jf = 0; jf < nfreq; jf++) 
@@ -116,7 +116,7 @@ void test_convergence_with_averaging() {
     int maxbands = 10, nfreq;
     complex<double> *amps = new complex<double>[maxbands]; ;
     double *freq_re = new double[maxbands], *freq_im = new double[maxbands], *errors  = new double[maxbands];
-    nfreq = do_harminv(mon_data, t_harminv_max - 1, 1, a, 0.10, 0.50, maxbands, amps, freq_re, freq_im, errors);
+    nfreq = do_harminv(mon_data, t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands, amps, freq_re, freq_im, errors);
     double w = 0.0;
     for (int jf = 0; jf < nfreq; jf++) 
       if (abs(freq_re[jf] - w0) < abs(w - w0))
