@@ -185,81 +185,36 @@ void fields::output_slices(const char *name) {
   }
   char time_step_string[buflen];
   if (a == 1)
-    snprintf(time_step_string, buflen, "%08.0f", t*inva);
+    snprintf(time_step_string, buflen, "%08.0f", time());
   else
-    snprintf(time_step_string, buflen, "%09.2f", t*inva);
+    snprintf(time_step_string, buflen, "%09.2f", time());
   printf("time format: %s\n", time_step_string);
   {
     polarization *p = pol;
     int polnum = 0;
     while (p) {
-v v v v v v v
-      if (a == 1) snprintf(n, buflen, "%s/%sp%dr-%08.0f.sli", outdir, nname, polnum, t*inva*c);
-      else snprintf(n, buflen, "%s/%sp%dr-%09.2f.sli", outdir, nname, polnum, t*inva*c);
-*************
       snprintf(n, buflen, "%s/%sp%dr-%s.sli", outdir, nname, polnum, time_step_string);
-^ ^ ^ ^ ^ ^ ^
       output_complex_slice(p->Pr, nr, nz, n);
-v v v v v v v
-      if (a == 1) snprintf(n, buflen, "%s/%sp%dp-%08.0f.sli", outdir, nname, polnum, t*inva*c);
-      else snprintf(n, buflen, "%s/%sp%dp-%09.2f.sli", outdir, nname, polnum, t*inva*c);
-*************
       snprintf(n, buflen, "%s/%sp%dp-%s.sli", outdir, nname, polnum, time_step_string);
-^ ^ ^ ^ ^ ^ ^
       output_complex_slice(p->Pp, nr, nz, n);
-v v v v v v v
-      if (a == 1) snprintf(n, buflen, "%s/%sp%dz-%08.0f.sli", outdir, nname, polnum, t*inva*c);
-      else snprintf(n, buflen, "%s/%sp%dz-%09.2f.sli", outdir, nname, polnum, t*inva*c);
-*************
       snprintf(n, buflen, "%s/%sp%dz-%s.sli", outdir, nname, polnum, time_step_string);
-^ ^ ^ ^ ^ ^ ^
       output_complex_slice(p->Pz, nr, nz, n);
       polnum++;
       p = p->next;
     }
   }
-v v v v v v v
-  if (a == 1) snprintf(n, buflen, "%s/%shr-%08.0f.sli", outdir, nname, t*inva*c);
-  else snprintf(n, buflen, "%s/%shr-%09.2f.sli", outdir, nname, t*inva*c);
-*************
   snprintf(n, buflen, "%s/%shr-%s.sli", outdir, nname, time_step_string);
-^ ^ ^ ^ ^ ^ ^
   output_complex_slice(hr, nr, nz, n);
-v v v v v v v
-  if (a == 1) snprintf(n, buflen, "%s/%shp-%08.0f.sli", outdir, nname, t*inva*c);
-  else snprintf(n, buflen, "%s/%shp-%09.2f.sli", outdir, nname, t*inva*c);
-*************
   snprintf(n, buflen, "%s/%shp-%s.sli", outdir, nname, time_step_string);
-^ ^ ^ ^ ^ ^ ^
   output_complex_slice(hp, nr, nz, n);
-v v v v v v v
-  if (a == 1) snprintf(n, buflen, "%s/%shz-%08.0f.sli", outdir, nname, t*inva*c);
-  else snprintf(n, buflen, "%s/%shz-%09.2f.sli", outdir, nname, t*inva*c);
-*************
   snprintf(n, buflen, "%s/%shz-%s.sli", outdir, nname, time_step_string);
-^ ^ ^ ^ ^ ^ ^
   output_complex_slice(hz, nr, nz, n);
   
-v v v v v v v
-  if (a == 1) snprintf(n, buflen, "%s/%ser-%08.0f.sli", outdir, nname, t*inva*c);
-  else snprintf(n, buflen, "%s/%ser-%09.2f.sli", outdir, nname, t*inva*c);
-*************
   snprintf(n, buflen, "%s/%ser-%s.sli", outdir, nname, time_step_string);
-^ ^ ^ ^ ^ ^ ^
   output_complex_slice(er, nr, nz, n);
-v v v v v v v
-  if (a == 1) snprintf(n, buflen, "%s/%sep-%08.0f.sli", outdir, nname, t*inva*c);
-  else snprintf(n, buflen, "%s/%sep-%09.2f.sli", outdir, nname, t*inva*c);
-*************
   snprintf(n, buflen, "%s/%sep-%s.sli", outdir, nname, time_step_string);
-^ ^ ^ ^ ^ ^ ^
   output_complex_slice(ep, nr, nz, n);
-v v v v v v v
-  if (a == 1) snprintf(n, buflen, "%s/%sez-%08.0f.sli", outdir, nname, t*inva*c);
-  else snprintf(n, buflen, "%s/%sez-%09.2f.sli", outdir, nname, t*inva*c);
-*************
   snprintf(n, buflen, "%s/%sez-%s.sli", outdir, nname, time_step_string);
-^ ^ ^ ^ ^ ^ ^
   output_complex_slice(ez, nr, nz, n);
 
   free(n);
