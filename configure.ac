@@ -39,8 +39,24 @@ AM_CONDITIONAL(WITH_DOC, test "x$with_doc" = xyes)
 
 ##############################################################################
 
-# Checks for programs.
+# Check for mpiCC immediately after getting C++ compiler...
 AC_PROG_CXX
+
+# Check for MPI library
+
+AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
+                  with_mpi=$withval, with_mpi=no)
+
+if test "x$with_mpi" = "xyes"; then
+	AC_LANG_PUSH([C++])
+	ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
+	CXX=$MPICXX
+	AC_LANG_POP([C++])
+fi
+
+##############################################################################
+# More checks
+
 AC_PROG_LIBTOOL
 
 AC_CHECK_PROG(LATEX2HTML, latex2html, latex2html)
@@ -91,19 +107,6 @@ AC_CHECK_FUNC(cblas_cgemm, [], [AC_CHECK_LIB(gslcblas, cblas_cgemm)])
 
 AC_CHECK_LIB(gsl, gsl_sf_bessel_Jn, [],
 	[AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
-
-##############################################################################
-# Check for MPI library
-
-AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
-                  with_mpi=$withval, with_mpi=no)
-
-if test "x$with_mpi" = "xyes"; then
-	AC_LANG_PUSH([C++])
-	ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
-	CXX=$MPICXX
-	AC_LANG_POP([C++])
-fi
 
 ##############################################################################
 # Check for HDF5 library
