@@ -1058,15 +1058,20 @@ double fields::rflux(int zl, int zu, int r) {
 }
 
 void fields::output_point(FILE *o, double r, double z, const char *name) {
-  fprintf(o, 
-          "%s\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\n",
-          name, t*inva,
-          RE(er,(int)(r*a),(int)(z*a)), IM(er,(int)(r*a),(int)(z*a)),
-          RE(ep,(int)(r*a),(int)(z*a)), IM(ep,(int)(r*a),(int)(z*a)),
-          RE(ez,(int)(r*a),(int)(z*a)), IM(ez,(int)(r*a),(int)(z*a)),
-          RE(hr,(int)(r*a),(int)(z*a)), IM(hr,(int)(r*a),(int)(z*a)),
-          RE(hp,(int)(r*a),(int)(z*a)), IM(hp,(int)(r*a),(int)(z*a)),
+  fprintf(o, "%s\t%8lg", name, t*inva);
+  fprintf(o, "\t%8lg\t%8lg",
+          RE(er,(int)(r*a),(int)(z*a)), IM(er,(int)(r*a),(int)(z*a)));
+  fprintf(o, "\t%8lg\t%8lg",
+          RE(ep,(int)(r*a),(int)(z*a)), IM(ep,(int)(r*a),(int)(z*a)));
+  fprintf(o, "\t%8lg\t%8lg",
+          RE(ez,(int)(r*a),(int)(z*a)), IM(ez,(int)(r*a),(int)(z*a)));
+  fprintf(o, "\t%8lg\t%8lg",
+          RE(hr,(int)(r*a),(int)(z*a)), IM(hr,(int)(r*a),(int)(z*a)));
+  fprintf(o, "\t%8lg\t%8lg",
+          RE(hp,(int)(r*a),(int)(z*a)), IM(hp,(int)(r*a),(int)(z*a)));
+  fprintf(o, "\t%8lg\t%8lg",
           RE(hz,(int)(r*a),(int)(z*a)), IM(hz,(int)(r*a),(int)(z*a)));
+  fprintf(o, "\n");
 }
 
 static double get_phase(double *f[2], int nr, int nz) {
