@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
   for (m=0;m<1 && !interrupt;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
-    master_printf("Working on m = %d with a=%lg...\n", m, a);
+    master_printf("Working on m = %d with a=%g...\n", m, a);
     fields f(&s, m);
     f.use_bloch(0.0);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 2.2), 1.0);
@@ -76,9 +76,9 @@ int main(int argc, char **argv) {
     double next_print = 0.0;
     while (f.time() < ttot && !interrupt) {
       if (f.time() >= next_print) {
-        master_printf("%d is Working on time %lg...  ", my_rank(), f.time());
+        master_printf("%d is Working on time %g...  ", my_rank(), f.time());
         f.eps_slices(m_str);
-        master_printf("energy is %lg\n", f.field_energy());
+        master_printf("energy is %g\n", f.field_energy());
         next_print += 10.0;
       }
       f.step();
