@@ -34,6 +34,7 @@ static double one(const vec &p) {
 }
 
 typedef struct {
+  direction dx, dy, dz;
   double c, ax,ay,az, axy,ayz,axz, axyz;
   long double sum;
 } linear_integrand_data;
@@ -63,48 +64,69 @@ static void linear_integrand(fields_chunk *fc, component cgrid,
     // clean_vec is only necessary because we reference X/Y/Z for any v.dim
     vec locS(clean_vec(S.transform(loc, sn) + shift * (0.5*inva)));
     if (0) master_printf("at (%g,%g,%g) with weight*dV = %g*%g\n",
-			 locS.in_direction(X),
-			 locS.in_direction(Y),
-			 locS.in_direction(Z),
+			 locS.in_direction(data->dx),
+			 locS.in_direction(data->dy),
+			 locS.in_direction(data->dz),
 			 IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1),
 			 dV0 + dV1 * loop_i2);
 
     data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
       * (data->c
-	 + data->ax * locS.in_direction(X)
-	 + data->ay * locS.in_direction(Y)
-	 + data->az * locS.in_direction(Z)
-	 + data->axy * locS.in_direction(X) * locS.in_direction(Y)
-	 + data->ayz * locS.in_direction(Z) * locS.in_direction(Y)
-	 + data->axz * locS.in_direction(X) * locS.in_direction(Z)
-	 + data->axyz * locS.in_direction(X) * locS.in_direction(Y)
-	 * locS.in_direction(Z)
+	 + data->ax * locS.in_direction(data->dx)
+	 + data->ay * locS.in_direction(data->dy)
+	 + data->az * locS.in_direction(data->dz)
+
+	 + data->axy * locS.in_direction(data->dx)
+	 * locS.in_direction(data->dy)
+
+	 + data->ayz * locS.in_direction(data->dz)
+	 * locS.in_direction(data->dy)
+
+	 + data->axz * locS.in_direction(data->dx)
+	 * locS.in_direction(data->dz)
+
+	 + data->axyz * locS.in_direction(data->dx)
+	 * locS.in_direction(data->dy)
+	 * locS.in_direction(data->dz)
 	 );
   }
 }
 
 /* integrals of 1 and x, respectively, from a to b, or 1 and x if a==b: */
-static double integral1(double a, double b) { return a==b ? 1 : b-a; }
-static double integralx(double a, double b) { return a==b ? a : (b*b-a*a)*.5; }
+static double integral1(double a, double b, direction d) 
+{ 
+  if (d == R)
+    return a==b ? 2*pi*a : pi*(b*b-a*a); 
+  else
+    return a==b ? 1 : b-a; 
+}
+
+static double integralx(double a, double b, direction d) { 
+  if (d == R)
+    return a==b ? 2*pi*a*a : 2*pi*(b*b*b-a*a*a)*.3333333333333333333333333;
+  else
+    return a==b ? a : (b*b-a*a)*.5;
+}
 
 static double correct_integral(const geometric_volume &gv,
 			       const linear_integrand_data &data)
 {
-  double x1 = gv.in_direction_min(X);
-  double x2 = gv.in_direction_max(X);
-  double y1 = gv.in_direction_min(Y);
-  double y2 = gv.in_direction_max(Y);
-  double z1 = gv.in_direction_min(Z);
-  double z2 = gv.in_direction_max(Z);
+  direction x = data.dx, y = data.dy, z = data.dz;
+  double x1 = gv.in_direction_min(x);
+  double x2 = gv.in_direction_max(x);
+  double y1 = gv.in_direction_min(y);
+  double y2 = gv.in_direction_max(y);
+  double z1 = gv.in_direction_min(z);
+  double z2 = gv.in_direction_max(z);
 
-  return (data.c * integral1(x1,x2) * integral1(y1,y2) * integral1(z1,z2)
-       + data.ax * integralx(x1,x2) * integral1(y1,y2) * integral1(z1,z2)
-       + data.ay * integral1(x1,x2) * integralx(y1,y2) * integral1(z1,z2)
-       + data.az * integral1(x1,x2) * integral1(y1,y2) * integralx(z1,z2)
-      + data.axy * integralx(x1,x2) * integralx(y1,y2) * integral1(z1,z2)
-      + data.ayz * integral1(x1,x2) * integralx(y1,y2) * integralx(z1,z2)
-      + data.axz * integralx(x1,x2) * integral1(y1,y2) * integralx(z1,z2)
-     + data.axyz * integralx(x1,x2) * integralx(y1,y2) * integralx(z1,z2)
+  return (data.c * integral1(x1,x2,x) * integral1(y1,y2,y) * integral1(z1,z2,z)
+       + data.ax * integralx(x1,x2,x) * integral1(y1,y2,y) * integral1(z1,z2,z)
+       + data.ay * integral1(x1,x2,x) * integralx(y1,y2,y) * integral1(z1,z2,z)
+       + data.az * integral1(x1,x2,x) * integral1(y1,y2,y) * integralx(z1,z2,z)
+      + data.axy * integralx(x1,x2,x) * integralx(y1,y2,y) * integral1(z1,z2,z)
+      + data.ayz * integral1(x1,x2,x) * integralx(y1,y2,y) * integralx(z1,z2,z)
+      + data.axz * integralx(x1,x2,x) * integral1(y1,y2,y) * integralx(z1,z2,z)
+     + data.axyz * integralx(x1,x2,x) * integralx(y1,y2,y) * integralx(z1,z2,z)
 	  );
 }
 
@@ -119,16 +141,17 @@ static geometric_volume random_gv(ndim dim)
   geometric_volume gv(dim);
 
   double s[3] = {0,0,0};
-  switch (rand() % (dim + 2)) { /* dimensionality */
+  int idim = dim == Dcyl ? 1 : int(dim);
+  switch (rand() % (idim + 2)) { /* dimensionality */
   case 0:
     break;
   case 1: {
-    int d = rand() % (dim + 1);
+    int d = rand() % (idim + 1);
     s[d] = urand(0, size[d]);
     break;
   }
   case 2: {
-    int d1 = rand() % (dim + 1);
+    int d1 = rand() % (idim + 1);
     int d2 = (d1 + 1 + rand() % 2) % 3;
     s[d1] = urand(0, size[d1]);
     s[d2] = urand(0, size[d2]);
@@ -157,6 +180,18 @@ static geometric_volume random_gv(ndim dim)
     gv.set_direction_min(Z, 0);
     gv.set_direction_max(Z, 0);
     break;
+  case Dcyl:
+    gv.set_direction_min(X, 0);
+    gv.set_direction_max(X, 0);
+    gv.set_direction_min(Y, 0);
+    gv.set_direction_max(Y, 0);
+    gv.set_direction_min(R, 0.1 + urand(0, size[0] - s[0]));
+    gv.set_direction_min(Z, urand(-100, 100));
+    gv.set_direction_max(R, s[0] + gv.in_direction_min(R));
+    gv.set_direction_max(Z, s[1] + gv.in_direction_min(Z));
+    gv.set_direction_min(P, 0);
+    gv.set_direction_max(P, 0);
+    break;
   case D3:
     gv.set_direction_min(X, urand(-100, 100));
     gv.set_direction_min(Y, urand(-100, 100));
@@ -176,25 +211,27 @@ void check_integral(fields &f,
 		    linear_integrand_data &d, const geometric_volume &gv,
 		    component cgrid)
 {
-  double x1 = gv.in_direction_min(X);
-  double x2 = gv.in_direction_max(X);
-  double y1 = gv.in_direction_min(Y);
-  double y2 = gv.in_direction_max(Y);
-  double z1 = gv.in_direction_min(Z);
-  double z2 = gv.in_direction_max(Z);
+  double x1 = gv.in_direction_min(d.dx);
+  double x2 = gv.in_direction_max(d.dx);
+  double y1 = gv.in_direction_min(d.dy);
+  double y2 = gv.in_direction_max(d.dy);
+  double z1 = gv.in_direction_min(d.dz);
+  double z2 = gv.in_direction_max(d.dz);
   
-  if (0)
-    master_printf("Checking volume (%g,%g,%g) at (%g,%g,%g) with integral (%g, %g,%g,%g, %g,%g,%g, %g)...\n",
+  master_printf("Check %d-dim. %s integral in %s cell with %s integrand...",
+		(x2 - x1 > 0) + (y2 - y1 > 0) + (z2 - z1 > 0), 
+		component_name(cgrid),
+		gv.dim == D3 ? "3d" : (gv.dim == D2 ? "2d" : 
+				       (gv.dim == Dcyl ? "cylindrical" 
+					: "1d")),
+		(d.c == 1.0 && !d.axy && !d.ax && !d.ay && !d.az
+		 && !d.axy && !d.ayz && !d.axz) ? "unit" : "linear");
+  if (1)
+    master_printf("\n... volume (%g,%g,%g) at (%g,%g,%g) with integral (%g, %g,%g,%g, %g,%g,%g, %g)...\n",
 		  x2 - x1, y2 - y1, z2 - z1,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
 		  d.c, d.ax,d.ay,d.az, d.axy,d.ayz,d.axz, d.axyz);
-  else
-    master_printf("Check %d-dim. %s integral in %s cell with %s integrand...",
-		  (x2 - x1 > 0) + (y2 - y1 > 0) + (z2 - z1 > 0), 
-		  component_name(cgrid),
-		  gv.dim == D3 ? "3d" : (gv.dim == D2 ? "2d" : "1d"),
-		  (d.c == 1.0 && !d.axy && !d.ax && !d.ay && !d.az
-		   && !d.axy && !d.ayz && !d.axz) ? "unit" : "linear");
+
   d.sum = 0.0;
   f.integrate(linear_integrand, (void *) &d, gv);
   d.sum = sum_to_all(d.sum);
@@ -212,18 +249,20 @@ void check_splitsym(const volume &v, int splitting,
   fields f(&s);
 
   // periodic boundaries:
-  if (v.dim != D1) {
-    f.use_bloch(X, 0);
-    f.use_bloch(Y, 0);
+  f.use_bloch(zero_vec(v.dim));
+
+  linear_integrand_data d;
+  if (v.dim == Dcyl) {
+    d.dx = R; d.dy = P; d.dz = Z;
   }
-  if (v.dim != D2)
-    f.use_bloch(Z, 0);
+  else {
+    d.dx = X; d.dy = Y; d.dz = Z;
+  }
 
   master_printf("\nCHECKS for splitting=%d, symmetry=%s\n...",
 		splitting, Sname);
   for (int i = 0; i < num_random_trials; ++i) {
     geometric_volume gv(random_gv(v.dim));
-    linear_integrand_data d;
     component cgrid;
 
     do {
@@ -239,6 +278,8 @@ void check_splitsym(const volume &v, int splitting,
     d.ax = urand(-1,1); d.ay = urand(-1,1); d.az = urand(-1,1);
     d.axy = urand(-1,1); d.ayz = urand(-1,1); d.axz = urand(-1,1);
     d.axyz = urand(-1,1);
+    if (v.dim == Dcyl) // cyl. doesn't integrate linear functions of r exactly
+      d.ax = d.axy = d.axz = d.axyz = 0;
     check_integral(f, d, gv, cgrid);
   }
 }
@@ -360,6 +401,12 @@ int main(int argc, char **argv)
     check_splitsym(v2d, splitting, mirror(Y,v2d), "mirrory");
     check_splitsym(v2d, splitting, mirror(X,v2d) + mirror(Y,v2d), "mirrorxy");
     check_splitsym(v2d, splitting, rotate4(Z,v2d), "rotate4");
+  }
+
+  const volume vcyl_pad = volcyl(size[0] + 0.2, size[1], a);
+  for (int splitting = 0; splitting < 5; ++splitting) {
+    check_splitsym(vcyl_pad, splitting, identity(), "identity");
+    check_splitsym(vcyl_pad, splitting, mirror(Z,vcyl), "mirrorz");
   }
 
   for (int splitting = 0; splitting < 5; ++splitting) {

@@ -229,7 +229,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 		       component cgrid,
 		       bool use_symmetry)
 {
-  if (coordinate_mismatch(v.dim, component_direction(cgrid)))
+  if (coordinate_mismatch(v.dim, cgrid))
     abort("Invalid fields::integrate grid type %s for dimensions %s\n",
 	  component_name(cgrid), dimension_name(v.dim));
   if (where.dim != v.dim)

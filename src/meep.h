@@ -272,7 +272,7 @@ class structure {
 class src_vol;
 class bandsdata;
 class fields_chunk;
-class flux_box;
+class flux_vol;
 
 // Time-dependence of a current source, intended to be overridden by
 // subclasses.  current() and dipole() are be related by
@@ -394,7 +394,7 @@ public:
 	    ivec is_, ivec ie_,
 	    vec s0_, vec s1_, vec e0_, vec e1_,
 	    double dV0_, double dV1_,
-	    complex<double> shift_sym_phase_,
+	    complex<double> scale_,
 	    component c_,
 	    const void *data_);
   ~dft_chunk();
@@ -421,9 +421,9 @@ private:
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
-  complex<double> shift_sym_phase; // phase from shift and symmetry
+  complex<double> scale; // scale factor * phase from shift and symmetry
 
-  // cache of exp(iwt) * (shift/symmetry phase), of length Nomega
+  // cache of exp(iwt) * scale, of length Nomega
   complex<double> *dft_phase;
 
   int avg1, avg2; // index offsets for average to get epsilon grid
@@ -437,9 +437,8 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
 public:
-  dft_flux(const component cE_[2], const component cH_[2],
-	   dft_chunk *E_[2], dft_chunk *H_[2],
-	   const geometric_volume &where_,
+  dft_flux(const component cE_, const component cH_,
+	   dft_chunk *E_, dft_chunk *H_,
 	   double fmin, double fmax, int Nf);
   dft_flux(const dft_flux &f);
 
@@ -451,9 +450,8 @@ public:
 
   double freq_min, dfreq;
   int Nfreq;
-  dft_chunk *E[2], *H[2];
-  component cE[2], cH[2];
-  geometric_volume where;
+  dft_chunk *E, *H;
+  component cE, cH;
 };
 
 enum in_or_out { Incoming=0, Outgoing=1 };
@@ -608,7 +606,7 @@ class fields {
   int num_chunks;
   fields_chunk **chunks;
   src_time *sources;
-  flux_box *fluxes;
+  flux_vol *fluxes;
   symmetry S;
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
@@ -723,14 +721,24 @@ class fields {
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,
 		     double freq_min, double freq_max, int Nfreq,
-		     bool include_dV = true);
+		     bool include_dV = true,
+		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
+  dft_chunk *add_dft(component c, const geometric_volume_list *where,
+		     double freq_min, double freq_max, int Nfreq,
+		     bool include_dV = true);
   void update_dfts();
   dft_flux add_dft_flux(direction d, const geometric_volume &where,
 			double freq_min, double freq_max, int Nfreq);
+  dft_flux add_dft_flux_box(const geometric_volume &where,
+			    double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux_plane(const geometric_volume &where,
 			      double freq_min, double freq_max, int Nfreq);
+  dft_flux add_dft_flux(const direction *d, const geometric_volume_list *where,
+			double freq_min, double freq_max, int Nfreq);
+  dft_flux add_dft_flux(direction d, const geometric_volume_list *where,
+			double freq_min, double freq_max, int Nfreq);
   
   // monitor.cpp
   double get_eps(const vec &loc) const;
@@ -757,9 +765,9 @@ class fields {
   double field_energy();
   double flux_in_box_wrongH(direction d, const geometric_volume &);
   double flux_in_box(direction d, const geometric_volume &);
-  flux_box *add_flux_box(direction d, const geometric_volume &where);
-  flux_box *add_flux_plane(const geometric_volume &where);
-  flux_box *add_flux_plane(const vec &p1, const vec &p2);
+  flux_vol *add_flux_vol(direction d, const geometric_volume &where);
+  flux_vol *add_flux_plane(const geometric_volume &where);
+  flux_vol *add_flux_plane(const vec &p1, const vec &p2);
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
@@ -824,13 +832,13 @@ class fields {
   double get_eps(const ivec &iloc) const;
 };
 
-class flux_box {
+class flux_vol {
  public:
-  flux_box(fields *f_, direction d_, const geometric_volume &where_) : where(where_) {
+  flux_vol(fields *f_, direction d_, const geometric_volume &where_) : where(where_) {
     f = f_; d = d_; cur_flux = cur_flux_half = 0; 
     next = f->fluxes; f->fluxes = this;
   }
-  ~flux_box() { delete next; }
+  ~flux_vol() { delete next; }
 
   void update_half() { cur_flux_half = flux_wrongE(); 
                        if (next) next->update_half(); }
@@ -839,7 +847,7 @@ class flux_box {
 
   double flux() { return cur_flux; }
 
-  flux_box *next;
+  flux_vol *next;
  private:
   double flux_wrongE() { return f->flux_in_box_wrongH(d, where); }
   fields *f;

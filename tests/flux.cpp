@@ -25,6 +25,8 @@ double one(const vec &) { return 1.0; }
 static double width = 20.0;
 double bump(const vec &v) { return (fabs(v.z()-50.0) > width)?1.0:12.0; }
 
+double bump2(const vec &v) { return (fabs(v.z()-5.0) > 3.0)?1.0:12.0; }
+
 double cavity(const vec &v) {
   const double zz = fabs(v.z() - 7.5) + 0.3001;
   if (zz > 5.0) return 1.0;
@@ -58,8 +60,8 @@ int flux_1d(const double zmax,
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.25, 3.5, 0.0, 8.0, vec(zmax/6+0.3), 1.0);
-  flux_box *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
-  flux_box *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
+  flux_vol *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
+  flux_vol *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
 
   const double ttot = min(10.0 + 1e5/zmax,f.last_source_time());
 
@@ -103,9 +105,9 @@ int split_1d(double eps(const vec &), int splitting) {
   f.use_real_fields();
   f1.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
   f.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
-  flux_box *left1  = f1.add_flux_plane(vec(zmax*.5-boxwidth),
+  flux_vol *left1  = f1.add_flux_plane(vec(zmax*.5-boxwidth),
                                          vec(zmax*.5-boxwidth));
-  flux_box *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
+  flux_vol *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
                                        vec(zmax*.5-boxwidth));
   volume mid = volone(2*boxwidth,a);
   mid.set_origin(vec(zmax*.5-boxwidth-0.25/a));
@@ -132,9 +134,9 @@ int cavity_1d(const double boxwidth, const double timewait,
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
-  flux_box *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
+  flux_vol *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
                                        vec(zmax*.5-boxwidth));
-  flux_box *right = f.add_flux_plane(vec(zmax*.5+boxwidth),
+  flux_vol *right = f.add_flux_plane(vec(zmax*.5+boxwidth),
                                        vec(zmax*.5+boxwidth));
   volume mid = volone(2*boxwidth,a);
   mid.set_origin(vec(zmax*.5-boxwidth-0.25/a));
@@ -169,7 +171,7 @@ int flux_2d(const double xmax, const double ymax,
 
   volume v = voltwo(xmax,ymax,a);
   structure s(v, eps);
-  s.use_pml_everywhere((xmax > ymax ? xmax : ymax)/6);
+  s.use_pml_everywhere(0.5);
 
   fields f(&s);
   f.use_real_fields();
@@ -178,16 +180,29 @@ int flux_2d(const double xmax, const double ymax,
   // corners of flux planes and energy box:
   vec lb(vec2d(xmax/3, ymax/3)), rb(vec2d(2*xmax/3, ymax/3));
   vec lt(vec2d(xmax/3, 2*ymax/3)), rt(vec2d(2*xmax/3, 2*ymax/3));
+  geometric_volume box(lb, rt);
 
-  flux_box *left = f.add_flux_plane(lb, lt);
-  flux_box *right = f.add_flux_plane(rb, rt);
-  flux_box *bottom = f.add_flux_plane(lb, rb);
-  flux_box *top = f.add_flux_plane(lt, rt);
+  flux_vol *left = f.add_flux_plane(lb, lt);
+  flux_vol *right = f.add_flux_plane(rb, rt);
+  flux_vol *bottom = f.add_flux_plane(lb, rb);
+  flux_vol *top = f.add_flux_plane(lt, rt);
+
+  /* measure flux spectra through two concentric flux boxes
+     around the source...should be positive and equal */
+  geometric_volume box1(vec2d(xmax/6-0.4, ymax/6-0.2),
+			vec2d(xmax/6+0.6, ymax/6+0.8));
+  geometric_volume box2(vec2d(xmax/6-0.9, ymax/6-0.7),
+			vec2d(xmax/6+1.1, ymax/6+1.3));
+  double fmin = 0.23, fmax = 0.27;
+  int Nfreq = 10;
+  dft_flux flux1 = f.add_dft_flux_box(box1, fmin, fmax, Nfreq);
+  dft_flux flux2 = f.add_dft_flux_box(box2, fmin, fmax, Nfreq);
 
   const double ttot = 130;
 
+  /* first check: integral of flux = change in energy of box */
   f.step();
-  double init_energy = f.energy_in_box(geometric_volume(lb, rt));
+  double init_energy = f.energy_in_box(box);
   master_printf("Initial energy is %g\n", init_energy);
   long double fluxL = 0;
   while (f.time() < ttot) {
@@ -196,12 +211,29 @@ int flux_2d(const double xmax, const double ymax,
 		       + bottom->flux() - top->flux());
   }
   double flux = fluxL;
-  double del_energy = f.energy_in_box(geometric_volume(lb, rt)) - init_energy;
-  master_printf("Final energy is %g\n", 
-		f.energy_in_box(geometric_volume(lb, rt)));
+  double del_energy = f.energy_in_box(box) - init_energy;
+  master_printf("Final energy is %g\n", f.energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
 		del_energy, flux, del_energy/flux);
-  return compare(del_energy, flux, 0.06, "Flux");
+  if (!compare(del_energy, flux, 0.08, "Flux")) return 0;
+
+  /* second check: flux spectrum is same for two concentric
+     boxes containing the source. */
+  while (f.time() < ttot*2) {
+    f.step();
+  }
+  master_printf("  energy after more time is %g\n", f.energy_in_box(box));
+  master_printf("  and energy in box2 is %g\n", f.energy_in_box(box2));
+  double *fl1 = flux1.flux();
+  double *fl2 = flux2.flux();
+  for (int i = 0; i < Nfreq; ++i) {
+    printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
+	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
+    if (!compare(fl1[i], fl2[i], 0.08, "Flux spectrum")) return 0;
+  }
+  delete fl2; delete fl1;
+
+  return 1;
 }
 
 int flux_cyl(const double rmax, const double zmax,
@@ -212,25 +244,37 @@ int flux_cyl(const double rmax, const double zmax,
 
   volume v = volcyl(rmax,zmax,a);
   structure s(v, eps);
-  s.use_pml_everywhere((rmax > zmax ? rmax : zmax)/6);
+  s.use_pml_everywhere(0.5);
 
   fields f(&s, m);
   // f.use_real_fields();
-  f.add_point_source(Ep, 0.25, 3.5, 0., 8., vec(rmax/6+0.1, zmax/6+0.3), 1.);
+  f.add_point_source(Ep, 0.25, 3.5, 0., 8., vec(rmax*5/6+0.1, zmax/6+0.3), 1.);
   
   // corners of flux planes and energy box:
   vec lb(vec(-rmax/3, zmax/3)), rb(vec(2*rmax/3, zmax/3));
   vec lt(vec(-rmax/3, 2*zmax/3)), rt(vec(2*rmax/3, 2*zmax/3));
+  geometric_volume box(lb, rt);
 
-  flux_box *left = f.add_flux_plane(lb, lt);
-  flux_box *right = f.add_flux_plane(rb, rt);
-  flux_box *bottom = f.add_flux_plane(lb, rb);
-  flux_box *top = f.add_flux_plane(lt, rt);
+  /* measure flux spectra through two concentric flux boxes
+     around the source...should be positive and equal */
+  geometric_volume box1(vec(rmax*5/6-0.4, zmax/6-0.2),
+			vec(rmax*5/6+0.6, zmax/6+0.8));
+  geometric_volume box2(vec(rmax*5/6-0.9, zmax/6-0.7),
+			vec(rmax*5/6+1.1, zmax/6+1.3));
+  double fmin = 0.23, fmax = 0.27;
+  int Nfreq = 10;
+  dft_flux flux1 = f.add_dft_flux_box(box1, fmin, fmax, Nfreq);
+  dft_flux flux2 = f.add_dft_flux_box(box2, fmin, fmax, Nfreq);
+
+  flux_vol *left = f.add_flux_plane(lb, lt);
+  flux_vol *right = f.add_flux_plane(rb, rt);
+  flux_vol *bottom = f.add_flux_plane(lb, rb);
+  flux_vol *top = f.add_flux_plane(lt, rt);
 
   const double ttot = 130;
 
   f.step();
-  double init_energy = f.energy_in_box(geometric_volume(lb, rt));
+  double init_energy = f.energy_in_box(box);
   master_printf("Initial energy is %g\n", init_energy);
   long double fluxL = 0;
   while (f.time() < ttot) {
@@ -239,12 +283,27 @@ int flux_cyl(const double rmax, const double zmax,
 		      + bottom->flux() - top->flux());
   }
   double flux = fluxL;
-  double del_energy = f.energy_in_box(geometric_volume(lb, rt)) - init_energy;
-  master_printf("Final energy is %g\n", 
-		f.energy_in_box(geometric_volume(lb, rt)));
+  double del_energy = f.energy_in_box(box) - init_energy;
+  master_printf("Final energy is %g\n", f.energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
 		del_energy, flux, del_energy/flux);
-  return compare(del_energy, flux, 0.06, "Flux");
+  if (!compare(del_energy, flux, 0.08, "Flux")) return 0;
+
+  while (f.time() < ttot*2) {
+    f.step();
+  }
+  master_printf("  energy after more time is %g\n", f.energy_in_box(box));
+  master_printf("  and energy in box2 is %g\n", f.energy_in_box(box2));
+  double *fl1 = flux1.flux();
+  double *fl2 = flux2.flux();
+  for (int i = 0; i < Nfreq; ++i) {
+    printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
+	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
+    if (!compare(fl1[i], fl2[i], 0.05, "Flux spectrum")) return 0;
+  }
+  delete fl2; delete fl1;
+
+  return 1;
 }
 
 void attempt(const char *name, int allright) {
@@ -267,13 +326,15 @@ int main(int argc, char **argv) {
   width = 10.0;
   attempt("Flux 1D 10", flux_1d(100.0, bump));
   width = 300.0;
-  attempt("Flux 1D 300", flux_1d(100.0, bump));
+  attempt("Flux 1D 300", flux_1d(100, bump));
 
-  width = 10.0;
-  attempt("Flux 2D 10", flux_2d(30.0, 30.0, bump));
+  width = 5.0;
+  attempt("Flux 2D 5", flux_2d(10.0, 10.0, bump2));
 
-  width = 10.0;
-  attempt("Flux cylindrical 10", flux_cyl(30.0, 30.0, bump, 1));
+  width = 5.0;
+  attempt("Flux cylindrical 5", flux_cyl(20.0, 10.0, bump2, 1));
 
   exit(0);
 }
+
+

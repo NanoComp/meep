@@ -28,6 +28,7 @@ struct dft_chunk_data { // for passing to field::integrate as void*
   double omega_min, domega;
   int Nomega;
   component c;
+  complex<double> weight;
   bool include_dV;
   dft_chunk *dft_chunks;
 };
@@ -36,7 +37,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
 		     ivec is_, ivec ie_,
 		     vec s0_, vec s1_, vec e0_, vec e1_,
 		     double dV0_, double dV1_,
-		     complex<double> shift_sym_phase_,
+		     complex<double> scale_,
 		     component c_,
 		     const void *data_) {
   dft_chunk_data *data = (dft_chunk_data *) data_;
@@ -50,9 +51,15 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   s1 = s1_;
   e0 = e0_;
   e1 = e1_;
-  dV0 = dV0_;
-  dV1 = dV1_;
-  shift_sym_phase = shift_sym_phase_;
+  if (data->include_dV) {
+    dV0 = dV0_;
+    dV1 = dV1_;
+  }
+  else {
+    dV0 = 1;
+    dV1 = 0;
+  }
+  scale = scale_ * data->weight;
   c = c_;
 
   fc->v.yee2diel_offsets(c, avg1, avg2);
@@ -102,11 +109,8 @@ static void add_dft_integrand(fields_chunk *fc, component cgrid,
   if (cgrid != Dielectric) abort("dft chunks should use the Dielectric grid");
   
   component c = S.transform(data->c, -sn);
-  if (!fc->f[c][0]) return; // this chunk doesn't have component c
-
-  if (!data->include_dV) {
-    dV0 = 1; dV1 = 0;
-  }
+  if (c >= NUM_FIELD_COMPONENTS || !fc->f[c][0])
+       return; // this chunk doesn't have component c
 
   data->dft_chunks = new dft_chunk(fc,is,ie,s0,s1,e0,e1,dV0,dV1,
 				   shift_phase * S.phase_shift(c, sn),
@@ -115,8 +119,9 @@ static void add_dft_integrand(fields_chunk *fc, component cgrid,
 
 dft_chunk *fields::add_dft(component c, const geometric_volume &where,
 			   double freq_min, double freq_max, int Nfreq,
-			   bool include_dV) {
-  if (coordinate_mismatch(v.dim, component_direction(c)))
+			   bool include_dV,
+			   complex<double> weight, dft_chunk *chunk_next) {
+  if (coordinate_mismatch(v.dim, c))
     return NULL;
 
   dft_chunk_data data;  
@@ -126,17 +131,28 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
     (freq_max * 2*pi - data.omega_min) / (Nfreq - 1);
   data.Nomega = Nfreq;
   data.include_dV = include_dV;
-  data.dft_chunks = NULL;
-  
+  data.dft_chunks = chunk_next;
+  data.weight = weight * (inva*c/sqrt(2*pi));
   integrate(add_dft_integrand, (void *) &data, where);
 
   return data.dft_chunks;
 }
 
+dft_chunk *fields::add_dft(component c, const geometric_volume_list *where,
+			   double freq_min, double freq_max, int Nfreq,
+			   bool include_dV) {
+  dft_chunk *chunks = 0;
+  while (where) {
+    chunks = add_dft(c, where->gv, freq_min, freq_max, Nfreq, include_dV,
+		     where->weight, chunks);
+    where = where->next;
+  }
+  return chunks;
+}
+
 dft_chunk *fields::add_dft_pt(component c, const vec &where,
 			   double freq_min, double freq_max, int Nfreq) {
-  return add_dft(c, geometric_volume(where, where), 
-		 freq_min, freq_max, Nfreq, false);
+  return add_dft(c, where, freq_min, freq_max, Nfreq, false);
 }
 
 void fields::update_dfts() {
@@ -155,7 +171,7 @@ void dft_chunk::update_dft(double time) {
   if (!fc->f[c][0]) return;
 
   for (int i = 0; i < Nomega; ++i)
-    dft_phase[i] = polar(1.0, (omega_min + i*domega)*time) * shift_sym_phase;
+    dft_phase[i] = polar(1.0, (omega_min + i*domega)*time) * scale;
 
   int numcmp = fc->f[c][1] ? 2 : 1;
 
@@ -246,37 +262,32 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   }
 }
 
-dft_flux::dft_flux(const component cE_[2], const component cH_[2],
-		   dft_chunk *E_[2], dft_chunk *H_[2], 
-		   const geometric_volume &where_, 
-		   double fmin, double fmax, int Nf) : where(where_)
+dft_flux::dft_flux(const component cE_, const component cH_,
+		   dft_chunk *E_, dft_chunk *H_, 
+		   double fmin, double fmax, int Nf)
 {
   freq_min = fmin;
   Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
-  for (int i = 0; i < 2; ++i) {
-    E[i] = E_[i]; H[i] = H_[i];
-    cE[i] = cE_[i]; cH[i] = cH_[i];
-  }
+  E = E_; H = H_;
+  cE = cE_; cH = cH_;
 }
 
-dft_flux::dft_flux(const dft_flux &f) : where (f.where) {
+dft_flux::dft_flux(const dft_flux &f) {
   freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
-  for (int i = 0; i < 2; ++i) {
-    E[i] = f.E[i]; H[i] = f.H[i];
-    cE[i] = f.cE[i]; cH[i] = f.cH[i];
-  }
+  E = f.E; H = f.H;
+  cE = f.cE; cH = f.cH;
 }
 
 double *dft_flux::flux() {
   double *F = new double[Nfreq];
   for (int i = 0; i < Nfreq; ++i) F[i] = 0;
-  for (int j = 0; j < 2; ++j) {
-    for (dft_chunk *curE = E[j], *curH = H[j]; curE && curH;
-	 curE = curE->next_in_dft, curH = curH->next_in_dft)
+  for (dft_chunk *curE = E, *curH = H; curE && curH;
+       curE = curE->next_in_dft, curH = curH->next_in_dft)
+    for (int k = 0; k < curE->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
-	F[i] += (1 - 2*j) * real(curE->dft[i] * conj(curH->dft[i])) / (4*pi);
-  }
+	F[i] += real(curE->dft[k*Nfreq + i]
+		     * conj(curH->dft[k*Nfreq + i])) / (4*pi);
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, Nfreq);
   delete[] F;
@@ -284,54 +295,107 @@ double *dft_flux::flux() {
 }
 
 void dft_flux::save_hdf5(h5file *file, const char *dprefix) {
-  for (int i = 0; i < 2; ++i) {
-    save_dft_hdf5(E[i], cE[i], file, dprefix);
-    save_dft_hdf5(H[i], cH[i], file, dprefix);
-  }
+  save_dft_hdf5(E, cE, file, dprefix);
+  save_dft_hdf5(H, cH, file, dprefix);
 }
 
 void dft_flux::load_hdf5(h5file *file, const char *dprefix) {
-  for (int i = 0; i < 2; ++i) {
-    load_dft_hdf5(E[i], cE[i], file, dprefix);
-    load_dft_hdf5(H[i], cH[i], file, dprefix);
-  }
+  load_dft_hdf5(E, cE, file, dprefix);
+  load_dft_hdf5(H, cH, file, dprefix);
 }
 
 void dft_flux::negate_dfts() {
-  for (int i = 0; i < 2; ++i) {
-    if (E[i]) E[i]->negate_dft();
-    if (H[i]) H[i]->negate_dft();
+  if (E) E->negate_dft();
+  if (H) H->negate_dft();
+}
+
+// requires d to be an array of the same length as where list!!
+dft_flux fields::add_dft_flux(const direction *d,
+			      const geometric_volume_list *where,
+			      double freq_min, double freq_max, int Nfreq) {
+  dft_chunk *E = 0, *H = 0;
+  component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
+  
+  while (where) {
+    if (coordinate_mismatch(v.dim, *d))
+      abort("coordinate-type mismatch in add_dft_flux");
+    
+    switch (*d) {
+    case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
+    case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
+    case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
+    case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
+    case Z:
+      if (v.dim == Dcyl)
+	cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
+      else
+	cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
+      break;
+    case NO_DIRECTION:
+    default:
+      abort("cannot get flux in unknown direction!");
+    }
+    
+    for (int i = 0; i < 2; ++i) {
+      E = add_dft(cE[i], where->gv, freq_min, freq_max, Nfreq,
+		  true, where->weight * double(1 - 2*i), E);
+      H = add_dft(cH[i], where->gv, freq_min, freq_max, Nfreq,
+		  true, 1.0, H);
+    }
+    
+    where = where->next;
+    ++d;
   }
+
+  return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq);
+}
+
+dft_flux fields::add_dft_flux(direction d,
+			      const geometric_volume_list *where,
+			      double freq_min, double freq_max, int Nfreq) {
+  int nd = 0;
+  for (const geometric_volume_list *cur = where; cur; cur = cur->next)
+    ++nd;
+  direction *ds = new direction[nd];
+  for (int id = 0; id < nd; ++id)
+    ds[id] = d;
+  dft_flux flux = add_dft_flux(ds, where, freq_min, freq_max, Nfreq);
+  delete ds;
+  return flux;
 }
 
 dft_flux fields::add_dft_flux(direction d, const geometric_volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
-  if (where.dim != v.dim) abort("incorrect dimensionality in add_dft_flux");
-  if (coordinate_mismatch(v.dim, d))
-    abort("coordinate-type mismatch in add_dft_flux");
+  geometric_volume_list gvl(where);
+  return add_dft_flux(d, &gvl, freq_min, freq_max, Nfreq);
+}
 
-  component cE[2], cH[2];
-  switch (d) {
-  case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
-  case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
-  case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
-  case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
-  case Z:
-    if (v.dim == Dcyl)
-      cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
-    else
-      cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
-    break;
-  case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
-  }
-  
-  dft_chunk *E[2], *H[2];
-  for (int i = 0; i < 2; ++i) {
-    E[i] = add_dft(cE[i], where, freq_min, freq_max, Nfreq);
-    H[i] = add_dft(cH[i], where, freq_min, freq_max, Nfreq);
-  }
+dft_flux fields::add_dft_flux_box(const geometric_volume &where,
+				  double freq_min, double freq_max, int Nfreq){
+  int nfaces = 0;
+  LOOP_OVER_DIRECTIONS(where.dim, d)
+    if (where.in_direction(d) > 0) ++nfaces;
+  nfaces *= 2;
+  direction *ds = new direction[nfaces];
 
-  return dft_flux(cE, cH, E, H, where, freq_min, freq_max, Nfreq);
+  geometric_volume_list *faces = 0;
+  int ifaces = 0;
+  LOOP_OVER_DIRECTIONS(where.dim, d)
+    if (where.in_direction(d) > 0) {
+      geometric_volume face(where);
+      face.set_direction_min(d, where.in_direction_max(d));
+      faces = new geometric_volume_list(face, +1, faces);
+      ds[nfaces - ++ifaces] = d;
+      face.set_direction_min(d, where.in_direction_min(d));
+      face.set_direction_max(d, where.in_direction_min(d));
+      faces = new geometric_volume_list(face, -1, faces);
+      ds[nfaces - ++ifaces] = d;
+    }
+
+  dft_flux flux = add_dft_flux(ds, faces, freq_min, freq_max, Nfreq);
+  delete faces;
+  delete ds;
+  return flux;
 }
 
 dft_flux fields::add_dft_flux_plane(const geometric_volume &where,

@@ -259,7 +259,7 @@ double *h5file::read(const char *dataname,
 		     int *rank, int *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
-  double *data;
+  double *data = 0;
   if (parallel || am_master()) {
     int i, N;
     hid_t file_id = HID(get_id()), space_id, data_id;

@@ -106,7 +106,7 @@ static void dot_integrand(fields_chunk *fc, component cgrid,
 
 double fields::field_energy_in_box(component c,
 				   const geometric_volume &where) {
-  if (coordinate_mismatch(v.dim, component_direction(c)))
+  if (coordinate_mismatch(v.dim, c))
     return 0.0;
 
   dot_integrand_data data;
@@ -184,7 +184,7 @@ static void thermo_integrand(fields_chunk *fc, component cgrid,
 double fields::thermo_energy_in_box(const geometric_volume &where) {
   long double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c)
-    if (!coordinate_mismatch(v.dim, component_direction(c)))
+    if (!coordinate_mismatch(v.dim, c))
       integrate(thermo_integrand, (void *) &sum, where, c);
   return sum_to_all(sum);
 }
@@ -297,19 +297,19 @@ double fields::flux_in_box(direction d, const geometric_volume &where) {
   return 0.5 * (next_step_flux + flux_in_box_wrongH(d, where));
 }
 
-flux_box *fields::add_flux_box(direction d, const geometric_volume &where) {
-  if (where.dim != v.dim) abort("invalid dimensionality in add_flux_box");
+flux_vol *fields::add_flux_vol(direction d, const geometric_volume &where) {
+  if (where.dim != v.dim) abort("invalid dimensionality in add_flux_vol");
   if (d == NO_DIRECTION || coordinate_mismatch(v.dim, d))
-    abort("invalid direction in add_flux_box");
- return new flux_box(this, d, where);
+    abort("invalid direction in add_flux_vol");
+ return new flux_vol(this, d, where);
 }
 
-// As add_flux_box, but infer direction from where (if possible)
-flux_box *fields::add_flux_plane(const geometric_volume &where) {
-  return add_flux_box(where.normal_direction(), where);
+// As add_flux_vol, but infer direction from where (if possible)
+flux_vol *fields::add_flux_plane(const geometric_volume &where) {
+  return add_flux_vol(where.normal_direction(), where);
 }
 
-flux_box *fields::add_flux_plane(const vec &p1, const vec &p2) {
+flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
   return add_flux_plane(geometric_volume(p1, p2));
 }
 

@@ -152,8 +152,9 @@ inline bool has_direction(ndim dim, direction d) {
 
 // true if d is polar while dim is cartesian, or vice versa 
 inline bool coordinate_mismatch(ndim dim, direction d) {
-  return ((dim >= D1 && dim <= D3 && (d == R || d == P)) ||
-	  (dim == Dcyl && (d == X || d == Y)));
+  return (d != NO_DIRECTION &&
+	  ((dim >= D1 && dim <= D3 && d != X && d != Y && d != Z) ||
+	   (dim == Dcyl && d != R && d != P && d != Z)));
 }
 
 extern void abort(const char *, ...); // mympi.cpp
@@ -199,6 +200,10 @@ inline component direction_component(component c, direction d) {
   case NO_DIRECTION: abort("vector %d component in NO_DIRECTION", c);
   }
   return Ex; // This is never reached.
+}
+
+inline bool coordinate_mismatch(ndim dim, component c) {
+  return coordinate_mismatch(dim, component_direction(c));
 }
 
 class file;
@@ -436,6 +441,7 @@ class geometric_volume {
   ndim dim;
   geometric_volume(ndim di) { dim = di; min_corner.dim = di; max_corner.dim = di; };
   geometric_volume(const vec &vec1, const vec &vec2);
+  geometric_volume(const vec &pt);
   void set_direction_min(direction d, double val) { min_corner.set_direction(d, val); };
   void set_direction_max(direction d, double val) { max_corner.set_direction(d, val); };
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };
@@ -645,6 +651,17 @@ symmetry identity();
 symmetry rotate4(direction,const volume &);
 symmetry rotate2(direction,const volume &);
 symmetry mirror(direction,const volume &);
+
+class geometric_volume_list;
+class geometric_volume_list {
+ public:
+     geometric_volume_list(const geometric_volume &gv, complex<double> weight = 1.0, geometric_volume_list *next = 0) : gv(gv), weight(weight), next(next) {}
+     ~geometric_volume_list() { delete next; }
+
+     geometric_volume gv;
+     complex<double> weight;
+     geometric_volume_list *next;
+};
 
 } /* namespace meep */
 

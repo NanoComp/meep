@@ -142,6 +142,15 @@ geometric_volume::geometric_volume(const vec &vec1, const vec &vec2) {
     set_direction_max(d, max(vec1.in_direction(d), vec2.in_direction(d)));
   }
 }
+
+geometric_volume::geometric_volume(const vec &pt) {
+  min_corner.dim = max_corner.dim = dim = pt.dim; 
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    set_direction_min(d, pt.in_direction(d));
+    set_direction_max(d, pt.in_direction(d));
+  }
+}
+
 double geometric_volume::computational_volume() {
   double vol = 1.0; 
   LOOP_OVER_DIRECTIONS(dim,d) vol *= (in_direction_max(d) - in_direction_min(d));
