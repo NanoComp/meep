@@ -223,46 +223,56 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
 }
 
 static void eps_outline(FILE *out, component m, const double *f, const volume &v,
-                        const volume &what) {
+                        const volume &what,
+                        symmetry S, int symnum) {
   if (!f) return; // Field doesn't exist...
-  for (int i=0;i<v.ntot();i++)
-    if (what.contains(v.loc(m,i)))
+  for (int i=0;i<v.ntot();i++) {
+    const vec here = S.transform(v.loc(m,i),symnum);
+    if (what.contains(here))
       switch (v.dim) {
       case dcyl: {
         vec next = v.loc(m,i)+v.dr();
+        vec nextrot = S.transform(next,symnum);
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          fprintf(out, "%lg\t%lg\tLH\n", next.z(), next.r() - 0.5/v.a);
+          fprintf(out, "%lg\t%lg\tLH\n", nextrot.z(), nextrot.r() - 0.5/v.a);
         next = v.loc(m,i)+v.dz();
+        nextrot = S.transform(next,symnum);
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          fprintf(out, "%lg\t%lg\tLV\n", next.z() - 0.5/v.a, next.r());
+          fprintf(out, "%lg\t%lg\tLV\n", nextrot.z() - 0.5/v.a, nextrot.r());
         break;
       }
       case d2: {
         vec next = v.loc(m,i)+v.dy();
+        vec nextrot = S.transform(next,symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLH\n", next.x(), next.y() - 0.5/v.a);
+            fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y() - 0.5/v.a);
         next = v.loc(m,i)-v.dy();
+        nextrot = S.transform(next,symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLH\n", next.x(), next.y() + 0.5/v.a);
+            fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y() + 0.5/v.a);
         next = v.loc(m,i)+v.dx();
+        nextrot = S.transform(next,symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLV\n", next.x() - 0.5/v.a, next.y());
+            fprintf(out, "%lg\t%lg\tLV\n", nextrot.x() - 0.5/v.a, nextrot.y());
         next = v.loc(m,i)-v.dx();
+        nextrot = S.transform(next,symnum);
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            fprintf(out, "%lg\t%lg\tLV\n", next.x() + 0.5/v.a, next.y());
+            fprintf(out, "%lg\t%lg\tLV\n", nextrot.x() + 0.5/v.a, nextrot.y());
         break;
       }
       case d1: {
         const vec next = v.loc(m,i)+v.dz();
+        const vec nextrot = S.transform(next,symnum);
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          fprintf(out, "%lg\t%lg\tLV\n", next.z() - 0.5/v.a, 0.0);
+          fprintf(out, "%lg\t%lg\tLV\n", nextrot.z() - 0.5/v.a, 0.0);
         break;
       }
       }
+  }
 }
 
 static void output_complex_eps_body(component m, double *f[2], const volume &v,
@@ -291,7 +301,7 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
       else fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
     }
   }
-  if (overlay) eps_outline(out, om, overlay, v, what);
+  if (overlay) eps_outline(out, om, overlay, v, what, S, symnum);
   if (dashed) eps_dotted(out, om, dashed, v, what);
   fclose(out);
 }
