@@ -33,7 +33,7 @@ static geometric_volume nth_quadrant(const geometric_volume &v, int n) {
 #include "sphere-quad.h"
 
 static int count_sphere_pts(const geometric_volume &v) {
-     return num_sphere_quad[number_of_directions(v.dim)];
+     return num_sphere_quad[number_of_directions(v.dim) - 1];
 }
 
 static inline double dmax(double a, double b) { return (a > b ? a : b); }
