@@ -25,6 +25,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef IGNORE_SIGFPE
+#  include <signal.h>
+#endif
+
 #if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
 #  ifndef _GNU_SOURCE
 #    define _GNU_SOURCE 1
@@ -51,6 +55,9 @@ initialize::initialize(int argc, char **argv) {
 #endif
 #if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
   feenableexcept(FE_INVALID | FE_OVERFLOW); //crash if NaN created, or overflow
+#endif
+#ifdef IGNORE_SIGFPE
+  signal(SIGFPE, SIG_IGN);
 #endif
 }
 
