@@ -96,6 +96,25 @@ if test "x$with_mpi" = "xyes"; then
 fi
 
 ##############################################################################
+# Check for HDF5 library
+AC_ARG_WITH(hdf5, [AC_HELP_STRING([--without-hdf5],[do not allow HDF5 output])], ok=$withval, ok=yes)
+if test "$ok" = "yes"; then
+	AC_CHECK_LIB(z,deflate, [],[AC_MSG_WARN([zlib is required for HDF5!])])
+
+	save_LIBS_0="$LIBS" # save, to check later if we found any library
+	AC_CHECK_LIB(hdf5, H5Pcreate, [
+		AC_CHECK_HEADERS(hdf5.h, [LIBS="-lhdf5 $LIBS"
+                     AC_DEFINE(HAVE_HDF5,1,[Define if we have & link HDF5])])])
+	if test x"$save_LIBS_0" = x"$LIBS"; then
+		AC_MSG_WARN([Couldn't find the HDF5 library!!  Switching to --without-hdf5.])
+	fi
+
+        if test "x$with_mpi" = "xyes"; then
+		AC_CHECK_FUNCS(H5Pset_mpi H5Pset_fapl_mpio)
+	fi
+fi
+
+##############################################################################
 # Figure out the number of processors so we can quickly build the docs and
 # run the tests...  (FIXME: use more standard autoconf macros)
 

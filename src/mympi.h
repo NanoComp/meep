@@ -71,6 +71,9 @@ void i_flush(file *f);
 void i_fprintf(file *, const char *fmt, ...) PRINTF_ATTR(2,3);
 void master_fprintf(file *, const char *fmt, ...) PRINTF_ATTR(2,3);
 
+void begin_critical_section(int tag);
+void end_critical_section(int tag);
+
 } /* namespace meep */
 
 #endif /* MEEP_MY_MPI_H */

@@ -314,4 +314,43 @@ void master_fprintf(file *f, const char *fmt, ...) {
   va_end(ap);
 }
 
+/* The following functions bracket a "critical section," a region
+   of code that should be executed by only one process at a time.
+
+   They work by having each process wait for a message from the
+   previous process before starting. 
+
+   Each critical section is passed an integer "tag"...ideally, this
+   should be a unique identifier for each critical section so that
+   messages from different critical sections don't get mixed up
+   somehow. */
+
+void begin_critical_section(int tag)
+{
+#ifdef HAVE_MPI
+     int process_rank;
+     MPI_Comm_rank(MPI_COMM_WORLD, &process_rank);
+     if (process_rank > 0) { /* wait for a message before continuing */
+	  MPI_Status status;
+	  int recv_tag = tag - 1; /* initialize to wrong value */
+	  MPI_Recv(&recv_tag, 1, MPI_INT, process_rank - 1, tag, 
+		   MPI_COMM_WORLD, &status);
+	  if (recv_tag != tag) abort("invalid tag received in begin_critical_section");
+     }
+#endif
+}
+
+void end_critical_section(int tag)
+{
+#ifdef HAVE_MPI
+     int process_rank, num_procs;
+     MPI_Comm_rank(MPI_COMM_WORLD, &process_rank);
+     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+     if (process_rank != num_procs - 1) { /* send a message to next process */
+	  MPI_Send(&tag, 1, MPI_INT, process_rank + 1, tag, 
+		   MPI_COMM_WORLD);
+     }
+#endif
+}
+
 } // namespace meep
