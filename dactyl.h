@@ -56,6 +56,22 @@ class mat {
 class src;
 class bandsdata;
 class fields;
+class weighted_flux_plane;
+
+class flux_plane {
+ public:
+  double ymin, ymax, xconst;
+  int is_rflux;
+  int num_wf;
+  double weights[2];
+  int xpos[2];
+  int verbosity;
+  weighted_flux_plane *wf[2];
+  flux_plane(double ymin, double ymax, double xconst, int is_rflux, double a);
+  flux_plane(const flux_plane &fp);
+  ~flux_plane();
+  complex<double> flux(fields *f);
+};
 
 class a_field {
  public:
@@ -153,6 +169,10 @@ class fields {
   monitor_point *get_new_point(double r, double z, monitor_point *p=NULL);
   void output_point(FILE *, double r, double z, const char *name);
 
+  flux_plane create_rflux_plane(double zmin, double zmax, double rconst);
+  flux_plane create_zflux_plane(double rmin, double rmax, double zconst);
+  complex<double> get_flux(flux_plane *fp);
+  
   void prepare_for_bands(int z, int ttot, double fmax=0, double qmin=1e300);
   void record_bands();
   complex<double> get_band(int n, int maxbands=100);

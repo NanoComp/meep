@@ -164,8 +164,6 @@ extern "C" {
                      cmplx *WORK, int *lwork,double *RWORK, int*);
 }
 
-inline int min(int a, int b) { return (a<b)? a : b; }
-
 void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
                            int nbands, int n) {
   const int dofourier = 1;

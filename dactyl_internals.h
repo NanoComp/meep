@@ -41,7 +41,9 @@
 #define SWAP(a,b) {(a) += (b); (b) = (a)-(b); (a) -= (b); }
 
 inline double max(double a, double b) { return (a > b) ? a : b; }
+inline double min(double a, double b) { return (a < b) ? a : b; }
 inline int max(int a, int b) { return (a > b) ? a : b; }
+inline int min(int a, int b) { return (a < b) ? a : b; }
 
 inline int small_r_metal(int m) {
   return m-1;
@@ -120,4 +122,17 @@ class bandsdata {
                           complex<double> *refa,
                           complex<double> *refdata,
                           int numref);
+};
+
+class weighted_flux_plane {
+ public:
+  int ymin, ymax, xconst;
+  double dy_min, dy_max;
+  int is_rflux;
+  int verbosity;
+  weighted_flux_plane() {};
+  weighted_flux_plane(int ymin, int ymax, int xconst, 
+	    double dy_min, double dy_max, int is_rflux);
+  ~weighted_flux_plane() {};
+  complex<double> flux(fields *f);  
 };
