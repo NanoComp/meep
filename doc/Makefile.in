@@ -59,6 +59,8 @@ epsilon_polariton-out/eps.eps : preproc epsilon_polariton.dac
 omniguide-out/bands.eps : preproc omniguide.dac
 	rm -rf omniguide-out/*
 	./omniguide.dac
+	mv $@ $@-tmp
+	sed -e 's/fill//' $@-tmp > $@
 
 superluminal_epsilon-out/eps.eps : preproc superluminal_epsilon.dac
 	rm -rf superluminal_epsilon-out/*
