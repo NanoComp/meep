@@ -198,11 +198,15 @@ class fields_chunk {
   double find_last_source();
   // monitor.cpp
   complex<double> get_field(component, const ivec &) const;
+  double get_polarization_energy(const ivec &) const;
+  double my_polarization_energy(const ivec &) const;
   double get_eps(const ivec &iloc) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   // slices.cpp
   double maxfieldmag(component) const;
+  double maxpolenergy() const;
+  double minpolenergy() const;
   void output_eps_body(component, const symmetry &, int sn,
                        const geometric_volume &what, file *);
   complex<double> fields_chunk::field_mean(component c, bool abs_real,
@@ -330,10 +334,14 @@ class fields {
   void eps_slices(const vec &origin, const vec &xside, const vec &yside,
                   const double dx = 0.05, const char *name = "");
   void eps_slices(const geometric_volume &what, const char *name = "");
+  void eps_energy_slice(const char *name = "");
+  void eps_energy_slice(const geometric_volume &what, const char *name = "");
   void output_real_imaginary_slices(const char *name = "");
   void output_real_imaginary_slices(const geometric_volume &what,
                                     const char *name = "");
   double maxfieldmag_to_master(component) const;
+  double minpolenergy_to_master() const;
+  double maxpolenergy_to_master() const;
   complex<double> optimal_phase_shift(component) const;
   // step.cpp methods:
   void step();
@@ -439,6 +447,8 @@ class fields {
   // monitor.cpp
   complex<double> get_field(component c, const ivec &iloc) const;
   complex<double> get_field(component c, const vec &loc) const;
+  double get_polarization_energy(const ivec &) const;
+  double get_polarization_energy(const vec &) const;
   double get_eps(const ivec &iloc) const;
 };
 

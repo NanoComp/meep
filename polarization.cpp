@@ -118,6 +118,15 @@ double polarization::total_energy(const geometric_volume &what) {
   return e;
 }
 
+double polarization::local_energy(const ivec &iloc) {
+  if (pb->v.dim != D1) abort("Can't do local_energy in these dims.\n");
+  double res = 0.0;
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (energy[c])
+      res += energy[c][pb->v.index(c,iloc)];
+  return res;
+}
+
 polarizability::polarizability(const polarizability *pb) {
   omeganot = pb->omeganot;
   gamma = pb->gamma;

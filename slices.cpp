@@ -527,6 +527,62 @@ void fields::output_slices(const geometric_volume &what, const char *name) {
   finished_working();
 }
 
+void fields::eps_energy_slice(const char *name) {
+  if (v.dim == D3) abort("FIXME need to support 3D energy slices...\n");
+  geometric_volume what = user_volume.surroundings();
+  if (v.dim == Dcyl) what.set_direction_min(R,-what.in_direction_max(R));
+  eps_energy_slice(what,name);
+}
+
+void fields::eps_energy_slice(const geometric_volume &what, const char *name) {
+  am_now_working_on(Slicing);
+  const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
+  char *n = new char[buflen];
+  if (!n) abort("Allocation failure!\n");
+  char time_step_string[buflen];
+  snprintf(time_step_string, buflen, "%09.2f", time());
+  
+  snprintf(n, buflen, "%s/%senergy-%s.eps", outdir, nname, time_step_string);
+  file *out = everyone_open_write(n);
+  if (!out) abort("Unable to open file '%s' for slice output.\n", n);
+  const double fmax = max(maxpolenergy_to_master(), -minpolenergy_to_master());
+  if (am_master())
+    output_complex_eps_header(v.eps_component(), fmax, user_volume,
+                              what, out, n, v.eps_component());
+  if (v.dim != D1) abort("Still only works in 1D.  :( \n");
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      for (int sn=0;sn<S.multiplicity();sn++)
+        for (int n=0;n<chunks[i]->v.ntot();n++) {
+          const ivec here = chunks[i]->v.iloc(v.eps_component(), n);
+          i_fprintf(out, "%lg\t0\t%lg\tP\n", chunks[i]->v[S.transform(here,sn)].z(),
+                    chunks[i]->get_polarization_energy(here));
+        }
+  //all_wait();
+  //for (int i=0;i<num_chunks;i++)
+  //  if (chunks[i]->is_mine())
+  //    for (int sn=0;sn<S.multiplicity();sn++)
+  //      FOR_COMPONENTS(otherc)
+  //        if (S.transform(otherc,sn) == v.eps_component())
+  //          chunks[i]->output_eps_body(otherc, S, sn, what, out);
+  all_wait();
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      for (int sn=0;sn<S.multiplicity();sn++)
+        for (int otherc=0;otherc<10;otherc++)
+          if (S.transform((component)otherc,sn) == c)
+            eps_outline(v.eps_component(), chunks[i]->ma->eps,
+                        chunks[i]->v, what, S, sn, out);
+  all_wait();
+  if (am_master()) output_complex_eps_tail(out);
+  everyone_close(out);
+  delete[] n;
+  finished_working();
+}
+
 void fields::eps_slices(const char *name) {
   if (v.dim == D3) abort("Specify directions for EPS slices in 3D\n");
   geometric_volume what = user_volume.surroundings();
@@ -674,6 +730,22 @@ void fields::eps_slices(const geometric_volume &what, const char *name) {
   finished_working();
 }
 
+double fields::minpolenergy_to_master() const {
+  double themin = 1e300;
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      themin = min(themin,chunks[i]->minpolenergy());
+  return -max_to_master(-themin);
+}
+
+double fields::maxpolenergy_to_master() const {
+  double themax = -1e300;
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      themax = max(themax,chunks[i]->maxpolenergy());
+  return max_to_master(themax);
+}
+
 double fields::maxfieldmag_to_master(component c) const {
   double themax = 0.0;
   for (int i=0;i<num_chunks;i++)
@@ -690,5 +762,21 @@ double fields_chunk::maxfieldmag(component c) const {
       DOCMP norm += f[c][cmp][i]*f[c][cmp][i];
       themax = max(themax,sqrt(norm));
     }
+  return themax;
+}
+
+double fields_chunk::minpolenergy() const {
+  double themin = 1e300;
+  const component c = v.eps_component();
+  for (int i=0;i<v.ntot();i++)
+    themin = min(themin,my_polarization_energy(v.iloc(c, i)));
+  return themin;
+}
+
+double fields_chunk::maxpolenergy() const {
+  double themax = -1e300;
+  const component c = v.eps_component();
+  for (int i=0;i<v.ntot();i++)
+    themax = max(themax,my_polarization_energy(v.iloc(c, i)));
   return themax;
 }

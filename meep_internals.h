@@ -58,6 +58,7 @@ class polarization {
   polarization *next;
 
   complex<double> analytic_epsilon(double freq, const vec &) const;
+  double local_energy(const ivec &);
   double total_energy(const geometric_volume &);
   static polarization *set_up_polarizations(const mat_chunk *ma, int is_real);
   void use_real_fields();
