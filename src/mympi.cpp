@@ -104,6 +104,7 @@ void abort(const char *fmt, ...) {
   fprintf(stderr, "meep: ");
   vfprintf(stderr, fmt, ap);
   va_end(ap);
+  if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
 #ifdef HAVE_MPI
   MPI_Abort(MPI_COMM_WORLD, 1);
 #endif
