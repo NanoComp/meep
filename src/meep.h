@@ -771,6 +771,8 @@ class fields {
   flux_vol *add_flux_plane(const vec &p1, const vec &p2);
   double electric_energy_max_in_box(const geometric_volume &where);
   double modal_volume_in_box(const geometric_volume &where);
+  double electric_deps_integral_in_box(double (*deps)(const vec &),
+				       const geometric_volume &where);
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }

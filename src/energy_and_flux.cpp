@@ -402,5 +402,64 @@ double fields::modal_volume_in_box(const geometric_volume &where) {
   return electric_energy_in_box(where) / electric_energy_max_in_box(where);
 }
 
+/************************************************************************/
+
+  /* compute integral (delta epsilon) * |E|^2 / (8*pi), which is useful for
+     perturbation theory, etcetera */
+
+struct dot_deps_integrand_data {
+  component c1, c2;
+  double (*deps)(const vec &);
+  long double sum;
+};
+
+static void dot_deps_integrand(fields_chunk *fc, component cgrid,
+			       ivec is, ivec ie,
+			       vec s0, vec s1, vec e0, vec e1,
+			       double dV0, double dV1,
+			       ivec shift, complex<double> shift_phase,
+			       const symmetry &S, int sn,
+			       void *data_) {
+  dot_deps_integrand_data *data = (dot_deps_integrand_data *) data_;
+
+  (void) shift_phase; // unused
+
+  component c1 = S.transform(data->c1, -sn);
+  component c2 = S.transform(data->c2, -sn);
+
+  // We're integrating c1 * c2*, and we assume that
+  // S.phase_shift(c1,sn) == S.phase_shift(c2,sn), so the phases all cancel
+
+  // We also assume that cgrid is the same yee grid as that for c1 and c2,
+  // so that no averaging is needed.
+  (void) cgrid;
+
+  double inva = fc->v.inva;
+  for (int cmp = 0; cmp < 2; ++cmp)
+    if (fc->f[c1][cmp] && fc->f[c2][cmp])
+      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+        IVEC_LOOP_LOC(fc->v, loc);
+        vec locS(S.transform(loc, sn) + shift * (0.5*inva));
+
+        data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
+	  * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx] * data->deps(locS);
+    }
+}
+
+double fields::electric_deps_integral_in_box(double (*deps)(const vec &),
+					     const geometric_volume &where) {
+  dot_deps_integrand_data data;
+  data.deps = deps;
+  data.sum = 0.0;
+
+  FOR_ELECTRIC_COMPONENTS(c) 
+    if (!coordinate_mismatch(v.dim, component_direction(c))) {
+      data.c1 = direction_component(Ex, component_direction(c));
+      data.c2 = direction_component(Ex, component_direction(c));
+      integrate(dot_deps_integrand, (void *) &data, where, c);
+    }
+  return sum_to_all(data.sum) / (8*pi);
+}
+
 } // namespace meep
 
