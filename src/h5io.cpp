@@ -194,7 +194,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	   "invalid chunk_dims[0] for rank 0");
 
      // stupid HDF5 has problems with rank 0
-     rank1 = rank == 0 ? 1 : rank;
+     rank1 = (rank == 0 && !append_data) ? 1 : rank;
 
      hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
 #  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
@@ -229,8 +229,9 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      if (first_chunk && (IF_EXCLUSIVE(!parallel || am_master(), 1))) {
 	  hsize_t *dims_copy = new hsize_t[rank1 + append_data];
 	  hsize_t *maxdims = new hsize_t[rank1 + append_data];
+	  hsize_t N = 1;
 	  for (i = 0; i < rank; ++i)
-	       maxdims[i] = dims_copy[i] = dims[i];
+	       N *= (maxdims[i] = dims_copy[i] = dims[i]);
 	  if (!rank)
 	       maxdims[0] = dims_copy[0] = 1;
 	  if (append_data) {
@@ -244,8 +245,13 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	     "chunks" in which the file data is allocated.  We'll just
 	     set the chunk size to the dataset dimensions (dims_copy). */
 	  hid_t prop_id = H5Pcreate(H5P_DATASET_CREATE);
-	  if (append_data)
-	       H5Pset_chunk(prop_id, rank1 + 1, dims_copy);
+	  if (append_data) {
+	    const int blocksize = 128;
+	    // make a chunk at least blocksize elements for efficiency
+	    dims_copy[rank1] = (blocksize + (N - 1)) / N;
+	    H5Pset_chunk(prop_id, rank1 + 1, dims_copy);
+	    dims_copy[rank1] = 1;
+	  }
 
 	  delete[] dims_copy;
 	  
@@ -263,8 +269,8 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	  CHECK(rank1 + append_data == H5Sget_simple_extent_ndims(space_id),
 		"file data is inconsistent rank for subsequent chunk");
 	  
-	  hsize_t *dims_copy = new hsize_t[rank1];
-	  hsize_t *maxdims = new hsize_t[rank1];
+	  hsize_t *dims_copy = new hsize_t[rank1 + append_data];
+	  hsize_t *maxdims = new hsize_t[rank1 + append_data];
 	  H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
 	  CHECK(!append_data || maxdims[rank1] == H5S_UNLIMITED,
 		"file data is missing unlimited dimension for append_data");
@@ -272,7 +278,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	  for (i = 0; i < rank; ++i)
 	       CHECK(dims[i] == (int) dims_copy[i],
 		     "file data is inconsistent size for subsequent chunk");
-	  if (!rank)
+	  if (rank < rank1)
 	       CHECK(dims_copy[0] == 1, "rank-0 data is incorrect size");
 
 	  // Allocate more space along unlimited direction, if needed:
@@ -312,7 +318,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      if (count_prod > 0) {
 	  H5Sselect_hyperslab(space_id, H5S_SELECT_SET,
 			      start, NULL, count, NULL);
-	  mem_space_id = H5Screate_simple(rank1, count, NULL);
+	  mem_space_id = H5Screate_simple(!rank1 ? 1 : rank1, count, NULL);
 	  H5Sselect_all(mem_space_id);
      }
      else { /* this can happen on leftover processes in MPI */

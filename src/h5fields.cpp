@@ -85,7 +85,6 @@ void fields::output_hdf5(const char *filename,
 
   char dataname[256];
   snprintf(dataname, 256, "%s.%s", component_name(c), reim ? "i" : "r");
-  master_printf("writing %s to %s\n", dataname, filename);
 
   // Finally, fetch the data from each chunk and write it to the file:
   for (int sn = 0; sn < S.multiplicity(); ++sn) {

@@ -266,6 +266,68 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   return 1;
 }
 
+bool check_2d_monitor(double eps(const vec &),
+		      double a, int splitting, symfunc Sf,
+		      component src_c, component file_c,
+		      const vec &pt,
+		      bool real_fields,
+		      const char *name) {
+  const volume v = vol2d(xsize, ysize, a);
+  structure s(v, eps, splitting, Sf(v));
+  fields f(&s);
+
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
+  if (real_fields) f.use_real_fields();
+
+  char fname[1024];
+  snprintf(fname, 1024, "%s.h5", name);
+
+  const double T = 3.0;
+  complex<double> *mon = new complex<double>[int(T / (f.inva * c)) + 2];
+  while (f.time() <= T && !interrupt) {
+    f.output_hdf5(fname, geometric_volume(pt, pt), a, file_c,
+		  true, f.t);
+    mon[f.t] = f.get_field(file_c, pt);
+    f.step();
+  }
+
+  double data_min = infinity, data_max = -infinity;
+  double err_max = 0;
+
+  for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
+    int rank, dims[1] = {1};
+
+    char dataname[256];
+    snprintf(dataname, 256, "%s.%s", component_name(file_c), reim ? "i" : "r");
+
+    double *h5data = h5io::read(fname, dataname, &rank, dims, 2);
+    if (!h5data)
+	 abort("failed to read dataset %s:%s\n", fname, dataname);
+    if (rank != 1)
+      abort("monitor-point data is not one-dimensional");
+    if (dims[0] != f.t)
+      abort("incorrect size of monitor-point data");
+
+    for (int i = 0; i < f.t; ++i) {
+      double err = compare(h5data[i], get_reim(mon[i], reim), name);
+      err_max = max(err, err_max);
+      data_min = min(data_min, h5data[i]);
+      data_max = max(data_max, h5data[i]);
+    }
+    delete[] h5data;
+  }
+
+  delete[] mon;
+
+  remove(fname);
+
+  master_printf("Passed %s (%g..%g), err=%g\n", name,
+		data_min, data_max,
+		err_max / max(fabs(data_min), fabs(data_max)));
+
+  return 1;
+}
+
 int main(int argc, char **argv)
 {
   const double a = 10.0;
@@ -299,6 +361,20 @@ int main(int argc, char **argv)
 			  gv_2d[igv], use_real, gv_2d_rank[igv], name))
 	      return 1;
 	  }
+  
+  for (int iS = 0; iS < 5; ++iS)
+    for (int splitting = 0; splitting < 5; ++splitting)
+      for (int ic = 0; ic < 4; ++ic)
+	for (int use_real = 0; use_real <= 1; ++use_real) {
+	  char name[1024];
+	  snprintf(name, 1024, "check_2d_monitor_tm_%s_%d_%s%s",
+		   Sf2_name[iS], splitting,
+		   component_name(tm_c[ic]), use_real ? "_r" : "");
+	  master_printf("Checking %s...\n", name);
+	  if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, 
+				tm_c[ic], vec2d(pad1,pad2), use_real, name))
+	    return 1;
+	}
   
   geometric_volume gv_3d[4] = {
        geometric_volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,zsize-pad3)),
