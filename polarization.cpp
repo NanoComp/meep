@@ -157,43 +157,20 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
   sigma = new double[v.ntot()];
   if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
-  if (v.dim == dcyl) {
-    for (int i=0;i<v.ntot();i++) sigma[i] = sigscale*sig(v.loc(Hp,i));
-  } else if (v.dim == d1) {
-    for (int i=0;i<v.ntot();i++) sigma[i] = sigscale*sig(v.loc(Ex,i));
-  } else {
-    abort("Unsupported dimensionality!\n");
-  }
+  for (int i=0;i<v.ntot();i++)
+    sigma[i] = sigscale*sig(v.loc(v.eps_component(),i));
   for (int c=0;c<10;c++) if (s[c])
     for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
   // Average out sigma over the grid...
   if (v.dim == dcyl) {
     const vec dr = v.dr()*0.5; // The distance between Yee field components
     const vec dz = v.dz()*0.5; // The distance between Yee field components
-    for (int r=1;r<v.nr();r++) {
-      const int ir = r*(v.nz()+1);
-      const int irm1 = (r-1)*(v.nz()+1);
-      for (int z=1;z<=v.nz();z++) {
-        s[Er][z + ir] = 0.5*(sigma[z+ir] + sigma[z+ir-1]);
-        s[Ep][z + ir] = 0.25*(sigma[z+ir] + sigma[z+ir-1] +
-                           sigma[z+irm1] + sigma[z+irm1-1]);
-        s[Ez][z + ir] = 0.5*(sigma[z+ir] + sigma[z+irm1]);
-      }
-    }
-    for (int r=0;r<v.nr();r++) {
-      const int ir = r*(v.nz()+1);
-      const vec here = v.loc(Ep,ir);
-      s[Er][ir] = 0.5*sigscale*(sig(here+dr+dz) + sig(here+dr-dz));
-      s[Ep][ir] = 0.25*sigscale*(sig(here+dr+dz) + sig(here-dr+dz) +
-                              sig(here+dr-dz) + sig(here-dr-dz));
-      s[Ez][ir] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
-    }
-    for (int z=0;z<v.nz();z++) {
-      const vec here = v.loc(Ep,z);
-      s[Er][z] = 0.5*sigscale*(sig(here+dr+dz) + sig(here+dr-dz));
-      s[Ep][z] = 0.25*sigscale*(sig(here+dr+dz) + sig(here-dr+dz) +
-                             sig(here+dr-dz) + sig(here-dr-dz));
-      s[Ez][z] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
+    for (int i=0;i<v.ntot();i++) {
+      const vec here = v.loc(Ep,i);
+      s[Er][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here+dr-dz));
+      s[Ep][i] = 0.25*sigscale*(sig(here+dr+dz) + sig(here-dr+dz) +
+                                sig(here+dr-dz) + sig(here-dr-dz));
+      s[Ez][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
     }
   } else if (v.dim == d1) {
     // There's just one field point...

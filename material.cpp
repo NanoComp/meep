@@ -426,30 +426,12 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
     if (v.dim == dcyl) {
       const vec dr = v.dr()*0.5; // The distance between Yee field components
       const vec dz = v.dz()*0.5; // The distance between Yee field components
-      for (int r=1;r<v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        const int irm1 = (r-1)*(v.nz()+1);
-        for (int z=1;z<=v.nz();z++) {
-          inveps[Er][z + ir] = 2./(eps[z+ir] + eps[z+ir-1]);
-          inveps[Ep][z + ir] = 4./(eps[z+ir] + eps[z+ir-1] +
-                                   eps[z+irm1] + eps[z+irm1-1]);
-          inveps[Ez][z + ir] = 2./(eps[z+ir] + eps[z+irm1]);
-        }
-      }
-      for (int r=0;r<v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        const vec here = v.loc(Ep,ir);
-        inveps[Er][ir] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
-        inveps[Ep][ir] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
-                             feps(here+dr-dz) + feps(here-dr-dz));
-        inveps[Ez][ir] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
-      }
-      for (int z=0;z<v.nz();z++) {
-        const vec here = v.loc(Ep,z);
-        inveps[Er][z] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
-        inveps[Ep][z] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
+      for (int i=0;i<v.ntot();i++) {
+        const vec here = v.loc(Ep,i);
+        inveps[Er][i] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
+        inveps[Ep][i] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
                             feps(here+dr-dz) + feps(here-dr-dz));
-        inveps[Ez][z] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
+        inveps[Ez][i] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
       }
     } else if (v.dim == d1) {
       for (int i=0;i<v.ntot();i++) inveps[Ex][i] = 1.0/eps[i];
