@@ -511,7 +511,8 @@ public:
   component cE, cH;
 };
 
-enum in_or_out { Incoming=0, Outgoing=1 };
+enum in_or_out { Incoming=0, Outgoing };
+enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 
 class fields_chunk {
  public:
@@ -526,10 +527,9 @@ class fields_chunk {
 
   double **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   int num_zeroes[NUM_FIELD_TYPES];
-  double **connections[NUM_FIELD_TYPES][2];
-  int num_connections[NUM_FIELD_TYPES][2];
+  double **connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
+  int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   complex<double> *connection_phases[NUM_FIELD_TYPES];
-  double *connection_factors[NUM_FIELD_TYPES];
 
   polarization *pol, *olpol;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
@@ -643,7 +643,7 @@ class fields_chunk {
   bool initialize_with_nth_te(int n, double kz);
   bool initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
-  void alloc_extra_connections(field_type, in_or_out, int);
+  void alloc_extra_connections(field_type, connect_phase, in_or_out, int);
   // dft.cpp
   void update_dfts(double timeE, double timeH);
 };
@@ -673,14 +673,18 @@ class fields {
   src_time *sources;
   flux_vol *fluxes;
   symmetry S;
+
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
   double **comm_blocks[NUM_FIELD_TYPES];
-  // This is the same size as each comm_blocks array, and stores the sizes
-  // of the comm blocks themselves.
-  int *comm_sizes[NUM_FIELD_TYPES];
-  int *comm_num_complex[NUM_FIELD_TYPES];
-  int *comm_num_negate[NUM_FIELD_TYPES];
+  // This is the same size as each comm_blocks array, and store the sizes
+  // of the comm blocks themselves for each connection-phase type
+  int *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
+  int comm_size_tot(int f, int pair) const {
+    int sum = 0; for (int ip=0; ip<3; ++ip) sum+=comm_sizes[f][ip][pair];
+    return sum;
+  }
+
   double a, dt; // The resolution a and timestep dt=Courant/a
   volume v, user_volume;
   geometric_volume gv;

@@ -53,12 +53,10 @@ fields::fields(const structure *s, int tm) :
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new fields_chunk(s->chunks[i], outdir, m);
   FOR_FIELD_TYPES(ft) {
-    comm_sizes[ft] = new int[num_chunks*num_chunks];
-    comm_num_complex[ft] = new int[num_chunks*num_chunks];
-    comm_num_negate[ft] = new int[num_chunks*num_chunks];
-    for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][i] = 0;
-    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_complex[ft][i] = 0;
-    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_negate[ft][i] = 0;
+    for (int ip=0;ip<3;ip++) {
+      comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
+      for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
+    }
     typedef double *double_ptr;
     comm_blocks[ft] = new double_ptr[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++)
@@ -97,12 +95,10 @@ fields::fields(const fields &thef) :
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new fields_chunk(*thef.chunks[i]);
   FOR_FIELD_TYPES(ft) {
-    comm_sizes[ft] = new int[num_chunks*num_chunks];
-    comm_num_complex[ft] = new int[num_chunks*num_chunks];
-    comm_num_negate[ft] = new int[num_chunks*num_chunks];
-    for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][i] = 0;
-    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_complex[ft][i] = 0;
-    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_negate[ft][i] = 0;
+    for (int ip=0;ip<3;ip++) {
+      comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
+      for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
+    }
     typedef double *double_ptr;
     comm_blocks[ft] = new double_ptr[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++)
@@ -120,7 +116,8 @@ fields::~fields() {
     for (int i=0;i<num_chunks*num_chunks;i++)
       delete[] comm_blocks[ft][i];
     delete[] comm_blocks[ft];
-    delete[] comm_sizes[ft];
+    for (int ip=0;ip<3;ip++)
+      delete[] comm_sizes[ft][ip];
   }
   delete sources;
   delete fluxes;
@@ -155,8 +152,9 @@ fields_chunk::~fields_chunk() {
     FOR_COMPONENTS(i) delete[] f_backup_m_pml[i][cmp];
   }
   FOR_FIELD_TYPES(ft)
-    for (int io=0;io<2;io++)
-      delete[] connections[ft][io];
+    for (int ip=0;ip<3;ip++)
+      for (int io=0;io<2;io++)
+	delete[] connections[ft][ip][io];
   FOR_FIELD_TYPES(ft) delete[] connection_phases[ft];
   delete h_sources;
   delete e_sources;
@@ -215,12 +213,11 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
         for (int i=0;i<v.ntot();i++)
           f_m_pml[c][cmp][i] = 0.0;
   }
-  FOR_FIELD_TYPES(ft)
-    num_connections[ft][Incoming] = num_connections[ft][Outgoing] = 0;
+  FOR_FIELD_TYPES(ft) for (int ip=0;ip<3;ip++)
+    num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
   FOR_FIELD_TYPES(ft) connection_phases[ft] = 0;
-  FOR_FIELD_TYPES(f)
-    for (int io=0;io<2;io++)
-      connections[f][io] = NULL;
+  FOR_FIELD_TYPES(f)  for (int ip=0;ip<3;ip++) for (int io=0;io<2;io++)
+      connections[f][ip][io] = NULL;
   FOR_FIELD_TYPES(ft) zeroes[ft] = NULL;
   FOR_FIELD_TYPES(ft) num_zeroes[ft] = 0;
   figure_out_step_plan();
@@ -273,12 +270,11 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
         for (int i=0;i<v.ntot();i++)
           f_m_pml[c][cmp][i] = thef.f_m_pml[c][cmp][i];
   }
-  FOR_FIELD_TYPES(ft)
-    num_connections[ft][Incoming] = num_connections[ft][Outgoing] = 0;
+  FOR_FIELD_TYPES(ft) for (int ip=0;ip<3;ip++)
+    num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
   FOR_FIELD_TYPES(ft) connection_phases[ft] = 0;
-  FOR_FIELD_TYPES(f)
-    for (int io=0;io<2;io++)
-      connections[f][io] = NULL;
+  FOR_FIELD_TYPES(f)  for (int ip=0;ip<3;ip++) for (int io=0;io<2;io++)
+      connections[f][ip][io] = NULL;
   FOR_FIELD_TYPES(ft) zeroes[ft] = NULL;
   FOR_FIELD_TYPES(ft) num_zeroes[ft] = 0;
   figure_out_step_plan();

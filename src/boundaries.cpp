@@ -87,24 +87,26 @@ void fields::disconnect_chunks() {
   for (int i=0;i<num_chunks;i++) {
     DOCMP {
       FOR_FIELD_TYPES(f)
-        for (int io=0;io<2;io++) {
-          delete[] chunks[i]->connections[f][io];
-          chunks[i]->connections[f][io] = NULL;
-        }
+	for (int ip=0;ip<3;++ip)
+	  for (int io=0;io<2;io++) {
+	    delete[] chunks[i]->connections[f][ip][io];
+	    chunks[i]->connections[f][ip][io] = NULL;
+	  }
     }
-    delete[] chunks[i]->connection_phases[E_stuff];
-    delete[] chunks[i]->connection_phases[H_stuff];
-    chunks[i]->connection_phases[E_stuff] = 0;
-    chunks[i]->connection_phases[H_stuff] = 0;
-    FOR_FIELD_TYPES(f)
-      for (int io=0;io<2;io++)
-        chunks[i]->num_connections[f][io] = 0;
+    FOR_FIELD_TYPES(f) {
+      delete[] chunks[i]->connection_phases[f];
+      chunks[i]->connection_phases[f] = NULL;
+      for (int ip=0;ip<3;++ip)
+	for (int io=0;io<2;io++)
+	  chunks[i]->num_connections[f][ip][io] = 0;
+    }
   }
   FOR_FIELD_TYPES(ft)
     for (int i=0;i<num_chunks*num_chunks;i++) {
       delete[] comm_blocks[ft][i];
       comm_blocks[ft][i] = 0;
-      comm_sizes[ft][i] = 0;
+      for (int ip=0;ip<3;++ip)
+	comm_sizes[ft][ip][i] = 0;
     }
 }
 
@@ -273,295 +275,183 @@ void fields::find_metals() {
 }
 
 void fields::connect_the_chunks() {
-  int *nc[NUM_FIELD_TYPES][2];
+  int *nc[NUM_FIELD_TYPES][3][2];
   FOR_FIELD_TYPES(f)
-    for (int io=0;io<2;io++) {
-      nc[f][io] = new int[num_chunks];
-      for (int i=0;i<num_chunks;i++) nc[f][io][i] = 0;
-    }
+    for (int ip=0;ip<3;ip++)
+      for (int io=0;io<2;io++) {
+	nc[f][ip][io] = new int[num_chunks];
+	for (int i=0;i<num_chunks;i++) nc[f][ip][io][i] = 0;
+      }
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
     const volume vi = chunks[i]->v;
-    for (int j=0;j<num_chunks;j++)
-      FOR_FIELD_TYPES(ft) {
-        comm_sizes[ft][j+i*num_chunks] = 0;
-        comm_num_complex[ft][j+i*num_chunks] = 0;
-        comm_num_negate[ft][j+i*num_chunks] = 0;
-      }
-    for (int j=0;j<num_chunks;j++) {
-      FOR_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here)) {
-		// Adjacent, periodic or rotational...
-		const int nn = is_real?1:2;
+    FOR_FIELD_TYPES(ft)
+      for (int ip=0;ip<3;ip++)
+	for (int j=0;j<num_chunks;j++)
+	  comm_sizes[ft][ip][j+i*num_chunks] = 0;
+    FOR_COMPONENTS(corig) {
+      if (have_component(corig))
+	LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	  IVEC_LOOP_ILOC(vi, here);
+	  component c = corig;
+	  // We're looking at a border element...
+	  complex<double> thephase = 1.0;
+	  if (locate_component_point(&c,&here,&thephase)
+	      && !on_metal_boundary(here))
+	    for (int j=0;j<num_chunks;j++) {
+	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
+		  && chunks[j]->v.owns(here)) {
 		const int pair = j+i*num_chunks;
-		if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
-		  comm_num_complex[type(corig)][pair] += nn;
-		else if (thephase == -1.0)
-		  comm_num_negate[type(corig)][pair] += nn;
-		nc[type(corig)][Incoming][i] += nn;
-		nc[type(c)][Outgoing][j] += nn;
-		comm_sizes[type(c)][pair] += nn;
-	      }
-        }
-      FOR_ELECTRIC_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here)) {
-		// Adjacent, periodic or rotational...
-		int common_pols = 0;
-		for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-		  for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-		    if (pi->pb->get_identifier() == pj->pb->get_identifier())
-		      common_pols += 1;
-		const int nn = (is_real?1:2) * common_pols;
-		const int pair = j+i*num_chunks;
-		if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
-		  comm_num_complex[P_stuff][pair] += 2*nn;
-		else if (thephase == -1.0)
-		  comm_num_negate[P_stuff][pair] += 2*nn;
-		nc[P_stuff][Incoming][i] += 2*nn;
-		nc[P_stuff][Outgoing][j] += 2*nn;
-		comm_sizes[P_stuff][pair] += 2*nn;
-		// Note above that the factor of two in 2*nn comes from
-		// the fact that we have two polarization arrays, pol and
-		// olpol.
-	      }
-        }
-    }
+		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
+		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
+		{
+		  const int nn = is_real?1:2;
+		  nc[type(corig)][ip][Incoming][i] += nn;
+		  nc[type(c)][ip][Outgoing][j] += nn;
+		  comm_sizes[type(c)][ip][pair] += nn;
+		}
+		if (is_electric(corig)) {
+		  int common_pols = 0;
+		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+		      if (pi->pb->get_identifier() == pj->pb->get_identifier())
+			common_pols += 1;
+		  const int nn = (is_real?1:2) * common_pols * 2;
+		  nc[P_stuff][ip][Incoming][i] += nn;
+		  nc[P_stuff][ip][Outgoing][j] += nn;
+		  comm_sizes[P_stuff][ip][pair] += nn;
+		  // Note above that the factor of two in 2*nn comes from
+		  // the fact that we have two polarization arrays, pol and
+		  // olpol.
+		}
+	      } // if is_mine and owns...
+	    } // loop over j chunks
+        } // LOOP_OVER_VOL_NOTOWNED
+    } // FOR_COMPONENTS
+
     // Allocating comm blocks as we go...
     FOR_FIELD_TYPES(ft)
       for (int j=0;j<num_chunks;j++) {
         delete[] comm_blocks[ft][j+i*num_chunks];
         comm_blocks[ft][j+i*num_chunks] =
-          new double[comm_sizes[ft][j+i*num_chunks]];
+          new double[comm_size_tot(ft, j+i*num_chunks)];
       }
-  }
-  // Now allocate the connection arrays...
-  for (int i=0;i<num_chunks;i++)
-    FOR_FIELD_TYPES(f)
-      for (int io=0;io<2;io++)
-        chunks[i]->alloc_extra_connections((field_type)f,
-                                           (in_or_out)io,nc[f][io][i]);
+  } // loop over i chunks
+
+  /* Note that the ordering of the connections arrays must be kept
+     consistent with the code in boundaries.cpp.  In particular, we
+     must set up the connections array so that all of the connections
+     for process i come before all of the connections for process i'
+     for i < i' */
+
+  // wh stores the current indices in the connections array(s)
+  int *wh[NUM_FIELD_TYPES][3][2];
+
+  /* Now allocate the connection arrays... this is still slightly
+     wasteful (by a factor of 2) because we allocate for chunks we
+     don't own if we have a connection with them. Removing this waste
+     would mean a bunch more is_mine() checks below. */
   FOR_FIELD_TYPES(f)
-    for (int io=0;io<2;io++) delete[] nc[f][io];
-  // Next start setting up the connections...
-  int *wh[NUM_FIELD_TYPES][2];
-  FOR_FIELD_TYPES(f)
-    for (int io=0;io<2;io++) {
-      wh[f][io] = new int[num_chunks];
-      for (int i=0;i<num_chunks;i++) wh[f][io][i] = 0;
+    for (int ip=0;ip<3;ip++) {
+      for (int io=0;io<2;io++) {
+	for (int i=0;i<num_chunks;i++)
+	  chunks[i]->alloc_extra_connections(field_type(f),
+					     connect_phase(ip),
+					     in_or_out(io),
+					     nc[f][ip][io][i]);
+	delete[] nc[f][ip][io];
+	wh[f][ip][io] = new int[num_chunks];
+      }
+      for (int i=0;i<num_chunks;i++) wh[f][ip][Outgoing][i] = 0;
     }
-  // First look for connections with complex phases...
+
+  // Next start setting up the connections...
+  
   for (int i=0;i<num_chunks;i++) {
     const volume vi = chunks[i]->v;
-    for (int j=0;j<num_chunks;j++) {
-      FOR_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-#define FT (type(c))
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here) &&
-		  (imag(thephase) != 0.0 || fabs(real(thephase))!=1.0)) {
-		// Periodic, probably...
-		// index is deprecated, but ok in this case:
-		const int m = chunks[j]->v.index(c, here);
-		chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
-		DOCMP {
-		  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-		    = chunks[i]->f[corig][cmp] + n;
-		  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-		    = chunks[j]->f[c][cmp] + m;
-		}
-	      }
-	  }
-      DOCMP FOR_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here) &&
-		  thephase == -1.0) {
-		// Adjacent, periodic or rotational...
-		// index is deprecated, but ok in this case:
-		const int m = chunks[j]->v.index(c, here);
-		chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-		  = chunks[i]->f[corig][cmp] + n;
-		chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-		  = chunks[j]->f[c][cmp] + m;
-	      }
-          }
-      DOCMP FOR_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here) &&
-		  thephase == 1.0) {
-		// Adjacent, periodic or rotational...
-		// index is deprecated, but ok in this case:
-		const int m = chunks[j]->v.index(c, here);
-		chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-		  = chunks[i]->f[corig][cmp] + n;
-		chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-		  = chunks[j]->f[c][cmp] + m;
-	      }
-          }
+    
+    // initialize wh[f][ip][Incoming][j] to sum of comm_sizes for jj < j
+    FOR_FIELD_TYPES(f)
+      for (int ip=0;ip<3;ip++) {
+	wh[f][ip][Incoming][0] = 0;
+	for (int j = 1; j < num_chunks; ++j)
+	  wh[f][ip][Incoming][j] = wh[f][ip][Incoming][j-1]
+	    + comm_sizes[f][ip][(j-1)+i*num_chunks];
+      }
 
-      // Now connect up the polarizations...
-#undef FT
-#define FT P_stuff
-      // First the complex connections:
-      FOR_ELECTRIC_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here))
-		if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0) {
-		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-			const int m = chunks[j]->v.index(c, here);
-			chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
-			DOCMP {
-			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-			    = pi->P[corig][cmp] + n;
-			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-			    = pj->P[c][cmp] + m;
-			}
-		      }
-		  // Now do same thing with olpol (could this be uglier?)
-		  for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
-		    for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
-		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-			const int m = chunks[j]->v.index(c, here);
-			chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
-			DOCMP {
-			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-			    = pi->P[corig][cmp] + n;
-			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-			    = pj->P[c][cmp] + m;
-			}
-		      }
+    FOR_COMPONENTS(corig)
+      if (have_component(corig))
+	LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+  	  IVEC_LOOP_ILOC(vi, here);
+	  component c = corig;
+	  // We're looking at a border element...
+	  complex<double> thephase = 1.0;
+	  if (locate_component_point(&c,&here,&thephase)
+	      && !on_metal_boundary(here))
+	    for (int j=0;j<num_chunks;j++) {
+	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
+		  && chunks[j]->v.owns(here)) {
+		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
+		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
+		const int m = chunks[j]->v.index(c, here);
+		const int f = type(c);
+
+		if (ip == CONNECT_PHASE)
+		  chunks[i]->connection_phases[f][wh[f][ip][Incoming][j]/2] =
+		    thephase;
+		DOCMP {
+		  chunks[i]->connections[f][ip][Incoming]
+		    [wh[f][ip][Incoming][j]++] = chunks[i]->f[corig][cmp] + n;
+		  chunks[j]->connections[f][ip][Outgoing]
+		    [wh[f][ip][Outgoing][j]++] = chunks[j]->f[c][cmp] + m;
 		}
-          }
-      // Now the negative connections:
-      FOR_ELECTRIC_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here))
-		if (thephase == -1.0) {
-		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-			const int m = chunks[j]->v.index(c, here);
-			DOCMP {
-			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-			    = pi->P[corig][cmp] + n;
-			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-			    = pj->P[c][cmp] + m;
+		
+		if (is_electric(corig)) {
+		  const int f = P_stuff;
+		  for (int ipol = 0; ipol < 2; ++ipol) // pol then olpol
+		    for (polarization *pi = 
+			   ipol ? chunks[i]->olpol : chunks[i]->pol;
+			 pi; pi = pi->next)
+		      for (polarization *pj = 
+			     ipol ? chunks[j]->olpol : chunks[j]->pol;
+			   pj; pj = pj->next)
+			if (pi->pb->get_identifier()
+			    == pj->pb->get_identifier()) {
+			  if (ip == CONNECT_PHASE)
+			    chunks[i]->connection_phases[f]
+			      [wh[f][ip][Incoming][j]/2] = thephase;
+			  DOCMP {
+			    chunks[i]->connections[f][ip][Incoming]
+			      [wh[f][ip][Incoming][j]++] = pi->P[corig][cmp]+n;
+			    chunks[j]->connections[f][ip][Outgoing]
+			      [wh[f][ip][Outgoing][j]++] = pj->P[c][cmp]+m;
+			  }
 			}
-		      }
-		  // Now do same thing with olpol (could this be uglier?)
-		  for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
-		    for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
-		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-			const int m = chunks[j]->v.index(c, here);
-			DOCMP {
-			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-			    = pi->P[corig][cmp] + n;
-			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-			    = pj->P[c][cmp] + m;
-			}
-		      }
-		}
-          }
-      // Finally the plain old copied connections:
-      FOR_ELECTRIC_COMPONENTS(corig)
-        if (have_component(corig))
-	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
-	    IVEC_LOOP_ILOC(vi, here);
-            component c = corig;
-	    // We're looking at a border element...
-	    complex<double> thephase = 1.0;
-	    if (locate_component_point(&c,&here,&thephase))
-	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here))
-		if (thephase == 1.0) {
-		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-			const int m = chunks[j]->v.index(c, here);
-			DOCMP {
-			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-			    = pi->P[corig][cmp] + n;
-			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-			    = pj->P[c][cmp] + m;
-			}
-		      }
-		  // Now do same thing with olpol (could this be uglier?)
-		  for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
-		    for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
-		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-			const int m = chunks[j]->v.index(c, here);
-			DOCMP {
-			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-			    = pi->P[corig][cmp] + n;
-			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-			    = pj->P[c][cmp] + m;
-			}
-		      }
-		}
-          }
-      // Finished connecting up the polarizations...
-    }
-  }
+		} // is_electric(corig)
+	      } // if is_mine and owns...
+	    } // loop over j chunks
+      } // LOOP_OVER_VOL_NOTOWNED
+  } // loop over i chunks
   FOR_FIELD_TYPES(f)
-    for (int io=0;io<2;io++) delete[] wh[f][io];
+    for (int ip=0;ip<3;ip++)
+      for (int io=0;io<2;io++)
+	delete[] wh[f][ip][io];
 }
 
-void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) {
+void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip,
+					   in_or_out io, int num) {
   if (num == 0) return; // No need to go to any bother...
-  const int tot = num_connections[f][io] + num;
-  if (io == Incoming) {
+  const int tot = num_connections[f][ip][io] + num;
+  if (io == Incoming && ip == CONNECT_PHASE) {
     delete[] connection_phases[f];
-    connection_phases[f] = new complex<double>[tot]; // This is larger than necesary...
+    connection_phases[f] = new complex<double>[tot];
   }
   typedef double *double_ptr;
   double **conn = new double_ptr[tot];
   if (!conn) abort("Out of memory!\n");
-  delete[] connections[f][io];
-  connections[f][io] = conn;
-  num_connections[f][io] += num;
+  delete[] connections[f][ip][io];
+  connections[f][ip][io] = conn;
+  num_connections[f][ip][io] = tot;
 }
 
 } // namespace meep

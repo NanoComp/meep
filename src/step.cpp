@@ -129,20 +129,33 @@ void fields_chunk::phase_material(int phasein_time) {
 void fields::step_boundaries(field_type ft) {
   connect_chunks(); // re-connect if !chunk_connections_valid
   am_now_working_on(MpiTime);
+
   // Do the metals first!
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) chunks[i]->zero_metal(ft);
+
+  /* Note that the copying of data to/from buffers is order-sensitive,
+     and must be kept consistent with the code in boundaries.cpp.
+     In particular, we require that boundaries.cpp set up the connections
+     array so that all of the connections for process i come before all
+     of the connections for process i' for i < i'  */
+
   // First copy outgoing data to buffers...
-  int *wh = new int[num_chunks];
-  for (int i=0;i<num_chunks;i++) wh[i] = 0;
-  for (int i=0;i<num_chunks;i++)
-    for (int j=0;j<num_chunks;j++)
-      if (chunks[j]->is_mine()) {
-        const int pair = j+i*num_chunks;
-        for (int n=0;n<comm_sizes[ft][pair];n++)
-          comm_blocks[ft][pair][n] =
-            *(chunks[j]->connections[ft][Outgoing][wh[j]++]);
+  for (int j=0;j<num_chunks;j++)
+    if (chunks[j]->is_mine()) {
+      int wh[3] = {0,0,0};
+      for (int i=0;i<num_chunks;i++) {
+	const int pair = j+i*num_chunks;
+	int n0 = 0;
+	for (int ip=0;ip<3;ip++) {
+	  for (int n=0;n<comm_sizes[ft][ip][pair];n++)
+	    comm_blocks[ft][pair][n0 + n] =
+	      *(chunks[j]->connections[ft][ip][Outgoing][wh[ip]++]);
+	  n0 += comm_sizes[ft][ip][pair];
+	}
       }
+    }
+
   // Communicate the data around!
 #if 0 // This is the blocking version, which should always be safe!
   for (int noti=0;noti<num_chunks;noti++)
@@ -151,7 +164,7 @@ void fields::step_boundaries(field_type ft) {
       const int pair = j+i*num_chunks;
       DOCMP {
         send(chunks[j]->n_proc(), chunks[i]->n_proc(),
-             comm_blocks[ft][pair], comm_sizes[ft][pair]);
+             comm_blocks[ft][pair], comm_size_tot(ft,pair));
       }
     }
 #endif
@@ -165,20 +178,19 @@ void fields::step_boundaries(field_type ft) {
   for (int noti=0;noti<num_chunks;noti++)
     for (int j=0;j<num_chunks;j++) {
       const int i = (noti+j)%num_chunks;
-      if (chunks[j]->n_proc() != chunks[i]->n_proc()) {
-        const int pair = j+i*num_chunks;
-        if (comm_sizes[ft][pair] > 0) {
-          if (chunks[j]->is_mine())
-            MPI_Isend(comm_blocks[ft][pair], comm_sizes[ft][pair],
-                      MPI_DOUBLE, chunks[i]->n_proc(),
-                      tagto[chunks[i]->n_proc()]++,
-                      MPI_COMM_WORLD, &reqs[reqnum++]);
-          if (chunks[i]->is_mine())
-            MPI_Irecv(comm_blocks[ft][pair], comm_sizes[ft][pair],
-                      MPI_DOUBLE, chunks[j]->n_proc(),
-                      tagto[chunks[j]->n_proc()]++,
-                      MPI_COMM_WORLD, &reqs[reqnum++]);
-        }
+      const int pair = j+i*num_chunks;
+      const int comm_size = comm_size_tot(ft,pair);
+      if (comm_size > 0) {
+	if (chunks[j]->is_mine() && !chunks[i]->is_mine())
+	  MPI_Isend(comm_blocks[ft][pair], comm_size,
+		    MPI_DOUBLE, chunks[i]->n_proc(),
+		    tagto[chunks[i]->n_proc()]++,
+		    MPI_COMM_WORLD, &reqs[reqnum++]);
+	if (chunks[i]->is_mine() && !chunks[j]->is_mine())
+	  MPI_Irecv(comm_blocks[ft][pair], comm_size,
+		    MPI_DOUBLE, chunks[j]->n_proc(),
+		    tagto[chunks[j]->n_proc()]++,
+		    MPI_COMM_WORLD, &reqs[reqnum++]);
       }
     }
   delete[] tagto;
@@ -188,29 +200,34 @@ void fields::step_boundaries(field_type ft) {
   delete[] stats;
 #endif
   
-  // Finally, copy incoming data to the fields themselves!
-  for (int i=0;i<num_chunks;i++) {
-    int wh = 0;
-    if (chunks[i]->is_mine())
+  // Finally, copy incoming data to the fields themselves, multiplying phases:
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine()) {
+      int wh[3] = {0,0,0};
       for (int j=0;j<num_chunks;j++) {
         const int pair = j+i*num_chunks;
-        int n;
-        for (n=0;n<comm_num_complex[ft][pair];n+=2) {
-          const double phr = real(chunks[i]->connection_phases[ft][wh/2]);
-          const double phi = imag(chunks[i]->connection_phases[ft][wh/2]);
-          *(chunks[i]->connections[ft][Incoming][wh]) =
+	connect_phase ip = CONNECT_PHASE;
+        for (int n = 0; n < comm_sizes[ft][ip][pair]; n += 2, wh[ip] += 2) {
+          const double phr = real(chunks[i]->connection_phases[ft][wh[ip]/2]);
+          const double phi = imag(chunks[i]->connection_phases[ft][wh[ip]/2]);
+          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]]) =
             phr*comm_blocks[ft][pair][n] - phi*comm_blocks[ft][pair][n+1];
-          *(chunks[i]->connections[ft][Incoming][wh+1]) =
+          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]+1]) =
             phr*comm_blocks[ft][pair][n+1] + phi*comm_blocks[ft][pair][n];
-          wh += 2;
         }
-        for (;n<comm_num_complex[ft][pair]+comm_num_negate[ft][pair];n++)
-          *(chunks[i]->connections[ft][Incoming][wh++]) = -comm_blocks[ft][pair][n];
-        for (;n<comm_sizes[ft][pair];n++)
-          *(chunks[i]->connections[ft][Incoming][wh++]) = comm_blocks[ft][pair][n];
+	int n0 = comm_sizes[ft][ip][pair];
+	ip = CONNECT_NEGATE;
+        for (int n = 0; n < comm_sizes[ft][ip][pair]; ++n)
+          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++])
+	    = -comm_blocks[ft][pair][n0 + n];
+	n0 += comm_sizes[ft][ip][pair];
+	ip = CONNECT_COPY;
+        for (int n = 0; n < comm_sizes[ft][ip][pair]; ++n)
+          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++])
+	    = comm_blocks[ft][pair][n0 + n];
       }
-  }
-  delete[] wh;
+    }
+
   finished_working();
 }
 
