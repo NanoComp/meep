@@ -195,6 +195,7 @@ class fields_chunk {
   const char *outdir;
 
   fields_chunk(const mat_chunk *, const char *outdir, int m=0);
+  fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
   // step.cpp
@@ -265,6 +266,7 @@ class fields_chunk {
   void calc_source_phases(double time);
   // fields.cpp
   void alloc_f(component c);
+  void zero_fields();
   // monitor.cpp
   // sources.cpp
 
@@ -317,8 +319,10 @@ class fields {
   const char *outdir;
   // fields.cpp methods:
   fields(const mat *, int m=0);
+  fields(const fields &);
   ~fields();
   void use_real_fields();
+  void zero_fields();
   // time.cpp
   double time_spent_on(time_sink);
   void print_times();
@@ -405,7 +409,7 @@ class fields {
   unsigned long last_time;
   time_sink working_on, was_working_on;
   double times_spent[Other+1];
-  // field.cpp
+  // fields.cpp
   bool have_component(component);
   // material.cpp
   double max_eps() const;

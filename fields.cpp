@@ -67,6 +67,48 @@ fields::fields(const mat *ma, int tm) :
   connect_chunks();
 }
 
+fields::fields(const fields &thef) :
+  S(thef.S), v(thef.v), user_volume(thef.user_volume), gv(thef.gv)
+{
+  verbosity = 0;
+  outdir = thef.outdir;
+  m = thef.m;
+  phasein_time = thef.phasein_time;
+  bands = NULL;
+  for (int d=0;d<5;d++) k[d] = thef.k[d];
+  is_real = thef.is_real;
+  a = v.a;
+  inva = 1.0/a;
+  t = thef.t;
+  fluxes = NULL;
+  // Time stuff:
+  was_working_on = working_on = Other;
+  for (int i=0;i<=Other;i++) times_spent[i] = 0.0;
+  last_time = 0;
+  am_now_working_on(Other);
+
+  num_chunks = thef.num_chunks;
+  typedef fields_chunk *fields_chunk_ptr;
+  chunks = new fields_chunk_ptr[num_chunks];
+  for (int i=0;i<num_chunks;i++)
+    chunks[i] = new fields_chunk(*thef.chunks[i]);
+  FOR_FIELD_TYPES(ft) {
+    comm_sizes[ft] = new int[num_chunks*num_chunks];
+    comm_num_complex[ft] = new int[num_chunks*num_chunks];
+    comm_num_negate[ft] = new int[num_chunks*num_chunks];
+    for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][i] = 0;
+    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_complex[ft][i] = 0;
+    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_negate[ft][i] = 0;
+    typedef double *double_ptr;
+    comm_blocks[ft] = new double_ptr[num_chunks*num_chunks];
+    for (int i=0;i<num_chunks*num_chunks;i++)
+      comm_blocks[ft][i] = 0;
+  }
+  for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
+    boundaries[b][d] = thef.boundaries[b][d];
+  connect_chunks();
+}
+
 fields::~fields() {
   for (int i=0;i<num_chunks;i++) delete chunks[i];
   delete[] chunks;
@@ -176,6 +218,63 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm)
   figure_out_step_plan();
 }
 
+fields_chunk::fields_chunk(const fields_chunk &thef)
+  : v(thef.v), gv(thef.gv) {
+  ma = new mat_chunk(thef.ma);
+  verbosity = thef.verbosity;
+  outdir = thef.outdir;
+  m = thef.m;
+  new_ma = NULL;
+  bands = NULL;
+  is_real = thef.is_real;
+  a = ma->a;
+  inva = 1.0/a;
+  fluxes = NULL;
+  pol = polarization::set_up_polarizations(ma, is_real);
+  olpol = polarization::set_up_polarizations(ma, is_real);
+  h_sources = e_sources = NULL;
+  DOCMP {
+    FOR_COMPONENTS(i) f[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_backup[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_p_pml[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_m_pml[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_backup_p_pml[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_backup_m_pml[i][cmp] = NULL;
+
+    FOR_COMPONENTS(i) if (thef.f[i][cmp])
+      f[i][cmp] = new double[v.ntot()];
+    FOR_COMPONENTS(i) if (thef.f_p_pml[i][cmp]) {
+      f_p_pml[i][cmp] = new double[v.ntot()];
+      f_m_pml[i][cmp] = new double[v.ntot()];
+      if (f_m_pml[i][cmp] == NULL) abort("Out of memory!\n");      
+    }
+  }
+  DOCMP {
+    FOR_COMPONENTS(c)
+      if (f[c][cmp])
+        for (int i=0;i<v.ntot();i++)
+          f[c][cmp][i] = thef.f[c][cmp][i];
+    // Now for pml extra fields_chunk...
+    FOR_COMPONENTS(c)
+      if (f_p_pml[c][cmp])
+        for (int i=0;i<v.ntot();i++)
+          f_p_pml[c][cmp][i] = thef.f_p_pml[c][cmp][i];
+    FOR_COMPONENTS(c)
+      if (f_m_pml[c][cmp])
+        for (int i=0;i<v.ntot();i++)
+          f_m_pml[c][cmp][i] = thef.f_m_pml[c][cmp][i];
+  }
+  FOR_FIELD_TYPES(ft)
+    num_connections[ft][Incoming] = num_connections[ft][Outgoing] = 0;
+  FOR_FIELD_TYPES(ft) connection_phases[ft] = 0;
+  FOR_FIELD_TYPES(f)
+    for (int io=0;io<2;io++)
+      connections[f][io] = NULL;
+  FOR_FIELD_TYPES(ft) zeroes[ft] = NULL;
+  FOR_FIELD_TYPES(ft) num_zeroes[ft] = 0;
+  figure_out_step_plan();
+}
+
 static inline bool cross_negative(direction a, direction b) {
   return ((3+b-a)%3) == 2;
 }
@@ -238,17 +337,34 @@ void fields_chunk::alloc_f(component the_c) {
         if (!f[c][cmp]) {
           f[c][cmp] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
-        }
-        if (!f_p_pml[c][cmp] && !is_electric(c)) {
-          f_p_pml[c][cmp] = new double[v.ntot()];
-          f_m_pml[c][cmp] = new double[v.ntot()];
-          for (int i=0;i<v.ntot();i++) {
-            f_p_pml[c][cmp][i] = 0.0;
-            f_m_pml[c][cmp][i] = 0.0;
+          if (!f_p_pml[c][cmp] && !is_electric(c)) {
+            f_p_pml[c][cmp] = new double[v.ntot()];
+            f_m_pml[c][cmp] = new double[v.ntot()];
           }
+          if (!is_electric(c))
+            for (int i=0;i<v.ntot();i++) {
+              f_p_pml[c][cmp][i] = 0.0;
+              f_m_pml[c][cmp][i] = 0.0;
+            }
         }
       }
   figure_out_step_plan();
+}
+
+void fields_chunk::zero_fields() {
+  FOR_COMPONENTS(c) DOCMP {
+    delete[] f[c][cmp];
+    delete[] f_p_pml[c][cmp];
+    delete[] f_m_pml[c][cmp];
+    f[c][cmp] = 0;
+    f_p_pml[c][cmp] = 0;
+    f_m_pml[c][cmp] = 0;
+  }
+}
+
+void fields::zero_fields() {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->zero_fields();
 }
 
 void fields_chunk::use_real_fields() {
