@@ -91,7 +91,7 @@ double fields_chunk::peek_field(component c, const vec &where) {
   double w[8];
   v.interpolate(c,where,inds,w);
   const int ind = inds[0];
-  if (ind >= 0 && ind < v.ntot()) {
+  if (ind >= 0 && ind < v.ntot() && w[0]) {
     double hello = 0.0;
     if (is_mine()) {
       hello = f[c][0][ind];
