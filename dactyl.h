@@ -347,7 +347,7 @@ class fields {
   double get_eps(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
-  void output_point(FILE *, const vec &, const char *name);
+  void output_point(file *, const vec &, const char *name);
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   void prepare_for_bands(const vec &, double end_time, double fmax=0,
@@ -355,7 +355,7 @@ class fields {
   void record_bands();
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
-  void output_bands(FILE *, const char *, int maxbands=100);
+  void output_bands(file *, const char *, int maxbands=100);
   // energy_and_flux.cpp
   double energy_in_box(const geometric_volume &);
   double electric_energy_in_box(const geometric_volume &);

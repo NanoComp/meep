@@ -182,11 +182,11 @@ void fields::grace_bands(grace *g, int maxbands) {
   delete[] approx_power;
 }
 
-void fields::output_bands(FILE *o, const char *name, int maxbands) {
+void fields::output_bands(file *o, const char *name, int maxbands) {
   out_bands(o, name, maxbands);
 }
 
-void fields::out_bands(FILE *o, const char *name, int maxbands) {
+void fields::out_bands(file *o, const char *name, int maxbands) {
   double *approx_power = new double[maxbands];
   //complex<double> *fad = get_the_bands(maxbands, approx_power);
   complex<double> *fad = clever_cluster_bands(maxbands, approx_power);
@@ -204,9 +204,10 @@ void fields::out_bands(FILE *o, const char *name, int maxbands) {
 
   for (int i = 0; i < num_found; ++i) {
     // k m index freq decay Q
-    fprintf(o, "%s %lg %d %d %lg %lg %lg %lg\n", name,
-            k, m, i, fabs(real(fad[i])), imag(fad[i]),
-            -fabs(real(fad[i])) / (2 * imag(fad[i])), approx_power[i]);
+    master_fprintf(o, "%s %lg %d %d %lg %lg %lg %lg\n", name,
+                   k, m, i, fabs(real(fad[i])), imag(fad[i]),
+                   -fabs(real(fad[i])) / (2 * imag(fad[i])),
+                   approx_power[i]);
   }
   delete[] approx_power;
   delete[] fad;
