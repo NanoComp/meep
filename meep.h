@@ -261,14 +261,8 @@ class fields_chunk {
   void step_h_source(const src *, double);
   void step_d();
   void update_e_from_d();
-  void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
-  void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
-  void step_e_source(const src *, double);
+  void update_from_e();
   void calc_source_phases(double time);
-  // polarization.cpp
-  void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
-  void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
-  void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
   // fields.cpp
   void alloc_f(component c);
   // monitor.cpp
@@ -437,14 +431,9 @@ class fields {
   void step_h_source();
   void step_d();
   void update_e_from_d();
+  void update_from_e();
   void step_boundaries(field_type);
-  void step_polarization_itself();
-  void step_e_polarization();
-  void step_e_source();
   void calc_source_phases();
-  void prepare_step_polarization_energy();
-  void half_step_polarization_energy();
-  void update_polarization_saturation();
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);

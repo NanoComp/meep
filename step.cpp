@@ -40,18 +40,13 @@ void fields::step() {
   step_d();
   step_boundaries(D_stuff);
 
-  prepare_step_polarization_energy();
-  half_step_polarization_energy();
   update_e_from_d();
   step_boundaries(E_stuff);
 
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
 
-  half_step_polarization_energy();
-
-  update_polarization_saturation();
-  step_polarization_itself();
+  update_from_e();
 
   update_fluxes();
   t += 1;
@@ -451,6 +446,17 @@ void fields_chunk::step_d() {
   }
 }
 
+void fields::update_from_e() {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->update_from_e();
+}
+
+void fields_chunk::update_from_e() {
+  const int ntot = ma->v.ntot();
+#include "update_from_e.h"
+}
+
 void fields::update_e_from_d() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -580,13 +586,6 @@ void fields_chunk::step_h_source(const src *s, double time) {
   step_h_source(s->next, time);
 }
 
-void fields::step_e_source() {
-  const double tim = time()+0.5*inva*c;
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->step_e_source(chunks[i]->e_sources, tim);
-}
-
 void fields::calc_source_phases() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -596,19 +595,4 @@ void fields::calc_source_phases() {
 void fields_chunk::calc_source_phases(double time) {
   for (src *s = e_sources; s; s = s->next) s->update_dipole(time);
   for (src *s = h_sources; s; s = s->next) s->update_dipole(time-0.5*inva*c);
-}
-
-void fields_chunk::step_e_source(const src *s, double time) {
-  if (s == NULL) return;
-  complex<double> A = s->get_dPdt_at_time(time, inva*c);
-  if (A == 0.0) {
-    step_e_source(s->next, time);
-    return;
-  }
-  FOR_E_AND_D(c,dc)
-    if (f[c][0]) {
-      f[dc][0][s->i] += real(A*s->A[c]);
-      if (!is_real) f[dc][1][s->i] += imag(A*s->A[c]);
-    }
-  step_e_source(s->next, time);
 }

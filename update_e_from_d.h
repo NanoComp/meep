@@ -2,6 +2,15 @@ if (pol) {
   double *d_minus_p = new double[ntot];
   if (e_sources) {
     FOR_E_AND_D(ec,dc) if (f[ec][0]) {
+      for (int i=0;i<ntot;i++) {
+        for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
+          np->energy[ec][i] = op->energy[ec][i];
+          DOCMP {
+            np->energy[ec][i] += 0.5*(np->P[ec][cmp][i] - op->P[ec][cmp][i])
+               * f[ec][cmp][i];
+          }
+        }
+      }
       DOCMP {
         for (int i=0;i<ntot;i++) {
           d_minus_p[i] = f[dc][cmp][i];
@@ -20,6 +29,15 @@ if (pol) {
     }
   } else {
     FOR_E_AND_D(ec,dc) if (f[ec][0]) {
+      for (int i=0;i<ntot;i++) {
+        for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
+          np->energy[ec][i] = op->energy[ec][i];
+          DOCMP {
+            np->energy[ec][i] += 0.5*(np->P[ec][cmp][i] - op->P[ec][cmp][i])
+               * f[ec][cmp][i];
+          }
+        }
+      }
       DOCMP {
         for (int i=0;i<ntot;i++) {
           d_minus_p[i] = f[dc][cmp][i];
@@ -38,6 +56,8 @@ if (pol) {
   if (e_sources) {
     double *d_minus_p = new double[ntot];
     FOR_E_AND_D(ec,dc) if (f[ec][0]) {
+      for (int i=0;i<ntot;i++) {
+      }
       DOCMP {
         for (int i=0;i<ntot;i++) {
           d_minus_p[i] = f[dc][cmp][i];
@@ -54,6 +74,8 @@ if (pol) {
     delete[] d_minus_p;
   } else {
     FOR_E_AND_D(ec,dc) if (f[ec][0]) {
+      for (int i=0;i<ntot;i++) {
+      }
       DOCMP {
         for (int i=0;i<ntot;i++) {
           f[ec][cmp][i] = (ma->inveps[ec][component_direction(ec)][i])*f[dc][cmp][i];

@@ -4,9 +4,12 @@ import Monad ( liftM )
 main = putStr $ gencode $ job
 
 job = with_d_minus_p $ whether_or_not "e_sources" $
-      loop_fields $ loop_complex $ docode [
-        calc_d_minus_p,
-        update_e_from_d_minus_p
+      loop_fields $ docode [
+        prepare_polarizations,
+        loop_complex $ docode [
+          calc_d_minus_p,
+          update_e_from_d_minus_p
+        ]
       ]
 
 d_minus_p = ("have_nonzero_polarization")|?|"d_minus_p[i]"|:|"f[dc][cmp][i]"
@@ -38,6 +41,25 @@ calc_d_minus_p = if_ "have_nonzero_polarization" $
         doexp $ "d_minus_p[s->i]" |-=| get_cmp_part "s->get_dipole_now()*s->A[ec]"
     ]
 
+{- Half-step polarization energy.
+
+The energy change associated with a polarization field is equal to dP*E.
+This means E must be known at H time.  To acheive this we do the update in
+two steps, once with E before it is updated, and once after (with the same
+dP, of course).
+
+-}
+
+prepare_polarizations =
+    loop_points $ loop_new_and_old_polarizations $
+    docode [prepare_polarization_energy,
+            loop_complex half_step_polarization_energy]
+
+prepare_polarization_energy = doexp "np->energy[ec][i] = op->energy[ec][i]"
+
+half_step_polarization_energy =
+    doexp "np->energy[ec][i] += 0.5*(np->P[ec][cmp][i] - op->P[ec][cmp][i]) * f[ec][cmp][i]"
+
 {- Here is where we compute E from D - P -}
 
 update_e_from_d_minus_p =
@@ -55,6 +77,8 @@ get_cmp_part num = ("cmp==0")|?| ("real("<<num<<")") |:| ("imag("<<num<<")")
 
 loop_polarizations job =
     if_ "pol" $ doblock "for (polarization *p = pol; p; p = p->next)" job
+loop_new_and_old_polarizations job = if_ "pol" $ doblock
+    "for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next)" job
 loop_sources start svar job =
     if_ start $ doblock ("for (src *"++svar++" = "++start++"; "++
                                svar++"; "++svar++" = "++svar++"->next)") job
