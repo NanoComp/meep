@@ -46,8 +46,8 @@ class mat {
       double rmax, double zmax, double a=1.0);
   mat(const mat *);
   void make_average_eps();
-  void use_integer_pml(int npmlr=16, int npmlz=16);
-  void use_pml(double pmlr=2.0, double pmlz=2.0);
+  double use_integer_pml(int npmlr=16, int npmlz=16, double fmin=0.2);
+  double use_pml(double pmlr=2.0, double pmlz=2.0, double fmin=0.2);
 
   void output_slices(const char *name = "");
   void set_output_directory(const char *name);
@@ -57,6 +57,7 @@ class mat {
                           double delta_epsilon = 1.0);
  private:
   void output_sigma_slice(const char *name);
+  double pml_fmin;
 };
 
 class src;

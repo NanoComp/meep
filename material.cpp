@@ -44,13 +44,23 @@ mat::~mat() {
   if (pb) delete pb;
 }
 
-static double sig(double r);
+static double sig(double r, double power);
 
-void mat::use_pml(double pmlr, double pmlz) {
-  use_integer_pml((int)(0.5+pmlr*a), (int)(0.5+pmlz*a));
+double mat::use_pml(double pmlr, double pmlz, double fmin) {
+  return use_integer_pml((int)(0.5+pmlr*a), (int)(0.5+pmlz*a), fmin);
 }
 
-void mat::use_integer_pml(int numpmlr, int numpmlz) {
+static double minimize_badness(double sig[], int thickness, double eps, double fmin, int i);
+inline void reverse(double sig[], int l) {
+  for (int i=0;i<l/2;i++) {
+    double temp = sig[i];
+    sig[i] = sig[l-1-i];
+    sig[l-1-i] = temp;
+  }
+}
+
+double mat::use_integer_pml(int numpmlr, int numpmlz, double fmin) {
+  pml_fmin = fmin;
   npmlz = numpmlz;
   npmlr = numpmlr;
   if (pb) pb->use_integer_pml(npmlr,npmlz);
@@ -96,28 +106,102 @@ void mat::use_integer_pml(int numpmlr, int numpmlz) {
   for (int r=0;r<npmlr;r++) {
     double rr = (r)/(double)npmlr;
     double rp = (1+r)/(double)npmlr;
-    Crez[r] = Crep[r] = Cmax*0.5*(sig(rp)+sig(rr));
-    Crhz[r] = Crhp[r] = Cmax*sig(rp);
+    Crhz[r] = Crhp[r] = Cmax*sig(rp, 2.0);
   }
   double sigintegrated = 0.0;
   for (int r=0;r<npmlr;r++) {
     double rr = (r)/(double)npmlr;
     double rp = (1+r)/(double)npmlr;
-    sigintegrated += Cmax*0.5*(sig(rp)+sig(rr));
+    sigintegrated += Cmax*0.5*(sig(rp, 2.0)+sig(rr, 2.0));
     Cper[r] = Cphz[r] = 0.0; //sigintegrated/(nr-npmlr+r+0.5);
-    if (r==0) Cpez[r] = Cphr[r] = 0.5*Cper[r];
-    else Cpez[r] = Cphr[r] = 0.5*(Cper[r]+Cper[r-1]);
+  }
+  double meaneps = 0;
+  for (int i=0;i<nr*(nz+1);i++) {
+    meaneps += eps[i]; // really I should use the min eps within the pml area...
+  }
+  meaneps /= nr*(nz+1);
+  reverse(Crhz, npmlr);
+  double reflection = 0;
+  for (int i=0;i<npmlr*20;i++) {
+    for (int r=0;r<npmlr;r++) {
+      double oldrefl = reflection;
+      reflection = minimize_badness(Crhz, npmlr, meaneps, fmin/a*c, r);
+      if (oldrefl == reflection) break;
+    }
+  }
+  reverse(Crhz, npmlr);
+  for (int r=0;r<npmlr;r++) {
+    Crhp[r] = Crhz[r];
+    if (r==0) Crep[r] = Crez[r] = 0.5*Crhz[r];
+    else Crep[r] = Crez[r] = 0.5*(Crhz[r]+Crhz[r-1]);
+    if (r==0) Cphr[r] = Cpez[r] = 0.5*Cphz[r];
+    else Cphr[r] = Cpez[r] = 0.5*(Cphz[r]+Crhz[r-1]);
   }
   for (int z=0;z<npmlz;z++) {
     double rr = (z)/(double)npmlz;
     double rp = (1+z)/(double)npmlz;
-    Czer[z] = Czep[z] = Cmax*0.5*(sig(rp)+sig(rr));
-    Czhr[z] = Czhp[z] = Cmax*sig(rp);
+    Czhr[z] = Czhp[z] = Cmax*sig(rp, 2.0);
   }
+  reverse(Czhr, npmlz);
+  reflection = 0;
+  for (int i=0;i<npmlz*20;i++) {
+    for (int z=0;z<npmlz;z++) {
+      double oldrefl = reflection;
+      reflection = minimize_badness(Czhr, npmlz, meaneps, fmin/a*c, z);
+      if (oldrefl == reflection) break;
+    }
+  }
+  reverse(Czhr, npmlz);
+  for (int z=0;z<npmlz;z++) {
+    Czhp[z] = Czhr[z];
+    if (z==0) Czer[z] = Czep[z] = Cmax*0.5*Czhr[z];
+    else Czer[z] = Czep[z] = Cmax*0.5*(Czhr[z]+Czhr[z-1]);//(sig(rp, 2.0)+sig(rr, 2.0));
+  }
+  return reflection;
 }
 
-static double sig(double r) {
-  return pow(r, 2);
+static double badness(double sig[], int thickness, double epsilon, double fmin) {
+  if (thickness < 1) return 1;
+  const double A = .0001/fmin*.1/fmin, K = 6.0/epsilon*2.25/epsilon;
+  double sofar = 1.0;
+  for (int i=0;i<thickness-1;i++) {
+    double first_trans = exp(-K*sig[i+1]);
+    double refl = A*fabs(sig[i]-sig[i+1])*fabs(sig[i]-sig[i+1]);
+    double total_trans = exp(-K*sig[i])*first_trans;
+    sofar = refl + (1-refl)*total_trans*sofar;
+    if (sofar > 1.0) sofar = 1.0;
+  }
+  double last_refl = A*fabs(sig[thickness-1]);
+  sofar = last_refl + (1-last_refl)*sofar;
+  return sofar;
+}
+
+static double minimize_badness(double sig[], int thickness,
+                               double epsilon, double fmin, int i) {
+  double behind_reflection = badness(sig, i-1, epsilon, fmin);
+  
+
+  double now = badness(sig, thickness, epsilon, fmin);
+  double tried = now;
+  do {
+    now = tried;
+    sig[i] *= 1.001;
+    tried = badness(sig, thickness, epsilon, fmin);
+  } while (tried < now);
+  sig[i] /= 1.001;
+  tried = now = badness(sig, thickness, epsilon, fmin);
+  do {
+    now = tried;
+    sig[i] /= 1.001;
+    tried = badness(sig, thickness, epsilon, fmin);
+  } while (tried < now);
+  sig[i] *= 1.001;
+  //if (sig[i]>0.3) sig[i] = 0.3;
+  return badness(sig, thickness, epsilon, fmin);
+}
+
+static double sig(double r, double power) {
+  return pow(r, power);
 }
 
 void mat::mix_with(const mat *n, double f) {
@@ -185,11 +269,12 @@ mat::mat(const mat *o) {
   Czer = Czep = Czhr = Czhp = NULL;
   npmlz = 0;
   npmlr = 0;
-  use_integer_pml(o->npmlr,o->npmlz);
+  use_integer_pml(o->npmlr,o->npmlz, o->pml_fmin);
 }
 
 mat::mat(double feps(double r, double z),
          double rmax, double zmax, double ta) {
+  pml_fmin = 0.2;
   int r,z;
   outdir = ".";
   pb = NULL;
