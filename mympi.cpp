@@ -27,7 +27,9 @@
 void initialize(int argc, char **argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
-  master_printf("Using MPI...\n");
+  int major, minor;
+  MPI_Get_version(&major, &minor);
+  master_printf("Using MPI... version %d.%d\n", major, minor);
 #endif
 }
 
@@ -131,6 +133,8 @@ int count_processors() {
 #endif
 }
 
+// IO Routines...
+
 void master_printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -151,5 +155,48 @@ void debug_printf(const char *fmt, ...) {
   }
   vfprintf(debf, fmt, ap);
   fflush(debf);
+  va_end(ap);
+}
+
+// Scary file writing...
+
+file *everyone_open_write(const char *name) {
+#ifdef HAVE_MPI
+  const int buflen = strlen(name)+1;
+  char *buf = new char[buflen];
+  strcpy(buf,name);
+  MPI_File myf;
+  MPI_File_open(MPI_COMM_WORLD, buf,
+                MPI_MODE_WRONLY | MPI_MODE_CREATE,
+                NULL, &myf);
+  return (file *)myf;
+#else
+  return (file *)fopen(name,"w");
+#endif
+}
+
+void everyone_close(file *f) {
+#ifdef HAVE_MPI
+  MPI_File_close((MPI_File *)&f);
+#else
+  fclose((FILE *)f);
+#endif
+}
+
+static const int buflen = 8192;
+static char buf[buflen];
+
+void i_printf(file *f, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+#ifdef HAVE_MPI
+  int written = vsnprintf(buf, buflen, fmt, ap);
+  if (written <= 0 || written > buflen)
+    abort("Aaack can't write that much in i_printf!\n");
+  MPI_Status stat;
+  MPI_File_write_shared((MPI_File)f, buf, written, MPI_CHAR, &stat);
+#else
+  vfprintf((FILE *)f, fmt, ap);
+#endif
   va_end(ap);
 }

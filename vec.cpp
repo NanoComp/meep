@@ -100,18 +100,20 @@ const char *component_name(component c) {
   abort("Unsupported case.\n");
 }
 
-void vec::print(FILE *f) const {
+#include "mympi.h"
+
+void vec::print(file *f) const {
   if (dim == Dcyl) {
-    fprintf(f, "%lg %lg 0", r(), z());
+    i_printf(f, "%lg %lg 0", r(), z());
   } else if (dim == D3  ) {
-    fprintf(f, "%lg %lg %lg", x(), y(), z());
+    i_printf(f, "%lg %lg %lg", x(), y(), z());
   } else if (dim == D2  ) {
-    fprintf(f, "%lg %lg 0", x(), y());
+    i_printf(f, "%lg %lg 0", x(), y());
   } else if (dim == D1  ) {
-    fprintf(f, "0 0 %lg", z());
+    i_printf(f, "0 0 %lg", z());
   } else  {
     printf("I don't know how to print in this dimension!\n");
-    fprintf(f, "I don't know how to print in this dimension!\n");
+    i_printf(f, "I don't know how to print in this dimension!\n");
   }
 }
 

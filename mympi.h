@@ -26,8 +26,6 @@ void all_wait();
 int count_processors();
 int my_rank();
 inline int am_master() { return my_rank() == 0; };
-void master_printf(const char *fmt, ...);
-void debug_printf(const char *fmt, ...);
 
 void send(int from, int to, double *data, int size);
 void broadcast(int from, double *data, int size);
@@ -36,5 +34,17 @@ double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
+
+// IO routines:
+void master_printf(const char *fmt, ...);
+void debug_printf(const char *fmt, ...);
+
+// File is an abstract type to keep you from accidentally using it in an
+// unsafe manner.
+class file;
+
+file *everyone_open_write(const char *);
+void everyone_close(file *);
+void i_printf(file *, const char *fmt, ...);
 
 #endif

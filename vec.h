@@ -88,6 +88,8 @@ inline component direction_component(component c, direction d) {
   }
 }
 
+class file;
+
 class vec {
  public:
   vec() {};
@@ -144,7 +146,7 @@ class vec {
   double set_direction(direction d, double val) { t[d] = val; };
 
   double project_to_boundary(direction, double boundary_loc);
-  void print(FILE *) const;
+  void print(file *) const;
   friend vec zero_vec(ndim);
  private:
   double t[5];

@@ -184,7 +184,7 @@ class fields_chunk {
   // slices.cpp
   double maxfieldmag(component) const;
   void output_eps_body(component, const symmetry &, int sn,
-                       const volume &what, const char *name);
+                       const volume &what, file *);
 
   double electric_energy_in_box(const volume &, const symmetry &);
   double magnetic_energy_in_box(const volume &, const symmetry &);
@@ -384,7 +384,7 @@ class fields {
   void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
   // slices.cpp
-  void outline_chunks(const char *name);
+  void outline_chunks(file *name);
   // energy_and_flux.cpp
   // fluxes.cpp
   void update_fluxes();
