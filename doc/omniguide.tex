@@ -26,6 +26,7 @@ double guided_eps(const vec &v) {
   if (rr < 0.3) return 21.16; // in the high dielectric
   return 1.6*1.6;             // in the low dielectric
 }
+double vacuum_eps(const vec &v) { return 1.0; }
 \end{verbatim}
 
 \begin{comment}
@@ -48,7 +49,7 @@ plot.
 \begin{comment}
   s.set_output_directory(dirname);
   structure vac(&s);
-  vac.make_average_eps();
+  vac.set_epsilon(vacuum_eps);
 \end{comment}
 
 Since the m = 0 modes are pure TE or TM, it makes sense to calculate the
