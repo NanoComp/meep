@@ -178,6 +178,7 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
   is_real = 0;
   a = s->a;
   inva = 1.0/a;
+  dft_chunks = NULL;
   fluxes = NULL;
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);
@@ -235,6 +236,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   is_real = thef.is_real;
   a = s->a;
   inva = 1.0/a;
+  dft_chunks = NULL;
   fluxes = NULL;
   pol = polarization::set_up_polarizations(s, is_real);
   olpol = polarization::set_up_polarizations(s, is_real);

@@ -61,6 +61,7 @@ void fields::step() {
 
   update_fluxes();
   t += 1;
+  update_dfts();
   finished_working();
 }
 

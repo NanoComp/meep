@@ -8,7 +8,7 @@ HDRS = h5io.h meep.h meep_internals.h mympi.h ran.h	\
 threevec.h vec.h
 
 libmeep_la_SOURCES = anisotropic_averaging.cpp bands.cpp		\
-boundaries.cpp control_c.cpp energy_and_flux.cpp fields.cpp		\
+boundaries.cpp control_c.cpp dft.cpp energy_and_flux.cpp fields.cpp	\
 fields_integrate.cpp fluxes.cpp grace.cpp h5fields.cpp h5io.cpp		\
 initialize.cpp monitor.cpp mympi.cpp output_directory.cpp		\
 polarization.cpp ran.cpp slices.cpp sources.cpp step.cpp step_d.cpp	\

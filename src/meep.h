@@ -315,6 +315,54 @@ class monitor_point {
                int maxbands);
 };
 
+// dft.cpp
+// this should normally only be created with fields::add_dft
+class dft_chunk {
+public:
+  dft_chunk(fields_chunk *fc_,
+	    ivec is_, ivec ie_,
+	    vec s0_, vec s1_, vec e0_, vec e1_,
+	    double dV0_, double dV1_,
+	    complex<double> shift_sym_phase_,
+	    component c_,
+	    const void *data_);
+  ~dft_chunk();
+  
+  void update_dft(double time);
+
+  void negate_dft();
+
+  // the frequencies to integrate
+  double omega_min, domega;
+  int Nomega;
+
+  component c; // component to DFT (possibly transformed by symmetry)
+
+  int N; // number of spatial points (on epsilon grid)
+  complex<double> *dft; // N x Nomega array of DFT values.
+
+  struct dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
+  struct dft_chunk *next_in_dft; // next for this particular DFT vol./component
+
+private:
+  // parameters passed from field_integrate:
+  fields_chunk *fc;
+  ivec is, ie;
+  vec s0, s1, e0, e1;
+  double dV0, dV1;
+  complex<double> shift_sym_phase; // phase from shift and symmetry
+
+  // cache of exp(iwt) * (shift/symmetry phase), of length Nomega
+  complex<double> *dft_phase;
+
+  int avg1, avg2; // index offsets for average to get epsilon grid
+};
+
+void save_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
+		   bool append_file = false, const char *prefix = 0);
+void load_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
+		   bool in_appended_file = false, const char *prefix = 0);
+
 class partial_flux_plane;
 
 class flux_plane {
@@ -338,6 +386,8 @@ class fields_chunk {
   double *(f_m_pml[NUM_FIELD_COMPONENTS][2]);
   double *(f_backup_p_pml[NUM_FIELD_COMPONENTS][2]);
   double *(f_backup_m_pml[NUM_FIELD_COMPONENTS][2]);
+
+  dft_chunk *dft_chunks;
 
   double **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   int num_zeroes[NUM_FIELD_TYPES];
@@ -367,7 +417,7 @@ class fields_chunk {
   double peek_field(component, const vec &);
 
   void use_real_fields();
-  bool have_component(component c, bool is_complex) {
+  bool have_component(component c, bool is_complex = false) {
     switch (c) {
     case Dielectric:
       return !is_complex;
@@ -474,6 +524,8 @@ class fields_chunk {
   void alloc_extra_connections(field_type, in_or_out, int);
   // fluxes.cpp
   partial_flux_plane *nfp_1d(const vec &);
+  // dft.cpp
+  void update_dfts(double timeE, double timeH);
 };
 
 enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
@@ -600,7 +652,12 @@ class fields {
   // fields_integrate.cpp
   void integrate(field_integrand integrand, void *integrand_data,
 		 const geometric_volume &where);
-
+  
+  // dft.cpp
+  dft_chunk *add_dft(component c, const geometric_volume &where,
+		     double freq_min, double freq_max, int Nfreq);
+  void update_dfts();
+  
   // monitor.cpp
   double get_eps(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;

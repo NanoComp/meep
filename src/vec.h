@@ -510,9 +510,6 @@ class volume {
 	    v = v.pad(d);
        return v;
   }
- private:
-  volume(ndim, double a, int na, int nb=1, int nc=1);
-  ivec io() const;
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim,d)
@@ -522,6 +519,9 @@ class volume {
         out.set_direction(d,1);
     return out;
   }
+ private:
+  volume(ndim, double a, int na, int nb=1, int nc=1);
+  ivec io() const;
   void set_strides();
   int num[3];
   int the_stride[5];
