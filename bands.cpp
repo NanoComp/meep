@@ -89,7 +89,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
     // for when there are too many data points...
     double decayconst = bands->fmax*(c*inva)/qmin*8.0;
     double smalltime = 1./(decayconst + bands->fmax*(c*inva));
-    bands->scale_factor = (int)(0.12*smalltime);
+    bands->scale_factor = (int)(0.06*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
     if (verbosity) printf("scale_factor is %d (%lg,%lg)\n",
                           bands->scale_factor, bands->fmax*(c*inva), decayconst);
