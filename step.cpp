@@ -215,7 +215,7 @@ void fields_chunk::step_h() {
       if (ma->C[Z][Hy])
         for (int z=0;z<v.nz();z++) {
           const double C = ma->C[Z][Hy][z];
-          const double ooop_C = 1.0/(1.0+0.5*C);
+          const double ooop_C = ma->Cdecay[Z][Hy][z];
           f[Hy][cmp][z] += ooop_C*(-c*(f[Ex][cmp][z+1] - f[Ex][cmp][z])
                                    - C*f[Hy][cmp][z]);
         }
@@ -233,8 +233,10 @@ void fields_chunk::step_h() {
           for (int y=0;y<v.ny();y++) {
             const double Cxhz = (ma->C[X][Hz])?ma->C[X][Hz][y+ix]:0;
             const double Cyhz = (ma->C[Y][Hz])?ma->C[Y][Hz][y+ix]:0;
-            const double ooop_Cxhz = 1.0/(1.0+.5*Cxhz);
-            const double ooop_Cyhz = 1.0/(1.0+.5*Cyhz);
+            const double ooop_Cxhz =
+              (ma->Cdecay[X][Hz])?ma->Cdecay[X][Hz][y+ix]:1.0;
+            const double ooop_Cyhz =
+              (ma->Cdecay[Y][Hz])?ma->Cdecay[Y][Hz][y+ix]:1.0;
             const double dhzx = ooop_Cxhz*
               (c*(f[Ey][cmp][y+ixp1] - f[Ey][cmp][y+ix]) - Cxhz*f_pml[Hz][cmp][y+ix]);
             const double hzy = f[Hz][cmp][y+ix] - f_pml[Hz][cmp][y+ix];
@@ -257,7 +259,8 @@ void fields_chunk::step_h() {
           const int ix = x*(v.ny()+1);
           for (int y=0;y<v.ny();y++) {
             const double Cyhx = ma->C[Y][Hx][y+ix];
-            const double ooop_Cyhx = 1.0/(1.0+.5*Cyhx);
+            const double ooop_Cyhx =
+              (ma->Cdecay[Y][Hx])?ma->Cdecay[Y][Hx][y+ix]:1.0;
             f[Hx][cmp][y+ix] += ooop_Cyhx*
               (c*(f[Ez][cmp][y+ix+1] - f[Ez][cmp][y+ix]) - Cyhx*f[Hx][cmp][y+ix]);
           }
@@ -275,7 +278,8 @@ void fields_chunk::step_h() {
           const int ixp1 = (x+1)*(v.ny()+1);
           for (int y=1;y<=v.ny();y++) {
             const double Cxhy = ma->C[X][Hy][y+ix];
-            const double ooop_Cxhy = 1.0/(1.0+0.5*Cxhy);
+            const double ooop_Cxhy =
+              (ma->Cdecay[X][Hy])?ma->Cdecay[X][Hy][y+ix]:1.0;
             f[Hy][cmp][y+ix] += ooop_Cxhy*
               (c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix])) - Cxhy*f[Hy][cmp][y+ix]);
           }
@@ -298,7 +302,7 @@ void fields_chunk::step_h() {
             const int ir = r*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
               const double Czhr = ma->C[Z][Hr][z+ir];
-              const double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
+              const double ooop_Czhr = ma->Cdecay[Z][Hr][z+ir];
               double dhrp = c*(-it(cmp,f[Ez],z+ir)*mor);
               double hrz = f[Hr][cmp][z+ir] - f_pml[Hr][cmp][z+ir];
               f_pml[Hr][cmp][z+ir] += dhrp;
@@ -325,8 +329,10 @@ void fields_chunk::step_h() {
             for (int z=0;z<v.nz();z++) {
               const double Czhp = (ma->C[Z][Hp])?ma->C[Z][Hp][z+ir]:0;
               const double Crhp = (ma->C[R][Hp])?ma->C[R][Hp][z+ir]:0;
-              const double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
-              const double ooop_Crhp = 1.0/(1.0+0.5*Crhp);
+              const double ooop_Czhp =
+                (ma->Cdecay[Z][Hp])?ma->Cdecay[Z][Hp][z+ir]:1.0;
+              const double ooop_Crhp =
+                (ma->Cdecay[R][Hp])?ma->Cdecay[R][Hp][z+ir]:1.0;
               const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
                                              - Czhp*f_pml[Hp][cmp][z+ir]);
               const double hpr = f[Hp][cmp][z+ir]-f_pml[Hp][cmp][z+ir];
@@ -355,7 +361,7 @@ void fields_chunk::step_h() {
           const int irp1 = (r+1)*(v.nz()+1);
           for (int z=1;z<=v.nz();z++) {
             const double Crhz = ma->C[R][Hz][z+ir];
-            const double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
+            const double ooop_Crhz = ma->Cdecay[R][Hz][z+ir];
             const double dhzr =
               ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*((int)(v.origin.r()*v.a+0.5) + r+1.)-
                              f[Ep][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r))*oorph
@@ -384,7 +390,7 @@ void fields_chunk::step_h() {
         if (ma->C[Z][Hr])
           for (int z=0;z<v.nz();z++) {
             const double Czhr = ma->C[Z][Hr][z];
-            const double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
+            const double ooop_Czhr = ma->Cdecay[Z][Hr][z];
             const double dhrp = c*(-it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
             const double hrz = f[Hr][cmp][z] - f_pml[Hr][cmp][z];
             f_pml[Hr][cmp][z] += dhrp;
@@ -422,7 +428,7 @@ void fields_chunk::step_e() {
       if (ma->C[Z][Ex])
         for (int z=1;z<=v.nz();z++) {
           const double C = ma->C[Z][Ex][z];
-          const double inveps_plus_C = ma->inveps[Ex][z]/(1.0+0.5*ma->inveps[Ex][z]*C);
+          const double inveps_plus_C = ma->Cdecay[Z][Ex][z];
           f[Ex][cmp][z] += inveps_plus_C*(-c*(f[Hy][cmp][z] - f[Hy][cmp][z-1])
                                           - C*f[Ex][cmp][z]);
         }
@@ -440,10 +446,10 @@ void fields_chunk::step_e() {
           for (int y=1;y<=v.ny();y++) {
             const double Cxez = (ma->C[X][Ez])?ma->C[X][Ez][y+ix]:0;
             const double Cyez = (ma->C[Y][Ez])?ma->C[Y][Ez][y+ix]:0;
-            const double inveps_plus_Cxez = ma->inveps[Ez][y+ix]/
-              (1+.5*ma->inveps[Ez][y+ix]*Cxez);
-            const double inveps_plus_Cyez = ma->inveps[Ez][y+ix]/
-              (1+.5*ma->inveps[Ez][y+ix]*Cyez);
+            const double inveps_plus_Cxez
+              = (ma->Cdecay[X][Ez])?ma->Cdecay[X][Ez][y+ix]:ma->inveps[Ez][y+ix];
+            const double inveps_plus_Cyez
+              = (ma->Cdecay[Y][Ez])?ma->Cdecay[Y][Ez][y+ix]:ma->inveps[Ez][y+ix];
             const double dezx = inveps_plus_Cxez*
               (-c*(f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) - Cxez*f_pml[Ez][cmp][y+ix]);
             const double ezy = f[Ez][cmp][y+ix] - f_pml[Ez][cmp][y+ix];
@@ -468,8 +474,8 @@ void fields_chunk::step_e() {
           const int ix = x*(v.ny()+1);
           for (int y=1;y<=v.ny();y++) {
             const double Cyex = ma->C[Y][Ex][y+ix];
-            const double inveps_plus_Cyex = ma->inveps[Ex][y+ix]/
-              (1+.5*ma->inveps[Ex][y+ix]*Cyex);
+            const double inveps_plus_Cyex
+              = (ma->Cdecay[Y][Ex])?ma->Cdecay[Y][Ex][y+ix]:ma->inveps[Ex][y+ix];
             f[Ex][cmp][y+ix] += inveps_plus_Cyex*
               (-c*(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ix-1]) - Cyex*f[Ex][cmp][y+ix]);
           }
@@ -488,8 +494,8 @@ void fields_chunk::step_e() {
           const int ixm1 = (x-1)*(v.ny()+1);
           for (int y=0;y<v.ny();y++) {
             const double Cxey = ma->C[X][Ey][y+ix];
-            const double inveps_plus_Cxey = ma->inveps[Ey][y+ix]/
-              (1+.5*ma->inveps[Ey][y+ix]*Cxey);
+            const double inveps_plus_Cxey
+              = (ma->Cdecay[X][Ey])?ma->Cdecay[X][Ey][y+ix]:ma->inveps[Ey][y+ix];
             f[Ey][cmp][y+ix] += inveps_plus_Cxey*
               (-c*(-(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ixm1])) - Cxey*f[Ey][cmp][y+ix]);
           }
@@ -515,10 +521,10 @@ void fields_chunk::step_e() {
             for (int z=1;z<=v.nz();z++) {
               const double Czep = (ma->C[Z][Ep])?ma->C[Z][Ep][z+ir]:0;
               const double Crep = (ma->C[R][Ep])?ma->C[R][Ep][z+ir]:0;
-              const double inveps_plus_Czep = ma->inveps[Ep][z+ir]/
-                (1+.5*ma->inveps[Ep][z+ir]*Czep);
-              const double inveps_plus_Crep = ma->inveps[Ep][z+ir]/
-                (1+.5*ma->inveps[Ep][z+ir]*Crep);
+              const double inveps_plus_Czep
+              = (ma->Cdecay[Z][Ep])?ma->Cdecay[Z][Ep][z+ir]:ma->inveps[Ep][z+ir];
+              const double inveps_plus_Crep
+              = (ma->Cdecay[R][Ep])?ma->Cdecay[R][Ep][z+ir]:ma->inveps[Ep][z+ir];
               const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
                                                     - Czep*f_pml[Ep][cmp][z+ir]);
               const double epr = f[Ep][cmp][z+ir] - f_pml[Ep][cmp][z+ir];
@@ -545,9 +551,8 @@ void fields_chunk::step_e() {
           const int irm1 = (r-1)*(v.nz()+1);
           for (int z=0;z<v.nz();z++) {
             const double Crez = ma->C[R][Ez][z+ir];
-            const double inveps_plus_Crez = ma->inveps[Ez][z+ir]/
-              (1+.5*ma->inveps[Ez][z+ir]*Crez);
-
+            const double inveps_plus_Crez
+              = (ma->Cdecay[R][Ez])?ma->Cdecay[R][Ez][z+ir]:ma->inveps[Ez][z+ir];
             const double dezr = inveps_plus_Crez*
               (c*(f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
                   f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
@@ -579,8 +584,8 @@ void fields_chunk::step_e() {
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++) {
               const double Czer = ma->C[Z][Er][z+ir];
-              const double inveps_plus_Czer = ma->inveps[Er][z+ir]/
-                (1+.5*ma->inveps[Er][z+ir]*Czer);
+              const double inveps_plus_Czer
+              = (ma->Cdecay[Z][Er])?ma->Cdecay[Z][Er][z+ir]:ma->inveps[Er][z+ir];
               double derp = c*ma->inveps[Er][z+ir]*(it(cmp,f[Hz],z+ir)*morph);
               double erz = f[Er][cmp][z+ir] - f_pml[Er][cmp][z+ir];
               f_pml[Er][cmp][z+ir] += derp;
@@ -606,8 +611,8 @@ void fields_chunk::step_e() {
         if (ma->C[Z][Ep])
           for (int z=1;z<=v.nz();z++) {
             const double Czep = ma->C[Z][Ep][z];
-            const double inveps_plus_Czep = ma->inveps[Ep][z]/
-              (1+.5*ma->inveps[Ep][z]*Czep);
+            const double inveps_plus_Czep
+              = (ma->Cdecay[Z][Ep])?ma->Cdecay[Z][Ep][z]:ma->inveps[Ep][z];
             const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
                                                   - Czep*f_pml[Ep][cmp][z]);
             const double epr = f[Ep][cmp][z] - f_pml[Ep][cmp][z];

@@ -118,6 +118,7 @@ mat_chunk::~mat_chunk() {
   delete[] eps;
 
   for (int d=0;d<5;d++) for (int c=0;c<10;c++) delete[] C[d][c];
+  for (int d=0;d<5;d++) for (int c=0;c<10;c++) delete[] Cdecay[d][c];
   if (pb) delete pb;
 }
 
@@ -221,11 +222,20 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
         if (!C[d][c]) {
           C[d][c] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
+          Cdecay[d][c] = new double[v.ntot()];
+          if (is_electric((component)c))
+            for (int i=0;i<v.ntot();i++) Cdecay[d][c][i] = inveps[c][i];
+          else
+            for (int i=0;i<v.ntot();i++) Cdecay[d][c][i] = 1.0;
         }
         for (int i=0;i<v.ntot();i++) {
           const double x = dx - (0.5/a)*
             ((int)(2*a*fabs(bloc-v.loc((component)c,i).in_direction(d))+0.5));
           if (x > 0) C[d][c][i] = prefac*x*x;
+          if (is_electric((component)c))
+            Cdecay[d][c][i] = inveps[c][i]/(1.0+0.5*C[d][c][i]*inveps[c][i]);
+          else
+            Cdecay[d][c][i] = 1.0/(1.0+0.5*C[d][c][i]);
         }
       }
 }
@@ -253,13 +263,16 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
     }
   // Allocate the conductivity arrays:
   for (int d=0;d<5;d++) for (int c=0;c<10;c++) C[d][c] = NULL;
+  for (int d=0;d<5;d++) for (int c=0;c<10;c++) Cdecay[d][c] = NULL;
   // Copy over the conductivity arrays:
   if (is_mine())
     for (int d=0;d<5;d++) 
       for (int c=0;c<10;c++)
         if (o->C[d][c]) {
           C[d][c] = new double[v.ntot()];
+          Cdecay[d][c] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) C[d][c][i] = o->C[d][c][i];
+          for (int i=0;i<v.ntot();i++) Cdecay[d][c][i] = o->Cdecay[d][c][i];
         }
 }
 
@@ -318,4 +331,5 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
     }
   // Allocate the conductivity arrays:
   for (int d=0;d<5;d++) for (int c=0;c<10;c++) C[d][c] = NULL;
+  for (int d=0;d<5;d++) for (int c=0;c<10;c++) Cdecay[d][c] = NULL;
 }

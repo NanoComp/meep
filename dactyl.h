@@ -33,6 +33,7 @@ class mat_chunk {
   double *eps, a;
   double *inveps[10];
   double *C[5][10];
+  double *Cdecay[5][10];
   volume v;
   polarizability *pb;
 
