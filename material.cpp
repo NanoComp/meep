@@ -167,11 +167,11 @@ mat::mat(const mat *o) {
       MA(eps,r,z) = MA(o->eps,r,z);
     }
   }
-  invepser = new double[nr*(nz+1)];
-  invepsep = new double[nr*(nz+1)];
-  invepsez = new double[nr*(nz+1)];
+  invepser = new double[(nr+1)*(nz+1)];
+  invepsep = new double[(nr+1)*(nz+1)];
+  invepsez = new double[(nr+1)*(nz+1)];
 
-  for (int i=0;i<nr*(nz+1);i++) {
+  for (int i=0;i<(nr+1)*(nz+1);i++) {
     invepser[i] = o->invepser[i];
     invepsep[i] = o->invepsep[i];
     invepsez[i] = o->invepsez[i];
@@ -205,13 +205,13 @@ mat::mat(double feps(double r, double z),
       MA(eps,r,z) = (feps) ? feps((r+0.5)/a,(z+0.5)/a) : 1.0; // Null feps means vacuum.
     }
   }
-  invepser = new double[nr*(nz+1)];
-  invepsep = new double[nr*(nz+1)];
-  invepsez = new double[nr*(nz+1)];
+  invepser = new double[(nr+1)*(nz+1)];
+  invepsep = new double[(nr+1)*(nz+1)];
+  invepsez = new double[(nr+1)*(nz+1)];
 
-  // Initialize eps to NaNs so we'll notice if we don't set it properly.
-  for (int i=0;i<nr*(nz+1);i++)
-    invepser[i] = invepsep[i] = invepsez[i] = sqrt(-1);
+  // Initialize eps to 1;
+  for (int i=0;i<(nr+1)*(nz+1);i++)
+    invepser[i] = invepsep[i] = invepsez[i] = 1;
   for (r=1;r<nr;r++) {
     for (z=1;z<=nz;z++) {
       MA(invepser,r,z) = 2./(MA(eps,r,z)+MA(eps,r,z-1));
