@@ -148,9 +148,16 @@ fi
 AC_CHECK_PROG(HC, ghc, ghc)
 
 ##############################################################################
+# Libraries and flags (other than -lmeep) required to link Meep:
+
+MEEPLIBS="$LDFLAGS $LIBS"
+AC_SUBST(MEEPLIBS)
+
+##############################################################################
 
 AC_CONFIG_FILES([
 	Makefile
+	meep.pc
 	src/Makefile
 	hsrc/Makefile
 	doc/Makefile

@@ -9,3 +9,6 @@ SUBDIRS = $(HSRC) src doc tests
 
 EXTRA_DIST=COPYRIGHT m4
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = meep.pc
+
