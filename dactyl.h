@@ -172,7 +172,9 @@ class fields_chunk {
   void use_bloch(double kz);
   ~fields_chunk();
 
+  // step.cpp
   void step();
+  double peek_field(component, const vec &);
 
   void use_real_fields();
   double find_last_source();

@@ -47,6 +47,8 @@ void fields::step_right() {
 void fields::step() {
   phase_material();
 
+  //for (int i=0;i<num_chunks;i++)
+  //  master_printf("Field is now %lg\n", chunks[i]->peek_field(Ex,vec2d(1.55,0.6)));
   step_h();
   step_h_source();
   step_boundaries(H_stuff);
@@ -64,6 +66,21 @@ void fields::step() {
 
   update_fluxes();
   t += 1;
+}
+
+double fields_chunk::peek_field(component c, const vec &where) {
+  const int ind = v.index(c,where);
+  if (ind >= 0 && ind < v.ntot()) {
+    double hello = 0.0;
+    if (is_mine()) {
+      hello = f[c][0][ind];
+    }
+    //master_printf("Found the field here at %lg %lg!\n",
+    //              v.loc(c,ind).x(), v.loc(c,ind).y());
+    broadcast(n_proc(), &hello, 1);
+    return hello;
+  }
+  return 0.0;
 }
 
 void fields::phase_material() {
