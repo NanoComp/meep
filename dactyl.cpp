@@ -727,7 +727,8 @@ void fields::step_e_bulk() {
     }
     for (int z=1+npmlz;z<nz-npmlz;z++) {
       const int r=rmin_bulk(m)-1;
-      double morph = m*(1.0/0.5);
+      double oorph = 1/(r+0.5);
+      double morph = m*oorph;
       CM(er,r,z)+= c*MA(ma->invepser,r,z)* /* false boundary layer */
         (IT(hz,r,z)*morph - (CM(hp,r,z)-CM(hp,r,z-1)));
     }
@@ -776,7 +777,8 @@ void fields::step_e_pml() {
         int z = z0;
         for (int iz=0;iz<npmlz;iz++,z+=lr) {
           const int r=rmin_bulk(m)-1;
-          double morph = m*(1.0/0.5); /* false boundary layer */
+          double oorph = 1/(r+0.5);
+          double morph = m*oorph; /* false boundary layer */
           double Czer = ma->Czer[iz];
           double Czep = ma->Czep[iz];
           double derp = c*MA(ma->invepser,r,z)*(IT(hz,r,z)*morph);
@@ -939,7 +941,8 @@ void fields::step_e_boundaries() {
       }
       {
         const int r=rmin_bulk(m)-1, z=0;
-        double morph = m*(1.0/0.5);
+        double oorph = 1/(r+0.5);
+        double morph = m*oorph; /* false boundary layer */
         CM(er,r,z)+= c*MA(ma->invepser,r,z)*
           (IT(hz,r,z)*morph - (CM(hp,r,z)-EMIKZ(hp,r,nz-1)));
         CM(er,r,nz)+= c*MA(ma->invepser,r,z)*
