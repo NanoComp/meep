@@ -341,7 +341,6 @@ void fields_chunk::update_polarization_saturation(polarization *op, polarization
             else np->s[Ex][i] = shere;
           }
         else for (int i=0;i<v.ntot();i++)
-          //np->s[Ex][i] = (np->energy[Ex][i] - f[Ex][0][i]*np->P[Ex][0][i]/(8*pi))*fac;
           np->s[Ex][i] = np->energy[Ex][i]*fac;
       } else {
         abort("I don't yet support saturation in this dimension.\n");

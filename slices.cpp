@@ -634,8 +634,6 @@ void fields::eps_slices(const vec &origin, const vec &xside, const vec &yside,
           if (has_eps_interface(&loc))
             master_fprintf(out, "%lg\t%lg\tB\n", loc & xhat, loc & yhat);
         }
-      //outline_chunks(out);
-      //all_wait();
       if (am_master()) output_complex_eps_tail(out);
       everyone_close(out);
     }
