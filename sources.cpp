@@ -102,16 +102,8 @@ int fields_chunk::add_point_source(component whichf, double freq,
     abort("Error:  source component %s is invalid.\n", component_name(whichf));
   // Allocate fields if they haven't already been allocated:
   int need_reconnection = 0;
-  if (v.dim == D2 && !f[whichf][0]) {
-    switch (whichf) {
-    case Ex: case Ey: case Hz:
-      alloc_f(Ex); alloc_f(Ey); alloc_f(Dx); alloc_f(Dy); alloc_f(Hz); break;
-    case Hx: case Hy: case Ez:
-      alloc_f(Hx); alloc_f(Hy); alloc_f(Ez); alloc_f(Dz); break;
-    case Dx: case Dy: case Dz: case Dp: case Dr:
-    case Er: case Ep: case Hr: case Hp: case Dielectric:
-      abort("Invalid source component in 2D.\n");
-    }
+  if (!f[whichf][0]) {
+    alloc_f(whichf);
     need_reconnection = 1;
   }
   if (amp == 0.0) return need_reconnection; // No source here...

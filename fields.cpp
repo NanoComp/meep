@@ -218,22 +218,36 @@ void fields_chunk::figure_out_step_plan() {
   }
 }
 
-void fields_chunk::alloc_f(component c) {
-  DOCMP {
-    delete[] f[c][cmp];
-    delete[] f_p_pml[c][cmp];
-    delete[] f_m_pml[c][cmp];
-    f[c][cmp] = new double[v.ntot()];
-    for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
-    if (!is_electric(c)) {
-      f_p_pml[c][cmp] = new double[v.ntot()];
-      f_m_pml[c][cmp] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) {
-        f_p_pml[c][cmp][i] = 0.0;
-        f_m_pml[c][cmp][i] = 0.0;
-      }
-    }
+static bool is_tm(component c) {
+  switch (c) {
+  case Hx: case Hy: case Ez: case Dz: return true;
+  otherwise: return false;
   }
+  return false;
+}
+
+static bool is_like(ndim d, component c1, component c2) {
+  if (d != D2) return true;
+  return !(is_tm(c1) ^ is_tm(c2));
+}
+
+void fields_chunk::alloc_f(component the_c) {
+  FOR_COMPONENTS(c)
+    if (v.has_field(c) && is_like(v.dim, the_c, c))
+      DOCMP {
+        if (!f[c][cmp]) {
+          f[c][cmp] = new double[v.ntot()];
+          for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
+        }
+        if (!f_p_pml[c][cmp] && !is_electric(c)) {
+          f_p_pml[c][cmp] = new double[v.ntot()];
+          f_m_pml[c][cmp] = new double[v.ntot()];
+          for (int i=0;i<v.ntot();i++) {
+            f_p_pml[c][cmp][i] = 0.0;
+            f_m_pml[c][cmp][i] = 0.0;
+          }
+        }
+      }
   figure_out_step_plan();
 }
 
