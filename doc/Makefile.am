@@ -30,6 +30,8 @@ LIBMEEP = $(top_builddir)/src/libmeep.la
 	epstopdf --outfile=$@ $<
 
 html: $(TEX) $(EPS) $(FREQS)
+	rm -rf $@
+	mkdir $@
 	@LATEX2HTML@ -split +1 -local_icons -dir $@ meep
 
 # FIXME: use \includegraphics for figures
