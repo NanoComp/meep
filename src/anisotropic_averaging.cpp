@@ -9,7 +9,7 @@ static int count_quadrants(const geometric_volume &v) {
   return 1 << number_of_directions(v.dim);
 }
 
-static vec geo_center(geometric_volume v) {
+static vec geo_center(const geometric_volume &v) {
   vec o = zero_vec(v.dim);
   LOOP_OVER_DIRECTIONS(v.dim,d)
     o.set_direction(d, 0.5*(v.in_direction_max(d) + v.in_direction_min(d)));
