@@ -172,13 +172,6 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
   // eigen has dimensions of nr*maxbands*6
   // n here is the total time
   double unitconvert = (2*pi)*c*scale_factor*inva;
-  double lowpass_time = 0.2/(scale_factor*fmax*(c*inva));
-  printf("Lowpass time is %lg\n", lowpass_time);
-  int passtime = (int)(lowpass_time*8);
-  double *filter = new double[passtime+1];
-  if (!filter) printf("Memory error!!!!!!!!!!!!!!!\n");
-  for (int i=0;i<=passtime;i++)
-    filter[i] = exp(-i*i/(2.0*lowpass_time*lowpass_time))/lowpass_time;
 
   // Now let's zero out any decays that seem unreasonably small...
   for (int i = 0; i < nbands; i++) {
@@ -254,12 +247,7 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
     for (int i=0;i<nbands;i++) {
       if (imag(fad[i]) != 0.0 || !dofourier) {
         for (int t=0;t<n;t++) {
-          A[ifit*n+t] = 0;
-          //A[(ifit+numfit)*n+t] = 0;
-          for (int tt=max(0,t-passtime);tt<min(n,t+passtime);tt++) {
-            A[ifit*n+t] += exp(-unitconvert*fad[i]*tt)
-              *filter[abs(tt-t)];
-          }
+          A[ifit*n+t] = exp(-unitconvert*fad[i]*t);
         }
         ifit++;
       }
@@ -297,10 +285,7 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
               cmplx possum=0, negsum=0;
               if (S[i] > 1e-6) {
                 for (int t=0;t<n;t++) {
-                  complex<double> bandhere = 0.0;
-                  for (int tt=max(0,t-passtime);tt<min(n,t+passtime);tt++)
-                    bandhere += BAND(bdata,r,tt)*filter[abs(tt-t)];
-                  possum += A[i*n+t]*bandhere;
+                  possum += A[i*n+t]*BAND(bdata,r,t);
                   //negsum += A[(i+numfit)*n+t]*bandhere;
                 }
                 possofar += possum*V[i*numfit+j]/S[i];
