@@ -7,8 +7,10 @@ endif
 
 SUBDIRS = $(HSRC) src doc tests
 
-EXTRA_DIST=COPYRIGHT m4
+EXTRA_DIST = COPYRIGHT m4 meep.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
+
+dist-hook: $(HSRC) src
 
