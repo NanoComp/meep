@@ -822,21 +822,39 @@ void fields_chunk::step_e() {
 #endif
 
 void fields::step_boundaries(field_type ft) {
+  am_now_working_on(MpiTime);
+  // Do the metals first!
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine()) chunks[i]->zero_metal(ft);
   // First copy outgoing data to buffers...
   int *wh = new int[num_chunks];
   for (int i=0;i<num_chunks;i++) wh[i] = 0;
-  for (int i=0;i<num_chunks;i++)
-    for (int j=0;j<num_chunks;j++)
-      if (chunks[j]->is_mine()) {
-        const int pair = j+i*num_chunks;
-        for (int n=0;n<comm_sizes[ft][pair];n++) {
-          DOCMP {
-            double stupid = *(chunks[j]->connections[ft][Outgoing][cmp][wh[j]]);
-            comm_blocks[ft][pair][n*2+cmp] = stupid;
+  if (is_real) {
+    for (int i=0;i<num_chunks;i++)
+      for (int j=0;j<num_chunks;j++)
+        if (chunks[j]->is_mine()) {
+          const int pair = j+i*num_chunks;
+          for (int n=0;n<comm_sizes[ft][pair];n++) {
+            comm_blocks[ft][pair][n*2] =
+              *(chunks[j]->connections[ft][Outgoing][0][wh[j]]);
+            comm_blocks[ft][pair][n*2+1] = 0.0;
+            wh[j]++;
           }
-          wh[j]++;
         }
-      }
+  } else {
+    for (int i=0;i<num_chunks;i++)
+      for (int j=0;j<num_chunks;j++)
+        if (chunks[j]->is_mine()) {
+          const int pair = j+i*num_chunks;
+          for (int n=0;n<comm_sizes[ft][pair];n++) {
+            comm_blocks[ft][pair][n*2] =
+              *(chunks[j]->connections[ft][Outgoing][0][wh[j]]);
+            comm_blocks[ft][pair][n*2+1] =
+              *(chunks[j]->connections[ft][Outgoing][1][wh[j]]);
+            wh[j]++;
+          }
+        }
+  }
   // Communicate the data around!
 #if 0 // This is the blocking version, which should always be safe!
   for (int noti=0;noti<num_chunks;noti++)
@@ -850,7 +868,6 @@ void fields::step_boundaries(field_type ft) {
     }
 #endif
 #ifdef HAVE_MPI
-  am_now_working_on(MpiTime);
   const int maxreq = num_chunks*num_chunks;
   MPI_Request *reqs = new MPI_Request[maxreq];
   MPI_Status *stats = new MPI_Status[maxreq];
@@ -881,25 +898,48 @@ void fields::step_boundaries(field_type ft) {
   if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
   delete[] reqs;
   delete[] stats;
-  finished_working();
 #endif
   
   // Finally, copy incoming data to the fields themselves!
-  for (int i=0;i<num_chunks;i++) wh[i] = 0;
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      for (int j=0;j<num_chunks;j++) {
-        const int pair = j+i*num_chunks;
-        for (int n=0;n<comm_sizes[ft][pair];n++) {
-          complex<double> val = chunks[i]->connection_phases[ft][wh[i]]*
-            complex<double>(comm_blocks[ft][pair][n*2],
-                            comm_blocks[ft][pair][n*2+1]);
-          *(chunks[i]->connections[ft][Incoming][0][wh[i]]) = real(val);
-          *(chunks[i]->connections[ft][Incoming][1][wh[i]]) = imag(val);
-          wh[i]++;
+  if (is_real) {
+    for (int i=0;i<num_chunks;i++) {
+      int wh = 0;
+      if (chunks[i]->is_mine())
+        for (int j=0;j<num_chunks;j++) {
+          const int pair = j+i*num_chunks;
+          for (int n=0;n<comm_sizes[ft][pair];n++) {
+            *(chunks[i]->connections[ft][Incoming][0][wh]) =
+              real(chunks[i]->connection_phases[ft][wh])*
+              comm_blocks[ft][pair][n*2];
+            wh++;
+          }
         }
-      }
+    }
+  } else {
+    for (int i=0;i<num_chunks;i++) {
+      int wh = 0;
+      const complex<double> *phases = chunks[i]->connection_phases[ft];
+      double **incoming_real = chunks[i]->connections[ft][Incoming][0];
+      double **incoming_imag = chunks[i]->connections[ft][Incoming][1];
+      if (chunks[i]->is_mine())
+        for (int j=0;j<num_chunks;j++) {
+          const int pair = j+i*num_chunks;
+          const double *comm_block = comm_blocks[ft][pair];
+          for (int n=0;n<comm_sizes[ft][pair];n++) {
+            const complex<double> ph = phases[wh];
+            const double phr = real(ph);
+            const double phi = imag(ph);
+            const double re = comm_block[n*2];
+            const double im = comm_block[n*2+1];
+            *(incoming_real[wh]) = phr*re-phi*im;
+            *(incoming_imag[wh]) = phr*im+phi*re;
+            wh++;
+          }
+        }
+    }
+  }
   delete[] wh;
+  finished_working();
 }
 
 void fields::step_h_source() {

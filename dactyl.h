@@ -165,6 +165,8 @@ class fields_chunk {
   double *(f_backup_p_pml[10][2]);
   double *(f_backup_m_pml[10][2]);
 
+  double **zeroes[2]; // Holds pointers to metal points.
+  int num_zeroes[2];
   double **(connections[2][2][2]);
   int num_connections[2][2];
   complex<double> *connection_phases[2];
@@ -213,6 +215,8 @@ class fields_chunk {
 
   int n_proc() const { return ma->n_proc(); };
   int is_mine() const { return ma->is_mine(); };
+  // boundaries.cpp
+  void zero_metal(field_type);
   // fluxes.cpp
   partial_flux_plane *new_flux_plane(const vec &p1, const vec &p2);
   void update_fluxes();
@@ -383,6 +387,7 @@ class fields {
   void am_now_working_on(time_sink);
   void finished_working();
   // boundaries.cpp
+  void find_metals();
   void disconnect_chunks();
   void connect_chunks();
   void connect_the_chunks(); // Intended to be ultra-private...

@@ -107,6 +107,8 @@ fields_chunk::~fields_chunk() {
   delete pol;
   delete olpol;
   delete fluxes;
+  delete[] zeroes[0];
+  delete[] zeroes[1];
 }
 
 fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
@@ -162,6 +164,8 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
     for (int io=0;io<2;io++)
       for (int cmp=0;cmp<2;cmp++)
         connections[f][io][cmp] = 0;
+  zeroes[0] = NULL;  zeroes[1] = NULL;
+  num_zeroes[0] = 0; num_zeroes[1] = 0;
   figure_out_step_plan();
 }
 

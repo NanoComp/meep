@@ -123,6 +123,7 @@ void fields::disconnect_chunks() {
 void fields::connect_chunks() {
   am_now_working_on(Connecting);
   disconnect_chunks();
+  find_metals();
   connect_the_chunks();
   finished_working();
 }
@@ -131,27 +132,26 @@ static double zero = 0.0;
 
 inline int fields::is_metal(const ivec &here) {
   if (!user_volume.owns(here)) return 0;
-  for (int bb=0;bb<2;bb++) for (int dd=0;dd<5;dd++)
-    if (user_volume.has_boundary((boundary_side)bb, (direction)dd) &&
-        (boundaries[bb][dd]==Metallic || boundaries[bb][dd]==Magnetic)) {
-      const direction d = (direction) dd;
-      const boundary_side b = (boundary_side) bb;
+  LOOP_OVER_DIRECTIONS(v.dim, d) {
+    if (user_volume.has_boundary(High, d) &&
+        here.in_direction(d) == user_volume.big_corner().in_direction(d)) {
       switch (d) {
-      case X:
-      case Y:
-      case Z:
-        if (b == High && boundaries[b][d] == Metallic &&
-            here.in_direction(d) == user_volume.big_corner().in_direction(d))
-          return true;
-        if (b == Low && boundaries[b][d] == Magnetic &&
-            here.in_direction(d) == user_volume.little_corner().in_direction(d)+1)
-          return true;
+      case X: case Y: case Z:
+        if (boundaries[High][d] == Metallic) return true;
       case R:
-        if (b == High && boundaries[b][d] == Magnetic &&
-            here.in_direction(d) == user_volume.big_corner().in_direction(d))
+        if (boundaries[High][d] == Magnetic) return true;
+      }
+    }
+    if (user_volume.has_boundary(Low, d)) {
+      switch (d) {
+      case X: case Y: case Z:
+        if (boundaries[Low][d] == Magnetic &&
+            here.in_direction(d) ==
+            user_volume.little_corner().in_direction(d)+1)
           return true;
       }
     }
+  }
   return false;
 }
 
@@ -207,6 +207,49 @@ bool fields::locate_component_point(component *c, ivec *there,
   return false;
 }
 
+void fields_chunk::zero_metal(field_type ft) {
+  for (int i=0;i<num_zeroes[ft];i++) *(zeroes[ft][i]) = 0.0;
+}
+
+void fields::find_metals() {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine()) {
+      const volume vi = chunks[i]->v;
+      delete[] chunks[i]->zeroes[E_stuff];
+      delete[] chunks[i]->zeroes[H_stuff];
+      // First electric components...
+      chunks[i]->num_zeroes[E_stuff] = 0;
+      DOCMP FOR_ELECTRIC_COMPONENTS(c)
+        if (chunks[i]->f[c][cmp])
+          for (int n=0;n<vi.ntot();n++)
+            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
+              chunks[i]->num_zeroes[E_stuff]++;
+      chunks[i]->zeroes[E_stuff] =
+        new (double *)[chunks[i]->num_zeroes[E_stuff]];
+      int num = 0;
+      DOCMP FOR_ELECTRIC_COMPONENTS(c)
+        if (chunks[i]->f[c][cmp])
+          for (int n=0;n<vi.ntot();n++)
+            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
+              chunks[i]->zeroes[E_stuff][num++] = &(chunks[i]->f[c][cmp][n]);
+      // Now magnetic components
+      chunks[i]->num_zeroes[H_stuff] = 0;
+      DOCMP FOR_MAGNETIC_COMPONENTS(c)
+        if (chunks[i]->f[c][cmp])
+          for (int n=0;n<vi.ntot();n++)
+            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
+              chunks[i]->num_zeroes[H_stuff]++;
+      chunks[i]->zeroes[H_stuff] =
+        new (double *)[chunks[i]->num_zeroes[H_stuff]];
+      num = 0;
+      DOCMP FOR_MAGNETIC_COMPONENTS(c)
+        if (chunks[i]->f[c][cmp])
+          for (int n=0;n<vi.ntot();n++)
+            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
+              chunks[i]->zeroes[H_stuff][num++] = &(chunks[i]->f[c][cmp][n]);
+    }
+}
+
 void fields::connect_the_chunks() {
   int *nc[2][2];
   for (int f=0;f<2;f++)
@@ -238,11 +281,6 @@ void fields::connect_the_chunks() {
                   nc[type(c)][Outgoing][j]++;
                   new_comm_sizes[type(c)][j]++;
                 }
-            } else if (j == i && is_metal(here) && chunks[i]->f[c][0] ) {
-              // Try metallic...
-              nc[type(c)][Incoming][i]++;
-              nc[type(c)][Outgoing][i]++;
-              new_comm_sizes[type(c)][j]++;
             }
         }
     // Allocating comm blocks as we go...
@@ -296,17 +334,6 @@ void fields::connect_the_chunks() {
                   wh[FT][Incoming][i]++;
                   wh[FT][Outgoing][j]++;
                 }
-            } else if (j == i && is_metal(here) && chunks[i]->f[c][0]) {
-              // Try metallic...
-              DOCMP {
-                chunks[i]->connections[FT][Incoming][cmp][wh[FT][Incoming][i]]
-                  = chunks[i]->f[c][cmp] + n;
-                chunks[j]->connections[FT][Outgoing][cmp][wh[FT][Outgoing][j]]
-                  = &zero;
-              }
-              chunks[i]->connection_phases[FT][wh[FT][Incoming][i]] = 1.0;
-              wh[FT][Incoming][i]++;
-              wh[FT][Outgoing][j]++;
             }
           }
   }
