@@ -49,7 +49,7 @@ fields::fields(const mat *ma, int tm) :
   chunks = new (fields_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new fields_chunk(ma->chunks[i], outdir, m);
-  for (int ft=0;ft<2;ft++) {
+  FOR_FIELD_TYPES(ft) {
     comm_sizes[ft] = new int[num_chunks*num_chunks];
     comm_num_complex[ft] = new int[num_chunks*num_chunks];
     comm_num_negate[ft] = new int[num_chunks*num_chunks];
@@ -67,7 +67,7 @@ fields::fields(const mat *ma, int tm) :
 fields::~fields() {
   for (int i=0;i<num_chunks;i++) delete chunks[i];
   delete[] chunks;
-  for (int ft=0;ft<2;ft++) {
+  FOR_FIELD_TYPES(ft) {
     for (int i=0;i<num_chunks*num_chunks;i++)
       delete[] comm_blocks[ft][i];
     delete[] comm_blocks[ft];
@@ -103,10 +103,10 @@ fields_chunk::~fields_chunk() {
     FOR_COMPONENTS(i) delete[] f_backup_p_pml[i][cmp];
     FOR_COMPONENTS(i) delete[] f_backup_m_pml[i][cmp];
   }
-  for (int ft=0;ft<2;ft++)
+  FOR_FIELD_TYPES(ft)
     for (int io=0;io<2;io++)
       delete[] connections[ft][io];
-  for (int ft=0;ft<2;ft++) delete[] connection_phases[ft];
+  FOR_FIELD_TYPES(ft) delete[] connection_phases[ft];
   delete h_sources;
   delete e_sources;
   delete pol;
@@ -162,14 +162,14 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm)
         for (int i=0;i<v.ntot();i++)
           f_m_pml[c][cmp][i] = 0.0;
   }
-  num_connections[E_stuff][Incoming] = num_connections[E_stuff][Outgoing] = 0;
-  num_connections[H_stuff][Incoming] = num_connections[H_stuff][Outgoing] = 0;
-  connection_phases[E_stuff] = connection_phases[H_stuff] = 0;
-  for (int f=0;f<2;f++)
+  FOR_FIELD_TYPES(ft)
+    num_connections[ft][Incoming] = num_connections[ft][Outgoing] = 0;
+  FOR_FIELD_TYPES(ft) connection_phases[ft] = 0;
+  FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++)
       connections[f][io] = NULL;
-  zeroes[0] = NULL;  zeroes[1] = NULL;
-  num_zeroes[0] = 0; num_zeroes[1] = 0;
+  FOR_FIELD_TYPES(ft) zeroes[ft] = NULL;
+  FOR_FIELD_TYPES(ft) num_zeroes[ft] = 0;
   figure_out_step_plan();
 }
 

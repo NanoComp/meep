@@ -38,9 +38,9 @@ class grace;
 class mat_chunk {
  public:
   double *eps, a;
-  double *inveps[10][5];
-  double *C[5][10];
-  double *Cdecay[5][10][5];
+  double *inveps[NUM_FIELD_COMPONENTS][5];
+  double *C[5][NUM_FIELD_COMPONENTS];
+  double *Cdecay[5][NUM_FIELD_COMPONENTS][5];
   volume v;
   geometric_volume gv;
   polarizability *pb;
@@ -126,7 +126,7 @@ class monitor_point {
   ~monitor_point();
   vec loc;
   double t;
-  complex<double> f[10];
+  complex<double> f[NUM_FIELD_COMPONENTS];
   monitor_point *next;
 
   complex<double> get_component(component);
@@ -168,19 +168,19 @@ enum in_or_out { Incoming=0, Outgoing=1 };
 
 class fields_chunk {
  public:
-  double *(f[10][2]);
-  double *(f_backup[10][2]);
-  double *(f_p_pml[10][2]);
-  double *(f_m_pml[10][2]);
-  double *(f_backup_p_pml[10][2]);
-  double *(f_backup_m_pml[10][2]);
+  double *(f[NUM_FIELD_COMPONENTS][2]);
+  double *(f_backup[NUM_FIELD_COMPONENTS][2]);
+  double *(f_p_pml[NUM_FIELD_COMPONENTS][2]);
+  double *(f_m_pml[NUM_FIELD_COMPONENTS][2]);
+  double *(f_backup_p_pml[NUM_FIELD_COMPONENTS][2]);
+  double *(f_backup_m_pml[NUM_FIELD_COMPONENTS][2]);
 
-  double **zeroes[2]; // Holds pointers to metal points.
-  int num_zeroes[2];
-  double **(connections[2][2]);
-  int num_connections[2][2];
-  complex<double> *connection_phases[2];
-  double *connection_factors[2];
+  double **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
+  int num_zeroes[NUM_FIELD_TYPES];
+  double **(connections[NUM_FIELD_TYPES][2]);
+  int num_connections[NUM_FIELD_TYPES][2];
+  complex<double> *connection_phases[NUM_FIELD_TYPES];
+  double *connection_factors[NUM_FIELD_TYPES];
 
   polarization *pol, *olpol;
   partial_flux_plane *fluxes;
@@ -248,9 +248,10 @@ class fields_chunk {
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
   void figure_out_step_plan();
-  bool have_plus_deriv[10], have_minus_deriv[10];
-  component plus_component[10], minus_component[10];
-  direction plus_deriv_direction[10], minus_deriv_direction[10];
+  bool have_plus_deriv[NUM_FIELD_COMPONENTS], have_minus_deriv[NUM_FIELD_COMPONENTS];
+  component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
+  direction plus_deriv_direction[NUM_FIELD_COMPONENTS],
+            minus_deriv_direction[NUM_FIELD_COMPONENTS];
   int num_each_direction[3], stride_each_direction[3];
   // bands.cpp
   void record_bands(int tcount);
@@ -261,6 +262,7 @@ class fields_chunk {
   void phase_material(int phasein_time);
   void step_h();
   void step_h_source(const src *, double);
+  void step_d();
   void step_e();
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
@@ -306,12 +308,12 @@ class fields {
   symmetry S;
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
-  double **comm_blocks[2];
+  double **comm_blocks[NUM_FIELD_TYPES];
   // This is the same size as each comm_blocks array, and stores the sizes
   // of the comm blocks themselves.
-  int *comm_sizes[2];
-  int *comm_num_complex[2];
-  int *comm_num_negate[2];
+  int *comm_sizes[NUM_FIELD_TYPES];
+  int *comm_num_complex[NUM_FIELD_TYPES];
+  int *comm_num_negate[NUM_FIELD_TYPES];
   double a, inva; // The "lattice constant" and its inverse!
   volume v, user_volume;
   geometric_volume gv;
@@ -437,6 +439,7 @@ class fields {
   void step_h();
   void step_h_old();
   void step_h_source();
+  void step_d();
   void step_e();
   void step_e_old();
   void step_boundaries(field_type);

@@ -22,9 +22,13 @@
 
 using namespace std;
 
-enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz, Dielectric };
+const int NUM_FIELD_COMPONENTS = 15;
+const int NUM_FIELD_TYPES = 3;
+
+enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
+                 Dx, Dy, Dr, Dp, Dz, Dielectric };
 enum ndim { D1=0, D2, D3, Dcyl };
-enum field_type { E_stuff=0, H_stuff=1 };
+enum field_type { E_stuff=0, H_stuff=1, D_stuff=2 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P };
 struct signed_direction {
@@ -52,13 +56,17 @@ inline direction stop_at_direction(ndim dim) {
   return (direction) (dim + 1 + 2 * (dim == D1));
 }
 
+#define FOR_FIELD_TYPES(ft) for (field_type ft = E_stuff; \
+                                 ft <= D_stuff; ft = (field_type) (ft+1))
 #define FOR_ELECTRIC_COMPONENTS(c) for (component c = Ex; \
                                         c < Hx; c = (component) (c+1))
 #define FOR_MAGNETIC_COMPONENTS(c) for (component c = Hz; \
                                         c > Ez; c = (component) (c-1))
+#define FOR_D_COMPONENTS(c) for (component c = Dz; \
+                                 c > Hz; c = (component) (c-1))
 #define FOR_COMPONENTS(c) for (component c = Ex,loop_stop_co=Ey; \
                                c != loop_stop_co; \
-                               c = (component)((c+1)%10), \
+                               c = (component)((c+1)%NUM_FIELD_COMPONENTS), \
                                loop_stop_co = Ex)
 #define FOR_DIRECTIONS(d) for (direction d = X,loop_stop_di=Y; \
                                d != loop_stop_di; \
@@ -93,31 +101,37 @@ inline bool has_direction(ndim dim, direction d) {
   return false;
 }
 
-inline int is_electric(component c) { return (int) c < 5; }
-inline int is_magnetic(component c) { return (int) c >= 5; }
+inline int is_electric(component c) { return c < Hx; }
+inline int is_magnetic(component c) { return c >= Hx && c < Dx; }
+inline int is_D(component c) { return c >= Dx && c < Dielectric; }
 inline field_type type(component c) {
   if (is_electric(c)) return E_stuff;
-  else return H_stuff;
+  else if (is_magnetic(c)) return H_stuff;
+  else if (is_D(c)) return D_stuff;
 }
 const char *component_name(component c);
 const char *direction_name(direction);
 const char *dimension_name(ndim);
 inline direction component_direction(component c) {
   switch (c) {
-  case Ex: case Hx: return X;
-  case Ey: case Hy: return Y;
-  case Ez: case Hz: return Z;
-  case Er: case Hr: return R;
-  case Ep: case Hp: return P;
+  case Ex: case Hx: case Dx: return X;
+  case Ey: case Hy: case Dy: return Y;
+  case Ez: case Hz: case Dz: return Z;
+  case Er: case Hr: case Dr: return R;
+  case Ep: case Hp: case Dp: return P;
   }
 }
 inline component direction_component(component c, direction d) {
+  component start_point;
+  if (is_electric(c)) start_point = Ex;
+  else if (is_magnetic(c)) start_point = Hx;
+  else if (is_D(c)) start_point = Dx;
   switch (d) {
-  case X: if (is_electric(c)) return Ex; else return Hx;
-  case Y: if (is_electric(c)) return Ey; else return Hy;
-  case Z: if (is_electric(c)) return Ez; else return Hz;
-  case R: if (is_electric(c)) return Er; else return Hr;
-  case P: if (is_electric(c)) return Ep; else return Hp;
+  case X: return start_point;
+  case Y: return (component) (start_point + 1);
+  case Z: return (component) (start_point + 4);
+  case R: return (component) (start_point + 2);
+  case P: return (component) (start_point + 3);
   }
 }
 

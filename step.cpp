@@ -67,6 +67,9 @@ void fields::step() {
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
 
+  step_d();
+  step_boundaries(D_stuff);
+
   prepare_step_polarization_energy();
   half_step_polarization_energy();
   step_e();
@@ -406,6 +409,147 @@ void fields_chunk::step_h() {
     }
   } else {
     abort("Can't step H in these dimensions.");
+  }
+}
+
+void fields::step_d() {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->step_d();
+}
+
+void fields_chunk::step_d() {
+  const volume v = this->v;
+  if (v.dim != Dcyl) {
+    // To be implemented later...
+  } else if (v.dim == Dcyl) {
+    DOCMP {
+      // Propogate Dp
+      if (f[Dp][cmp])
+        if (ma->C[Z][Dp] || ma->C[R][Dp])
+          for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            const double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
+            const double mor = m*oor;
+            const int ir = r*(v.nz()+1);
+            const int irm1 = (r-1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++) {
+              const double Czep = (ma->C[Z][Dp])?ma->C[Z][Dp][z+ir]:0;
+              const double Crep = (ma->C[R][Dp])?ma->C[R][Dp][z+ir]:0;
+              const double ooop_Czep = (ma->Cdecay[Z][Dp][P]) ?
+                ma->Cdecay[Z][Dp][P][z+ir] : 1.0;
+              const double ooop_Crep = (ma->Cdecay[R][Dp][P]) ?
+                ma->Cdecay[R][Dp][P][z+ir] : 1.0;
+              const double depz = ooop_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
+                                             - Czep*f_p_pml[Dp][cmp][z+ir]);
+              const double epr = f[Dp][cmp][z+ir] - f_p_pml[Dp][cmp][z+ir];
+              f_p_pml[Dp][cmp][z+ir] += depz;
+              f[Dp][cmp][z+ir] += depz +
+                ooop_Crep*(c*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1])) - Crep*epr);
+            }
+          }
+        else
+          for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            const int ir = r*(v.nz()+1);
+            const int irm1 = (r-1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++)
+              f[Dp][cmp][z+ir] += c*((f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
+                                     - (f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
+          }
+      // Propogate Dz
+      if (f[Dz][cmp])
+        if (ma->C[R][Dz])
+          for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
+            double mor = m*oor;
+            const int ir = r*(v.nz()+1);
+            const int irm1 = (r-1)*(v.nz()+1);
+            for (int z=0;z<v.nz();z++) {
+              const double Crez = ma->C[R][Dz][z+ir];
+              const double ooop_Crez = (ma->Cdecay[R][Dz][Z]) ?
+                ma->Cdecay[R][Dz][Z][z+ir] : 1.0;
+              const double dezr = ooop_Crez*
+                (c*(f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
+                    f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
+                 - Crez*f_p_pml[Dz][cmp][z+ir]);
+              const double ezp = f[Dz][cmp][z+ir]-f_p_pml[Dz][cmp][z+ir];
+              f_p_pml[Dz][cmp][z+ir] += dezr;
+              f[Dz][cmp][z+ir] += dezr + c*(-it(cmp,f[Hr],z+ir)*mor);
+            }
+          }
+        else
+          for (int r=rstart_1(v,m);r<=v.nr();r++) {
+            double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
+            double mor = m*oor;
+            const int ir = r*(v.nz()+1);
+            const int irm1 = (r-1)*(v.nz()+1);
+            for (int z=0;z<v.nz();z++)
+              f[Dz][cmp][z+ir] += c*
+                ((f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
+                  f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
+                 - it(cmp,f[Hr],z+ir)*mor);
+          }
+      // Propogate Dr
+      if (f[Dr][cmp])
+        if (ma->C[Z][Dr])
+          for (int r=rstart_0(v,m);r<v.nr();r++) {
+            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
+            double morph = m*oorph;
+            const int ir = r*(v.nz()+1);
+            const int irp1 = (r+1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++) {
+              const double Czer = ma->C[Z][Dr][z+ir];
+              const double ooop_Czer = (ma->Cdecay[Z][Dr][R]) ?
+                ma->Cdecay[Z][Dr][R][z+ir] : 1.0;
+              double derp = c*(it(cmp,f[Hz],z+ir)*morph);
+              double erz = f[Dr][cmp][z+ir] - f_p_pml[Dr][cmp][z+ir];
+              f_p_pml[Dr][cmp][z+ir] += derp;
+              f[Dr][cmp][z+ir] += derp + ooop_Czer*
+                (-c*(f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]) - Czer*erz);
+            }
+          }
+        else
+          for (int r=rstart_0(v,m);r<v.nr();r++) {
+            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
+            double morph = m*oorph;
+            const int ir = r*(v.nz()+1);
+            const int irp1 = (r+1)*(v.nz()+1);
+            for (int z=1;z<=v.nz();z++)
+              f[Dr][cmp][z+ir] += c*
+                (it(cmp,f[Hz],z+ir)*morph - (f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]));
+          }
+      // Deal with annoying r==0 boundary conditions...
+      if (m == 0 && v.origin.r() == 0.0 && f[Dz][cmp]) {
+        for (int z=0;z<=v.nz();z++)
+          f[Dz][cmp][z] += c*(f[Hp][cmp][z] + it(cmp,f[Hr],z)*m);
+      } else if (m == 1 && v.origin.r() == 0.0 && f[Dp][cmp]) {
+        if (ma->C[Z][Dp])
+          for (int z=1;z<=v.nz();z++) {
+            const double Czep = ma->C[Z][Dp][z];
+            const double ooop_Czep = (ma->Cdecay[Z][Dp][P]) ?
+              ma->Cdecay[Z][Dp][P][z] : 1.0;
+            const double depz = ooop_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
+                                                  - Czep*f_p_pml[Dp][cmp][z]);
+            const double epr = f[Dp][cmp][z] - f_p_pml[Dp][cmp][z];
+            f_p_pml[Dp][cmp][z] += depz;
+            f[Dp][cmp][z] += depz + c*(-f[Hz][cmp][z]*2.0);
+          }
+        else
+          for (int z=1;z<=v.nz();z++)
+            f[Dp][cmp][z] += c*((f[Hr][cmp][z]-f[Hr][cmp][z-1]) - f[Hz][cmp][z]*2.0);
+      } else {
+        for (int r=0;r<=v.nr() && (int)(v.origin.r()*v.a+0.5) + r < m;r++) {
+          const int ir = r*(v.nz()+1);
+          for (int z=0;z<=v.nz();z++) f[Dp][cmp][z+ir] = 0;
+          if (f_p_pml[Dp][cmp])
+            for (int z=0;z<=v.nz();z++) f_p_pml[Dp][cmp][z+ir] = 0;
+          for (int z=0;z<=v.nz();z++) f[Dz][cmp][z+ir] = 0;
+          if (f_p_pml[Dz][cmp])
+            for (int z=0;z<=v.nz();z++) f_p_pml[Dz][cmp][z+ir] = 0;
+        }
+      }
+    }
+  } else {
+    abort("Unsupported dimension.\n");
   }
 }
 

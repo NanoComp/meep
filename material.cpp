@@ -427,8 +427,8 @@ void mat_chunk::mix_with(const mat_chunk *n, double f) {
   // Mix in the polarizability...
   polarizability *po = pb, *pn = n->pb;
   while (po && pn) {
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && is_electric((component)c))
+    FOR_COMPONENTS(c)
+      if (v.has_field(c) && is_electric(c))
         for (int i=0;i<v.ntot();i++)
           po->s[c][i] += f*(pn->s[c][i] - po->s[c][i]);
     po = po->next;
@@ -504,8 +504,9 @@ void mat_chunk::update_Cdecay() {
 	  Cdecay[d][c][d2] = new double[v.ntot()];
 	  for (int i=0;i<v.ntot();i++) {
 	    if (is_magnetic(c)) Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]);
-	    else Cdecay[d][c][d2][i] =
-		   inveps[c][d2][i]/(1.0+0.5*C[d][c][i]*inveps[c][d2][i]);
+	    else if (is_electric(c))
+          Cdecay[d][c][d2][i] = inveps[c][d2][i]/(1.0+0.5*C[d][c][i]*inveps[c][d2][i]);
+        else Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]); // FIXME: Is this right?
 	    if (Cdecay[d][c][d2][i] == 0.0)
 	      abort("In update_Cdecay: Cdecay == 0\n");
 	  }

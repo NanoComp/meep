@@ -98,7 +98,7 @@ vec fields::lattice_vector(direction d) const {
 void fields::disconnect_chunks() {
   for (int i=0;i<num_chunks;i++) {
     DOCMP {
-      for (int f=0;f<2;f++)
+      FOR_FIELD_TYPES(f)
         for (int io=0;io<2;io++) {
           delete[] chunks[i]->connections[f][io];
           chunks[i]->connections[f][io] = NULL;
@@ -108,11 +108,11 @@ void fields::disconnect_chunks() {
     delete[] chunks[i]->connection_phases[H_stuff];
     chunks[i]->connection_phases[E_stuff] = 0;
     chunks[i]->connection_phases[H_stuff] = 0;
-    for (int f=0;f<2;f++)
+    FOR_FIELD_TYPES(f)
       for (int io=0;io<2;io++)
         chunks[i]->num_connections[f][io] = 0;
   }
-  for (int ft=0;ft<2;ft++)
+  FOR_FIELD_TYPES(ft)
     for (int i=0;i<num_chunks*num_chunks;i++) {
       delete[] comm_blocks[ft][i];
       comm_blocks[ft][i] = 0;
@@ -206,44 +206,29 @@ void fields::find_metals() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
       const volume vi = chunks[i]->v;
-      delete[] chunks[i]->zeroes[E_stuff];
-      delete[] chunks[i]->zeroes[H_stuff];
-      // First electric components...
-      chunks[i]->num_zeroes[E_stuff] = 0;
-      DOCMP FOR_ELECTRIC_COMPONENTS(c)
-        if (chunks[i]->f[c][cmp])
-          for (int n=0;n<vi.ntot();n++)
-            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
-              chunks[i]->num_zeroes[E_stuff]++;
-      chunks[i]->zeroes[E_stuff] =
-        new (double *)[chunks[i]->num_zeroes[E_stuff]];
-      int num = 0;
-      DOCMP FOR_ELECTRIC_COMPONENTS(c)
-        if (chunks[i]->f[c][cmp])
-          for (int n=0;n<vi.ntot();n++)
-            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
-              chunks[i]->zeroes[E_stuff][num++] = &(chunks[i]->f[c][cmp][n]);
-      // Now magnetic components
-      chunks[i]->num_zeroes[H_stuff] = 0;
-      DOCMP FOR_MAGNETIC_COMPONENTS(c)
-        if (chunks[i]->f[c][cmp])
-          for (int n=0;n<vi.ntot();n++)
-            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
-              chunks[i]->num_zeroes[H_stuff]++;
-      chunks[i]->zeroes[H_stuff] =
-        new (double *)[chunks[i]->num_zeroes[H_stuff]];
-      num = 0;
-      DOCMP FOR_MAGNETIC_COMPONENTS(c)
-        if (chunks[i]->f[c][cmp])
-          for (int n=0;n<vi.ntot();n++)
-            if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
-              chunks[i]->zeroes[H_stuff][num++] = &(chunks[i]->f[c][cmp][n]);
+      FOR_FIELD_TYPES(ft) {
+        delete[] chunks[i]->zeroes[ft];
+        // First electric components...
+        chunks[i]->num_zeroes[ft] = 0;
+        DOCMP FOR_COMPONENTS(c)
+          if (type(c) == ft && chunks[i]->f[c][cmp])
+            for (int n=0;n<vi.ntot();n++)
+              if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
+                chunks[i]->num_zeroes[ft]++;
+        chunks[i]->zeroes[ft] = new (double *)[chunks[i]->num_zeroes[ft]];
+        int num = 0;
+        DOCMP FOR_COMPONENTS(c)
+          if (type(c) == ft && chunks[i]->f[c][cmp])
+            for (int n=0;n<vi.ntot();n++)
+              if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
+                chunks[i]->zeroes[ft][num++] = &(chunks[i]->f[c][cmp][n]);
+      }
     }
 }
 
 void fields::connect_the_chunks() {
   int *nc[2][2];
-  for (int f=0;f<2;f++)
+  FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++) {
       nc[f][io] = new int[num_chunks];
       for (int i=0;i<num_chunks;i++) nc[f][io][i] = 0;
@@ -252,7 +237,7 @@ void fields::connect_the_chunks() {
     // First count the border elements...
     const volume vi = chunks[i]->v;
     for (int j=0;j<num_chunks;j++)
-      for (int ft=0;ft<2;ft++) {
+      FOR_FIELD_TYPES(ft) {
         comm_sizes[ft][j+i*num_chunks] = 0;
         comm_num_complex[ft][j+i*num_chunks] = 0;
         comm_num_negate[ft][j+i*num_chunks] = 0;
@@ -282,7 +267,7 @@ void fields::connect_the_chunks() {
             }
         }
     // Allocating comm blocks as we go...
-    for (int ft=0;ft<2;ft++)
+    FOR_FIELD_TYPES(ft)
       for (int j=0;j<num_chunks;j++) {
         delete[] comm_blocks[ft][j+i*num_chunks];
         comm_blocks[ft][j+i*num_chunks] =
@@ -291,15 +276,15 @@ void fields::connect_the_chunks() {
   }
   // Now allocate the connection arrays...
   for (int i=0;i<num_chunks;i++)
-    for (int f=0;f<2;f++)
+    FOR_FIELD_TYPES(f)
       for (int io=0;io<2;io++)
         chunks[i]->alloc_extra_connections((field_type)f,
                                            (in_or_out)io,nc[f][io][i]);
-  for (int f=0;f<2;f++)
+  FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++) delete[] nc[f][io];
   // Next start setting up the connections...
   int *wh[2][2];
-  for (int f=0;f<2;f++)
+  FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++) {
       wh[f][io] = new int[num_chunks];
       for (int i=0;i<num_chunks;i++) wh[f][io][i] = 0;
@@ -377,7 +362,7 @@ void fields::connect_the_chunks() {
           }
     }
   }
-  for (int f=0;f<2;f++)
+  FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++) delete[] wh[f][io];
 }
 

@@ -40,7 +40,7 @@ class polarizability {
                  double energy_saturation = 0.0);
   polarizability(const polarizability *);
   ~polarizability();
-  double gamma, omeganot, *sigma, *s[10];
+  double gamma, omeganot, *sigma, *s[NUM_FIELD_COMPONENTS];
   double energy_saturation, saturated_sigma;
   polarizability *next;
 
@@ -53,7 +53,9 @@ class polarization {
   polarization(const polarizability *the_pb, int is_real);
   ~polarization();
   double saturation_factor;
-  double *(P[10][2]), *(P_p_pml[10][2]), *(P_m_pml[10][2]), *(energy[10]), *(s[10]);
+  double *(P[NUM_FIELD_COMPONENTS][2]), *(P_p_pml[NUM_FIELD_COMPONENTS][2]),
+    *(P_m_pml[NUM_FIELD_COMPONENTS][2]), *(energy[NUM_FIELD_COMPONENTS]),
+    *(s[NUM_FIELD_COMPONENTS]);
   int is_real;
   const polarizability *pb;
   polarization *next;
@@ -71,7 +73,7 @@ class src {
   src();
   ~src();
   double freq, width, peaktime, cutoff;
-  complex<double> A[10], amp_shift;
+  complex<double> A[NUM_FIELD_COMPONENTS], amp_shift;
   int i, is_continuous;
   src *next;
   double find_last_source(double guess=0);
@@ -89,7 +91,7 @@ class bandsdata {
   bandsdata();
   ~bandsdata();
 
-  complex<double> *f[num_bandpts][10];
+  complex<double> *f[num_bandpts][NUM_FIELD_COMPONENTS];
   // The following is the polarization at just one point, with Pz and Pp
   // added together (a crude compromize for speed, while still observing the
   // phonon bands).
