@@ -664,6 +664,8 @@ void fields::step_boundaries(field_type ft) {
   MPI_Request *reqs = new MPI_Request[maxreq];
   MPI_Status *stats = new MPI_Status[maxreq];
   int reqnum = 0;
+  int *tagto = new int[count_processors()];
+  for (int i=0;i<count_processors();i++) tagto[i] = 0;
   for (int noti=0;noti<num_chunks;noti++)
     for (int j=0;j<num_chunks;j++) {
       const int i = (noti+j)%num_chunks;
@@ -672,15 +674,18 @@ void fields::step_boundaries(field_type ft) {
         if (comm_sizes[ft][pair] > 0) {
           if (chunks[j]->is_mine())
             MPI_Isend(comm_blocks[ft][pair], comm_sizes[ft][pair]*2,
-                      MPI_DOUBLE, chunks[i]->n_proc(), pair,
+                      MPI_DOUBLE, chunks[i]->n_proc(),
+                      tagto[chunks[i]->n_proc()]++,
                       MPI_COMM_WORLD, &reqs[reqnum++]);
           if (chunks[i]->is_mine())
             MPI_Irecv(comm_blocks[ft][pair], comm_sizes[ft][pair]*2,
-                      MPI_DOUBLE, chunks[j]->n_proc(), pair,
+                      MPI_DOUBLE, chunks[j]->n_proc(),
+                      tagto[chunks[j]->n_proc()]++,
                       MPI_COMM_WORLD, &reqs[reqnum++]);
         }
       }
     }
+  delete[] tagto;
   if (reqnum > maxreq) abort("Too many requests!!!\n");
   if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
   delete[] reqs;
