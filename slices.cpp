@@ -372,7 +372,7 @@ void fields::output_slices(const volume &what, const char *name) {
   
   if (new_ma) {
     snprintf(n, buflen, "%s/%sepsilon-%s.sli", outdir, nname, time_step_string);
-    output_slice(Hp, ma->eps, v, what, n);
+    output_slice(v.eps_component(), ma->eps, v, what, n);
   }
   
   free(n);
@@ -400,6 +400,9 @@ void fields::eps_slices(const volume &what, const char *name) {
           snprintf(n, buflen, "%s/%sp%d%s-%s.eps", outdir, nname, polnum,
                    component_name((component)c), time_step_string);
           output_complex_eps((component)c, p->P[c], v, what, n);
+          snprintf(n, buflen, "%s/%senergy%d%s-%s.eps", outdir, nname, polnum,
+                   component_name((component)c), time_step_string);
+          output_eps((component)c, p->energy[c], v, what, n);
         }
       polnum++;
       p = p->next;
@@ -417,12 +420,12 @@ void fields::eps_slices(const volume &what, const char *name) {
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
                component_name((component)c), time_step_string);
-      output_complex_eps((component)c, f[c], v, what, n, Hp, ma->eps, sig);
+      output_complex_eps((component)c, f[c], v, what, n, v.eps_component(), ma->eps, sig);
     }
   
   if (new_ma) {
     snprintf(n, buflen, "%s/%sepsilon-%s.eps", outdir, nname, time_step_string);
-    output_eps(Hp, ma->eps, v, what, n);
+    output_eps(v.eps_component(), ma->eps, v, what, n);
   }
   
   delete[] sig;
