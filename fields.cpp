@@ -30,6 +30,7 @@ fields::fields(const mat *ma, int tm) :
   verbosity = 0;
   outdir = ma->outdir;
   m = tm;
+  if (v.dim == Dcyl) S = S + r_to_minus_r_symmetry(m);
   phasein_time = 0;
   bands = NULL;
   for (int d=0;d<5;d++) k[d] = 0.0;

@@ -331,15 +331,6 @@ static inline void stupidsort(ivec *locs, double *w, int l) {
 }
 
 void volume::interpolate(component c, const vec &p,
-                         ivec locs[8], double weights[8]) const {
-  if (dim != Dcyl) {
-    interpolate_fancy(c, p, locs, weights);
-  } else {
-    interpolate_cyl(c, p, locs, weights);
-  }
-}
-
-void volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
   ivec locs[8];
   interpolate(c, p, locs, weights);
@@ -373,32 +364,8 @@ void volume::interpolate(component c, const vec &p,
   }
 }
 
-void volume::interpolate_cyl(component c, const vec &p,
-                             ivec locs[8], double weights[8], int m) const {
-  interpolate_fancy(c,p,locs,weights);
-  // Ep is also odd, but we don't need to interpolate it to zero.
-  for (int i=0;i<4&&weights[i];i++) {
-    switch ((component)c) {
-    case Hp: case Hz: case Er:
-      if (locs[i].r() < 0) {
-        ivec plus = locs[i];
-        plus.set_direction(R,-locs[i].r());
-        for (int j=0;j<4&&weights[j];j++)
-          if (locs[j] == plus) {
-            if (c != Hp) weights[j] -= weights[i];
-            else weights[j] += weights[i];
-            weights[i] = 0.0;
-          }
-      }
-    }
-  }
-  // Now I need to reorder them so the points with nonzero weights come
-  // first.
-  stupidsort(locs, weights, 4);
-}
-
-void volume::interpolate_fancy(component c, const vec &pc,
-                               ivec locs[8], double weights[8]) const {
+void volume::interpolate(component c, const vec &pc,
+                         ivec locs[8], double weights[8]) const {
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
@@ -861,23 +828,19 @@ volume volume::pad(direction d) const {
   return v;
 }
 
-vec volume::center() const {
+ivec volume::icenter() const {
   // Find the center of the user's cell (which must be the symmetry
   // point):
-  const double inva = 1.0/a;
-  vec almost_center;
   switch (dim) {
-  case D2:
-    almost_center = origin + vec2d(nx()/2*inva, ny()/2*inva);
-    return operator[](round_vec(almost_center));
-  case D3:
-    almost_center = origin + vec(nx()/2*inva, ny()/2*inva, nz()/2*inva);
-    return operator[](round_vec(almost_center));
-  case Dcyl:
-    almost_center = vec(0.0, origin.in_direction(Z) + nz()/2*inva);
-    return operator[](round_vec(almost_center));    
+  case D2: return io() + ivec2d(nx(), ny());
+  case D3: return io() + ivec(nx(), ny(), nz());
+  case Dcyl: return io() + ivec(0, nz());
   }
   abort("Can't do symmetry with these dimensions.\n");
+}
+
+vec volume::center() const {
+  return operator[](icenter());
 }
 
 symmetry rotate4(direction axis, const volume &v) {
@@ -892,8 +855,7 @@ symmetry rotate4(direction axis, const volume &v) {
   s.S[(axis+1)%3].flipped = true;
   s.S[(axis+2)%3].d = (direction)((axis+1)%3);
   s.symmetry_point = v.center();
-  s.a = v.a;
-  s.inva = 1.0/v.a;
+  s.i_symmetry_point = v.icenter();
   return s;
 }
 
@@ -904,8 +866,7 @@ symmetry rotate2(direction axis, const volume &v) {
   s.S[(axis+1)%3].flipped = true;
   s.S[(axis+2)%3].flipped = true;
   s.symmetry_point = v.center();
-  s.a = v.a;
-  s.inva = 1.0/v.a;
+  s.i_symmetry_point = v.icenter();
   return s;
 }
 
@@ -914,8 +875,18 @@ symmetry mirror(direction axis, const volume &v) {
   s.g = 2;
   s.S[axis].flipped = true;
   s.symmetry_point = v.center();
-  s.a = v.a;
-  s.inva = 1.0/v.a;
+  s.i_symmetry_point = v.icenter();
+  return s;
+}
+
+symmetry r_to_minus_r_symmetry(int m) {
+  symmetry s = identity();
+  s.g = 2;
+  s.S[R].flipped = true;
+  s.S[P].flipped = true;
+  s.symmetry_point = zero_vec(Dcyl);
+  s.i_symmetry_point = zero_ivec(Dcyl);
+  s.ph = (m & 1) ? -1.0 : 1.0;
   return s;
 }
 
@@ -926,27 +897,24 @@ symmetry identity() {
 symmetry::symmetry() {
   g = 1;
   ph = 1.0;
-  for (int d=0;d<5;d++) {
-    S[d].d = (direction)d;
+  FOR_DIRECTIONS(d) {
+    S[d].d = d;
     S[d].flipped = false;
   }
-  // Set these to NaN just to make sure I don't use them.
-  a = inva = sqrt(-1.0);
   next = NULL;
 }
 
 symmetry::symmetry(const symmetry &s) {
   g = s.g;
-  for (int d=0;d<5;d++) {
+  FOR_DIRECTIONS(d) {
     S[d].d = s.S[d].d;
     S[d].flipped = s.S[d].flipped;
   }
   ph = s.ph;
   symmetry_point = s.symmetry_point;
+  i_symmetry_point = s.i_symmetry_point;
   if (s.next) next = new symmetry(*s.next);
   else next = NULL;
-  a = s.a;
-  inva = s.inva;
 }
 
 void symmetry::operator=(const symmetry &s) {
@@ -957,10 +925,9 @@ void symmetry::operator=(const symmetry &s) {
   }
   ph = s.ph;
   symmetry_point = s.symmetry_point;
+  i_symmetry_point = s.i_symmetry_point;
   if (s.next) next = new symmetry(*s.next);
   else next = NULL;
-  a = s.a;
-  inva = s.inva;
 }
 
 symmetry::~symmetry() {
@@ -973,6 +940,11 @@ int symmetry::multiplicity() const {
 }
 
 symmetry symmetry::operator+(const symmetry &b) const {
+  // The following optimization ignores identity when adding symmetries
+  // together.  This is important because identity has an undefined
+  // symmetry point.
+  if (multiplicity() == 1) return b;
+  else if (b.multiplicity() == 1) return *this;
   symmetry s = *this;
   s.next = new symmetry(b);
   return s;
@@ -1017,8 +989,8 @@ ivec symmetry::transform(const ivec &ov, int n) const {
   ivec out = ov;
   LOOP_OVER_DIRECTIONS(ov.dim, d) {
     const signed_direction s = transform(d,n);
-    const int sp_d  = lattice_to_yee(symmetry_point.in_direction(d),a,inva);
-    const int sp_sd = lattice_to_yee(symmetry_point.in_direction(s.d),a,inva);
+    const int sp_d  = i_symmetry_point.in_direction(d);
+    const int sp_sd = i_symmetry_point.in_direction(s.d);
     const int delta = ov.in_direction(d) - sp_d;
     if (s.flipped) out.set_direction(s.d, sp_sd - delta);
     else out.set_direction(s.d, sp_sd + delta);
@@ -1049,27 +1021,23 @@ component symmetry::transform(component c, int n) const {
 
 complex<double> symmetry::phase_shift(component c, int n) const {
   complex<double> phase = transform(component_direction(c),n).phase;
+  // flip tells us if we need to flip the sign.  For vectors (E), it is
+  // just this simple:
+  bool flip = transform(component_direction(c),n).flipped;
   if (is_magnetic(c)) {
-    // Because H is a pseudovector, here we have to figure out if it is an
-    // inversion... to do this we'll figure out what happens when we
-    // transform the two other directions.
-    const direction d0 = component_direction(c);
-    const direction d1 = (direction) ((d0+1)%3);
-    const direction d2 = (direction) ((d0+2)%3);
-    // Note that according to the above definition, c1 and c2 are in
-    // cyclical permutation order, i.e. (c2 - c1)%3 == 1.  If the
-    // transformation of these two directions is no longer cyclical, then
-    // we need to flip the sign of this component of H.
-    bool flip = false;
-    if (((3+transform(d2,n).d - transform(d1,n).d)%3) == 2) flip = !flip;
-    if (transform(d1,n).flipped) flip = !flip;
-    if (transform(d2,n).flipped) flip = !flip;
-    if (flip) return -phase;
-    else return phase;
-  } else {
-    if (transform(component_direction(c),n).flipped) return -phase;
-    else return phase;
+    // Because H is a pseudovector, here we have to figure out if the
+    // transformation changes the handedness of the basis.
+    bool have_one = false, have_two = false;
+    FOR_DIRECTIONS(d) {
+      if (transform(d,n).flipped) flip = !flip;
+      int shift = (transform(d,n).d - d + 6) % 3;
+      if (shift == 1) have_one = true;
+      if (shift == 2) have_two = true;
+    }
+    if (have_one && have_two) flip = !flip;
   }
+  if (flip) return -phase;
+  else return phase;
 }
 
 bool symmetry::is_primitive(const ivec &p) const {

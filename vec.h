@@ -350,11 +350,6 @@ class volume {
   void interpolate(component, const vec &, int indices[8], double weights[8]) const;
   void interpolate(component, const vec &, ivec locs[8], double weights[8]) const;
 
-  void interpolate_cyl(component c, const vec &p,
-                       ivec locs[8], double weights[8], int m=0) const;
-  void interpolate_fancy(component c, const vec &p,
-                         ivec locs[8], double weights[8]) const;
-
   geometric_volume dV(component c, int index) const;
   geometric_volume dV(const ivec &) const;
   bool intersect_with(const volume &vol_in, volume *intersection = NULL, volume *others = NULL, int *num_others = NULL) const;
@@ -367,6 +362,7 @@ class volume {
   double zmin() const;
   double zmax() const;
   vec center() const;
+  ivec icenter() const;
   vec loc(component, int index) const;
   vec loc_at_resolution(int index, double res) const;
   int ntot_at_resolution(double res) const;
@@ -446,9 +442,10 @@ class symmetry {
   signed_direction S[5];
   complex<double> ph;
   vec symmetry_point;
-  double a, inva;
+  ivec i_symmetry_point;
   int g; // g is the multiplicity of the symmetry.
   symmetry *next;
+  friend symmetry r_to_minus_r_symmetry(int m);
 };
 
 symmetry identity();

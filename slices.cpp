@@ -528,8 +528,10 @@ void fields::output_slices(const geometric_volume &what, const char *name) {
 }
 
 void fields::eps_slices(const char *name) {
-  if (v.dim == Dcyl || v.dim == D1 || v.dim == D2)
-    eps_slices(user_volume.surroundings(), name);
+  if (v.dim == D3) abort("Specify directions for EPS slices in 3D\n");
+  geometric_volume what = user_volume.surroundings();
+  if (v.dim == Dcyl) what.set_direction_min(R,-what.in_direction_max(R));
+  eps_slices(what,name);
 }
 
 void fields::eps_slices(const vec &origin, const vec &xside, const vec &yside,

@@ -159,6 +159,53 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *dir
   return 1;
 }
 
+int test_r_equals_zero(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 3.0;  
+  volume v = volcyl(1.5,0.8,a);
+  mat ma(v, eps);
+  ma.set_output_directory(dirname);
+  for (int m=0;m<3;m++) {
+    char m_str[10];
+    snprintf(m_str, 10, "%d", m);
+    master_printf("Checking at r == 0 with m = %d...\n", m);
+    fields f(&ma, m);
+    f.use_metal_everywhere();
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
+    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    while (f.time() < ttot) f.step();
+    monitor_point p;
+    f.get_point(&p, vec(0.0, 0.5));
+    if (p.get_component(Ez) != 0.0 && (m & 1)) {
+      printf("Got non-zero Ez with m == %d\n", m);
+      return 0;
+    }
+    if (p.get_component(Hz) != 0.0 && (m & 1)) {
+      printf("Got non-zero Hz with m == %d\n", m);
+      return 0;
+    }
+    if (p.get_component(Er) != 0.0 && !(m & 1)) {
+      printf("Got non-zero Er with m == %d\n", m);
+      return 0;
+    }
+    if (p.get_component(Ep) != 0.0 && !(m & 1)) {
+      printf("Got non-zero Ep with m == %d\n", m);
+      return 0;
+    }
+    if (p.get_component(Hr) != 0.0 && !(m & 1)) {
+      printf("Got non-zero Hr with m == %d\n", m);
+      return 0;
+    }
+    if (p.get_component(Hp) != 0.0 && !(m & 1)) {
+      f.eps_slices();
+      printf("Got non-zero Hp of %lg %lg with m == %d\n",
+             real(p.get_component(Hp)), imag(p.get_component(Hp)), m);
+      return 0;
+    }
+  }
+  return 1;
+}
+
 int test_pml(double eps(const vec &), int splitting, const char *dirname) {
   double a = 8;
   double ttot = 25.0;
@@ -274,7 +321,9 @@ int main(int argc, char **argv) {
   trash_output_directory(dirname);
   master_printf("Testing cylindrical coords under different splittings...\n");
 
-  for (int s=2;s<8;s++)
+  if (!test_r_equals_zero(one, dirname)) abort("error in test_r_equals_zero");
+
+  for (int s=2;s<6;s++)
     if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
   if (!test_pattern(one, 8, dirname)) abort("error in crazy test_pattern\n");
   if (!test_pattern(one, 120, dirname)) abort("error in crazy test_pattern\n");

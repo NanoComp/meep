@@ -136,3 +136,5 @@ class weighted_flux_plane {
   ~weighted_flux_plane() {};
   complex<double> flux(fields_chunk *f);  
 };
+
+symmetry r_to_minus_r_symmetry(int m);
