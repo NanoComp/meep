@@ -23,7 +23,7 @@ OBJ_example = example.o libdactyl.a
 
 ###########################################################################
 
-all: libdactyl.a example plot
+all: libdactyl.a example plot modes doc
 install: dactyl-install
 uninstall: dactyl-uninstall
 
@@ -55,6 +55,12 @@ convergence_testing: convergence_testing.o libdactyl.a
 .o.dac: libdactyl.a
 	$(CXX) $(CFLAGS) $(LDFLAGS) $< libdactyl.a $(LIBS) -o $@
 
+doc/dactyl.ps : doc/dactyl.dvi
+	cd doc && dvips -o dactyl.ps dactyl.dvi
+
+doc/dactyl.dvi : doc/dactyl.tex
+	cd doc && latex dactyl.tex
+
 ###########################################################################
 
 dactyl-install: dactyl
@@ -82,6 +88,8 @@ dist:
 test: libdactyl.a d_metal_m_1.dac d_rpml_m_1.dac
 	./d_metal_m_1.dac && mv d_metal_m_1-*.sli test_results/ && \
 	./d_rpml_m_1.dac && mv d_rpml_m_1-*.sli test_results/
+
+doc: doc/dactyl.ps
 
 clean:
 	rm -f $(OBJ_dactyl) *.o libdactyl.a example core bands_example *.dac
