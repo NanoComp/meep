@@ -17,7 +17,7 @@ meep_SOURCES = meep.cpp structure.cpp $(MEEP_WRAP) $(HDRS) meep.i
 nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i
 meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
-BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx
+BUILT_SOURCES = $(nodist_meep_SOURCES) $(MEEP_WRAP)
 
 meep_wrap.cxx: meep.i meep_renames.i ctl-io.i meep-ctl-swig.h $(LIBHDRS)
 	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
