@@ -49,6 +49,15 @@ static double sig(double r);
 void mat::use_pml(int numpmlr, int numpmlz) {
   npmlz = numpmlz;
   npmlr = numpmlr;
+  if (npmlz * 2 >= nz) {
+    printf("Not enough room for the z PML. nz = %d\n", nz);
+    exit(1);
+  }
+  if (npmlr >= nr) {
+    printf("Not enough room for the r PML. nr = %d\n", nr);
+    exit(1);
+  }
+    
   // Delete any previously allocated conductivity arrays...
   delete[] Crez;
   delete[] Crep;
