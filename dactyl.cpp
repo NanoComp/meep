@@ -337,10 +337,13 @@ complex<double> src::get_amplitude_at_time(int t) const {
 
 double src::get_envelope_at_time(int t) const {
   double tt = t - peaktime;
-  if (fabs(tt) > cutoff) {
+  if (is_continuous && tt > 0) {
+    return 1.0;
+  } else if (fabs(tt) > cutoff) {
     return 0.0;
+  } else {
+    return exp(-tt*tt/(2*width*width));
   }
-  return exp(-tt*tt/(2*width*width));
 }
 
 static double integrate_envelope(const src *s) {
@@ -376,7 +379,7 @@ static complex<double> integrate_source(const src *s) {
 void fields::add_src_pt(int r, int z,
                         complex<double> Pr, complex<double> Pp, complex<double> Pz,
                         double freq, double width, double peaktime,
-                        double cutoff, int is_h) {
+                        double cutoff, int is_h, int is_contin) {
   const double pi=3.14159265;
   if (m!=0 && r < rmin_bulk(m)-1) return;
   if (r >= nr - npmlr) return;
@@ -405,6 +408,7 @@ void fields::add_src_pt(int r, int z,
   tmp->z = z;
   tmp->amp_shift = 0.0;
   tmp->is_real = 0;
+  tmp->is_continuous = is_contin;
   if (is_h) {
     tmp->next = h_sources;
     h_sources = tmp;
@@ -417,7 +421,8 @@ void fields::add_src_pt(int r, int z,
   if (peaktime <= 0.0) tmp->peaktime = tmp->cutoff;
   // Apply a shift so that we won't end up with a static polarization when
   // the source is gone:
-  tmp->amp_shift = integrate_source(tmp)/integrate_envelope(tmp);
+  if (is_contin) tmp->amp_shift = 0.0;
+  else tmp->amp_shift = integrate_source(tmp)/integrate_envelope(tmp);
 }
 
 void fields::find_source_z_position(double z, double shift, int *z1, int *z2,
@@ -477,7 +482,8 @@ void fields::find_source_z_position(double z, double shift, int *z1, int *z2,
 }
 
 void fields::add_plane_source(double freq, double width, double peaktime,
-                              double cutoff, double z, complex<double> amp(double r)) {
+                              double cutoff, double z, complex<double> amp(double r),
+                              int is_c) {
   int thez = (int) (z*a + 0.5);
   const complex<double> I = complex<double>(0,1);
   complex<double> eiomt = exp(-I*freq*2*pi*inva/c*0.5);
@@ -490,20 +496,61 @@ void fields::add_plane_source(double freq, double width, double peaktime,
     double eps = sqrt(MA(ma->eps, r, thez));
     if (A != 0.0) {
       // E_phi
-      add_src_pt(r, thez, 0.0, A, 0.0, freq, width, peaktime, cutoff, 0);
+      add_src_pt(r, thez, 0.0, A, 0.0, freq, width, peaktime, cutoff, 0, is_c);
       // iH_r = d(rH_phi)/dr
       complex<double> A_Hr = -(rh*Ah - rmh*Amh)*eps;
       if (r == 0) A_Hr = Ah*eps;
-      add_src_pt(r, thez, -A*eps, 0.0, 0.0, freq, width, peaktime, cutoff, 1);
+      add_src_pt(r, thez, -A*eps, 0.0, 0.0, freq, width, peaktime, cutoff, 1, is_c);
     }
     if (Ah != 0.0) {
       // iE_r = d(rE_phi)/dr
       complex<double> A_Er = -I*0.5*(Ap + A);
-      add_src_pt(r, thez, A_Er, 0.0, 0.0, freq, width, peaktime, cutoff, 0);
+      add_src_pt(r, thez, A_Er, 0.0, 0.0, freq, width, peaktime, cutoff, 0, is_c);
       // H_phi
-      add_src_pt(r, thez, 0.0, -(Ap+A)*0.5*I*eps, 0.0, freq, width, peaktime, cutoff, 1);
+      add_src_pt(r, thez, 0.0, -(Ap+A)*0.5*I*eps, 0.0, freq, width, peaktime, cutoff, 1, is_c);
     }
   }
+}
+
+void fields::add_continuous_plane_source(double freq, double width, double peaktime,
+                                         double cutoff, double z, complex<double> amp(double r)) {
+  add_plane_source(freq, width, peaktime, cutoff, z, amp, 1);
+}
+
+void fields::add_source(component whichf, double freq, double width, double peaktime,
+                        double cutoff, double z, complex<double> amp(double r),
+                        int is_c) {
+  double zshift = 0.0;
+  if (whichf == Hr || whichf == Hp || whichf == Ez) zshift = 0.5;
+  int is_h = 0;
+  if (whichf == Hr || whichf == Hp || whichf == Hz) is_h = 1;
+  int z1, z2;
+  complex<double> amp1, amp2;
+  find_source_z_position(z*a, zshift, &z1, &z2, &amp1, &amp2);
+  for (int r=0;r<nr;r++) {
+    switch (whichf) {
+    case Er:
+    case Hr:
+      add_src_pt(r, z1, amp1*amp(r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
+      add_src_pt(r, z2, amp2*amp(r*inva), 0.0, 0.0, freq, width, peaktime, cutoff, is_h, is_c);
+      break;
+    case Ep:
+    case Hp:
+      add_src_pt(r, z1, 0.0, amp1*amp(r*inva), 0.0, freq, width, peaktime, cutoff, is_h, is_c);
+      add_src_pt(r, z2, 0.0, amp2*amp(r*inva), 0.0, freq, width, peaktime, cutoff, is_h, is_c);
+      break;
+    case Ez:
+    case Hz:
+      add_src_pt(r, z1, 0.0, 0.0, amp1*amp(r*inva), freq, width, peaktime, cutoff, is_h, is_c);
+      add_src_pt(r, z2, 0.0, 0.0, amp2*amp(r*inva), freq, width, peaktime, cutoff, is_h, is_c);
+      break;
+    }
+  }
+}
+
+void fields::add_continuous_source(component whichf, double freq, double width, double peaktime,
+                                   double cutoff, double z, complex<double> amp(double r)) {
+  add_source(whichf, freq, width, peaktime, cutoff, z, amp, 1);
 }
 
 void fields::add_hr_source(double freq, double width, double peaktime,

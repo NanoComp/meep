@@ -87,7 +87,7 @@ class src {
   double freq, width, peaktime;
   complex<double> ez, ep, er, amp_shift;
   int r, z, cutoff;
-  int is_real;
+  int is_real, is_continuous;
   src *next;
   int find_last_source(int guess=0);
   void use_real_sources();

@@ -153,7 +153,15 @@ class fields {
   int find_last_source();
   // Note that the following plane source only works if m == 1.
   void add_plane_source(double freq, double width, double peaktime,
-                        double cutoff, double z, complex<double> amp(double r));
+                        double cutoff, double z, complex<double> amp(double r),
+                        int is_continuous = 0);
+  void add_continuous_plane_source(double freq, double width, double peaktime,
+                                   double cutoff, double z, complex<double> amp(double r));
+  void add_source(component whichf, double freq, double width, double peaktime,
+                  double cutoff, double z, complex<double> amp(double r),
+                  int is_continuous = 0);
+  void add_continuous_source(component whichf, double freq, double width, double peaktime,
+                             double cutoff, double z, complex<double> amp(double r));
   void add_er_source(double freq, double width, double peaktime,
                      double cutoff, double z, complex<double> amp(double r));
   void add_ep_source(double freq, double width, double peaktime,
@@ -227,7 +235,7 @@ class fields {
   void add_src_pt(int r, int z,
                   complex<double> Pr, complex<double> Pp, complex<double> Pz,
                   double freq, double width, double peaktime,
-                  double cutoff, int is_h = 0);
+                  double cutoff, int is_h = 0, int is_continuous = 0);
   int setifreqmax_and_iposmax(int ifreq, int ipos);
   void out_bands(FILE *, const char *, int maxbands, int outmodes);
   complex<double> *get_the_bands(int maxbands, double *approx_power = NULL);
