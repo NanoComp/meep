@@ -299,7 +299,7 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
   for (int r=0;r<nr;r+=bands.scale_factor/c*2) {
     cmplx *bdata;
     for (int whichf = 0; whichf < 6; whichf++) {
-      printf("Looking at (%d.%d)\n", r, whichf);
+      //printf("Looking at (%d.%d)\n", r, whichf);
       switch (whichf) {
       case 0: bdata = bands.er; break;
       case 1: bdata = bands.ep; break;
@@ -316,13 +316,12 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
       if (not_empty) {
         if (numref == 0) { // Have no reference bands so far...
           numref = bands.get_freqs(simple_data, ntime, refa, reff, refd);
-          printf("Starting out with %d modes!\n", numref);
           for (int n=0;n<numref;n++) {
             HARMOUT(eigen,r,n,whichf) = refa[n];
             refr[n] = r;
             refw[n] = whichf;
-            printf("Here's a mode (%10lg,%10lg) (%10lg,%10lg) -- %d (%d.%d)\n",
-                   reff[n], refd[n], real(refa[n]),imag(refa[n]), n, r, whichf);
+            //printf("Here's a mode (%10lg,%10lg) (%10lg,%10lg) -- %d (%d.%d)\n",
+            //       reff[n], refd[n], real(refa[n]),imag(refa[n]), n, r, whichf);
             for (int t=0;t<ntime;t++)
               refdata[t+n*ntime] = BAND(bdata,r,t);
           }
@@ -347,7 +346,7 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
             //printf("Setting amp to %lg (vs %lg)\n",
             //       abs(herea[best_match]), abs(ta[best_match]));
             if (err_best > 0.02 && err_best < 1e299) {
-              printf("OOOOOOOOO\n");
+              /*printf("OOOOOOOOO\n");
               printf("---------\n");
               if (err_best > 0.02) {
                 printf("Didn't find a nice frequency! (%lg) (%d.%d) vs (%d.%d)\n",
@@ -363,16 +362,16 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
                        i, tf[i], td[i], ta[i]);
               } 
               printf("---------\n");
-              printf("OOOOOOOOO\n");
+              printf("OOOOOOOOO\n");*/
             } else if (err_best < 0.02) {
               HARMOUT(eigen,r,n,whichf) = herea[best_match];
               if (abs(herea[best_match]) > abs(refa[n])) { // Change reference...
-                printf("Changing reference %d to (%d.%d)\n", n, r, whichf);
-                printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
-                printf("best_err is %lg\n", err_best);
-                printf("amp (%lg,%lg) (%lg,%lg)\n", 
-                       real(refa[n]),imag(refa[n]),
-                       real(ta[best_match]), imag(ta[best_match]));
+                //printf("Changing reference %d to (%d.%d)\n", n, r, whichf);
+                //printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
+                //printf("best_err is %lg\n", err_best);
+                //printf("amp (%lg,%lg) (%lg,%lg)\n", 
+                //       real(refa[n]),imag(refa[n]),
+                //       real(ta[best_match]), imag(ta[best_match]));
                 reff[n] = tf[best_match];
                 refd[n] = td[best_match];
                 refa[n] = herea[best_match];
@@ -419,8 +418,8 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
               if (refnum[i] == -1) { // New mode!!! Change reference...
                 reff[numref] = heref[i];
                 refd[numref] = hered[i];
-                printf("Found one more mode! (%10lg,%10lg) -- %d (%d.%d)\n",
-                       heref[i], refd[numref], numref, r, whichf);
+                //printf("Found one more mode! (%10lg,%10lg) -- %d (%d.%d)\n",
+                //       heref[i], refd[numref], numref, r, whichf);
                 refa[numref] = herea[i];
                 refa[numref] = HARMOUT(eigen,r,numref,whichf);
                 refr[numref] = r;
@@ -523,8 +522,8 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
         for (int i=0;i<numfound;i++) {
           freqs[i] = 0.5*(fp[i]+fm[i]);
           if (0.5*(fp[i]-fm[i]) > 0.1*freqs[i]) {
-            printf("We've got some weird frequencies: %lg and %lg\n",
-                   fp[i], fm[i]);
+            //printf("We've got some weird frequencies: %lg and %lg\n",
+            //       fp[i], fm[i]);
           }
           decays[i] = 0.5*(dp[i]+dm[i]);
           amps1[i] = 0.5*(Ap[i]+Am[i]);
