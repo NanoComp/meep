@@ -56,7 +56,7 @@ AC_CHECK_LIB(m, sin)
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
   [AC_CHECK_LIB(dfftw, fftw_create_plan, [],
     [AC_CHECK_LIB(fftw, fftw_create_plan, [],
-       [AC_MSG_WARN([Missing FFTW library...slow DFT will be used for monitor-point Fourier transform])])])
+       [AC_MSG_WARN([Missing FFTW library...slow DFT will be used for monitor-point Fourier transform])])])])
 
 ###########################################################################
 # Harminv library
