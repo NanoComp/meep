@@ -90,4 +90,4 @@ testclean:
 	rm -rf *.o *.hi *.cpp *.dac *-out *-out-*
 
 clean:
-	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.cpp *.dac dactyl/
+	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.cpp *.dac dactyl/ *-out *-out-*

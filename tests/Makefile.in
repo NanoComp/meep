@@ -1,5 +1,5 @@
 .SUFFIXES: .dac .tex
-.PHONY: all clean
+.PHONY: all clean bench
 
 CXX = @DACTYL_CXX@
 CXXFLAGS = @DACTYL_CXXFLAGS@
@@ -20,8 +20,8 @@ all: dactyl.ps dactyl/dactyl.html preproc
 
 ###########################################################################
 
-OBJFILES = cylindrical.o one_dimensional.o
-TESTFILES = cylindrical.dac one_dimensional.dac
+OBJFILES = cylindrical.o one_dimensional.o bench.o
+TESTFILES = cylindrical.dac one_dimensional.dac bench.dac
 
 $(OBJFILES): ../dactyl.h
 $(TESTFILES): ../libdactyl.a
@@ -31,10 +31,14 @@ $(TESTFILES): ../libdactyl.a
 .o.dac:
 	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
 
-test: $(TESTFILES)
+test: $(TESTFILES) bench
 	set -e
 	$(RUNCODE) ./one_dimensional.dac
 	$(RUNCODE) ./cylindrical.dac
 
+bench: $(TESTFILES)
+	set -e
+	$(RUNCODE) ./bench.dac
+
 clean:
-	rm -rf *.o *.dac
+	rm -rf *.o *.dac *-out/ *-out-*/
