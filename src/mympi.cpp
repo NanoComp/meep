@@ -29,6 +29,9 @@
 #    define _GNU_SOURCE 1
 #  endif
 #  include <fenv.h>
+#  if !HAVE_DECL_FEENABLEEXCEPT
+extern "C" int feenableexcept (int EXCEPTS);
+#  endif
 #endif
 
 #define UNUSED(x) (void) x // silence compiler warnings
