@@ -216,7 +216,12 @@ void fields::output_slices(const char *name) {
   output_complex_slice(ep, nr, nz, n);
   snprintf(n, buflen, "%s/%sez-%s.sli", outdir, nname, time_step_string);
   output_complex_slice(ez, nr, nz, n);
-
+  
+  if (new_ma) {
+    snprintf(n, buflen, "%s/%sepsilon-%s.sli", outdir, nname, time_step_string);
+    output_slice(ma->eps, nr, nz, n);
+  }
+  
   free(n);
 }
 
