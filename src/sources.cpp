@@ -257,6 +257,9 @@ static void src_vol_integrand(fields_chunk *fc, component c,
     index_array[idx_vol++] = idx;
   }
 
+  if (idx_vol != npts)
+    abort("add_volume_source: computed wrong npts (%d vs. %d)", npts, idx_vol);
+
   src_vol *tmp = new src_vol(c, data->src, npts, index_array, amps_array);
   if (is_magnetic(c))
     fc->h_sources = tmp->add_to(fc->h_sources);
