@@ -83,37 +83,38 @@ inline direction stop_at_direction(ndim dim) {
 
 // loop over indices idx from is to ie (inclusive) in v
 #define LOOP_OVER_IVECS(v, is, ie, idx) \
-  for (int loop_n1 = (ie.yucky_val(0) - is.yucky_val(0)) / 2 + 1, \
-           loop_n2 = (ie.yucky_val(1) - is.yucky_val(1)) / 2 + 1, \
-           loop_n3 = (ie.yucky_val(2) - is.yucky_val(2)) / 2 + 1, \
-           loop_d1 = v.yucky_direction(0), \
-           loop_d2 = v.yucky_direction(1), \
-           loop_d3 = v.yucky_direction(2), \
-           loop_is1 = is.yucky_val(0), \
-           loop_is2 = is.yucky_val(1), \
-           loop_is3 = is.yucky_val(2), \
-           loop_s1 = v.stride((direction) loop_d1), \
-           loop_s2 = v.stride((direction) loop_d2), \
-           loop_s3 = v.stride((direction) loop_d3), \
-           idx0 = (is - v.little_corner()).yucky_val(0) / 2 * loop_s1 \
-                + (is - v.little_corner()).yucky_val(1) / 2 * loop_s2 \
-                + (is - v.little_corner()).yucky_val(2) / 2 * loop_s3,\
+  for (int loop_is1 = (is).yucky_val(0), \
+           loop_is2 = (is).yucky_val(1), \
+           loop_is3 = (is).yucky_val(2), \
+           loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
+           loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1, \
+           loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
+           loop_d1 = (v).yucky_direction(0), \
+           loop_d2 = (v).yucky_direction(1), \
+           loop_d3 = (v).yucky_direction(2), \
+           loop_s1 = (v).stride((direction) loop_d1), \
+           loop_s2 = (v).stride((direction) loop_d2), \
+           loop_s3 = (v).stride((direction) loop_d3), \
+           idx0 = (is - (v).little_corner()).yucky_val(0) / 2 * loop_s1 \
+                + (is - (v).little_corner()).yucky_val(1) / 2 * loop_s2 \
+                + (is - (v).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
     for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
       for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
-#define IVEC_LOOP_WEIGHTx(i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? s0.in_direction(direction(dir)) : (i == 1 ? s1.in_direction(direction(dir)) : i == n - 1 ? e0.in_direction(direction(dir)) : (i == n - 2 ? e1.in_direction(direction(dir)) : 1.0))))
-#define IVEC_LOOP_WEIGHT(k) IVEC_LOOP_WEIGHTx(loop_i##k, loop_n##k, loop_d##k)
+#define IVEC_LOOP_WEIGHT1x(i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? s0.in_direction(direction(dir)) : (i == 1 ? s1.in_direction(direction(dir)) : i == n - 1 ? e0.in_direction(direction(dir)) : (i == n - 2 ? e1.in_direction(direction(dir)) : 1.0))))
+#define IVEC_LOOP_WEIGHT1(k) IVEC_LOOP_WEIGHT1x(loop_i##k,loop_n##k,loop_d##k)
+#define IVEC_LOOP_WEIGHT(dV) (IVEC_LOOP_WEIGHT1(3) * (IVEC_LOOP_WEIGHT1(2) * ((dV) * IVEC_LOOP_WEIGHT1(1))))
 
 #define LOOP_OVER_OWNED(v, idx) \
-  for (int loop_n1 = v.yucky_num(0), \
-           loop_n2 = v.yucky_num(1), \
-           loop_n3 = v.yucky_num(2), \
-           loop_s1 = v.stride(v.yucky_direction(0)), \
-           loop_s2 = v.stride(v.yucky_direction(1)), \
-           loop_s3 = v.stride(v.yucky_direction(2)), \
+  for (int loop_n1 = (v).yucky_num(0), \
+           loop_n2 = (v).yucky_num(1), \
+           loop_n3 = (v).yucky_num(2), \
+           loop_s1 = (v).stride((v).yucky_direction(0)), \
+           loop_s2 = (v).stride((v).yucky_direction(1)), \
+           loop_s3 = (v).stride((v).yucky_direction(2)), \
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
       for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
         for (int idx = loop_i1*loop_s1 + loop_i2*loop_s2, \

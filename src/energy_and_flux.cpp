@@ -99,14 +99,9 @@ static void dot_integrand(fields_chunk *fc, component cgrid,
 
   for (int cmp = 0; cmp < 2; ++cmp)
     if (fc->f[c1][cmp] && fc->f[c2][cmp])
-      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-        double w1 = IVEC_LOOP_WEIGHT(1);
-	double dV = dV0 + dV1 * loop_i2;
-	double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
-	double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-	data->sum += w123 * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx];
-	(void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
-    }
+      LOOP_OVER_IVECS(fc->v, is, ie, idx)
+	data->sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2)
+	  * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx];
 }
 
 double fields::field_energy_in_box(component c,
@@ -181,14 +176,9 @@ static void thermo_integrand(fields_chunk *fc, component cgrid,
   long double *sum = (long double *) sum_;
   (void) shift; (void) shift_phase; (void) S; (void) sn; // unused
   if (fc->pol && fc->pol->energy[cgrid])
-    LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-      double w1 = IVEC_LOOP_WEIGHT(1);
-      double dV = dV0 + dV1 * loop_i2;
-      double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
-      double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-      *sum += w123 * fc->pol->energy[cgrid][idx];
-      (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
-  }
+    LOOP_OVER_IVECS(fc->v, is, ie, idx)
+      *sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2)
+	* fc->pol->energy[cgrid][idx];
 }
 
 double fields::thermo_energy_in_box(const geometric_volume &where) {
@@ -236,10 +226,6 @@ static void flux_integrand(fields_chunk *fc, component cgrid,
   for (int cmp = 0; cmp < 2; ++cmp)
     if (fc->f[cE][cmp] && fc->f[cH][cmp])
       LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-        double w1 = IVEC_LOOP_WEIGHT(1);
-	double dV = dV0 + dV1 * loop_i2;
-	double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
-	double w123 = w12 * IVEC_LOOP_WEIGHT(3);
 	double E, H;
 
 	if (oE2)
@@ -258,8 +244,7 @@ static void flux_integrand(fields_chunk *fc, component cgrid,
 	else
 	  H = fc->f[cH][cmp][idx];
 	
-	sum += w123 * E * H;
-	(void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
+	sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2) * E * H;
     }
 
   data->sum += S.transform(data->d, -sn).flipped ? -sum : sum;

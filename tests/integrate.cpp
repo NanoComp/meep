@@ -57,12 +57,8 @@ static void linear_integrand(fields_chunk *fc, component cgrid,
   (void) cgrid;
 
   vec loc(fc->v.dim, 0.0);
+  double inva = fc->v.inva;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    double w1 = IVEC_LOOP_WEIGHT(1);
-    double dV = dV0 + dV1 * loop_i2;
-    double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
-    double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-    double inva = fc->v.inva;
     loc.set_direction(direction(loop_d1), loop_is1*0.5*inva + loop_i1*inva);
     loc.set_direction(direction(loop_d2), loop_is2*0.5*inva + loop_i2*inva);
     loc.set_direction(direction(loop_d3), loop_is3*0.5*inva + loop_i3*inva);
@@ -73,18 +69,18 @@ static void linear_integrand(fields_chunk *fc, component cgrid,
 			 locS.in_direction(X),
 			 locS.in_direction(Y),
 			 locS.in_direction(Z),
-			 w123/dV, dV);
-    data->sum +=
-      w123 * (data->c
-	      + data->ax * locS.in_direction(X)
-	      + data->ay * locS.in_direction(Y)
-	      + data->az * locS.in_direction(Z)
-	      + data->axy * locS.in_direction(X) * locS.in_direction(Y)
-	      + data->ayz * locS.in_direction(Z) * locS.in_direction(Y)
-	      + data->axz * locS.in_direction(X) * locS.in_direction(Z)
-	      + data->axyz * locS.in_direction(X) * locS.in_direction(Y)
-	                   * locS.in_direction(Z)
-	      );
+			 IVEC_LOOP_WEIGHT(1), dV0 + dV1 * loop_i2);
+    data->sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2)
+      * (data->c
+	 + data->ax * locS.in_direction(X)
+	 + data->ay * locS.in_direction(Y)
+	 + data->az * locS.in_direction(Z)
+	 + data->axy * locS.in_direction(X) * locS.in_direction(Y)
+	 + data->ayz * locS.in_direction(Z) * locS.in_direction(Y)
+	 + data->axz * locS.in_direction(X) * locS.in_direction(Z)
+	 + data->axyz * locS.in_direction(X) * locS.in_direction(Y)
+	 * locS.in_direction(Z)
+	 );
   }
 }
 

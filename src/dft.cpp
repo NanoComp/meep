@@ -149,25 +149,19 @@ void dft_chunk::update_dft(double time) {
 
   int idx_dft = 0;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    double w1 = IVEC_LOOP_WEIGHT(1);
-    double dV = dV0 + dV1 * loop_i2;
-    double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
-    double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-    
-    (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
-    
+    double w = IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2);
     double f[2]; // real/imag field value at epsilon point
     if (avg2)
       for (int cmp=0; cmp < numcmp; ++cmp)
-	f[cmp] = (w123 * 0.25) * 
+	f[cmp] = (w * 0.25) * 
 	  (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]
 	   + fc->f[c][cmp][idx+avg2] + fc->f[c][cmp][idx+(avg1+avg2)]);
     else if (avg1)
       for (int cmp=0; cmp < numcmp; ++cmp)
-	f[cmp] = (w123*0.5) * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]);
+	f[cmp] = (w * 0.5) * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]);
     else
       for (int cmp=0; cmp < numcmp; ++cmp)
-	f[cmp] = w123 * fc->f[c][cmp][idx];
+	f[cmp] = w * fc->f[c][cmp][idx];
     
     if (numcmp == 2) {
       complex<double> fc(f[0], f[1]);

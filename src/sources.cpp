@@ -242,16 +242,12 @@ static void src_vol_integrand(fields_chunk *fc, component c,
   double inva = fc->v.inva;
   int idx_vol = 0;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    double w1 = IVEC_LOOP_WEIGHT(1);
-    double w12 = w1 * IVEC_LOOP_WEIGHT(2);
-    double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-
     loc.set_direction(direction(loop_d1), (loop_is1*0.5 + loop_i1) * inva);
     loc.set_direction(direction(loop_d2), (loop_is2*0.5 + loop_i2) * inva);
     loc.set_direction(direction(loop_d3), (loop_is3*0.5 + loop_i3) * inva);
     loc += shift - data->center;
 
-    amps_array[idx_vol] = w123 * amp * data->A(loc);
+    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(1) * amp * data->A(loc);
     index_array[idx_vol++] = idx;
   }
 
