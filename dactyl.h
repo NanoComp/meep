@@ -52,6 +52,27 @@ class mat {
 
 class src;
 class bandsdata;
+class fields;
+
+class a_field {
+ public:
+  a_field();
+  ~a_field();
+  a_field(complex<double>, complex<double>, complex<double>);
+  void another_field(complex<double>, complex<double>, complex<double>);
+  complex<double> r, p, z;
+  a_field *next;
+};
+
+class monitor_point {
+ public:
+  monitor_point();
+  monitor_point(double r, double z, const fields *f);
+  ~monitor_point();
+  double r, z, t;
+  a_field h, e, *p;
+  monitor_point *next;
+};
 
 class fields {
  public:
@@ -103,6 +124,8 @@ class fields {
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
   void phase_in_material(const mat *ma, double num_periods);
 
+  void get_point(monitor_point *p, double r, double z);
+  monitor_point *get_new_point(double r, double z, monitor_point *p=NULL);
   void output_point(FILE *, double r, double z, const char *name);
 
   void prepare_for_bands(int z, int ttot, double fmax=0, double qmin=1e300);
