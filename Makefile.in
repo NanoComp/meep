@@ -26,7 +26,7 @@ OBJ_example = example.o libdactyl.a
 
 ###########################################################################
 
-all: libdactyl.a example plot modes
+all: libdactyl.a example
 install: dactyl-install
 uninstall: dactyl-uninstall
 
@@ -38,10 +38,6 @@ bands_example.o: bands_example.cpp dactyl.h
 convergence_testing.o: convergence_testing.cpp dactyl.h
 example.o: example.cpp dactyl.h
 
-plot: plot.hs
-	ghc -package data -package text -o plot plot.hs
-modes: modes.hs
-	ghc -package data -package text -o modes modes.hs
 libdactyl.a: $(OBJ_dactyl)
 	ar cru libdactyl.a $(OBJ_dactyl)
 	ranlib libdactyl.a
@@ -79,7 +75,7 @@ uninstall: $(UNINSTALL_TARGETS)
 dist:
 	mkdir dactyl-$(VERSION) \
 	&& cp -a Makefile configure dactyl.cpp dactyl.h \
-	bands.cpp plot.hs example.cpp config.h check.h \
+	bands.cpp example.cpp config.h check.h \
 	harminv.cpp harminv.h  dactyl-$(VERSION) \
 	&& GZIP="--best" tar chozf dactyl-$(VERSION).tar.gz dactyl-$(VERSION) \
 	&& rm -rf dactyl-$(VERSION)
@@ -96,7 +92,7 @@ test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
 
 doc : documentation
 
-documentation: libdactyl.a plot modes
+documentation: libdactyl.a
 	cd doc && make
 
 clean:
