@@ -256,22 +256,31 @@ double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
   if (coordinate_mismatch(v.dim, d))
     return 0.0;
 
-  component cE, cH;
+  component cE[2], cH[2];
   switch (d) {
-  case X: cE = Ey; cH = Hz; break;
-  case Y: cE = Ez; cH = Hx; break;
-  case Z: if (v.dim == Dcyl) cE = Er, cH = Hp; else cE = Ex, cH = Hy; break;
-  case R: cE = Ep; cH = Hz; break;
-  case P: cE = Ez; cH = Hr; break;
+  case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
+  case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
+  case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
+  case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
+  case Z:
+    if (v.dim == Dcyl)
+      cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
+    else
+      cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
+    break;
   case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
   }
   
   flux_integrand_data data;
   data.d = d;
-  data.cE = cE; data.cH = cH;
-  data.sum = 0.0;
-  integrate(flux_integrand, (void *) &data, where, Dielectric);
-  return sum_to_all(data.sum) / (4*pi);
+  long double sum = 0.0;
+  for (int i = 0; i < 2; ++i) {
+    data.cE = cE[i]; data.cH = cH[i];
+    data.sum = 0.0;
+    integrate(flux_integrand, (void *) &data, where, Dielectric);
+    sum += data.sum * (1 - 2*i);
+  }
+  return sum_to_all(sum) / (4*pi);
 }
 
 double fields::flux_in_box(direction d, const geometric_volume &where) {
