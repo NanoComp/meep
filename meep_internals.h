@@ -63,6 +63,7 @@ class polarization {
   double total_energy(const geometric_volume &);
   static polarization *set_up_polarizations(const mat_chunk *ma, int is_real);
   void use_real_fields();
+  void initialize_energy(double energy(const vec &));
 };
 
 class src {

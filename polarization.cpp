@@ -299,6 +299,33 @@ void fields_chunk::initialize_polarizations(polarization *op, polarization *np) 
   }
 }
 
+void fields::initialize_polarization_energy(const polarizability_identifier &pi,
+                                            double energy(const vec &)) {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->initialize_polarization_energy(pi, energy);
+}
+
+void fields_chunk::initialize_polarization_energy(const polarizability_identifier &pi,
+                                                  double energy(const vec &)) {
+  polarization *p = pol;
+  while (p) {
+    if (p->pb->get_identifier() == pi) p->initialize_energy(energy);
+    p = p->next;
+  }
+  p = olpol;
+  while (p) {
+    if (p->pb->get_identifier() == pi) p->initialize_energy(energy);
+    p = p->next;
+  }
+}
+
+void polarization::initialize_energy(double the_energy(const vec &)) {
+  FOR_COMPONENTS(c)
+    if (energy[c])
+      for (int i=0;i<pb->v.ntot();i++)
+        energy[c][i] = the_energy(pb->v.loc(c, i));
+}
+
 void fields::prepare_step_polarization_energy() {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->prepare_step_polarization_energy();

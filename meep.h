@@ -241,6 +241,9 @@ class fields_chunk {
   // fluxes.cpp
   partial_flux_plane *new_flux_plane(const vec &p1, const vec &p2);
   void update_fluxes();
+  // polarization.cpp
+  void initialize_polarization_energy(const polarizability_identifier &,
+                                      double energy(const vec &));
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
@@ -400,6 +403,9 @@ class fields {
   double count_volume(component);
   // fluxes.cpp
   flux_plane *add_flux_plane(const vec &, const vec &);
+  // polarization.cpp
+  void initialize_polarization_energy(const polarizability_identifier &,
+                                      double energy(const vec &));
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   unsigned long last_time;
