@@ -106,6 +106,7 @@ class fields {
   void output_bands(FILE *, const char *, int maxbands=100);
   double total_energy();
   double zflux(int ri, int ro, int z);
+  double rflux(int zl, int zu, int r);
   void dft_flux();
   int add_zfluxplane(int ri, int ro, int z);
   int add_rfluxplane(int zl, int zu, int r);
