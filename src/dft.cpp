@@ -360,7 +360,7 @@ dft_flux fields::add_dft_flux(direction d,
   for (int id = 0; id < nd; ++id)
     ds[id] = d;
   dft_flux flux = add_dft_flux(ds, where, freq_min, freq_max, Nfreq);
-  delete ds;
+  delete[] ds;
   return flux;
 }
 
