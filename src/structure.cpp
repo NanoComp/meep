@@ -631,7 +631,7 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
         if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
         if (!inveps[c][d]) abort("Memory allocation error.\n");
         for (int i=0;i<v.ntot();i++)
-          inveps[c][d][i] = anisoaverage(c, d, epsilon, v.dV(v.iloc(c,i)), minvol);
+          inveps[c][d][i] = anisoaverage(c, d, feps, v.dV(v.iloc(c,i)), minvol);
       }
   }
 }

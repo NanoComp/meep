@@ -5,11 +5,8 @@ namespace meep {
 class threevec {
 public:
   threevec() {};
-  threevec(int i) {
-    FOR3(j) val[j] = (i==j)?1.0:0.0;
-  };
   double operator*(const threevec &a) const {
-    double out = 0.0;
+    double out;
     FOR3(i) out += val[i]*a.val[i];
     return out;
   }
@@ -53,9 +50,6 @@ double abs(const threevec &v) {
 class tensor {
 public:
   tensor() {};
-  tensor(double v) {
-    FOR3(i) row[i] = threevec(i)*v;
-  };
   tensor(const threevec &v) { // Projection tensor.
     FOR3(i) FOR3(j) row[i].val[j] = v.val[i]*v.val[j];
   };
@@ -104,6 +98,12 @@ public:
   threevec row[3];
 };
 
+inline tensor diagonal(double v) {
+  tensor o;
+  FOR3(i) FOR3(j) o.row[i].val[j] = (i==j)?v:0;
+  return o;
+};
+
 inline tensor transpose(const tensor &t) {
   return t.transpose();
 }
@@ -118,6 +118,8 @@ inline tensor operator/(double s, const tensor &t) {
   tensor out;
   double s_o_vol = s/(t.row[0]*(t.row[1]^t.row[2]));
   if (fabs(s_o_vol) > 1e50) {
+    master_printf("Danger, singular tensor!!! %lg\n", fabs(s_o_vol));
+    exit(1);
     FOR3(i) out.row[i] = t.row[(i+1)%3]^t.row[(i+2)%3];
     FOR3(i) FOR3(j)
       if (out.row[i].val[j] != 0.0) out.row[i].val[j] = 1e80;

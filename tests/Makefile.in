@@ -1,0 +1,49 @@
+.SUFFIXES: .dac .tex .done
+.PHONY: all clean bench
+
+CXX = @DACTYL_CXX@
+CXXFLAGS = @DACTYL_CXXFLAGS@
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@
+LIBS = -lgsl -lfftw @LIBS@ -lm
+LDFLAGS = @LDFLAGS@
+INSTALL = @INSTALL@
+prefix = @prefix@
+# c.f. AC_ARG_PROGRAM autoconf docs:
+transform=@program_transform_name@
+@SET_MAKE@
+RUNCODE=@RUNCODE@
+
+VERSION = @VERSION@
+
+###########################################################################
+
+OBJFILES = convergence_cyl_waveguide.o known_results.o symmetry.o \
+		two_dimensional.o cylindrical.o one_dimensional.o \
+		three_d.o bench.o flux.o physical.o
+TESTFILES = convergence_cyl_waveguide.dac known_results.dac symmetry.dac \
+		two_dimensional.dac cylindrical.dac one_dimensional.dac \
+		three_d.dac bench.dac flux.dac physical.dac
+DONEFILES = convergence_cyl_waveguide.done known_results.done symmetry.done \
+	cylindrical.done one_dimensional.done two_dimensional.done \
+	three_d.done bench.done flux.done physical.done
+
+$(OBJFILES): ../meep.h ../vec.h
+$(TESTFILES): ../libmeep.a
+
+.cpp.o:
+	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
+.o.dac:
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libmeep.a $(LIBS) -o $@
+.dac.done:
+	$(RUNCODE) ./$< && touch $@
+
+all: $(TESTFILES)
+
+test: $(DONEFILES)
+
+bench: bench.dac
+	$(RUNCODE) ./bench.dac
+
+clean:
+	rm -rf *.o *.dac debug_out_* *.done
