@@ -14,8 +14,10 @@
 %  along with this program; if not, write to the Free Software Foundation,
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
-#ifndef MY_MPI_H
-#define MY_MPI_H
+#ifndef MEEP_MY_MPI_H
+#define MEEP_MY_MPI_H
+
+namespace meep {
 
 // MPI helper routines!
 
@@ -58,5 +60,7 @@ void i_flush(file *f);
 void i_fprintf(file *, const char *fmt, ...);
 void master_fprintf(file *, const char *fmt, ...);
 
-#endif
+} /* namespace meep */
+
+#endif /* MEEP_MY_MPI_H */
 

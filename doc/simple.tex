@@ -12,9 +12,10 @@ of the example itself.  Meep is a C++ library, so your control file is a
 small C++ program.
 
 At the beginning of your control file, you have to include the ``meep.h''
-header...
+header and use the ``meep'' namespace...
 \begin{verbatim}
-#include "meep.h"
+#include <meep.h>
+using namespace meep;
 \end{verbatim}
 
 Next we create a function to define epsilon.  This function accepts a

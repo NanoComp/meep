@@ -22,6 +22,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 mat::mat()
   : gv(D1) // Aaack, this is very hokey.
 {
@@ -665,4 +667,6 @@ double mat_chunk::max_eps() const {
   for (int i=0;i<v.ntot();i++) themax = max(themax,eps[i]);
   return themax;
 }
+
+} // namespace meep
 

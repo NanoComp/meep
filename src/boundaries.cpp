@@ -21,6 +21,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 void fields::set_boundary(boundary_side b,direction d,
                           boundary_condition cond, bool autoconnect,
                           complex<double> kcomponent) {
@@ -513,4 +515,6 @@ void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) 
   connections[f][io] = conn;
   num_connections[f][io] += num;
 }
+
+} // namespace meep
 

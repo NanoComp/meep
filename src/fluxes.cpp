@@ -22,6 +22,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 flux_plane *fields::add_flux_plane(const vec &p1, const vec &p2) {
   partial_flux_plane *hello_world = NULL;
   for (int i=0;i<num_chunks;i++)
@@ -168,4 +170,6 @@ void fields_chunk::update_fluxes() {
     mover = mover->next_in_chunk;
   } while (mover);
 }
+
+} // namespace meep
 

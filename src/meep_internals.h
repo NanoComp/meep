@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+namespace meep {
+
 #define DOCMP for (int cmp=0;cmp<2-is_real;cmp++)
 
 inline double max(double a, double b) { return (a > b) ? a : b; }
@@ -146,4 +148,6 @@ class weighted_flux_plane {
 };
 
 symmetry r_to_minus_r_symmetry(int m);
+
+} // namespace meep
 

@@ -23,6 +23,8 @@
 #include "meep_internals.h"
 #include "harminv.h"
 
+namespace meep {
+
 #define BAND(b,r,t) ((b)[(r)+(t)*nr])
 
 bandsdata::bandsdata() {
@@ -546,5 +548,5 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
   return num;
 }
 
-
+} // namespace meep
 

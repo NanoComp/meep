@@ -23,6 +23,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 complex<double> fields::optimal_phase_shift(component c) const {
   complex<double> mean = field_mean(c, false, false);
   complex<double> meanr= field_mean(c, true , false);
@@ -1043,4 +1045,6 @@ double fields_chunk::maxpolenergy() const {
     themax = max(themax,my_polarization_energy(v.iloc(c, i)));
   return themax;
 }
+
+} // namespace meep
 

@@ -23,6 +23,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 fields::fields(const mat *ma, int tm) :
   S(ma->S), v(ma->v), user_volume(ma->user_volume), gv(ma->gv)
 {
@@ -400,4 +402,6 @@ void fields_chunk::phase_in_material(const mat_chunk *newma) {
 int fields::is_phasing() {
   return phasein_time > 0;
 }
+
+} // namespace meep
 

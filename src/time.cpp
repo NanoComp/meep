@@ -19,6 +19,8 @@
 
 #include "meep.h"
 
+namespace meep {
+
 #ifdef WITH_TIMINGS
 void fields::finished_working() {
   unsigned long now = clock();
@@ -63,4 +65,6 @@ void fields::print_times() {
   for (int i=0;i<=Other;i++)
     pt(times_spent, (time_sink) i);
 }
+
+} // namespace meep
 

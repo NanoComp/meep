@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include "meep.h"
+#include <meep.h>
+using namespace meep;
 
 double guided_eps(const vec &v) { return ((v.r() < 0.5+1e-6) ? 9.0 : 1.0); }
 

@@ -19,7 +19,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "meep.h"
+#include <meep.h>
+using namespace meep;
 
 double one(const vec &) { return 1.0; }
 static double width = 20.0;

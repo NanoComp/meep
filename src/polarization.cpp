@@ -23,6 +23,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 polarization *polarization::set_up_polarizations(const mat_chunk *ma, int is_r) {
   if (ma->pb == NULL) return NULL;
   return new polarization(ma->pb, is_r);
@@ -315,4 +317,6 @@ void polarization::initialize_energy(double the_energy(const vec &)) {
       for (int i=0;i<pb->v.ntot();i++)
         energy[c][i] = inv_num_components*the_energy(pb->v.loc(c, i));
 }
+
+} // namespace meep
 

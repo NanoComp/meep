@@ -22,6 +22,9 @@
 
 #include "vec.h"
 #include "meep.h"
+#include "mympi.h"
+
+namespace meep {
 
 static inline int min(int a, int b) { return (a<b)?a:b; };
 static inline int max(int a, int b) { return (a>b)?a:b; };
@@ -112,8 +115,6 @@ const char *component_name(component c) {
   }
   return "Error in component_name";
 }
-
-#include "mympi.h"
 
 void vec::print(file *f) const {
   if (dim == Dcyl) {
@@ -1103,4 +1104,6 @@ bool symmetry::is_primitive(const ivec &p) const {
   }
   return true;
 }
+
+} // namespace meep
 

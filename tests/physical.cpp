@@ -18,7 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "meep.h"
+#include <meep.h>
+using namespace meep;
 
 double one(const vec &) { return 1.0; }
 

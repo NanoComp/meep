@@ -22,6 +22,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 /* Below are some routines to output to a grace file. */
 
 const char grace_header[] = "# Grace project file\
@@ -157,4 +159,6 @@ void grace::flush_pts() {
     }
   }
 }
+
+} // namespace meep
 

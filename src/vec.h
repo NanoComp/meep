@@ -15,12 +15,14 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#ifndef VEC_H
-#define VEC_H
+#ifndef MEEP_VEC_H
+#define MEEP_VEC_H
 
 #include <complex>
 
 using namespace std;
+
+namespace meep {
 
 const int NUM_FIELD_COMPONENTS = 15;
 const int NUM_FIELD_TYPES = 4;
@@ -481,5 +483,7 @@ symmetry rotate4(direction,const volume &);
 symmetry rotate2(direction,const volume &);
 symmetry mirror(direction,const volume &);
 
-#endif
+} /* namespace meep */
+
+#endif /* MEEP_VEC_H */
 

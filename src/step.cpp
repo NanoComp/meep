@@ -22,7 +22,14 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+#include "config.h"
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 #define RESTRICT
+
+namespace meep {
 
 void fields::step() {
   am_now_working_on(Stepping);
@@ -112,11 +119,6 @@ void fields_chunk::phase_material(int phasein_time) {
     }
   }
 }
-
-#include "config.h"
-#ifdef HAVE_MPI
-#include <mpi.h>
-#endif
 
 void fields::step_boundaries(field_type ft) {
   am_now_working_on(MpiTime);
@@ -237,4 +239,6 @@ void fields_chunk::calc_source_phases(double time) {
   for (src *s = e_sources; s; s = s->next) s->update_dipole(time);
   for (src *s = h_sources; s; s = s->next) s->update_dipole(time-0.5*inva*c);
 }
+
+} // namespace meep
 

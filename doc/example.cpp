@@ -19,7 +19,8 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "meep.h"
+#include <meep.h>
+using namespace meep;
 
 double guided_eps(const vec &x) {
   return 1.0;

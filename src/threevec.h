@@ -1,3 +1,5 @@
+namespace meep {
+
 #define FOR3(i) for (int i=0;i<3;i++)
 
 class threevec {
@@ -45,7 +47,7 @@ public:
 };
 
 double abs(const threevec &v) {
-  return sqrt(abs(v*v));
+  return sqrt(fabs(v*v));
 }
 
 class tensor {
@@ -126,4 +128,6 @@ inline tensor operator/(double s, const tensor &t) {
     if (fabs(out.row[i].val[j]) < 1e-50) out.row[i].val[j] = 0.0;
   return out;
 }
+
+} // namespace meep
 

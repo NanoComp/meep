@@ -23,6 +23,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 complex<double> src::get_dPdt_at_time(double time, double dt) const {
   return (get_dipole_at_time(time) - get_dipole_at_time(time - dt))/dt;
 }
@@ -167,4 +169,6 @@ src *src::add_to(src *others) const {
     return others;
   }
 }
+
+} // namespace meep
 

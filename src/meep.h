@@ -14,13 +14,15 @@
 %  along with this program; if not, write to the Free Software Foundation,
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
-#ifndef DACTYL_H
-#define DACTYL_H
+#ifndef MEEP_H
+#define MEEP_H
 
 #include <stdio.h>
 
 #include "vec.h"
 #include "mympi.h"
+
+namespace meep {
 
 const double c = 0.5;
 const double pi = 3.141592653589793238462643383276L;
@@ -526,5 +528,7 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL);
 
-#endif
+} /* namespace meep */
+
+#endif /* MEEP_H */
 

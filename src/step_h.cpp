@@ -25,6 +25,8 @@
 
 #define RESTRICT
 
+namespace meep {
+
 inline double it(int cmp, double *(f[2]), int ind) { return (1-2*cmp)*f[1-cmp][ind]; }
 
 inline int rstart_0(const volume &v, int m) {
@@ -191,4 +193,6 @@ void fields_chunk::step_h() {
     abort("Can't step H in these dimensions.");
   }
 }
+
+} // namespace meep
 

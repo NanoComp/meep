@@ -1,6 +1,8 @@
 #include "math.h"
 #include "ran.h"
 
+namespace meep {
+
 const int im1 = 2147483563;
 const int im2 = 2147483399;
 const double am = 1.0/im1;
@@ -76,4 +78,6 @@ double exponential() {
   do { dum = ran(); } while (dum == 0.0);
   return -log(dum);
 }
+
+} // namespace meep
 

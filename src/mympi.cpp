@@ -24,6 +24,8 @@
 #include <mpi.h>
 #endif
 
+namespace meep {
+
 initialize::initialize(int argc, char **argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -278,4 +280,6 @@ void master_fprintf(file *f, const char *fmt, ...) {
   }
   va_end(ap);
 }
+
+} // namespace meep
 

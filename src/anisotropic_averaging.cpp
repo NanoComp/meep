@@ -1,6 +1,8 @@
 #include "meep.h"
 #include "threevec.h"
 
+namespace meep {
+
 static int count_quadrants(const geometric_volume &v) {
   return 2 << number_of_directions(v.dim);
 }
@@ -54,4 +56,6 @@ double anisoaverage(component ec, direction d, double eps(const vec &),
   int colnum = d % 3;
   return avg.row[rownum].val[colnum];
 }
+
+} // namespace meep
 

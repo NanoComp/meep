@@ -23,6 +23,7 @@
 #include "meep_internals.h"
 #include "ran.h"
 
+namespace meep {
 
 void fields::update_from_e() {
   for (int i=0;i<num_chunks;i++)
@@ -34,4 +35,6 @@ void fields_chunk::update_from_e() {
   const int ntot = ma->v.ntot();
 #include "update_from_e.h"
 }
+
+} // namespace meep
 

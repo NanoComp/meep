@@ -27,6 +27,8 @@
 
 #include <gsl/gsl_sf_bessel.h>
 
+namespace meep {
+
 static double J(int m, double kr) { return gsl_sf_bessel_Jn(m, kr); }
 static double Jprime(int m, double kr) { 
   if (m) return 0.5*(J(m-1,kr)-J(m+1,kr));
@@ -157,4 +159,6 @@ void fields::initialize_A(complex<double> A(component, const vec &), double freq
   update_e_from_d();
   step_boundaries(E_stuff);
 }
+
+} // namespace meep
 

@@ -22,6 +22,8 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+namespace meep {
+
 /* Energy calculation */
 
 double fields::count_volume(component c) {
@@ -157,4 +159,6 @@ double fields_chunk::thermo_energy_in_box(const geometric_volume &otherv,
     return 0.0;
   }
 }
+
+} // namespace meep
 

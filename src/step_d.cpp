@@ -25,6 +25,8 @@
 
 #define RESTRICT
 
+namespace meep {
+
 inline double it(int cmp, double *(f[2]), int ind) { return (1-2*cmp)*f[1-cmp][ind]; }
 
 inline int rstart_0(const volume &v, int m) {
@@ -200,4 +202,6 @@ void fields_chunk::step_d() {
     abort("Unsupported dimension.\n");
   }
 }
+
+} // namespace meep
 
