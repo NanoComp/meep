@@ -184,6 +184,9 @@ class src_pt;
 class bandsdata;
 class fields_chunk;
 
+// Time-dependence of a current source, intended to be overridden by
+// subclasses.  current() and dipole() are be related by
+// current = d(dipole)/dt (or rather, the finite-difference equivalent).
 class src_time {
  public:
   src_time() { current_time = nan; current_current = 0.0; next = NULL; }
@@ -191,14 +194,22 @@ class src_time {
   src_time(const src_time &t) { 
        current_time = t.current_time;
        current_current = t.current_current;
+       current_dipole = t.current_dipole;
        if (t.next) next = t.next->clone(); else next = NULL;
   }
   
+  complex<double> dipole() const { return current_dipole; }
   complex<double> current() const { return current_current; }
-  complex<double> update_current(double time) {
-    if (time != current_time)
-      current_current = current(current_time = time);
-    return current_current;
+  void update(double time, double dt) {
+    if (time != current_time) {
+      current_dipole = dipole(time);
+      current_current = current(time, dt);
+      current_time = time;
+    }
+  }
+
+  complex<double> current(double time, double dt) const { 
+    return (dipole(time) - dipole(time - dt)) / dt;
   }
 
   double last_time_max() { return last_time_max(0.0); }
@@ -208,14 +219,14 @@ class src_time {
   src_time *next;
 
   // subclasses should override these methods:
-  virtual complex<double> current(double time) const { (void)time; return 0; }
+  virtual complex<double> dipole(double time) const { (void)time; return 0; }
   virtual double last_time() const { return 0.0; }
   virtual src_time *clone() const { return new src_time(*this); }
   virtual bool is_equal(const src_time &t) const { return 1; }
 
  private:
   double current_time;
-  complex<double> current_current;
+  complex<double> current_dipole, current_current;
 };
 
 bool src_times_equal(const src_time &t1, const src_time &t2);
@@ -226,7 +237,7 @@ class gaussian_src_time : public src_time {
   gaussian_src_time(double f, double w, double start_time, double end_time);
   virtual ~gaussian_src_time() {}
 
-  virtual complex<double> current(double time) const;
+  virtual complex<double> dipole(double time) const;
   virtual double last_time() const { return peak_time + cutoff; };
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
@@ -243,7 +254,7 @@ class continuous_src_time : public src_time {
 		      double s = 3.0);
   virtual ~continuous_src_time() {}
   
-  virtual complex<double> current(double time) const;
+  virtual complex<double> dipole(double time) const;
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;

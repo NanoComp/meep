@@ -51,7 +51,7 @@ calc_d_minus_p_sources = if_ "have_nonzero_polarization" $
     loop_sources "e_sources" "spt" $
       doblock "if (f[spt->c][0])" $ 
 	docode [
-	  doexp "const complex<double> A = spt->current()",
+	  doexp "const complex<double> A = spt->dipole()",
           for_complex $
 	    doexp $ d_minus_p "spt->c" "spt->i" |-=| get_cmp_part "A"
 	]

@@ -82,11 +82,11 @@ class src_pt {
   component c; // field component the source applies to
   complex<double> A; // amplitude of the source at this point/component
 
+  complex<double> dipole() { return A * t->dipole(); }
+  complex<double> dipole(double time) { return A * t->dipole(time); }
   complex<double> current() { return A * t->current(); }
-  complex<double> current(double time) { return A * t->current(time); }
-  complex<double> update_current(double time) {
-    return A * t->update_current(time);
-  }
+  complex<double> current(double T, double dt) { return A * t->current(T,dt); }
+  void update(double time, double dt) { t->update(time, dt); }
 
   bool operator==(const src_pt &p) const {return p.i==i && p.c==c && p.t==t;}
 

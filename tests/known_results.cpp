@@ -21,8 +21,6 @@
 #include <meep.h>
 using namespace meep;
 
-#define SRCAMP v.a/c  // backwards compatibility with current renorm.
-
 double one(const vec &) { return 1.0; }
 
 double rods(const vec &r) {
@@ -50,7 +48,7 @@ double using_pml_ez(const volume &v, double eps(const vec &)) {
   structure s(v, eps);
   s.use_pml_everywhere(1.0);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -63,7 +61,7 @@ double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
   s.use_pml(Y, High, 1.0);
   s.use_pml(Y, Low, 1.0);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -75,7 +73,7 @@ double x_periodic(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -87,7 +85,7 @@ double periodic_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   vec k;
   switch (v.dim) {
   case D1: k = vec(0.3); break;
@@ -106,7 +104,7 @@ double metallic_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -118,7 +116,7 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   structure s(v, eps);
   s.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&s);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -130,7 +128,7 @@ double polariton_energy(const volume &v, double eps(const vec &)) {
   structure s(v, eps);
   s.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&s);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   return f.total_energy();
 }
@@ -140,7 +138,7 @@ double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
   structure s(v, eps);
   polarizability_identifier thep = s.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
   fields f(&s);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(), SRCAMP);
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
   while (f.time() < ttot) f.step();
   monitor_point p;

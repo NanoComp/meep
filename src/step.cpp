@@ -230,7 +230,7 @@ void fields_chunk::step_h_source(src_pt *spt, double time) {
 }
 
 void fields::calc_sources(double tim) {
-  for (src_time *s = sources; s; s = s->next) s->update_current(tim);
+  for (src_time *s = sources; s; s = s->next) s->update(tim, inva*c);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->calc_sources(tim);

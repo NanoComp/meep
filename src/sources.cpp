@@ -71,7 +71,7 @@ gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
     cutoff *= 0.9;
 }
 
-complex<double> gaussian_src_time::current(double time) const
+complex<double> gaussian_src_time::dipole(double time) const
 {
   double tt = time - peak_time;
   if (fabs(tt) > cutoff)
@@ -92,13 +92,13 @@ bool gaussian_src_time::is_equal(const src_time &t) const
 continuous_src_time::continuous_src_time(double f, double w, double st, double et, double s)
 {
   freq = f;
-  width = w == 0.0 ? 1e-20 : w; // hack to prevent NaN in current(t), below
+  width = w == 0.0 ? 1e-20 : w; // hack to prevent NaN in dipole(t), below
   start_time = st;
   end_time = et;
   slowness = s;
 }
 
-complex<double> continuous_src_time::current(double time) const
+complex<double> continuous_src_time::dipole(double time) const
 {
   if (time < start_time || time > end_time)
     return 0.0;
@@ -228,7 +228,7 @@ void fields_chunk::add_indexed_source(component whichf, src_time *src,
   if (theindex >= v.ntot() || theindex < 0)
     abort("Error:  source is outside of cell! (%d)\n", theindex);
   src_pt tmp(src);
-  tmp.A = amp * (inva * c); // multiply by dt for time-stepping
+  tmp.A = amp;
   tmp.c = whichf;
   tmp.i = theindex;
   if (is_magnetic(whichf)) {
