@@ -107,7 +107,7 @@ void fields::add_point_source(component whichf, double freq,
     add_point_source(whichf, src, p, amp);
   }
   else {
-    cutoff = c * inva + cutoff * width;
+    cutoff = inva + cutoff * width;
     if (peaktime <= 0.0)
       peaktime = time() + cutoff;
   
