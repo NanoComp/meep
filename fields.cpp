@@ -50,7 +50,7 @@ void fields::use_bloch(double kz) { // FIXME for more D
   connect_chunks();
 }
 
-vec fields::lattice_vector() {
+vec fields::lattice_vector() const {
   if (v.dim == dcyl) {
     return vec(0,v.nz()*inva);
   } else if (v.dim == d1) {

@@ -36,6 +36,16 @@ inline complex<double> getcm(const double * const f[2], int i) {
   return complex<double>(f[0][i],f[1][i]);
 }
 
+static void dumbsort(complex<double> val[8]) {
+  for (int i=0;i<7;i++) {
+    int lowest = i;
+    for (int j=i+1;j<8;j++) if (abs(val[j]) < abs(val[i])) lowest = j;
+    complex<double> tmp = val[i];
+    val[i] = val[lowest];
+    val[lowest] = tmp;
+  }
+}
+
 void fields::get_point(monitor_point *pt, const vec &loc) const {
   if (pt == NULL) {
     printf("Error:  get_point passed a null pointer!\n");
@@ -44,20 +54,40 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
   for (int i=0;i<10;i++) pt->f[i] = 0.0;
   pt->loc = loc;
   pt->t = time();
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->v.contains(loc))
-      chunks[i]->get_point(pt, loc);
-}
-
-void fields_chunk::get_point(monitor_point *pt, const vec &loc) const {
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
-      int ind[8];
-      double w[8];
-      v.interpolate((component)c,loc,ind,w);
-      for (int i=0;i<8&&w[i];i++)
-        pt->f[c] += getcm(f[c],ind[i]);
+      complex<double> val[8];
+      for (int i=0;i<8;i++) val[i] = 0.0;
+      for (int i=0;i<num_chunks;i++) {
+        if (chunks[i]->v.contains(loc))
+          chunks[i]->interpolate_field((component)c, loc, val);
+        if (k != -1 && 0)
+          for (int i=0;i<num_chunks;i++) {
+            if (chunks[i]->v.contains(loc + lattice_vector()))
+              chunks[i]->interpolate_field((component)c,
+                                           loc - lattice_vector(),
+                                           val, conj(eiknz));
+            if (chunks[i]->v.contains(loc - lattice_vector()))
+              chunks[i]->interpolate_field((component)c,
+                                           loc - lattice_vector(),
+                                           val, eiknz);
+          }
+      }
+      dumbsort(val);
+      for (int i=0;i<8 && val[i]!=0.0;i++) pt->f[c] += val[i];
     }
+}
+
+void fields_chunk::interpolate_field(component c, const vec &loc,
+                                     complex<double> val[8],
+                                     complex<double> phase) const {
+  int ind[8];
+  double w[8];
+  v.interpolate((component)c,loc,ind,w);
+  int startingat = 0;
+  for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
+  for (int i=0;i<8 && w[i] && (i+startingat<8);i++)
+    val[i+startingat] = phase*getcm(f[c],ind[i]);
 }
 
 monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) const {

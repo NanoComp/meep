@@ -168,7 +168,8 @@ class fields_chunk {
   void use_real_fields();
   double find_last_source();
 
-  void get_point(monitor_point *p, const vec &) const;
+  void interpolate_field(component, const vec &, complex<double> val[8],
+                         complex<double> phase = 1.0) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   double electric_energy_in_box(const volume &);
@@ -234,7 +235,7 @@ class fields {
   ~fields();
   void use_bloch(double kz);
   void use_real_fields();
-  vec lattice_vector();
+  vec lattice_vector() const;
   // slices.cpp methods:
   void output_slices(const char *name = "") const;
   void output_slices(const volume &what, const char *name = "") const;
