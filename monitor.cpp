@@ -99,6 +99,17 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
   return broadcast(n_proc(), res);
 }
 
+complex<double> fields_chunk::get_polarization_field(const polarizability_identifier &p,
+                                                     component c, const ivec &iloc) const {
+  complex<double> res = 0.0;
+  for (polarization *P = olpol; P; P = P->next)
+    if (P->pb->get_identifier() == p) {
+      if (P->P[c][0] && P->P[c][1]) res = getcm(P->P[c], v.index(c, iloc));
+      else if (P->P[c][0]) res = P->P[c][0][v.index(c,iloc)];
+    }
+  return broadcast(n_proc(), res);
+}
+
 double fields::get_polarization_energy(const vec &loc) const {
   ivec ilocs[8];
   double w[8], val[8];

@@ -208,6 +208,8 @@ class fields_chunk {
   double find_last_source();
   // monitor.cpp
   complex<double> get_field(component, const ivec &) const;
+  complex<double> get_polarization_field(const polarizability_identifier &p,
+                                         component c, const ivec &iloc) const;
   double get_polarization_energy(const ivec &) const;
   double my_polarization_energy(const ivec &) const;
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
@@ -222,6 +224,10 @@ class fields_chunk {
   void output_eps_body(component, const symmetry &, int sn,
                        const geometric_volume &what, file *,
                        complex<double> phase_shift);
+  void output_eps_body(const polarizability_identifier &p,
+                       component c, const symmetry &S, int sn,
+                       const geometric_volume &what, file *out,
+                       complex<double> phshift);
   complex<double> field_mean(component c, bool abs_real, bool abs_imag) const;
 
   double electric_energy_in_box(const geometric_volume &, const symmetry &);
@@ -349,6 +355,9 @@ class fields {
   void eps_slices(const vec &origin, const vec &xside, const vec &yside,
                   const double dx = 0.05, const char *name = "");
   void eps_slices(const geometric_volume &what, const char *name = "");
+  void eps_polarization_slice(const polarizability_identifier &, const char *name = "");
+  void eps_polarization_slice(const polarizability_identifier &,
+                              const geometric_volume &, const char *name = "");
   void eps_energy_slice(const polarizability_identifier &, const char *name = "");
   void eps_energy_slice(const polarizability_identifier &,
                         const geometric_volume &what, const char *name = "");

@@ -382,6 +382,42 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
   }
 }
 
+void fields_chunk::output_eps_body(const polarizability_identifier &p,
+                                   component c, const symmetry &S, int sn,
+                                   const geometric_volume &what, file *out,
+                                   complex<double> phshift) {
+  if (f[c][0]) {
+    if (v.a <= default_eps_resolution) {
+      output_complex_eps_body(c, f[c], v, S, sn, what, out);
+    } else {
+      const complex<double> ph = S.phase_shift(c, sn);
+      const int n = v.ntot_at_resolution(default_eps_resolution);
+      for (int i=0;i<n;i++) {
+        const vec here = v.loc_at_resolution(i,default_eps_resolution);
+        const vec there = S.transform(here, sn);
+        if (what.contains(here)) {
+          double x = 0, y = 0;
+          switch (v.dim) {
+          case Dcyl: x = there.z(); y = there.r(); break;
+          case D1: x = there.z(); break;
+          case D2: x = there.x(); y = there.y(); break;
+          case D3: abort("Don't support 3D o_e_b\n"); break;
+          }
+          ivec ilocs[8];
+          double w[8];
+          double fhere = 0.0;
+          v.interpolate(c, here, ilocs, w);
+          for (int i=0;i<8&&w[i];i++)
+            if (v.contains(S.transform(ilocs[i],sn)))
+              fhere += w[i]*real(phshift*get_polarization_field(p,c,ilocs[i]));
+          if (fhere != 0.0) // save space by leaving out blanks.
+            i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
+        }
+      }
+    }
+  }
+}
+
 static void output_complex_eps_header(component m, double fmax, const volume &v,
                                       const geometric_volume &what, file *out,
                                       const char *name, component om = Hx) {
@@ -630,6 +666,65 @@ void fields::eps_energy_slice(const polarizability_identifier &p,
   all_wait();
   if (am_master()) output_complex_eps_tail(out);
   everyone_close(out);
+  delete[] n;
+  finished_working();
+}
+
+void fields::eps_polarization_slice(const polarizability_identifier &p, const char *name) {
+  if (v.dim == D3) abort("FIXME need to support 3D polarization slices...\n");
+  geometric_volume what = user_volume.surroundings();
+  if (v.dim == Dcyl) what.set_direction_min(R,-what.in_direction_max(R));
+  eps_polarization_slice(p, what,name);
+}
+
+void fields::eps_polarization_slice(const polarizability_identifier &p,
+                                    const geometric_volume &what, const char *name) {
+  am_now_working_on(Slicing);
+  const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
+  char *n = new char[buflen];
+  if (!n) abort("Allocation failure!\n");
+  char time_step_string[buflen];
+  snprintf(time_step_string, buflen, "%09.2f", time());
+
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (v.has_field(c)) {
+      snprintf(n, buflen, "%s/%sP-%s-%s.eps", outdir, nname,
+               component_name(c), time_step_string);
+      const double fmax = maxfieldmag_to_master(c);
+      file *out = everyone_open_write(n);
+      if (!out) {
+        printf("Unable to open file '%s' for slice output.\n", n);
+        return;
+      }
+      if (am_master())
+        output_complex_eps_header(c, fmax, user_volume, what,
+                                  out, n, v.eps_component());
+      complex<double> phshift = optimal_phase_shift(c);
+      all_wait();
+      for (int i=0;i<num_chunks;i++)
+        if (chunks[i]->is_mine())
+          for (int sn=0;sn<S.multiplicity();sn++)
+            FOR_COMPONENTS(otherc)
+              if (S.transform(otherc,sn) == c)
+                chunks[i]->output_eps_body(p, otherc,
+                                           S, sn, what, out, phshift);
+      all_wait();
+      for (int i=0;i<num_chunks;i++)
+        if (chunks[i]->is_mine())
+          for (int sn=0;sn<S.multiplicity();sn++)
+            FOR_COMPONENTS(otherc)
+              if (S.transform(otherc,sn) == c)
+                eps_outline(v.eps_component(), chunks[i]->ma->eps,
+                            chunks[i]->v, what, S, sn, out);
+      all_wait();
+      outline_chunks(out);
+      all_wait();
+      if (am_master()) output_complex_eps_tail(out);
+      everyone_close(out);
+    }
   delete[] n;
   finished_working();
 }
