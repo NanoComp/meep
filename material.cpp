@@ -103,11 +103,6 @@ void mat::use_pml(int numpmlr, int numpmlz) {
     Cper[r] = Cphz[r] = sigintegrated/(nr-npmlr+r+0.5);
     if (r==0) Cpez[r] = Cphr[r] = 0.5*Cper[r];
     else Cpez[r] = Cphr[r] = 0.5*(Cper[r]+Cper[r-1]);
-
-    Cphz[r] = 0.0;
-    Cper[r] = 0.0;
-    Cphr[r] = 0.0;
-    Cpez[r] = 0.0;
   }
   for (int z=0;z<npmlz;z++) {
     double rr = (z)/(double)npmlz;
