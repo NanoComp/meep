@@ -73,26 +73,35 @@ void add_clever_sources(fields &f, double fmin, double fmax, double r) {
 int main(int argc, char **argv) {
   char directory[100], target[100], sumwflux_name[100], temp[100];
   char executable_name[100], source_name[100], target_name[100];
+  char bands_name[100];
+  char *lastptr, *currptr;
   DIR *dir;
   FILE *tempf, *targetf;
   int c;
 
   signal(SIGINT, handle_control_c);
   printf("Running example program!\n");
-  FILE *ban = fopen("bands", "w");
 
   rad = 10;
   int m=1;
   double k = 0.0;
   int ttot = 8000*rad;
 
-  sprintf(directory,"example/");
+  sprintf(directory,"example-dir/");
   if ((dir = opendir(directory)) != NULL)
     closedir(dir);
   else
     mkdir(directory, 00777);
+  sprintf(bands_name, "%s/bands", directory);
+  FILE *ban = fopen(bands_name, "w");
   strcpy(executable_name, argv[0]);
-  sprintf(source_name, "%s.cpp", executable_name);
+  lastptr = strtok(executable_name, "/");
+  do {
+    currptr = strtok(NULL, "/"); 
+    if (currptr != NULL)
+      lastptr = currptr;
+  } while (currptr != NULL);
+  sprintf(source_name, "%s.cpp", lastptr);
   sprintf(target_name, "%s/%s", directory, source_name);
   if ((tempf = fopen(source_name,"r")) != NULL 
     && (targetf = fopen(target_name,"w")) != NULL) {
