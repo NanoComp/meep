@@ -14,6 +14,8 @@
 %  along with this program; if not, write to the Free Software Foundation,
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
+#ifndef DACTYL_H
+#define DACTYL_H
 
 #include <complex>
 
@@ -271,3 +273,5 @@ extern int interrupt;
 int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL);
+
+#endif
