@@ -17,6 +17,7 @@
 #ifndef DACTYL_H
 #define DACTYL_H
 
+#include <stdio.h>
 #include <complex>
 
 #include "vec.h"
@@ -150,7 +151,6 @@ class fields_chunk {
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
   int m, is_real;
-  complex<double> eiknz;
   bandsdata *bands;
   src *e_sources, *h_sources;
   const mat_chunk *new_ma;
@@ -213,6 +213,8 @@ class fields_chunk {
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
+  // boundaries.cpp
+  void alloc_extra_connections(int nume, int numh);
 };
 
 class fields {
@@ -231,6 +233,7 @@ class fields {
   ~fields();
   void use_bloch(double kz);
   void use_real_fields();
+  vec lattice_vector();
   // slices.cpp methods:
   void output_slices(const char *name = "");
   void output_slices(const volume &what, const char *name = "");
@@ -283,6 +286,15 @@ class fields {
   void verbose(int v=1) { verbosity = v; }
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
+  // boundaries.cpp
+  void disconnect_chunks();
+  void connect_chunks();
+  void connect_adjacent_chunks();
+  void connect_periodic_chunks();
+  void connect_metallic_chunks();
+  void connect_metallic_bigz_chunks();
+  void connect_metallic_bigr_chunks();
+  // step.cpp
   void phase_material();
   void step_h();
   void step_h_right();

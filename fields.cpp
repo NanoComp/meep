@@ -40,11 +40,27 @@ fields::fields(const mat *ma, int tm=0) {
   chunks = new (fields_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new fields_chunk(ma->chunks[i], m);
+  connect_chunks();
 }
 void fields::use_bloch(double kz) { // FIXME
   k = kz;
-  for (int i=0;i<num_chunks;i++) chunks[i]->use_bloch(kz);
+  const double cosknz = cos(k*2*pi*inva*v.nz());
+  const double sinknz = sin(k*2*pi*inva*v.nz());
+  eiknz = complex<double>(cosknz, sinknz);
+  connect_chunks();
 }
+
+vec fields::lattice_vector() {
+  if (v.dim == dcyl) {
+    return vec(0,v.nz()*inva);
+  } else if (v.dim == d1) {
+    return vec(v.nz()*inva);
+  } else {
+    printf("Don't support lattice_vector in these dimensions.\n");
+    exit(1);
+  }
+}
+
 fields::~fields() {
   for (int i=0;i<num_chunks;i++) delete chunks[i];
   delete[] chunks;
@@ -79,89 +95,6 @@ fields_chunk::~fields_chunk() {
   delete pol;
   delete olpol;
 }
-
-void fields_chunk::use_bloch(double k) {
-  if (is_real) {
-    printf("Can't do bloch boundaries with real fields_chunk!\n");
-    // Note that I *could* implement bloch boundary conditions, at least
-    // for gamma point and zone edge situations.
-    exit(1);
-  }
-  const double cosknz = cos(k*2*pi*inva*v.nz());
-  const double sinknz = sin(k*2*pi*inva*v.nz());
-  eiknz = complex<double>(cosknz, sinknz);
-  complex<double> emiknz = complex<double>(cosknz, -sinknz);
-  if (v.dim == d1) {
-    delete[] e_phases;
-    delete[] h_phases;
-    num_h_connections = 0;
-    num_e_connections = 1;
-    e_phases = new complex<double>[num_e_connections];
-    e_phases[0] = eiknz;
-    DOCMP {
-      delete[] e_connection_sinks[cmp];
-      delete[] e_connection_sources[cmp];
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp][0] = &f[Ex][cmp][0];
-      e_connection_sinks[cmp][0] = &f[Ex][cmp][v.nz()];
-    }
-  } else if (v.dim == dcyl) {
-    num_e_connections = 3*(v.nr()+1);
-    num_h_connections = 3*(v.nr()+1);
-    delete[] e_phases;
-    delete[] h_phases;
-    e_phases = new complex<double>[num_e_connections];
-    h_phases = new complex<double>[num_h_connections];
-    DOCMP {
-      delete[] e_connection_sinks[cmp];
-      delete[] e_connection_sources[cmp];
-      delete[] h_connection_sinks[cmp];
-      delete[] h_connection_sources[cmp];
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      h_connection_sinks[cmp] = new (double *)[num_h_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      h_connection_sources[cmp] = new (double *)[num_h_connections];
-      int econ = 0;
-      int hcon = 0;
-      for (int r=0;r<=v.nr();r++) {
-        int right = v.nz() + r*(v.nz()+1);
-        int left = 0 + r*(v.nz()+1);
-        e_connection_sources[cmp][econ] = &f[Ep][cmp][right];
-        e_connection_sinks[cmp][econ] = &f[Ep][cmp][left];
-        e_phases[econ] = emiknz;
-        econ++;
-        e_connection_sources[cmp][econ] = &f[Er][cmp][right];
-        e_connection_sinks[cmp][econ] = &f[Er][cmp][left];
-        e_phases[econ] = emiknz;
-        econ++;
-        e_connection_sources[cmp][econ] = &f[Ez][cmp][left];
-        e_connection_sinks[cmp][econ] = &f[Ez][cmp][right];
-        e_phases[econ] = eiknz;
-        econ++;
-
-        h_connection_sources[cmp][hcon] = &f[Hz][cmp][right];
-        h_connection_sinks[cmp][hcon] = &f[Hz][cmp][left];
-        h_phases[hcon] = emiknz;
-        hcon++;
-        h_connection_sources[cmp][hcon] = &f[Hr][cmp][left];
-        h_connection_sinks[cmp][hcon] = &f[Hr][cmp][right];
-        h_phases[hcon] = eiknz;
-        hcon++;
-        h_connection_sources[cmp][hcon] = &f[Hp][cmp][left];
-        h_connection_sinks[cmp][hcon] = &f[Hp][cmp][right];
-        h_phases[hcon] = eiknz;
-        hcon++;
-        // FIXME: Need to add PML connections here!
-      }
-    }
-  } else {
-    printf("Unsupported dimension?!\n");
-    exit(1);
-  }
-}
-
-double zero = 0.0;
 
 fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
   ma = new mat_chunk(the_ma);
@@ -204,68 +137,11 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
         for (int i=0;i<v.ntot();i++)
           f_pml[c][cmp][i] = 0.0;
   }
-  if (v.dim == d1) {
-    // Set up by default with metallic boundary conditions.
-    num_h_connections = 0;
-    num_e_connections = 1;
-    e_phases = new complex<double>[num_e_connections];
-    e_phases[0] = 0.0;
-    h_phases = NULL;
-    DOCMP {
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      e_connection_sources[cmp][0] = &zero;
-      e_connection_sinks[cmp][0] = &f[Ex][cmp][v.nz()];
-      h_connection_sinks[cmp] = NULL;
-      h_connection_sources[cmp] = NULL;
-    }
-  } else if (v.dim == dcyl) {
-    // Set up by default with metallic boundary conditions.
-    num_e_connections = 2*(v.nr()+1);
-    num_h_connections =   (v.nr()+1);
-    if (f_pml[Ep][0]) num_e_connections += v.nr()+1;
-    if (f_pml[Er][0]) num_e_connections += v.nr()+1;
-    if (f_pml[Hz][0]) num_h_connections += v.nr()+1;
-    e_phases = new complex<double>[num_e_connections];
-    h_phases = new complex<double>[num_h_connections];
-    DOCMP {
-      e_connection_sinks[cmp] = new (double *)[num_e_connections];
-      h_connection_sinks[cmp] = new (double *)[num_h_connections];
-      e_connection_sources[cmp] = new (double *)[num_e_connections];
-      h_connection_sources[cmp] = new (double *)[num_h_connections];
-      int econ = 0;
-      int hcon = 0;
-      for (int i=0;i<num_e_connections;i++) e_phases[i] = 1.0;
-      for (int i=0;i<num_h_connections;i++) h_phases[i] = 1.0;
-      for (int r=0;r<=v.nr();r++) {
-        int i = v.nz() + r*(v.nz()+1);
-        e_connection_sources[cmp][econ] = &zero;
-        e_connection_sinks[cmp][econ] = &f[Ep][cmp][i];
-        econ++;
-        e_connection_sources[cmp][econ] = &zero;
-        e_connection_sinks[cmp][econ] = &f[Er][cmp][i];
-        econ++;
-        h_connection_sources[cmp][hcon] = &zero;
-        h_connection_sinks[cmp][hcon] = &f[Hz][cmp][i];
-        hcon++;
-        // I have to add PML connections here too:
-        if (f_pml[Ep][cmp]) {
-          e_connection_sources[cmp][econ] = &zero;
-          e_connection_sinks[cmp][econ] = &f_pml[Ep][cmp][i];
-          econ++;
-        }
-        if (f_pml[Er][cmp]) {
-          e_connection_sources[cmp][econ] = &zero;
-          e_connection_sinks[cmp][econ] = &f_pml[Er][cmp][i];
-          econ++;
-        }
-        if (f_pml[Hz][0]) {
-          h_connection_sources[cmp][hcon] = &zero;
-          h_connection_sinks[cmp][hcon] = &f_pml[Hz][cmp][i];
-          hcon++;
-        }
-      }
-    }
+  num_e_connections = num_h_connections = 0;
+  for (int cmp=0;cmp<2;cmp++) {
+    e_connection_sources[cmp] = e_connection_sinks[cmp] = NULL;
+    h_connection_sources[cmp] = h_connection_sinks[cmp] = NULL;
+    h_phases = e_phases = NULL;
   }
 }
 

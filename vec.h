@@ -104,6 +104,7 @@ class volume {
   component eps_component() const;
 
   int contains(const vec &) const;
+  int owns(const vec &) const;
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);

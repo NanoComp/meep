@@ -119,13 +119,39 @@ vec volume::yee_shift(component c) const {
 }
 
 int volume::contains(const vec &p) const {
-  const vec o = p - origin;
+  // containts returns true if the volume has any information in it
+  // relevant to the point p.  Basically has is like owns (see below)
+  // except it is more lenient, in that more than one lattice may contain a
+  // given point.
   const double inva = 1.0/a;
+  const double hinva = 0.5*inva;
+  const vec o = p - origin;
   if (dim == dcyl) {
-    return o.r() >= 0 && o.z() >= 0 &&
-      o.r() <= nr()*inva && o.z() <= nz()*inva;
+    return o.r() >= -hinva && o.z() >= -hinva &&
+      o.r() <= nr()*inva - hinva && o.z() <= nz()*inva - hinva;
   } else if (dim == d1) {
-    return o.z() >= 0 && o.z() <= nz()*inva;
+    return o.z() >= -hinva && o.z() <= nz()*inva - hinva;
+  } else {
+    printf("Unsupported dimension.\n");
+    exit(1);
+  }
+}
+
+int volume::owns(const vec &p) const {
+  // owns returns true if the point is closer to an active point on the
+  // lattice than it is to any active point on a different lattice.  Thus
+  // the "owns" borders of two adjacent volumes touch, while the "contains"
+  // borders overlap.  "owns" is meant to indicate that when the point is a
+  // lattice point, only one chunk actually *owns* that active lattice
+  // point.
+  const double inva = 1.0/a;
+  const double qinva = 0.25*inva;
+  const vec o = p - origin;
+  if (dim == dcyl) {
+    return o.r() >= qinva && o.z() >= qinva &&
+      o.r() <= nr()*inva + qinva && o.z() <= nz()*inva + qinva;
+  } else if (dim == d1) {
+    return o.z() >= qinva && o.z() <= nz()*inva + qinva;
   } else {
     printf("Unsupported dimension.\n");
     exit(1);
