@@ -842,7 +842,7 @@ void fields::step_boundaries(field_type ft) {
       const int pair = j+i*num_chunks;
       DOCMP {
         send(chunks[j]->n_proc(), chunks[i]->n_proc(),
-             comm_blocks[ft][pair], comm_sizes[ft][pair]*2);
+             comm_blocks[ft][pair], comm_sizes[ft][pair]);
       }
     }
 #endif
@@ -860,12 +860,12 @@ void fields::step_boundaries(field_type ft) {
         const int pair = j+i*num_chunks;
         if (comm_sizes[ft][pair] > 0) {
           if (chunks[j]->is_mine())
-            MPI_Isend(comm_blocks[ft][pair], comm_sizes[ft][pair]*2,
+            MPI_Isend(comm_blocks[ft][pair], comm_sizes[ft][pair],
                       MPI_DOUBLE, chunks[i]->n_proc(),
                       tagto[chunks[i]->n_proc()]++,
                       MPI_COMM_WORLD, &reqs[reqnum++]);
           if (chunks[i]->is_mine())
-            MPI_Irecv(comm_blocks[ft][pair], comm_sizes[ft][pair]*2,
+            MPI_Irecv(comm_blocks[ft][pair], comm_sizes[ft][pair],
                       MPI_DOUBLE, chunks[j]->n_proc(),
                       tagto[chunks[j]->n_proc()]++,
                       MPI_COMM_WORLD, &reqs[reqnum++]);
