@@ -26,10 +26,11 @@
 
 const char grace_header[] = "# Grace project file
 #
+@version 1
 @page size 792, 612
-@page scroll 5%
-@page inout 5%
-@default symbol size 0.330000\n
+@default symbol size 0.330000
+@g0 on
+@with g0
 ";
 
 class grace_point {
@@ -74,6 +75,17 @@ void grace::new_set(grace_type pt) {
   fprintf(f, "@    target G0.S%d\n", sn);
   if (pt == ERROR_BARS) fprintf(f, "@    type xydy\n");
   else fprintf(f, "@    type xy\n");
+}
+
+void grace::set_range(double xmin, double xmax, double ymin, double ymax) {
+  fprintf(f, "@    world xmin %lg\n", xmin);
+  fprintf(f, "@    world xmax %lg\n", xmax);
+  fprintf(f, "@    world ymin %lg\n", ymin);
+  fprintf(f, "@    world ymax %lg\n", ymax);
+  fprintf(f, "@    view xmin 0.15\n");
+  fprintf(f, "@    view xmax 0.95\n");
+  fprintf(f, "@    view ymin 0.15\n");
+  fprintf(f, "@    view ymax 0.85\n");
 }
 
 void grace::set_legend(const char *l) {
