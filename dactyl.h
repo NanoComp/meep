@@ -167,9 +167,10 @@ class fields_chunk {
 
   double **zeroes[2]; // Holds pointers to metal points.
   int num_zeroes[2];
-  double **(connections[2][2][2]);
+  double **(connections[2][2]);
   int num_connections[2][2];
   complex<double> *connection_phases[2];
+  double *connection_factors[2];
 
   polarization *pol, *olpol;
   partial_flux_plane *fluxes;
@@ -290,6 +291,8 @@ class fields {
   // This is the same size as each comm_blocks array, and stores the sizes
   // of the comm blocks themselves.
   int *comm_sizes[2];
+  int *comm_num_complex[2];
+  int *comm_num_negate[2];
   double a, inva; // The "lattice constant" and its inverse!
   volume v, user_volume;
   int m, t, phasein_time, is_real;

@@ -829,32 +829,14 @@ void fields::step_boundaries(field_type ft) {
   // First copy outgoing data to buffers...
   int *wh = new int[num_chunks];
   for (int i=0;i<num_chunks;i++) wh[i] = 0;
-  if (is_real) {
-    for (int i=0;i<num_chunks;i++)
-      for (int j=0;j<num_chunks;j++)
-        if (chunks[j]->is_mine()) {
-          const int pair = j+i*num_chunks;
-          for (int n=0;n<comm_sizes[ft][pair];n++) {
-            comm_blocks[ft][pair][n*2] =
-              *(chunks[j]->connections[ft][Outgoing][0][wh[j]]);
-            comm_blocks[ft][pair][n*2+1] = 0.0;
-            wh[j]++;
-          }
-        }
-  } else {
-    for (int i=0;i<num_chunks;i++)
-      for (int j=0;j<num_chunks;j++)
-        if (chunks[j]->is_mine()) {
-          const int pair = j+i*num_chunks;
-          for (int n=0;n<comm_sizes[ft][pair];n++) {
-            comm_blocks[ft][pair][n*2] =
-              *(chunks[j]->connections[ft][Outgoing][0][wh[j]]);
-            comm_blocks[ft][pair][n*2+1] =
-              *(chunks[j]->connections[ft][Outgoing][1][wh[j]]);
-            wh[j]++;
-          }
-        }
-  }
+  for (int i=0;i<num_chunks;i++)
+    for (int j=0;j<num_chunks;j++)
+      if (chunks[j]->is_mine()) {
+        const int pair = j+i*num_chunks;
+        for (int n=0;n<comm_sizes[ft][pair];n++)
+          comm_blocks[ft][pair][n] =
+            *(chunks[j]->connections[ft][Outgoing][wh[j]++]);
+      }
   // Communicate the data around!
 #if 0 // This is the blocking version, which should always be safe!
   for (int noti=0;noti<num_chunks;noti++)
@@ -901,42 +883,30 @@ void fields::step_boundaries(field_type ft) {
 #endif
   
   // Finally, copy incoming data to the fields themselves!
-  if (is_real) {
-    for (int i=0;i<num_chunks;i++) {
-      int wh = 0;
-      if (chunks[i]->is_mine())
-        for (int j=0;j<num_chunks;j++) {
-          const int pair = j+i*num_chunks;
-          for (int n=0;n<comm_sizes[ft][pair];n++) {
-            *(chunks[i]->connections[ft][Incoming][0][wh]) =
-              real(chunks[i]->connection_phases[ft][wh])*
-              comm_blocks[ft][pair][n*2];
-            wh++;
-          }
+  for (int i=0;i<num_chunks;i++) {
+    int wh = 0;
+    if (chunks[i]->is_mine())
+      for (int j=0;j<num_chunks;j++) {
+        const int pair = j+i*num_chunks;
+        int n;
+        for (n=0;n<comm_num_complex[ft][pair];n+=2) {
+          const double phr = real(chunks[i]->connection_phases[ft][wh/2]);
+          const double phi = imag(chunks[i]->connection_phases[ft][wh/2]);
+          *(chunks[i]->connections[ft][Incoming][wh]) =
+            phr*comm_blocks[ft][pair][n] - phi*comm_blocks[ft][pair][n+1];
+          *(chunks[i]->connections[ft][Incoming][wh]) =
+            phr*comm_blocks[ft][pair][n+1] + phi*comm_blocks[ft][pair][n];
+          wh += 2;
         }
-    }
-  } else {
-    for (int i=0;i<num_chunks;i++) {
-      int wh = 0;
-      const complex<double> *phases = chunks[i]->connection_phases[ft];
-      double **incoming_real = chunks[i]->connections[ft][Incoming][0];
-      double **incoming_imag = chunks[i]->connections[ft][Incoming][1];
-      if (chunks[i]->is_mine())
-        for (int j=0;j<num_chunks;j++) {
-          const int pair = j+i*num_chunks;
-          const double *comm_block = comm_blocks[ft][pair];
-          for (int n=0;n<comm_sizes[ft][pair];n++) {
-            const complex<double> ph = phases[wh];
-            const double phr = real(ph);
-            const double phi = imag(ph);
-            const double re = comm_block[n*2];
-            const double im = comm_block[n*2+1];
-            *(incoming_real[wh]) = phr*re-phi*im;
-            *(incoming_imag[wh]) = phr*im+phi*re;
-            wh++;
-          }
+        for (;n<comm_num_negate[ft][pair];n++) {
+          *(chunks[i]->connections[ft][Incoming][wh]) = -comm_blocks[ft][pair][n];
+          wh++;
         }
-    }
+        for (;n<comm_sizes[ft][pair];n++) {
+          *(chunks[i]->connections[ft][Incoming][wh]) = comm_blocks[ft][pair][n];
+          wh++;
+        }
+      }
   }
   delete[] wh;
   finished_working();

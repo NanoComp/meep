@@ -100,8 +100,8 @@ void fields::disconnect_chunks() {
     DOCMP {
       for (int f=0;f<2;f++)
         for (int io=0;io<2;io++) {
-          delete[] chunks[i]->connections[f][io][cmp];
-          chunks[i]->connections[f][io][cmp] = 0;
+          delete[] chunks[i]->connections[f][io];
+          chunks[i]->connections[f][io] = NULL;
         }
     }
     delete[] chunks[i]->connection_phases[E_stuff];
@@ -257,19 +257,20 @@ void fields::connect_the_chunks() {
       nc[f][io] = new int[num_chunks];
       for (int i=0;i<num_chunks;i++) nc[f][io][i] = 0;
     }
-  int *new_comm_sizes[2];
-  for (int ft=0;ft<2;ft++) new_comm_sizes[ft] = new int[num_chunks];
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
     const volume vi = chunks[i]->v;
     for (int j=0;j<num_chunks;j++)
-      for (int ft=0;ft<2;ft++)
-        new_comm_sizes[ft][j] = comm_sizes[ft][j+i*num_chunks];
+      for (int ft=0;ft<2;ft++) {
+        comm_sizes[ft][j+i*num_chunks] = 0;
+        comm_num_complex[ft][j+i*num_chunks] = 0;
+        comm_num_negate[ft][j+i*num_chunks] = 0;
+      }
     for (int j=0;j<num_chunks;j++)
-      for (int corig=0;corig<10;corig++)
-        if (have_component((component)corig))
+      FOR_COMPONENTS(corig)
+        if (have_component(corig))
           for (int n=0;n<vi.ntot();n++) {
-            component c = (component)corig;
+            component c = corig;
             ivec here = vi.iloc(c, n);
             if (!vi.owns(here)) {
               // We're looking at a border element...
@@ -277,9 +278,15 @@ void fields::connect_the_chunks() {
               if (locate_component_point(&c,&here,&thephase))
                 if (chunks[j]->v.owns(here) && !is_metal(here)) {
                   // Adjacent, periodic or rotational...
-                  nc[type((component)corig)][Incoming][i]++;
-                  nc[type(c)][Outgoing][j]++;
-                  new_comm_sizes[type(c)][j]++;
+                  const int nn = is_real?1:2;
+                  const int pair = j+i*num_chunks;
+                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
+                    comm_num_complex[type(corig)][pair] += nn;
+                  else if (thephase == -1.0)
+                    comm_num_negate[type(corig)][pair] += nn;
+                  nc[type(corig)][Incoming][i] += nn;
+                  nc[type(c)][Outgoing][j] += nn;
+                  comm_sizes[type(c)][pair] += nn;
                 }
             }
         }
@@ -287,17 +294,16 @@ void fields::connect_the_chunks() {
     for (int ft=0;ft<2;ft++)
       for (int j=0;j<num_chunks;j++) {
         delete[] comm_blocks[ft][j+i*num_chunks];
-        comm_blocks[ft][j+i*num_chunks] = new double[2*new_comm_sizes[ft][j]];
-        comm_sizes[ft][j+i*num_chunks] = new_comm_sizes[ft][j];
+        comm_blocks[ft][j+i*num_chunks] =
+          new double[comm_sizes[ft][j+i*num_chunks]];
       }
   }
-  for (int ft=0;ft<2;ft++) delete[] new_comm_sizes[ft];
   // Now allocate the connection arrays...
-  for (int i=0;i<num_chunks;i++) {
+  for (int i=0;i<num_chunks;i++)
     for (int f=0;f<2;f++)
       for (int io=0;io<2;io++)
-        chunks[i]->alloc_extra_connections((field_type)f,(in_or_out)io,nc[f][io][i]);
-  }
+        chunks[i]->alloc_extra_connections((field_type)f,
+                                           (in_or_out)io,nc[f][io][i]);
   for (int f=0;f<2;f++)
     for (int io=0;io<2;io++) delete[] nc[f][io];
   // Next start setting up the connections...
@@ -307,35 +313,78 @@ void fields::connect_the_chunks() {
       wh[f][io] = new int[num_chunks];
       for (int i=0;i<num_chunks;i++) wh[f][io][i] = 0;
     }
+  // First look for connections with complex phases...
   for (int i=0;i<num_chunks;i++) {
     const volume vi = chunks[i]->v;
-    for (int j=0;j<num_chunks;j++)
-      for (int corig=0;corig<10;corig++)
-        if (have_component((component)corig))
+    for (int j=0;j<num_chunks;j++) {
+      FOR_COMPONENTS(corig)
+        if (have_component(corig))
           for (int n=0;n<vi.ntot();n++) {
-            component c = (component)corig;
+            component c = corig;
 #define FT (type(c))
             ivec here = vi.iloc(c, n);
             if (!vi.owns(here)) {
               // We're looking at a border element...
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here)) {
-                  // Adjacent, periodic or rotational...
+                if (chunks[j]->v.owns(here) && !is_metal(here) &&
+                    (imag(thephase) != 0.0 || fabs(real(thephase))!=1.0)) {
+                  // Periodic, probably...
                   // index is deprecated, but ok in this case:
                   const int m = chunks[j]->v.index(c, here);
+                  chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
                   DOCMP {
-                    chunks[i]->connections[FT][Incoming][cmp][wh[FT][Incoming][i]]
+                    chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
                       = chunks[i]->f[corig][cmp] + n;
-                    chunks[j]->connections[FT][Outgoing][cmp][wh[FT][Outgoing][j]]
+                    chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
                       = chunks[j]->f[c][cmp] + m;
                   }
-                  chunks[i]->connection_phases[FT][wh[FT][Incoming][i]] = thephase;
-                  wh[FT][Incoming][i]++;
-                  wh[FT][Outgoing][j]++;
                 }
             }
           }
+      DOCMP FOR_COMPONENTS(corig)
+        if (have_component(corig))
+          for (int n=0;n<vi.ntot();n++) {
+            component c = corig;
+            ivec here = vi.iloc(c, n);
+            if (!vi.owns(here)) {
+              // We're looking at a border element...
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here) && !is_metal(here) &&
+                    thephase == -1.0) {
+                  // Adjacent, periodic or rotational...
+                  // index is deprecated, but ok in this case:
+                  const int m = chunks[j]->v.index(c, here);
+                  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                    = chunks[i]->f[corig][cmp] + n;
+                  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                    = chunks[j]->f[c][cmp] + m;
+                }
+            }
+          }
+      DOCMP FOR_COMPONENTS(corig)
+        if (have_component(corig))
+          for (int n=0;n<vi.ntot();n++) {
+            component c = corig;
+            ivec here = vi.iloc(c, n);
+            if (!vi.owns(here)) {
+              // We're looking at a border element...
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here) && !is_metal(here) &&
+                    thephase == 1.0) {
+                  // Adjacent, periodic or rotational...
+                  // index is deprecated, but ok in this case:
+                  const int m = chunks[j]->v.index(c, here);
+                  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                    = chunks[i]->f[corig][cmp] + n;
+                  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                    = chunks[j]->f[c][cmp] + m;
+                }
+            }
+          }
+    }
   }
   for (int f=0;f<2;f++)
     for (int io=0;io<2;io++) delete[] wh[f][io];
@@ -345,20 +394,12 @@ void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) 
   if (num == 0) return; // No need to go to any bother...
   const int tot = num_connections[f][io] + num;
   if (io == Incoming) {
-    complex<double> *ph = new complex<double>[tot];
-    if (!ph) abort("Out of memory!\n");
-    for (int x=0;x<num_connections[f][io];x++)
-      ph[num+x] = connection_phases[f][x];
     delete[] connection_phases[f];
-    connection_phases[f] = ph;
+    connection_phases[f] = new complex<double>[tot]; // This is larger than necesary...
   }
-  DOCMP {
-    double **conn = new double *[tot];
-    if (!conn) abort("Out of memory!\n");
-    for (int x=0;x<num_connections[f][io];x++)
-      conn[num+x] = connections[f][io][cmp][x];
-    delete[] connections[f][io][cmp];
-    connections[f][io][cmp] = conn;
-  }
+  double **conn = new (double *)[tot];
+  if (!conn) abort("Out of memory!\n");
+  delete[] connections[f][io];
+  connections[f][io] = conn;
   num_connections[f][io] += num;
 }

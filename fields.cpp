@@ -50,7 +50,11 @@ fields::fields(const mat *ma, int tm) {
     chunks[i] = new fields_chunk(ma->chunks[i], outdir, m);
   for (int ft=0;ft<2;ft++) {
     comm_sizes[ft] = new int[num_chunks*num_chunks];
+    comm_num_complex[ft] = new int[num_chunks*num_chunks];
+    comm_num_negate[ft] = new int[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][i] = 0;
+    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_complex[ft][i] = 0;
+    for (int i=0;i<num_chunks*num_chunks;i++) comm_num_negate[ft][i] = 0;
     comm_blocks[ft] = new (double *)[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
@@ -97,10 +101,10 @@ fields_chunk::~fields_chunk() {
     FOR_COMPONENTS(i) delete[] f_m_pml[i][cmp];
     FOR_COMPONENTS(i) delete[] f_backup_p_pml[i][cmp];
     FOR_COMPONENTS(i) delete[] f_backup_m_pml[i][cmp];
-    for (int ft=0;ft<2;ft++)
-      for (int io=0;io<2;io++)
-        delete[] connections[ft][io][cmp];
   }
+  for (int ft=0;ft<2;ft++)
+    for (int io=0;io<2;io++)
+      delete[] connections[ft][io];
   for (int ft=0;ft<2;ft++) delete[] connection_phases[ft];
   delete h_sources;
   delete e_sources;
@@ -162,8 +166,7 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
   connection_phases[E_stuff] = connection_phases[H_stuff] = 0;
   for (int f=0;f<2;f++)
     for (int io=0;io<2;io++)
-      for (int cmp=0;cmp<2;cmp++)
-        connections[f][io][cmp] = 0;
+      connections[f][io] = NULL;
   zeroes[0] = NULL;  zeroes[1] = NULL;
   num_zeroes[0] = 0; num_zeroes[1] = 0;
   figure_out_step_plan();
