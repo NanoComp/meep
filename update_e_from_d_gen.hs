@@ -4,25 +4,30 @@ import YeeLattice
 
 main = putStr $ gencode $ job
 
-job = with_d_minus_p $ whether_or_not "e_sources" $ whether_or_not "is_real" $
-      consider_electric_polarizations $ 
-      loop_electric_fields $ docode [
-        prepare_polarizations,
-        loop_complex $ docode [
-          calc_d_minus_p,
-          update_e_from_d_minus_p
-        ]
+job = with_d_minus_p $ whether_or_not "e_sources" $ consider_electric_polarizations $
+      docode [
+        loop_electric_fields $ docode [
+          prepare_polarizations,
+          for_complex $ calc_d_minus_p
+        ],
+        loop_electric_fields $ regardless_of_inveps $ for_complex $ update_e_from_d_minus_p
       ]
 
-d_minus_p = ("have_nonzero_polarization")|?|"d_minus_p[i]"|:|"f[dc]["<<cmp<<"][i]"
+d_minus_p c i = ("have_nonzero_polarization")|?|("d_minus_p["<<c<<"]["<<cmp<<"]["<<i<<"]")
+              |:|("f[(component)("<<c<<"+10)]["<<cmp<<"]["<<i<<"]")
 
 {- Here is where we compute the polarization -}
 
 with_d_minus_p job =
     with_or_withot_polarization $ ifelse_ "have_nonzero_polarization" (
-      docode [doexp "double *d_minus_p = new double[ntot]",
+      docode [doexp "double *d_minus_p[5][2]",
+              for_complex $ doblock "FOR_ELECTRIC_COMPONENTS(ec)" $
+                ifelse_ "f[ec]"
+                (doexp $ "d_minus_p[ec]["<<cmp<<"] = new double[v.ntot()]")
+                (doexp $ "d_minus_p[ec]["<<cmp<<"] = 0"),
               job,
-              doexp "delete[] d_minus_p"]
+              for_complex $ doblock "FOR_ELECTRIC_COMPONENTS(ec)" $
+                doexp $ "delete[] d_minus_p[ec]["<<cmp<<"]"]
     ) (
       job
     )
@@ -36,11 +41,11 @@ calc_d_minus_p = if_ "have_nonzero_polarization" $
     docode [
       -- First we look at the contribution from polarization fields.
       loop_points $ docode [
-        doexp $ "d_minus_p[i]" |=| "f[dc]["<<cmp<<"][i]",
-        loop_polarizations $ doexp $ d_minus_p |-=| "p->P[ec]["<<cmp<<"][i]"],
+        doexp $ d_minus_p "ec" "i" |=| "f[dc]["<<cmp<<"][i]",
+        loop_polarizations $ doexp $ d_minus_p "ec" "i" |-=| "p->P[ec]["<<cmp<<"][i]"],
       -- The following code calculates the polarization from sources.
       loop_sources "e_sources" "s" $
-        doexp $ "d_minus_p[s->i]" |-=| get_cmp_part "s->get_dipole_now()*s->A[ec]"
+        doexp $ d_minus_p "ec" "s->i" |-=| get_cmp_part "s->get_dipole_now()*s->A[ec]"
     ]
 
 {- Half-step polarization energy.
@@ -53,7 +58,7 @@ dP, of course).
 -}
 
 prepare_polarizations =
-    loop_points $ loop_new_and_old_polarizations $
+    whether_or_not "is_real" $ loop_points $ loop_new_and_old_polarizations $
     docode [doexp "np->energy[ec][i] = op->energy[ec][i]",
             loop_complex half_step_polarization_energy]
 
@@ -64,13 +69,27 @@ half_step_polarization_energy =
 {- Here is where we compute E from D - P -}
 
 update_e_from_d_minus_p =
-    whether_or_not "p_here" $
-      docode [
-        --doexp "const double *the_inveps = ma->inveps[ec][component_direction(ec)]",
-        --loop_points $ doexp $ "f[ec]["<<cmp<<"][i]" |=| "the_inveps[i]" |*| d_minus_p
-        loop_points $ doexp $ ("f[ec]["<<cmp<<"][i]") |=|
-               "ma->inveps[ec][component_direction(ec)][i]" |*| d_minus_p
-      ]
+    whether_or_not "p_here" $ loop_inner $
+        doexp $ ("f[ec]["<<cmp<<"][i]") |=|
+               sum_over_components_with_prefactor (\c -> inveps c "i") (\c i-> d_minus_p c i)
+
+regardless_of_inveps job =
+    declare "ma->inveps[ec][d_ec]" True $
+    using_symmetry consider_inv
+    where consider_inv "1D" = job
+          consider_inv "2DTM" = job
+          consider_inv "2DTE" = whether_or_not "ma->inveps[ec][d_1]" job
+          consider_inv _ = whether_or_not "ma->inveps[ec][d_1]" $
+                           whether_or_not "ma->inveps[ec][d_2]" job
+
+inveps :: String -> String -> Expression
+inveps "ec" i = ("ma->inveps[ec][d_ec]")
+              |?| ("ma->inveps[ec][d_ec]["++i++"]") |:| "0"
+inveps "ec_1" i = ("ma->inveps[ec][d_1]")
+                |?| ("ma->inveps[ec][d_1]["++i++"]") |:| "0"
+inveps "ec_2" i = ("ma->inveps[ec][d_2]")
+                |?| ("ma->inveps[ec][d_2]["++i++"]") |:| "0"
+inveps c i = error $ "inveps can't use "++c
 
 {- Stuff below is more sort of general-use functions -}
 

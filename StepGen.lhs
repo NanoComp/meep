@@ -2,7 +2,7 @@
 module StepGen ( Code, Expression, gencode,
                  doexp, docode, doline, doblock, dodebug, comment,
                  if_, ifelse_, (|?|), (|:|),
-                 ifdef, ifdefelse, casedef,
+                 ifdef, ifdefelse, casedef, casedefined,
                  whether_or_not, declare, for_loop,
                  for_true_false, for_any_one_of, sum_for_any_one_of,
                  sum_true_false,
@@ -100,6 +100,13 @@ casedef (b:bs) e other = do check <- istrueCC b
                             if check == Just True
                                then expression $ e b
                                else casedef bs e other
+
+casedefined :: EXPRESSION a => [String] -> (String -> a) -> a -> Expression
+casedefined [] _ other = expression other
+casedefined (b:bs) e other = do check <- istrueCC b
+                                if check /= Nothing
+                                   then expression $ e b
+                                   else casedef bs e other
 
 ifelse_ :: (CODE a, CODE b) => String -> a -> b -> Code
 ifelse_ b thendo elsedo =

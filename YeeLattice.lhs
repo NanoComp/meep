@@ -1,7 +1,10 @@
 \begin{code}
 module YeeLattice ( loop_points, loop_inner,
-                    consider_electric_polarizations,
+                    consider_electric_polarizations, consider_all_directions,
                     loop_electric_fields, sum_over_components,
+                    sum_over_components_with_prefactor,
+                    loop_over_components, mean_component,
+                    using_symmetry,
                   ) where
 
 import List ( (\\) )
@@ -29,6 +32,7 @@ figure_out_fields x = ifelse_ "f[Er][0]" (am_cylindrical x) nc
           am1d = not_translatable ["X","Y"] $ is_translatable ["Z"] $
                  declare "f[Ey][0]" False $ declare "f[Ez][0]" False $
                  declare "f[Ex][0]" True $
+                 declare "num_any_direction[Z]==1" False $
                  primary_direction "Z" $
                  declare "1D" True $ comment "Am in 1D" $ x
           am2d = primary_direction "Y" $
@@ -86,10 +90,37 @@ loop_electric_fields x =
                       doexp $ "const int s_"++show n++
                               " = stride_any_direction[d_"++show n++"]"]
 
+loop_over_components :: Code -> Code
+loop_over_components job = using_symmetry dojob
+    where dojob "1D" = job
+          dojob "2DTM" = job
+          dojob "2DTE" = for_any_one_of ["Am_on_ec","Am_on_ec_1"] job
+          dojob _ = for_any_one_of ["Am_on_ec","Am_on_ec_1","Am_on_ec_2"] job
+
+
+mean_component :: (String -> String -> Expression) -> Expression
+mean_component e = with_symmetry domean
+    where domean "1D" = e "ec" "i"
+          domean "2DTM" = e "ec" "i"
+          domean "2DTE" = ("Am_on_ec")|?| e "ec" "i" |:|
+                          "0.25"|*|(e "ec_1" "i" |+|
+                                    e "ec_1" "i-s_1" |+|
+                                    e "ec_1" "i+s_ec" |+|
+                                    e "ec_1" "i-s_1+s_ec")
+          domean _ =  ("Am_on_ec") |?| e "ec" "i" |:|
+                   (("Am_on_ec_1") |?| ("0.25"|*|(e "ec_1" "i" |+|
+                                                  e "ec_1" "i-s_1" |+|
+                                                  e "ec_1" "i+s_ec" |+|
+                                                  e "ec_1" "i-s_1+s_ec"))
+                                   |:| ("0.25"|*|(e "ec_2" "i" |+|
+                                                  e "ec_2" "i-s_2" |+|
+                                                  e "ec_2" "i+s_ec" |+|
+                                                  e "ec_2" "i-s_2+s_ec")))
+
 sum_over_components :: (String -> String -> Expression) -> Expression
 sum_over_components e = with_symmetry sumit
-    where sumit "1D" = e "Ex" "i"
-          sumit "2DTM" = e "Ez" "i"
+    where sumit "1D" = e "ec" "i"
+          sumit "2DTM" = e "ec" "i"
           sumit "2DTE" = e "ec" "i" |+|
               "0.25"|*|(e "ec_1" "i" |+|
                         e "ec_1" "i-s_1" |+|
@@ -105,6 +136,26 @@ sum_over_components e = with_symmetry sumit
                         e "ec_2" "i+s_ec" |+|
                         e "ec_2" "i-s_2+s_ec")
 
+sum_over_components_with_prefactor :: (String -> Expression)
+                                   -> (String -> String -> Expression) -> Expression
+sum_over_components_with_prefactor pre e = with_symmetry sumit
+    where sumit "1D" = pre "ec" |*| e "ec" "i"
+          sumit "2DTM" = pre "ec" |*| e "ec" "i"
+          sumit "2DTE" = pre "ec" |*| e "ec" "i" |+|
+              "0.25"|*| pre "ec_1" |*| (e "ec_1" "i" |+|
+                                        e "ec_1" "i-s_1" |+|
+                                        e "ec_1" "i+s_ec" |+|
+                                        e "ec_1" "i-s_1+s_ec")
+          sumit _ =  pre "ec" |*| e "ec" "i" |+|
+              "0.25"|*| pre "ec_1" |*| (e "ec_1" "i" |+|
+                                        e "ec_1" "i-s_1" |+|
+                                        e "ec_1" "i+s_ec" |+|
+                                        e "ec_1" "i-s_1+s_ec") |+|
+              "0.25"|*| pre "ec_2" |*| (e "ec_2" "i" |+|
+                                        e "ec_2" "i-s_2" |+|
+                                        e "ec_2" "i+s_ec" |+|
+                                        e "ec_2" "i-s_2+s_ec")
+
 {- The following bit loops over "owned" points -}
 
 stride d = ("stride_any_direction["++d++"]") |?|
@@ -118,17 +169,29 @@ define_i =
                           |+| ind "X" |*| stride "X" |+| ind "Y" |*| stride "Y"
                           |+| ind "Z" |*| stride "Z" |+| ind "R" |*| stride "R"
 
-loop_inner job =
-    consider_directions ["Z","R","X","Y"] $
-    lad ["X","Y","R","Z"] job
+loop_inner job = consider_all_directions $ lad ["X","Y","R","Z"] job
     where lad [] job = docode [define_i, job]
           lad (d:ds) job = loop_direction d $ lad ds job
+
+consider_all_directions job =
+    look_for_short $ consider_directions ["Z","R","X","Y"] job
+    where look_for_short job =
+              ifelse_ "num_any_direction[Z]==1"
+              (declare "num_any_direction[X]==1" False $
+               declare "num_any_direction[Y]==1" False $
+               declare "num_any_direction[R]==1" False $ job) $
+              ifelse_ "num_any_direction[X]==1"
+              (declare "num_any_direction[Y]==1" False $
+               declare "num_any_direction[R]==1" False $ job) $
+              ifelse_ "num_any_direction[Y]==1"
+              (declare "num_any_direction[R]==1" False $ job) $
+              whether_or_not "num_any_direction[R]==1" job
 
 consider_directions [] x = x
 consider_directions (d:ds) x =
     ifelse_ ("stride_any_direction["++d++"]")
                 (whether_or_not ("num_any_direction["++d++"]==1") $
-                 ifelse_ ("stride_any_direction["++d++"]==1")
+                ifelse_ ("stride_any_direction["++d++"]==1")
                  (not_primary_direction ds $ special_case d $ the_rest)
                  (special_case d $ the_rest))
                 (declare ("stride_any_direction["++d++"]==1") False $
