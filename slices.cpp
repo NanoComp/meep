@@ -240,6 +240,12 @@ void fields::outline_chunks(file *out) {
       ylo = chunks[i]->v.boundary_location(Low,Y);
       xhi = chunks[i]->v.boundary_location(High,X);
       yhi = chunks[i]->v.boundary_location(High,Y);
+    break;
+    case D3: // FIXME make this smart about plane direction.
+      xlo = chunks[i]->v.boundary_location(Low,X);
+      ylo = chunks[i]->v.boundary_location(Low,Y);
+      xhi = chunks[i]->v.boundary_location(High,X);
+      yhi = chunks[i]->v.boundary_location(High,Y);
     }
     i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xlo, yhi, xhi, yhi);
     i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xhi, yhi, xhi, ylo);
@@ -312,6 +318,7 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
       case Dcyl: x = here.z(); y = here.r(); break;
       case D1: x = here.z(); break;
       case D2: x = here.x(); y = here.y(); break;
+      case D3: x = here.x(); y = here.y(); break; // FIXME use right directions!
       }
       if (f[1]) i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
                          real(ph)*f[0][i] - imag(ph)*f[1][i]);
@@ -359,6 +366,7 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
   direction xdir, ydir;
   switch (v.dim) {
   case Dcyl: xdir = Z; ydir = R; break;
+  case D3: xdir = X; ydir = Y; break; // FIXME: check the thin direction of what.
   case D2: xdir = X; ydir = Y; break;
   case D1: xdir = Z; ydir = Z; break; // a tad ugly...
   }
