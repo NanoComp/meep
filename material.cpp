@@ -319,10 +319,10 @@ void mat::make_average_eps() {
 }
 
 void mat::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
-  volume pml_volume = v;
-  pml_volume.set_num_direction(d, (int) (dx*v.a + 1 + 0.5)); //FIXME: exact value?
+  volume pml_volume = user_volume;
+  pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if ((boundary_side) b == High)
-    pml_volume.origin.set_direction(d, (v.num_direction(d) - pml_volume.num_direction(d))/v.a);
+    pml_volume.origin.set_direction(d, (user_volume.num_direction(d) - pml_volume.num_direction(d))/user_volume.a);
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
 
   if (recalculate_chunks) optimize_chunks();  
