@@ -121,12 +121,17 @@ void mat::mix_with(const mat *n, double f) {
   }
 }
 
-void mat::make_vacuum() {
+void mat::make_average_eps() {
+  double meaneps = 0;
   for (int i=0;i<nr*(nz+1);i++) {
-    eps[i] = 1;
-    invepser[i] = 1;
-    invepsep[i] = 1;
-    invepsez[i] = 1;
+    meaneps += eps[i];
+  }
+  meaneps /= nr*(nz+1);
+  for (int i=0;i<nr*(nz+1);i++) {
+    eps[i] = meaneps;
+    invepser[i] = 1/meaneps;
+    invepsep[i] = 1/meaneps;
+    invepsez[i] = 1/meaneps;
   }
 }
 
