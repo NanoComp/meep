@@ -11,6 +11,7 @@ AM_INIT_AUTOMAKE(1.6)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
+AM_ENABLE_SHARED(no) dnl shared libs cause too many headaches to be default
 
 DEFAULTFLAGS="no"
 if test "x" == "x$CXXFLAGS"; then
