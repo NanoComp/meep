@@ -122,6 +122,7 @@ class fields {
   void output_slices(const char *name = "");
   void output_real_imaginary_slices(const char *name = "");
   void step();
+  inline double time() { return t*inva; };
 
   void use_real_sources();
   // Note that the following plane source only works if m == 1.
