@@ -381,7 +381,8 @@ void all_wait();
 int count_processors();
 int my_rank();
 inline int am_master() { return my_rank() == 0; };
-void master_printf(char *fmt, ...);
+void master_printf(const char *fmt, ...);
+void debug_printf(const char *fmt, ...);
 
 void send(int from, int to, double *data, int size);
 void broadcast(int from, double *data, int size);

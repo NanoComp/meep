@@ -131,9 +131,25 @@ int count_processors() {
 #endif
 }
 
-void master_printf(char *fmt, ...) {
+void master_printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   if (am_master()) vprintf(fmt, ap);
+  va_end(ap);
+}
+
+static FILE *debf = NULL;
+
+void debug_printf(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  if (debf == NULL) {
+    char temp[50];
+    snprintf(temp, 50, "debug_out_%d", my_rank());
+    debf = fopen(temp,"w");
+    if (!debf) abort("Unable to open debug output %s\n", temp);
+  }
+  vfprintf(debf, fmt, ap);
+  fflush(debf);
   va_end(ap);
 }
