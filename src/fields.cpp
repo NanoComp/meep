@@ -190,12 +190,14 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
     FOR_COMPONENTS(i) f_backup_p_pml[i][cmp] = NULL;
     FOR_COMPONENTS(i) f_backup_m_pml[i][cmp] = NULL;
 
-    FOR_COMPONENTS(i) if (v.dim != D2 && v.has_field(i))
-      f[i][cmp] = new double[v.ntot()];
-    FOR_COMPONENTS(i) if (f[i][cmp] && !is_electric(i)) {
-      f_p_pml[i][cmp] = new double[v.ntot()];
-      f_m_pml[i][cmp] = new double[v.ntot()];
-      if (f_m_pml[i][cmp] == NULL) abort("Out of memory!\n");
+    if (is_mine()) {
+      FOR_COMPONENTS(i) if (v.dim != D2 && v.has_field(i))
+	f[i][cmp] = new double[v.ntot()];
+      FOR_COMPONENTS(i) if (f[i][cmp] && !is_electric(i)) {
+	f_p_pml[i][cmp] = new double[v.ntot()];
+	f_m_pml[i][cmp] = new double[v.ntot()];
+	if (f_m_pml[i][cmp] == NULL) abort("Out of memory!\n");
+      }
     }
   }
   DOCMP {
@@ -348,7 +350,7 @@ static bool is_like(ndim d, component c1, component c2) {
 
 void fields_chunk::alloc_f(component the_c) {
   FOR_COMPONENTS(c)
-    if (v.has_field(c) && is_like(v.dim, the_c, c))
+    if (is_mine() && v.has_field(c) && is_like(v.dim, the_c, c))
       DOCMP {
         if (!f[c][cmp]) {
           f[c][cmp] = new double[v.ntot()];
@@ -365,6 +367,19 @@ void fields_chunk::alloc_f(component the_c) {
         }
       }
   figure_out_step_plan();
+}
+
+void fields_chunk::remove_sources() {
+  delete h_sources;
+  delete e_sources;
+  e_sources = h_sources = NULL;
+}
+
+void fields::remove_sources() {
+  delete sources;
+  sources = NULL;
+  for (int i=0;i<num_chunks;i++) 
+    chunks[i]->remove_sources();
 }
 
 void fields_chunk::zero_fields() {

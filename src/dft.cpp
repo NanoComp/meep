@@ -207,11 +207,11 @@ void dft_chunk::update_dft(double time) {
   }
 }
 
-void dft_chunk::negate_dft() {
+void dft_chunk::scale_dft(complex<double> scale) {
   for (int i = 0; i < N * Nomega; ++i)
-    dft[i] = -dft[i];
+    dft[i] *= scale;
   if (next_in_dft)
-    next_in_dft->negate_dft();
+    next_in_dft->scale_dft(scale);
 }
 
 static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
@@ -305,9 +305,9 @@ void dft_flux::load_hdf5(h5file *file, const char *dprefix) {
   load_dft_hdf5(H, cH, file, dprefix);
 }
 
-void dft_flux::negate_dfts() {
-  if (E) E->negate_dft();
-  if (H) H->negate_dft();
+void dft_flux::scale_dfts(complex<double> scale) {
+  if (E) E->scale_dft(scale);
+  if (H) H->scale_dft(scale);
 }
 
 dft_flux fields::add_dft_flux(const geometric_volume_list *where_,

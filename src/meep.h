@@ -458,7 +458,7 @@ public:
   
   void update_dft(double time);
 
-  void negate_dft();
+  void scale_dft(complex<double> scale);
 
   // the frequencies to loop_in_chunks
   double omega_min, domega;
@@ -503,7 +503,7 @@ public:
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
 
-  void negate_dfts();
+  void scale_dfts(complex<double> scale);
 
   double freq_min, dfreq;
   int Nfreq;
@@ -609,6 +609,7 @@ class fields_chunk {
 
   // fields.cpp
   void alloc_f(component c);
+  void remove_sources();
   void zero_fields();
 
  private: 
@@ -695,6 +696,7 @@ class fields {
   ~fields();
   void use_real_fields();
   void zero_fields();
+  void remove_sources();
   // time.cpp
   double time_spent_on(time_sink);
   void print_times();
@@ -778,6 +780,7 @@ class fields {
   void step();
   inline double time() const { return t*dt; };
 
+  // sources.cpp:
   double last_source_time();
   void add_point_source(component c, double freq, double width, double peaktime,
                         double cutoff, const vec &, complex<double> amp = 1.0,
@@ -791,6 +794,9 @@ class fields {
   void add_volume_source(component c, const src_time &src,
 			 const geometric_volume &, 
 			 complex<double> amp = 1.0);
+  void require_component(component c);
+
+  // initialize.cpp:
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_A(complex<double> A(component, const vec &), double freq);
   void initialize_with_nth_te(int n);

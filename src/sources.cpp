@@ -273,6 +273,17 @@ static void src_vol_chunkloop(fields_chunk *fc, component c,
     fc->e_sources = tmp->add_to(fc->e_sources);
 }
 
+void fields::require_component(component c) {
+  // allocate fields if they haven't been allocated yet for this component
+  int need_to_reconnect = 0;
+  for (int i = 0; i < num_chunks; ++i)
+    if (chunks[i]->is_mine() && !chunks[i]->f[c][0]) {
+      chunks[i]->alloc_f(c);
+      need_to_reconnect++;
+    }
+  if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
+}
+
 void fields::add_volume_source(component c, const src_time &src,
                                const geometric_volume &where,
                                complex<double> A(const vec &), 
@@ -293,15 +304,7 @@ void fields::add_volume_source(component c, const src_time &src,
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
   loop_in_chunks(src_vol_chunkloop, (void *) &data, where, c, false);
-
-  // allocate fields if they haven't been allocated yet for this component
-  int need_to_reconnect = 0;
-  for (int i = 0; i < num_chunks; ++i)
-    if (chunks[i]->is_mine() && !chunks[i]->f[c][0]) {
-      chunks[i]->alloc_f(c);
-      need_to_reconnect++;
-    }
-  if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
+  require_component(c);
 }
 
 } // namespace meep
