@@ -50,8 +50,8 @@ grace::grace(const char *fname, const char *dirname) {
     printf("Unable to open file %f\n", buf);
     exit(1);
   }
-  set_num = 0;
-  sn = 0;
+  set_num = -1;
+  sn = -1;
   pts = NULL;
   fprintf(f,"%s", grace_header);
 }
@@ -69,9 +69,9 @@ void grace::new_set(grace_type pt) {
   flush_pts();
   set_num++;
   sn++;
-  fprintf(f, "@    s%d line color %d\n", sn, set_num);
-  fprintf(f, "@    s%d symbol color %d\n", sn, set_num);
-  fprintf(f, "@    s%d errorbar color %d\n", sn, set_num);
+  fprintf(f, "@    s%d line color %d\n", sn, set_num+1);
+  fprintf(f, "@    s%d symbol color %d\n", sn, set_num+1);
+  fprintf(f, "@    s%d errorbar color %d\n", sn, set_num+1);
   fprintf(f, "@    target G0.S%d\n", sn);
   if (pt == ERROR_BARS) fprintf(f, "@    type xydy\n");
   else fprintf(f, "@    type xy\n");
@@ -93,11 +93,11 @@ void grace::set_legend(const char *l) {
 }
 
 void grace::new_curve() {
-  sn++;
-  fprintf(f, "@    s%d line color %d\n", sn, set_num);
-  fprintf(f, "@    s%d symbol color %d\n", sn, set_num);
-  fprintf(f, "@    s%d errorbar color %d\n", sn, set_num);
-  if (!set_num) new_set();
+  if (set_num == -1) new_set();
+  else sn++;
+  fprintf(f, "@    s%d line color %d\n", sn, set_num+1);
+  fprintf(f, "@    s%d symbol color %d\n", sn, set_num+1);
+  fprintf(f, "@    s%d errorbar color %d\n", sn, set_num+1);
   fprintf(f, "\n");
 }
 
