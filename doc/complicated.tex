@@ -81,30 +81,25 @@ function really isn't what we want here, but I haven't yet written one
 which is analagous to \verb!master_printf! in that you will only get one
 copy of each thing you print to the file.
 \begin{verbatim}
-  monitor_point *p = NULL, *p1 = NULL, *p2 = NULL;
+  monitor_point *p = NULL;
   FILE *myout = create_output_file(dirname, "hy");
-  const double monitor_period = 0.2;
-  double monitor_time = 0.0;
   while (f.time() <= 2000.0 && !interrupt) {
     // Now we'll start taking data!
     f.step();
-    if (f.time() > monitor_time) {
-      monitor_time = f.time() + monitor_period;
 \end{verbatim}
 To get the monitor point data we use the \verb!get_new_point! method of
 \verb!fields!.  This ends up creating a linked list containing the values
 of the field at the monitor point as a function of time, which we will
 later use to run harminv and get the $Q$.
 \begin{verbatim}
-      p = f.get_new_point(vec2d(x_center,y_center), p);
+    p = f.get_new_point(vec2d(x_center,y_center), p);
 \end{verbatim}
 We use the \verb!get_component! method to extract the (complex) fields from
 the monitor point so we can print them.
 \begin{verbatim}
-      fprintf(myout, "%lg\t%lg\t%lg\n", f.time(),
-              real(p->get_component(Hy)),
-              imag(p->get_component(Hy)));
-    }
+    fprintf(myout, "%lg\t%lg\t%lg\n", f.time(),
+            real(p->get_component(Hy)),
+            imag(p->get_component(Hy)));
 \end{verbatim}
 Every time we reach the \verb!next_print_time! we print out a copy of the
 slices, along with a little message indicating the time and the total
