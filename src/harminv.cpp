@@ -21,6 +21,7 @@
 
 #include "harminv.h"
 #include "check.h"
+#include "config.h"
 
 /**************************************************************************/
 
@@ -63,21 +64,6 @@
 #define TWOPI 6.2831853071795864769252867665590057683943388
 
 /**************************************************************************/
-
-/* replace the following with an autoconf test when autoconf 2.5 is out: */
-#if defined(CRAY) || defined(_UNICOS) || defined(_CRAYMPP)
-#define F77_FUNC(x,X) X /* all upper-case on the Cray */
-
-#elif defined(IBM6000) || defined(_AIX)
-#define F77_FUNC(x,X) x  /* all lower-case on RS/6000 */
-
-#elif defined(__hpux)
-#define F77_FUNC(x,X) x  /* all lower-case on HP-UX */
-
-#else
-#define F77_FUNC(x,X) x##_  /* use all lower-case with underscore by default */
-
-#endif
 
 /* Crays have float == double, and don't have the Z* functions in
    LAPACK/BLAS...we have to use C*.  Sigh. */

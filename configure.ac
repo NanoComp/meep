@@ -38,6 +38,8 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 
 # Checks for BLAS/LAPACK libraries:
 
+AC_F77_WRAPPERS
+
 sinclude(m4/acx_blas.m4)
 sinclude(m4/acx_lapack.m4)
 
