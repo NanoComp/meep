@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
   ma.set_output_directory(dirname);
   //ma.use_pml(8,8);
   ma.output_slices("");
-  for (m=0;m<2 && !stopnow;m++) {
+  for (m=0;m<4 && !stopnow;m++) {
     for (k=0.0;k<5.1 && !stopnow;k+=1.0) {
       char k_and_m[10];
       snprintf(k_and_m, 10, "%g-%d", k, m);
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
       add_clever_sources(f, 0.30, 2.5, 0.15);
       add_clever_sources(f, 0.31, 2.5, 0.6);
       add_clever_sources(f, 0.29, 2.5, 0.45);
-      f.prepare_for_bands(0, ttot, 2.5, 20);
+      f.prepare_for_bands(0, ttot, 2.5, 200);
 //      f.add_ez_source(0.125, 0.02,  0.0, 8.0, 0.0*rad, source_sharp);
       //f.set_frequency_range(0.0,0.4, ((double) f.a) / (c * ((double)ttot)) );
       //f.add_zfluxplane(0,(int)(5*rad),80);
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
         f.dft_flux();
       }
       //f.fluxw_output(fluxf, "sumwflux");
-      f.output_bands(ban, "band", 15);
+      f.output_bands(ban, "band", 20);
     }
   }
   fclose(ban);
