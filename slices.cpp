@@ -223,10 +223,15 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
       }
 }
 
-static void eps_outline(FILE *out, component m, const double *f, const volume &v,
-                        const volume &what,
-                        symmetry S, int symnum) {
+static void eps_outline(component m, const double *f,
+                        const volume &v, const volume &what,
+                        symmetry S, int symnum, const char *name) {
   if (!f) return; // Field doesn't exist...
+  FILE *out = fopen(name, "a");
+  if (!out) {
+    printf("Unable to open file '%s' for epsilon border output.\n", name);
+    return;
+  }
   for (int i=0;i<v.ntot();i++) {
     const vec here = S.transform(v.loc(m,i),symnum);
     if (what.contains(here))
@@ -274,13 +279,12 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
       }
       }
   }
+  fclose(out);
 }
 
 static void output_complex_eps_body(component m, double *f[2], const volume &v,
                                     symmetry S, int symnum,
-                                    const volume &what, const char *name,
-                                    component om = Hx, const double *overlay = NULL,
-                                    const double *dashed = NULL) {
+                                    const volume &what, const char *name) {
   if (!f[0] || !f[1]) return; // Field doesn't exist...
   FILE *out = fopen(name, "a");
   if (!out) {
@@ -302,8 +306,6 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
       else fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
     }
   }
-  if (overlay) eps_outline(out, om, overlay, v, what, S, symnum);
-  if (dashed) eps_dotted(out, om, dashed, v, what);
   fclose(out);
 }
 
@@ -470,16 +472,22 @@ void fields::eps_slices(const volume &what, const char *name) const {
                                   n, v.eps_component());
       all_wait();
       for (int i=0;i<num_chunks;i++)
-        if (chunks[i]->is_mine()) {
+        if (chunks[i]->is_mine())
           for (int sn=0;sn<S.multiplicity();sn++)
             for (int otherc=0;otherc<10;otherc++)
               if (S.transform((component)otherc,sn) == c)
                 output_complex_eps_body((component)otherc,
                                         chunks[i]->f[otherc],
                                         chunks[i]->v,
-                                        S, sn, what, n,
-                                        v.eps_component(), chunks[i]->ma->eps);
-        }
+                                        S, sn, what, n);
+      all_wait();
+      for (int i=0;i<num_chunks;i++)
+        if (chunks[i]->is_mine())
+          for (int sn=0;sn<S.multiplicity();sn++)
+            for (int otherc=0;otherc<10;otherc++)
+              if (S.transform((component)otherc,sn) == c)
+                eps_outline(v.eps_component(), chunks[i]->ma->eps,
+                            v, what, S, sn, n);
       all_wait();
       if (am_master()) output_complex_eps_tail(n);
     }
