@@ -134,9 +134,11 @@ void fields::record_bands() {
 
 #define HARMOUT(o,r,n,f) ((o)[(r)+(n)*nr+(f)*nr*maxbands])
 
-double fields::get_band(int nn, double fmax, int maxbands) {
-  // Need to reimplement this...
-  return 0;
+complex<double> fields::get_band(int nn, int maxbands) {
+  complex<double> *fad = get_the_bands(maxbands);
+  complex<double> thef = fad[nn-1];
+  delete[] fad;
+  return thef;
 }
 
 extern "C" {
@@ -148,7 +150,7 @@ extern "C" {
 
 inline int min(int a, int b) { return (a<b)? a : b; }
 
-void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
+void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
                            int nbands, int n) {
   const int dofourier = 1;
   // eigen has dimensions of nr*maxbands*6
@@ -164,13 +166,13 @@ void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
 
   // Now let's zero out any decays that seem unreasonably small...
   for (int i = 0; i < nbands; i++) {
-    if (abs(unitconvert*d[i]*n) < 4.0) {
+    if (abs(unitconvert*imag(fad[i])*n) < 4.0) {
       printf("I think that band with freq %lg and decay %lg has no decay.\n",
-             f[i], d[i]);
-      d[i] = 0.0;
+             real(fad[i]), imag(fad[i]));
+      fad[i] = real(fad[i]);
     } else {
       printf("It seems the band with freq %lg and decay %lg does decay.\n",
-             f[i], d[i]);
+             real(fad[i]), imag(fad[i]));
     }
   }
   // First, we want to take a fourier transform of each mode that has zero
@@ -196,12 +198,12 @@ void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
           for (int t=0;t<n;t++) BAND(bdata,r,t) -= (1.0/n)*mean;
         }
         for (int j=0;j<nbands;j++) {
-          if (d[j] == 0.0) {
+          if (imag(fad[j]) == 0.0) {
             cmplx posfreq = 0;
             cmplx negfreq = 0;
             double energy = 0;
             for (int t=0;t<n;t++) {
-              complex<double> phase = exp(cmplx(0.0,unitconvert*f[j]*t));
+              complex<double> phase = exp(cmplx(0.0,unitconvert*real(fad[j])*t));
               posfreq += BAND(bdata,r,t)*phase;
               negfreq += BAND(bdata,r,t)*conj(phase);
               energy += abs(BAND(bdata,r,t))*abs(BAND(bdata,r,t));
@@ -211,7 +213,7 @@ void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
             negfreq *= 1.0/n;
             HARMOUT(eigen,r,j,whichf) = posfreq;
             for (int t=0;t<n;t++) {
-              complex<double> phase = exp(cmplx(0.0,unitconvert*f[j]*t));
+              complex<double> phase = exp(cmplx(0.0,unitconvert*real(fad[j])*t));
               BAND(bdata,r,t) -= posfreq*conj(phase);
               BAND(bdata,r,t) -= negfreq*phase;
               energy += abs(BAND(bdata,r,t))*abs(BAND(bdata,r,t));
@@ -234,15 +236,13 @@ void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
 
     int ifit = 0;
     for (int i=0;i<nbands;i++) {
-      if (d[i] != 0.0 || !dofourier) {
+      if (imag(fad[i]) != 0.0 || !dofourier) {
         for (int t=0;t<n;t++) {
           A[ifit*n+t] = 0;
           //A[(ifit+numfit)*n+t] = 0;
           for (int tt=max(0,t-passtime);tt<min(n,t+passtime);tt++) {
-            A[ifit*n+t] += exp(cmplx(-unitconvert*d[i]*tt,-unitconvert*f[i]*tt))
+            A[ifit*n+t] += exp(-fad[i]*tt)
               *filter[abs(tt-t)];
-            //A[(ifit+numfit)*n+t] += exp(cmplx(-unitconvert*d[i]*tt,unitconvert*f[i]*tt))
-            //  *filter[abs(tt-t)];
           }
         }
         ifit++;
@@ -276,7 +276,7 @@ void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
         }
         for (int j=0;j<nbands;j++) {
           cmplx possofar = 0, negsofar = 0;
-          if (d[j] != 0.0 || !dofourier) {
+          if (imag(fad[j]) != 0.0 || !dofourier) {
             for (int i=0;i<numfit;i++) {
               cmplx possum=0, negsum=0;
               if (S[i] > 1e-6) {
@@ -317,8 +317,45 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
 }
 
 void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
-  const double pi = 3.14159;
+  complex<double> *fad = get_the_bands(maxbands);
 
+  cmplx *eigen = new cmplx[nr*maxbands*6];
+  if (!eigen) {
+    printf("Error allocating...\n");
+    exit(1);
+  }
+
+  for (int r=0;r<nr;r++) {
+    for (int whichf = 0; whichf < 6; whichf++) {
+      for (int n=0;n<maxbands;n++) {
+        HARMOUT(eigen,r,n,whichf) = 0;
+      }
+    }
+  }
+  int num_found = 0;
+  for (int i=0;i<maxbands;i++) if (fad[i] != 0) num_found = i+1;
+  if (and_modes) bands->get_fields(eigen,fad,num_found,bands->ntime);
+
+  for (int i = 0; i < num_found; ++i) {
+    // k m index freq decay Q
+    fprintf(o, "%s %lg %d %d %lg %lg %lg\n", name,
+            k, m, i, fabs(real(fad[i])), imag(fad[i]),
+            (2*pi)*fabs(real(fad[i])) / (2 * imag(fad[i])));
+    if (and_modes) {
+      for (int r=0;r<nr;r++) {
+        fprintf(o, "%s-fields %lg %d %d %lg", name, k, m, i, r*inva);
+        for (int whichf = 0; whichf < 6; whichf++) {
+          fprintf(o, " %lg %lg", real(HARMOUT(eigen,r,i,whichf)),
+                  imag(HARMOUT(eigen,r,i,whichf)));
+        }
+        fprintf(o, "\n");
+      }
+    }
+  } 
+  delete[] fad;
+}
+
+complex<double> *fields::get_the_bands(int maxbands) {
   bands->maxbands = maxbands;
   double *tf = new double[maxbands];
   double *td = new double[maxbands];
@@ -509,28 +546,14 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
     }
   }
 
-  if (and_modes) bands->get_fields(eigen,reff,refd,numref,ntime);
+  complex<double> *fad = new complex<double>[maxbands];
+  for (int i=0;i<maxbands;i++) fad[i] = 0.0;
+  for (int i=0;i<numref;i++) fad[i] = complex<double>(reff[i],refd[i]);
 
-  for (int i = 0; i < numref; ++i) {
-    //printf("Nice mode with freq %lg %lg\n", freqs[i], decays[i]);
-    // k m index freq decay Q
-    fprintf(o, "%s %lg %d %d %lg %lg %lg\n", name,
-            k, m, i, fabs(reff[i]), refd[i],
-            (2*pi)*fabs(reff[i]) / (2 * refd[i]));
-    if (and_modes) {
-      for (int r=0;r<nr;r++) {
-        fprintf(o, "%s-fields %lg %d %d %lg", name, k, m, i, r*inva);
-        for (int whichf = 0; whichf < 6; whichf++) {
-          fprintf(o, " %lg %lg", real(HARMOUT(eigen,r,i,whichf)),
-                  imag(HARMOUT(eigen,r,i,whichf)));
-        }
-        fprintf(o, "\n");
-      }
-    }
-  } 
   delete[] reff;
   delete[] refd;
   delete[] eigen;
+  return fad;
 }
 
 int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,

@@ -99,7 +99,7 @@ class fields {
 
   void prepare_for_bands(int z, int ttot, double fmax=0, double qmin=1e300);
   void record_bands();
-  double get_band(int n, double fmax=0, int maxbands=100);
+  complex<double> get_band(int n, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
   void output_bands_and_modes(FILE *, const char *, int maxbands=100);
   double total_energy();
@@ -132,9 +132,11 @@ class fields {
                   double cutoff, int is_h = 0);
   int setifreqmax_and_iposmax(int ifreq, int ipos);
   void out_bands(FILE *, const char *, int maxbands, int outmodes);
+  complex<double> *get_the_bands(int maxbands);
 };
 
 const double c = 0.5;
+const double pi = 3.141592653589793238462643383276L;
 
 // The following is a utility function to parse the executable name use it
 // to come up with a directory name, avoiding overwriting any existing

@@ -43,8 +43,6 @@
 inline double max(double a, double b) { return (a > b) ? a : b; }
 inline int max(int a, int b) { return (a > b) ? a : b; }
 
-const double pi = 3.141592653589793238462643383276L;
-
 class polarizability {
  public:
   int nr, nz;
@@ -87,7 +85,7 @@ class bandsdata {
   double a, inva, fmin, fmax, qmin;
   int ntime;
 
-  void get_fields(complex<double> *eigen, double *f, double *d,
+  void get_fields(complex<double> *eigen, complex<double> *f_and_d,
                   int nbands, int n);
   int get_both_freqs(complex<double> *data1, complex<double> *data2, int n,
                      complex<double> *amps1, complex<double> *amps2, 
