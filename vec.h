@@ -95,6 +95,7 @@ inline component direction_component(component c, direction d) {
 class vec {
  public:
   vec() {};
+  vec(ndim di) { dim = di; };
   vec(double zz) { dim = D1; t[Z] = zz; };
   vec(double rr, double zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
   vec(double xx, double yy, double zz) {
@@ -165,6 +166,7 @@ inline vec vec2d(double xx, double yy) {
 class ivec {
  public:
   ivec() { dim = D2; t[X] = t[Y] = 0; };
+  ivec(ndim di) { dim = di; };
   ivec(int zz) { dim = D1; t[Z] = zz; };
   ivec(int rr, int zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
   ivec(int xx, int yy, int zz) {
