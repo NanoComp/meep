@@ -458,7 +458,9 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
             err_best = err;
           }
         }
-        if (err_best < 0.025) {
+        double total_time = (tend-tstart)*a/c;
+        //printf("Extra err here is %lg\n", 100.0/total_time/reff[n]);
+        if (err_best < 0.025+100.0/total_time/reff[n]) {
           refnum[best_match] = n;
           if (verbosity > 1)
             printf("Matched %d: %10lg Got a best err of %8lg on an f of %lg %d (%lg)\n",
