@@ -42,7 +42,7 @@ fields::fields(const mat *ma, int tm=0) {
     chunks[i] = new fields_chunk(ma->chunks[i], outdir, m);
   connect_chunks();
 }
-void fields::use_bloch(double kz) { // FIXME
+void fields::use_bloch(double kz) { // FIXME for more D
   k = kz;
   const double cosknz = cos(k*2*pi*inva*v.nz());
   const double sinknz = sin(k*2*pi*inva*v.nz());
