@@ -17,6 +17,16 @@ if test "x" == "x$CXXFLAGS"; then
    DEFAULTFLAGS=""
 fi
 
+##############################################################################
+
+AC_ARG_WITH(doc,
+	[AC_HELP_STRING([--without-doc], [omit documentation from dist])],
+	with_doc=$withval,with_doc=yes)
+
+AM_CONDITIONAL(WITH_DOC, test "x$with_doc" = xyes)
+
+##############################################################################
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_LIBTOOL
