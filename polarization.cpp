@@ -115,25 +115,6 @@ double polarization::total_energy(const volume &what) {
   return e;
 }
 
-void polarization::update_sigma() {
-  if (saturation_factor != 0.0) {
-    const volume v = pb->v;
-    const double fac = saturation_factor;
-    if (v.dim == d1) {
-      if (fac > 0.0)
-        for (int i=0;i<v.ntot();i++) {
-          const double shere = -energy[Ex][i]*fac;
-          if (shere < 0.0) s[Ex][i] = 0;
-          else s[Ex][i] = shere;
-        }
-      else for (int i=0;i<v.ntot();i++) s[Ex][i] = energy[Ex][i]*fac;
-    } else {
-      printf("I don't yet support saturation in this dimension.\n");
-      exit(1);
-    }
-  }
-}
-
 polarizability::polarizability(const polarizability *pb) {
   omeganot = pb->omeganot;
   gamma = pb->gamma;
@@ -298,6 +279,33 @@ void fields::half_step_polarization_energy(polarization *op, polarization *np) {
   }
 }
 
+void fields::update_polarization_saturation(polarization *op, polarization *np) {
+  if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
+    // This is the initial call... so I should start running from olpol and pol.
+    update_polarization_saturation(olpol, pol);
+  } else if (olpol != NULL && pol != NULL) {
+    if (np->saturation_factor != 0.0) {
+      const volume v = np->pb->v;
+      const double fac = np->saturation_factor;
+      if (v.dim == d1) {
+        if (fac > 0.0)
+          for (int i=0;i<v.ntot();i++) {
+            const double shere = -np->energy[Ex][i]*fac;
+            if (shere < 0.0) np->s[Ex][i] = 0;
+            else np->s[Ex][i] = shere;
+          }
+        else for (int i=0;i<v.ntot();i++)
+          //np->s[Ex][i] = (np->energy[Ex][i] - f[Ex][0][i]*np->P[Ex][0][i]/(8*pi))*fac;
+          np->s[Ex][i] = np->energy[Ex][i]*fac;
+      } else {
+        printf("I don't yet support saturation in this dimension.\n");
+        exit(1);
+      }
+    }
+    if (op->next && np->next) update_polarization_saturation(op->next, np->next);
+  }
+}
+
 void fields::step_polarization_itself(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
@@ -309,7 +317,6 @@ void fields::step_polarization_itself(polarization *op, polarization *np) {
     const double g = op->pb->gamma;
     const double om = op->pb->omeganot;
     const double funinv = 1.0/(1+0.5*g);
-    np->update_sigma();
     DOCMP {
       for (int cc=0;cc<10;cc++)
         if (v.has_field((component)cc) && is_electric((component)cc)) {

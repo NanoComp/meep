@@ -213,6 +213,7 @@ class fields {
   void step_e_source(const src *);
   void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
+  void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);

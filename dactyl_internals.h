@@ -60,8 +60,6 @@ class polarization {
   double total_energy(const volume &);
   static polarization *set_up_polarizations(const mat *ma, int is_real);
   void use_real_fields();
-
-  void update_sigma(); // This is to deal with saturation.
 };
 
 class src {

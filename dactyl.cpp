@@ -456,6 +456,7 @@ void fields::step() {
   step_e_boundaries();
   half_step_polarization_energy();
 
+  update_polarization_saturation();
   step_polarization_itself();
 }
 
