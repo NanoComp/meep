@@ -684,16 +684,16 @@ ivec volume::big_corner() const {
   }
 }
 
-int max(int a, int b) {
+static inline int max(int a, int b) {
   return (a>b)?a:b;
 }
 
 
-double max(double a, double b) {
+static inline double max(double a, double b) {
   return (a>b)?a:b;
 }
 
-double min(double a, double b) {
+static inline double min(double a, double b) {
   return (a<b)?a:b;
 }
 
