@@ -597,7 +597,17 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
         FOR_ELECTRIC_COMPONENTS(c)
           if (v.has_field(c)) {
             const vec here = v.loc(Ep,i);
-            inveps[c][component_direction(c)][i] = 1.0/feps(here);
+            int num_avg = 0;
+            double temp = 0.0;
+            LOOP_OVER_DIRECTIONS(v.dim,d)
+              if (d != component_direction(c)) {
+                num_avg += 2;
+                vec dx = zero_vec(v.dim);
+                dx.set_direction(d,0.5/a);
+                temp += feps(here + dx);
+                temp += feps(here - dx);
+              }
+            inveps[c][component_direction(c)][i] = num_avg/temp;
           }
       }
     }
