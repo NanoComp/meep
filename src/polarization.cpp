@@ -148,7 +148,7 @@ polarizability::polarizability(const structure_chunk *sc, material_function &sig
   energy_saturation = energy_sat;
   saturated_sigma = sigscale;
 
-  sig.set_volume(sc->gv);
+  sig.set_volume(sc->v.pad().surroundings());
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
     sigma = new double[v.ntot()];

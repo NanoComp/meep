@@ -594,7 +594,7 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
   if (!is_mine()) return;
   if (!use_anisotropic_averaging) {
     if (is_mine()) {
-      epsilon.set_volume(gv);
+      epsilon.set_volume(v.pad().surroundings());
       for (int i=0;i<v.ntot();i++) {
         FOR_ELECTRIC_COMPONENTS(c)
           if (v.has_field(c)) {
@@ -648,7 +648,7 @@ structure_chunk::structure_chunk(const volume &thev, material_function &epsilon,
   if (is_mine()) {
     eps = new double[v.ntot()];
     if (eps == NULL) abort("Out of memory!\n");
-    epsilon.set_volume(gv);
+    epsilon.set_volume(v.pad().surroundings());
     for (int i=0;i<v.ntot();i++)
 	 eps[i] = epsilon.eps(v.loc(v.eps_component(),i));
   } else {

@@ -429,6 +429,12 @@ class volume {
   volume split_at_fraction(bool want_high, int numer) const;
   volume split_specifically(int num, int which, direction d) const;
   volume pad(direction d) const;
+  volume pad() const {
+       volume v = *this;
+       LOOP_OVER_DIRECTIONS(dim,d)
+	    v = v.pad(d);
+       return v;
+  }
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);
   ivec io() const;
