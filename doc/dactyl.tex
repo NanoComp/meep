@@ -49,7 +49,7 @@
 \chapter{Maxwell's equations in cylindrical coordinates}
 
 Here are Maxwell's equations in cylindrical coordinates.  We take the
-fields_chunk to be of the form:
+fields to be of the form:
 \begin{equation*}
 \mathbf{E}(r,\phi,z) = \mathbf{E}_m(r,z)e^{i m \phi} 
 \end{equation*}
@@ -71,7 +71,7 @@ Without further ado:
 
 PML (Perfectly Matched Layers) is used to provide absorbing boundary
 conditions in either the $z$ or $r$ direction.  PML consists of a material
-in which some of the field components are split into two fields_chunk, each of
+in which some of the field components are split into two fields, each of
 which has a conductivity associated with it, which is responsible for the
 absorption of the PML.
 
@@ -119,7 +119,7 @@ Here are the field equations for a PML material:
 Most real materials, at least in some frequency range, have polarizations
 that are not actually instantaneously proportional to the local electric
 field.  We model these polaritonic and plasmonic effects by introducing one
-or more additional polarization fields_chunk, to be propogated along with the
+or more additional polarization fields, to be propogated along with the
 electric and magnetic field.  The polarization field, $\mathbf{P}$, is a
 vector field which exists on the electric field Yee lattice points.
 
@@ -146,7 +146,7 @@ components, so we need to figure out which of the two components gets the
 contribution from $\frac{d\mathbf{P}}{dt}$.  The obvious solution to this
 (well, maybe not exactly obvious, but it is the solution) is to split the
 polarization field also into two components in the PML region, just as we
-split the electric and magnetic fields_chunk.
+split the electric and magnetic fields.
 
 The electric field propogation equations in PML then become:
 \begin{align}

@@ -80,7 +80,7 @@ We use a couple of monitor points to determine epsilon.
     }
 \end{comment}
 The monitor points are located one grid spacing from one another.  The
-\verb*|get_new_point| method appends the fields_chunk at a given time to a
+\verb*|get_new_point| method appends the fields at a given time to a
 monitor point linked list.
 \begin{verbatim}
     left  = f.get_new_point(vec(sourceloc+1.0/a), left );
@@ -95,7 +95,7 @@ monitor point linked list.
   int numl, numr;
   printf("Working on left fourier transform...\n");
 \end{comment}
-When the time stepping is over, we take a fourier transform of the fields_chunk
+When the time stepping is over, we take a fourier transform of the fields
 at the two monitor points.
 \begin{verbatim}
   left->fourier_transform(Ex, &al, &freqs, &numl, 0.301, 0.5, 300);

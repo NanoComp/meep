@@ -35,10 +35,9 @@ int main() {
 There are a few tricks you should know before you decide to go about
 calculating a band structure.  One of the biggest problems in calculating a
 band structure in a time domain code is that of exciting all the modes you
-are interested in.  dactyl makes this easy with a couple of ``fields_chunk''
-methods, \verb-initialize_with_n_te-, and
-\verb-initialize_with_n_tm-.  These initialize the field with the n
-lowest TE and TM modes respectively.
+are interested in.  dactyl makes this easy with a couple of ``fields''
+methods, \verb-initialize_with_n_te-, and \verb-initialize_with_n_tm-.
+These initialize the field with the n lowest TE and TM modes respectively.
 
 \begin{verbatim}
       f.initialize_with_n_te(4);
@@ -56,7 +55,7 @@ argument is the maximum frequency you are interested in.
 \end{verbatim}
 
 The second band structure function is \verb-record_bands-, which just
-copies the fields_chunk into the already allocated arrays for future use.
+copies the fields into the already allocated arrays for future use.
 
 \begin{verbatim}
         f.record_bands();
