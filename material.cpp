@@ -110,9 +110,9 @@ void mat::use_pml(direction d, boundary_side b, double dx) {
 }
 
 void mat::use_pml_everywhere(double dx) {
-  for (int b=0;b<2;b++) for (int d=0;d<5;d++)
-    if (user_volume.has_boundary((boundary_side)b, (direction)d))
-      use_pml((direction)d, (boundary_side)b, dx);
+  for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
+    if (user_volume.has_boundary((boundary_side)b, d))
+      use_pml(d, (boundary_side)b, dx);
 }
 
 void mat::mix_with(const mat *oth, double f) {
@@ -232,7 +232,7 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
       bloc < v.boundary_location(Low,d) - dx - 1.0/a) return;
   if (is_mine()) {
     FOR_COMPONENTS(c)
-      if (inveps[c][component_direction(c)] && component_direction(c) != d) {
+      if (v.has_field(c) && component_direction(c) != d) {
         if (!C[d][c]) {
           C[d][c] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
@@ -244,13 +244,14 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
         }
       }
     FOR_COMPONENTS(c) FOR_DIRECTIONS(d2)
-      if ((inveps[c][d2] || d2 == d) && d2 != d) {
+      if ((inveps[c][d2] || d2 == component_direction(c)) &&
+          C[d][c] && d2 != d) {
         if (!Cdecay[d][c][d2]) {
           Cdecay[d][c][d2] = new double[v.ntot()];
           if (is_electric(c))
             for (int i=0;i<v.ntot();i++) Cdecay[d][c][d2][i] = inveps[c][d2][i];
           else
-            for (int i=0;i<v.ntot();i++) Cdecay[d][c][d][i] = 1.0;
+            for (int i=0;i<v.ntot();i++) Cdecay[d][c][d2][i] = 1.0;
         }
         for (int i=0;i<v.ntot();i++) {
           if (is_magnetic(c)) Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]);
