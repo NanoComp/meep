@@ -315,6 +315,15 @@ void fields_chunk::figure_out_step_plan() {
     num_each_direction[i] = v.yucky_num(i);
     stride_each_direction[i] = v.stride(v.yucky_direction(i));
   }
+  FOR_DIRECTIONS(d) {
+    num_any_direction[d] = 1;
+    stride_any_direction[d] = 0;
+    for (int i=0;i<3;i++)
+      if (d == v.yucky_direction(i)) {
+        num_any_direction[d] = v.yucky_num(i);
+        stride_any_direction[d] = v.stride(v.yucky_direction(i));
+      }
+  }
 }
 
 static bool is_tm(component c) {
