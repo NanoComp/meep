@@ -17,8 +17,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include "dactyl.h"
+
+static int stopnow = 0;
+void handle_control_c(int i) {
+  printf("Be patient, I'll stop as soon as it's convenient...\n");
+  stopnow = 1;
+}
 
 int rad;
 
@@ -48,6 +55,7 @@ double source_sharp(double r) {
 }
 
 int main() {
+  signal(SIGINT, handle_control_c);
   printf("Running example program!\n");
   FILE *ban = fopen("bands", "w");
 
@@ -57,8 +65,8 @@ int main() {
   mat ma(guided_eps, 3.5, 3.0, rad);
   ma.use_pml(8,8);
   ma.output_slices("example");
-  for (m=0;m<1;m++) {
-    for (k=0.3;k<0.31;k+=0.1) {
+  for (m=1;m<2 && !stopnow;m++) {
+    for (k=0.3;k<0.31 && !stopnow;k+=0.1) {
       printf("Working on k of %g and m = %d with a=%d...\n", k, m, rad);
       fields f(&ma, m);
       //f.use_bloch(k);
@@ -76,9 +84,8 @@ int main() {
       int ttot = 3000*rad;
       ttot = 140*rad;
       
-      //f.prepare_for_bands(0, ttot, 3.0, 20);
-      for (int t=0; t < ttot+1; t++) {
-        if (t % /*(100*rad)*/1 == 0 && t > 137*rad) {
+      for (int t=0; t < ttot+1 && !stopnow; t++) {
+        if (t % (1000*rad) == 0 && t > 137*rad) {
           printf("Working on time step %d...  ", t);
           f.output_slices("example");
           printf("energy is %lg\n", f.total_energy()/3.66e-6);
