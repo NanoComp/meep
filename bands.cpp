@@ -456,6 +456,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
                   (abs(heref[i]-reff[n])+abs(hered[i]-refd[n]))/abs(reff[n]);
                 double erra = abs(herea[i]-mya)/abs(refa[n]);
                 double err = sqrt(errf*errf + erra*erra);
+                err = errf;
                 if (err > 10*errf) err = 10*errf;
                 //printf("heref[%d] %lg vs reff[%d] %lg gives %lg %lg -- %lg\n",
                 //       i, heref[i], n, reff[n], errf, erra, abs(mya));
@@ -465,7 +466,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
                   best_erra = erra;
                 }
               }
-              if (err_best < 0.25) {
+              if (err_best < 0.025) {
                 refnum[best_match] = n;
                 //printf("Got a best err of %lg (%lg) on an f of %lg %d\n",
                 //       err_best, best_erra, reff[n], n);
