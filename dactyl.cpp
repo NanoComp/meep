@@ -244,20 +244,6 @@ void src::use_real_sources() {
   if (next) next->use_real_sources();
 }
 
-void fields::initialize_with_nth_te(int n) {
-}
-
-void fields::initialize_with_nth_tm(int n) {
-}
-
-void fields::initialize_with_n_te(int ntot) {
-  //for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
-}
-
-void fields::initialize_with_n_tm(int ntot) {
-  //for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
-}
-
 int fields::phase_in_material(const mat *newma, double time) {
   new_ma = newma;
   phasein_time = (int) (time*a/c);
@@ -492,14 +478,6 @@ void fields::step_e_right() {
         for (int z=0;z<v.nz();z++) f[Ez][cmp][z+ir] = f[Hr][cmp][z+ir];
       }
     }
-  }
-}
-
-void fields::initialize_field(component c, complex<double> func(const vec &)) {
-  for (int i=0;i<v.ntot();i++) {
-    complex<double> val = func(v.loc(c,i));
-    f[c][0][i] = real(val);
-    f[c][1][i] = imag(val);
   }
 }
 
