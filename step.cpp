@@ -40,6 +40,7 @@ void fields::step_right() {
   update_polarization_saturation();
   step_polarization_itself();
 
+  update_fluxes();
   t += 1;
 }
 
@@ -61,6 +62,7 @@ void fields::step() {
   update_polarization_saturation();
   step_polarization_itself();
 
+  update_fluxes();
   t += 1;
 }
 

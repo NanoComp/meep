@@ -35,6 +35,7 @@ fields::fields(const mat *ma, int tm) {
   a = v.a;
   inva = 1.0/a;
   t = 0;
+  fluxes = NULL;
 
   num_chunks = ma->num_chunks;
   chunks = new (fields_chunk *)[num_chunks];
@@ -76,6 +77,7 @@ fields::~fields() {
     delete[] comm_blocks[ft];
     delete[] comm_sizes[ft];
   }
+  delete fluxes;
   delete bands;
 }
 void fields::use_real_fields() {
@@ -102,6 +104,7 @@ fields_chunk::~fields_chunk() {
   delete e_sources;
   delete pol;
   delete olpol;
+  delete fluxes;
 }
 
 fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
@@ -115,6 +118,7 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
   is_real = 0;
   a = ma->a;
   inva = 1.0/a;
+  fluxes = NULL;
   pol = polarization::set_up_polarizations(ma, is_real);
   olpol = polarization::set_up_polarizations(ma, is_real);
   h_sources = e_sources = NULL;

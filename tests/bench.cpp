@@ -66,6 +66,8 @@ bench bench_flux_1d(const double zmax,
   fields f(&ma);
   f.use_real_fields();
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 3.0, vec(zmax/2+0.3), 1.0);
+  flux_plane *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
+  flux_plane *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
 
   while (f.time() <= f.find_last_source()) f.step();
 
@@ -75,8 +77,7 @@ bench bench_flux_1d(const double zmax,
   clock_t start = clock();
   while (f.time() < ttot) {
     f.step();
-    flux_energy += -(c/a)*real(f.flux(vec(zmax/3.0),vec(zmax/3.0)) -
-                               f.flux(vec(zmax*2.0/3.0),vec(zmax*2.0/3.0)));
+    flux_energy += (c/a)*(right->flux() - left->flux());
   }
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);

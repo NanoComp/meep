@@ -131,6 +131,19 @@ class monitor_point {
                int maxbands);
 };
 
+class partial_flux_plane;
+
+class flux_plane {
+ public:
+  partial_flux_plane *partials;
+  flux_plane *next;
+
+  flux_plane(partial_flux_plane *);
+  ~flux_plane();
+
+  double flux();
+};
+
 enum in_or_out { Incoming=0, Outgoing=1 };
 
 class fields_chunk {
@@ -145,6 +158,7 @@ class fields_chunk {
   complex<double> *connection_phases[2];
 
   polarization *pol, *olpol;
+  partial_flux_plane *fluxes;
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
   int m, is_real;
@@ -185,6 +199,9 @@ class fields_chunk {
 
   int n_proc() const { return ma->n_proc(); };
   int is_mine() const { return ma->is_mine(); };
+  // fluxes.cpp
+  partial_flux_plane *new_flux_plane(const vec &p1, const vec &p2);
+  void update_fluxes();
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   void record_bands(int tcount);
@@ -219,12 +236,15 @@ class fields_chunk {
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
   void alloc_extra_connections(field_type, in_or_out, int);
+  // fluxes.cpp
+  partial_flux_plane *nfp_1d(const vec &);
 };
 
 class fields {
  public:
   int num_chunks;
   fields_chunk **chunks;
+  flux_plane *fluxes;
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
   double **comm_blocks[2];
@@ -288,7 +308,6 @@ class fields {
   void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
   // energy_and_flux.cpp
-  complex<double> flux(const vec &end1, const vec &end2);
   double energy_in_box(const volume &);
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);
@@ -300,6 +319,8 @@ class fields {
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
   double count_volume(component);
+  // fluxes.cpp
+  flux_plane *add_flux_plane(const vec &, const vec &);
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   // boundaries.cpp
@@ -327,7 +348,8 @@ class fields {
   void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
   // energy_and_flux.cpp
-  complex<double> oned_flux(const vec &end1);
+  // fluxes.cpp
+  void update_fluxes();
 };
 
 class grace_point;

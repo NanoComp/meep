@@ -48,6 +48,8 @@ int flux_1d(const double zmax,
   fields f(&ma);
   f.use_real_fields();
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 3.0, vec(zmax/2+0.3), 1.0);
+  flux_plane *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
+  flux_plane *right = f.add_flux_plane(vec(zmax*2.0/3.0), vec(zmax*2.0/3.0));
 
   while (f.time() <= f.find_last_source()) f.step();
 
@@ -57,8 +59,7 @@ int flux_1d(const double zmax,
   double delta_energy = f.energy_in_box(mid);
   while (f.time() < ttot) {
     f.step();
-    flux_energy += -(c/a)*real(f.flux(vec(zmax/3.0),vec(zmax/3.0)) -
-                               f.flux(vec(zmax*2.0/3.0),vec(zmax*2.0/3.0)));
+    flux_energy += (c/a)*(right->flux() - left->flux());
   }
   delta_energy -= f.energy_in_box(mid);
   master_printf("  Energy change:  \t%lg\n  Integrated flux:\t%lg\n  Ratio:\t%lg\n",

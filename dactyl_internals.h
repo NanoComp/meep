@@ -104,6 +104,23 @@ class bandsdata {
                           int numref);
 };
 
+class partial_flux_plane {
+ public:
+  partial_flux_plane(fields_chunk *, int);
+  ~partial_flux_plane();
+
+  component cE, cH;
+  double *weights;
+  int *indE, *indH, numpts;
+  partial_flux_plane *next;
+  fields_chunk *f;
+
+  double *oldE[2];
+
+  void append(partial_flux_plane *);
+ private:
+};
+
 class weighted_flux_plane {
  public:
   int ymin, ymax, xconst;
