@@ -1,6 +1,7 @@
 lib_LTLIBRARIES = libmeep.la
 
-BUILT_SOURCES = step_d.h step_h.h update_e_from_d.h update_from_e.h
+BUILT_SOURCES = step_d.h step_h.h update_e_from_d.h update_from_e.h	\
+sphere-quad.h
 
 HDRS = harminv.h meep.h meep_internals.h mympi.h ran.h threevec.h	\
 vec.h
@@ -14,12 +15,19 @@ update_e_from_d.cpp update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)
 
 libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
+noinst_PROGRAMS = sphere_quad
+sphere_quad_SOURCES = sphere-quad.cpp
+
+PRELUDE = "/* This file was automatically generated --- DO NOT EDIT */"
+
+SPHERE_QUAD = $(top_builddir)/src/sphere_quad
+sphere-quad.h: sphere_quad
+	(echo $(PRELUDE); echo; $(SPHERE_QUAD)) > $@
+
 # Generate built sources only in maintainer mode
 if MAINTAINER_MODE
 
 HSRC=$(top_builddir)/hsrc
-
-PRELUDE = "/* This file was automatically generated --- DO NOT EDIT */"
 
 step_d.h: $(HSRC)/step_d_gen
 	(echo $(PRELUDE); echo; $(HSRC)/step_d_gen) > $@

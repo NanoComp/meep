@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "meep.h"
 #include "threevec.h"
 
@@ -24,6 +26,51 @@ static geometric_volume nth_quadrant(const geometric_volume &v, int n) {
   }
   return o;
 }
+
+#define USE_SPHERE_QUAD 0
+
+#if USE_SPHERE_QUAD
+#include "sphere-quad.h"
+
+static int count_sphere_pts(const geometric_volume &v) {
+     return num_sphere_quad[number_of_directions(v.dim)];
+}
+
+static vec sphere_pt(const geometric_volume &v, int n, double &weight) {
+     geometric_volume gv = v;
+     vec cent = geo_center(v);
+     vec pt;
+     int d = number_of_directions(v.dim);
+     double R = abs(gv.get_min_corner() - gv.get_max_corner())
+	  / sqrt((double) d) * 0.5;
+     switch (v.dim) {
+	 case D1:
+	 {
+	      weight = sphere_quad[0][n][3];
+	      vec pt(sphere_quad[0][n][2]);
+	      return cent + pt * R;
+	 }
+	 case D2:
+	 {
+	      weight = sphere_quad[1][n][3];
+	      return cent + vec2d(sphere_quad[1][n][0], sphere_quad[1][n][1]) * R;
+	 }
+	 case D3:
+	 {
+	      weight = sphere_quad[2][n][3];
+	      vec pt(sphere_quad[2][n][0], sphere_quad[2][n][1],
+		     sphere_quad[2][n][2]);
+	      return cent + pt * R;
+	 }
+	 case Dcyl:
+	 {
+	      weight = sphere_quad[1][n][3];
+	      vec pt(sphere_quad[1][n][0], sphere_quad[1][n][1]);
+	      return cent + pt * R;
+	 }
+     }
+}
+#endif /* USE_SPHERE_QUAD */
 
 void prthv(threevec v) {
   master_printf("%10lg\t%10lg\t%10lg\n", v.val[0], v.val[1], v.val[2]);
