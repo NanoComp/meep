@@ -183,9 +183,10 @@ class fields {
   void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
   void output_bands_and_modes(FILE *, const char *, int maxbands=100);
-  double total_energy();
-  double electric_energy();
-  double magnetic_energy();
+  double energy_in_box(double rmin, double rmax, double zmin, double zmax);
+  double electric_energy_in_box(double rmin, double rmax, double zmin, double zmax);
+  double magnetic_energy_in_box(double rmin, double rmax, double zmin, double zmax);
+  double total_energy() {return energy_in_box(0.0, nr*inva, 0.0, nz*inva);};
   double zflux(int ri, int ro, int z);
   double rflux(int zl, int zu, int r);
   void dft_flux();

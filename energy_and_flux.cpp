@@ -207,8 +207,8 @@ complex<double> fields::get_flux(flux_plane *fp) {
 
 /* Energy calculation */
 
-double fields::total_energy() {
-  
+double fields::energy_in_box(double rmin, double rmax, double zmin, double zmax) 
+{
   if (backup_hr[0] == NULL) {
     DOCMP {
       backup_hr[cmp] = new double[(nr+1)*(nz+1)];
@@ -227,8 +227,10 @@ double fields::total_energy() {
   }
 
   step_h_bulk();
+  step_h_pml();
   step_h_boundaries();
-  double next_step_magnetic_energy = magnetic_energy();
+  step_h_source(h_sources);
+  double next_step_magnetic_energy = magnetic_energy_in_box(rmin, rmax, zmin, zmax);
 
   DOCMP {
     for (int j=0; j<(nr+1)*(nz+1); j++)
@@ -239,39 +241,59 @@ double fields::total_energy() {
       hz[cmp][j] = backup_hz[cmp][j];
   }
 
- return electric_energy() + 0.5*next_step_magnetic_energy + 0.5*magnetic_energy();
+ return electric_energy_in_box(rmin, rmax, zmin, zmax) + 
+   0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(rmin, rmax, zmin, zmax);
 }
 
-double fields::electric_energy() {
-  double energy = 0, norm = 0;
+double weight(int rmin, int rmax, int zmin, int zmax, double r, double z) {
+  return (r <= rmax) * ((r>rmin) + (r<rmax))/2.0 *
+    (z <= zmax) * ((z>zmin) + (z<zmax))/2.0;
+}
+
+double fields::electric_energy_in_box(double rmin, double rmax, double zmin, double zmax) {
+  int i_rmin = (int) (rmin*a+0.5);
+  int i_rmax = (int) (rmax*a+0.5);
+  int i_zmin = (int) (zmin*a+0.5);
+  int i_zmax = (int) (zmax*a+0.5);
+
+  double energy = 0;
   DOCMP {
-    for (int r=0;r<nr;r++) {
+    for (int r=i_rmin;r<=i_rmax;r++) {
+      double r_prefactor = r + (r==0)*1./8;
       double rph = r+0.5;
-      for (int z=0;z<nz;z++) {
-        energy += rph*(1./MA(ma->invepser,r,z))*CM(er,r,z)*CM(er,r,z);
-        energy += r*(1./MA(ma->invepsep,r,z))*CM(ep,r,z)*CM(ep,r,z);
-        energy += r*(1./MA(ma->invepsez,r,z))*CM(ez,r,z)*CM(ez,r,z);
-        norm += (r + rph)/2;
+      for (int z=i_zmin;z<=i_zmax;z++) {
+	energy += weight(i_rmin, i_rmax, i_zmin, i_zmax, r+0.5, z    ) *
+	  rph*(1./MA(ma->invepser,r,z))*CM(er,r,z)*CM(er,r,z);
+        energy += weight(i_rmin, i_rmax, i_zmin, i_zmax, r    , z    ) *
+	  r_prefactor*(1./MA(ma->invepsep,r,z))*CM(ep,r,z)*CM(ep,r,z);
+        energy += weight(i_rmin, i_rmax, i_zmin, i_zmax, r    , z+0.5) *
+	  r_prefactor*(1./MA(ma->invepsez,r,z))*CM(ez,r,z)*CM(ez,r,z);
       }
     }
   }
-  return energy/norm/(8*pi);
-}
-
-double fields::magnetic_energy() {
-  double energy = 0, norm = 0;
-  DOCMP {
-    for (int r=0;r<nr;r++) {
-      double rph = r+0.5;
-      for (int z=0;z<nz;z++) {
-        energy += r*CM(hr,r,z)*CM(hr,r,z);
-        energy += rph*CM(hp,r,z)*CM(hp,r,z);
-        energy += rph*CM(hz,r,z)*CM(hz,r,z);
-        norm += (r + rph)/2;
-      }
-    }
-  }
-  //return energy/norm/(8*pi);
   return energy/(8*pi) * 2*pi/(a*a*a);
 }
 
+double fields::magnetic_energy_in_box(double rmin, double rmax, double zmin, double zmax) {
+  int i_rmin = (int) (rmin*a+0.1);
+  int i_rmax = (int) (rmax*a+0.1);
+  int i_zmin = (int) (zmin*a+0.1);
+  int i_zmax = (int) (zmax*a+0.1);
+  
+  double energy = 0;
+  DOCMP {
+    for (int r=i_rmin;r<=i_rmax;r++) {
+      double r_prefactor = r + (r==0)*1./8;      
+      double rph = r+0.5;
+      for (int z=i_zmin;z<=i_zmax;z++) {
+        energy += weight(i_rmin, i_rmax, i_zmin, i_zmax, r    , z+0.5) *
+	  r_prefactor*CM(hr,r,z)*CM(hr,r,z);
+        energy += weight(i_rmin, i_rmax, i_zmin, i_zmax, r+0.5, z+0.5) *
+	  rph*CM(hp,r,z)*CM(hp,r,z);
+        energy += weight(i_rmin, i_rmax, i_zmin, i_zmax, r+0.5, z    ) *
+	  rph*CM(hz,r,z)*CM(hz,r,z);
+      }
+    }
+  }
+  return energy/(8*pi) * 2*pi/(a*a*a);
+}
