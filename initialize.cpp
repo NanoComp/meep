@@ -52,6 +52,9 @@ static int m_for_J;
 static complex<double> JJ(const vec &v) {
   return polar(J(m_for_J, ktrans*v.r()),kax*v.r());
 }
+static complex<double> JP(const vec &v) {
+  return polar(Jprime(m_for_J, ktrans*v.r()),kax*v.r());
+}
 
 void fields::initialize_with_nth_te(int np0) {
   if (v.dim == dcyl) {
@@ -74,6 +77,7 @@ void fields::initialize_with_nth_tm(int np1) {
     kax = k*2*pi*inva;
     m_for_J = m;
     initialize_field(Ez, JJ);
+    initialize_field(Hp, JP);
   } else {
     printf("Can't initialize with TM in this dimension.\n");
   }

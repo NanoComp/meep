@@ -87,9 +87,12 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     if (ma->eps[i] > epsmax) epsmax = ma->eps[i];
 
   double cutoff_freq = 0.0;
-  if (v.dim == dcyl) cutoff_freq = 1.84*c/(2*pi)/v.nr()/sqrt(epsmax);
+  if (v.dim == dcyl) {
+    cutoff_freq = 1.84*c/(2*pi)/v.nr()/sqrt(epsmax);
+    if (m == 0) cutoff_freq *= 0.5;
+  }
   bands->fmin = sqrt(cutoff_freq*cutoff_freq + k*k*c*c/epsmax);
-  bands->fmin = cutoff_freq/(c*inva);
+  bands->fmin = cutoff_freq*a/c;
   bands->qmin = qmin;
   // Set fmax and determine how many timesteps to skip over...
   bands->fmax = fmax;
