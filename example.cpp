@@ -69,18 +69,11 @@ int main(int argc, char **argv) {
   int ttot = 4000*rad;
   
   mat ma(guided_eps, 1.0, 0.0, rad);
-  const char *outdirname = make_output_directory(argv[0]);
-  printf("Storing output in directory %s/\n", outdirname);
-  char bands_name[100];
-  snprintf(bands_name, 100, "%s/bands", outdirname);
-  char flux_name[100];
-  snprintf(flux_name, 100, "%s/flux", outdirname);
-  FILE *ban = fopen(bands_name, "w");
-  if (!ban) {
-    printf("Unable to create file %s...\n", bands_name);
-    exit(1);
-  }
-  ma.set_output_directory(outdirname);
+  const char *dirname = make_output_directory(argv[0]);
+  printf("Storing output in directory %s/\n", dirname);
+  FILE *ban = create_output_file(dirname, "bands");
+  //FILE *fluxf = create_output_file(dirname, "flux");
+  ma.set_output_directory(dirname);
   //ma.use_pml(8,8);
   ma.output_slices("");
   for (m=0;m<2 && !stopnow;m++) {
@@ -111,8 +104,7 @@ int main(int argc, char **argv) {
         f.step();
         f.dft_flux();
       }
-      //FILE *sumwflux = fopen(flux_name, "w");
-      //f.fluxw_output(sumwflux, "sumwflux");
+      //f.fluxw_output(fluxf, "sumwflux");
       f.output_bands(ban, "band", 15);
     }
   }

@@ -155,3 +155,4 @@ const double c = 0.5;
 // directory, unless the source file hasn't changed.
 
 const char *make_output_directory(const char *exename);
+FILE *create_output_file(const char *dirname, const char *fname);

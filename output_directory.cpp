@@ -80,6 +80,18 @@ static int is_ok_dir(const char *dirname, const char *sourcename, const char *ba
   return 0;
 }
 
+FILE *create_output_file(const char *dirname, const char *fname) {
+  const int buflen = 300;
+  char n[buflen];
+  snprintf(n, buflen, "%s/%s", dirname, fname);
+  FILE *o = fopen(n, "w");
+  if (!o) {
+    printf("Unable to create file %s!\n", n);
+    exit(1);
+  }
+  return o;
+}
+
 const char *make_output_directory(const char *exename) {
   const int buflen = 300;
   char basename[buflen];
