@@ -24,7 +24,7 @@
 
 namespace meep {
 
-static double one_function(const vec &r) { return 1.0; }
+static double one_function(const vec &) { return 1.0; }
 
 structure::structure()
   : gv(D1) // Aaack, this is very hokey.
