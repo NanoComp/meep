@@ -213,6 +213,8 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 	   dprefix ? dprefix : "", dprefix ? "_" : "", component_name(c));
   file->create_data(dataname, 1, &n);
 
+  // FIXME: this is WRONG on a parallel machine (all CPUs can't start at 0)
+
   int ichunk = 0, istart = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
     int Nchunk = cur->N * cur->Nomega * 2;
@@ -234,6 +236,8 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   if (file_rank != 1 || file_dims != n)
     abort("incorrect dataset size (%d vs. %d) in load_dft_hdf5 %s:%s", file_dims, n, file->file_name(), dataname);
   
+  // FIXME: this is WRONG on a parallel machine (all CPUs can't start at 0)
+
   int ichunk = 0, istart = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
     int Nchunk = cur->N * cur->Nomega * 2;
