@@ -79,7 +79,7 @@ void fields::connect_adjacent_chunks() {
             for (int j=0;j<num_chunks;j++)
               if (j != i)
                 if (chunks[j]->v.owns(here)) {
-                  // the following is deprecated, but ok here.
+                  // index is deprecated, but ok in this case:
                   int m = chunks[j]->v.index((component)c, here);
                   if (is_electric((component)c)) {
                     DOCMP {
