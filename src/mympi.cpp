@@ -24,6 +24,8 @@
 #include <mpi.h>
 #endif
 
+#define UNUSED(x) (void) x // silence compiler warnings
+
 namespace meep {
 
 initialize::initialize(int argc, char **argv) {
@@ -32,6 +34,9 @@ initialize::initialize(int argc, char **argv) {
   int major, minor;
   MPI_Get_version(&major, &minor);
   master_printf("Using MPI... version %d.%d\n", major, minor);
+#else
+  UNUSED(argc);
+  UNUSED(argv);
 #endif
 }
 
@@ -60,6 +65,11 @@ void send(int from, int to, double *data, int size) {
   if (from == me) MPI_Send(data, size, MPI_DOUBLE, to, 1, MPI_COMM_WORLD);
   MPI_Status stat;
   if (to == me) MPI_Recv(data, size, MPI_DOUBLE, from, 1, MPI_COMM_WORLD, &stat);
+#else
+  UNUSED(from);
+  UNUSED(to);
+  UNUSED(data);
+  UNUSED(size);
 #endif
 }
 
@@ -67,6 +77,10 @@ void broadcast(int from, double *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
   MPI_Bcast(data, size, MPI_DOUBLE, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
 #endif
 }
 
@@ -74,6 +88,10 @@ void broadcast(int from, complex<double> *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
   MPI_Bcast(data, 2*size, MPI_DOUBLE, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
 #endif
 }
 
@@ -81,6 +99,8 @@ bool broadcast(int from, bool b) {
   int bi = b;
 #ifdef HAVE_MPI
   MPI_Bcast(&bi, 2, MPI_INT, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
 #endif
   return bi;
 }
@@ -88,6 +108,8 @@ bool broadcast(int from, bool b) {
 complex<double> broadcast(int from, complex<double> data) {
 #ifdef HAVE_MPI
   MPI_Bcast(&data, 2, MPI_DOUBLE, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
 #endif
   return data;
 }
@@ -95,6 +117,8 @@ complex<double> broadcast(int from, complex<double> data) {
 double broadcast(int from, double data) {
 #ifdef HAVE_MPI
   MPI_Bcast(&data, 1, MPI_DOUBLE, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
 #endif
   return data;
 }

@@ -332,7 +332,7 @@ void fields_chunk::figure_out_step_plan() {
 static bool is_tm(component c) {
   switch (c) {
   case Hx: case Hy: case Ez: case Dz: return true;
-  otherwise: return false;
+  default: return false;
   }
   return false;
 }

@@ -137,6 +137,7 @@ inline component direction_component(component c, direction d) {
   if (is_electric(c)) start_point = Ex;
   else if (is_magnetic(c)) start_point = Hx;
   else if (is_D(c)) start_point = Dx;
+  else abort("unknown field component %d", c);
   switch (d) {
   case X: return start_point;
   case Y: return (component) (start_point + 1);

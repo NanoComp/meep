@@ -9,7 +9,7 @@ public:
     FOR3(j) val[j] = (i==j)?1.0:0.0;
   };
   double operator*(const threevec &a) const {
-    double out;
+    double out = 0.0;
     FOR3(i) out += val[i]*a.val[i];
     return out;
   }

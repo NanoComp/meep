@@ -147,7 +147,7 @@ void fields::initialize_A(complex<double> A(component, const vec &), double freq
   }
   tmp.step();
   f_static = &tmp;
-  const double dt = inva*c;
+  // const double dt = inva*c;
   const complex<double> I = complex<double>(0.0,1.0);
   const complex<double> h_prefac = sqrt(a);
   const complex<double> d_prefac = h_prefac / (I*freq*(2*pi));

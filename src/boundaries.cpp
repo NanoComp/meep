@@ -21,11 +21,14 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+#define UNUSED(x) (void) x // silence compiler warnings
+
 namespace meep {
 
 void fields::set_boundary(boundary_side b,direction d,
                           boundary_condition cond, bool autoconnect,
                           complex<double> kcomponent) {
+  UNUSED(kcomponent);
   boundaries[b][d] = cond;
   if (autoconnect) connect_chunks();
 }

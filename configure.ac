@@ -146,6 +146,12 @@ if test "x" == "x$DEFAULTFLAGS"; then
    CFLAGS="$CFLAGS_my_saved"
 fi
 
+# Add lots of compiler warnings in maintainer mode if we are using gcc:
+# (The variable $GXX is set to "yes" by AC_PROG_CXX if we are using g++.)
+if test "$GXX" = "yes" && test "$USE_MAINTAINER_MODE" = yes; then
+        CXXFLAGS="$CXXFLAGS -Wall -W -pedantic"
+fi
+ 
 ##############################################################################
 
 AC_ARG_WITH(timings, [AC_HELP_STRING([--with-timings],[calculate timings of various operations])],with_timings=$withval,with_timings=no)

@@ -22,6 +22,7 @@ static geometric_volume nth_quadrant(const geometric_volume &v, int n) {
     else o.set_direction_max(d, cent.in_direction(d));
     n = n >> 1;
   }
+  return o;
 }
 
 static tensor doaverage_inveps(double eps(const vec &), const geometric_volume &vol,
