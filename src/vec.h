@@ -103,22 +103,41 @@ inline direction stop_at_direction(ndim dim) {
       for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
+#define LOOP_OVER_VOL(v, c, idx) \
+  LOOP_OVER_IVECS(v, (v).little_corner() + (v).iyee_shift(c), (v).big_corner() + (v).iyee_shift(c), idx)
+
+#define LOOP_OVER_VOL_OWNED(v, c, idx) \
+  LOOP_OVER_IVECS(v, (v).little_owned_corner(c), (v).big_corner(), idx)
+
+#define LOOP_OVER_VOL_NOTOWNED(v, c, idx) \
+ for (ivec loop_notowned_is((v).dim,0), loop_notowned_ie((v).dim,0); \
+      loop_notowned_is == zero_ivec((v).dim);) \
+   for (int loop_ibound = 0; (v).get_boundary_icorners(c, loop_ibound,     \
+		  				       &loop_notowned_is,  \
+						       &loop_notowned_ie); \
+	loop_ibound++) \
+     LOOP_OVER_IVECS(v, loop_notowned_is, loop_notowned_ie, idx)
+
+#define IVEC_LOOP_AT_BOUNDARY (loop_i1 == 0 || loop_i1 == loop_n1-1 || \
+                               loop_i2 == 0 || loop_i2 == loop_n2-1 || \
+                               loop_i3 == 0 || loop_i3 == loop_n3-1)
+
+#define IVEC_LOOP_ILOC(v, iloc) \
+  ivec iloc((v).dim); \
+  iloc.set_direction(direction(loop_d1), loop_is1 + 2*loop_i1); \
+  iloc.set_direction(direction(loop_d2), loop_is2 + 2*loop_i2); \
+  iloc.set_direction(direction(loop_d3), loop_is3 + 2*loop_i3)
+
+#define IVEC_LOOP_LOC(v, loc) \
+  vec loc((v).dim); \
+  loc.set_direction(direction(loop_d1), (0.5*loop_is1 + loop_i1) * (v).inva); \
+  loc.set_direction(direction(loop_d2), (0.5*loop_is2 + loop_i2) * (v).inva); \
+  loc.set_direction(direction(loop_d3), (0.5*loop_is3 + loop_i3) * (v).inva)
+
 // integration weight for using LOOP_OVER_IVECS with field::integrate
 #define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? (s0).in_direction(direction(dir)) : (i == 1 ? (s1).in_direction(direction(dir)) : i == n - 1 ? (e0).in_direction(direction(dir)) : (i == n - 2 ? (e1).in_direction(direction(dir)) : 1.0))))
 #define IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, k) IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, loop_i##k,loop_n##k,loop_d##k)
 #define IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV) (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 3) * (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 2) * ((dV) * IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 1))))
-
-#define LOOP_OVER_OWNED(v, idx) \
-  for (int loop_n1 = (v).yucky_num(0), \
-           loop_n2 = (v).yucky_num(1), \
-           loop_n3 = (v).yucky_num(2), \
-           loop_s1 = (v).stride((v).yucky_direction(0)), \
-           loop_s2 = (v).stride((v).yucky_direction(1)), \
-           loop_s3 = (v).stride((v).yucky_direction(2)), \
-           loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
-      for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
-        for (int idx = loop_i1*loop_s1 + loop_i2*loop_s2, \
-                 loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
 inline signed_direction flip(signed_direction d) {
   signed_direction d2 = d;
@@ -385,6 +404,7 @@ class ivec {
   int in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, int val) { t[d] = val; };
 
+  void print(file *) const;
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);
  private:
@@ -458,7 +478,6 @@ class volume {
   volume() {};
 
   ndim dim;
-  vec origin;
   double a, inva;
 
   void print() const;
@@ -525,13 +544,16 @@ class volume {
 
   double boundary_location(boundary_side, direction) const;
   ivec big_corner() const;
-  ivec little_corner() const { return io(); };
+  ivec little_corner() const { return io; };
   vec corner(boundary_side b) const;
 
   bool contains(const vec &) const;
   bool contains(const ivec &) const;
+  ivec little_owned_corner(component c) const;
   bool owns(const ivec &) const;
   geometric_volume surroundings() const;
+
+  bool get_boundary_icorners(component c, int ib, ivec *cs, ivec *ce) const;
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);
@@ -562,9 +584,24 @@ class volume {
         out.set_direction(d,1);
     return out;
   }
+
+  vec get_origin() const { return origin; }
+  vec set_origin(const vec &o) { origin = o; update_io(); }
+  vec shift_origin(const vec &s) { origin += s; update_io(); }
+  vec origin_set_direction(direction d, double v) { 
+    origin.set_direction(d, v); update_io();
+  }
+  double origin_in_direction(direction d) const{return origin.in_direction(d);}
+  double origin_r() const { return origin.r(); }
+  double origin_x() const { return origin.x(); }
+  double origin_y() const { return origin.y(); }
+  double origin_z() const { return origin.z(); }
+
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);
-  ivec io() const;
+  vec origin; // never change this without calling update_io() !!
+  ivec io; // cache of round_vec(origin), for performance
+  void update_io();
   void set_strides();
   int num[3];
   int the_stride[5];

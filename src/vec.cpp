@@ -47,8 +47,8 @@ inline ivec volume::round_vec(const vec &p) const {
   return result;
 }
 
-ivec volume::io() const {
-  return round_vec(origin);
+void volume::update_io() {
+  io = round_vec(origin);
 }
 
 static inline double rtl(double x, double a, double inva=0.0) {
@@ -116,6 +116,21 @@ void vec::print(file *f) const {
     i_fprintf(f, "%g %g 0", x(), y());
   } else if (dim == D1  ) {
     i_fprintf(f, "0 0 %g", z());
+  } else  {
+    printf("I don't know how to print in this dimension!\n");
+    i_fprintf(f, "I don't know how to print in this dimension!\n");
+  }
+}
+
+void ivec::print(file *f) const {
+  if (dim == Dcyl) {
+    i_fprintf(f, "%d %d 0", r(), z());
+  } else if (dim == D3  ) {
+    i_fprintf(f, "%d %d %d", x(), y(), z());
+  } else if (dim == D2  ) {
+    i_fprintf(f, "%d %d 0", x(), y());
+  } else if (dim == D1  ) {
+    i_fprintf(f, "0 0 %d", z());
   } else  {
     printf("I don't know how to print in this dimension!\n");
     i_fprintf(f, "I don't know how to print in this dimension!\n");
@@ -255,7 +270,7 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
   num[0] = na;
   num[1] = nb;
   num[2] = nc;
-  origin = zero_vec(dim);
+  set_origin(zero_vec(dim));
   the_ntot = right_ntot(d, num);
   set_strides();
 }
@@ -302,7 +317,7 @@ bool geometric_volume::contains(const vec &p) const {
 bool volume::contains(const ivec &p) const {
   // containts returns true if the volume has information about this grid
   // point.
-  const ivec o = p - io();
+  const ivec o = p - io;
   LOOP_OVER_DIRECTIONS(dim, d)
     if (o.in_direction(d) < 0 || o.in_direction(d) >= (num_direction(d)+1)*2)
       return false;
@@ -322,10 +337,62 @@ bool volume::contains(const vec &p) const {
   return true;
 }
 
+/* Compute the corners (cs,ce) of the ib-th boundary for component c,
+   returning true if ib is a valid index (ib = 0..#boundaries-1).  The
+   boundaries are all the points that are in but not owned by the
+   volume, and are a set of *disjoint* regions.  The main purpose of
+   this function is currently to support the LOOP_OVER_NOT_OWNED
+   macro.  (In the future, it may be used for other
+   boundary-element-type computations, too.) */
+bool volume::get_boundary_icorners(component c, int ib,
+				   ivec *cs, ivec *ce) const {
+  ivec cl(little_corner() + iyee_shift(c));
+  ivec cb(big_corner() + iyee_shift(c));
+  ivec clo(little_owned_corner(c));
+  ivec cbo(big_corner() - iyee_shift(c));
+  *cs = cl;
+  *ce = cb;
+  bool ib_found = false;
+  int jb = 0;
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    if (cl.in_direction(d) < clo.in_direction(d)) {
+      if (jb == ib) {
+	ce->set_direction(d, cs->in_direction(d));
+	ib_found = true;
+	break;
+      }
+      cs->set_direction(d, clo.in_direction(d));
+      jb++;
+    }
+    if (cb.in_direction(d) > cbo.in_direction(d)) {
+      if (jb == ib) {
+	cs->set_direction(d, ce->in_direction(d));
+	ib_found = true;
+	break;
+      }
+      ce->set_direction(d, cbo.in_direction(d));
+      jb++;
+    }
+  }
+  if (!ib_found) { // yucky interaction here with LOOP_OVER_VOL_NOTOWNED
+    *cs = one_ivec(dim);
+    *ce = -one_ivec(dim);
+  }
+  return ib_found;
+}
+
+// first "owned" point for c in volume (see also volume::owns)
+ivec volume::little_owned_corner(component c) const {
+  ivec iloc(little_corner() + one_ivec(dim)*2 - iyee_shift(c));
+  if (dim == Dcyl && origin.r() == 0.0 && iloc.r() == 2)
+    iloc.set_direction(R, 0);
+  return iloc;
+}
+
 bool volume::owns(const ivec &p) const {
   // owns returns true if the point "owned" by this volume, meaning that it
   // is the volume that would timestep the point.
-  const ivec o = p - io();
+  const ivec o = p - io;
   if (dim == Dcyl) {
     if (origin.r() == 0.0 && o.z() > 0 && o.z() <= nz()*2 &&
         o.r() == 0) return true;
@@ -359,7 +426,7 @@ int volume::has_boundary(boundary_side b,direction d) const {
 }
 
 int volume::index(component c, const ivec &p) const {
-  const ivec offset = p - io() - iyee_shift(c);
+  const ivec offset = p - io - iyee_shift(c);
   int idx = 0;
   LOOP_OVER_DIRECTIONS(dim,d) idx += offset.in_direction(d)/2*stride(d);
   return idx;
@@ -604,10 +671,10 @@ double volume::boundary_location(boundary_side b, direction d) const {
 
 ivec volume::big_corner() const {
   switch (dim) {
-  case D1: return io() + ivec(nz())*2;
-  case D2: return io() + ivec2d(nx(),ny())*2;
-  case D3: return io() + ivec(nx(),ny(),nz())*2;
-  case Dcyl: return io() + ivec(nr(),nz())*2;
+  case D1: return io + ivec(nz())*2;
+  case D2: return io + ivec2d(nx(),ny())*2;
+  case D3: return io + ivec(nx(),ny(),nz())*2;
+  case Dcyl: return io + ivec(nr(),nz())*2;
   }
   return ivec(0); // This is never reached.
 }
@@ -632,30 +699,30 @@ bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *
   int temp_num[3] = {0,0,0};
   vec origin_shift(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
-    //printf("dim=%s vol_in.io().in_direction(%s) = %d\n", dimension_name(dim), direction_name(d), vol_in.io().in_direction(d));
-    int minval = max(io().in_direction(d), vol_in.io().in_direction(d));
+    //printf("dim=%s vol_in.io.in_direction(%s) = %d\n", dimension_name(dim), direction_name(d), vol_in.io.in_direction(d));
+    int minval = max(io.in_direction(d), vol_in.io.in_direction(d));
     int maxval = min(big_corner().in_direction(d), vol_in.big_corner().in_direction(d));
     if (minval >= maxval)
       return false;
     temp_num[d%3] = (maxval - minval)/2;
-    origin_shift.set_direction(d, (minval - io().in_direction(d))/2/a);
+    origin_shift.set_direction(d, (minval - io.in_direction(d))/2/a);
   }
   if (intersection != NULL) {
     *intersection = volume(dim, a, temp_num[0], temp_num[1], temp_num[2]); // fix me : ugly, need new constructor
-    intersection->origin = origin + origin_shift;
+    intersection->set_origin(origin + origin_shift);
   }
   if (others != NULL) {
     int counter = 0;
     volume vol_containing = *this;
     LOOP_OVER_DIRECTIONS(dim, d) {
-      if (vol_containing.io().in_direction(d) < vol_in.io().in_direction(d)) {
+      if (vol_containing.io.in_direction(d) < vol_in.io.in_direction(d)) {
 	// shave off lower slice from vol_containing and add it to others
 	volume other = vol_containing;
-	const int thick = (vol_in.io().in_direction(d) - vol_containing.io().in_direction(d))/2;
+	const int thick = (vol_in.io.in_direction(d) - vol_containing.io.in_direction(d))/2;
 	other.set_num_direction(d, thick);
 	others[counter] = other;
 	counter++;
-	vol_containing.origin.set_direction(d, vol_containing.origin.in_direction(d) + thick/a);
+	vol_containing.origin_set_direction(d, vol_containing.origin.in_direction(d) + thick/a);
 	vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
       }
       if (vol_containing.big_corner().in_direction(d) > vol_in.big_corner().in_direction(d)) {
@@ -663,7 +730,7 @@ bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *
 	volume other = vol_containing;
 	const int thick = (vol_containing.big_corner().in_direction(d) - vol_in.big_corner().in_direction(d))/2;
 	other.set_num_direction(d, thick);
-	other.origin.set_direction(d, vol_containing.origin.in_direction(d) + (vol_containing.num_direction(d) - thick)/a); 
+	other.origin_set_direction(d, vol_containing.origin.in_direction(d) + (vol_containing.num_direction(d) - thick)/a); 
 	others[counter] = other;
 	counter++;
 	vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
@@ -725,7 +792,7 @@ ivec volume::iloc(component c, int ind) const {
     while (ind_over_stride < 0) ind_over_stride += num_direction(d)+1;
     out.set_direction(d, 2*(ind_over_stride%(num_direction(d)+1)));
   }
-  return out + iyee_shift(c) + io();
+  return out + iyee_shift(c) + io;
 }
 
 vec volume::dr() const {
@@ -847,7 +914,7 @@ volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, doub
     v_left.set_num_direction(splitdir, split_point);
     volume v_right = *this;
     v_right.set_num_direction(splitdir, num_direction(splitdir) - split_point);
-    v_right.origin.set_direction(splitdir, v_right.origin.in_direction(splitdir)+split_point/a);
+    v_right.origin_set_direction(splitdir, v_right.origin.in_direction(splitdir)+split_point/a);
 
     double total_left_effort = 0, total_right_effort = 0;
     volume vol;
@@ -913,9 +980,9 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
     abort("Aaack bad bug in split_at_fraction.\n");
   direction d = (direction) bestd;
   if (dim == Dcyl && d == X) d = R;
-  retval.origin = origin;
+  retval.set_origin(origin);
   if (want_high)
-    retval.origin.set_direction(d,origin.in_direction(d)+numer/a);
+    retval.origin_set_direction(d,origin.in_direction(d)+numer/a);
 
   if (want_high) retval.num[bestd] -= numer;
   else retval.num[bestd] = numer;
@@ -930,7 +997,7 @@ volume volume::split_specifically(int n, int which, direction d) const {
 
   vec shift = zero_vec(dim);
   shift.set_direction(d, num_direction(d)/n*which/a);
-  retval.origin = origin + shift;
+  retval.set_origin(origin + shift);
 
   retval.num[d % 3] /= n;
   retval.the_ntot = right_ntot(dim, retval.num);
@@ -941,9 +1008,9 @@ volume volume::split_specifically(int n, int which, direction d) const {
 volume volume::pad(direction d) const {
   volume v = *this;
   v.num[d%3]+=2; // Pad in both directions by one grid point.
-  ivec temp = io();
-  temp.set_direction(d, io().in_direction(d) - 2);
-  v.origin = v[temp];
+  ivec temp = io;
+  temp.set_direction(d, io.in_direction(d) - 2);
+  v.set_origin(v[temp]);
   v.the_ntot = right_ntot(dim, v.num);
   v.set_strides();
   return v;
@@ -953,10 +1020,10 @@ ivec volume::icenter() const {
   // Find the center of the user's cell (which must be the symmetry
   // point):
   switch (dim) {
-  case D1: return io() + ivec(nz());
-  case D2: return io() + ivec2d(nx(), ny());
-  case D3: return io() + ivec(nx(), ny(), nz());
-  case Dcyl: return io() + ivec(0, nz());
+  case D1: return io + ivec(nz());
+  case D2: return io + ivec2d(nx(), ny());
+  case D3: return io + ivec(nx(), ny(), nz());
+  case Dcyl: return io + ivec(0, nz());
   }
   abort("Can't do symmetry with these dimensions.\n");
   return ivec(0); // This is never reached.
@@ -1087,9 +1154,15 @@ signed_direction signed_direction::operator*(complex<double> p) {
 
 signed_direction symmetry::transform(direction d, int n) const {
   // Returns transformed direction + phase/flip; -n indicates inverse transform
-  if (d == NO_DIRECTION) return signed_direction(d);
-  const int nme = n < 0 ? (g - (-n) % g) % g : n % g;
-  const int nrest = n < 0 ? -((-n) / g) : n / g;
+  if (n == 0 || d == NO_DIRECTION) return signed_direction(d);
+  int nme, nrest;
+  if (n < 0) {
+       nme = (g - (-n) % g) % g;
+       nrest = -((-n) / g);
+  } else {
+       nme = n % g;
+       nrest = n / g;
+  }
   if (nme == 0) {
     if (nrest == 0) return signed_direction(d);
     else return next->transform(d,nrest);

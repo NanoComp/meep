@@ -114,7 +114,7 @@ void fields::connect_chunks() {
   finished_working();
 }
 
-inline int fields::is_metal(const ivec &here) {
+inline bool fields::on_metal_boundary(const ivec &here) {
   LOOP_OVER_DIRECTIONS(v.dim, d) {
     if (user_volume.has_boundary(High, d) &&
         here.in_direction(d) == user_volume.big_corner().in_direction(d)) {
@@ -246,17 +246,23 @@ void fields::find_metals() {
         chunks[i]->num_zeroes[ft] = 0;
         DOCMP FOR_COMPONENTS(c)
           if (type(c) == ft && chunks[i]->f[c][cmp])
-            for (int n=0;n<vi.ntot();n++)
-              if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
-                chunks[i]->num_zeroes[ft]++;
+	    LOOP_OVER_VOL_OWNED(vi, c, n) 
+	      if (IVEC_LOOP_AT_BOUNDARY) { // todo: just loop over boundaries
+		IVEC_LOOP_ILOC(vi, here);
+		if (on_metal_boundary(here))
+		  chunks[i]->num_zeroes[ft]++;
+	      }
         typedef double *double_ptr;
         chunks[i]->zeroes[ft] = new double_ptr[chunks[i]->num_zeroes[ft]];
         int num = 0;
         DOCMP FOR_COMPONENTS(c)
           if (type(c) == ft && chunks[i]->f[c][cmp])
-            for (int n=0;n<vi.ntot();n++)
-              if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
-                chunks[i]->zeroes[ft][num++] = &(chunks[i]->f[c][cmp][n]);
+	    LOOP_OVER_VOL_OWNED(vi, c, n)
+	      if (IVEC_LOOP_AT_BOUNDARY) { // todo: just loop over boundaries
+		IVEC_LOOP_ILOC(vi, here);
+		if (on_metal_boundary(here))
+		  chunks[i]->zeroes[ft][num++] = &(chunks[i]->f[c][cmp][n]);
+	      }
       }
     }
 }
@@ -280,57 +286,53 @@ void fields::connect_the_chunks() {
     for (int j=0;j<num_chunks;j++) {
       FOR_COMPONENTS(corig)
         if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
             component c = corig;
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here)) {
-                  // Adjacent, periodic or rotational...
-                  const int nn = is_real?1:2;
-                  const int pair = j+i*num_chunks;
-                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
-                    comm_num_complex[type(corig)][pair] += nn;
-                  else if (thephase == -1.0)
-                    comm_num_negate[type(corig)][pair] += nn;
-                  nc[type(corig)][Incoming][i] += nn;
-                  nc[type(c)][Outgoing][j] += nn;
-                  comm_sizes[type(c)][pair] += nn;
-                }
-            }
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here)) {
+		// Adjacent, periodic or rotational...
+		const int nn = is_real?1:2;
+		const int pair = j+i*num_chunks;
+		if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
+		  comm_num_complex[type(corig)][pair] += nn;
+		else if (thephase == -1.0)
+		  comm_num_negate[type(corig)][pair] += nn;
+		nc[type(corig)][Incoming][i] += nn;
+		nc[type(c)][Outgoing][j] += nn;
+		comm_sizes[type(c)][pair] += nn;
+	      }
         }
       FOR_ELECTRIC_COMPONENTS(corig)
         if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
             component c = corig;
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here)) {
-                  // Adjacent, periodic or rotational...
-                  int common_pols = 0;
-                  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-                    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-                      if (pi->pb->get_identifier() == pj->pb->get_identifier())
-                        common_pols += 1;
-                  const int nn = (is_real?1:2) * common_pols;
-                  const int pair = j+i*num_chunks;
-                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
-                    comm_num_complex[P_stuff][pair] += 2*nn;
-                  else if (thephase == -1.0)
-                    comm_num_negate[P_stuff][pair] += 2*nn;
-                  nc[P_stuff][Incoming][i] += 2*nn;
-                  nc[P_stuff][Outgoing][j] += 2*nn;
-                  comm_sizes[P_stuff][pair] += 2*nn;
-                  // Note above that the factor of two in 2*nn comes from
-                  // the fact that we have two polarization arrays, pol and
-                  // olpol.
-                }
-            }
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here)) {
+		// Adjacent, periodic or rotational...
+		int common_pols = 0;
+		for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+		  for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+		    if (pi->pb->get_identifier() == pj->pb->get_identifier())
+		      common_pols += 1;
+		const int nn = (is_real?1:2) * common_pols;
+		const int pair = j+i*num_chunks;
+		if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
+		  comm_num_complex[P_stuff][pair] += 2*nn;
+		else if (thephase == -1.0)
+		  comm_num_negate[P_stuff][pair] += 2*nn;
+		nc[P_stuff][Incoming][i] += 2*nn;
+		nc[P_stuff][Outgoing][j] += 2*nn;
+		comm_sizes[P_stuff][pair] += 2*nn;
+		// Note above that the factor of two in 2*nn comes from
+		// the fact that we have two polarization arrays, pol and
+		// olpol.
+	      }
         }
     }
     // Allocating comm blocks as we go...
@@ -362,70 +364,64 @@ void fields::connect_the_chunks() {
     for (int j=0;j<num_chunks;j++) {
       FOR_COMPONENTS(corig)
         if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
             component c = corig;
 #define FT (type(c))
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here) &&
-                    (imag(thephase) != 0.0 || fabs(real(thephase))!=1.0)) {
-                  // Periodic, probably...
-                  // index is deprecated, but ok in this case:
-                  const int m = chunks[j]->v.index(c, here);
-                  chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
-                  DOCMP {
-                    chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                      = chunks[i]->f[corig][cmp] + n;
-                    chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                      = chunks[j]->f[c][cmp] + m;
-                  }
-                }
-            }
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here) &&
+		  (imag(thephase) != 0.0 || fabs(real(thephase))!=1.0)) {
+		// Periodic, probably...
+		// index is deprecated, but ok in this case:
+		const int m = chunks[j]->v.index(c, here);
+		chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
+		DOCMP {
+		  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+		    = chunks[i]->f[corig][cmp] + n;
+		  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+		    = chunks[j]->f[c][cmp] + m;
+		}
+	      }
+	  }
+      DOCMP FOR_COMPONENTS(corig)
+        if (have_component(corig))
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
+            component c = corig;
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here) &&
+		  thephase == -1.0) {
+		// Adjacent, periodic or rotational...
+		// index is deprecated, but ok in this case:
+		const int m = chunks[j]->v.index(c, here);
+		chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+		  = chunks[i]->f[corig][cmp] + n;
+		chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+		  = chunks[j]->f[c][cmp] + m;
+	      }
           }
       DOCMP FOR_COMPONENTS(corig)
         if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
             component c = corig;
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here) &&
-                    thephase == -1.0) {
-                  // Adjacent, periodic or rotational...
-                  // index is deprecated, but ok in this case:
-                  const int m = chunks[j]->v.index(c, here);
-                  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                    = chunks[i]->f[corig][cmp] + n;
-                  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                    = chunks[j]->f[c][cmp] + m;
-                }
-            }
-          }
-      DOCMP FOR_COMPONENTS(corig)
-        if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
-            component c = corig;
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here) &&
-                    thephase == 1.0) {
-                  // Adjacent, periodic or rotational...
-                  // index is deprecated, but ok in this case:
-                  const int m = chunks[j]->v.index(c, here);
-                  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                    = chunks[i]->f[corig][cmp] + n;
-                  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                    = chunks[j]->f[c][cmp] + m;
-                }
-            }
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here) &&
+		  thephase == 1.0) {
+		// Adjacent, periodic or rotational...
+		// index is deprecated, but ok in this case:
+		const int m = chunks[j]->v.index(c, here);
+		chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+		  = chunks[i]->f[corig][cmp] + n;
+		chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+		  = chunks[j]->f[c][cmp] + m;
+	      }
           }
 
       // Now connect up the polarizations...
@@ -434,118 +430,112 @@ void fields::connect_the_chunks() {
       // First the complex connections:
       FOR_ELECTRIC_COMPONENTS(corig)
         if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
             component c = corig;
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here))
-                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0) {
-                    for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-                      for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-                          const int m = chunks[j]->v.index(c, here);
-                          chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
-                          DOCMP {
-                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                              = pi->P[corig][cmp] + n;
-                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                              = pj->P[c][cmp] + m;
-                          }
-                        }
-                    // Now do same thing with olpol (could this be uglier?)
-                    for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
-                      for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
-                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-                          const int m = chunks[j]->v.index(c, here);
-                          chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
-                          DOCMP {
-                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                              = pi->P[corig][cmp] + n;
-                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                              = pj->P[c][cmp] + m;
-                          }
-                        }
-                  }
-            }
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here))
+		if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0) {
+		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+			const int m = chunks[j]->v.index(c, here);
+			chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
+			DOCMP {
+			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+			    = pi->P[corig][cmp] + n;
+			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+			    = pj->P[c][cmp] + m;
+			}
+		      }
+		  // Now do same thing with olpol (could this be uglier?)
+		  for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
+		    for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
+		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+			const int m = chunks[j]->v.index(c, here);
+			chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
+			DOCMP {
+			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+			    = pi->P[corig][cmp] + n;
+			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+			    = pj->P[c][cmp] + m;
+			}
+		      }
+		}
           }
       // Now the negative connections:
       FOR_ELECTRIC_COMPONENTS(corig)
         if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
             component c = corig;
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here))
-                  if (thephase == -1.0) {
-                    for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-                      for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-                          const int m = chunks[j]->v.index(c, here);
-                          DOCMP {
-                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                              = pi->P[corig][cmp] + n;
-                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                              = pj->P[c][cmp] + m;
-                          }
-                        }
-                    // Now do same thing with olpol (could this be uglier?)
-                    for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
-                      for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
-                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-                          const int m = chunks[j]->v.index(c, here);
-                          DOCMP {
-                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                              = pi->P[corig][cmp] + n;
-                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                              = pj->P[c][cmp] + m;
-                          }
-                        }
-                  }
-            }
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here))
+		if (thephase == -1.0) {
+		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+			const int m = chunks[j]->v.index(c, here);
+			DOCMP {
+			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+			    = pi->P[corig][cmp] + n;
+			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+			    = pj->P[c][cmp] + m;
+			}
+		      }
+		  // Now do same thing with olpol (could this be uglier?)
+		  for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
+		    for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
+		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+			const int m = chunks[j]->v.index(c, here);
+			DOCMP {
+			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+			    = pi->P[corig][cmp] + n;
+			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+			    = pj->P[c][cmp] + m;
+			}
+		      }
+		}
           }
       // Finally the plain old copied connections:
       FOR_ELECTRIC_COMPONENTS(corig)
         if (have_component(corig))
-          for (int n=0;n<vi.ntot();n++) {
+	  LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+	    IVEC_LOOP_ILOC(vi, here);
             component c = corig;
-            ivec here = vi.iloc(c, n);
-            if (!vi.owns(here)) {
-              // We're looking at a border element...
-              complex<double> thephase = 1.0;
-              if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here))
-                  if (thephase == 1.0) {
-                    for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-                      for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
-                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-                          const int m = chunks[j]->v.index(c, here);
-                          DOCMP {
-                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                              = pi->P[corig][cmp] + n;
-                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                              = pj->P[c][cmp] + m;
-                          }
-                        }
-                    // Now do same thing with olpol (could this be uglier?)
-                    for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
-                      for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
-                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
-                          const int m = chunks[j]->v.index(c, here);
-                          DOCMP {
-                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
-                              = pi->P[corig][cmp] + n;
-                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
-                              = pj->P[c][cmp] + m;
-                          }
-                        }
-                  }
-            }
+	    // We're looking at a border element...
+	    complex<double> thephase = 1.0;
+	    if (locate_component_point(&c,&here,&thephase))
+	      if (chunks[j]->v.owns(here) && !on_metal_boundary(here))
+		if (thephase == 1.0) {
+		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+			const int m = chunks[j]->v.index(c, here);
+			DOCMP {
+			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+			    = pi->P[corig][cmp] + n;
+			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+			    = pj->P[c][cmp] + m;
+			}
+		      }
+		  // Now do same thing with olpol (could this be uglier?)
+		  for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
+		    for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
+		      if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+			const int m = chunks[j]->v.index(c, here);
+			DOCMP {
+			  chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+			    = pi->P[corig][cmp] + n;
+			  chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+			    = pj->P[c][cmp] + m;
+			}
+		      }
+		}
           }
       // Finished connecting up the polarizations...
     }

@@ -244,13 +244,10 @@ static void src_vol_integrand(fields_chunk *fc, component c,
 
   complex<double> amp = data->amp * conj(shift_phase);
 
-  vec loc(fc->v.dim, 0.0);
   double inva = fc->v.inva;
   int idx_vol = 0;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    loc.set_direction(direction(loop_d1), (loop_is1*0.5 + loop_i1) * inva);
-    loc.set_direction(direction(loop_d2), (loop_is2*0.5 + loop_i2) * inva);
-    loc.set_direction(direction(loop_d3), (loop_is3*0.5 + loop_i3) * inva);
+    IVEC_LOOP_LOC(fc->v, loc);
     loc += shift * (0.5*inva) - data->center;
 
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);

@@ -65,7 +65,7 @@ int flux_1d(const double zmax,
 
   f.step();
   volume mid = volone(zmax/3,a);
-  mid.origin = vec(zmax/3);
+  mid.set_origin(vec(zmax/3));
   double flux_left=0.0, flux_right=0.0;
   double delta_energy = f.energy_in_box(mid.surroundings());
   master_printf("Initial energy is %g\n", f.energy_in_box(mid.surroundings()));
@@ -108,7 +108,7 @@ int split_1d(double eps(const vec &), int splitting) {
   flux_box *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
                                        vec(zmax*.5-boxwidth));
   volume mid = volone(2*boxwidth,a);
-  mid.origin = vec(zmax*.5-boxwidth-0.25/a);
+  mid.set_origin(vec(zmax*.5-boxwidth-0.25/a));
 
   const double ttot = f.last_source_time() + timewait;
   while (f.time() < ttot) {
@@ -137,7 +137,7 @@ int cavity_1d(const double boxwidth, const double timewait,
   flux_box *right = f.add_flux_plane(vec(zmax*.5+boxwidth),
                                        vec(zmax*.5+boxwidth));
   volume mid = volone(2*boxwidth,a);
-  mid.origin = vec(zmax*.5-boxwidth-0.25/a);
+  mid.set_origin(vec(zmax*.5-boxwidth-0.25/a));
 
   while (f.time() < f.last_source_time()) f.step();
   const double ttot = f.time() + timewait;

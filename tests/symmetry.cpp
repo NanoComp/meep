@@ -211,7 +211,7 @@ int test_origin_shift(const char *mydirname) {
 
   const volume v = voltwo(1.0, 1.0, a);
   volume vcentered = v;
-  vcentered.origin -= v.center();
+  vcentered.shift_origin(-v.center());
   structure s(vcentered, one);
   structure s1(v, one);
   s.set_output_directory(mydirname);

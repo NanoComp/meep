@@ -105,6 +105,7 @@ inline double zero_function(const vec &v) { (void) v; return 0.0; }
 static inline void copy_from(int from, int to,
                              double *f, double *t, int size=1) {
   double temp;
+  (void) size; // unused
   if (my_rank() == from) temp = *f;
   send(from, to, &temp);
   if (my_rank() == to) *t = temp;
@@ -155,15 +156,17 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
         // buffer.
 
         // eps
-        for (int l=0; l<vol_intersection.ntot(); l++) {
+	{
           component c = vol_intersection.eps_component();
-          ivec iv = vol_intersection.iloc(c, l);
-          int index_old = chunks[i]->v.index(c, iv);
-          int index_new = new_chunks[j]->v.index(c, iv);
-          copy_from(chunks[i]->n_proc(), new_chunks[j]->n_proc(),
-                    &chunks[i]->eps[index_old],
-                    &new_chunks[j]->eps[index_new]);
-        }
+	  LOOP_OVER_VOL(vol_intersection, c, l) {
+	    IVEC_LOOP_ILOC(vol_intersection, iv);
+	    int index_old = chunks[i]->v.index(c, iv);
+	    int index_new = new_chunks[j]->v.index(c, iv);
+	    copy_from(chunks[i]->n_proc(), new_chunks[j]->n_proc(),
+		      &chunks[i]->eps[index_old],
+		      &new_chunks[j]->eps[index_new]);
+	  }
+	}
         // inveps
         FOR_COMPONENTS(c)
           FOR_DIRECTIONS(d)
@@ -174,8 +177,8 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
                 for (int i=0;i<new_chunks[j]->v.ntot();i++)
                   new_chunks[j]->inveps[c][d][i] = 0.0;
               }
-              for (int l=0; l<vol_intersection.ntot(); l++) {
-                ivec iv = vol_intersection.iloc(c, l);
+	      LOOP_OVER_VOL(vol_intersection, c, l) {
+		IVEC_LOOP_ILOC(vol_intersection, iv);
                 int index_old = chunks[i]->v.index(c, iv);
                 int index_new = new_chunks[j]->v.index(c, iv);
                 copy_from(chunks[i]->n_proc(), new_chunks[j]->n_proc(),
@@ -195,8 +198,8 @@ void structure::redefine_chunks(const int Nv, const volume *new_volumes,
                 for (int l=0; l<new_chunks[j]->v.ntot(); l++)
                   new_chunks[j]->C[d][c][l] = 0.0;
               }
-              for (int l=0; l<vol_intersection.ntot(); l++) {
-                ivec iv = vol_intersection.iloc(c, l);
+	      LOOP_OVER_VOL(vol_intersection, c, l) {
+		IVEC_LOOP_ILOC(vol_intersection, iv);
                 int index_old = chunks[i]->v.index(c, iv);
                 int index_new = new_chunks[j]->v.index(c, iv);
                 copy_from(chunks[i]->n_proc(), new_chunks[j]->n_proc(),
@@ -376,10 +379,10 @@ void structure::use_pml(direction d, boundary_side b, double dx, bool recalculat
   volume pml_volume = v;
   pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if ((boundary_side) b == High)
-    pml_volume.origin.set_direction(d, (user_volume.num_direction(d)
+    pml_volume.origin_set_direction(d, (user_volume.num_direction(d)
                                         - pml_volume.num_direction(d))/user_volume.a);
   const int v_to_user_shift = (int)
-    floor((user_volume.origin.in_direction(d) - v.origin.in_direction(d))*v.a + 0.5);
+    floor((user_volume.origin_in_direction(d) - v.origin_in_direction(d))*v.a + 0.5);
   if ((boundary_side) b == Low && v_to_user_shift != 0)
     pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
@@ -519,10 +522,11 @@ void structure_chunk::use_pml(direction d, double dx, double bloc) {
           C[d][c] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
         }
-        for (int i=0;i<v.ntot();i++) {
+	LOOP_OVER_VOL(v, (component) c, i) {
+	  IVEC_LOOP_LOC(v, here);
           const double x =
             0.5/a*((int)(dx*(2*a)+0.5) -
-                   (int)(2*a*fabs(bloc-v.loc((component)c,i).in_direction(d))+0.5));
+                   (int)(2*a*fabs(bloc-here.in_direction(d))+0.5));
           if (x > 0) C[d][c][i] = prefac*x*x;
         }
       }
@@ -535,10 +539,13 @@ void structure_chunk::update_pml_arrays() {
     FOR_COMPONENTS(c) 
       if (C[d][c] != NULL) {
 	bool all_zeros = true;
-	for (int i=0;i<v.ntot();i++)
-	  if (v.owns(v.iloc(c, i)))
-	    if (C[d][c][i] != 0.0)
-	      all_zeros = false;
+	LOOP_OVER_VOL_OWNED(v, c, i) {
+	  if (C[d][c][i] != 0.0) {
+	    all_zeros = false;
+	    goto done; // can't use 'break' since LOOP has nested loops
+	  }
+	}
+      done:
 	if (all_zeros) {
 	  delete[] C[d][c];
 	  C[d][c] = NULL;
@@ -628,8 +635,8 @@ void structure_chunk::set_kerr(material_function &epsilon) {
   FOR_ELECTRIC_COMPONENTS(c)
     if (inveps[c][component_direction(c)]) {
       if (!kerr[c]) kerr[c] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) {
-        const vec here = v.loc(c,i);
+      LOOP_OVER_VOL(v, c, i) {
+	IVEC_LOOP_LOC(v, here);
         kerr[c][i] = epsilon.kerr(here);
         LOOP_OVER_DIRECTIONS(v.dim,d)
           if (d != component_direction(c)) {
@@ -652,36 +659,39 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
 
   if (!eps)
        eps = new double[v.ntot()];
-  for (int i=0;i<v.ntot();i++)
-       eps[i] = epsilon.eps(v.loc(v.eps_component(),i));
+  LOOP_OVER_VOL(v, v.eps_component(), i) {
+    IVEC_LOOP_LOC(v, here);
+    eps[i] = epsilon.eps(here);
+  }
   
   if (!use_anisotropic_averaging) {
-      for (int i=0;i<v.ntot();i++) {
-        FOR_ELECTRIC_COMPONENTS(c)
-          if (v.has_field(c)) {
-            const vec here = v.loc(c,i);
-            LOOP_OVER_DIRECTIONS(v.dim,da)
-              if (da != component_direction(c)) {
-                vec dxa = zero_vec(v.dim);
-                dxa.set_direction(da,0.5/a);
-                bool have_other_direction = false;
-                LOOP_OVER_DIRECTIONS(v.dim,db)
-                  if (db != component_direction(c) && db != da) {
-                    vec dxb = zero_vec(v.dim);
-                    dxb.set_direction(db,0.5/a);
-                    inveps[c][component_direction(c)][i] =
-                      4.0/(epsilon.eps(here + dxa + dxb) +
-                           epsilon.eps(here + dxa - dxb) +
-                           epsilon.eps(here - dxa + dxb) +
-                           epsilon.eps(here - dxa - dxb));
-                    have_other_direction = true;
-                  }
-                if (!have_other_direction)
-                  inveps[c][component_direction(c)][i] =
-                    2.0/(epsilon.eps(here + dxa) + epsilon.eps(here - dxa));
-                break;
-              }
-          }
+    FOR_ELECTRIC_COMPONENTS(c)
+      if (v.has_field(c)) {
+	bool have_other_direction = false;
+	vec dxa = zero_vec(v.dim);
+	vec dxb = zero_vec(v.dim);
+	direction c_d = component_direction(c);
+	LOOP_OVER_DIRECTIONS(v.dim,da)
+	  if (da != c_d) {
+	    dxa.set_direction(da,0.5/a);
+	    LOOP_OVER_DIRECTIONS(v.dim,db)
+	      if (db != c_d && db != da) {
+		dxb.set_direction(db,0.5/a);
+		have_other_direction = true;
+	      }
+	    break;
+	  }
+	LOOP_OVER_VOL(v, c, i) {
+	  IVEC_LOOP_LOC(v, here);
+	  if (!have_other_direction)
+	    inveps[c][c_d][i] =
+	      2.0/(epsilon.eps(here + dxa) + epsilon.eps(here - dxa));
+	  else
+	    inveps[c][c_d][i] = 4.0/(epsilon.eps(here + dxa + dxb) +
+				     epsilon.eps(here + dxa - dxb) +
+				     epsilon.eps(here - dxa + dxb) +
+				     epsilon.eps(here - dxa - dxb));
+	}
       }
   } else {
     if (minvol == 0.0) minvol = v.dV(zero_ivec(v.dim)).full_volume()/100.0;
@@ -690,9 +700,11 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
         LOOP_OVER_DIRECTIONS(v.dim,d) {
           if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
           if (!inveps[c][d]) abort("Memory allocation error.\n");
-          for (int i=0;i<v.ntot();i++)
-            inveps[c][d][i] = anisoaverage(c, d, epsilon, v.dV(v.iloc(c,i)), minvol);
-        }
+	  LOOP_OVER_VOL(v, c, i) {
+	    IVEC_LOOP_ILOC(v, here);
+	    inveps[c][d][i] = anisoaverage(c, d, epsilon, v.dV(here), minvol);
+	  }
+      }
   }
 }
 

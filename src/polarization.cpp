@@ -145,16 +145,18 @@ polarizability::polarizability(const structure_chunk *sc, material_function &sig
       s[c] = new double[v.ntot()];
     if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
-    for (int i=0;i<v.ntot();i++)
-      sigma[i] = sigscale*sig.sigma(v.loc(v.eps_component(),i));
+    LOOP_OVER_VOL(v, v.eps_component(), i) {
+      IVEC_LOOP_LOC(v, here);
+      sigma[i] = sigscale*sig.sigma(here);
+    }
     FOR_COMPONENTS(c) if (s[c])
       for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
     // Average out sigma over the grid...
     if (v.dim == Dcyl) {
       const vec dr = v.dr()*0.5; // The distance between Yee field components
       const vec dz = v.dz()*0.5; // The distance between Yee field components
-      for (int i=0;i<v.ntot();i++) {
-        const vec here = v.loc(Ep,i);
+      LOOP_OVER_VOL(v, Ep, i) {
+	IVEC_LOOP_LOC(v, here);
         s[Er][i] = 0.5*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here+dr-dz));
         s[Ep][i] = 0.25*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz) +
                                   sig.sigma(here+dr-dz) + sig.sigma(here-dr-dz));
@@ -166,8 +168,10 @@ polarizability::polarizability(const structure_chunk *sc, material_function &sig
     } else {
       // FIXME:  should we be doing clever averaging here?
       FOR_ELECTRIC_COMPONENTS(c) if (s[c])
-        for (int i=0;i<v.ntot();i++)
-          s[c][i] = sigscale*sig.sigma(v.loc(c,i));
+	LOOP_OVER_VOL(v, c, i) {
+	  IVEC_LOOP_LOC(v, here);
+          s[c][i] = sigscale*sig.sigma(here);
+        }
     }
   } else { // Not mine, don't store arrays...
     sigma = 0;
@@ -320,8 +324,10 @@ void polarization::initialize_energy(double the_energy(const vec &)) {
   inv_num_components = 1.0/inv_num_components;
   FOR_ELECTRIC_COMPONENTS(c)
     if (energy[c])
-      for (int i=0;i<pb->v.ntot();i++)
-        energy[c][i] = inv_num_components*the_energy(pb->v.loc(c, i));
+      LOOP_OVER_VOL(pb->v, c, i) {
+        IVEC_LOOP_LOC(pb->v, here);
+        energy[c][i] = inv_num_components*the_energy(here);
+      }
 }
 
 } // namespace meep

@@ -792,7 +792,7 @@ class fields {
   void disconnect_chunks();
   void connect_chunks();
   void connect_the_chunks(); // Intended to be ultra-private...
-  int is_metal(const ivec &);
+  bool on_metal_boundary(const ivec &);
   ivec ilattice_vector(direction) const;
   bool locate_component_point(component *, ivec *, complex<double> *) const;
   bool locate_point_in_user_volume(ivec *, complex<double> *phase) const;

@@ -56,12 +56,9 @@ static void linear_integrand(fields_chunk *fc, component cgrid,
   /* the code should be correct regardless of cgrid */
   (void) cgrid;
 
-  vec loc(fc->v.dim, 0.0);
   double inva = fc->v.inva;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    loc.set_direction(direction(loop_d1), loop_is1*0.5*inva + loop_i1*inva);
-    loc.set_direction(direction(loop_d2), loop_is2*0.5*inva + loop_i2*inva);
-    loc.set_direction(direction(loop_d3), loop_is3*0.5*inva + loop_i3*inva);
+    IVEC_LOOP_LOC(fc->v, loc);
 
     // clean_vec is only necessary because we reference X/Y/Z for any v.dim
     vec locS(clean_vec(S.transform(loc, sn) + shift * (0.5*inva)));
@@ -246,13 +243,106 @@ void check_splitsym(const volume &v, int splitting,
   }
 }
 
+// check LOOP_OVER_VOL and LOOP_OVER_VOL_OWNED macros
+void check_loop_vol(const volume &v, component c)
+{
+  int count = 0, min_i = v.ntot(), max_i = 0, count_owned = 0;
+
+  master_printf("Checking %s loops for %s volume...\n",
+		component_name(c), dimension_name(v.dim));
+
+  ivec vmin(v.little_corner() + v.iyee_shift(c));
+  ivec vmax(v.big_corner() + v.iyee_shift(c));
+
+  LOOP_OVER_VOL(v, c, i) {
+    IVEC_LOOP_ILOC(v, ihere);
+    IVEC_LOOP_LOC(v, here);
+    ivec ihere0(v.iloc(c, i));
+    vec here0(v[ihere0]);
+    if (ihere0 != ihere)
+      abort("FAILED: wrong LOOP_OVER_VOL iloc at i=%d\n", i);
+    if (abs(here0 - here) > 1e-13)
+      abort("FAILED: wrong LOOP_OVER_VOL loc (err = %g) at i=%d\n",
+	    abs(here0 - here), i);
+    ++count;
+    if (i < min_i) min_i = i;
+    if (i > max_i) max_i = i;
+    if (v.owns(ihere))
+      ++count_owned;
+    if (ihere < vmin || ihere > vmax)
+      abort("FAILED: LOOP_OVER_VOL outside V at i=%d\n", i);
+  }
+  if (count != v.ntot())
+    abort("FAILED: LOOP_OVER_VOL has %d iterations instead of ntot=%d\n",
+	  count, v.ntot());
+  if (min_i != 0)
+    abort("FAILED: LOOP_OVER_VOL has minimum index %d instead of 0\n", min_i);
+  if (max_i != v.ntot() - 1)
+    abort("FAILED: LOOP_OVER_VOL has max index %d instead of ntot-1\n", max_i);
+
+  count = 0;
+  LOOP_OVER_VOL_OWNED(v, c, i) {
+    IVEC_LOOP_ILOC(v, ihere);
+    IVEC_LOOP_LOC(v, here);
+    ivec ihere0(v.iloc(c, i));
+    vec here0(v[ihere0]);
+    if (ihere0 != ihere)
+      abort("FAILED: wrong LOOP_OVER_VOL_OWNED iloc at i=%d\n", i);
+    if (abs(here0 - here) > 1e-13)
+      abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%d\n",
+	    abs(here0 - here), i);
+    if (!v.owns(ihere))
+      abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%d\n", i);
+    ++count;
+  }
+  if (count != count_owned)
+    abort("FAILED: LOOP_OVER_VOL_OWNED has %d iterations instead of %d\n",
+	  count, count_owned);
+
+  count = 0;
+  LOOP_OVER_VOL_NOTOWNED(v, c, i) {
+    IVEC_LOOP_ILOC(v, ihere);
+    IVEC_LOOP_LOC(v, here);
+    ivec ihere0(v.iloc(c, i));
+    vec here0(v[ihere0]);
+    if (ihere0 != ihere)
+      abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED iloc at i=%d\n", i);
+    if (abs(here0 - here) > 1e-13)
+      abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%d\n",
+	    abs(here0 - here), i);
+    if (v.owns(ihere))
+      abort("FAILED: LOOP_OVER_VOL_NOTOWNED includes owned at i=%d\n", i);
+    if (ihere < vmin || ihere > vmax)
+      abort("FAILED: LOOP_OVER_VOL_NOTOWNED outside V at i=%d\n", i);
+    ++count;
+  }
+  if (count != v.ntot() - count_owned)
+    abort("FAILED: LOOP_OVER_VOL_NOTOWNED has %d iterations instead of %d\n",
+	  count, v.ntot() - count_owned);
+
+  master_printf("...PASSED.\n");
+}
+
 int main(int argc, char **argv)
 {
   const double a = 10.0;
   initialize mpi(argc, argv);
   const volume v3d = vol3d(size[0], size[1], size[2], a);
+  const volume v3d0 = vol3d(size[0], size[1], 0, a);
+  const volume v3d00 = vol3d(size[0], 0, 0, a);
   const volume v2d = vol2d(size[0], size[1], a);
   const volume v1d = vol1d(size[0], a);
+  const volume vcyl = volcyl(size[0], size[1], a);
+
+  for (int ic = Ex; ic <= Dielectric; ++ic) {
+    component c = component(ic);
+    check_loop_vol(v1d, c);
+    check_loop_vol(v2d, c);
+    check_loop_vol(v3d, c);
+    check_loop_vol(vcyl, c);
+    check_loop_vol(v3d0, c);
+    check_loop_vol(v3d00, c);
+  }
 
   srand(0); // use fixed random sequence
 

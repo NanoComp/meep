@@ -73,7 +73,7 @@ bench bench_flux_1d(const double zmax,
   while (f.time() <= f.last_source_time()) f.step();
 
   volume mid = volone(zmax/3,a);
-  mid.origin = vec(zmax/3);
+  mid.set_origin(vec(zmax/3));
   double flux_energy=0.0;
   clock_t start = clock();
   while (f.time() < ttot) {
