@@ -99,6 +99,8 @@ documentation: libdactyl.a
 
 clean:
 	rm -f $(OBJ_dactyl) *.o libdactyl.a example core bands_example *.dac
+	cd doc && make clean && cd ..
+	cd tests && make clean && cd ..
 
 distclean: clean
 	rm -f config.cache Makefile config.log config.status config.h dactyl
