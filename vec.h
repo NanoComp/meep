@@ -33,6 +33,14 @@ struct signed_direction {
   bool flipped;
 };
 
+inline int nd(ndim dim) {
+  return (int) dim + 1 + (dim == Dcyl) * ((int) D2 - (int) Dcyl);
+}
+
+inline int dstart(ndim dim) {
+  return ((dim == D1) || (dim == Dcyl)) ? 2 : 0;
+}
+
 inline signed_direction flip(signed_direction d) {
   signed_direction D2 = d;
   D2.flipped = !d.flipped;
