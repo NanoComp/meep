@@ -53,6 +53,7 @@ inline int small_r_metal(int m) {
 inline int rmin_bulk(int m) {
   int r = 1 + small_r_metal(m);
   if (r < 1) r = 1;
+  return r;
 }
 
 mat::~mat() {
@@ -357,7 +358,7 @@ void fields::add_src_pt(int r, int z,
                         double freq, double width, double peaktime,
                         double cutoff) {
   const double pi=3.14159265;
-  if (r <= rmin_bulk(m)-1) return;
+  if (m!=0 && r <= rmin_bulk(m)-1) return;
   if (r >= nr - npmlr) return;
   if (z >= nz || z < 0) {
     printf("Error:  source is outside of cell!\n");
