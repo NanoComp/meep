@@ -30,12 +30,8 @@ gencode (CC code) = unlines $ snd $ code emptyFM
 for_true_false :: CODE a => String -> a -> Code
 for_true_false s x = do check <- istrueCC s
                         if check == Nothing
-                           then do docode [doline "{",
-                                           indent $ withCC s True $ docode x,
-                                           doline "}",
-                                           doline "{",
-                                           indent $ withCC s False $ docode x,
-                                           doline "}"]
+                           then do docode [withCC s False $ docode x,
+                                           withCC s True $ docode x]
                            else docode x
 
 for_loop :: CODE a => String -> String -> a -> Code
