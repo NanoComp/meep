@@ -148,8 +148,8 @@ double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  const char *dirname = "known_results-out";
-  trash_output_directory(dirname);
+  const char *mydirname = "known_results-out";
+  trash_output_directory(mydirname);
   master_printf("Testing with some known results...\n");
   const double a = 10.0;
 

@@ -57,15 +57,15 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int test_simple_periodic(double eps(const vec &), int splitting, const char *dirname) {
+int test_simple_periodic(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 170.0;
   
   volume v = volone(6.0,a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
 
   master_printf("Trying splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -112,13 +112,13 @@ complex<double> checkers(const vec &v) {
 }
 
 int test_pattern(double eps(const vec &), int splitting,
-                 const char *dirname) {
+                 const char *mydirname) {
   double a = 10.0;
   volume v = volone(6.0,a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
 
   master_printf("Trying test pattern with %d chunks...\n", splitting);
   fields f(&s);
@@ -149,13 +149,13 @@ int test_pattern(double eps(const vec &), int splitting,
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  const char *dirname = "one_dimensional-out";
+  const char *mydirname = "one_dimensional-out";
   master_printf("Testing one dimension under different splittings...\n");
 
   for (int s=2;s<7;s++)
-    if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
+    if (!test_pattern(one, s, mydirname)) abort("error in test_pattern\n");
 
   for (int s=2;s<7;s++)
-    if (!test_simple_periodic(one, s, dirname)) abort("error in test_simple_periodic\n");
+    if (!test_simple_periodic(one, s, mydirname)) abort("error in test_simple_periodic\n");
   exit(0);
 }

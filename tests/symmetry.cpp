@@ -22,7 +22,7 @@
 #include <meep.h>
 using namespace meep;
 
-const char *dirname = "symmetry-out";
+const char *mydirname = "symmetry-out";
 
 double one(const vec &) { return 1.0; }
 vec the_center;
@@ -201,7 +201,7 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   return 1;
 }
 
-int test_origin_shift(const char *dirname) {
+int test_origin_shift(const char *mydirname) {
   master_printf("Testing origin shift in 2D...\n");
   double a = 10.0;
   double ttot = 3.0;
@@ -211,8 +211,8 @@ int test_origin_shift(const char *dirname) {
   vcentered.origin -= v.center();
   structure s(vcentered, one);
   structure s1(v, one);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
 
   fields f1(&s1);
   fields f(&s);
@@ -515,8 +515,8 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   const symmetry S = mirror(Y,v);
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   master_printf("Testing Y periodic with mirror symmetry...\n");
 
   fields f1(&s1);
@@ -776,8 +776,8 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
 
   structure s(v, eps, 0, S);
   structure s1(v, eps, 0, identity());
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   s.use_pml_everywhere(1.0);
   s1.use_pml_everywhere(1.0);
   master_printf("Testing X twofold rotational symmetry with PML...\n");
@@ -924,7 +924,7 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  trash_output_directory(dirname);
+  trash_output_directory(mydirname);
   master_printf("Testing with various kinds of symmetry...\n");
 
   if (!nonlinear_ex(vol1d(1.0, 10.0), one))
@@ -966,7 +966,7 @@ int main(int argc, char **argv) {
   if (!pml_twomirrors(one))
     abort("error in pml_twomirrors vacuum\n");
 
-  if (!test_origin_shift(dirname))
+  if (!test_origin_shift(mydirname))
     abort("error in test_origin_shift\n");
 
   if (!exact_pml_rot2x_tm(one))

@@ -67,15 +67,15 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int test_metal(double eps(const vec &), int splitting, const char *dirname) {
+int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 17.0;
 
   volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
 
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&s);
@@ -106,15 +106,15 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
   return 1;
 }
 
-int test_periodic(double eps(const vec &), int splitting, const char *dirname) {
+int test_periodic(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 17.0;
 
   volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
 
   master_printf("Periodic test using %d chunks...\n", splitting);
   fields f(&s);
@@ -147,15 +147,15 @@ int test_periodic(double eps(const vec &), int splitting, const char *dirname) {
   return 1;
 }
 
-int test_periodic_tm(double eps(const vec &), int splitting, const char *dirname) {
+int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 17.0;
 
   volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
 
   master_printf("Periodic 2D TM test using %d chunks...\n", splitting);
   fields f(&s);
@@ -186,14 +186,14 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *dirname
   return 1;
 }
 
-int test_pml(double eps(const vec &), int splitting, const char *dirname) {
+int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
   volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   s.use_pml(X,Low,1.0);
   s.use_pml(X,High,1.0);
   s.use_pml(Y,High,1.0);
@@ -239,14 +239,14 @@ int test_pml(double eps(const vec &), int splitting, const char *dirname) {
   return 1;
 }
 
-int test_pml_tm(double eps(const vec &), int splitting, const char *dirname) {
+int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
   volume v = voltwo(3.0, 3.0, a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   s.use_pml_everywhere(1.0);
   s1.use_pml_everywhere(1.0);
 
@@ -286,14 +286,14 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *dirname) {
   return 1;
 }
 
-int test_pml_te(double eps(const vec &), int splitting, const char *dirname) {
+int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
   volume v = voltwo(3.0, 3.0, a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   s.use_pml_everywhere(1.0);
   s1.use_pml_everywhere(1.0);
 
@@ -337,37 +337,37 @@ int test_pml_te(double eps(const vec &), int splitting, const char *dirname) {
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  const char *dirname = "two_dimensional-out";
-  trash_output_directory(dirname);
+  const char *mydirname = "two_dimensional-out";
+  trash_output_directory(mydirname);
   master_printf("Testing 2D...\n");
 
   for (int s=2;s<4;s++)
-    if (!test_pml(one, s, dirname)) abort("error in test_pml vacuum\n");
+    if (!test_pml(one, s, mydirname)) abort("error in test_pml vacuum\n");
 
   for (int s=2;s<4;s++)
-    if (!test_pml_tm(one, s, dirname))
+    if (!test_pml_tm(one, s, mydirname))
       abort("error in test_pml_tm vacuum\n");
 
   for (int s=2;s<4;s++)
-    if (!test_pml_te(one, s, dirname))
+    if (!test_pml_te(one, s, mydirname))
       abort("error in test_pml_te vacuum\n");
 
   for (int s=2;s<4;s++)
-    if (!test_metal(one, s, dirname)) abort("error in test_metal vacuum\n");
-  //if (!test_metal(one, 200, dirname)) abort("error in test_metal vacuum\n");
+    if (!test_metal(one, s, mydirname)) abort("error in test_metal vacuum\n");
+  //if (!test_metal(one, 200, mydirname)) abort("error in test_metal vacuum\n");
 
   for (int s=2;s<5;s++)
-    if (!test_metal(targets, s, dirname)) abort("error in test_metal targets\n");
-  //if (!test_metal(targets, 60, dirname)) abort("error in test_metal targets\n");
+    if (!test_metal(targets, s, mydirname)) abort("error in test_metal targets\n");
+  //if (!test_metal(targets, 60, mydirname)) abort("error in test_metal targets\n");
 
   for (int s=2;s<5;s++)
-    if (!test_periodic(targets, s, dirname))
+    if (!test_periodic(targets, s, mydirname))
       abort("error in test_periodic targets\n");
-  //if (!test_periodic(one, 200, dirname))
+  //if (!test_periodic(one, 200, mydirname))
   //  abort("error in test_periodic targets\n");
 
   for (int s=2;s<4;s++)
-    if (!test_periodic_tm(one, s, dirname))
+    if (!test_periodic_tm(one, s, mydirname))
       abort("error in test_periodic_tm vacuum\n");
 
   exit(0);

@@ -58,15 +58,15 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int test_simple_periodic(double eps(const vec &), int splitting, const char *dirname) {
+int test_simple_periodic(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 30.0;
   
   volume v = volcyl(1.5,0.8,a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
@@ -109,15 +109,15 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
   return 1;
 }
 
-int test_simple_metallic(double eps(const vec &), int splitting, const char *dirname) {
+int test_simple_metallic(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 30.0;
   
   volume v = volcyl(1.5,0.8,a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
@@ -158,12 +158,12 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *dir
   return 1;
 }
 
-int test_r_equals_zero(double eps(const vec &), const char *dirname) {
+int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
   double a = 10.0;
   double ttot = 3.0;  
   volume v = volcyl(1.5,0.8,a);
   structure s(v, eps);
-  s.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
@@ -204,7 +204,7 @@ int test_r_equals_zero(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int test_pml(double eps(const vec &), int splitting, const char *dirname) {
+int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 8;
   double ttot = 25.0;
   
@@ -213,8 +213,8 @@ int test_pml(double eps(const vec &), int splitting, const char *dirname) {
   structure s(v, eps, splitting);
   s.use_pml_everywhere(2.0);
   s1.use_pml_everywhere(2.0);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
@@ -272,13 +272,13 @@ complex<double> checkers(const vec &v) {
 }
 
 int test_pattern(double eps(const vec &), int splitting,
-                 const char *dirname) {
+                 const char *mydirname) {
   double a = 10.0;
   volume v = volcyl(1.5,0.8,a);
   structure s1(v, eps, 1);
   structure s(v, eps, splitting);
-  s.set_output_directory(dirname);
-  s1.set_output_directory(dirname);
+  s.set_output_directory(mydirname);
+  s1.set_output_directory(mydirname);
   for (int m=0;m<1;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
@@ -313,33 +313,33 @@ int test_pattern(double eps(const vec &), int splitting,
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  const char *dirname = "cylindrical-out";
-  trash_output_directory(dirname);
+  const char *mydirname = "cylindrical-out";
+  trash_output_directory(mydirname);
   master_printf("Testing cylindrical coords under different splittings...\n");
 
-  if (!test_r_equals_zero(one, dirname)) abort("error in test_r_equals_zero");
+  if (!test_r_equals_zero(one, mydirname)) abort("error in test_r_equals_zero");
 
   for (int s=2;s<6;s++)
-    if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
-  //if (!test_pattern(one, 8, dirname)) abort("error in crazy test_pattern\n");
-  //if (!test_pattern(one, 120, dirname)) abort("error in crazy test_pattern\n");
+    if (!test_pattern(one, s, mydirname)) abort("error in test_pattern\n");
+  //if (!test_pattern(one, 8, mydirname)) abort("error in crazy test_pattern\n");
+  //if (!test_pattern(one, 120, mydirname)) abort("error in crazy test_pattern\n");
   
   for (int s=2;s<4;s++)
-    if (!test_simple_periodic(one, s, dirname)) abort("error in test_simple_periodic\n");
-  //if (!test_simple_periodic(one, 8, dirname))
+    if (!test_simple_periodic(one, s, mydirname)) abort("error in test_simple_periodic\n");
+  //if (!test_simple_periodic(one, 8, mydirname))
   //  abort("error in crazy test_simple_periodic\n");
-  //if (!test_simple_periodic(one, 120, dirname))
+  //if (!test_simple_periodic(one, 120, mydirname))
   //  abort("error in crazy test_simple_periodic\n");
   
   for (int s=2;s<5;s++)
-    if (!test_simple_metallic(one, s, dirname)) abort("error in test_simple_metallic\n");
-  //if (!test_simple_metallic(one, 8, dirname))
+    if (!test_simple_metallic(one, s, mydirname)) abort("error in test_simple_metallic\n");
+  //if (!test_simple_metallic(one, 8, mydirname))
   //  abort("error in crazy test_simple_metallic\n");
-  //if (!test_simple_metallic(one, 120, dirname))
+  //if (!test_simple_metallic(one, 120, mydirname))
   //  abort("error in crazy test_simple_metallic\n");
   
   for (int s=2;s<6;s++)
-    if (!test_pml(one, s, dirname)) abort("error in test_pml\n");
+    if (!test_pml(one, s, mydirname)) abort("error in test_pml\n");
 
   exit(0);
 }
