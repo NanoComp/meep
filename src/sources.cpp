@@ -282,7 +282,7 @@ void fields::add_volume_source(component c, const src_time &src,
   // allocate fields if they haven't been allocated yet for this component
   int need_to_reconnect = 0;
   for (int i = 0; i < num_chunks; ++i)
-    if (!chunks[i]->f[c][0]) {
+    if (chunks[i]->is_mine() && !chunks[i]->f[c][0]) {
       chunks[i]->alloc_f(c);
       need_to_reconnect++;
     }
