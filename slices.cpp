@@ -185,6 +185,7 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
 
 static void eps_trailer(FILE *out) {
   fprintf(out, "grestore\n");
+  fprintf(out, "showpage\n");
   fprintf(out, "%%%%Trailer\n");
   fprintf(out, "%%%%EOF\n");
 }
