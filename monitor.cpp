@@ -95,7 +95,7 @@ void fields_chunk::interpolate_field(component c, const vec &loc,
     int startingat = 0;
     for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
     for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
-      val[i+startingat] = phase*getcm(f[c],ind[i]);
+      val[i+startingat] = phase*w[i]*getcm(f[c],ind[i]);
       if (val[i+startingat] == 0.0) startingat--;
     }
   }
