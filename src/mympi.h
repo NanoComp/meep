@@ -17,6 +17,9 @@
 #ifndef MEEP_MY_MPI_H
 #define MEEP_MY_MPI_H
 
+#include <complex>
+using namespace std;
+
 namespace meep {
 
 // MPI helper routines!
