@@ -33,7 +33,7 @@ SUFFIXES = .dac .tex .dvi .ps .pdf .eps
 	$(CXXLINK) $< $(LIBMEEP) $(LIBS)
 
 .tex.cpp:
-	perl ./preproc.pl $< > $@
+	perl $(srcdir)/preproc.pl $< > $@
 
 .eps.pdf:
 	epstopdf --outfile=$@ $<
