@@ -134,6 +134,8 @@ polarizability::polarizability(const mat *ma, double sig(const vec &),
     printf("Unsupported dimensionality!\n");
     exit(1);
   }
+  for (int c=0;c<10;c++) if (s[c])
+    for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
   // Average out sigma over the grid...
   if (v.dim == dcyl) {
     const vec dr = v.dr()*0.5; // The distance between Yee field components
