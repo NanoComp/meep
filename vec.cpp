@@ -101,6 +101,11 @@ const char *component_name(component c) {
   case Ey: return "ey";
   case Hx: return "hx";
   case Hy: return "hy";
+  case Dx: return "dx";
+  case Dy: return "dy";
+  case Dz: return "dz";
+  case Dr: return "dr";
+  case Dp: return "dp";
   }
   abort("Unsupported case.\n");
 }

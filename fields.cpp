@@ -141,7 +141,7 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm)
 
     FOR_COMPONENTS(i) if (v.dim != D2 && v.has_field(i))
       f[i][cmp] = new double[v.ntot()];
-    FOR_COMPONENTS(i) if (f[i][cmp]) {
+    FOR_COMPONENTS(i) if (f[i][cmp] && !is_electric(i)) {
       f_p_pml[i][cmp] = new double[v.ntot()];
       f_m_pml[i][cmp] = new double[v.ntot()];
       if (f_m_pml[i][cmp] == NULL) abort("Out of memory!\n");
@@ -193,6 +193,7 @@ void fields_chunk::figure_out_step_plan() {
       bool var_have_p = false, var_have_m = false;
       FOR_COMPONENTS(c2)
         if ((is_electric(c1) && is_magnetic(c2)) ||
+            (is_D(c1) && is_magnetic(c2)) ||
             (is_magnetic(c1) && is_electric(c2))) {
           const direction dc2 = component_direction(c2);
           if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
@@ -218,13 +219,18 @@ void fields_chunk::figure_out_step_plan() {
 
 void fields_chunk::alloc_f(component c) {
   DOCMP {
+    delete[] f[c][cmp];
+    delete[] f_p_pml[c][cmp];
+    delete[] f_m_pml[c][cmp];
     f[c][cmp] = new double[v.ntot()];
-    f_p_pml[c][cmp] = new double[v.ntot()];
-    f_m_pml[c][cmp] = new double[v.ntot()];
-    for (int i=0;i<v.ntot();i++) {
-      f[c][cmp][i] = 0.0;
-      f_p_pml[c][cmp][i] = 0.0;
-      f_m_pml[c][cmp][i] = 0.0;
+    for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
+    if (!is_electric(c)) {
+      f_p_pml[c][cmp] = new double[v.ntot()];
+      f_m_pml[c][cmp] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) {
+        f_p_pml[c][cmp][i] = 0.0;
+        f_m_pml[c][cmp][i] = 0.0;
+      }
     }
   }
   figure_out_step_plan();

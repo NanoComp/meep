@@ -121,9 +121,9 @@ int fields_chunk::add_point_source(component whichf, double freq,
   if (v.dim == D2 && !f[whichf][0]) {
     switch (whichf) {
     case Ex: case Ey: case Hz:
-      alloc_f(Ex); alloc_f(Ey); alloc_f(Hz); break;
+      alloc_f(Ex); alloc_f(Ey); alloc_f(Dx); alloc_f(Dy); alloc_f(Hz); break;
     case Hx: case Hy: case Ez:
-      alloc_f(Hx); alloc_f(Hy); alloc_f(Ez); break;
+      alloc_f(Hx); alloc_f(Hy); alloc_f(Ez); alloc_f(Dz); break;
     }
     need_reconnection = 1;
   }

@@ -24,37 +24,6 @@
 
 #define RESTRICT
 
-void fields::step_old() {
-  am_now_working_on(Stepping);
-  phase_material();
-
-  //for (int i=0;i<num_chunks;i++)
-  //  master_printf("Field is now %lg\n", chunks[i]->peek_field(Ex,vec2d(1.55,0.6)));
-  step_h_old();
-  step_h_source();
-  step_boundaries(H_stuff);
-  // because step_boundaries overruns the timing stack...
-  am_now_working_on(Stepping);
-
-  prepare_step_polarization_energy();
-  half_step_polarization_energy();
-  step_e_old();
-  step_e_source();
-  step_e_polarization();
-  step_boundaries(E_stuff);
-  // because step_boundaries overruns the timing stack...
-  am_now_working_on(Stepping);
-
-  half_step_polarization_energy();
-
-  update_polarization_saturation();
-  step_polarization_itself();
-
-  update_fluxes();
-  t += 1;
-  finished_working();
-}
-
 void fields::step() {
   am_now_working_on(Stepping);
   phase_material();
@@ -68,14 +37,14 @@ void fields::step() {
   am_now_working_on(Stepping);
 
   step_d();
+  step_e_source();
   step_boundaries(D_stuff);
 
   prepare_step_polarization_energy();
   half_step_polarization_energy();
-  step_e();
-  step_e_source();
-  step_e_polarization();
-  step_boundaries(E_stuff);
+  update_e_from_d();
+  //step_boundaries(E_stuff);  FIXME: Need to enable this when I encode anisotropy, etc.
+
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
 
@@ -163,130 +132,6 @@ void fields::step_h() {
       chunks[i]->step_h();
 }
 
-void fields::step_h_old() {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->step_h_old();
-}
-
-void fields_chunk::step_h_old() {
-  if (v.dim == D3) {
-    const int n1 = num_each_direction[0];
-    const int n2 = num_each_direction[1];
-    const int n3 = num_each_direction[2];
-    const int s1 = stride_each_direction[0];
-    const int s2 = stride_each_direction[1];
-    const int s3 = stride_each_direction[2];
-    DOCMP FOR_MAGNETIC_COMPONENTS(cc)
-      if (f[cc][cmp]) {
-        const int yee_idx = v.yee_index(cc);
-        const component c_p=plus_component[cc], c_m=minus_component[cc];
-        const direction d_deriv_p = plus_deriv_direction[cc];
-        const direction d_deriv_m = minus_deriv_direction[cc];
-        const bool have_p = have_plus_deriv[cc];
-        const bool have_m = have_minus_deriv[cc];
-        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
-        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
-        const int stride_p = (have_p)?v.stride(d_deriv_p):0;
-        const int stride_m = (have_m)?v.stride(d_deriv_m):0;
-        // The following lines "promise" the compiler that the values of
-        // these arrays won't change during this loop.
-        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
-        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
-        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
-          ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
-        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
-          ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
-        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
-        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
-        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
-#include "step_h.h"
-      }
-  } else if (v.dim == D1) {
-    DOCMP {
-      if (ma->C[Z][Hy])
-        for (int z=0;z<v.nz();z++) {
-          const double C = ma->C[Z][Hy][z];
-          const double ooop_C = ma->Cdecay[Z][Hy][Y][z];
-          f[Hy][cmp][z] += ooop_C*(c*(f[Ex][cmp][z+1] - f[Ex][cmp][z])
-                                   - C*f[Hy][cmp][z]);
-        }
-      else
-        for (int z=0;z<v.nz();z++)
-          f[Hy][cmp][z] += c*(f[Ex][cmp][z+1] - f[Ex][cmp][z]);
-    }
-  } else if (v.dim == D2) {
-    DOCMP {
-      // Propogate Hz
-      if ((ma->C[X][Hz] || ma->C[Y][Hz])&& f[Hz][cmp])
-        for (int x=0;x<v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixp1 = (x+1)*(v.ny()+1);
-          for (int y=0;y<v.ny();y++) {
-            const double Cxhz = (ma->C[X][Hz])?ma->C[X][Hz][y+ix]:0;
-            const double Cyhz = (ma->C[Y][Hz])?ma->C[Y][Hz][y+ix]:0;
-            const double ooop_Cxhz = (ma->Cdecay[X][Hz][Z]) ?
-              ma->Cdecay[X][Hz][Z][y+ix]:1.0;
-            const double ooop_Cyhz = (ma->Cdecay[Y][Hz][Z]) ?
-              ma->Cdecay[Y][Hz][Z][y+ix] : 1.0;
-            const double dhzx = ooop_Cxhz*
-              (c*(f[Ey][cmp][y+ixp1] - f[Ey][cmp][y+ix]) - Cxhz*f_p_pml[Hz][cmp][y+ix]);
-            const double hzy = f[Hz][cmp][y+ix] - f_p_pml[Hz][cmp][y+ix];
-            f_p_pml[Hz][cmp][y+ix] += dhzx;
-            f[Hz][cmp][y+ix] += dhzx +
-              ooop_Cyhz*(c*(-(f[Ex][cmp][y+ix+1] - f[Ex][cmp][y+ix])) - Cyhz*hzy);
-          }
-        }
-      else if (f[Hz][cmp])
-        for (int x=0;x<v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixp1 = (x+1)*(v.ny()+1);
-          for (int y=0;y<v.ny();y++)
-            f[Hz][cmp][y+ix] += c*((f[Ey][cmp][y+ixp1] - f[Ey][cmp][y+ix]) -
-                                   (f[Ex][cmp][y+ix+1] - f[Ex][cmp][y+ix]));
-        }
-      // Propogate Hx
-      if (ma->C[Y][Hx] && f[Hx][cmp])
-        for (int x=1;x<=v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          for (int y=0;y<v.ny();y++) {
-            const double Cyhx = ma->C[Y][Hx][y+ix];
-            const double ooop_Cyhx = ma->Cdecay[Y][Hx][X][y+ix];
-            f[Hx][cmp][y+ix] += ooop_Cyhx*
-              (c*(f[Ez][cmp][y+ix+1] - f[Ez][cmp][y+ix]) - Cyhx*f[Hx][cmp][y+ix]);
-          }
-        }
-      else if (f[Hx][cmp])
-        for (int x=1;x<=v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          for (int y=0;y<v.ny();y++)
-            f[Hx][cmp][y+ix] += c*(f[Ez][cmp][y+ix+1] - f[Ez][cmp][y+ix]);
-        }
-      // Propogate Hy
-      if (ma->C[X][Hy] && f[Hy][cmp])
-        for (int x=0;x<v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixp1 = (x+1)*(v.ny()+1);
-          for (int y=1;y<=v.ny();y++) {
-            const double Cxhy = ma->C[X][Hy][y+ix];
-            const double ooop_Cxhy = ma->Cdecay[X][Hy][Y][y+ix];
-            f[Hy][cmp][y+ix] += ooop_Cxhy*
-              (c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix])) - Cxhy*f[Hy][cmp][y+ix]);
-          }
-        }
-      else if (f[Hy][cmp])
-        for (int x=0;x<v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixp1 = (x+1)*(v.ny()+1);
-          for (int y=1;y<=v.ny();y++)
-            f[Hy][cmp][y+ix] += c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix]));
-        }
-    }
-  }
-}
-  
 void fields_chunk::step_h() {
   const volume v = this->v;
   if (v.dim != Dcyl) {
@@ -455,7 +300,39 @@ void fields::step_d() {
 void fields_chunk::step_d() {
   const volume v = this->v;
   if (v.dim != Dcyl) {
-    // To be implemented later...
+    const int n1 = num_each_direction[0];
+    const int n2 = num_each_direction[1];
+    const int n3 = num_each_direction[2];
+    const int s1 = stride_each_direction[0];
+    const int s2 = stride_each_direction[1];
+    const int s3 = stride_each_direction[2];
+    DOCMP FOR_D_COMPONENTS(cc)
+      if (f[cc][cmp]) {
+        const int yee_idx = v.yee_index(cc);
+        const component c_p=plus_component[cc], c_m=minus_component[cc];
+        const direction d_deriv_p = plus_deriv_direction[cc];
+        const direction d_deriv_m = minus_deriv_direction[cc];
+        const bool have_p = have_plus_deriv[cc];
+        const bool have_m = have_minus_deriv[cc];
+        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
+        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
+        const int stride_p = (have_p)?v.stride(d_deriv_p):0;
+        const int stride_m = (have_m)?v.stride(d_deriv_m):0;
+        // The following lines "promise" the compiler that the values of
+        // these arrays won't change during this loop.
+        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
+        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
+        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
+          ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
+        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
+          ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
+        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
+        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
+        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
+#include "step_d.h"
+      }
   } else if (v.dim == Dcyl) {
     DOCMP {
       // Propogate Dp
@@ -587,443 +464,24 @@ void fields_chunk::step_d() {
   }
 }
 
-void fields::step_e() {
+void fields::update_e_from_d() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_e();
+      chunks[i]->update_e_from_d();
 }
 
-void fields::step_e_old() {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->step_e_old();
-}
+#define FOR_POLARIZATIONS(init, p) for (polarization *p = init; p; p = p->next)
 
-void fields_chunk::step_e_old() {
-  const volume v = this->v;
-  if (v.dim == D3) {
-    const int n1 = num_each_direction[0];
-    const int n2 = num_each_direction[1];
-    const int n3 = num_each_direction[2];
-    const int s1 = stride_each_direction[0];
-    const int s2 = stride_each_direction[1];
-    const int s3 = stride_each_direction[2];
-    DOCMP FOR_ELECTRIC_COMPONENTS(cc)
-      if (f[cc][cmp]) {
-        const int yee_idx = v.yee_index(cc);
-        const component c_p=plus_component[cc], c_m=minus_component[cc];
-        const direction d_deriv_p = plus_deriv_direction[cc];
-        const direction d_deriv_m = minus_deriv_direction[cc];
-        const bool have_p = have_plus_deriv[cc];
-        const bool have_m = have_minus_deriv[cc];
-        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
-        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
-        const int stride_p = (have_p)?v.stride(d_deriv_p):0;
-        const int stride_m = (have_m)?v.stride(d_deriv_m):0;
-        // The following lines "promise" the compiler that the values of
-        // these arrays won't change during this loop.
-        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
-        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
-        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
-          ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
-        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
-          ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
-        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
-        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
-        RESTRICT const double *inveps = ma->inveps[cc][component_direction(cc)] + yee_idx;
-        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
-#include "step_e_old.h"
+void fields_chunk::update_e_from_d() {
+  const int ntot = ma->v.ntot();
+  FOR_E_AND_D(ec,dc) DOCMP
+    if (f[ec][cmp])
+      for (int i=0;i<ntot;i++) {
+        double phere = 0.0;
+        FOR_POLARIZATIONS(pol, p) phere += p->P[ec][cmp][i];
+        f[ec][cmp][i] = ma->inveps[ec][component_direction(ec)][i]*
+          (f[dc][cmp][i] - phere);
       }
-  } else if (v.dim == D1) {
-    DOCMP {
-      if (ma->C[Z][Ex])
-        for (int z=1;z<=v.nz();z++) {
-          const double C = ma->C[Z][Ex][z];
-          const double inveps_plus_C = ma->Cdecay[Z][Ex][X][z];
-          f[Ex][cmp][z] += inveps_plus_C*(c*(f[Hy][cmp][z] - f[Hy][cmp][z-1])
-                                          - C*f[Ex][cmp][z]);
-        }
-      else 
-        for (int z=1;z<=v.nz();z++)
-          f[Ex][cmp][z] += c*ma->inveps[Ex][X][z]*
-            (f[Hy][cmp][z] - f[Hy][cmp][z-1]);
-    }
-  } else if (v.dim == D2) {
-    DOCMP {
-      // Propogate Ez
-      if ((ma->C[X][Ez] || ma->C[Y][Ez])&& f[Ez][cmp])
-        for (int x=1;x<=v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixm1 = (x-1)*(v.ny()+1);
-          for (int y=1;y<=v.ny();y++) {
-            const double Cxez = (ma->C[X][Ez])?ma->C[X][Ez][y+ix]:0;
-            const double Cyez = (ma->C[Y][Ez])?ma->C[Y][Ez][y+ix]:0;
-            const double inveps_plus_Cxez = (ma->Cdecay[X][Ez][Z]) ?
-              ma->Cdecay[X][Ez][Z][y+ix] : ma->inveps[Ez][Z][y+ix];
-            const double inveps_plus_Cyez = (ma->Cdecay[Y][Ez][Z]) ?
-              ma->Cdecay[Y][Ez][Z][y+ix] : ma->inveps[Ez][Z][y+ix];
-            const double dezx = inveps_plus_Cxez*
-              (-c*(f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) - Cxez*f_p_pml[Ez][cmp][y+ix]);
-            const double ezy = f[Ez][cmp][y+ix] - f_p_pml[Ez][cmp][y+ix];
-            f_p_pml[Ez][cmp][y+ix] += dezx;
-            f[Ez][cmp][y+ix] += dezx +
-              inveps_plus_Cyez*(-c*(-(f[Hx][cmp][y+ix] - f[Hx][cmp][y+ix-1])) - Cyez*ezy);
-          }
-        }
-      else if (f[Ez][cmp])
-        for (int x=1;x<=v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixm1 = (x-1)*(v.ny()+1);
-          for (int y=1;y<=v.ny();y++) {
-            f[Ez][cmp][y+ix] += -c*ma->inveps[Ez][Z][y+ix]*
-              ((f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) -
-               (f[Hx][cmp][y+ix] - f[Hx][cmp][y+ix-1]));
-          }
-        }
-      // Propogate Ex
-      if (ma->C[Y][Ex] && f[Ex][cmp])
-        for (int x=0;x<v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          for (int y=1;y<=v.ny();y++) {
-            const double Cyex = ma->C[Y][Ex][y+ix];
-            const double inveps_plus_Cyex = (ma->Cdecay[Y][Ex][X]) ?
-              ma->Cdecay[Y][Ex][X][y+ix] : ma->inveps[Ex][X][y+ix];
-            f[Ex][cmp][y+ix] += inveps_plus_Cyex*
-              (-c*(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ix-1]) - Cyex*f[Ex][cmp][y+ix]);
-          }
-        }
-      else if (f[Ex][cmp])
-        for (int x=0;x<v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          for (int y=1;y<=v.ny();y++)
-            f[Ex][cmp][y+ix] += -c*ma->inveps[Ex][X][y+ix]*
-              (f[Hz][cmp][y+ix] - f[Hz][cmp][y+ix-1]);
-        }
-      // Propogate Ey
-      if (ma->C[X][Ey] && f[Ey][cmp])
-        for (int x=1;x<=v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixm1 = (x-1)*(v.ny()+1);
-          for (int y=0;y<v.ny();y++) {
-            const double Cxey = ma->C[X][Ey][y+ix];
-            const double inveps_plus_Cxey = (ma->Cdecay[X][Ey][Y]) ?
-              ma->Cdecay[X][Ey][Y][y+ix] : ma->inveps[Ey][Y][y+ix];
-            f[Ey][cmp][y+ix] += inveps_plus_Cxey*
-              (-c*(-(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ixm1])) - Cxey*f[Ey][cmp][y+ix]);
-          }
-        }
-      else if (f[Ey][cmp])
-        for (int x=1;x<=v.nx();x++) {
-          const int ix = x*(v.ny()+1);
-          const int ixm1 = (x-1)*(v.ny()+1);
-          for (int y=0;y<v.ny();y++)
-            f[Ey][cmp][y+ix] += -c*ma->inveps[Ey][Y][y+ix]*
-              (-(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ixm1]));
-        }
-    }
-  } else if (v.dim == Dcyl) {
-    DOCMP {
-      // Propogate Ep
-      if (ma->C[Z][Ep] || ma->C[R][Ep])
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            const double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
-            const double mor = m*oor;
-            const int ir = r*(v.nz()+1);
-            const int irm1 = (r-1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++) {
-              const double Czep = (ma->C[Z][Ep])?ma->C[Z][Ep][z+ir]:0;
-              const double Crep = (ma->C[R][Ep])?ma->C[R][Ep][z+ir]:0;
-              const double inveps_plus_Czep = (ma->Cdecay[Z][Ep][P]) ?
-                ma->Cdecay[Z][Ep][P][z+ir] : ma->inveps[Ep][P][z+ir];
-              const double inveps_plus_Crep = (ma->Cdecay[R][Ep][P]) ?
-                ma->Cdecay[R][Ep][P][z+ir] : ma->inveps[Ep][P][z+ir];
-              const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
-                                                    - Czep*f_p_pml[Ep][cmp][z+ir]);
-              const double epr = f[Ep][cmp][z+ir] - f_p_pml[Ep][cmp][z+ir];
-              f_p_pml[Ep][cmp][z+ir] += depz;
-              f[Ep][cmp][z+ir] += depz +
-                inveps_plus_Crep*(c*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1])) - Crep*epr);
-            }
-          }
-      else
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            const int ir = r*(v.nz()+1);
-            const int irm1 = (r-1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++)
-              f[Ep][cmp][z+ir] += c*ma->inveps[Ep][P][z+ir]*
-                ((f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
-                 - (f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
-          }
-      // Propogate Ez
-      if (ma->C[R][Ez])
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-          double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
-          double mor = m*oor;
-          const int ir = r*(v.nz()+1);
-          const int irm1 = (r-1)*(v.nz()+1);
-          for (int z=0;z<v.nz();z++) {
-            const double Crez = ma->C[R][Ez][z+ir];
-            const double inveps_plus_Crez = (ma->Cdecay[R][Ez][Z]) ?
-              ma->Cdecay[R][Ez][Z][z+ir] : ma->inveps[Ez][Z][z+ir];
-            const double dezr = inveps_plus_Crez*
-              (c*(f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
-                  f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
-               - Crez*f_p_pml[Ez][cmp][z+ir]);
-            const double ezp = f[Ez][cmp][z+ir]-f_p_pml[Ez][cmp][z+ir];
-            f_p_pml[Ez][cmp][z+ir] += dezr;
-            f[Ez][cmp][z+ir] += dezr +
-              c*ma->inveps[Ez][Z][z+ir]*(-it(cmp,f[Hr],z+ir)*mor);
-          }
-        }
-      else
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-          double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
-          double mor = m*oor;
-          const int ir = r*(v.nz()+1);
-          const int irm1 = (r-1)*(v.nz()+1);
-          for (int z=0;z<v.nz();z++)
-            f[Ez][cmp][z+ir] += c*ma->inveps[Ez][Z][z+ir]*
-              ((f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
-                f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
-               - it(cmp,f[Hr],z+ir)*mor);
-        }
-      // Propogate Er
-      if (ma->C[Z][Er])
-        for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
-            double morph = m*oorph;
-            const int ir = r*(v.nz()+1);
-            const int irp1 = (r+1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++) {
-              const double Czer = ma->C[Z][Er][z+ir];
-              const double inveps_plus_Czer = (ma->Cdecay[Z][Er][R]) ?
-                ma->Cdecay[Z][Er][R][z+ir] : ma->inveps[Er][R][z+ir];
-              double derp = c*ma->inveps[Er][R][z+ir]*(it(cmp,f[Hz],z+ir)*morph);
-              double erz = f[Er][cmp][z+ir] - f_p_pml[Er][cmp][z+ir];
-              f_p_pml[Er][cmp][z+ir] += derp;
-              f[Er][cmp][z+ir] += derp + inveps_plus_Czer*
-                (-c*(f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]) - Czer*erz);
-            }
-          }
-      else
-        for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
-            double morph = m*oorph;
-            const int ir = r*(v.nz()+1);
-            const int irp1 = (r+1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++)
-              f[Er][cmp][z+ir] += c*ma->inveps[Er][R][z+ir]*
-                (it(cmp,f[Hz],z+ir)*morph - (f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]));
-          }
-      // Deal with annoying r==0 boundary conditions...
-      if (m == 0 && v.origin.r() == 0.0) {
-        for (int z=0;z<=v.nz();z++)
-          f[Ez][cmp][z] += c*ma->inveps[Ez][Z][z]*
-            (f[Hp][cmp][z] + it(cmp,f[Hr],z)*m);
-      } else if (m == 1 && v.origin.r() == 0.0) {
-        if (ma->C[Z][Ep])
-          for (int z=1;z<=v.nz();z++) {
-            const double Czep = ma->C[Z][Ep][z];
-            const double inveps_plus_Czep = (ma->Cdecay[Z][Ep][P]) ?
-              ma->Cdecay[Z][Ep][P][z] : ma->inveps[Ep][P][z];
-            const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
-                                                  - Czep*f_p_pml[Ep][cmp][z]);
-            const double epr = f[Ep][cmp][z] - f_p_pml[Ep][cmp][z];
-            f_p_pml[Ep][cmp][z] += depz;
-            f[Ep][cmp][z] += depz +
-              c*ma->inveps[Ep][P][z]*(-f[Hz][cmp][z]*2.0);
-          }
-        else
-          for (int z=1;z<=v.nz();z++)
-            f[Ep][cmp][z] += c*ma->inveps[Ep][P][z]*
-              ((f[Hr][cmp][z]-f[Hr][cmp][z-1]) - f[Hz][cmp][z]*2.0);
-      } else {
-        for (int r=0;r<=v.nr() && (int)(v.origin.r()*v.a+0.5) + r < m;r++) {
-          const int ir = r*(v.nz()+1);
-          for (int z=0;z<=v.nz();z++) f[Ep][cmp][z+ir] = 0;
-          if (f_p_pml[Ep][cmp])
-            for (int z=0;z<=v.nz();z++) f_p_pml[Ep][cmp][z+ir] = 0;
-          for (int z=0;z<=v.nz();z++) f[Ez][cmp][z+ir] = 0;
-          if (f_p_pml[Ez][cmp])
-            for (int z=0;z<=v.nz();z++) f_p_pml[Ez][cmp][z+ir] = 0;
-        }
-      }
-    }
-  } else {
-    abort("Unsupported dimension.\n");
-  }
-}
-
-void fields_chunk::step_e() {
-  const volume v = this->v;
-  if (v.dim != Dcyl) {
-    const int n1 = num_each_direction[0];
-    const int n2 = num_each_direction[1];
-    const int n3 = num_each_direction[2];
-    const int s1 = stride_each_direction[0];
-    const int s2 = stride_each_direction[1];
-    const int s3 = stride_each_direction[2];
-    DOCMP FOR_ELECTRIC_COMPONENTS(cc)
-      if (f[cc][cmp]) {
-        const int yee_idx = v.yee_index(cc);
-        const component c_p=plus_component[cc], c_m=minus_component[cc];
-        const direction d_deriv_p = plus_deriv_direction[cc];
-        const direction d_deriv_m = minus_deriv_direction[cc];
-        const bool have_p = have_plus_deriv[cc];
-        const bool have_m = have_minus_deriv[cc];
-        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
-        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
-        const int stride_p = (have_p)?v.stride(d_deriv_p):0;
-        const int stride_m = (have_m)?v.stride(d_deriv_m):0;
-        // The following lines "promise" the compiler that the values of
-        // these arrays won't change during this loop.
-        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
-        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
-        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
-          ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
-        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
-          ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
-        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
-        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
-        RESTRICT const double *inveps = ma->inveps[cc][component_direction(cc)] + yee_idx;
-        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
-#include "step_e.h"
-      }
-  } else if (v.dim == Dcyl) {
-    DOCMP {
-      // Propogate Ep
-      if (ma->C[Z][Ep] || ma->C[R][Ep])
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            const double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
-            const double mor = m*oor;
-            const int ir = r*(v.nz()+1);
-            const int irm1 = (r-1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++) {
-              const double Czep = (ma->C[Z][Ep])?ma->C[Z][Ep][z+ir]:0;
-              const double Crep = (ma->C[R][Ep])?ma->C[R][Ep][z+ir]:0;
-              const double inveps_plus_Czep = (ma->Cdecay[Z][Ep][P]) ?
-                ma->Cdecay[Z][Ep][P][z+ir] : ma->inveps[Ep][P][z+ir];
-              const double inveps_plus_Crep = (ma->Cdecay[R][Ep][P]) ?
-                ma->Cdecay[R][Ep][P][z+ir] : ma->inveps[Ep][P][z+ir];
-              const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
-                                                    - Czep*f_p_pml[Ep][cmp][z+ir]);
-              const double epr = f[Ep][cmp][z+ir] - f_p_pml[Ep][cmp][z+ir];
-              f_p_pml[Ep][cmp][z+ir] += depz;
-              f[Ep][cmp][z+ir] += depz +
-                inveps_plus_Crep*(c*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1])) - Crep*epr);
-            }
-          }
-      else
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            const int ir = r*(v.nz()+1);
-            const int irm1 = (r-1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++)
-              f[Ep][cmp][z+ir] += c*ma->inveps[Ep][P][z+ir]*
-                ((f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
-                 - (f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
-          }
-      // Propogate Ez
-      if (ma->C[R][Ez])
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-          double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
-          double mor = m*oor;
-          const int ir = r*(v.nz()+1);
-          const int irm1 = (r-1)*(v.nz()+1);
-          for (int z=0;z<v.nz();z++) {
-            const double Crez = ma->C[R][Ez][z+ir];
-            const double inveps_plus_Crez = (ma->Cdecay[R][Ez][Z]) ?
-              ma->Cdecay[R][Ez][Z][z+ir] : ma->inveps[Ez][Z][z+ir];
-            const double dezr = inveps_plus_Crez*
-              (c*(f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
-                  f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
-               - Crez*f_p_pml[Ez][cmp][z+ir]);
-            const double ezp = f[Ez][cmp][z+ir]-f_p_pml[Ez][cmp][z+ir];
-            f_p_pml[Ez][cmp][z+ir] += dezr;
-            f[Ez][cmp][z+ir] += dezr +
-              c*ma->inveps[Ez][Z][z+ir]*(-it(cmp,f[Hr],z+ir)*mor);
-          }
-        }
-      else
-        for (int r=rstart_1(v,m);r<=v.nr();r++) {
-          double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
-          double mor = m*oor;
-          const int ir = r*(v.nz()+1);
-          const int irm1 = (r-1)*(v.nz()+1);
-          for (int z=0;z<v.nz();z++)
-            f[Ez][cmp][z+ir] += c*ma->inveps[Ez][Z][z+ir]*
-              ((f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
-                f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
-               - it(cmp,f[Hr],z+ir)*mor);
-        }
-      // Propogate Er
-      if (ma->C[Z][Er])
-        for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
-            double morph = m*oorph;
-            const int ir = r*(v.nz()+1);
-            const int irp1 = (r+1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++) {
-              const double Czer = ma->C[Z][Er][z+ir];
-              const double inveps_plus_Czer = (ma->Cdecay[Z][Er][R]) ?
-                ma->Cdecay[Z][Er][R][z+ir] : ma->inveps[Er][R][z+ir];
-              double derp = c*ma->inveps[Er][R][z+ir]*(it(cmp,f[Hz],z+ir)*morph);
-              double erz = f[Er][cmp][z+ir] - f_p_pml[Er][cmp][z+ir];
-              f_p_pml[Er][cmp][z+ir] += derp;
-              f[Er][cmp][z+ir] += derp + inveps_plus_Czer*
-                (-c*(f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]) - Czer*erz);
-            }
-          }
-      else
-        for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
-            double morph = m*oorph;
-            const int ir = r*(v.nz()+1);
-            const int irp1 = (r+1)*(v.nz()+1);
-            for (int z=1;z<=v.nz();z++)
-              f[Er][cmp][z+ir] += c*ma->inveps[Er][R][z+ir]*
-                (it(cmp,f[Hz],z+ir)*morph - (f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]));
-          }
-      // Deal with annoying r==0 boundary conditions...
-      if (m == 0 && v.origin.r() == 0.0) {
-        for (int z=0;z<=v.nz();z++)
-          f[Ez][cmp][z] += c*ma->inveps[Ez][Z][z]*
-            (f[Hp][cmp][z] + it(cmp,f[Hr],z)*m);
-      } else if (m == 1 && v.origin.r() == 0.0) {
-        if (ma->C[Z][Ep])
-          for (int z=1;z<=v.nz();z++) {
-            const double Czep = ma->C[Z][Ep][z];
-            const double inveps_plus_Czep = (ma->Cdecay[Z][Ep][P]) ?
-              ma->Cdecay[Z][Ep][P][z] : ma->inveps[Ep][P][z];
-            const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
-                                                  - Czep*f_p_pml[Ep][cmp][z]);
-            const double epr = f[Ep][cmp][z] - f_p_pml[Ep][cmp][z];
-            f_p_pml[Ep][cmp][z] += depz;
-            f[Ep][cmp][z] += depz +
-              c*ma->inveps[Ep][P][z]*(-f[Hz][cmp][z]*2.0);
-          }
-        else
-          for (int z=1;z<=v.nz();z++)
-            f[Ep][cmp][z] += c*ma->inveps[Ep][P][z]*
-              ((f[Hr][cmp][z]-f[Hr][cmp][z-1]) - f[Hz][cmp][z]*2.0);
-      } else {
-        for (int r=0;r<=v.nr() && (int)(v.origin.r()*v.a+0.5) + r < m;r++) {
-          const int ir = r*(v.nz()+1);
-          for (int z=0;z<=v.nz();z++) f[Ep][cmp][z+ir] = 0;
-          if (f_p_pml[Ep][cmp])
-            for (int z=0;z<=v.nz();z++) f_p_pml[Ep][cmp][z+ir] = 0;
-          for (int z=0;z<=v.nz();z++) f[Ez][cmp][z+ir] = 0;
-          if (f_p_pml[Ez][cmp])
-            for (int z=0;z<=v.nz();z++) f_p_pml[Ez][cmp][z+ir] = 0;
-        }
-      }
-    }
-  } else {
-    abort("Unsupported dimension.\n");
-  }
 }
 
 #include "config.h"
@@ -1136,8 +594,8 @@ void fields_chunk::step_h_source(const src *s, double time) {
     step_h_source(s->next, time);
     return;
   }
-  for (int c=0;c<10;c++)
-    if (f[c][0] && is_magnetic((component)c)) {
+  FOR_COMPONENTS(c)
+    if (f[c][0] && is_magnetic(c)) {
       f[c][0][s->i] += real(A*s->A[c]);
       if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }
@@ -1158,10 +616,10 @@ void fields_chunk::step_e_source(const src *s, double time) {
     step_e_source(s->next, time);
     return;
   }
-  for (int c=0;c<10;c++)
-    if (f[c][0] && is_electric((component)c)) {
-      f[c][0][s->i] += real(A*s->A[c]);
-      if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
+  FOR_E_AND_D(c,dc)
+    if (f[c][0]) {
+      f[dc][0][s->i] += real(A*s->A[c]);
+      if (!is_real) f[dc][1][s->i] += imag(A*s->A[c]);
     }
   step_e_source(s->next, time);
 }

@@ -44,7 +44,6 @@ class polarizability {
   double energy_saturation, saturated_sigma;
   polarizability *next;
 
-  void use_pml();
   polarizability_identifier get_identifier() const;
 };
 
@@ -53,8 +52,7 @@ class polarization {
   polarization(const polarizability *the_pb, int is_real);
   ~polarization();
   double saturation_factor;
-  double *(P[NUM_FIELD_COMPONENTS][2]), *(P_p_pml[NUM_FIELD_COMPONENTS][2]),
-    *(P_m_pml[NUM_FIELD_COMPONENTS][2]), *(energy[NUM_FIELD_COMPONENTS]),
+  double *(P[NUM_FIELD_COMPONENTS][2]), *(energy[NUM_FIELD_COMPONENTS]),
     *(s[NUM_FIELD_COMPONENTS]);
   int is_real;
   const polarizability *pb;

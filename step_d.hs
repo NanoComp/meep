@@ -38,10 +38,10 @@ m_p_update =
         |?| (m_update |+| p_update)
         |:| ("have_m_pml")
             |?| (m_update |+| p_update)
-            |:| ("inveps[ind]*c" |*| (m_deriv_m |+| deriv_p))
+            |:| ("c" |*| (m_deriv_m |+| deriv_p))
 
-decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "inveps[ind]"
-decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "inveps[ind]"
+decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "1"
+decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "1"
 sig_m = ("have_m_pml") |?| "C_m[ind]" |:| "0"
 sig_p = ("have_p_pml") |?| "C_p[ind]" |:| "0"
 m_deriv_m = ("have_m") |?| "m_deriv_m" |:| "0"

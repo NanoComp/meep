@@ -64,6 +64,8 @@ inline direction stop_at_direction(ndim dim) {
                                         c > Ez; c = (component) (c-1))
 #define FOR_D_COMPONENTS(c) for (component c = Dz; \
                                  c > Hz; c = (component) (c-1))
+#define FOR_E_AND_D(e,d) for (component e = Ex, d = Dx; \
+                              e <= Ez; e = (component) (e+1), d = (component) (d+1))
 #define FOR_COMPONENTS(c) for (component c = Ex,loop_stop_co=Ey; \
                                c != loop_stop_co; \
                                c = (component)((c+1)%NUM_FIELD_COMPONENTS), \
@@ -346,7 +348,7 @@ class volume {
   int nz() const { return num_direction(Z); }
 
   bool has_field(component c) const {
-    if (dim == D1) return c == Ex || c == Hy;
+    if (dim == D1) return c == Ex || c == Hy || c == Dx;
     return (dim == Dcyl)?component_direction(c)>Y:component_direction(c)<R;
   }
   int has_boundary(boundary_side,direction) const;
@@ -419,7 +421,7 @@ class volume {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim,d)
       if (c == Dielectric ||
-          (is_electric(c) && d == component_direction(c)) ||
+          ((is_electric(c) || is_D(c)) && d == component_direction(c)) ||
           (is_magnetic(c) && d != component_direction(c)))
         out.set_direction(d,1);
     return out;

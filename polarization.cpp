@@ -31,11 +31,7 @@ polarization *polarization::set_up_polarizations(const mat_chunk *ma, int is_r) 
 void polarization::use_real_fields() {
   is_real = 1;
   FOR_COMPONENTS(c) delete[] P[c][1];
-  FOR_COMPONENTS(c) delete[] P_p_pml[c][1];
-  FOR_COMPONENTS(c) delete[] P_m_pml[c][1];
   FOR_COMPONENTS(c) P[c][1] = NULL;
-  FOR_COMPONENTS(c) P_p_pml[c][1] = NULL;
-  FOR_COMPONENTS(c) P_m_pml[c][1] = NULL;
   if (next) next->use_real_fields();
 }
 
@@ -43,26 +39,16 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
   const volume &v = the_pb->v;
   is_real = is_r;
   DOCMP {
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && is_electric((component)c)) {
+    FOR_COMPONENTS(c)
+      if (v.has_field(c) && is_electric(c)) {
         P[c][cmp] = new double[v.ntot()];
         for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0.0;
-        // FIXME perhaps shouldn't allocate the PML split fields_chunk if we don't
-        // have pml...
-        P_p_pml[c][cmp] = new double[v.ntot()];
-        P_m_pml[c][cmp] = new double[v.ntot()];
-        if (P_m_pml[c][cmp] == NULL)
-          abort("Allocation error in polarization!\n");
-        for (int i=0;i<v.ntot();i++) P_p_pml[c][cmp][i] = 0.0;
-        for (int i=0;i<v.ntot();i++) P_m_pml[c][cmp][i] = 0.0;
       } else {
         P[c][cmp] = NULL;
-        P_p_pml[c][cmp] = NULL;
-        P_m_pml[c][cmp] = NULL;
       }
   }
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c)) {
+  FOR_COMPONENTS(c)
+    if (v.has_field(c) && is_electric(c)) {
       energy[c] = new double[v.ntot()];
       for (int i=0;i<v.ntot();i++) energy[c][i] = 0.0;
     } else {
@@ -70,7 +56,7 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
     }
   pb = the_pb;
   // Initialize the s[] arrays that point to sigma.
-  for (int c=0;c<10;c++)
+  FOR_COMPONENTS(c)
     if (pb->energy_saturation != 0.0) {
       if (pb->s[c]) {
         s[c] = new double[v.ntot()];
@@ -81,11 +67,11 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
   if (pb->energy_saturation != 0.0) {
     saturation_factor = pb->saturated_sigma/pb->energy_saturation;
     const double isf = 1.0/fabs(saturation_factor);
-    for (int c=0;c<10;c++)
+    FOR_COMPONENTS(c)
       if (pb->s[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = -isf*s[c][i];
   } else {
     saturation_factor = 0.0;
-    for (int c=0;c<10;c++)
+    FOR_COMPONENTS(c)
       if (energy[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = 0.0;
   }
   if (pb->next == NULL) {
@@ -96,14 +82,10 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
 }
 
 polarization::~polarization() {
-  DOCMP {
-    FOR_COMPONENTS(c) delete[] P[c][cmp];
-    FOR_COMPONENTS(c) delete[] P_p_pml[c][cmp];
-    FOR_COMPONENTS(c) delete[] P_m_pml[c][cmp];
-  }
-  for (int c=0;c<10;c++) delete[] energy[c];
+  DOCMP FOR_COMPONENTS(c) delete[] P[c][cmp];
+  FOR_COMPONENTS(c) delete[] energy[c];
   if (saturation_factor != 0.0)
-    for (int c=0;c<10;c++) delete[] s[c];
+    FOR_COMPONENTS(c) delete[] s[c];
   if (next) delete next;
 }
 
@@ -136,20 +118,14 @@ polarizability::polarizability(const polarizability *pb) {
   saturated_sigma = pb->saturated_sigma;
   sigma = new double[v.ntot()];
   for (int i=0;i<v.ntot();i++) sigma[i] = pb->sigma[i];
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c)) {
+  FOR_COMPONENTS(c) s[c] = NULL;
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (v.has_field(c)) {
       s[c] = new double[v.ntot()];
       for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
-    } else {
-      s[c] = NULL;
     }
   if (pb->next) next = new polarizability(pb->next);
   else next = NULL;
-}
-
-void polarizability::use_pml() {
-  // Dummy function for now...
-  if (next) next->use_pml();
 }
 
 polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
@@ -162,18 +138,17 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
   energy_saturation = energy_sat;
   saturated_sigma = sigscale;
 
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c)) {
+  FOR_COMPONENTS(c) s[c] = NULL;
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (v.has_field(c)) {
       s[c] = new double[v.ntot()];
-    } else {
-      s[c] = NULL;
     }
   sigma = new double[v.ntot()];
   if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
   for (int i=0;i<v.ntot();i++)
     sigma[i] = sigscale*sig(v.loc(v.eps_component(),i));
-  for (int c=0;c<10;c++) if (s[c])
+  FOR_COMPONENTS(c) if (s[c])
     for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
   // Average out sigma over the grid...
   if (v.dim == Dcyl) {
@@ -195,7 +170,7 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
 }
 
 polarizability::~polarizability() {
-  for (int c=0;c<10;c++) delete[] s[c];
+  FOR_COMPONENTS(c) delete[] s[c];
   delete[] sigma;
 }
 
@@ -291,8 +266,8 @@ void fields_chunk::initialize_polarizations(polarization *op, polarization *np) 
     double sinkz = sin(-omt);
     double coskz = cos(-omt);
     DOCMP {
-      for (int c=0;c<10;c++)
-        if (v.has_field((component)c) && is_electric((component)c))
+      FOR_ELECTRIC_COMPONENTS(c)
+        if (v.has_field(c))
           for (int i=0;i<v.ntot();i++) np->P[c][cmp][i] = op->P[c][cmp][i] = f[c][cmp][i];
     }
     if (op->next && np->next) initialize_polarizations(op->next, np->next);
@@ -336,7 +311,7 @@ void fields_chunk::prepare_step_polarization_energy(polarization *op, polarizati
     // This is the initial call... so I should start running from olpol and pol.
     prepare_step_polarization_energy(olpol, pol);
   } else if (op != NULL && np != NULL) {
-    for (int c=0;c<10;c++)
+    FOR_COMPONENTS(c)
       if (np->energy[c])
         for (int i=0;i<v.ntot();i++)
           np->energy[c][i] = op->energy[c][i];
@@ -355,7 +330,7 @@ void fields_chunk::half_step_polarization_energy(polarization *op, polarization 
     half_step_polarization_energy(olpol, pol);
   } else if (op != NULL && np != NULL) {
     DOCMP
-      for (int c=0;c<10;c++)
+      FOR_COMPONENTS(c)
         if (np->energy[c])
           for (int i=0;i<v.ntot();i++)
             np->energy[c][i] += 0.5*(np->P[c][cmp][i] - op->P[c][cmp][i])*f[c][cmp][i];
@@ -410,23 +385,12 @@ void fields_chunk::step_polarization_itself(polarization *op, polarization *np) 
     const double om = op->pb->omeganot;
     const double funinv = 1.0/(1+0.5*g);
     DOCMP {
-      for (int cc=0;cc<10;cc++)
-        if (v.has_field((component)cc) && is_electric((component)cc)) {
+      FOR_ELECTRIC_COMPONENTS(cc)
+        if (v.has_field(cc))
           for (int i=0;i<v.ntot();i++)
             op->P[cc][cmp][i] = funinv*((2-om*om)*np->P[cc][cmp][i]+
                                         (0.5*g-1)*op->P[cc][cmp][i])+
               np->s[cc][i]*f[cc][cmp][i];
-          if (f_p_pml[cc][cmp])
-            for (int i=0;i<v.ntot();i++)
-              op->P_p_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_p_pml[cc][cmp][i]+
-                                              (0.5*g-1)*op->P_p_pml[cc][cmp][i])+
-                np->s[cc][i]*f_p_pml[cc][cmp][i];
-          if (f_m_pml[cc][cmp])
-            for (int i=0;i<v.ntot();i++)
-              op->P_m_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_m_pml[cc][cmp][i]+
-                                              (0.5*g-1)*op->P_m_pml[cc][cmp][i])+
-                np->s[cc][i]*f_m_pml[cc][cmp][i];
-        }
     }
     if (op->next && np->next) step_polarization_itself(op->next, np->next);
   }
@@ -445,21 +409,10 @@ void fields_chunk::step_e_polarization(polarization *op, polarization *np) {
   } else if (olpol != NULL && pol != NULL) {
     DOCMP {
       FOR_ELECTRIC_COMPONENTS(cc)
-        if (op->P[cc][cmp] && f[cc][cmp]) {
+        if (op->P[cc][cmp] && f[cc][cmp])
           for (int i=0;i<v.ntot();i++)
             f[cc][cmp][i] -= ma->inveps[cc][component_direction(cc)][i]*
               (np->P[cc][cmp][i]-op->P[cc][cmp][i]);
-          if (f_p_pml[cc][cmp])
-            for (int i=0;i<v.ntot();i++)
-              f_p_pml[cc][cmp][i] -=
-                ma->inveps[cc][component_direction(cc)][i]*
-                (np->P_p_pml[cc][cmp][i]-op->P_p_pml[cc][cmp][i]);
-          if (f_m_pml[cc][cmp])
-            for (int i=0;i<v.ntot();i++)
-              f_m_pml[cc][cmp][i] -=
-                ma->inveps[cc][component_direction(cc)][i]*
-                (np->P_m_pml[cc][cmp][i]-op->P_m_pml[cc][cmp][i]);
-        }
     }
     if (op->next && np->next) step_e_polarization(op->next, np->next);
   }
