@@ -74,21 +74,21 @@ update_e_from_d_minus_p =
                sum_over_components_with_prefactor (\c -> inveps c "i") (\c i-> d_minus_p c i)
 
 regardless_of_inveps job =
-    declare "ma->inveps[ec][d_ec]" True $
+    declare "s->inveps[ec][d_ec]" True $
     using_symmetry consider_inv
     where consider_inv "1D" = job
           consider_inv "2DTM" = job
-          consider_inv "2DTE" = whether_or_not "ma->inveps[ec][d_1]" job
-          consider_inv _ = whether_or_not "ma->inveps[ec][d_1]" $
-                           whether_or_not "ma->inveps[ec][d_2]" job
+          consider_inv "2DTE" = whether_or_not "s->inveps[ec][d_1]" job
+          consider_inv _ = whether_or_not "s->inveps[ec][d_1]" $
+                           whether_or_not "s->inveps[ec][d_2]" job
 
 inveps :: String -> String -> Expression
-inveps "ec" i = ("ma->inveps[ec][d_ec]")
-              |?| ("ma->inveps[ec][d_ec]["++i++"]") |:| "0"
-inveps "ec_1" i = ("ma->inveps[ec][d_1]")
-                |?| ("ma->inveps[ec][d_1]["++i++"]") |:| "0"
-inveps "ec_2" i = ("ma->inveps[ec][d_2]")
-                |?| ("ma->inveps[ec][d_2]["++i++"]") |:| "0"
+inveps "ec" i = ("s->inveps[ec][d_ec]")
+              |?| ("s->inveps[ec][d_ec]["++i++"]") |:| "0"
+inveps "ec_1" i = ("s->inveps[ec][d_1]")
+                |?| ("s->inveps[ec][d_1]["++i++"]") |:| "0"
+inveps "ec_2" i = ("s->inveps[ec][d_2]")
+                |?| ("s->inveps[ec][d_2]["++i++"]") |:| "0"
 inveps c i = error $ "inveps can't use "++c
 
 {- Stuff below is more sort of general-use functions -}

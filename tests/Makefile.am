@@ -32,5 +32,7 @@ check-local: $(DONE)
 benchmark: bench
 	$(RUNCODE) ./bench
 
+dac: $(DAC)
+
 clean-local::
 	rm -f *.o *.dac debug_out_* *.done

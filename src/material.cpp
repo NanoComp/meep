@@ -658,7 +658,7 @@ double fields::max_eps() const {
   double themax = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      themax = max(themax,chunks[i]->ma->max_eps());
+      themax = max(themax,chunks[i]->s->max_eps());
   return max_to_all(themax);
 }
 

@@ -228,7 +228,7 @@ double fields::get_eps(const ivec &origloc) const {
 
 double fields_chunk::get_eps(const ivec &iloc) const {
   double res = 0.0;
-  if (is_mine()) res = ma->eps[v.index(v.eps_component(), iloc)];
+  if (is_mine()) res = s->eps[v.index(v.eps_component(), iloc)];
   return broadcast(n_proc(), res);
 }
 
@@ -238,7 +238,7 @@ double fields::get_eps(const vec &loc) const {
   for (int i=0;i<8;i++) val[i] = 0.0;
   for (int i=0;i<num_chunks;i++) {
     if (chunks[i]->v.contains(loc))
-      chunks[i]->ma->interpolate_eps(loc, val);
+      chunks[i]->s->interpolate_eps(loc, val);
       dumbsort(val);
       for (int i=0;i<8;i++) theeps += val[i];
     }

@@ -137,10 +137,10 @@ polarizability::polarizability(const polarizability *pb) {
   else next = NULL;
 }
 
-polarizability::polarizability(const structure_chunk *s, double sig(const vec &),
+polarizability::polarizability(const structure_chunk *sc, double sig(const vec &),
                                double om, double ga, double sigscale,
                                double energy_sat, bool mine) {
-  v = s->v;
+  v = sc->v;
   is_it_mine = mine;
   omeganot = om;
   gamma = ga;
