@@ -290,7 +290,7 @@ int fields_chunk::add_volume_source(component whichf, src_time *src, const vec &
         if (minindex > index) minindex = index;
         if (maxindex < index) maxindex = index;
         index_array[npts] = index;
-        vec original_vec = (sn == 0) ? here : S.transform(here, S.multiplicity() - sn); // inv(S,sn) * here
+        vec original_vec = S.transform(here, -sn); // inv(S,sn) * here
         amps_array[npts] = weight * amp * A(original_vec);  
         npts++;
       }
