@@ -3,7 +3,9 @@ EXTRA_DIST = meep.scm.in
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
-meep_SOURCES = meep.cpp structure.cpp meep-ctl.h meep-ctl-const.h
+HDRS = meep-ctl.h meep-ctl-const.h my-smob.h
+
+meep_SOURCES = meep.cpp structure.cpp $(HDRS)
 nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h
 meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
