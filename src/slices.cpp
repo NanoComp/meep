@@ -518,10 +518,10 @@ static void output_complex_eps_tail(file *out) {
   eps_trailer(out);
 }
 
-void mat::output_slices(const char *name) const {
+void structure::output_slices(const char *name) const {
   output_slices(v.surroundings(),name);
 }
-void mat::output_slices(const geometric_volume &what, const char *name) const {
+void structure::output_slices(const geometric_volume &what, const char *name) const {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -623,9 +623,9 @@ void fields::output_slices(const geometric_volume &what, const char *name) {
                                chunks[i]->v, what, out);
       everyone_close(out);
     }
-  //if (new_ma) {
+  //if (new_s) {
   //  snprintf(n, buflen, "%s/%sepsilon-%s.sli", outdir, nname, time_step_string);
-  //  output_slice(v.eps_component(), ma->eps, v, what, n);
+  //  output_slice(v.eps_component(), s->eps, v, what, n);
   //}
   free(n);
   finished_working();
@@ -674,7 +674,7 @@ void fields::eps_energy_slice(const geometric_volume &what, const char *name) {
       for (int sn=0;sn<S.multiplicity();sn++)
         for (int otherc=0;otherc<10;otherc++)
           if (S.transform((component)otherc,sn) == c)
-            eps_outline(v.eps_component(), chunks[i]->ma->eps,
+            eps_outline(v.eps_component(), chunks[i]->s->eps,
                         chunks[i]->v, what, S, sn, out);
   all_wait();
   if (am_master()) output_complex_eps_tail(out);
@@ -727,7 +727,7 @@ void fields::eps_energy_slice(const polarizability_identifier &p,
       for (int sn=0;sn<S.multiplicity();sn++)
         for (int otherc=0;otherc<10;otherc++)
           if (S.transform((component)otherc,sn) == c)
-            eps_outline(v.eps_component(), chunks[i]->ma->eps,
+            eps_outline(v.eps_component(), chunks[i]->s->eps,
                         chunks[i]->v, what, S, sn, out);
   all_wait();
   if (am_master()) output_complex_eps_tail(out);
@@ -783,7 +783,7 @@ void fields::eps_polarization_slice(const polarizability_identifier &p,
           for (int sn=0;sn<S.multiplicity();sn++)
             FOR_COMPONENTS(otherc)
               if (S.transform(otherc,sn) == c)
-                eps_outline(v.eps_component(), chunks[i]->ma->eps,
+                eps_outline(v.eps_component(), chunks[i]->s->eps,
                             chunks[i]->v, what, S, sn, out);
       all_wait();
       outline_chunks(out);
@@ -840,7 +840,7 @@ void fields::eps_envelope(const geometric_volume &what, const char *name) {
           for (int sn=0;sn<S.multiplicity();sn++)
             FOR_COMPONENTS(otherc)
               if (S.transform(otherc,sn) == c)
-                eps_outline(v.eps_component(), chunks[i]->ma->eps,
+                eps_outline(v.eps_component(), chunks[i]->s->eps,
                             chunks[i]->v, what, S, sn, out);
       all_wait();
       outline_chunks(out);
@@ -983,7 +983,7 @@ void fields::eps_slices(const geometric_volume &what, const char *name) {
           for (int sn=0;sn<S.multiplicity();sn++)
             FOR_COMPONENTS(otherc)
               if (S.transform(otherc,sn) == c)
-                eps_outline(v.eps_component(), chunks[i]->ma->eps,
+                eps_outline(v.eps_component(), chunks[i]->s->eps,
                             chunks[i]->v, what, S, sn, out);
       all_wait();
       outline_chunks(out);

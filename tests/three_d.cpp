@@ -98,15 +98,15 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
   double ttot = 17.0;
 
   volume v = vol3d(1.5, 0.5, 1.0, a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
   master_printf("Metal test using %d chunks...\n", splitting);
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
   double total_energy_check_time = 8.0;
   while (f.time() < ttot) {
@@ -135,16 +135,16 @@ int test_periodic(double eps(const vec &), int splitting, const char *dirname) {
   double ttot = 17.0;
 
   volume v = vol3d(1.5, 0.5, 1.0, a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
   master_printf("Periodic test using %d chunks...\n", splitting);
-  fields f(&ma);
+  fields f(&s);
   f.use_bloch(vec(0.1,0.7,0.3));
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.25,0.5), 1.0);
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.use_bloch(vec(0.1,0.7,0.3));
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.25,0.5), 1.0);
   double total_energy_check_time = 8.0;
@@ -173,12 +173,12 @@ int test_pml(double eps(const vec &), const char *dirname) {
   double a = 10.0;
 
   volume v = vol3d(1.5, 1.0, 1.2, a);
-  mat ma(v, eps, 0);
-  ma.set_output_directory(dirname);
-  ma.use_pml_everywhere(0.401);
+  structure s(v, eps, 0);
+  s.set_output_directory(dirname);
+  s.use_pml_everywhere(0.401);
 
   master_printf("Testing pml quality...\n");
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.751,0.5,0.601), 1.0);
   const double deltaT = 10.0;
   const double ttot = 3.1*deltaT;
@@ -208,17 +208,17 @@ int test_pml_splitting(double eps(const vec &), int splitting, const char *dirna
   double a = 10.0;
 
   volume v = vol3d(1.5, 1.0, 1.2, a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
-  ma.use_pml_everywhere(0.3);
-  ma1.use_pml_everywhere(0.3);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
+  s.use_pml_everywhere(0.3);
+  s1.use_pml_everywhere(0.3);
 
   master_printf("Testing pml while splitting into %d chunks...\n", splitting);
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.099,0.499,0.501), 1.0);
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.099,0.499,0.501), 1.0);
   const double ttot = 31.0;
 

@@ -30,7 +30,7 @@ namespace meep {
 
 const char symlink_name[] = "latest_output";
 
-void mat::set_output_directory(const char *name) {
+void structure::set_output_directory(const char *name) {
   char buf[300];
   outdir = name;
   master_printf("Using output directory %s/\n", name);

@@ -59,18 +59,18 @@ void fields_chunk::step_h() {
         const direction d_deriv_m = minus_deriv_direction[cc];
         const bool have_p = have_plus_deriv[cc];
         const bool have_m = have_minus_deriv[cc];
-        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
-        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
+        const bool have_p_pml = have_p && s->C[d_deriv_p][cc];
+        const bool have_m_pml = have_m && s->C[d_deriv_m][cc];
         const int stride_p = (have_p)?v.stride(d_deriv_p):0;
         const int stride_m = (have_m)?v.stride(d_deriv_m):0;
         // The following lines "promise" the compiler that the values of
         // these arrays won't change during this loop.
-        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
-        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
+        RESTRICT const double *C_m = (have_m_pml)?s->C[d_deriv_m][cc] + yee_idx:NULL;
+        RESTRICT const double *C_p = (have_p_pml)?s->C[d_deriv_p][cc] + yee_idx:NULL;
         RESTRICT const double *decay_m = (!have_m_pml)?NULL:
-          ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
+          s->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
         RESTRICT const double *decay_p = (!have_p_pml)?NULL:
-          ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
+          s->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
         RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
         RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
         RESTRICT double *the_f = f[cc][cmp] + yee_idx;
@@ -81,14 +81,14 @@ void fields_chunk::step_h() {
   } else if (v.dim == Dcyl) {
     DOCMP {
       // Propogate Hr
-      if (ma->C[Z][Hr])
+      if (s->C[Z][Hr])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
             double oor = 1.0/((int)(v.origin.r()*v.a+0.5) + r);
             double mor = m*oor;
             const int ir = r*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
-              const double Czhr = ma->C[Z][Hr][z+ir];
-              const double ooop_Czhr = ma->Cdecay[Z][Hr][R][z+ir];
+              const double Czhr = s->C[Z][Hr][z+ir];
+              const double ooop_Czhr = s->Cdecay[Z][Hr][R][z+ir];
               double dhrp = c*(-it(cmp,f[Ez],z+ir)*mor);
               double hrz = f[Hr][cmp][z+ir] - f_p_pml[Hr][cmp][z+ir];
               f_p_pml[Hr][cmp][z+ir] += dhrp;
@@ -106,15 +106,15 @@ void fields_chunk::step_h() {
                 ((f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - it(cmp,f[Ez],z+ir)*mor);
           }
       // Propogate Hp
-      if (ma->C[Z][Hp] || ma->C[R][Hp])
+      if (s->C[Z][Hp] || s->C[R][Hp])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
-              const double Czhp = (ma->C[Z][Hp])?ma->C[Z][Hp][z+ir]:0;
-              const double Crhp = (ma->C[R][Hp])?ma->C[R][Hp][z+ir]:0;
-              const double ooop_Czhp = (ma->Cdecay[Z][Hp][P]) ?
-                ma->Cdecay[Z][Hp][P][z+ir]:1.0;
+              const double Czhp = (s->C[Z][Hp])?s->C[Z][Hp][z+ir]:0;
+              const double Crhp = (s->C[R][Hp])?s->C[R][Hp][z+ir]:0;
+              const double ooop_Czhp = (s->Cdecay[Z][Hp][P]) ?
+                s->Cdecay[Z][Hp][P][z+ir]:1.0;
               const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
                                              - Czhp*f_p_pml[Hp][cmp][z+ir]);
               const double hpr = f[Hp][cmp][z+ir]-f_p_pml[Hp][cmp][z+ir];
@@ -133,15 +133,15 @@ void fields_chunk::step_h() {
                  - (f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir]));
         }
       // Propogate Hz
-      if (ma->C[R][Hz])
+      if (s->C[R][Hz])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
           double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
           double morph = m*oorph;
           const int ir = r*(v.nz()+1);
           const int irp1 = (r+1)*(v.nz()+1);
           for (int z=1;z<=v.nz();z++) {
-            const double Crhz = ma->C[R][Hz][z+ir];
-            const double ooop_Crhz = ma->Cdecay[R][Hz][Z][z+ir];
+            const double Crhz = s->C[R][Hz][z+ir];
+            const double ooop_Crhz = s->Cdecay[R][Hz][Z][z+ir];
             const double dhzr =
               ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*((int)(v.origin.r()*v.a+0.5) + r+1.)-
                              f[Ep][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r))*oorph
@@ -166,10 +166,10 @@ void fields_chunk::step_h() {
       if (m == 0) {
         // Nothing needed for H.
       } else if (m == 1 && v.origin.r() == 0.0) {
-        if (ma->C[Z][Hr])
+        if (s->C[Z][Hr])
           for (int z=0;z<v.nz();z++) {
-            const double Czhr = ma->C[Z][Hr][z];
-            const double ooop_Czhr = ma->Cdecay[Z][Hr][R][z];
+            const double Czhr = s->C[Z][Hr][z];
+            const double ooop_Czhr = s->Cdecay[Z][Hr][R][z];
             const double dhrp = c*(-it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
             const double hrz = f[Hr][cmp][z] - f_p_pml[Hr][cmp][z];
             f_p_pml[Hr][cmp][z] += dhrp;

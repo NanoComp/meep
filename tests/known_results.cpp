@@ -45,9 +45,9 @@ void compare(double a, double b, const char *n) {
 
 double using_pml_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  mat ma(v, eps);
-  ma.use_pml_everywhere(1.0);
-  fields f(&ma);
+  structure s(v, eps);
+  s.use_pml_everywhere(1.0);
+  fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -57,10 +57,10 @@ double using_pml_ez(const volume &v, double eps(const vec &)) {
 
 double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  mat ma(v, eps);
-  ma.use_pml(Y, High, 1.0);
-  ma.use_pml(Y, Low, 1.0);
-  fields f(&ma);
+  structure s(v, eps);
+  s.use_pml(Y, High, 1.0);
+  s.use_pml(Y, Low, 1.0);
+  fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
@@ -71,8 +71,8 @@ double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
 
 double x_periodic(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  mat ma(v, eps);
-  fields f(&ma);
+  structure s(v, eps);
+  fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
@@ -83,8 +83,8 @@ double x_periodic(const volume &v, double eps(const vec &)) {
 
 double periodic_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  mat ma(v, eps);
-  fields f(&ma);
+  structure s(v, eps);
+  fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   vec k;
   switch (v.dim) {
@@ -102,8 +102,8 @@ double periodic_ez(const volume &v, double eps(const vec &)) {
 
 double metallic_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
-  mat ma(v, eps);
-  fields f(&ma);
+  structure s(v, eps);
+  fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -113,9 +113,9 @@ double metallic_ez(const volume &v, double eps(const vec &)) {
 
 double polariton_ex(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
-  mat ma(v, eps);
-  ma.add_polarizability(one, 0.3, 0.1, 7.63);
-  fields f(&ma);
+  structure s(v, eps);
+  s.add_polarizability(one, 0.3, 0.1, 7.63);
+  fields f(&s);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -125,9 +125,9 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
 
 double polariton_energy(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
-  mat ma(v, eps);
-  ma.add_polarizability(one, 0.3, 0.1, 7.63);
-  fields f(&ma);
+  structure s(v, eps);
+  s.add_polarizability(one, 0.3, 0.1, 7.63);
+  fields f(&s);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
   return f.total_energy();
@@ -135,9 +135,9 @@ double polariton_energy(const volume &v, double eps(const vec &)) {
 
 double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
-  mat ma(v, eps);
-  polarizability_identifier thep = ma.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
-  fields f(&ma);
+  structure s(v, eps);
+  polarizability_identifier thep = s.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
+  fields f(&s);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
   while (f.time() < ttot) f.step();

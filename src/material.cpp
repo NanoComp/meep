@@ -24,7 +24,7 @@
 
 namespace meep {
 
-mat::mat()
+structure::structure()
   : gv(D1) // Aaack, this is very hokey.
 {
   num_chunks = 0;
@@ -36,9 +36,9 @@ mat::mat()
   S = identity();
 }
 
-typedef mat_chunk *mat_chunk_ptr;
+typedef structure_chunk *structure_chunk_ptr;
 
-mat::mat(const volume &thev, double eps(const vec &), int num, const symmetry &s)
+structure::structure(const volume &thev, double eps(const vec &), int num, const symmetry &s)
   : gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
@@ -52,7 +52,7 @@ mat::mat(const volume &thev, double eps(const vec &), int num, const symmetry &s
   effort[0] = 1.0;
 }
 
-void mat::optimize_volumes(int *Nv, volume *new_volumes, int *procs) {
+void structure::optimize_volumes(int *Nv, volume *new_volumes, int *procs) {
   const int num_processors = count_processors();
   int counter = 0;
   for (int i=0;i<desired_num_chunks;i++) {
@@ -71,7 +71,7 @@ void mat::optimize_volumes(int *Nv, volume *new_volumes, int *procs) {
   *Nv = counter;
 }
 
-void mat::optimize_chunks() {
+void structure::optimize_chunks() {
   int Nv;
   volume *new_volumes = new volume[333]; // fix me
   int *procs = new int[333]; // fix me
@@ -92,7 +92,7 @@ static inline void copy_from(int from, int to,
   if (my_rank() == to) *t = temp;
 }
 
-void mat::redefine_chunks(const int Nv, const volume *new_volumes,
+void structure::redefine_chunks(const int Nv, const volume *new_volumes,
                           const int *procs) {
   // First check that the new_volumes do not intersect and that they add
   // up to the total volume
@@ -114,14 +114,14 @@ void mat::redefine_chunks(const int Nv, const volume *new_volumes,
   if (sum != v_grid_points)
     abort("v_grid_points = %d, sum(new_volumes) = %d\n", v_grid_points, sum);
 
-  mat_chunk **new_chunks = new mat_chunk_ptr[Nv];
+  structure_chunk **new_chunks = new structure_chunk_ptr[Nv];
   for (int j=0; j<Nv; j++)
     new_chunks[j] = NULL;
   for (int j=0; j<Nv; j++) {
     for (int i=0; i<num_chunks; i++)
       if (chunks[i]->v.intersect_with(new_volumes[j], &vol_intersection)) {
         if (new_chunks[j] == NULL) {
-          new_chunks[j] = new mat_chunk(new_volumes[j], zero_function,
+          new_chunks[j] = new structure_chunk(new_volumes[j], zero_function,
                                         gv, procs[j]);
           // the above happens even if chunk not owned by proc
         }
@@ -191,7 +191,7 @@ void mat::redefine_chunks(const int Nv, const volume *new_volumes,
   num_chunks = Nv;
 }
 
-void mat::add_to_effort_volumes(const volume &new_effort_volume,
+void structure::add_to_effort_volumes(const volume &new_effort_volume,
                                 double extra_effort) {
   volume *temp_volumes =
     new volume[(2*number_of_directions(v.dim)+1)*num_effort_volumes]; 
@@ -235,7 +235,7 @@ void mat::add_to_effort_volumes(const volume &new_effort_volume,
   num_effort_volumes = counter;
 }
 
-void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
+void structure::choose_chunkdivision(const volume &thev, double eps(const vec &),
                                int num, const symmetry &s) {
   num_chunks = num;
   user_volume = thev;
@@ -264,50 +264,50 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
     for (int d=0;d<3;d++)
       if (break_this[d]) v = v.pad((direction)d);
   }
-  chunks = new mat_chunk_ptr[num_chunks];
+  chunks = new structure_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++) {
     const int proc = i*count_processors()/num_chunks;
-    chunks[i] = new mat_chunk( v.split(num_chunks,i), eps, gv, proc);
+    chunks[i] = new structure_chunk( v.split(num_chunks,i), eps, gv, proc);
   }
 }
 
-mat::mat(const mat *m) : gv(m->gv) {
-  num_chunks = m->num_chunks;
-  desired_num_chunks = m->desired_num_chunks;
-  outdir = m->outdir;
-  v = m->v;
-  S = m->S;
-  user_volume = m->user_volume;
-  chunks = new mat_chunk_ptr[num_chunks];
-  for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m->chunks[i]);
-  num_effort_volumes = m->num_effort_volumes;
+structure::structure(const structure *s) : gv(s->gv) {
+  num_chunks = s->num_chunks;
+  desired_num_chunks = s->desired_num_chunks;
+  outdir = s->outdir;
+  v = s->v;
+  S = s->S;
+  user_volume = s->user_volume;
+  chunks = new structure_chunk_ptr[num_chunks];
+  for (int i=0;i<num_chunks;i++) chunks[i] = new structure_chunk(s->chunks[i]);
+  num_effort_volumes = s->num_effort_volumes;
   effort_volumes = new volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
   for (int i=0;i<num_effort_volumes;i++) {
-    effort_volumes[i] = m->effort_volumes[i];
-    effort[i] = m->effort[i];
+    effort_volumes[i] = s->effort_volumes[i];
+    effort[i] = s->effort[i];
   }
 }
 
-mat::mat(const mat &m) : gv(m.gv) {
-  num_chunks = m.num_chunks;
-  desired_num_chunks = m.desired_num_chunks;
-  outdir = m.outdir;
-  v = m.v;
-  S = m.S;
-  user_volume = m.user_volume;
-  chunks = new mat_chunk_ptr[num_chunks];
-  for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m.chunks[i]);
-  num_effort_volumes = m.num_effort_volumes;
+structure::structure(const structure &s) : gv(s.gv) {
+  num_chunks = s.num_chunks;
+  desired_num_chunks = s.desired_num_chunks;
+  outdir = s.outdir;
+  v = s.v;
+  S = s.S;
+  user_volume = s.user_volume;
+  chunks = new structure_chunk_ptr[num_chunks];
+  for (int i=0;i<num_chunks;i++) chunks[i] = new structure_chunk(s.chunks[i]);
+  num_effort_volumes = s.num_effort_volumes;
   effort_volumes = new volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
   for (int i=0;i<num_effort_volumes;i++) {
-    effort_volumes[i] = m.effort_volumes[i];
-    effort[i] = m.effort[i];
+    effort_volumes[i] = s.effort_volumes[i];
+    effort[i] = s.effort[i];
   }  
 }
 
-mat::~mat() {
+structure::~structure() {
   for (int i=0;i<num_chunks;i++) {
     delete chunks[i];
     chunks[i] = NULL; // Just to be sure...
@@ -317,20 +317,20 @@ mat::~mat() {
   delete[] effort;
 }
 
-void mat::make_average_eps() {
+void structure::make_average_eps() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->make_average_eps(); // FIXME
 }
 
-void mat::set_epsilon(double eps(const vec &), double minvol,
+void structure::set_epsilon(double eps(const vec &), double minvol,
                       bool use_anisotropic_averaging) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->set_epsilon(eps, minvol, use_anisotropic_averaging);
 }
 
-void mat::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
+void structure::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
   volume pml_volume = v;
   pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if ((boundary_side) b == High)
@@ -348,14 +348,14 @@ void mat::use_pml(direction d, boundary_side b, double dx, bool recalculate_chun
     chunks[i]->use_pml(d, dx, user_volume.boundary_location(b,d));
 }
 
-void mat::use_pml_everywhere(double dx, bool recalculate_chunks) {
+void structure::use_pml_everywhere(double dx, bool recalculate_chunks) {
   for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
     if (user_volume.has_boundary((boundary_side)b, d))
       use_pml(d, (boundary_side)b, dx, false);
   if (recalculate_chunks) optimize_chunks();
 }
 
-void mat::mix_with(const mat *oth, double f) {
+void structure::mix_with(const structure *oth, double f) {
   if (num_chunks != oth->num_chunks)
     abort("You can't phase materials with different chunk topologies...\n");
   for (int i=0;i<num_chunks;i++)
@@ -363,7 +363,7 @@ void mat::mix_with(const mat *oth, double f) {
       chunks[i]->mix_with(oth->chunks[i], f);
 }
 
-mat_chunk::~mat_chunk() {
+structure_chunk::~structure_chunk() {
   FOR_ELECTRIC_COMPONENTS(c)
     FOR_DIRECTIONS(d)
       delete[] inveps[c][d];
@@ -430,7 +430,7 @@ mat_chunk::~mat_chunk() {
 //   return pow(r, power);
 // }
 
-void mat_chunk::mix_with(const mat_chunk *n, double f) {
+void structure_chunk::mix_with(const structure_chunk *n, double f) {
   for (int i=0;i<v.ntot();i++)
     eps[i] = 1.0/(1.0/eps[i] + f*(1.0/n->eps[i]-1.0/eps[i]));
   FOR_ELECTRIC_COMPONENTS(c) FOR_DIRECTIONS(d)
@@ -449,7 +449,7 @@ void mat_chunk::mix_with(const mat_chunk *n, double f) {
   }
 }
 
-void mat_chunk::make_average_eps() {
+void structure_chunk::make_average_eps() {
   double meaneps = 0;
   for (int i=0;i<v.ntot();i++) {
     meaneps += eps[i]; // This is totally wrong, as it needs parallelization.
@@ -465,7 +465,7 @@ void mat_chunk::make_average_eps() {
 
 const double Cmax = 0.5;
 
-void mat_chunk::use_pml(direction d, double dx, double bloc) {
+void structure_chunk::use_pml(direction d, double dx, double bloc) {
   const double prefac = Cmax/(dx*dx);
   // Don't bother with PML if we don't even overlap with the PML region...
   if (bloc > v.boundary_location(High,d) + dx + 1.0/a ||
@@ -488,7 +488,7 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
   }
 }
 
-void mat_chunk::update_pml_arrays() {
+void structure_chunk::update_pml_arrays() {
   FOR_DIRECTIONS(d)
     FOR_COMPONENTS(c) 
       if (C[d][c] != NULL) {
@@ -505,7 +505,7 @@ void mat_chunk::update_pml_arrays() {
   update_Cdecay();
 }
 
-void mat_chunk::update_Cdecay() {
+void structure_chunk::update_Cdecay() {
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) FOR_DIRECTIONS(d2) {
     delete[] Cdecay[d][c][d2];
     Cdecay[d][c][d2] = NULL;
@@ -526,7 +526,7 @@ void mat_chunk::update_Cdecay() {
 	}
 }
 
-mat_chunk::mat_chunk(const mat_chunk *o) : gv(o->gv) {
+structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
   if (o->pb) pb = new polarizability(o->pb);
   else pb = NULL;
   a = o->a;
@@ -570,7 +570,7 @@ mat_chunk::mat_chunk(const mat_chunk *o) : gv(o->gv) {
 double anisoaverage(component ec, direction d, double eps(const vec &),
                     const geometric_volume &vol, double minvol);
 
-void mat_chunk::set_epsilon(double feps(const vec &), double minvol,
+void structure_chunk::set_epsilon(double feps(const vec &), double minvol,
                             bool use_anisotropic_averaging) {
   if (!is_mine()) return;
   if (!use_anisotropic_averaging) {
@@ -615,7 +615,7 @@ void mat_chunk::set_epsilon(double feps(const vec &), double minvol,
   }
 }
 
-mat_chunk::mat_chunk(const volume &thev, double feps(const vec &),
+structure_chunk::structure_chunk(const volume &thev, double feps(const vec &),
                      const geometric_volume &vol_limit, int pr)
   : gv(thev.surroundings() & vol_limit) {
   pml_fmin = 0.2;
@@ -646,7 +646,7 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &),
   FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;
 }
 
-double mat::max_eps() const {
+double structure::max_eps() const {
   double themax = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -662,7 +662,7 @@ double fields::max_eps() const {
   return max_to_all(themax);
 }
 
-double mat_chunk::max_eps() const {
+double structure_chunk::max_eps() const {
   double themax = 0.0;
   for (int i=0;i<v.ntot();i++) themax = max(themax,eps[i]);
   return themax;

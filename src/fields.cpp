@@ -25,11 +25,11 @@
 
 namespace meep {
 
-fields::fields(const mat *ma, int tm) :
-  S(ma->S), v(ma->v), user_volume(ma->user_volume), gv(ma->gv)
+fields::fields(const structure *s, int tm) :
+  S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv)
 {
   verbosity = 0;
-  outdir = ma->outdir;
+  outdir = s->outdir;
   m = tm;
   if (v.dim == Dcyl) S = S + r_to_minus_r_symmetry(m);
   phasein_time = 0;
@@ -46,11 +46,11 @@ fields::fields(const mat *ma, int tm) :
   last_time = 0;
   am_now_working_on(Other);
 
-  num_chunks = ma->num_chunks;
+  num_chunks = s->num_chunks;
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++)
-    chunks[i] = new fields_chunk(ma->chunks[i], outdir, m);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m);
   FOR_FIELD_TYPES(ft) {
     comm_sizes[ft] = new int[num_chunks*num_chunks];
     comm_num_complex[ft] = new int[num_chunks*num_chunks];
@@ -141,7 +141,7 @@ bool fields::have_component(component c) {
 }
 
 fields_chunk::~fields_chunk() {
-  delete ma;
+  delete s;
   is_real = 0; // So that we can make sure to delete everything...
   DOCMP {
     FOR_COMPONENTS(i) delete[] f[i][cmp];
@@ -164,20 +164,20 @@ fields_chunk::~fields_chunk() {
   delete[] zeroes[1];
 }
 
-fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm)
-  : v(the_ma->v), gv(the_ma->gv) {
-  ma = new mat_chunk(the_ma);
+fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
+  : v(the_s->v), gv(the_s->gv) {
+  s = new structure_chunk(the_s);
   verbosity = 0;
   outdir = od;
   m = tm;
-  new_ma = NULL;
+  new_s = NULL;
   bands = NULL;
   is_real = 0;
-  a = ma->a;
+  a = s->a;
   inva = 1.0/a;
   fluxes = NULL;
-  pol = polarization::set_up_polarizations(ma, is_real);
-  olpol = polarization::set_up_polarizations(ma, is_real);
+  pol = polarization::set_up_polarizations(s, is_real);
+  olpol = polarization::set_up_polarizations(s, is_real);
   h_sources = e_sources = NULL;
   DOCMP {
     FOR_COMPONENTS(i) f[i][cmp] = NULL;
@@ -223,18 +223,18 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm)
 
 fields_chunk::fields_chunk(const fields_chunk &thef)
   : v(thef.v), gv(thef.gv) {
-  ma = new mat_chunk(thef.ma);
+  s = new structure_chunk(thef.s);
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
-  new_ma = NULL;
+  new_s = NULL;
   bands = NULL;
   is_real = thef.is_real;
-  a = ma->a;
+  a = s->a;
   inva = 1.0/a;
   fluxes = NULL;
-  pol = polarization::set_up_polarizations(ma, is_real);
-  olpol = polarization::set_up_polarizations(ma, is_real);
+  pol = polarization::set_up_polarizations(s, is_real);
+  olpol = polarization::set_up_polarizations(s, is_real);
   h_sources = e_sources = NULL;
   DOCMP {
     FOR_COMPONENTS(i) f[i][cmp] = NULL;
@@ -384,19 +384,19 @@ void fields_chunk::use_real_fields() {
   if (is_mine() && olpol) olpol->use_real_fields();
 }
 
-int fields::phase_in_material(const mat *newma, double time) {
-  if (newma->num_chunks != num_chunks)
+int fields::phase_in_material(const structure *snew, double time) {
+  if (snew->num_chunks != num_chunks)
     abort("Can only phase in similar sets of chunks: %d vs %d\n", 
-	  newma->num_chunks, num_chunks);
+	  snew->num_chunks, num_chunks);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->phase_in_material(newma->chunks[i]);
+      chunks[i]->phase_in_material(snew->chunks[i]);
   phasein_time = (int) (time*a/c);
   return phasein_time;
 }
 
-void fields_chunk::phase_in_material(const mat_chunk *newma) {
-  new_ma = newma;
+void fields_chunk::phase_in_material(const structure_chunk *snew) {
+  new_s = snew;
 }
 
 int fields::is_phasing() {

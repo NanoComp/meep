@@ -84,38 +84,38 @@ void fields::phase_material() {
 }
 
 void fields_chunk::phase_material(int phasein_time) {
-  if (new_ma && phasein_time > 0) {
+  if (new_s && phasein_time > 0) {
     // First multiply the electric field by epsilon...
     DOCMP {
       FOR_ELECTRIC_COMPONENTS(c)
         if (f[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f[c][cmp][i] /= ma->inveps[c][component_direction(c)][i];
+            f[c][cmp][i] /= s->inveps[c][component_direction(c)][i];
       FOR_ELECTRIC_COMPONENTS(c)
         if (f_p_pml[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f_p_pml[c][cmp][i] /= ma->inveps[c][component_direction(c)][i];
+            f_p_pml[c][cmp][i] /= s->inveps[c][component_direction(c)][i];
       FOR_ELECTRIC_COMPONENTS(c)
         if (f_m_pml[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f_m_pml[c][cmp][i] /= ma->inveps[c][component_direction(c)][i];
+            f_m_pml[c][cmp][i] /= s->inveps[c][component_direction(c)][i];
     }
     // Then change epsilon...
-    ma->mix_with(new_ma, 1.0/phasein_time);
+    s->mix_with(new_s, 1.0/phasein_time);
     // Finally divide the electric field by the new epsilon...
     DOCMP {
       FOR_ELECTRIC_COMPONENTS(c)
         if (f[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f[c][cmp][i] *= ma->inveps[c][component_direction(c)][i];
+            f[c][cmp][i] *= s->inveps[c][component_direction(c)][i];
       FOR_ELECTRIC_COMPONENTS(c)
         if (f_p_pml[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f_p_pml[c][cmp][i] *= ma->inveps[c][component_direction(c)][i];
+            f_p_pml[c][cmp][i] *= s->inveps[c][component_direction(c)][i];
       FOR_ELECTRIC_COMPONENTS(c)
         if (f_m_pml[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f_m_pml[c][cmp][i] *= ma->inveps[c][component_direction(c)][i];
+            f_m_pml[c][cmp][i] *= s->inveps[c][component_direction(c)][i];
     }
   }
 }

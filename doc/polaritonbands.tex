@@ -37,9 +37,9 @@ int main(int argc, char **argv) {
 \end{comment}
 
 \begin{comment}
-  mat ma(volcyl(rmax, 0.0, a), eps);
+  structure s(volcyl(rmax, 0.0, a), eps);
   const char *dirname = make_output_directory(__FILE__);
-  ma.set_output_directory(dirname);
+  s.set_output_directory(dirname);
   grace g("bands", dirname);
   g.set_range(0.0, 4.0, 0.0, 1.1);
 \end{comment}
@@ -49,13 +49,13 @@ material after we have created it.
 
 \begin{verbatim}
   double freq = 0.4, gamma = 0.01, delta_eps = 27.63;
-  ma.add_polarizability(one, freq, gamma, delta_eps);
+  s.add_polarizability(one, freq, gamma, delta_eps);
 \end{verbatim}
 
 \begin{verbatim}
   for (k=0.0;k<4.01 && !interrupt;k+=.5) {
     master_printf("Working on k of %g and m = %d...\n", k, m);
-    fields f(&ma, m);
+    fields f(&s, m);
     f.use_bloch(k);
 \end{verbatim}
 

@@ -37,9 +37,9 @@ int main(int argc, char **argv) {
   const char *dirname = make_output_directory(__FILE__);
   master_printf("Using pml of %lg thickness.\n", pml);
   master_printf("Using an rmax of %lg\n", rmax);
-  mat ma(volcyl(rmax + pml, zsize, a), eps);
-  ma.use_pml_everywhere(pml);
-  ma.set_output_directory(dirname);
+  structure s(volcyl(rmax + pml, zsize, a), eps);
+  s.use_pml_everywhere(pml);
+  s.set_output_directory(dirname);
 \end{comment}
 
 In this section, we demonstrate a better way to calculate the dielectric
@@ -55,14 +55,14 @@ middle of the system (which is surrounded by PML).
 \end{figure}
 
 \begin{verbatim}
-  ma.add_polarizability(one_in_middle, 0.195, 0.03, 0.25*.25/.195);
-  ma.add_polarizability(one_in_middle, 0.25, 0.03,-0.25);
+  s.add_polarizability(one_in_middle, 0.195, 0.03, 0.25*.25/.195);
+  s.add_polarizability(one_in_middle, 0.25, 0.03,-0.25);
 \end{verbatim}
 
 \begin{comment}
-  ma.output_slices();
+  s.output_slices();
 
-  fields f(&ma, m);
+  fields f(&s, m);
 \end{comment}
 
 For sources, we use a series of broad point sources covering the frequency

@@ -32,7 +32,7 @@ void fields::update_from_e() {
 }
 
 void fields_chunk::update_from_e() {
-  const int ntot = ma->v.ntot();
+  const int ntot = s->v.ntot();
 #include "update_from_e.h"
 }
 

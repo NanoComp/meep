@@ -63,20 +63,20 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
   double ttot = 30.0;
   
   volume v = volcyl(1.5,0.8,a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     master_printf("Trying with m = %d and a splitting into %d chunks...\n",
                   m, splitting);
-    fields f(&ma, m);
+    fields f(&s, m);
     f.use_bloch(0.0);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
-    fields f1(&ma1, m);
+    fields f1(&s1, m);
     f1.use_bloch(0.0);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
@@ -114,19 +114,19 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *dir
   double ttot = 30.0;
   
   volume v = volcyl(1.5,0.8,a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     master_printf("Metallic with m = %d and a splitting into %d chunks...\n",
                   m, splitting);
-    fields f(&ma, m);
+    fields f(&s, m);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
-    fields f1(&ma1, m);
+    fields f1(&s1, m);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
@@ -162,13 +162,13 @@ int test_r_equals_zero(double eps(const vec &), const char *dirname) {
   double a = 10.0;
   double ttot = 3.0;  
   volume v = volcyl(1.5,0.8,a);
-  mat ma(v, eps);
-  ma.set_output_directory(dirname);
+  structure s(v, eps);
+  s.set_output_directory(dirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     master_printf("Checking at r == 0 with m = %d...\n", m);
-    fields f(&ma, m);
+    fields f(&s, m);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     while (f.time() < ttot) f.step();
@@ -209,21 +209,21 @@ int test_pml(double eps(const vec &), int splitting, const char *dirname) {
   double ttot = 25.0;
   
   volume v = volcyl(3.5,10.0,a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.use_pml_everywhere(2.0);
-  ma1.use_pml_everywhere(2.0);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.use_pml_everywhere(2.0);
+  s1.use_pml_everywhere(2.0);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     master_printf("PML with m = %d and a splitting into %d chunks...\n",
                   m, splitting);
-    fields f(&ma, m);
+    fields f(&s, m);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
-    fields f1(&ma1, m);
+    fields f1(&s1, m);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
     f.eps_slices("multi");
@@ -275,18 +275,18 @@ int test_pattern(double eps(const vec &), int splitting,
                  const char *dirname) {
   double a = 10.0;
   volume v = volcyl(1.5,0.8,a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   for (int m=0;m<1;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     master_printf("Trying test pattern with m = %d and %d chunks...\n",
                   m, splitting);
-    fields f(&ma, m);
+    fields f(&s, m);
     f.use_bloch(0.0);
-    fields f1(&ma1, m);
+    fields f1(&s1, m);
     f1.use_bloch(0.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
     master_printf("First chunk is %lg by %lg\n",

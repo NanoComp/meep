@@ -73,8 +73,8 @@ the high Q mode in the cavity.
   const double amicron = 10; // a micron is this many grid points.
   const volume vol = voltwo(2*x_center, 2*y_center, amicron);
   const symmetry S = mirror(Y, vol) + rotate2(Y, vol);
-  mat ma(vol, eps, 0, S);
-  ma.use_pml_everywhere(pml_thickness);
+  structure s(vol, eps, 0, S);
+  s.use_pml_everywhere(pml_thickness);
 \end{verbatim}
 To avoid clutter, we'll create a directory to hold the output.  The
 function \verb!make_output_directory! creates a directory based on the name
@@ -84,13 +84,13 @@ reuses it, unless the C++ control file has changed, in which case it
 creates a new one.
 \begin{verbatim}
   const char *dirname = make_output_directory(__FILE__);
-  ma.set_output_directory(dirname);
+  s.set_output_directory(dirname);
 \end{verbatim}
-The mat structure only holds the epsilon.  We will also need a ``fields''
+The structure only holds the epsilon.  We will also need a ``fields''
 object to hold our electric and magnetic fields.  We add a point source
 oriented in the $E_z$ direction, located in the center of our cavity.
 \begin{verbatim}
-  fields f(&ma);
+  fields f(&s);
   const double wavelength = 1.72;
   const double freq = 1.0/wavelength;
   f.add_point_source(Hy, freq, 10.0, 0.0, 5.0, vec2d(x_center,y_center));

@@ -53,10 +53,10 @@ int flux_1d(const double zmax,
   const double gridpts = a*zmax;
 
   volume v = volone(zmax,a);
-  mat ma(v, eps);
-  ma.use_pml_everywhere(zmax/6);
+  structure s(v, eps);
+  s.use_pml_everywhere(zmax/6);
 
-  fields f(&ma);
+  fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.25, 3.5, 0.0, 8.0, vec(zmax/6+0.3), 1.0);
   flux_plane *left = f.add_flux_plane(vec(zmax/3.0), vec(zmax/3.0));
@@ -93,13 +93,13 @@ int split_1d(double eps(const vec &), int splitting) {
   const double zmax = 15.0, a = 10.0, gridpts = a*zmax;
 
   volume v = volone(zmax,a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma1.use_pml_everywhere(2.0);
-  ma.use_pml_everywhere(2.0);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s1.use_pml_everywhere(2.0);
+  s.use_pml_everywhere(2.0);
 
-  fields f1(&ma1);
-  fields f(&ma);
+  fields f1(&s1);
+  fields f(&s);
   f1.use_real_fields();
   f.use_real_fields();
   f1.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
@@ -128,10 +128,10 @@ int cavity_1d(const double boxwidth, const double timewait,
   const double gridpts = a*zmax;
 
   volume v = volone(zmax,a);
-  mat ma(v, eps);
-  ma.use_pml_everywhere(2.0);
+  structure s(v, eps);
+  s.use_pml_everywhere(2.0);
 
-  fields f(&ma);
+  fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.25, 4.5, 0.0, 8.0, vec(zmax/2+0.3), 1.0e2);
   flux_plane *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),

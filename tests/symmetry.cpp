@@ -81,15 +81,15 @@ int test_cyl_metal_mirror(double eps(const vec &), const char *dirname) {
   const volume v = volcyl(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   double total_energy_check_time = 1.0;
@@ -124,15 +124,15 @@ int test_1d_periodic_mirror(double eps(const vec &), const char *dirname) {
   const volume v = volone(1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.use_bloch(0.0);
   f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.5));
-  fields f(&ma);
+  fields f(&s);
   f.use_bloch(0.0);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.5));
   double total_energy_check_time = 1.0;
@@ -165,13 +165,13 @@ int test_origin_shift(const char *dirname) {
   const volume v = voltwo(1.0, 1.0, a);
   volume vcentered = v;
   vcentered.origin -= v.center();
-  mat ma(vcentered, one);
-  mat ma1(v, one);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(vcentered, one);
+  structure s1(v, one);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
-  fields f1(&ma1);
-  fields f(&ma);
+  fields f1(&s1);
+  fields f(&s);
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, v.center());
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, v.center());
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.0,0.0));
@@ -199,15 +199,15 @@ int test_metal_xmirror(double eps(const vec &), const char *dirname) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(X,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.401));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.401));
   double total_energy_check_time = 1.0;
@@ -240,15 +240,15 @@ int test_3D_metal_xmirror(double eps(const vec &), const char *dirname) {
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = mirror(X,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing X mirror symmetry in 3D...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -280,15 +280,15 @@ int test_3D_metal_zmirror(double eps(const vec &), const char *dirname) {
 
   const volume v = vol3d(1.1, 0.6, 1.0, a);
   const symmetry S = mirror(Z,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing Z mirror symmetry in 3D...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -320,15 +320,15 @@ int test_3D_metal_odd_zmirror(double eps(const vec &), const char *dirname) {
 
   const volume v = vol3d(1.1, 0.6, 1.0, a);
   const symmetry S = mirror(Z,v)*(-1.0);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing odd Z mirror symmetry in 3D...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -360,15 +360,15 @@ int test_3D_metal_rot4z(double eps(const vec &), const char *dirname) {
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = rotate4(Z,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing Z fourfold rotational symmetry in 3D...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -400,15 +400,15 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &), const char *dirname) {
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = rotate4(Z,v) + mirror(Z,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing Z fourfold rotational symmetry in 3D with horizontal mirror...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -441,16 +441,16 @@ int test_metal_ymirror(double eps(const vec &), const char *dirname) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Y,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing Y mirror symmetry...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
   double total_energy_check_time = 1.0;
@@ -483,17 +483,17 @@ int test_yperiodic_ymirror(double eps(const vec &), const char *dirname) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Y,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing Y periodic with mirror symmetry...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.use_bloch(vec2d(0.1*pi/2,0.0));
   //f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
-  fields f(&ma);
+  fields f(&s);
   f.use_bloch(vec2d(0.1*pi/2,0.0));
   //f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
@@ -532,18 +532,18 @@ int test_metal_rot2y(double eps(const vec &), const char *dirname) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = rotate2(Y,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing Y twofold rotational symmetry...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25, 0.85), 1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.4), 1.0);
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75, 0.85),-1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.4),-1.0);
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.85 ), 1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.4), 1.0);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.85 ),-1.0);
@@ -578,16 +578,16 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
   const volume v = voltwo(1.0, 1.5, a);
   the_center = v.center();
   const symmetry S = rotate2(Y,v);
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing exact Y twofold rotational symmetry...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.85));
   f1.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.4));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.85));
   f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.4));
   double total_energy_check_time = 1.0;
@@ -621,17 +621,17 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
   the_center = v.center();
   const symmetry S = mirror(X,v) + mirror(Y,v);
 
-  mat ma_mm(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  mat mas[2] = { ma1, ma_mm };
+  structure s_mm(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  structure ss[2] = { s1, s_mm };
 
   for (int i=0;i<2;i++) {
-    mas[i].set_output_directory(dirname);
-    mas[i].use_pml_everywhere(0.5);
+    ss[i].set_output_directory(dirname);
+    ss[i].use_pml_everywhere(0.5);
   }
   master_printf("Testing two mirrors with PML...\n");
 
-  fields fs[2] = { fields(&mas[0]), fields(&mas[1]) };
+  fields fs[2] = { fields(&ss[0]), fields(&ss[1]) };
   for (int i=0;i<2;i++) {
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.0,1.0),-1.5);
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.75));
@@ -666,16 +666,16 @@ int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
   the_center = v.center();
   const symmetry S = rotate4(Z,v);
 
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
   master_printf("Testing Z fourfold rotational symmetry...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
   double total_energy_check_time = 1.0;
@@ -709,17 +709,17 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
   the_center = v.center();
   const symmetry S = rotate2(X,v);
 
-  mat ma(v, eps, 0, S);
-  mat ma1(v, eps, 0, identity());
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
-  ma.use_pml_everywhere(1.0);
-  ma1.use_pml_everywhere(1.0);
+  structure s(v, eps, 0, S);
+  structure s1(v, eps, 0, identity());
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
+  s.use_pml_everywhere(1.0);
+  s1.use_pml_everywhere(1.0);
   master_printf("Testing X twofold rotational symmetry with PML...\n");
 
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -754,13 +754,13 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   master_printf("Testing polariton in %s...\n", dimension_name(v.dim));
   the_center = v.center();
   const symmetry S = mirror(Z,v);
-  mat ma(v, eps);
-  mat maS(v, eps, 0, S);
-  ma.add_polarizability(one, 0.3, 0.1, 7.63);
-  maS.add_polarizability(one, 0.3, 0.1, 7.63);
-  fields f(&ma);
+  structure s(v, eps);
+  structure sS(v, eps, 0, S);
+  s.add_polarizability(one, 0.3, 0.1, 7.63);
+  sS.add_polarizability(one, 0.3, 0.1, 7.63);
+  fields f(&s);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  fields fS(&ma);
+  fields fS(&s);
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
   fS.use_real_fields();
@@ -781,13 +781,13 @@ double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   master_printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
   the_center = v.center();
   const symmetry S = mirror(Z,v)*(-1);
-  mat ma(v, eps);
-  mat maS(v, eps, 0, S);
-  ma.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
-  maS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
-  fields f(&ma);
+  structure s(v, eps);
+  structure sS(v, eps, 0, S);
+  s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
+  sS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
+  fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
-  fields fS(&ma);
+  fields fS(&s);
   fS.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
   fS.use_real_fields();
@@ -808,13 +808,13 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
   master_printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
   the_center = v.center();
   const symmetry S = mirror(X,v)*(-1);
-  mat ma(v, eps);
-  mat maS(v, eps, 0, S);
-  ma.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
-  maS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
-  fields f(&ma);
+  structure s(v, eps);
+  structure sS(v, eps, 0, S);
+  s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
+  sS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
+  fields f(&s);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  fields fS(&ma);
+  fields fS(&s);
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
   fS.use_real_fields();

@@ -62,17 +62,17 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
   double ttot = 170.0;
   
   volume v = volone(6.0,a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
   master_printf("Trying splitting into %d chunks...\n", splitting);
-  fields f(&ma);
+  fields f(&s);
   f.use_bloch(0.0);
   f.add_point_source(Hy, 0.7, 2.5, 0.0, 4.0, vec(0.5), 1.0);
   f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401), 1.0);
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.use_bloch(0.0);
   f1.add_point_source(Hy, 0.7, 2.5, 0.0, 4.0, vec(0.5), 1.0);
   f1.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401), 1.0);
@@ -115,15 +115,15 @@ int test_pattern(double eps(const vec &), int splitting,
                  const char *dirname) {
   double a = 10.0;
   volume v = volone(6.0,a);
-  mat ma1(v, eps, 1);
-  mat ma(v, eps, splitting);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
+  structure s1(v, eps, 1);
+  structure s(v, eps, splitting);
+  s.set_output_directory(dirname);
+  s1.set_output_directory(dirname);
 
   master_printf("Trying test pattern with %d chunks...\n", splitting);
-  fields f(&ma);
+  fields f(&s);
   f.use_bloch(0.0);
-  fields f1(&ma1);
+  fields f1(&s1);
   f1.use_bloch(0.0);
   if (!compare(f1.count_volume(Ex), f.count_volume(Ex), "volume")) return 0;
   f1.initialize_field(Hy, checkers);

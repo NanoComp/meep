@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
   printf("Running omniguide!\n");
 
   const double ttot = 1000.0;
-  mat ma(volcyl(rcore + num_layers + 0.3, 0.0, a), guided_eps);
+  structure s(volcyl(rcore + num_layers + 0.3, 0.0, a), guided_eps);
   const char *dirname = make_output_directory(__FILE__);
 \end{comment}
 
@@ -46,8 +46,8 @@ plot.
   g.set_range(0.0, 0.35, 0.0, 0.35);
 \end{verbatim}
 \begin{comment}
-  ma.set_output_directory(dirname);
-  mat vac(&ma);
+  s.set_output_directory(dirname);
+  structure vac(&s);
   vac.make_average_eps();
 \end{comment}
 
@@ -70,7 +70,7 @@ straight to the TE modes.
       fields f(&vac, m);
       f.use_bloch(k);
       f.verbose(1);
-      f.phase_in_material(&ma, 1000);
+      f.phase_in_material(&s, 1000);
       f.initialize_with_n_tm(9);
       double next_slice_time = 0.0;
       while (f.is_phasing() && !interrupt) f.step();
@@ -110,7 +110,7 @@ adiabatically transform from that waveguide into our omniguide structure.
       fields f(&vac, m);
       f.use_bloch(k);
       f.verbose(1);
-      f.phase_in_material(&ma, 1000);
+      f.phase_in_material(&s, 1000);
 \end{verbatim}
 We initialize the fields with both TE and TM modes, and then phase in the
 epsilon as usual, and then do the actual phasing in of the structure.

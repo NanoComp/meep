@@ -33,10 +33,10 @@ int radiating_2D(const double xmax) {
   const double ymax = 3.0;
 
   volume v = voltwo(xmax,ymax,a);
-  mat ma(v, one);
-  ma.use_pml_everywhere(ymax/3);
+  structure s(v, one);
+  s.use_pml_everywhere(ymax/3);
 
-  fields f(&ma);
+  fields f(&s);
   double w = 0.30;
   double dx = 2.0;
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0, vec2d(xmax/2 - dx, ymax/2), 1.0, 1); //continuous
@@ -71,10 +71,10 @@ int radiating_3D() {
 
   volume v = vol3d(xmax,ymax,ymax,a);
   symmetry S = mirror(X,v) + mirror(Y,v) + mirror(Z,v)*(-1.0);
-  mat ma(v, one, 0, S);
-  ma.use_pml_everywhere(pml_thickness);
+  structure s(v, one, 0, S);
+  s.use_pml_everywhere(pml_thickness);
 
-  fields f(&ma);
+  fields f(&s);
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0,
                      vec(xmax/2, ymax/2, ymax/2), 1.0, 1); //continuous
   const double t1 = f.find_last_source();

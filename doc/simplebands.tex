@@ -26,12 +26,12 @@ metallic waveguide of radius one.
 int main(int argc, char *argv[]) {
   initialize mpi(argc, argv);
   file *ban = everyone_open_write("bands");
-  mat ma(volcyl(1.0, 0.0, rad), eps);
+  structure s(volcyl(1.0, 0.0, rad), eps);
   for (int m=0;m<3;m++) {
     for (double k=0.0; k<= 1.01; k += 0.25) {
       master_printf("Working on k of %g and m = %d with a=%d...\n",
                     k, m, rad);
-      fields f(&ma, m);
+      fields f(&s, m);
       f.use_bloch(k);
 \end{verbatim}
 

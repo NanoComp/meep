@@ -56,17 +56,17 @@ int main(int argc, char **argv) {
   int m=1;
   double ttot = 100;
   
-  mat ma(volcyl(4.0,3.6,a), guided_eps);
+  structure s(volcyl(4.0,3.6,a), guided_eps);
   const char *dirname = make_output_directory(__FILE__);
-  ma.set_output_directory(dirname);
-  //ma.use_pml_right(1.0);
-  //ma.use_pml_left(1.0);
-  //ma.use_pml_radial(1.0);
+  s.set_output_directory(dirname);
+  //s.use_pml_right(1.0);
+  //s.use_pml_left(1.0);
+  //s.use_pml_radial(1.0);
   for (m=0;m<1 && !interrupt;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     master_printf("Working on m = %d with a=%lg...\n", m, a);
-    fields f(&ma, m);
+    fields f(&s, m);
     f.use_bloch(0.0);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 2.2), 1.0);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 3.2), 1.0);

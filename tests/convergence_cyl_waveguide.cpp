@@ -14,9 +14,9 @@ int main(int argc, char **argv) {
 
   for (int a=10; a <= 25; a+=3) {
   volume vol = volcyl(1.0,0.0,a);  
-  mat ma(vol, guided_eps, 0);
+  structure s(vol, guided_eps, 0);
   
-  fields f(&ma, 1);
+  fields f(&s, 1);
   f.use_bloch(0.1);
   f.set_boundary(High, R, Metallic);
   f.add_point_source(Hr, w0, 2.0, 0.0, 5.0, vec(0.2,0.0));

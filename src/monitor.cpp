@@ -245,7 +245,7 @@ double fields::get_eps(const vec &loc) const {
   return theeps;
 }
 
-double mat::get_eps(const vec &loc) const {
+double structure::get_eps(const vec &loc) const {
   double theeps = 0.0;
   double val[8];
   for (int i=0;i<8;i++) val[i] = 0.0;
@@ -258,7 +258,7 @@ double mat::get_eps(const vec &loc) const {
   return theeps;
 }
 
-void mat_chunk::interpolate_eps(const vec &loc, double val[8]) const {
+void structure_chunk::interpolate_eps(const vec &loc, double val[8]) const {
   if (is_mine()) {
     int ind[8];
     double w[8];

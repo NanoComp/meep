@@ -37,7 +37,7 @@ class polarizability;
 class polarization;
 class grace;
 
-class mat_chunk {
+class structure_chunk {
  public:
   double *eps, a;
   double *inveps[NUM_FIELD_COMPONENTS][5];
@@ -47,10 +47,10 @@ class mat_chunk {
   geometric_volume gv;
   polarizability *pb;
 
-  ~mat_chunk();
-  mat_chunk(const volume &v, double eps(const vec &),
+  ~structure_chunk();
+  structure_chunk(const volume &v, double eps(const vec &),
             const geometric_volume &vol_limit, int proc_num=0);
-  mat_chunk(const mat_chunk *);
+  structure_chunk(const structure_chunk *);
   void set_epsilon(double eps(const vec &), double minvol,
                    bool use_anisotropic_averaging);
   void make_average_eps();
@@ -59,7 +59,7 @@ class mat_chunk {
   void update_Cdecay();
 
   void set_output_directory(const char *name);
-  void mix_with(const mat_chunk *, double);
+  void mix_with(const structure_chunk *, double);
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
@@ -75,9 +75,9 @@ class mat_chunk {
   int the_is_mine;
 };
 
-class mat {
+class structure {
  public:
-  mat_chunk **chunks;
+  structure_chunk **chunks;
   int num_chunks;
   int desired_num_chunks;
   volume v, user_volume;
@@ -88,12 +88,12 @@ class mat {
   double *effort;
   int num_effort_volumes;
 
-  ~mat();
-  mat();
-  mat(const volume &v, double eps(const vec &), int num_chunks = 0,
+  ~structure();
+  structure();
+  structure(const volume &v, double eps(const vec &), int num_chunks = 0,
       const symmetry &s = identity());
-  mat(const mat *);
-  mat(const mat &);
+  structure(const structure *);
+  structure(const structure &);
   void set_epsilon(double eps(const vec &), double minvol = 0.0,
                    bool use_anisotropic_averaging=true);
   void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
@@ -110,7 +110,7 @@ class mat {
   void output_slices(const char *name = "") const;
   void output_slices(const geometric_volume &what, const char *name = "") const;
   void set_output_directory(const char *name);
-  void mix_with(const mat *, double);
+  void mix_with(const structure *, double);
 
   polarizability_identifier
      add_polarizability(double sigma(const vec &), double omega, double gamma,
@@ -198,11 +198,11 @@ class fields_chunk {
   int m, is_real;
   bandsdata *bands;
   src *e_sources, *h_sources;
-  const mat_chunk *new_ma;
-  mat_chunk *ma;
+  const structure_chunk *new_s;
+  structure_chunk *s;
   const char *outdir;
 
-  fields_chunk(const mat_chunk *, const char *outdir, int m=0);
+  fields_chunk(const structure_chunk *, const char *outdir, int m=0);
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
@@ -249,8 +249,8 @@ class fields_chunk {
   double count_volume(component);
   friend class fields;
 
-  int n_proc() const { return ma->n_proc(); };
-  int is_mine() const { return ma->is_mine(); };
+  int n_proc() const { return s->n_proc(); };
+  int is_mine() const { return s->is_mine(); };
   // boundaries.cpp
   void zero_metal(field_type);
   // fluxes.cpp
@@ -272,7 +272,7 @@ class fields_chunk {
   // bands.cpp
   void record_bands(int tcount);
   // step.cpp
-  void phase_in_material(const mat_chunk *ma);
+  void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
   void step_h();
   void step_h_source(const src *, double);
@@ -334,7 +334,7 @@ class fields {
   bandsdata *bands;
   const char *outdir;
   // fields.cpp methods:
-  fields(const mat *, int m=0);
+  fields(const structure *, int m=0);
   fields(const fields &);
   ~fields();
   void use_real_fields();
@@ -391,7 +391,7 @@ class fields {
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
   void initialize_polarizations();
-  int phase_in_material(const mat *ma, double time);
+  int phase_in_material(const structure *s, double time);
   int is_phasing();
 
   // monitor.cpp

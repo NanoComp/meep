@@ -25,9 +25,9 @@
 
 namespace meep {
 
-polarization *polarization::set_up_polarizations(const mat_chunk *ma, int is_r) {
-  if (ma->pb == NULL) return NULL;
-  return new polarization(ma->pb, is_r);
+polarization *polarization::set_up_polarizations(const structure_chunk *s, int is_r) {
+  if (s->pb == NULL) return NULL;
+  return new polarization(s->pb, is_r);
 }
 
 void polarization::use_real_fields() {
@@ -137,10 +137,10 @@ polarizability::polarizability(const polarizability *pb) {
   else next = NULL;
 }
 
-polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
+polarizability::polarizability(const structure_chunk *s, double sig(const vec &),
                                double om, double ga, double sigscale,
                                double energy_sat, bool mine) {
-  v = ma->v;
+  v = s->v;
   is_it_mine = mine;
   omeganot = om;
   gamma = ga;
@@ -220,13 +220,13 @@ complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
     double w[8];
     v.interpolate(c,p,in,w);
     for (int i=0;i<8 && w[i];i++)
-      epsi += ma->eps[in[i]]*w[i];
+      epsi += s->eps[in[i]]*w[i];
     if (pol) epsi += pol->analytic_epsilon(freq, p);
   }
   return broadcast(n_proc(), epsi);
 }
 
-polarizability_identifier mat::add_polarizability(double sigma(const vec &),
+polarizability_identifier structure::add_polarizability(double sigma(const vec &),
                                                   double omega, double gamma,
                                                   double delta_epsilon,
                                                   double energy_saturation) {
@@ -249,7 +249,7 @@ bool polarizability_identifier::operator==(const polarizability_identifier &a) {
     energy_saturation == a.energy_saturation && saturated_sigma == a.saturated_sigma;
 }
 
-void mat_chunk::add_polarizability(double sigma(const vec &),
+void structure_chunk::add_polarizability(double sigma(const vec &),
                              double omega, double gamma, double delta_epsilon,
                              double energy_sat) {
   const double freq_conversion = 2*pi*c/a;
