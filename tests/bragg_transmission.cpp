@@ -136,14 +136,14 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
 
   int dindex = 0;
   if (0)
-    f.output_hdf5(Dielectric, f0.v.surroundings(), a, true, dindex, false, true, "f");
+    f.output_hdf5(Dielectric, f0.v.surroundings(), a, false, true, "f");
   while (f.time() < nfreq / fabs(freq_max - freq_min) / 2) {
     f.step();
     f0.step();
 
     if (0 && f.t % 20 == 0) { // output fields for debugging
-      f.output_hdf5(Ex, f0.v.surroundings(), a, true, dindex, false, true, "f");
-      f0.output_hdf5(Ex, f0.v.surroundings(), a, true, dindex, false, true, "f0");
+      f.output_hdf5(Ex, f0.v.surroundings(), a, true, true, "f");
+      f0.output_hdf5(Ex, f0.v.surroundings(), a, true, true, "f0");
       dindex++;
     }
   }
@@ -198,13 +198,16 @@ int main(int argc, char **argv) {
 
   double dfreq = (freq_max - freq_min) / (nfreq - 1);
 
+  double maxerr = 0;
   for (int i = 0; i < nfreq; ++i) {
     double err = distance_from_curve(nfreq, dfreq, T0, i * dfreq, T[i])
       / T0[i];
+    if (err > maxerr) maxerr = err;
     if (err * sqr(freq_min / (freq_min + i*dfreq)) > 0.01)
       abort("large rel. error %g at freq = %g: T = %g instead of %g\n",
 	    err, freq_min + i*dfreq, T[i], T0[i]);
   }
+  master_printf("Done (max. err = %e)\n", maxerr);
 
   if (0) { // output transmissions for debugging
     master_printf("transmission:, freq (c/a), T\n");
