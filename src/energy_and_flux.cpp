@@ -100,7 +100,7 @@ static void dot_integrand(fields_chunk *fc, component cgrid,
   for (int cmp = 0; cmp < 2; ++cmp)
     if (fc->f[c1][cmp] && fc->f[c2][cmp])
       LOOP_OVER_IVECS(fc->v, is, ie, idx)
-	data->sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2)
+	data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
 	  * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx];
 }
 
@@ -177,7 +177,7 @@ static void thermo_integrand(fields_chunk *fc, component cgrid,
   (void) shift; (void) shift_phase; (void) S; (void) sn; // unused
   if (fc->pol && fc->pol->energy[cgrid])
     LOOP_OVER_IVECS(fc->v, is, ie, idx)
-      *sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2)
+      *sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
 	* fc->pol->energy[cgrid][idx];
 }
 
@@ -244,7 +244,7 @@ static void flux_integrand(fields_chunk *fc, component cgrid,
 	else
 	  H = fc->f[cH][cmp][idx];
 	
-	sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2) * E * H;
+	sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2) * E * H;
     }
 
   data->sum += S.transform(data->d, -sn).flipped ? -sum : sum;

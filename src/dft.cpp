@@ -149,7 +149,7 @@ void dft_chunk::update_dft(double time) {
 
   int idx_dft = 0;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    double w = IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2);
+    double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
     double f[2]; // real/imag field value at epsilon point
     if (avg2)
       for (int cmp=0; cmp < numcmp; ++cmp)

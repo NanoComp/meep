@@ -247,7 +247,7 @@ static void src_vol_integrand(fields_chunk *fc, component c,
     loc.set_direction(direction(loop_d3), (loop_is3*0.5 + loop_i3) * inva);
     loc += shift - data->center;
 
-    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(1) * amp * data->A(loc);
+    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
     index_array[idx_vol++] = idx;
   }
 

@@ -69,8 +69,10 @@ static void linear_integrand(fields_chunk *fc, component cgrid,
 			 locS.in_direction(X),
 			 locS.in_direction(Y),
 			 locS.in_direction(Z),
-			 IVEC_LOOP_WEIGHT(1), dV0 + dV1 * loop_i2);
-    data->sum += IVEC_LOOP_WEIGHT(dV0 + dV1 * loop_i2)
+			 IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1),
+			 dV0 + dV1 * loop_i2);
+
+    data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
       * (data->c
 	 + data->ax * locS.in_direction(X)
 	 + data->ay * locS.in_direction(Y)
