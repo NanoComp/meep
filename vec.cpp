@@ -686,12 +686,14 @@ volume volone(double zsize, double a) {
 }
 
 volume voltwo(double xsize, double ysize, double a) {
-  return volume(D2, a, (int) (xsize*a + 0.5), (int) (ysize*a + 0.5),0);
+  return volume(D2, a, (xsize==0)?1:(int) (xsize*a + 0.5),
+                       (ysize==0)?1:(int) (ysize*a + 0.5),0);
 }
 
 volume vol3d(double xsize, double ysize, double zsize, double a) {
-  return volume(D3, a, (int) (xsize*a + 0.5), (int) (ysize*a + 0.5),
-                (int) (zsize*a + 0.5));
+  return volume(D3, a,(xsize==0)?1:(int) (xsize*a + 0.5),
+                      (ysize==0)?1:(int) (ysize*a + 0.5),
+                      (zsize==0)?1:(int) (zsize*a + 0.5));
 }
 
 volume volcyl(double rsize, double zsize, double a) {

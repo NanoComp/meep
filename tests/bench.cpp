@@ -247,6 +247,59 @@ bench bench_2d_te_old(const double xmax, const double ymax,
                   b.time, b.time*1e6/b.gridsteps); \
   }
 
+// 3D benchmarks:
+
+inline double max(double a, double b) { return (a>b)?a:b; }
+
+bench bench_3d_periodic(const double xmax, const double ymax, const double zmax,
+                        double eps(const vec &)) {
+  const double a = 10.0;
+  const double gridpts = a*a*a*max(xmax,1/a)*max(ymax,1/a)*max(zmax,1/a);
+  const double ttot = 5.0 + 1e5/gridpts;
+
+  volume v = vol3d(xmax,ymax,zmax,a);
+  mat ma(v, eps);
+  fields f(&ma);
+  f.use_metal_everywhere();
+  if (xmax==0) f.use_bloch(X,0.0);
+  if (ymax==0) f.use_bloch(Y,0.0);
+  if (ymax==0) f.use_bloch(Z,0.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(xmax*.5, ymax*.5, zmax*.5));
+
+  while (f.time() < f.find_last_source()) f.step();
+  const double tend = f.time() + ttot;
+  clock_t start = clock();
+  while (f.time() < tend) f.step();
+  bench b;
+  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.gridsteps = ttot*a*2*gridpts;
+  //f.print_times();
+  return b;
+}
+
+bench bench_3d(const double xmax, const double ymax, const double zmax,
+               double eps(const vec &)) {
+  const double a = 10.0;
+  const double gridpts = a*a*a*xmax*ymax*zmax;
+  const double ttot = 5.0 + 1e5/gridpts;
+
+  volume v = vol3d(xmax,ymax,zmax,a);
+  mat ma(v, eps, 0);
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(xmax*.5, ymax*.5, zmax*.5));
+
+  while (f.time() < f.find_last_source()) f.step();
+  const double tend = f.time() + ttot;
+  clock_t start = clock();
+  while (f.time() < tend) f.step();
+  bench b;
+  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.gridsteps = ttot*a*2*gridpts;
+  //f.print_times();
+  return b;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   master_printf("Benchmarking...\n");
@@ -265,6 +318,13 @@ int main(int argc, char **argv) {
   showbench("Flux 1D 100", bench_flux_1d(100.0, bump));
   width = 300.0;
   showbench("Flux 1D 100 old", bench_flux_1d_old(100.0, bump));
+
+  showbench("3D 1x1x10", bench_3d(1.0, 1.0, 10.0, one));
+  showbench("3D 10x1x1", bench_3d(10.0, 1.0, 1.0, one));
+  showbench("3D 1x1x1 ", bench_3d(1.0, 1.0, 1.0, one));
+  showbench("3D 3x3x3 ", bench_3d(3.0, 3.0, 3.0, one));
+  showbench("3D 10x3x0", bench_3d_periodic(10.0, 3.0, 0.0, one));
+  showbench("3D 0x3x10", bench_3d_periodic(0.0, 3.0, 10.0, one));
 
   showbench("2D 6x4 ", bench_2d(6.0, 4.0, one));
   showbench("2D 12x12 ", bench_2d(12.0, 12.0, one));
