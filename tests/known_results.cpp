@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 
   compare(-0.00894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
-  compare(-23.8506, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
+  compare(-0.811989, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
           "3D saturated polariton");
   compare(-0.0036943, saturated_polariton_ex(volone(1.0, a), one),
           "1D saturated polariton");
@@ -174,15 +174,15 @@ int main(int argc, char **argv) {
           "1x1 fully periodic 2D TM");
   compare(0.0191973, x_periodic_y_pml(voltwo(1.0, 2.0, a), one),
           "1x1 X periodic Y PML 2D TM");
-  compare(-41.8057, metallic_ez(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-1.32201, metallic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 metallic 3D");
-  compare(-100.758, x_periodic(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-3.18623, x_periodic(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 X periodic 3D");
-  compare(-101.191, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
+  compare(-3.19994, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
           "1x1x1 X periodic Y PML 3D");
-  compare(-101.62, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
+  compare(-3.21349, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
           "1x1x1 fully periodic 3D rods");
-  compare(-99.1618, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-3.13577, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 fully periodic 3D");
 
   return 0;
