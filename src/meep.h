@@ -372,7 +372,6 @@ class fields_chunk {
 
   // for non-collective interpolation:
   geometric_volume get_field_gv(component) const;
-  double get_field(component, const vec &, int reim) const;
   complex<double> get_field(component, const vec &) const;
 
   complex<double> get_polarization_field(const polarizability_identifier &p,

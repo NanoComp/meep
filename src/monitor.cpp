@@ -117,25 +117,14 @@ geometric_volume fields_chunk::get_field_gv(component c) const {
 
 /* Non-collective, zero-communication get_field... loc *must*
    be in get_field_gv(c). */
-double fields_chunk::get_field(component c, const vec &loc, int reim) const {
-  if (!f[c][reim]) return 0.0;
-  ivec ilocs[8];
-  double w[8];
-  v.interpolate(c, loc, ilocs, w);
-  double res = 0.0;
-  for (int i = 0; i < 8; ++i) {
-    if (!v.contains(ilocs[i])) abort("invalid loc in chunk get_field");
-    res += f[c][reim][v.index(c,ilocs[i])] * w[i];
-  }
-  return res;
-}
 complex<double> fields_chunk::get_field(component c, const vec &loc) const {
   ivec ilocs[8];
   double w[8];
   v.interpolate(c, loc, ilocs, w);
   complex<double> res = 0.0;
-  for (int i = 0; i < 8; ++i) {
-    if (!v.contains(ilocs[i])) abort("invalid loc in chunk get_field");
+  for (int i = 0; i < 8 && w[i] != 0.0; ++i) {
+    if (!v.contains(ilocs[i]))
+      abort("invalid loc in chunk get_field, weight = %g", w[i]);
     if (f[c][0] && f[c][1]) res += getcm(f[c], v.index(c, ilocs[i])) * w[i];
     else if (f[c][0]) res += f[c][0][v.index(c,ilocs[i])] * w[i];
   }
