@@ -21,10 +21,10 @@
 namespace meep {
      namespace h5io {
 
-	  double *read(char *filename, char *dataname,
+	  double *read(const char *filename, const char *dataname,
 		       int *rank, int *dims, int maxrank);
 	  
-	  void write_chunk(char *filename, char *dataname,
+	  void write_chunk(const char *filename, const char *dataname,
 			   int rank, const int *dims,
 			   double *data,
 			   const int *chunk_start, const int *chunk_dims,
@@ -33,7 +33,7 @@ namespace meep {
 			   bool single_precision,
 			   bool append_file);
 
-	  void write(char *filename, char *dataname,
+	  void write(const char *filename, const char *dataname,
 		     double *data, int rank, const int *dims,
 		     bool single_precision,
 		     bool append_file);

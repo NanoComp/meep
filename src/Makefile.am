@@ -9,9 +9,9 @@ threevec.h vec.h
 
 libmeep_la_SOURCES = anisotropic_averaging.cpp bands.cpp		\
 boundaries.cpp control_c.cpp energy_and_flux.cpp fields.cpp fluxes.cpp	\
-grace.cpp h5io.cpp harminv.cpp initialize.cpp monitor.cpp mympi.cpp	\
-output_directory.cpp polarization.cpp ran.cpp slices.cpp sources.cpp	\
-step.cpp step_d.cpp step_h.cpp structure.cpp time.cpp			\
+grace.cpp h5fields.cpp h5io.cpp harminv.cpp initialize.cpp monitor.cpp	\
+mympi.cpp output_directory.cpp polarization.cpp ran.cpp slices.cpp	\
+sources.cpp step.cpp step_d.cpp step_h.cpp structure.cpp time.cpp	\
 update_e_from_d.cpp	update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES) \
 update_e_from_d_prepare.cpp update_e_from_d_sources.cpp update_e_from_d_update.cpp
 

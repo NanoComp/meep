@@ -535,6 +535,19 @@ class fields {
   void output_real_imaginary_slices(const char *name = "");
   void output_real_imaginary_slices(const geometric_volume &what,
                                     const char *name = "");
+
+  // h5fields.cpp
+  void output_hdf5(const char *filename,
+		   const geometric_volume &where, double res,
+		   component c, int reim,
+		   bool append_data = false, int dindex = -1,
+		   bool single_precision = false, bool append_file = false);
+  void output_hdf5(const char *filename,
+		   const geometric_volume &where, double res,
+		   component c,
+		   bool append_data = false, int dindex = -1,
+		   bool single_precision = false, bool append_file = false);
+
   double maxfieldmag_to_master(component) const;
   double minpolenergy_to_master() const;
   double maxpolenergy_to_master() const;

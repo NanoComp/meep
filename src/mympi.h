@@ -52,6 +52,7 @@ complex<double> broadcast(int from, complex<double> data);
 double broadcast(int from, double data);
 double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);
+int max_to_all(int);
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
 complex<double> sum_to_all(complex<double>);

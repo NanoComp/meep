@@ -88,8 +88,8 @@ static bool dataset_exists(hid_t id, const char *name)
 #endif
 }
 
-double *h5io::read(char *filename, char *dataname,
-		     int *rank, int *dims, int maxrank)
+double *h5io::read(const char *filename, const char *dataname,
+		   int *rank, int *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
      int i, N;
@@ -153,7 +153,7 @@ double *h5io::read(char *filename, char *dataname,
 
    If append_file is true, then the file can have pre-existing datasets
    with different names, which are not modified. */
-void h5io::write_chunk(char *filename, char *dataname,
+void h5io::write_chunk(const char *filename, const char *dataname,
 		       int rank, const int *dims,
 		       double *data,
 		       const int *chunk_start, const int *chunk_dims,
@@ -168,6 +168,7 @@ void h5io::write_chunk(char *filename, char *dataname,
      hid_t file_id, space_id, mem_space_id, data_id;
 
      CHECK(!append_data || dindex >= 0, "invalid dindex");
+     CHECK(rank > 0, "non-positive rank");
 
      hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
 #  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
@@ -199,8 +200,6 @@ void h5io::write_chunk(char *filename, char *dataname,
 	  IF_EXCLUSIVE((void) 0, if (parallel) all_wait());
      }
      
-     CHECK(rank > 0, "non-positive rank");
-
      if (first_chunk || (IF_EXCLUSIVE(!parallel || am_master(), 1))) {
 	  hsize_t *dims_copy = new hsize_t[rank + append_data];
 	  hsize_t *maxdims = new hsize_t[rank + append_data];
@@ -311,7 +310,7 @@ void h5io::write_chunk(char *filename, char *dataname,
 #endif
 }
 
-void h5io::write(char *filename, char *dataname,
+void h5io::write(const char *filename, const char *dataname,
 		 double *data, int rank, const int *dims,
 		 bool single_precision,
 		 bool append_file)
