@@ -265,7 +265,7 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
   for (int i=0;i<8;i++) weights[i] = 0;
   // Tabulate the actual weights:
   if (dr+dz > 0.0) {
-    if (dr-dz > 0.0) { // North  
+    if (dr-dz > 0.0) { // North
       weights[0] = (1-2*dr)*0.25;
       weights[1] = (1-2*dr)*0.25;
       weights[2] = 2*dr*(0.5-dz) + (1-2*dr)*0.25;
