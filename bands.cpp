@@ -177,92 +177,179 @@ inline int min(int a, int b) { return (a<b)? a : b; }
 
 void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
                            int nbands, int n) {
+  const int dofourier = 1;
   // eigen has dimensions of nr*maxbands*6
   // n here is the total time
-  if (nbands == 1) {
-    nbands = 2;
-    f[1] = 0;
-    d[1] = 15;
-  }
-  cmplx *A = new cmplx[nbands*n];
   double unitconvert = (2*pi)*c*scale_factor*inva;
-  double lowpass_time = 1.0/(scale_factor*fmax);
+  double lowpass_time = 0.2/(scale_factor*fmax);
   printf("Lowpass time is %lg\n", lowpass_time);
-  int passtime = (int)(lowpass_time*4);
-  for (int i=0;i<nbands;i++) {
-    printf("Native freq[%d] is %lg.\n", i, unitconvert*f[i]);
-    for (int t=0;t<n;t++) {
-      A[i*n+t] = 0;
-      for (int tt=max(0,t-passtime);tt<min(n,t+passtime);tt++) {
-        A[i*n+t] += exp(cmplx(-unitconvert*d[i]*tt,
-                              -unitconvert*f[i]*tt))*
-          exp(-(t-passtime)*(t-passtime)/(2.0*lowpass_time*lowpass_time))
-          /lowpass_time;
-      }
+  int passtime = (int)(lowpass_time*8);
+  double *filter = new double[passtime+1];
+  if (!filter) printf("Memory error!!!!!!!!!!!!!!!\n");
+  for (int i=0;i<=passtime;i++)
+    filter[i] = exp(-i*i/(2.0*lowpass_time*lowpass_time))/lowpass_time;
+
+  // Now let's zero out any decays that seem unreasonably small...
+  for (int i = 0; i < nbands; i++) {
+    if (abs(unitconvert*d[i]*n) < 4.0) {
+      printf("I think that band with freq %lg and decay %lg has no decay.\n",
+             f[i], d[i]);
+      d[i] = 0.0;
+    } else {
+      printf("It seems the band with freq %lg and decay %lg does decay.\n",
+             f[i], d[i]);
     }
   }
-  int one = 1, zero=0, worksize = nbands*n, dummy;
-  double *S = new double[nbands];
-  cmplx *VT = new cmplx[nbands*nbands];
-  cmplx *V = new cmplx[nbands*nbands];
-  cmplx *work = new cmplx[worksize];
-  double *rwork = new double[5*nbands];
-  zgesvd_("O","A",&n,&nbands,A,&n,S,NULL,&one,VT,&nbands,
-          work,&worksize,rwork,&dummy);
-  // Unhermitian conjugate V
-  for (int j=0;j<nbands;j++) {
-    printf("S[%d] value is %lg.\n", j, S[j]);
+
+  /*complex<double> *overlap = new complex<double>[(nbands+1)*(nbands+1)];
+  for (int i=0;i<=nbands;i++) {
+    for (int j=0;j<=nbands;j++) {
+      complex<double> sum = 0;
+      for (int t=0;t<n;t++) {
+        complex<double> now = 1;
+        if (i < nbands) now *= exp(cmplx(0.0,unitconvert*f[i]*t));
+        if (j < nbands) now *= exp(cmplx(0.0,-unitconvert*f[j]*t));
+        sum += now;
+      }
+      overlap[i*(nbands+1)+j] = sum;
+    }
+  }
+  //zpotrf;
+  //zpotri;
+  delete[] overlap;*/
+  // First, we want to take a fourier transform of each mode that has zero
+  // decay, and subtract off its power.
+  int numfit = 0;
+  if (dofourier) {
+    for (int r=0;r<nr;r++) {
+      for (int whichf=0;whichf<6;whichf++) {
+        cmplx *bdata;
+        switch (whichf) {
+        case 0: bdata = er; break;
+        case 1: bdata = ep; break;
+        case 2: bdata = ez; break;
+        case 3: bdata = hr; break;
+        case 4: bdata = hp; break;
+        case 5: bdata = hz; break;
+        }
+        {
+          cmplx mean = 0;
+          for (int t=0;t<n;t++) {
+            mean += BAND(bdata,r,t);
+          }
+          for (int t=0;t<n;t++) BAND(bdata,r,t) -= (1.0/n)*mean;
+        }
+        for (int j=0;j<nbands;j++) {
+          if (d[j] == 0.0) {
+            cmplx posfreq = 0;
+            cmplx negfreq = 0;
+            double energy = 0;
+            for (int t=0;t<n;t++) {
+              complex<double> phase = exp(cmplx(0.0,unitconvert*f[j]*t));
+              posfreq += BAND(bdata,r,t)*phase;
+              negfreq += BAND(bdata,r,t)*conj(phase);
+              energy += abs(BAND(bdata,r,t))*abs(BAND(bdata,r,t));
+            }
+            double oldenergy = energy/n;
+            posfreq *= 1.0/n;
+            negfreq *= 1.0/n;
+            HARMOUT(eigen,r,j,whichf) = posfreq;
+            for (int t=0;t<n;t++) {
+              complex<double> phase = exp(cmplx(0.0,unitconvert*f[j]*t));
+              BAND(bdata,r,t) -= posfreq*conj(phase);
+              BAND(bdata,r,t) -= negfreq*phase;
+              energy += abs(BAND(bdata,r,t))*abs(BAND(bdata,r,t));
+            }
+          } else numfit++;
+        }
+      }
+    }
+    numfit /= 6*nr;
+  } else {
+    numfit = nbands;
+  }
+  printf("Looking at %d bands using least squares...\n", numfit);
+  if (numfit < 2) {
+    printf("It looks like we can't do the least squares fit, since we\n");
+    printf("only have %d frequencies to fit.\n", numfit);
+  } else {
+    int num_param = numfit;
+    cmplx *A = new cmplx[num_param*n];
+
+    int ifit = 0;
     for (int i=0;i<nbands;i++) {
-      V[i*nbands+j] = conj( VT[j*nbands+i]);
-    }
-  }
-  for (int r=0;r<nr;r++) {
-    for (int whichf=0;whichf<6;whichf++) {
-      cmplx *bdata;
-      switch (whichf) {
-      case 0: bdata = er; break;
-      case 1: bdata = ep; break;
-      case 2: bdata = ez; break;
-      case 3: bdata = hr; break;
-      case 4: bdata = hp; break;
-      case 5: bdata = hz; break;
-      }
-      for (int j=0;j<nbands;j++) {
-        cmplx sofar = 0;
-        for (int i=0;i<nbands;i++) {
-          cmplx sum=0;
-          if (S[i] > 1e-6) {
-            for (int t=0;t<n;t++) sum += A[i*n+t]*BAND(bdata,r,t);
-            sofar += sum*V[i*nbands+j]/S[i];
+      if (d[i] != 0.0 || !dofourier) {
+        for (int t=0;t<n;t++) {
+          A[ifit*n+t] = 0;
+          //A[(ifit+numfit)*n+t] = 0;
+          for (int tt=max(0,t-passtime);tt<min(n,t+passtime);tt++) {
+            A[ifit*n+t] += exp(cmplx(-unitconvert*d[i]*tt,-unitconvert*f[i]*tt))
+              *filter[abs(tt-t)];
+            //A[(ifit+numfit)*n+t] += exp(cmplx(-unitconvert*d[i]*tt,unitconvert*f[i]*tt))
+            //  *filter[abs(tt-t)];
           }
         }
-        HARMOUT(eigen,r,j,whichf) = sofar;
+        ifit++;
       }
     }
-  }
-
-  // Following check is useful to see how much energy you're putting into
-  // each mode, but unnecesary for the computation itself.
-  for (int i=0;i<nbands;i++) {
-    printf("Considering freq[%d] %10lg :  ", i, f[i]);
-    double this_energy = 0.0;
-    for (int t=0;t<n;t++) {
-      for (int r=0;r<nr;r++) {
-        for (int whichf=0;whichf<6;whichf++) {
-          this_energy += abs(HARMOUT(eigen,r,i,whichf))*
-            abs(HARMOUT(eigen,r,i,whichf))*exp(-2*unitconvert*d[i]*t);
+    int one = 1, zero=0, worksize = num_param*n, dummy;
+    double *S = new double[num_param];
+    cmplx *VT = new cmplx[num_param*num_param];
+    cmplx *V = new cmplx[num_param*num_param];
+    cmplx *work = new cmplx[worksize];
+    double *rwork = new double[5*num_param];
+    zgesvd_("O","A",&n,&num_param,A,&n,S,NULL,&one,VT,&num_param,
+            work,&worksize,rwork,&dummy);
+    // Unhermitian conjugate V
+    for (int j=0;j<num_param;j++) {
+      printf("S[%d] value is %lg.\n", j, S[j]);
+      for (int i=0;i<num_param;i++) {
+        V[i*num_param+j] = conj( VT[j*num_param+i]);
+      }
+    }
+    for (int r=0;r<nr;r++) {
+      for (int whichf=0;whichf<6;whichf++) {
+        cmplx *bdata;
+        switch (whichf) {
+        case 0: bdata = er; break;
+        case 1: bdata = ep; break;
+        case 2: bdata = ez; break;
+        case 3: bdata = hr; break;
+        case 4: bdata = hp; break;
+        case 5: bdata = hz; break;
+        }
+        for (int j=0;j<nbands;j++) {
+          cmplx possofar = 0, negsofar = 0;
+          if (d[j] != 0.0 || !dofourier) {
+            for (int i=0;i<numfit;i++) {
+              cmplx possum=0, negsum=0;
+              if (S[i] > 1e-6) {
+                for (int t=0;t<n;t++) {
+                  complex<double> bandhere = 0.0;
+                  for (int tt=max(0,t-passtime);tt<min(n,t+passtime);tt++)
+                    bandhere += BAND(bdata,r,tt)*filter[abs(tt-t)];
+                  possum += A[i*n+t]*bandhere;
+                  //negsum += A[(i+numfit)*n+t]*bandhere;
+                }
+                possofar += possum*V[i*numfit+j]/S[i];
+                //negsofar += negsum*V[(i+numfit)*numfit+j]/S[(i+numfit)];
+              }
+            }
+            if (abs(negsofar) > abs(possofar))
+              HARMOUT(eigen,r,j,whichf) = negsofar;
+            else
+              HARMOUT(eigen,r,j,whichf) = possofar;
+          }
         }
       }
     }
-    printf("Energy is %lg.\n", sqrt(this_energy));
+    delete[] VT;
+    delete[] V;
+    delete[] S;
+    delete[] rwork;
+    delete[] work;
+    delete[] A;
   }
-
-  delete[] VT;
-  delete[] V;
-  delete[] S;
-  delete[] rwork;
-  delete[] work;
-  delete[] A;
 }
 
 void fields::output_bands(FILE *o, const char *name, int maxbands) {
@@ -296,7 +383,7 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
   double *reff = new double[maxbands], *refd = new double[maxbands];
   cmplx *refa = new complex<double>[maxbands];
   cmplx *refdata = new complex<double>[maxbands*ntime];
-  for (int r=0;r<nr;r+=bands.scale_factor/c*2) {
+  for (int r=0;r<nr;r+=1+(int)(bands.scale_factor/c*1.99)) {
     cmplx *bdata;
     for (int whichf = 0; whichf < 6; whichf++) {
       //printf("Looking at (%d.%d)\n", r, whichf);
