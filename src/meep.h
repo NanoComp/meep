@@ -664,24 +664,24 @@ class fields {
   void output_real_imaginary_slices(const geometric_volume &what,
                                     const char *name = "");
 
-  // h5fields.cpp
-  void output_hdf5(h5file *file, const char *dataname,
-		   component c, int reim,
-		   const geometric_volume &where, double res,
-		   bool append_data = false,
-		   bool single_precision = true);
+  // h5fields.cpp:
   void output_hdf5(h5file *file, component c,
 		   const geometric_volume &where, double res,
 		   bool append_data = false,
 		   bool single_precision = true);
   void output_hdf5(component c,
 		   const geometric_volume &where, double res,
-		   bool append_data = false,
 		   bool single_precision = true,
 		   const char *prefix = NULL);
   h5file *open_h5file(const char *name, 
 		      h5file::access_mode mode = h5file::WRITE,
 		      const char *prefix = NULL, bool timestamp = false);
+  // low-level function
+  void output_hdf5(h5file *file, const char *dataname,
+		   component c, int reim,
+		   const geometric_volume &where, double res,
+		   bool append_data = false,
+		   bool single_precision = true);
 
   double maxfieldmag_to_master(component) const;
   double minpolenergy_to_master() const;

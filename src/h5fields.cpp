@@ -262,12 +262,11 @@ void fields::output_hdf5(h5file *file, component c,
 
 void fields::output_hdf5(component c,
 			 const geometric_volume &where, double res,
-			 bool append_data, 
 			 bool single_precision, 
 			 const char *prefix) {
   h5file *file = open_h5file(component_name(c), h5file::WRITE,
-			     prefix, !append_data);
-  output_hdf5(file, c, where, res, append_data, single_precision);
+			     prefix, true);
+  output_hdf5(file, c, where, res, false, single_precision);
   delete file;
 }
 
