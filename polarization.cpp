@@ -215,6 +215,32 @@ polarizability::~polarizability() {
   delete[] sigma;
 }
 
+complex<double> polarization::analytic_epsilon(double freq, const vec &p) const {
+  const complex<double> I = complex<double>(0,1);
+  double w[8];
+  int in[8];
+  pb->v.interpolate(pb->v.eps_component(), p, in, w);
+  complex<double> epsi = 0.0;
+  for (int i=0;i<8 && w[i];i++)
+    epsi += pb->sigma[in[i]]/(pb->omeganot*pb->omeganot - freq*freq - freq*pb->gamma*I);
+  if (next) epsi += next->analytic_epsilon(freq, p);
+  return epsi;
+}
+
+complex<double> fields::analytic_epsilon(double f, const vec &p) const {
+  const double freq_conversion = 2*pi*c/a;
+  double freq = f*freq_conversion;
+  const component c = v.eps_component();
+  int in[8];
+  double w[8];
+  v.interpolate(c,p,in,w);
+  complex<double> epsi = 0.0;
+  for (int i=0;i<8 && w[i];i++)
+    epsi += ma->eps[in[i]]*w[i];
+  if (pol) epsi += pol->analytic_epsilon(freq, p);
+  return epsi;
+}
+
 void mat::add_polarizability(double sigma(const vec &),
                              double omega, double gamma, double delta_epsilon,
                              double energy_sat) {

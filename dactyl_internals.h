@@ -57,6 +57,7 @@ class polarization {
   const polarizability *pb;
   polarization *next;
 
+  complex<double> analytic_epsilon(double freq, const vec &) const;
   double total_energy(const volume &);
   static polarization *set_up_polarizations(const mat *ma, int is_real);
   void use_real_fields();

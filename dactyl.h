@@ -177,6 +177,7 @@ class fields {
   void get_point(monitor_point *p, const vec &);
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL);
   void output_point(FILE *, const vec &, const char *name);
+  complex<double> analytic_epsilon(double freq, const vec &) const;
 
   flux_plane create_flux_plane(const vec &corner1, const vec &corner2);
   complex<double> get_flux(flux_plane *fp);

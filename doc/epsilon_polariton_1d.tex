@@ -44,7 +44,7 @@ double one_in_middle(const vec &p) {
 
 int main(int argc, char **argv) {
   deal_with_ctrl_c();
-  const double ttot = 600.0;
+  const double ttot = 300.0;
   mat ma(volone(zsize, a), eps);
   const char *dirname = make_output_directory(argv[0]);
   printf("Storing output in directory %s/\n", dirname);
@@ -98,15 +98,15 @@ monitor point linked list.
 When the time stepping is over, we take a fourier transform of the fields
 at the two monitor points.
 \begin{verbatim}
-  left->fourier_transform(Ex, &al, &freqs, &numl, 0.301, 0.5, 1000);
+  left->fourier_transform(Ex, &al, &freqs, &numl, 0.301, 0.5, 300);
 \end{verbatim}
 \begin{comment}
   delete[] freqs;
   printf("Working on middle fourier transform...\n");
-  middle->fourier_transform(Ex, &am, &freqs, &numr, 0.301, 0.5, 1000);
+  middle->fourier_transform(Ex, &am, &freqs, &numr, 0.301, 0.5, 300);
   delete[] freqs;
   printf("Working on right fourier transform...\n");
-  right->fourier_transform(Ex, &ar, &freqs, &numr, 0.301, 0.5, 1000);
+  right->fourier_transform(Ex, &ar, &freqs, &numr, 0.301, 0.5, 300);
   if (numl != numr) printf("Aaack you need both nums to be the same!\n");
   g.new_set();
   g.set_legend("\\x\\e\\s1\\N");
@@ -129,6 +129,18 @@ Finally we calculate epsilon from the second derivative of the field using
     g.output_point(real(freqs[i]), imag(epsilon[i]));
 \end{verbatim}
 \begin{comment}
+  g.new_set();
+  g.set_legend("analytic \\x\\e\\s1\\N");
+  for (int i=0;i<numl;i++) {
+    g.output_point(real(freqs[i]),
+                   real(f.analytic_epsilon(real(freqs[i]),vec(sourceloc))));
+  }
+  g.new_set();
+  g.set_legend("analytic \\x\\e\\s2\\N");
+  for (int i=0;i<numl;i++) {
+    g.output_point(real(freqs[i]),
+                   imag(f.analytic_epsilon(real(freqs[i]),vec(sourceloc))));
+  }
 }
 \end{comment}
 
