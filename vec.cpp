@@ -323,12 +323,11 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
 }
 
 double volume::dv(component c, int ind) const {
-  const vec offset = origin + yee_shift(c);
   const double pi = 3.141592653589793238462643383276L;
   switch (dim) {
   case dcyl: {
-    double r = (offset + vec(inva*(ind/(nr()+1)), inva*(ind%(nr()+1)))).r();
-    double Dr = inva*0.5;
+    const double r = loc(c,ind).r();
+    const double Dr = inva*0.5;
     if (r != 0.0) return inva*pi*((r+Dr)*(r+Dr) - (r-Dr)*(r-Dr));
     else return inva*pi*(r+Dr)*(r+Dr);
   }
