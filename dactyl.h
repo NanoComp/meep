@@ -173,13 +173,15 @@ class fields_chunk {
 
   void use_real_fields();
   double find_last_source();
-
+  // monitor.cpp
   void interpolate_field(component, const vec &, complex<double> val[8],
                          complex<double> phase = 1.0) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   // slices.cpp
   double maxfieldmag(component) const;
+  void output_eps_body(component, const symmetry &, int sn,
+                       const volume &what, const char *name);
 
   double electric_energy_in_box(const volume &, const symmetry &);
   double magnetic_energy_in_box(const volume &, const symmetry &);
@@ -217,6 +219,9 @@ class fields_chunk {
   void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
   // fields.cpp
   void alloc_f(component c);
+  // monitory.cpp
+  void interpolate_field_private(component, const vec &, complex<double> val[8],
+                                 complex<double> phase = 1.0) const;
   // sources.cpp
 
   // add_point_source returns 1 if the connections between chunks need to

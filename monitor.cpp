@@ -85,9 +85,9 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
     }
 }
 
-void fields_chunk::interpolate_field(component c, const vec &loc,
-                                     complex<double> val[8],
-                                     complex<double> phase) const {
+void fields_chunk::interpolate_field_private(component c, const vec &loc,
+                                             complex<double> val[8],
+                                             complex<double> phase) const {
   if (is_mine() && f[c][0]) {
     int ind[8];
     double w[8];
@@ -99,6 +99,12 @@ void fields_chunk::interpolate_field(component c, const vec &loc,
       if (val[i+startingat] == 0.0) startingat--;
     }
   }
+}
+
+void fields_chunk::interpolate_field(component c, const vec &loc,
+                                     complex<double> val[8],
+                                     complex<double> phase) const {
+  interpolate_field_private(c,loc,val,phase);
   broadcast(n_proc(), val, 8);
 }
 

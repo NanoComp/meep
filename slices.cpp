@@ -81,18 +81,22 @@ static void output_slice(component m, const double *f, const volume &v,
   fclose(out);
 }
 
+const double default_eps_resolution = 20.0;
+const double default_eps_size = 1000.0;
+
 static void eps_header(double xmin, double ymin, double xmax, double ymax,
                        double fmax, double a, FILE *out, const char *name) {
   fprintf(out, "%%!PS-Adobe-3.0 EPSF\n");
   double size = xmax - xmin + ymax - ymin;
   fprintf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
-          xmin*500/size, ymin*500/size, xmax*500/size, ymax*500/size);
+          xmin*default_eps_size/size, ymin*default_eps_size/size,
+          xmax*default_eps_size/size, ymax*default_eps_size/size);
   fprintf(out, "gsave\n");
-  fprintf(out, "%lg %lg scale\n", 500/size, 500/size);
+  fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
   fprintf(out, "/Times-Roman findfont 20 scalefont setfont\n");
   fprintf(out, "newpath 140 280 moveto (%s) show\n", name);
   fprintf(out, "/max %lg def\n", fmax);
-  const double dx = 1.0/a;
+  const double dx = 1.0/min(a, default_eps_resolution);
   fprintf(out, "/dx %lg def\n", dx);
   fprintf(out, "/hdx %lg def\n", dx*0.5);
   fprintf(out, "dx 10 div setlinewidth\n");
@@ -147,12 +151,13 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
   const double fsize = (5.0 < 0.2*size)?0.2*size:5.0;
   const double dx = 1.0/a;
   fprintf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
-          xmin*500/size, -250*fsize/size, xmax*500/size, 250*fsize/size);
+          xmin*default_eps_size/size, -default_eps_size*0.5*fsize/size,
+          xmax*default_eps_size/size, default_eps_size*0.5*fsize/size);
   fprintf(out, "gsave\n");
   fprintf(out, "%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
-          xmin*500/size, xmax*500/size, dx*0.1); 
-  fprintf(out, "%lg %lg scale\n", 500/size, 500/size);
-  fprintf(out, "/height %lg def\n", (250*fsize)/size);
+          xmin*default_eps_size/size, xmax*default_eps_size/size, dx*0.1); 
+  fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
+  fprintf(out, "/height %lg def\n", (default_eps_size*0.5*fsize)/size);
   fprintf(out, "/Times-Roman findfont 12 scalefont setfont\n");
   fprintf(out, "newpath 220 height 0.75 mul moveto (%s) show\n", name);
   fprintf(out, "/max %lg def\n", fmax);
@@ -291,6 +296,7 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
     printf("Unable to open file '%s' for slice output.\n", name);
     return;
   }
+  const complex<double> ph = S.phase_shift(m, symnum);
   for (int i=0;i<v.ntot();i++) {
     const vec here = S.transform(v.loc(m,i),symnum);
     if (what.contains(here)) {
@@ -300,13 +306,48 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
       case d1: x = here.z(); break;
       case d2: x = here.x(); y = here.y(); break;
       }
-      complex<double> ph = S.phase_shift(m, symnum);
       if (f[1]) fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
                         real(ph)*f[0][i] - imag(ph)*f[1][i]);
       else fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
     }
   }
   fclose(out);
+}
+
+void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
+                                   const volume &what, const char *n) {
+  if (f[c][0]) {
+    if (v.a <= default_eps_resolution) {
+      output_complex_eps_body(c, f[c], v, S, sn, what, n);
+    } else {
+      const complex<double> ph = S.phase_shift(c, sn);
+      FILE *out = fopen(n, "a");
+      if (!out) {
+        printf("Unable to open file '%s' for slice output.\n", n);
+        return;
+      }
+      const int n = v.ntot_at_resolution(default_eps_resolution);
+      for (int i=0;i<n;i++) {
+        const vec here = v.loc_at_resolution(i,default_eps_resolution);
+        const vec there = S.transform(here, sn);
+        if (what.contains(here)) {
+          double x = 0, y = 0;
+          switch (v.dim) {
+          case dcyl: x = there.z(); y = there.r(); break;
+          case d1: x = there.z(); break;
+          case d2: x = there.x(); y = there.y(); break;
+          }
+          complex<double> val[8];
+          for (int j=0;j<8;j++) val[j] = 0.0;
+          interpolate_field_private(c, here, val, ph);
+          double fhere = 0.0;
+          for (int j=0;j<8;j++) fhere += real(val[j]);
+          fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
+        }
+      }
+      fclose(out);
+    }
+  }
 }
 
 static void output_complex_eps_header(component m, double fmax, const volume &v,
@@ -479,10 +520,8 @@ void fields::eps_slices(const volume &what, const char *name) {
           for (int sn=0;sn<S.multiplicity();sn++)
             for (int otherc=0;otherc<10;otherc++)
               if (S.transform((component)otherc,sn) == c)
-                output_complex_eps_body((component)otherc,
-                                        chunks[i]->f[otherc],
-                                        chunks[i]->v,
-                                        S, sn, what, n);
+                chunks[i]->output_eps_body((component)otherc,
+                                           S, sn, what, n);
       all_wait();
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
@@ -490,7 +529,7 @@ void fields::eps_slices(const volume &what, const char *name) {
             for (int otherc=0;otherc<10;otherc++)
               if (S.transform((component)otherc,sn) == c)
                 eps_outline(v.eps_component(), chunks[i]->ma->eps,
-                            v, what, S, sn, n);
+                            chunks[i]->v, what, S, sn, n);
       all_wait();
       if (am_master()) output_complex_eps_tail(n);
     }

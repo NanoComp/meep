@@ -311,11 +311,13 @@ class volume {
   double zmax() const;
   vec center() const;
   vec loc(component, int index) const;
+  vec loc_at_resolution(int index, double res) const;
+  int ntot_at_resolution(double res) const;
   ivec iloc(component, int index) const;
   vec yee_shift(component) const;
   component eps_component() const;
 
-  double boundary_location(boundary_side, direction);
+  double boundary_location(boundary_side, direction) const;
   ivec big_corner() const;
   ivec little_corner() const { return io(); };
 

@@ -709,7 +709,7 @@ double vec::project_to_boundary(direction d, double boundary_loc) {
   }
 }
 
-double volume::boundary_location(boundary_side b, direction d) {
+double volume::boundary_location(boundary_side b, direction d) const {
   // Returns the location of metallic walls...
   if (b == High) switch (d) {
   case X: return loc(Ez,ntot()-1).x();
@@ -801,6 +801,32 @@ double volume::dv(component c, int ind) const {
   case d1: return inva;
   }
   abort("This should never be reached...\n");
+}
+
+vec volume::loc_at_resolution(int index, double res) const {
+  vec where = origin;
+  for (int dd=X;dd<=R;dd++) {
+    const direction d = (direction) dd;
+    if (has_boundary(High,d)) {
+      const double dist = boundary_location(High,d)-boundary_location(Low,d);
+      const int nhere = max(1,(int)(dist*res+0.5));
+      where.set_direction(d,origin.in_direction(d) +
+                          ((index % nhere)+0.5)*(1.0/res));
+      index /= nhere;
+    }
+  }
+  return where;
+}
+
+int volume::ntot_at_resolution(double res) const {
+  int mytot = 1;
+  for (int d=X;d<=R;d++)
+    if (has_boundary(High,(direction)d)) {
+      const double dist = boundary_location(High,(direction)d)
+                        - boundary_location(Low,(direction)d);
+      mytot *= max(1,(int)(dist*res+0.5));
+    }
+  return mytot;
 }
 
 vec volume::loc(component c, int ind) const {
