@@ -474,7 +474,7 @@ void fields::update_e_from_d() {
 
 void fields_chunk::update_e_from_d() {
   const int ntot = ma->v.ntot();
-#include "step_e.h"
+#include "update_e_from_d.h"
 }
 
 #include "config.h"
