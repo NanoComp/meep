@@ -198,7 +198,7 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
 
 static void eps_trailer(file *out) {
   i_fprintf(out, "grestore\n");
-  i_fprintf(out, " 1 0 0 setrgbcolor\n");
+  i_fprintf(out, " 0.25 0 0.5 setrgbcolor\n");
   i_fprintf(out, "/Times-Roman findfont 16 scalefont setfont\n");
   i_fprintf(out, "newpath 5 5 moveto title show\n");
   i_fprintf(out, "grestore\n");
