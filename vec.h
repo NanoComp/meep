@@ -238,7 +238,7 @@ inline ivec ivec2d(int xx, int yy) {
 
 class volume {
  public:
-  volume();
+  volume() {};
 
   ndim dim;
   vec origin;

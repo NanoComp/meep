@@ -117,12 +117,6 @@ void vec::print(file *f) const {
   }
 }
 
-volume::volume() {
-  dim = D1;
-  the_ntot = num[0] = num[1] = num[2] = 0;
-  origin = vec(0);
-}
-
 inline int right_ntot(ndim di, const int num[3]) {
   int result = 1;
   LOOP_OVER_DIRECTIONS(di, d) result *= num[d%3]+1;
