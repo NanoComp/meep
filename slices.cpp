@@ -182,11 +182,6 @@ static void output_eps(component m, const double *f, const volume &v,
                        const volume &what, const char *name,
                        component om = Hx, const double *overlay = NULL,
                        const double *dashed = NULL) {
-  FILE *out = fopen(name, "w");
-  if (!out) {
-    printf("Unable to open file '%s' for slice output.\n", name);
-    return;
-  }
   double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300, fmax = 0.0;
   switch (v.dim) {
   case dcyl:
@@ -206,22 +201,40 @@ static void output_eps(component m, const double *f, const volume &v,
     if (what.contains(v.loc(m,i)))
       fmax = max(fmax, fabs(f[i]));
   if (fmax == 0.0) fmax = 0.0001;
-  eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
-  for (int i=0;i<v.ntot();i++) {
-    if (what.contains(v.loc(m,i))) {
-      double x = 0, y = 0;
-      switch (v.dim) {
-      case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
-      case d1: x = v.loc(m,i).z(); break;
-      case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
-      }
-      fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[i]);
+  if (v.dim == d1) {
+    // Make a 1D line plot!
+    grace g(name);
+    int skipnum = 1 + v.ntot()/1000;
+    for (int i=0;i<v.ntot();i+=skipnum)
+      if (what.contains(v.loc(m,i)))
+        g.output_point(v.loc(m,i).z(), f[i]);
+    //for (int i=1;i<v.ntot()-1;i++)
+    //  if (what.contains(v.loc(m,i)) && f[i] > f[i-1] && f[i] > f[i+1])
+    //    g.output_point(v.loc(m,i).z(), f[i]);
+  } else {
+    // Make a 2D grayscale plot!
+    FILE *out = fopen(name, "w");
+    if (!out) {
+      printf("Unable to open file '%s' for slice output.\n", name);
+      return;
     }
+    eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
+    for (int i=0;i<v.ntot();i++) {
+      if (what.contains(v.loc(m,i))) {
+        double x = 0, y = 0;
+        switch (v.dim) {
+        case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
+        case d1: x = v.loc(m,i).z(); break;
+        case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
+        }
+        fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[i]);
+      }
+    }
+    if (overlay) eps_outline(out, om, overlay, v, what);
+    if (dashed) eps_dotted(out, om, dashed, v, what);
+    eps_trailer(out);
+    fclose(out);
   }
-  if (overlay) eps_outline(out, om, overlay, v, what);
-  if (dashed) eps_dotted(out, om, dashed, v, what);
-  eps_trailer(out);
-  fclose(out);
 }
 
 static void output_complex_eps(component m, double *f[2], const volume &v,
@@ -258,8 +271,11 @@ static void output_complex_eps(component m, double *f[2], const volume &v,
   if (v.dim == d1) {
     // Make a 1D line plot!
     grace g(name);
-    for (int i=0;i<v.ntot();i++)
-      if (what.contains(v.loc(m,i)))
+    //for (int i=0;i<v.ntot();i++)
+    //  if (what.contains(v.loc(m,i)))
+    //    g.output_point(v.loc(m,i).z(), c*f[0][i]+((f[1])?s*f[1][i]:0));
+    for (int i=1;i<v.ntot()-1;i++)
+      if (what.contains(v.loc(m,i)) && f[0][i] > f[0][i-1] && f[0][i] > f[0][i+1])
         g.output_point(v.loc(m,i).z(), c*f[0][i]+((f[1])?s*f[1][i]:0));
   } else {
     // Make a 2D color plot!
