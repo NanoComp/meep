@@ -130,13 +130,15 @@ class monitor_point {
   monitor_point *next;
 
   complex<double> get_component(component);
+  double poynting_in_direction(direction d);
+  double poynting_in_direction(vec direction_v);
 
   // When called with only its first four arguments, fourier_transform
   // performs an FFT on its monitor points, putting the frequencies in f
   // and the amplitudes in a.  Yes, the frequencies are trivial and
   // redundant, but this saves you the risk of making a mistake in
   // converting your units.  Note also, that in this case f is always a
-  // real number, although it's stored in a float.
+  // real number, although it's stored in a complex.
   //
   // Note that in either case, fourier_transform assumes that the monitor
   // points are all equally spaced in time.

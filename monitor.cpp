@@ -263,6 +263,33 @@ monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) co
 complex<double> monitor_point::get_component(component w) {
   return f[w];
 }
+  
+double monitor_point::poynting_in_direction(direction d) {
+  int direction_shift = 0;
+  if (loc.dim == Dcyl)
+    direction_shift = 2;
+
+  direction d1 = (direction) (((d+1) - direction_shift)%3 + direction_shift);
+  direction d2 = (direction) (((d+2) - direction_shift)%3 + direction_shift);
+
+  // below Ex and Hx are used just to say that we want electric or magnetic component
+  complex<double> E1 = get_component(direction_component(Ex, d1));
+  complex<double> E2 = get_component(direction_component(Ex, d2));
+  complex<double> H1 = get_component(direction_component(Hx, d1));
+  complex<double> H2 = get_component(direction_component(Hx, d2));
+
+  return (real(E1)*real(H2) - real(E2)*real(H1)) + (imag(E1)*imag(H2) - imag(E2)*imag(H1));
+}
+
+double monitor_point::poynting_in_direction(vec v) {
+  if (v.dim != loc.dim)
+    abort("poynting_in_direction: v.dim != loc.dim\n");
+  v = v / abs(v);
+  double result = 0.0;
+  LOOP_OVER_DIRECTIONS(v.dim, d)
+    result += v.in_direction(d) * poynting_in_direction(d);
+  return result;
+}
 
 #include <fftw.h>
 
