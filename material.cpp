@@ -114,7 +114,7 @@ static double sig(double r) {
 
 void mat::mix_with(const mat *n, double f) {
   for (int i=0;i<nr*(nz+1);i++) {
-    eps[i] += f*(n->eps[i]-eps[i]);
+    eps[i] = 1.0/(1.0/eps[i] + f*(1.0/n->eps[i]-1.0/eps[i]));
     invepser[i] += f*(n->invepser[i] - invepser[i]);
     invepsep[i] += f*(n->invepsep[i] - invepsep[i]);
     invepsez[i] += f*(n->invepsez[i] - invepsez[i]);
