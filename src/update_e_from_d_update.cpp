@@ -22,7 +22,7 @@ namespace {
 
   inline double calc_nonlinear_inveps(const double Dsqr, const double e,
                                       const double alpha) {
-    return (1.0/e)*(1 - (alpha*Dsqr)/(e + 3*(alpha*Dsqr)));
+    return 1.0 - (alpha*Dsqr)/(e + 3*(alpha*Dsqr));
   }
 
 }
