@@ -22,6 +22,17 @@
 #include "dactyl.h"
 
 double one(const vec &) { return 1.0; }
+vec the_center;
+double rods_2d(const vec &pp) {
+  vec p = pp - the_center;
+  while (p.x() > 0.5) p -= vec2d(1.0,0);
+  while (p.x() <-0.5) p += vec2d(1.0,0);
+  while (p.y() > 0.5) p -= vec2d(0,1.0);
+  while (p.y() <-0.5) p += vec2d(0,1.0);
+  if (fabs(p.x()) < 0.314) return 12.0;
+  if (fabs(p.y()) < 0.314) return 12.0;
+  return 1.0;
+}
 
 int compare(double a, double b, const char *n) {
   if (fabs(a-b) > fabs(b)*1.3e-14) {
@@ -64,16 +75,17 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
 }
 
 int test_metal_xmirror(double eps(const vec &), const char *dirname) {
+  master_printf("Testing X mirror symmetry...\n");
   double a = 10.0;
   double ttot = 3.0;
 
   const volume v = voltwo(1.0, 1.0, a);
+  the_center = v.center();
   const symmetry S = mirror(X,v);
   mat ma(v, eps, 0, S);
   mat ma1(v, eps, 0, identity());
   ma.set_output_directory(dirname);
   ma1.set_output_directory(dirname);
-  master_printf("Testing X mirror symmetry...\n");
 
   fields f1(&ma1);
   f1.use_metal_everywhere();
@@ -322,6 +334,7 @@ int test_metal_ymirror(double eps(const vec &), const char *dirname) {
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
+  the_center = v.center();
   const symmetry S = mirror(Y,v);
   mat ma(v, eps, 0, S);
   mat ma1(v, eps, 0, identity());
@@ -365,6 +378,7 @@ int test_metal_rot2y(double eps(const vec &), const char *dirname) {
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
+  the_center = v.center();
   const symmetry S = rotate2(Y,v);
   mat ma(v, eps, 0, S);
   mat ma1(v, eps, 0, identity());
@@ -412,6 +426,7 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.5, a);
+  the_center = v.center();
   const symmetry S = rotate2(Y,v);
   mat ma(v, eps, 0, S);
   mat ma1(v, eps, 0, identity());
@@ -455,6 +470,7 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
   double ttot = 10.0;
 
   const volume v = voltwo(2.0, 2.0, a);
+  the_center = v.center();
   const symmetry S = mirror(X,v) + mirror(Y,v);
 
   mat ma_mm(v, eps, 0, S);
@@ -500,6 +516,7 @@ int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
+  the_center = v.center();
   const symmetry S = rotate4(Z,v);
 
   mat ma(v, eps, 0, S);
@@ -544,6 +561,7 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
   double ttot = 30.0;
 
   const volume v = voltwo(3.0, 3.0, a);
+  the_center = v.center();
   const symmetry S = rotate2(X,v);
 
   mat ma(v, eps, 0, S);
@@ -617,19 +635,29 @@ int main(int argc, char **argv) {
 
   if (!test_metal_xmirror(one, dirname))
     abort("error in test_metal_xmirror vacuum\n");
+  if (!test_metal_xmirror(rods_2d, dirname))
+    abort("error in test_metal_xmirror rods_2d\n");
 
   if (!test_metal_ymirror(one, dirname))
     abort("error in test_metal_ymirror vacuum\n");
+  if (!test_metal_ymirror(rods_2d, dirname))
+    abort("error in test_metal_ymirror rods_2d\n");
 
   if (!test_metal_rot2y(one, dirname))
     abort("error in test_metal_rot2y vacuum\n");
+  if (!test_metal_rot2y(rods_2d, dirname))
+    abort("error in test_metal_rot2y rods_2d\n");
 
   if (!exact_metal_rot2y(one, dirname))
     abort("error in exact_metal_rot2y vacuum\n");
+  if (!exact_metal_rot2y(rods_2d, dirname))
+    abort("error in exact_metal_rot2y rods_2d\n");
 
   if (!exact_metal_rot4z(one, dirname))
     abort("error in exact_metal_rot4z vacuum\n");
+  if (!exact_metal_rot4z(rods_2d, dirname))
+    abort("error in exact_metal_rot4z rods_2d\n");
 
-  exit(0);
+  return 0;
 }
 

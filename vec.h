@@ -142,6 +142,7 @@ class vec {
 
   vec operator+=(const vec &a) {
     LOOP_OVER_DIRECTIONS(dim, d) t[d] += a.t[d];
+    return *this;
   };
 
   vec operator-(const vec &a) const {
@@ -152,6 +153,7 @@ class vec {
 
   vec operator-=(const vec &a) {
     LOOP_OVER_DIRECTIONS(dim, d) t[d] -= a.t[d];
+    return *this;
   };
 
   bool operator!=(const vec &a) const {
