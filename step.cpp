@@ -28,14 +28,14 @@ void fields::step_right() {
 
   step_h_right();
   step_h_source();
-  step_h_boundaries();
+  step_boundaries(H_stuff);
 
   prepare_step_polarization_energy();
   half_step_polarization_energy();
   step_e_right();
   step_e_source();
   step_e_polarization();
-  step_e_boundaries();
+  step_boundaries(E_stuff);
   half_step_polarization_energy();
 
   update_polarization_saturation();
@@ -49,14 +49,14 @@ void fields::step() {
 
   step_h();
   step_h_source();
-  step_h_boundaries();
+  step_boundaries(H_stuff);
 
   prepare_step_polarization_energy();
   half_step_polarization_energy();
   step_e();
   step_e_source();
   step_e_polarization();
-  step_e_boundaries();
+  step_boundaries(E_stuff);
   half_step_polarization_energy();
 
   update_polarization_saturation();
@@ -310,20 +310,6 @@ void fields_chunk::step_h() {
   }
 }
 
-void fields::step_h_boundaries() {
-  for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_h_boundaries();
-}
-
-void fields_chunk::step_h_boundaries() {
-  for (int i=0;i<num_h_connections;i++) {
-    complex<double> val = h_phases[i]*
-      complex<double>(*h_connection_sources[0][i],*h_connection_sources[1][i]);
-    *h_connection_sinks[0][i] = real(val);
-    *h_connection_sinks[1][i] = imag(val);
-  }
-}
-
 void fields::step_e() {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->step_e();
@@ -478,17 +464,36 @@ void fields_chunk::step_e() {
   }
 }
 
-void fields::step_e_boundaries() {
-  for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_e_boundaries();
-}
-
-void fields_chunk::step_e_boundaries() {
-  for (int i=0;i<num_e_connections;i++) {
-    complex<double> val = e_phases[i]*
-      complex<double>(*e_connection_sources[0][i],*e_connection_sources[1][i]);
-    *e_connection_sinks[0][i] = real(val);
-    *e_connection_sinks[1][i] = imag(val);
+void fields::step_boundaries(field_type ft) {
+  // First copy outgoing data to buffers...
+  for (int i=0;i<num_chunks;i++) {
+    int ind = 0;
+    for (int j=0;j<num_chunks;j++) {
+      const int pair = i+j*num_chunks;
+      for (int n=0;n<comm_sizes[ft][pair];n++) {
+        DOCMP {
+          double stupid = *(chunks[i]->connections[ft][Outgoing][cmp][ind]);
+          comm_blocks[ft][cmp][pair][n] = stupid;
+        }
+        ind++;
+      }
+    }
+  }
+  // Finally, copy incoming data to the fields themselves!
+  for (int i=0;i<num_chunks;i++) {
+    int ind = 0;
+    //for (int j=0;j<num_chunks;j++) {
+    for (int j=num_chunks-1;j>=0;j--) {
+      const int pair = j+i*num_chunks;
+      for (int n=0;n<comm_sizes[ft][pair];n++) {
+        complex<double> val = chunks[i]->connection_phases[ft][ind]*
+          complex<double>(comm_blocks[ft][0][pair][n],
+                          comm_blocks[ft][1][pair][n]);
+        *(chunks[i]->connections[ft][Incoming][0][ind]) = real(val);
+        *(chunks[i]->connections[ft][Incoming][1][ind]) = imag(val);
+        ind++;
+      }
+    }
   }
 }
 

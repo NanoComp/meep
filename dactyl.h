@@ -135,6 +135,8 @@ class monitor_point {
                int maxbands);
 };
 
+enum in_or_out { Incoming=0, Outgoing=1 };
+
 class fields_chunk {
  public:
   double *(f[10][2]);
@@ -142,12 +144,9 @@ class fields_chunk {
   double *(f_pml[10][2]);
   double *(f_backup_pml[10][2]);
 
-  double **(h_connection_sources[2]), **(h_connection_sinks[2]);
-  int num_h_connections;
-  complex<double> *h_phases;
-  double **(e_connection_sources[2]), **(e_connection_sinks[2]);
-  int num_e_connections;
-  complex<double> *e_phases;
+  double **(connections[2][2][2]);
+  int num_connections[2][2];
+  complex<double> *connection_phases[2];
 
   polarization *pol, *olpol;
   double a, inva; // The "lattice constant" and its inverse!
@@ -175,7 +174,9 @@ class fields_chunk {
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);
   double thermo_energy_in_box(const volume &);
-  double field_energy_in_box(const volume &, double time);
+
+  double backup_h();
+  double restore_h();
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
@@ -189,11 +190,9 @@ class fields_chunk {
   void phase_material(int phasein_time);
   void step_h();
   void step_h_right();
-  void step_h_boundaries();
   void step_h_source(const src *, double);
   void step_e();
   void step_e_right();
-  void step_e_boundaries();
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *, double);
@@ -217,13 +216,19 @@ class fields_chunk {
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
-  void alloc_extra_connections(int nume, int numh);
+  void alloc_extra_connections(field_type, in_or_out, int);
 };
 
 class fields {
  public:
   int num_chunks;
   fields_chunk **chunks;
+  // The following is an array that is num_chunks by num_chunks.  Actually
+  // it is two arrays, one for the imaginary and one for the real part.
+  double **comm_blocks[2][2];
+  // This is the same size as each comm_blocks array, and stores the sizes
+  // of the comm blocks themselves.
+  int *comm_sizes[2];
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
   int m, t, phasein_time, is_real;
@@ -302,11 +307,10 @@ class fields {
   void phase_material();
   void step_h();
   void step_h_right();
-  void step_h_boundaries();
   void step_h_source();
   void step_e();
   void step_e_right();
-  void step_e_boundaries();
+  void step_boundaries(field_type);
   void step_polarization_itself();
   void step_e_polarization();
   void step_e_source();

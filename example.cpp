@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
   int m=1;
   double ttot = 100;
   
-  mat ma(volcyl(4.0,3.6,a), guided_eps, 2);
+  mat ma(volcyl(4.0,3.6,a), guided_eps, 40);
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
   //ma.use_pml_right(1.0);

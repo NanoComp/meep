@@ -17,9 +17,14 @@
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz };
 enum ndim { d1=0, d2, d3, dcyl };
+enum field_type { E_stuff=0, H_stuff=1 };
 
 inline int is_electric(component c) { return (int) c < 5; }
 inline int is_magnetic(component c) { return (int) c >= 5; }
+inline field_type type(component c) {
+  if (is_electric(c)) return E_stuff;
+  else return H_stuff;
+}
 const char *component_name(component c);
 
 class vec {

@@ -24,22 +24,28 @@
 void fields::disconnect_chunks() {
   for (int i=0;i<num_chunks;i++) {
     DOCMP {
-      delete[] chunks[i]->e_connection_sources[cmp];
-      delete[] chunks[i]->e_connection_sinks[cmp];  
-      delete[] chunks[i]->h_connection_sources[cmp];
-      delete[] chunks[i]->h_connection_sinks[cmp];
-      chunks[i]->e_connection_sources[cmp] = 0;
-      chunks[i]->e_connection_sinks[cmp] = 0;
-      chunks[i]->h_connection_sources[cmp] = 0;
-      chunks[i]->h_connection_sinks[cmp] = 0;
+      for (int f=0;f<2;f++)
+        for (int io=0;io<2;io++) {
+          delete[] chunks[i]->connections[f][io][cmp];
+          chunks[i]->connections[f][io][cmp] = 0;
+        }
     }
-    delete[] chunks[i]->e_phases;
-    delete[] chunks[i]->h_phases;
-    chunks[i]->e_phases = 0;
-    chunks[i]->h_phases = 0;
-    chunks[i]->num_h_connections = 0;
-    chunks[i]->num_e_connections = 0;
+    delete[] chunks[i]->connection_phases[E_stuff];
+    delete[] chunks[i]->connection_phases[H_stuff];
+    chunks[i]->connection_phases[E_stuff] = 0;
+    chunks[i]->connection_phases[H_stuff] = 0;
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        chunks[i]->num_connections[f][io] = 0;
   }
+  for (int ft=0;ft<2;ft++)
+    for (int i=0;i<num_chunks*num_chunks;i++) {
+      DOCMP {
+        delete[] comm_blocks[ft][cmp][i];
+        comm_blocks[ft][cmp][i] = 0;
+      }
+      comm_sizes[ft][i] = 0;
+    }
 }
 
 void fields::connect_chunks() {
@@ -50,27 +56,61 @@ void fields::connect_chunks() {
 }
 
 void fields::connect_adjacent_chunks() {
+  int *nc[2][2];
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) {
+      nc[f][io] = new int[num_chunks];
+      for (int i=0;i<num_chunks;i++) nc[f][io][i] = 0;
+    }
+  int *new_comm_sizes[2];
+  for (int ft=0;ft<2;ft++) new_comm_sizes[ft] = new int[num_chunks*num_chunks];
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
-    int num_e_connections = 0, num_h_connections = 0;
     const volume vi = chunks[i]->v;
+    for (int ft=0;ft<2;ft++) 
+      for (int j=0;j<num_chunks;j++)
+        new_comm_sizes[ft][j] = comm_sizes[ft][j+i*num_chunks];
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
           const vec here = vi.loc((component)c, n);
-          if (!vi.owns(here))
-            // Here we are, looking at a border element...
+          if (!vi.owns(here)) // This means we're looking at a border element...
             for (int j=0;j<num_chunks;j++)
               if (j != i)
                 if (chunks[j]->v.owns(here)) {
-                  if (is_electric((component)c)) num_e_connections++;
-                  else num_h_connections++;
+                  nc[type((component)c)][Incoming][i]++;
+                  nc[type((component)c)][Outgoing][j]++;
+                  new_comm_sizes[type((component)c)][j]++;
                 }
         }
-    // Now allocate the connection arrays...
-    chunks[i]->alloc_extra_connections(num_e_connections, num_h_connections);
-    // Next start setting up the connections...
-    int which_h = 0, which_e = 0;
+    // Allocating comm blocks as we go...
+    for (int ft=0;ft<2;ft++)
+      for (int j=0;j<num_chunks;j++) {
+        DOCMP {
+          delete[] comm_blocks[ft][cmp][j+i*num_chunks];
+          comm_blocks[ft][cmp][j+i*num_chunks] = new double[new_comm_sizes[ft][j]];
+        }
+        comm_sizes[ft][j+i*num_chunks] = new_comm_sizes[ft][j];
+      }
+  }
+  for (int ft=0;ft<2;ft++) delete[] new_comm_sizes[ft];
+  // Now allocate the connection arrays...
+  for (int i=0;i<num_chunks;i++) {
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        chunks[i]->alloc_extra_connections((field_type)f,(in_or_out)io,nc[f][io][i]);
+  }
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) delete[] nc[f][io];
+  // Next start setting up the connections...
+  int *which[2][2];
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) {
+      which[f][io] = new int[num_chunks];
+      for (int i=0;i<num_chunks;i++) which[f][io][i] = 0;
+    }
+  for (int i=0;i<num_chunks;i++) {
+    const volume vi = chunks[i]->v;
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
@@ -81,36 +121,39 @@ void fields::connect_adjacent_chunks() {
                 if (chunks[j]->v.owns(here)) {
                   // index is deprecated, but ok in this case:
                   int m = chunks[j]->v.index((component)c, here);
-                  if (is_electric((component)c)) {
-                    DOCMP {
-                      chunks[i]->e_connection_sinks[cmp][which_e] =
-                        chunks[i]->f[c][cmp] + n;
-                      chunks[i]->e_connection_sources[cmp][which_e] =
-                        chunks[j]->f[c][cmp] + m;
-                    }
-                    chunks[i]->e_phases[which_e] = 1.0;
-                    which_e++;
-                  } else {
-                    DOCMP {
-                      chunks[i]->h_connection_sinks[cmp][which_h] =
-                        chunks[i]->f[c][cmp] + n;
-                      chunks[i]->h_connection_sources[cmp][which_h] =
-                        chunks[j]->f[c][cmp] + m;
-                    }
-                    chunks[i]->h_phases[which_h] = 1.0;
-                    which_h++;
+                  int ft = type((component) c);
+                  DOCMP {
+                    chunks[i]->connections[ft][Incoming][cmp][which[ft][Incoming][i]]
+                      = chunks[i]->f[c][cmp] + n;
+                    chunks[j]->connections[ft][Outgoing][cmp][which[ft][Outgoing][j]]
+                      = chunks[j]->f[c][cmp] + m;
                   }
+                  chunks[i]->connection_phases[ft][which[ft][Incoming][i]] = 1.0;
+                  which[ft][Incoming][i]++;
+                  which[ft][Outgoing][j]++;
                 }
         }
   }
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) delete[] which[f][io];
 }
 
 void fields::connect_periodic_chunks() {
   if (k == -1) return; // It isn't periodic!  :)
+  int *nc[2][2];
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) {
+      nc[f][io] = new int[num_chunks];
+      for (int i=0;i<num_chunks;i++) nc[f][io][i] = 0;
+    }
+  int *new_comm_sizes[2];
+  for (int ft=0;ft<2;ft++) new_comm_sizes[ft] = new int[num_chunks*num_chunks];
   for (int i=0;i<num_chunks;i++) {
-    // First count the border elements in z direction...
-    int num_e_connections = 0, num_h_connections = 0;
     const volume vi = chunks[i]->v;
+    // First count the border elements in z direction...
+    for (int ft=0;ft<2;ft++)
+      for (int j=0;j<num_chunks;j++)
+        new_comm_sizes[ft][j] = comm_sizes[ft][j+i*num_chunks];
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
@@ -120,8 +163,9 @@ void fields::connect_periodic_chunks() {
             const vec there = here + lattice_vector();
             for (int j=0;j<num_chunks;j++)
               if (chunks[j]->v.owns(there)) {
-                if (is_electric((component)c)) num_e_connections++;
-                else num_h_connections++;
+                nc[type((component)c)][Incoming][i]++;
+                nc[type((component)c)][Outgoing][j]++;
+                new_comm_sizes[type((component)c)][j]++;
               }
           } else if (here.z() > v.origin.z() + lattice_vector().z() &&
                      !vi.owns(here)) {
@@ -129,15 +173,41 @@ void fields::connect_periodic_chunks() {
             const vec there = here - lattice_vector();
             for (int j=0;j<num_chunks;j++)
               if (chunks[j]->v.owns(there)) {
-                if (is_electric((component)c)) num_e_connections++;
-                else num_h_connections++;
+                nc[type((component)c)][Incoming][i]++;
+                nc[type((component)c)][Outgoing][j]++;
+                new_comm_sizes[type((component)c)][j]++;
               }
           }
         }
-    // Now allocate the connection arrays...
-    chunks[i]->alloc_extra_connections(num_e_connections, num_h_connections);
-    // Next start setting up the connections...
-    int which_h = 0, which_e = 0;
+    // Allocating comm blocks as we go...
+    for (int ft=0;ft<2;ft++)
+      for (int j=0;j<num_chunks;j++) {
+        DOCMP {
+          delete[] comm_blocks[ft][cmp][j+i*num_chunks];
+          comm_blocks[ft][cmp][j+i*num_chunks] = new double[new_comm_sizes[ft][j]];
+        }
+        comm_sizes[ft][j+i*num_chunks] = new_comm_sizes[ft][j];
+      }
+  }
+  for (int ft=0;ft<2;ft++) delete[] new_comm_sizes[ft];
+  // Now allocate the connection arrays...
+  for (int i=0;i<num_chunks;i++) {
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        chunks[i]->alloc_extra_connections((field_type)f,(in_or_out)io,nc[f][io][i]);
+  }
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) delete[] nc[f][io];
+  // Next start setting up the connections...
+  int *which[2][2];
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++)
+      which[f][io] = new int[num_chunks];
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++)
+      for (int i=0;i<num_chunks;i++) which[f][io][i] = 0;
+  for (int i=0;i<num_chunks;i++) {
+    const volume vi = chunks[i]->v;
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
@@ -159,33 +229,24 @@ void fields::connect_periodic_chunks() {
           if (isborder && !vi.owns(here)) {
             for (int j=0;j<num_chunks;j++)
               if (chunks[j]->v.owns(there)) {
+                // index is deprecated, but ok in this case:
                 int m = chunks[j]->v.index((component)c, there);
-                //printf("Connected %4lg %4lg with %4lg %4lg -- %s\n",
-                //       here.r(), here.z(), there.r(), there.z(),
-                //       component_name((component)c));
-                if (is_electric((component)c)) {
-                  DOCMP {
-                    chunks[i]->e_connection_sinks[cmp][which_e] =
-                      chunks[i]->f[c][cmp] + n;
-                    chunks[i]->e_connection_sources[cmp][which_e] =
-                      chunks[j]->f[c][cmp] + m;
-                  }
-                  chunks[i]->e_phases[which_e] = phase;
-                  which_e++;
-                } else {
-                  DOCMP {
-                    chunks[i]->h_connection_sinks[cmp][which_h] =
-                      chunks[i]->f[c][cmp] + n;
-                    chunks[i]->h_connection_sources[cmp][which_h] =
-                      chunks[j]->f[c][cmp] + m;
-                  }
-                  chunks[i]->h_phases[which_h] = phase;
-                  which_h++;
+                int ft = type((component) c);
+                DOCMP {
+                  chunks[i]->connections[ft][Incoming][cmp]
+                    [which[ft][Incoming][i]] = chunks[i]->f[c][cmp] + n;
+                  chunks[j]->connections[ft][Outgoing][cmp]
+                    [which[ft][Outgoing][j]] = chunks[j]->f[c][cmp] + m;
                 }
+                chunks[i]->connection_phases[ft][which[ft][Incoming][i]] = 1.0;
+                which[ft][Incoming][i]++;
+                which[ft][Outgoing][j]++;
               }
           }
         }
   }
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) delete[] which[f][io];
 }
 
 void fields::connect_metallic_chunks() {
@@ -197,144 +258,175 @@ void fields::connect_metallic_chunks() {
 static double zero = 0.0;
 
 void fields::connect_metallic_bigr_chunks() {
+  int *nc[2][2];
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) {
+      nc[f][io] = new int[num_chunks];
+      for (int i=0;i<num_chunks;i++) nc[f][io][i] = 0;
+    }
   // Note: Only call this function if you are in cylindrical coords!
   for (int i=0;i<num_chunks;i++) {
-    // First count the radial border elements...
-    int num_e_connections = 0, num_h_connections = 0;
     const volume vi = chunks[i]->v;
+    // First count the radial border elements...
+    int new_comm_size[2];
+    for (int ft=0;ft<2;ft++) new_comm_size[ft] = comm_sizes[ft][i+i*num_chunks];
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
           const vec here = vi.loc((component)c, n);
           if (here.r() > v.origin.r() + v.nr()*inva && !vi.owns(here)) {
             // It is on the big r border...
-            if (is_electric((component)c)) num_e_connections++;
-            else num_h_connections++;
+            nc[type((component)c)][Incoming][i]++;
+            nc[type((component)c)][Outgoing][i]++;
+            new_comm_size[type((component)c)]++;
           }
         }
-    // Now allocate the connection arrays...
-    chunks[i]->alloc_extra_connections(num_e_connections, num_h_connections);
-    // Next start setting up the connections...
-    int which_h = 0, which_e = 0;
+    // Allocating comm blocks as we go...
+    for (int ft=0;ft<2;ft++) {
+      DOCMP {
+        delete[] comm_blocks[ft][cmp][i+i*num_chunks];
+        comm_blocks[ft][cmp][i+i*num_chunks] = new double[new_comm_size[ft]];
+      }
+      comm_sizes[ft][i+i*num_chunks] = new_comm_size[ft];
+    }
+  }
+  // Now allocate the connection arrays...
+  for (int i=0;i<num_chunks;i++) {
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        chunks[i]->alloc_extra_connections((field_type)f,(in_or_out)io,nc[f][io][i]);
+  }
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) delete[] nc[f][io];
+  // Next start setting up the connections...
+  for (int i=0;i<num_chunks;i++) {
+    const volume vi = chunks[i]->v;
+    int *which[2][2];
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        which[f][io] = new int[num_chunks];
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        for (int i=0;i<num_chunks;i++) which[f][io][i] = 0;
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
           const vec here = vi.loc((component)c, n);
           if (here.r() > v.origin.r() + v.nr()*inva && !vi.owns(here)) {
-            // It is on the big r border...
-            //printf("Connected %4lg %4lg with zero -- %s\n",
-            //       here.r(), here.z(), component_name((component)c));
-            if (is_electric((component)c)) {
-              DOCMP {
-                chunks[i]->e_connection_sinks[cmp][which_e] =
-                  chunks[i]->f[c][cmp] + n;
-                chunks[i]->e_connection_sources[cmp][which_e] = &zero;
-              }
-              chunks[i]->e_phases[which_e] = 1.0;
-              which_e++;
-            } else {
-              DOCMP {
-                chunks[i]->h_connection_sinks[cmp][which_h] =
-                  chunks[i]->f[c][cmp] + n;
-                chunks[i]->h_connection_sources[cmp][which_h] = &zero;
-              }
-              chunks[i]->h_phases[which_h] = 1.0;
-              which_h++;
+            int ft = type((component) c);
+            DOCMP {
+              chunks[i]->connections[ft][Incoming][cmp][which[ft][Incoming][i]]
+                = chunks[i]->f[c][cmp] + n;
+              chunks[i]->connections[ft][Outgoing][cmp][which[ft][Outgoing][i]]
+                = &zero;
             }
+            chunks[i]->connection_phases[ft][which[ft][Incoming][i]] = 1.0;
+            which[ft][Incoming][i]++;
+            which[ft][Outgoing][i]++;
           }
         }
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++) delete[] which[f][io];
   }
 }
 
 void fields::connect_metallic_bigz_chunks() {
-  // Note: Only call this function if you are in cylindrical coords!
+  int *nc[2][2];
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) {
+      nc[f][io] = new int[num_chunks];
+      for (int i=0;i<num_chunks;i++) nc[f][io][i] = 0;
+    }
   for (int i=0;i<num_chunks;i++) {
-    // First count the radial border elements...
-    int num_e_connections = 0, num_h_connections = 0;
     const volume vi = chunks[i]->v;
+    // First count the border elements...
+    int new_comm_size[2];
+    for (int ft=0;ft<2;ft++) new_comm_size[ft] = comm_sizes[ft][i+i*num_chunks];
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
           const vec here = vi.loc((component)c, n);
           if (here.z() == v.origin.z() + (v.nz()+0.5)*inva && !vi.owns(here)) {
             // It is on the big z border...
-            if (is_electric((component)c)) num_e_connections++;
-            else num_h_connections++;
+            nc[type((component)c)][Incoming][i]++;
+            nc[type((component)c)][Outgoing][i]++;
+            new_comm_size[type((component)c)]++;
           }
         }
-    // Now allocate the connection arrays...
-    chunks[i]->alloc_extra_connections(num_e_connections, num_h_connections);
-    // Next start setting up the connections...
-    int which_h = 0, which_e = 0;
+    // Allocating comm blocks as we go...
+    for (int ft=0;ft<2;ft++) {
+      DOCMP {
+        delete[] comm_blocks[ft][cmp][i+i*num_chunks];
+        comm_blocks[ft][cmp][i+i*num_chunks] = new double[new_comm_size[ft]];
+      }
+      comm_sizes[ft][i+i*num_chunks] = new_comm_size[ft];
+    }
+  }
+  // Now allocate the connection arrays...
+  for (int i=0;i<num_chunks;i++) {
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        chunks[i]->alloc_extra_connections((field_type)f,(in_or_out)io,nc[f][io][i]);
+  }
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++) delete[] nc[f][io];
+  // Next start setting up the connections...
+  for (int i=0;i<num_chunks;i++) {
+    const volume vi = chunks[i]->v;
+    int *which[2][2];
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        which[f][io] = new int[num_chunks];
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++)
+        for (int i=0;i<num_chunks;i++) which[f][io][i] = 0;
     for (int c=0;c<10;c++)
       if (vi.has_field((component)c))
         for (int n=0;n<vi.ntot();n++) {
           const vec here = vi.loc((component)c, n);
           if (here.z() == v.origin.z() + (v.nz()+0.5)*inva && !vi.owns(here)) {
             // It is on the big z border...
-            if (is_electric((component)c)) {
-              DOCMP {
-                chunks[i]->e_connection_sinks[cmp][which_e] =
-                  chunks[i]->f[c][cmp] + n;
-                chunks[i]->e_connection_sources[cmp][which_e] = &zero;
-              }
-              chunks[i]->e_phases[which_e] = 1.0;
-              which_e++;
-            } else {
-              DOCMP {
-                chunks[i]->h_connection_sinks[cmp][which_h] =
-                  chunks[i]->f[c][cmp] + n;
-                chunks[i]->h_connection_sources[cmp][which_h] = &zero;
-              }
-              chunks[i]->h_phases[which_h] = 1.0;
-              which_h++;
+            int ft = type((component) c);
+            DOCMP {
+              chunks[i]->connections[ft][Incoming][cmp][which[ft][Incoming][i]]
+                = chunks[i]->f[c][cmp] + n;
+              chunks[i]->connections[ft][Outgoing][cmp][which[ft][Outgoing][i]]
+                = &zero;
             }
+            chunks[i]->connection_phases[ft][which[ft][Incoming][i]] = 1.0;
+            which[ft][Incoming][i]++;
+            which[ft][Outgoing][i]++;
           }
         }
+    for (int f=0;f<2;f++)
+      for (int io=0;io<2;io++) delete[] which[f][io];
   }
 }
 
-void fields_chunk::alloc_extra_connections(int nume, int numh) {
-  const int toth = num_h_connections + numh;
-  const int tote = num_e_connections + nume;
-  complex<double> *eph = new complex<double>[tote];
-  complex<double> *hph = new complex<double>[toth];
-  if (!hph) {
-    printf("Out of memory!\n");
-    exit(1);
-  }
-  for (int x=0;x<num_e_connections;x++) eph[nume+x] = e_phases[x];
-  for (int x=0;x<num_h_connections;x++) hph[numh+x] = h_phases[x];
-  delete[] e_phases;
-  delete[] h_phases;
-  e_phases = eph;
-  h_phases = hph;
-  DOCMP {
-    double **sink_e = new double *[tote];
-    double **source_e = new double *[tote];
-    double **sink_h = new double *[toth];
-    double **source_h = new double *[toth];
-    if (!source_h) {
+void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) {
+  if (num == 0) return; // No need to go to any bother...
+  const int tot = num_connections[f][io] + num;
+  if (io == Incoming) {
+    complex<double> *ph = new complex<double>[tot];
+    if (!ph) {
       printf("Out of memory!\n");
       exit(1);
     }
-    for (int x=0;x<num_e_connections;x++) {
-      sink_e[nume+x] = e_connection_sinks[cmp][x];
-      source_e[nume+x] = e_connection_sources[cmp][x];
-    }
-    for (int x=0;x<num_h_connections;x++) {
-      sink_h[numh+x] = h_connection_sinks[cmp][x];
-      source_h[numh+x] = h_connection_sources[cmp][x];
-    }
-    delete[] e_connection_sources[cmp];
-    delete[] h_connection_sources[cmp];
-    delete[] e_connection_sinks[cmp];
-    delete[] h_connection_sinks[cmp];
-    e_connection_sources[cmp] = source_e;
-    h_connection_sources[cmp] = source_h;
-    e_connection_sinks[cmp] = sink_e;
-    h_connection_sinks[cmp] = sink_h;
+    for (int x=0;x<num_connections[f][io];x++)
+      ph[num+x] = connection_phases[f][x];
+    delete[] connection_phases[f];
+    connection_phases[f] = ph;
   }
-  num_e_connections += nume;
-  num_h_connections += numh;
+  DOCMP {
+    double **conn = new double *[tot];
+    if (!conn) {
+      printf("Out of memory!\n");
+      exit(1);
+    }
+    for (int x=0;x<num_connections[f][io];x++)
+      conn[num+x] = connections[f][io][cmp][x];
+    delete[] connections[f][io][cmp];
+    connections[f][io][cmp] = conn;
+  }
+  num_connections[f][io] += num;
 }

@@ -40,6 +40,15 @@ fields::fields(const mat *ma, int tm=0) {
   chunks = new (fields_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new fields_chunk(ma->chunks[i], outdir, m);
+  for (int ft=0;ft<2;ft++) {
+    comm_sizes[ft] = new int[num_chunks*num_chunks];
+    for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][i] = 0;
+    for (int cmp=0;cmp<2;cmp++) {
+      comm_blocks[ft][cmp] = new (double *)[num_chunks*num_chunks];
+      for (int i=0;i<num_chunks*num_chunks;i++)
+        comm_blocks[ft][cmp][i] = 0;
+    }
+  }
   connect_chunks();
 }
 void fields::use_bloch(double kz) { // FIXME for more D
@@ -64,6 +73,12 @@ vec fields::lattice_vector() const {
 fields::~fields() {
   for (int i=0;i<num_chunks;i++) delete chunks[i];
   delete[] chunks;
+  for (int ft=0;ft<2;ft++) {
+    for (int i=0;i<num_chunks*num_chunks;i++)
+      DOCMP delete[] comm_blocks[ft][cmp][i];
+    for (int cmp=0;cmp<2;cmp++) delete[] comm_blocks[ft][cmp];
+    delete[] comm_sizes[ft];
+  }
   delete bands;
 }
 void fields::use_real_fields() {
@@ -83,13 +98,11 @@ fields_chunk::~fields_chunk() {
     for (int i=0;i<10;i++) delete[] f_backup[i][cmp];
     for (int i=0;i<10;i++) delete[] f_pml[i][cmp];
     for (int i=0;i<10;i++) delete[] f_backup_pml[i][cmp];
-    delete[] e_connection_sinks[cmp];
-    delete[] e_connection_sources[cmp];
-    delete[] h_connection_sinks[cmp];
-    delete[] h_connection_sources[cmp];
+    for (int ft=0;ft<2;ft++)
+      for (int io=0;io<2;io++)
+        delete[] connections[ft][io][cmp];
   }
-  delete[] e_phases;
-  delete[] h_phases;
+  for (int ft=0;ft<2;ft++) delete[] connection_phases[ft];
   delete h_sources;
   delete e_sources;
   delete pol;
@@ -137,12 +150,13 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
         for (int i=0;i<v.ntot();i++)
           f_pml[c][cmp][i] = 0.0;
   }
-  num_e_connections = num_h_connections = 0;
-  for (int cmp=0;cmp<2;cmp++) {
-    e_connection_sources[cmp] = e_connection_sinks[cmp] = NULL;
-    h_connection_sources[cmp] = h_connection_sinks[cmp] = NULL;
-    h_phases = e_phases = NULL;
-  }
+  num_connections[E_stuff][Incoming] = num_connections[E_stuff][Outgoing] = 0;
+  num_connections[H_stuff][Incoming] = num_connections[H_stuff][Outgoing] = 0;
+  connection_phases[E_stuff] = connection_phases[H_stuff] = 0;
+  for (int f=0;f<2;f++)
+    for (int io=0;io<2;io++)
+      for (int cmp=0;cmp<2;cmp++)
+        connections[f][io][cmp] = 0;
 }
 
 void fields_chunk::use_real_fields() {

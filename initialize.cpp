@@ -104,6 +104,8 @@ void fields::initialize_with_n_tm(int ntot) {
 void fields::initialize_field(component c, complex<double> func(const vec &)) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->initialize_field(c, func);
+  step_boundaries(H_stuff);
+  step_boundaries(E_stuff);
 }
 
 void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
@@ -112,6 +114,4 @@ void fields_chunk::initialize_field(component c, complex<double> func(const vec 
     f[c][0][i] += real(val);
     f[c][1][i] += imag(val);
   }
-  step_h_boundaries();
-  step_e_boundaries();
 }

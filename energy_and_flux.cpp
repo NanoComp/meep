@@ -51,11 +51,15 @@ double fields::energy_in_box(const volume &otherv) {
 }
 
 double fields::field_energy_in_box(const volume &otherv) {
-  const double tim = time();
-  double energy = 0.0;
-  for (int i=0;i<num_chunks;i++)
-    energy += chunks[i]->field_energy_in_box(otherv, tim);
-  return energy;
+  for (int i=0;i<num_chunks;i++) chunks[i]->backup_h();
+  step_h();
+  step_boundaries(H_stuff);
+  step_h_source();
+  double next_step_magnetic_energy = magnetic_energy_in_box(otherv);
+  for (int i=0;i<num_chunks;i++) chunks[i]->restore_h();
+
+  return electric_energy_in_box(otherv) +
+    0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(otherv);
 }
 
 double fields::electric_energy_in_box(const volume &otherv) {
@@ -79,7 +83,7 @@ double fields::thermo_energy_in_box(const volume &otherv) {
   return energy;
 }
 
-double fields_chunk::field_energy_in_box(const volume &otherv, double time) {
+double fields_chunk::backup_h() {
   DOCMP {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && is_magnetic((component)c)) {
@@ -96,12 +100,9 @@ double fields_chunk::field_energy_in_box(const volume &otherv, double time) {
         for (int i=0;i<v.ntot();i++) f_backup_pml[c][cmp][i] = f_pml[c][cmp][i];
       }
   }
+}
 
-  step_h();
-  step_h_boundaries();
-  step_h_source(h_sources, time);
-  double next_step_magnetic_energy = magnetic_energy_in_box(otherv);
-
+double fields_chunk::restore_h() {
   DOCMP {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && is_magnetic((component)c)) {
@@ -109,9 +110,6 @@ double fields_chunk::field_energy_in_box(const volume &otherv, double time) {
         for (int i=0;i<v.ntot();i++) f_pml[c][cmp][i] = f_backup_pml[c][cmp][i];
       }
   }
-
-  return electric_energy_in_box(otherv) +
-    0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(otherv);
 }
 
 double fields_chunk::electric_energy_in_box(const volume &otherv) {
