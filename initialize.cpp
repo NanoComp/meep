@@ -58,15 +58,15 @@ static complex<double> JP(const vec &v) {
 
 void fields::initialize_with_nth_te(int np0) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->initialize_with_nth_te(np0);
+    chunks[i]->initialize_with_nth_te(np0, k);
 }
 
-void fields_chunk::initialize_with_nth_te(int np0) {
+void fields_chunk::initialize_with_nth_te(int np0, double kz) {
   if (v.dim == dcyl) {
     const int n = (m==0) ? np0 - 0 : np0 - 1;
     const double rmax = Jmax(m,n);
     ktrans = rmax/(v.nr()*inva);
-    kax = k*2*pi*inva;
+    kax = kz*2*pi*inva;
     m_for_J = m;
     initialize_field(Hz, JJ);
   } else {
@@ -76,15 +76,15 @@ void fields_chunk::initialize_with_nth_te(int np0) {
 
 void fields::initialize_with_nth_tm(int np0) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->initialize_with_nth_tm(np0);
+    chunks[i]->initialize_with_nth_tm(np0, k);
 }
 
-void fields_chunk::initialize_with_nth_tm(int np1) {
+void fields_chunk::initialize_with_nth_tm(int np1, double kz) {
   if (v.dim == dcyl) {
     const int n = np1 - 1;
     const double rroot = Jroot(m,n);
     ktrans = rroot/(v.nr()*inva);
-    kax = k*2*pi*inva;
+    kax = kz*2*pi*inva;
     m_for_J = m;
     initialize_field(Ez, JJ);
     initialize_field(Hp, JP);

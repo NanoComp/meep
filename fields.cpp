@@ -51,6 +51,10 @@ fields::~fields() {
   delete bands;
 }
 void fields::use_real_fields() {
+  if (k >= 0.0) {
+    printf("Can't use real fields_chunk with bloch boundary conditions!\n");
+    exit(1);
+  }
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
 }
@@ -76,16 +80,15 @@ fields_chunk::~fields_chunk() {
   delete olpol;
 }
 
-void fields_chunk::use_bloch(double tk) {
+void fields_chunk::use_bloch(double k) {
   if (is_real) {
     printf("Can't do bloch boundaries with real fields_chunk!\n");
     // Note that I *could* implement bloch boundary conditions, at least
     // for gamma point and zone edge situations.
     exit(1);
   }
-  k = tk;
-  cosknz = cos(k*2*pi*inva*v.nz());
-  sinknz = sin(k*2*pi*inva*v.nz());
+  const double cosknz = cos(k*2*pi*inva*v.nz());
+  const double sinknz = sin(k*2*pi*inva*v.nz());
   eiknz = complex<double>(cosknz, sinknz);
   complex<double> emiknz = complex<double>(cosknz, -sinknz);
   if (v.dim == d1) {
@@ -168,7 +171,6 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
   m = tm;
   new_ma = NULL;
   bands = NULL;
-  k = -1;
   is_real = 0;
   a = ma->a;
   inva = 1.0/a;
@@ -268,10 +270,6 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
 }
 
 void fields_chunk::use_real_fields() {
-  if (k >= 0.0) {
-    printf("Can't use real fields_chunk with bloch boundary conditions!\n");
-    exit(1);
-  }
   is_real = 1;
   if (pol) pol->use_real_fields();
   if (olpol) olpol->use_real_fields();

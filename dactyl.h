@@ -150,7 +150,6 @@ class fields_chunk {
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
   int m, is_real;
-  double k, cosknz, sinknz;
   complex<double> eiknz;
   bandsdata *bands;
   src *e_sources, *h_sources;
@@ -166,10 +165,6 @@ class fields_chunk {
 
   void use_real_fields();
   double find_last_source();
-  void initialize_field(component, complex<double> f(const vec &));
-  void initialize_with_nth_te(int n);
-  void initialize_with_nth_tm(int n);
-  void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
 
   void get_point(monitor_point *p, const vec &, double time);
   void output_point(FILE *, const vec &, const char *name, double time);
@@ -213,6 +208,11 @@ class fields_chunk {
   void add_indexed_source(component whichf, double freq, double width,
                           double peaktime, int cutoff, int theindex, 
                           complex<double> amp, int is_c, double time);
+  // initialize.cpp
+  void initialize_field(component, complex<double> f(const vec &));
+  void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
+  void initialize_with_nth_te(int n, double kz);
+  void initialize_with_nth_tm(int n, double kz);
 };
 
 class fields {
