@@ -196,10 +196,16 @@ void fields::add_point_source(component c, double freq,
   }
 }
 
-complex<double> one(const vec &v) {(void) v; return 1.0;}
 void fields::add_point_source(component c, const src_time &src,
 			      const vec &p, complex<double> amp) {
-  add_volume_source(c, src, geometric_volume(p, p), one, amp);
+  add_volume_source(c, src, geometric_volume(p, p), amp);
+}
+
+complex<double> one(const vec &v) {(void) v; return 1.0;}
+void fields::add_volume_source(component c, const src_time &src,
+                               const geometric_volume &where,
+			       complex<double> amp) {
+  add_volume_source(c, src, where, one, amp);
 }
 
 struct src_vol_integrand_data {

@@ -704,6 +704,9 @@ class fields {
 			 const geometric_volume &, 
 			 complex<double> A(const vec &),
 			 complex<double> amp = 1.0);
+  void add_volume_source(component c, const src_time &src,
+			 const geometric_volume &, 
+			 complex<double> amp = 1.0);
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_A(complex<double> A(component, const vec &), double freq);
   void initialize_with_nth_te(int n);
