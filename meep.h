@@ -152,7 +152,7 @@ class monitor_point {
   // harminv works much like fourier_transform, except that it is not yet
   // implemented.
   void harminv(component w,
-               complex<double> **a, double **f_re, double **f_im,
+               complex<double> **a, complex<double> **f,
                int *numout, double fmin, double fmax,
                int maxbands);
 };

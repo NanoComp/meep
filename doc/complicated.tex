@@ -153,18 +153,18 @@ In case you're wondering about the ``\verb!\begin{verbatim}!'', it's there
 so I can easily include the output in this manual (see
 Figure~\ref{complicated_figure}).
 \begin{verbatim}
-  complex<double> *amp;
-  double *freqs, *decays;
+  complex<double> *amp, *freqs;
   int num;
   
   file *myfreqs = create_output_file(dirname, "freqs");
   master_fprintf(myfreqs, "\\begin{verbatim}\n");
   master_printf("Harminving Hy...\n");
   interrupt = 0; // Harminv even if we were interrupted.
-  p->harminv(Hy, &amp, &freqs, &decays, &num, 0.8*freq, 1.2*freq, 5);
+  p->harminv(Hy, &amp, &freqs, &num, 0.8*freq, 1.2*freq, 5);
   for (int i=0;i<num;i++) {
     master_fprintf(myfreqs, "%lg\t%lg\t%lg\t%lg\t%lg\n",
-                   freqs[i], decays[i], -freqs[i]/decays[i],
+                   real(freqs[i]), imag(freqs[i]),
+                   -real(freqs[i])/imag(freqs[i]),
                    real(amp[i]), imag(amp[i]));
   }
   master_fprintf(myfreqs, "%cend{verbatim}\n", '\\');
