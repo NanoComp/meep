@@ -604,9 +604,15 @@ double anisoaverage(component ec, direction d, material_function &eps,
 void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
                             bool use_anisotropic_averaging) {
   if (!is_mine()) return;
+
+  epsilon.set_volume(v.pad().surroundings());
+
+  if (!eps)
+       eps = new double[v.ntot()];
+  for (int i=0;i<v.ntot();i++)
+       eps[i] = epsilon.eps(v.loc(v.eps_component(),i));
+  
   if (!use_anisotropic_averaging) {
-    if (is_mine()) {
-      epsilon.set_volume(v.pad().surroundings());
       for (int i=0;i<v.ntot();i++) {
         FOR_ELECTRIC_COMPONENTS(c)
           if (v.has_field(c)) {
@@ -634,7 +640,6 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
               }
           }
       }
-    }
   } else {
     if (minvol == 0.0) minvol = v.dV(zero_ivec(v.dim)).full_volume()/100.0;
     FOR_ELECTRIC_COMPONENTS(c)
@@ -657,15 +662,7 @@ structure_chunk::structure_chunk(const volume &thev, material_function &epsilon,
   a = thev.a;
   the_proc = pr;
   the_is_mine = n_proc() == my_rank();
-  if (is_mine()) {
-    eps = new double[v.ntot()];
-    if (eps == NULL) abort("Out of memory!\n");
-    epsilon.set_volume(v.pad().surroundings());
-    for (int i=0;i<v.ntot();i++)
-	 eps[i] = epsilon.eps(v.loc(v.eps_component(),i));
-  } else {
-    eps = NULL;
-  }
+  eps = NULL;
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
     if (is_mine() && v.has_field(c) && is_electric(c) &&
         d == component_direction(c)) {
