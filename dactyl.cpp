@@ -606,9 +606,9 @@ void fields::step_h_pml() {
         double Cphz = ma->Cphz[r-nr+npmlr];
         for (int z=1;z<nz;z++) {
           double Czhp, Czhr;
-          if (z <= npmlz) {
-            Czhr = ma->Czhr[npmlz - z];
-            Czhp = ma->Czhp[npmlz - z];
+          if (z < npmlz) {
+            Czhr = ma->Czhr[npmlz - z - 1];
+            Czhp = ma->Czhp[npmlz - z - 1];
           } else if (z >= nz - npmlz) {
             Czhr = ma->Czhr[z+npmlz-nz];
             Czhp = ma->Czhp[z+npmlz-nz];
@@ -651,7 +651,7 @@ void fields::step_h_pml() {
         double dhrp = (- c*IT(ez,r,z)*mor*(1-0.5*Cphr)-Cphr*PMLR(hrp,r,z) );
         double hrz = CM(hr,r,z) - PMLR(hrp,r,z);
         PMLR(hrp,r,z) += dhrp;
-        CM(hr,r,z)+= dhrp + c*((CM(ep,r,z+1)-CM(ep,r,z))*(1-0.5*Czhr) - Czhr*hrz);
+        CM(hr,r,z)+= dhrp + (c*(CM(ep,r,z+1)-CM(ep,r,z))*(1-0.5*Czhr) - Czhr*hrz);
         double dhpz = (-c*(CM(er,r,z+1)-CM(er,r,z))*(1-0.5*Czhp)-Czhp*PMLR(hpz,r,z));
         double hpr = CM(hp,r,z)-PMLR(hpz,r,z);
         PMLR(hpz,r,z) += dhpz;
