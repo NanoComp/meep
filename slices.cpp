@@ -400,6 +400,20 @@ void mat::output_slices(const geometric_volume &what, const char *name) const {
     if (chunks[i]->is_mine())
       output_slice(v.eps_component(), chunks[i]->eps, chunks[i]->v, what, out);
   everyone_close(out);
+
+  FOR_DIRECTIONS(d)
+    FOR_COMPONENTS(c) {
+      snprintf(n, buflen, "%s/%ssigma-C-%s-%s.sli", outdir, nname, component_name(c), direction_name(d));
+      file *out = everyone_open_write(n);
+      if (!out) {
+	printf("Unable to open file '%s' for slice output.\n", n);
+	return;
+      }
+      for (int i=0;i<num_chunks;i++)
+	if (chunks[i]->is_mine())
+	  output_slice(c, chunks[i]->C/*decay*/[d][c]/*[component_direction(c)]*/, chunks[i]->v, what, out);
+      everyone_close(out);
+    }
   delete[] n;
 }
 
