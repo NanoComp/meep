@@ -75,18 +75,16 @@ static int matrixio_critical_section_tag = 0;
 
 /*****************************************************************************/
 
+#ifdef HAVE_HDF5
 static bool dataset_exists(hid_t id, const char *name)
 {
-#ifdef HAVE_HDF5
      hid_t data_id;
      SUPPRESS_HDF5_ERRORS(data_id = H5Dopen(id, name));
      if (data_id >= 0)
           H5Dclose(data_id);
      return (data_id >= 0);
-#else
-     return false;
-#endif
 }
+#endif
 
 double *h5io::read(const char *filename, const char *dataname,
 		   int *rank, int *dims, int maxrank)
@@ -140,8 +138,7 @@ double *h5io::read(const char *filename, const char *dataname,
 
      return data;
 #else
-     master_fprintf(stderr, "h5io: compiled without HDF5, cannot read files");
-     return NULL
+     return NULL;
 #endif
 }
 
@@ -346,8 +343,6 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      IF_EXCLUSIVE(if (parallel)
 		    end_critical_section(matrixio_critical_section_tag++),
 		  (void) 0);
-#else
-     master_fprintf(stderr, "h5io: compiled without HDF5, cannot write files");
 #endif
 }
 
