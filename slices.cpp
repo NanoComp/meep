@@ -143,8 +143,9 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
   fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
   fprintf(out, "    /D { moveto\n\
-    0 1 0 setrgbcolor [0 %lg] 0 setdash\n\
-    lineto stroke } def\n", dx);
+    %lg setlinewidth\n\
+    0 0.8 0 setrgbcolor [0 %lg] 0 setdash\n\
+    lineto stroke } def\n", 0.6*dx, 3*dx);
 }
 
 static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
@@ -190,8 +191,9 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
 } def\n");
   fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
   fprintf(out, "    /D { moveto\n\
-    0 1 0 setrgbcolor [0 %lg] 0 setdash\n\
-    lineto stroke } def\n", dx);
+    %lg setlinewidth\n\
+    0 0.8 0 setrgbcolor [0 %lg] 0 setdash\n\
+    lineto stroke } def\n", 0.6*dx, 3*dx);
 }
 
 static void eps_trailer(FILE *out) {
