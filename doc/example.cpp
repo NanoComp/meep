@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
   double ttot = 100;
   
   mat ma(volcyl(4.0,3.6,a), guided_eps);
-  const char *dirname = make_output_directory(argv[0]);
+  const char *dirname = make_output_directory(__FILE__);
   ma.set_output_directory(dirname);
   //ma.use_pml_right(1.0);
   //ma.use_pml_left(1.0);

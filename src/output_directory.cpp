@@ -110,6 +110,7 @@ file *create_output_file(const char *dirname, const char *fname) {
 const char *make_output_directory(const char *exename, const char *jobname) {
   const int buflen = 300;
   char basename[buflen];
+  const char * const evil_suffixes[] = { ".dac", ".cpp", ".cc", ".cxx", ".C" };
   char stripped_name[buflen];
   const char *bnp = exename; // stripped_name holds the actual name of the
                                   // executable (dirs removed).
@@ -119,8 +120,14 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   }
   
   snprintf(stripped_name, buflen, "%s", bnp);
-  if (strcmp(stripped_name + strlen(stripped_name) - 4, ".dac") == 0) {
-    stripped_name[strlen(stripped_name) - 4] = (char)0;
+  for (int i = 0; i < sizeof(evil_suffixes) / sizeof(evil_suffixes[0]); ++i) {
+    int sufflen = strlen(evil_suffixes[i]);
+    if (strcmp(stripped_name + strlen(stripped_name) - sufflen, 
+	       evil_suffixes[i]) == 0
+	&& strlen(stripped_name) > sufflen) {
+      stripped_name[strlen(stripped_name) - sufflen] = (char)0;
+      break;
+    }
   }
 
   char sourcename[buflen]; // Holds the "example.cpp" filename.

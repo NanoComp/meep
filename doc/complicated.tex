@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
   const symmetry S = mirror(Y, vol) + rotate2(Y, vol);
   mat ma(vol, eps, 0, S);
   ma.use_pml_everywhere(pml_thickness);
-  const char *dirname = make_output_directory(argv[0]);
+  const char *dirname = make_output_directory(__FILE__);
   ma.set_output_directory(dirname);
   fields f(&ma);
   const double wavelength = 1.72;

@@ -82,7 +82,7 @@ source file if it can find it.  If the directory already exists, then it
 reuses it, unless the C++ control file has changed, in which case it
 creates a new one.
 \begin{verbatim}
-  const char *dirname = make_output_directory(argv[0]);
+  const char *dirname = make_output_directory(__FILE__);
   ma.set_output_directory(dirname);
 \end{verbatim}
 The mat structure only holds the epsilon.  We will also need a ``fields''
