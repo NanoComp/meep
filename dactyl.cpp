@@ -103,9 +103,9 @@ fields::fields(const mat *the_ma, int tm) {
   h_sources = e_sources = NULL;
   DOCMP {
     hr[cmp] = new double[(nr+1)*(nz+1)];
-    hp[cmp] = new double[nr*(nz+1)];
-    hz[cmp] = new double[nr*(nz+1)];
-    er[cmp] = new double[nr*(nz+1)];
+    hp[cmp] = new double[(nr+1)*(nz+1)];
+    hz[cmp] = new double[(nr+1)*(nz+1)];
+    er[cmp] = new double[(nr+1)*(nz+1)];
     ep[cmp] = new double[(nr+1)*(nz+1)];
     ez[cmp] = new double[(nr+1)*(nz+1)];
     backup_hr[cmp] = NULL;
@@ -142,11 +142,11 @@ fields::fields(const mat *the_ma, int tm) {
   DOCMP {
     for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
       CM(hr,r,z) = 0.0;
-    for (r=0;r<nr  ;r++) for (z=0;z<nz+1;z++)
+    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
       CM(hp,r,z) = 0.0;
-    for (r=0;r<nr  ;r++) for (z=0;z<nz+1;z++)
+    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
       CM(hz,r,z) = 0.0;
-    for (r=0;r<nr  ;r++) for (z=0;z<nz+1;z++)
+    for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
       CM(er,r,z) = 0.0;
     for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
       CM(ep,r,z) = 0.0;

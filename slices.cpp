@@ -29,17 +29,17 @@ double fields::total_energy() {
   if (backup_hr[0] == NULL) {
     DOCMP {
       backup_hr[cmp] = new double[(nr+1)*(nz+1)];
-      backup_hp[cmp] = new double[nr*(nz+1)];
-      backup_hz[cmp] = new double[nr*(nz+1)];
+      backup_hp[cmp] = new double[(nr+1)*(nz+1)];
+      backup_hz[cmp] = new double[(nr+1)*(nz+1)];
     }
   }
 
   DOCMP {
     for (int j=0; j<(nr+1)*(nz+1); j++)
       backup_hr[cmp][j] = hr[cmp][j];
-    for (int j=0; j<nr*(nz+1); j++)
+    for (int j=0; j<(nr+1)*(nz+1); j++)
       backup_hp[cmp][j] = hp[cmp][j];
-    for (int j=0; j<nr*(nz+1); j++)
+    for (int j=0; j<(nr+1)*(nz+1); j++)
       backup_hz[cmp][j] = hz[cmp][j];
   }
 
@@ -50,9 +50,9 @@ double fields::total_energy() {
   DOCMP {
     for (int j=0; j<(nr+1)*(nz+1); j++)
       hr[cmp][j] = backup_hr[cmp][j];
-    for (int j=0; j<nr*(nz+1); j++)
+    for (int j=0; j<(nr+1)*(nz+1); j++)
       hp[cmp][j] = backup_hp[cmp][j];
-    for (int j=0; j<nr*(nz+1); j++)
+    for (int j=0; j<(nr+1)*(nz+1); j++)
       hz[cmp][j] = backup_hz[cmp][j];
   }
 
