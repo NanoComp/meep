@@ -97,8 +97,6 @@ void mat::use_pml(int numpmlr, int numpmlz) {
     Cper[r] = 0.0;
     Cphr[r] = 0.0;
     Cpez[r] = 0.0;
-    printf("Big sig(Ez)[%d  ] is %10lg, little sig is %10lg\n", r, Crez[r], Cpez[r]);
-    printf("Big sig(Hz)[%d  ] is %10lg, little sig is %10lg\n", r, Crhz[r], Cphz[r]);
   }
   for (int z=0;z<npmlz;z++) {
     double rr = (z)/(double)npmlz;
@@ -166,7 +164,7 @@ mat::mat(const mat *o) {
   Czer = Czep = Czhr = Czhp = NULL;
   npmlz = 0;
   npmlr = 0;
-  use_pml(npmlr,npmlz);
+  use_pml(o->npmlr,o->npmlz);
 }
 
 mat::mat(double feps(double r, double z),
