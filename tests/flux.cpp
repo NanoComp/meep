@@ -50,7 +50,6 @@ static inline double min(double a, double b) { return (a<b)?a:b; }
 int flux_1d(const double zmax,
             double eps(const vec &)) {
   const double a = 10.0;
-  const double gridpts = a*zmax;
 
   volume v = volone(zmax,a);
   structure s(v, eps);
@@ -90,7 +89,7 @@ int flux_1d(const double zmax,
 
 int split_1d(double eps(const vec &), int splitting) {
   const double boxwidth = 5.0, timewait = 1.0;
-  const double zmax = 15.0, a = 10.0, gridpts = a*zmax;
+  const double zmax = 15.0, a = 10.0;
 
   volume v = volone(zmax,a);
   structure s1(v, eps, 1);
@@ -125,7 +124,6 @@ int cavity_1d(const double boxwidth, const double timewait,
               double eps(const vec &)) {
   const double zmax = 15.0;
   const double a = 10.0;
-  const double gridpts = a*zmax;
 
   volume v = volone(zmax,a);
   structure s(v, eps);
@@ -163,6 +161,51 @@ int cavity_1d(const double boxwidth, const double timewait,
                  (timewait>50)?0.032:0.004, "Flux"); // Yuck, problem with flux.
 }
 
+int flux_2d(const double xmax, const double ymax,
+            double eps(const vec &)) {
+  const double a = 8.0;
+
+  master_printf("\nFlux_2d(%g,%g) test...\n", xmax, ymax);
+
+  volume v = voltwo(xmax,ymax,a);
+  structure s(v, eps);
+  s.use_pml_everywhere((xmax > ymax ? xmax : ymax)/6);
+
+  fields f(&s);
+  f.use_real_fields();
+  f.add_point_source(Ez, 0.25, 3.5, 0., 8., vec2d(xmax/6+0.1, ymax/6+0.3), 1.);
+  
+  // corners of flux planes and energy box:
+  vec lb(vec2d(xmax/3, ymax/3)), rb(vec2d(2*xmax/3, ymax/3));
+  vec lt(vec2d(xmax/3, 2*ymax/3)), rt(vec2d(2*xmax/3, 2*ymax/3));
+
+  flux_box *left = f.add_flux_plane(lb, lt);
+  flux_box *right = f.add_flux_plane(rb, rt);
+  flux_box *bottom = f.add_flux_plane(lb, rb);
+  flux_box *top = f.add_flux_plane(lt, rt);
+
+  const double ttot = 130;
+
+  f.step();
+  double init_energy = f.energy_in_box(geometric_volume(lb, rt));
+  master_printf("Initial energy is %g\n", init_energy);
+  long double fluxL = 0;
+  while (f.time() < ttot) {
+    f.step();
+    fluxL += -(c/a) * (left->flux() - right->flux()
+		       + bottom->flux() - top->flux());
+    if (f.t % 20 == 0)
+      master_printf("  flux(%g) = %g\n", f.time(), (double) fluxL);
+  }
+  double flux = fluxL;
+  double del_energy = f.energy_in_box(geometric_volume(lb, rt)) - init_energy;
+  master_printf("Final energy is %g\n", 
+		f.energy_in_box(geometric_volume(lb, rt)));
+  master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
+		del_energy, flux, del_energy/flux);
+  return compare(del_energy, flux, 0.06, "Flux");
+}
+
 void attempt(const char *name, int allright) {
   if (allright) master_printf("Passed %s\n", name);
   else abort("Failed %s!\n", name);
@@ -184,6 +227,9 @@ int main(int argc, char **argv) {
   attempt("Flux 1D 10", flux_1d(100.0, bump));
   width = 300.0;
   attempt("Flux 1D 300", flux_1d(100.0, bump));
+
+  width = 10.0;
+  attempt("Flux 2D 10", flux_2d(30.0, 30.0, bump));
 
   exit(0);
 }
