@@ -99,18 +99,18 @@ a large variation of $\sigma$ from one grid point to the next.
 
 Here are the field equations for a PML material:
 \begin{align}
-\frac1c\frac{dH_{r\phi}}{dt} &= - \frac{im}r E_z             - \sigma_\phi H_{r\phi} &
-\frac1c\frac{dH_{rz}}{dt} &= \frac{dE_\phi}{dz}              - \sigma_z H_{rz}\\
-\frac1c\frac{dH_{\phi z}}{dt} &= - \frac{dE_r}{dz}           - \sigma_z H_{\phi z} &
-\frac1c\frac{dH_{\phi r}}{dt} &= \frac{dE_z}{dr}             - \sigma_r H_{\phi r} \\
-\frac1c\frac{dH_{zr}}{dt} &= - \frac1r\frac{d(rE_\phi)}{dr}  - \sigma_r H_{zr}  &
-\frac1c\frac{dH_{z\phi}}{dt} &= \frac{im}r E_r               - \sigma_\phi H_{z\phi} \\
-\frac\epsilon c\frac{dE_{r\phi}}{dt} &=   \frac{im}r H_z             - \sigma_\phi E_{r\phi} &
-\frac\epsilon c\frac{dE_{rz}}{dt} &=-\frac{dH_\phi}{dz}              - \sigma_z E_{rz}\\
-\frac\epsilon c\frac{dE_{\phi z}}{dt} &=   \frac{dH_r}{dz}           - \sigma_z E_{\phi z} &
-\frac\epsilon c\frac{dE_{\phi r}}{dt} &=-\frac{dH_z}{dr}             - \sigma_r E_{\phi r} \\
-\frac\epsilon c\frac{dE_{zr}}{dt} &=   \frac1r\frac{d(rH_\phi)}{dr}  - \sigma_r E_{zr}  &
-\frac\epsilon c\frac{dE_{z\phi}}{dt} &=-\frac{im}r H_r               - \sigma_\phi E_{z\phi} 
+\frac{dH_{r\phi}}{dt} &= - c \frac{im}r E_z             - \sigma_\phi H_{r\phi} &
+\frac{dH_{rz}}{dt} &= c \frac{dE_\phi}{dz}              - \sigma_z H_{rz}\\
+\frac{dH_{\phi z}}{dt} &= - c \frac{dE_r}{dz}           - \sigma_z H_{\phi z} &
+\frac{dH_{\phi r}}{dt} &= c \frac{dE_z}{dr}             - \sigma_r H_{\phi r} \\
+\frac{dH_{zr}}{dt} &= - c \frac1r\frac{d(rE_\phi)}{dr}  - \sigma_r H_{zr}  &
+\frac{dH_{z\phi}}{dt} &= c \frac{im}r E_r               - \sigma_\phi H_{z\phi} \\
+\epsilon\frac{dE_{r\phi}}{dt} &=   c \frac{im}r H_z             - \sigma_\phi E_{r\phi} &
+\epsilon\frac{dE_{rz}}{dt} &= -c\frac{dH_\phi}{dz}              - \sigma_z E_{rz}\\
+\epsilon\frac{dE_{\phi z}}{dt} &=   c \frac{dH_r}{dz}           - \sigma_z E_{\phi z} &
+\epsilon\frac{dE_{\phi r}}{dt} &=-c \frac{dH_z}{dr}             - \sigma_r E_{\phi r} \\
+\epsilon\frac{dE_{zr}}{dt} &=   c \frac1r\frac{d(rH_\phi)}{dr}  - \sigma_r E_{zr}  &
+\epsilon\frac{dE_{z\phi}}{dt} &=-c \frac{im}r H_r               - \sigma_\phi E_{z\phi} 
 \end{align}
 
 \appendix
