@@ -114,6 +114,8 @@ class fields {
                      double cutoff, int z, double amp(double r));
   void add_hz_source(double freq, double width, double peaktime,
                      double cutoff, int z, double amp(double r));
+  void initialize_with_nth_te(int n);
+  void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
   void phase_in_material(const mat *ma, double num_periods);

@@ -207,70 +207,76 @@ double Jmax(int m, int n) {
 }
 
 void fields::initialize_with_n_te(int ntot) {
-  for (int n=0;n<ntot;n++) {
-    double rmax = Jmax(m,n);
-    double ktrans = nr/rmax;
-    double freq = sqrt(ktrans*ktrans + k*k);
-    if (freq > preferred_fmax) preferred_fmax = freq;
-    for (int r=0;r<nr;r++) {
-      double Jm = J(m,ktrans*r);
-      double Jmp1 = J(m+1,ktrans*r);
-      double Jmm1 = J(m-1,ktrans*r);
-      double Jm_h = J(m,ktrans*(r+0.5));
-      double Jmp1_h = J(m+1,ktrans*(r+0.5));
-      double Jmm1_h = J(m-1,ktrans*(r+0.5));
-      double f2ok2c2 = freq*freq/(k*k*c*c);
-      for (int z=0;z<nz;z++) {
-        double coskz = 1.0, sinkz = 0.0;
-        if (z > 0) {
-          coskz = cos(k*inva*z);
-          sinkz = sin(k*inva*z);
-        }
-        double hcoskz = cos(k*inva*z-freq*0.5);
-        double hsinkz = sin(k*inva*z-freq*0.5);
-        DOCMP { // FIXME this is TM, not TE!!!
-          CM(ez,r,z) += EIKZR*Jm;
-          if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
-          CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+  for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
+}
 
-          if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
-          CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
-        }
+void fields::initialize_with_n_tm(int ntot) {
+  for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
+}
+
+void fields::initialize_with_nth_te(int np1) {
+  const int n = np1 - 1;
+  double rmax = Jmax(m,n);
+  double ktrans = nr/rmax;
+  double freq = sqrt(ktrans*ktrans + k*k);
+  if (freq > preferred_fmax) preferred_fmax = freq;
+  for (int r=0;r<nr;r++) {
+    double Jm = J(m,ktrans*r);
+    double Jmp1 = J(m+1,ktrans*r);
+    double Jmm1 = J(m-1,ktrans*r);
+    double Jm_h = J(m,ktrans*(r+0.5));
+    double Jmp1_h = J(m+1,ktrans*(r+0.5));
+    double Jmm1_h = J(m-1,ktrans*(r+0.5));
+    double f2ok2c2 = freq*freq/(k*k*c*c);
+    for (int z=0;z<nz;z++) {
+      double coskz = 1.0, sinkz = 0.0;
+      if (z > 0) {
+        coskz = cos(k*inva*z);
+        sinkz = sin(k*inva*z);
+      }
+      double hcoskz = cos(k*inva*z-freq*0.5);
+      double hsinkz = sin(k*inva*z-freq*0.5);
+      DOCMP { // FIXME this is TM, not TE!!!
+        CM(ez,r,z) += EIKZR*Jm;
+        if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
+        CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+        
+        if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
+        CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
       }
     }
   }
 }
 
-void fields::initialize_with_n_tm(int ntot) {
-  for (int n=0;n<ntot;n++) {
-    double rroot = Jroot(m,n);
-    double ktrans = rroot/nr;
-    double freq = sqrt(ktrans*ktrans + k*k);
-    if (freq > preferred_fmax) preferred_fmax = freq;
-    for (int r=0;r<nr;r++) {
-      double Jm = J(m,ktrans*r);
-      double Jmp1 = J(m+1,ktrans*r);
-      double Jmm1 = J(m-1,ktrans*r);
-      double Jm_h = J(m,ktrans*(r+0.5));
-      double Jmp1_h = J(m+1,ktrans*(r+0.5));
-      double Jmm1_h = J(m-1,ktrans*(r+0.5));
-      double f2ok2c2 = freq*freq/(k*k*c*c);
-      for (int z=0;z<nz;z++) {
-        double coskz = 1.0, sinkz = 0.0;
-        if (z > 0) {
-          coskz = cos(k*inva*z);
-          sinkz = sin(k*inva*z);
-        }
-        double hcoskz = cos(k*inva*z-freq*0.5);
-        double hsinkz = sin(k*inva*z-freq*0.5);
-        DOCMP {
-          CM(ez,r,z) += EIKZR*Jm;
-          if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
-          CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
-
-          if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
-          CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
-        }
+void fields::initialize_with_nth_tm(int np1) {
+  const int n = np1 - 1;
+  double rroot = Jroot(m,n);
+  double ktrans = rroot/nr;
+  double freq = sqrt(ktrans*ktrans + k*k);
+  if (freq > preferred_fmax) preferred_fmax = freq;
+  for (int r=0;r<nr;r++) {
+    double Jm = J(m,ktrans*r);
+    double Jmp1 = J(m+1,ktrans*r);
+    double Jmm1 = J(m-1,ktrans*r);
+    double Jm_h = J(m,ktrans*(r+0.5));
+    double Jmp1_h = J(m+1,ktrans*(r+0.5));
+    double Jmm1_h = J(m-1,ktrans*(r+0.5));
+    double f2ok2c2 = freq*freq/(k*k*c*c);
+    for (int z=0;z<nz;z++) {
+      double coskz = 1.0, sinkz = 0.0;
+      if (z > 0) {
+        coskz = cos(k*inva*z);
+        sinkz = sin(k*inva*z);
+      }
+      double hcoskz = cos(k*inva*z-freq*0.5);
+      double hsinkz = sin(k*inva*z-freq*0.5);
+      DOCMP {
+        CM(ez,r,z) += EIKZR*Jm;
+        if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
+        CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+        
+        if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
+        CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
       }
     }
   }
@@ -280,6 +286,7 @@ void fields::phase_in_material(const mat *newma, double num_periods) {
   double period = a/(preferred_fmax*c);
   new_ma = newma;
   phasein_time = 1 + (int) (period*num_periods);
+  printf("I'm going to take %d time steps to phase in the material.\n", phasein_time);
 }
 
 void fields::add_src_pt(int r, int z,
