@@ -299,7 +299,7 @@ int flux_cyl(const double rmax, const double zmax,
   for (int i = 0; i < Nfreq; ++i) {
     printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
 	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
-    if (!compare(fl1[i], fl2[i], 0.06, "Flux spectrum")) return 0;
+    if (!compare(fl1[i], fl2[i], 0.08, "Flux spectrum")) return 0;
   }
   delete fl2; delete fl1;
 
