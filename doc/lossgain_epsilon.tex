@@ -12,9 +12,9 @@ const double a = 10.0;
 const int m = 0;
 const double eps_value = 2.25;
 
-const double pml = 1.0;
+const double pml_thickness = 1.0;
 const double rmax  = 6.0/a;
-const double zsize = 2*pml+10.0/a;
+const double zsize = 2*pml_thickness+10.0/a;
 const double zmiddle = zsize/2.0;
 const double sourceloc = zmiddle - 4.0/a;
 
@@ -35,10 +35,9 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const char *dirname = make_output_directory(__FILE__);
-  master_printf("Using pml of %g thickness.\n", pml);
+  master_printf("Using pml of %g thickness.\n", pml_thickness);
   master_printf("Using an rmax of %g\n", rmax);
-  structure s(volcyl(rmax + pml, zsize, a), eps);
-  s.use_pml_everywhere(pml);
+  structure s(volcyl(rmax + pml_thickness, zsize, a), eps, pml(pml_thickness));
   s.set_output_directory(dirname);
 \end{comment}
 

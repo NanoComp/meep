@@ -80,7 +80,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const volume v = vol2d(xsize, ysize, a);
-  structure s(v, eps, splitting, Sf(v));
+  structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
   f.use_bloch(X, real_fields ? 0.0 : kx);
@@ -194,7 +194,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const volume v = vol3d(xsize, ysize, zsize, a);
-  structure s(v, eps, splitting, Sf(v));
+  structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
@@ -305,7 +305,7 @@ bool check_2d_monitor(double eps(const vec &),
 		      bool real_fields,
 		      const char *name) {
   const volume v = vol2d(xsize, ysize, a);
-  structure s(v, eps, splitting, Sf(v));
+  structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);

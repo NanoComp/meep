@@ -63,8 +63,8 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   double ttot = 30.0;
   
   volume v = volcyl(1.5,0.8,a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
@@ -114,8 +114,8 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
   double ttot = 30.0;
   
   volume v = volcyl(1.5,0.8,a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
@@ -209,10 +209,8 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double ttot = 25.0;
   
   volume v = volcyl(3.5,10.0,a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
-  s.use_pml_everywhere(2.0);
-  s1.use_pml_everywhere(2.0);
+  structure s1(v, eps, pml(2.0));
+  structure s(v, eps, pml(2.0), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
@@ -275,8 +273,8 @@ int test_pattern(double eps(const vec &), int splitting,
                  const char *mydirname) {
   double a = 10.0;
   volume v = volcyl(1.5,0.8,a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<1;m++) {

@@ -89,8 +89,8 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
   const volume v = volcyl(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
 
   fields f1(&s1);
   f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
@@ -130,8 +130,8 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   const volume v = volcyl(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   s.set_kerr(one);
   s1.set_kerr(one);
 
@@ -173,8 +173,8 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   const volume v = volone(1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
 
   fields f1(&s1);
   f1.use_bloch(0.0);
@@ -246,8 +246,8 @@ int test_metal_xmirror(double eps(const vec &)) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(X,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
 
   fields f1(&s1);
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
@@ -285,8 +285,8 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = mirror(X,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing X mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -323,8 +323,8 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
 
   const volume v = vol3d(1.1, 0.6, 1.0, a);
   const symmetry S = mirror(Z,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing Z mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -361,8 +361,8 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
 
   const volume v = vol3d(1.1, 0.6, 1.0, a);
   const symmetry S = mirror(Z,v)*(-1.0);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing odd Z mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -399,8 +399,8 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = rotate4(Z,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing Z fourfold rotational symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -437,8 +437,8 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = rotate4(Z,v) + mirror(Z,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing Z fourfold rotational symmetry in 3D with horizontal mirror...\n");
 
   fields f1(&s1);
@@ -476,8 +476,8 @@ int test_metal_ymirror(double eps(const vec &)) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Y,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing Y mirror symmetry...\n");
 
   fields f1(&s1);
@@ -516,8 +516,8 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Y,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   master_printf("Testing Y periodic with mirror symmetry...\n");
@@ -565,8 +565,8 @@ int test_metal_rot2y(double eps(const vec &)) {
   const volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = rotate2(Y,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -609,8 +609,8 @@ int exact_metal_rot2y(double eps(const vec &)) {
   const volume v = voltwo(1.0, 1.5, a);
   the_center = v.center();
   const symmetry S = rotate2(Y,v);
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing exact Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -650,12 +650,10 @@ int pml_twomirrors(double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = mirror(X,v) + mirror(Y,v);
 
-  structure s_mm(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s_mm(v, eps, pml(0.5), S);
+  structure s1(v, eps, pml(0.5), identity());
   structure ss[2] = { s1, s_mm };
 
-  for (int i=0;i<2;i++)
-    ss[i].use_pml_everywhere(0.5);
   master_printf("Testing two mirrors with PML...\n");
 
   fields fs[2] = { fields(&ss[0]), fields(&ss[1]) };
@@ -693,8 +691,8 @@ int exact_metal_rot4z(double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = rotate4(Z,v);
 
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   master_printf("Testing Z fourfold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -734,8 +732,8 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = rotate4(Z,v);
 
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, no_pml(), S);
+  structure s1(v, eps);
   s.set_kerr(one);
   s1.set_kerr(one);
   master_printf("Testing nonlinear Z fourfold rotational symmetry...\n");
@@ -777,12 +775,10 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = rotate2(X,v);
 
-  structure s(v, eps, 0, S);
-  structure s1(v, eps, 0, identity());
+  structure s(v, eps, pml(1.0), S);
+  structure s1(v, eps, pml(1.0), identity());
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
-  s.use_pml_everywhere(1.0);
-  s1.use_pml_everywhere(1.0);
   master_printf("Testing X twofold rotational symmetry with PML...\n");
 
   fields f1(&s1);
@@ -823,7 +819,7 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = mirror(Z,v);
   structure s(v, eps);
-  structure sS(v, eps, 0, S);
+  structure sS(v, eps, no_pml(), S);
   s.add_polarizability(one, 0.3, 0.1, 7.63);
   sS.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&s);
@@ -850,7 +846,7 @@ double nonlinear_ex(const volume &v, double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = mirror(Z,v);
   structure s(v, eps);
-  structure sS(v, eps, 0, S);
+  structure sS(v, eps, no_pml(), S);
   s.set_kerr(one);
   sS.set_kerr(one);
   fields f(&s);
@@ -877,7 +873,7 @@ double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = mirror(Z,v)*(-1);
   structure s(v, eps);
-  structure sS(v, eps, 0, S);
+  structure sS(v, eps, no_pml(), S);
   s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   sS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   fields f(&s);
@@ -904,7 +900,7 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
   the_center = v.center();
   const symmetry S = mirror(X,v)*(-1);
   structure s(v, eps);
-  structure sS(v, eps, 0, S);
+  structure sS(v, eps, no_pml(), S);
   s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   sS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
   fields f(&s);

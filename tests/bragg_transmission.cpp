@@ -112,13 +112,11 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
 			double *T, double *R) {
   const volume v = volone(zsize, a);
 
-  structure s(v, eps_bragg);
-  s.use_pml_everywhere(0.5);
+  structure s(v, eps_bragg, pml(0.5));
   fields f(&s);
   f.use_real_fields();
 
-  structure s0(v, one);
-  s0.use_pml_everywhere(0.5);
+  structure s0(v, one, pml(0.5));
   fields f0(&s0);
   f0.use_real_fields();
 

@@ -72,8 +72,8 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   double ttot = 17.0;
 
   volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -111,8 +111,8 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   double ttot = 17.0;
 
   volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -152,8 +152,8 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
   double ttot = 17.0;
 
   volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -190,16 +190,10 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
   volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps, pml(1.0, X) + pml(1.0, Y, High));
+  structure s(v, eps, pml(1.0, X) + pml(1.0, Y, High), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
-  s.use_pml(X,Low,1.0);
-  s.use_pml(X,High,1.0);
-  s.use_pml(Y,High,1.0);
-  s1.use_pml(X,Low,1.0);
-  s1.use_pml(X,High,1.0);
-  s1.use_pml(Y,High,1.0);
 
   master_printf("Testing pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -243,12 +237,10 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
   volume v = voltwo(3.0, 3.0, a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps, pml(1.0));
+  structure s(v, eps, pml(1.0), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
-  s.use_pml_everywhere(1.0);
-  s1.use_pml_everywhere(1.0);
 
   master_printf("Testing TM pml while splitting into %d chunks...\n", splitting);
   fields f(&s);
@@ -290,12 +282,10 @@ int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
   volume v = voltwo(3.0, 3.0, a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps, pml(1.0));
+  structure s(v, eps, pml(1.0), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
-  s.use_pml_everywhere(1.0);
-  s1.use_pml_everywhere(1.0);
 
   master_printf("Testing TE pml while splitting into %d chunks...\n", splitting);
   fields f(&s);

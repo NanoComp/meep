@@ -37,7 +37,7 @@ void test_convergence_without_averaging() {
 
   for (int a = MINRES; a <= MAXRES; a += RESSTEP) {
     volume vol = volcyl(1.0,0.0,a);  
-    structure s(vol, eps, 0);
+    structure s(vol, eps);
     fields f(&s, 1);
     f.use_bloch(0.1);
     f.set_boundary(High, R, Metallic);
@@ -95,8 +95,8 @@ void test_convergence_with_averaging() {
 
   for (int a = MINRES; a <= MAXRES; a += RESSTEP) {
     volume vol = volcyl(1.0,0.0,a);  
-    structure s(vol, eps, 0);
-    s.set_epsilon(eps, 0.0, true);
+    structure s(vol, eps);
+    s.set_epsilon(eps);
 
     fields f(&s, 1);
     f.use_bloch(0.1);

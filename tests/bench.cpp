@@ -60,8 +60,7 @@ bench bench_flux_1d(const double zmax,
   const double ttot = 10.0 + 1e5/zmax;
 
   volume v = volone(zmax,a);
-  structure s(v, eps);
-  s.use_pml_everywhere(zmax/6);
+  structure s(v, eps, pml(zmax/6));
 
   fields f(&s);
   f.use_real_fields();
@@ -245,7 +244,7 @@ bench bench_3d(const double xmax, const double ymax, const double zmax,
   const double ttot = 5.0 + 1e5/gridpts;
 
   volume v = vol3d(xmax,ymax,zmax,a);
-  structure s(v, eps, 0);
+  structure s(v, eps);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(xmax*.5, ymax*.5, zmax*.5));
 

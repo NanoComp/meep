@@ -54,8 +54,7 @@ int flux_1d(const double zmax,
   const double a = 10.0;
 
   volume v = volone(zmax,a);
-  structure s(v, eps);
-  s.use_pml_everywhere(zmax/6);
+  structure s(v, eps, pml(zmax/6));
 
   fields f(&s);
   f.use_real_fields();
@@ -94,10 +93,8 @@ int split_1d(double eps(const vec &), int splitting) {
   const double zmax = 15.0, a = 10.0;
 
   volume v = volone(zmax,a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
-  s1.use_pml_everywhere(2.0);
-  s.use_pml_everywhere(2.0);
+  structure s1(v, eps, pml(2.0));
+  structure s(v, eps, pml(2.0), identity(), splitting);
 
   fields f1(&s1);
   fields f(&s);
@@ -128,8 +125,7 @@ int cavity_1d(const double boxwidth, const double timewait,
   const double a = 10.0;
 
   volume v = volone(zmax,a);
-  structure s(v, eps);
-  s.use_pml_everywhere(2.0);
+  structure s(v, eps, pml(2.0));
 
   fields f(&s);
   f.use_real_fields();
@@ -170,8 +166,7 @@ int flux_2d(const double xmax, const double ymax,
   master_printf("\nFlux_2d(%g,%g) test...\n", xmax, ymax);
 
   volume v = voltwo(xmax,ymax,a);
-  structure s(v, eps);
-  s.use_pml_everywhere(0.5);
+  structure s(v, eps, pml(0.5));
 
   fields f(&s);
   f.use_real_fields();
@@ -243,8 +238,7 @@ int flux_cyl(const double rmax, const double zmax,
   master_printf("\nFlux_cyl(%g,%g) test...\n", rmax, zmax);
 
   volume v = volcyl(rmax,zmax,a);
-  structure s(v, eps);
-  s.use_pml_everywhere(0.5);
+  structure s(v, eps, pml(0.5));
 
   fields f(&s, m);
   // f.use_real_fields();

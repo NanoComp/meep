@@ -45,8 +45,7 @@ void compare(double b, double a, const char *n) {
 
 double using_pml_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  structure s(v, eps);
-  s.use_pml_everywhere(1.0);
+  structure s(v, eps, pml(1.0));
   fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   while (f.time() < ttot) f.step();
@@ -57,9 +56,7 @@ double using_pml_ez(const volume &v, double eps(const vec &)) {
 
 double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  structure s(v, eps);
-  s.use_pml(Y, High, 1.0);
-  s.use_pml(Y, Low, 1.0);
+  structure s(v, eps, pml(1.0, Y));
   fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(X, 0.1);

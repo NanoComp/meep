@@ -48,14 +48,13 @@ int main(int argc, char **argv) {
   const double ttot =2000.0;
   const volume v = volone(zsize, a);
   const symmetry S = mirror(Z, v);
-  structure s(v, eps, 0, S);
+  structure s(v, eps, pml(pml_thickness), S);
   const char *dirname = make_output_directory(__FILE__);
   s.set_output_directory(dirname);
 \end{comment}
 Altough in this calculation the polaritonic material will not be within the
 PML, it is all right to have polaritonic material within PML regions.
 \begin{verbatim}
-  s.use_pml_everywhere(pml_thickness);
   s.add_polarizability(one, 0.4, 0.01, 27.63);
 \end{verbatim}
 \begin{comment}

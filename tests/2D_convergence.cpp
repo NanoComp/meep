@@ -40,7 +40,7 @@ double get_the_freq(monitor_point *p, component c) {
 double freq_at_resolution(double e(const vec &), double a, component c) {
   const volume v = vol2d(2.0,1.0,a);
   structure s(v, e);
-  s.set_epsilon(e, 0.0, true);
+  s.set_epsilon(e);
 
   fields f(&s);
   f.use_bloch(vec(0,0));

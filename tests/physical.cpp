@@ -33,8 +33,7 @@ int radiating_2D(const double xmax) {
   const double ymax = 3.0;
 
   volume v = voltwo(xmax,ymax,a);
-  structure s(v, one);
-  s.use_pml_everywhere(ymax/3);
+  structure s(v, one, pml(ymax/3));
 
   fields f(&s);
   double w = 0.30;
@@ -85,8 +84,7 @@ int radiating_3D() {
 
   volume v = vol3d(xmax,ymax,ymax,a);
   symmetry S = mirror(X,v) + mirror(Y,v) + mirror(Z,v)*(-1.0);
-  structure s(v, one, 0, S);
-  s.use_pml_everywhere(pml_thickness);
+  structure s(v, one, pml(pml_thickness), S);
 
   fields f(&s);
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0,

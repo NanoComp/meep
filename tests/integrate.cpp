@@ -245,7 +245,7 @@ void check_splitsym(const volume &v, int splitting,
 		    const symmetry &S, const char *Sname)
 {
   const int num_random_trials = 100;
-  structure s(v, one, splitting, S);
+  structure s(v, one, no_pml(), S, splitting);
   fields f(&s);
 
   // periodic boundaries:

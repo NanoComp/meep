@@ -62,8 +62,8 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   double ttot = 170.0;
   
   volume v = volone(6.0,a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -115,8 +115,8 @@ int test_pattern(double eps(const vec &), int splitting,
                  const char *mydirname) {
   double a = 10.0;
   volume v = volone(6.0,a);
-  structure s1(v, eps, 1);
-  structure s(v, eps, splitting);
+  structure s1(v, eps);
+  structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 

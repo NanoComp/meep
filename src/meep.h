@@ -171,6 +171,8 @@ class simple_material_function : public material_function {
      virtual double kerr(const vec &r) { return f(r); }
 };
 
+class structure;
+
 class structure_chunk {
  public:
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
@@ -183,22 +185,23 @@ class structure_chunk {
   polarizability *pb;
 
   ~structure_chunk();
-  structure_chunk(const volume &v, material_function &eps,
+  structure_chunk(const volume &v,
             const geometric_volume &vol_limit, double Courant, int proc_num);
   structure_chunk(const structure_chunk *);
-  void set_epsilon(material_function &eps, double minvol,
-                   bool use_anisotropic_averaging);
+  void set_epsilon(material_function &eps,
+                   bool use_anisotropic_averaging, double minvol);
   void set_kerr(material_function &eps);
   void use_pml(direction, double dx, double boundary_loc);
   void update_pml_arrays();
   void update_Cdecay();
 
-  void mix_with(const structure_chunk *, double);
-
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
   void add_polarizability(material_function &sigma, double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
+
+  void mix_with(const structure_chunk *, double);
+
   int n_proc() const { return the_proc; } // Says which proc owns me!
   int is_mine() const { return the_is_mine; }
 
@@ -211,11 +214,56 @@ class structure_chunk {
   int the_is_mine;
 };
 
+// linked list of descriptors for boundary regions (currently just for PML)
+class boundary_region {
+public:
+  typedef enum { NOTHING_SPECIAL, PML } boundary_region_kind;
+  
+  boundary_region() :
+    kind(NOTHING_SPECIAL), thickness(0), d(NO_DIRECTION), side(Low), next(0) {}
+  boundary_region(boundary_region_kind kind, double thickness, direction d,
+		  boundary_side side, boundary_region *next) :
+    kind(kind), thickness(thickness), d(d), side(side), next(next) {}
+
+  boundary_region(const boundary_region &r) :
+    kind(r.kind), thickness(r.thickness), d(r.d), side(r.side) { 
+    next = r.next ? new boundary_region(*r.next) : 0;
+  }
+
+  ~boundary_region() { if (next) delete next; }
+  
+  void operator=(const boundary_region &r) {
+    kind = r.kind; thickness = r.thickness; d = r.d; side = r.side;
+    if (next) delete next;
+    next = r.next ? new boundary_region(*r.next) : 0;
+  }
+  boundary_region operator+(const boundary_region &r0) const {
+    boundary_region r(*this), *cur = &r;
+    while (cur->next) cur = cur->next;
+    cur->next = new boundary_region(r0);
+    return r;
+  }
+
+  void apply(structure *s) const;
+  void apply(const structure *s, structure_chunk *sc) const;
+
+private:
+  boundary_region_kind kind;
+  double thickness;
+  direction d;
+  boundary_side side;
+  boundary_region *next;
+};
+
+boundary_region pml(double thickness, direction d, boundary_side side);
+boundary_region pml(double thickness, direction d);
+boundary_region pml(double thickness);
+#define no_pml() boundary_region()
+
 class structure {
  public:
   structure_chunk **chunks;
   int num_chunks;
-  int desired_num_chunks;
   volume v, user_volume;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   geometric_volume gv;
@@ -227,45 +275,52 @@ class structure {
 
   ~structure();
   structure();
-  structure(const volume &v, material_function &eps, int num_chunks = 0,
-      const symmetry &s = meep::identity(), double Courant = 0.5);
-  structure(const volume &v, double eps(const vec &), int num_chunks = 0,
-      const symmetry &s = meep::identity(), double Courant = 0.5);
+  structure(const volume &v, material_function &eps,
+	    const boundary_region &br = boundary_region(),
+	    const symmetry &s = meep::identity(),
+	    int num_chunks = 0, double Courant = 0.5);
+  structure(const volume &v, double eps(const vec &), 
+	    const boundary_region &br = boundary_region(),
+	    const symmetry &s = meep::identity(),
+	    int num_chunks = 0, double Courant = 0.5);
   structure(const structure *);
   structure(const structure &);
-  void set_epsilon(material_function &eps, double minvol = 0.0,
-                   bool use_anisotropic_averaging=true);
-  void set_epsilon(double eps(const vec &), double minvol = 0.0,
-                   bool use_anisotropic_averaging=true);
+
+  void set_materials(material_function &mat,
+		     bool use_anisotropic_averaging=true, double minvol=0.0);
+  void set_epsilon(material_function &eps,
+                   bool use_anisotropic_averaging=true, double minvol=0.0);
+  void set_epsilon(double eps(const vec &),
+                   bool use_anisotropic_averaging=true, double minvol=0.0);
   void set_kerr(material_function &eps);
   void set_kerr(double eps(const vec &));
-  void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
-  void redefine_chunks(const int Nv, const volume *new_volumes, const int *procs);
-  void optimize_volumes(int *Nv, volume *new_volumes, int *procs);
-  void optimize_chunks();
-  void choose_chunkdivision(const volume &v, material_function &eps,
-                            int num_chunks = 1,
-                            const symmetry &s = meep::identity());
-  void use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks = true);
-  void use_pml_everywhere(double dx, bool recalculate_chunks = true);
-
-  void output_slices(const char *name = "") const;
-  void output_slices(const geometric_volume &what, const char *name = "") const;
-  void set_output_directory(const char *name);
-  void mix_with(const structure *, double);
-
   polarizability_identifier
      add_polarizability(double sigma(const vec &), double omega, double gamma,
-                        double delta_epsilon = 1.0, double energy_saturation = 0.0);
+                  double delta_epsilon = 1.0, double energy_saturation = 0.0);
   polarizability_identifier
      add_polarizability(material_function &sigma, double omega, double gamma,
-                        double delta_epsilon = 1.0, double energy_saturation = 0.0);
+                  double delta_epsilon = 1.0, double energy_saturation = 0.0);
+
+  void output_slices(const char *name="") const;
+  void output_slices(const geometric_volume &what, const char *name="") const;
+
+  void set_output_directory(const char *name);
+  void mix_with(const structure *, double);
 
   // monitor.cpp
   double get_eps(const ivec &origloc) const;
   double get_eps(const vec &loc) const;
   double max_eps() const;
+
+  friend class boundary_region;
+
  private:
+  void use_pml(direction d, boundary_side b, double dx);
+  void add_to_effort_volumes(const volume &new_effort_volume, 
+			     double extra_effort);
+  void choose_chunkdivision(const volume &v, int num_chunks,
+			    const boundary_region &br, const symmetry &s);
+  void check_chunks();
 };
 
 class src_vol;

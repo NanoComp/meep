@@ -64,7 +64,7 @@ done).
 int main(int argc, char *argv[]) {
   initialize mpi(argc, argv);
 \end{verbatim}
-The ``mat'' structure defines the contents of the unit cell.  It needs a
+The ``s'' structure defines the contents of the unit cell.  It needs a
 volume, which includes the size of the grid and the resolution, as well as
 the epsilon function we defined earlier.  Here we also choose to use PML
 absorbing boundary conditions in all directions, since we are interested in
@@ -73,8 +73,7 @@ the high Q mode in the cavity.
   const double amicron = 10; // a micron is this many grid points.
   const volume vol = voltwo(2*x_center, 2*y_center, amicron);
   const symmetry S = mirror(Y, vol) + rotate2(Y, vol);
-  structure s(vol, eps, 0, S);
-  s.use_pml_everywhere(pml_thickness);
+  structure s(vol, eps, pml(pml_thickness), S);
 \end{verbatim}
 To avoid clutter, we'll create a directory to hold the output.  The
 function \verb!make_output_directory! creates a directory based on the name
