@@ -138,6 +138,49 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
 }
 
+static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
+                          double fmax, double a, FILE *out, const char *name) {
+  fprintf(out, "%%!PS-Adobe-3.0 EPSF\n");
+  const double size = xmax - xmin;
+  const double fsize = (5.0 < 0.2*size)?0.2*size:5.0;
+  const double dx = 1.0/a;
+  fprintf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
+          xmin*500/size, -250*fsize/size, xmax*500/size, 250*fsize/size);
+  fprintf(out, "gsave\n");
+  fprintf(out, "%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
+          xmin*500/size, xmax*500/size, dx*0.1); 
+  fprintf(out, "%lg %lg scale\n", 500/size, 500/size);
+  fprintf(out, "/height %lg def\n", (250*fsize)/size);
+  fprintf(out, "/Times-Roman findfont 12 scalefont setfont\n");
+  fprintf(out, "newpath 220 height 0.75 mul moveto (%s) show\n", name);
+  fprintf(out, "/max %lg def\n", fmax);
+  fprintf(out, "/fscale %lg def\n", 2.2*fmax/fsize);
+  fprintf(out, "/dotrad %lg def\n", dx);
+  fprintf(out, "/dx %lg def\n", dx);
+  fprintf(out, "/hdx %lg def\n", dx*0.5);
+  fprintf(out, "dx 10 div setlinewidth\n");
+  fprintf(out, "1 setlinecap\n");
+  fprintf(out, "/P {\n\
+    fscale div exch pop \n\
+    newpath dotrad 0 360 arc fill \n\
+} def\n");
+  fprintf(out, "/LV {\n\
+    0.8 0.8 0 setrgbcolor\n\
+    pop dup height moveto height neg lineto\n");
+  fprintf(out, "    %lg setlinewidth\n", dx*0.5);
+  fprintf(out, "    stroke\n\
+} def\n\
+/LH {\n");
+  fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  fprintf(out, "    0 0 0 setrgbcolor\n\
+    moveto\n");
+  fprintf(out, "    %lg 0 rmoveto\n", 10*dx*0.5);
+  fprintf(out, "    %lg 0 rlineto\n", -10*dx);
+  fprintf(out, "    stroke\n\
+} def\n");
+  fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
+}
+
 static void eps_trailer(FILE *out) {
   fprintf(out, "grestore\n");
   fprintf(out, "%%%%Trailer\n");
@@ -298,10 +341,18 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
   }
   if (ymax == ymin) ymax = ymin + 1.0/v.a;
   if (fmax == 0.0) fmax = 0.0001;
-  if (v.dim == d1 && 0) {
+  if (v.dim == d1) {
+    // Make a 1D line plot!
+    FILE *out = fopen(name, "w");
+    if (!out) {
+      printf("Unable to open file '%s' for slice output.\n", name);
+      return;
+    }
+    eps_1d_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
+    fclose(out);
   } else {
     // Make a 2D color plot!
-    FILE *out = fopen(name, "a");
+    FILE *out = fopen(name, "w");
     if (!out) {
       printf("Unable to open file '%s' for slice output.\n", name);
       return;
