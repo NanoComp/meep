@@ -584,7 +584,7 @@ void fields::step_h() {
         else
           for (int z=0;z<v.nz();z++)
             f[Hr][cmp][z] += c*
-              ((f[Ep][cmp][z+1]-f[Ep][cmp][z]) - it(cmp,f[Ez],1)/* /1.0 */);
+              ((f[Ep][cmp][z+1]-f[Ep][cmp][z]) - it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
       } else {
         for (int r=0;r<=v.nr() && v.origin.r() + r < m;r++) {
           const int ir = r*(v.nz()+1);
