@@ -163,11 +163,7 @@ mat::mat(double feps(double r, double z),
   }
   for (r=0;r<nr;r++) {
     for (z=0;z<nz+1;z++) {
-v v v v v v v
       MA(eps,r,z) = feps((r+0.5)/a,(z+0.5));
-*************
-      MA(eps,r,z) = feps(r/a,z/a);
-^ ^ ^ ^ ^ ^ ^
     }
   }
   invepser = new double[nr*(nz+1)];
