@@ -374,7 +374,8 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
           for (int i=0;i<8&&w[i];i++)
             if (v.contains(S.transform(ilocs[i],sn)))
               fhere += w[i]*real(phshift*get_field(c,ilocs[i]));
-          i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
+          if (fhere != 0.0) // save space by leaving out blanks.
+            i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
         }
       }
     }
