@@ -722,7 +722,10 @@ class fields {
   
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,
-		     double freq_min, double freq_max, int Nfreq);
+		     double freq_min, double freq_max, int Nfreq,
+		     bool include_dV = true);
+  dft_chunk *add_dft_pt(component c, const vec &where,
+			double freq_min, double freq_max, int Nfreq);
   void update_dfts();
   dft_flux add_dft_flux(direction d, const geometric_volume &where,
 			double freq_min, double freq_max, int Nfreq);

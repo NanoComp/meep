@@ -28,6 +28,7 @@ struct dft_chunk_data { // for passing to field::integrate as void*
   double omega_min, domega;
   int Nomega;
   component c;
+  bool include_dV;
   dft_chunk *dft_chunks;
 };
 
@@ -103,13 +104,18 @@ static void add_dft_integrand(fields_chunk *fc, component cgrid,
   component c = S.transform(data->c, -sn);
   if (!fc->f[c][0]) return; // this chunk doesn't have component c
 
+  if (!data->include_dV) {
+    dV0 = 1; dV1 = 0;
+  }
+
   data->dft_chunks = new dft_chunk(fc,is,ie,s0,s1,e0,e1,dV0,dV1,
 				   shift_phase * S.phase_shift(c, sn),
 				   c, integrand_data);
 }
 
 dft_chunk *fields::add_dft(component c, const geometric_volume &where,
-			   double freq_min, double freq_max, int Nfreq) {
+			   double freq_min, double freq_max, int Nfreq,
+			   bool include_dV) {
   if (coordinate_mismatch(v.dim, component_direction(c)))
     return NULL;
 
@@ -119,11 +125,18 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
   data.domega = Nfreq <= 1 ? 0.0 : 
     (freq_max * 2*pi - data.omega_min) / (Nfreq - 1);
   data.Nomega = Nfreq;
+  data.include_dV = include_dV;
   data.dft_chunks = NULL;
   
   integrate(add_dft_integrand, (void *) &data, where);
 
   return data.dft_chunks;
+}
+
+dft_chunk *fields::add_dft_pt(component c, const vec &where,
+			   double freq_min, double freq_max, int Nfreq) {
+  return add_dft(c, geometric_volume(where, where), 
+		 freq_min, freq_max, Nfreq, false);
 }
 
 void fields::update_dfts() {
