@@ -35,11 +35,10 @@ uninstall: dactyl-uninstall
 
 $(OBJ_dactyl): dactyl.h dactyl_internals.h vec.h mympi.h
 example.o: example.cpp dactyl.h vec.h mympi.h
-step.o: step.cpp stepgen.h dactyl.h dactyl_internals.h vec.h mympi.h
+step.o: step.cpp step_h.h dactyl.h dactyl_internals.h vec.h mympi.h
 
-stepgen.h: stepgen.hs
-	ghc -fglasgow-exts -fallow-undecidable-instances -fno-monomorphism-restriction stepgen.hs -o stepgen
-	./stepgen > stepgen.h
+step_h.h: step_h.hs StepGen.lhs
+	ghc -fglasgow-exts --make -o step_h step_h.hs && ./step_h > step_h.h
 
 libdactyl.a: $(OBJ_dactyl)
 	ar cru libdactyl.a $(OBJ_dactyl)

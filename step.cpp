@@ -283,7 +283,7 @@ void fields_chunk::step_h() {
         const int s1 = stride_each_direction[0];
         const int s2 = stride_each_direction[1];
         const int s3 = stride_each_direction[2];
-#include "stepgen.h"
+#include "step_h.h"
         /*for (int i1 = 0; i1 < n1; i1++)
         for (int i2 = 0; i2 < n2; i2++)
         for (int i3 = 0, ind = i1*s1+i2*s2; i3 < n3; i3++, ind += s3) {
