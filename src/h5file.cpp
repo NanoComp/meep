@@ -240,6 +240,7 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
     hsize_t *dims_copy = new hsize_t[*rank];
     hsize_t *maxdims = new hsize_t[*rank];
     H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
+    for (int i = 0; i < *rank; ++i) dims[i] = dims_copy[i];
     delete[] maxdims;
     delete[] dims_copy;
     H5Sclose(space_id);

@@ -219,7 +219,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   int file_rank, file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
-    abort("incorrect dataset size in load_dft_hdf5");
+    abort("incorrect dataset size (%d vs. %d) in load_dft_hdf5 %s:%s", file_dims, n, file->file_name(), dataname);
   
   int ichunk = 0, istart = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
