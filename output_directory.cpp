@@ -74,26 +74,27 @@ static void cp(const char *a, const char *b) {
   fclose(fb);
 }
 
-static int is_ok_dir(const char *dirname, const char *sourcename,
-                     const char *basename) {
+static bool is_ok_dir(const char *dirname, const char *sourcename,
+                      const char *basename) {
   const int buflen = 300;
 
   DIR *dir;
-  if ((dir = opendir(dirname)) != NULL)
+  if ((dir = opendir(dirname)) != NULL) {
     closedir(dir);
-  else {
+    return false;
+  } else {
     mkdir(dirname, 00777);
-    return 1;
+    return true;
   }
 
-  char drsrcn[buflen];
-  snprintf(drsrcn, buflen, "%s/%s", dirname, sourcename);
-  if (is_same_file(drsrcn, sourcename)) return 1;
+//   char drsrcn[buflen];
+//   snprintf(drsrcn, buflen, "%s/%s", dirname, sourcename);
+//   if (is_same_file(drsrcn, sourcename)) return 1;
   
-  FILE *f;
-  if ((f = fopen(drsrcn, "r")) == NULL) return 1;
-  fclose(f);
-  return 0;
+//   FILE *f;
+//   if ((f = fopen(drsrcn, "r")) == NULL) return 1;
+//   fclose(f);
+//   return true;
 }
 
 file *create_output_file(const char *dirname, const char *fname) {
