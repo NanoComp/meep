@@ -121,15 +121,18 @@ inline int fields::is_metal(const vec &here, const volume &vi) {
       case X:
       case Y:
       case Z:
-        return (b == High && boundaries[b][d] == Metallic &&
-                here.in_direction(d) > user_volume.origin.in_direction(d) +
-                (user_volume.num_direction(d)-0.2)*inva) ||
-          (b == Low && boundaries[b][d] == Magnetic &&
-           here.in_direction(d) < user_volume.origin.in_direction(d) + 0.2*inva);
+        if (b == High && boundaries[b][d] == Metallic &&
+            here.in_direction(d) > user_volume.origin.in_direction(d) +
+            (user_volume.num_direction(d)-0.2)*inva)
+          return true;
+        if (b == Low && boundaries[b][d] == Magnetic &&
+            here.in_direction(d) < user_volume.origin.in_direction(d) + 0.2*inva)
+          return true;
       case R:
-        return b == High && boundaries[b][d] == Magnetic &&
-          here.in_direction(d) > user_volume.origin.in_direction(d) +
-          (user_volume.num_direction(d)-0.2)*inva;
+        if (b == High && boundaries[b][d] == Magnetic &&
+            here.in_direction(d) > user_volume.origin.in_direction(d) +
+            (user_volume.num_direction(d)-0.2)*inva)
+          return true;
       }
     }
   return 0;
