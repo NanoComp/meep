@@ -423,8 +423,12 @@ void structure_chunk::update_Cdecay() {
 	    else if (is_electric(c))
           Cdecay[d][c][d2][i] = inveps[c][d2][i]/(1.0+0.5*C[d][c][i]*inveps[c][d2][i]);
         else Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]); // FIXME: Is this right?
+	    /*
+	      TODO: THIS IS NOT CORRECT FOR NON-DIAGONAL INVEPS...maybe
+              above code is not correct either????
 	    if (Cdecay[d][c][d2][i] == 0.0)
 	      abort("In update_Cdecay: Cdecay == 0\n");
+	    */
 	  }
 	}
 }
