@@ -167,7 +167,7 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
       switch (v.dim) {
-      case dcyl:
+      case dcyl: {
         vec next = v.loc(m,i)+v.dr();
         if (v.contains(next) && f[i] != f[v.index(m,next)])
           fprintf(out, "%lg\t%lg\tLH\n", next.z(), next.r() - 0.5/v.a);
@@ -175,6 +175,13 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
         if (v.contains(next) && f[i] != f[v.index(m,next)])
           fprintf(out, "%lg\t%lg\tLV\n", next.z() - 0.5/v.a, next.r());
         break;
+      }
+      case d1: {
+        const vec next = v.loc(m,i)+v.dz();
+        if (v.contains(next) && f[i] != f[v.index(m,next)])
+          fprintf(out, "%lg\t%lg\tLV\n", next.z() - 0.5/v.a, 0.0);
+        break;
+      }
       }
 }
 
