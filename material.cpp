@@ -186,7 +186,7 @@ mat::mat(double feps(double r, double z),
   }
   for (r=0;r<nr;r++) {
     for (z=0;z<nz+1;z++) {
-      MA(eps,r,z) = (feps) ? feps((r+0.5)/a,(z+0.5)) : 1.0; // Null feps means vacuum.
+      MA(eps,r,z) = (feps) ? feps((r+0.5)/a,(z+0.5)/a) : 1.0; // Null feps means vacuum.
     }
   }
   invepser = new double[nr*(nz+1)];
