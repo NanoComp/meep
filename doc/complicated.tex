@@ -49,8 +49,9 @@ int main(int argc, char *argv[]) {
   deal_with_ctrl_c();
   initialize(argc, argv);
   const double amicron = 10; // a micron is this many grid points.
-  const symmetry S = mirror(Y, voltwo(2*x_center, 2*y_center, amicron));
-  mat ma(voltwo(2*x_center, 2*y_center, amicron), eps, 0, S);
+  const volume vol = voltwo(2*x_center, 2*y_center, amicron);
+  const symmetry S = mirror(Y, vol) + rotate2(Y, vol);
+  mat ma(vol, eps, 0, S);
   ma.use_pml_everywhere(pml_thickness);
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
@@ -112,7 +113,7 @@ function rather than something like
 problems if the arguments to printf require synchronization between the
 processes.
 \begin{verbatim}
-    if (f.time() == next_print_time) {
+    if (f.time() >= next_print_time) {
       f.eps_slices();
       master_printf("Energy is %lg at time %lg\n",
                     f.total_energy(), f.time());
@@ -137,8 +138,11 @@ means you can just set the code to run for an excessively long time without
 risking losing everything if you lose patience.
 \begin{figure}
 \label{complicated_figure}
+\begin{center}
+\fbox{\parbox{4in}{
 \caption{Contents of ``freqs'' file}
-\input{complicated-out/freqs}
+\input{complicated-out/freqs}}}
+\end{center}
 \end{figure}
 
 In case you're wondering about the ``\verb!\begin{verbatim}!'', it's there

@@ -69,8 +69,9 @@ absorbing boundary conditions in all directions, since we are interested in
 the high Q mode in the cavity.
 \begin{verbatim}
   const double amicron = 10; // a micron is this many grid points.
-  const symmetry S = mirror(Y, voltwo(2*x_center, 2*y_center, amicron));
-  mat ma(voltwo(2*x_center, 2*y_center, amicron), eps, 0, S);
+  const volume vol = voltwo(2*x_center, 2*y_center, amicron);
+  const symmetry S = mirror(Y, vol) + rotate2(Y, vol);
+  mat ma(vol, eps, 0, S);
   ma.use_pml_everywhere(pml_thickness);
 \end{verbatim}
 To avoid clutter, we'll create a directory to hold the output.  The
