@@ -167,7 +167,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 		data_min, data_max,
 		err_max / max(fabs(data_min), fabs(data_max)));
 
-  return 1;
+  return true;
 }
 
 bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,

@@ -261,6 +261,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      }
      else {
 	  data_id = H5Dopen(file_id, dataname);
+	  CHECK(data_id >= 0, "missing dataset for subsequent chunk");
 	  space_id = H5Dget_space(data_id);
 	  
 	  CHECK(rank1 + append_data == H5Sget_simple_extent_ndims(space_id),
@@ -338,6 +339,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 
      H5Sclose(mem_space_id);
      H5Sclose(space_id);
+     H5Dclose(data_id);
      H5Fclose(file_id);
 
      IF_EXCLUSIVE(if (parallel)
