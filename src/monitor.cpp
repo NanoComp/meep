@@ -25,10 +25,12 @@
 #include "config.h"
 #if defined(HAVE_LIBFFTW3)
 #  include <fftw3.h>
+#elif defined(HAVE_LIBDFFTW)
+#  include <dfftw.h>
 #elif defined(HAVE_LIBFFTW)
 #  include <fftw.h>
 #endif
-#define HAVE_SOME_FFTW (defined(HAVE_LIBFFTW3) || defined(HAVE_LIBFFTW))
+#define HAVE_SOME_FFTW (defined(HAVE_LIBFFTW3) || defined(HAVE_LIBFFTW) || defined(HAVE_LIBDFFTW))
 
 /* Below are the monitor point routines. */
 
