@@ -25,9 +25,9 @@
 
 namespace meep {
 
-polarization *polarization::set_up_polarizations(const structure_chunk *s, int is_r) {
-  if (s->pb == NULL) return NULL;
-  return new polarization(s->pb, is_r);
+polarization *polarization::set_up_polarizations(const structure_chunk *sc, int is_r) {
+  if (sc->pb == NULL) return NULL;
+  return new polarization(sc->pb, is_r);
 }
 
 void polarization::use_real_fields() {
