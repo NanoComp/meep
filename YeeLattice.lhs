@@ -66,12 +66,13 @@ not_primary_direction (d:ds) x =
 loop_electric_fields x =
     doblock "FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0])" $
     docode [doexp $ "const int yee_idx = v.yee_index(ec)",
-            doexp $ "const int s_ec = stride_any_direction[component_direction(ec)]",
+            doexp $ "const int d_ec = component_direction(ec)",
+            doexp $ "const int s_ec = stride_any_direction[d_ec]",
             using_symmetry $ define_others,
             x]
-    where dc n "CYLINDRICAL" = "(direction)(((ec-2)+"++show n++")%3+2)"
-          dc n "2DTE" = "(direction)((ec+"++show n++")%2)"
-          dc n _ = "(direction)((ec+"++show n++")%3)"
+    where dc n "CYLINDRICAL" = "(direction)(((d_ec-2)+"++show n++")%3+2)"
+          dc n "2DTE" = "(direction)((d_ec+"++show n++")%2)"
+          dc n _ = "(direction)((d_ec+"++show n++")%3)"
           define_others "1D" = doexp ""
           define_others "2DTE" = define_other 1
           define_others "2DTM" = doexp ""

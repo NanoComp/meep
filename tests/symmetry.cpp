@@ -775,6 +775,33 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   return 1;
 }
 
+double saturated_gain_ez(const volume &v, double eps(const vec &)) {
+  const double ttot = 10.0;
+  printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
+  the_center = v.center();
+  const symmetry S = mirror(Z,v)*(-1);
+  mat ma(v, eps);
+  mat maS(v, eps, 0, S);
+  ma.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
+  maS.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
+  fields f(&ma);
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
+  fields fS(&ma);
+  fS.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.use_real_fields();
+  fS.use_real_fields();
+  f.use_bloch(zero_vec(v.dim));
+  fS.use_bloch(zero_vec(v.dim));
+  while (f.time() < ttot) {
+    f.step();
+    fS.step();
+    if (!compare_point(fS, f, v.center())) return 0;
+    if (!compare_point(fS, f, zero_vec(v.dim))) return 0;
+    if (!compare_point(fS, f, v.center()*0.3)) return 0;
+  }
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   const char *dirname = "symmetry-out";
@@ -784,8 +811,14 @@ int main(int argc, char **argv) {
   if (!polariton_ex(vol1d(1.0, 10.0), one))
     abort("error in 1D polariton vacuum\n");
 
-  if (!polariton_ex(vol2d(1.0, 1.0, 10.0), one))
-    abort("error in 1D polariton vacuum\n");
+  if (!polariton_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
+    abort("error in 3D polariton vacuum\n");
+
+  if (!saturated_gain_ez(vol3d(0.5, 1.2, 0.8, 10.0), one))
+    abort("error in 3D saturated gain\n");
+
+  if (!saturated_gain_ez(volcyl(0.5, 1.2, 10.0), one))
+    abort("error in cylindrical saturated gain\n");
 
   if (!test_1d_periodic_mirror(one, dirname))
     abort("error in test_1d_periodic_mirror vacuum\n");

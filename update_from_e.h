@@ -2,11 +2,12 @@ if (f[Er][0]) {
   // Am in cylindrical coordinates.
   FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
     const int yee_idx = v.yee_index(ec);
-    const int s_ec = stride_any_direction[component_direction(ec)];
-    const direction d_1 = (direction)(((ec-2)+1)%3+2);
+    const int d_ec = component_direction(ec);
+    const int s_ec = stride_any_direction[d_ec];
+    const direction d_1 = (direction)(((d_ec-2)+1)%3+2);
     const component ec_1 = direction_component(ec,d_1);
     const int s_1 = stride_any_direction[d_1];
-    const direction d_2 = (direction)(((ec-2)+2)%3+2);
+    const direction d_2 = (direction)(((d_ec-2)+2)%3+2);
     const component ec_2 = direction_component(ec,d_2);
     const int s_2 = stride_any_direction[d_2];
     if (is_real) {
@@ -309,11 +310,12 @@ if (f[Er][0]) {
         // Am in 3D
         FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
           const int yee_idx = v.yee_index(ec);
-          const int s_ec = stride_any_direction[component_direction(ec)];
-          const direction d_1 = (direction)((ec+1)%3);
+          const int d_ec = component_direction(ec);
+          const int s_ec = stride_any_direction[d_ec];
+          const direction d_1 = (direction)((d_ec+1)%3);
           const component ec_1 = direction_component(ec,d_1);
           const int s_1 = stride_any_direction[d_1];
-          const direction d_2 = (direction)((ec+2)%3);
+          const direction d_2 = (direction)((d_ec+2)%3);
           const component ec_2 = direction_component(ec,d_2);
           const int s_2 = stride_any_direction[d_2];
           if (is_real) {
@@ -889,11 +891,12 @@ if (f[Er][0]) {
         // Am in 2D
         FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
           const int yee_idx = v.yee_index(ec);
-          const int s_ec = stride_any_direction[component_direction(ec)];
-          const direction d_1 = (direction)((ec+1)%3);
+          const int d_ec = component_direction(ec);
+          const int s_ec = stride_any_direction[d_ec];
+          const direction d_1 = (direction)((d_ec+1)%3);
           const component ec_1 = direction_component(ec,d_1);
           const int s_1 = stride_any_direction[d_1];
-          const direction d_2 = (direction)((ec+2)%3);
+          const direction d_2 = (direction)((d_ec+2)%3);
           const component ec_2 = direction_component(ec,d_2);
           const int s_2 = stride_any_direction[d_2];
           if (is_real) {
@@ -1194,8 +1197,9 @@ if (f[Er][0]) {
       // Am in 2D TE
       FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
         const int yee_idx = v.yee_index(ec);
-        const int s_ec = stride_any_direction[component_direction(ec)];
-        const direction d_1 = (direction)((ec+1)%2);
+        const int d_ec = component_direction(ec);
+        const int s_ec = stride_any_direction[d_ec];
+        const direction d_1 = (direction)((d_ec+1)%2);
         const component ec_1 = direction_component(ec,d_1);
         const int s_1 = stride_any_direction[d_1];
         if (is_real) {
@@ -1913,7 +1917,8 @@ if (f[Er][0]) {
       // Am in 1D
       FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
         const int yee_idx = v.yee_index(ec);
-        const int s_ec = stride_any_direction[component_direction(ec)];
+        const int d_ec = component_direction(ec);
+        const int s_ec = stride_any_direction[d_ec];
         if (is_real) {
           if (pol) {
             for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
@@ -2051,7 +2056,8 @@ if (f[Er][0]) {
       // Am in 2D TM
       FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
         const int yee_idx = v.yee_index(ec);
-        const int s_ec = stride_any_direction[component_direction(ec)];
+        const int d_ec = component_direction(ec);
+        const int s_ec = stride_any_direction[d_ec];
         if (is_real) {
           if (pol) {
             for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
