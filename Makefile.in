@@ -18,7 +18,8 @@ distdir = $(package)-$(VERSION)
 
 ###########################################################################
 
-OBJ_dactyl = dactyl.o harminv.o bands.o output_directory.o material.o
+OBJ_dactyl = dactyl.o harminv.o bands.o output_directory.o material.o \
+	slices.o
 OBJ_example = example.o libdactyl.a
 
 ###########################################################################
