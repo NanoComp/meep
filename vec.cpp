@@ -715,14 +715,14 @@ double volume::boundary_location(boundary_side b, direction d) const {
   case X: return loc(Ez,ntot()-1).x();
   case Y: return loc(Ez,ntot()-1).y();
   case R: return loc(Ep,ntot()-1).r();
-  case Z: if (dim == Dcyl) return loc(Ep,ntot()-1).x();
+  case Z: if (dim == Dcyl) return loc(Ep,ntot()-1).z();
           else return loc(Ex,ntot()-1).z();
   }
   else switch (d) {
   case X: return loc(Ez,0).x();
   case Y: return loc(Ez,0).y();
   case R: return loc(Ep,0).r();
-  case Z: if (dim == Dcyl) return loc(Ep,0).x();
+  case Z: if (dim == Dcyl) return loc(Ep,0).z();
           else return loc(Ex,0).z();
   }
 }
