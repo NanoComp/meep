@@ -147,24 +147,24 @@ void fields::output_real_imaginary_slices(const char *name) {
   }
   char *r_or_i = "-re";
   for (int cmp=0;cmp<2;cmp++) {
-    if (a == 1) snprintf(n, buflen, "%s/%shr%s-%08.0f.sli", outdir, nname, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s/%shr%s-%09.2f.sli", outdir, nname, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%shr%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
+    else snprintf(n, buflen, "%s/%shr%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
     output_slice(hr[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%shp%s-%08.0f.sli", outdir, nname, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s/%shp%s-%09.2f.sli", outdir, nname, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%shp%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
+    else snprintf(n, buflen, "%s/%shp%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
     output_slice(hp[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%shz%s-%08.0f.sli", outdir, nname, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s/%shz%s-%09.2f.sli", outdir, nname, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%shz%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
+    else snprintf(n, buflen, "%s/%shz%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
     output_slice(hz[cmp], nr, nz, n);
     
-    if (a == 1) snprintf(n, buflen, "%s/%ser%s-%08.0f.sli", outdir, nname, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s/%ser%s-%09.2f.sli", outdir, nname, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%ser%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
+    else snprintf(n, buflen, "%s/%ser%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
     output_slice(er[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%sep%s-%08.0f.sli", outdir, nname, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s/%sep%s-%09.2f.sli", outdir, nname, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%sep%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
+    else snprintf(n, buflen, "%s/%sep%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
     output_slice(ep[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s/%sez%s-%08.0f.sli", outdir, nname, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s/%sez%s-%09.2f.sli", outdir, nname, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%sez%s-%08.0f.sli", outdir, nname, r_or_i, t*inva*c);
+    else snprintf(n, buflen, "%s/%sez%s-%09.2f.sli", outdir, nname, r_or_i, t*inva*c);
     output_slice(ez[cmp], nr, nz, n);
     r_or_i = "-im";
   }
@@ -187,37 +187,37 @@ void fields::output_slices(const char *name) {
     polarization *p = pol;
     int polnum = 0;
     while (p) {
-      if (a == 1) snprintf(n, buflen, "%s/%sp%dr-%08.0f.sli", outdir, nname, polnum, t*inva);
-      else snprintf(n, buflen, "%s/%sp%dr-%09.2f.sli", outdir, nname, polnum, t*inva);
+      if (a == 1) snprintf(n, buflen, "%s/%sp%dr-%08.0f.sli", outdir, nname, polnum, t*inva*c);
+      else snprintf(n, buflen, "%s/%sp%dr-%09.2f.sli", outdir, nname, polnum, t*inva*c);
       output_complex_slice(p->Pr, nr, nz, n);
-      if (a == 1) snprintf(n, buflen, "%s/%sp%dp-%08.0f.sli", outdir, nname, polnum, t*inva);
-      else snprintf(n, buflen, "%s/%sp%dp-%09.2f.sli", outdir, nname, polnum, t*inva);
+      if (a == 1) snprintf(n, buflen, "%s/%sp%dp-%08.0f.sli", outdir, nname, polnum, t*inva*c);
+      else snprintf(n, buflen, "%s/%sp%dp-%09.2f.sli", outdir, nname, polnum, t*inva*c);
       output_complex_slice(p->Pp, nr, nz, n);
-      if (a == 1) snprintf(n, buflen, "%s/%sp%dz-%08.0f.sli", outdir, nname, polnum, t*inva);
-      else snprintf(n, buflen, "%s/%sp%dz-%09.2f.sli", outdir, nname, polnum, t*inva);
+      if (a == 1) snprintf(n, buflen, "%s/%sp%dz-%08.0f.sli", outdir, nname, polnum, t*inva*c);
+      else snprintf(n, buflen, "%s/%sp%dz-%09.2f.sli", outdir, nname, polnum, t*inva*c);
       output_complex_slice(p->Pz, nr, nz, n);
       polnum++;
       p = p->next;
     }
   }
-  if (a == 1) snprintf(n, buflen, "%s/%shr-%08.0f.sli", outdir, nname, t*inva);
-  else snprintf(n, buflen, "%s/%shr-%09.2f.sli", outdir, nname, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%shr-%08.0f.sli", outdir, nname, t*inva*c);
+  else snprintf(n, buflen, "%s/%shr-%09.2f.sli", outdir, nname, t*inva*c);
   output_complex_slice(hr, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s/%shp-%08.0f.sli", outdir, nname, t*inva);
-  else snprintf(n, buflen, "%s/%shp-%09.2f.sli", outdir, nname, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%shp-%08.0f.sli", outdir, nname, t*inva*c);
+  else snprintf(n, buflen, "%s/%shp-%09.2f.sli", outdir, nname, t*inva*c);
   output_complex_slice(hp, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s/%shz-%08.0f.sli", outdir, nname, t*inva);
-  else snprintf(n, buflen, "%s/%shz-%09.2f.sli", outdir, nname, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%shz-%08.0f.sli", outdir, nname, t*inva*c);
+  else snprintf(n, buflen, "%s/%shz-%09.2f.sli", outdir, nname, t*inva*c);
   output_complex_slice(hz, nr, nz, n);
   
-  if (a == 1) snprintf(n, buflen, "%s/%ser-%08.0f.sli", outdir, nname, t*inva);
-  else snprintf(n, buflen, "%s/%ser-%09.2f.sli", outdir, nname, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%ser-%08.0f.sli", outdir, nname, t*inva*c);
+  else snprintf(n, buflen, "%s/%ser-%09.2f.sli", outdir, nname, t*inva*c);
   output_complex_slice(er, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s/%sep-%08.0f.sli", outdir, nname, t*inva);
-  else snprintf(n, buflen, "%s/%sep-%09.2f.sli", outdir, nname, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%sep-%08.0f.sli", outdir, nname, t*inva*c);
+  else snprintf(n, buflen, "%s/%sep-%09.2f.sli", outdir, nname, t*inva*c);
   output_complex_slice(ep, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s/%sez-%08.0f.sli", outdir, nname, t*inva);
-  else snprintf(n, buflen, "%s/%sez-%09.2f.sli", outdir, nname, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%sez-%08.0f.sli", outdir, nname, t*inva*c);
+  else snprintf(n, buflen, "%s/%sez-%09.2f.sli", outdir, nname, t*inva*c);
   output_complex_slice(ez, nr, nz, n);
 
   free(n);
