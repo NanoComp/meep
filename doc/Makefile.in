@@ -43,7 +43,7 @@ polaritonbands.eps : polaritonbands-out/bands
 	../plot polaritonbands-out/bands band && \
 	mv polaritonbands-out/bands.ps polaritonbands.eps
 
-polaritonbands-out/bands : polaritonbands.dac
+polaritonbands-out/bands : preproc polaritonbands.dac
 	rm -rf polaritonbands-out/ && ./polaritonbands.dac
 
 test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac

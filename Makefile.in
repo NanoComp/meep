@@ -84,7 +84,9 @@ dist:
 test: libdactyl.a
 	cd doc && make testclean && make test
 
-doc :
+doc : documentation
+
+documentation: libdactyl.a plot modes
 	cd doc && make
 
 clean:
