@@ -7,11 +7,17 @@ HDRS = meep-ctl.h meep-ctl-const.h
 
 LIBHDRS = $(top_srcdir)/src/meep.h $(top_srcdir)/src/meep/vec.h $(top_srcdir)/src/meep/mympi.h
 
-meep_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i
+if WITH_LIBCTL
+MEEP_WRAP = meep_wrap.cxx
+else
+MEEP_WRAP = # can't build meep_wrap.cxx without libctl
+endif
+
+meep_SOURCES = meep.cpp structure.cpp $(MEEP_WRAP) $(HDRS) meep.i
 nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i
 meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
-BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx meep_renames.i
+BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx
 
 meep_wrap.cxx: meep.i meep_renames.i ctl-io.i meep-ctl-swig.h $(LIBHDRS)
 	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
