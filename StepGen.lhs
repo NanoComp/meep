@@ -1,8 +1,8 @@
 \begin{code}
 module StepGen ( Code, Expression, gencode,
-                 --EXPRESSION, expression,
                  doexp, docode, doline, doblock, dodebug, comment,
-                 if_, ifelse_, (|?|), (|:|), ifdef,
+                 if_, ifelse_, (|?|), (|:|),
+                 ifdef, ifdefelse, casedef,
                  whether_or_not, declare, for_loop,
                  for_true_false, for_any_one_of, sum_for_any_one_of,
                  (|+|), (|-|), (|*|), (|+=|), (|-=|), (|=|), (<<),
@@ -78,10 +78,20 @@ if_ b thendo = ifelseCC b (docode thendo) (return []) $ \thethen _ ->
                            ]
 
 ifdef :: CODE a => String -> a -> Code
-ifdef b thendo = do check <- istrueCC b
-                    if check == Just True
-                       then docode thendo
-                       else return []
+ifdef b thendo = ifdefelse b (docode thendo) (doexp "")
+
+ifdefelse :: CODE a => String -> a -> a -> Code
+ifdefelse b thendo elsedo = do check <- istrueCC b
+                               if check == Just True
+                                  then docode thendo
+                                  else docode elsedo
+
+casedef :: EXPRESSION a => [String] -> (String -> a) -> a -> Expression
+casedef [] _ other = expression other
+casedef (b:bs) e other = do check <- istrueCC b
+                            if check == Just True
+                               then expression $ e b
+                               else casedef bs e other
 
 ifelse_ :: (CODE a, CODE b) => String -> a -> b -> Code
 ifelse_ b thendo elsedo =
