@@ -198,7 +198,7 @@ void fields::initialize_with_n_tm(int ntot) {
 double J(int m, double kr) { return gsl_sf_bessel_Jn(m, kr); }
 double Jprime(int m, double kr) { 
   if (m) return 0.5*(J(m-1,kr)-J(m+1,kr));
-  else return 0.5*J(1,kr);
+  else return -J(1,kr);
 }
 double Jroot(int m, int n) { return gsl_sf_bessel_zero_Jnu(m, n+1); }
 double Jmax(int m, int n) {
@@ -224,34 +224,42 @@ void fields::initialize_with_nth_te(int np1) {
   double rmax = Jmax(m,n);
   double ktrans = rmax/nr;
   double kk = k*inva;
-  double om = c*sqrt(ktrans*ktrans + kk*kk);
-  double omt = om*0.5*inva;
   double eps = ma->eps[1];
   double inveps = 1.0/eps;
+  double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
+  double omt = om*0.5*inva;
   printf("Freq is %lg\n", om/(2*pi));
   if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
-  double funky_minus = 1-kk*kk*c*c/(eps*om*om);
+  double funky = 1-kk*kk*c*c/(eps*om*om);
   for (int r=0;r<nr;r++) {
     double Jm = J(m,ktrans*(r+0.5));
-    double Jmp1 = J(m+1,ktrans*(r+0.5));
-    double Jmm1 = J(m-1,ktrans*(r+0.5));
+    double Jmp = Jprime(m, ktrans*(r+0.5));
     double Jm_h = J(m,ktrans*r);
-    double Jmp1_h = J(m+1,ktrans*r);
-    double Jmm1_h = J(m-1,ktrans*r);
+    double Jmp_h = Jprime(m,ktrans*r);
     for (int z=0;z<nz;z++) {
       double kz = k*inva*z;
       double kzph = k*inva*(z+0.5);
       DOCMP {
         CM(hz,r,z) += Jm*expi(cmp, kz);
-        CM(hr,r,z) += kk*c/om*c*inveps/om*0.5*(Jmm1_h - Jmp1_h)
-          *expi(cmp, kzph-pi/2)/funky_minus;
-        if (r > 0) CM(hp,r,z) += kk*c/om*(-m*c*inveps/(r*om))
-                     *Jm_h*expi(cmp, kzph)/funky_minus;
+        CM(hr,r,z) += (-kk*c/om)*(-c*inveps/om/funky)*ktrans*Jmp_h
+          *expi(cmp, kzph+pi/2);
+        if (r > 0) CM(hp,r,z) += (kk*c/om)*(-m*c*inveps/(r*om)/funky)
+                     *Jm*expi(cmp, kzph);
         
-        CM(ep,r,z) += c*inveps/om*0.5*(Jmm1 - Jmp1)
-          *expi(cmp, kz-omt-pi/2)/funky_minus;
-        if (r > 0) CM(er,r,z) += -m*c*inveps/(r*om)*Jm*expi(cmp, kz-omt)/funky_minus;
+        CM(ep,r,z) += (-c*inveps/om/funky)*ktrans*Jmp_h
+          *expi(cmp, kz-omt+pi/2);
+        if (r > 0) CM(er,r,z) += (-m*c*inveps/(r*om)/funky)*Jm*expi(cmp, kz-omt);
       }
+    }
+    DOCMP {
+      const int z=nz;
+      double kz = k*inva*z;
+      double kzph = k*inva*(z+0.5);
+      CM(hz,r,z) += Jm*expi(cmp, kz);
+
+      CM(ep,r,z) += (-c*inveps/om/funky)*ktrans*Jmp_h
+        *expi(cmp, kz-omt+pi/2);
+        if (r > 0) CM(er,r,z) += (-m*c*inveps/(r*om)/funky)*Jm*expi(cmp, kz-omt);
     }
   }
 }
@@ -261,35 +269,43 @@ void fields::initialize_with_nth_tm(int np1) {
   double rroot = Jroot(m,n);
   double ktrans = rroot/nr;
   double kk = k*inva;
-  double om = c*sqrt(ktrans*ktrans + kk*kk);
-  double omt = om*0.5*inva;
   double eps = ma->eps[1];
   double inveps = 1.0/eps;
+  double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
+  double omt = om*0.5*inva;
   printf("Freq is %lg\n", om/(2*pi));
   if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
-  double funky_minus = 1-kk*kk*c*c/(eps*om*om);
+  double funky = 1-kk*kk*c*c/(eps*om*om);
   for (int r=0;r<nr;r++) {
     double Jm = J(m,ktrans*r);
-    double Jmp1 = J(m+1,ktrans*r);
-    double Jmm1 = J(m-1,ktrans*r);
+    double Jmp = Jprime(m,ktrans*r);
     double Jm_h = J(m,ktrans*(r+0.5));
-    double Jmp1_h = J(m+1,ktrans*(r+0.5));
-    double Jmm1_h = J(m-1,ktrans*(r+0.5));
+    double Jmp_h = Jprime(m,ktrans*(r+0.5));
     for (int z=0;z<nz;z++) {
       double kz = k*inva*z;
       double kzmh = k*inva*(z-0.5);
       DOCMP {
         CM(ez,r,z) += Jm*expi(cmp, kz);
-        if (r > 0) CM(hr,r,z) += m*c/(r*om)*Jm*expi(cmp, kz+omt)/funky_minus;
-        CM(hp,r,z) += (c/om)*(ktrans*0.5*(Jmm1-Jmp1))
-                      *expi(cmp, kz+omt+pi/2)/funky_minus;
+        if (r > 0) CM(hr,r,z) += m*c/(r*om)*Jm*expi(cmp, kz+omt)/funky;
+        CM(hp,r,z) += (c/om)*(ktrans*Jmp)
+                      *expi(cmp, kz+omt+pi/2)/funky;
         
-        if (r > 0) CM(ep,r,z) += m*c/(r*om)*Jm*expi(cmp, kzmh)/funky_minus
+        if (r > 0) CM(ep,r,z) += m*c/(r*om)*Jm*expi(cmp, kzmh)/funky
                      *(-kk*c*inveps/om);
-        CM(er,r,z) += (c/om)*(ktrans*0.5*(Jmm1_h-Jmp1_h))
-                      *expi(cmp, kzmh+pi/2)/funky_minus
+        CM(er,r,z) += (c/om)*(ktrans*Jmp_h)
+                      *expi(cmp, kzmh+pi/2)/funky
                       *kk*c*inveps/om;
       }
+    }
+    DOCMP {
+      const int z=nz;
+      double kz = k*inva*z;
+      double kzmh = k*inva*(z-0.5);
+      if (r > 0) CM(ep,r,z) += m*c/(r*om)*Jm*expi(cmp, kzmh)/funky
+                   *(-kk*c*inveps/om);
+      CM(er,r,z) += (c/om)*(ktrans*Jmp_h)
+        *expi(cmp, kzmh+pi/2)/funky
+        *kk*c*inveps/om;
     }
   }
 }
