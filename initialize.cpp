@@ -104,14 +104,56 @@ void fields::initialize_with_n_tm(int ntot) {
 void fields::initialize_field(component c, complex<double> func(const vec &)) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->initialize_field(c, func);
+  connect_chunks();
   step_boundaries(H_stuff);
   step_boundaries(E_stuff);
+  step_boundaries(D_stuff);
 }
 
 void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
+  bool have_f = false;
+  for (int i=0;i<v.ntot();i++)
+    if (func(v.loc(c,i)) != 0.0) have_f = true;
+  if (!have_f) return;
+
+  if (!f[c][0]) alloc_f(c);
   for (int i=0;i<v.ntot();i++) {
     complex<double> val = func(v.loc(c,i));
     f[c][0][i] += real(val);
     f[c][1][i] += imag(val);
   }
+}
+
+static complex<double> (*A_static)(component, const vec &);
+static component c_static;
+static complex<double> stupid_A(const vec &p) {
+  return A_static(c_static, p);
+}
+static fields *f_static;
+static complex<double> prefactor_static;
+static complex<double> stupider_A(const vec &p) {
+  return prefactor_static*f_static->get_field(c_static, p);
+}
+
+void fields::initialize_A(complex<double> A(component, const vec &), double freq) {
+  fields tmp(*this);
+  tmp.zero_fields();
+  A_static = A;
+  FOR_ELECTRIC_COMPONENTS(ec) {
+    c_static = ec;
+    tmp.initialize_field(ec, stupid_A);
+  }
+  tmp.step();
+  f_static = &tmp;
+  const double dt = inva*c;
+  const complex<double> I = complex<double>(0.0,1.0);
+  const complex<double> h_prefac = 1.0/dt;exp(-0.5*I*(2*pi)*freq*dt);
+  const complex<double> d_prefac = h_prefac/dt / (I*freq*(2*pi));
+  FOR_COMPONENTS(c) {
+    c_static = c;
+    prefactor_static = (is_magnetic(c))? h_prefac : d_prefac;
+    initialize_field(c, stupider_A);
+  }
+  update_e_from_d();
+  step_boundaries(E_stuff);
 }

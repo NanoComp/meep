@@ -366,6 +366,7 @@ class fields {
                         double cutoff, const vec &, complex<double> amp = 1.0,
                         int is_continuous = 0);
   void initialize_field(component, complex<double> f(const vec &));
+  void initialize_A(complex<double> A(component, const vec &), double freq);
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
@@ -387,6 +388,7 @@ class fields {
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
   void output_bands(file *, const char *, int maxbands=100);
+  complex<double> get_field(component c, const vec &loc) const;
   // energy_and_flux.cpp
   double energy_in_box(const geometric_volume &);
   double electric_energy_in_box(const geometric_volume &);
@@ -457,7 +459,6 @@ class fields {
   void update_fluxes();
   // monitor.cpp
   complex<double> get_field(component c, const ivec &iloc) const;
-  complex<double> get_field(component c, const vec &loc) const;
   double get_polarization_energy(const ivec &) const;
   double get_polarization_energy(const vec &) const;
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
