@@ -92,7 +92,7 @@ We use a couple of monitor points to determine epsilon.
     if (f.time() >= next_printtime) {
       next_printtime += 50;
       printf("Working on time %lg...  ", f.time());
-      printf("energy is %lg\n", f.total_energy()/3.66e-6);
+      printf("energy is %lg\n", f.total_energy());
     }
 \end{comment}
 The monitor points are located one grid spacing from one another.  The
