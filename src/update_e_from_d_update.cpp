@@ -18,16 +18,12 @@
 #include "meep.h"
 #include "meep_internals.h"
 
-namespace {
+namespace meep {
 
   inline double calc_nonlinear_inveps(const double Dsqr, const double e,
                                       const double alpha) {
     return 1.0 - (alpha*Dsqr)/(e + 3*(alpha*Dsqr));
   }
-
-}
-
-namespace meep {
 
 void fields_chunk::update_e_from_d_update(double *d_minus_p[5][2],
                                           bool have_d_minus_p) {
