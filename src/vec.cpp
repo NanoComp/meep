@@ -1281,6 +1281,7 @@ int symmetry::transform(int c, int n) const {
 }
 
 complex<double> symmetry::phase_shift(component c, int n) const {
+  if (c == Dielectric) return 1.0;
   complex<double> phase = transform(component_direction(c),n).phase;
   // flip tells us if we need to flip the sign.  For vectors (E), it is
   // just this simple:
@@ -1304,7 +1305,8 @@ complex<double> symmetry::phase_shift(component c, int n) const {
 complex<double> symmetry::phase_shift(derived_component c, int n) const {
   if (is_poynting(c)) {
     signed_direction ds = transform(component_direction(c),n);
-    return (ds.flipped ? -ds.phase : ds.phase);
+    complex<double> ph = conj(ds.phase) * ds.phase; // E x H gets |phase|^2
+    return (ds.flipped ? -ph : ph);
   }
   else /* energy density */
     return 1.0;
