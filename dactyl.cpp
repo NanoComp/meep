@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <complex>
 
 #include "dactyl.h"
 #include "dactyl_internals.h"
@@ -373,8 +374,9 @@ void fields::add_src_pt(int r, int z,
                         double freq, double width, double peaktime,
                         double cutoff, int is_h) {
   const double pi=3.14159265;
-  if (m!=0 && r <= rmin_bulk(m)-1) return;
+  if (m!=0 && r < rmin_bulk(m)-1) return;
   if (r >= nr - npmlr) return;
+  if (Pr == 0 && Pp == 0 && Pz == 0) return;
   if (z >= nz || z < 0) {
     printf("Error:  source is outside of cell!\n");
     exit(1);
@@ -456,6 +458,36 @@ void fields::find_source_z_position(double z, double shift, int *z1, int *z2,
       *amp1 = 1.0;
       *z2 = 0;
       *amp2 = 0.0;
+    }
+  }
+}
+
+void fields::add_plane_source(double freq, double width, double peaktime,
+                              double cutoff, double z, complex<double> amp(double r)) {
+  int thez = (int) (z*a + 0.5);
+  const complex<double> I = complex<double>(0,1);
+  complex<double> eiomt = exp(-I*freq*2*pi*inva/c*0.5);
+  if (z == 0.0 && npmlz) thez = npmlz+1;
+  for (int r=0;r<nr;r++) {
+    double rh = r+0.5, rmh = r-0.5, rp = r+1;
+    complex<double> A = amp(r*inva), Ah = amp(rh*inva),
+      Ap = amp(rp*inva), Amh = amp(rmh*inva);;
+
+    double eps = MA(ma->eps, r, thez);
+    if (A != 0.0) {
+      // E_phi
+      add_src_pt(r, thez, 0.0, A, 0.0, freq, width, peaktime, cutoff, 0);
+      // iH_r = d(rH_phi)/dr
+      complex<double> A_Hr = -(rh*Ah - rmh*Amh)*eps;
+      if (r == 0) A_Hr = Ah*eps;
+      add_src_pt(r, thez, -A*eps, 0.0, 0.0, freq, width, peaktime, cutoff, 1);
+    }
+    if (Ah != 0.0) {
+      // iE_r = d(rE_phi)/dr
+      complex<double> A_Er = -I*0.5*(Ap + A);
+      add_src_pt(r, thez, A_Er, 0.0, 0.0, freq, width, peaktime, cutoff, 0);
+      // H_phi
+      add_src_pt(r, thez, 0.0, -(Ap+A)*0.5*I*eps, 0.0, freq, width, peaktime, cutoff, 1);
     }
   }
 }

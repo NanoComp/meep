@@ -81,6 +81,9 @@ class fields {
   void step();
 
   void use_real_sources();
+  // Note that the following plane source only works if m == 1.
+  void add_plane_source(double freq, double width, double peaktime,
+                        double cutoff, double z, complex<double> amp(double r));
   void add_er_source(double freq, double width, double peaktime,
                      double cutoff, double z, complex<double> amp(double r));
   void add_ep_source(double freq, double width, double peaktime,
