@@ -117,14 +117,18 @@ polarizability::polarizability(const polarizability *pb) {
   energy_saturation = pb->energy_saturation;
   saturated_sigma = pb->saturated_sigma;
   is_it_mine = pb->is_it_mine;
-  sigma = new double[v.ntot()];
-  for (int i=0;i<v.ntot();i++) sigma[i] = pb->sigma[i];
   FOR_COMPONENTS(c) s[c] = NULL;
-  FOR_ELECTRIC_COMPONENTS(c)
-    if (v.has_field(c)) {
-      s[c] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
-    }
+  if (is_mine()) {
+    sigma = new double[v.ntot()];
+    for (int i=0;i<v.ntot();i++) sigma[i] = pb->sigma[i];
+    FOR_ELECTRIC_COMPONENTS(c)
+      if (v.has_field(c)) {
+        s[c] = new double[v.ntot()];
+        for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
+      }
+  } else {
+    sigma = 0;
+  }
   if (pb->next) next = new polarizability(pb->next);
   else next = NULL;
 }
