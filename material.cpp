@@ -25,18 +25,45 @@
 mat::mat() {
   num_chunks = 0;
   outdir = ".";
+  S = identity();
 }
 
-mat::mat(const volume &thev, double eps(const vec &), int num) {
+mat::mat(const volume &thev, double eps(const vec &), int num, const symmetry &s) {
   outdir = ".";
   if (num == 0) num = count_processors();
-  choose_chunkdivision(thev, eps, num);
+  choose_chunkdivision(thev, eps, num, s);
 }
 
 void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
-                               int num) {
+                               int num, const symmetry &s) {
   num_chunks = num;
-  v = thev;
+  user_volume = thev;
+  S = s;
+  if (S.multiplicity() > 1) {
+    // Have to work out the symmetry point and volume to use.
+    if (!(thev.dim == d2 /* || thev.dim == d3 */))
+      abort("I don't support symmetries except in cartesian.  %d\n",
+            (int) thev.dim);
+    bool break_this[3];
+    for (int dd=0;dd<3;dd++) {
+      const direction d = (direction) dd;
+      break_this[d] = false;
+      for (int n=0;n<S.multiplicity();n++)
+        if (S.transform(d,n).d != d || S.transform(d,n).flipped) {
+          break_this[d] = true;
+          if (thev.num_direction(d) & 1)
+            abort("Aaack, odd number of grid points!\n");
+        }
+    }
+    v = thev;
+    for (int d=0;d<3;d++)
+      if (break_this[d]) v = v.split_specifically(2,0,(direction)d);
+    // Pad the little cell in any direction that we've shrunk:
+    for (int d=0;d<3;d++)
+      if (break_this[d]) v = v.pad((direction)d);
+  } else {
+    v = thev;
+  }
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) {
     int proc = i*count_processors()/num_chunks;
@@ -48,6 +75,8 @@ mat::mat(const mat *m) {
   num_chunks = m->num_chunks;
   outdir = m->outdir;
   v = m->v;
+  S = m->S;
+  user_volume = m->user_volume;
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m->chunks[i]);
 }

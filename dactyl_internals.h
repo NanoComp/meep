@@ -65,6 +65,7 @@ class polarization {
 
 class src {
  public:
+  src();
   ~src();
   double freq, width, peaktime, cutoff;
   complex<double> A[10], amp_shift;
@@ -74,6 +75,7 @@ class src {
   void use_real_sources();
   complex<double> get_amplitude_at_time(double t) const;
   double get_envelope_at_time(double t) const;
+  src *add_to(src *others) const;
 };
 
 const int num_bandpts = 32;

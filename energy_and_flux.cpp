@@ -40,11 +40,11 @@ double fields_chunk::count_volume(component c) {
 }
 
 double fields::total_energy() {
-  return energy_in_box(v);
+  return energy_in_box(user_volume);
 }
 
 double fields::field_energy() {
-  return field_energy_in_box(v);
+  return field_energy_in_box(user_volume);
 }
 
 double fields::energy_in_box(const volume &otherv) {
@@ -71,7 +71,7 @@ double fields::electric_energy_in_box(const volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      energy += chunks[i]->electric_energy_in_box(otherv);
+      energy += chunks[i]->electric_energy_in_box(otherv, S);
   return sum_to_all(energy);
 }
 
@@ -79,7 +79,7 @@ double fields::magnetic_energy_in_box(const volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      energy += chunks[i]->magnetic_energy_in_box(otherv);
+      energy += chunks[i]->magnetic_energy_in_box(otherv, S);
   return sum_to_all(energy);
 }
 
@@ -87,7 +87,7 @@ double fields::thermo_energy_in_box(const volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      energy += chunks[i]->thermo_energy_in_box(otherv);
+      energy += chunks[i]->thermo_energy_in_box(otherv, S);
   return sum_to_all(energy);
 }
 
@@ -113,40 +113,54 @@ double fields_chunk::backup_h() {
 double fields_chunk::restore_h() {
   DOCMP {
     for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && is_magnetic((component)c)) {
+      if (f[c][cmp] && is_magnetic((component)c)) {
         for (int i=0;i<v.ntot();i++) f[c][cmp][i] = f_backup[c][cmp][i];
         for (int i=0;i<v.ntot();i++) f_pml[c][cmp][i] = f_backup_pml[c][cmp][i];
       }
   }
 }
 
-double fields_chunk::electric_energy_in_box(const volume &otherv) {
+double fields_chunk::electric_energy_in_box(const volume &otherv,
+                                            const symmetry &S) {
   double energy = 0;
   DOCMP
     for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && is_electric((component)c))
-        for (int i=0;i<v.ntot();i++)
-          if (otherv.owns(v.loc((component)c,i)))
-            energy += otherv.intersection(v.dV((component)c,i))*
-              f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
-  return energy*(1.0/(8*pi));
-}
-
-double fields_chunk::magnetic_energy_in_box(const volume &otherv) {
-  double energy = 0;
-  DOCMP
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && is_magnetic((component)c))
+      if (f[c][cmp] && is_electric((component)c))
         for (int i=0;i<v.ntot();i++) {
-          vec here = v.loc((component)c,i);
-          if (v.owns(here) && otherv.owns(here))
-            energy += otherv.intersection(v.dV((component)c,i))*
-              f[c][cmp][i]*f[c][cmp][i];
+          const vec p0 = v.loc((component)c,i);
+          if (S.is_primitive(p0))
+            for (int sn=0;sn<S.multiplicity();sn++) {
+              const vec pn = S.transform(p0,sn);
+              if ((pn!=p0 || sn==0) && otherv.owns(pn))
+                energy += otherv.intersection(v.dV((component)c,i))*
+                  f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
+            }
         }
   return energy*(1.0/(8*pi));
 }
 
-double fields_chunk::thermo_energy_in_box(const volume &otherv) {
+double fields_chunk::magnetic_energy_in_box(const volume &otherv,
+                                            const symmetry &S) {
+  double energy = 0;
+  DOCMP
+    for (int c=0;c<10;c++)
+      if (f[c][cmp] && is_magnetic((component)c))
+        for (int i=0;i<v.ntot();i++) {
+          const vec p0 = v.loc((component)c,i);
+          if (S.is_primitive(p0))
+            for (int sn=0;sn<S.multiplicity();sn++) {
+              const vec pn = S.transform(p0,sn);
+              if ((pn!=p0 || sn==0) && otherv.owns(pn))
+                energy += otherv.intersection(v.dV((component)c,i))*
+                  f[c][cmp][i]*f[c][cmp][i];
+            }
+        }
+  return energy*(1.0/(8*pi));
+}
+
+double fields_chunk::thermo_energy_in_box(const volume &otherv,
+                                          const symmetry &S) {
+  // FIXME this is buggy when either parallel or using symmetry.
   if (pol) {
     return pol->total_energy(otherv)/(4*pi);
   } else {

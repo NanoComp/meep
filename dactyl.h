@@ -18,9 +18,6 @@
 #define DACTYL_H
 
 #include <stdio.h>
-#include <complex>
-
-using namespace std;
 
 #include "vec.h"
 
@@ -65,15 +62,18 @@ class mat {
  public:
   mat_chunk **chunks;
   int num_chunks;
-  volume v;
+  volume v, user_volume;
+  symmetry S;
   const char *outdir;
 
   ~mat();
   mat();
-  mat(const volume &v, double eps(const vec &), int num_chunks = 0);
+  mat(const volume &v, double eps(const vec &), int num_chunks = 0,
+      const symmetry &s = identity());
   mat(const mat *);
   void choose_chunkdivision(const volume &v, double eps(const vec &),
-                            int num_chunks = 1);
+                            int num_chunks = 1,
+                            const symmetry &s = identity());
 
   void make_average_eps();
   void use_pml(direction d, boundary_side b, double dx);
@@ -181,9 +181,9 @@ class fields_chunk {
   // slices.cpp
   double maxfieldmag(component) const;
 
-  double electric_energy_in_box(const volume &);
-  double magnetic_energy_in_box(const volume &);
-  double thermo_energy_in_box(const volume &);
+  double electric_energy_in_box(const volume &, const symmetry &);
+  double magnetic_energy_in_box(const volume &, const symmetry &);
+  double thermo_energy_in_box(const volume &, const symmetry &);
 
   double backup_h();
   double restore_h();
@@ -244,6 +244,7 @@ class fields {
   int num_chunks;
   fields_chunk **chunks;
   flux_plane *fluxes;
+  symmetry S;
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
   double **comm_blocks[2];
@@ -251,7 +252,7 @@ class fields {
   // of the comm blocks themselves.
   int *comm_sizes[2];
   double a, inva; // The "lattice constant" and its inverse!
-  volume v;
+  volume v, user_volume;
   int m, t, phasein_time, is_real;
   complex<double> k[5], eikna[5];
   double coskna[5], sinkna[5];
@@ -269,6 +270,7 @@ class fields {
   void use_metal_everywhere();
   void use_bloch(direction, complex<double> kz, bool autoconnect=true);
   void use_bloch(const vec &k, bool autoconnect=true);
+  bool locate_component_point(component *, vec *, complex<double> *);
   vec lattice_vector(direction) const;
   // slices.cpp methods:
   void output_slices(const char *name = "") const;

@@ -31,7 +31,16 @@ const char *dimension_name(ndim dim) {
   case d3: return "3D";
   case dcyl: return "Cylindrical";
   }
-  abort("Unsupported dimensionality name.\n");
+}
+
+const char *direction_name(direction d) {
+  switch (d) {
+  case X: return "x";
+  case Y: return "y";
+  case Z: return "z";
+  case R: return "r";
+  case P: return "phi";
+  }
 }
 
 const char *component_name(component c) {
@@ -868,4 +877,148 @@ volume volume::split_once(int n, int which) const {
   } else {
     abort("Can't split when dimensions don't work out right\n");
   }
+}
+
+volume volume::pad(direction d) const {
+  volume v = *this;
+  v.num[d%3]++;
+  v.the_ntot = right_ntot(dim, v.num);
+  return v;
+}
+
+vec volume::center() const {
+  // Find the center of the user's cell (which must be the symmetry
+  // point):
+  const double inva = 1.0/a;
+  vec almost_center;
+  switch (dim) {
+  case d2:
+    almost_center = origin + vec2d(nx()/2*inva, ny()/2*inva);
+    return loc(Ez, index(Ez, almost_center));
+  case d3:
+    almost_center = origin + vec(nx()/2*inva, ny()/2*inva, nz()/2*inva);
+  }
+  abort("Can't do symmetry with these dimensions.\n");
+}
+
+symmetry rotate4(direction axis, const volume &v) {
+  symmetry s = identity();
+  if (axis > 2) abort("Can only rotate4 in 2D or 3D.\n");
+  s.g = 4;
+  for (int d=0;d<5;d++) {
+    s.S[d].d = (direction)d;
+    s.S[d].flipped = false;
+  }
+  s.S[(axis+1)%3].d = (direction)((axis+2)%3);
+  s.S[(axis+1)%3].flipped = true;
+  s.S[(axis+2)%3].d = (direction)((axis+1)%3);
+  s.symmetry_point = v.center();
+  return s;
+}
+
+symmetry rotate2(direction axis, const volume &v) {
+  symmetry s = identity();
+  if (axis > 2) abort("Can only rotate2 in 2D or 3D.\n");
+  s.g = 2;
+  s.S[(axis+1)%3].d = (direction)((axis+2)%3);
+  s.S[(axis+1)%3].flipped = true;
+  s.S[(axis+2)%3].d = (direction)((axis+1)%3);
+  s.S[(axis+2)%3].flipped = true;
+  s.symmetry_point = v.center();
+  return s;
+}
+
+symmetry mirror(direction axis, const volume &v) {
+  symmetry s = identity();
+  s.g = 2;
+  s.S[axis].flipped = true;
+  s.symmetry_point = v.center();
+  return s;
+}
+
+symmetry identity() {
+  symmetry s;
+  s.g = 1;
+  for (int d=0;d<5;d++) {
+    s.S[d].d = (direction)d;
+    s.S[d].flipped = false;
+  }
+  return s;
+}
+
+signed_direction symmetry::transform(direction d, int n) const {
+  // Returns direction or if opposite, 
+  if (n == 0) return signed_direction(d);
+  if (n == 1) return S[d];
+  if (S[d].flipped) return flip(transform(S[d].d, n-1));
+  return transform(S[d].d, n-1);
+}
+
+vec symmetry::transform(const vec &ov, int n) const {
+  if (n == 0) return ov;
+  const vec v = ov - symmetry_point;
+  vec out = v;
+  int ddmin = X, ddmax = 4;
+  if (v.dim == d2) {
+    ddmin = X; ddmax = Y;
+  } else if (v.dim == d3) {
+    ddmin = X; ddmax = Z;
+  } else if (v.dim == d1) {
+    ddmin = ddmax = Z;
+  } else if (v.dim == dcyl) {
+    ddmin = Z; ddmax = R;
+  }
+  for (int dd=ddmin;dd<=ddmax;dd++) {
+    const direction d = (direction) dd;
+    const signed_direction s = transform(d,n);
+    if (s.flipped) out.set_direction(s.d, -v.in_direction(d));
+    else out.set_direction(s.d, v.in_direction(d));
+  }
+  return out + symmetry_point;
+}
+
+component symmetry::transform(component c, int n) const {
+  return direction_component(c,transform(component_direction(c),n).d);
+}
+
+complex<double> symmetry::phase_shift(component c, int n) const {
+  if (is_magnetic(c)) {
+    // Because H is a pseudovector, here we have to figure out if it is an
+    // inversion... to do this we'll figure out what happens when we
+    // transform the two other directions.
+    const direction d0 = component_direction(c);
+    const direction d1 = (direction) ((d0+1)%3);
+    const direction d2 = (direction) ((d0+2)%3);
+    // Note that according to the above definition, c1 and c2 are in
+    // cyclical permutation order, i.e. (c2 - c1)%3 == 1.  If the
+    // transformation of these two directions is no longer cyclical, then
+    // we need to flip the sign of this component of H.
+    bool flip = false;
+    if (((transform(d2,n).d - transform(d1,n).d)%3) == 2) flip = !flip;
+    if (transform(d1,n).flipped) flip = !flip;
+    if (transform(d2,n).flipped) flip = !flip;
+    if (flip) return -1.0;
+    else return 1.0;
+  } else {
+    if (transform(component_direction(c),n).flipped) return -1.0;
+    else return 1.0;
+  }
+}
+
+bool symmetry::is_primitive(const vec &p) const {
+  if (multiplicity() == 1) return true;
+  for (int i=1;i<multiplicity();i++) {
+    const vec pp = transform(p,i);
+    switch (p.dim) {
+    case d2:
+      if (pp.x() < p.x() || pp.y() < p.y()) return false;
+      break;
+    case d3:
+      if (pp.x() < p.x() || pp.y() < p.y()) return false;
+    case d1: case dcyl:
+      if (pp.z() < p.z()) return false;
+      break;
+    }
+  }
+  return true;
 }

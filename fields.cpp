@@ -26,10 +26,12 @@
 fields::fields(const mat *ma, int tm) {
   verbosity = 0;
   v = ma->v;
+  user_volume = ma->user_volume;
   outdir = ma->outdir;
   m = tm;
   phasein_time = 0;
   bands = NULL;
+  S = ma->S;
   for (int d=0;d<5;d++) k[d] = 0.0;
   is_real = 0;
   a = v.a;

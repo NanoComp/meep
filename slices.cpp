@@ -261,71 +261,8 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
       }
 }
 
-static void output_eps(component m, const double *f, const volume &v,
-                       const volume &what, const char *name,
-                       component om = Hx, const double *overlay = NULL,
-                       const double *dashed = NULL) {
-  double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300, fmax = 0.0;
-  switch (v.dim) {
-  case dcyl:
-    xmin = what.origin.z();
-    xmax = what.origin.z() + what.nz()*what.inva;
-    ymin = ymax = what.origin.r();
-    ymax = what.origin.r() + what.nr()*what.inva;
-    break;
-  case d1:
-    ymin = -v.inva*0.5;
-    ymax = v.inva*0.5;
-    xmin = what.origin.z();
-    xmax = what.origin.z() + what.nz()*what.inva;
-    break;
-  case d2:
-    xmin = what.origin.x();
-    xmax = what.origin.x() + what.nx()*what.inva;
-    ymin = ymax = what.origin.y();
-    ymax = what.origin.y() + what.ny()*what.inva;
-  }
-  for (int i=0;i<v.ntot();i++)
-    if (what.contains(v.loc(m,i)))
-      fmax = max(fmax, fabs(f[i]));
-  if (fmax == 0.0) fmax = 0.0001;
-  if (v.dim == d1) {
-    // Make a 1D line plot!
-    grace g(name);
-    int skipnum = 1 + v.ntot()/1000;
-    for (int i=0;i<v.ntot();i+=skipnum)
-      if (what.contains(v.loc(m,i)))
-        g.output_point(v.loc(m,i).z(), f[i]);
-    //for (int i=1;i<v.ntot()-1;i++)
-    //  if (what.contains(v.loc(m,i)) && f[i] > f[i-1] && f[i] > f[i+1])
-    //    g.output_point(v.loc(m,i).z(), f[i]);
-  } else {
-    // Make a 2D grayscale plot!
-    FILE *out = fopen(name, "w");
-    if (!out) {
-      printf("Unable to open file '%s' for slice output.\n", name);
-      return;
-    }
-    eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
-    for (int i=0;i<v.ntot();i++) {
-      if (what.contains(v.loc(m,i))) {
-        double x = 0, y = 0;
-        switch (v.dim) {
-        case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
-        case d1: x = v.loc(m,i).z(); break;
-        case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
-        }
-        fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[i]);
-      }
-    }
-    if (overlay) eps_outline(out, om, overlay, v, what);
-    if (dashed) eps_dotted(out, om, dashed, v, what);
-    eps_trailer(out);
-    fclose(out);
-  }
-}
-
 static void output_complex_eps_body(component m, double *f[2], const volume &v,
+                                    symmetry S, int symnum,
                                     const volume &what, const char *name,
                                     component om = Hx, const double *overlay = NULL,
                                     const double *dashed = NULL) {
@@ -335,14 +272,18 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
     return;
   }
   for (int i=0;i<v.ntot();i++) {
-    if (what.contains(v.loc(m,i))) {
+    const vec here = S.transform(v.loc(m,i),symnum);
+    if (what.contains(here)) {
       double x = 0, y = 0;
       switch (v.dim) {
-      case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
-      case d1: x = v.loc(m,i).z(); break;
-      case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
+      case dcyl: x = here.z(); y = here.r(); break;
+      case d1: x = here.z(); break;
+      case d2: x = here.x(); y = here.y(); break;
       }
-      fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[0][i]);
+      complex<double> ph = S.phase_shift(m, symnum);
+      if (f[1]) fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
+                        real(ph)*f[0][i] - imag(ph)*f[1][i]);
+      else fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
     }
   }
   if (overlay) eps_outline(out, om, overlay, v, what);
@@ -397,20 +338,14 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
   }
 }
 
-static void output_complex_eps_tail(component m, const volume &v,
-                                    const volume &what, const char *name) {
-  if (v.dim == d1 && 0) {
-    // Make a 1D line plot!
-  } else {
-    // Make a 2D color plot!
-    FILE *out = fopen(name, "a");
-    if (!out) {
-      printf("Unable to open file '%s' for slice output.\n", name);
-      return;
-    }
-    eps_trailer(out);
-    fclose(out);
+static void output_complex_eps_tail(const char *name) {
+  FILE *out = fopen(name, "a");
+  if (!out) {
+    printf("Unable to open file '%s' for slice output.\n", name);
+    return;
   }
+  eps_trailer(out);
+  fclose(out);
 }
 
 void mat::output_slices(const char *name) const {
@@ -436,7 +371,8 @@ void fields::output_real_imaginary_slices(const char *name) const {
   output_real_imaginary_slices(v,name);
 }
 
-void fields::output_real_imaginary_slices(const volume &what, const char *name) const {
+void fields::output_real_imaginary_slices(const volume &what,
+                                          const char *name) const {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -477,20 +413,6 @@ void fields::output_slices(const volume &what, const char *name) const {
     snprintf(time_step_string, buflen, "%08.0f", time());
   else
     snprintf(time_step_string, buflen, "%09.2f", time());
-  {
-    //polarization *p = pol;
-    //int polnum = 0;
-    //while (p) {
-    //  for (int c=0;c<10;c++)
-    //    if (v.has_field((component)c) && is_electric((component)c)) {
-    //      snprintf(n, buflen, "%s/%sp%d%s-%s.sli", outdir, nname, polnum,
-    //               component_name((component)c), time_step_string);
-    //      output_complex_slice((component)c, p->P[c], v, what, n);
-    //    }
-    //  polnum++;
-    //  p = p->next;
-    //}
-  }
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.sli", outdir, nname,
@@ -508,7 +430,7 @@ void fields::output_slices(const volume &what, const char *name) const {
 
 void fields::eps_slices(const char *name) const {
   if (v.dim == dcyl || v.dim == d1 || v.dim == d2)
-    eps_slices(v, name);
+    eps_slices(user_volume, name);
 }
 
 void fields::eps_slices(const volume &what, const char *name) const {
@@ -521,23 +443,6 @@ void fields::eps_slices(const volume &what, const char *name) const {
   if (!n) abort("Allocation failure!\n");
   char time_step_string[buflen];
   snprintf(time_step_string, buflen, "%09.2f", time());
-  /*{
-    polarization *p = pol;
-    int polnum = 0;
-    while (p) {
-      for (int c=0;c<10;c++)
-        if (v.has_field((component)c) && is_electric((component)c)) {
-          snprintf(n, buflen, "%s/%sp%d%s-%s.eps", outdir, nname, polnum,
-                   component_name((component)c), time_step_string);
-          output_complex_eps((component)c, p->P[c], v, what, n);
-          snprintf(n, buflen, "%s/%senergy%d%s-%s.eps", outdir, nname, polnum,
-                   component_name((component)c), time_step_string);
-          output_eps((component)c, p->energy[c], v, what, n);
-        }
-      polnum++;
-      p = p->next;
-    }
-  }*/
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
@@ -545,15 +450,22 @@ void fields::eps_slices(const volume &what, const char *name) const {
       const double fmax = maxfieldmag_to_master((component)c);
       if (am_master())
         output_complex_eps_header((component)c, fmax,
-                                  chunks[0]->v, what, n, v.eps_component());
+                                  user_volume, what,
+                                  n, v.eps_component());
       all_wait();
       for (int i=0;i<num_chunks;i++)
-        if (chunks[i]->is_mine())
-          output_complex_eps_body((component)c, chunks[i]->f[c], chunks[i]->v, what, n,
-                                  v.eps_component(), chunks[i]->ma->eps);
+        if (chunks[i]->is_mine()) {
+          for (int sn=0;sn<S.multiplicity();sn++)
+            for (int otherc=0;otherc<10;otherc++)
+              if (S.transform((component)otherc,sn) == c)
+                output_complex_eps_body((component)otherc,
+                                        chunks[i]->f[otherc],
+                                        chunks[i]->v,
+                                        S, sn, what, n,
+                                        v.eps_component(), chunks[i]->ma->eps);
+        }
       all_wait();
-      if (am_master())
-        output_complex_eps_tail((component)c, v, what, n);
+      if (am_master()) output_complex_eps_tail(n);
     }
   free(n);
 }

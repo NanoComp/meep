@@ -68,12 +68,18 @@ int flux_1d(const double zmax,
   mid.origin = vec(zmax/3);
   double flux_left=0.0, flux_right=0.0;
   double delta_energy = f.energy_in_box(mid);
+  master_printf("Initial energy is %lg\n", f.energy_in_box(mid));
+  master_printf("Initial electric energy is %lg\n",
+                f.electric_energy_in_box(mid));
   while (f.time() < ttot) {
     f.step();
     flux_left  +=  (c/a)*left->flux();
     flux_right +=  (c/a)*right->flux();
   }
   delta_energy -= f.energy_in_box(mid);
+  master_printf("Final energy is %lg\n", f.energy_in_box(mid));
+  master_printf("Final electric energy is %lg\n",
+                f.electric_energy_in_box(mid));
   const double del = flux_left;
   const double der = flux_right - delta_energy;
   master_printf("  Delta E:\t%lg\n  Flux left:\t%lg\n  Flux right:\t%lg\n  Ratio:\t%lg\n",

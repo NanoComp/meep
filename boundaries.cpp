@@ -111,9 +111,9 @@ void fields::connect_chunks() {
 static double zero = 0.0;
 
 inline int fields::is_metal(const vec &here, const volume &vi) {
-  if (!v.owns(here)) return 0;
+  if (!user_volume.owns(here)) return 0;
   for (int bb=0;bb<2;bb++) for (int dd=0;dd<5;dd++)
-    if (v.has_boundary((boundary_side)bb, (direction)dd) &&
+    if (user_volume.has_boundary((boundary_side)bb, (direction)dd) &&
         (boundaries[bb][dd]==Metallic || boundaries[bb][dd]==Magnetic)) {
       const direction d = (direction) dd;
       const boundary_side b = (boundary_side) bb;
@@ -122,17 +122,70 @@ inline int fields::is_metal(const vec &here, const volume &vi) {
       case Y:
       case Z:
         return (b == High && boundaries[b][d] == Metallic &&
-                here.in_direction(d) > v.origin.in_direction(d) +
-                (v.num_direction(d)-0.2)*inva) ||
+                here.in_direction(d) > user_volume.origin.in_direction(d) +
+                (user_volume.num_direction(d)-0.2)*inva) ||
           (b == Low && boundaries[b][d] == Magnetic &&
-           here.in_direction(d) < v.origin.in_direction(d) + 0.2*inva);
+           here.in_direction(d) < user_volume.origin.in_direction(d) + 0.2*inva);
       case R:
         return b == High && boundaries[b][d] == Magnetic &&
-          here.in_direction(d) > v.origin.in_direction(d) +
-          (v.num_direction(d)-0.2)*inva;
+          here.in_direction(d) > user_volume.origin.in_direction(d) +
+          (user_volume.num_direction(d)-0.2)*inva;
       }
     }
   return 0;
+}
+
+bool fields::locate_component_point(component *c, vec *there,
+                                    complex<double> *phase) {
+  // returns true if this point and component exist in the user_volume.  If
+  // that is the case, on return *c and *there store the component and
+  // location of where the point actually is, and *phase determines holds
+  // the phase needed to get the true field.  If the point is not located,
+  // *c and *there will hold undefined values.
+
+  // Check if nothing tricky is needed...
+  *phase = 1.0;
+  if (v.owns(*there)) return true;
+  bool try_again = false;
+  do {
+    try_again = false;
+    // Check if a rotation or inversion brings the point in...
+    if (S.multiplicity() > 1 && user_volume.owns(*there))
+      for (int sn=1;sn<S.multiplicity();sn++) {
+        const vec here=S.transform(*there,sn);
+        if (v.owns(here)) {
+          *there = here;
+          *phase = S.phase_shift(*c,sn);
+          *c = direction_component(*c,
+                                   S.transform(component_direction(*c),sn).d);
+          return true;
+        }
+      }
+    // Check if a translational symmetry is needed to bring the point in...
+    if (!user_volume.owns(*there))
+      for (int dd=0;dd<5;dd++) {
+        const direction d = (direction) dd;
+        if (boundaries[Low][d] == Periodic &&
+            there->in_direction(d) <= user_volume.origin.in_direction(d)) {
+          while (there->in_direction(d) <=
+                 user_volume.origin.in_direction(d)) {
+            *there += lattice_vector(d);
+            *phase *= conj(eikna[d]);
+          }
+          try_again = true;
+        } else if (boundaries[High][d] == Periodic &&
+                   there->in_direction(d)-lattice_vector(d).in_direction(d)
+                   > user_volume.origin.in_direction(d)) {
+          while (there->in_direction(d)-lattice_vector(d).in_direction(d)
+                 > user_volume.origin.in_direction(d)) {
+            *there -= lattice_vector(d);
+            *phase *= eikna[d];
+          }
+          try_again = true;
+        }
+      }
+  } while (try_again);
+  return false;
 }
 
 void fields::connect_the_chunks() {
@@ -151,45 +204,26 @@ void fields::connect_the_chunks() {
       for (int ft=0;ft<2;ft++)
         new_comm_sizes[ft][j] = comm_sizes[ft][j+i*num_chunks];
     for (int j=0;j<num_chunks;j++)
-      for (int c=0;c<10;c++)
-        if (vi.has_field((component)c))
+      for (int corig=0;corig<10;corig++)
+        if (vi.has_field((component)corig))
           for (int n=0;n<vi.ntot();n++) {
-            const vec here = vi.loc((component)c, n);
+            component c = (component)corig;
+            vec here = vi.loc(c, n);
             if (!vi.owns(here)) {
               // We're looking at a border element...
-              if (j != i && chunks[j]->v.owns(here)) {
-                // Adjacent...
-                nc[type((component)c)][Incoming][i]++;
-                nc[type((component)c)][Outgoing][j]++;
-                new_comm_sizes[type((component)c)][j]++;
-              } else {
-                for (int dd=0;dd<5;dd++) {
-                  const direction d = (direction) dd;
-                  if (boundaries[Low][d] == Periodic &&
-                      here.in_direction(d) == v.origin.in_direction(d) &&
-                      chunks[j]->v.owns(here + lattice_vector(d))) {
-                    // Periodic...
-                    nc[type((component)c)][Incoming][i]++;
-                    nc[type((component)c)][Outgoing][j]++;
-                    new_comm_sizes[type((component)c)][j]++;
-                    break;
-                  } else if (boundaries[High][d] == Periodic &&
-                             here.in_direction(d) > v.origin.in_direction(d)
-                             + lattice_vector(d).in_direction(d) &&
-                             chunks[j]->v.owns(here - lattice_vector(d))) {
-                    // Periodic...
-                    nc[type((component)c)][Incoming][i]++;
-                    nc[type((component)c)][Outgoing][j]++;
-                    new_comm_sizes[type((component)c)][j]++;
-                    break;
-                  }
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here)) {
+                  // Adjacent, periodic or rotational...
+                  nc[type(c)][Incoming][i]++;
+                  nc[type(c)][Outgoing][j]++;
+                  new_comm_sizes[type(c)][j]++;
                 }
-              }
             } else if (j == i && is_metal(here, vi)) {
               // Try metallic...
-              nc[type((component)c)][Incoming][i]++;
-              nc[type((component)c)][Outgoing][i]++;
-              new_comm_sizes[type((component)c)][j]++;
+              nc[type(c)][Incoming][i]++;
+              nc[type(c)][Outgoing][i]++;
+              new_comm_sizes[type(c)][j]++;
             }
         }
     // Allocating comm blocks as we go...
@@ -219,79 +253,41 @@ void fields::connect_the_chunks() {
   for (int i=0;i<num_chunks;i++) {
     const volume vi = chunks[i]->v;
     for (int j=0;j<num_chunks;j++)
-      for (int c=0;c<10;c++)
-        if (vi.has_field((component)c))
+      for (int corig=0;corig<10;corig++)
+        if (vi.has_field((component)corig))
           for (int n=0;n<vi.ntot();n++) {
-            const field_type ft = type((component) c);
-            const vec here = vi.loc((component)c, n);
+            component c = (component)corig;
+#define FT (type(c))
+            vec here = vi.loc(c, n);
             if (!vi.owns(here)) {
-              // This means we're looking at a border element...
-              if (j != i && chunks[j]->v.owns(here)) {
-                // index is deprecated, but ok in this case:
-                const int m = chunks[j]->v.index((component)c, here);
-                DOCMP {
-                  chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
-                    = chunks[i]->f[c][cmp] + n;
-                  chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
-                    = chunks[j]->f[c][cmp] + m;
-                }
-                chunks[i]->connection_phases[ft][wh[ft][Incoming][i]] = 1.0;
-                wh[ft][Incoming][i]++;
-                wh[ft][Outgoing][j]++;
-              } else {
-                for (int dd=0;dd<5;dd++) {
-                  const direction d = (direction) dd;
-                  if (boundaries[Low][d] == Periodic &&
-                      here.in_direction(d) == v.origin.in_direction(d) &&
-                      chunks[j]->v.owns(here + lattice_vector(d))) {
-                    // Periodic...
-                    // index is deprecated, but ok in this case:
-                    const int m = chunks[j]->v.index((component)c,
-                                                     here + lattice_vector(d));
-                    DOCMP {
-                      chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
-                        = chunks[i]->f[c][cmp] + n;
-                      chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
-                        = chunks[j]->f[c][cmp] + m;
-                    }
-                    chunks[i]->connection_phases[ft][wh[ft][Incoming][i]]
-                      = eikna[d];
-                    wh[ft][Incoming][i]++;
-                    wh[ft][Outgoing][j]++;
-                    break;
-                  } else if (boundaries[High][d] == Periodic &&
-                             here.in_direction(d) > v.origin.in_direction(d)
-                             + lattice_vector(d).in_direction(d) &&
-                             chunks[j]->v.owns(here - lattice_vector(d))) {
-                    // Periodic...
-                    // index is deprecated, but ok in this case:
-                    const int m = chunks[j]->v.index((component)c,
-                                                     here - lattice_vector(d));
-                    DOCMP {
-                      chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
-                        = chunks[i]->f[c][cmp] + n;
-                      chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
-                        = chunks[j]->f[c][cmp] + m;
-                    }
-                    chunks[i]->connection_phases[ft][wh[ft][Incoming][i]]
-                      = conj(eikna[d]);
-                    wh[ft][Incoming][i]++;
-                    wh[ft][Outgoing][j]++;
-                    break;
+              // We're looking at a border element...
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here)) {
+                  // Adjacent, periodic or rotational...
+                  // index is deprecated, but ok in this case:
+                  const int m = chunks[j]->v.index(c, here);
+                  DOCMP {
+                    chunks[i]->connections[FT][Incoming][cmp][wh[FT][Incoming][i]]
+                      = chunks[i]->f[c][cmp] + n;
+                    chunks[j]->connections[FT][Outgoing][cmp][wh[FT][Outgoing][j]]
+                      = chunks[j]->f[c][cmp] + m;
                   }
+                  chunks[i]->connection_phases[FT][wh[FT][Incoming][i]] = thephase;
+                  wh[FT][Incoming][i]++;
+                  wh[FT][Outgoing][j]++;
                 }
-              }
             } else if (j == i && is_metal(here, vi)) {
               // Try metallic...
               DOCMP {
-                chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
+                chunks[i]->connections[FT][Incoming][cmp][wh[FT][Incoming][i]]
                   = chunks[i]->f[c][cmp] + n;
-                chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
+                chunks[j]->connections[FT][Outgoing][cmp][wh[FT][Outgoing][j]]
                   = &zero;
               }
-              chunks[i]->connection_phases[ft][wh[ft][Incoming][i]] = 1.0;
-              wh[ft][Incoming][i]++;
-              wh[ft][Outgoing][j]++;
+              chunks[i]->connection_phases[FT][wh[FT][Incoming][i]] = 1.0;
+              wh[FT][Incoming][i]++;
+              wh[FT][Outgoing][j]++;
             }
           }
   }

@@ -15,11 +15,26 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <complex>
+
+using namespace std;
+
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz };
 enum ndim { d1=0, d2, d3, dcyl };
 enum field_type { E_stuff=0, H_stuff=1 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P };
+struct signed_direction {
+  signed_direction(direction dd=X,bool f=false) { d = dd; flipped = f; };
+  direction d;
+  bool flipped;
+};
+
+inline signed_direction flip(signed_direction d) {
+  signed_direction d2 = d;
+  d2.flipped = !d.flipped;
+  return d2;
+}
 
 inline int is_electric(component c) { return (int) c < 5; }
 inline int is_magnetic(component c) { return (int) c >= 5; }
@@ -28,6 +43,7 @@ inline field_type type(component c) {
   else return H_stuff;
 }
 const char *component_name(component c);
+const char *direction_name(direction);
 inline direction component_direction(component c) {
   switch (c) {
   case Ex: case Hx: return X;
@@ -35,6 +51,15 @@ inline direction component_direction(component c) {
   case Ez: case Hz: return Z;
   case Er: case Hr: return R;
   case Ep: case Hp: return P;
+  }
+}
+inline component direction_component(component c, direction d) {
+  switch (d) {
+  case X: if (is_electric(c)) return Ex; else return Hx;
+  case Y: if (is_electric(c)) return Ey; else return Hy;
+  case Z: if (is_electric(c)) return Ez; else return Hz;
+  case R: if (is_electric(c)) return Er; else return Hr;
+  case P: if (is_electric(c)) return Ep; else return Hp;
   }
 }
 
@@ -64,6 +89,14 @@ class vec {
     case d1: t[Z] += a.t[Z]; return vec(t[Z]+a.t[Z]);
     }
   };
+  vec operator-=(const vec &a) {
+    switch (dim) {
+    case dcyl: t[R] -= a.t[R]; t[Z] -= a.t[Z]; return *this;
+    case d3: t[X] -= a.t[X]; t[Y] -= a.t[Y]; t[Z] -= a.t[Z]; return *this;
+    case d2: t[X] -= a.t[X]; t[Y] -= a.t[Y]; return *this;
+    case d1: t[Z] -= a.t[Z]; return vec(t[Z]-a.t[Z]);
+    }
+  };
   vec operator-(const vec &a) const {
     switch (dim) {
     case dcyl: return vec(t[R]-a.t[R],t[Z]-a.t[Z]);
@@ -72,7 +105,22 @@ class vec {
     case d1: return vec(t[Z]-a.t[Z]);
     }
   };
-  vec operator==(const vec &a) const;
+  bool operator!=(const vec &a) const {
+    switch (dim) {
+    case dcyl: return t[R]!=a.t[R] || t[Z]!=a.t[Z];
+    case d3: return t[X]!=a.t[X] || t[Y]!=a.t[Y] || t[Z]!=a.t[Z];
+    case d2: return t[X]!=a.t[X] || t[Y]!=a.t[Y];
+    case d1: return t[Z]!=a.t[Z];
+    }
+  };
+  bool operator==(const vec &a) const {
+    switch (dim) {
+    case dcyl: return t[R]==a.t[R] && t[Z]==a.t[Z];
+    case d3: return t[X]==a.t[X] && t[Y]==a.t[Y] && t[Z]==a.t[Z];
+    case d2: return t[X]==a.t[X] && t[Y]==a.t[Y];
+    case d1: return t[Z]==a.t[Z];
+    }
+  };
   vec operator*(double s) const {
     switch (dim) {
     case dcyl: return vec(t[R]*s,t[Z]*s);
@@ -170,6 +218,7 @@ class volume {
   double ymax() const;
   double zmin() const;
   double zmax() const;
+  vec center() const;
   vec loc(component, int index) const;
   vec yee_shift(component) const;
   component eps_component() const;
@@ -187,8 +236,33 @@ class volume {
   volume split(int num, int which) const;
   volume split_once(int num, int which) const;
   volume split_specifically(int num, int which, direction d) const;
+  volume pad(direction d) const;
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);
   int num[3];
   int the_ntot;
 };
+
+class symmetry {
+ public:
+  friend symmetry identity();
+  friend symmetry rotate4(direction,const volume &);
+  friend symmetry rotate2(direction,const volume &);
+  friend symmetry mirror(direction,const volume &);
+
+  signed_direction transform(direction d, int n) const;
+  vec transform(const vec &, int n) const;
+  component transform(component, int n) const;
+  complex<double> phase_shift(component, int n) const;
+  int multiplicity() const { return g; };
+  bool is_primitive(const vec &) const;
+ private:
+  signed_direction S[5];
+  vec symmetry_point;
+  int g; // g is the multiplicity of the symmetry.
+};
+
+symmetry identity();
+symmetry rotate4(direction,const volume &);
+symmetry rotate2(direction,const volume &);
+symmetry mirror(direction,const volume &);

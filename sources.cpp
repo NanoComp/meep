@@ -43,6 +43,10 @@ double src::get_envelope_at_time(double time) const {
   }
 }
 
+src::src() {
+  next = NULL;
+}
+
 src::~src() {
   delete next;
 }
@@ -75,10 +79,17 @@ void fields::add_point_source(component whichf, double freq,
                               double width, double peaktime,
                               double cutoff, const vec &p,
                               complex<double> amp, int is_c) {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->add_point_source(whichf, freq, width, peaktime,
-                                  cutoff, p, amp, is_c, time());
+  const double invmul = 1.0/S.multiplicity();
+  for (int sn=0;sn<S.multiplicity();sn++) {
+    component cc = S.transform(whichf,sn);
+    complex<double> ph = S.phase_shift(whichf,sn);
+    const vec pp = S.transform(p,sn);
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->is_mine())
+        chunks[i]->add_point_source(cc, freq, width, peaktime,
+                                    cutoff, pp, invmul*ph*amp, is_c,
+                                    time());
+  }
 }
 
 void fields_chunk::add_point_source(component whichf, double freq,
@@ -166,28 +177,45 @@ void fields_chunk::add_indexed_source(component whichf, double freq, double widt
                                       complex<double> amp, int is_c, double time) {
   if (theindex >= v.ntot() || theindex < 0)
     abort("Error:  source is outside of cell! (%d)\n", theindex);
-  src *tmp = new src;
-  tmp->freq = freq;
-  tmp->width = width/tmp->freq; // this is now time width
-  for (int com=0;com<10;com++) tmp->A[com] = 0;
-  tmp->A[whichf] = amp;
-  tmp->i = theindex;
-  tmp->amp_shift = 0.0;
-  tmp->is_continuous = is_c;
-  if (is_magnetic(whichf)) {
-    tmp->next = h_sources;
-    h_sources = tmp;
-  } else {
-    tmp->next = e_sources;
-    e_sources = tmp;
-  }
-  tmp->cutoff = inva+ cutoff*tmp->width;
-  while (exp(-tmp->cutoff*tmp->cutoff/(2*tmp->width*tmp->width)) == 0.0)
-    tmp->cutoff *= 0.9;
-  tmp->peaktime = peaktime;
-  if (peaktime <= 0.0) tmp->peaktime = time+tmp->cutoff;
+  src tmp;
+  tmp.freq = freq;
+  tmp.width = width/tmp.freq; // this is now time width
+  for (int com=0;com<10;com++) tmp.A[com] = 0;
+  tmp.A[whichf] = amp;
+  tmp.i = theindex;
+  tmp.amp_shift = 0.0;
+  tmp.is_continuous = is_c;
+  tmp.cutoff = inva+ cutoff*tmp.width;
+  while (exp(-tmp.cutoff*tmp.cutoff/(2*tmp.width*tmp.width)) == 0.0)
+    tmp.cutoff *= 0.9;
+  tmp.peaktime = peaktime;
+  if (peaktime <= 0.0) tmp.peaktime = time+tmp.cutoff;
   // Apply a shift so that we won't end up with a static polarization when
   // the source is gone:
-  if (is_c) tmp->amp_shift = 0.0;
-  else tmp->amp_shift = integrate_source(tmp, inva)/integrate_envelope(tmp, inva);
+  if (is_c) tmp.amp_shift = 0.0;
+  else tmp.amp_shift = integrate_source(&tmp, inva)/integrate_envelope(&tmp, inva);
+  if (is_magnetic(whichf)) {
+    h_sources = tmp.add_to(h_sources);
+  } else {
+    e_sources = tmp.add_to(e_sources);
+  }
+}
+
+src *src::add_to(src *others) const {
+  if (!others) {
+    src *t = new src(*this);
+    t->next = NULL;
+    return t;
+  }
+  if (others->i == i &&
+      others->is_continuous == is_continuous &&
+      others->cutoff == cutoff &&
+      others->peaktime == peaktime) {
+    for (int com=0;com<10;com++)
+      others->A[com] += A[com];
+    return others;
+  } else {
+    others->next = add_to(others->next);
+    return others;
+  }
 }
