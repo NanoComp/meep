@@ -1045,3 +1045,5 @@ double fields_chunk::maxpolenergy() const {
     themax = max(themax,my_polarization_energy(v.iloc(c, i)));
   return themax;
 }
+
+} // namespace meep

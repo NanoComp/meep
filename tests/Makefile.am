@@ -34,4 +34,3 @@ benchmark: bench
 
 clean-local::
 	rm -f *.o *.dac debug_out_* *.done
-

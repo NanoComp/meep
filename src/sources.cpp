@@ -169,3 +169,5 @@ src *src::add_to(src *others) const {
     return others;
   }
 }
+
+} // namespace meep

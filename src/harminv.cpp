@@ -20,7 +20,6 @@
 #include <math.h>
 
 #include "harminv.h"
-#include "check.h"
 #include "config.h"
 
 /**************************************************************************/
@@ -62,6 +61,21 @@
 /**************************************************************************/
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
+
+/* some useful error-checking macros: */
+
+#define CHECK(condition, message) do { \
+     if (!(condition))  { \
+          fprintf(stderr, "CHECK failure on line %d of " __FILE__ ": " \
+		  message "\n", __LINE__);  exit(EXIT_FAILURE); \
+     } \
+} while (0)
+
+#define CHK_MALLOC(p, t, n) do {                              \
+     size_t CHK_MALLOC_n_tmp = (n);                           \
+     (p) = (t *) malloc(sizeof(t) * CHK_MALLOC_n_tmp);        \
+     CHECK((p) || CHK_MALLOC_n_tmp == 0, "out of memory!");   \
+} while (0)
 
 /**************************************************************************/
 
@@ -641,4 +655,3 @@ double harminv_get_decay(harminv_data d, int k)
 }
 
 /**************************************************************************/
-

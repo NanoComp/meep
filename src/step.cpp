@@ -239,3 +239,5 @@ void fields_chunk::calc_source_phases(double time) {
   for (src *s = e_sources; s; s = s->next) s->update_dipole(time);
   for (src *s = h_sources; s; s = s->next) s->update_dipole(time-0.5*inva*c);
 }
+
+} // namespace meep

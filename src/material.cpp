@@ -667,3 +667,5 @@ double mat_chunk::max_eps() const {
   for (int i=0;i<v.ntot();i++) themax = max(themax,eps[i]);
   return themax;
 }
+
+} // namespace meep

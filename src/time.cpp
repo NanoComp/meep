@@ -65,3 +65,5 @@ void fields::print_times() {
   for (int i=0;i<=Other;i++)
     pt(times_spent, (time_sink) i);
 }
+
+} // namespace meep

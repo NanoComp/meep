@@ -8,4 +8,3 @@ Description: time-domain electromagnetic simulation
 Version: @VERSION@
 Libs: -L${libdir} -lmeep @MEEPLIBS@
 Cflags: -I${includedir}
-

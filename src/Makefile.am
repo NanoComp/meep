@@ -37,4 +37,3 @@ maintainer-clean-local:
 	rm -f $(BUILT_SOURCES)
 
 endif # MAINTAINER_MODE
-

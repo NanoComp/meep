@@ -515,3 +515,5 @@ void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) 
   connections[f][io] = conn;
   num_connections[f][io] += num;
 }
+
+} // namespace meep

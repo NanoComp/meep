@@ -529,3 +529,5 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL);
 
 } /* namespace meep */
+
+#endif /* MEEP_H */

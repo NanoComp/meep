@@ -44,4 +44,3 @@ depend:
 	(cd ${srcdir}; $(HC) -M -optdep-f -optdep.depend $(HC_FLAGS) $(SRC))
 
 include .depend
-

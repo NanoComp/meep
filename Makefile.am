@@ -24,4 +24,3 @@ libmeep: generator
 
 # add a fake dependency to make sure stuff is built before 'make dist'
 COPYRIGHT: generator libmeep
-

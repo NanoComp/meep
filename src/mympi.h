@@ -61,3 +61,5 @@ void i_fprintf(file *, const char *fmt, ...);
 void master_fprintf(file *, const char *fmt, ...);
 
 } /* namespace meep */
+
+#endif /* MEEP_MY_MPI_H */

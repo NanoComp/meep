@@ -148,3 +148,5 @@ class weighted_flux_plane {
 };
 
 symmetry r_to_minus_r_symmetry(int m);
+
+} // namespace meep

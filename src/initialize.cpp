@@ -159,3 +159,5 @@ void fields::initialize_A(complex<double> A(component, const vec &), double freq
   update_e_from_d();
   step_boundaries(E_stuff);
 }
+
+} // namespace meep

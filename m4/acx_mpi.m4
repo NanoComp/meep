@@ -97,4 +97,3 @@ else
         :
 fi
 ])dnl ACX_MPI
-

@@ -147,4 +147,3 @@ else
         $2
 fi
 ])dnl ACX_BLAS
-

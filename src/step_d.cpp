@@ -202,3 +202,5 @@ void fields_chunk::step_d() {
     abort("Unsupported dimension.\n");
   }
 }
+
+} // namespace meep
