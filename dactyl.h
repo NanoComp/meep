@@ -406,7 +406,7 @@ class fields {
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);
-  void out_bands(FILE *, const char *, int maxbands);
+  void out_bands(file *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
   // slices.cpp
   void outline_chunks(file *name);
