@@ -145,12 +145,10 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
   saturated_sigma = sigscale;
 
   FOR_COMPONENTS(c) s[c] = NULL;
-  FOR_ELECTRIC_COMPONENTS(c)
-    if (v.has_field(c)) {
-      s[c] = new double[v.ntot()];
-    }
   if (is_mine()) {
     sigma = new double[v.ntot()];
+    FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c))
+      s[c] = new double[v.ntot()];
     if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
     for (int i=0;i<v.ntot();i++)
@@ -172,7 +170,10 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
       // There's just one field point...
       for (int i=0;i<v.ntot();i++) s[Ex][i] = sigma[i];
     } else {
-      abort("Unsupported dimensionality!\n");
+      // FIXME:  we should be doing clever averaging here...
+      FOR_ELECTRIC_COMPONENTS(c) if (s[c])
+        for (int i=0;i<v.ntot();i++)
+          s[c][i] = sigscale*sig(v.loc(c,i));
     }
   } else { // Not mine, don't store arrays...
     sigma = 0;

@@ -69,18 +69,18 @@ loop_electric_fields x =
             doexp $ "const int s_ec = stride_any_direction[component_direction(ec)]",
             using_symmetry $ define_others,
             x]
-    where oc n "CYLINDRICAL" = "(((ec-2)+"++show n++")%3+2)"
-          oc n "2DTE" = "((ec+"++show n++")%2)"
-          oc n _ = "((ec+"++show n++")%3)"
+    where dc n "CYLINDRICAL" = "(direction)(((ec-2)+"++show n++")%3+2)"
+          dc n "2DTE" = "(direction)((ec+"++show n++")%2)"
+          dc n _ = "(direction)((ec+"++show n++")%3)"
           define_others "1D" = doexp ""
           define_others "2DTE" = define_other 1
           define_others "2DTM" = doexp ""
           define_others _ = docode [define_other 1, define_other 2]
           define_other n =
-              docode [doexp $ "const component ec_"<<show n<<
-                              " = (component)" << with_symmetry (oc 1),
-                      doexp $ "const direction d_"++show n++
-                              " = component_direction(ec_"++show n++")",
+              docode [doexp $ "const direction d_"<<show n<<
+                              " = " << with_symmetry (dc n),
+                      doexp $ "const component ec_"<<show n<<
+                              " = direction_component(ec,d_" << show n<<")",
                       doexp $ "const int s_"++show n++
                               " = stride_any_direction[d_"++show n++"]"]
 
@@ -91,17 +91,17 @@ sum_over_components e = with_symmetry sumit
           sumit "2DTE" = e "ec" "i" |+|
               "0.25"|*|(e "ec_1" "i" |+|
                         e "ec_1" "i-s_1" |+|
-                        e "ec_1" "i-s_ec" |+|
-                        e "ec_1" "i-s_1-s_ec")
+                        e "ec_1" "i+s_ec" |+|
+                        e "ec_1" "i-s_1+s_ec")
           sumit _ =  e "ec" "i" |+|
               "0.25"|*|(e "ec_1" "i" |+|
                         e "ec_1" "i-s_1" |+|
-                        e "ec_1" "i-s_ec" |+|
-                        e "ec_1" "i-s_1-s_ec") |+|
+                        e "ec_1" "i+s_ec" |+|
+                        e "ec_1" "i-s_1+s_ec") |+|
               "0.25"|*|(e "ec_2" "i" |+|
                         e "ec_2" "i-s_2" |+|
-                        e "ec_2" "i-s_ec" |+|
-                        e "ec_2" "i-s_2-s_ec")
+                        e "ec_2" "i+s_ec" |+|
+                        e "ec_2" "i-s_2+s_ec")
 
 {- The following bit loops over "owned" points -}
 

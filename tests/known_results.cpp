@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
 
 #include "meep.h"
 
@@ -34,7 +33,7 @@ double rods(const vec &r) {
 }
 
 void compare(double a, double b, const char *n) {
-  if (fabs(a-b) > fabs(b)*1e-5) {
+  if (fabs(a-b) > fabs(b)*1e-5 || b != b) {
     master_printf("Differs by\t%lg out of\t%lg\n", a-b, b);
     master_printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
     abort("Error in %s\n", n);
@@ -156,6 +155,10 @@ int main(int argc, char **argv) {
           "1D polariton");
   compare(-0.00592748, saturated_polariton_ex(volone(1.0, a), one),
           "1D saturated polariton");
+  compare(-0.70784, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
+          "2D saturated polariton");
+  //compare(5.0, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
+  //        "3D saturated polariton");
   compare(0.000265566, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(0.520605, metallic_ez(voltwo(1.0, 1.0, a), one),

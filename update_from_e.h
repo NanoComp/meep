@@ -3,11 +3,11 @@ if (f[Er][0]) {
   FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
     const int yee_idx = v.yee_index(ec);
     const int s_ec = stride_any_direction[component_direction(ec)];
-    const component ec_1 = (component)(((ec-2)+1)%3+2);
-    const direction d_1 = component_direction(ec_1);
+    const direction d_1 = (direction)(((ec-2)+1)%3+2);
+    const component ec_1 = direction_component(ec,d_1);
     const int s_1 = stride_any_direction[d_1];
-    const component ec_2 = (component)(((ec-2)+1)%3+2);
-    const direction d_2 = component_direction(ec_2);
+    const direction d_2 = (direction)(((ec-2)+2)%3+2);
+    const component ec_2 = direction_component(ec,d_2);
     const int s_2 = stride_any_direction[d_2];
     if (is_real) {
       if (pol) {
@@ -26,10 +26,10 @@ if (f[Er][0]) {
                 if (num_any_direction[R]==1) {
                   const int i = yee_idx;
                   const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                        + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                              + np->energy[ec_2][i-s_2-s_ec]);
+                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                        + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                              + np->energy[ec_2][i-s_2+s_ec]);
                   np->s[ec][i] = max(-energy_here*fac, 0.0);
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
@@ -37,10 +37,10 @@ if (f[Er][0]) {
                   for (int iR=0; iR<num_any_direction[R]; iR += stride_any_direction[R]) {
                     const int i = yee_idx + iR*stride_any_direction[R];
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = max(-energy_here*fac, 0.0);
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -51,10 +51,10 @@ if (f[Er][0]) {
                   for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                     const int i = yee_idx + iZ;
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = max(-energy_here*fac, 0.0);
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -64,10 +64,10 @@ if (f[Er][0]) {
                     for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                       const int i = yee_idx + iZ + iR*stride_any_direction[R];
                       const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                            + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                  + np->energy[ec_2][i-s_2-s_ec]);
+                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                            + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                  + np->energy[ec_2][i-s_2+s_ec]);
                       np->s[ec][i] = max(-energy_here*fac, 0.0);
                       op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                          + np->s[ec][i]*f[ec][0][i]);
@@ -83,10 +83,10 @@ if (f[Er][0]) {
                 if (num_any_direction[R]==1) {
                   const int i = yee_idx;
                   const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                        + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                              + np->energy[ec_2][i-s_2-s_ec]);
+                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                        + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                              + np->energy[ec_2][i-s_2+s_ec]);
                   np->s[ec][i] = energy_here*fac;
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
@@ -94,10 +94,10 @@ if (f[Er][0]) {
                   for (int iR=0; iR<num_any_direction[R]; iR += stride_any_direction[R]) {
                     const int i = yee_idx + iR*stride_any_direction[R];
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = energy_here*fac;
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -108,10 +108,10 @@ if (f[Er][0]) {
                   for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                     const int i = yee_idx + iZ;
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = energy_here*fac;
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -121,10 +121,10 @@ if (f[Er][0]) {
                     for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                       const int i = yee_idx + iZ + iR*stride_any_direction[R];
                       const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                            + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                  + np->energy[ec_2][i-s_2-s_ec]);
+                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                            + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                  + np->energy[ec_2][i-s_2+s_ec]);
                       np->s[ec][i] = energy_here*fac;
                       op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                          + np->s[ec][i]*f[ec][0][i]);
@@ -160,10 +160,10 @@ if (f[Er][0]) {
                 if (num_any_direction[R]==1) {
                   const int i = yee_idx;
                   const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                        + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                              + np->energy[ec_2][i-s_2-s_ec]);
+                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                        + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                              + np->energy[ec_2][i-s_2+s_ec]);
                   np->s[ec][i] = max(-energy_here*fac, 0.0);
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
@@ -173,10 +173,10 @@ if (f[Er][0]) {
                   for (int iR=0; iR<num_any_direction[R]; iR += stride_any_direction[R]) {
                     const int i = yee_idx + iR*stride_any_direction[R];
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = max(-energy_here*fac, 0.0);
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -189,10 +189,10 @@ if (f[Er][0]) {
                   for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                     const int i = yee_idx + iZ;
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = max(-energy_here*fac, 0.0);
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -204,10 +204,10 @@ if (f[Er][0]) {
                     for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                       const int i = yee_idx + iZ + iR*stride_any_direction[R];
                       const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                            + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                  + np->energy[ec_2][i-s_2-s_ec]);
+                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                            + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                  + np->energy[ec_2][i-s_2+s_ec]);
                       np->s[ec][i] = max(-energy_here*fac, 0.0);
                       op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                          + np->s[ec][i]*f[ec][0][i]);
@@ -226,10 +226,10 @@ if (f[Er][0]) {
                 if (num_any_direction[R]==1) {
                   const int i = yee_idx;
                   const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                        + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                              + np->energy[ec_2][i-s_2-s_ec]);
+                     + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                        + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                           + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                              + np->energy[ec_2][i-s_2+s_ec]);
                   np->s[ec][i] = energy_here*fac;
                   op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                      + np->s[ec][i]*f[ec][0][i]);
@@ -239,10 +239,10 @@ if (f[Er][0]) {
                   for (int iR=0; iR<num_any_direction[R]; iR += stride_any_direction[R]) {
                     const int i = yee_idx + iR*stride_any_direction[R];
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = energy_here*fac;
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -255,10 +255,10 @@ if (f[Er][0]) {
                   for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                     const int i = yee_idx + iZ;
                     const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                          + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                + np->energy[ec_2][i-s_2-s_ec]);
+                       + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                          + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                             + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                + np->energy[ec_2][i-s_2+s_ec]);
                     np->s[ec][i] = energy_here*fac;
                     op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                        + np->s[ec][i]*f[ec][0][i]);
@@ -270,10 +270,10 @@ if (f[Er][0]) {
                     for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                       const int i = yee_idx + iZ + iR*stride_any_direction[R];
                       const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                            + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                  + np->energy[ec_2][i-s_2-s_ec]);
+                         + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                            + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                               + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                  + np->energy[ec_2][i-s_2+s_ec]);
                       np->s[ec][i] = energy_here*fac;
                       op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                          + np->s[ec][i]*f[ec][0][i]);
@@ -310,11 +310,11 @@ if (f[Er][0]) {
         FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
           const int yee_idx = v.yee_index(ec);
           const int s_ec = stride_any_direction[component_direction(ec)];
-          const component ec_1 = (component)((ec+1)%3);
-          const direction d_1 = component_direction(ec_1);
+          const direction d_1 = (direction)((ec+1)%3);
+          const component ec_1 = direction_component(ec,d_1);
           const int s_1 = stride_any_direction[d_1];
-          const component ec_2 = (component)((ec+1)%3);
-          const direction d_2 = component_direction(ec_2);
+          const direction d_2 = (direction)((ec+2)%3);
+          const component ec_2 = direction_component(ec,d_2);
           const int s_2 = stride_any_direction[d_2];
           if (is_real) {
             if (pol) {
@@ -334,10 +334,10 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -345,10 +345,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                             const int i = yee_idx + iY*stride_any_direction[Y];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -359,10 +359,10 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -372,10 +372,10 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y];
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -389,10 +389,10 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                             const int i = yee_idx + iZ;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -402,10 +402,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iY*stride_any_direction[Y] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -418,10 +418,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -434,10 +434,10 @@ if (f[Er][0]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y]
                                    + iZ;
                                 const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                            + np->energy[ec_2][i-s_2-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                            + np->energy[ec_2][i-s_2+s_ec]);
                                 np->s[ec][i] = max(-energy_here*fac, 0.0);
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -456,10 +456,10 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -467,10 +467,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                             const int i = yee_idx + iY*stride_any_direction[Y];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -481,10 +481,10 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -494,10 +494,10 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y];
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -511,10 +511,10 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                             const int i = yee_idx + iZ;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -524,10 +524,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iY*stride_any_direction[Y] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -540,10 +540,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -556,10 +556,10 @@ if (f[Er][0]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y]
                                    + iZ;
                                 const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                            + np->energy[ec_2][i-s_2-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                            + np->energy[ec_2][i-s_2+s_ec]);
                                 np->s[ec][i] = energy_here*fac;
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -598,10 +598,10 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -611,10 +611,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                             const int i = yee_idx + iY*stride_any_direction[Y];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -627,10 +627,10 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -642,10 +642,10 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y];
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -661,10 +661,10 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                             const int i = yee_idx + iZ;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -676,10 +676,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iY*stride_any_direction[Y] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -694,10 +694,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -712,10 +712,10 @@ if (f[Er][0]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y]
                                    + iZ;
                                 const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                            + np->energy[ec_2][i-s_2-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                            + np->energy[ec_2][i-s_2+s_ec]);
                                 np->s[ec][i] = max(-energy_here*fac, 0.0);
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -737,10 +737,10 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -750,10 +750,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                             const int i = yee_idx + iY*stride_any_direction[Y];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -766,10 +766,10 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -781,10 +781,10 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += stride_any_direction[Y]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y];
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -800,10 +800,10 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                             const int i = yee_idx + iZ;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -815,10 +815,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iY*stride_any_direction[Y] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -833,10 +833,10 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ;
                               const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                          + np->energy[ec_2][i-s_2-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                       + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                          + np->energy[ec_2][i-s_2+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -851,10 +851,10 @@ if (f[Er][0]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY*stride_any_direction[Y]
                                    + iZ;
                                 const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                            + np->energy[ec_2][i-s_2-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                         + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                            + np->energy[ec_2][i-s_2+s_ec]);
                                 np->s[ec][i] = energy_here*fac;
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -890,11 +890,11 @@ if (f[Er][0]) {
         FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
           const int yee_idx = v.yee_index(ec);
           const int s_ec = stride_any_direction[component_direction(ec)];
-          const component ec_1 = (component)((ec+1)%3);
-          const direction d_1 = component_direction(ec_1);
+          const direction d_1 = (direction)((ec+1)%3);
+          const component ec_1 = direction_component(ec,d_1);
           const int s_1 = stride_any_direction[d_1];
-          const component ec_2 = (component)((ec+1)%3);
-          const direction d_2 = component_direction(ec_2);
+          const direction d_2 = (direction)((ec+2)%3);
+          const component ec_2 = direction_component(ec,d_2);
           const int s_2 = stride_any_direction[d_2];
           if (is_real) {
             if (pol) {
@@ -913,10 +913,10 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                    + np->energy[ec_2][i-s_2-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                    + np->energy[ec_2][i-s_2+s_ec]);
                         np->s[ec][i] = max(-energy_here*fac, 0.0);
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -924,10 +924,10 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -938,10 +938,10 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -951,10 +951,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -970,10 +970,10 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                    + np->energy[ec_2][i-s_2-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                    + np->energy[ec_2][i-s_2+s_ec]);
                         np->s[ec][i] = energy_here*fac;
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -981,10 +981,10 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -995,10 +995,10 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1008,10 +1008,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1047,10 +1047,10 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                    + np->energy[ec_2][i-s_2-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                    + np->energy[ec_2][i-s_2+s_ec]);
                         np->s[ec][i] = max(-energy_here*fac, 0.0);
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -1060,10 +1060,10 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1076,10 +1076,10 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1091,10 +1091,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1113,10 +1113,10 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                    + np->energy[ec_2][i-s_2-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                 + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                    + np->energy[ec_2][i-s_2+s_ec]);
                         np->s[ec][i] = energy_here*fac;
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -1126,10 +1126,10 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1142,10 +1142,10 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                      + np->energy[ec_2][i-s_2-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                   + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                      + np->energy[ec_2][i-s_2+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1157,10 +1157,10 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + (0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec])) + 0.25*((np->energy[ec_2][i])
-                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i-s_ec])
-                                        + np->energy[ec_2][i-s_2-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec])) + 0.25*((np->energy[ec_2][i])
+                                     + (np->energy[ec_2][i-s_2]) + (np->energy[ec_2][i+s_ec])
+                                        + np->energy[ec_2][i-s_2+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1195,8 +1195,8 @@ if (f[Er][0]) {
       FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0]) {
         const int yee_idx = v.yee_index(ec);
         const int s_ec = stride_any_direction[component_direction(ec)];
-        const component ec_1 = (component)((ec+1)%2);
-        const direction d_1 = component_direction(ec_1);
+        const direction d_1 = (direction)((ec+1)%2);
+        const component ec_1 = direction_component(ec,d_1);
         const int s_1 = stride_any_direction[d_1];
         if (is_real) {
           if (pol) {
@@ -1217,8 +1217,8 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1226,8 +1226,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1238,8 +1238,8 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1249,8 +1249,8 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY;
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1264,8 +1264,8 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                             const int i = yee_idx + iZ*stride_any_direction[Z];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1275,8 +1275,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iY + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1289,8 +1289,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1302,8 +1302,8 @@ if (f[Er][0]) {
                               for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY + iZ*stride_any_direction[Z];
                                 const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec]);
                                 np->s[ec][i] = max(-energy_here*fac, 0.0);
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -1318,8 +1318,8 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec]);
                         np->s[ec][i] = max(-energy_here*fac, 0.0);
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -1327,8 +1327,8 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1339,8 +1339,8 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1350,8 +1350,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1370,8 +1370,8 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1379,8 +1379,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1391,8 +1391,8 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1402,8 +1402,8 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY;
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1417,8 +1417,8 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                             const int i = yee_idx + iZ*stride_any_direction[Z];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1428,8 +1428,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iY + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1442,8 +1442,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1455,8 +1455,8 @@ if (f[Er][0]) {
                               for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY + iZ*stride_any_direction[Z];
                                 const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec]);
                                 np->s[ec][i] = energy_here*fac;
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -1471,8 +1471,8 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec]);
                         np->s[ec][i] = energy_here*fac;
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -1480,8 +1480,8 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1492,8 +1492,8 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1503,8 +1503,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1543,8 +1543,8 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1554,8 +1554,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1568,8 +1568,8 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1581,8 +1581,8 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY;
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1598,8 +1598,8 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                             const int i = yee_idx + iZ*stride_any_direction[Z];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1611,8 +1611,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iY + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1627,8 +1627,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = max(-energy_here*fac, 0.0);
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1642,8 +1642,8 @@ if (f[Er][0]) {
                               for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY + iZ*stride_any_direction[Z];
                                 const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec]);
                                 np->s[ec][i] = max(-energy_here*fac, 0.0);
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -1660,8 +1660,8 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec]);
                         np->s[ec][i] = max(-energy_here*fac, 0.0);
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -1671,8 +1671,8 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1685,8 +1685,8 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = max(-energy_here*fac, 0.0);
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1698,8 +1698,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = max(-energy_here*fac, 0.0);
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1721,8 +1721,8 @@ if (f[Er][0]) {
                         if (num_any_direction[Y]==1) {
                           const int i = yee_idx;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1732,8 +1732,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1746,8 +1746,8 @@ if (f[Er][0]) {
                           for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                             const int i = yee_idx + iX*stride_any_direction[X];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1759,8 +1759,8 @@ if (f[Er][0]) {
                             for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iY;
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1776,8 +1776,8 @@ if (f[Er][0]) {
                           for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                             const int i = yee_idx + iZ*stride_any_direction[Z];
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
@@ -1789,8 +1789,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iY + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1805,8 +1805,8 @@ if (f[Er][0]) {
                             for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                               const int i = yee_idx + iX*stride_any_direction[X] + iZ*stride_any_direction[Z];
                               const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                    + np->energy[ec_1][i-s_1-s_ec]);
+                                 + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                    + np->energy[ec_1][i-s_1+s_ec]);
                               np->s[ec][i] = energy_here*fac;
                               op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                  + np->s[ec][i]*f[ec][0][i]);
@@ -1820,8 +1820,8 @@ if (f[Er][0]) {
                               for (int iZ=0; iZ<num_any_direction[Z]; iZ += stride_any_direction[Z]) {
                                 const int i = yee_idx + iX*stride_any_direction[X] + iY + iZ*stride_any_direction[Z];
                                 const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                      + np->energy[ec_1][i-s_1-s_ec]);
+                                   + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                      + np->energy[ec_1][i-s_1+s_ec]);
                                 np->s[ec][i] = energy_here*fac;
                                 op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                    + np->s[ec][i]*f[ec][0][i]);
@@ -1838,8 +1838,8 @@ if (f[Er][0]) {
                       if (num_any_direction[Y]==1) {
                         const int i = yee_idx;
                         const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                              + np->energy[ec_1][i-s_1-s_ec]);
+                           + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                              + np->energy[ec_1][i-s_1+s_ec]);
                         np->s[ec][i] = energy_here*fac;
                         op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                            + np->s[ec][i]*f[ec][0][i]);
@@ -1849,8 +1849,8 @@ if (f[Er][0]) {
                         for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                           const int i = yee_idx + iY;
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1863,8 +1863,8 @@ if (f[Er][0]) {
                         for (int iX=0; iX<num_any_direction[X]; iX += stride_any_direction[X]) {
                           const int i = yee_idx + iX*stride_any_direction[X];
                           const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                + np->energy[ec_1][i-s_1-s_ec]);
+                             + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                + np->energy[ec_1][i-s_1+s_ec]);
                           np->s[ec][i] = energy_here*fac;
                           op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                              + np->s[ec][i]*f[ec][0][i]);
@@ -1876,8 +1876,8 @@ if (f[Er][0]) {
                           for (int iY=0; iY<num_any_direction[Y]; iY += 1) {
                             const int i = yee_idx + iX*stride_any_direction[X] + iY;
                             const double energy_here = (np->energy[ec][i]) + 0.25*((np->energy[ec_1][i])
-                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i-s_ec])
-                                  + np->energy[ec_1][i-s_1-s_ec]);
+                               + (np->energy[ec_1][i-s_1]) + (np->energy[ec_1][i+s_ec])
+                                  + np->energy[ec_1][i-s_1+s_ec]);
                             np->s[ec][i] = energy_here*fac;
                             op->P[ec][0][i] = funinv*((2-om*om)*np->P[ec][0][i] + (0.5*g-1)*op->P[ec][0][i]
                                + np->s[ec][i]*f[ec][0][i]);
