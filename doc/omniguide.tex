@@ -72,9 +72,7 @@ straight to the TE modes.
       f.phase_in_material(&ma, 1000);
       f.initialize_with_n_tm(9);
       double next_slice_time = 0.0;
-      while (f.is_phasing() && !interrupt) {
-        f.step();
-      }
+      while (f.is_phasing() && !interrupt) f.step();
       f.prepare_for_bands(vec(4.801,0.0), ttot, .40, 300, 0.0);
       f.prepare_for_bands(vec(3.801,0.0), ttot, .40, 300, 0.0);
       f.prepare_for_bands(vec(3.301,0.0), ttot, .40, 300, 0.0);
@@ -103,22 +101,23 @@ straight to the TE modes.
     g.set_legend(m_string);
     for (double k=0.0;k<0.351 && !interrupt;k+=0.05) {
 \end{verbatim}
-\begin{comment}
+In order to populate the modes that we are interested in, we first populate
+the modes of an empty waveguide (whose modes are known), and then
+adiabatically transform from that waveguide into our omniguide structure.
+\begin{verbatim}
       printf("Working on k of %g and %s with a=%d...\n", k, m_string, a);
       fields f(&vac, m);
       f.use_bloch(k);
       f.verbose(1);
       f.phase_in_material(&ma, 1000);
-\end{comment}
+\end{verbatim}
 We initialize the fields with both TE and TM modes, and then phase in the
-epsilon as usual.
+epsilon as usual, and then do the actual phasing in of the structure.
 \begin{verbatim}
       f.initialize_with_n_te(9);
       if (m) f.initialize_with_n_tm(9);
-\end{verbatim}
-\begin{comment}
       while (f.is_phasing() && !interrupt) f.step();
-\end{comment}
+\end{verbatim}
 Again, the band structure code is pretty normal, with the only real
 difference being that in this case we \emph{really} want to have specify a
 large $Q_{min}$, to help dactyl to distinguish between real modes and
