@@ -81,6 +81,14 @@ double max_to_master(double in) {
   return out;
 }
 
+double max_to_all(double in) {
+  double out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
 double sum_to_master(double in) {
   double out = in;
 #ifdef HAVE_MPI

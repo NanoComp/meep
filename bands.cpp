@@ -49,8 +49,9 @@ double src::find_last_source(double sofar) {
 double fields::find_last_source() {
   double last_source = 0;
   for (int i=0;i<num_chunks;i++)
-    last_source = max(last_source,chunks[i]->find_last_source());
-  return last_source;  
+    if (chunks[i]->is_mine())
+      last_source = max(last_source,chunks[i]->find_last_source());
+  return max_to_all(last_source);
 }
 
 double fields_chunk::find_last_source() {
