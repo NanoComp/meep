@@ -144,8 +144,7 @@ void fields::record_bands() {
   int thet = (t-bands.tstart)/bands.scale_factor;
   if (thet >= bands.ntime) return;
   for (int r=0;r<nr;r++) {
-    cmplx *fun = bands.hr;
-    BAND(fun,r,thet) =
+    BAND(bands.hr,r,thet) =
       cmplx(RE(hr,r,bands.z), IM(hr,r,bands.z));
     BAND(bands.hp,r,thet) =
       cmplx(RE(hp,r,bands.z), IM(hp,r,bands.z));
