@@ -42,7 +42,7 @@ void spherical_quadrature_points(double *x, double *y, double *z,
 	  /* Computes quadrature points and weights for 50-point 11th degree
 	     integration formula on a unit sphere.  This particular quadrature
 	     formula has the advantage, for our purposes, of preserving the
-	     symmetry group of an octahedraon (i.e. simple cubic symmetry, with
+	     symmetry group of an octahedron (i.e. simple cubic symmetry, with
 	     respect to the Cartesian xyz axes).  References:
 	
 	     A. D. McLaren, "Optimal Numerical Integration on a Sphere,"
