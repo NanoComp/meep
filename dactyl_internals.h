@@ -15,29 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#define MA(e,r,z) ((e)[(z)+(r)*(nz+1)])
-#define DOCMP for (int cmp=0;cmp<2;cmp++)
-
-#define RE(f,r,z) ((f)[0][(z)+(r)*(nz+1)])
-#define IM(f,r,z) ((f)[1][(z)+(r)*(nz+1)])
-
-#define PMLR(f,r,z) ((f)[cmp][(z)+((r)-nr+npmlr)*(nz+1)])
-#define PMLZ(f,r) ((f)[cmp][(lr+1)/2][(iz)+(r)*npmlz])
-#define CM(f,r,z) ((f)[cmp][(z)+(r)*(nz+1)])
-#define IT(f,r,z) (cmp?((f)[0][(z)+(r)*(nz+1)]):(-(f)[1][(z)+(r)*(nz+1)]))
-
-#define EIKZ(f,r,z) (cmp? (cosknz*IM(f,r,z)+sinknz*RE(f,r,z)) \
-                         : (cosknz*RE(f,r,z)-sinknz*IM(f,r,z)))
-#define EMIKZ(f,r,z) (cmp? (cosknz*IM(f,r,z)-sinknz*RE(f,r,z)) \
-                          : (cosknz*RE(f,r,z)+sinknz*IM(f,r,z)))
-#define IEIKZ(f,r,z) (cmp? (cosknz*RE(f,r,z)+sinknz*IM(f,r,z)) \
-                          : (-(cosknz*IM(f,r,z)-sinknz*RE(f,r,z))))
-
-#define FIPHI(f,phase) (cmp ? (cos(phase)*imag(f)+sin(phase)*real(f)) \
-                            : (cos(phase)*real(f)-sin(phase)*imag(f)))
-#define FW(f,ipos) &((f)[0][ipos*ifreqmax]), &((f)[1][ipos*ifreqmax])
-#define FPW(f,ipos,freq) (complex<double>((f)[0][(ipos)*ifreqmax+(freq)], \
-                                  (f)[1][(ipos)*ifreqmax+(freq)]))
+#define DOCMP for (int cmp=0;cmp<2-is_real;cmp++)
 
 inline double max(double a, double b) { return (a > b) ? a : b; }
 inline double min(double a, double b) { return (a < b) ? a : b; }
@@ -71,15 +49,17 @@ class polarizability {
 
 class polarization {
  public:
-  polarization(const polarizability *the_pb);
+  polarization(const polarizability *the_pb, int is_real);
   ~polarization();
   double saturation_factor;
   double *(P[10][2]), *(P_pml[10][2]), *(energy[10]), *(s[10]);
+  int is_real;
   const polarizability *pb;
   polarization *next;
 
   double total_energy(const volume &);
-  static polarization *set_up_polarizations(const mat *ma);
+  static polarization *set_up_polarizations(const mat *ma, int is_real);
+  void use_real_fields();
 
   void update_sigma(); // This is to deal with saturation.
 };

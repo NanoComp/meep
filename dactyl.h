@@ -128,7 +128,7 @@ class fields {
   polarization *pol, *olpol;
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
-  int m, t, phasein_time;
+  int m, t, phasein_time, is_real;
   double k, cosknz, sinknz;
   complex<double> eiknz;
   bandsdata *bands;
@@ -153,7 +153,7 @@ class fields {
   void step_right();
   inline double time() { return t*inva*c; };
 
-  void use_real_sources();
+  void use_real_fields();
   double find_last_source();
   void add_source(component whichf, double freq, double width, double peaktime,
                   double cutoff, complex<double> amp(const vec &),

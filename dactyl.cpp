@@ -45,6 +45,12 @@ fields::~fields() {
 }
 
 void fields::use_bloch(double tk) {
+  if (is_real) {
+    printf("Can't do bloch boundaries with real fields!\n");
+    // Note that I *could* implement bloch boundary conditions, at least
+    // for gamma point and zone edge situations.
+    exit(1);
+  }
   k = tk;
   cosknz = cos(k*2*pi*inva*v.nz());
   sinknz = sin(k*2*pi*inva*v.nz());
@@ -133,14 +139,15 @@ fields::fields(const mat *the_ma, int tm) {
   new_ma = NULL;
   bands = NULL;
   k = -1;
+  is_real = 0;
   a = ma->a;
   inva = 1.0/a;
   preferred_fmax = 2.5; // Some sort of reasonable maximum
                         // frequency... (assuming a has a value on the
                         // order of your frequency).
   t = 0;
-  pol = polarization::set_up_polarizations(ma);
-  olpol = polarization::set_up_polarizations(ma);
+  pol = polarization::set_up_polarizations(ma, is_real);
+  olpol = polarization::set_up_polarizations(ma, is_real);
   h_sources = e_sources = NULL;
   DOCMP {
     for (int i=0;i<10;i++) f[i][cmp] = NULL;
@@ -234,9 +241,16 @@ fields::fields(const mat *the_ma, int tm) {
   }
 }
 
-void fields::use_real_sources() {
+void fields::use_real_fields() {
+  if (k >= 0.0) {
+    printf("Can't use real fields with bloch boundary conditions!\n");
+    exit(1);
+  }
+  is_real = 1;
   if (e_sources) e_sources->use_real_sources();
   if (h_sources) h_sources->use_real_sources();
+  if (pol) pol->use_real_fields();
+  if (olpol) olpol->use_real_fields();
 }
 
 void src::use_real_sources() {
@@ -552,7 +566,7 @@ void fields::step_h() {
           f[Hy][cmp][z] += -c*(f[Ex][cmp][z+1] - f[Ex][cmp][z]);
     }
   } else if (v.dim == dcyl) {
-    for (int cmp=0;cmp<=1;cmp++) {
+    DOCMP {
       // Propogate Hr
       if (ma->Cother[Hr])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
@@ -693,7 +707,7 @@ void fields::step_e() {
           f[Ex][cmp][z] += -c*ma->inveps[Ex][z]*(f[Hy][cmp][z] - f[Hy][cmp][z-1]);
     }
   } else if (v.dim == dcyl) {
-    for (int cmp=0;cmp<=1;cmp++) {
+    DOCMP {
       // Propogate Ep
       if (ma->Cmain[Ep] || ma->Cother[Ep])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {

@@ -311,7 +311,7 @@ void fields::output_real_imaginary_slices(const volume &what, const char *name) 
     exit(1);
   }
   char *r_or_i = "-re";
-  for (int cmp=0;cmp<2;cmp++) {
+  DOCMP {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c)) {
         snprintf(n, buflen, "%s/%shr%s-%09.2f.sli",

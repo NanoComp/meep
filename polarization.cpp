@@ -23,13 +23,23 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-polarization *polarization::set_up_polarizations(const mat *ma) {
+polarization *polarization::set_up_polarizations(const mat *ma, int is_r) {
   if (ma->pb == NULL) return NULL;
-  return new polarization(ma->pb);
+  return new polarization(ma->pb, is_r);
 }
 
-polarization::polarization(const polarizability *the_pb) {
+void polarization::use_real_fields() {
+  is_real = 1;
+  for (int c=0;c<10;c++) delete[] P[c][1];
+  for (int c=0;c<10;c++) delete[] P_pml[c][1];
+  for (int c=0;c<10;c++) P[c][1] = NULL;
+  for (int c=0;c<10;c++) P_pml[c][1] = NULL;
+  if (next) next->use_real_fields();
+}
+
+polarization::polarization(const polarizability *the_pb, int is_r) {
   const volume &v = the_pb->v;
+  is_real = is_r;
   DOCMP {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && is_electric((component)c)) {
@@ -67,7 +77,7 @@ polarization::polarization(const polarizability *the_pb) {
   // Deal with saturation stuff.
   if (pb->energy_saturation != 0.0) {
     saturation_factor = pb->saturated_sigma/pb->energy_saturation;
-    const double isf = 1.0/saturation_factor;
+    const double isf = 1.0/fabs(saturation_factor);
     for (int c=0;c<10;c++)
       if (pb->s[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = -isf*s[c][i];
   } else {
@@ -78,7 +88,7 @@ polarization::polarization(const polarizability *the_pb) {
   if (pb->next == NULL) {
     next = NULL;
   } else {
-    next = new polarization(pb->next);
+    next = new polarization(pb->next, is_r);
   }
 }
 
