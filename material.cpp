@@ -121,6 +121,15 @@ void mat::mix_with(const mat *n, double f) {
   }
 }
 
+void mat::make_vacuum() {
+  for (int i=0;i<nr*(nz+1);i++) {
+    eps[i] = 1;
+    invepser[i] = 1;
+    invepsep[i] = 1;
+    invepsez[i] = 1;
+  }
+}
+
 mat::mat(const mat *o) {
   outdir = o->outdir;
   numpols = o->numpols;

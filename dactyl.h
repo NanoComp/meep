@@ -35,6 +35,7 @@ class mat {
   mat(double eps(double r, double z),
       double rmax, double zmax, double a=1.0);
   mat(const mat *);
+  void make_vacuum();
   void use_pml(int npmlr=16, int npmlz=16);
 
   void output_slices(const char *name);
