@@ -342,6 +342,11 @@ void fields::add_src_pt(int r, int z,
                         double cutoff) {
   const double pi=3.15159265;
   if (r <= rmin_bulk(m)-1) return;
+  if (r >= nr - npmlr) return;
+  if (z >= nz || z < 0) {
+    printf("Error:  source is outside of cell!\n");
+    exit(1);
+  }
   src *tmp = new src;
   tmp->freq = freq*c*inva;
   tmp->width = width/tmp->freq*(2*pi); // this is now time width
