@@ -205,6 +205,8 @@ void mat::add_to_effort_volumes(const volume &new_effort_volume,
         effort_volumes[j].print();
         printf("new_effort_volume  ");
         new_effort_volume.print();
+        // NOTE: this may not be a bug if this function is used for
+        // something other than PML.
         abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
       }
       temp_effort[counter] = extra_effort + effort[j];
@@ -319,10 +321,15 @@ void mat::make_average_eps() {
 }
 
 void mat::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
-  volume pml_volume = user_volume;
+  volume pml_volume = v;
   pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if ((boundary_side) b == High)
-    pml_volume.origin.set_direction(d, (user_volume.num_direction(d) - pml_volume.num_direction(d))/user_volume.a);
+    pml_volume.origin.set_direction(d, (user_volume.num_direction(d)
+                                        - pml_volume.num_direction(d))/user_volume.a);
+  const int v_to_user_shift = (int)
+    floor((user_volume.origin.in_direction(d) - v.origin.in_direction(d))*v.a + 0.5);
+  if ((boundary_side) b == Low && v_to_user_shift != 0)
+    pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
 
   if (recalculate_chunks) optimize_chunks();  
