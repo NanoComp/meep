@@ -20,16 +20,8 @@
 #include <math.h>
 
 #include "dactyl.h"
+#include "dactyl_internals.h"
 #include "harminv.h"
-
-#define EP(e,r,z) ((e)[(z)+(r)*(nz+1)])
-#define DOCMP for (int cmp=0;cmp<2;cmp++)
-
-#define RE(f,r,z) ((f)[0][(z)+(r)*(nz+1)])
-#define IM(f,r,z) ((f)[1][(z)+(r)*(nz+1)])
-
-#define CM(f,r,z) ((f)[cmp][(z)+(r)*(nz+1)])
-#define IT(f,r,z) (cmp?((f)[0][(z)+(r)*(nz+1)]):(-(f)[1][(z)+(r)*(nz+1)]))
 
 #define BAND(b,r,t) ((b)[(r)+(t)*nr])
 
@@ -57,9 +49,6 @@ int src::find_last_source(int sofar) {
   return next->find_last_source(sofar);
 }
 
-inline double max(double a, double b) { return (a > b) ? a : b; }
-inline int max(int a, int b) { return (a > b) ? a : b; }
-
 void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
   int last_source = 0;
   if (e_sources != NULL)
@@ -81,7 +70,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
   double epsmax = 1;
   for (int r=0;r<nr;r++) {
     for (z=0;z<nz;z++) {
-      if (EP(ma->eps,r,z) > epsmax) epsmax = EP(ma->eps,r,z);
+      if (MA(ma->eps,r,z) > epsmax) epsmax = MA(ma->eps,r,z);
     }
   }
   const double cutoff_freq = 1.84*c/(2*pi)/nr/epsmax;
