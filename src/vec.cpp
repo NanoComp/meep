@@ -165,6 +165,17 @@ geometric_volume geometric_volume::intersect_with(const geometric_volume &a) con
   return result;
 };
 
+bool geometric_volume::intersects(const geometric_volume &a) const {
+  if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    double minval = max(in_direction_min(d), a.in_direction_min(d));
+    double maxval = min(in_direction_max(d), a.in_direction_max(d));
+    if (minval > maxval)
+      return false;
+  }
+  return true;
+};
+
 int volume::yucky_num(int n) const {
   if (has_direction(dim, yucky_direction(n)))
     return num_direction(yucky_direction(n));
