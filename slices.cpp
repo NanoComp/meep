@@ -193,15 +193,29 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
     if (what.contains(v.loc(m,i)))
       switch (v.dim) {
       case dcyl:
-        vec next = v.loc(m,i)+v.dr();
-        if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
-            f[i]*f[v.index(m,next)] == 0.0)
-          fprintf(out, "%lg\t%lg\tDH\n", next.z(), next.r() - 0.5/v.a);
-        next = v.loc(m,i)+v.dz();
-        if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
-            f[i]*f[v.index(m,next)] == 0.0)
-          fprintf(out, "%lg\t%lg\tDV\n", next.z() - 0.5/v.a, next.r());
-        break;
+        {
+          vec next = v.loc(m,i)+v.dr();
+          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+              f[i]*f[v.index(m,next)] == 0.0)
+            fprintf(out, "%lg\t%lg\tDH\n", next.z(), next.r() - 0.5/v.a);
+          next = v.loc(m,i)+v.dz();
+          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+              f[i]*f[v.index(m,next)] == 0.0)
+            fprintf(out, "%lg\t%lg\tDV\n", next.z() - 0.5/v.a, next.r());
+          break;
+        }
+      case d2:
+        {
+          vec next = v.loc(m,i)+v.dx();
+          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+              f[i]*f[v.index(m,next)] == 0.0)
+            fprintf(out, "%lg\t%lg\tDH\n", next.x() - 0.5/v.a, next.y());
+          next = v.loc(m,i)+v.dy();
+          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+              f[i]*f[v.index(m,next)] == 0.0)
+            fprintf(out, "%lg\t%lg\tDV\n", next.x(), next.y() - 0.5/v.a);
+          break;
+        }
       }
 }
 
@@ -217,6 +231,25 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
         next = v.loc(m,i)+v.dz();
         if (v.contains(next) && f[i] != f[v.index(m,next)])
           fprintf(out, "%lg\t%lg\tLV\n", next.z() - 0.5/v.a, next.r());
+        break;
+      }
+      case d2: {
+        vec next = v.loc(m,i)+v.dy();
+        if (v.owns(next))
+          if (f[i] != f[v.index(m,next)])
+            fprintf(out, "%lg\t%lg\tLH\n", next.x(), next.y() - 0.5/v.a);
+        next = v.loc(m,i)-v.dy();
+        if (v.owns(next))
+          if (f[i] != f[v.index(m,next)])
+            fprintf(out, "%lg\t%lg\tLH\n", next.x(), next.y() + 0.5/v.a);
+        next = v.loc(m,i)+v.dx();
+        if (v.owns(next))
+          if (f[i] != f[v.index(m,next)])
+            fprintf(out, "%lg\t%lg\tLV\n", next.x() - 0.5/v.a, next.y());
+        next = v.loc(m,i)-v.dx();
+        if (v.owns(next))
+          if (f[i] != f[v.index(m,next)])
+            fprintf(out, "%lg\t%lg\tLV\n", next.x() + 0.5/v.a, next.y());
         break;
       }
       case d1: {
@@ -246,6 +279,11 @@ static void output_eps(component m, const double *f, const volume &v,
     xmin = what.origin.z();
     xmax = what.origin.z() + what.nz()*what.inva;
     break;
+  case d2:
+    xmin = what.origin.x();
+    xmax = what.origin.x() + what.nx()*what.inva;
+    ymin = ymax = what.origin.y();
+    ymax = what.origin.y() + what.ny()*what.inva;
   }
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
@@ -291,34 +329,25 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
                                     const volume &what, const char *name,
                                     component om = Hx, const double *overlay = NULL,
                                     const double *dashed = NULL) {
-  if (v.dim == d1 && 0) {
-    // Make a 1D line plot!
-    //grace g(name);
-    //for (int i=1;i<v.ntot()-1;i++)
-    //  if (what.contains(v.loc(m,i)) && f[0][i] > f[0][i-1] && f[0][i] > f[0][i+1])
-    //    g.output_point(v.loc(m,i).z(), c*f[0][i]+((f[1])?s*f[1][i]:0));
-  } else {
-    // Make a 2D color plot!
-    FILE *out = fopen(name, "a");
-    if (!out) {
-      printf("Unable to open file '%s' for slice output.\n", name);
-      return;
-    }
-    for (int i=0;i<v.ntot();i++) {
-      if (what.contains(v.loc(m,i))) {
-        double x = 0, y = 0;
-        switch (v.dim) {
-        case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
-        case d1: x = v.loc(m,i).z(); break;
-        case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
-        }
-        fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[0][i]);
-      }
-    }
-    if (overlay) eps_outline(out, om, overlay, v, what);
-    if (dashed) eps_dotted(out, om, dashed, v, what);
-    fclose(out);
+  FILE *out = fopen(name, "a");
+  if (!out) {
+    printf("Unable to open file '%s' for slice output.\n", name);
+    return;
   }
+  for (int i=0;i<v.ntot();i++) {
+    if (what.contains(v.loc(m,i))) {
+      double x = 0, y = 0;
+      switch (v.dim) {
+      case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
+      case d1: x = v.loc(m,i).z(); break;
+      case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
+      }
+      fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, f[0][i]);
+    }
+  }
+  if (overlay) eps_outline(out, om, overlay, v, what);
+  if (dashed) eps_dotted(out, om, dashed, v, what);
+  fclose(out);
 }
 
 static void output_complex_eps_header(component m, double fmax, const volume &v,
@@ -331,6 +360,12 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
     xmax = what.origin.z() + what.nz()*what.inva;
     ymin = what.origin.r();
     ymax = what.origin.r() + what.nr()*what.inva;
+    break;
+  case d2:
+    xmin = what.origin.x();
+    xmax = what.origin.x() + what.nx()*what.inva;
+    ymin = what.origin.y();
+    ymax = what.origin.y() + what.ny()*what.inva;
     break;
   case d1:
     ymin = -v.inva*0.5;
@@ -472,7 +507,7 @@ void fields::output_slices(const volume &what, const char *name) const {
 }
 
 void fields::eps_slices(const char *name) const {
-  if (v.dim == dcyl || v.dim == d1)
+  if (v.dim == dcyl || v.dim == d1 || v.dim == d2)
     eps_slices(v, name);
 }
 

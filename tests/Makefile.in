@@ -18,8 +18,10 @@ VERSION = @VERSION@
 
 ###########################################################################
 
-OBJFILES = cylindrical.o one_dimensional.o bench.o flux.o
-TESTFILES = cylindrical.dac one_dimensional.dac bench.dac flux.dac
+OBJFILES = two_dimensional.o cylindrical.o one_dimensional.o \
+		bench.o flux.o
+TESTFILES = two_dimensional.dac cylindrical.dac one_dimensional.dac \
+		bench.dac flux.dac
 
 $(OBJFILES): ../dactyl.h
 $(TESTFILES): ../libdactyl.a
@@ -33,6 +35,7 @@ all: $(TESTFILES)
 
 test: $(TESTFILES) bench
 	set -e
+	$(RUNCODE) ./two_dimensional.dac
 	$(RUNCODE) ./one_dimensional.dac
 	$(RUNCODE) ./cylindrical.dac
 	$(RUNCODE) ./flux.dac

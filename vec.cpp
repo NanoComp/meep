@@ -104,6 +104,7 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
 component volume::eps_component() const {
   switch (dim) {
   case d1: return Ex;
+  case d2: return Ez;
   case dcyl: return Hp;
   }
   abort("Unsupported dimensionality eps.\n");
@@ -125,11 +126,20 @@ vec volume::yee_shift(component c) const {
     case Ex: return vec(0);
     case Hy: return dz()*0.5;
     }
+  } else if (dim == d2) {
+    switch (c) {
+    case Ez: return vec2d(0,0);
+    case Hz: return (dx()+dy())*0.5;
+    case Ex:
+    case Hy: return dx()*0.5;
+    case Hx:
+    case Ey: return dy()*0.5;
+    }
   } else {
-    abort("Invalid component!\n");
+    abort("Unsupported dimension! yee shift of %s in %s\n",
+          component_name(c), dimension_name(dim));
   }
-  abort("Unsupported dimension! yee shift of %s in %s\n",
-        component_name(c), dimension_name(dim));
+  abort("Invalid component in yee!\n");
 }
 
 int volume::contains(const vec &p) const {
@@ -154,7 +164,7 @@ int volume::contains(const vec &p) const {
   } else if (dim == d1) {
     return o.z() >= -inva && o.z() <= nz()*inva + inva;
   } else {
-    abort("Unsupported dimension.\n");
+    abort("Unsupported dimension in contains.\n");
   }
 }
 
@@ -185,7 +195,7 @@ int volume::owns(const vec &p) const {
   } else if (dim == d1) {
     return o.z() >= qinva && o.z() <= nz()*inva + qinva;
   } else {
-    abort("Unsupported dimension.\n");
+    abort("Unsupported dimension in owns.\n");
   }
 }
 
@@ -221,7 +231,7 @@ int volume::index(component c, const vec &p) const {
   } else if (dim == d1) {
     theindex = (int)(offset.z()*a + 0.5);
   } else {
-    abort("Unsupported dimension.\n");
+    abort("Unsupported dimension in index.\n");
   }
   return theindex;
 }
@@ -245,6 +255,8 @@ void volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
   if (dim == d1) {
     interpolate_one(c, p, indices, weights);
+  } else if (dim == d2) {
+    interpolate_two(c, p, indices, weights);
   } else if (dim == dcyl) {
     interpolate_cyl(c, p, 0, indices, weights);
   } else {
@@ -429,6 +441,109 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
   }
 }
 
+void volume::interpolate_two(component c, const vec &p,
+                             int indices[8], double weights[8]) const {
+  const double ix = (p.x() - yee_shift(c).x())*a;
+  const double iy = (p.y() - yee_shift(c).y())*a;
+  // (0,0) must be on grid!
+  const int ioriginx = (int) (origin.x()*a + 0.5);
+  const int ioriginy = (int) (origin.y()*a + 0.5);
+  int ixlo = (int)ix - ioriginx, iylo = (int)iy - ioriginy,
+    ixhi = ixlo+1, iyhi = iylo+1;
+  const double dx = p.x()*a - (ioriginx + ixlo + 0.5) - yee_shift(c).x()*a;
+  const double dy = p.y()*a - (ioriginy + iylo + 0.5) - yee_shift(c).y()*a;
+  for (int i=0;i<8;i++) indices[i] = 0;
+  for (int i=0;i<8;i++) weights[i] = 0;
+  // Tabulate the actual weights:
+  if (dx+dy > 0.0) {
+    if (dx-dy > 0.0) { // North
+      weights[0] = (1-2*dx)*0.25;
+      weights[1] = (1-2*dx)*0.25;
+      weights[2] = 2*dx*(0.5-dy) + (1-2*dx)*0.25;
+      weights[3] = 2*dx*(0.5+dy) + (1-2*dx)*0.25;
+    } else { // East
+      weights[0] = (1-2*dy)*0.25;
+      weights[2] = (1-2*dy)*0.25;
+      weights[1] = 2*dy*(0.5-dx) + (1-2*dy)*0.25;
+      weights[3] = 2*dy*(0.5+dx) + (1-2*dy)*0.25;
+    }
+  } else {
+    if (dx-dy > 0.0) { // West
+      weights[3] = (1+2*dy)*0.25;
+      weights[1] = (1+2*dy)*0.25;
+      weights[0] = -2*dy*(0.5-dx) + (1+2*dy)*0.25;
+      weights[2] = -2*dy*(0.5+dx) + (1+2*dy)*0.25;
+    } else { // South
+      weights[2] = (1+2*dx)*0.25;
+      weights[3] = (1+2*dx)*0.25;
+      weights[0] = -2*dx*(0.5-dy) + (1+2*dx)*0.25;
+      weights[1] = -2*dx*(0.5+dy) + (1+2*dx)*0.25;
+    }
+  }
+  // These are the four nearest neighbor points:
+  indices[0] = iylo + (1+ny())*ixlo; // SW
+  indices[1] = iyhi + (1+ny())*ixlo; // SE
+  indices[2] = iylo + (1+ny())*ixhi; // NW
+  indices[3] = iyhi + (1+ny())*ixhi; // NE
+  // Figure out which of these points is off the grid in y direction:
+  switch ((component)c) {
+  case Ez: case Ex: case Hy:
+    if (iylo <= 0 || iylo > ny()) {
+      weights[0] = 0;
+      weights[2] = 0;
+    }
+    if (iyhi <= 0 || iyhi > ny()) {
+      weights[1] = 0;
+      weights[3] = 0;
+    }
+    break;
+  case Hz: case Hx: case Ey:
+    if (iylo < 0 || iylo >= ny()) {
+      weights[0] = 0;
+      weights[2] = 0;
+    }
+    if (iyhi < 0 || iyhi >= ny()) {
+      weights[1] = 0;
+      weights[3] = 0;
+    }
+  }
+  // Figure out which of the points is off the grid in x direction:
+  switch ((component)c) {
+  case Ez: case Ey: case Hx:
+    if (ixhi > nx() || ixhi < 0) {
+      weights[2] = 0;
+      weights[3] = 0;
+    }
+    if (ixlo > nx() || ixlo < 0) {
+      weights[0] = 0;
+      weights[1] = 0;
+    }
+    break;
+  case Hz: case Hy: case Ex:
+    if (ixhi >= nx() || ixhi < 0) {
+      weights[2] = 0;
+      weights[3] = 0;
+    }
+    if (ixlo >= nx() || ixlo < 0) {
+      weights[0] = 0;
+      weights[1] = 0;
+    }
+  }
+  // Now I need to reorder them so the points with nonzero weights come
+  // first.
+  stupidsort(indices, weights, 4);
+  for (int i=0;i<8&&weights[i];i++)
+    if (!owns(loc(c, indices[i])))
+      weights[i] = 0.0;
+  stupidsort(indices, weights, 4);
+  for (int i=0;i<8&&weights[i];i++)
+    if (!owns(loc(c, indices[i])))
+      abort("Aaack, I don't actually own this! (2D)\n");
+  if (!contains(p) && weights[0]) {
+    abort("Error made in 2D interpolation--fix this bug!!!\n");
+  }
+}
+
 volume volume::dV(component c, int ind) const {
   if (!owns(loc(c, ind))) return volume(dim, a, 0, 0, 0);
   const vec here = loc(c,ind);
@@ -440,6 +555,10 @@ volume volume::dV(component c, int ind) const {
     out.origin = here - vec(thqinva, thqinva);
     return out;
   }
+  case d2:
+    out = voltwo(inva, inva, a);
+    out.origin = here - vec2d(thqinva, thqinva);
+    return out;
   case d1:
     out = volone(inva, a);
     out.origin = vec(here.z()-thqinva);
@@ -552,6 +671,7 @@ double volume::dv(component c, int ind) const {
   case d2: return inva*inva;
   case d1: return inva;
   }
+  abort("This should never be reached...\n");
 }
 
 vec volume::loc(component c, int ind) const {
@@ -620,6 +740,10 @@ volume volone(double zsize, double a) {
   return volume(d1, a, 0, 0, (int) (zsize*a + 0.5));
 }
 
+volume voltwo(double xsize, double ysize, double a) {
+  return volume(d2, a, (int) (xsize*a + 0.5), (int) (ysize*a + 0.5),0);
+}
+
 volume volcyl(double rsize, double zsize, double a) {
   if (zsize == 0.0) return volume(dcyl, a, (int) (rsize*a + 0.5), 0, 1);
   else return volume(dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
@@ -672,7 +796,7 @@ volume volume::split_once(int n, int which) const {
       if (bestd==0) { // split on x
         retval.origin = origin + vec2d(nx()/n*which/a,0);
       } else { // split on y
-        retval.origin = origin + vec2d(0,nz()/n*which/a);
+        retval.origin = origin + vec2d(0,ny()/n*which/a);
       }
       break;
     case d3:

@@ -196,6 +196,71 @@ void fields_chunk::step_h() {
         for (int z=0;z<v.nz();z++)
           f[Hy][cmp][z] += -c*(f[Ex][cmp][z+1] - f[Ex][cmp][z]);
     }
+  } else if (v.dim == d2) {
+    DOCMP {
+      // Propogate Hz
+      if ((ma->Cmain[Hz] || ma->Cother[Hz])&& f[Hz][cmp])
+        for (int x=0;x<v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixp1 = (x+1)*(v.ny()+1);
+          for (int y=0;y<v.ny();y++) {
+            const double Cxhz = (ma->Cmain[Hz])?ma->Cmain[Hz][y+ix]:0;
+            const double Cyhz = (ma->Cother[Hz])?ma->Cother[Hz][y+ix]:0;
+            const double ooop_Cxhz = 1.0/(1.0+.5*Cxhz);
+            const double ooop_Cyhz = 1.0/(1.0+.5*Cyhz);
+            const double dhzx = ooop_Cxhz*
+              (c*(f[Ey][cmp][y+ixp1] - f[Ey][cmp][y+ix]) - Cxhz*f_pml[Hz][cmp][y+ix]);
+            const double hzy = f[Hz][cmp][y+ix] - f_pml[Hz][cmp][y+ix];
+            f_pml[Hz][cmp][y+ix] += dhzx;
+            f[Hz][cmp][y+ix] += dhzx +
+              ooop_Cyhz*(c*(-(f[Ex][cmp][y+ix+1] - f[Ex][cmp][y+ix])) - Cyhz*hzy);
+          }
+        }
+      else if (f[Hz][cmp])
+        for (int x=0;x<v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixp1 = (x+1)*(v.ny()+1);
+          for (int y=0;y<v.ny();y++)
+            f[Hz][cmp][y+ix] += c*((f[Ey][cmp][y+ixp1] - f[Ey][cmp][y+ix]) -
+                                   (f[Ex][cmp][y+ix+1] - f[Ex][cmp][y+ix]));
+        }
+      // Propogate Hx
+      if (ma->Cmain[Hx] && f[Hx][cmp])
+        for (int x=1;x<=v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          for (int y=0;y<v.ny();y++) {
+            const double Cyhx = (ma->Cmain[Hx])?ma->Cmain[Hx][y+ix]:0;
+            const double ooop_Cyhx = 1.0/(1.0+.5*Cyhx);
+            f[Hx][cmp][y+ix] += ooop_Cyhx*
+              (-c*(f[Ez][cmp][y+ix] - f[Ez][cmp][y+ix-1]) - Cyhx*f[Hx][cmp][y+ix]);
+          }
+        }
+      else if (f[Hx][cmp])
+        for (int x=1;x<=v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          for (int y=0;y<v.ny();y++)
+            f[Hx][cmp][y+ix] += c*(f[Ez][cmp][y+ix+1] - f[Ez][cmp][y+ix]);
+        }
+      // Propogate Hy
+      if (ma->Cmain[Hy] && f[Hy][cmp])
+        for (int x=0;x<v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixp1 = (x+1)*(v.ny()+1);
+          for (int y=1;y<=v.ny();y++) {
+            const double Cxhy = (ma->Cmain[Hy])?ma->Cmain[Hy][y+ix]:0;
+            const double ooop_Cxhy = 1.0/(1.0+0.5*Cxhy);
+            f[Hy][cmp][y+ix] += ooop_Cxhy*
+              (c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix])) - Cxhy*f[Hy][cmp][y+ix]);
+          }
+        }
+      else if (f[Hy][cmp])
+        for (int x=0;x<v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixp1 = (x+1)*(v.ny()+1);
+          for (int y=1;y<=v.ny();y++)
+            f[Hy][cmp][y+ix] += c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix]));
+        }
+    }
   } else if (v.dim == dcyl) {
     DOCMP {
       // Propogate Hr
@@ -312,6 +377,8 @@ void fields_chunk::step_h() {
         }
       }
     }
+  } else {
+    abort("Can't step H in these dimensions.");
   }
 }
 
@@ -335,6 +402,78 @@ void fields_chunk::step_e() {
       else 
         for (int z=1;z<=v.nz();z++)
           f[Ex][cmp][z] += -c*ma->inveps[Ex][z]*(f[Hy][cmp][z] - f[Hy][cmp][z-1]);
+    }
+  } else if (v.dim == d2) {
+    DOCMP {
+      // Propogate Ez
+      if ((ma->Cmain[Ez] || ma->Cother[Ez])&& f[Ez][cmp])
+        for (int x=1;x<=v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixm1 = (x-1)*(v.ny()+1);
+          for (int y=1;y<=v.ny();y++) {
+            const double Cxez = (ma->Cmain[Ez])?ma->Cmain[Ez][y+ix]:0;
+            const double Cyez = (ma->Cother[Ez])?ma->Cother[Ez][y+ix]:0;
+            const double inveps_plus_Cxez = ma->inveps[Ez][y+ix]/
+              (1+.5*ma->inveps[Ez][y+ix]*Cxez);
+            const double inveps_plus_Cyez = ma->inveps[Ez][y+ix]/
+              (1+.5*ma->inveps[Ez][y+ix]*Cyez);
+            const double dezx = inveps_plus_Cxez*
+              (-c*(f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) - Cxez*f_pml[Ez][cmp][y+ix]);
+            const double ezy = f[Ez][cmp][y+ix] - f_pml[Ez][cmp][y+ix];
+            f_pml[Ez][cmp][y+ix] += dezx;
+            f[Ez][cmp][y+ix] += dezx +
+              inveps_plus_Cyez*(-c*(-(f[Hx][cmp][y+ix] - f[Hx][cmp][y+ix-1])) - Cyez*ezy);
+          }
+        }
+      else if (f[Ez][cmp])
+        for (int x=1;x<=v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixm1 = (x-1)*(v.ny()+1);
+          for (int y=1;y<=v.ny();y++)
+            f[Ez][cmp][y+ix] += -c*ma->inveps[Ez][y+ix]*
+              ((f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) -
+               (f[Hx][cmp][y+ix] - f[Hx][cmp][y+ix-1]));
+        }
+      // Propogate Ex
+      if (ma->Cmain[Ex] && f[Ex][cmp])
+        for (int x=1;x<=v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          for (int y=1;y<=v.ny();y++) {
+            const double Cyex = (ma->Cmain[Ex])?ma->Cmain[Ex][y+ix]:0;
+            const double inveps_plus_Cyex = ma->inveps[Ex][y+ix]/
+              (1+.5*ma->inveps[Ex][y+ix]*Cyex);
+            f[Ex][cmp][y+ix] += inveps_plus_Cyex*
+              (-c*(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ix-1]) - Cyex*f[Ex][cmp][y+ix]);
+          }
+        }
+      else if (f[Ex][cmp])
+        for (int x=0;x<v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          for (int y=1;y<=v.ny();y++)
+            f[Ex][cmp][y+ix] += -c*ma->inveps[Ex][y+ix]*
+              (f[Hz][cmp][y+ix] - f[Hz][cmp][y+ix-1]);
+        }
+      // Propogate Ey
+      if (ma->Cmain[Ey] && f[Ey][cmp])
+        for (int x=1;x<=v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixm1 = (x-1)*(v.ny()+1);
+          for (int y=0;y<v.ny();y++) {
+            const double Cxey = (ma->Cmain[Ey])?ma->Cmain[Ey][y+ix]:0;
+            const double inveps_plus_Cxey = ma->inveps[Ey][y+ix]/
+              (1+.5*ma->inveps[Ey][y+ix]*Cxey);
+            f[Ey][cmp][y+ix] += inveps_plus_Cxey*
+              (-c*(-(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ixm1])) - Cxey*f[Ey][cmp][y+ix]);
+          }
+        }
+      else if (f[Ey][cmp])
+        for (int x=1;x<=v.nx();x++) {
+          const int ix = x*(v.ny()+1);
+          const int ixm1 = (x-1)*(v.ny()+1);
+          for (int y=0;y<v.ny();y++)
+            f[Ey][cmp][y+ix] += -c*ma->inveps[Ey][y+ix]*
+              (-(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ixm1]));
+        }
     }
   } else if (v.dim == dcyl) {
     DOCMP {

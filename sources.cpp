@@ -96,6 +96,7 @@ void fields_chunk::add_point_source(component whichf, double freq,
   double prefac = 1.0;
   switch (v.dim) {
   case dcyl: prefac = a; break;
+  case d2: prefac = a; break; // FIXME: verify that this works right.
   case d1: prefac = 1; break;
   }
   for (int i=0;i<8 && w[i];i++)

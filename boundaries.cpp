@@ -59,7 +59,7 @@ inline int fields::is_metal(const vec &here, const volume &vi) {
     // Check if it is on the big r border...
     (v.dim == dcyl && here.r() > v.origin.r() + (v.nr()-0.2)*inva) ||
     // Check if it is on the big z border...
-    (k == -1 && here.z() > v.origin.z() + (v.nz()-0.2)*inva);
+    (k == -1 && (v.dim != d2) && here.z() > v.origin.z() + (v.nz()-0.2)*inva);
 }
 
 void fields::connect_the_chunks() {

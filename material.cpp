@@ -435,6 +435,21 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
       }
     } else if (v.dim == d1) {
       for (int i=0;i<v.ntot();i++) inveps[Ex][i] = 1.0/eps[i];
+    } else if (v.dim == d2) {
+      if (inveps[Ez])
+        for (int i=0;i<v.ntot();i++) inveps[Ez][i] = 1.0/eps[i];
+      const vec hdx = v.dx()*0.5;;
+      if (inveps[Ex])
+        for (int i=0;i<v.ntot();i++) {
+          const vec here = v.loc(Ex,i);
+          inveps[Ex][i] = 2.0/(feps(here+hdx)+feps(here-hdx));
+        }
+      const vec hdy = v.dy()*0.5;;
+      if (inveps[Ey])
+        for (int i=0;i<v.ntot();i++) {
+          const vec here = v.loc(Ey,i);
+          inveps[Ey][i] = 2.0/(feps(here+hdy)+feps(here-hdy));
+        }
     } else {
       abort("Unsupported symmetry!\n");
     }

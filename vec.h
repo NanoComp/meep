@@ -125,6 +125,8 @@ class volume {
 
   void interpolate_one(component c, const vec &p,
                        int indices[8], double weights[8]) const;
+  void interpolate_two(component c, const vec &p,
+                       int indices[8], double weights[8]) const;
   void interpolate_cyl(component c, const vec &p, int m,
                        int indices[8], double weights[8]) const;
 
@@ -148,6 +150,7 @@ class volume {
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);
+  friend volume voltwo(double xsize, double ysize, double a);
 
   int can_split_evenly(int num) const;
   volume split(int num, int which) const;
