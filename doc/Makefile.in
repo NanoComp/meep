@@ -18,7 +18,7 @@ all: dactyl.ps dactyl/dactyl.html preproc
 
 ###########################################################################
 
-TEXFILES = dactyl.tex simplebands.tex
+TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex polaritonbands.eps
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
@@ -39,12 +39,19 @@ dactyl/dactyl.html : $(TEXFILES)
 dactyl.dvi : $(TEXFILES)
 	latex dactyl.tex
 
-test: ../libdactyl.a preproc simplebands.dac
+polaritonbands.eps : polaritonbands-out/bands
+	../plot polaritonbands-out/bands band && \
+	mv polaritonbands-out/bands.ps polaritonbands.eps
+
+polaritonbands-out/bands : polaritonbands.dac
+	rm -rf polaritonbands-out/ && ./polaritonbands.dac
+
+test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac
 
 doc: doc/dactyl.ps
 
 testclean:
-	rm -rf *.o *.hi *.cpp *.dac
+	rm -rf *.o *.hi *.cpp *.dac *-out *-out-*
 
 clean:
 	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.cpp *.dac dactyl/

@@ -1,0 +1,109 @@
+\section{Band structure of a polariton}
+
+\begin{comment}
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+
+#include "dactyl.h"
+
+static int stopnow = 0;
+void handle_control_c(int i) {
+  printf("Be patient, I'll stop as soon as it's convenient...\n");
+  stopnow = 1;
+}
+
+const double rmax = 1.0;
+\end{comment}
+
+Here we compute and plot the band structure of a polariton material.  We
+look at a simple metallic waveguide filled with a polaritonic material.
+The material we look at has an epsilon of 13.4 and a longitudinal phonon
+frequency of 0.7 and a transverse phonon frequency of 0.4.
+
+\begin{figure}
+\label{polaritonbands}
+\caption{Polariton band structure.}
+\epsfig{file=polaritonbands.eps,width=7.8cm,angle=270}
+\end{figure}
+
+\begin{verbatim}
+double eps(double r, double z) { return 13.4; }
+double one(double r, double z) { return 1; }
+\end{verbatim}
+
+\begin{comment}
+int main(int argc, char **argv) {
+  signal(SIGINT, handle_control_c);
+  const int rad = 10;
+  const int m = 0;
+  double k;
+  const int ttot = 1000*rad;  
+\end{comment}
+
+\begin{comment}
+  mat ma(eps, rmax, 0.0, rad);
+  const char *dirname = make_output_directory(argv[0]);
+  printf("Storing output in directory %s/\n", dirname);
+  FILE *ban = create_output_file(dirname, "bands");
+  ma.set_output_directory(dirname);
+\end{comment}
+
+To create the polaritonic material, we add the polarizability to the
+material after we have created it.
+
+\begin{verbatim}
+  ma.add_polarizability(one, 0.4, 0.01, 27.63);//0.1);//
+\end{verbatim}
+
+In order to easily calculate the bandstructure, we start out with a simple
+material with a material with the same epsilon and polarization
+frequencies, but with no coupling between the phonons and the
+electromagnetic fields.
+
+\begin{verbatim}
+  mat vac(&ma);
+  vac.make_average_eps();
+  vac.add_polarizability(one, 0.4, 0.01, 0.0);
+  for (k=0.0;k<30.01 && !stopnow;k+=2.5) {
+    printf("Working on k of %g and m = %d...\n", k, m);
+    fields f(&vac, m);
+    f.use_bloch(k);
+\end{verbatim}
+
+We will rather quickly move from this fake material to the actual
+polaritonic material.
+
+\begin{verbatim}
+    f.phase_in_material(&ma, 10);
+\end{verbatim}
+
+Now we excite the first TE mode (we're only looking at m = 0 here), and
+remember to excite along with it the phonon with which it couples.
+
+\begin{verbatim}
+    f.initialize_with_nth_te(1);
+    f.initialize_polarizations();
+\end{verbatim}
+
+Finally, we compute the band structure as usual.
+
+\begin{verbatim}
+    while (f.is_phasing()) f.step();
+    f.prepare_for_bands(0, ttot, .7+0.5*k/30.0, 30);
+    
+    for (int t=0; t < ttot+1 && !stopnow; t++) {
+      f.record_bands();
+      f.step();
+    }
+    f.output_bands(ban, "band", 16);
+\end{verbatim}
+\begin{comment}
+    fflush(ban);
+  }
+  fclose(ban);
+}
+\end{comment}
+
+The final output of this routine (as calculated using the ``plot'' program)
+is shown in Figure~\ref{polaritonbands}.
