@@ -64,8 +64,11 @@ class mat {
   const char *outdir;
 
   ~mat();
+  mat();
   mat(const volume &v, double eps(const vec &));
   mat(const mat *);
+  void determine_chunkdivision(const volume &v, double eps(const vec &));
+
   void make_average_eps();
   void use_pml_left(double dx);
   void use_pml_right(double dx);

@@ -22,7 +22,16 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
+mat::mat() {
+  num_chunks = 0;
+}
+
 mat::mat(const volume &thev, double eps(const vec &)) {
+  num_chunks = 1;
+  determine_chunkdivision(thev, eps);
+}
+
+void mat::determine_chunkdivision(const volume &thev, double eps(const vec &)) {
   num_chunks = 1;
   v = thev;
   chunks = new (mat_chunk *)[num_chunks];
