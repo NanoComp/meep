@@ -85,10 +85,9 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   i_fprintf(out, "%%%%BoundingBox: 0 0 %lg %lg\n",
            (xmax-xmin)*default_eps_size/size, (ymax-ymin)*default_eps_size/size);
   i_fprintf(out, "gsave\n");
+  i_fprintf(out, "/title (%s) def\n", name);
   i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
   i_fprintf(out, "%lg %lg translate\n", -xmin, -ymin);
-  i_fprintf(out, "/Times-Roman findfont 20 scalefont setfont\n");
-  i_fprintf(out, "newpath 140 280 moveto (%s) show\n", name);
   i_fprintf(out, "/max %lg def\n", fmax);
   const double dx = 1.0/min(a, default_eps_resolution);
   i_fprintf(out, "/dx %lg def\n", dx);
@@ -154,16 +153,15 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
   const double size = xmax - xmin;
   const double fsize = (5.0 < 0.2*size)?0.2*size:5.0;
   const double dx = 1.0/a;
-  i_fprintf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
-           xmin*default_eps_size/size, -default_eps_size*0.5*fsize/size,
-           xmax*default_eps_size/size, default_eps_size*0.5*fsize/size);
+  i_fprintf(out, "%%%%BoundingBox: 0 0 %lg %lg\n",
+           (xmax-xmin)*default_eps_size/size, default_eps_size*fsize/size);
   i_fprintf(out, "gsave\n");
-  i_fprintf(out, "%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
-           xmin*default_eps_size/size, xmax*default_eps_size/size, dx*0.1); 
+  i_fprintf(out, "/title (%s) def\n", name);
   i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
+  i_fprintf(out, "%lg %lg translate\n", -xmin, 0.5*fsize);
+  i_fprintf(out, "%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
+            xmin, xmax, dx*0.1); 
   i_fprintf(out, "/height %lg def\n", (default_eps_size*0.5*fsize)/size);
-  i_fprintf(out, "/Times-Roman findfont 12 scalefont setfont\n");
-  i_fprintf(out, "newpath 220 height 0.75 mul moveto (%s) show\n", name);
   i_fprintf(out, "/max %lg def\n", fmax);
   i_fprintf(out, "/fscale %lg def\n", 2.2*fmax/fsize);
   i_fprintf(out, "/dotrad %lg def\n", dx);
@@ -198,6 +196,8 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
 
 static void eps_trailer(file *out) {
   i_fprintf(out, "grestore\n");
+  i_fprintf(out, "/Times-Roman findfont 16 scalefont setfont\n");
+  i_fprintf(out, "newpath 5 5 moveto title show\n");
   i_fprintf(out, "showpage\n");
   i_fprintf(out, "%%%%Trailer\n");
   i_fprintf(out, "%%%%EOF\n");
