@@ -24,8 +24,9 @@ double get_the_freq(monitor_point *p) {
   complex<double> *amp, *freqs;
   int num;
   p->harminv(Ey, &amp, &freqs, &num, 0.15, 0.20, 8);
-  double best_amp = 0.0, best_freq = 0.0;
-  for (int i=0;i<num;i++)
+  if (!num) return 0.0;
+  double best_amp = abs(amp[0]), best_freq = fabs(real(freqs[0]));
+  for (int i=1;i<num;i++)
     if (abs(amp[i]) > best_amp &&
         fabs(imag(freqs[i])/real(freqs[i])) < 0.002) {
       best_amp = abs(amp[i]);
