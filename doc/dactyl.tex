@@ -114,7 +114,7 @@ Here are the field equations for a PML material:
 \epsilon\frac{dE_{z\phi}}{dt} &=-c \frac{im}r H_r               - \sigma_\phi E_{z\phi} 
 \end{align}
 
-\chapter{Of polaritons and plasmons}
+\chapter{Of polaritons and plasmons}\label{polaritons}
 
 Most real materials, at least in some frequency range, have polarizations
 that are not actually instantaneously proportional to the local electric
@@ -162,9 +162,46 @@ The electric field propogation equations in PML then become:
              - \sigma_z E_{rz} - \frac{dP_{rz}}{dt}\\
 \epsilon\frac{dE_{\phi r}}{dt} &=-c \frac{dH_z}{dr}
              - \sigma_r E_{\phi r} - \frac{dP_{\phi r}}{dt} \\
-\epsilon\frac{dE_{z\phi}}{dt} &=-c \frac{im}r H_r
+\epsilon\frac{dE_{z\phi}}{dt} &=-c \frac{im}r H_r \label{polariton_pml}
              - \sigma_\phi E_{z\phi} - \frac{dP_{z\phi}}{dt}
 \end{align}
+
+\chapter{Hints for writing finite difference time domain code}
+
+(Or \emph{Things I forgot many times, so I wrote down so maybe I won't make
+  the same mistake again.})
+
+There is just one rule to remember when writing time domain code, and that
+is (as Lefteris has repeatedly told me) ``Always know \emph{when} each
+equation is evaluated.''  The trick, of course, lies in knowing how to
+apply this rule, and remembering to actually apply it (and I think the
+latter is perhaps harder than the former).
+
+As an example, I'll convert a PML polariton equation into a finite
+difference equation taken from equation~\ref{polariton_pml} of
+chapter~\ref{polaritons}.
+\begin{equation*}
+\epsilon\frac{dE_{z\phi}}{dt} = -c \frac{im}r H_r
+             - \sigma_\phi E_{z\phi} - \frac{dP_{z\phi}}{dt}
+\end{equation*}
+If we consider the $\mathbf{E}$ timesteps to be at times $n$, $n+1$ etc.,
+then this equation needs to be evaluated at time $n+\frac12$.  This is no
+problem for most of the terms, but it means that the $\sigma_\phi
+E_{z\phi}$ term needs to be an average of its values at time $n$ and
+$n+1$.  In short (taking $\Delta t$ to be unity)...
+\begin{equation*}
+\epsilon (E_{z\phi}^{n+1} - E_{z\phi}^n) = -c \frac{im}r H_r^{n+\frac12}
+  - \sigma_\phi ( E_{z\phi}^{n+1} + E_{z\phi}^n) - (dP_{z\phi}^{n+1} - dP_{z\phi}^n)
+\end{equation*}
+Simplifying a tad gives
+\begin{equation*}
+E_{z\phi}^{n+1} - E_{z\phi}^n = \frac1{\epsilon + \frac12\sigma_\phi}
+    \left(-c \frac{im}r H_r^{n+\frac12}
+  - \sigma_\phi E_{z\phi}^n - (dP_{z\phi}^{n+1} - dP_{z\phi}^n)\right)
+\end{equation*}
+Basically, that is all there is to it.  You now have the equation to
+determine $E_{z\phi}^{n+1}$ from $E_{z\phi}^n$, $\frac{im}r
+H_r^{n+\frac12}$, $dP_{z\phi}^{n+1}$ and $dP_{z\phi}^n$.
 
 \chapter{Tutorial}
 
