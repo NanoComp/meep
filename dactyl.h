@@ -23,6 +23,7 @@ enum component { Er=0, Ep, Ez, Hr, Hp, Hz };
 
 class polarizability;
 class polarization;
+class grace;
 
 class mat {
  public:
@@ -155,6 +156,7 @@ class fields {
   void prepare_for_bands(int z, int ttot, double fmax=0, double qmin=1e300);
   void record_bands();
   complex<double> get_band(int n, int maxbands=100);
+  void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
   void output_bands_and_modes(FILE *, const char *, int maxbands=100);
   double total_energy();
@@ -200,6 +202,27 @@ class fields {
 
 const double c = 0.5;
 const double pi = 3.141592653589793238462643383276L;
+
+class grace_point;
+enum grace_type { XY, ERROR_BARS };
+
+class grace {
+ public:
+  grace(const char *fname, const char *dirname = "");
+  ~grace();
+  
+  void new_set(grace_type t = XY);
+  void new_curve();
+  void set_legend(const char *);
+  void output_point(double x, double y, double dy = -1.0);
+  void output_out_of_order(int n, double x, double y, double dy = -1.0);
+ private:
+  void flush_pts();
+  FILE *f;
+  const char *fn, *dn;
+  grace_point *pts;
+  int set_num,sn;
+};
 
 // The following is a utility function to parse the executable name use it
 // to come up with a directory name, avoiding overwriting any existing

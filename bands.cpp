@@ -326,6 +326,18 @@ void fields::output_bands_and_modes(FILE *o, const char *name, int maxbands) {
   out_bands(o, name, maxbands, 1);
 }
 
+void fields::grace_bands(grace *g, int maxbands) {
+  complex<double> *fad = get_the_bands(maxbands);
+
+  int num_found = 0;
+  for (int i=0;i<maxbands;i++) if (fad[i] != 0) num_found = i+1;
+
+  for (int i = 0; i < num_found; ++i) {
+    g->output_out_of_order(i, k, fabs(real(fad[i])), fabs(imag(fad[i])));
+  }
+  delete[] fad;
+}
+
 void fields::output_bands(FILE *o, const char *name, int maxbands) {
   out_bands(o, name, maxbands, 0);
 }
