@@ -350,6 +350,21 @@ class ivec {
     return true;
   };
 
+  bool operator>=(const ivec &a) const {
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] < a.t[d]) return false;
+    return true;
+  };
+
+  bool operator<(const ivec &a) const {
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] >= a.t[d]) return false;
+    return true;
+  };
+
+  bool operator>(const ivec &a) const {
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] <= a.t[d]) return false;
+    return true;
+  };
+
   ivec operator*(int s) const {
     ivec result = *this;
     LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= s;
