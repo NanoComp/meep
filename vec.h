@@ -49,6 +49,14 @@ inline direction stop_at_direction(ndim dim) {
                                         c < Hx; c = (component) (c+1))
 #define FOR_MAGNETIC_COMPONENTS(c) for (component c = Hz; \
                                         c > Ez; c = (component) (c-1))
+#define FOR_COMPONENTS(c) for (component c = Ex,loop_stop_co=Ey; \
+                               c != loop_stop_co; \
+                               c = (component)((c+1)%10), \
+                               loop_stop_co = Ex)
+#define FOR_DIRECTIONS(d) for (direction d = X,loop_stop_di=Y; \
+                               d != loop_stop_di; \
+                               d = (direction)((d+1)%5), \
+                               loop_stop_di = X)
 
 #define LOOP_OVER_DIRECTIONS(dim, d) for (direction d = start_at_direction(dim), \
                                      loop_stop_directi = stop_at_direction(dim); \

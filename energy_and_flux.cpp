@@ -124,8 +124,8 @@ double fields_chunk::electric_energy_in_box(const volume &otherv,
                                             const symmetry &S) {
   double energy = 0;
   DOCMP
-    for (int c=0;c<10;c++)
-      if (f[c][cmp] && is_electric((component)c))
+    FOR_ELECTRIC_COMPONENTS(c)
+      if (f[c][cmp])
         for (int i=0;i<v.ntot();i++) {
           const ivec p0 = v.iloc((component)c,i);
           if (S.is_primitive(p0) && v.owns(p0)) {
@@ -135,8 +135,11 @@ double fields_chunk::electric_energy_in_box(const volume &otherv,
             for (int sn=0;sn<S.multiplicity();sn++) {
               const ivec pn = S.transform(p0,sn);
               if (otherv.owns(pn))
+                // FIXME I need to rewrite this to deal with anisotropic
+                // dielectric stuff.
                 energy += otherv.intersection(v.dV(pn))*
-                  f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i])
+                  f[c][cmp][i]*
+                  (1./ma->inveps[c][component_direction(c)][i]*f[c][cmp][i])
                   /num_times_mapped_to_self;
             }
           }

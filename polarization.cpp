@@ -383,14 +383,16 @@ void fields_chunk::step_e_polarization(polarization *op, polarization *np) {
     step_e_polarization(olpol, pol);
   } else if (olpol != NULL && pol != NULL) {
     DOCMP {
-      for (int cc=0;cc<10;cc++)
+      FOR_ELECTRIC_COMPONENTS(cc)
         if (op->P[cc][cmp] && f[cc][cmp]) {
           for (int i=0;i<v.ntot();i++)
-            f[cc][cmp][i] -= ma->inveps[cc][i]*(np->P[cc][cmp][i]-op->P[cc][cmp][i]);
+            f[cc][cmp][i] -= ma->inveps[cc][component_direction(cc)][i]*
+              (np->P[cc][cmp][i]-op->P[cc][cmp][i]);
           if (f_pml[cc][cmp])
             for (int i=0;i<v.ntot();i++)
               f_pml[cc][cmp][i] -=
-                ma->inveps[cc][i]*(np->P_pml[cc][cmp][i]-op->P_pml[cc][cmp][i]);
+                ma->inveps[cc][component_direction(cc)][i]*
+                (np->P_pml[cc][cmp][i]-op->P_pml[cc][cmp][i]);
         }
     }
     if (op->next && np->next) step_e_polarization(op->next, np->next);

@@ -124,11 +124,15 @@ void mat::mix_with(const mat *oth, double f) {
 }
 
 mat_chunk::~mat_chunk() {
-  for (int c=0;c<10;c++) delete[] inveps[c];
+  FOR_ELECTRIC_COMPONENTS(c)
+    FOR_DIRECTIONS(d)
+      delete[] inveps[c][d];
   delete[] eps;
 
-  for (int d=0;d<5;d++) for (int c=0;c<10;c++) delete[] C[d][c];
-  for (int d=0;d<5;d++) for (int c=0;c<10;c++) delete[] Cdecay[d][c];
+  FOR_ELECTRIC_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] C[d][c];
+  FOR_ELECTRIC_COMPONENTS(c)
+    FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2)
+        delete[] Cdecay[d][c][d2];
   if (pb) delete pb;
 }
 
@@ -189,10 +193,10 @@ static double sig(double r, double power) {
 void mat_chunk::mix_with(const mat_chunk *n, double f) {
   for (int i=0;i<v.ntot();i++)
     eps[i] = 1.0/(1.0/eps[i] + f*(1.0/n->eps[i]-1.0/eps[i]));
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c))
+  FOR_ELECTRIC_COMPONENTS(c) FOR_DIRECTIONS(d)
+    if (inveps[c][d])
       for (int i=0;i<v.ntot();i++)
-        inveps[c][i] += f*(n->inveps[c][i] - inveps[c][i]);
+        inveps[c][d][i] += f*(n->inveps[c][d][i] - inveps[c][d][i]);
   // Mix in the polarizability...
   polarizability *po = pb, *pn = n->pb;
   while (po && pn) {
@@ -208,15 +212,15 @@ void mat_chunk::mix_with(const mat_chunk *n, double f) {
 void mat_chunk::make_average_eps() {
   double meaneps = 0;
   for (int i=0;i<v.ntot();i++) {
-    meaneps += eps[i]; // This isn't quite correct as some points are counted twice...
+    meaneps += eps[i]; // This is totally wrong, as it needs parallelization.
   }
   meaneps /= v.ntot();
   for (int i=0;i<v.ntot();i++)
     eps[i] = meaneps;
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c))
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (v.has_field(c))
       for (int i=0;i<v.ntot();i++)
-        inveps[c][i] = 1/meaneps;
+        inveps[c][component_direction(c)][i] = 1/meaneps;
 }
 
 const double Cmax = 0.5;
@@ -226,28 +230,35 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
   // Don't bother with PML if we don't even overlap with the PML region...
   if (bloc > v.boundary_location(High,d) + dx + 1.0/a ||
       bloc < v.boundary_location(Low,d) - dx - 1.0/a) return;
-  if (is_mine())
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c) && component_direction((component)c) != d) {
+  if (is_mine()) {
+    FOR_COMPONENTS(c)
+      if (inveps[c][component_direction(c)] && component_direction(c) != d) {
         if (!C[d][c]) {
           C[d][c] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
-          Cdecay[d][c] = new double[v.ntot()];
-          if (is_electric((component)c))
-            for (int i=0;i<v.ntot();i++) Cdecay[d][c][i] = inveps[c][i];
-          else
-            for (int i=0;i<v.ntot();i++) Cdecay[d][c][i] = 1.0;
         }
         for (int i=0;i<v.ntot();i++) {
           const double x = dx - (0.5/a)*
             ((int)(2*a*fabs(bloc-v.loc((component)c,i).in_direction(d))+0.5));
           if (x > 0) C[d][c][i] = prefac*x*x;
-          if (is_electric((component)c))
-            Cdecay[d][c][i] = inveps[c][i]/(1.0+0.5*C[d][c][i]*inveps[c][i]);
-          else
-            Cdecay[d][c][i] = 1.0/(1.0+0.5*C[d][c][i]);
         }
       }
+    FOR_COMPONENTS(c) FOR_DIRECTIONS(d2)
+      if ((inveps[c][d2] || d2 == d) && d2 != d) {
+        if (!Cdecay[d][c][d2]) {
+          Cdecay[d][c][d2] = new double[v.ntot()];
+          if (is_electric(c))
+            for (int i=0;i<v.ntot();i++) Cdecay[d][c][d2][i] = inveps[c][d2][i];
+          else
+            for (int i=0;i<v.ntot();i++) Cdecay[d][c][d][i] = 1.0;
+        }
+        for (int i=0;i<v.ntot();i++) {
+          if (is_magnetic(c)) Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]);
+          else Cdecay[d][c][d2][i] =
+                 inveps[c][d2][i]/(1.0+0.5*C[d][c][i]*inveps[c][d2][i]);
+        }
+      }
+  }
 }
 
 mat_chunk::mat_chunk(const mat_chunk *o) {
@@ -264,26 +275,30 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
   } else {
     eps = NULL;
   }
-  for (int c=0;c<10;c++)
-    if (is_mine() && v.has_field((component)c) && is_electric((component)c)) {
-      inveps[c] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) inveps[c][i] = o->inveps[c][i];
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
+    if (is_mine() && o->inveps[c][d]) {
+      inveps[c][d] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) inveps[c][d][i] = o->inveps[c][d][i];
     } else {
-      inveps[c] = NULL;
+      inveps[c][d] = NULL;
     }
   // Allocate the conductivity arrays:
-  for (int d=0;d<5;d++) for (int c=0;c<10;c++) C[d][c] = NULL;
-  for (int d=0;d<5;d++) for (int c=0;c<10;c++) Cdecay[d][c] = NULL;
+  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
+  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) FOR_DIRECTIONS(d2)
+    Cdecay[d][c][d2] = NULL;
   // Copy over the conductivity arrays:
   if (is_mine())
-    for (int d=0;d<5;d++) 
-      for (int c=0;c<10;c++)
-        if (o->C[d][c]) {
-          C[d][c] = new double[v.ntot()];
-          Cdecay[d][c] = new double[v.ntot()];
-          for (int i=0;i<v.ntot();i++) C[d][c][i] = o->C[d][c][i];
-          for (int i=0;i<v.ntot();i++) Cdecay[d][c][i] = o->Cdecay[d][c][i];
-        }
+    FOR_DIRECTIONS(d) FOR_COMPONENTS(c)
+      if (o->C[d][c]) {
+        C[d][c] = new double[v.ntot()];
+        for (int i=0;i<v.ntot();i++) C[d][c][i] = o->C[d][c][i];
+        FOR_DIRECTIONS(d2)
+          if (o->Cdecay[d][c][d2]) {
+            Cdecay[d][c][d2] = new double[v.ntot()];
+            for (int i=0;i<v.ntot();i++)
+              Cdecay[d][c][d2][i] = o->Cdecay[d][c][d2][i];
+          }
+      }
 }
 
 mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
@@ -300,13 +315,14 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
   } else {
     eps = NULL;
   }
-  for (int c=0;c<10;c++)
-    if (is_mine() && v.has_field((component)c) && is_electric((component)c)) {
-      inveps[c] = new double[v.ntot()];
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
+    if (is_mine() && v.has_field(c) && is_electric(c) &&
+        d == component_direction(c)) {
+      inveps[c][d] = new double[v.ntot()];
       // Initialize eps to 1;
-      for (int i=0;i<v.ntot();i++) inveps[c][i] = 1;
+      for (int i=0;i<v.ntot();i++) inveps[c][d][i] = 1;
     } else {
-      inveps[c] = NULL;
+      inveps[c][d] = NULL;
     }
   if (is_mine())
     if (v.dim == Dcyl) {
@@ -314,34 +330,34 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
       const vec dz = v.dz()*0.5; // The distance between Yee field components
       for (int i=0;i<v.ntot();i++) {
         const vec here = v.loc(Ep,i);
-        inveps[Er][i] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
-        inveps[Ep][i] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
-                            feps(here+dr-dz) + feps(here-dr-dz));
-        inveps[Ez][i] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
+        inveps[Er][R][i] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
+        inveps[Ep][P][i] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
+                               feps(here+dr-dz) + feps(here-dr-dz));
+        inveps[Ez][Z][i] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
       }
     } else if (v.dim == D1) {
-      for (int i=0;i<v.ntot();i++) inveps[Ex][i] = 1.0/eps[i];
+      for (int i=0;i<v.ntot();i++) inveps[Ex][X][i] = 1.0/eps[i];
     } else if (v.dim == D2) {
-      if (inveps[Ez])
-        for (int i=0;i<v.ntot();i++) inveps[Ez][i] = 1.0/eps[i];
+      if (inveps[Ez][Z])
+        for (int i=0;i<v.ntot();i++) inveps[Ez][Z][i] = 1.0/eps[i];
       const vec hdx = v.dx()*0.5;;
-      if (inveps[Ex])
+      if (inveps[Ex][X])
         for (int i=0;i<v.ntot();i++) {
           const vec here = v.loc(Ex,i);
-          inveps[Ex][i] = 2.0/(feps(here+hdx)+feps(here-hdx));
+          inveps[Ex][X][i] = 2.0/(feps(here+hdx)+feps(here-hdx));
         }
       const vec hdy = v.dy()*0.5;;
-      if (inveps[Ey])
+      if (inveps[Ey][Y])
         for (int i=0;i<v.ntot();i++) {
           const vec here = v.loc(Ey,i);
-          inveps[Ey][i] = 2.0/(feps(here+hdy)+feps(here-hdy));
+          inveps[Ey][Y][i] = 2.0/(feps(here+hdy)+feps(here-hdy));
         }
     } else {
       abort("Unsupported symmetry!\n");
     }
   // Allocate the conductivity arrays:
-  for (int d=0;d<5;d++) for (int c=0;c<10;c++) C[d][c] = NULL;
-  for (int d=0;d<5;d++) for (int c=0;c<10;c++) Cdecay[d][c] = NULL;
+  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
+  FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;
 }
 
 double mat::max_eps() const {

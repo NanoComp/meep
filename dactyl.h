@@ -32,9 +32,9 @@ class grace;
 class mat_chunk {
  public:
   double *eps, a;
-  double *inveps[10];
+  double *inveps[10][5];
   double *C[5][10];
-  double *Cdecay[5][10];
+  double *Cdecay[5][10][5];
   volume v;
   polarizability *pb;
 
