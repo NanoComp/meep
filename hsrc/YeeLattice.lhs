@@ -3,8 +3,8 @@ module YeeLattice ( loop_points, loop_inner,
                     consider_electric_polarizations, consider_all_directions,
                     loop_electric_fields, sum_over_components,
                     sum_over_components_with_prefactor,
-                    loop_over_components, mean_component,
                     using_symmetry,
+                    sum_D_function_on_eps_point,
                   ) where
 
 import List ( (\\) )
@@ -87,35 +87,10 @@ loop_electric_fields x =
                               " = " << with_symmetry (dc n),
                       doexp $ "const component ec_"<<show n<<
                               " = direction_component(ec,d_" << show n<<")",
+                      doexp $ "const component dc_"<<show n<<
+                              " = direction_component(dc,d_" << show n<<")",
                       doexp $ "const int s_"++show n++
                               " = stride_any_direction[d_"++show n++"]"]
-
-loop_over_components :: Code -> Code
-loop_over_components job = using_symmetry dojob
-    where dojob "1D" = job
-          dojob "2DTM" = job
-          dojob "2DTE" = for_any_one_of ["Am_on_ec","Am_on_ec_1"] job
-          dojob _ = for_any_one_of ["Am_on_ec","Am_on_ec_1","Am_on_ec_2"] job
-
-
-mean_component :: (String -> String -> Expression) -> Expression
-mean_component e = with_symmetry domean
-    where domean "1D" = e "ec" "i"
-          domean "2DTM" = e "ec" "i"
-          domean "2DTE" = ("Am_on_ec")|?| e "ec" "i" |:|
-                          "0.25"|*|(e "ec_1" "i" |+|
-                                    e "ec_1" "i-s_1" |+|
-                                    e "ec_1" "i+s_ec" |+|
-                                    e "ec_1" "i-s_1+s_ec")
-          domean _ =  ("Am_on_ec") |?| e "ec" "i" |:|
-                   (("Am_on_ec_1") |?| ("0.25"|*|(e "ec_1" "i" |+|
-                                                  e "ec_1" "i-s_1" |+|
-                                                  e "ec_1" "i+s_ec" |+|
-                                                  e "ec_1" "i-s_1+s_ec"))
-                                   |:| ("0.25"|*|(e "ec_2" "i" |+|
-                                                  e "ec_2" "i-s_2" |+|
-                                                  e "ec_2" "i+s_ec" |+|
-                                                  e "ec_2" "i-s_2+s_ec")))
 
 sum_over_components :: (String -> String -> Expression) -> Expression
 sum_over_components = sum_over_gen_component "ec"
@@ -163,9 +138,23 @@ sum_over_components_with_prefactor pre e = with_symmetry sumit
 
 {- The following bit loops over "owned" points -}
 
+declare_strides :: Code -> Code
+declare_strides job = using_symmetry ds
+    where ds "1D" = docode [doexp $ s "Z", job]
+          ds "3D" = docode $ map (doexp . s) ["X","Y","Z"] ++ [job]
+          ds "CYLINDRICAL" = docode $ map (doexp . s) ["R","Z"] ++ [job]
+          ds _ = docode $ map (doexp . s) ["X","Y"] ++ [job]
+          s d = ("const int s" ++ d) |=| actual_stride d
+
+actual_stride :: String -> Expression
+actual_stride d = ("stride_any_direction["++d++"]") |?|
+                  (("stride_any_direction["++d++"]==1")|?|"1"
+                   |:|("stride_any_direction["++d++"]"))
+                      |:| "0"
 stride d = ("stride_any_direction["++d++"]") |?|
-           (("stride_any_direction["++d++"]==1")|?|"1"|:|("stride_any_direction["++d++"]"))
-           |:| "0"
+           (("stride_any_direction["++d++"]==1")|?|"1"
+            |:|("s" ++ d)) |:| "0"
+
 ind d = casedef ["num_any_direction["++d++"]==1"] (\_ -> "0") $ "i"++d
 num d = casedef ["num_any_direction["++d++"]==1"] (\_ -> "1") $ "num_any_direction["++d++"]"
 
@@ -174,9 +163,10 @@ define_i =
                           |+| ind "X" |*| stride "X" |+| ind "Y" |*| stride "Y"
                           |+| ind "Z" |*| stride "Z" |+| ind "R" |*| stride "R"
 
-loop_inner job = consider_all_directions $ lad ["X","Y","R","Z"] job
-    where lad [] job = docode [define_i, job]
-          lad (d:ds) job = loop_direction d $ lad ds job
+loop_inner :: Code -> Code
+loop_inner job = consider_all_directions $ declare_strides $ lad ["X","Y","R","Z"]
+    where lad [] = docode [define_i, job]
+          lad (d:ds) = loop_direction d $ lad ds
 
 consider_all_directions job =
     look_for_short $ consider_directions ["Z","R","X","Y"] job
@@ -214,6 +204,22 @@ loop_direction d job =
                "i"<<d<<"<"<<num d<<"; "<<
                ("i"<<d<<"++")<<")") job))
     job
+
+sum_D_function_on_eps_point :: (String -> String -> Expression) -> Expression
+sum_D_function_on_eps_point e = with_symmetry sumit
+    where sumit "1D" = "0.5" |*| two_D "Dx" "Z"
+          sumit "2DTE" = "0.5" |*| (two_D "Dy" "X" |+| two_D "Dx" "Y")
+          sumit "2DTM" = "0.25" |*| (four_D "Dz" "X" "Y")
+          sumit "CYLINDRICAL" = "0.5" |*| (two_D "Dz" "R" |+| two_D "Dr" "Z") |+| 
+                                "0.25" |*| (four_D "Dp" "R" "Z")
+          sumit "2D" = "0.5" |*| (two_D "Dy" "X" |+| two_D "Dx" "Y")
+                     |+| "0.25" |*| four_D "Dz" "X" "Y"
+          sumit "3D" = "0.25" |*| (four_D "Dz" "X" "Y" |+|
+                                   four_D "Dx" "Y" "Z" |+|
+                                   four_D "Dy" "X" "Z")
+          two_D f d = e f "i" |+| e f ("i+s" ++ d)
+          four_D f d1 d2 = e f "i" |+| e f ("i+s" ++ d1)
+                       |+| e f ("i+s" ++ d2) |+| e f ("i+s"++d1++"+s"++d2) 
 \end{code}
 
 \begin{code}

@@ -361,6 +361,17 @@ void structure::set_epsilon(double eps(const vec &), double minvol,
   set_epsilon(epsilon, minvol, use_anisotropic_averaging);
 }
 
+void structure::set_kerr(material_function &eps) {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->set_kerr(eps);
+}
+
+void structure::set_kerr(double eps(const vec &)) {
+  simple_material_function epsilon(eps);
+  set_kerr(epsilon);
+}
+
 void structure::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
   volume pml_volume = v;
   pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
@@ -571,6 +582,14 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
   } else {
     eps = NULL;
   }
+  FOR_COMPONENTS(c)
+    if (is_mine() && o->kerr[c]) {
+      kerr[c] = new double[v.ntot()];
+      if (kerr[c] == NULL) abort("Out of memory!\n");
+      for (int i=0;i<v.ntot();i++) kerr[c][i] = o->kerr[c][i];
+    } else {
+      kerr[c] = NULL;
+    }
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
     if (is_mine() && o->inveps[c][d]) {
       inveps[c][d] = new double[v.ntot()];
@@ -600,6 +619,30 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
 // The following is defined in anisotropic_averaging.cpp:
 double anisoaverage(component ec, direction d, material_function &eps,
                     const geometric_volume &vol, double minvol);
+
+void structure_chunk::set_kerr(material_function &epsilon) {
+  if (!is_mine()) return;
+  
+  epsilon.set_volume(v.pad().surroundings());
+
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (inveps[c][component_direction(c)]) {
+      if (!kerr[c]) kerr[c] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) {
+        const vec here = v.loc(c,i);
+        kerr[c][i] = epsilon.kerr(here);
+        LOOP_OVER_DIRECTIONS(v.dim,d)
+          if (d != component_direction(c)) {
+            vec dx = zero_vec(v.dim);
+            dx.set_direction(d,0.5/a);
+            // Following TD3D, we set kerr coefficient to zero if any of
+            // the adjoining epsilon points is linear.
+            kerr[c][i] = min(kerr[c][i], epsilon.kerr(here + dx));
+            kerr[c][i] = min(kerr[c][i], epsilon.kerr(here - dx));
+          }
+      }
+    }
+}
 
 void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
                             bool use_anisotropic_averaging) {
@@ -663,6 +706,7 @@ structure_chunk::structure_chunk(const volume &thev, material_function &epsilon,
   the_proc = pr;
   the_is_mine = n_proc() == my_rank();
   eps = NULL;
+  FOR_COMPONENTS(c) kerr[c] = NULL;
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
     if (is_mine() && v.has_field(c) && is_electric(c) &&
         d == component_direction(c)) {
@@ -673,6 +717,7 @@ structure_chunk::structure_chunk(const volume &thev, material_function &epsilon,
       inveps[c][d] = NULL;
     }
   set_epsilon(epsilon, 0.0, false);
+  if (epsilon.has_kerr()) set_kerr(epsilon);
   // Allocate the conductivity arrays:
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
   FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;

@@ -841,6 +841,33 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   return 1;
 }
 
+double nonlinear_ex(const volume &v, double eps(const vec &)) {
+  const double ttot = 10.0;
+  master_printf("Testing nonlinear in %s...\n", dimension_name(v.dim));
+  the_center = v.center();
+  const symmetry S = mirror(Z,v);
+  structure s(v, eps);
+  structure sS(v, eps, 0, S);
+  s.set_kerr(one);
+  sS.set_kerr(one);
+  fields f(&s);
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  fields fS(&s);
+  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.use_real_fields();
+  fS.use_real_fields();
+  f.use_bloch(zero_vec(v.dim));
+  fS.use_bloch(zero_vec(v.dim));
+  while (f.time() < ttot) {
+    f.step();
+    fS.step();
+    if (!compare_point(fS, f, v.center())) return 0;
+    if (!compare_point(fS, f, zero_vec(v.dim))) return 0;
+    if (!compare_point(fS, f, v.center()*0.3)) return 0;
+  }
+  return 1;
+}
+
 double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   master_printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
@@ -899,6 +926,12 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   trash_output_directory(dirname);
   master_printf("Testing with various kinds of symmetry...\n");
+
+  if (!nonlinear_ex(vol1d(1.0, 10.0), one))
+    abort("error in 1D nonlinear vacuum\n");
+
+  if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
+    abort("error in 3D nonlinear vacuum\n");
 
   if (!polariton_ex(vol1d(1.0, 10.0), one))
     abort("error in 1D polariton vacuum\n");

@@ -5,13 +5,15 @@ import YeeLattice
 main = putStr $ gencode $ job
 
 job = with_d_minus_p $ whether_or_not "e_sources" $ consider_electric_polarizations $
-      docode [
-        loop_electric_fields $ docode [
-          prepare_polarizations,
-          for_complex $ calc_d_minus_p
-        ],
-	calc_d_minus_p_sources,
-        loop_electric_fields $ regardless_of_inveps $ for_complex $ update_e_from_d_minus_p
+      docode
+      [
+       loop_electric_fields $ docode
+       [
+        prepare_polarizations,
+        for_complex $ calc_d_minus_p
+       ],
+	   calc_d_minus_p_sources,
+       loop_electric_fields $ regardless_of_inveps $ update_e_from_d_minus_p
       ]
 
 d_minus_p c i = ("have_nonzero_polarization")|?|("d_minus_p["<<c<<"]["<<cmp<<"]["<<i<<"]")
@@ -77,9 +79,23 @@ half_step_polarization_energy =
 {- Here is where we compute E from D - P -}
 
 update_e_from_d_minus_p =
-    whether_or_not "p_here" $ loop_inner $
-        doexp $ ("f[ec]["<<cmp<<"][i]") |=|
-               sum_over_components_with_prefactor (\c -> inveps c "i") (\c i-> d_minus_p c i)
+    ifelse_ ("s->kerr[ec]") update_e_from_d_minus_p_nonlinear update_e_from_d_minus_p_linear
+
+update_e_from_d_minus_p_linear =
+    whether_or_not "p_here" $ for_complex $ loop_inner $
+     doexp $ ("f[ec]["<<cmp<<"][i]") |=|
+         sum_over_components_with_prefactor (\c -> inveps c "i") (\c i-> d_minus_p c i)
+
+update_e_from_d_minus_p_nonlinear =
+    whether_or_not "p_here" $ whether_or_not "is_real" $ loop_inner $ 
+    docode
+    [
+     doexp $ "const double dsqr_here" |=|
+         sum_over_components (\c i-> sqr_complex (d_minus_p c i)),
+     doexp $ "const double frac_change" |=| "calc_nonlinear_inveps(dsqr_here, s->inveps[ec][d_ec][i], s->kerr[ec][i])",
+     loop_complex $ doexp $ ("f[ec]["<<cmp<<"][i]") |=| "frac_change" |*|
+         sum_over_components_with_prefactor (\c -> inveps c "i") (\c i-> d_minus_p c i)
+    ]
 
 regardless_of_inveps job =
     declare "s->inveps[ec][d_ec]" True $

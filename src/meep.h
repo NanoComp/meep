@@ -71,7 +71,12 @@ class material_function {
 				     double delta_epsilon,
 				     double energy_saturation) {}
 
-     // TODO: Kerr coefficient, dielectric tensor, ...
+  // Kerr coefficient
+
+  virtual bool has_kerr() { return false; }
+  virtual double kerr(const vec &r) { return 0.0; }
+
+     // TODO: dielectric tensor, ...
 };
 
 class simple_material_function : public material_function {
@@ -84,11 +89,12 @@ class simple_material_function : public material_function {
 
      virtual double eps(const vec &r) { return f(r); }
      virtual double sigma(const vec &r) { return f(r); }
+     virtual double kerr(const vec &r) { return f(r); }
 };
 
 class structure_chunk {
  public:
-  double *eps, a;
+  double *eps, a, *kerr[NUM_FIELD_COMPONENTS];
   double *inveps[NUM_FIELD_COMPONENTS][5];
   double *C[5][NUM_FIELD_COMPONENTS];
   double *Cdecay[5][NUM_FIELD_COMPONENTS][5];
@@ -102,6 +108,7 @@ class structure_chunk {
   structure_chunk(const structure_chunk *);
   void set_epsilon(material_function &eps, double minvol,
                    bool use_anisotropic_averaging);
+  void set_kerr(material_function &eps);
   void make_average_eps();
   void use_pml(direction, double dx, double boundary_loc);
   void update_pml_arrays();
@@ -151,6 +158,8 @@ class structure {
                    bool use_anisotropic_averaging=true);
   void set_epsilon(double eps(const vec &), double minvol = 0.0,
                    bool use_anisotropic_averaging=true);
+  void set_kerr(material_function &eps);
+  void set_kerr(double eps(const vec &));
   void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
   void redefine_chunks(const int Nv, const volume *new_volumes, const int *procs);
   void optimize_volumes(int *Nv, volume *new_volumes, int *procs);
