@@ -349,7 +349,7 @@ static double integrate_envelope(const src *s) {
     exit(1);
   }
   double sofar = 0.0;
-  for (int t=0;1<<30;t++) {
+  for (int t=0;t<(1<<30);t++) {
     double e = s->get_envelope_at_time(t);
     sofar += e;
     if (e == 0) break; // But here if there is a source that starts late,
