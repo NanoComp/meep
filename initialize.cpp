@@ -62,7 +62,7 @@ void fields::initialize_with_nth_te(int np0) {
 }
 
 void fields_chunk::initialize_with_nth_te(int np0, double kz) {
-  if (v.dim == dcyl) {
+  if (v.dim == Dcyl) {
     const int n = (m==0) ? np0 - 0 : np0 - 1;
     const double rmax = Jmax(m,n);
     ktrans = rmax/(v.nr()*inva);
@@ -80,7 +80,7 @@ void fields::initialize_with_nth_tm(int np0) {
 }
 
 void fields_chunk::initialize_with_nth_tm(int np1, double kz) {
-  if (v.dim == dcyl) {
+  if (v.dim == Dcyl) {
     const int n = np1 - 1;
     const double rroot = Jroot(m,n);
     ktrans = rroot/(v.nr()*inva);

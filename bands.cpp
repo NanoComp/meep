@@ -96,7 +96,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
       epsmax = max(epsmax, chunks[h]->ma->eps[i]);
 
   double cutoff_freq = 0.0;
-  if (v.dim == dcyl) {
+  if (v.dim == Dcyl) {
     cutoff_freq = 1.84*c/(2*pi)/v.nr()/sqrt(epsmax);
     if (m == 0) cutoff_freq *= 0.5;
   }
@@ -360,7 +360,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
         }
         if (freqs_so_far + maxbands > max_freqs) break;
       }
-  if (k == 0 && v.dim == dcyl && m != 0) fields_considered /= 2;
+  if (k == 0 && v.dim == Dcyl && m != 0) fields_considered /= 2;
   num_found = cluster_some_bands_cleverly(tf, td, ta, freqs_so_far, fields_considered,
                                           maxbands, fad, approx_power);
   delete[] ta;

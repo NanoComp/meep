@@ -23,7 +23,7 @@
 using namespace std;
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz };
-enum ndim { d1=0, d2, d3, dcyl };
+enum ndim { D1=0, D2, D3, Dcyl };
 enum field_type { E_stuff=0, H_stuff=1 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P };
@@ -34,9 +34,9 @@ struct signed_direction {
 };
 
 inline signed_direction flip(signed_direction d) {
-  signed_direction d2 = d;
-  d2.flipped = !d.flipped;
-  return d2;
+  signed_direction D2 = d;
+  D2.flipped = !d.flipped;
+  return D2;
 }
 
 inline int is_electric(component c) { return (int) c < 5; }
@@ -69,68 +69,68 @@ inline component direction_component(component c, direction d) {
 
 class vec {
  public:
-  vec() { dim = d2; t[X] = t[Y] = 0; };
-  vec(double zz) { dim = d1; t[Z] = zz; };
-  vec(double rr, double zz) { dim = dcyl; t[R] = rr; t[Z] = zz; };
+  vec() { dim = D2; t[X] = t[Y] = 0; };
+  vec(double zz) { dim = D1; t[Z] = zz; };
+  vec(double rr, double zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
   vec(double xx, double yy, double zz) {
-    dim = d3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
+    dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
   friend vec vec2d(double xx, double yy);
   ~vec() {};
 
   vec operator+(const vec &a) const {
     switch (dim) {
-    case dcyl: return vec(t[R]+a.t[R],t[Z]+a.t[Z]);
-    case d3: return vec(t[X]+a.t[X],t[Y]+a.t[Y],t[Z]+a.t[Z]);
-    case d2: return vec2d(t[X]+a.t[X],t[Y]+a.t[Y]);
-    case d1: return vec(t[Z]+a.t[Z]);
+    case Dcyl: return vec(t[R]+a.t[R],t[Z]+a.t[Z]);
+    case D3: return vec(t[X]+a.t[X],t[Y]+a.t[Y],t[Z]+a.t[Z]);
+    case D2: return vec2d(t[X]+a.t[X],t[Y]+a.t[Y]);
+    case D1: return vec(t[Z]+a.t[Z]);
     }
   };
   vec operator+=(const vec &a) {
     switch (dim) {
-    case dcyl: t[R] += a.t[R]; t[Z] += a.t[Z]; return *this;
-    case d3: t[X] += a.t[X]; t[Y] += a.t[Y]; t[Z] += a.t[Z]; return *this;
-    case d2: t[X] += a.t[X]; t[Y] += a.t[Y]; return *this;
-    case d1: t[Z] += a.t[Z]; return vec(t[Z]+a.t[Z]);
+    case Dcyl: t[R] += a.t[R]; t[Z] += a.t[Z]; return *this;
+    case D3: t[X] += a.t[X]; t[Y] += a.t[Y]; t[Z] += a.t[Z]; return *this;
+    case D2: t[X] += a.t[X]; t[Y] += a.t[Y]; return *this;
+    case D1: t[Z] += a.t[Z]; return vec(t[Z]+a.t[Z]);
     }
   };
   vec operator-=(const vec &a) {
     switch (dim) {
-    case dcyl: t[R] -= a.t[R]; t[Z] -= a.t[Z]; return *this;
-    case d3: t[X] -= a.t[X]; t[Y] -= a.t[Y]; t[Z] -= a.t[Z]; return *this;
-    case d2: t[X] -= a.t[X]; t[Y] -= a.t[Y]; return *this;
-    case d1: t[Z] -= a.t[Z]; return vec(t[Z]-a.t[Z]);
+    case Dcyl: t[R] -= a.t[R]; t[Z] -= a.t[Z]; return *this;
+    case D3: t[X] -= a.t[X]; t[Y] -= a.t[Y]; t[Z] -= a.t[Z]; return *this;
+    case D2: t[X] -= a.t[X]; t[Y] -= a.t[Y]; return *this;
+    case D1: t[Z] -= a.t[Z]; return vec(t[Z]-a.t[Z]);
     }
   };
   vec operator-(const vec &a) const {
     switch (dim) {
-    case dcyl: return vec(t[R]-a.t[R],t[Z]-a.t[Z]);
-    case d3: return vec(t[X]-a.t[X],t[Y]-a.t[Y],t[Z]-a.t[Z]);
-    case d2: return vec2d(t[X]-a.t[X],t[Y]-a.t[Y]);
-    case d1: return vec(t[Z]-a.t[Z]);
+    case Dcyl: return vec(t[R]-a.t[R],t[Z]-a.t[Z]);
+    case D3: return vec(t[X]-a.t[X],t[Y]-a.t[Y],t[Z]-a.t[Z]);
+    case D2: return vec2d(t[X]-a.t[X],t[Y]-a.t[Y]);
+    case D1: return vec(t[Z]-a.t[Z]);
     }
   };
   bool operator!=(const vec &a) const {
     switch (dim) {
-    case dcyl: return t[R]!=a.t[R] || t[Z]!=a.t[Z];
-    case d3: return t[X]!=a.t[X] || t[Y]!=a.t[Y] || t[Z]!=a.t[Z];
-    case d2: return t[X]!=a.t[X] || t[Y]!=a.t[Y];
-    case d1: return t[Z]!=a.t[Z];
+    case Dcyl: return t[R]!=a.t[R] || t[Z]!=a.t[Z];
+    case D3: return t[X]!=a.t[X] || t[Y]!=a.t[Y] || t[Z]!=a.t[Z];
+    case D2: return t[X]!=a.t[X] || t[Y]!=a.t[Y];
+    case D1: return t[Z]!=a.t[Z];
     }
   };
   bool operator==(const vec &a) const {
     switch (dim) {
-    case dcyl: return t[R]==a.t[R] && t[Z]==a.t[Z];
-    case d3: return t[X]==a.t[X] && t[Y]==a.t[Y] && t[Z]==a.t[Z];
-    case d2: return t[X]==a.t[X] && t[Y]==a.t[Y];
-    case d1: return t[Z]==a.t[Z];
+    case Dcyl: return t[R]==a.t[R] && t[Z]==a.t[Z];
+    case D3: return t[X]==a.t[X] && t[Y]==a.t[Y] && t[Z]==a.t[Z];
+    case D2: return t[X]==a.t[X] && t[Y]==a.t[Y];
+    case D1: return t[Z]==a.t[Z];
     }
   };
   vec operator*(double s) const {
     switch (dim) {
-    case dcyl: return vec(t[R]*s,t[Z]*s);
-    case d3: return vec(t[X]*s,t[Y]*s,t[Z]*s);
-    case d2: return vec2d(t[X]*s,t[Y]*s);
-    case d1: return vec(t[Z]*s);
+    case Dcyl: return vec(t[R]*s,t[Z]*s);
+    case D3: return vec(t[X]*s,t[Y]*s,t[Z]*s);
+    case D2: return vec2d(t[X]*s,t[Y]*s);
+    case D1: return vec(t[Z]*s);
     }
   };
   ndim dim;
@@ -160,76 +160,76 @@ inline vec vec2d(double xx, double yy) {
 
 class ivec {
  public:
-  ivec() { dim = d2; t[X] = t[Y] = 0; };
-  ivec(int zz) { dim = d1; t[Z] = zz; };
-  ivec(int rr, int zz) { dim = dcyl; t[R] = rr; t[Z] = zz; };
+  ivec() { dim = D2; t[X] = t[Y] = 0; };
+  ivec(int zz) { dim = D1; t[Z] = zz; };
+  ivec(int rr, int zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
   ivec(int xx, int yy, int zz) {
-    dim = d3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
+    dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
   friend ivec ivec2d(int xx, int yy);
   ~ivec() {};
 
   ivec operator+(const ivec &a) const {
     switch (dim) {
-    case dcyl: return ivec(t[R]+a.t[R],t[Z]+a.t[Z]);
-    case d3: return ivec(t[X]+a.t[X],t[Y]+a.t[Y],t[Z]+a.t[Z]);
-    case d2: return ivec2d(t[X]+a.t[X],t[Y]+a.t[Y]);
-    case d1: return ivec(t[Z]+a.t[Z]);
+    case Dcyl: return ivec(t[R]+a.t[R],t[Z]+a.t[Z]);
+    case D3: return ivec(t[X]+a.t[X],t[Y]+a.t[Y],t[Z]+a.t[Z]);
+    case D2: return ivec2d(t[X]+a.t[X],t[Y]+a.t[Y]);
+    case D1: return ivec(t[Z]+a.t[Z]);
     }
   };
   ivec operator+=(const ivec &a) {
     switch (dim) {
-    case dcyl: t[R] += a.t[R]; t[Z] += a.t[Z]; return *this;
-    case d3: t[X] += a.t[X]; t[Y] += a.t[Y]; t[Z] += a.t[Z]; return *this;
-    case d2: t[X] += a.t[X]; t[Y] += a.t[Y]; return *this;
-    case d1: t[Z] += a.t[Z]; return ivec(t[Z]+a.t[Z]);
+    case Dcyl: t[R] += a.t[R]; t[Z] += a.t[Z]; return *this;
+    case D3: t[X] += a.t[X]; t[Y] += a.t[Y]; t[Z] += a.t[Z]; return *this;
+    case D2: t[X] += a.t[X]; t[Y] += a.t[Y]; return *this;
+    case D1: t[Z] += a.t[Z]; return ivec(t[Z]+a.t[Z]);
     }
   };
   ivec operator-=(const ivec &a) {
     switch (dim) {
-    case dcyl: t[R] -= a.t[R]; t[Z] -= a.t[Z]; return *this;
-    case d3: t[X] -= a.t[X]; t[Y] -= a.t[Y]; t[Z] -= a.t[Z]; return *this;
-    case d2: t[X] -= a.t[X]; t[Y] -= a.t[Y]; return *this;
-    case d1: t[Z] -= a.t[Z]; return ivec(t[Z]-a.t[Z]);
+    case Dcyl: t[R] -= a.t[R]; t[Z] -= a.t[Z]; return *this;
+    case D3: t[X] -= a.t[X]; t[Y] -= a.t[Y]; t[Z] -= a.t[Z]; return *this;
+    case D2: t[X] -= a.t[X]; t[Y] -= a.t[Y]; return *this;
+    case D1: t[Z] -= a.t[Z]; return ivec(t[Z]-a.t[Z]);
     }
   };
   ivec operator-(const ivec &a) const {
     switch (dim) {
-    case dcyl: return ivec(t[R]-a.t[R],t[Z]-a.t[Z]);
-    case d3: return ivec(t[X]-a.t[X],t[Y]-a.t[Y],t[Z]-a.t[Z]);
-    case d2: return ivec2d(t[X]-a.t[X],t[Y]-a.t[Y]);
-    case d1: return ivec(t[Z]-a.t[Z]);
+    case Dcyl: return ivec(t[R]-a.t[R],t[Z]-a.t[Z]);
+    case D3: return ivec(t[X]-a.t[X],t[Y]-a.t[Y],t[Z]-a.t[Z]);
+    case D2: return ivec2d(t[X]-a.t[X],t[Y]-a.t[Y]);
+    case D1: return ivec(t[Z]-a.t[Z]);
     }
   };
   bool operator!=(const ivec &a) const {
     switch (dim) {
-    case dcyl: return t[R]!=a.t[R] || t[Z]!=a.t[Z];
-    case d3: return t[X]!=a.t[X] || t[Y]!=a.t[Y] || t[Z]!=a.t[Z];
-    case d2: return t[X]!=a.t[X] || t[Y]!=a.t[Y];
-    case d1: return t[Z]!=a.t[Z];
+    case Dcyl: return t[R]!=a.t[R] || t[Z]!=a.t[Z];
+    case D3: return t[X]!=a.t[X] || t[Y]!=a.t[Y] || t[Z]!=a.t[Z];
+    case D2: return t[X]!=a.t[X] || t[Y]!=a.t[Y];
+    case D1: return t[Z]!=a.t[Z];
     }
   };
   bool operator==(const ivec &a) const {
     switch (dim) {
-    case dcyl: return t[R]==a.t[R] && t[Z]==a.t[Z];
-    case d3: return t[X]==a.t[X] && t[Y]==a.t[Y] && t[Z]==a.t[Z];
-    case d2: return t[X]==a.t[X] && t[Y]==a.t[Y];
-    case d1: return t[Z]==a.t[Z];
+    case Dcyl: return t[R]==a.t[R] && t[Z]==a.t[Z];
+    case D3: return t[X]==a.t[X] && t[Y]==a.t[Y] && t[Z]==a.t[Z];
+    case D2: return t[X]==a.t[X] && t[Y]==a.t[Y];
+    case D1: return t[Z]==a.t[Z];
     }
   };
   ivec operator*(int s) const {
     switch (dim) {
-    case dcyl: return ivec(t[R]*s,t[Z]*s);
-    case d3: return ivec(t[X]*s,t[Y]*s,t[Z]*s);
-    case d2: return ivec2d(t[X]*s,t[Y]*s);
-    case d1: return ivec(t[Z]*s);
+    case Dcyl: return ivec(t[R]*s,t[Z]*s);
+    case D3: return ivec(t[X]*s,t[Y]*s,t[Z]*s);
+    case D2: return ivec2d(t[X]*s,t[Y]*s);
+    case D1: return ivec(t[Z]*s);
     }
   };
   vec operator*(double s) const {
     switch (dim) {
-    case dcyl: return vec(t[R]*s,t[Z]*s);
-    case d3: return vec(t[X]*s,t[Y]*s,t[Z]*s);
-    case d2: return vec2d(t[X]*s,t[Y]*s);
-    case d1: return vec(t[Z]*s);
+    case Dcyl: return vec(t[R]*s,t[Z]*s);
+    case D3: return vec(t[X]*s,t[Y]*s,t[Z]*s);
+    case D2: return vec2d(t[X]*s,t[Y]*s);
+    case D1: return vec(t[Z]*s);
     }
   };
   ndim dim;

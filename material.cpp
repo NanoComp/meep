@@ -41,7 +41,7 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
   S = s;
   if (S.multiplicity() > 1) {
     // Have to work out the symmetry point and volume to use.
-    if (!(thev.dim == d2 /* || thev.dim == d3 */))
+    if (!(thev.dim == D2 /* || thev.dim == D3 */))
       abort("I don't support symmetries except in cartesian.  %s\n",
             dimension_name(thev.dim));
     bool break_this[3];
@@ -286,7 +286,7 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
       inveps[c] = NULL;
     }
   if (is_mine())
-    if (v.dim == dcyl) {
+    if (v.dim == Dcyl) {
       const vec dr = v.dr()*0.5; // The distance between Yee field components
       const vec dz = v.dz()*0.5; // The distance between Yee field components
       for (int i=0;i<v.ntot();i++) {
@@ -296,9 +296,9 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
                             feps(here+dr-dz) + feps(here-dr-dz));
         inveps[Ez][i] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
       }
-    } else if (v.dim == d1) {
+    } else if (v.dim == D1) {
       for (int i=0;i<v.ntot();i++) inveps[Ex][i] = 1.0/eps[i];
-    } else if (v.dim == d2) {
+    } else if (v.dim == D2) {
       if (inveps[Ez])
         for (int i=0;i<v.ntot();i++) inveps[Ez][i] = 1.0/eps[i];
       const vec hdx = v.dx()*0.5;;

@@ -214,7 +214,7 @@ static void generate_U(cmplx *U, cmplx *U1,
      for (m = 0; m <= M; ++m) {
 	  cmplx c1 = c[m + p], c2;
 	  double d = m + 1; /* M - fabs(M - m) + 1 */
-	  double d2 = M - m; /* M - fabs(M - (m + M + 1)) + 1 */
+	  double D2 = M - m; /* M - fabs(M - (m + M + 1)) + 1 */
 
 	  if (m < M)
 	       c2 = c[m + p + M + 1];
@@ -226,7 +226,7 @@ static void generate_U(cmplx *U, cmplx *U1,
 	       cmplx x2 = z_m[i] * c2;
 	       G[i] += x1;
 	       G_M[i] += x2;
-	       D[i] += x1 * d + x2 * d2 * z_M[i] * z_inv[i];
+	       D[i] += x1 * d + x2 * D2 * z_M[i] * z_inv[i];
 	       z_m[i] *= z_inv[i];
 	  }
 	  if (z2 != z)

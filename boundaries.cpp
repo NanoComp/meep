@@ -49,7 +49,7 @@ void fields::use_bloch(direction d, complex<double> kk, bool autoconnect) {
 void fields::use_bloch(const vec &k, bool autoconnect) {
   // Note that I allow a 1D k input when in cylindrical, since in that case
   // it is unambiguous.
-  if (k.dim != v.dim && !(k.dim == d1 && v.dim == dcyl))
+  if (k.dim != v.dim && !(k.dim == D1 && v.dim == Dcyl))
     abort("Aaaack, k has wrong dimensions!\n");
   for (int dd=0;dd<5;dd++) {
     const direction d = (direction) dd;
@@ -61,13 +61,13 @@ void fields::use_bloch(const vec &k, bool autoconnect) {
 
 ivec fields::ilattice_vector(direction d) const {
   switch (v.dim) {
-  case dcyl: case d1: return ivec(0,2*v.nz()); // Only Z direction here...
-  case d2:
+  case Dcyl: case D1: return ivec(0,2*v.nz()); // Only Z direction here...
+  case D2:
     switch (d) {
     case X: return ivec2d(v.nx()*2,0);
     case Y: return ivec2d(0,v.ny()*2);
     }
-  case d3:
+  case D3:
     switch (d) {
     case X: return ivec(v.nx()*2,0,0);
     case Y: return ivec(0,v.ny()*2,0);
@@ -77,16 +77,16 @@ ivec fields::ilattice_vector(direction d) const {
 }
 
 vec fields::lattice_vector(direction d) const {
-  if (v.dim == dcyl) {
+  if (v.dim == Dcyl) {
     return vec(0,v.nz()*inva); // Only Z direction here...
-  } else if (v.dim == d1) {
+  } else if (v.dim == D1) {
     return vec(v.nz()*inva); // Only Z direction here...
-  } else if (v.dim == d2) {
+  } else if (v.dim == D2) {
     switch (d) {
     case X: return vec2d(v.nx()*inva,0);
     case Y: return vec2d(0,v.ny()*inva);
     }
-  } else if (v.dim == d3) {
+  } else if (v.dim == D3) {
     switch (d) {
     case X: return vec(v.nx()*inva,0,0);
     case Y: return vec(0,v.ny()*inva,0);

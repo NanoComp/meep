@@ -162,7 +162,7 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
   for (int c=0;c<10;c++) if (s[c])
     for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
   // Average out sigma over the grid...
-  if (v.dim == dcyl) {
+  if (v.dim == Dcyl) {
     const vec dr = v.dr()*0.5; // The distance between Yee field components
     const vec dz = v.dz()*0.5; // The distance between Yee field components
     for (int i=0;i<v.ntot();i++) {
@@ -172,7 +172,7 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
                                 sig(here+dr-dz) + sig(here-dr-dz));
       s[Ez][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
     }
-  } else if (v.dim == d1) {
+  } else if (v.dim == D1) {
     // There's just one field point...
     for (int i=0;i<v.ntot();i++) s[Ex][i] = sigma[i];
   } else {
@@ -317,7 +317,7 @@ void fields_chunk::update_polarization_saturation(polarization *op, polarization
     if (np->saturation_factor != 0.0) {
       const volume v = np->pb->v;
       const double fac = np->saturation_factor;
-      if (v.dim == d1) {
+      if (v.dim == D1) {
         if (fac > 0.0)
           for (int i=0;i<v.ntot();i++) {
             const double shere = -np->energy[Ex][i]*fac;

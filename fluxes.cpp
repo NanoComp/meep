@@ -40,7 +40,7 @@ flux_plane *fields::add_flux_plane(const vec &p1, const vec &p2) {
 
 partial_flux_plane *fields_chunk::new_flux_plane(const vec &p1, const vec &p2) {
   switch (v.dim) {
-  case d1: return nfp_1d(p1);
+  case D1: return nfp_1d(p1);
   }
   return NULL;
 }

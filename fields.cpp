@@ -80,7 +80,7 @@ void fields::use_real_fields() {
 }
 
 bool fields::have_component(component c) {
-  if (v.dim != d2) return v.has_field(c);
+  if (v.dim != D2) return v.has_field(c);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       return chunks[i]->f[c][0] != NULL;
@@ -128,7 +128,7 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
     for (int i=0;i<10;i++) f_pml[i][cmp] = NULL;
     for (int i=0;i<10;i++) f_backup_pml[i][cmp] = NULL;
 
-    for (int i=0;i<10;i++) if (v.dim != d2 && v.has_field((component)i))
+    for (int i=0;i<10;i++) if (v.dim != D2 && v.has_field((component)i))
       f[i][cmp] = new double[v.ntot()];
     for (int i=0;i<10;i++) if (f[i][cmp]) {
       f_pml[i][cmp] = new double[v.ntot()];

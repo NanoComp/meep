@@ -45,13 +45,13 @@ static inline int lattice_to_yee(double x, double a, double inva=0.0) {
 
 inline ivec volume::round_vec(const vec &p) const {
   switch (dim) {
-  case d1: return ivec(lattice_to_yee(p.z(),a,inva));
-  case d2: return ivec2d(lattice_to_yee(p.x(),a,inva),
+  case D1: return ivec(lattice_to_yee(p.z(),a,inva));
+  case D2: return ivec2d(lattice_to_yee(p.x(),a,inva),
                          lattice_to_yee(p.y(),a,inva));
-  case d3: return ivec(lattice_to_yee(p.x(),a,inva),
+  case D3: return ivec(lattice_to_yee(p.x(),a,inva),
                        lattice_to_yee(p.y(),a,inva),
                        lattice_to_yee(p.z(),a,inva));
-  case dcyl: return ivec(lattice_to_yee(p.r(),a,inva),
+  case Dcyl: return ivec(lattice_to_yee(p.r(),a,inva),
                          lattice_to_yee(p.z(),a,inva));
   }
 }
@@ -69,19 +69,19 @@ static inline vec round_to_lattice(const vec &p, double a, double inva=0.0) {
   // Rounds to a value somewhere on the yee lattice.
   if (inva == 0.0) inva = 1.0/a;
   switch (p.dim) {
-  case d1: return vec(rtl(p.z(),a,inva));
-  case d2: return vec2d(rtl(p.x(),a,inva), rtl(p.y(),a,inva));
-  case d3: return vec(rtl(p.x(),a,inva), rtl(p.y(),a,inva), rtl(p.z(),a,inva));
-  case dcyl: return vec(rtl(p.r(),a,inva), rtl(p.z(),a,inva));
+  case D1: return vec(rtl(p.z(),a,inva));
+  case D2: return vec2d(rtl(p.x(),a,inva), rtl(p.y(),a,inva));
+  case D3: return vec(rtl(p.x(),a,inva), rtl(p.y(),a,inva), rtl(p.z(),a,inva));
+  case Dcyl: return vec(rtl(p.r(),a,inva), rtl(p.z(),a,inva));
   }
 }
 
 const char *dimension_name(ndim dim) {
   switch (dim) {
-  case d1: return "1D";
-  case d2: return "2D";
-  case d3: return "3D";
-  case dcyl: return "Cylindrical";
+  case D1: return "1D";
+  case D2: return "2D";
+  case D3: return "3D";
+  case Dcyl: return "Cylindrical";
   }
 }
 
@@ -112,13 +112,13 @@ const char *component_name(component c) {
 }
 
 void vec::print(FILE *f) const {
-  if (dim == dcyl) {
+  if (dim == Dcyl) {
     fprintf(f, "%lg %lg 0", r(), z());
-  } else if (dim == d3  ) {
+  } else if (dim == D3  ) {
     fprintf(f, "%lg %lg %lg", x(), y(), z());
-  } else if (dim == d2  ) {
+  } else if (dim == D2  ) {
     fprintf(f, "%lg %lg 0", x(), y());
-  } else if (dim == d1  ) {
+  } else if (dim == D1  ) {
     fprintf(f, "0 0 %lg", z());
   } else  {
     printf("I don't know how to print in this dimension!\n");
@@ -127,17 +127,17 @@ void vec::print(FILE *f) const {
 }
 
 volume::volume() {
-  dim = d1;
+  dim = D1;
   the_ntot = num[0] = num[1] = num[2] = 0;
   origin = vec(0);
 }
 
 inline int right_ntot(ndim d, const int num[3]) {
   switch (d) {
-  case d1: return num[2] + 1;
-  case d2: return (num[0]+1)*(num[1]+1);
-  case d3: return (num[0]+1)*(num[1]+1)*(num[2]+1);
-  case dcyl: return (num[0]+1)*(num[2]+1);
+  case D1: return num[2] + 1;
+  case D2: return (num[0]+1)*(num[1]+1);
+  case D3: return (num[0]+1)*(num[1]+1)*(num[2]+1);
+  case Dcyl: return (num[0]+1)*(num[2]+1);
   }
 }
 
@@ -149,13 +149,13 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
   num[1] = nb;
   num[2] = nc;
   switch (d) {
-  case dcyl: origin = vec(0,0);
+  case Dcyl: origin = vec(0,0);
     break;
-  case d3: origin = vec(0,0,0);
+  case D3: origin = vec(0,0,0);
     break;
-  case d2: origin = vec2d(0,0);
+  case D2: origin = vec2d(0,0);
     break;
-  case d1: origin = vec(0);
+  case D1: origin = vec(0);
     break;
     abort("Can't make volume with these dimensions!\n");
   }
@@ -164,27 +164,27 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
 
 component volume::eps_component() const {
   switch (dim) {
-  case d1: return Ex;
-  case d2: return Ez;
-  case dcyl: return Hp;
+  case D1: return Ex;
+  case D2: return Ez;
+  case Dcyl: return Hp;
   }
   abort("Unsupported dimensionality eps.\n");
 }
 
 ivec volume::iyee_shift(component c) const {
-  if (dim == dcyl) {
+  if (dim == Dcyl) {
     switch (c) {
     case Er: case Hz: return ivec(1,0);
     case Ez: case Hr: return ivec(0,1);
     case Hp: return ivec(1,1);
     case Ep: return ivec(0,0);
     }
-  } else if (dim == d1) {
+  } else if (dim == D1) {
     switch (c) {
     case Ex: return ivec(0);
     case Hy: return ivec(1);
     }
-  } else if (dim == d2) {
+  } else if (dim == D2) {
     switch (c) {
     case Ez: return ivec2d(0,0);
     case Hz: return ivec2d(1,1);
@@ -206,18 +206,18 @@ int volume::contains(const ivec &p) const {
   // containts returns true if the volume has information about this grid
   // point.
   const ivec o = p - io();
-  if (dim == dcyl) {
+  if (dim == Dcyl) {
     return o.r() >= 0 && o.z() >= 0 &&
       o.r() < (nr()+1)*2 + inva && o.z() < (nz()+1)*2;
-  } else if (dim == d3) {
+  } else if (dim == D3) {
     return
       o.x() >= 0 && o.x() < (nx()+1)*2 &&
       o.y() >= 0 && o.y() < (ny()+1)*2 &&
       o.z() >= 0 && o.z() < (nz()+1)*2;
-  } else if (dim == d2) {
+  } else if (dim == D2) {
     return o.x() >= 0 && o.x() <= (nx()+1)*2 &&
            o.y() >= 0 && o.y() <= (ny()+1)*2;
-  } else if (dim == d1) {
+  } else if (dim == D1) {
     return o.z() >= 0 && o.z() <= (nz()+1)*2;
   } else {
     abort("Unsupported dimension in contains.\n");
@@ -231,19 +231,19 @@ int volume::contains(const vec &p) const {
   // given point.
   const double inva = 1.0/a;
   const vec o = p - origin;
-  if (dim == dcyl) {
+  if (dim == Dcyl) {
     return o.r() >= -inva && o.z() >= -inva &&
       o.r() <= nr()*inva + inva && o.z() <= nz()*inva + inva;
-  } else if (dim == d3) {
+  } else if (dim == D3) {
     return
       o.x() >= -inva && o.x() <= nx()*inva + inva &&
       o.y() >= -inva && o.y() <= ny()*inva + inva &&
       o.z() >= -inva && o.z() <= nz()*inva + inva;
-  } else if (dim == d2) {
+  } else if (dim == D2) {
     return
       o.x() >= -inva && o.x() <= nx()*inva + inva &&
       o.y() >= -inva && o.y() <= ny()*inva + inva;
-  } else if (dim == d1) {
+  } else if (dim == D1) {
     return o.z() >= -inva && o.z() <= nz()*inva + inva;
   } else {
     abort("Unsupported dimension in contains.\n");
@@ -254,21 +254,21 @@ int volume::owns(const ivec &p) const {
   // owns returns true if the point "owned" by this volume, meaning that it
   // is the volume that would timestep the point.
   const ivec o = p - io();
-  if (dim == dcyl) {
+  if (dim == Dcyl) {
     if (origin.r() == 0.0 && o.z() > 0 && o.z() <= nz()*2 &&
         o.r() == 0) return true;
     return o.r() > 0 && o.z() > 0 &&
            o.r() <= nr()*2 && o.z() <= nz()*2;
-  } else if (dim == d3) {
+  } else if (dim == D3) {
     return
       o.x() > 0 && o.x() <= nx()*2 &&
       o.y() > 0 && o.y() <= ny()*2 &&
       o.z() > 0 && o.z() <= nz()*2;
-  } else if (dim == d2) {
+  } else if (dim == D2) {
     return
       o.x() > 0 && o.x() <= nx()*2 &&
       o.y() > 0 && o.y() <= ny()*2;
-  } else if (dim == d1) {
+  } else if (dim == D1) {
     return o.z() > 0 && o.z() <= nz()*2;
   } else {
     abort("Unsupported dimension in owns.\n");
@@ -281,13 +281,13 @@ int volume::has_field(component c) const {
   const int is_z = c == Hz || c == Ez;
   const int is_x = c == Hx || c == Ex;
   const int is_y = c == Hy || c == Ey;
-  if (dim == dcyl) {
+  if (dim == Dcyl) {
     return is_r || is_p || is_z;
-  } else if (dim == d3) {
+  } else if (dim == D3) {
     return is_x || is_y || is_z;
-  } else if (dim == d2) {
+  } else if (dim == D2) {
     return is_x || is_y || is_z;
-  } else if (dim == d1) {
+  } else if (dim == D1) {
     return c == Ex || c == Hy;
   } else {
     abort("Aaack unsupported dim! (%d)\n", (int) dim);
@@ -296,21 +296,21 @@ int volume::has_field(component c) const {
 
 int volume::has_boundary(boundary_side b,direction d) const {
   switch (dim) {
-  case dcyl: return d == Z || (d == R && b == High);
-  case d1: return d == Z;
-  case d2: return d == X || d == Y;
-  case d3: return d == X || d == Y || d == Z;
+  case Dcyl: return d == Z || (d == R && b == High);
+  case D1: return d == Z;
+  case D2: return d == X || d == Y;
+  case D3: return d == X || d == Y || d == Z;
   }
 }
 
 int volume::index(component c, const ivec &p) const {
   const ivec offset = p - io() - iyee_shift(c);
   switch (dim) {
-  case dcyl: return (offset.z() + offset.r()*(nz()+1))/2;
-  case d3: return (offset.z() + offset.y()*(nz()+1) +
+  case Dcyl: return (offset.z() + offset.r()*(nz()+1))/2;
+  case D3: return (offset.z() + offset.y()*(nz()+1) +
                    offset.x()*(nz()+1)*(ny()+1))/2;
-  case d2: return (offset.y() + offset.x()*(ny()+1))/2;
-  case d1: return offset.z()/2;
+  case D2: return (offset.y() + offset.x()*(ny()+1))/2;
+  case D1: return offset.z()/2;
   }
   abort("Unsupported dimension in index.\n");
 }
@@ -332,11 +332,11 @@ static inline void stupidsort(int *ind, double *w, int l) {
 
 void volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
-  if (dim == d1) {
+  if (dim == D1) {
     interpolate_one(c, p, indices, weights);
-  } else if (dim == d2) {
+  } else if (dim == D2) {
     interpolate_two(c, p, indices, weights);
-  } else if (dim == dcyl) {
+  } else if (dim == Dcyl) {
     interpolate_cyl(c, p, 0, indices, weights);
   } else {
     // by default use the 'index' routine with simple rounding.
@@ -630,16 +630,16 @@ volume volume::dV(const ivec &here) const {
   const volume &v = *this;
   volume out;
   switch (dim) {
-  case dcyl: {
+  case Dcyl: {
     out = volcyl(inva, inva, 2*a);
     out.origin = v[here] - vec(thqinva, thqinva);
     return out;
   }
-  case d2:
+  case D2:
     out = voltwo(inva, inva, 2*a);
     out.origin = v[here] - vec2d(thqinva, thqinva);
     return out;
-  case d1:
+  case D1:
     out = volone(inva, 2*a);
     out.origin = v[here] - vec(thqinva);
     return out;
@@ -684,13 +684,13 @@ double volume::zmin() const {
 
 double volume::rmax() const {
   const double inva = 1.0/a, qinva = 0.25*inva;
-  if (dim == dcyl) return origin.r() + nr()*inva + qinva;
+  if (dim == Dcyl) return origin.r() + nr()*inva + qinva;
   abort("No rmax in these dimensions.\n");
 }
 
 double volume::rmin() const {
   const double inva = 1.0/a, qinva = 0.25*inva;
-  if (dim == dcyl) {
+  if (dim == Dcyl) {
     if (origin.r() == 0.0) {
       return 0.0;
     } else {
@@ -715,24 +715,24 @@ double volume::boundary_location(boundary_side b, direction d) const {
   case X: return loc(Ez,ntot()-1).x();
   case Y: return loc(Ez,ntot()-1).y();
   case R: return loc(Ep,ntot()-1).r();
-  case Z: if (dim == dcyl) return loc(Ep,ntot()-1).x();
+  case Z: if (dim == Dcyl) return loc(Ep,ntot()-1).x();
           else return loc(Ex,ntot()-1).z();
   }
   else switch (d) {
   case X: return loc(Ez,0).x();
   case Y: return loc(Ez,0).y();
   case R: return loc(Ep,0).r();
-  case Z: if (dim == dcyl) return loc(Ep,0).x();
+  case Z: if (dim == Dcyl) return loc(Ep,0).x();
           else return loc(Ex,0).z();
   }
 }
 
 ivec volume::big_corner() const {
   switch (dim) {
-  case d1: return io() + ivec(nz())*2;
-  case d2: return io() + ivec2d(nx(),ny())*2;
-  case d3: return io() + ivec(nx(),ny(),nz())*2;
-  case dcyl: return io() + ivec(nr(),nz())*2;
+  case D1: return io() + ivec(nz())*2;
+  case D2: return io() + ivec2d(nx(),ny())*2;
+  case D3: return io() + ivec(nx(),ny(),nz())*2;
+  case Dcyl: return io() + ivec(nr(),nz())*2;
   }
 }
 
@@ -753,7 +753,7 @@ double volume::intersection(const volume &o) const {
   const double pi = 3.141592653589793238462643383276L;
   const double inva = 1.0/a;
   switch (dim) {
-  case dcyl: {
+  case Dcyl: {
     const double r_min = max(0.0,max(rmin(), o.rmin()));
     const double r_max = min(rmax(), o.rmax());
     const double z_min = max(zmin(), o.zmin());
@@ -762,7 +762,7 @@ double volume::intersection(const volume &o) const {
     if (r_max <= r_min) return 0.0;
     return (z_max-z_min)*pi*(r_max*r_max-r_min*r_min);
   }
-  case d3: {
+  case D3: {
     const double z_min = max(zmin(), o.zmin());
     const double z_max = min(zmax(), o.zmax());
     const double x_min = max(xmin(), o.xmin());
@@ -774,7 +774,7 @@ double volume::intersection(const volume &o) const {
     if (z_max <= z_min) return 0.0;
     return (z_max-z_min)*(x_max-x_min)*(y_max-y_min);
   }
-  case d2: {
+  case D2: {
     const double x_min = max(xmin(), o.xmin());
     const double x_max = min(xmax(), o.xmax());
     const double y_min = max(ymin(), o.ymin());
@@ -783,7 +783,7 @@ double volume::intersection(const volume &o) const {
     if (y_max <= y_min) return 0.0;
     return (x_max-x_min)*(y_max-y_min);
   }
-  case d1:
+  case D1:
     const double z_min = max(zmin(), o.zmin());
     const double z_max = min(zmax(), o.zmax());
     if (z_max <= z_min) return 0.0;
@@ -795,15 +795,15 @@ double volume::dv(component c, int ind) const {
   const double pi = 3.141592653589793238462643383276L;
   if (!owns(iloc(c, ind))) return 0.0;
   switch (dim) {
-  case dcyl: {
+  case Dcyl: {
     const double r = loc(c,ind).r();
     const double Dr = inva*0.5;
     if (r != 0.0) return inva*pi*((r+Dr)*(r+Dr) - (r-Dr)*(r-Dr));
     else return inva*pi*(r+Dr)*(r+Dr);
   }
-  case d3: return inva*inva*inva;
-  case d2: return inva*inva;
-  case d1: return inva;
+  case D3: return inva*inva*inva;
+  case D2: return inva*inva;
+  case D1: return inva;
   }
   abort("This should never be reached...\n");
 }
@@ -840,57 +840,57 @@ vec volume::loc(component c, int ind) const {
 
 ivec volume::iloc(component c, int ind) const {
   switch (dim) {
-  case dcyl: return iyee_shift(c)+io()+ ivec(ind/(nz()+1),(ind%(nz()+1)))*2;
-  case d3: return iyee_shift(c) + io() +
+  case Dcyl: return iyee_shift(c)+io()+ ivec(ind/(nz()+1),(ind%(nz()+1)))*2;
+  case D3: return iyee_shift(c) + io() +
              ivec(ind/((nz()+1)*(ny()+1)),
                   (ind%((nz()+1)*(ny()+1)))/(nz()+1),
                   (ind%(nz()+1)))*2;
-  case d2: return iyee_shift(c) + io() +
+  case D2: return iyee_shift(c) + io() +
              ivec2d(ind/(ny()+1),
                     (ind%(ny()+1)))*2;
-  case d1: return iyee_shift(c) + io() + ivec(ind)*2;
+  case D1: return iyee_shift(c) + io() + ivec(ind)*2;
   }
 }
 
 vec volume::dr() const {
   switch (dim) {
-  case dcyl: return vec(inva, 0.0);
+  case Dcyl: return vec(inva, 0.0);
   }
 }
 
 vec volume::dx() const {
   switch (dim) {
-  case d3: return vec(inva,0,0);
-  case d2: return vec2d(inva,0);
+  case D3: return vec(inva,0,0);
+  case D2: return vec2d(inva,0);
   }
 }
 
 vec volume::dy() const {
   switch (dim) {
-  case d3: return vec(0,inva,0);
-  case d2: return vec2d(0,inva);
+  case D3: return vec(0,inva,0);
+  case D2: return vec2d(0,inva);
   }
 }
 
 vec volume::dz() const {
   switch (dim) {
-  case dcyl: return vec(0.0,inva);
-  case d3: return vec(0,0,inva);
-  case d1: return vec(inva);
+  case Dcyl: return vec(0.0,inva);
+  case D3: return vec(0,0,inva);
+  case D1: return vec(inva);
   }
 }
 
 volume volone(double zsize, double a) {
-  return volume(d1, a, 0, 0, (int) (zsize*a + 0.5));
+  return volume(D1, a, 0, 0, (int) (zsize*a + 0.5));
 }
 
 volume voltwo(double xsize, double ysize, double a) {
-  return volume(d2, a, (int) (xsize*a + 0.5), (int) (ysize*a + 0.5),0);
+  return volume(D2, a, (int) (xsize*a + 0.5), (int) (ysize*a + 0.5),0);
 }
 
 volume volcyl(double rsize, double zsize, double a) {
-  if (zsize == 0.0) return volume(dcyl, a, (int) (rsize*a + 0.5), 0, 1);
-  else return volume(dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
+  if (zsize == 0.0) return volume(Dcyl, a, (int) (rsize*a + 0.5), 0, 1);
+  else return volume(Dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
 }
 
 int volume::can_split_evenly(int n) const {
@@ -962,7 +962,7 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
   if (numer >= num[bestd])
     abort("Aaack bad bug in split_at_fraction.\n");
   direction d = (direction) bestd;
-  if (dim == dcyl && d == X) d = R;
+  if (dim == Dcyl && d == X) d = R;
   retval.origin = origin;
   if (want_high)
     retval.origin.set_direction(d,origin.in_direction(d)+numer/a);
@@ -977,17 +977,17 @@ volume volume::split_specifically(int n, int which, direction d) const {
   volume retval(dim, a,1);
   for (int i=0;i<3;i++) retval.num[i] = num[i];
   switch (dim) {
-  case d1:
+  case D1:
     retval.origin = origin + vec(nz()/n*which/a);
     break;
-  case d2:
+  case D2:
     if (d==X) { // split on x
       retval.origin = origin + vec2d(nx()/n*which/a,0);
     } else { // split on y
       retval.origin = origin + vec2d(0,ny()/n*which/a);
     }
     break;
-  case d3:
+  case D3:
     if (d==X) { // split on x
       retval.origin = origin + vec(nx()/n*which/a,0,0);
     } else if (d==Y) { // split on y
@@ -996,7 +996,7 @@ volume volume::split_specifically(int n, int which, direction d) const {
       retval.origin = origin + vec(0,0,nz()/n*which/a);
     }
     break;
-  case dcyl:
+  case Dcyl:
     if (d == Z) { // split on z
       retval.origin = origin + vec(0.0,nz()/n*which/a);
     } else { // split on r
@@ -1023,10 +1023,10 @@ vec volume::center() const {
   const double inva = 1.0/a;
   vec almost_center;
   switch (dim) {
-  case d2:
+  case D2:
     almost_center = origin + vec2d(nx()/2*inva, ny()/2*inva);
     return operator[](round_vec(almost_center));
-  case d3:
+  case D3:
     almost_center = origin + vec(nx()/2*inva, ny()/2*inva, nz()/2*inva);
   }
   abort("Can't do symmetry with these dimensions.\n");
@@ -1093,13 +1093,13 @@ ivec symmetry::transform(const ivec &ov, int n) const {
   if (n == 0) return ov;
   ivec out = ov;
   int ddmin = X, ddmax = 4;
-  if (ov.dim == d2) {
+  if (ov.dim == D2) {
     ddmin = X; ddmax = Y;
-  } else if (ov.dim == d3) {
+  } else if (ov.dim == D3) {
     ddmin = X; ddmax = Z;
-  } else if (ov.dim == d1) {
+  } else if (ov.dim == D1) {
     ddmin = ddmax = Z;
-  } else if (ov.dim == dcyl) {
+  } else if (ov.dim == Dcyl) {
     ddmin = Z; ddmax = R;
   }
   for (int dd=ddmin;dd<=ddmax;dd++) {
@@ -1117,13 +1117,13 @@ ivec symmetry::transform(const ivec &ov, int n) const {
 vec symmetry::transform(const vec &ov, int n) const {
   if (n == 0) return ov;
   int ddmin = X, ddmax = 4;
-  if (ov.dim == d2) {
+  if (ov.dim == D2) {
     ddmin = X; ddmax = Y;
-  } else if (ov.dim == d3) {
+  } else if (ov.dim == D3) {
     ddmin = X; ddmax = Z;
-  } else if (ov.dim == d1) {
+  } else if (ov.dim == D1) {
     ddmin = ddmax = Z;
-  } else if (ov.dim == dcyl) {
+  } else if (ov.dim == Dcyl) {
     ddmin = Z; ddmax = R;
   }
   vec delta = ov;
@@ -1147,16 +1147,16 @@ complex<double> symmetry::phase_shift(component c, int n) const {
     // inversion... to do this we'll figure out what happens when we
     // transform the two other directions.
     const direction d0 = component_direction(c);
-    const direction d1 = (direction) ((d0+1)%3);
-    const direction d2 = (direction) ((d0+2)%3);
+    const direction D1 = (direction) ((d0+1)%3);
+    const direction D2 = (direction) ((d0+2)%3);
     // Note that according to the above definition, c1 and c2 are in
     // cyclical permutation order, i.e. (c2 - c1)%3 == 1.  If the
     // transformation of these two directions is no longer cyclical, then
     // we need to flip the sign of this component of H.
     bool flip = false;
-    if (((3+transform(d2,n).d - transform(d1,n).d)%3) == 2) flip = !flip;
-    if (transform(d1,n).flipped) flip = !flip;
-    if (transform(d2,n).flipped) flip = !flip;
+    if (((3+transform(D2,n).d - transform(D1,n).d)%3) == 2) flip = !flip;
+    if (transform(D1,n).flipped) flip = !flip;
+    if (transform(D2,n).flipped) flip = !flip;
     if (flip) return -1.0;
     else return 1.0;
   } else {
@@ -1171,18 +1171,18 @@ bool symmetry::is_primitive(const ivec &p) const {
   for (int i=1;i<multiplicity();i++) {
     const ivec pp = transform(p,i);
     switch (p.dim) {
-    case d2:
+    case D2:
       if (pp.x()+pp.y() < p.x()+p.y()) return false;
       if (pp.x()+pp.y() == p.x()+p.y() &&
           p.y() > p.x() && pp.y() <= pp.x()) return false;
       break;
-    case d3:
+    case D3:
       if (pp.x()+pp.y()+pp.z() < p.x()+p.y()+p.z()) return false;
       if (pp.x()+pp.y()+pp.z() == p.x()+p.y()+p.z() &&
           pp.y() > pp.x() && p.y() <= p.x()) return false;
       abort("there is a known bug in 3d is_primitive!\n");// FIXME!
       break;
-    case d1: case dcyl:
+    case D1: case Dcyl:
       if (pp.z() < p.z()) return false;
       break;
     }

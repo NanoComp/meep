@@ -105,7 +105,7 @@ int fields_chunk::add_point_source(component whichf, double freq,
     abort("Error:  source component %s is invalid.\n", component_name(whichf));
   // Allocate fields if they haven't already been allocated:
   int need_reconnection = 0;
-  if (v.dim == d2 && !f[whichf][0]) {
+  if (v.dim == D2 && !f[whichf][0]) {
     switch (whichf) {
     case Ex: case Ey: case Hz:
       alloc_f(Ex); alloc_f(Ey); alloc_f(Hz); break;
@@ -120,9 +120,9 @@ int fields_chunk::add_point_source(component whichf, double freq,
   if (w[0] == 0.0) return need_reconnection; // No source here...
   double prefac = 1.0;
   switch (v.dim) {
-  case dcyl: prefac = a; break;
-  case d2: prefac = a; break; // FIXME: verify that this works right.
-  case d1: prefac = 1; break;
+  case Dcyl: prefac = a; break;
+  case D2: prefac = a; break; // FIXME: verify that this works right.
+  case D1: prefac = 1; break;
   }
   for (int i=0;i<8 && w[i];i++)
     add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i],
@@ -144,7 +144,7 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
                                     double cutoff, double envelope (const vec &),
                                     const vec &p, const vec &norm,
                                     int is_c, double time) {
-  if (v.dim == dcyl) {
+  if (v.dim == Dcyl) {
     // We ignore norm in this case...
     if (m != 1) abort("Can only use plane source with m == 1!\n");
     const complex<double> I = complex<double>(0,1);
@@ -175,7 +175,7 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
                          -I*eps*sc*envelope(vec(r,z)), is_c, time);
       }
     }
-  } else if (v.dim == d1) {
+  } else if (v.dim == D1) {
     const double z = p.z();
     const double eps = sqrt(ma->eps[(int)(z+0.5)]);
     add_point_source(Ex, freq, width, peaktime, cutoff, vec(z),

@@ -201,7 +201,7 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
       switch (v.dim) {
-      case dcyl:
+      case Dcyl:
         {
           ivec next = v.iloc(m,i)+ivec(2,0);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
@@ -213,7 +213,7 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
             fprintf(out, "%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
           break;
         }
-      case d2:
+      case D2:
         {
           ivec next = v.iloc(m,i)+ivec2d(2,0);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
@@ -241,7 +241,7 @@ static void eps_outline(component m, const double *f,
     const vec here = S.transform(v.loc(m,i),symnum);
     if (what.contains(here))
       switch (v.dim) {
-      case dcyl: {
+      case Dcyl: {
         ivec next = v.iloc(m,i)+ivec(2,0);
         vec nextrot = v[S.transform(next - ivec(1,0),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
@@ -252,7 +252,7 @@ static void eps_outline(component m, const double *f,
           fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), nextrot.r());
         break;
       }
-      case d2: {
+      case D2: {
         ivec next = v.iloc(m,i)+ivec2d(0,2);
         vec nextrot = v[(S.transform(next - ivec2d(0,1),symnum))];
         if (v.owns(next))
@@ -275,7 +275,7 @@ static void eps_outline(component m, const double *f,
             fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         break;
       }
-      case d1: {
+      case D1: {
         const ivec next = v.iloc(m,i)+ivec(2);
         const vec nextrot = v[S.transform(next - ivec(1),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
@@ -302,9 +302,9 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
     if (what.contains(here)) {
       double x = 0, y = 0;
       switch (v.dim) {
-      case dcyl: x = here.z(); y = here.r(); break;
-      case d1: x = here.z(); break;
-      case d2: x = here.x(); y = here.y(); break;
+      case Dcyl: x = here.z(); y = here.r(); break;
+      case D1: x = here.z(); break;
+      case D2: x = here.x(); y = here.y(); break;
       }
       if (f[1]) fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
                         real(ph)*f[0][i] - imag(ph)*f[1][i]);
@@ -333,9 +333,9 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
         if (what.contains(here)) {
           double x = 0, y = 0;
           switch (v.dim) {
-          case dcyl: x = there.z(); y = there.r(); break;
-          case d1: x = there.z(); break;
-          case d2: x = there.x(); y = there.y(); break;
+          case Dcyl: x = there.z(); y = there.r(); break;
+          case D1: x = there.z(); break;
+          case D2: x = there.x(); y = there.y(); break;
           }
           complex<double> val[8];
           for (int j=0;j<8;j++) val[j] = 0.0;
@@ -355,19 +355,19 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
                                       component om = Hx) {
   double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300;
   switch (v.dim) {
-  case dcyl:
+  case Dcyl:
     xmin = what.origin.z();
     xmax = what.origin.z() + what.nz()*what.inva;
     ymin = what.origin.r();
     ymax = what.origin.r() + what.nr()*what.inva;
     break;
-  case d2:
+  case D2:
     xmin = what.origin.x();
     xmax = what.origin.x() + what.nx()*what.inva;
     ymin = what.origin.y();
     ymax = what.origin.y() + what.ny()*what.inva;
     break;
-  case d1:
+  case D1:
     ymin = -v.inva*0.5;
     ymax = v.inva*0.5;
     xmin = what.origin.z();
@@ -376,7 +376,7 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
   }
   if (ymax == ymin) ymax = ymin + 1.0/v.a;
   if (fmax == 0.0) fmax = 0.0001;
-  if (v.dim == d1) {
+  if (v.dim == D1) {
     // Make a 1D line plot!
     FILE *out = fopen(name, "w");
     if (!out) {
@@ -490,7 +490,7 @@ void fields::output_slices(const volume &what, const char *name) {
 }
 
 void fields::eps_slices(const char *name) {
-  if (v.dim == dcyl || v.dim == d1 || v.dim == d2)
+  if (v.dim == Dcyl || v.dim == D1 || v.dim == D2)
     eps_slices(user_volume, name);
 }
 

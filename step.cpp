@@ -146,12 +146,12 @@ void fields::step_h_right() {
 
 void fields_chunk::step_h_right() {
   const volume v = this->v;
-  if (v.dim == d1) {
+  if (v.dim == D1) {
     DOCMP {
       for (int z=0;z<v.nz();z++)
         f[Hy][cmp][z] = f[Ex][cmp][z];
     }
-  } else if (v.dim == dcyl) {
+  } else if (v.dim == Dcyl) {
     DOCMP {
       for (int r=rstart_1(v,m);r<=v.nr();r++) {
         const int ir = r*(v.nz()+1);
@@ -178,12 +178,12 @@ void fields::step_e_right() {
 
 void fields_chunk::step_e_right() {
   const volume v = this->v;
-  if (v.dim == d1) {
+  if (v.dim == D1) {
     DOCMP {
       for (int z=0;z<v.nz();z++)
         f[Hy][cmp][z] = f[Ex][cmp][z];
     }
-  } else if (v.dim == dcyl) {
+  } else if (v.dim == Dcyl) {
     DOCMP {
       for (int r=rstart_1(v,m);r<=v.nr();r++) {
         const int ir = r*(v.nz()+1);
@@ -210,7 +210,7 @@ void fields::step_h() {
 
 void fields_chunk::step_h() {
   const volume v = this->v;
-  if (v.dim == d1) {
+  if (v.dim == D1) {
     DOCMP {
       if (ma->C[Z][Hy])
         for (int z=0;z<v.nz();z++) {
@@ -223,7 +223,7 @@ void fields_chunk::step_h() {
         for (int z=0;z<v.nz();z++)
           f[Hy][cmp][z] += -c*(f[Ex][cmp][z+1] - f[Ex][cmp][z]);
     }
-  } else if (v.dim == d2) {
+  } else if (v.dim == D2) {
     DOCMP {
       // Propogate Hz
       if ((ma->C[X][Hz] || ma->C[Y][Hz])&& f[Hz][cmp])
@@ -288,7 +288,7 @@ void fields_chunk::step_h() {
             f[Hy][cmp][y+ix] += c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix]));
         }
     }
-  } else if (v.dim == dcyl) {
+  } else if (v.dim == Dcyl) {
     DOCMP {
       // Propogate Hr
       if (ma->C[Z][Hr])
@@ -417,7 +417,7 @@ void fields::step_e() {
 
 void fields_chunk::step_e() {
   const volume v = this->v;
-  if (v.dim == d1) {
+  if (v.dim == D1) {
     DOCMP {
       if (ma->C[Z][Ex])
         for (int z=1;z<=v.nz();z++) {
@@ -430,7 +430,7 @@ void fields_chunk::step_e() {
         for (int z=1;z<=v.nz();z++)
           f[Ex][cmp][z] += -c*ma->inveps[Ex][z]*(f[Hy][cmp][z] - f[Hy][cmp][z-1]);
     }
-  } else if (v.dim == d2) {
+  } else if (v.dim == D2) {
     DOCMP {
       // Propogate Ez
       if ((ma->C[X][Ez] || ma->C[Y][Ez])&& f[Ez][cmp])
@@ -503,7 +503,7 @@ void fields_chunk::step_e() {
               (-(f[Hz][cmp][y+ix] - f[Hz][cmp][y+ixm1]));
         }
     }
-  } else if (v.dim == dcyl) {
+  } else if (v.dim == Dcyl) {
     DOCMP {
       // Propogate Ep
       if (ma->C[Z][Ep] || ma->C[R][Ep])
