@@ -6,7 +6,7 @@
 */
 \end{comment}
 
-This example demonstrates a lot more of what you can do using dactyl.  The
+This example demonstrates a lot more of what you can do using meep.  The
 system is the same as in the previous example, but this time we will
 calculate the quality factor of the cavity.  Again, the entire control file
 will be included here, but I'll skip over sections that have already been
@@ -39,7 +39,7 @@ double eps(const vec &rr) {
 }
 \end{verbatim}
 This time we use the \verb!deal_with_ctrl_c();! function.  This is a handy
-utility function that is useful when running your dactyl code
+utility function that is useful when running your meep code
 interactively.  It traps the SIGINT signal, so when you hit cntl-C, rather
 than simply exiting, the global variable \verb!interrupt! is incremented.
 If you really want to exit, just hit cntl-C again, and when
