@@ -233,9 +233,7 @@ void fields::step_polarization_itself(polarization *op, polarization *np) {
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     // This is the initial call... so I should start running from olpol and pol.
     step_polarization_itself(olpol, pol);
-    polarization *temp = olpol;
-    olpol = pol;
-    pol = temp; // They got switched....
+    // The two polarizations get switched during the pml step...
   } else if (olpol != NULL && pol != NULL) {
     const double g = op->pb->gamma;
     const double om = op->pb->omeganot;
@@ -244,15 +242,15 @@ void fields::step_polarization_itself(polarization *op, polarization *np) {
     const double *sp = np->pb->sp;
     const double *sz = np->pb->sz;
     DOCMP {
-      for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
+      for (int r=rmin_bulk(m)-1;r<nr;r++) for (int z=0;z<=nz;z++)
         CM(op->Pr,r,z) = funinv*((2-om*om)*CM(np->Pr,r,z)+
                                  (0.5*g-1)*CM(op->Pr,r,z))+
                          MA(sr,r,z)*CM(er,r,z);
-      for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
+      for (int r=rmin_bulk(m)-1;r<nr;r++) for (int z=0;z<=nz;z++)
         CM(op->Pp,r,z) = funinv*((2-om*om)*CM(np->Pp,r,z)+
                                  (0.5*g-1)*CM(op->Pp,r,z))+
                          MA(sp,r,z)*CM(ep,r,z);
-      for (int r=0;r<nr;r++) for (int z=0;z<nz;z++)
+      for (int r=rmin_bulk(m)-1;r<nr;r++) for (int z=0;z<nz;z++)
         CM(op->Pz,r,z) = funinv*((2-om*om)*CM(np->Pz,r,z)+
                                  (0.5*g-1)*CM(op->Pz,r,z))+
                          MA(sz,r,z)*CM(ez,r,z);
@@ -319,12 +317,27 @@ void fields::step_e_polarization(polarization *op, polarization *np) {
     step_e_polarization(olpol, pol);
   } else if (olpol != NULL && pol != NULL) {
     DOCMP {
-      for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
-        CM(er,r,z) -= MA(ma->invepser,r,z)*(CM(np->Pr,r,z)-CM(op->Pr,r,z));
-      for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
-        CM(ep,r,z) -= MA(ma->invepsep,r,z)*(CM(np->Pp,r,z)-CM(op->Pp,r,z));
-      for (int r=0;r<nr;r++) for (int z=0;z<nz;z++)
-        CM(ez,r,z) -= MA(ma->invepsez,r,z)*(CM(np->Pz,r,z)-CM(op->Pz,r,z));
+      for (int r=rmin_bulk(m)-1;r<nr-npmlr;r++) {
+        for (int z=npmlz+1;z<nz-npmlz;z++) {
+          CM(er,r,z) -= MA(ma->invepser,r,z)*(CM(np->Pr,r,z)-CM(op->Pr,r,z));
+          CM(ep,r,z) -= MA(ma->invepsep,r,z)*(CM(np->Pp,r,z)-CM(op->Pp,r,z));
+        }
+        {
+          const int z = 0;
+          CM(er,r,z) -= MA(ma->invepser,r,z)*(CM(np->Pr,r,z)-CM(op->Pr,r,z));
+          CM(ep,r,z) -= MA(ma->invepsep,r,z)*(CM(np->Pp,r,z)-CM(op->Pp,r,z));
+        }
+        {
+          const int z = nz;
+          CM(er,r,z) -= MA(ma->invepser,r,z)*(CM(np->Pr,r,z)-CM(op->Pr,r,z));
+          CM(ep,r,z) -= MA(ma->invepsep,r,z)*(CM(np->Pp,r,z)-CM(op->Pp,r,z));
+        }
+      }
+      for (int r=rmin_bulk(m)-1;r<nr-npmlr;r++) {
+        for (int z=0;z<=nz;z++) {
+          CM(ez,r,z) -= MA(ma->invepsez,r,z)*(CM(np->Pz,r,z)-CM(op->Pz,r,z));
+        }
+      }
     }
     if (op->next && np->next) step_e_polarization(op->next, np->next);
   }
@@ -342,8 +355,21 @@ void fields::step_e_pml_polarization(polarization *op, polarization *np) {
           for (int lr=-1;lr<2;lr+=2,z0=nz-npmlz) {
             int z = z0;
             for (int iz=0;iz<npmlz;iz++,z+=lr) {
-              PMLZ(z_erp,r) -= MA(ma->invepser,r,z)*(PMLZ(np->z_Prp,r)-PMLZ(op->z_Prp,r));
-              PMLZ(z_epz,r) -= MA(ma->invepsep,r,z)*(PMLZ(np->z_Ppz,r)-PMLZ(op->z_Ppz,r));
+              double Czer = ma->Czer[iz];
+              double Czep = ma->Czep[iz];
+
+              double derp = -MA(ma->invepser,r,z)*(PMLZ(np->z_Prp,r)-PMLZ(op->z_Prp,r));
+              double dPrz = (CM(np->Pr,r,z)-CM(op->Pr,r,z))-
+                (PMLZ(np->z_Prp,r)-PMLZ(op->z_Prp,r));
+              PMLZ(z_erp,r) += derp;
+              CM(er,r,z) += derp - MA(ma->invepser,r,z)*dPrz/(1+.5*MA(ma->invepser,r,z)*Czer);
+              
+              double depz = -MA(ma->invepsep,r,z)*(PMLZ(np->z_Ppz,r)-PMLZ(op->z_Ppz,r))
+                /(1+.5*MA(ma->invepsep,r,z)*Czep);
+              double dPpr = (CM(np->Pp,r,z)-CM(op->Pp,r,z))-
+                (PMLZ(np->z_Ppz,r)-PMLZ(op->z_Ppz,r));
+              PMLZ(z_epz,r) += depz;
+              CM(ep,r,z) += depz - MA(ma->invepsep,r,z)*dPpr;
             }
           }
         }
@@ -351,10 +377,39 @@ void fields::step_e_pml_polarization(polarization *op, polarization *np) {
       if (npmlr) {
         // update large r pml for all z (except actual boundary)...
         for (int r=nr-npmlr;r<nr;r++) {
+          double Cper = ma->Cper[r-nr+npmlr];
+          double Crep = ma->Crep[r-nr+npmlr];
+          double Crez = ma->Crez[r-nr+npmlr];
+          double Cpez = ma->Cpez[r-nr+npmlr];
           for (int z=1;z<nz;z++) {
-            PMLR(erp,r,z) -= MA(ma->invepser,r,z)*(PMLR(np->Prp,r,z)-PMLR(op->Prp,r,z));
-            PMLR(epz,r,z) -= MA(ma->invepsep,r,z)*(PMLR(np->Ppz,r,z)-PMLR(op->Ppz,r,z));
-            PMLR(ezr,r,z) -= MA(ma->invepsez,r,z)*(PMLR(np->Pzr,r,z)-PMLR(op->Pzr,r,z));
+            double Czep, Czer;
+            if (z <= npmlz) {
+              Czer = ma->Czer[npmlz - z];
+              Czep = ma->Czep[npmlz - z];
+            } else if (z >= nz - npmlz) {
+              Czer = ma->Czer[z+npmlz-nz];
+              Czep = ma->Czep[z+npmlz-nz];
+            } else {
+              Czer = 0;
+              Czep = 0;
+            }
+            double derp = -MA(ma->invepser,r,z)*(PMLR(np->Prp,r,z)-PMLR(op->Prp,r,z))
+              /(1+.5*MA(ma->invepser,r,z)*Cper);
+            double dPrz = (CM(np->Pr,r,z)-CM(op->Pr,r,z))-(PMLR(np->Prp,r,z)-PMLR(op->Prp,r,z));
+            PMLR(erp,r,z) += derp;
+            CM(er,r,z) += derp - MA(ma->invepser,r,z)*dPrz/(1+.5*MA(ma->invepser,r,z)*Czer);
+
+            double depz = -MA(ma->invepsep,r,z)*(PMLR(np->Ppz,r,z)-PMLR(op->Ppz,r,z))
+              /(1+.5*MA(ma->invepsep,r,z)*Czep);
+            double dPpr = (CM(np->Pp,r,z)-CM(op->Pp,r,z))-(PMLR(np->Ppz,r,z)-PMLR(op->Ppz,r,z));
+            PMLR(epz,r,z) += depz;
+            CM(ep,r,z) += depz - MA(ma->invepsep,r,z)*dPpr/(1+.5*MA(ma->invepsep,r,z)*Crep);
+
+            double dezr = -MA(ma->invepsez,r,z)*(PMLR(np->Pzr,r,z)-PMLR(op->Pzr,r,z))
+              /(1+.5*MA(ma->invepsez,r,z)*Crez);
+            double dPzp = (CM(np->Pz,r,z)-CM(op->Pz,r,z))-(PMLR(np->Pzr,r,z)-PMLR(op->Pzr,r,z));
+            PMLR(ezr,r,z) += dezr;
+            CM(ez,r,z) += dezr - MA(ma->invepsez,r,z)*dPzp/(1+.5*MA(ma->invepsez,r,z)*Cpez);
           }
         }
       }
