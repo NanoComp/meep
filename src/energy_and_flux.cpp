@@ -298,40 +298,15 @@ double fields::flux_in_box(direction d, const geometric_volume &where) {
 }
 
 flux_box *fields::add_flux_box(direction d, const geometric_volume &where) {
-  return new flux_box(this, d, where);
+  if (where.dim != v.dim) abort("invalid dimensionality in add_flux_box");
+  if (d == NO_DIRECTION || coordinate_mismatch(v.dim, d))
+    abort("invalid direction in add_flux_box");
+ return new flux_box(this, d, where);
 }
 
 // As add_flux_box, but infer direction from where (if possible)
 flux_box *fields::add_flux_plane(const geometric_volume &where) {
-  if (where.dim != v.dim) abort("incorrect dimensionality in add_flux_plane");
-  direction d = NO_DIRECTION;
-  switch (v.dim) {
-  case D1: d = Z; break;
-  case D2:
-    if (where.in_direction(X) == 0 && where.in_direction(Y) > 0)
-      d = X;
-    else if (where.in_direction(X) > 0 && where.in_direction(Y) == 0)
-      d = Y;
-    break;
-  case Dcyl:
-    if (where.in_direction(R) == 0 && where.in_direction(Z) > 0)
-      d = R;
-    else if (where.in_direction(R) > 0 && where.in_direction(Z) == 0)
-      d = Z;
-    break;
-  case D3: {
-    bool zx = where.in_direction(X) == 0;
-    bool zy = where.in_direction(Y) == 0;
-    bool zz = where.in_direction(Z) == 0;
-    if (zx && !zy && !zz) d = X;
-    else if (!zx && zy && !zz) d = Y;
-    else if (!zx && !zy && zz) d = Z;
-    break;
-  }
-  }
-  if (d == NO_DIRECTION)
-    abort("invalid argument to add_flux_plane: not a plane");
-  return add_flux_box(d, where);
+  return add_flux_box(where.normal_direction(), where);
 }
 
 flux_box *fields::add_flux_plane(const vec &p1, const vec &p2) {

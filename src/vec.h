@@ -448,6 +448,7 @@ class geometric_volume {
   };
   vec get_min_corner() const { return min_corner; };
   vec get_max_corner() const { return max_corner; };
+  direction normal_direction() const;
  private:
   vec min_corner, max_corner;
 };

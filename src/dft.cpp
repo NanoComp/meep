@@ -358,34 +358,8 @@ dft_flux fields::add_dft_flux(direction d, const geometric_volume &where,
 
 dft_flux fields::add_dft_flux_plane(const geometric_volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
-  direction d = NO_DIRECTION;
-  switch (v.dim) {
-  case D1: d = Z; break;
-  case D2:
-    if (where.in_direction(X) == 0 && where.in_direction(Y) > 0)
-      d = X;
-    else if (where.in_direction(X) > 0 && where.in_direction(Y) == 0)
-      d = Y;
-    break;
-  case Dcyl:
-    if (where.in_direction(R) == 0 && where.in_direction(Z) > 0)
-      d = R;
-    else if (where.in_direction(R) > 0 && where.in_direction(Z) == 0)
-      d = Z;
-    break;
-  case D3: {
-    bool zx = where.in_direction(X) == 0;
-    bool zy = where.in_direction(Y) == 0;
-    bool zz = where.in_direction(Z) == 0;
-    if (zx && !zy && !zz) d = X;
-    else if (!zx && zy && !zz) d = Y;
-    else if (!zx && !zy && zz) d = Z;
-    break;
-  }
-  }
-  if (d == NO_DIRECTION)
-    abort("invalid argument to add_flux_plane: not a plane");
-  return add_dft_flux(d, where, freq_min, freq_max, Nfreq);
+  return add_dft_flux(where.normal_direction(), where, 
+		      freq_min, freq_max, Nfreq);
 }
 
 } // namespace meep

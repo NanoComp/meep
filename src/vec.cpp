@@ -167,6 +167,37 @@ bool geometric_volume::intersects(const geometric_volume &a) const {
   return true;
 }
 
+// Return normal direction to volume, if the volume is dim-1 dimensional;
+// otherwise, return NO_DIRECTION.
+direction geometric_volume::normal_direction() const {
+  direction d = NO_DIRECTION;
+  switch (dim) {
+  case D1: d = Z; break;
+  case D2:
+    if (in_direction(X) == 0 && in_direction(Y) > 0)
+      d = X;
+    else if (in_direction(X) > 0 && in_direction(Y) == 0)
+      d = Y;
+    break;
+  case Dcyl:
+    if (in_direction(R) == 0 && in_direction(Z) > 0)
+      d = R;
+    else if (in_direction(R) > 0 && in_direction(Z) == 0)
+      d = Z;
+    break;
+  case D3: {
+    bool zx = in_direction(X) == 0;
+    bool zy = in_direction(Y) == 0;
+    bool zz = in_direction(Z) == 0;
+    if (zx && !zy && !zz) d = X;
+    else if (!zx && zy && !zz) d = Y;
+    else if (!zx && !zy && zz) d = Z;
+    break;
+  }
+  }
+  return d;
+}
+
 /* Used for n=0,1,2 nested loops in macros.  We should arrange
    the ordering so that this gives most efficient traversal of
    a field array, where n=2 is the innermost loop. */
