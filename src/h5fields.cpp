@@ -53,7 +53,7 @@ static void update_datasize(h5_output_data *data, fields_chunk *fc,
     data->bufsz = max(data->bufsz, bufsz);
 }
 
-static void h5_findsize_integrand(fields_chunk *fc, component cgrid,
+static void h5_findsize_chunkloop(fields_chunk *fc, component cgrid,
 				  ivec is, ivec ie,
 				  vec s0, vec s1, vec e0, vec e1,
 				  double dV0, double dV1,
@@ -108,7 +108,7 @@ static void get_output_dimensions(int start[3], int count[3],
     }
 }
 
-static void h5_output_integrand(fields_chunk *fc, component cgrid,
+static void h5_output_chunkloop(fields_chunk *fc, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,
@@ -180,7 +180,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   data.bufsz = 0;
   data.c = c; data.reim = reim;
 
-  integrate(h5_findsize_integrand, (void *) &data, 
+  loop_in_chunks(h5_findsize_chunkloop, (void *) &data, 
 	    where, Dielectric, true, true);
 
   data.max_corner = max_to_all(data.max_corner);
@@ -206,7 +206,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
 
   data.buf = new double[data.bufsz];
 
-  integrate(h5_output_integrand, (void *) &data, 
+  loop_in_chunks(h5_output_chunkloop, (void *) &data, 
 	    where, Dielectric, true, true);
 
   delete[] data.buf;

@@ -10,12 +10,13 @@ HDRS = meep.h meep_internals.h meep/mympi.h ran.h threevec.h meep/vec.h
 
 libmeep_la_SOURCES = anisotropic_averaging.cpp bands.cpp		\
 boundaries.cpp control_c.cpp dft.cpp energy_and_flux.cpp fields.cpp	\
-fields_integrate.cpp grace.cpp h5fields.cpp h5file.cpp initialize.cpp	\
-monitor.cpp mympi.cpp output_directory.cpp polarization.cpp ran.cpp	\
-slices.cpp sources.cpp step.cpp step_d.cpp step_h.cpp structure.cpp	\
-time.cpp update_e_from_d.cpp update_from_e.cpp vec.cpp $(HDRS)		\
-$(BUILT_SOURCES) update_e_from_d_prepare.cpp				\
-update_e_from_d_sources.cpp update_e_from_d_update.cpp
+loop_in_chunks.cpp grace.cpp h5fields.cpp h5file.cpp initialize.cpp	\
+integrate.cpp monitor.cpp mympi.cpp output_directory.cpp		\
+polarization.cpp ran.cpp slices.cpp sources.cpp step.cpp step_d.cpp	\
+step_h.cpp structure.cpp time.cpp update_e_from_d.cpp			\
+update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)			\
+update_e_from_d_prepare.cpp update_e_from_d_sources.cpp			\
+update_e_from_d_update.cpp
 
 libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 

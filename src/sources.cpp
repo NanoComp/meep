@@ -208,7 +208,7 @@ void fields::add_volume_source(component c, const src_time &src,
   add_volume_source(c, src, where, one, amp);
 }
 
-struct src_vol_integrand_data {
+struct src_vol_chunkloop_data {
   complex<double> (*A)(const vec &);
   complex<double> amp;
   src_time *src;
@@ -219,11 +219,11 @@ struct src_vol_integrand_data {
    problem, since we need to loop over all the chunks that intersect
    the source volume, with appropriate interpolation weights at the
    boundaries so that the integral of the current is fixed regardless
-   of resolution.  Unlike most uses of fields::integrate, however, we
+   of resolution.  Unlike most uses of fields::loop_in_chunks, however, we
    set use_symmetry=false: we only find the intersection of the volume
    with the untransformed chunks (since the transformed versions are
    implicit). */
-static void src_vol_integrand(fields_chunk *fc, component c,
+static void src_vol_chunkloop(fields_chunk *fc, component c,
 			      ivec is, ivec ie,
 			      vec s0, vec s1, vec e0, vec e1,
 			      double dV0, double dV1,
@@ -231,7 +231,7 @@ static void src_vol_integrand(fields_chunk *fc, component c,
 			      const symmetry &S, int sn,
 			      void *data_)
 {
-  src_vol_integrand_data *data = (src_vol_integrand_data *) data_;
+  src_vol_chunkloop_data *data = (src_vol_chunkloop_data *) data_;
   
   (void) S; (void) sn; // these should be the identity
   (void) dV0; (void) dV1; // volume weighting is included in data->amp
@@ -275,7 +275,7 @@ void fields::add_volume_source(component c, const src_time &src,
 				 - user_volume.boundary_location(Low, d)))
       abort("Source width > cell width in %s direction!\n", direction_name(d));
 
-  src_vol_integrand_data data;
+  src_vol_chunkloop_data data;
   data.A = A;
   data.amp = amp;
   LOOP_OVER_DIRECTIONS(v.dim, d)
@@ -283,7 +283,7 @@ void fields::add_volume_source(component c, const src_time &src,
       data.amp *= v.a; // correct units for J delta-function amplitude
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
-  integrate(src_vol_integrand, (void *) &data, where, c, false);
+  loop_in_chunks(src_vol_chunkloop, (void *) &data, where, c, false);
 
   // allocate fields if they haven't been allocated yet for this component
   int need_to_reconnect = 0;

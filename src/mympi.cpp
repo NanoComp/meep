@@ -291,6 +291,14 @@ complex<double> sum_to_all(complex<double> in) {
   return out;
 }
 
+complex<long double> sum_to_all(complex<long double> in) {
+  complex<long double> out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,2,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
 bool or_to_all(bool in) {
   int out = in;
 #ifdef HAVE_MPI

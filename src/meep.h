@@ -458,7 +458,7 @@ public:
 
   void negate_dft();
 
-  // the frequencies to integrate
+  // the frequencies to loop_in_chunks
   double omega_min, domega;
   int Nomega;
 
@@ -648,13 +648,16 @@ enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
 enum time_sink { Connecting, Stepping, Boundaries, MpiTime,
                  Slicing, Other };
 
-typedef void (*field_integrand)(fields_chunk *fc, component cgrid,
+typedef void (*field_chunkloop)(fields_chunk *fc, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,
 				ivec shift, complex<double> shift_phase, 
 				const symmetry &S, int sn,
-				void *integrand_data);
+				void *chunkloop_data);
+typedef complex<double> (*field_integrand)(const complex<double> *fields,
+					   const vec &loc,
+					   void *integrand_data_);
 
 class fields {
  public:
@@ -767,12 +770,23 @@ class fields {
   int phase_in_material(const structure *s, double time);
   int is_phasing();
 
-  // fields_integrate.cpp
-  void integrate(field_integrand integrand, void *integrand_data,
+  // loop_in_chunks.cpp
+  void loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
+		      const geometric_volume &where,
+		      component cgrid = Dielectric,
+		      bool use_symmetry = true,
+		      bool snap_unit_dims = false);
+  
+  // integrate.cpp
+  complex<double> integrate(int num_fields, const component *components,
+			    field_integrand integrand,
+			    const geometric_volume &where,
+			    void *integrand_data_ = 0,
+			    double *maxabs = 0);
+  double max_abs(int num_fields, const component *components,
+		 field_integrand integrand,
 		 const geometric_volume &where,
-		 component cgrid = Dielectric,
-		 bool use_symmetry = true,
-		 bool snap_unit_dims = false);
+		 void *integrand_data = 0);
   
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,
@@ -826,7 +840,7 @@ class fields {
   flux_vol *add_flux_plane(const vec &p1, const vec &p2);
   double electric_energy_max_in_box(const geometric_volume &where);
   double modal_volume_in_box(const geometric_volume &where);
-  double electric_deps_integral_in_box(double (*deps)(const vec &),
+  double electric_sqr_weighted_integral(double (*deps)(const vec &),
 				       const geometric_volume &where);
   double electric_energy_weighted_integral(double (*f)(const vec &),
 					   const geometric_volume &where);

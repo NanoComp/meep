@@ -40,56 +40,35 @@ typedef struct {
 } linear_integrand_data;
 
 /* integrand for integrating c + ax*x + ay*y + az*z. */
-static void linear_integrand(fields_chunk *fc, component cgrid,
-			     ivec is, ivec ie,
-			     vec s0, vec s1, vec e0, vec e1,
-			     double dV0, double dV1,
-			     ivec shift, complex<double> shift_phase, 
-			     const symmetry &S, int sn,
-			     void *data_)
+static complex<double> linear_integrand(const complex<double> *fields,
+					const vec &loc,
+					void *data_)
 {
   linear_integrand_data *data = (linear_integrand_data *) data_;
-  
-  /* we don't use the Bloch phase here, but it's important for
-     integrating fields, obviously */
-  (void) shift_phase;
 
-  /* the code should be correct regardless of cgrid */
-  (void) cgrid;
+  (void) fields; // unused
 
-  double inva = fc->v.inva;
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    IVEC_LOOP_LOC(fc->v, loc);
+  // clean_vec is only necessary because we reference X/Y/Z for any v.dim
+  vec locS(clean_vec(loc));
 
-    // clean_vec is only necessary because we reference X/Y/Z for any v.dim
-    vec locS(clean_vec(S.transform(loc, sn) + shift * (0.5*inva)));
-    if (0) master_printf("at (%g,%g,%g) with weight*dV = %g*%g\n",
-			 locS.in_direction(data->dx),
-			 locS.in_direction(data->dy),
-			 locS.in_direction(data->dz),
-			 IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1),
-			 dV0 + dV1 * loop_i2);
-
-    data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
-      * (data->c
-	 + data->ax * locS.in_direction(data->dx)
-	 + data->ay * locS.in_direction(data->dy)
-	 + data->az * locS.in_direction(data->dz)
-
-	 + data->axy * locS.in_direction(data->dx)
-	 * locS.in_direction(data->dy)
-
-	 + data->ayz * locS.in_direction(data->dz)
-	 * locS.in_direction(data->dy)
-
-	 + data->axz * locS.in_direction(data->dx)
-	 * locS.in_direction(data->dz)
-
-	 + data->axyz * locS.in_direction(data->dx)
-	 * locS.in_direction(data->dy)
-	 * locS.in_direction(data->dz)
-	 );
-  }
+  return (data->c
+	  + data->ax * locS.in_direction(data->dx)
+	  + data->ay * locS.in_direction(data->dy)
+	  + data->az * locS.in_direction(data->dz)
+	  
+	  + data->axy * locS.in_direction(data->dx)
+	  * locS.in_direction(data->dy)
+	  
+	  + data->ayz * locS.in_direction(data->dz)
+	  * locS.in_direction(data->dy)
+	  
+	  + data->axz * locS.in_direction(data->dx)
+	  * locS.in_direction(data->dz)
+	  
+	  + data->axyz * locS.in_direction(data->dx)
+	  * locS.in_direction(data->dy)
+	  * locS.in_direction(data->dz)
+	  );
 }
 
 /* integrals of 1 and x, respectively, from a to b, or 1 and x if a==b: */
@@ -232,12 +211,10 @@ void check_integral(fields &f,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
 		  d.c, d.ax,d.ay,d.az, d.axy,d.ayz,d.axz, d.axyz);
 
-  d.sum = 0.0;
-  f.integrate(linear_integrand, (void *) &d, gv);
-  d.sum = sum_to_all(d.sum);
-  if (fabs(d.sum - correct_integral(gv, d)) > 1e-9 * fabs(d.sum))
+  double sum = real(f.integrate(0, 0, linear_integrand, gv, (void *) &d));
+  if (fabs(sum - correct_integral(gv, d)) > 1e-9 * fabs(sum))
     abort("FAILED: %0.16g instead of %0.16g\n", 
-	  (double) d.sum, correct_integral(gv, d));
+	  (double) sum, correct_integral(gv, d));
   master_printf("...PASSED.\n");
 }
 

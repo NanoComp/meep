@@ -22,6 +22,21 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+/* This file contains a generic function for looping over all of the
+   points in all of the chunks that intersect some given volume.  This
+   is used for everything from HDF5 output to applying source volumes to
+   integrating energy and flux.  It's fairly tricky because of the
+   parallelization, arbitrary chunk divisions, symmetries, and periodic
+   boundary conditions, but at least all of the trickiness is in one
+   place.  It is designed so that the inner loops over the actual grid
+   points can be tight and fast (using the LOOP_OVER_IVECS macro).
+
+   Many of the loops over chunks involve some sort of integration-like
+   computation, and so we also perform the additional task of calculating
+   the integration weights for each point -- mainly, this involves weighting
+   the boundary points appropriately so that the sum approximates (via
+   linear interpolation) a continuous integral over the supplied volume. */
+
 /****************************************************************************
 
                      Integration Weights
@@ -98,7 +113,7 @@ e0 = w1 = 1 - w0
 
 Ideally, we should have different weights for the R direction of
 cylindrical coordinates, i.e. for integrating f(r) r dr, because again
-we want to perfectly integrate any linear f(r).  Thus, the integration
+we want to perfectly loop_in_chunks any linear f(r).  Thus, the integration
 weights will depend upon r.  Note, however, that we also have an r in
 the dV, so we will have to divide the weights by this factor.
 
@@ -138,7 +153,7 @@ The above is also not correct for integrals that cross x=0, because
 it should really be the integral of f(x) |x|.  Even interior points
 probably need special handling in that case.  For sanity, we would
 just divide the integration region into positive and negative r and
-integrate them separately somehow.  Grrr.
+loop_in_chunks them separately somehow.  Grrr.
 
 2) one grid point between a and b.
 
@@ -194,67 +209,67 @@ static ivec vec2diel_ceil(const vec &v, double a, const ivec &equal_shift) {
 
 static inline int iabs(int i) { return (i < 0 ? -i : i); }
 
-/* Generic function for computing integrals of fields, and
+/* Generic function for computing loops within the chunks, often
    integral-like things, over a volume WHERE.  The job of this
-   function is to call INTEGRAND() for each chunk that intersects
+   function is to call CHUNKLOOP() for each chunk that intersects
    WHERE, passing it the chunk, the range of integer coordinates to
-   integrate, the integration weights for the boundary points, and the
+   loop_in_chunks, the integration weights for the boundary points, and the
    bloch phase shift, translational shift, and symmetry operation to
    transform the chunk to the actual integration location.  (N.B.
    we apply the symmetry first to the chunk, *then* the shift.)
 
-   We also pass the integrand dV0 and dV1, such that the integration
-   "volume" dV is dV0 + dV1 * iloopR, where iloopR is the loop variable
-   (starting from 0 at the starting integer coord and incrementing by
-   1) corresponding to the direction R.  Note that, in the
-   LOOP_OVER_IVECS macro, iloopR corresponds to the loop variable
+   We also pass CHUNKLOOP() dV0 and dV1, such that the integration
+   "volume" dV is dV0 + dV1 * iloopR, where iloopR is the loop
+   variable (starting from 0 at the starting integer coord and
+   incrementing by 1) corresponding to the direction R.  Note that, in
+   the LOOP_OVER_IVECS macro, iloopR corresponds to the loop variable
    loop_i2 in Dcyl (cylindrical coordinates).  In other coordinates,
    dV1 is 0.  Note also that by "volume" dV we mean the integration
-   unit corresponding to the dimensionality of WHERE (e.g. an area
-   if WHERE is 2d, etc.)
+   unit corresponding to the dimensionality of WHERE (e.g. an area if
+   WHERE is 2d, etc.)
 
-   In particular, the integration coordinates are calculated on the
+   In particular, the loop's point coordinates are calculated on the
    Yee grid for component cgrid.  cgrid == Dielectric is a good choice
-   if you want to integrate a combination of multiple field components,
-   because all of the field components can be interpolated onto this
-   grid without communication between chunks.
+   if you want to loop_in_chunks a combination of multiple field
+   components, because all of the field components can be interpolated
+   onto this grid without communication between chunks.
 
    The integration weights are chosen to correspond to integrating the
    linear interpolation of the function values from these grid points.
 
-   For a simple example of an integrand routine, see the
-   tests/integrate.cpp file.
+   For a simple example of an chunkloop routine, see the
+   tests/loop_in_chunks.cpp file.
 
    The parameters USE_SYMMETRY (default = true) and SNAP_UNIT_DIMS
    (default = false) are for use with not-quite-integration-like
-   operations.  If use_symmetry is false, then we do *not* loop
-   over all possible symmetry transformations of the chunks to see
-   if they intersect WHERE; we only use chunks that, untransformed,
-   already intersect the volume.  If SNAP_UNIT_DIMS is true,
-   then for empty (min = max) dimensions of WHERE, instead of interpolating,
-   we "snap" them to the nearest grid point.
- */
-void fields::integrate(field_integrand integrand, void *integrand_data,
-		       const geometric_volume &where, 
-		       component cgrid,
-		       bool use_symmetry, bool snap_unit_dims)
+   operations.  If use_symmetry is false, then we do *not* loop over
+   all possible symmetry transformations of the chunks to see if they
+   intersect WHERE; we only use chunks that, untransformed, already
+   intersect the volume.  If SNAP_UNIT_DIMS is true, then for empty
+   (min = max) dimensions of WHERE, instead of interpolating, we
+   "snap" them to the nearest grid point.  */
+
+void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
+			    const geometric_volume &where, 
+			    component cgrid,
+			    bool use_symmetry, bool snap_unit_dims)
 {
   if (coordinate_mismatch(v.dim, cgrid))
-    abort("Invalid fields::integrate grid type %s for dimensions %s\n",
+    abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n",
 	  component_name(cgrid), dimension_name(v.dim));
   if (where.dim != v.dim)
-    abort("Invalid dimensions %d for WHERE in fields::integrate", where.dim);
+    abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
   
   /*
-    We handle integration on an arbitrary component grid by shifting
-    to the dielectric grid and then shifting back.  The integration
+    We handle looping on an arbitrary component grid by shifting
+    to the dielectric grid and then shifting back.  The looping
     coordinates are internally calculated on the odd-indexed
     "dielectric grid", which has the virtue that it is disjoint for
     each chunk and each chunk has enough information to interpolate all
     of its field components onto this grid without communication.
     Another virtue of this grid is that it is invariant under all of
     our symmetry transformations, so we can uniquely decide which
-    transformed chunk gets to integrate which grid point. 
+    transformed chunk gets to loop_in_chunks which grid point. 
   */
   vec yee_c(v.yee_shift(Dielectric) - v.yee_shift(cgrid));
   ivec iyee_c(v.iyee_shift(Dielectric) - v.iyee_shift(cgrid));
@@ -305,7 +320,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
       e1.set_direction(d, s0.in_direction(d));
     }
     else
-      abort("bug: impossible(?) integration boundaries");
+      abort("bug: impossible(?) looping boundaries");
   }
 
   // loop over symmetry transformations of the chunks:
@@ -355,7 +370,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 
       for (int i = 0; i < num_chunks; ++i) {
 	if (!chunks[i]->is_mine()) continue;
-	// Chunk integration boundaries:
+	// Chunk looping boundaries:
 	geometric_volume gvS(v.dim);
 
 	if (use_symmetry)
@@ -377,7 +392,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	ivec iecS(min(ie-shifti, vec2diel_floor(gvS.get_max_corner(),
 						v.a, zero_ivec(v.dim))));
 	if (iscS <= iecS) {
-	  // Determine weights at chunk integration boundaries:
+	  // Determine weights at chunk looping boundaries:
 	  ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
 	  vec s0c(v.dim,1.0), s1c(v.dim,1.0), e0c(v.dim,1.0), e1c(v.dim,1.0);
 	  iscS += shifti;
@@ -440,13 +455,13 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 				- yee_c).in_direction(R));
 	  }
 	 
-	  integrand(chunks[i], cS,
+	  chunkloop(chunks[i], cS,
 		    isc - iyee_cS, iec - iyee_cS,
 		    s0c, s1c, e0c, e1c,
 		    dV0, dV1,
 		    shifti, ph,
 		    S, sn,
-		    integrand_data);
+		    chunkloop_data);
 	}
       }
       

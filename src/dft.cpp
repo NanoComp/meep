@@ -24,7 +24,7 @@
 
 namespace meep {
 
-struct dft_chunk_data { // for passing to field::integrate as void*
+struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   double omega_min, domega;
   int Nomega;
   component c;
@@ -95,15 +95,15 @@ dft_chunk::~dft_chunk() {
     fc->dft_chunks = next_in_chunk;
 }
 
-static void add_dft_integrand(fields_chunk *fc, component cgrid,
+static void add_dft_chunkloop(fields_chunk *fc, component cgrid,
 			      ivec is, ivec ie,
 			      vec s0, vec s1, vec e0, vec e1,
 			      double dV0, double dV1,
 			      ivec shift, complex<double> shift_phase,
 			      const symmetry &S, int sn,
-			      void *integrand_data)
+			      void *chunkloop_data)
 {
-  dft_chunk_data *data = (dft_chunk_data *) integrand_data;
+  dft_chunk_data *data = (dft_chunk_data *) chunkloop_data;
   (void) shift; // unused
 
   if (cgrid != Dielectric) abort("dft chunks should use the Dielectric grid");
@@ -114,7 +114,7 @@ static void add_dft_integrand(fields_chunk *fc, component cgrid,
 
   data->dft_chunks = new dft_chunk(fc,is,ie,s0,s1,e0,e1,dV0,dV1,
 				   shift_phase * S.phase_shift(c, sn),
-				   c, integrand_data);
+				   c, chunkloop_data);
 }
 
 dft_chunk *fields::add_dft(component c, const geometric_volume &where,
@@ -133,7 +133,7 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
   data.include_dV = include_dV;
   data.dft_chunks = chunk_next;
   data.weight = weight * (dt/sqrt(2*pi));
-  integrate(add_dft_integrand, (void *) &data, where);
+  loop_in_chunks(add_dft_chunkloop, (void *) &data, where);
 
   return data.dft_chunks;
 }

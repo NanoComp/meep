@@ -70,38 +70,11 @@ double fields::field_energy_in_box(const geometric_volume &where) {
     0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(where);
 }
 
-struct dot_integrand_data {
-  component c1, c2;
-  long double sum;
-};
-
-static void dot_integrand(fields_chunk *fc, component cgrid,
-			  ivec is, ivec ie,
-			  vec s0, vec s1, vec e0, vec e1,
-			  double dV0, double dV1,
-			  ivec shift, complex<double> shift_phase,
-			  const symmetry &S, int sn,
-			  void *data_) {
-  dot_integrand_data *data = (dot_integrand_data *) data_;
-
-  (void) shift; // unused
-  (void) shift_phase; // unused
-
-  component c1 = S.transform(data->c1, -sn);
-  component c2 = S.transform(data->c2, -sn);
-
-  // We're integrating c1 * c2*, and we assume that
-  // S.phase_shift(c1,sn) == S.phase_shift(c2,sn), so the phases all cancel
-
-  // We also assume that cgrid is the same yee grid as that for c1 and c2,
-  // so that no averaging is needed.
-  (void) cgrid;
-
-  for (int cmp = 0; cmp < 2; ++cmp)
-    if (fc->f[c1][cmp] && fc->f[c2][cmp])
-      LOOP_OVER_IVECS(fc->v, is, ie, idx)
-	data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
-	  * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx];
+static complex<double> dot_integrand(const complex<double> *fields,
+				     const vec &loc, void *data_)
+{
+  (void) loc; (void) data_; // unused;
+  return real(conj(fields[0]) * fields[1]);
 }
 
 double fields::field_energy_in_box(component c,
@@ -109,20 +82,18 @@ double fields::field_energy_in_box(component c,
   if (coordinate_mismatch(v.dim, c))
     return 0.0;
 
-  dot_integrand_data data;
+  component cs[2];
   if (is_electric(c) || is_D(c)) {
-    data.c1 = direction_component(Ex, component_direction(c));
-    data.c2 = direction_component(Dx, component_direction(c));
+    cs[0] = direction_component(Ex, component_direction(c));
+    cs[1] = direction_component(Dx, component_direction(c));
   }
   else if (is_magnetic(c)) {
-    data.c1 = data.c2 = direction_component(Hx, component_direction(c));
+    cs[0] = cs[1] = direction_component(Hx, component_direction(c));
   }
   else
     abort("invalid field component in field_energy_in_box");
 
-  data.sum = 0.0;
-  integrate(dot_integrand, (void *) &data, where, c);
-  return sum_to_all(data.sum) / (8*pi);
+  return real(integrate(2, cs, dot_integrand, where)) / (8*pi);
 }
 
 double fields::electric_energy_in_box(const geometric_volume &where) {
@@ -166,7 +137,7 @@ void fields_chunk::restore_h() {
     }
 }
 
-static void thermo_integrand(fields_chunk *fc, component cgrid,
+static void thermo_chunkloop(fields_chunk *fc, component cgrid,
 			     ivec is, ivec ie,
 			     vec s0, vec s1, vec e0, vec e1,
 			     double dV0, double dV1,
@@ -185,69 +156,8 @@ double fields::thermo_energy_in_box(const geometric_volume &where) {
   long double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c)
     if (!coordinate_mismatch(v.dim, c))
-      integrate(thermo_integrand, (void *) &sum, where, c);
+      loop_in_chunks(thermo_chunkloop, (void *) &sum, where, c);
   return sum_to_all(sum);
-}
-
-struct flux_integrand_data {
-  direction d; // flux direction
-  component cE, cH; // components of E and H to get ExH in d
-  long double sum;
-};
-
-static void flux_integrand(fields_chunk *fc, component cgrid,
-			  ivec is, ivec ie,
-			  vec s0, vec s1, vec e0, vec e1,
-			  double dV0, double dV1,
-			  ivec shift, complex<double> shift_phase,
-			  const symmetry &S, int sn,
-			  void *data_) {
-  flux_integrand_data *data = (flux_integrand_data *) data_;
-
-  (void) shift; // unused
-  (void) shift_phase; // unused
-  (void) cgrid; // == Dielectric
-
-  component cE = S.transform(data->cE, -sn);
-  component cH = S.transform(data->cH, -sn);
-
-  // We're integrating Re[E * H*], and we assume that
-  // S.phase_shift(cE,sn) == S.phase_shift(cH,sn), so the phases all cancel
-  // ...except for at most an overall sign, which is fixed by checking
-  // whether S.transform(data->d, -sn) is flipped, below.
-
-  // offsets to average E and H components onto the Dielectric grid
-  int oE1, oE2, oH1, oH2;
-  fc->v.yee2diel_offsets(cE, oE1, oE2);
-  fc->v.yee2diel_offsets(cH, oH1, oH2);
-
-  long double sum = 0.0;
-
-  for (int cmp = 0; cmp < 2; ++cmp)
-    if (fc->f[cE][cmp] && fc->f[cH][cmp])
-      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-	double E, H;
-
-	if (oE2)
-	  E = 0.25 * (fc->f[cE][cmp][idx] + fc->f[cE][cmp][idx+oE1] +
-		      fc->f[cE][cmp][idx+oE2] + fc->f[cE][cmp][idx+(oE1+oE2)]);
-	else if (oE1)
-	  E = 0.5 * (fc->f[cE][cmp][idx] + fc->f[cE][cmp][idx+oE1]);
-	else
-	  E = fc->f[cE][cmp][idx];
-
-	if (oH2)
-	  H = 0.25 * (fc->f[cH][cmp][idx] + fc->f[cH][cmp][idx+oH1] +
-		      fc->f[cH][cmp][idx+oH2] + fc->f[cH][cmp][idx+(oH1+oH2)]);
-	else if (oH1)
-	  H = 0.5 * (fc->f[cH][cmp][idx] + fc->f[cH][cmp][idx+oH1]);
-	else
-	  H = fc->f[cH][cmp][idx];
-	
-	sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2) * E * H;
-    }
-
-  data->sum += S.transform(data->d, -sn).flipped ? -sum : sum;
 }
 
 /* Compute ExH integral in box using current fields, ignoring fact
@@ -271,14 +181,11 @@ double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
   case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
   }
   
-  flux_integrand_data data;
-  data.d = d;
   long double sum = 0.0;
   for (int i = 0; i < 2; ++i) {
-    data.cE = cE[i]; data.cH = cH[i];
-    data.sum = 0.0;
-    integrate(flux_integrand, (void *) &data, where, Dielectric);
-    sum += data.sum * (1 - 2*i);
+    component cs[2];
+    cs[0] = cE[i]; cs[1] = cH[i];
+    sum += real(integrate(2, cs, dot_integrand, where)) * (1 - 2*i);
   }
   return sum_to_all(sum) / (4*pi);
 }
@@ -315,84 +222,27 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
 
 /************************************************************************/
 
-struct max_integrand_data {
-  component c1[3], c2[3]; // field components to take dot product of
-  double max;
-};
-
-static void max_integrand(fields_chunk *fc, component cgrid,
-			  ivec is, ivec ie,
-			  vec s0, vec s1, vec e0, vec e1,
-			  double dV0, double dV1,
-			  ivec shift, complex<double> shift_phase,
-			  const symmetry &S, int sn,
-			  void *data_) {
-  max_integrand_data *data = (max_integrand_data *) data_;
-
-  (void) shift; // unused
-  (void) cgrid; // == Dielectric
-  (void) s0; (void) s1; (void) e0; (void) e1; (void) dV0; (void) dV1; // unused
-
-  // We're taking the maximum of E * D*, and we assume that
-  // S.phase_shift(E,sn) == S.phase_shift(D,sn), so the phases all cancel
-  (void) shift_phase; (void) S; (void) sn; // unused
-
-  // offsets to average c1 and c2 (e.g. E and D) onto the Dielectric grid
-  // (assume c1 and c2 are stored at the same grid point, so have same offset)
-  int oA[3], oB[3];
-  for (int i = 0; i < 3; ++i)
-    fc->v.yee2diel_offsets(data->c1[i], oA[i], oB[i]);
-
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    double dot = 0.0;
-    for (int i = 0; i < 3; ++i) {
-      for (int cmp = 0; cmp < 2; ++cmp) {
-	component c1i, c2i;
-	if (fc->f[c1i = data->c1[i]][cmp] && fc->f[c2i = data->c2[i]][cmp]) {
-	  if (oB[i]) // average over 4 points:
-	    dot += 0.25 *
-	      (fc->f[c1i][cmp][idx] * fc->f[c2i][cmp][idx] +
-	       fc->f[c1i][cmp][idx + oA[i]] * fc->f[c2i][cmp][idx + oA[i]] +
-	       fc->f[c1i][cmp][idx + oB[i]] * fc->f[c2i][cmp][idx + oB[i]] +
-	       fc->f[c1i][cmp][idx + oA[i] + oB[i]] 
-	       * fc->f[c2i][cmp][idx + oA[i] + oB[i]]);
-	  else if (oA[i]) // average over 2 points:
-	    dot += 0.5 *
-	      (fc->f[c1i][cmp][idx] * fc->f[c2i][cmp][idx] +
-	       fc->f[c1i][cmp][idx + oA[i]] * fc->f[c2i][cmp][idx + oA[i]]);
-	  else // no average
-	    dot += fc->f[c1i][cmp][idx] * fc->f[c2i][cmp][idx];
-	}
-      }
-    }
-    if (dot > data->max)
-      data->max = dot;
-  }
+static complex<double> dot3_integrand(const complex<double> *fields,
+				      const vec &loc, void *data_)
+{
+  (void) loc; (void) data_; // unused;
+  return (real(conj(fields[0]) * fields[3]) +
+	  real(conj(fields[1]) * fields[4]) +
+	  real(conj(fields[2]) * fields[5]));
 }
 
 double fields::electric_energy_max_in_box(const geometric_volume &where) {
-  max_integrand_data data;
-
+  component cs[6];
   if (v.dim == Dcyl) {
-    data.c1[0] = Er;
-    data.c1[1] = Ep;
-    data.c1[2] = Ez;
-    data.c2[0] = Dr;
-    data.c2[1] = Dp;
-    data.c2[2] = Dz;
+    cs[0] = Er; cs[1] = Ep; cs[2] = Ez;
+    cs[3+0] = Dr; cs[3+1] = Dp; cs[3+2] = Dz;
   }
   else {
-    data.c1[0] = Ex;
-    data.c1[1] = Ey;
-    data.c1[2] = Ez;
-    data.c2[0] = Dx;
-    data.c2[1] = Dy;
-    data.c2[2] = Dz;
+    cs[0] = Ex; cs[1] = Ey; cs[2] = Ez;
+    cs[3+0] = Dx; cs[3+1] = Dy; cs[3+2] = Dz;
   }
-
-  data.max = 0.0;
-  integrate(max_integrand, (void *) &data, where, Dielectric);
-  return max_to_all(data.max) / (8*pi);
+  
+  return max_abs(6, cs, dot3_integrand, where) / (8*pi);
 }
 
 /* "modal" volume according to definition in:
@@ -408,74 +258,39 @@ double fields::modal_volume_in_box(const geometric_volume &where) {
      perturbation theory, etcetera, where f1 and f2 are two field components
      on the same Yee lattice (e.g. Hx and Hx or Ex and Dx). */
 
-struct dot_weight_integrand_data {
-  component c1, c2;
-  double (*f)(const vec &);
-  long double sum;
-};
+typedef double (*fx_func)(const vec &);
 
-static void dot_weight_integrand(fields_chunk *fc, component cgrid,
-			       ivec is, ivec ie,
-			       vec s0, vec s1, vec e0, vec e1,
-			       double dV0, double dV1,
-			       ivec shift, complex<double> shift_phase,
-			       const symmetry &S, int sn,
-			       void *data_) {
-  dot_weight_integrand_data *data = (dot_weight_integrand_data *) data_;
-
-  (void) shift_phase; // unused
-
-  component c1 = S.transform(data->c1, -sn);
-  component c2 = S.transform(data->c2, -sn);
-
-  // We're integrating c1 * c2*, and we assume that
-  // S.phase_shift(c1,sn) == S.phase_shift(c2,sn), so the phases all cancel
-
-  // We also assume that cgrid is the same yee grid as that for c1 and c2,
-  // so that no averaging is needed.
-  (void) cgrid;
-
-  double inva = fc->v.inva;
-  for (int cmp = 0; cmp < 2; ++cmp)
-    if (fc->f[c1][cmp] && fc->f[c2][cmp])
-      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-        IVEC_LOOP_LOC(fc->v, loc);
-        vec locS(S.transform(loc, sn) + shift * (0.5*inva));
-
-        data->sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
-	  * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx] * data->f(locS);
-    }
+static complex<double> dot_fx_integrand(const complex<double> *fields,
+					const vec &loc, void *data_) {
+  fx_func fx = (fx_func) data_;
+  return (real(conj(fields[0]) * fields[1]) * fx(loc));
 }
 
-double fields::electric_deps_integral_in_box(double (*deps)(const vec &),
+/* computes integral of f(x) * |E|^2 / (8*pi) / integral epsilon*|E|^2 */
+double fields::electric_sqr_weighted_integral(double (*deps)(const vec &),
 					     const geometric_volume &where) {
-  dot_weight_integrand_data data;
-  data.f = deps;
-  data.sum = 0.0;
-
+  double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c) 
     if (!coordinate_mismatch(v.dim, component_direction(c))) {
-      data.c1 = direction_component(Ex, component_direction(c));
-      data.c2 = direction_component(Ex, component_direction(c));
-      integrate(dot_weight_integrand, (void *) &data, where, c);
+      component cs[2];
+      cs[0] = cs[1] = direction_component(Ex, component_direction(c));
+      sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) deps));
     }
-  return sum_to_all(data.sum) / (8*pi);
+  return sum / (8*pi) / electric_energy_in_box(where);
 }
 
 /* computes integral of f(x) * epsilon*|E|^2 / integral epsilon*|E|^2 */
 double fields::electric_energy_weighted_integral(double (*f)(const vec &),
 					     const geometric_volume &where) {
-  dot_weight_integrand_data data;
-  data.f = f;
-  data.sum = 0.0;
-
+  double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c) 
     if (!coordinate_mismatch(v.dim, component_direction(c))) {
-      data.c1 = direction_component(Ex, component_direction(c));
-      data.c2 = direction_component(Dx, component_direction(c));
-      integrate(dot_weight_integrand, (void *) &data, where, c);
+      component cs[2];
+      cs[0] = direction_component(Ex, component_direction(c));
+      cs[1] = direction_component(Dx, component_direction(c));
+      sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) f));
     }
-  return sum_to_all(data.sum) / (8*pi) / electric_energy_in_box(where);
+  return sum / (8*pi) / electric_energy_in_box(where);
 }
 
 } // namespace meep
