@@ -41,6 +41,7 @@ double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
+complex<double> sum_to_all(complex<double>);
 
 // IO routines:
 void master_printf(const char *fmt, ...);

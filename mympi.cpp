@@ -129,6 +129,14 @@ double sum_to_all(double in) {
   return out;
 }
 
+complex<double> sum_to_all(complex<double> in) {
+  complex<double> out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,2,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
 void all_wait() {
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
