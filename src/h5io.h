@@ -28,15 +28,15 @@ namespace meep {
 			   int rank, const int *dims,
 			   double *data,
 			   const int *chunk_start, const int *chunk_dims,
-			   bool append_data, int dindex,
 			   bool parallel, bool first_chunk,
-			   bool single_precision,
-			   bool append_file);
+			   bool append_data = false, int dindex = -1,
+			   bool append_file = false,
+			   bool single_precision = true);
 
 	  void write(const char *filename, const char *dataname,
 		     double *data, int rank, const int *dims,
-		     bool single_precision,
-		     bool append_file);
+		     bool append_file = false,
+		     bool single_precision = true);
 
 
      } // namespace h5io

@@ -92,7 +92,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   char fname[1024];
   snprintf(fname, 1024, "%s.h5", name);
   double res = 1.54321 * a;
-  f.output_hdf5(fname, file_c, file_gv, res);
+  f.output_hdf5(fname, file_c, file_gv, res, false, -1, false, false);
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
@@ -197,7 +197,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   char fname[1024];
   snprintf(fname, 1024, "%s.h5", name);
   double res = 0.54321 * a;
-  f.output_hdf5(fname, file_c, file_gv, res);
+  f.output_hdf5(fname, file_c, file_gv, res, false, -1, false, false);
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
@@ -303,7 +303,7 @@ bool check_2d_monitor(double eps(const vec &),
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
     f.output_hdf5(fname, file_c, geometric_volume(pt, pt), a,
-		  true, f.t);
+		  true, f.t, false, false);
     mon[f.t] = f.get_field(file_c, pt);
     f.step();
   }

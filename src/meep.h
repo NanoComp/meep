@@ -549,15 +549,18 @@ class fields {
 		   component c, int reim,
 		   const geometric_volume &where, double res,
 		   bool append_data = false, int dindex = -1,
-		   bool single_precision = false, bool append_file = false);
+		   bool append_file = false,
+		   bool single_precision = true);
   void output_hdf5(const char *filename, component c,
 		   const geometric_volume &where, double res,
 		   bool append_data = false, int dindex = -1,
-		   bool single_precision = false, bool append_file = false);
+		   bool append_file = false,
+		   bool single_precision = true);
   void output_hdf5(component c,
 		   const geometric_volume &where, double res,
 		   bool append_data = false, int dindex = -1,
-		   bool single_precision = false, bool append_file = false,
+		   bool append_file = false,
+		   bool single_precision = true, 
 		   const char *prefix = 0);
 
   double maxfieldmag_to_master(component) const;

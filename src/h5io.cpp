@@ -174,10 +174,10 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 		       int rank, const int *dims,
 		       double *data,
 		       const int *chunk_start, const int *chunk_dims,
-		       bool append_data, int dindex,
 		       bool parallel, bool first_chunk, 
-		       bool single_precision,
-		       bool append_file)
+		       bool append_data, int dindex,
+		       bool append_file,
+		       bool single_precision)
 {
 #ifdef HAVE_HDF5
      int i;
@@ -354,14 +354,17 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 
 void h5io::write(const char *filename, const char *dataname,
 		 double *data, int rank, const int *dims,
-		 bool single_precision,
-		 bool append_file)
+		 bool append_file,
+		 bool single_precision)
 {
   if (am_master()) {
     int *start = new int[rank + 1];
     for (int i = 0; i < rank; i++) start[i] = 0;
     h5io::write_chunk(filename, dataname, rank, dims, data, start, dims,
-		      false,-1, false, true, single_precision, append_file);
+		      false, true, 
+		      false,-1, 
+		      append_file,
+		      single_precision);
     delete[] start;
   }
 }

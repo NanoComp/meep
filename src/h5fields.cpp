@@ -32,7 +32,8 @@ void fields::output_hdf5(const char *filename, const char *dataname,
 			 component c, int reim,
 			 const geometric_volume &where, double res,
 			 bool append_data, int dindex,
-                         bool single_precision, bool append_file) {
+			 bool append_file,
+                         bool single_precision) {
   geometric_volume vout(where); // FIXME: intersect with computational cell?
   vec loc0(vout.dim);
 
@@ -160,9 +161,9 @@ void fields::output_hdf5(const char *filename, const char *dataname,
 	
 	h5io::write_chunk(filename, dataname,
 			  rank, dims, data, start, count,
-			  append_data, dindex,
 			  true, !chunks_written && (!append_data || !dindex),
-			  single_precision, append_file);
+			  append_data, dindex,
+			  append_file, single_precision);
 	++chunks_written;
       }
     }
@@ -178,7 +179,7 @@ void fields::output_hdf5(const char *filename, const char *dataname,
 			rank, dims, data, start, count,
 			append_data, dindex,
 			true, !chunks_written && (!append_data || !dindex),
-			single_precision, append_file);
+			append_file, single_precision);
       ++chunks_written;
   }
 }
@@ -186,24 +187,26 @@ void fields::output_hdf5(const char *filename, const char *dataname,
 void fields::output_hdf5(const char *filename, component c,
 			 const geometric_volume &where, double res,
 			 bool append_data, int dindex,
-                         bool single_precision, bool append_file) {
+			 bool append_file,
+                         bool single_precision) {
   char dataname[256];
   bool has_imag = !is_real && c != Dielectric;
 
   snprintf(dataname, 256, "%s%s", component_name(c), has_imag ? ".r" : "");
   output_hdf5(filename, dataname, c, 0, where, res,
-	      append_data, dindex, single_precision, append_file);
+	      append_data, dindex, append_file, single_precision);
   if (has_imag) {
     snprintf(dataname, 256, "%s.i", component_name(c));
     output_hdf5(filename, dataname, c, 1, where, res,
-		append_data, dindex, single_precision, true);
+		append_data, dindex, true, single_precision);
   }
 }
 
 void fields::output_hdf5(component c,
 			 const geometric_volume &where, double res,
 			 bool append_data, int dindex,
-                         bool single_precision, bool append_file,
+                         bool append_file,
+			 bool single_precision, 
 			 const char *prefix) {
   const int buflen = 1024;
   char filename[buflen];
@@ -217,7 +220,7 @@ void fields::output_hdf5(component c,
 	   time_step_string);
 
   output_hdf5(filename, c, where, res, append_data, dindex,
-	      single_precision, append_file);
+	      append_file, single_precision);
 }
 
 } // meep
