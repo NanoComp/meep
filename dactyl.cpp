@@ -873,10 +873,10 @@ void fields::step_e_boundaries() {
         CM(er,r,nz)+= c*MA(ma->invepser,r,z)*
           (IT(hz,r,nz)*morph - (EIKZ(hp,r,0)-CM(hp,r,nz-1)));
 
-        CM(ep,r,0)+= c*MA(ma->invepsep,r,z)*
-          ((CM(hr,r,0)-EMIKZ(hr,r,nz-1)) - (CM(hz,r,0)-CM(hz,r-1,0)));
+        CM(ep,r, 0)+= c*MA(ma->invepsep,r,z)*
+          ((CM(hr,r,0)-EMIKZ(hr,r,nz-1)) - (CM(hz,r, 0)-CM(hz,r-1, 0)));
         CM(ep,r,nz)+= c*MA(ma->invepsep,r,z)*
-          ((EIKZ(hr,r,0)-CM(hr,r,nz-1)) - (CM(hz,r,nz)-CM(hz,r-1,nz)));
+          (( EIKZ(hr,r,0)-CM(hr,r,nz-1)) - (CM(hz,r,nz)-CM(hz,r-1,nz)));
       }
       {
         const int r=rmin_bulk(m)-1, z=0;
@@ -889,10 +889,10 @@ void fields::step_e_boundaries() {
       }
       if (m==1) { // corner case...
         const int r=0;
-        CM(ep,r,0)+= c*MA(ma->invepsep,r,0)*
-          ((CM(hr,r,0)-EMIKZ(hr,r,nz-1)) - (CM(hz,r,0)*2.0));
+        CM(ep,r, 0)+= c*MA(ma->invepsep,r,0)*
+          ((CM(hr,r,0)-EMIKZ(hr,r,nz-1)) - (CM(hz,r, 0)*2.0));
         CM(ep,r,nz)+= c*MA(ma->invepsep,r,0)*
-          ((EIKZ(hr,r,0)-CM(hr,r,nz-1)) - (CM(hz,r,nz)*2.0));
+          (( EIKZ(hr,r,0)-CM(hr,r,nz-1)) - (CM(hz,r,nz)*2.0));
       }
     }
     if (m==0) {
