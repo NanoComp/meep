@@ -57,8 +57,8 @@ decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "1"
 decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "1"
 sig_m = ("have_m_pml") |?| "C_m[ind]" |:| "0"
 sig_p = ("have_p_pml") |?| "C_p[ind]" |:| "0"
-deriv_m = ("have_m") |?| "f_m[ind]-f_m[ind-stride_m]" |:| "0"
-m_deriv_p = ("have_p") |?| "f_p[ind-stride_p]-f_p[ind]" |:| "0"
+deriv_m = ("have_m") |?| "(f_m[ind]-f_m[ind-stride_m])" |:| "0"
+m_deriv_p = ("have_p") |?| "(f_p[ind-stride_p]-f_p[ind])" |:| "0"
 
 if_have_p_else x y = ifelse_ "have_p" x
                      (declare "have_p_pml" False $ declare "have_m" True y)
