@@ -1,4 +1,5 @@
 #include <math.h>
+#include <unistd.h>
 #include <stdio.h>
 
 #include "meep.h"
@@ -90,6 +91,9 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   snprintf(fname, 1024, "%s.h5", name);
   double res = 1.54321 * a;
   f.output_hdf5(fname, file_gv, res, file_c);
+
+  sync(); // flush the filesystem buffers before we read back
+  all_wait();
 
   // compute corner coordinate of file data
   double resinv = 1.0 / res;
@@ -189,6 +193,9 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   snprintf(fname, 1024, "%s.h5", name);
   double res = 0.54321 * a;
   f.output_hdf5(fname, file_gv, res, file_c);
+
+  sync(); // flush the filesystem buffers before we read back
+  all_wait();
 
   // compute corner coordinate of file data
   double resinv = 1.0 / res;
@@ -292,6 +299,9 @@ bool check_2d_monitor(double eps(const vec &),
     mon[f.t] = f.get_field(file_c, pt);
     f.step();
   }
+
+  sync(); // flush the filesystem buffers before we read back
+  all_wait();
 
   double data_min = infinity, data_max = -infinity;
   double err_max = 0;

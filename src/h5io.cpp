@@ -193,6 +193,8 @@ void h5io::write_chunk(const char *filename, const char *dataname,
      // stupid HDF5 has problems with rank 0
      rank1 = (rank == 0 && !append_data) ? 1 : rank;
 
+     all_wait();
+
      hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
 #  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
      if (parallel)
@@ -263,7 +265,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	  data_id = H5Dopen(file_id, dataname);
 	  CHECK(data_id >= 0, "missing dataset for subsequent chunk");
 	  space_id = H5Dget_space(data_id);
-	  
+
 	  CHECK(rank1 + append_data == H5Sget_simple_extent_ndims(space_id),
 		"file data is inconsistent rank for subsequent chunk");
 	  
