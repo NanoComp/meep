@@ -78,15 +78,18 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
 void fields_chunk::interpolate_field(component c, const vec &loc,
                                      complex<double> val[8],
                                      complex<double> phase) const {
-  int ind[8];
-  double w[8];
-  v.interpolate((component)c,loc,ind,w);
-  int startingat = 0;
-  for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
-  for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
-    val[i+startingat] = phase*getcm(f[c],ind[i]);
-    if (val[i+startingat] == 0.0) startingat--;
+  if (is_mine()) {
+    int ind[8];
+    double w[8];
+    v.interpolate((component)c,loc,ind,w);
+    int startingat = 0;
+    for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
+    for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
+      val[i+startingat] = phase*getcm(f[c],ind[i]);
+      if (val[i+startingat] == 0.0) startingat--;
+    }
   }
+  broadcast(n_proc(), val, 8);
 }
 
 monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) const {
