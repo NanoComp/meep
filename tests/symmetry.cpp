@@ -124,7 +124,7 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
 
 int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   master_printf("Testing Z mirror symmetry in Cylindrical...\n");
-  double a = 10.0;
+  double a = 16.0;
   double ttot = 3.0;
 
   const volume v = volcyl(1.0, 1.0, a);
@@ -167,7 +167,7 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
 
 int test_1d_periodic_mirror(double eps(const vec &)) {
   master_printf("Testing Z mirror symmetry in 1D...\n");
-  double a = 10.0;
+  double a = 16.0;
   double ttot = 3.0;
 
   const volume v = volone(1.0, a);
@@ -206,7 +206,7 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
 
 int test_origin_shift(const char *mydirname) {
   master_printf("Testing origin shift in 2D...\n");
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = voltwo(1.0, 1.0, a);
@@ -318,7 +318,7 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
 }
 
 int test_3D_metal_zmirror(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = vol3d(1.1, 0.6, 1.0, a);
@@ -394,7 +394,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
 }
 
 int test_3D_metal_rot4z(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 3.0;
 
   const volume v = vol3d(1.0, 1.0, 1.0, a);
@@ -470,7 +470,7 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
 }
 
 int test_metal_ymirror(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
@@ -570,15 +570,15 @@ int test_metal_rot2y(double eps(const vec &)) {
   master_printf("Testing Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25, 0.85), 1.0);
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.4), 1.0);
-  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75, 0.85),-1.0);
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.4),-1.0);
+  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25, 0.875), 1.0);
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.375), 1.0);
+  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75, 0.875),-1.0);
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.375),-1.0);
   fields f(&s);
-  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.85 ), 1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.4), 1.0);
-  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.85 ),-1.0);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.4),-1.0);
+  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.875 ), 1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.375), 1.0);
+  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.875 ),-1.0);
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.375),-1.0);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -603,7 +603,7 @@ int test_metal_rot2y(double eps(const vec &)) {
 }
 
 int exact_metal_rot2y(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 16.0;
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.5, a);
@@ -614,11 +614,11 @@ int exact_metal_rot2y(double eps(const vec &)) {
   master_printf("Testing exact Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.85));
-  f1.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.4));
+  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.875));
+  f1.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.375));
   fields f(&s);
-  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.85));
-  f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.4));
+  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.875));
+  f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.375));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -686,7 +686,7 @@ int pml_twomirrors(double eps(const vec &)) {
 }
 
 int exact_metal_rot4z(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
@@ -727,7 +727,7 @@ int exact_metal_rot4z(double eps(const vec &)) {
 }
 
 int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
-  double a = 10.0;
+  double a = 8.0;
   double ttot = 5.0;
 
   const volume v = voltwo(1.0, 1.0, a);
