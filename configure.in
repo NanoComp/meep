@@ -11,6 +11,11 @@ AC_SUBST(VERSION)
 AC_F77_LIBRARY_LDFLAGS
 LIBS="$LIBS $FLIBS"
 
+DEFAULTFLAGS="no"
+if test "x" == "x$CXXFLAGS"; then
+   DEFAULTFLAGS=""
+fi
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_MAKE_SET
@@ -22,12 +27,6 @@ if test -z "$LATEX2HTML"; then
     LATEX2HTML='echo not running latex2html...'
 fi
 AC_SUBST(LATEX2HTML)
-
-# Add lots of compiler warnings to check for if we are using gcc:
-# (The variable $GCC is set to "yes" by AC_PROG_CC if we are using gcc.)
-if test "$GCC" = "yes"; then
-	CXXFLAGS="$CXXFLAGS -Wall -W -Wbad-function-cast -Wcast-qual -Wpointer-arith -Wcast-align -pedantic"
-fi
 
 # check how to transform the name of the installed program:
 AC_ARG_PROGRAM
@@ -175,6 +174,36 @@ MYEOF
         echo Looks like we have got "$NUMPROCS" processors
 
         RUNCODE="mpirun -np $NUMPROCS"
+fi
+
+
+# Try to guess some good optimization flags if CXXFLAGS is empty...
+if test "x" == "x$DEFAULTFLAGS"; then
+   CXXFLAGS_my_saved="-g"
+   CFLAGS_my_saved="$CFLAGS"
+   CFLAGS="$CXXFLAGS_my_saved -O3"
+   AC_COMPILE_IFELSE([int main() { return 0; }],
+       [echo Looks like -O3 is good && CXXFLAGS_my_saved="$CFLAGS"],
+       [echo Looks like -O3 is bad  && CFLAGS="$CXXFLAGS_my_saved"])
+   CFLAGS="$CFLAGS -funroll-loops"
+   AC_COMPILE_IFELSE([int main() { return 0; }],
+       [echo Looks like -funroll-loops is good && CXXFLAGS_my_saved="$CFLAGS"],
+       [echo Looks like -funroll-loops is bad  && CFLAGS="$CXXFLAGS_my_saved"])
+   CFLAGS="$CFLAGS -msse2"
+   AC_COMPILE_IFELSE([int main() { return 0; }],
+       [echo Looks like -msse2 is good && CXXFLAGS_my_saved="$CFLAGS"],
+       [echo Looks like -msse2 is bad  && CFLAGS="$CXXFLAGS_my_saved"])
+   CFLAGS="$CFLAGS -mfpmath=sse"
+   AC_COMPILE_IFELSE([int main() { return 0; }],
+       [echo Looks like -mfpmath=sse is good && CXXFLAGS_my_saved="$CFLAGS"],
+       [echo Looks like -mfpmath=sse is bad  && CFLAGS="$CXXFLAGS_my_saved"])
+   CFLAGS="$CFLAGS -mcpu=pentium4"
+   AC_COMPILE_IFELSE([int main() { return 0; }],
+       [echo Looks like -mcpu=pentium4 is good && CXXFLAGS_my_saved="$CFLAGS"],
+       [echo Looks like -mcpu=pentium4 is bad  && CFLAGS="$CXXFLAGS_my_saved"])
+
+   CXXFLAGS="$CFLAGS"
+   CFLAGS="$CFLAGS_my_saved"
 fi
 
 DACTYL_CXX="$CXX"
