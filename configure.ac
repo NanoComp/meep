@@ -76,7 +76,7 @@ if test $have_harminv = no; then
 	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
 
 	# just use lapack/blas in default libs since we always need them
-	AC_CHECK_LIB(harminv, harminv_solve, [have_harminv=yes; LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
+	AC_CHECK_LIB(harminv, harminv_solve, [have_harminv=yes; LIBS="-lharminv $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
 fi
 
 if test $have_harminv = yes; then
@@ -85,7 +85,7 @@ fi
 ##############################################################################
 # GNU Scientific Library
 
-AC_CHECK_FUNC(cblas_cgemm, [], [AC_CHECK_LIB(gslcblas, cblas, cblas_cgemm)])
+AC_CHECK_FUNC(cblas_cgemm, [], [AC_CHECK_LIB(gslcblas, cblas_cgemm)])
 
 AC_CHECK_LIB(gsl, gsl_sf_bessel_Jn, [],
 	[AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
