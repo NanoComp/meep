@@ -67,7 +67,7 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 # is /usr/lib/pkgconfig.
 PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
 export PKG_CONFIG_PATH
-PKG_CHECK_MODULES(HARMINV, harminv, [CFLAGS="$CFLAGS $HARMINV_CFLAGS"; LIBS="$HARMINV_LIBS $LIBS"; have_harminv=yes], [have_harminv=no])
+PKG_CHECK_MODULES(HARMINV, harminv >= 1.1, [CFLAGS="$CFLAGS $HARMINV_CFLAGS"; LIBS="$HARMINV_LIBS $LIBS"; have_harminv=yes], [have_harminv=no])
 
 # As a fallback, check manually for BLAS/LAPACK and harminv libraries:
 if test $have_harminv = no; then
@@ -76,7 +76,7 @@ if test $have_harminv = no; then
 	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
 
 	# just use lapack/blas in default libs since we always need them
-	AC_CHECK_LIB(harminv, harminv_solve, [have_harminv=yes; LIBS="-lharminv $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
+	AC_CHECK_LIB(harminv, harminv_get_freq_error, [have_harminv=yes; LIBS="-lharminv $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
 fi
 
 ACX_BLAS

@@ -401,139 +401,148 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
 int bandsdata::get_freqs(complex<double> *data, int n, complex<double> *amps,
                          double *freq_re, double *freq_im) {
   
-  int num = do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands,
-                       amps,  freq_re, freq_im);
-  // First deal with any negative frequency solutions.
   const double total_time = n*scale_factor*c/a;
-  for (int i=0;i<num-1;i++) {
-    if (freq_re[i] < 0) {
-      for (int j=i+1;j<num;j++) {
-        if (abs(freq_re[j]+freq_re[i]) < 2.0/total_time) {
-          if (verbosity > 2 && freq_re[i] != 0.0) {
-            master_printf("Got a plus/minus freq match at %g\n",freq_re[j]); 
-            master_printf("Total time: %g and delta freq limit %g\n",
-                   total_time, 2.0/total_time);
-          }
-          freq_re[i] = -0.0; // It will get cleaned up later...
-        }
-      }
-      freq_re[i] = -freq_re[i];
-      if (verbosity > 2 && freq_re[i] != 0.0)
-        master_printf("Flipping sign of a negative freq:  %g %g\n",
-                      freq_re[i], freq_im[i]);
-    }
-  }
-  // Now sort the silly solutions again...
-  for (int i=0;i<num-1;i++) { // This is a really bad sort algorithm...
-    for (int j=i+1;j<num;j++) {
-      if (freq_re[i] > freq_re[j]) {
-        double t = freq_re[i];
-        freq_re[i] = freq_re[j];
-        freq_re[j] = t;
-        t = freq_im[i];
-        freq_im[i] = freq_im[j];
-        freq_im[j] = t;
-        complex<double> tc = amps[i];
-        amps[i] = amps[j];
-        amps[j] = tc;
-      }
-    }
-  }
-  // Now get rid of any spurious low frequency solutions...
-  int orignum = num;
-  for (int i=0;i<orignum;i++) {
-    if (freq_re[0] < fmin*.9) {
-      if (verbosity > 2 && freq_re[0] != 0.0) {
-        master_printf("Trashing a spurious low frequency solution with freq %g %g\n",
-               freq_re[0], freq_im[0]);
-        //master_printf("For your info, fmin is %g\n", fmin);
-      }
-      for (int j=0;j<num-1;j++) {
-        freq_re[j]=freq_re[j+1];
-        freq_im[j]=freq_im[j+1];
-        amps[j]=amps[j+1];
-      }
-      num--;
-    }
-  }
-  // Now get rid of any spurious transient solutions...
-  for (int i=num-1;i>=0;i--) {
-    double qminhere = 1.0/(1.0/qmin + 0.25/(freq_re[i]*total_time));
-    double qhere = 0.5*fabs(fabs(freq_re[i])/freq_im[i]);
-    if (qhere < qminhere) {
-      num--;
-      if (verbosity > 2) {
-        master_printf("Trashing a spurious low Q solution with freq %g %g (%g vs %g)\n",
-                      freq_re[i], freq_im[i], qhere, qminhere);
-      }
-      for (int j=i;j<num;j++) {
-        freq_re[j] = freq_re[j+1];
-        freq_im[j] = freq_im[j+1];
-        amps[j] = amps[j+1];
-      }
-    }
-  }
-  return num;
+  const double qminhere = 1.0/(1.0/qmin + 0.25/(fmin*total_time));
+  return do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands,
+		    amps,  freq_re, freq_im, NULL, 100, qminhere);
 }
 
 int do_harminv(complex<double> *data, int n, int sampling_rate, double a, 
 	       double fmin, double fmax, int maxbands,
-	       complex<double> *amps, double *freq_re, double *freq_im, double *errors) {
+	       complex<double> *amps, double *freq_re, double *freq_im, double *errors,
+	       int numfreqs, double Q_thresh, double rel_err_thresh, double err_thresh, double rel_amp_thresh, double amp_thresh) {
 #ifndef HAVE_HARMINV
   abort("compiled without Harminv library, required for do_harminv");
   return 0;
 #else
   // data is a size n array.
 
+  if (maxbands > numfreqs)
+       numfreqs = maxbands;
+
   // check for all zeros in input
   {
-    int all_zeros = 1;
-    for (int i=0; i<n; i++)
-      if (data[i] != 0.0) all_zeros = 0;
-    if (all_zeros)
+    int i;
+    for (i = 0; i < n && data[i] == 0.0; i++)
+      ;
+    if (i == n)
       return 0;
   }
 
-  harminv_data hd = 
-    harminv_data_create(n, data, 
-			fmin*sampling_rate*c/a, 
-			fmax*sampling_rate*c/a, maxbands);
+#if 0
+  // debugging: save data file and arguments for standalone harminv program,
+  {
+    FILE *f = fopen("harminv.dat", "w");
+    fprintf(f, "# -f %d -t %g %g-%g -Q %e -e %e -E %e -a %e -A %e\n",
+	    numfreqs, sampling_rate*c/a, fmin, fmax,
+	    Q_thresh, rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
+    for (int i = 0; i < n; ++i)
+      fprintf(f, "%g%+gi\n", real(data[i]), imag(data[i]));
+    fclose(f);
+  }
+#endif
 
+  double dt = sampling_rate * c / a;
+  harminv_data hd = harminv_data_create(n, data, fmin*dt, fmax*dt, numfreqs);
   harminv_solve(hd);
-  
-  complex<double> *tmpamps = harminv_compute_amplitudes(hd);
-  double *tmperrors = harminv_compute_frequency_errors(hd);
 
-  freq_re[0] = a*harminv_get_freq(hd, 0)/c/sampling_rate;
-  freq_im[0] = -1/(2*pi)*a*harminv_get_decay(hd, 0)/c/sampling_rate;
-  for (int i = 1; i < harminv_get_num_freqs(hd); ++i) {
-    freq_re[i] = a*harminv_get_freq(hd, i)/c/sampling_rate;
-    freq_im[i] = -1/(2*pi)*a*harminv_get_decay(hd, i)/c/sampling_rate;
-    for (int j=i; j>0;j--) {
-      if (freq_re[j]<freq_re[j-1]) {
-        double t1 = freq_re[j], t2 = freq_im[j], e = tmperrors[j];
-        complex<double> a = tmpamps[j];
-        tmpamps[j] = tmpamps[j-1];
-        tmperrors[j] = tmperrors[j-1];
-        freq_re[j] = freq_re[j-1];
-        freq_im[j] = freq_im[j-1];
-        freq_re[j-1] = t1;
-        freq_im[j-1] = t2;
-        tmpamps[j-1] = a;
-        tmperrors[j-1] = e;
+  int nf = harminv_get_num_freqs(hd);
+  if (nf == 0) return 0;
+  int *fsort = new int[nf]; // indices of frequencies, sorted as needed
+  
+  for (int i = 0; i < nf; ++i)
+    fsort[i] = i;
+  for (int i = 0; i < nf; ++i) // sort in increasing order of error
+    for (int j = i + 1; j < nf; ++j) 
+      if (harminv_get_freq_error(hd, fsort[i]) >
+	  harminv_get_freq_error(hd, fsort[j])) {
+	int k = fsort[i];
+	fsort[i] = fsort[j];
+	fsort[j] = k;
+      }
+  
+  double min_err = harminv_get_freq_error(hd, fsort[0]);
+  double max_amp = abs(harminv_get_amplitude(hd, 0));
+  for (int i = 1; i < nf; ++i) {
+    double amp = abs(harminv_get_amplitude(hd, i));
+    if (max_amp < amp)
+      max_amp = amp;
+  }
+  { // eliminate modes that fall outside the various thresholds:
+    int j = 0;
+    for (int i = 0; i < nf; ++i) {
+      double f = abs(harminv_get_freq(hd, fsort[i]) / dt);
+      double err = harminv_get_freq_error(hd, fsort[i]);
+      double amp = abs(harminv_get_amplitude(hd, fsort[i]));
+      if (f >= fmin && f <= fmax
+	  && abs(harminv_get_Q(hd, fsort[i])) > Q_thresh
+	  && err < err_thresh
+	  && err < rel_err_thresh * min_err
+	  && amp > amp_thresh
+	  && amp > rel_amp_thresh * max_amp) {
+	fsort[j++] = fsort[i];
       }
     }
+    nf = j;
   }
-  int num = harminv_get_num_freqs(hd);
-  for (int i = 0; i < num; ++i) {
-    amps[i] = tmpamps[i];
+  { // eliminate positive/negative frequency pairs
+    // set indices to -1 for frequencies to be eliminated
+    for (int i = 0; i < nf; ++i) 
+      if (fsort[i] != -1) { // i hasn't been eliminated yet
+	double f = harminv_get_freq(hd, fsort[i]);
+	if (f < 0.0) {
+	  double kdiff = -2 * f;
+	  int kpos = i;
+	  for (int k = 0; k < nf; ++k) // search for closest positive freq.
+	    if (fsort[k] != -1) { // k hasn't been eliminated yet
+	      double fdiff = abs(harminv_get_freq(hd, fsort[k]) + f);
+	      if (fdiff < kdiff) {
+		kpos = k;
+		kdiff = fdiff;
+	      }
+	    }
+	  if (kpos != i && kdiff < 2.0 / n) { // consider them the same
+	    // pick the one with the smaller error
+	    if (harminv_get_freq_error(hd, fsort[i]) <
+		harminv_get_freq_error(hd, fsort[kpos]))
+	      fsort[kpos] = -1;
+	    else
+	      fsort[i] = -1;
+	  }
+	}
+      }
+    int j = 0;
+    for (int i = 0; i < nf; ++i) // remove the eliminated indices
+      if (fsort[i] != -1)
+	fsort[j++] = fsort[i];
+    nf = j;
+  }
+  
+  if (nf > numfreqs)
+    nf = numfreqs;
+  
+  // sort again, this time in increasing order of freq:
+  for (int i = 0; i < nf; ++i) // simple O(nf^2) sort
+    for (int j = i + 1; j < nf; ++j) 
+      if (abs(harminv_get_freq(hd, fsort[i])) >
+	  abs(harminv_get_freq(hd, fsort[j]))) {
+	int k = fsort[i];
+	fsort[i] = fsort[j];
+	fsort[j] = k;
+      }
+  
+  for (int i = 0; i < nf; ++i) {
+    complex<double> freq = harminv_get_omega(hd, fsort[i]) / (2*pi*dt);
+    freq_re[i] = abs(real(freq));
+    freq_im[i] = imag(freq);
+    amps[i] = harminv_get_amplitude(hd, fsort[i]);
     if (errors)
-      errors[i] = tmperrors[i];
+      errors[i] = harminv_get_freq_error(hd, fsort[i]);
   }
-  free(tmpamps);
-  free(tmperrors);
+
+  delete[] fsort;
   harminv_data_destroy(hd);
-  return num;
+  return nf;
 #endif
 }
 

@@ -706,7 +706,11 @@ extern int interrupt;
 
 int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 	       double fmin, double fmax, int maxbands,
-	       complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL);
+	       complex<double> *amps, double *freq_re, double *freq_im,
+	       double *errors = NULL,
+	       int numfreqs = 100, double Q_thresh = 50,
+	       double rel_err_thresh = 1e4, double err_thresh = 0.1, 
+	       double rel_amp_thresh = -1, double amp_thresh = -1);
 
 } /* namespace meep */
 
