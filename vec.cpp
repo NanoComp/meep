@@ -414,10 +414,7 @@ int volume::can_split_evenly(int n) const {
 }
 
 volume volume::split_once(int n, int which) const {
-  if (n == 1) {
-    printf("We aren't really splitting.\n");
-    return *this;
-  }
+  if (n == 1) return *this;
   int cse = can_split_evenly(n);
   if (cse) {
     int bestd = cse-1;
