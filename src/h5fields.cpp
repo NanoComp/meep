@@ -21,13 +21,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "meep.h"
+#include "meep_internals.h"
 
 namespace meep {
-
-static inline int min(int a, int b) { return (a<b)?a:b; }
-static inline int max(int a, int b) { return (a>b)?a:b; }
-static inline int abs(int a) { return a < 0 ? -a : a; }
 
 /***************************************************************************/
 

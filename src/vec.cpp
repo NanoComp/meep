@@ -20,14 +20,9 @@
 #include <math.h>
 #include <complex>
 
-#include "meep.h"
+#include "meep_internals.h"
 
 namespace meep {
-
-static inline int min(int a, int b) { return (a<b)?a:b; }
-static inline int max(int a, int b) { return (a>b)?a:b; }
-static inline double min(double a, double b) { return (a<b)?a:b; }
-static inline double max(double a, double b) { return (a>b)?a:b; }
 
 static inline double yee_to_lattice(int n, double a, double inva=0.0) {
   if (inva == 0.0) inva = 1.0/a;
