@@ -22,7 +22,7 @@
 
 using namespace std;
 
-enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz };
+enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz, Dielectric };
 enum ndim { D1=0, D2, D3, Dcyl };
 enum field_type { E_stuff=0, H_stuff=1 };
 enum boundary_side { High=0, Low };
@@ -76,9 +76,9 @@ inline direction stop_at_direction(ndim dim) {
                  loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
 inline signed_direction flip(signed_direction d) {
-  signed_direction D2 = d;
-  D2.flipped = !d.flipped;
-  return D2;
+  signed_direction d2 = d;
+  d2.flipped = !d.flipped;
+  return d2;
 }
 
 inline bool has_direction(ndim dim, direction d) {
@@ -323,6 +323,8 @@ class volume {
                        int indices[8], double weights[8]) const;
   void interpolate_cyl(component c, const vec &p, int m,
                        int indices[8], double weights[8]) const;
+  void interpolate_fancy(component c, const vec &p,
+                         int indices[8], double weights[8]) const;
 
   geometric_volume dV(component c, int index) const;
   geometric_volume dV(const ivec &) const;
@@ -361,6 +363,7 @@ class volume {
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);
   friend volume voltwo(double xsize, double ysize, double a);
+  friend volume vol3d(double xsize, double ysize, double zsize, double a);
 
   int can_split_evenly(int num) const;
   volume split(int num, int which) const;
@@ -374,7 +377,8 @@ class volume {
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim,d)
-      if ((is_electric(c) && d == component_direction(c)) ||
+      if (c == Dielectric ||
+          (is_electric(c) && d == component_direction(c)) ||
           (is_magnetic(c) && d != component_direction(c)))
         out.set_direction(d,1);
     return out;

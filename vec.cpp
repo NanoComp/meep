@@ -202,6 +202,7 @@ component volume::eps_component() const {
   switch (dim) {
   case D1: return Ex;
   case D2: return Ez;
+  case D3: return Dielectric;
   case Dcyl: return Hp;
   }
   abort("Unsupported dimensionality eps.\n");
@@ -315,16 +316,12 @@ void volume::interpolate(component c, const vec &p,
     interpolate_one(c, p, indices, weights);
   } else if (dim == D2) {
     interpolate_two(c, p, indices, weights);
+  } else if (dim == D3) {
+    interpolate_fancy(c, p, indices, weights);
   } else if (dim == Dcyl) {
     interpolate_cyl(c, p, 0, indices, weights);
   } else {
-    // by default use the 'index' routine with simple rounding.
-    indices[0] = index(c, round_vec(p));
-    weights[0] = 1.0;
-    for (int i=1;i<8;i++) {
-      indices[i] = 0;
-      weights[i] = 0;
-    }
+    abort("Can't interpolate in these dimensions.\n");
   }
   // Throw out out of range indices:
   for (int i=0;i<8;i++)
@@ -602,6 +599,46 @@ void volume::interpolate_two(component c, const vec &p,
   }
 }
 
+void volume::interpolate_fancy(component c, const vec &pc,
+                               int indices[8], double weights[8]) const {
+  const vec p = (pc - yee_shift(c))*a;
+  ivec middle(dim);
+  LOOP_OVER_DIRECTIONS(dim,d)
+    middle.set_direction(d, (int) p.in_direction(d)*2+1);
+  middle += iyee_shift(c);
+  const vec midv = this->operator[](middle);
+  const vec dv = (pc - midv)*(2*a);
+  int already_have = 1;
+  ivec locs[8];
+  for (int i=0;i<8;i++) {
+    locs[i] = round_vec(midv);
+    weights[i] = 1.0;
+  }
+  LOOP_OVER_DIRECTIONS(dim,d) {
+    for (int i=0;i<already_have;i++) {
+      locs[already_have+i] = locs[i];
+      weights[already_have+i] = weights[i];
+      locs[i].set_direction(d,middle.in_direction(d)-1);
+      if (dv.in_direction(d) < 0.0) weights[i] *= -dv.in_direction(d);
+      else weights[i] = 0.0;
+      locs[already_have+i].set_direction(d,middle.in_direction(d)+1);
+      if (dv.in_direction(d) > 0.0) weights[already_have+i] *= dv.in_direction(d);
+      else weights[already_have+i] = 0.0;
+    }
+    already_have *= 2;
+  }
+  for (int i=already_have;i<8;i++) weights[i] = 0.0;
+  double total_weight = 0.0;
+  for (int i=0;i<already_have;i++) total_weight += weights[i];
+  for (int i=0;i<already_have;i++)
+    weights[i] += (1.0 - total_weight)*(1.0/already_have);
+  for (int i=0;i<already_have;i++) {
+    if (!owns(locs[i])) weights[i] = 0.0;
+    else indices[i] = index(c,locs[i]);
+  }
+  stupidsort(indices, weights, already_have);
+}
+
 geometric_volume empty_volume(ndim dim) {
   geometric_volume out(dim);
   LOOP_OVER_DIRECTIONS(dim,d) {
@@ -741,17 +778,10 @@ vec volume::loc(component c, int ind) const {
 }
 
 ivec volume::iloc(component c, int ind) const {
-  switch (dim) {
-  case Dcyl: return iyee_shift(c)+io()+ ivec(ind/(nz()+1),(ind%(nz()+1)))*2;
-  case D3: return iyee_shift(c) + io() +
-             ivec(ind/((nz()+1)*(ny()+1)),
-                  (ind%((nz()+1)*(ny()+1)))/(nz()+1),
-                  (ind%(nz()+1)))*2;
-  case D2: return iyee_shift(c) + io() +
-             ivec2d(ind/(ny()+1),
-                    (ind%(ny()+1)))*2;
-  case D1: return iyee_shift(c) + io() + ivec(ind)*2;
-  }
+  ivec out(dim);
+  LOOP_OVER_DIRECTIONS(dim,d)
+    out.set_direction(d, 2*((ind/stride(d))%(num_direction(d)+1)));
+  return out + iyee_shift(c) + io();
 }
 
 vec volume::dr() const {
@@ -788,6 +818,11 @@ volume volone(double zsize, double a) {
 
 volume voltwo(double xsize, double ysize, double a) {
   return volume(D2, a, (int) (xsize*a + 0.5), (int) (ysize*a + 0.5),0);
+}
+
+volume vol3d(double xsize, double ysize, double zsize, double a) {
+  return volume(D3, a, (int) (xsize*a + 0.5), (int) (ysize*a + 0.5),
+                (int) (zsize*a + 0.5));
 }
 
 volume volcyl(double rsize, double zsize, double a) {
