@@ -58,6 +58,7 @@ double max_to_all(double);
 int max_to_all(int);
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
+void sum_to_all(const double *in, double *out, int size);
 long double sum_to_all(long double);
 int sum_to_all(int);
 complex<double> sum_to_all(complex<double>);

@@ -364,6 +364,30 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
 void load_dft_hdf5(dft_chunk *dft_chunks, component, const char *outdir = ".",
 		   bool in_appended_file = false, const char *prefix = 0);
 
+// dft.cpp (normally created with fields::add_dft_flux)
+class dft_flux {
+public:
+  dft_flux(const component cE_[2], const component cH_[2],
+	   dft_chunk *E_[2], dft_chunk *H_[2],
+	   const geometric_volume &where_,
+	   double fmin, double fmax, int Nf);
+  dft_flux(const dft_flux &f);
+
+  double *flux();
+  void save_hdf5(const char *outdir = ".",
+		 bool append_file = false, const char *prefix = 0);
+  void load_hdf5(const char *outdir = ".",
+		 bool in_appended = false, const char *prefix = 0);
+
+  void negate_dfts();
+
+  double freq_min, dfreq;
+  int Nfreq;
+  dft_chunk *E[2], *H[2];
+  component cE[2], cH[2];
+  geometric_volume where;
+};
+
 enum in_or_out { Incoming=0, Outgoing=1 };
 
 class fields_chunk {
@@ -633,6 +657,10 @@ class fields {
   dft_chunk *add_dft(component c, const geometric_volume &where,
 		     double freq_min, double freq_max, int Nfreq);
   void update_dfts();
+  dft_flux add_dft_flux(direction d, const geometric_volume &where,
+			double freq_min, double freq_max, int Nfreq);
+  dft_flux add_dft_flux_plane(const geometric_volume &where,
+			      double freq_min, double freq_max, int Nfreq);
   
   // monitor.cpp
   double get_eps(const vec &loc) const;

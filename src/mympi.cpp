@@ -16,6 +16,7 @@
 */
 
 #include <stdarg.h>
+#include <string.h>
 
 #include "meep.h"
 #include "config.h"
@@ -200,6 +201,13 @@ double sum_to_all(double in) {
   MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 #endif
   return out;
+}
+
+void sum_to_all(const double *in, double *out, int size) {
+  memcpy(out, in, sizeof(double) * size);
+#ifdef HAVE_MPI
+  MPI_Allreduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#endif
 }
 
 long double sum_to_all(long double in) {

@@ -40,7 +40,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
 		     component c_,
 		     const void *data_) {
   dft_chunk_data *data = (dft_chunk_data *) data_;
-  if (!fc->f[c][0])
+  if (!fc_->f[c_][0])
     abort("invalid fields_chunk/component combination in dft_chunk");
   
   fc = fc_;
@@ -180,6 +180,8 @@ void dft_chunk::update_dft(double time) {
 void dft_chunk::negate_dft() {
   for (int i = 0; i < N * Nomega; ++i)
     dft[i] = -dft[i];
+  if (next_in_dft)
+    next_in_dft->negate_dft();
 }
 
 static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *nchunks_p) {
@@ -262,6 +264,128 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, const char *outdir,
 		     &istart, &Nchunk,
 		     true);
   }
+}
+
+dft_flux::dft_flux(const component cE_[2], const component cH_[2],
+		   dft_chunk *E_[2], dft_chunk *H_[2], 
+		   const geometric_volume &where_, 
+		   double fmin, double fmax, int Nf) : where(where_)
+{
+  freq_min = fmin;
+  Nfreq = Nf;
+  dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
+  for (int i = 0; i < 2; ++i) {
+    E[i] = E_[i]; H[i] = H_[i];
+    cE[i] = cE_[i]; cH[i] = cH_[i];
+  }
+}
+
+dft_flux::dft_flux(const dft_flux &f) : where (f.where) {
+  freq_min = f.freq_min; Nfreq = f.Nfreq; dfreq = f.dfreq;
+  for (int i = 0; i < 2; ++i) {
+    E[i] = f.E[i]; H[i] = f.H[i];
+    cE[i] = f.cE[i]; cH[i] = f.cH[i];
+  }
+}
+
+double *dft_flux::flux() {
+  double *F = new double[Nfreq];
+  for (int i = 0; i < Nfreq; ++i) F[i] = 0;
+  for (int j = 0; j < 2; ++j) {
+    for (dft_chunk *curE = E[j], *curH = H[j]; curE && curH;
+	 curE = curE->next_in_dft, curH = curH->next_in_dft)
+      for (int i = 0; i < Nfreq; ++i)
+	F[i] += (1 - 2*j) * real(curE->dft[i] * conj(curH->dft[i])) / (4*pi);
+  }
+  double *Fsum = new double[Nfreq];
+  sum_to_all(F, Fsum, Nfreq);
+  delete[] F;
+  return Fsum;
+}
+
+void dft_flux::save_hdf5(const char *outdir,
+			 bool append_file, const char *prefix) {
+  for (int i = 0; i < 2; ++i) {
+    save_dft_hdf5(E[i], cE[i], outdir, append_file, prefix);
+    save_dft_hdf5(H[i], cH[i], outdir, append_file, prefix);
+  }
+}
+
+void dft_flux::load_hdf5(const char *outdir,
+			 bool in_appended_file, const char *prefix) {
+  for (int i = 0; i < 2; ++i) {
+    load_dft_hdf5(E[i], cE[i], outdir, in_appended_file, prefix);
+    load_dft_hdf5(H[i], cH[i], outdir, in_appended_file, prefix);
+  }
+}
+
+void dft_flux::negate_dfts() {
+  for (int i = 0; i < 2; ++i) {
+    if (E[i]) E[i]->negate_dft();
+    if (H[i]) H[i]->negate_dft();
+  }
+}
+
+dft_flux fields::add_dft_flux(direction d, const geometric_volume &where,
+			      double freq_min, double freq_max, int Nfreq) {
+  if (where.dim != v.dim) abort("incorrect dimensionality in add_dft_flux");
+  if (coordinate_mismatch(v.dim, d))
+    abort("coordinate-type mismatch in add_dft_flux");
+
+  component cE[2], cH[2];
+  switch (d) {
+  case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
+  case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
+  case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
+  case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
+  case Z:
+    if (v.dim == Dcyl)
+      cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
+    else
+      cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
+    break;
+  case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
+  }
+  
+  dft_chunk *E[2], *H[2];
+  for (int i = 0; i < 2; ++i) {
+    E[i] = add_dft(cE[i], where, freq_min, freq_max, Nfreq);
+    H[i] = add_dft(cH[i], where, freq_min, freq_max, Nfreq);
+  }
+
+  return dft_flux(cE, cH, E, H, where, freq_min, freq_max, Nfreq);
+}
+
+dft_flux fields::add_dft_flux_plane(const geometric_volume &where,
+			      double freq_min, double freq_max, int Nfreq) {
+  direction d = NO_DIRECTION;
+  switch (v.dim) {
+  case D1: d = Z; break;
+  case D2:
+    if (where.in_direction(X) == 0 && where.in_direction(Y) > 0)
+      d = X;
+    else if (where.in_direction(X) > 0 && where.in_direction(Y) == 0)
+      d = Y;
+    break;
+  case Dcyl:
+    if (where.in_direction(R) == 0 && where.in_direction(Z) > 0)
+      d = R;
+    else if (where.in_direction(R) > 0 && where.in_direction(Z) == 0)
+      d = Z;
+    break;
+  case D3: {
+    bool zx = where.in_direction(X) == 0;
+    bool zy = where.in_direction(Y) == 0;
+    bool zz = where.in_direction(Z) == 0;
+    if (zx && !zy && !zz) d = X;
+    else if (!zx && zy && !zz) d = Y;
+    else if (!zx && !zy && zz) d = Z;
+    break;
+  }
+  }
+  if (d == NO_DIRECTION)
+    abort("invalid argument to add_flux_plane: not a plane");
+  return add_dft_flux(d, where, freq_min, freq_max, Nfreq);
 }
 
 } // namespace meep
