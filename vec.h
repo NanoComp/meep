@@ -33,13 +33,21 @@ struct signed_direction {
   bool flipped;
 };
 
-inline int nd(ndim dim) {
-  return (int) dim + 1 + (dim == Dcyl) * ((int) D2 - (int) Dcyl);
+inline int number_of_directions(ndim dim) {
+  return (int) (dim + 1 - 2 * (dim == Dcyl));
 }
 
-inline int dstart(ndim dim) {
-  return ((dim == D1) || (dim == Dcyl)) ? 2 : 0;
+inline direction start_at_direction(ndim dim) {
+  return (direction) (((dim == D1) || (dim == Dcyl)) ? 2 : 0);
 }
+
+inline direction stop_at_direction(ndim dim) {
+  return (direction) (dim + 1 + 2 * (dim == D1));
+}
+
+#define LOOP_OVER_DIRECTIONS(dim, d) for (direction d = start_at_direction(dim), \
+                                     loop_stop_directi = stop_at_direction(dim); \
+                                     d < loop_stop_directi; d = (direction) (d+1))
 
 inline signed_direction flip(signed_direction d) {
   signed_direction D2 = d;
@@ -95,60 +103,39 @@ class vec {
   ~vec() {};
 
   vec operator+(const vec &a) const {
-    switch (dim) {
-    case Dcyl: return vec(t[R]+a.t[R],t[Z]+a.t[Z]);
-    case D3: return vec(t[X]+a.t[X],t[Y]+a.t[Y],t[Z]+a.t[Z]);
-    case D2: return vec2d(t[X]+a.t[X],t[Y]+a.t[Y]);
-    case D1: return vec(t[Z]+a.t[Z]);
-    }
+    vec result = a;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] += t[d];
+    return result;
   };
+
   vec operator+=(const vec &a) {
-    switch (dim) {
-    case Dcyl: t[R] += a.t[R]; t[Z] += a.t[Z]; return *this;
-    case D3: t[X] += a.t[X]; t[Y] += a.t[Y]; t[Z] += a.t[Z]; return *this;
-    case D2: t[X] += a.t[X]; t[Y] += a.t[Y]; return *this;
-    case D1: t[Z] += a.t[Z]; return vec(t[Z]+a.t[Z]);
-    }
+    LOOP_OVER_DIRECTIONS(dim, d) t[d] += a.t[d];
   };
-  vec operator-=(const vec &a) {
-    switch (dim) {
-    case Dcyl: t[R] -= a.t[R]; t[Z] -= a.t[Z]; return *this;
-    case D3: t[X] -= a.t[X]; t[Y] -= a.t[Y]; t[Z] -= a.t[Z]; return *this;
-    case D2: t[X] -= a.t[X]; t[Y] -= a.t[Y]; return *this;
-    case D1: t[Z] -= a.t[Z]; return vec(t[Z]-a.t[Z]);
-    }
-  };
+
   vec operator-(const vec &a) const {
-    switch (dim) {
-    case Dcyl: return vec(t[R]-a.t[R],t[Z]-a.t[Z]);
-    case D3: return vec(t[X]-a.t[X],t[Y]-a.t[Y],t[Z]-a.t[Z]);
-    case D2: return vec2d(t[X]-a.t[X],t[Y]-a.t[Y]);
-    case D1: return vec(t[Z]-a.t[Z]);
-    }
+    vec result = a;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] = t[d] - result.t[d];
+    return result;
   };
+
+  vec operator-=(const vec &a) {
+    LOOP_OVER_DIRECTIONS(dim, d) t[d] -= a.t[d];
+  };
+
   bool operator!=(const vec &a) const {
-    switch (dim) {
-    case Dcyl: return t[R]!=a.t[R] || t[Z]!=a.t[Z];
-    case D3: return t[X]!=a.t[X] || t[Y]!=a.t[Y] || t[Z]!=a.t[Z];
-    case D2: return t[X]!=a.t[X] || t[Y]!=a.t[Y];
-    case D1: return t[Z]!=a.t[Z];
-    }
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] != a.t[d]) return true;
+    return false;
   };
+
   bool operator==(const vec &a) const {
-    switch (dim) {
-    case Dcyl: return t[R]==a.t[R] && t[Z]==a.t[Z];
-    case D3: return t[X]==a.t[X] && t[Y]==a.t[Y] && t[Z]==a.t[Z];
-    case D2: return t[X]==a.t[X] && t[Y]==a.t[Y];
-    case D1: return t[Z]==a.t[Z];
-    }
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] != a.t[d]) return false;
+    return true;
   };
+
   vec operator*(double s) const {
-    switch (dim) {
-    case Dcyl: return vec(t[R]*s,t[Z]*s);
-    case D3: return vec(t[X]*s,t[Y]*s,t[Z]*s);
-    case D2: return vec2d(t[X]*s,t[Y]*s);
-    case D1: return vec(t[Z]*s);
-    }
+    vec result = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= s;
+    return result;
   };
   ndim dim;
 
