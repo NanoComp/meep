@@ -22,12 +22,38 @@ static geometric_volume nth_quadrant(const geometric_volume &v, int n) {
     else o.set_direction_max(d, cent.in_direction(d));
     n = n >> 1;
   }
+  return o;
+}
+
+void prthv(threevec v) {
+  master_printf("%10lg\t%10lg\t%10lg\n", v.val[0], v.val[1], v.val[2]);
+}
+
+void prtens(tensor t) {
+  FOR3(i) prthv(t.row[i]);
+}
+
+void prgeo(geometric_volume v) {
+  LOOP_OVER_DIRECTIONS(v.dim,d)
+    master_printf("%g < %s < %g\n",
+                  v.in_direction_min(d), direction_name(d), v.in_direction_max(d));
+}
+
+static double is_constant_inveps(material_function &eps, const geometric_volume &vol,
+                                 double minvol) {
+  double inveps = 1.0/eps.eps(geo_center(vol));
+  if (vol.full_volume() <= minvol) return inveps;
+  for (int i=0;i<count_quadrants(vol);i++) {
+    geometric_volume here = nth_quadrant(vol, i);
+    const double here_inveps = is_constant_inveps(eps, here, minvol);
+    if (here_inveps != inveps) return -1.0;
+  }
+  return inveps;
 }
 
 static tensor doaverage_inveps(material_function &eps, const geometric_volume &vol,
                                double minvol) {
-  if (vol.full_volume() <= minvol) return tensor(1.0/eps(geo_center(vol)));
-  tensor averages[8]; // averages hold local averages of *inveps*
+  if (vol.full_volume() <= minvol) return diagonal(1.0/eps.eps(geo_center(vol)));
   vec gradient = zero_vec(vol.dim);
   tensor mean = diagonal(0.0), meaninv = diagonal(0.0);
   for (int i=0;i<count_quadrants(vol);i++) {

@@ -31,19 +31,18 @@ void test_convergence_without_averaging() {
   double a_mean[2] = {0,0}, a_meansqr[2] = {0,0}, a2_mean[2] = {0,0}, a2_meansqr[2] = {0,0}; 
 
   for (int a=10; a <= 25; a+=3) {
-  volume vol = volcyl(1.0,0.0,a);  
-  structure ma(vol, guided_eps, 0);
-  
-  fields f(&ma, 1);
-  f.use_bloch(0.1);
-  f.set_boundary(High, R, Metallic);
-  f.add_point_source(Hr, w0, 2.0, 0.0, 5.0, vec(0.2,0.0));
-  while (f.time() < f.find_last_source()) f.step();
-  int t_harminv_max = 2500; // try increasing this in case of failure
-  complex<double> *mon_data = new complex<double>[t_harminv_max];
-  int t = 0;
-  monitor_point mp;
-  while (t < t_harminv_max) {
+    volume vol = volcyl(1.0,0.0,a);  
+    structure s(vol, eps, 0);
+    fields f(&s, 1);
+    f.use_bloch(0.1);
+    f.set_boundary(High, R, Metallic);
+    f.add_point_source(Hr, w0, 2.0, 0.0, 5.0, vec(0.2,0.0));
+    while (f.time() < f.find_last_source()) f.step();
+    int t_harminv_max = 2500; // try increasing this in case of failure
+    complex<double> *mon_data = new complex<double>[t_harminv_max];
+    int t = 0;
+    monitor_point mp;
+    while (t < t_harminv_max) {
       f.step();
       f.get_point(&mp,  vec(0.2,0.0));
       mon_data[t] = mp.get_component(Er);
@@ -91,10 +90,10 @@ void test_convergence_with_averaging() {
 
   for (int a=10; a <= 25; a+=3) {
     volume vol = volcyl(1.0,0.0,a);  
-    structure ma(vol, eps, 0);
-    ma.set_epsilon(eps, 0.0, true);
+    structure s(vol, eps, 0);
+    s.set_epsilon(eps, 0.0, true);
 
-    fields f(&ma, 1);
+    fields f(&s, 1);
     f.use_bloch(0.1);
     f.set_boundary(High, R, Metallic);
     f.add_point_source(Hr, w0, 2.0, 0.0, 5.0, vec(0.2,0.0));
@@ -141,3 +140,9 @@ void test_convergence_with_averaging() {
   master_printf("Passed convergence test with anisotropic dielectric averaging!\n");
 }
 
+int main(int argc, char **argv) {
+  initialize mpi(argc, argv);
+  master_printf("Testing convergence of a waveguide mode frequency...\n");
+  test_convergence_without_averaging();
+  test_convergence_with_averaging();
+}

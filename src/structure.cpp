@@ -355,6 +355,12 @@ void structure::set_epsilon(material_function &eps, double minvol,
       chunks[i]->set_epsilon(eps, minvol, use_anisotropic_averaging);
 }
 
+void structure::set_epsilon(double eps(const vec &), double minvol,
+                            bool use_anisotropic_averaging) {
+  simple_material_function epsilon(eps);
+  set_epsilon(epsilon, minvol, use_anisotropic_averaging);
+}
+
 void structure::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
   volume pml_volume = v;
   pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
@@ -634,11 +640,11 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
     FOR_ELECTRIC_COMPONENTS(c)
       if (v.has_field(c))
         LOOP_OVER_DIRECTIONS(v.dim,d) {
-        if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
-        if (!inveps[c][d]) abort("Memory allocation error.\n");
-        for (int i=0;i<v.ntot();i++)
-          inveps[c][d][i] = anisoaverage(c, d, feps, v.dV(v.iloc(c,i)), minvol);
-      }
+          if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
+          if (!inveps[c][d]) abort("Memory allocation error.\n");
+          for (int i=0;i<v.ntot();i++)
+            inveps[c][d][i] = anisoaverage(c, d, epsilon, v.dV(v.iloc(c,i)), minvol);
+        }
   }
 }
 

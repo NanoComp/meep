@@ -1,4 +1,5 @@
 #include "meep.h"
+using namespace meep;
 
 const double diameter = 0.8;
 const double r = diameter*0.5;
@@ -36,10 +37,10 @@ double get_the_freq(monitor_point *p) {
 
 double freq_at_resolution(double e(const vec &), double a) {
   const volume v = vol2d(2.0,1.0,a);
-  mat ma(v, e);
-  ma.set_epsilon(e, 0.0, true);
+  structure s(v, e);
+  s.set_epsilon(e, 0.0, true);
 
-  fields f(&ma);
+  fields f(&s);
   f.use_bloch(vec2d(0,0));
   f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(0.5,0.5), 1.0);
   f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(1.5,0.5),-1.0);

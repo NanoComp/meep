@@ -6,7 +6,7 @@ class threevec {
 public:
   threevec() {};
   double operator*(const threevec &a) const {
-    double out;
+    double out = 0.0;
     FOR3(i) out += val[i]*a.val[i];
     return out;
   }

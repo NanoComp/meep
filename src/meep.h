@@ -146,6 +146,8 @@ class structure {
   structure(const structure &);
   void set_epsilon(material_function &eps, double minvol = 0.0,
                    bool use_anisotropic_averaging=true);
+  void set_epsilon(double eps(const vec &), double minvol = 0.0,
+                   bool use_anisotropic_averaging=true);
   void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
   void redefine_chunks(const int Nv, const volume *new_volumes, const int *procs);
   void optimize_volumes(int *Nv, volume *new_volumes, int *procs);
