@@ -99,6 +99,10 @@ class bandsdata {
   ~bandsdata();
 
   complex<double> *hr, *hp, *hz, *er, *ep, *ez;
+  // The following is the polarization at just one point, with Pz and Pp
+  // added together (a crude compromize for speed, while still observing the
+  // phonon bands).
+  complex<double> *P;
   int tstart, tend, z, nr, maxbands, scale_factor;
   double a, inva, fmin, fmax, qmin;
   int ntime;

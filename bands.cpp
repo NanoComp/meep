@@ -30,6 +30,7 @@ bandsdata::bandsdata() {
   tstart = nr = z = 0;
   tend = -1;
   hr = hp = hz = er = ep = ez = NULL;
+  P = NULL;
 }
 
 bandsdata::~bandsdata() {
@@ -39,6 +40,7 @@ bandsdata::~bandsdata() {
   delete[] er;
   delete[] ep;
   delete[] ez;
+  delete[] P;
 }
 
 int src::find_last_source(int sofar) {
@@ -106,6 +108,8 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
   bands->er = new cmplx[nr*bands->ntime];
   bands->ep = new cmplx[nr*bands->ntime];
   bands->ez = new cmplx[nr*bands->ntime];
+  bands->P = new cmplx[bands->ntime];
+  for (int i=0;i<bands->ntime;i++) bands->P[i] = 0.0;
   if (bands->ez == NULL) {
     printf("Unable to allocate bandstructure array!\n");
     exit(1);
@@ -130,6 +134,15 @@ void fields::record_bands() {
       cmplx(RE(ep,r,bands->z), IM(ep,r,bands->z));
     BAND(bands->ez,r,thet) =
       cmplx(RE(ez,r,bands->z), IM(ez,r,bands->z));
+  }
+  if (pol) {
+    int zmean = nz/2;
+    int rmean = nr/2;
+    // The 1.137 below is just a pathetic attempt to avoid the situation
+    // where some symmetry makes Pp and Pz equal and opposite.  The better
+    // solution would be to store the two of them separately.
+    bands->P[thet] = cmplx(RE(pol->Pp, rmean, zmean)+1.137*RE(pol->Pz, rmean, zmean),
+                           IM(pol->Pp, rmean, zmean)+1.137*IM(pol->Pz, rmean, zmean));
   }
 }
 
@@ -509,6 +522,8 @@ complex<double> *fields::get_the_bands(int maxbands) {
   double *reff = new double[maxbands], *refd = new double[maxbands];
   cmplx *refa = new complex<double>[maxbands];
   cmplx *refdata = new complex<double>[maxbands*ntime];
+  bands->look_for_more_bands(bands->P, reff, refd, refa, refdata, numref);
+  if (numref) printf("I found %d bands in the polarization...\n", numref);
   for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*1.99)) {
     cmplx *bdata;
     for (int whichf = 0; whichf < 6; whichf++) {
