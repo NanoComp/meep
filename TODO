@@ -12,6 +12,14 @@ HDF5 output:
 		   get_field, etc. ... HDF5 then follows automatically
         give simple way to output "whole" cell, centered on v.center
 
+Re-entrant functions: foo(vec&) arguments should be foo(vec&, void*)
+where the second argument can be used to pass state (instead of global
+vars).
+
+src_vol:
+	get rid of add_volume_source's amp argument (redundant).
+	make coordinates of A() function relative to center of src volume
+
 Fix bug: divergence in saturated polarization (tests/symmetry.cpp)
 
 User-specified anisotropic dielectric constant.
