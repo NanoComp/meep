@@ -134,9 +134,9 @@ int volume::contains(const vec &p) const {
   const vec o = p - origin;
   if (dim == dcyl) {
     return o.r() >= -hinva && o.z() >= -hinva &&
-      o.r() <= nr()*inva - hinva && o.z() <= nz()*inva - hinva;
+      o.r() <= nr()*inva + hinva && o.z() <= nz()*inva + hinva;
   } else if (dim == d1) {
-    return o.z() >= -hinva && o.z() <= nz()*inva - hinva;
+    return o.z() >= -hinva && o.z() <= nz()*inva + hinva;
   } else {
     printf("Unsupported dimension.\n");
     exit(1);
@@ -360,6 +360,25 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
   // Now I need to reorder them so the points with nonzero weights come
   // first.
   stupidsort(indices, weights, 4);
+  for (int i=0;i<8&&weights[i];i++)
+    if (!owns(loc(c, indices[i])))
+      weights[i] = 0.0;
+  stupidsort(indices, weights, 4);
+  if (!contains(p)) {
+    if (weights[0]) {
+      printf("Error made in cyl interpolation--fix this bug!!!\n");
+      printf("Point is at %lg %lg\n", ir, iz);
+      for (int i=0;i<8&&weights[i];i++) {
+        printf("  Point %lg %lg Weight %lg\n",
+               loc(c, indices[i]).r(), loc(c, indices[i]).z(), weights[i]);
+        if (!owns(loc(c, indices[i]))) {
+          printf("  ...we don't own this index!\n");
+          weights[i] = 0.0;
+        }
+      }
+      //exit(1);
+    }
+  }
 }
 
 double volume::dv(component c, int ind) const {
@@ -383,6 +402,7 @@ vec volume::loc(component c, int ind) const {
   case d1: return offset + vec(inva*ind);
   }
 }
+
 
 vec volume::dr() const {
   switch (dim) {
