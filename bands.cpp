@@ -391,7 +391,7 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
     for (int n=0;n<numref;n++) {
       int num_match = get_both_freqs(refdata+n*ntime,simple_data,ntime,
                                      ta, herea, tf, td);
-      //printf("See %d modes at (%d.%d)\n", num_match, r, whichf);
+      if (verbosity && !num_match) printf("I don't see any matches for ref %d here!\n",n);
       int best_match=-1;
       double err_best = 1e300;
       for (int i=0;i<num_match;i++) {
@@ -407,6 +407,9 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
       //printf("Setting amp to %lg (vs %lg)\n",
       //       abs(herea[best_match]), abs(ta[best_match]));
       if (err_best > 0.02 && err_best < 1e299) {
+        if (verbosity > 2 && abs(herea[best_match]) != 0.0)
+          printf("Missed a match at %d between %lg and %lg (%lg vs %lg) -- %lg\n",
+                 n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]), err_best);
         /*printf("OOOOOOOOO\n");
         printf("---------\n");
         if (err_best > 0.02) {
@@ -423,11 +426,12 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
         printf("---------\n");
         printf("OOOOOOOOO\n");*/
       } else if (err_best < 0.02) {
-        //printf("Found a match at %d between %lg and %lg (%lg vs %lg) -- %lg\n",
-        //       n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]), err_best);
+        if (verbosity > 2 && abs(herea[best_match]) != 0.0)
+          printf("Found a match at %d between %lg and %lg (%lg vs %lg) -- %lg\n",
+                 n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]), err_best);
         if (abs(herea[best_match]) > abs(refa[n])) { // Change reference...
-          //printf("Changing reference %d...\n", n);
-          //printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
+          if (verbosity > 1) printf("Changing reference %d...\n", n);
+          if (verbosity > 1) printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
           //printf("best_err is %lg\n", err_best);
           //printf("amp (%lg,%lg) (%lg,%lg)\n", 
           //       real(refa[n]),imag(refa[n]),
@@ -608,9 +612,12 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
       if (plus[i] != 0) plusboring = 0;
       if (minus[i] != 0) minusboring = 0;
     }
+    if (verbosity > 2 && (plusboring || minusboring))
+      printf("This is a boring point...\n");
     if (!plusboring && !minusboring) {
       int numplus = get_freqs(plus, n, Ap, fp, dp);
       int numminus = get_freqs(minus, n, Am, fm, dm);
+      if (verbosity > 3) printf("We got %d plus and %d minus...\n", numplus, numminus);
       if (numplus == numminus) {
         // Looks like we agree on the number of bands...
         numfound = numplus;
@@ -655,9 +662,9 @@ int bandsdata::get_freqs(cmplx *data, int n,
   int orignum = num;
   for (int i=0;i<orignum;i++) {
     if (freq_re[0] < fmin*.9) {
-      if (freq_re[0] > 0) {
-        //printf("Trashing a spurious low frequency solution with freq %lg %lg\n",
-        //       freq_re[0], freq_im[0]);
+      if (verbosity > 2 && freq_re[0] != 0.0) {
+        printf("Trashing a spurious low frequency solution with freq %lg %lg\n",
+               freq_re[0], freq_im[0]);
         //printf("For your info, fmin is %lg\n", fmin);
       }
       for (int j=0;j<num-1;j++) {
@@ -672,8 +679,11 @@ int bandsdata::get_freqs(cmplx *data, int n,
   for (int i=num-1;i>=0;i--) {
     if (0.5*fabs(freq_re[i]/freq_im[i]) < qmin) {
       num--;
-      //printf("Trashing a spurious low Q solution with freq %lg %lg\n",
-      //       freq_re[i], freq_im[i]);
+      if (verbosity > 2) {
+        printf("Trashing a spurious low Q solution with freq %lg %lg (vs %lg)\n",
+               freq_re[i], freq_im[i], qminhere);
+        printf("qminhere is %lg (with %lg)\n", qminhere, freq_re[i]);
+      }
       for (int j=i;j<num;j++) {
         freq_re[j] = freq_re[j+1];
         freq_im[j] = freq_im[j+1];
