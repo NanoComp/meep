@@ -328,7 +328,8 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
 }
 
 void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
-  complex<double> *fad = get_the_bands(maxbands);
+  double *approx_power = new double[maxbands];
+  complex<double> *fad = get_the_bands(maxbands, approx_power);
 
   cmplx *eigen = new cmplx[nr*maxbands*6];
   if (!eigen) {
@@ -349,9 +350,9 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
 
   for (int i = 0; i < num_found; ++i) {
     // k m index freq decay Q
-    fprintf(o, "%s %lg %d %d %lg %lg %lg\n", name,
+    fprintf(o, "%s %lg %d %d %lg %lg %lg %lg\n", name,
             k, m, i, fabs(real(fad[i])), imag(fad[i]),
-            fabs(real(fad[i])) / (2 * imag(fad[i])));
+            fabs(real(fad[i])) / (2 * imag(fad[i])), approx_power[i]);
     if (and_modes) {
       for (int r=0;r<nr;r++) {
         fprintf(o, "%s-fields %lg %d %d %lg", name, k, m, i, r*inva);
@@ -362,7 +363,8 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
         fprintf(o, "\n");
       }
     }
-  } 
+  }
+  delete[] approx_power;
   delete[] fad;
 }
 
@@ -499,7 +501,7 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
   return numref;
 }
 
-complex<double> *fields::get_the_bands(int maxbands) {
+complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
   bands->maxbands = maxbands;
   double *tf = new double[maxbands];
   double *td = new double[maxbands];
@@ -549,7 +551,6 @@ complex<double> *fields::get_the_bands(int maxbands) {
     }
   }
   delete[] refdata;
-  delete[] refa;
   delete[] tf;
   delete[] td;
   delete[] ta;
@@ -566,6 +567,9 @@ complex<double> *fields::get_the_bands(int maxbands) {
         refd[j] = refd[j-1];
         reff[j-1] = t1;
         refd[j-1] = t2;
+	complex<double> temp = refa[j];
+	refa[j] = refa[j-1];
+	refa[j-1] = temp;
       }
     }
   }
@@ -573,10 +577,12 @@ complex<double> *fields::get_the_bands(int maxbands) {
   complex<double> *fad = new complex<double>[maxbands];
   for (int i=0;i<maxbands;i++) fad[i] = 0.0;
   for (int i=0;i<numref;i++) fad[i] = complex<double>(reff[i],refd[i]);
+  if (approx_power) for (int i=0;i<numref;i++) approx_power[i] = abs(refa[i])*abs(refa[i]);
 
   delete[] reff;
   delete[] refd;
   delete[] eigen;
+  delete[] refa;
   return fad;
 }
 

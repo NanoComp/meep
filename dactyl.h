@@ -219,7 +219,7 @@ class fields {
                   double cutoff, int is_h = 0);
   int setifreqmax_and_iposmax(int ifreq, int ipos);
   void out_bands(FILE *, const char *, int maxbands, int outmodes);
-  complex<double> *get_the_bands(int maxbands);
+  complex<double> *get_the_bands(int maxbands, double *approx_power = NULL);
 };
 
 const double c = 0.5;
