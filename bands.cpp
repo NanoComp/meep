@@ -166,7 +166,7 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
 
   // Now let's zero out any decays that seem unreasonably small...
   for (int i = 0; i < nbands; i++) {
-    if (abs(unitconvert*imag(fad[i])*n) < 4.0) {
+    if (abs(unitconvert*imag(fad[i])*n) < 1.0) {
       printf("I think that band with freq %lg and decay %lg has no decay.\n",
              real(fad[i]), imag(fad[i]));
       fad[i] = real(fad[i]);
@@ -241,7 +241,7 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
           A[ifit*n+t] = 0;
           //A[(ifit+numfit)*n+t] = 0;
           for (int tt=max(0,t-passtime);tt<min(n,t+passtime);tt++) {
-            A[ifit*n+t] += exp(-fad[i]*tt)
+            A[ifit*n+t] += exp(-unitconvert*fad[i]*tt)
               *filter[abs(tt-t)];
           }
         }
@@ -340,7 +340,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
     // k m index freq decay Q
     fprintf(o, "%s %lg %d %d %lg %lg %lg\n", name,
             k, m, i, fabs(real(fad[i])), imag(fad[i]),
-            (2*pi)*fabs(real(fad[i])) / (2 * imag(fad[i])));
+            fabs(real(fad[i])) / (2 * imag(fad[i])));
     if (and_modes) {
       for (int r=0;r<nr;r++) {
         fprintf(o, "%s-fields %lg %d %d %lg", name, k, m, i, r*inva);
@@ -624,89 +624,55 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
 }
 
 int bandsdata::get_freqs(cmplx *data, int n,
-                         cmplx *amps, double *freqs, double *decays) {
-  // data is a size n array. 
-  harminv_data hd = 
-    harminv_data_create(n, data, fmin*scale_factor, 
-                        fmax*scale_factor, maxbands);
-
-  int prev_nf, cur_nf;
-  harminv_solve(hd);
-  prev_nf = cur_nf = harminv_get_num_freqs(hd);
-
-  /* keep re-solving as long as spurious solutions are eliminated */
-  do {
-    prev_nf = cur_nf;
-    harminv_solve_again(hd);
-    cur_nf = harminv_get_num_freqs(hd);
-  } while (cur_nf < prev_nf);
-  if (cur_nf > prev_nf)
-    fprintf(stderr,
-            "harminv: warning, number of solutions increased from %d to %d!\n",
-            prev_nf, cur_nf);
+                         cmplx *amps, double *freq_re, double *freq_im) {
   
-  cmplx *tmpamps = harminv_compute_amplitudes(hd);
+  int num = do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands, amps, 
+		       freq_re, freq_im);
 
-  freqs[0] = a*harminv_get_freq(hd, 0)/c/scale_factor;
-  decays[0] = a*harminv_get_decay(hd, 0)/c/scale_factor;
-  for (int i = 1; i < harminv_get_num_freqs(hd); ++i) {
-    freqs[i] = a*harminv_get_freq(hd, i)/c/scale_factor;
-    decays[i] = a*harminv_get_decay(hd, i)/c/scale_factor;
-    for (int j=i; j>0;j--) {
-      if (freqs[j]<freqs[j-1]) {
-        double t1 = freqs[j], t2 = decays[j];
-        cmplx a = tmpamps[j];
-        tmpamps[j] = tmpamps[j-1];
-        freqs[j] = freqs[j-1];
-        decays[j] = decays[j-1];
-        freqs[j-1] = t1;
-        decays[j-1] = t2;
-        tmpamps[j-1] = a;
-      }
-    }
-  }
-  int num = harminv_get_num_freqs(hd);
   // Now get rid of any spurious low frequency solutions...
   int orignum = num;
   for (int i=0;i<orignum;i++) {
-    if (freqs[0] < a/c*fmin*.9) {
+    if (freq_re[0] < a/c*fmin*.9) {
       for (int j=0;j<num-1;j++) {
-        freqs[j]=freqs[j+1];
-        decays[j]=decays[j+1];
-        tmpamps[j]=tmpamps[j+1];
+        freq_re[j]=freq_re[j+1];
+        freq_im[j]=freq_im[j+1];
+        amps[j]=amps[j+1];
       }
       num--;
     }
   }
   // Now get rid of any spurious transient solutions...
   for (int i=num-1;i>=0;i--) {
-    if (pi*fabs(freqs[i]/decays[i]) < qmin) {
+    if (0.5*fabs(freq_re[i]/freq_im[i]) < qmin) {
       num--;
       //printf("Trashing a spurious low Q solution with freq %lg %lg\n",
-      //       freqs[i], decays[i]);
+      //       freq_re[i], freq_im[i]);
       for (int j=i;j<num;j++) {
-        freqs[j] = freqs[j+1];
-        decays[j] = decays[j+1];
-        tmpamps[j] = tmpamps[j+1];
+        freq_re[j] = freq_re[j+1];
+        freq_im[j] = freq_im[j+1];
+        amps[j] = amps[j+1];
       }
     }
   }
-  for (int i = 0; i < num; ++i) {
-    amps[i] = tmpamps[i];
-  }
-  free(tmpamps);
-  harminv_data_destroy(hd);
   return num;
 }
 
-int fields::do_harminv(cmplx *data, int n, int sampling_rate, double fmin, double fmax, int maxbands,
-			cmplx *amps, double *freqs, double *decays, double *errors) {
-  // check for zero input
+int do_harminv(cmplx *data, int n, int sampling_rate, double a, 
+	       double fmin, double fmax, int maxbands,
+	       cmplx *amps, double *freq_re, double *freq_im, double *errors) {
+  // data is a size n array.
 
+  // check for all zeros in input
+  {
+    int all_zeros = 1;
+    for (int i=0; i<n; i++)
+      if (data[i] != 0) all_zeros = 0;
+    if (all_zeros)
+      return 0;
+  }
 
-// data is a size n array.
   harminv_data hd = 
-    harminv_data_create(n, data, fmin, fmax, maxbands);
+    harminv_data_create(n, data, fmin*sampling_rate, fmax*sampling_rate, maxbands);
 
   int prev_nf, cur_nf;
   harminv_solve(hd);
@@ -726,21 +692,21 @@ int fields::do_harminv(cmplx *data, int n, int sampling_rate, double fmin, doubl
   cmplx *tmpamps = harminv_compute_amplitudes(hd);
   double *tmperrors = harminv_compute_frequency_errors(hd);
 
-  freqs[0] = a*harminv_get_freq(hd, 0)/c/sampling_rate;
-  decays[0] = a*harminv_get_decay(hd, 0)/c/sampling_rate;
+  freq_re[0] = a*harminv_get_freq(hd, 0)/c/sampling_rate;
+  freq_im[0] = 1/(2*pi)*a*harminv_get_decay(hd, 0)/c/sampling_rate;
   for (int i = 1; i < harminv_get_num_freqs(hd); ++i) {
-    freqs[i] = a*harminv_get_freq(hd, i)/c/sampling_rate;
-    decays[i] = a*harminv_get_decay(hd, i)/c/sampling_rate;
+    freq_re[i] = a*harminv_get_freq(hd, i)/c/sampling_rate;
+    freq_im[i] = 1/(2*pi)*a*harminv_get_decay(hd, i)/c/sampling_rate;
     for (int j=i; j>0;j--) {
-      if (freqs[j]<freqs[j-1]) {
-        double t1 = freqs[j], t2 = decays[j], e = tmperrors[j];
+      if (freq_re[j]<freq_re[j-1]) {
+        double t1 = freq_re[j], t2 = freq_im[j], e = tmperrors[j];
         cmplx a = tmpamps[j];
         tmpamps[j] = tmpamps[j-1];
 	tmperrors[j] = tmperrors[j-1];
-        freqs[j] = freqs[j-1];
-        decays[j] = decays[j-1];
-        freqs[j-1] = t1;
-        decays[j-1] = t2;
+        freq_re[j] = freq_re[j-1];
+        freq_im[j] = freq_im[j-1];
+        freq_re[j-1] = t1;
+        freq_im[j-1] = t2;
         tmpamps[j-1] = a;
 	tmperrors[j-1] = e;
       }
@@ -749,7 +715,8 @@ int fields::do_harminv(cmplx *data, int n, int sampling_rate, double fmin, doubl
   int num = harminv_get_num_freqs(hd);
   for (int i = 0; i < num; ++i) {
     amps[i] = tmpamps[i];
-    errors[i] = tmperrors[i];
+    if (errors)
+      errors[i] = tmperrors[i];
   }
   free(tmpamps);
   free(tmperrors);
