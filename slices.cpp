@@ -314,9 +314,9 @@ void fields::output_real_imaginary_slices(const volume &what, const char *name) 
   DOCMP {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c)) {
-        snprintf(n, buflen, "%s/%shr%s-%09.2f.sli",
+        snprintf(n, buflen, "%s/%s%s%s-%09.2f.sli",
                  outdir, nname, component_name((component)c),
-                 r_or_i, t*inva*c);
+                 r_or_i, time());
         output_slice((component)c, f[c][cmp], v, what, n);
       }
     r_or_i = "-im";

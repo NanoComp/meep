@@ -64,6 +64,7 @@ class polarization {
 
 class src {
  public:
+  ~src();
   double freq, width, peaktime;
   complex<double> A[10], amp_shift;
   int i, cutoff;

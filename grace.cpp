@@ -40,8 +40,10 @@ public:
 };
 
 grace::grace(const char *fname, const char *dirname) {
-  fn = fname;
-  dn = dirname;
+  fn = new char[strlen(fname)+1];
+  strcpy(fn, fname);
+  dn = new char[strlen(dirname)+1];
+  strcpy(dn, dirname);
   char buf[300];
   snprintf(buf,300,"%s/%s", dirname, fname);
   f = fopen(buf, "w");
@@ -62,6 +64,8 @@ grace::~grace() {
   snprintf(gracecmd, 500, "gracebat -hdevice EPS -printfile %s/%s.eps -hardcopy %s/%s",
            dn, fn, dn, fn);
   system(gracecmd);
+  delete[] dn;
+  delete[] fn;
 }
 
 void grace::new_set(grace_type pt) {

@@ -25,6 +25,7 @@
 
 fields::~fields() {
   delete ma;
+  is_real = 0; // So that we can make sure to delete everything...
   DOCMP {
     for (int i=0;i<10;i++) delete[] f[i][cmp];
     for (int i=0;i<10;i++) delete[] f_backup[i][cmp];
@@ -280,6 +281,10 @@ double src::get_envelope_at_time(int t) const {
   } else {
     return exp(-tt*tt/(2*width*width));
   }
+}
+
+src::~src() {
+  delete next;
 }
 
 static double integrate_envelope(const src *s) {

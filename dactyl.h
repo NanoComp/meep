@@ -243,7 +243,7 @@ class grace {
  private:
   void flush_pts();
   FILE *f;
-  const char *fn, *dn;
+  char *fn, *dn;
   grace_point *pts;
   int set_num,sn;
 };
