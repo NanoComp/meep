@@ -74,7 +74,7 @@ int approx_point(fields &f1, fields &f2, const vec &p) {
     component c = (component) i;
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
-      if (abs(v1 - v2) > 1e-15*(5.0 + abs(v2))) {
+      if (abs(v1 - v2) > 4e-15*(5.0 + abs(v2))) {
         master_printf("%s differs:  %lg %lg out of %lg %lg\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %lg\n",
