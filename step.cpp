@@ -503,8 +503,9 @@ void fields::step_boundaries(field_type ft) {
     }
 #endif
 #ifdef HAVE_MPI
-  MPI_Request *reqs = new MPI_Request[num_chunks*4];
-  MPI_Status *stats = new MPI_Status[num_chunks*4];
+  const int maxreq = num_chunks*num_chunks;
+  MPI_Request *reqs = new MPI_Request[maxreq];
+  MPI_Status *stats = new MPI_Status[maxreq];
   int reqnum = 0;
   for (int noti=0;noti<num_chunks;noti++)
     for (int j=0;j<num_chunks;j++) {
@@ -523,6 +524,7 @@ void fields::step_boundaries(field_type ft) {
         }
       }
     }
+  if (reqnum > maxreq) abort("Too many requests!!!\n");
   if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
   delete[] reqs;
   delete[] stats;
