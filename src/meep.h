@@ -771,7 +771,8 @@ class fields {
   void integrate(field_integrand integrand, void *integrand_data,
 		 const geometric_volume &where,
 		 component cgrid = Dielectric,
-		 bool use_symmetry = true);
+		 bool use_symmetry = true,
+		 bool snap_unit_dims = false);
   
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,

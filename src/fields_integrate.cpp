@@ -223,11 +223,21 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    linear interpolation of the function values from these grid points.
 
    For a simple example of an integrand routine, see the
-   tests/integrate.cpp file. */
+   tests/integrate.cpp file.
+
+   The parameters USE_SYMMETRY (default = true) and SNAP_UNIT_DIMS
+   (default = false) are for use with not-quite-integration-like
+   operations.  If use_symmetry is false, then we do *not* loop
+   over all possible symmetry transformations of the chunks to see
+   if they intersect WHERE; we only use chunks that, untransformed,
+   already intersect the volume.  If SNAP_UNIT_DIMS is true,
+   then for empty (min = max) dimensions of WHERE, instead of interpolating,
+   we "snap" them to the nearest grid point.
+ */
 void fields::integrate(field_integrand integrand, void *integrand_data,
 		       const geometric_volume &where, 
 		       component cgrid,
-		       bool use_symmetry)
+		       bool use_symmetry, bool snap_unit_dims)
 {
   if (coordinate_mismatch(v.dim, cgrid))
     abort("Invalid fields::integrate grid type %s for dimensions %s\n",
@@ -276,6 +286,13 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
       e1.set_direction(d, s1.in_direction(d));
     }
     else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
+      if (snap_unit_dims) {
+	if (w0 > w1) ie.set_direction(d, is.in_direction(d));
+	else is.set_direction(d, ie.in_direction(d));
+	wherec.set_direction_min(d, is.in_direction(d) * (0.5*v.inva));
+	wherec.set_direction_max(d, is.in_direction(d) * (0.5*v.inva));
+	w0 = w1 = 1.0;
+      }
       s0.set_direction(d, w0);
       s1.set_direction(d, w1);
       e0.set_direction(d, w1);
@@ -290,7 +307,6 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
     else
       abort("bug: impossible(?) integration boundaries");
   }
-
 
   // loop over symmetry transformations of the chunks:
   for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
