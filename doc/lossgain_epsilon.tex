@@ -10,9 +10,8 @@
 const double a = 10.0;
 const int m = 0;
 const double eps_value = 2.25;
-const double fmin = 0.05;
 
-const double pml = 2.0;
+const double pml = 1.0;
 const double zsize = 2*pml+10.0/a;
 const double rmax  = 6.0/a;
 const double zmiddle = zsize/2.0;
@@ -70,14 +69,14 @@ For sources, we use a series of broad point sources covering the frequency
 range of interest.
 
 \begin{verbatim}
-  f.add_point_source(Ep, 0.9, 0.8, 0.0, 8.0, vec(rmax*.5,sourceloc));
+  f.add_point_source(Ep, 0.3,  0.8, 0.0, 8.0, vec(rmax*0.5,sourceloc));
 \end{verbatim}
 \begin{comment}
   printf("Working with a=%lg...\n", a);
   monitor_point *left = NULL, *right = NULL, *middle = NULL,
                 *top = NULL, *bottom = NULL;
   double next_printtime = 10;
-  while (f.time() < 270 && !interrupt) {
+  while (f.time() < 130 && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 10;
       printf("Working on time %lg...  ", f.time());
@@ -106,26 +105,28 @@ derivative.
   complex<double> *al, *ar, *am, *at, *ab, *freqs;
   int numl, numr;
   printf("Working on left fourier transform...\n");
+  double minfreq = 0.101, maxfreq = 0.5;
+  int numfreqs = 300;
 \end{comment}
 
 We fourier transform $H_z$ at each point:
 
 \begin{verbatim}
-  left->fourier_transform(Hz, &al, &freqs, &numl, 0.101, 0.5, 300);
+  left->fourier_transform(Hz, &al, &freqs, &numl, minfreq, maxfreq, numfreqs);
 \end{verbatim}
 \begin{comment}
   delete[] freqs;
   printf("Working on middle fourier transform...\n");
-  middle->fourier_transform(Hz, &am, &freqs, &numr, 0.101, 0.5, 300);
+  middle->fourier_transform(Hz, &am, &freqs, &numr, minfreq, maxfreq, numfreqs);
   delete[] freqs;
   printf("Working on top fourier transform...\n");
-  top->fourier_transform(Hz, &at, &freqs, &numr, 0.101, 0.5, 300);
+  top->fourier_transform(Hz, &at, &freqs, &numr, minfreq, maxfreq, numfreqs);
   delete[] freqs;
   printf("Working on bottom fourier transform...\n");
-  bottom->fourier_transform(Hz, &ab, &freqs, &numr, 0.101, 0.5, 300);
+  bottom->fourier_transform(Hz, &ab, &freqs, &numr, minfreq, maxfreq, numfreqs);
   delete[] freqs;
   printf("Working on right fourier transform...\n");
-  right->fourier_transform(Hz, &ar, &freqs, &numr, 0.101, 0.5, 300);
+  right->fourier_transform(Hz, &ar, &freqs, &numr, minfreq, maxfreq, numfreqs);
   if (numl != numr) printf("Aaack you need both nums to be the same!\n");
   g.new_set();
   g.set_legend("\\x\\e\\s1\\N");
