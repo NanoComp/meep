@@ -61,7 +61,9 @@ fields::fields(const mat *ma, int tm) :
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
   }
-  for (int b=0;b<2;b++) for (int d=0;d<5;d++) boundaries[b][d] = None;
+  for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
+    if (v.has_boundary((boundary_side)b, d)) boundaries[b][d] = Metallic;
+    else boundaries[b][d] = None;
   connect_chunks();
 }
 

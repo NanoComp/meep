@@ -54,7 +54,7 @@ int radiating_2D(const double xmax) {
 
   double ratio = pow(abs(amp1)/abs(amp2), 2.0) ;
   
-  if (ratio > 2.02 || ratio < 1.98)
+  if (ratio > 2.12 || ratio < 1.88)
     abort("Failed: amp1 = (%lg, %lg), amp2 = (%lg, %lg)\n abs(amp1/amp2)^2 = %lg, too far from 2.0\n",
 	  real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;

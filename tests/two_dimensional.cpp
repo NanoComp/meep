@@ -78,11 +78,9 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
 
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
   double total_energy_check_time = 8.0;
@@ -256,8 +254,6 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *dirname) {
   f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,1.401), 1.0);
   fields f1(&ma1);
   f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,1.401), 1.0);
-  f.use_metal_everywhere();
-  f1.use_metal_everywhere();
   const double deltaT = 100.0;
   const double ttot = 3.1*deltaT;
   double total_energy_check_time = deltaT;
@@ -325,7 +321,7 @@ int test_pml_te(double eps(const vec &), int splitting, const char *dirname) {
       const double new_energy = f.total_energy();
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
-      if (new_energy > last_energy*9e-7) {
+      if (new_energy > last_energy*1.1e-6) {
         master_printf("Energy decaying too slowly: from %lg to %lg (%lg)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;

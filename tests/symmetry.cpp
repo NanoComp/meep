@@ -86,11 +86,9 @@ int test_cyl_metal_mirror(double eps(const vec &), const char *dirname) {
   ma1.set_output_directory(dirname);
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   double total_energy_check_time = 1.0;
@@ -173,8 +171,6 @@ int test_origin_shift(const char *dirname) {
 
   fields f1(&ma1);
   fields f(&ma);
-  f1.use_metal_everywhere();
-  f.use_metal_everywhere();
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, v.center());
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, v.center());
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.0,0.0));
@@ -208,11 +204,9 @@ int test_metal_xmirror(double eps(const vec &), const char *dirname) {
   ma1.set_output_directory(dirname);
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.401));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.401));
   double total_energy_check_time = 1.0;
@@ -252,10 +246,8 @@ int test_3D_metal_xmirror(double eps(const vec &), const char *dirname) {
   master_printf("Testing X mirror symmetry in 3D...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -294,10 +286,8 @@ int test_3D_metal_zmirror(double eps(const vec &), const char *dirname) {
   master_printf("Testing Z mirror symmetry in 3D...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -336,10 +326,8 @@ int test_3D_metal_odd_zmirror(double eps(const vec &), const char *dirname) {
   master_printf("Testing odd Z mirror symmetry in 3D...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -378,10 +366,8 @@ int test_3D_metal_rot4z(double eps(const vec &), const char *dirname) {
   master_printf("Testing Z fourfold rotational symmetry in 3D...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -420,10 +406,8 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &), const char *dirname) {
   master_printf("Testing Z fourfold rotational symmetry in 3D with horizontal mirror...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -463,11 +447,9 @@ int test_metal_ymirror(double eps(const vec &), const char *dirname) {
   master_printf("Testing Y mirror symmetry...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec2d(0.85 ,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401,0.5));
   double total_energy_check_time = 1.0;
@@ -556,13 +538,11 @@ int test_metal_rot2y(double eps(const vec &), const char *dirname) {
   master_printf("Testing Y twofold rotational symmetry...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25, 0.85), 1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.4), 1.0);
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75, 0.85),-1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.75,0.4),-1.0);
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.85 ), 1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.25,0.4), 1.0);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.85 ),-1.0);
@@ -604,11 +584,9 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
   master_printf("Testing exact Y twofold rotational symmetry...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.85));
   f1.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.4));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.5, 0.85));
   f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.4));
   double total_energy_check_time = 1.0;
@@ -654,7 +632,6 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
 
   fields fs[2] = { fields(&mas[0]), fields(&mas[1]) };
   for (int i=0;i<2;i++) {
-    fs[i].use_metal_everywhere();
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.0,1.0),-1.5);
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.75));
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,1.25));
@@ -695,11 +672,9 @@ int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
   master_printf("Testing Z fourfold rotational symmetry...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec2d(0.5,0.5));
   double total_energy_check_time = 1.0;
@@ -742,10 +717,8 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
   master_printf("Testing X twofold rotational symmetry with PML...\n");
 
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec2d(1.3,1.5));
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {

@@ -326,7 +326,6 @@ class fields {
   void set_boundary(boundary_side,direction,
                     boundary_condition, bool autoconnect=true,
                     complex<double> kcomponent=0.0);
-  void use_metal_everywhere();
   void use_bloch(direction d, double k, bool autoconnect=true) {
     use_bloch(d, (complex<double>) k, autoconnect);
   }

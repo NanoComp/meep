@@ -59,7 +59,6 @@ int main(int argc, char *argv[]) {
   const double wavelength = 1.72;
   const double freq = 1.0/wavelength;
   f.add_point_source(Hy, freq, 5.0, 0.0, 5.0, vec2d(x_center,y_center));
-  f.use_metal_everywhere();
 \end{verbatim}
 We add an additional check below ``\verb!&& !interrupt!'' so that when the
 user hits cntl-C we exit the loop.

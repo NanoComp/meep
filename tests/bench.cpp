@@ -95,7 +95,6 @@ bench bench_2d(const double xmax, const double ymax,
   volume v = voltwo(xmax,ymax,a);
   mat ma(v, eps);
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
   f.add_point_source(Hz, 0.8, 0.7, 0.0, 4.0, vec2d(0.431, 0.2));
 
@@ -121,7 +120,6 @@ bench bench_2d_tm(const double xmax, const double ymax,
   volume v = voltwo(xmax,ymax,a);
   mat ma(v, eps);
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
 
   while (f.time() < f.find_last_source()) f.step();
@@ -144,7 +142,6 @@ bench bench_2d_te(const double xmax, const double ymax,
   volume v = voltwo(xmax,ymax,a);
   mat ma(v, eps);
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
   f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec2d(0.7, 0.5));
 
@@ -180,7 +177,6 @@ bench bench_3d_periodic(const double xmax, const double ymax, const double zmax,
   volume v = vol3d(xmax,ymax,zmax,a);
   mat ma(v, eps);
   fields f(&ma);
-  f.use_metal_everywhere();
   if (xmax==0) f.use_bloch(X,0.0);
   if (ymax==0) f.use_bloch(Y,0.0);
   if (ymax==0) f.use_bloch(Z,0.0);
@@ -206,7 +202,6 @@ bench bench_3d(const double xmax, const double ymax, const double zmax,
   volume v = vol3d(xmax,ymax,zmax,a);
   mat ma(v, eps, 0);
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(xmax*.5, ymax*.5, zmax*.5));
 
   while (f.time() < f.find_last_source()) f.step();

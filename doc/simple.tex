@@ -87,15 +87,12 @@ creates a new one.
 \end{verbatim}
 The mat structure only holds the epsilon.  We will also need a ``fields''
 object to hold our electric and magnetic fields.  We add a point source
-oriented in the $E_z$ direction, located in the center of our cavity.  We
-use metal boundary conditions (behind the PML) everywhere to avoid a
-decrease in symmetry that I don't want to bother explaining here.
+oriented in the $E_z$ direction, located in the center of our cavity.
 \begin{verbatim}
   fields f(&ma);
   const double wavelength = 1.72;
   const double freq = 1.0/wavelength;
   f.add_point_source(Hy, freq, 10.0, 0.0, 5.0, vec2d(x_center,y_center));
-  f.use_metal_everywhere();
 \end{verbatim}
 I'm not interested in seeing the source itself, so I'll keep time stepping
 until the current time is greater than the last time at which the source is

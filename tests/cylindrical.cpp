@@ -123,11 +123,9 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *dir
     master_printf("Metallic with m = %d and a splitting into %d chunks...\n",
                   m, splitting);
     fields f(&ma, m);
-    f.use_metal_everywhere();
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     fields f1(&ma1, m);
-    f1.use_metal_everywhere();
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
@@ -170,7 +168,6 @@ int test_r_equals_zero(double eps(const vec &), const char *dirname) {
     snprintf(m_str, 10, "%d", m);
     master_printf("Checking at r == 0 with m = %d...\n", m);
     fields f(&ma, m);
-    f.use_metal_everywhere();
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     while (f.time() < ttot) f.step();
@@ -223,11 +220,9 @@ int test_pml(double eps(const vec &), int splitting, const char *dirname) {
     master_printf("PML with m = %d and a splitting into %d chunks...\n",
                   m, splitting);
     fields f(&ma, m);
-    f.use_metal_everywhere();
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
     fields f1(&ma1, m);
-    f1.use_metal_everywhere();
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
     f.eps_slices("multi");

@@ -104,10 +104,8 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
 
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&ma);
-  f.use_metal_everywhere();
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
   fields f1(&ma1);
-  f1.use_metal_everywhere();
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
   double total_energy_check_time = 8.0;
   while (f.time() < ttot) {

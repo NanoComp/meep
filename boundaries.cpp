@@ -28,14 +28,6 @@ void fields::set_boundary(boundary_side b,direction d,
   if (autoconnect) connect_chunks();
 }
 
-void fields::use_metal_everywhere() {
-  for (int b=0;b<2;b++)
-    for (int d=0;d<5;d++)
-      if (v.has_boundary((boundary_side)b, (direction)d))
-        set_boundary((boundary_side)b,(direction)d,Metallic, false);
-  connect_chunks();
-}
-
 void fields::use_bloch(direction d, complex<double> kk, bool autoconnect) {
   k[d] = kk;
   for (int b=0;b<2;b++) boundaries[b][d] = Periodic;

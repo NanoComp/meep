@@ -62,7 +62,6 @@ double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
   ma.use_pml(Y, Low, 1.0);
   fields f(&ma);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_metal_everywhere();
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -75,7 +74,6 @@ double x_periodic(const volume &v, double eps(const vec &)) {
   mat ma(v, eps);
   fields f(&ma);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_metal_everywhere();
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -107,7 +105,6 @@ double metallic_ez(const volume &v, double eps(const vec &)) {
   mat ma(v, eps);
   fields f(&ma);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_metal_everywhere();
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -120,7 +117,6 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   ma.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&ma);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_metal_everywhere();
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -133,7 +129,6 @@ double polariton_energy(const volume &v, double eps(const vec &)) {
   ma.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&ma);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_metal_everywhere();
   while (f.time() < ttot) f.step();
   return f.total_energy();
 }
@@ -144,7 +139,6 @@ double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
   ma.add_polarizability(one, 0.3, 0.1, 7.63, 0.1);
   fields f(&ma);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_metal_everywhere();
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -166,7 +160,7 @@ int main(int argc, char **argv) {
           "1D polariton energy");
   compare(0.520605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
-  compare(0.0874797, using_pml_ez(voltwo(3.0, 3.0, a), one),
+  compare(0.0895966, using_pml_ez(voltwo(3.0, 3.0, a), one),
           "1x1 PML 2D TM");
   compare(0.0110425, x_periodic(voltwo(1.0, 1.0, a), one),
           "1x1 X periodic 2D TM");
