@@ -4,6 +4,10 @@ set -ev
 
 sh autogen.sh --verbose
 
+pushd hsrc
+make
+popd
+
 version=`grep PACKAGE_VERSION config.h |cut -d' ' -f3 |tr -d \"`
 distdir="meep-$version"
 tarfile="${distdir}.tar.gz"
@@ -13,10 +17,10 @@ make dist
 tar xzf $tarfile
 rm $tarfile
 
-cd $distdir
+pushd $distdir
 make
 make check
-cd ..
+popd
 
 rm -rf $distdir */latest_output
 
