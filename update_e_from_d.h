@@ -119,8 +119,6 @@ if (pol) {
     if (is_real) {
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
-        }
-        for (int i=0;i<ntot;i++) {
           d_minus_p[i] = f[dc][0][i];
         }
         for (src *s = e_sources; s; s = s->next) {
@@ -132,8 +130,6 @@ if (pol) {
       }
     } else {
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
-        for (int i=0;i<ntot;i++) {
-        }
         for (int i=0;i<ntot;i++) {
           d_minus_p[i] = f[dc][0][i];
         }
@@ -159,15 +155,11 @@ if (pol) {
     if (is_real) {
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
         for (int i=0;i<ntot;i++) {
-        }
-        for (int i=0;i<ntot;i++) {
           f[ec][0][i] = (ma->inveps[ec][component_direction(ec)][i])*f[dc][0][i];
         }
       }
     } else {
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
-        for (int i=0;i<ntot;i++) {
-        }
         for (int i=0;i<ntot;i++) {
           f[ec][0][i] = (ma->inveps[ec][component_direction(ec)][i])*f[dc][0][i];
         }

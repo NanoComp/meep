@@ -182,9 +182,12 @@ instance CODE a => CODE [a] where
     docode co = do c <- sequence $ map docode co
                    return $ concat c
 doblock :: (EXPRESSION a, CODE b) => a -> b -> Code
-doblock thefor job = docode [doline $ add_brace $ expression thefor,
-                             indent job,
-                             doline "}"]
+doblock thefor job = do j <- docode job
+                        if is_empty j
+                           then return j
+                           else docode [doline $ add_brace $ expression thefor,
+                                        indent job,
+                                        doline "}"]
     where add_brace :: Expression -> Expression
           add_brace = liftM (++" {")
 indent :: CODE a => a -> Code
