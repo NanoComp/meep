@@ -19,6 +19,13 @@ double funky_eps_2d(const vec &p_) {
   return 2.0 + cos(p.x() * eps_k) * cos(p.y() * eps_k);
 }
 
+double funky_eps_3d(const vec &p_) {
+  vec p = p_ - vec(xsize / 2, ysize / 2, zsize / 2);
+  if (fabs(p & p) < r * r)
+    return 1.0;
+  return 2.0 + cos(p.x() * eps_k) * cos(p.y() * eps_k) * cos(p.z() * eps_k);
+}
+
 const double tol = 1e-13;
 double compare(double a, double b, const char *nam) {
   if (fabs(a-b) > fabs(b)*tol || b != b) {
@@ -95,7 +102,81 @@ bool check_2d(double eps(const vec &), double a,
     delete[] h5data;
   }
 
-  // remove(fname);
+  remove(fname);
+
+  master_printf("Passed %s (%g..%g), err=%g\n", name,
+		data_min, data_max,
+		err_max / max(fabs(data_min), fabs(data_max)));
+
+  return 1;
+}
+
+bool check_3d(double eps(const vec &), double a,
+	      component src_c, component file_c,
+	      geometric_volume file_gv,
+	      bool real_fields, int expected_rank,
+	      const char *name) {
+  const volume v = vol3d(xsize, ysize, zsize, a);
+  structure s(v, eps);
+  fields f(&s);
+
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
+  if (real_fields) f.use_real_fields();
+
+  while (f.time() <= 3.0 && !interrupt)
+    f.step();
+
+  char fname[1024];
+  snprintf(fname, 1024, "%s.h5", name);
+  double res = 0.54321 * a;
+  f.output_hdf5(fname, file_gv, res, file_c);
+
+  // compute corner coordinate of file data
+  double resinv = 1.0 / res;
+  vec loc0(file_gv.get_min_corner());
+  LOOP_OVER_DIRECTIONS(loc0.dim, d) {
+     int minpt = int(ceil(file_gv.in_direction_min(d) * res));
+     int maxpt = int(floor(file_gv.in_direction_max(d) * res));
+     if (minpt < maxpt)
+	  loc0.set_direction(d, minpt * resinv);
+  }
+
+  double data_min = infinity, data_max = -infinity;
+  double err_max = 0;
+  for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
+    int rank, dims[3] = {1, 1, 1};
+
+    char dataname[256];
+    snprintf(dataname, 256, "%s.%s", component_name(file_c), reim ? "i" : "r");
+
+    double *h5data = h5io::read(fname, dataname,
+				&rank, dims, 3);
+    if (!h5data)
+	 abort("failed to read dataset %s:%s\n", fname, dataname);
+    if (rank != expected_rank)
+	 abort("incorrect rank (%d instead of %d) in %s:%s\n",
+	       rank, expected_rank, fname, dataname);
+    vec loc(loc0.dim);
+    for (int i0 = 0; i0 < dims[0]; ++i0) {
+      loc.set_direction(X, loc0.in_direction(X) + i0 * resinv);
+      for (int i1 = 0; i1 < dims[1]; ++i1) {
+	loc.set_direction(Y, loc0.in_direction(Y) + i1 * resinv);
+	for (int i2 = 0; i2 < dims[2]; ++i2) {
+	     loc.set_direction(Z, loc0.in_direction(Z) + i2 * resinv);
+	     int idx = (i0 * dims[1] + i1) * dims[2] + i2;
+	     double err = compare(h5data[idx],
+				  get_reim(f.get_field(file_c, loc),reim),
+				  name);
+	     err_max = max(err, err_max);
+	     data_min = min(data_min, h5data[idx]);
+	     data_max = max(data_max, h5data[idx]);
+	}
+      }
+    }
+    delete[] h5data;
+  }
+
+  remove(fname);
 
   master_printf("Passed %s (%g..%g), err=%g\n", name,
 		data_min, data_max,
@@ -111,11 +192,11 @@ int main(int argc, char **argv)
   const double pad = 0.3;
 
   geometric_volume gv_2d[3] = {
-       geometric_volume(vec2d(pad, pad), vec2d(xsize-pad,ysize-pad)),
-       geometric_volume(vec2d(pad, pad), vec2d(xsize-pad, pad)),
-       geometric_volume(vec2d(pad, pad), vec2d(pad,pad)),
+       geometric_volume(vec2d(pad,pad), vec2d(xsize-pad,ysize-pad)),
+       geometric_volume(vec2d(pad,pad), vec2d(xsize-pad,pad)),
+       geometric_volume(vec2d(pad,pad), vec2d(pad,pad)),
   };
-  char gv_2d_name[3][10] = {"pad", "line", "pt"};
+  char gv_2d_name[3][10] = {"plane", "line", "point"};
   int gv_2d_rank[3] = {2,1,0};
   component tm_c[4] = {Ez, Dz, Hx, Hy};
 
@@ -130,6 +211,28 @@ int main(int argc, char **argv)
 			       gv_2d[igv], use_real, gv_2d_rank[igv], name))
 		      return 1;
 	    }
+
+  geometric_volume gv_3d[4] = {
+       geometric_volume(vec(pad,pad,pad), vec(xsize-pad,ysize-pad,zsize-pad)),
+       geometric_volume(vec(pad,pad,pad), vec(xsize-pad,ysize-pad,pad)),
+       geometric_volume(vec(pad,pad,pad), vec(xsize-pad,pad,pad)),
+       geometric_volume(vec(pad,pad,pad), vec(pad,pad,pad)),
+  };
+  char gv_3d_name[4][10] = {"volume", "plane", "line", "point"};
+  int gv_3d_rank[4] = {3,2,1,0};
+  component c3d[6] = {Ex,Ey,Ez, Hx,Hy,Hz};
+
+  for (int igv = 0; igv < 4; ++igv) {
+    int ic = 0;
+    bool use_real = true;
+    char name[1024];
+    snprintf(name, 1024, "check_3d_ezsrc_%s_%s%s",
+	     gv_3d_name[igv], component_name(c3d[ic]),
+	     use_real ? "_r" : "");
+    if (!check_3d(funky_eps_3d, a, Ez, c3d[ic],
+		  gv_3d[igv], use_real, gv_3d_rank[igv], name))
+      return 1;
+  }
 
   return 0;
 }
