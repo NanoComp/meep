@@ -1,5 +1,4 @@
 import StepGen
-import Monad ( liftM )
 
 main = putStr $ gencode $ job
 

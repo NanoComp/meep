@@ -127,6 +127,7 @@ void fields::use_real_fields() {
       abort("Can't use real fields_chunk with bloch boundary conditions!\n");
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
+  connect_chunks();
 }
 
 bool fields::have_component(component c) {

@@ -265,12 +265,15 @@ void fields::connect_the_chunks() {
                   const int nn = (is_real?1:2) * common_pols;
                   const int pair = j+i*num_chunks;
                   if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
-                    comm_num_complex[P_stuff][pair] += nn;
+                    comm_num_complex[P_stuff][pair] += 2*nn;
                   else if (thephase == -1.0)
-                    comm_num_negate[P_stuff][pair] += nn;
-                  nc[P_stuff][Incoming][i] += nn;
-                  nc[P_stuff][Outgoing][j] += nn;
-                  comm_sizes[P_stuff][pair] += nn;
+                    comm_num_negate[P_stuff][pair] += 2*nn;
+                  nc[P_stuff][Incoming][i] += 2*nn;
+                  nc[P_stuff][Outgoing][j] += 2*nn;
+                  comm_sizes[P_stuff][pair] += 2*nn;
+                  // Note above that the factor of two in 2*nn comes from
+                  // the fact that we have two polarization arrays, pol and
+                  // olpol.
                 }
             }
         }
@@ -383,7 +386,7 @@ void fields::connect_the_chunks() {
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
                 if (chunks[j]->v.owns(here) && !is_metal(here))
-                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
+                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0) {
                     for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
                       for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
                         if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
@@ -396,6 +399,20 @@ void fields::connect_the_chunks() {
                               = pj->P[c][cmp] + m;
                           }
                         }
+                    // Now do same thing with olpol (could this be uglier?)
+                    for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
+                      for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
+                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+                          const int m = chunks[j]->v.index(c, here);
+                          chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
+                          DOCMP {
+                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                              = pi->P[corig][cmp] + n;
+                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                              = pj->P[c][cmp] + m;
+                          }
+                        }
+                  }
             }
           }
       // Now the negative connections:
@@ -409,7 +426,7 @@ void fields::connect_the_chunks() {
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
                 if (chunks[j]->v.owns(here) && !is_metal(here))
-                  if (thephase == -1.0)
+                  if (thephase == -1.0) {
                     for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
                       for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
                         if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
@@ -421,6 +438,19 @@ void fields::connect_the_chunks() {
                               = pj->P[c][cmp] + m;
                           }
                         }
+                    // Now do same thing with olpol (could this be uglier?)
+                    for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
+                      for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
+                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+                          const int m = chunks[j]->v.index(c, here);
+                          DOCMP {
+                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                              = pi->P[corig][cmp] + n;
+                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                              = pj->P[c][cmp] + m;
+                          }
+                        }
+                  }
             }
           }
       // Finally the plain old copied connections:
@@ -434,7 +464,7 @@ void fields::connect_the_chunks() {
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
                 if (chunks[j]->v.owns(here) && !is_metal(here))
-                  if (thephase == 1.0)
+                  if (thephase == 1.0) {
                     for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
                       for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
                         if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
@@ -446,6 +476,19 @@ void fields::connect_the_chunks() {
                               = pj->P[c][cmp] + m;
                           }
                         }
+                    // Now do same thing with olpol (could this be uglier?)
+                    for (polarization *pi = chunks[i]->olpol; pi; pi = pi->next)
+                      for (polarization *pj = chunks[j]->olpol; pj; pj = pj->next)
+                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+                          const int m = chunks[j]->v.index(c, here);
+                          DOCMP {
+                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                              = pi->P[corig][cmp] + n;
+                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                              = pj->P[c][cmp] + m;
+                          }
+                        }
+                  }
             }
           }
       // Finished connecting up the polarizations...

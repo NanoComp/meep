@@ -37,6 +37,7 @@ figure_out_fields x = ifelse_ "f[Er][0]" (am_cylindrical x) nc
                    not_translatable ["Z"] $
                    declare "2DTM" True $ comment "Am in 2D TM" x
           am2dte = primary_direction "Y" $ declare "f[Ez][0]" False $
+                   not_translatable ["Z"] $
                    declare "2DTE" True $ comment "Am in 2D TE" x
           am3d = primary_direction "Z" $
                  declare "3D" True $ comment "Am in 3D" x
@@ -143,7 +144,7 @@ loop_direction d job =
      job
      (doblock ("for (int i"<<d<<"=0; "<<
                "i"<<d<<"<"<<num d<<"; "<<
-               (("i"<<d) |+=| stride d)<<")") job))
+               ("i"<<d<<"++")<<")") job))
     job
 \end{code}
 

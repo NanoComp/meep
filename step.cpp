@@ -195,14 +195,10 @@ void fields::step_boundaries(field_type ft) {
             phr*comm_blocks[ft][pair][n+1] + phi*comm_blocks[ft][pair][n];
           wh += 2;
         }
-        for (;n<comm_num_complex[ft][pair]+comm_num_negate[ft][pair];n++) {
-          *(chunks[i]->connections[ft][Incoming][wh]) = -comm_blocks[ft][pair][n];
-          wh++;
-        }
-        for (;n<comm_sizes[ft][pair];n++) {
-          *(chunks[i]->connections[ft][Incoming][wh]) = comm_blocks[ft][pair][n];
-          wh++;
-        }
+        for (;n<comm_num_complex[ft][pair]+comm_num_negate[ft][pair];n++)
+          *(chunks[i]->connections[ft][Incoming][wh++]) = -comm_blocks[ft][pair][n];
+        for (;n<comm_sizes[ft][pair];n++)
+          *(chunks[i]->connections[ft][Incoming][wh++]) = comm_blocks[ft][pair][n];
       }
   }
   delete[] wh;
