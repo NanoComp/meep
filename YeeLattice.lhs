@@ -65,7 +65,7 @@ not_primary_direction (d:ds) x =
     declare ("stride_any_direction["++d++"]==1") False $ not_primary_direction ds x
 
 loop_electric_fields x =
-    doblock "FOR_ELECTRIC_COMPONENTS(ec) if (f[ec][0])" $
+    doblock "FOR_E_AND_D(ec,dc) if (f[ec][0])" $
     docode [doexp $ "const int yee_idx = v.yee_index(ec)",
             doexp $ "const int d_ec = component_direction(ec)",
             doexp $ "const int s_ec = stride_any_direction[d_ec]",

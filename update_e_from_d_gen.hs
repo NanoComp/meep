@@ -1,9 +1,12 @@
 import StepGen
+import Complex
+import YeeLattice
 
 main = putStr $ gencode $ job
 
 job = with_d_minus_p $ whether_or_not "e_sources" $ whether_or_not "is_real" $
-      loop_fields $ docode [
+      consider_electric_polarizations $ 
+      loop_electric_fields $ docode [
         prepare_polarizations,
         loop_complex $ docode [
           calc_d_minus_p,
@@ -51,10 +54,8 @@ dP, of course).
 
 prepare_polarizations =
     loop_points $ loop_new_and_old_polarizations $
-    docode [prepare_polarization_energy,
+    docode [doexp "np->energy[ec][i] = op->energy[ec][i]",
             loop_complex half_step_polarization_energy]
-
-prepare_polarization_energy = doexp "np->energy[ec][i] = op->energy[ec][i]"
 
 half_step_polarization_energy =
     doexp $ "np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec]["<<cmp<<"][i] - op->P[ec]["<<cmp<<"][i])"
@@ -73,8 +74,6 @@ update_e_from_d_minus_p =
 
 {- Stuff below is more sort of general-use functions -}
 
-get_cmp_part num = ("cmp")|?| ("imag("<<num<<")") |:| ("real("<<num<<")")
-
 loop_polarizations job =
     if_ "pol" $ doblock "for (polarization *p = pol; p; p = p->next)" job
 loop_new_and_old_polarizations job = if_ "pol" $ doblock
@@ -82,10 +81,3 @@ loop_new_and_old_polarizations job = if_ "pol" $ doblock
 loop_sources start svar job =
     if_ start $ doblock ("for (src *"++svar++" = "++start++"; "++
                                svar++"; "++svar++" = "++svar++"->next)") job
-loop_fields = doblock "FOR_E_AND_D(ec,dc) if (f[ec][0])"
---loop_complex = doblock "DOCMP"
-cmp = ("cmp")|?|"1"|:|"0"
-loop_complex job =
-    ifelse_ "is_real" realjob (for_true_false "cmp" $ docode [job])
-        where realjob = declare "cmp" False $ docode [job]
-loop_points = doblock "for (int i=0;i<ntot;i++)"

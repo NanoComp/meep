@@ -5,6 +5,7 @@ module StepGen ( Code, Expression, gencode,
                  ifdef, ifdefelse, casedef,
                  whether_or_not, declare, for_loop,
                  for_true_false, for_any_one_of, sum_for_any_one_of,
+                 sum_true_false,
                  (|+|), (|-|), (|*|), (|+=|), (|-=|), (|=|), (<<),
                ) where
 
@@ -44,6 +45,13 @@ for_any_one_of (b:bs) x =
           then for_any_one_of bs $ docode x
           else docode [withCC b True $ with_all_false bs $ docode x,
                        withCC b False $ for_any_one_of bs $ docode x]
+
+sum_true_false :: EXPRESSION a => String -> a -> Expression
+sum_true_false b e =
+    do check <- istrueCC b
+       if check == Nothing
+          then (withCC b True $ expression e) |+| (withCC b False $ expression e)
+          else expression e
 
 sum_for_any_one_of :: EXPRESSION a => [String] -> a -> Expression
 sum_for_any_one_of [] e = expression "0"

@@ -68,9 +68,9 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
     saturation_factor = pb->saturated_sigma/pb->energy_saturation;
     double num_components = 0.0;
     FOR_ELECTRIC_COMPONENTS(c) if (s[c]) num_components += 1.0;
-    const double isf = 1.0/fabs(saturation_factor)/num_components;
+    const double isf = 1.0/saturation_factor/num_components;
     FOR_COMPONENTS(c)
-      if (pb->s[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = -isf*s[c][i];
+      if (pb->s[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = isf*s[c][i];
   } else {
     saturation_factor = 0.0;
     FOR_COMPONENTS(c)
