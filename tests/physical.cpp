@@ -121,6 +121,6 @@ int main(int argc, char **argv) {
 
   attempt("radiating source should decay spatially as 1/sqrt(r) in 2D.", radiating_2D(8.0));
   attempt("radiating source should decay spatially as 1/r in 3D.", radiating_3D());
-  exit(0);
+  return 0;
 }
 

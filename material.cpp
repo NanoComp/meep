@@ -49,13 +49,14 @@ void mat::optimize_volumes(int *Nv, volume *new_volumes, int *procs) {
   int counter = 0;
   for (int i=0;i<desired_num_chunks;i++) {
     const int proc = num_processors * i / desired_num_chunks;
-    volume vi = v.split_by_effort(desired_num_chunks, i, num_effort_volumes, effort_volumes, effort);
+    volume vi = v.split_by_effort(desired_num_chunks, i,
+                                  num_effort_volumes, effort_volumes, effort);
     volume v_intersection;
     for (int j=0;j<num_effort_volumes;j++) {
       if (vi.intersect_with(effort_volumes[j], &v_intersection)) {
     	new_volumes[counter] = v_intersection;
-	procs[counter] = proc;
-	counter++;
+        procs[counter] = proc;
+        counter++;
       }
     }
   }
@@ -75,110 +76,142 @@ void mat::optimize_chunks() {
 
 inline double zero_function(const vec &v) { return 0.0; }
 
-void mat::redefine_chunks(const int Nv, const volume *new_volumes, const int *procs) {
-     // First check that the new_volumes do not intersect and that they add up to the total volume
-     volume vol_intersection;
-     for (int i=0; i<Nv; i++)
-	  for (int j=i+1; j<Nv; j++)
-	       if (new_volumes[i].intersect_with(new_volumes[j], &vol_intersection))
-		    abort("new_volumes[%d] intersects with new_volumes[%d]\n", i, j);
-     int sum = 0;
-     for (int i=0; i<Nv; i++) {
-	  int grid_points = 1;
-	  LOOP_OVER_DIRECTIONS(new_volumes[i].dim, d) grid_points *= new_volumes[i].num_direction(d);
-	  sum += grid_points;
-     }
-     int v_grid_points = 1;
-     LOOP_OVER_DIRECTIONS(v.dim, d) v_grid_points *= v.num_direction(d);
-     if (sum != v_grid_points)
-	  abort("v_grid_points = %d, sum(new_volumes) = %d\n", v_grid_points, sum);
-
-     mat_chunk **new_chunks = new (mat_chunk *)[Nv];
-     for (int j=0; j<Nv; j++)
-       new_chunks[j] = NULL;
-     for (int j=0; j<Nv; j++) {
-       for (int i=0; i<num_chunks; i++)
-	 if (chunks[i]->v.intersect_with(new_volumes[j], &vol_intersection)) {
-	   if (new_chunks[j] == NULL) {
-	     new_chunks[j] = new mat_chunk(new_volumes[j], zero_function, procs[j]);
-	     // the above happens even if chunk not owned by proc
-	   }
-	   // chunk "printing" is parallelized below
-	   if (new_chunks[j]->is_mine()) {
-	     // eps
-	     for (int l=0; l<vol_intersection.ntot(); l++) {
-	       component c = vol_intersection.eps_component();
-	       ivec iv = vol_intersection.iloc(c, l);
-	       int index_old = chunks[i]->v.index(c, iv);
-	       int index_new = new_chunks[j]->v.index(c, iv);
-	       new_chunks[j]->eps[index_new] = chunks[i]->eps[index_old];
-	     }
-		      
-	     // inveps
-	     FOR_COMPONENTS(c)
-	       FOR_DIRECTIONS(d)
-	         if (chunks[i]->inveps[c][d] != NULL)
-		   for (int l=0; l<vol_intersection.ntot(); l++) {
-		     ivec iv = vol_intersection.iloc(c, l);
-		     int index_old = chunks[i]->v.index(c, iv);
-		     int index_new = new_chunks[j]->v.index(c, iv);
-		     new_chunks[j]->inveps[c][d][index_new] = chunks[i]->inveps[c][d][index_old];
-		   }
-		      
-	     FOR_DIRECTIONS(d)
-	       FOR_COMPONENTS(c) {
-	         // C
-	         if (chunks[i]->C[d][c] != NULL) {
-		   if (new_chunks[j]->C[d][c] == NULL) {
-		     new_chunks[j]->C[d][c] = new double[new_chunks[j]->v.ntot()];
-		     for (int l=0; l<new_chunks[j]->v.ntot(); l++)
-		       new_chunks[j]->C[d][c][l] = 0.0;
-		   }
-		   for (int l=0; l<vol_intersection.ntot(); l++) {
-		     ivec iv = vol_intersection.iloc(c, l);
-		     int index_old = chunks[i]->v.index(c, iv);
-		     int index_new = new_chunks[j]->v.index(c, iv);
-		     new_chunks[j]->C[d][c][index_new] = chunks[i]->C[d][c][index_old];
-		   }
-		 }
-	       }
-	     // polarization! FIXME
-	   }
-	 }
-       new_chunks[j]->update_pml_arrays();
-     }
-     // Finally replace old chunks with new chunks
-     delete[] chunks;
-     chunks = new_chunks;
-     num_chunks = Nv;
+static inline void copy_from(int from, int to,
+                             double *f, double *t, int size=1) {
+  double temp;
+  if (my_rank() == from) temp = *f;
+  send(from, to, &temp);
+  if (my_rank() == to) *t = temp;
 }
 
-void mat::add_to_effort_volumes(const volume &new_effort_volume, double extra_effort) {
-  volume *temp_volumes = new volume[(2*number_of_directions(v.dim)+1)*num_effort_volumes]; 
-  double *temp_effort = new double[(2*number_of_directions(v.dim)+1)*num_effort_volumes];
+void mat::redefine_chunks(const int Nv, const volume *new_volumes,
+                          const int *procs) {
+  // First check that the new_volumes do not intersect and that they add
+  // up to the total volume
+  
+  volume vol_intersection;
+  for (int i=0; i<Nv; i++)
+    for (int j=i+1; j<Nv; j++)
+      if (new_volumes[i].intersect_with(new_volumes[j], &vol_intersection))
+        abort("new_volumes[%d] intersects with new_volumes[%d]\n", i, j);
+  int sum = 0;
+  for (int i=0; i<Nv; i++) {
+    int grid_points = 1;
+    LOOP_OVER_DIRECTIONS(new_volumes[i].dim, d)
+      grid_points *= new_volumes[i].num_direction(d);
+    sum += grid_points;
+  }
+  int v_grid_points = 1;
+  LOOP_OVER_DIRECTIONS(v.dim, d) v_grid_points *= v.num_direction(d);
+  if (sum != v_grid_points)
+    abort("v_grid_points = %d, sum(new_volumes) = %d\n", v_grid_points, sum);
+
+  mat_chunk **new_chunks = new (mat_chunk *)[Nv];
+  for (int j=0; j<Nv; j++)
+    new_chunks[j] = NULL;
+  for (int j=0; j<Nv; j++) {
+    for (int i=0; i<num_chunks; i++)
+      if (chunks[i]->v.intersect_with(new_volumes[j], &vol_intersection)) {
+        if (new_chunks[j] == NULL) {
+          new_chunks[j] = new mat_chunk(new_volumes[j], zero_function,
+                                        procs[j]);
+          // the above happens even if chunk not owned by proc
+        }
+        // chunk "printing" is parallelized below
+
+        // FIXME: The following code is *terribly* parallelized! The
+        // boolean broadcasts should be removed in favor of sends from one
+        // processor to another (and should only be done if their chunks
+        // intersect).  The copy_froms should all be elimiated (they're a
+        // crude kludge) in favor of sending the entire chunk's data all at
+        // once, followed by a more leisurely copying and deletion of the
+        // buffer.
+
+        // eps
+        for (int l=0; l<vol_intersection.ntot(); l++) {
+          component c = vol_intersection.eps_component();
+          ivec iv = vol_intersection.iloc(c, l);
+          int index_old = chunks[i]->v.index(c, iv);
+          int index_new = new_chunks[j]->v.index(c, iv);
+          copy_from(chunks[i]->n_proc(), new_chunks[j]->n_proc(),
+                    &chunks[i]->eps[index_old],
+                    &new_chunks[j]->eps[index_new]);
+        }
+        // inveps
+        FOR_COMPONENTS(c)
+          FOR_DIRECTIONS(d)
+            if (broadcast(chunks[i]->n_proc(),
+                          chunks[i]->inveps[c][d] != NULL))
+              for (int l=0; l<vol_intersection.ntot(); l++) {
+                ivec iv = vol_intersection.iloc(c, l);
+                int index_old = chunks[i]->v.index(c, iv);
+                int index_new = new_chunks[j]->v.index(c, iv);
+                copy_from(chunks[i]->n_proc(), new_chunks[j]->n_proc(),
+                          &chunks[i]->inveps[c][d][index_old],
+                          &new_chunks[j]->inveps[c][d][index_new]);
+              }
+        FOR_DIRECTIONS(d)
+          FOR_COMPONENTS(c) {
+            // C
+            if (broadcast(chunks[i]->n_proc(),
+                          chunks[i]->C[d][c] != NULL)) {
+              if (new_chunks[j]->is_mine() &&
+                  new_chunks[j]->C[d][c] == NULL) {
+                new_chunks[j]->C[d][c] =
+                  new double[new_chunks[j]->v.ntot()];
+                for (int l=0; l<new_chunks[j]->v.ntot(); l++)
+                  new_chunks[j]->C[d][c][l] = 0.0;
+              }
+              for (int l=0; l<vol_intersection.ntot(); l++) {
+                ivec iv = vol_intersection.iloc(c, l);
+                int index_old = chunks[i]->v.index(c, iv);
+                int index_new = new_chunks[j]->v.index(c, iv);
+                copy_from(chunks[i]->n_proc(), new_chunks[j]->n_proc(),
+                          &chunks[i]->C[d][c][index_old],
+                          &new_chunks[j]->C[d][c][index_new]);
+              }
+            }
+            // polarization! FIXME
+        }
+      }
+    if (new_chunks[j]->is_mine())
+      new_chunks[j]->update_pml_arrays();
+  }
+  // Finally replace old chunks with new chunks
+  delete[] chunks;
+  chunks = new_chunks;
+  num_chunks = Nv;
+}
+
+void mat::add_to_effort_volumes(const volume &new_effort_volume,
+                                double extra_effort) {
+  volume *temp_volumes =
+    new volume[(2*number_of_directions(v.dim)+1)*num_effort_volumes]; 
+  double *temp_effort =
+    new double[(2*number_of_directions(v.dim)+1)*num_effort_volumes];
   // Intersect previous mat_volumes with this new_effort_volume
   int counter = 0;
   for (int j=0; j<num_effort_volumes; j++) {
     volume intersection, others[6];
     int num_others;
-    if (effort_volumes[j].intersect_with(new_effort_volume, &intersection, others, &num_others)) {
-	if (num_others > 1) {
-	  printf("effort_volumes[%d]  ", j);
-          effort_volumes[j].print();
-	  printf("new_effort_volume  ");
-          new_effort_volume.print();
-	  abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
-	}
+    if (effort_volumes[j].intersect_with(new_effort_volume, &intersection,
+                                         others, &num_others)) {
+      if (num_others > 1) {
+        printf("effort_volumes[%d]  ", j);
+        effort_volumes[j].print();
+        printf("new_effort_volume  ");
+        new_effort_volume.print();
+        abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
+      }
       temp_effort[counter] = extra_effort + effort[j];
       temp_volumes[counter] = intersection;
       counter++;
       for (int k = 0; k<num_others; k++) {
-	temp_effort[counter] = effort[j];	  
-	temp_volumes[counter] = others[k];
-	counter++;
+        temp_effort[counter] = effort[j];	  
+        temp_volumes[counter] = others[k];
+        counter++;
       }
-    }
-    else {
+    } else {
       temp_effort[counter] = effort[j];	  
       temp_volumes[counter] = effort_volumes[j];
       counter++;
@@ -208,7 +241,8 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
       const direction d = (direction) dd;
       break_this[d] = false;
       for (int n=0;n<S.multiplicity();n++)
-        if (has_direction(thev.dim,(direction)d) && (S.transform(d,n).d != d || S.transform(d,n).flipped)) {
+        if (has_direction(thev.dim,(direction)d) &&
+            (S.transform(d,n).d != d || S.transform(d,n).flipped)) {
           break_this[d] = true;
           if (thev.num_direction(d) & 1)
             abort("Aaack, odd number of grid points!\n");

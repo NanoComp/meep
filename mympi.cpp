@@ -75,6 +75,14 @@ void broadcast(int from, complex<double> *data, int size) {
 #endif
 }
 
+bool broadcast(int from, bool b) {
+  int bi = b;
+#ifdef HAVE_MPI
+  MPI_Bcast(&bi, 2, MPI_INT, from, MPI_COMM_WORLD);
+#endif
+  return bi;
+}
+
 complex<double> broadcast(int from, complex<double> data) {
 #ifdef HAVE_MPI
   MPI_Bcast(&data, 2, MPI_DOUBLE, from, MPI_COMM_WORLD);

@@ -31,9 +31,10 @@ int count_processors();
 int my_rank();
 inline int am_master() { return my_rank() == 0; };
 
-void send(int from, int to, double *data, int size);
+void send(int from, int to, double *data, int size=1);
 void broadcast(int from, double *data, int size);
 void broadcast(int from, complex<double> *data, int size);
+bool broadcast(int from, bool);
 complex<double> broadcast(int from, complex<double> data);
 double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);

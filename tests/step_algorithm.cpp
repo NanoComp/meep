@@ -291,6 +291,6 @@ int main(int argc, char **argv) {
   if (!step_pml_2d_te(dirname))
     abort("error in step_pml_2d_te\n");
 
-  exit(0);
+  return 0;
 }
 
