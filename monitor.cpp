@@ -42,51 +42,6 @@ void fields::output_point(FILE *o, const vec &loc, const char *name) {
   fprintf(o, "\n");
 }
 
-static inline complex<double> interpolate(double *f[2], double r, double z, 
-                                          int nr, int nz,
-                                          int odd_with_respect_to_r,
-                                          complex<double> eiknz) {
-  int rlo = (int) r, zlo = (int) z, rhi = rlo+1, zhi = zlo+1;
-  double dr = r - (rlo + 0.5), dz = z - (zlo + 0.5);
-  complex<double> phrlo = 1.0, phzlo = 1.0, phzhi = 1.0;
-  if (rlo < 0) {
-    rlo = 0;
-    if (odd_with_respect_to_r) phrlo = -1;
-  }
-  if (rhi > nr-1) rhi = nr-1;
-  if (zlo < 0) {
-    zlo = nz-1;
-    phzlo = 1.0/eiknz;
-  }
-  if (zhi > nz-1) {
-    zhi = 0;
-    phzhi = eiknz;
-  }
-  if (rlo > nr-1 || zlo > nz-1 || zhi < 0 || rhi < 0) {
-    printf("interpolated point is out of range! (%lg,%lg)\n", r, z);
-    exit(1);
-  }
-  complex<double> fsw = phrlo*phzlo*complex<double>(RE(f,rlo,zlo),IM(f,rlo,zlo));
-  complex<double> fnw =       phzlo*complex<double>(RE(f,rhi,zlo),IM(f,rhi,zlo));
-  complex<double> fse = phrlo*phzhi*complex<double>(RE(f,rlo,zhi),IM(f,rlo,zhi));
-  complex<double> fne =       phzhi*complex<double>(RE(f,rhi,zhi),IM(f,rhi,zhi));
-  complex<double> fmid = 0.25*(fsw+fse+fnw+fne);
-  if (dr+dz > 0.0) {
-    if (dr-dz > 0.0) { // North     
-      return 2*dr*( (0.5+dz)*fne + (0.5-dz)*fnw ) + (1-2*dr)*fmid;
-    } else { // East
-      return 2*dz*( (0.5+dr)*fne + (0.5-dr)*fse ) + (1-2*dz)*fmid;
-    }
-  } else {
-    if (dr-dz > 0.0) { // West
-      return -2*dz*( (0.5+dr)*fnw + (0.5-dr)*fsw ) + (1+2*dz)*fmid;
-    } else { // South
-      return -2*dr*( (0.5+dz)*fse + (0.5-dz)*fsw ) + (1+2*dr)*fmid;
-    }
-  }
-  return fmid;
-}
-
 inline complex<double> getcm(double *f[2], int i) {
   return complex<double>(f[0][i],f[1][i]);
 }

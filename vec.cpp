@@ -162,6 +162,8 @@ void volume::interpolate(component c, const vec &p,
       indices[i] = 0;
       weights[i] = 0;
     }
+    //} else if (dim == dcyl) { FIXME the cylindrical interpolation is buggy!
+    //interpolate_cyl(c, p, 0, indices, weights);
   } else {
     // by default use the 'index' routine.
     indices[0] = index(c,p);
@@ -169,6 +171,45 @@ void volume::interpolate(component c, const vec &p,
     for (int i=1;i<8;i++) {
       indices[i] = 0;
       weights[i] = 0;
+    }
+  }
+}
+
+void volume::interpolate_cyl(component c, const vec &p, int m,
+                             int indices[8], double weights[8]) const {
+  const vec yeept = p - origin - yee_shift(c);
+  const double r = yeept.r()*a, z = yeept.z()*a;
+  int rlo = (int) r, zlo = (int) z, rhi = rlo+1, zhi = zlo+1;
+  double dr = r - (rlo + 0.5), dz = z - (zlo + 0.5);
+  for (int i=4;i<8;i++) indices[i] = 0;
+  for (int i=4;i<8;i++) weights[i] = 0;
+  indices[0] = zlo + (1+nz())*rlo;
+  indices[1] = zhi + (1+nz())*rlo;
+  indices[2] = zlo + (1+nz())*rhi;
+  indices[3] = zhi + (1+nz())*rhi;
+  if (dr+dz > 0.0) {
+    if (dr-dz > 0.0) { // North  
+      weights[0] = (1-2*dr)*0.25;
+      weights[1] = (1-2*dr)*0.25;
+      weights[2] = 2*dr*(0.5-dz) + (1-2*dr)*0.25;
+      weights[3] = 2*dr*(0.5+dz) + (1-2*dr)*0.25;
+    } else { // East
+      weights[0] = (1-2*dz)*0.25;
+      weights[2] = (1-2*dz)*0.25;
+      weights[1] = 2*dz*(0.5-dr) + (1-2*dz)*0.25;
+      weights[3] = 2*dz*(0.5+dr) + (1-2*dz)*0.25;
+    }
+  } else {
+    if (dr-dz > 0.0) { // West
+      weights[3] = (1-2*dz)*0.25;
+      weights[1] = (1-2*dz)*0.25;
+      weights[0] = 2*dz*(0.5-dr) + (1-2*dz)*0.25;
+      weights[2] = 2*dz*(0.5+dr) + (1-2*dz)*0.25;
+    } else { // South
+      weights[2] = (1-2*dr)*0.25;
+      weights[3] = (1-2*dr)*0.25;
+      weights[0] = 2*dr*(0.5-dz) + (1-2*dr)*0.25;
+      weights[1] = 2*dr*(0.5+dz) + (1-2*dr)*0.25;
     }
   }
 }
