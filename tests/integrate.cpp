@@ -26,7 +26,7 @@
 #include "meep.h"
 using namespace meep;
 
-const double size[3] = {3.0,3.0,2.6};
+double size[3] = {3.0,3.0,2.6};
 
 static double one(const vec &p) {
   (void) p;
@@ -53,22 +53,19 @@ static void linear_integrand(fields_chunk *fc,
      integrating fields, obviously */
   (void) shift_phase;
 
-  // get the integration weight along a given dimension
-#define WEIGHT(i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? s0.in_direction(direction(dir)) : (i == 1 ? s1.in_direction(direction(dir)) : i == n - 1 ? e0.in_direction(direction(dir)) : (i == n - 2 ? e1.in_direction(direction(dir)) : 1.0))))
-
-  vec loc(fc->v.dim);
+  vec loc(fc->v.dim, 0.0);
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    // slightly evil use of loop vars defined internally by LOOP_OVER_IVECS...
-    double w1 = WEIGHT(loop_i1, loop_n1, loop_d1);
+    double w1 = IVEC_LOOP_WEIGHT(1);
     double dV = dV0 + dV1 * loop_i2;
-    double w12 = w1 * WEIGHT(loop_i2, loop_n2, loop_d2) * dV;
-    double w123 = w12 * WEIGHT(loop_i3, loop_n3, loop_d3);
+    double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
+    double w123 = w12 * IVEC_LOOP_WEIGHT(3);
     double inva = fc->v.inva;
     loc.set_direction(direction(loop_d1), loop_is1*0.5*inva + loop_i1*inva);
     loc.set_direction(direction(loop_d2), loop_is2*0.5*inva + loop_i2*inva);
     loc.set_direction(direction(loop_d3), loop_is3*0.5*inva + loop_i3*inva);
 
-    vec locS(S.transform(loc, sn) + shift);
+    // clean_vec is only necessary because we reference X/Y/Z for any v.dim
+    vec locS(clean_vec(S.transform(loc, sn) + shift));
     if (0) master_printf("at (%g,%g,%g) with weight*dV = %g*%g\n",
 			 locS.in_direction(X),
 			 locS.in_direction(Y),
@@ -86,8 +83,6 @@ static void linear_integrand(fields_chunk *fc,
 	                   * locS.in_direction(Z)
 	      );
   }
-
-#undef WEIGHT
 }
 
 /* integrals of 1 and x, respectively, from a to b, or 1 and x if a==b: */
@@ -121,25 +116,21 @@ static double urand(double min, double max)
   return (rand() * ((max - min) / RAND_MAX) + min);
 }
 
-static geometric_volume random_gv(void)
+static geometric_volume random_gv(ndim dim)
 {
-  geometric_volume gv(D3);
-
-  gv.set_direction_min(X, urand(-100, 100));
-  gv.set_direction_min(Y, urand(-100, 100));
-  gv.set_direction_min(Z, urand(-100, 100));
+  geometric_volume gv(dim);
 
   double s[3] = {0,0,0};
-  switch (rand() % 4) { /* dimensionality */
+  switch (rand() % (dim + 2)) { /* dimensionality */
   case 0:
     break;
   case 1: {
-    int d = rand() % 3;
+    int d = rand() % (dim + 1);
     s[d] = urand(0, size[d]);
     break;
   }
   case 2: {
-    int d1 = rand() % 3;
+    int d1 = rand() % (dim + 1);
     int d2 = (d1 + 1 + rand() % 2) % 3;
     s[d1] = urand(0, size[d1]);
     s[d2] = urand(0, size[d2]);
@@ -150,9 +141,36 @@ static geometric_volume random_gv(void)
     s[1] = urand(0, size[1]);
     s[2] = urand(0, size[2]);
   }
-  gv.set_direction_max(X, s[0] + gv.in_direction_min(X));
-  gv.set_direction_max(Y, s[1] + gv.in_direction_min(Y));
-  gv.set_direction_max(Z, s[2] + gv.in_direction_min(Z));
+  
+  switch (dim) {
+  case D1:
+    gv.set_direction_min(X, 0);
+    gv.set_direction_max(X, 0);
+    gv.set_direction_min(Y, 0);
+    gv.set_direction_max(Y, 0);
+    gv.set_direction_min(Z, urand(-100, 100));
+    gv.set_direction_max(Z, s[0] + gv.in_direction_min(Z));
+    break;
+  case D2:
+    gv.set_direction_min(X, urand(-100, 100));
+    gv.set_direction_min(Y, urand(-100, 100));
+    gv.set_direction_max(X, s[0] + gv.in_direction_min(X));
+    gv.set_direction_max(Y, s[1] + gv.in_direction_min(Y));
+    gv.set_direction_min(Z, 0);
+    gv.set_direction_max(Z, 0);
+    break;
+  case D3:
+    gv.set_direction_min(X, urand(-100, 100));
+    gv.set_direction_min(Y, urand(-100, 100));
+    gv.set_direction_max(X, s[0] + gv.in_direction_min(X));
+    gv.set_direction_max(Y, s[1] + gv.in_direction_min(Y));
+    gv.set_direction_min(Z, urand(-100, 100));
+    gv.set_direction_max(Z, s[2] + gv.in_direction_min(Z));
+    break;
+  default:
+    abort("unsupported dimensionality in integrate.cpp");
+  }
+
   return gv;
 }
 
@@ -172,8 +190,9 @@ void check_integral(fields &f,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
 		  d.c, d.ax,d.ay,d.az, d.axy,d.ayz,d.axz, d.axyz);
   else
-    master_printf("Checking %d-dim. volume with %s integral...",
+    master_printf("Checking %d-dim. integral in %s cell with %s integrand...",
 		  (x2 - x1 > 0) + (y2 - y1 > 0) + (z2 - z1 > 0), 
+		  gv.dim == D3 ? "3d" : (gv.dim == D2 ? "2d" : "1d"),
 		  (d.c == 1.0 && !d.axy && !d.ax && !d.ay && !d.az
 		   && !d.axy && !d.ayz && !d.axz) ? "unit" : "linear");
   d.sum = 0.0;
@@ -193,14 +212,17 @@ void check_splitsym(const volume &v, int splitting,
   fields f(&s);
 
   // periodic boundaries:
-  f.use_bloch(X, 0);
-  f.use_bloch(Y, 0);
-  f.use_bloch(Z, 0);
+  if (v.dim != D1) {
+    f.use_bloch(X, 0);
+    f.use_bloch(Y, 0);
+  }
+  if (v.dim != D2)
+    f.use_bloch(Z, 0);
 
   master_printf("\nCHECKS for splitting=%d, symmetry=%s\n...",
 		splitting, Sname);
   for (int i = 0; i < num_random_trials; ++i) {
-    geometric_volume gv(random_gv());
+    geometric_volume gv(random_gv(v.dim));
     linear_integrand_data d;
 
     // try integral of 1 first (easier to debug, I hope)
@@ -220,16 +242,32 @@ int main(int argc, char **argv)
 {
   const double a = 10.0;
   initialize mpi(argc, argv);
-  const volume v = vol3d(size[0], size[1], size[2], a);
+  const volume v3d = vol3d(size[0], size[1], size[2], a);
+  const volume v2d = vol2d(size[0], size[1], a);
+  const volume v1d = vol1d(size[0], a);
 
   srand(0); // use fixed random sequence
 
   for (int splitting = 0; splitting < 5; ++splitting) {
-    check_splitsym(v, splitting, identity(), "identity");
-    check_splitsym(v, splitting, mirror(X, v), "mirrorx");
-    check_splitsym(v, splitting, mirror(Y, v), "mirrory");
-    check_splitsym(v, splitting, mirror(X, v) + mirror(Y, v), "mirrorxy");
-    check_splitsym(v, splitting, rotate4(Z, v), "rotate4");
+    check_splitsym(v3d, splitting, identity(), "identity");
+    check_splitsym(v3d, splitting, mirror(X,v3d), "mirrorx");
+    check_splitsym(v3d, splitting, mirror(Y,v3d), "mirrory");
+    check_splitsym(v3d, splitting, mirror(X,v3d) + mirror(Y,v3d), "mirrorxy");
+    check_splitsym(v3d, splitting, rotate4(Z,v3d), "rotate4");
   }
+
+  for (int splitting = 0; splitting < 5; ++splitting) {
+    check_splitsym(v2d, splitting, identity(), "identity");
+    check_splitsym(v2d, splitting, mirror(X,v2d), "mirrorx");
+    check_splitsym(v2d, splitting, mirror(Y,v2d), "mirrory");
+    check_splitsym(v2d, splitting, mirror(X,v2d) + mirror(Y,v2d), "mirrorxy");
+    check_splitsym(v2d, splitting, rotate4(Z,v2d), "rotate4");
+  }
+
+  for (int splitting = 0; splitting < 5; ++splitting) {
+    check_splitsym(v1d, splitting, identity(), "identity");
+    check_splitsym(v1d, splitting, mirror(Z,v1d), "mirrorz");
+  }
+
   return 0;
 }

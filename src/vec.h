@@ -103,6 +103,10 @@ inline direction stop_at_direction(ndim dim) {
       for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
+// integration weight for using LOOP_OVER_IVECS with field::integrate
+#define IVEC_LOOP_WEIGHTx(i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? s0.in_direction(direction(dir)) : (i == 1 ? s1.in_direction(direction(dir)) : i == n - 1 ? e0.in_direction(direction(dir)) : (i == n - 2 ? e1.in_direction(direction(dir)) : 1.0))))
+#define IVEC_LOOP_WEIGHT(k) IVEC_LOOP_WEIGHTx(loop_i##k, loop_n##k, loop_d##k)
+
 #define LOOP_OVER_OWNED(v, idx) \
   for (int loop_n1 = v.yucky_num(0), \
            loop_n2 = v.yucky_num(1), \
@@ -124,6 +128,12 @@ inline signed_direction flip(signed_direction d) {
 inline bool has_direction(ndim dim, direction d) {
   LOOP_OVER_DIRECTIONS(dim, dd) if (dd == d) return true;
   return false;
+}
+
+// true if d is polar while dim is cartesian, or vice versa 
+inline bool coordinate_mismatch(ndim dim, direction d) {
+  return ((dim >= D1 && dim <= D3 && (d == R || d == P)) ||
+	  (dim == Dcyl && (d == X || d == Y)));
 }
 
 void abort(const char *, ...);
@@ -177,6 +187,7 @@ class vec {
  public:
   vec() {};
   vec(ndim di) { dim = di; };
+  vec(ndim di, double val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
   vec(double zz) { dim = D1; t[Z] = zz; };
   vec(double rr, double zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
   vec(double xx, double yy, double zz) {
@@ -263,6 +274,12 @@ inline vec zero_vec(ndim di) {
   return v;
 }
 
+inline vec clean_vec(const vec &v, double val_unused = 0.0) {
+  vec vc(v.dim, val_unused);
+  LOOP_OVER_DIRECTIONS(v.dim, d) vc.set_direction(d, v.in_direction(d));
+  return vc;
+}
+
 inline vec vec2d(double xx, double yy) {
   vec v; v.dim = D2; v.t[X] = xx; v.t[Y] = yy; return v;
 }
@@ -271,6 +288,7 @@ class ivec {
  public:
   ivec() { dim = D2; t[X] = t[Y] = 0; };
   ivec(ndim di) { dim = di; };
+  ivec(ndim di, int val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
   ivec(int zz) { dim = D1; t[Z] = zz; };
   ivec(int rr, int zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
   ivec(int xx, int yy, int zz) {
@@ -479,6 +497,7 @@ class volume {
   }
   vec yee_shift(component) const;
   component eps_component() const;
+  void yee2diel_offsets(component c, int &offset1, int &offset2);
 
   double boundary_location(boundary_side, direction) const;
   ivec big_corner() const;

@@ -55,15 +55,8 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   shift_sym_phase = shift_sym_phase_;
   c = c_;
 
-  avg1 = avg2 = 0;
-  LOOP_OVER_DIRECTIONS(fc->v.dim,d) {
-    if (!fc->v.iyee_shift(c).in_direction(d)) {
-      if (avg2) abort("weird yee shift for component %s", component_name(c));
-      if (avg1) avg2 = fc->v.stride(d);
-      else avg1 = fc->v.stride(d);
-    }
-  }
-  
+  fc->v.yee2diel_offsets(c, avg1, avg2);
+
   omega_min = data->omega_min;
   domega = data->domega;
   Nomega = data->Nomega;
@@ -119,14 +112,16 @@ static void add_dft_integrand(fields_chunk *fc,
 
 dft_chunk *fields::add_dft(component c, const geometric_volume &where,
 			   double freq_min, double freq_max, int Nfreq) {
-  dft_chunk_data data;
-  
+  if (coordinate_mismatch(v.dim, component_direction(c)))
+    return NULL;
+
+  dft_chunk_data data;  
   data.c = c;
   data.omega_min = freq_min * 2*pi;
   data.domega = Nfreq <= 1 ? 0.0 : 
     (freq_max * 2*pi - data.omega_min) / (Nfreq - 1);
   data.Nomega = Nfreq;
-  data.dft_chunks = 0;
+  data.dft_chunks = NULL;
   
   integrate(add_dft_integrand, (void *) &data, where);
 
@@ -149,16 +144,12 @@ void dft_chunk::update_dft(double time) {
   for (int i = 0; i < Nomega; ++i)
     dft_phase[i] = polar(1.0, (omega_min + i*domega)*time) * shift_sym_phase;
 
-  // get the integration weight along a given dimension
-#define WEIGHT(i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? s0.in_direction(direction(dir)) : (i == 1 ? s1.in_direction(direction(dir)) : i == n - 1 ? e0.in_direction(direction(dir)) : (i == n - 2 ? e1.in_direction(direction(dir)) : 1.0))))
-  
   if (fc->f[c][1]) // complex fields
     LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-      // slightly evil use of loop vars defined within LOOP_OVER_IVECS...
-      double w1 = WEIGHT(loop_i1, loop_n1, loop_d1);
+      double w1 = IVEC_LOOP_WEIGHT(1);
       double dV = dV0 + dV1 * loop_i2;
-      double w12 = w1 * WEIGHT(loop_i2, loop_n2, loop_d2) * dV;
-      double w123 = w12 * WEIGHT(loop_i3, loop_n3, loop_d3);
+      double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
+      double w123 = w12 * IVEC_LOOP_WEIGHT(3);
 
       (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
       
@@ -172,10 +163,12 @@ void dft_chunk::update_dft(double time) {
 	     complex<double>(fc->f[c][0][idx+avg1], fc->f[c][1][idx+avg1]));
       }
       else { // avg1 != 0, avg2 != 0, avg2 != avg1
-	f = (w123 * (1./3.)) * 
+	f = (w123 * 0.25) * 
 	  (complex<double>(fc->f[c][0][idx], fc->f[c][1][idx]) +
 	   complex<double>(fc->f[c][0][idx+avg1], fc->f[c][1][idx+avg1]) +
-	   complex<double>(fc->f[c][0][idx+avg2], fc->f[c][1][idx+avg2]));
+	   complex<double>(fc->f[c][0][idx+avg2], fc->f[c][1][idx+avg2]) +
+	   complex<double>(fc->f[c][0][idx+(avg1+avg2)], 
+			   fc->f[c][1][idx+(avg1+avg2)]));
       }
       
       int idx_dft = loop_i3 + loop_n3 * (loop_i2 + loop_n2 * loop_i1);
@@ -184,11 +177,10 @@ void dft_chunk::update_dft(double time) {
     }
   else // real fields
     LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-      // slightly evil use of loop vars defined within LOOP_OVER_IVECS...
-      double w1 = WEIGHT(loop_i1, loop_n1, loop_d1);
+      double w1 = IVEC_LOOP_WEIGHT(1);
       double dV = dV0 + dV1 * loop_i2;
-      double w12 = w1 * WEIGHT(loop_i2, loop_n2, loop_d2) * dV;
-      double w123 = w12 * WEIGHT(loop_i3, loop_n3, loop_d3);
+      double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
+      double w123 = w12 * IVEC_LOOP_WEIGHT(3);
       
       (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
       
@@ -200,16 +192,15 @@ void dft_chunk::update_dft(double time) {
 	  f = (w123 * 0.5) * (fc->f[c][0][idx] + fc->f[c][0][idx+avg1]);
       }
       else { // avg1 != 0, avg2 != 0, avg2 != avg1
-	f = (w123 * (1./3.)) * 
-	  (fc->f[c][0][idx] + fc->f[c][0][idx+avg1] + fc->f[c][0][idx+avg2]);
+	f = (w123 * 0.25) * 
+	  (fc->f[c][0][idx] + fc->f[c][0][idx+avg1] + fc->f[c][0][idx+avg2] +
+	   fc->f[c][0][idx+(avg1+avg2)]);
       }
       
       int idx_dft = loop_i3 + loop_n3 * (loop_i2 + loop_n2 * loop_i1);
       for (int i = 0; i < Nomega; ++i)
 	dft[Nomega * idx_dft + i] += dft_phase[i] * f;
     }
-
-#undef WEIGHT
 }
 
 void dft_chunk::negate_dft() {

@@ -244,6 +244,22 @@ vec volume::yee_shift(component c) const {
   return operator[](iyee_shift(c));
 }
 
+/* Return array offsets to average with a given array location of c
+   in order to get c on the "dielectric" grid.  Non-zero offsets
+   should be ignored, so that 1, 2, or 4 locations can be averaged.
+   If only one offset is zero, it will be offset2. */
+void volume::yee2diel_offsets(component c, int &offset1, int &offset2) {
+  offset1 = offset2 = 0;
+  LOOP_OVER_DIRECTIONS(dim,d) {
+    if (!iyee_shift(c).in_direction(d)) {
+      if (offset2) 
+	abort("weird yee shift for component %s", component_name(c));
+      if (offset1) offset2 = stride(d);
+      else offset1 = stride(d);
+    }
+  }
+}
+
 bool geometric_volume::contains(const vec &p) const {
   LOOP_OVER_DIRECTIONS(dim,d) {
     if (p.in_direction(d) > in_direction_max(d) ||

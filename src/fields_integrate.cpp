@@ -22,6 +22,148 @@
 #include "meep.h"
 #include "meep_internals.h"
 
+/****************************************************************************
+
+                     Integration Weights
+
+We want the integral from a to b, assuming linear interpolation of fn
+(function values on grid points n).  Most interior points have weight
+1, but the points just inside and outside the boundaries have
+different weights.  Call the weights for the points just *outside* the
+starting and ending boundaries s0 and e0, respectively, and weights
+for the points just *inside* the boundaries s1 and e1.  Then we have
+to handle the following cases:
+
+1) a and b separated by at least 2 grid points, e.g.:
+
+x  |    x       x       x  |    x
+0  a    1       2       3  b    4
+
+first segment: f(x) = f0 (1 - x) + f1 x
+      -- \int_a^1 f(x) dx = f0 (1 - a)^2/2 + f1 (1 - a^2) / 2
+
+last segment: f(x) = f3 (4 - x) + f4 (x - 3)
+     -- \int_3^b f(x) dx = f3 [1 - (4-b)^2] / 2 + f4 (b - 3)^2 / 2
+
+integral = f0 (1 - a)^2/2         <---- f0 s0
+         + f1 (1 - a^2/2)         <---- f1 s1
+         + f2
+         + f3 (1 - (4-b)^2 / 2)   <---- f3 e1
+         + f4 (b - 3)^2 / 2       <---- f4 e0
+
+In terms of starting and ending weights:
+	 w0 = 1 - a
+	 w1 = b - 3
+
+	 s0 = w0^2 / 2
+	 s1 = 1 - (1 - w0)^2 / 2
+	 e0 = w1^2 / 2
+	 e1 = 1 - (1 - w1)^2 / 2
+
+2) one grid point between a and b.
+
+x  |    x  |    x
+0  a    1  b    2
+
+integral = f0 (1 - a)^2 / 2
+         + f1 [(1 - a^2) + 1 - (2 - b)^2] / 2
+         + f3 (b - 1)^2 / 2
+
+s0 = w0^2 / 2
+e0 = w1^2 / 2
+s1 = e1 = 1 - (1 - w0)^2 / 2 - (1 - w1)^2 / 2
+
+3) no grid points between a and b.
+
+x  |      |    x
+0  a      b    1
+
+integral = f0 [ (1-a)^2 - (1-b)^2 ] / 2 + f1 [ b^2 - a^2 ] / 2
+         = f0 [ w0^2 - (1-w1)^2 ]  / 2 + f1 [ w1^2 - (1-w0)^2 ] / 2
+
+s0 = e1 = w0^2/2 - (1-w1)^2/2
+e0 = s1 = w1^2/2 - (1-w0)^2/2
+
+4) as (3), but a = b: interpolation, not integration:
+
+ -- want: f0 * w0 + f1 * w1
+
+s0 = w0
+e0 = w1 = 1 - w0
+
+                        --------------
+
+          Integration Weights in Cylindrical Coordinates
+                   FIXME: implement this below?
+
+Ideally, we should have different weights for the R direction of
+cylindrical coordinates, i.e. for integrating f(r) r dr, because again
+we want to perfectly integrate any linear f(r).  Thus, the integration
+weights will depend upon r.  Note, however, that we also have an r in
+the dV, so we will have to divide the weights by this factor.
+
+1) a and b separated by at least 2 grid points, e.g.:
+
+x  |    x       x       x  |    x
+i  a   i+1     i+2     i+3  b  i+4
+
+(where r = i * inva).
+
+linear interpolation in [i,i+1): f(x) = f_i (i+1 - x) + f_{i+1} (x-i)
+
+   want: \int_a^b f(x) x dx
+
+in terms of starting and ending weights:
+	 w0 = (i+1) - a
+	 w1 = b - (i+3)
+
+integral = f_i [-w0^3 / 3 + (i+1) w0^2 / 2]                       <- s0 i
+      + f_{j=i+1} [w0^3 / 3 - (j+1) w0^2 / 2 + j w0 + j/2 + 1/6]  <- s1 (i+1)
+      + f_{j=i+2} j                                               <- 1 (i+2)
+      + f_{j=i+3} [-w1^3 / 3 - (j-1) w1^2 / 2 + j w1 + j/2 - 1/6] <- e1 (i+3)
+      + f_{j=i+4} [w1^3 / 3 + (j-1) w1^2 / 2]                     <- e0 (i+4)
+
+      (thanks to Maple for doing the annoying algebra)
+  (yes, I have tested that it correctly integrates linear f(r))
+
+Note that the coefficients need to be divided by i, i+1, etcetera to
+get s0, s1, etcetera; this gives an interior-point weight of 1 as
+before.  For i->infinity, this should converge to the weights from
+before.  Avoiding division by zero is more tricky, because the weight
+at j=0 is not necessarily zero, due to the interpolation.  It might be
+better to pre-include the dV in the weight for edge elements, with
+appropriate logic in the IVEC_LOOP_WEIGHT macro.  Tricky.
+
+The above is also not correct for integrals that cross x=0, because
+it should really be the integral of f(x) |x|.  Even interior points
+probably need special handling in that case.  For sanity, we would
+just divide the integration region into positive and negative r and
+integrate them separately somehow.  Grrr.
+
+2) one grid point between a and b.
+
+x  |    x   |    x
+i  a   i+1  b   i+2
+
+integral = f_i [-w0^3 / 3 + (i+1) w0^2 / 2]                 <- s0 i
+      + f_{j=i+1} [w0^3 / 3 - (j+1) w0^2 / 2 + j w0 +
+                  -w1^3 / 3 - (j-1) w1^2 / 2 + j w1]        <- {s1,e1} (i+1)
+      + f_{j=i+2} [w1^3 / 3 + (j-1) w1^2 / 2]               <- e0 (i+2)
+
+3) no grid points between a and b.
+
+x  |      |    x
+i  a      b   i+1
+
+integral = f_i [-w0^3/3 + (i+1) w0^2/2
+              + -w1^3/3 - (i-1) w1^2/2 + i w1 - i/2 - 1/6]  <- s0 i
+   + f_{j=i+1} [ w0^3/3 - (j+1) w0^2/2 + j w0
+              +  w1^3/3 + (j-1) w1^2/2 - j/2 + 1/6]         <- e0 (i+1)
+
+4) as (3), but a = b: interpolation, not integration: same as above
+
+****************************************************************************/
+
 namespace meep {
 
 /* The following two functions convert a vec to the nearest ivec
@@ -101,7 +243,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
   ivec is(vec2diel_floor(where.get_min_corner(), v.a, zero_ivec(v.dim)));
   ivec ie(vec2diel_ceil(where.get_max_corner(), v.a, zero_ivec(v.dim)));
   
-  /* Integration weights at boundaries (c.f. long comment at bottom). */
+  /* Integration weights at boundaries (c.f. long comment at top). */
   vec s0(v.dim), e0(v.dim), s1(v.dim), e1(v.dim);
   LOOP_OVER_DIRECTIONS(v.dim, d) {
     double w0, w1;
@@ -190,7 +332,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	if (iscS <= iecS) {
 	  // Determine weights at chunk integration boundaries:
 	  ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
-	  vec s0c(v.dim), s1c(v.dim), e0c(v.dim), e1c(v.dim);
+	  vec s0c(v.dim,1.0), s1c(v.dim,1.0), e0c(v.dim,1.0), e1c(v.dim,1.0);
 	  iscS += shifti;
 	  iecS += shifti;
 	  LOOP_OVER_DIRECTIONS(v.dim, d) {
@@ -201,11 +343,6 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	    }
 	    else if (iscS.in_direction(dS) == is.in_direction(dS) + 2) {
 	      s0c.set_direction(d, s1.in_direction(dS));
-	      s1c.set_direction(d, 1.0);
-	    }
-	    else {
-	      s0c.set_direction(d, 1.0);
-	      s1c.set_direction(d, 1.0);
 	    }
 	    if (iecS.in_direction(dS) == ie.in_direction(dS)) {
 	      e0c.set_direction(d, e0.in_direction(dS));
@@ -213,11 +350,6 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	    }
 	    else if (iecS.in_direction(dS) == ie.in_direction(dS) - 2) {
 	      e0c.set_direction(d, e1.in_direction(dS));
-	      e1c.set_direction(d, 1.0);
-	    }
-	    else {
-	      e0c.set_direction(d, 1.0);
-	      e1c.set_direction(d, 1.0);
 	    }
 	    if (iecS.in_direction(dS) == iscS.in_direction(dS)) {
 	      double w = min(s0c.in_direction(d), e0c.in_direction(d));
@@ -256,10 +388,9 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	    if (where.in_direction_max(d) > where.in_direction_min(d))
 	      dV0 *= v.inva;
 	  if (v.dim == Dcyl) {
-	    dV0 *= 2*pi * (S.transform(chunks[i]->v[isc], sn) + shift)
-	      .in_direction(R);
-	    dV1 = 2*pi * S.transform(chunks[i]->v[unit_ivec(v.dim,R)*2], sn)
-	      .in_direction(R);
+	    dV1 = dV0 * 2*pi * v.inva;
+	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->v[isc], sn) + shift)
+			       .in_direction(R));
 	  }
 	 
 	  integrand(chunks[i], 
@@ -284,76 +415,5 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
     } while (ishift != min_ishift);
   }
 }
-
-/*
-
-                     Integration Weights
-
-We want the integral from a to b, assuming linear interpolation of fn
-(function values on grid points n).  Most interior points have weight
-1, but the points just inside and outside the boundaries have
-different weights.  Call the weights for the points just *outside* the
-starting and ending boundaries s0 and e0, respectively, and weights
-for the points just *inside* the boundaries s1 and e1.  Then we have
-to handle the following cases:
-
-1) a and b separated by at least 2 grid points, e.g.:
-
-x  |    x       x       x  |    x
-0  a    1       2       3  b    4
-
-first segment: f(x) = f0 (1 - x) + f1 x
-      -- \int_a^1 f(x) dx = f0 (1 - a)^2/2 + f1 (1 - a^2) / 2
-
-last segment: f(x) = f3 (4 - x) + f4 (x - 3)
-     -- \int_3^b f(x) dx = f3 [1 - (4-b)^2] / 2 + f4 (b - 3)^2 / 2
-
-integral = f0 (1 - a)^2/2         <---- f0 s0
-         + f1 (1 - a^2/2)         <---- f1 s1
-         + f2
-         + f3 (1 - (4-b)^2 / 2)   <---- f3 e1
-         + f4 (b - 3)^2 / 2       <---- f4 e0
-
-In terms of starting and ending weights:
-	 w0 = 1 - a
-	 w1 = b - 3
-
-	 s0 = w0^2 / 2
-	 s1 = 1 - (1 - w0)^2 / 2
-	 e0 = w1^2 / 2
-	 e1 = 1 - (1 - w1)^2 / 2
-
-2) one grid point between a and b.
-
-x  |    x  |    x
-0  a    1  b    2
-
-integral = f0 (1 - a)^2 / 2
-         + f1 [(1 - a^2) + 1 - (2 - b)^2] / 2
-         + f3 (b - 1)^2 / 2
-
-s0 = w0^2 / 2
-e0 = w1^2 / 2
-s1' = e1' = 1 - (1 - w0)^2 / 2 - (1 - w1)^2 / 2
-
-3) no grid points between a and b.
-
-x  |      |    x
-0  a      b    1
-
-integral = f0 [ (1-a)^2 - (1-b)^2 ] / 2 + f1 [ b^2 - a^2 ] / 2
-         = f0 [ w0^2 - (1-w1)^2 ]  / 2 + f1 [ w1^2 - (1-w0)^2 ] / 2
-
-s0 = e1 = w0^2/2 - (1-w1)^2/2
-e0' = s1' = w1^2/2 - (1-w0)^2/2
-
-4) as (3), but a = b: interpolation, not integration:
-
- -- want: f0 * w0 + f1 * w1
-
-s0' = w0
-e0' = w1 = 1 - w0
-
-*/
 
 } // namespace meep

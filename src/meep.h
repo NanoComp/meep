@@ -456,8 +456,6 @@ class fields_chunk {
                        complex<double> phshift);
   complex<double> field_mean(component c, bool abs_real, bool abs_imag) const;
 
-  double electric_energy_in_box(const geometric_volume &, const symmetry &);
-  double magnetic_energy_in_box(const geometric_volume &, const symmetry &);
   double thermo_energy_in_box(const geometric_volume &, const symmetry &);
 
   void backup_h();
@@ -679,6 +677,7 @@ class fields {
   double thermo_energy_in_box(const geometric_volume &);
   double total_energy();
   double field_energy_in_box(const geometric_volume &);
+  double field_energy_in_box(component c, const geometric_volume &);
   double field_energy();
 
   void set_output_directory(const char *name);
