@@ -72,8 +72,22 @@ in_any_case x = any_have_m $ any_have_p $
                 whether_or_not "have_p_pml" x
 
 loop_over inside =
-  docode [doline "for (int i1=0; i1<n1; i1++)",
-          doline " for (int i2=0; i2<n2; i2++)",
-          doline "  for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {",
-          liftM (map ("   "++)) inside,
-          doline "  }"]
+    whether_or_not "n3==1" $
+    whether_or_not "s2==1" $
+    whether_or_not "s3==1" $
+    ifelse_ "n3==1" (
+      docode [doline "for (int i1=0; i1<n1; i1++)",
+              doline $ "  for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+="<<s2<<") {",
+              liftM (map ("    "++)) inside,
+              doline "  }"]
+    ) (
+      docode [doline "for (int i1=0; i1<n1; i1++)",
+              doline "  for (int i2=0; i2<n2; i2++)",
+              doline $ "    for (int i3=0, ind=i1*s1+i2*s2; i3<n3;"<<
+                               " i3++, ind+="<<s3<<") {",
+              liftM (map ("      "++)) inside,
+              doline "    }"]
+    )
+
+s2 = ("s2==1")|?|"1"|:|"s2"
+s3 = ("s3==1")|?|"1"|:|"s3"

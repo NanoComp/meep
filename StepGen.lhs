@@ -2,8 +2,8 @@
 module StepGen ( Code, Expression, gencode,
                  doexp, docode, doline,
                  if_, ifelse_, (|?|), (|:|),
-                 whether_or_not, declare,
-                 (|+|), (|-|), (|*|), (|+=|),
+                 whether_or_not, declare, for_loop,
+                 (|+|), (|-|), (|*|), (|+=|), (<<),
                ) where
 
 import Data.FiniteMap
@@ -26,6 +26,17 @@ gencode (CC code) = unlines $ snd $ code emptyFM
 \end{code}
 
 \begin{code}
+for_loop :: CODE a => String -> String -> a -> Code
+for_loop i num inside =
+    ifelse_ (num++"==1") (
+      docode [doexp $ "const int "<<i<<" = 0",
+              docode inside]
+    ) (
+      docode [doline $ "for (int "<<i<<"=0; "<<i<<"<"<<num<<"; "<<i<<"++) {",
+              liftM (map ("  "++)) (docode inside),
+              doline "}"]
+    )
+
 if_ :: CODE a => String -> a -> Code
 if_ b thendo = ifelseCC b (docode thendo) (return []) $ \thethen _ ->
                if is_empty thethen then return []
@@ -67,6 +78,12 @@ declare s b x = do check <- istrueCC s
 \end{code}
 
 \begin{code}
+(<<) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
+infixr 8 <<
+(<<) x y = do xe <- expression x
+              ye <- expression y
+              return $ xe++ye
+
 (|-|) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
 infixr 5 |-|
 (|-|) x y = do xe <- expression x
@@ -115,7 +132,7 @@ instance EXPRESSION Expression where
 instance EXPRESSION String where
     expression s = return s
 
-doline :: String -> Code
+doline :: EXPRESSION a => a -> Code
 doline e = do o <- expression e
               return [o]
 doexp :: EXPRESSION a => a -> Code
@@ -161,7 +178,7 @@ ifelseorCC s thendo elsedo eitherdo = do istrue <- istrueCC s
                                            Just False -> elsedo
                                            Nothing -> eitherdo
 
-ifelseCC :: String -> CC a -> CC a -> (a -> a -> CC a) -> CC a
+ifelseCC :: Eq a => String -> CC a -> CC a -> (a -> a -> CC a) -> CC a
 ifelseCC s thendo elsedo doif =
     do istrue <- istrueCC s
        case istrue of
@@ -169,7 +186,8 @@ ifelseCC s thendo elsedo doif =
          Just False -> elsedo
          Nothing -> do tt <- tryWith s True thendo
                        ee <- tryWith s False elsedo
-                       doif tt ee
+                       if tt == ee then return tt
+                                   else doif tt ee
 
 tryWith :: String -> Bool -> CC a -> CC a
 tryWith s b (CC x) = CC $ \st -> (st, snd $ x (addToFM (delFromFM st s) s b))

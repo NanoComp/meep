@@ -167,7 +167,6 @@ direction volume::yucky_direction(int n) const {
     case 1: return R;
     case 2: return Z;
     }
-  if (dim == D2) return (direction) ((n+2)%3);
   return (direction) n;
 }
 
