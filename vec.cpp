@@ -130,13 +130,12 @@ int volume::contains(const vec &p) const {
   // except it is more lenient, in that more than one lattice may contain a
   // given point.
   const double inva = 1.0/a;
-  const double hinva = 0.5*inva;
   const vec o = p - origin;
   if (dim == dcyl) {
-    return o.r() >= -hinva && o.z() >= -hinva &&
-      o.r() <= nr()*inva + hinva && o.z() <= nz()*inva + hinva;
+    return o.r() >= -inva && o.z() >= -inva &&
+      o.r() <= nr()*inva + inva && o.z() <= nz()*inva + inva;
   } else if (dim == d1) {
-    return o.z() >= -hinva && o.z() <= nz()*inva + hinva;
+    return o.z() >= -inva && o.z() <= nz()*inva + inva;
   } else {
     printf("Unsupported dimension.\n");
     exit(1);
@@ -252,6 +251,12 @@ void volume::interpolate(component c, const vec &p,
     if (indices[0] < 0 || indices[0] >= ntot()) weights[i] = 0.0;
   // Stupid very crude code to compactify arrays:
   stupidsort(indices, weights, 8);
+  if (!contains(p) && weights[0]) {
+    printf("Error made in interpolation of %s--fix this bug!!!\n",
+           component_name(c));
+    printf("Point   %lg %lg\n", p.r(), p.z());
+    exit(1);
+  }
 }
 
 void volume::interpolate_cyl(component c, const vec &p, int m,

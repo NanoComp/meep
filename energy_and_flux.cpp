@@ -131,14 +131,11 @@ double fields_chunk::magnetic_energy_in_box(const volume &otherv) {
   DOCMP {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && is_magnetic((component)c))
-        for (int i=0;i<v.ntot();i++)
-          if (otherv.owns(v.loc((component)c,i))) {
+        for (int i=0;i<v.ntot();i++) {
+          vec here = v.loc((component)c,i);
+          if (v.owns(here) && otherv.owns(here))
             energy += v.dv((component)c,i)*f[c][cmp][i]*f[c][cmp][i];
-          } else if (v.dv((component)c,i) != 0.0) {
-            //printf("I'm skipping a point I don't own at %lg %lg\n",
-            //       v.loc((component)c,i).r(), v.loc((component)c,i).z());
-            //printf("The dv here is %lg\n", v.dv((component)c,i));
-          }
+        }
   }
   return energy/(8*pi);
 }
