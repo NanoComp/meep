@@ -81,14 +81,19 @@ static int is_ok_dir(const char *dirname, const char *sourcename, const char *ba
 }
 
 const char *make_output_directory(const char *exename) {
-  const char *basename = exename; // basename holds the actual name of the
+  const int buflen = 300;
+  char basename[buflen];
+  const char *bnp = exename; // basename holds the actual name of the
                                   // executable (dirs removed).
   const char *t;
   for (t=exename;*t;t++) {
-    if (*t == '/') basename = t+1;
+    if (*t == '/') bnp = t+1;
+  }
+  snprintf(basename, buflen, "%s", bnp);
+  if (strcmp(basename + strlen(basename) - 4, ".dac") == 0) {
+    basename[strlen(basename) - 4] = (char)0;
   }
 
-  const int buflen = 300;
   char sourcename[buflen]; // Holds the "example.cpp" filename.
   snprintf(sourcename, buflen, "%s.cpp", exename);
 
