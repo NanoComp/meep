@@ -135,21 +135,13 @@ inline int fields::is_metal(const ivec &here) {
   LOOP_OVER_DIRECTIONS(v.dim, d) {
     if (user_volume.has_boundary(High, d) &&
         here.in_direction(d) == user_volume.big_corner().in_direction(d)) {
-      switch (d) {
-      case X: case Y: case Z:
-        if (boundaries[High][d] == Metallic) return true;
-      case R:
-        if (boundaries[High][d] == Magnetic) return true;
-      }
+      if (boundaries[High][d] == Metallic) return true;
     }
     if (user_volume.has_boundary(Low, d)) {
-      switch (d) {
-      case X: case Y: case Z:
-        if (boundaries[Low][d] == Magnetic &&
-            here.in_direction(d) ==
-            user_volume.little_corner().in_direction(d)+1)
-          return true;
-      }
+      if (boundaries[Low][d] == Magnetic &&
+          here.in_direction(d) ==
+          user_volume.little_corner().in_direction(d)+1)
+        return true;
     }
   }
   return false;
