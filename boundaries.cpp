@@ -110,7 +110,7 @@ void fields::connect_chunks() {
 
 static double zero = 0.0;
 
-inline int fields::is_metal(const vec &here, const volume &vi) {
+inline int fields::is_metal(const vec &here) {
   if (!user_volume.owns(here)) return 0;
   for (int bb=0;bb<2;bb++) for (int dd=0;dd<5;dd++)
     if (user_volume.has_boundary((boundary_side)bb, (direction)dd) &&
@@ -216,13 +216,13 @@ void fields::connect_the_chunks() {
               // We're looking at a border element...
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here)) {
+                if (chunks[j]->v.owns(here) && !is_metal(here)) {
                   // Adjacent, periodic or rotational...
                   nc[type(c)][Incoming][i]++;
                   nc[type(c)][Outgoing][j]++;
                   new_comm_sizes[type(c)][j]++;
                 }
-            } else if (j == i && is_metal(here, vi)) {
+            } else if (j == i && is_metal(here)) {
               // Try metallic...
               nc[type(c)][Incoming][i]++;
               nc[type(c)][Outgoing][i]++;
@@ -266,7 +266,7 @@ void fields::connect_the_chunks() {
               // We're looking at a border element...
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here)) {
+                if (chunks[j]->v.owns(here) && !is_metal(here)) {
                   // Adjacent, periodic or rotational...
                   // index is deprecated, but ok in this case:
                   const int m = chunks[j]->v.index(c, here);
@@ -280,7 +280,7 @@ void fields::connect_the_chunks() {
                   wh[FT][Incoming][i]++;
                   wh[FT][Outgoing][j]++;
                 }
-            } else if (j == i && is_metal(here, vi)) {
+            } else if (j == i && is_metal(here)) {
               // Try metallic...
               DOCMP {
                 chunks[i]->connections[FT][Incoming][cmp][wh[FT][Incoming][i]]

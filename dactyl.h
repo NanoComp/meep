@@ -335,7 +335,7 @@ class fields {
   void disconnect_chunks();
   void connect_chunks();
   void connect_the_chunks(); // Intended to be ultra-private...
-  int is_metal(const vec &, const volume &);
+  int is_metal(const vec &);
   // step.cpp
   void phase_material();
   void step_h();
