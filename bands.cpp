@@ -530,6 +530,8 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
       }
     }
   }
+  delete[] refdata;
+  delete[] refa;
   delete[] tf;
   delete[] td;
   delete[] ta;
