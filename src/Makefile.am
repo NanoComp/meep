@@ -2,8 +2,8 @@ lib_LTLIBRARIES = libmeep.la
 
 BUILT_SOURCES = step_d.h step_h.h update_e_from_d.h update_from_e.h
 
-HDRS = check.h copyright.h harminv.h meep.h meep_internals.h mympi.h	\
-ran.h threevec.h vec.h
+HDRS = harminv.h meep.h meep_internals.h mympi.h ran.h threevec.h	\
+vec.h
 
 libmeep_la_SOURCES = anisotropic_averaging.cpp bands.cpp		\
 boundaries.cpp control_c.cpp energy_and_flux.cpp fields.cpp fluxes.cpp	\
