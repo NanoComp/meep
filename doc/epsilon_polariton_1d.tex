@@ -26,8 +26,8 @@ of 40.
 
 \begin{comment}
 const double a = 10;
-const double pml_thickness = 160.0/a;
-const double middlesize = 5.0/a;
+const double pml_thickness = 1.0;
+const double middlesize = 1.0;
 const double zsize = middlesize + 2*pml_thickness;
 \end{verbatim}
 
@@ -45,7 +45,7 @@ double one_in_middle(const vec &p) {
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   deal_with_ctrl_c();
-  const double ttot =1180.0;
+  const double ttot =2000.0;
   mat ma(volone(zsize, a), eps, 5);
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
@@ -70,10 +70,10 @@ We use a couple of monitor points to determine epsilon.
   monitor_point *left = NULL, *right = NULL, *middle = NULL;
 \end{verbatim}
 \begin{comment}
-  double next_printtime = 50;
-  while (f.time() < ttot && !interrupt) {
+  double next_printtime = 100;
+  while (f.time() <= ttot && !interrupt) {
     if (f.time() >= next_printtime) {
-      next_printtime += 50;
+      next_printtime += 100;
       master_printf("Working on time %lg...  ", f.time());
       master_printf("energy is %lg\n", f.field_energy());
     }
