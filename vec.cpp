@@ -832,6 +832,7 @@ ivec volume::icenter() const {
   // Find the center of the user's cell (which must be the symmetry
   // point):
   switch (dim) {
+  case D1: return io() + ivec(nz());
   case D2: return io() + ivec2d(nx(), ny());
   case D3: return io() + ivec(nx(), ny(), nz());
   case Dcyl: return io() + ivec(0, nz());
