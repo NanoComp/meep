@@ -226,7 +226,7 @@ void check_integral(fields &f,
 					: "1d")),
 		(d.c == 1.0 && !d.axy && !d.ax && !d.ay && !d.az
 		 && !d.axy && !d.ayz && !d.axz) ? "unit" : "linear");
-  if (1)
+  if (0)
     master_printf("\n... volume (%g,%g,%g) at (%g,%g,%g) with integral (%g, %g,%g,%g, %g,%g,%g, %g)...\n",
 		  x2 - x1, y2 - y1, z2 - z1,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
