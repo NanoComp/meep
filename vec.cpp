@@ -318,7 +318,8 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
   }
   // Figure out which of the points is off the grid in r direction:
   const int have_r_zero = origin.r() == 0.0;
-  const int odd_field_at_origin = m == 1 && have_r_zero && (c == Er || c == Hz);
+  const int odd_field_at_origin = (m == 1 && have_r_zero && (c == Er || c == Hz))
+                               || (m == 0 && have_r_zero && (c == Hp));
   // Ep is also odd, but we don't need to interpolate it to zero.
   switch ((component)c) {
   case Ep: case Ez: case Hr:
@@ -331,10 +332,11 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
       weights[1] = 0;
     }
     break;
-    if (irhi > nr() || irhi < 0 || (irhi == 0 && !have_r_zero)) {
+  case Hp: case Hz: case Er:
+    if (irhi >= nr() || irhi < 0) {
       weights[2] = 0;
       weights[3] = 0;
-    } else if (irhi == -1) {
+    } else if (irhi == -1 && have_r_zero) {
       indices[2] = izlo + (1+nz())*0; // NW
       indices[3] = izhi + (1+nz())*0; // NE
       if (c != Hp) { // These guys are odd!
@@ -342,10 +344,10 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
         weights[3] = -weights[3];
       }
     }
-    if (irlo > nr() || irlo < 0 || (irlo == 0 && !have_r_zero)) {
+    if (irlo >= nr() || irlo < 0) {
       weights[0] = 0;
       weights[1] = 0;
-    } else if (irlo == -1) {
+    } else if (irlo == -1 && have_r_zero) {
       if (c != Hp) { // These guys are odd!
         weights[2] -= weights[0];
         weights[3] -= weights[1];
