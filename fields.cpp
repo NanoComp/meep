@@ -168,7 +168,6 @@ static inline direction cross(direction a, direction b) {
 void fields_chunk::figure_out_step_plan() {
   FOR_COMPONENTS(cc)
     have_minus_deriv[cc] = have_plus_deriv[cc] = false;
-  FOR_DIRECTIONS(d) have_pml_in_direction[d] = false;
   FOR_COMPONENTS(c1)
     if (f[c1][0]) {
       const direction dc1 = component_direction(c1);
@@ -182,7 +181,6 @@ void fields_chunk::figure_out_step_plan() {
           if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
               has_direction(v.dim,cross(dc1,dc2))) {
             direction d_deriv = cross(dc1,dc2);
-            if (ma->C[d_deriv][c1]) have_pml_in_direction[d_deriv] = true;
             if (cross_negative(dc1, dc2)) {
               minus_component[c1] = c2;
               have_minus_deriv[c1] = true;
@@ -221,7 +219,8 @@ void fields_chunk::use_real_fields() {
 
 int fields::phase_in_material(const mat *newma, double time) {
   if (newma->num_chunks != num_chunks)
-    abort("Can only phase in similar sets of chunks...\n");
+    abort("Can only phase in similar sets of chunks: %d vs %d\n", 
+	  newma->num_chunks, num_chunks);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->phase_in_material(newma->chunks[i]);

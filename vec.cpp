@@ -186,6 +186,10 @@ inline int right_ntot(ndim di, const int num[3]) {
   return result;
 }
 
+void volume::set_num_direction(direction d, int value) {
+  num[d%3] = value; the_ntot = right_ntot(dim, num);
+}
+
 volume::volume(ndim d, double ta, int na, int nb, int nc) {
   dim = d;
   a = ta;
@@ -610,6 +614,74 @@ ivec volume::big_corner() const {
   }
 }
 
+void volume::print() const {
+  LOOP_OVER_DIRECTIONS(dim, d)
+    printf("%s=%5g-%5g (%5g) \t", 
+      direction_name(d), origin.in_direction(d), 
+      origin.in_direction(d)+num_direction(d)/a, num_direction(d)/a); 
+  printf("\n");
+}
+
+bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *others, int *num_others) const {
+  int temp_num[3] = {0,0,0};
+  vec origin_shift(dim);
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    //printf("dim=%s vol_in.io().in_direction(%s) = %d\n", dimension_name(dim), direction_name(d), vol_in.io().in_direction(d));
+    int minval = max(io().in_direction(d), vol_in.io().in_direction(d));
+    int maxval = min(big_corner().in_direction(d), vol_in.big_corner().in_direction(d));
+    if (minval >= maxval)
+      return false;
+    temp_num[d%3] = (maxval - minval)/2;
+    origin_shift.set_direction(d, (minval - io().in_direction(d))/2/a);
+  }
+  if (intersection != NULL) {
+    *intersection = volume(dim, a, temp_num[0], temp_num[1], temp_num[2]); // fix me : ugly, need new constructor
+    intersection->origin = origin + origin_shift;
+  }
+  if (others != NULL) {
+    int counter = 0;
+    volume vol_containing = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) {
+      if (vol_containing.io().in_direction(d) < vol_in.io().in_direction(d)) {
+	// shave off lower slice from vol_containing and add it to others
+	volume other = vol_containing;
+	const int thick = (vol_in.io().in_direction(d) - vol_containing.io().in_direction(d))/2;
+	other.set_num_direction(d, thick);
+	others[counter] = other;
+	counter++;
+	vol_containing.origin.set_direction(d, vol_containing.origin.in_direction(d) + thick/a);
+	vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
+      }
+      if (vol_containing.big_corner().in_direction(d) > vol_in.big_corner().in_direction(d)) {
+	// shave off upper slice from vol_containing and add it to others
+	volume other = vol_containing;
+	const int thick = (vol_containing.big_corner().in_direction(d) - vol_in.big_corner().in_direction(d))/2;
+	other.set_num_direction(d, thick);
+	other.origin.set_direction(d, vol_containing.origin.in_direction(d) + (vol_containing.num_direction(d) - thick)/a); 
+	others[counter] = other;
+	counter++;
+	vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
+      }
+    }
+    *num_others = counter;
+    
+    int initial_points = 1;
+    LOOP_OVER_DIRECTIONS(dim, d) initial_points *= num_direction(d);
+    int final_points , temp = 1;
+    LOOP_OVER_DIRECTIONS(dim, d) temp *= intersection->num_direction(d);    
+    final_points = temp;
+    for (int j=0; j<*num_others; j++) {
+      temp = 1;
+      LOOP_OVER_DIRECTIONS(dim, d) temp *= others[j].num_direction(d);
+      final_points += temp;
+    }
+    if (initial_points != final_points)
+      abort("intersect_with: initial_points != final_points,  %d, %d\n", 
+	    initial_points, final_points);
+  }
+  return true;
+}
+
 vec volume::loc_at_resolution(int index, double res) const {
   vec where = origin;
   for (int dd=X;dd<=R;dd++) {
@@ -715,27 +787,74 @@ static int greatest_prime_factor(int n) {
 }
 
 volume volume::split(int n, int which) const {
+  if (n > nowned())
+    abort("Cannot split %d grid points into %d parts\n", nowned(), n);
   if (n == 1) return *this;
-  int spl = greatest_prime_factor(n);
-  if (false && can_split_evenly(spl)) { //disable prime factor
-    // Deal with case where we can split evenly by this big prime factor.
-    if (spl == n) {
-      return split_once(n, which);
-    } else {
-      volume v = split_once(spl, which % spl);
-      return v.split(n/spl, which/spl);
+
+  // Try to get as close as we can...
+  int biglen = 0;
+  for (int i=0;i<3;i++) if (num[i] > biglen) biglen = num[i];
+  const int split_point = (int)(biglen*(n/2)/(double)n + 0.5);
+  const int num_low = (int)(split_point*n/(double)biglen + 0.5);
+  if (which < num_low)
+    return split_at_fraction(false, split_point).split(num_low,which);
+  else
+    return split_at_fraction(true, split_point).split(n-num_low,which-num_low);
+}
+
+volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, double *effort) const {
+  const int grid_points_owned = nowned();
+  if (n > grid_points_owned)
+    abort("Cannot split %d grid points into %d parts\n", nowned(), n);
+  if (n == 1) return *this;
+  int biglen = 0;
+  direction splitdir;
+  LOOP_OVER_DIRECTIONS(dim, d) if (num_direction(d) > biglen) { biglen = num_direction(d); splitdir = d; } 
+  double best_split_measure = 1e20, left_effort_fraction;
+  int best_split_point;
+  vec corner = zero_vec(dim);
+  LOOP_OVER_DIRECTIONS(dim, d) corner.set_direction(d, origin.in_direction(d) + num_direction(d)/a); 
+
+  for (int split_point = 1; split_point < biglen; split_point+=1) {
+    volume v_left = *this;
+    v_left.set_num_direction(splitdir, split_point);
+    volume v_right = *this;
+    v_right.set_num_direction(splitdir, num_direction(splitdir) - split_point);
+    v_right.origin.set_direction(splitdir, v_right.origin.in_direction(splitdir)+split_point/a);
+
+    double total_left_effort = 0, total_right_effort = 0;
+    volume vol;
+    if (Ngv == 0) {
+      total_left_effort = v_left.ntot();
+      total_right_effort = v_right.ntot();
     }
-  } else {
-    // Try to get as close as we can...
-    int biglen = 0;
-    for (int i=0;i<3;i++) if (num[i] > biglen) biglen = num[i];
-    const int split_point = (int)(biglen*(n/2)/(double)n + 0.5);
-    const int num_low = (int)(split_point*n/(double)biglen + 0.5);
-    if (which < num_low)
-      return split_at_fraction(false, split_point).split(num_low,which);
-    else
-      return split_at_fraction(true, split_point).split(n-num_low,which-num_low);
+    else {
+      for (int j = 0; j<Ngv; j++) {
+	if (v_left.intersect_with(gv[j], &vol))
+	  total_left_effort += effort[j] * vol.ntot();
+	if (v_right.intersect_with(gv[j], &vol))
+	  total_right_effort += effort[j] * vol.ntot();
+      }
+    }
+    double split_measure = max(total_left_effort/(n/2), total_right_effort/(n-n/2));
+    if (split_measure < best_split_measure) {
+      best_split_measure = split_measure;
+      best_split_point = split_point;
+      left_effort_fraction = total_left_effort/(total_left_effort + total_right_effort);
+    }
   }
+  const int split_point = best_split_point;
+    
+  const int num_low = (int)(left_effort_fraction *n + 0.5);
+  // Revert to split() when effort method gives less grid points than chunks
+  if (num_low > best_split_point*(grid_points_owned/biglen) || 
+      (n-num_low) > (grid_points_owned - best_split_point*(grid_points_owned/biglen)))
+    return split(n, which);
+
+  if (which < num_low)
+    return split_at_fraction(false, split_point).split_by_effort(num_low,which, Ngv,gv,effort);
+  else
+    return split_at_fraction(true, split_point).split_by_effort(n-num_low,which-num_low, Ngv,gv,effort);
 }
 
 volume volume::split_once(int n, int which) const {
@@ -756,7 +875,10 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
       bestd = i;
       bestlen = num[i];
     }
-  if (bestd == -1) abort("Crazy weird splitting error.\n");
+  if (bestd == -1) {
+    for (int i=0;i<3;i++) printf("num[%d] = %d\n", i, num[i]);
+    abort("Crazy weird splitting error.\n");
+  }
   volume retval(dim, a,1);
   for (int i=0;i<3;i++) retval.num[i] = num[i];
   if (numer >= num[bestd])

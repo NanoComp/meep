@@ -287,6 +287,7 @@ class volume {
   vec origin;
   double a, inva;
 
+  void print() const;
   int stride(direction d) const { return the_stride[d]; };
   int num_direction(direction d) const {
     return num[((int) d) % 3];
@@ -295,6 +296,7 @@ class volume {
   // idiot.
   int yucky_num(int) const;
   direction yucky_direction(int) const;
+  void set_num_direction(direction d, int value);
   int nr() const { return num_direction(R); }
   int nx() const { return num_direction(X); }
   int ny() const { return num_direction(Y); }
@@ -312,6 +314,7 @@ class volume {
   vec dz() const;
 
   int ntot() const { return the_ntot; }
+  int nowned() const { int n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= num_direction(d); return n; }
   vec operator[](const ivec &p) const { return p*(0.5*inva); };
   int index(component, const ivec &) const;
   ivec round_vec(const vec &) const;
@@ -324,6 +327,7 @@ class volume {
 
   geometric_volume dV(component c, int index) const;
   geometric_volume dV(const ivec &) const;
+  bool intersect_with(const volume &vol_in, volume *intersection = NULL, volume *others = NULL, int *num_others = NULL) const;
   double rmin() const;
   double rmax() const;
   double xmin() const;
@@ -363,6 +367,7 @@ class volume {
 
   int can_split_evenly(int num) const;
   volume split(int num, int which) const;
+  volume split_by_effort(int num, int which, int Ngv = 0, const volume *gv = NULL, double *effort = NULL) const;
   volume split_once(int num, int which) const;
   volume split_at_fraction(bool want_high, int numer) const;
   volume split_specifically(int num, int which, direction d) const;

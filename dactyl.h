@@ -43,6 +43,8 @@ class mat_chunk {
   mat_chunk(const mat_chunk *);
   void make_average_eps();
   void use_pml(direction, double dx, double boundary_loc);
+  void update_pml_arrays();
+  void update_Cdecay();
 
   void set_output_directory(const char *name);
   void mix_with(const mat_chunk *, double);
@@ -65,9 +67,13 @@ class mat {
  public:
   mat_chunk **chunks;
   int num_chunks;
+  int desired_num_chunks;
   volume v, user_volume;
   symmetry S;
   const char *outdir;
+  volume *effort_volumes;
+  double *effort;
+  int num_effort_volumes;
 
   ~mat();
   mat();
@@ -75,13 +81,16 @@ class mat {
       const symmetry &s = identity());
   mat(const mat *);
   mat(const mat &);
+  void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
+  void redefine_chunks(const int Nv, const volume *new_volumes, const int *procs);
+  void optimize_volumes(int *Nv, volume *new_volumes, int *procs);
+  void optimize_chunks();
   void choose_chunkdivision(const volume &v, double eps(const vec &),
                             int num_chunks = 1,
                             const symmetry &s = identity());
-
   void make_average_eps();
-  void use_pml(direction d, boundary_side b, double dx);
-  void use_pml_everywhere(double dx);
+  void use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks = true);
+  void use_pml_everywhere(double dx, bool recalculate_chunks = true);
 
   void output_slices(const char *name = "") const;
   void output_slices(const geometric_volume &what, const char *name = "") const;
@@ -211,7 +220,6 @@ class fields_chunk {
   // fields.cpp
   void figure_out_step_plan();
   bool have_plus_deriv[10], have_minus_deriv[10];
-  bool have_pml_in_direction[5];
   component plus_component[10], minus_component[10];
   direction plus_deriv_direction[10], minus_deriv_direction[10];
   int num_each_direction[3], stride_each_direction[3];

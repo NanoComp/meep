@@ -20,15 +20,15 @@ VERSION = @VERSION@
 
 OBJFILES = step_algorithm.o symmetry.o \
 		two_dimensional.o cylindrical.o one_dimensional.o \
-		three_d.o bench.o flux.o
+		three_d.o bench.o flux.o physical.o
 TESTFILES = step_algorithm.dac symmetry.dac \
 		two_dimensional.dac cylindrical.dac one_dimensional.dac \
-		three_d.dac bench.dac flux.dac
+		three_d.dac bench.dac flux.dac physical.dac
 DONEFILES = step_algorithm.done symmetry.done \
 	cylindrical.done one_dimensional.done two_dimensional.done \
-	three_d.done bench.done flux.done
+	three_d.done bench.done flux.done physical.done
 
-$(OBJFILES): ../dactyl.h
+$(OBJFILES): ../dactyl.h ../vec.h
 $(TESTFILES): ../libdactyl.a
 
 .cpp.o:

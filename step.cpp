@@ -262,8 +262,8 @@ void fields_chunk::step_h() {
         const direction d_deriv_m = minus_deriv_direction[cc];
         const bool have_p = have_plus_deriv[cc];
         const bool have_m = have_minus_deriv[cc];
-        const bool have_p_pml = have_p && have_pml_in_direction[d_deriv_p];
-        const bool have_m_pml = have_m && have_pml_in_direction[d_deriv_m];
+        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
+        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
         const int stride_p = (have_p)?v.stride(d_deriv_p):0;
         const int stride_m = (have_m)?v.stride(d_deriv_m):0;
         // The following lines "promise" the compiler that the values of
@@ -339,7 +339,7 @@ void fields_chunk::step_h() {
               f[Hp][cmp][z+ir] += c*
                 ((f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir])
                  - (f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir]));
-          }
+        }
       // Propogate Hz
       if (ma->C[R][Hz])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
@@ -654,8 +654,8 @@ void fields_chunk::step_e() {
         const direction d_deriv_m = minus_deriv_direction[cc];
         const bool have_p = have_plus_deriv[cc];
         const bool have_m = have_minus_deriv[cc];
-        const bool have_p_pml = have_p && have_pml_in_direction[d_deriv_p];
-        const bool have_m_pml = have_m && have_pml_in_direction[d_deriv_m];
+        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
+        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
         const int stride_p = (have_p)?v.stride(d_deriv_p):0;
         const int stride_m = (have_m)?v.stride(d_deriv_m):0;
         // The following lines "promise" the compiler that the values of

@@ -24,6 +24,10 @@
 
 mat::mat() {
   num_chunks = 0;
+  desired_num_chunks = 0;
+  num_effort_volumes = 0;
+  effort_volumes = NULL;
+  effort = NULL;
   outdir = ".";
   S = identity();
 }
@@ -31,7 +35,161 @@ mat::mat() {
 mat::mat(const volume &thev, double eps(const vec &), int num, const symmetry &s) {
   outdir = ".";
   if (num == 0) num = count_processors();
+  desired_num_chunks = num;
   choose_chunkdivision(thev, eps, num, s);
+  num_effort_volumes = 1;
+  effort_volumes = new volume[num_effort_volumes];
+  effort_volumes[0] = v;
+  effort = new double[num_effort_volumes];
+  effort[0] = 1.0;
+}
+
+void mat::optimize_volumes(int *Nv, volume *new_volumes, int *procs) {
+  const int num_processors = count_processors();
+  int counter = 0;
+  for (int i=0;i<desired_num_chunks;i++) {
+    const int proc = num_processors * i / desired_num_chunks;
+    volume vi = v.split_by_effort(desired_num_chunks, i, num_effort_volumes, effort_volumes, effort);
+    volume v_intersection;
+    for (int j=0;j<num_effort_volumes;j++) {
+      if (vi.intersect_with(effort_volumes[j], &v_intersection)) {
+    	new_volumes[counter] = v_intersection;
+	procs[counter] = proc;
+	counter++;
+      }
+    }
+  }
+  *Nv = counter;
+}
+
+void mat::optimize_chunks() {
+  int Nv;
+  volume *new_volumes = new volume[333]; // fix me
+  int *procs = new int[333]; // fix me
+  optimize_volumes(&Nv, new_volumes, procs);
+  redefine_chunks(Nv, new_volumes, procs);
+  
+  delete[] new_volumes;
+  delete[] procs;
+}
+
+inline double zero_function(const vec &v) { return 0.0; }
+
+void mat::redefine_chunks(const int Nv, const volume *new_volumes, const int *procs) {
+     // First check that the new_volumes do not intersect and that they add up to the total volume
+     volume vol_intersection;
+     for (int i=0; i<Nv; i++)
+	  for (int j=i+1; j<Nv; j++)
+	       if (new_volumes[i].intersect_with(new_volumes[j], &vol_intersection))
+		    abort("new_volumes[%d] intersects with new_volumes[%d]\n", i, j);
+     int sum = 0;
+     for (int i=0; i<Nv; i++) {
+	  int grid_points = 1;
+	  LOOP_OVER_DIRECTIONS(new_volumes[i].dim, d) grid_points *= new_volumes[i].num_direction(d);
+	  sum += grid_points;
+     }
+     int v_grid_points = 1;
+     LOOP_OVER_DIRECTIONS(v.dim, d) v_grid_points *= v.num_direction(d);
+     if (sum != v_grid_points)
+	  abort("v_grid_points = %d, sum(new_volumes) = %d\n", v_grid_points, sum);
+
+     mat_chunk **new_chunks = new (mat_chunk *)[Nv];
+     for (int j=0; j<Nv; j++)
+       new_chunks[j] = NULL;
+     for (int j=0; j<Nv; j++) {
+       for (int i=0; i<num_chunks; i++)
+	 if (chunks[i]->v.intersect_with(new_volumes[j], &vol_intersection)) {
+	   if (new_chunks[j] == NULL) {
+	     new_chunks[j] = new mat_chunk(new_volumes[j], zero_function, procs[j]);
+	     // the above happens even if chunk not owned by proc
+	   }
+	   // chunk "printing" is parallelized below
+	   if (new_chunks[j]->is_mine()) {
+	     // eps
+	     for (int l=0; l<vol_intersection.ntot(); l++) {
+	       component c = vol_intersection.eps_component();
+	       ivec iv = vol_intersection.iloc(c, l);
+	       int index_old = chunks[i]->v.index(c, iv);
+	       int index_new = new_chunks[j]->v.index(c, iv);
+	       new_chunks[j]->eps[index_new] = chunks[i]->eps[index_old];
+	     }
+		      
+	     // inveps
+	     FOR_COMPONENTS(c)
+	       FOR_DIRECTIONS(d)
+	         if (chunks[i]->inveps[c][d] != NULL)
+		   for (int l=0; l<vol_intersection.ntot(); l++) {
+		     ivec iv = vol_intersection.iloc(c, l);
+		     int index_old = chunks[i]->v.index(c, iv);
+		     int index_new = new_chunks[j]->v.index(c, iv);
+		     new_chunks[j]->inveps[c][d][index_new] = chunks[i]->inveps[c][d][index_old];
+		   }
+		      
+	     FOR_DIRECTIONS(d)
+	       FOR_COMPONENTS(c) {
+	         // C
+	         if (chunks[i]->C[d][c] != NULL) {
+		   if (new_chunks[j]->C[d][c] == NULL) {
+		     new_chunks[j]->C[d][c] = new double[new_chunks[j]->v.ntot()];
+		     for (int l=0; l<new_chunks[j]->v.ntot(); l++)
+		       new_chunks[j]->C[d][c][l] = 0.0;
+		   }
+		   for (int l=0; l<vol_intersection.ntot(); l++) {
+		     ivec iv = vol_intersection.iloc(c, l);
+		     int index_old = chunks[i]->v.index(c, iv);
+		     int index_new = new_chunks[j]->v.index(c, iv);
+		     new_chunks[j]->C[d][c][index_new] = chunks[i]->C[d][c][index_old];
+		   }
+		 }
+	       }
+	     // polarization! FIXME
+	   }
+	 }
+       new_chunks[j]->update_pml_arrays();
+     }
+     // Finally replace old chunks with new chunks
+     delete[] chunks;
+     chunks = new_chunks;
+     num_chunks = Nv;
+}
+
+void mat::add_to_effort_volumes(const volume &new_effort_volume, double extra_effort) {
+  volume *temp_volumes = new volume[(2*number_of_directions(v.dim)+1)*num_effort_volumes]; 
+  double *temp_effort = new double[(2*number_of_directions(v.dim)+1)*num_effort_volumes];
+  // Intersect previous mat_volumes with this new_effort_volume
+  int counter = 0;
+  for (int j=0; j<num_effort_volumes; j++) {
+    volume intersection, others[6];
+    int num_others;
+    if (effort_volumes[j].intersect_with(new_effort_volume, &intersection, others, &num_others)) {
+	if (num_others > 1) {
+	  printf("effort_volumes[%d]  ", j);
+          effort_volumes[j].print();
+	  printf("new_effort_volume  ");
+          new_effort_volume.print();
+	  abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
+	}
+      temp_effort[counter] = extra_effort + effort[j];
+      temp_volumes[counter] = intersection;
+      counter++;
+      for (int k = 0; k<num_others; k++) {
+	temp_effort[counter] = effort[j];	  
+	temp_volumes[counter] = others[k];
+	counter++;
+      }
+    }
+    else {
+      temp_effort[counter] = effort[j];	  
+      temp_volumes[counter] = effort_volumes[j];
+      counter++;
+    }
+  }
+
+  delete[] effort_volumes;
+  delete[] effort;
+  effort_volumes = temp_volumes;
+  effort = temp_effort;
+  num_effort_volumes = counter;
 }
 
 void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
@@ -71,23 +229,38 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
 
 mat::mat(const mat *m) {
   num_chunks = m->num_chunks;
+  desired_num_chunks = m->desired_num_chunks;
   outdir = m->outdir;
   v = m->v;
   S = m->S;
   user_volume = m->user_volume;
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m->chunks[i]);
+  num_effort_volumes = m->num_effort_volumes;
+  effort_volumes = new volume[num_effort_volumes];
+  effort = new double[num_effort_volumes];
+  for (int i=0;i<num_effort_volumes;i++) {
+    effort_volumes[i] = m->effort_volumes[i];
+    effort[i] = m->effort[i];
+  }
 }
 
 mat::mat(const mat &m) {
   num_chunks = m.num_chunks;
+  desired_num_chunks = m.desired_num_chunks;
   outdir = m.outdir;
   v = m.v;
   S = m.S;
   user_volume = m.user_volume;
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m.chunks[i]);
-  
+  num_effort_volumes = m.num_effort_volumes;
+  effort_volumes = new volume[num_effort_volumes];
+  effort = new double[num_effort_volumes];
+  for (int i=0;i<num_effort_volumes;i++) {
+    effort_volumes[i] = m.effort_volumes[i];
+    effort[i] = m.effort[i];
+  }  
 }
 
 mat::~mat() {
@@ -104,15 +277,33 @@ void mat::make_average_eps() {
       chunks[i]->make_average_eps(); // FIXME
 }
 
-void mat::use_pml(direction d, boundary_side b, double dx) {
+void mat::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
+  volume pml_volume = v;
+  pml_volume.set_num_direction(d, (int) (dx*v.a + 1 + 0.5)); //FIXME: exact value?
+  if ((boundary_side) b == High)
+    pml_volume.origin.set_direction(d, (v.num_direction(d) - pml_volume.num_direction(d))/v.a);
+  add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
+
+  if (recalculate_chunks) optimize_chunks();  
+
   for (int i=0;i<num_chunks;i++)
     chunks[i]->use_pml(d, dx, user_volume.boundary_location(b,d));
 }
 
-void mat::use_pml_everywhere(double dx) {
+void mat::use_pml_everywhere(double dx, bool recalculate_chunks) {
   for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
-    if (user_volume.has_boundary((boundary_side)b, d))
-      use_pml(d, (boundary_side)b, dx);
+    if (user_volume.has_boundary((boundary_side)b, d)) {
+      use_pml(d, (boundary_side)b, dx, false);
+  
+      for (int i=0;i<num_chunks;i++)
+	if (chunks[i]->Cdecay[Z][Hp][P])
+	  for (int l=0; l<chunks[i]->v.ntot(); l++)
+	    if (chunks[i]->Cdecay[Z][Hp][P][l] == 0.0) {
+	      chunks[i]->v.print();
+	      abort("i=%d, l=%d, r=%lg, z=%lg\n",i,l,chunks[i]->v.loc(Hp, l).r(), chunks[i]->v.loc(Hp, l).z());
+	    }
+    }
+  if (recalculate_chunks) optimize_chunks();
 }
 
 void mat::mix_with(const mat *oth, double f) {
@@ -244,23 +435,45 @@ void mat_chunk::use_pml(direction d, double dx, double bloc) {
           if (x > 0) C[d][c][i] = prefac*x*x;
         }
       }
-    FOR_COMPONENTS(c) FOR_DIRECTIONS(d2)
-      if ((inveps[c][d2] || d2 == component_direction(c)) &&
-          C[d][c] && d2 != d) {
-        if (!Cdecay[d][c][d2]) {
-          Cdecay[d][c][d2] = new double[v.ntot()];
-          if (is_electric(c))
-            for (int i=0;i<v.ntot();i++) Cdecay[d][c][d2][i] = inveps[c][d2][i];
-          else
-            for (int i=0;i<v.ntot();i++) Cdecay[d][c][d2][i] = 1.0;
-        }
-        for (int i=0;i<v.ntot();i++) {
-          if (is_magnetic(c)) Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]);
-          else Cdecay[d][c][d2][i] =
-                 inveps[c][d2][i]/(1.0+0.5*C[d][c][i]*inveps[c][d2][i]);
-        }
-      }
+    update_pml_arrays();
   }
+}
+
+void mat_chunk::update_pml_arrays() {
+  FOR_DIRECTIONS(d)
+    FOR_COMPONENTS(c) 
+      if (C[d][c] != NULL) {
+	bool all_zeros = true;
+	for (int i=0;i<v.ntot();i++)
+	  if (v.owns(v.iloc(c, i)))
+	    if (C[d][c][i] != 0.0)
+	      all_zeros = false;
+	if (all_zeros) {
+	  delete[] C[d][c];
+	  C[d][c] = NULL;
+	}
+      }
+  update_Cdecay();
+}
+
+void mat_chunk::update_Cdecay() {
+  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) FOR_DIRECTIONS(d2) {
+    delete[] Cdecay[d][c][d2];
+    Cdecay[d][c][d2] = NULL;
+  }
+  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) 
+    if (C[d][c] != NULL)
+      FOR_DIRECTIONS(d2) 
+	if ((inveps[c][d2] || d2 == component_direction(c)) && d2 != d) {
+	  Cdecay[d][c][d2] = new double[v.ntot()];
+	  for (int i=0;i<v.ntot();i++) {
+	    if (is_magnetic(c)) Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]);
+	    else Cdecay[d][c][d2][i] =
+		   inveps[c][d2][i]/(1.0+0.5*C[d][c][i]*inveps[c][d2][i]);
+	    if (Cdecay[d][c][d2][i] == 0.0)
+	      abort("In update_Cdecay: Cdecay == 0\n");
+	  }
+	}
 }
 
 mat_chunk::mat_chunk(const mat_chunk *o) {
