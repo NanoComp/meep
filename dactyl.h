@@ -108,7 +108,6 @@ class flux_plane {
 class monitor_point {
  public:
   monitor_point();
-  monitor_point(double r, double z, const fields_chunk *f);
   ~monitor_point();
   vec loc;
   double t;
