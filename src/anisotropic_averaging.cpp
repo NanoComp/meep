@@ -81,7 +81,7 @@ static vec sphere_pt(const geometric_volume &v, int n, double &weight) {
 #endif /* USE_SPHERE_QUAD */
 
 void prthv(threevec v) {
-  master_printf("%10lg\t%10lg\t%10lg\n", v.val[0], v.val[1], v.val[2]);
+  master_printf("%10g\t%10g\t%10g\n", v.val[0], v.val[1], v.val[2]);
 }
 
 void prtens(tensor t) {
