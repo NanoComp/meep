@@ -159,19 +159,17 @@ void dft_chunk::update_dft(double time) {
     (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
     
     double f[2]; // real/imag field value at epsilon point
-    if (avg2 == 0) {
-      if (avg1 == 0)
-	for (int cmp=0; cmp < numcmp; ++cmp)
-	  f[cmp] = w123 * fc->f[c][cmp][idx];
-      else
-	for (int cmp=0; cmp < numcmp; ++cmp)
-	  f[cmp] = (w123*0.5) * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]);
-    }
-    else // avg1 != 0, avg2 != 0, avg2 != avg1
+    if (avg2)
       for (int cmp=0; cmp < numcmp; ++cmp)
 	f[cmp] = (w123 * 0.25) * 
 	  (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]
 	   + fc->f[c][cmp][idx+avg2] + fc->f[c][cmp][idx+(avg1+avg2)]);
+    else if (avg1)
+      for (int cmp=0; cmp < numcmp; ++cmp)
+	f[cmp] = (w123*0.5) * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]);
+    else
+      for (int cmp=0; cmp < numcmp; ++cmp)
+	f[cmp] = w123 * fc->f[c][cmp][idx];
     
     int idx_dft = loop_i3 + loop_n3 * (loop_i2 + loop_n2 * loop_i1);
     if (numcmp == 2) {

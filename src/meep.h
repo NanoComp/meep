@@ -456,8 +456,6 @@ class fields_chunk {
                        complex<double> phshift);
   complex<double> field_mean(component c, bool abs_real, bool abs_imag) const;
 
-  double thermo_energy_in_box(const geometric_volume &, const symmetry &);
-
   void backup_h();
   void restore_h();
 
@@ -672,6 +670,7 @@ class fields {
   void grace_bands(grace *, int maxbands=100);
   void output_bands(file *, const char *, int maxbands=100);
   complex<double> get_field(component c, const vec &loc) const;
+
   // energy_and_flux.cpp
   double energy_in_box(const geometric_volume &);
   double electric_energy_in_box(const geometric_volume &);
@@ -681,6 +680,8 @@ class fields {
   double field_energy_in_box(const geometric_volume &);
   double field_energy_in_box(component c, const geometric_volume &);
   double field_energy();
+  double flux_in_box_wrongH(direction d, const geometric_volume &);
+  double flux_in_box(direction d, const geometric_volume &);
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }

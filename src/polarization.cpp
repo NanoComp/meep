@@ -93,17 +93,6 @@ polarization::~polarization() {
   if (next) delete next;
 }
 
-double polarization::total_energy(const geometric_volume &what) {
-  const volume v = pb->v;
-  double e = 0.0;
-  FOR_ELECTRIC_COMPONENTS(c)
-    if (energy[c])
-      for (int i=0;i<v.ntot();i++)
-        e += what.intersect_with(v.dV(c,i)).full_volume()*energy[c][i];
-  if (next) e += next->total_energy(what);
-  return e;
-}
-
 double polarization::local_energy(const ivec &iloc) {
   if (pb->v.dim != D1) abort("Can't do local_energy in these dims.\n");
   double res = 0.0;

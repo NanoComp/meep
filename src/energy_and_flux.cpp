@@ -50,24 +50,24 @@ double fields::field_energy() {
   return field_energy_in_box(user_volume.surroundings());
 }
 
-double fields::energy_in_box(const geometric_volume &otherv) {
-  return thermo_energy_in_box(otherv) + field_energy_in_box(otherv);
+double fields::energy_in_box(const geometric_volume &where) {
+  return thermo_energy_in_box(where) + field_energy_in_box(where);
 }
 
-double fields::field_energy_in_box(const geometric_volume &otherv) {
+double fields::field_energy_in_box(const geometric_volume &where) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->backup_h();
   step_h();
   step_boundaries(H_stuff);
   step_h_source();
-  double next_step_magnetic_energy = magnetic_energy_in_box(otherv);
+  double next_step_magnetic_energy = magnetic_energy_in_box(where);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->restore_h();
 
-  return electric_energy_in_box(otherv) +
-    0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(otherv);
+  return electric_energy_in_box(where) +
+    0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(where);
 }
 
 struct dot_integrand_data {
@@ -104,13 +104,13 @@ static void dot_integrand(fields_chunk *fc, component cgrid,
 	double dV = dV0 + dV1 * loop_i2;
 	double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
 	double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-	data->sum += w123 * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx];;
+	data->sum += w123 * fc->f[c1][cmp][idx] * fc->f[c2][cmp][idx];
 	(void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
     }
 }
 
 double fields::field_energy_in_box(component c,
-				   const geometric_volume &otherv) {
+				   const geometric_volume &where) {
   if (coordinate_mismatch(v.dim, component_direction(c)))
     return 0.0;
 
@@ -126,30 +126,22 @@ double fields::field_energy_in_box(component c,
     abort("invalid field component in field_energy_in_box");
 
   data.sum = 0.0;
-  integrate(dot_integrand, (void *) &data, otherv, c);
+  integrate(dot_integrand, (void *) &data, where, c);
   return sum_to_all(data.sum) / (8*pi);
 }
 
-double fields::electric_energy_in_box(const geometric_volume &otherv) {
+double fields::electric_energy_in_box(const geometric_volume &where) {
   long double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c)
-    sum += field_energy_in_box(c, otherv);
+    sum += field_energy_in_box(c, where);
   return sum;
 }
 
-double fields::magnetic_energy_in_box(const geometric_volume &otherv) {
+double fields::magnetic_energy_in_box(const geometric_volume &where) {
   long double sum = 0.0;
   FOR_MAGNETIC_COMPONENTS(c)
-    sum += field_energy_in_box(c, otherv);
+    sum += field_energy_in_box(c, where);
   return sum;
-}
-
-double fields::thermo_energy_in_box(const geometric_volume &otherv) {
-  double energy = 0.0;
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      energy += chunks[i]->thermo_energy_in_box(otherv, S);
-  return sum_to_all(energy);
 }
 
 void fields_chunk::backup_h() {
@@ -179,14 +171,136 @@ void fields_chunk::restore_h() {
     }
 }
 
-double fields_chunk::thermo_energy_in_box(const geometric_volume &otherv,
-                                          const symmetry &S) {
-  // FIXME this is buggy when either parallel or using symmetry.
-  if (pol) {
-    return pol->total_energy(otherv);
-  } else {
-    return 0.0;
+static void thermo_integrand(fields_chunk *fc, component cgrid,
+			     ivec is, ivec ie,
+			     vec s0, vec s1, vec e0, vec e1,
+			     double dV0, double dV1,
+			     vec shift, complex<double> shift_phase,
+			     const symmetry &S, int sn,
+			     void *sum_) {
+  long double *sum = (long double *) sum_;
+  (void) shift; (void) shift_phase; (void) S; (void) sn; // unused
+  if (fc->pol && fc->pol->energy[cgrid])
+    LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+      double w1 = IVEC_LOOP_WEIGHT(1);
+      double dV = dV0 + dV1 * loop_i2;
+      double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
+      double w123 = w12 * IVEC_LOOP_WEIGHT(3);
+      *sum += w123 * fc->pol->energy[cgrid][idx];
+      (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
   }
+}
+
+double fields::thermo_energy_in_box(const geometric_volume &where) {
+  long double sum = 0.0;
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (!coordinate_mismatch(v.dim, component_direction(c)))
+      integrate(thermo_integrand, (void *) &sum, where, c);
+  return sum_to_all(sum);
+}
+
+struct flux_integrand_data {
+  direction d; // flux direction
+  component cE, cH; // components of E and H to get ExH in d
+  long double sum;
+};
+
+static void flux_integrand(fields_chunk *fc, component cgrid,
+			  ivec is, ivec ie,
+			  vec s0, vec s1, vec e0, vec e1,
+			  double dV0, double dV1,
+			  vec shift, complex<double> shift_phase,
+			  const symmetry &S, int sn,
+			  void *data_) {
+  flux_integrand_data *data = (flux_integrand_data *) data_;
+
+  (void) shift; // unused
+  (void) shift_phase; // unused
+  (void) cgrid; // == Dielectric
+
+  component cE = S.transform(data->cE, -sn);
+  component cH = S.transform(data->cH, -sn);
+
+  // We're integrating Re[E * H*], and we assume that
+  // S.phase_shift(cE,sn) == S.phase_shift(cH,sn), so the phases all cancel
+  // ...except for at most an overall sign, which is fixed by checking
+  // whether S.transform(data->d, -sn) is flipped, below.
+
+  // offsets to average E and H components onto the Dielectric grid
+  int oE1, oE2, oH1, oH2;
+  fc->v.yee2diel_offsets(cE, oE1, oE2);
+  fc->v.yee2diel_offsets(cH, oH1, oH2);
+
+  long double sum = 0.0;
+
+  for (int cmp = 0; cmp < 2; ++cmp)
+    if (fc->f[cE][cmp] && fc->f[cH][cmp])
+      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+        double w1 = IVEC_LOOP_WEIGHT(1);
+	double dV = dV0 + dV1 * loop_i2;
+	double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
+	double w123 = w12 * IVEC_LOOP_WEIGHT(3);
+	double E, H;
+
+	if (oE2)
+	  E = 0.25 * (fc->f[cE][cmp][idx] + fc->f[cE][cmp][idx+oE1] +
+		      fc->f[cE][cmp][idx+oE2] + fc->f[cE][cmp][idx+(oE1+oE2)]);
+	else if (oE1)
+	  E = 0.5 * (fc->f[cE][cmp][idx] + fc->f[cE][cmp][idx+oE1]);
+	else
+	  E = fc->f[cE][cmp][idx];
+
+	if (oH2)
+	  H = 0.25 * (fc->f[cH][cmp][idx] + fc->f[cH][cmp][idx+oH1] +
+		      fc->f[cH][cmp][idx+oH2] + fc->f[cH][cmp][idx+(oH1+oH2)]);
+	else if (oH1)
+	  H = 0.5 * (fc->f[cH][cmp][idx] + fc->f[cH][cmp][idx+oH1]);
+	else
+	  H = fc->f[cH][cmp][idx];
+	
+	sum += w123 * E * H;
+	(void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
+    }
+
+  data->sum += S.transform(data->d, -sn).flipped ? -sum : sum;
+}
+
+/* Compute ExH integral in box using current fields, ignoring fact
+   that this E and H correspond to different times. */
+double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
+  if (coordinate_mismatch(v.dim, d))
+    return 0.0;
+
+  component cE, cH;
+  switch (d) {
+  case X: cE = Ey; cH = Hz; break;
+  case Y: cE = Ez; cH = Hx; break;
+  case Z: if (v.dim == Dcyl) cE = Er, cH = Hp; else cE = Ex, cH = Hy; break;
+  case R: cE = Ep; cH = Hz; break;
+  case P: cE = Ez; cH = Hr; break;
+  case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
+  }
+  
+  flux_integrand_data data;
+  data.d = d;
+  data.cE = cE; data.cH = cH;
+  data.sum = 0.0;
+  integrate(flux_integrand, (void *) &data, where, Dielectric);
+  return sum_to_all(data.sum) / (4*pi);
+}
+
+double fields::flux_in_box(direction d, const geometric_volume &where) {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->backup_h();
+  step_h();
+  step_boundaries(H_stuff);
+  step_h_source();
+  double next_step_flux = flux_in_box_wrongH(d, where);
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->restore_h();
+  return 0.5 * (next_step_flux + flux_in_box_wrongH(d, where));
 }
 
 } // namespace meep

@@ -79,7 +79,7 @@ class polarization {
 
   complex<double> analytic_epsilon(double freq, const vec &) const;
   double local_energy(const ivec &);
-  double total_energy(const geometric_volume &);
+  // for total energy, use fields::thermo_energy_in_box
   static polarization *set_up_polarizations(const structure_chunk *s, int is_real);
   void use_real_fields();
   void initialize_energy(double energy(const vec &));
