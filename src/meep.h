@@ -432,6 +432,9 @@ class fields_chunk {
   void step_h();
   void step_h_source(src_pt *, double);
   void step_d();
+  void update_e_from_d_prepare(double *d_minus_p[5][2], bool have_d_minus_p);
+  void update_e_from_d_sources(double *d_minus_p[5][2], bool have_d_minus_p);
+  void update_e_from_d_update(double *d_minus_p[5][2], bool have_d_minus_p);
   void update_e_from_d();
   void update_from_e();
   void calc_sources(double time);

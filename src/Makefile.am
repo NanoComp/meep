@@ -1,7 +1,8 @@
 lib_LTLIBRARIES = libmeep.la
 
-BUILT_SOURCES = step_d.h step_h.h update_e_from_d.h update_from_e.h	\
-sphere-quad.h
+BUILT_SOURCES = step_d.h step_h.h update_from_e.h	\
+	sphere-quad.h \
+	update_e_from_d_prepare.h update_e_from_d_sources.h update_e_from_d_update.h
 
 HDRS = harminv.h meep.h meep_internals.h mympi.h ran.h threevec.h	\
 vec.h
@@ -11,7 +12,8 @@ boundaries.cpp control_c.cpp energy_and_flux.cpp fields.cpp fluxes.cpp	\
 grace.cpp harminv.cpp initialize.cpp monitor.cpp mympi.cpp		\
 output_directory.cpp polarization.cpp ran.cpp slices.cpp sources.cpp	\
 step.cpp step_d.cpp step_h.cpp structure.cpp time.cpp			\
-update_e_from_d.cpp update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)
+update_e_from_d.cpp	update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES) \
+update_e_from_d_prepare.cpp update_e_from_d_sources.cpp update_e_from_d_update.cpp
 
 libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
@@ -35,8 +37,14 @@ step_d.h: $(HSRC)/step_d_gen
 step_h.h: $(HSRC)/step_h_gen
 	(echo $(PRELUDE); echo; $(HSRC)/step_h_gen) > $@
 
-update_e_from_d.h: $(HSRC)/update_e_from_d_gen
-	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen) > $@
+update_e_from_d_prepare.h: $(HSRC)/update_e_from_d_gen
+	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen prepare) > $@
+
+update_e_from_d_sources.h: $(HSRC)/update_e_from_d_gen
+	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen sources) > $@
+
+update_e_from_d_update.h: $(HSRC)/update_e_from_d_gen
+	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen update) > $@
 
 update_from_e.h: $(HSRC)/update_from_e_gen
 	(echo $(PRELUDE); echo; $(HSRC)/update_from_e_gen) > $@

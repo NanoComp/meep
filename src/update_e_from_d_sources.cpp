@@ -20,27 +20,10 @@
 
 namespace meep {
 
-void fields::update_e_from_d() {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->update_e_from_d();
-}
-
-void fields_chunk::update_e_from_d() {
-  double *d_minus_p[5][2];
-  bool have_d_minus_p = false;
-  DOCMP FOR_ELECTRIC_COMPONENTS(ec) {
-    if (((pol || e_sources) && f[ec][cmp]) || s->kerr[ec]) {
-      d_minus_p[ec][cmp] = new double[v.ntot()];
-      have_d_minus_p = true;
-    } else {
-      d_minus_p[ec][cmp] = 0;
-    }
-  }
-  update_e_from_d_prepare(d_minus_p, have_d_minus_p);
-  update_e_from_d_sources(d_minus_p, have_d_minus_p);
-  update_e_from_d_update(d_minus_p, have_d_minus_p);
-  DOCMP FOR_ELECTRIC_COMPONENTS(ec) delete[] d_minus_p[ec][cmp];
+void fields_chunk::update_e_from_d_sources(double *d_minus_p[5][2],
+                                           bool have_d_minus_p) {
+  const int ntot = s->v.ntot();
+#include "update_e_from_d_sources.h"
 }
 
 } // namespace meep

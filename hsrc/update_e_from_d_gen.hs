@@ -1,46 +1,36 @@
 import StepGen
 import Complex
 import YeeLattice
+import System ( getArgs )
 
-main = putStr $ gencode $ job
+main = do args <- getArgs
+          putStr $ gencode $ job args
 
-job = with_d_minus_p $ whether_or_not "e_sources" $ consider_electric_polarizations $
+job ["prepare"]
+    = if_ "have_d_minus_p" $ whether_or_not "pol" $
+      consider_electric_polarizations $
+      doblock "FOR_E_AND_D(ec,dc) if (f[ec][0])" $
       docode
       [
-       loop_electric_fields $ docode
-       [
-        prepare_polarizations,
-        for_complex $ calc_d_minus_p
-       ],
-	   calc_d_minus_p_sources,
-       loop_electric_fields $ regardless_of_inveps $ update_e_from_d_minus_p
+       prepare_polarizations,
+       for_complex $ calc_d_minus_p
       ]
 
-d_minus_p c i = ("have_nonzero_polarization")|?|("d_minus_p["<<c<<"]["<<cmp<<"]["<<i<<"]")
+job ["sources"]
+    = if_ "have_d_minus_p" $ if_ "e_sources" $
+      consider_electric_polarizations $ calc_d_minus_p_sources
+
+job ["update"] = whether_or_not "have_d_minus_p" $ consider_electric_polarizations $
+                 loop_electric_fields $ regardless_of_inveps $ update_e_from_d_minus_p
+
+job _ = error "Must provide one argument:  prepare, sources or update_e"
+
+d_minus_p c i = ("have_d_minus_p")|?|("d_minus_p["<<c<<"]["<<cmp<<"]["<<i<<"]")
               |:|("f[(component)("<<c<<"+10)]["<<cmp<<"]["<<i<<"]")
 
 {- Here is where we compute the polarization -}
 
-with_d_minus_p job =
-    with_or_withot_polarization $ ifelse_ "have_nonzero_polarization" (
-      docode [doexp "double *d_minus_p[5][2]",
-              for_complex $ doblock "FOR_ELECTRIC_COMPONENTS(ec)" $
-                ifelse_ "f[ec]"
-                (doexp $ "d_minus_p[ec]["<<cmp<<"] = new double[v.ntot()]")
-                (doexp $ "d_minus_p[ec]["<<cmp<<"] = 0"),
-              job,
-              for_complex $ doblock "FOR_ELECTRIC_COMPONENTS(ec)" $
-                doexp $ "delete[] d_minus_p[ec]["<<cmp<<"]"]
-    ) (
-      job
-    )
-
-with_or_withot_polarization job =
-    ifelse_ "pol" p_job $ ifelse_ "e_sources" p_job $ nop_job
-    where p_job = declare "have_nonzero_polarization" True job
-          nop_job = declare "have_nonzero_polarization" False job
-
-calc_d_minus_p = if_ "have_nonzero_polarization" $
+calc_d_minus_p = if_ "have_d_minus_p" $
     docode [
       -- First we look at the contribution from polarization fields.
       loop_points $ docode [
@@ -48,7 +38,7 @@ calc_d_minus_p = if_ "have_nonzero_polarization" $
         loop_polarizations $ doexp $ d_minus_p "ec" "i" |-=| "p->P[ec]["<<cmp<<"][i]"]
     ]
 
-calc_d_minus_p_sources = if_ "have_nonzero_polarization" $
+calc_d_minus_p_sources = if_ "have_d_minus_p" $
     -- The following code calculates the polarization from sources.
     loop_sources "e_sources" "spt" $
       doblock "if (f[spt->c][0])" $ 
