@@ -208,7 +208,17 @@ class fields_chunk {
   void update_fluxes();
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
+  // fields.cpp
+  void figure_out_step_plan();
+  bool have_plus_deriv[10], have_minus_deriv[10];
+  bool have_pml_in_direction[5];
+  component plus_component[10], minus_component[10];
+  direction plus_deriv_direction[10], minus_deriv_direction[10];
+  int num_each_direction[3], stride_each_direction[3];
+  // bands.cpp
   void record_bands(int tcount);
+  // step.cpp
+  void step_h_old();
   void phase_in_material(const mat_chunk *ma);
   void phase_material(int phasein_time);
   void step_h();
@@ -217,6 +227,7 @@ class fields_chunk {
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *, double);
+  // polarization.cpp
   void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
@@ -301,6 +312,7 @@ class fields {
   double maxfieldmag_to_master(component) const;
   // step.cpp methods:
   void step();
+  void step_old(); // Step using old code.
   inline double time() const { return t*inva*c; };
 
   double find_last_source();
@@ -369,6 +381,7 @@ class fields {
   // step.cpp
   void phase_material();
   void step_h();
+  void step_h_old();
   void step_h_source();
   void step_e();
   void step_boundaries(field_type);
@@ -419,6 +432,7 @@ class grace {
 // directory, unless the source file hasn't changed.
 
 const char *make_output_directory(const char *exename, const char *jobname = NULL);
+void trash_output_directory(const char *dirname);
 file *create_output_file(const char *dirname, const char *fname);
 
 // The following allows you to hit ctrl-C to tell your calculation to stop

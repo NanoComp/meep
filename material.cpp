@@ -354,7 +354,13 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
           inveps[Ey][Y][i] = 2.0/(feps(here+hdy)+feps(here-hdy));
         }
     } else {
-      abort("Unsupported symmetry!\n");
+      for (int i=0;i<v.ntot();i++) {
+        FOR_ELECTRIC_COMPONENTS(c)
+          if (v.has_field(c)) {
+            const vec here = v.loc(Ep,i);
+            inveps[c][component_direction(c)][i] = 1.0/feps(here);
+          }
+      }
     }
   // Allocate the conductivity arrays:
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;

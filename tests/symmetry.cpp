@@ -402,6 +402,7 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   const char *dirname = "symmetry-out";
+  trash_output_directory(dirname);
   master_printf("Testing with various kinds of symmetry...\n");
 
   if (!pml_twomirrors(one, dirname))

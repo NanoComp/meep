@@ -153,6 +153,52 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
     for (int io=0;io<2;io++)
       for (int cmp=0;cmp<2;cmp++)
         connections[f][io][cmp] = 0;
+  figure_out_step_plan();
+}
+
+static inline bool cross_negative(direction a, direction b) {
+  return ((3+b-a)%3) == 2;
+}
+
+static inline direction cross(direction a, direction b) {
+  if (a < R && b < R) return (direction)((3+2*a-b)%3);
+  return (direction) (2 + (3+2*(a-2)-(b-2))%3);
+}
+
+void fields_chunk::figure_out_step_plan() {
+  FOR_COMPONENTS(cc)
+    have_minus_deriv[cc] = have_plus_deriv[cc] = false;
+  FOR_DIRECTIONS(d) have_pml_in_direction[d] = false;
+  FOR_COMPONENTS(c1)
+    if (f[c1][0]) {
+      const direction dc1 = component_direction(c1);
+      // Figure out which field components contribute.
+      component c_p=Ex, c_m=Ex;
+      bool var_have_p = false, var_have_m = false;
+      FOR_COMPONENTS(c2)
+        if ((is_electric(c1) && is_magnetic(c2)) ||
+            (is_magnetic(c1) && is_electric(c2))) {
+          const direction dc2 = component_direction(c2);
+          if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
+              has_direction(v.dim,cross(dc1,dc2))) {
+            direction d_deriv = cross(dc1,dc2);
+            if (ma->C[d_deriv][c1]) have_pml_in_direction[d_deriv] = true;
+            if (cross_negative(dc1, dc2)) {
+              minus_component[c1] = c2;
+              have_minus_deriv[c1] = true;
+              minus_deriv_direction[c1] = d_deriv;
+            } else {
+              plus_component[c1] = c2;
+              have_plus_deriv[c1] = true;
+              plus_deriv_direction[c1] = d_deriv;
+            }
+          }
+        }
+    }
+  for (int i=0;i<3;i++) {
+    num_each_direction[i] = v.yucky_num(i);
+    stride_each_direction[i] = v.stride(v.yucky_direction(i));
+  }
 }
 
 void fields_chunk::alloc_f(component c) {
@@ -164,6 +210,7 @@ void fields_chunk::alloc_f(component c) {
       f_pml[c][cmp][i] = 0.0;
     }
   }
+  figure_out_step_plan();
 }
 
 void fields_chunk::use_real_fields() {

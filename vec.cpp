@@ -154,6 +154,23 @@ geometric_volume geometric_volume::intersect_with(const geometric_volume &a) con
   return result;
 };
 
+int volume::yucky_num(int n) const {
+  if (has_direction(dim, yucky_direction(n)))
+    return num_direction(yucky_direction(n));
+  return 1;
+}
+
+direction volume::yucky_direction(int n) const {
+  if (dim == Dcyl)
+    switch (n) {
+    case 0: return X;
+    case 1: return R;
+    case 2: return Z;
+    }
+  if (dim == D2) return (direction) ((n+2)%3);
+  return (direction) n;
+}
+
 geometric_volume volume::surroundings() const {
   geometric_volume res(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
@@ -178,6 +195,7 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
   num[2] = nc;
   origin = zero_vec(dim);
   the_ntot = right_ntot(d, num);
+  set_strides();
 }
 
 component volume::eps_component() const {
@@ -187,33 +205,6 @@ component volume::eps_component() const {
   case Dcyl: return Hp;
   }
   abort("Unsupported dimensionality eps.\n");
-}
-
-ivec volume::iyee_shift(component c) const {
-  if (dim == Dcyl) {
-    switch (c) {
-    case Er: case Hz: return ivec(1,0);
-    case Ez: case Hr: return ivec(0,1);
-    case Hp: return ivec(1,1);
-    case Ep: return ivec(0,0);
-    }
-  } else if (dim == D1) {
-    switch (c) {
-    case Ex: return ivec(0);
-    case Hy: return ivec(1);
-    }
-  } else if (dim == D2) {
-    switch (c) {
-    case Ez: return ivec2d(0,0);
-    case Hz: return ivec2d(1,1);
-    case Ex: case Hy: return ivec2d(1,0);
-    case Hx: case Ey: return ivec2d(0,1);
-    }
-  } else {
-    abort("Unsupported dimension! yee shift of %s in %s\n",
-          component_name(c), dimension_name(dim));
-  }
-  abort("Invalid component in yee!\n");
 }
 
 inline vec volume::yee_shift(component c) const {
@@ -276,25 +267,6 @@ bool volume::owns(const ivec &p) const {
   }
 }
 
-int volume::has_field(component c) const {
-  const int is_r = c == Hr || c == Er;
-  const int is_p = c == Hp || c == Ep;
-  const int is_z = c == Hz || c == Ez;
-  const int is_x = c == Hx || c == Ex;
-  const int is_y = c == Hy || c == Ey;
-  if (dim == Dcyl) {
-    return is_r || is_p || is_z;
-  } else if (dim == D3) {
-    return is_x || is_y || is_z;
-  } else if (dim == D2) {
-    return is_x || is_y || is_z;
-  } else if (dim == D1) {
-    return c == Ex || c == Hy;
-  } else {
-    abort("Aaack unsupported dim! (%d)\n", (int) dim);
-  }
-}
-
 int volume::has_boundary(boundary_side b,direction d) const {
   switch (dim) {
   case Dcyl: return d == Z || (d == R && b == High);
@@ -311,14 +283,17 @@ int volume::index(component c, const ivec &p) const {
   return idx;
 }
 
-int volume::stride(direction d) const {
-  switch(d) {
-  case Z: return 1;
-  case R: return nz()+1;
-  case X: return stride(Y)*(ny() + 1);
-  case Y: if (dim == D2) return 1;
-          else return nz() + 1;
-  }
+void volume::set_strides() {
+  for (int d=0;d<5;d++) the_stride[d] = 1; // Yuck yuck yuck.
+  LOOP_OVER_DIRECTIONS(dim,d)
+    switch(d) {
+    case Z: the_stride[d] = 1; break;
+    case R: the_stride[d] = nz()+1; break;
+    case X: the_stride[d] = stride(Y)*(ny() + 1); break;
+    case Y: if (dim == D2) the_stride[d] = 1;
+            else the_stride[d] = nz() + 1;
+            break;
+    }
 }
 
 static inline void stupidsort(int *ind, double *w, int l) {
@@ -899,6 +874,7 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
   if (want_high) retval.num[bestd] -= numer;
   else retval.num[bestd] = numer;
   retval.the_ntot = right_ntot(dim, retval.num);
+  retval.set_strides();
   return retval;
 }
 
@@ -912,6 +888,7 @@ volume volume::split_specifically(int n, int which, direction d) const {
 
   retval.num[d % 3] /= n;
   retval.the_ntot = right_ntot(dim, retval.num);
+  retval.set_strides();
   return retval;
 }
 
@@ -919,6 +896,7 @@ volume volume::pad(direction d) const {
   volume v = *this;
   v.num[d%3]++;
   v.the_ntot = right_ntot(dim, v.num);
+  v.set_strides();
   return v;
 }
 

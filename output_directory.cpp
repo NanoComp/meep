@@ -74,7 +74,8 @@ static void cp(const char *a, const char *b) {
   fclose(fb);
 }
 
-static int is_ok_dir(const char *dirname, const char *sourcename, const char *basename) {
+static int is_ok_dir(const char *dirname, const char *sourcename,
+                     const char *basename) {
   const int buflen = 300;
 
   DIR *dir;
@@ -148,4 +149,8 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   char *dirname = new char[strlen(outdirname)+1];
   snprintf(dirname, strlen(outdirname)+1, "%s", outdirname);
   return dirname;
+}
+
+void trash_output_directory(const char *dirname) {
+  mkdir(dirname, 00777);
 }

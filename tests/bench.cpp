@@ -110,11 +110,13 @@ bench bench_2d(const double xmax, const double ymax,
   return b;
 }
 
+const double te_tm_2d_time = 1e6;
+
 bench bench_2d_tm(const double xmax, const double ymax,
                double eps(const vec &)) {
   const double a = 10.0;
   const double gridpts = a*a*xmax*ymax;
-  const double ttot = 5.0 + 1e5/gridpts;
+  const double ttot = 5.0 + te_tm_2d_time/gridpts;
 
   volume v = voltwo(xmax,ymax,a);
   mat ma(v, eps);
@@ -133,11 +135,34 @@ bench bench_2d_tm(const double xmax, const double ymax,
   return b;
 }
 
+bench bench_2d_tm_old(const double xmax, const double ymax,
+               double eps(const vec &)) {
+  const double a = 10.0;
+  const double gridpts = a*a*xmax*ymax;
+  const double ttot = 5.0 + te_tm_2d_time/gridpts;
+
+  volume v = voltwo(xmax,ymax,a);
+  mat ma(v, eps);
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
+
+  while (f.time() < f.find_last_source()) f.step_old();
+  const double tend = f.time() + ttot;
+  clock_t start = clock();
+  while (f.time() < tend) f.step_old();
+  bench b;
+  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.gridsteps = ttot*a*2*gridpts;
+  f.print_times();
+  return b;
+}
+
 bench bench_2d_te(const double xmax, const double ymax,
                double eps(const vec &)) {
   const double a = 10.0;
   const double gridpts = a*a*xmax*ymax;
-  const double ttot = 5.0 + 1e5/gridpts;
+  const double ttot = 5.0 + te_tm_2d_time/gridpts;
 
   volume v = voltwo(xmax,ymax,a);
   mat ma(v, eps);
@@ -150,6 +175,30 @@ bench bench_2d_te(const double xmax, const double ymax,
   const double tend = f.time() + ttot;
   clock_t start = clock();
   while (f.time() < tend) f.step();
+  bench b;
+  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.gridsteps = ttot*a*2*gridpts;
+  f.print_times();
+  return b;
+}
+
+bench bench_2d_te_old(const double xmax, const double ymax,
+               double eps(const vec &)) {
+  const double a = 10.0;
+  const double gridpts = a*a*xmax*ymax;
+  const double ttot = 5.0 + te_tm_2d_time/gridpts;
+
+  volume v = voltwo(xmax,ymax,a);
+  mat ma(v, eps);
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec2d(0.401, 0.301));
+  f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec2d(0.7, 0.5));
+
+  while (f.time() < f.find_last_source()) f.step_old();
+  const double tend = f.time() + ttot;
+  clock_t start = clock();
+  while (f.time() < tend) f.step_old();
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
@@ -184,12 +233,16 @@ int main(int argc, char **argv) {
 
   showbench("2D 6x4 ", bench_2d(6.0, 4.0, one));
   showbench("2D 12x12 ", bench_2d(12.0, 12.0, one));
+  showbench("2D 12x12 ", bench_2d(12.0, 12.0, one));
 
   showbench("2D TM 6x4 ", bench_2d_tm(6.0, 4.0, one));
   showbench("2D TM 12x12 ", bench_2d_tm(12.0, 12.0, one));
+  showbench("2D TM 12x12 old ", bench_2d_tm_old(12.0, 12.0, one));
 
   showbench("2D TE 2x2 ", bench_2d_te(2.0, 2.0, one));
+  showbench("2D TE 2x2 old ", bench_2d_te_old(2.0, 2.0, one));
   showbench("2D TE 10x11 ", bench_2d_te(10.0, 11.0, one));
+  showbench("2D TE 10x11 old ", bench_2d_te_old(10.0, 11.0, one));
 
   master_printf("\nnote: 1 Mgs = 1 million grid point time steps\n");
 

@@ -62,6 +62,19 @@ inline direction stop_at_direction(ndim dim) {
                                      loop_stop_directi = stop_at_direction(dim); \
                                      d < loop_stop_directi; d = (direction) (d+1))
 
+#define LOOP_OVER_OWNED(v, idx) \
+  for (int loop_n1 = v.yucky_num(0), \
+           loop_n2 = v.yucky_num(1), \
+           loop_n3 = v.yucky_num(2), \
+           loop_s1 = v.stride(v.yucky_direction(0)), \
+           loop_s2 = v.stride(v.yucky_direction(1)), \
+           loop_s3 = v.stride(v.yucky_direction(2)), \
+           loop_stupid=0; loop_stupid < 1; loop_stupid++) \
+    for (int loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
+      for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
+        for (int idx = loop_i1*loop_s1 + loop_i2*loop_s2, \
+                 loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
+
 inline signed_direction flip(signed_direction d) {
   signed_direction D2 = d;
   D2.flipped = !d.flipped;
@@ -274,16 +287,23 @@ class volume {
   vec origin;
   double a, inva;
 
-  int stride(direction d) const;
+  int stride(direction d) const { return the_stride[d]; };
   int num_direction(direction d) const {
     return num[((int) d) % 3];
   };
+  // Only an idiot (or a macro) would use a yucky function.  Don't be an
+  // idiot.
+  int yucky_num(int) const;
+  direction yucky_direction(int) const;
   int nr() const { return num_direction(R); }
   int nx() const { return num_direction(X); }
   int ny() const { return num_direction(Y); }
   int nz() const { return num_direction(Z); }
 
-  int has_field(component) const;
+  bool has_field(component c) const {
+    if (dim == D1) return c == Ex || c == Hy;
+    return (dim == Dcyl)?component_direction(c)>Y:component_direction(c)<R;
+  }
   int has_boundary(boundary_side,direction) const;
 
   vec dr() const;
@@ -319,6 +339,13 @@ class volume {
   vec loc_at_resolution(int index, double res) const;
   int ntot_at_resolution(double res) const;
   ivec iloc(component, int index) const;
+
+  int yee_index(component c) const {
+    int idx = 0;
+    LOOP_OVER_DIRECTIONS(dim,d)
+      idx += (1-iyee_shift(c).in_direction(d))*stride(d);
+    return idx;
+  }
   vec yee_shift(component) const;
   component eps_component() const;
 
@@ -344,8 +371,17 @@ class volume {
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);
   ivec io() const;
-  ivec iyee_shift(component) const;
+  ivec iyee_shift(component c) const {
+    ivec out = zero_ivec(dim);
+    LOOP_OVER_DIRECTIONS(dim,d)
+      if ((is_electric(c) && d == component_direction(c)) ||
+          (is_magnetic(c) && d != component_direction(c)))
+        out.set_direction(d,1);
+    return out;
+  }
+  void set_strides();
   int num[3];
+  int the_stride[5];
   int the_ntot;
 };
 
