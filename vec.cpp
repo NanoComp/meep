@@ -917,7 +917,7 @@ static int greatest_prime_factor(int n) {
 volume volume::split(int n, int which) const {
   if (n == 1) return *this;
   int spl = greatest_prime_factor(n);
-  if (can_split_evenly(spl)) {
+  if (false && can_split_evenly(spl)) { //disable prime factor
     // Deal with case where we can split evenly by this big prime factor.
     if (spl == n) {
       return split_once(n, which);
@@ -930,7 +930,7 @@ volume volume::split(int n, int which) const {
     int biglen = 0;
     for (int i=0;i<3;i++) if (num[i] > biglen) biglen = num[i];
     const int split_point = (int)(biglen*(n/2)/(double)n + 0.5);
-    const int num_low = (int)(split_point*n/biglen + 0.5);
+    const int num_low = (int)(split_point*n/(double)biglen + 0.5);
     if (which < num_low)
       return split_at_fraction(false, split_point).split(num_low,which);
     else

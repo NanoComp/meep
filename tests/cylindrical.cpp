@@ -23,8 +23,8 @@
 
 double one(const vec &) { return 1.0; }
 
-int compare(double a, double b, const char *n) {
-  if (fabs(a-b) > fabs(b)*4e-15) {
+int compare(double a, double b, const char *n, double eps=4e-15) {
+  if (fabs(a-b) > fabs(b)*eps) {
     printf("%s differs by\t%lg out of\t%lg\n", n, a-b, b);
     printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
     return 0;
@@ -155,6 +155,61 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *dir
   return 1;
 }
 
+int test_pml(double eps(const vec &), int splitting, const char *dirname) {
+  double a = 8;
+  double ttot = 25.0;
+  
+  volume v = volcyl(3.5,10.0,a);
+  mat ma1(v, eps, 1);
+  mat ma(v, eps, splitting);
+  ma.use_pml_everywhere(2.0);
+  ma1.use_pml_everywhere(2.0);
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  for (int m=0;m<3;m++) {
+    char m_str[10];
+    snprintf(m_str, 10, "%d", m);
+    master_printf("PML with m = %d and a splitting into %d chunks...\n",
+                  m, splitting);
+    fields f(&ma, m);
+    f.use_metal_everywhere();
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
+    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
+    fields f1(&ma1, m);
+    f1.use_metal_everywhere();
+    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.3, 7.0), 1.0);
+    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.3, 7.0), 1.0);
+    f.eps_slices("multi");
+    f1.eps_slices("single");
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume", 3e-14)) return 0;
+    master_printf("Chunks are %lg by %lg\n",
+                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+    double total_energy_check_time = 10.0;
+    while (f.time() < ttot) {
+      f.step();
+      f1.step();
+      //f.output_real_imaginary_slices("multi");
+      //f1.output_real_imaginary_slices("single");
+      if (!compare_point(f, f1, vec(0.5, 7.0))) return 0;
+      if (!compare_point(f, f1, vec(0.46, 0.36))) return 0;
+      if (!compare_point(f, f1, vec(1.0, 0.4))) return 0;
+      if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
+      if (!compare_point(f, f1, vec(0.601, 0.701))) return 0;
+      if (f.time() >= total_energy_check_time) {
+        if (!compare(f.total_energy(), f1.total_energy(),
+                     "pml total energy", 1e-13)) return 0;
+        if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+                     "electric energy", 1e-13)) return 0;
+        if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+                     "magnetic energy", 1e-13)) return 0;
+
+        total_energy_check_time += 10.0;
+      }
+    }
+  }
+  return 1;
+}
+
 complex<double> checkers(const vec &v) {
   const double ther = v.r() + 0.0001; // Just to avoid roundoff issues.
   const double thez = v.r() + 0.0001; // Just to avoid roundoff issues.
@@ -185,7 +240,7 @@ int test_pattern(double eps(const vec &), int splitting,
     fields f1(&ma1, m);
     f1.use_bloch(0.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
-    master_printf("Chunks are %lg by %lg\n",
+    master_printf("First chunk is %lg by %lg\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     f1.initialize_field(Hp, checkers);
     f.initialize_field(Hp, checkers);
@@ -209,6 +264,9 @@ int main(int argc, char **argv) {
   initialize(argc, argv);
   const char *dirname = make_output_directory(argv[0]);
   master_printf("Testing cylindrical coords under different splittings...\n");
+  
+  for (int s=2;s<6;s++)
+    if (!test_pml(one, s, dirname)) abort("error in test_pml\n");
 
   for (int s=2;s<8;s++)
     if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
