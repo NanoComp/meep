@@ -40,7 +40,8 @@ static void handle_control_c(int i) {
 
 void deal_with_ctrl_c(int stop_now) {
   kill_time = stop_now;
-  signal(SIGINT, handle_control_c);
+  if (signal(SIGINT, handle_control_c) == SIG_IGN)
+    signal(SIGINT, SIG_IGN); // ignore if parent process was ignoring
 }
 
 } // namespace meep
