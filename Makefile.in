@@ -22,7 +22,7 @@ distdir = $(package)-$(VERSION)
 OBJ_meep = step.o harminv.o bands.o output_directory.o material.o \
 	polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
 	vec.o slices.o initialize.o sources.o fields.o boundaries.o \
-	mympi.o fluxes.o time.o ran.o \
+	mympi.o fluxes.o time.o ran.o anisotropic_averaging.o \
 	step_d.o step_h.o update_e_from_d.o update_from_e.o
 OBJ_example = example.o libmeep.a
 
@@ -34,6 +34,7 @@ uninstall: meep-uninstall
 
 ###########################################################################
 
+anisotropic_averaging.o: threevec.h
 $(OBJ_meep): meep.h meep_internals.h vec.h mympi.h
 example.o: example.cpp meep.h vec.h mympi.h
 update_from_e.o: update_from_e.cpp update_from_e.h \

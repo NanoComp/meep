@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
           "1x1x1 X periodic 3D");
   compare(-101.191, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
           "1x1x1 X periodic Y PML 3D");
-  compare(-95.3455, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
+  compare(-101.62, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
           "1x1x1 fully periodic 3D rods");
   compare(-99.1618, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 fully periodic 3D");

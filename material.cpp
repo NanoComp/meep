@@ -321,6 +321,13 @@ void mat::make_average_eps() {
       chunks[i]->make_average_eps(); // FIXME
 }
 
+void mat::set_epsilon(double eps(const vec &), double minvol,
+                      bool use_anisotropic_averaging) {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->set_epsilon(eps, minvol, use_anisotropic_averaging);
+}
+
 void mat::use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks) {
   volume pml_volume = v;
   pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
@@ -557,6 +564,74 @@ mat_chunk::mat_chunk(const mat_chunk *o) : gv(o->gv) {
       }
 }
 
+// The following is defined in anisotropic_averaging.cpp:
+double anisoaverage(component ec, direction d, double eps(const vec &),
+                    const geometric_volume &vol, double minvol);
+
+void mat_chunk::set_epsilon(double feps(const vec &), double minvol,
+                            bool use_anisotropic_averaging) {
+  if (!is_mine()) return;
+  if (!use_anisotropic_averaging) {
+    if (is_mine())
+      if (v.dim == Dcyl) {
+        const vec dr = v.dr()*0.5; // The distance between Yee field components
+        const vec dz = v.dz()*0.5; // The distance between Yee field components
+        for (int i=0;i<v.ntot();i++) {
+          const vec here = v.loc(Ep,i);
+          inveps[Er][R][i] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
+          inveps[Ep][P][i] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
+                                 feps(here+dr-dz) + feps(here-dr-dz));
+          inveps[Ez][Z][i] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
+        }
+      } else if (v.dim == D1) {
+        for (int i=0;i<v.ntot();i++) inveps[Ex][X][i] = 1.0/eps[i];
+      } else if (v.dim == D2) {
+        if (inveps[Ez][Z])
+          for (int i=0;i<v.ntot();i++) inveps[Ez][Z][i] = 1.0/eps[i];
+        const vec hdx = v.dx()*0.5;;
+        if (inveps[Ex][X])
+          for (int i=0;i<v.ntot();i++) {
+            const vec here = v.loc(Ex,i);
+            inveps[Ex][X][i] = 2.0/(feps(here+hdx)+feps(here-hdx));
+          }
+        const vec hdy = v.dy()*0.5;;
+        if (inveps[Ey][Y])
+          for (int i=0;i<v.ntot();i++) {
+            const vec here = v.loc(Ey,i);
+            inveps[Ey][Y][i] = 2.0/(feps(here+hdy)+feps(here-hdy));
+          }
+      } else {
+        for (int i=0;i<v.ntot();i++) {
+          FOR_ELECTRIC_COMPONENTS(c)
+            if (v.has_field(c)) {
+              const vec here = v.loc(c,i);
+              int num_avg = 0;
+              double temp = 0.0;
+              LOOP_OVER_DIRECTIONS(v.dim,d)
+                if (d != component_direction(c)) {
+                  num_avg += 2;
+                  vec dx = zero_vec(v.dim);
+                  dx.set_direction(d,0.5/a);
+                  temp += feps(here + dx);
+                  temp += feps(here - dx);
+                }
+              inveps[c][component_direction(c)][i] = num_avg/temp;
+            }
+        }
+      }
+  } else {
+    if (minvol == 0.0) minvol = v.dV(zero_ivec(v.dim)).full_volume()/100.0;
+    FOR_ELECTRIC_COMPONENTS(c)
+      if (v.has_field(c))
+        LOOP_OVER_DIRECTIONS(v.dim,d) {
+        if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
+        if (!inveps[c][d]) abort("Memory allocation error.\n");
+        for (int i=0;i<v.ntot();i++)
+          inveps[c][d][i] = anisoaverage(c, d, feps, v.dV(v.iloc(c,i)), minvol);
+      }
+  }
+}
+
 mat_chunk::mat_chunk(const volume &thev, double feps(const vec &),
                      const geometric_volume &vol_limit, int pr)
   : gv(thev.surroundings() & vol_limit) {
@@ -582,53 +657,7 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &),
     } else {
       inveps[c][d] = NULL;
     }
-  if (is_mine())
-    if (v.dim == Dcyl) {
-      const vec dr = v.dr()*0.5; // The distance between Yee field components
-      const vec dz = v.dz()*0.5; // The distance between Yee field components
-      for (int i=0;i<v.ntot();i++) {
-        const vec here = v.loc(Ep,i);
-        inveps[Er][R][i] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
-        inveps[Ep][P][i] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
-                               feps(here+dr-dz) + feps(here-dr-dz));
-        inveps[Ez][Z][i] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
-      }
-    } else if (v.dim == D1) {
-      for (int i=0;i<v.ntot();i++) inveps[Ex][X][i] = 1.0/eps[i];
-    } else if (v.dim == D2) {
-      if (inveps[Ez][Z])
-        for (int i=0;i<v.ntot();i++) inveps[Ez][Z][i] = 1.0/eps[i];
-      const vec hdx = v.dx()*0.5;;
-      if (inveps[Ex][X])
-        for (int i=0;i<v.ntot();i++) {
-          const vec here = v.loc(Ex,i);
-          inveps[Ex][X][i] = 2.0/(feps(here+hdx)+feps(here-hdx));
-        }
-      const vec hdy = v.dy()*0.5;;
-      if (inveps[Ey][Y])
-        for (int i=0;i<v.ntot();i++) {
-          const vec here = v.loc(Ey,i);
-          inveps[Ey][Y][i] = 2.0/(feps(here+hdy)+feps(here-hdy));
-        }
-    } else {
-      for (int i=0;i<v.ntot();i++) {
-        FOR_ELECTRIC_COMPONENTS(c)
-          if (v.has_field(c)) {
-            const vec here = v.loc(Ep,i);
-            int num_avg = 0;
-            double temp = 0.0;
-            LOOP_OVER_DIRECTIONS(v.dim,d)
-              if (d != component_direction(c)) {
-                num_avg += 2;
-                vec dx = zero_vec(v.dim);
-                dx.set_direction(d,0.5/a);
-                temp += feps(here + dx);
-                temp += feps(here - dx);
-              }
-            inveps[c][component_direction(c)][i] = num_avg/temp;
-          }
-      }
-    }
+  if (is_mine()) set_epsilon(feps, 0.0, false);
   // Allocate the conductivity arrays:
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
   FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;

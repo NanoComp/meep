@@ -49,6 +49,8 @@ class mat_chunk {
   mat_chunk(const volume &v, double eps(const vec &),
             const geometric_volume &vol_limit, int proc_num=0);
   mat_chunk(const mat_chunk *);
+  void set_epsilon(double eps(const vec &), double minvol,
+                   bool use_anisotropic_averaging);
   void make_average_eps();
   void use_pml(direction, double dx, double boundary_loc);
   void update_pml_arrays();
@@ -90,6 +92,8 @@ class mat {
       const symmetry &s = identity());
   mat(const mat *);
   mat(const mat &);
+  void set_epsilon(double eps(const vec &), double minvol = 0.0,
+                   bool use_anisotropic_averaging=true);
   void add_to_effort_volumes(const volume &new_effort_volume, double extra_effort);
   void redefine_chunks(const int Nv, const volume *new_volumes, const int *procs);
   void optimize_volumes(int *Nv, volume *new_volumes, int *procs);
