@@ -408,25 +408,25 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
       //       abs(herea[best_match]), abs(ta[best_match]));
       if (err_best > 0.02 && err_best < 1e299) {
         /*printf("OOOOOOOOO\n");
-          printf("---------\n");
-          if (err_best > 0.02) {
-          printf("Didn't find a nice frequency! (%lg) (%d.%d) vs (%d.%d)\n",
-          err_best, r, whichf, refr[n], refw[n]);
-          } else {
-          printf("Found a nice frequency! (%lg) (%d.%d) vs (%d.%d)\n",
-          err_best, r, whichf, refr[n], refw[n]);
-          }
-          printf("Ref %d: %10lg %10lg\t(%10lg ,%10lg)\n",
-          n, reff[n], refd[n], refa[n]);
-          for (int i=0;i<num_match;i++) {
+        printf("---------\n");
+        if (err_best > 0.02) {
+          printf("Didn't find a nice frequency! (%lg)\n", err_best);
+        } else {
+          printf("Found a nice frequency! (%lg)\n", err_best);
+        }
+        printf("Ref %d: %10lg %10lg\t(%10lg ,%10lg)\n",
+               n, reff[n], refd[n], refa[n]);
+        for (int i=0;i<num_match;i++) {
           printf("%5d: %10lg %10lg\t(%10lg ,%10lg)\n",
-          i, tf[i], td[i], ta[i]);
-          } 
-          printf("---------\n");
-          printf("OOOOOOOOO\n");*/
+                 i, tf[i], td[i], ta[i]);
+        } 
+        printf("---------\n");
+        printf("OOOOOOOOO\n");*/
       } else if (err_best < 0.02) {
+        //printf("Found a match at %d between %lg and %lg (%lg vs %lg) -- %lg\n",
+        //       n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]), err_best);
         if (abs(herea[best_match]) > abs(refa[n])) { // Change reference...
-          //printf("Changing reference %d to (%d.%d)\n", n, r, whichf);
+          //printf("Changing reference %d...\n", n);
           //printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
           //printf("best_err is %lg\n", err_best);
           //printf("amp (%lg,%lg) (%lg,%lg)\n", 
@@ -451,8 +451,8 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
         for (int i=0;i<num_here;i++) {
           double err =
             (abs(heref[i]-reff[n])+0.1*abs(hered[i]-refd[n]))/abs(reff[n]);
-          //printf("heref[%d] %lg vs reff[%d] %lg gives %lg %lg -- %lg\n",
-          //       i, heref[i], n, reff[n], errf, erra, abs(mya));
+          //printf("heref[%d] %lg vs reff[%d] %lg gives %lg\n",
+          //       i, heref[i], n, reff[n], err);
           if (err < err_best && refnum[i] == -1) {
             best_match = i;
             err_best = err;
