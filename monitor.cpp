@@ -39,7 +39,7 @@ inline complex<double> getcm(const double * const f[2], int i) {
 static void dumbsort(complex<double> val[8]) {
   for (int i=0;i<7;i++) {
     int lowest = i;
-    for (int j=i+1;j<8;j++) if (abs(val[j]) < abs(val[i])) lowest = j;
+    for (int j=i+1;j<8;j++) if (abs(val[j]) < abs(val[lowest])) lowest = j;
     complex<double> tmp = val[i];
     val[i] = val[lowest];
     val[lowest] = tmp;
