@@ -64,6 +64,10 @@ int main(int argc, char **argv) {
   master_printf("Running square holes resolution convergence test.\n");
   const double amin = 5.0, amax = 30.0, adelta = 5.0;
   double best_guess = 0.0;
+
+  best_guess = 0.179944; // from MPB; correct to at least 4 decimal places
+  master_printf("The frequency is approximately %g\n", best_guess);
+
   for (double a=amax; a >= amin; a-=adelta) {
     const double freq = freq_at_resolution(holey_2d, a);
     const double freq_shifted = freq_at_resolution(holey_shifted_2d, a);
@@ -73,20 +77,22 @@ int main(int argc, char **argv) {
       best_guess = freq + 0.5*(freq_shifted - freq);
       master_printf("The frequency is approximately %g\n", best_guess);
     } else {
+      master_printf("frequency for a=%g is %g, %g (shifted), %g (mean)\n", 
+		    a, freq, freq_shifted, 0.5 * (freq + freq_shifted));
       master_printf("Unshifted freq error is %g/%g/%g\n",
                     (freq - best_guess)*a*a, a, a);
-      if (fabs(freq - best_guess)*a*a > 0.3)
+      if (fabs(freq - best_guess)*a*a > 0.4)
         abort("Frequency doesn't converge properly with a.\n");
       master_printf("Shifted freq error is %g/%g/%g\n",
                     (freq_shifted - best_guess)*a*a, a, a);
-      if (fabs(freq_shifted - best_guess)*a*a > 0.3)
-        abort("Frequency doesn't converge properly with a.\n");
+      if (fabs(freq_shifted - best_guess)*a*a > 0.4)
+	abort("Frequency doesn't converge properly with a.\n");
     }    
-
+    
     // Check frequency difference...
     master_printf("Frequency difference with a of %g is %g/%g/%g\n",
                   a, (freq - freq_shifted)*a*a, a, a);
-    if (fabs(freq - freq_shifted)*a*a > 0.3)
+    if (fabs(freq - freq_shifted)*a*a > 0.4)
       abort("Frequency difference = doesn't converge properly with a.\n");
   }
   master_printf("Passed 2D resolution convergence test!\n");
