@@ -1,10 +1,12 @@
 lib_LTLIBRARIES = libmeep.la
+include_HEADERS = meep.h
+pkginclude_HEADERS = meep/mympi.h meep/vec.h
 
 BUILT_SOURCES = step_d.h step_h.h update_from_e.h	\
 	sphere-quad.h \
 	update_e_from_d_prepare.h update_e_from_d_sources.h update_e_from_d_update.h
 
-HDRS = meep.h meep_internals.h mympi.h ran.h threevec.h vec.h
+HDRS = meep.h meep_internals.h meep/mympi.h ran.h threevec.h meep/vec.h
 
 libmeep_la_SOURCES = anisotropic_averaging.cpp bands.cpp		\
 boundaries.cpp control_c.cpp dft.cpp energy_and_flux.cpp fields.cpp	\

@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "vec.h"
-#include "mympi.h"
+#include "meep/vec.h"
+#include "meep/mympi.h"
 
 namespace meep {
 
