@@ -100,10 +100,7 @@ FILE *create_output_file(const char *dirname, const char *fname) {
   char n[buflen];
   snprintf(n, buflen, "%s/%s", dirname, fname);
   FILE *o = fopen(n, "a");
-  if (!o) {
-    printf("Unable to create file %s!\n", n);
-    exit(1);
-  }
+  if (!o) abort("Unable to create file %s!\n", n);
   return o;
 }
 
@@ -138,7 +135,8 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   snprintf(outdirname, buflen, "%s-out", basename);
   if (!is_ok_dir(outdirname, sourcename, basename)) {
     for (int i=1;i<1000;i++) {
-      printf("Source files %s  and %s/%s differ!\n", sourcename, outdirname, sourcename);  
+      master_printf("Source files %s  and %s/%s differ!\n",
+                    sourcename, outdirname, sourcename);  
       snprintf(outdirname, buflen, "%s-out-%d", basename, i);
       if (is_ok_dir(outdirname, sourcename, basename)) break;
     }

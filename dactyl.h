@@ -235,7 +235,7 @@ class fields {
   fields_chunk **chunks;
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
-  double **comm_blocks[2][2];
+  double **comm_blocks[2];
   // This is the same size as each comm_blocks array, and stores the sizes
   // of the comm blocks themselves.
   int *comm_sizes[2];

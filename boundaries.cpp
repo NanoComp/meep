@@ -40,10 +40,8 @@ void fields::disconnect_chunks() {
   }
   for (int ft=0;ft<2;ft++)
     for (int i=0;i<num_chunks*num_chunks;i++) {
-      DOCMP {
-        delete[] comm_blocks[ft][cmp][i];
-        comm_blocks[ft][cmp][i] = 0;
-      }
+      delete[] comm_blocks[ft][i];
+      comm_blocks[ft][i] = 0;
       comm_sizes[ft][i] = 0;
     }
 }
@@ -114,10 +112,8 @@ void fields::connect_the_chunks() {
     // Allocating comm blocks as we go...
     for (int ft=0;ft<2;ft++)
       for (int j=0;j<num_chunks;j++) {
-        DOCMP {
-          delete[] comm_blocks[ft][cmp][j+i*num_chunks];
-          comm_blocks[ft][cmp][j+i*num_chunks] = new double[new_comm_sizes[ft][j]];
-        }
+        delete[] comm_blocks[ft][j+i*num_chunks];
+        comm_blocks[ft][j+i*num_chunks] = new double[2*new_comm_sizes[ft][j]];
         comm_sizes[ft][j+i*num_chunks] = new_comm_sizes[ft][j];
       }
   }

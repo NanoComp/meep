@@ -43,11 +43,9 @@ fields::fields(const mat *ma, int tm=0) {
   for (int ft=0;ft<2;ft++) {
     comm_sizes[ft] = new int[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][i] = 0;
-    for (int cmp=0;cmp<2;cmp++) {
-      comm_blocks[ft][cmp] = new (double *)[num_chunks*num_chunks];
-      for (int i=0;i<num_chunks*num_chunks;i++)
-        comm_blocks[ft][cmp][i] = 0;
-    }
+    comm_blocks[ft] = new (double *)[num_chunks*num_chunks];
+    for (int i=0;i<num_chunks*num_chunks;i++)
+      comm_blocks[ft][i] = 0;
   }
   connect_chunks();
 }
@@ -75,8 +73,8 @@ fields::~fields() {
   delete[] chunks;
   for (int ft=0;ft<2;ft++) {
     for (int i=0;i<num_chunks*num_chunks;i++)
-      DOCMP delete[] comm_blocks[ft][cmp][i];
-    for (int cmp=0;cmp<2;cmp++) delete[] comm_blocks[ft][cmp];
+      delete[] comm_blocks[ft][i];
+    delete[] comm_blocks[ft];
     delete[] comm_sizes[ft];
   }
   delete bands;
