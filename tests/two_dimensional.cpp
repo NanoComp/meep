@@ -57,6 +57,8 @@ int compare_point(const fields &f1, const fields &f2, const vec &p) {
                       p.x(), p.y(), f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
+        f1.eps_slices("multi");
+        f2.eps_slices("single");
         return 0;
       }
     }
@@ -101,10 +103,66 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
   return 1;
 }
 
+int test_pml(double eps(const vec &), int splitting, const char *dirname) {
+  double a = 10.0;
+
+  volume v = voltwo(3.0, 2.0, a);
+  mat ma1(v, eps, 1);
+  mat ma(v, eps, splitting);
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  ma.use_pml(X,Low,1.0);
+  ma.use_pml(X,High,1.0);
+  ma.use_pml(Y,High,1.0);
+  ma1.use_pml(X,Low,1.0);
+  ma1.use_pml(X,High,1.0);
+  ma1.use_pml(Y,High,1.0);
+
+  master_printf("Testing pml while splitting into %d chunks...\n", splitting);
+  fields f(&ma);
+  //f.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.5,0.5), 1.0);
+  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  fields f1(&ma1);
+  //f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec2d(1.5,0.5), 1.0);
+  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
+  const double deltaT = 100.0;
+  const double ttot = 5.1*deltaT;
+  double total_energy_check_time = deltaT;
+
+  while (f.time() < f.find_last_source()) f.step();
+  while (f1.time() < f1.find_last_source()) f1.step();
+
+  double last_energy = f.total_energy();
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (f.time() >= total_energy_check_time) {
+      if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
+      if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
+      if (!compare_point(f, f1, vec2d(1.0  , 1.0 ))) return 0;
+      const double new_energy = f.total_energy();
+      if (!compare(new_energy, f1.total_energy(),
+                   "   total energy")) return 0;
+      if (new_energy > last_energy*1e-7) {
+        master_printf("Energy decaying too slowly: from %lg to %lg (%lg)\n",
+                      last_energy, new_energy, new_energy/last_energy);
+        return 0;
+      } else {
+        master_printf("Got newE/oldE of %lg\n", new_energy/last_energy);
+      }
+      total_energy_check_time += deltaT;
+    }
+  }
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize(argc, argv);
   const char *dirname = make_output_directory(argv[0]);
-  master_printf("Testing 2D under different splittings...\n");
+  master_printf("Testing 2D...\n");
+
+  for (int s=2;s<5;s++)
+    if (!test_pml(one, s, dirname)) abort("error in test_pml vacuum\n");
 
   for (int s=2;s<7;s++)
     if (!test_metal(one, s, dirname)) abort("error in test_metal vacuum\n");

@@ -65,20 +65,20 @@ void mat::make_average_eps() {
       chunks[i]->make_average_eps(); // FIXME
 }
 
-void mat::use_pml_left(double dx) {
+void mat::use_pml(direction d, boundary_side b, double dx) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->use_pml_left(dx, v.origin.z());
+      chunks[i]->use_pml(d, dx, v.boundary_location(b,d));
+}
+
+void mat::use_pml_left(double dx) {
+  use_pml(Z, Low, dx);
 }
 void mat::use_pml_right(double dx) {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->use_pml_right(dx, v.origin.z() + v.nz()/v.a);
+  use_pml(Z, High, dx);
 }
 void mat::use_pml_radial(double dx) {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->use_pml_radial(dx, v.origin.r() + v.nr()/v.a);
+  use_pml(R, High, dx);
 }
 void mat::mix_with(const mat *oth, double f) {
   if (num_chunks != oth->num_chunks)
@@ -92,8 +92,7 @@ mat_chunk::~mat_chunk() {
   for (int c=0;c<10;c++) delete[] inveps[c];
   delete[] eps;
 
-  for (int c=0;c<10;c++) delete[] Cmain[c];
-  for (int c=0;c<10;c++) delete[] Cother[c];
+  for (int d=0;d<5;d++) for (int c=0;c<10;c++) delete[] C[d][c];
   if (pb) delete pb;
 }
 
@@ -186,177 +185,22 @@ void mat_chunk::make_average_eps() {
 
 const double Cmax = 0.5;
 
-void mat_chunk::use_pml_right(double dx, double zright) {
-  if (v.dim == d1) {
-    const double border = zright - dx;
-    const double prefac = Cmax/(dx*dx);
-    if (!Cmain[Hy]) {
-      Cmain[Hy] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Hy][i] = 0.0;
+void mat_chunk::use_pml(direction d, double dx, double bloc) {
+  const double prefac = Cmax/(dx*dx);
+  for (int c=0;c<10;c++)
+    if (v.has_field((component)c) && component_direction((component)c) != d) {
+      if (!C[d][c]) {
+        C[d][c] = new double[v.ntot()];
+        for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
+      }
+      const double loborder = bloc - dx;
+      const double hiborder = bloc + dx;
+      for (int i=0;i<v.ntot();i++) {
+        const double x = dx -
+          fabs(bloc - v.loc((component)c,i).in_direction(d));
+        if (x > 0) C[d][c][i] = prefac*x*x;
+      }
     }
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(Hy,i).z();
-      if (x > border) Cmain[Hy][i] = prefac*(x-border)*(x-border);
-    }
-    if (!Cmain[Ex]) {
-      Cmain[Ex] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Ex][i] = 0.0;
-    }
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(Ex,i).z();
-      if (x > border) Cmain[Ex][i] = prefac*(x-border)*(x-border);
-    }
-  } else if (v.dim == dcyl) {
-    const double border = zright - dx;
-    const double prefac = Cmax/(dx*dx);
-    if (!Cmain[Ep]) {
-      Cmain[Ep] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Ep][i] = 0.0;
-    }
-    if (!Cmain[Hp]) {
-      Cmain[Hp] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Hp][i] = 0.0;
-    }
-    if (!Cother[Er]) {
-      Cother[Er] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Er][i] = 0.0;
-    }
-    if (!Cother[Hr]) {
-      Cother[Hr] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Hr][i] = 0.0;
-    }
-    component m=Er;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x > border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Hr;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x > border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Ep;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x > border) Cmain[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Hp;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x > border) Cmain[m][i] = prefac*(x-border)*(x-border);
-    }
-  } else {
-    abort("Unsupported dimension?!\n");
-  }
-}
-
-void mat_chunk::use_pml_left(double dx, double zleft) {
-  if (v.dim == d1) {
-    const double border = dx + zleft;
-    const double prefac = Cmax/(dx*dx);
-    if (!Cmain[Hy]) {
-      Cmain[Hy] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Hy][i] = 0.0;
-    }
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(Hy,i).z();
-      if (x < border) Cmain[Hy][i] = prefac*(x-border)*(x-border);
-    }
-    if (!Cmain[Ex]) {
-      Cmain[Ex] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Ex][i] = 0.0;
-    }
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(Ex,i).z();
-      if (x < border) Cmain[Ex][i] = prefac*(x-border)*(x-border);
-    }
-  } else if (v.dim == dcyl) {
-    const double border = dx + zleft;
-    const double prefac = Cmax/(dx*dx);
-    if (!Cmain[Ep]) {
-      Cmain[Ep] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Ep][i] = 0.0;
-    }
-    if (!Cmain[Hp]) {
-      Cmain[Hp] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cmain[Hp][i] = 0.0;
-    }
-    if (!Cother[Er]) {
-      Cother[Er] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Er][i] = 0.0;
-    }
-    if (!Cother[Hr]) {
-      Cother[Hr] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Hr][i] = 0.0;
-    }
-    component m=Er;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Hr;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Ep;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x < border) Cmain[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Hp;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.loc(m,i).z();
-      if (x < border) Cmain[m][i] = prefac*(x-border)*(x-border);
-    }
-  } else {
-    abort("Unsupported dimension?!\n");
-  }
-}
-
-void mat_chunk::use_pml_radial(double dx, double rmax) {
-  if (v.dim == dcyl) {
-    const double border = rmax - dx;
-    const double prefac = Cmax/(dx*dx);
-    if (!Cother[Ep]) {
-      Cother[Ep] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Ep][i] = 0.0;
-    }
-    if (!Cother[Hp]) {
-      Cother[Hp] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Hp][i] = 0.0;
-    }
-    if (!Cother[Ez]) {
-      Cother[Ez] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Ez][i] = 0.0;
-    }
-    if (!Cother[Hz]) {
-      Cother[Hz] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) Cother[Hz][i] = 0.0;
-    }
-    component m=Ez;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
-      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Hz;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
-      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Ep;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
-      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-    m=Hp;
-    for (int i=0;i<v.ntot();i++) {
-      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
-      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
-    }
-  } else {
-    abort("Radial pml only works in cylindrical coordinates!\n");
-  }
 }
 
 mat_chunk::mat_chunk(const mat_chunk *o) {
@@ -381,23 +225,15 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
       inveps[c] = NULL;
     }
   // Allocate the conductivity arrays:
-  for (int c=0;c<10;c++) {
-    Cmain[c] = NULL;
-    Cother[c] = NULL;
-  }
+  for (int d=0;d<5;d++) for (int c=0;c<10;c++) C[d][c] = NULL;
   // Copy over the conductivity arrays:
   if (is_mine())
-    for (int c=0;c<10;c++)
-      if (v.has_field((component)c)) {
-        if (o->Cmain[c]) {
-          Cmain[c] = new double[v.ntot()];
-          for (int i=0;i<v.ntot();i++) Cmain[c][i] = o->Cmain[c][i];
+    for (int d=0;d<5;d++) 
+      for (int c=0;c<10;c++)
+        if (o->C[d][c]) {
+          C[d][c] = new double[v.ntot()];
+          for (int i=0;i<v.ntot();i++) C[d][c][i] = o->C[d][c][i];
         }
-        if (o->Cother[c]) {
-          Cother[c] = new double[v.ntot()];
-          for (int i=0;i<v.ntot();i++) Cother[c][i] = o->Cother[c][i];
-        }
-      }
 }
 
 mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
@@ -454,8 +290,5 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
       abort("Unsupported symmetry!\n");
     }
   // Allocate the conductivity arrays:
-  for (int c=0;c<10;c++) {
-    Cmain[c] = NULL;
-    Cother[c] = NULL;
-  }
+  for (int d=0;d<5;d++) for (int c=0;c<10;c++) C[d][c] = NULL;
 }

@@ -35,8 +35,7 @@ class mat_chunk {
  public:
   double *eps, a;
   double *inveps[10];
-  double *Cmain[10];
-  double *Cother[10];
+  double *C[5][10];
   volume v;
   polarizability *pb;
 
@@ -44,9 +43,7 @@ class mat_chunk {
   mat_chunk(const volume &v, double eps(const vec &), int proc_num=0);
   mat_chunk(const mat_chunk *);
   void make_average_eps();
-  void use_pml_left(double dx, double zleft);
-  void use_pml_right(double dx, double zright);
-  void use_pml_radial(double dx, double rmax);
+  void use_pml(direction, double dx, double boundary_loc);
 
   void set_output_directory(const char *name);
   void mix_with(const mat_chunk *, double);
@@ -79,6 +76,7 @@ class mat {
                             int num_chunks = 1);
 
   void make_average_eps();
+  void use_pml(direction d, boundary_side b, double dx);
   void use_pml_left(double dx);
   void use_pml_right(double dx);
   void use_pml_radial(double dx);

@@ -18,6 +18,8 @@
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz };
 enum ndim { d1=0, d2, d3, dcyl };
 enum field_type { E_stuff=0, H_stuff=1 };
+enum boundary_side { High=0, Low };
+enum direction { X=0,Y,Z,R,P };
 
 inline int is_electric(component c) { return (int) c < 5; }
 inline int is_magnetic(component c) { return (int) c >= 5; }
@@ -26,6 +28,15 @@ inline field_type type(component c) {
   else return H_stuff;
 }
 const char *component_name(component c);
+inline direction component_direction(component c) {
+  switch (c) {
+  case Ex: case Hx: return X;
+  case Ey: case Hy: return Y;
+  case Ez: case Hz: return Z;
+  case Er: case Hr: return R;
+  case Ep: case Hp: return P;
+  }
+}
 
 class vec {
  public:
@@ -76,7 +87,16 @@ class vec {
   double x() const { return tx; };
   double y() const { return ty; };
   double z() const { return tz; };
+  double in_direction(direction d) const {
+    switch (d) {
+    case X: return tx;
+    case Y: return ty;
+    case Z: return tz;
+    case R: return tr;
+    }
+  };
 
+  double project_to_boundary(direction, double boundary_loc);
   void print(FILE *) const;
  private:
   double tx, ty, tz, tr;
@@ -144,6 +164,8 @@ class volume {
   vec loc(component, int index) const;
   vec yee_shift(component) const;
   component eps_component() const;
+
+  double boundary_location(boundary_side, direction);
 
   int contains(const vec &) const;
   int owns(const vec &) const;

@@ -615,6 +615,30 @@ double volume::rmin() const {
   abort("No rmin in these dimensions.\n");
 }
 
+double vec::project_to_boundary(direction d, double boundary_loc) {
+  switch (d) {
+  case X: return fabs(boundary_loc - x());
+  case Y: return fabs(boundary_loc - y());
+  case Z: return fabs(boundary_loc - z());
+  case R: return fabs(boundary_loc - r());
+  }
+}
+
+double volume::boundary_location(boundary_side b, direction d) {
+  if (b == High) switch (d) {
+  case X: return xmax();
+  case Y: return ymax();
+  case Z: return zmax();
+  case R: return rmax();
+  }
+  else switch (d) {
+  case X:  return xmin();
+  case Y:  return ymin();
+  case Z:  return zmin();
+  case R:  return rmin();
+  }
+}
+
 double max(double a, double b) {
   return (a>b)?a:b;
 }

@@ -202,9 +202,9 @@ void fields_chunk::step_h() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
-      if (ma->Cmain[Hy])
+      if (ma->C[Z][Hy])
         for (int z=0;z<v.nz();z++) {
-          const double C = ma->Cmain[Hy][z];
+          const double C = ma->C[Z][Hy][z];
           const double ooop_C = 1.0/(1.0+0.5*C);
           f[Hy][cmp][z] += ooop_C*(-c*(f[Ex][cmp][z+1] - f[Ex][cmp][z])
                                    - C*f[Hy][cmp][z]);
@@ -216,13 +216,13 @@ void fields_chunk::step_h() {
   } else if (v.dim == d2) {
     DOCMP {
       // Propogate Hz
-      if ((ma->Cmain[Hz] || ma->Cother[Hz])&& f[Hz][cmp])
+      if ((ma->C[X][Hz] || ma->C[Y][Hz])&& f[Hz][cmp])
         for (int x=0;x<v.nx();x++) {
           const int ix = x*(v.ny()+1);
           const int ixp1 = (x+1)*(v.ny()+1);
           for (int y=0;y<v.ny();y++) {
-            const double Cxhz = (ma->Cmain[Hz])?ma->Cmain[Hz][y+ix]:0;
-            const double Cyhz = (ma->Cother[Hz])?ma->Cother[Hz][y+ix]:0;
+            const double Cxhz = (ma->C[X][Hz])?ma->C[X][Hz][y+ix]:0;
+            const double Cyhz = (ma->C[Y][Hz])?ma->C[Y][Hz][y+ix]:0;
             const double ooop_Cxhz = 1.0/(1.0+.5*Cxhz);
             const double ooop_Cyhz = 1.0/(1.0+.5*Cyhz);
             const double dhzx = ooop_Cxhz*
@@ -242,14 +242,14 @@ void fields_chunk::step_h() {
                                    (f[Ex][cmp][y+ix+1] - f[Ex][cmp][y+ix]));
         }
       // Propogate Hx
-      if (ma->Cmain[Hx] && f[Hx][cmp])
+      if (ma->C[Y][Hx] && f[Hx][cmp])
         for (int x=1;x<=v.nx();x++) {
           const int ix = x*(v.ny()+1);
           for (int y=0;y<v.ny();y++) {
-            const double Cyhx = (ma->Cmain[Hx])?ma->Cmain[Hx][y+ix]:0;
+            const double Cyhx = ma->C[Y][Hx][y+ix];
             const double ooop_Cyhx = 1.0/(1.0+.5*Cyhx);
             f[Hx][cmp][y+ix] += ooop_Cyhx*
-              (-c*(f[Ez][cmp][y+ix] - f[Ez][cmp][y+ix-1]) - Cyhx*f[Hx][cmp][y+ix]);
+              (c*(f[Ez][cmp][y+ix+1] - f[Ez][cmp][y+ix]) - Cyhx*f[Hx][cmp][y+ix]);
           }
         }
       else if (f[Hx][cmp])
@@ -259,12 +259,12 @@ void fields_chunk::step_h() {
             f[Hx][cmp][y+ix] += c*(f[Ez][cmp][y+ix+1] - f[Ez][cmp][y+ix]);
         }
       // Propogate Hy
-      if (ma->Cmain[Hy] && f[Hy][cmp])
+      if (ma->C[X][Hy] && f[Hy][cmp])
         for (int x=0;x<v.nx();x++) {
           const int ix = x*(v.ny()+1);
           const int ixp1 = (x+1)*(v.ny()+1);
           for (int y=1;y<=v.ny();y++) {
-            const double Cxhy = (ma->Cmain[Hy])?ma->Cmain[Hy][y+ix]:0;
+            const double Cxhy = ma->C[X][Hy][y+ix];
             const double ooop_Cxhy = 1.0/(1.0+0.5*Cxhy);
             f[Hy][cmp][y+ix] += ooop_Cxhy*
               (c*(-(f[Ez][cmp][y+ixp1] - f[Ez][cmp][y+ix])) - Cxhy*f[Hy][cmp][y+ix]);
@@ -281,13 +281,13 @@ void fields_chunk::step_h() {
   } else if (v.dim == dcyl) {
     DOCMP {
       // Propogate Hr
-      if (ma->Cother[Hr])
+      if (ma->C[Z][Hr])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
             double oor = 1.0/((int)(v.origin.r()*v.a+0.5) + r);
             double mor = m*oor;
             const int ir = r*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
-              const double Czhr = ma->Cother[Hr][z+ir];
+              const double Czhr = ma->C[Z][Hr][z+ir];
               const double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
               double dhrp = c*(-it(cmp,f[Ez],z+ir)*mor);
               double hrz = f[Hr][cmp][z+ir] - f_pml[Hr][cmp][z+ir];
@@ -306,15 +306,15 @@ void fields_chunk::step_h() {
                 ((f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - it(cmp,f[Ez],z+ir)*mor);
           }
       // Propogate Hp
-      if (ma->Cmain[Hp] || ma->Cother[Hp])
+      if (ma->C[Z][Hp] || ma->C[R][Hp])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
             double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
-              const double Czhp = (ma->Cmain[Hp])?ma->Cmain[Hp][z+ir]:0;
-              const double Crhp = (ma->Cother[Hp])?ma->Cother[Hp][z+ir]:0;
+              const double Czhp = (ma->C[Z][Hp])?ma->C[Z][Hp][z+ir]:0;
+              const double Crhp = (ma->C[R][Hp])?ma->C[R][Hp][z+ir]:0;
               const double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
               const double ooop_Crhp = 1.0/(1.0+0.5*Crhp);
               const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
@@ -337,14 +337,14 @@ void fields_chunk::step_h() {
                  - (f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir]));
           }
       // Propogate Hz
-      if (ma->Cother[Hz])
+      if (ma->C[R][Hz])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
           double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
           double morph = m*oorph;
           const int ir = r*(v.nz()+1);
           const int irp1 = (r+1)*(v.nz()+1);
           for (int z=1;z<=v.nz();z++) {
-            const double Crhz = ma->Cother[Hz][z+ir];
+            const double Crhz = ma->C[R][Hz][z+ir];
             const double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
             const double dhzr =
               ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*((int)(v.origin.r()*v.a+0.5) + r+1.)-
@@ -371,9 +371,9 @@ void fields_chunk::step_h() {
       if (m == 0) {
         // Nothing needed for H.
       } else if (m == 1 && v.origin.r() == 0.0) {
-        if (ma->Cmain[Hr])
+        if (ma->C[Z][Hr])
           for (int z=0;z<v.nz();z++) {
-            const double Czhr = ma->Cmain[Hr][z];
+            const double Czhr = ma->C[Z][Hr][z];
             const double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
             const double dhrp = c*(-it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
             const double hrz = f[Hr][cmp][z] - f_pml[Hr][cmp][z];
@@ -409,9 +409,9 @@ void fields_chunk::step_e() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
-      if (ma->Cmain[Ex])
+      if (ma->C[Z][Ex])
         for (int z=1;z<=v.nz();z++) {
-          const double C = ma->Cmain[Ex][z];
+          const double C = ma->C[Z][Ex][z];
           const double inveps_plus_C = ma->inveps[Ex][z]/(1.0+0.5*ma->inveps[Ex][z]*C);
           f[Ex][cmp][z] += inveps_plus_C*(-c*(f[Hy][cmp][z] - f[Hy][cmp][z-1])
                                           - C*f[Ex][cmp][z]);
@@ -423,13 +423,13 @@ void fields_chunk::step_e() {
   } else if (v.dim == d2) {
     DOCMP {
       // Propogate Ez
-      if ((ma->Cmain[Ez] || ma->Cother[Ez])&& f[Ez][cmp])
+      if ((ma->C[X][Ez] || ma->C[Y][Ez])&& f[Ez][cmp])
         for (int x=1;x<=v.nx();x++) {
           const int ix = x*(v.ny()+1);
           const int ixm1 = (x-1)*(v.ny()+1);
           for (int y=1;y<=v.ny();y++) {
-            const double Cxez = (ma->Cmain[Ez])?ma->Cmain[Ez][y+ix]:0;
-            const double Cyez = (ma->Cother[Ez])?ma->Cother[Ez][y+ix]:0;
+            const double Cxez = (ma->C[X][Ez])?ma->C[X][Ez][y+ix]:0;
+            const double Cyez = (ma->C[Y][Ez])?ma->C[Y][Ez][y+ix]:0;
             const double inveps_plus_Cxez = ma->inveps[Ez][y+ix]/
               (1+.5*ma->inveps[Ez][y+ix]*Cxez);
             const double inveps_plus_Cyez = ma->inveps[Ez][y+ix]/
@@ -452,11 +452,11 @@ void fields_chunk::step_e() {
                (f[Hx][cmp][y+ix] - f[Hx][cmp][y+ix-1]));
         }
       // Propogate Ex
-      if (ma->Cmain[Ex] && f[Ex][cmp])
-        for (int x=1;x<=v.nx();x++) {
+      if (ma->C[Y][Ex] && f[Ex][cmp])
+        for (int x=0;x<v.nx();x++) {
           const int ix = x*(v.ny()+1);
           for (int y=1;y<=v.ny();y++) {
-            const double Cyex = (ma->Cmain[Ex])?ma->Cmain[Ex][y+ix]:0;
+            const double Cyex = ma->C[Y][Ex][y+ix];
             const double inveps_plus_Cyex = ma->inveps[Ex][y+ix]/
               (1+.5*ma->inveps[Ex][y+ix]*Cyex);
             f[Ex][cmp][y+ix] += inveps_plus_Cyex*
@@ -471,12 +471,12 @@ void fields_chunk::step_e() {
               (f[Hz][cmp][y+ix] - f[Hz][cmp][y+ix-1]);
         }
       // Propogate Ey
-      if (ma->Cmain[Ey] && f[Ey][cmp])
+      if (ma->C[X][Ey] && f[Ey][cmp])
         for (int x=1;x<=v.nx();x++) {
           const int ix = x*(v.ny()+1);
           const int ixm1 = (x-1)*(v.ny()+1);
           for (int y=0;y<v.ny();y++) {
-            const double Cxey = (ma->Cmain[Ey])?ma->Cmain[Ey][y+ix]:0;
+            const double Cxey = ma->C[X][Ey][y+ix];
             const double inveps_plus_Cxey = ma->inveps[Ey][y+ix]/
               (1+.5*ma->inveps[Ey][y+ix]*Cxey);
             f[Ey][cmp][y+ix] += inveps_plus_Cxey*
@@ -495,15 +495,15 @@ void fields_chunk::step_e() {
   } else if (v.dim == dcyl) {
     DOCMP {
       // Propogate Ep
-      if (ma->Cmain[Ep] || ma->Cother[Ep])
+      if (ma->C[Z][Ep] || ma->C[R][Ep])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
             const double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
             const double mor = m*oor;
             const int ir = r*(v.nz()+1);
             const int irm1 = (r-1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++) {
-              const double Czep = (ma->Cmain[Ep])?ma->Cmain[Ep][z+ir]:0;
-              const double Crep = (ma->Cother[Ep])?ma->Cother[Ep][z+ir]:0;
+              const double Czep = (ma->C[Z][Ep])?ma->C[Z][Ep][z+ir]:0;
+              const double Crep = (ma->C[R][Ep])?ma->C[R][Ep][z+ir]:0;
               const double inveps_plus_Czep = ma->inveps[Ep][z+ir]/
                 (1+.5*ma->inveps[Ep][z+ir]*Czep);
               const double inveps_plus_Crep = ma->inveps[Ep][z+ir]/
@@ -526,14 +526,14 @@ void fields_chunk::step_e() {
                  - (f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
           }
       // Propogate Ez
-      if (ma->Cother[Ez])
+      if (ma->C[R][Ez])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
           double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
           double mor = m*oor;
           const int ir = r*(v.nz()+1);
           const int irm1 = (r-1)*(v.nz()+1);
           for (int z=0;z<v.nz();z++) {
-            const double Crez = ma->Cother[Ez][z+ir];
+            const double Crez = ma->C[R][Ez][z+ir];
             const double inveps_plus_Crez = ma->inveps[Ez][z+ir]/
               (1+.5*ma->inveps[Ez][z+ir]*Crez);
 
@@ -560,14 +560,14 @@ void fields_chunk::step_e() {
                - it(cmp,f[Hr],z+ir)*mor);
         }
       // Propogate Er
-      if (ma->Cother[Er])
+      if (ma->C[Z][Er])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
             double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++) {
-              const double Czer = ma->Cother[Er][z+ir];
+              const double Czer = ma->C[Z][Er][z+ir];
               const double inveps_plus_Czer = ma->inveps[Er][z+ir]/
                 (1+.5*ma->inveps[Er][z+ir]*Czer);
               double derp = c*ma->inveps[Er][z+ir]*(it(cmp,f[Hz],z+ir)*morph);
@@ -592,9 +592,9 @@ void fields_chunk::step_e() {
         for (int z=0;z<=v.nz();z++)
           f[Ez][cmp][z] += c*ma->inveps[Ez][z]*(f[Hp][cmp][z] + it(cmp,f[Hr],z)*m);
       } else if (m == 1 && v.origin.r() == 0.0) {
-        if (ma->Cmain[Ep])
+        if (ma->C[Z][Ep])
           for (int z=1;z<=v.nz();z++) {
-            const double Czep = ma->Cmain[Ep][z];
+            const double Czep = ma->C[Z][Ep][z];
             const double inveps_plus_Czep = ma->inveps[Ep][z]/
               (1+.5*ma->inveps[Ep][z]*Czep);
             const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
