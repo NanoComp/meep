@@ -99,8 +99,14 @@ void fields::get_point(monitor_point *pt, const vec &loc) {
   pt->loc = loc;
   pt->t = t*inva*c;
   for (int c=0;c<10;c++)
-    if (v.has_field((component)c))
-      pt->f[c] = getcm(f[c],v.index((component)c,loc));
+    if (v.has_field((component)c)) {
+      int ind[8];
+      double w[8];
+      v.interpolate((component)c,loc,ind,w);
+      pt->f[c] = 0;
+      for (int i=0;i<8&&w[i];i++)
+        pt->f[c] += getcm(f[c],ind[i]);
+    }
 }
 
 monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) {

@@ -130,7 +130,7 @@ int volume::has_field(component c) const {
 }
 
 int volume::index(component c, const vec &p) const {
-  vec offset = p - origin - yee_shift(c);
+  const vec offset = p - origin - yee_shift(c);
   int theindex = -1;
   if (dim == dcyl) {
     theindex = (int)((offset.z() + offset.r()*(nz()+1))*a + 0.5);
@@ -141,6 +141,36 @@ int volume::index(component c, const vec &p) const {
     exit(1);
   }
   return theindex;
+}
+
+void volume::interpolate(component c, const vec &p,
+                         int indices[8], double weights[8]) const {
+  const vec offset = p - origin - yee_shift(c);
+  if (dim == d1) {
+    indices[0] = (int)(offset.z()*a);
+    if (indices[0] < nz()) {
+      indices[1] = indices[0] + 1;
+      const double lowfrac = offset.z()*a - indices[0];
+      weights[0] = lowfrac;
+      weights[1] = 1.0 - lowfrac;
+    } else {
+      weights[0] = 1.0;
+      weights[1] = 0.0;
+      indices[1] = 0;
+    }
+    for (int i=2;i<8;i++) {
+      indices[i] = 0;
+      weights[i] = 0;
+    }
+  } else {
+    // by default use the 'index' routine.
+    indices[0] = index(c,p);
+    weights[0] = 1.0;
+    for (int i=1;i<8;i++) {
+      indices[i] = 0;
+      weights[i] = 0;
+    }
+  }
 }
 
 double volume::dv(component c, int ind) const {

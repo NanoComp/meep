@@ -92,7 +92,8 @@ class volume {
   vec dz() const;
 
   int ntot() const { return the_ntot; }
-  int index(component, const vec &) const;
+  int index(component, const vec &) const; // DEPRECATED!
+  void interpolate(component, const vec &, int indices[8], double weights[8]) const;
   double dv(component c, int index) const;
   vec loc(component, int index) const;
   vec yee_shift(component) const;
