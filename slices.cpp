@@ -290,12 +290,9 @@ void fields::output_real_imaginary_slices(const volume &what, const char *name) 
   for (int cmp=0;cmp<2;cmp++) {
     for (int c=0;c<10;c++)
       if (v.has_field((component)c)) {
-        if (a == 1) snprintf(n, buflen, "%s/%s%s%s-%08.0f.sli",
-                             outdir, nname, component_name((component)c),
-                             r_or_i, t*inva*c);
-        else snprintf(n, buflen, "%s/%shr%s-%09.2f.sli",
-                      outdir, nname, component_name((component)c),
-                      r_or_i, t*inva*c);
+        snprintf(n, buflen, "%s/%shr%s-%09.2f.sli",
+                 outdir, nname, component_name((component)c),
+                 r_or_i, t*inva*c);
         output_slice((component)c, f[c][cmp], v, what, n);
       }
     r_or_i = "-im";
@@ -369,10 +366,7 @@ void fields::eps_slices(const volume &what, const char *name) {
     exit(1);
   }
   char time_step_string[buflen];
-  if (a == 1)
-    snprintf(time_step_string, buflen, "%08.0f", time());
-  else
-    snprintf(time_step_string, buflen, "%09.2f", time());
+  snprintf(time_step_string, buflen, "%09.2f", time());
   {
     polarization *p = pol;
     int polnum = 0;
