@@ -661,10 +661,12 @@ void fields::eps_envelope(const geometric_volume &what, const char *name) {
                                   user_volume, what,
                                   out, n, v.eps_component());
       for (double z = 0.0 + inva; z < user_volume.ntot(); z += inva)
-        if (real(get_field(c, vec(z))) > real(get_field(c, vec(z)-inva)) &&
-            real(get_field(c, vec(z))) > real(get_field(c, vec(z)+inva)) &&
-            real(get_field(c, vec(z))) > 0.0)
-          master_fprintf(out, "%lg\t0\t%lg\tP\n", z, real(get_field(c, vec(z))));
+        if (what.contains(vec(z))) {
+          const double fhere = real(get_field(c, vec(z)));
+          if (fhere > 0.0 && fhere > real(get_field(c, vec(z)-inva)) &&
+              fhere > real(get_field(c, vec(z)+inva)))
+            master_fprintf(out, "%lg\t0\t%lg\tP\n", z, fhere);
+        }
       all_wait();
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
