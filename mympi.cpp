@@ -239,14 +239,16 @@ void i_flush(file *f) {
 }
 
 #ifdef HAVE_MPI
-static const int buflen = 8192;
-static char buf[buflen];
+static const int buflen = 1 << 20;
+static char *buf = NULL;
 #endif
 
 void i_fprintf(file *f, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 #ifdef HAVE_MPI
+  if (!buf) buf = new char[buflen];
+  if (!buf) abort("Can't allocate buffer in i_fprintf!\n");
   int written = vsnprintf(buf, buflen, fmt, ap);
   if (written <= 0 || written > buflen)
     abort("Aaack can't write that much in i_fprintf!\n");
@@ -263,9 +265,11 @@ void master_fprintf(file *f, const char *fmt, ...) {
   va_start(ap, fmt);
   if (my_rank() == 0) {
 #ifdef HAVE_MPI
+    if (!buf) buf = new char[buflen];
+    if (!buf) abort("Can't allocate buffer in master_fprintf!\n");
     int written = vsnprintf(buf, buflen, fmt, ap);
     if (written <= 0 || written > buflen)
-      abort("Aaack can't write that much in i_fprintf!\n");
+      abort("Aaack can't write that much in master_fprintf!\n");
     MPI_Status stat;
     MPI_File_write_shared((MPI_File)f, buf, written, MPI_CHAR, &stat);
 #else

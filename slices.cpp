@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdarg.h>
 
 #include "meep.h"
 #include "meep_internals.h"
@@ -52,26 +53,73 @@ complex<double> fields_chunk::field_mean(component c, bool abs_real,
   return themean;
 }
 
+const int bufsize = 1<<16;
+
+class bufprint {
+public:
+  bufprint(file *out);
+  ~bufprint();
+  void flushme();
+  void printf(char *fmt, ...);
+private:
+  file *f;
+  char *buf;
+  int inbuf;
+};
+
+bufprint::bufprint(file *out) {
+  f = out;
+  buf = new char[bufsize];
+  if (!buf) abort("not enough memory for a buffer!");
+  inbuf = 0;
+}
+
+bufprint::~bufprint() {
+  flushme();
+}
+
+void bufprint::flushme() {
+  if (inbuf) {
+    buf[inbuf] = 0;
+    i_fprintf(f, "%s", buf);
+    inbuf = 0;
+  }
+}
+
+void bufprint::printf(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  int written = vsnprintf(buf + inbuf, bufsize - inbuf - 1, fmt, ap);
+  if (written <= 0 || written > bufsize - inbuf - 1) {
+    flushme();
+    written = vsnprintf(buf + inbuf, bufsize - inbuf - 1, fmt, ap);
+  }
+  inbuf += written;
+  if (inbuf > bufsize/2) flushme();
+}
+
 static void output_complex_slice(component m, double *f[2],
                                  complex<double> phshift, const volume &v,
                                  const geometric_volume &what, file *out) {
   if (!f[0] || ! f[1]) return; // Field doesn't exist...
   double c = real(phshift), s = imag(phshift);
+  bufprint buf(out);
   for (int i=0;i<v.ntot();i++) {
     if (what.contains(v.loc(m,i))) {
       v.loc(m,i).print(out);
-      i_fprintf(out, "\t%lg\n", c*f[0][i]+s*f[1][i]);
+      buf.printf("\t%lg\n", c*f[0][i]+s*f[1][i]);
     }
-  }
+  }  
 }
 
 static void output_slice(component m, const double *f, const volume &v,
                          const geometric_volume &what, file *out) {
   if (!f) return; // Field doesn't exist...
+  bufprint buf(out);
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i))) {
       v.loc(m,i).print(out);
-      i_fprintf(out, "\t%.18lg\n", f[i]);
+      buf.printf("\t%.18lg\n", f[i]);
     }
 }
 
@@ -80,23 +128,24 @@ static const double default_eps_size = 1000.0;
 
 static void eps_header(double xmin, double ymin, double xmax, double ymax,
                        double fmax, double a, file *out, const char *name) {
-  i_fprintf(out, "%%!PS-Adobe-3.0 EPSF\n");
+  bufprint buf(out);
+  buf.printf("%%!PS-Adobe-3.0 EPSF\n");
   double size = xmax - xmin + ymax - ymin;
-  i_fprintf(out, "%%%%BoundingBox: 0 0 %lg %lg\n",
+  buf.printf("%%%%BoundingBox: 0 0 %lg %lg\n",
            (xmax-xmin)*default_eps_size/size, (ymax-ymin)*default_eps_size/size);
-  i_fprintf(out, "gsave\n");
-  i_fprintf(out, "gsave\n");
-  i_fprintf(out, "/title (%s) def\n", name);
-  i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
-  i_fprintf(out, "%lg %lg translate\n", -xmin, -ymin);
-  i_fprintf(out, "/max %lg def\n", fmax);
+  buf.printf("gsave\n");
+  buf.printf("gsave\n");
+  buf.printf("/title (%s) def\n", name);
+  buf.printf("%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
+  buf.printf("%lg %lg translate\n", -xmin, -ymin);
+  buf.printf("/max %lg def\n", fmax);
   const double dx = 1.0/min(a, default_eps_resolution);
-  i_fprintf(out, "/dx %lg def\n", dx);
-  i_fprintf(out, "/hdx %lg def\n", dx*0.5);
-  i_fprintf(out, "dx 10 div setlinewidth\n");
-  i_fprintf(out, "/dotrad %lg def\n", dx*0.25);
-  i_fprintf(out, "1 setlinecap\n");
-  i_fprintf(out, "/P {\n\
+  buf.printf("/dx %lg def\n", dx);
+  buf.printf("/hdx %lg def\n", dx*0.5);
+  buf.printf("dx 10 div setlinewidth\n");
+  buf.printf("/dotrad %lg def\n", dx*0.25);
+  buf.printf("1 setlinecap\n");
+  buf.printf("/P {\n\
     max div\n\
     dup 0 lt {\n\
         1 add\n\
@@ -108,41 +157,41 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
     setrgbcolor\n\
     newpath\n\
     moveto\n");
-  i_fprintf(out, "    %lg %lg rmoveto\n", dx*0.5, dx*0.5);
-  i_fprintf(out, "    0 %lg rlineto\n", -dx);
-  i_fprintf(out, "    %lg 0 rlineto\n", -dx);
-  i_fprintf(out, "    0 dx rlineto\n", dx);
-  i_fprintf(out, "    dx 0 rlineto\n", dx);
-  i_fprintf(out, "    gsave\n\
+  buf.printf("    %lg %lg rmoveto\n", dx*0.5, dx*0.5);
+  buf.printf("    0 %lg rlineto\n", -dx);
+  buf.printf("    %lg 0 rlineto\n", -dx);
+  buf.printf("    0 dx rlineto\n", dx);
+  buf.printf("    dx 0 rlineto\n", dx);
+  buf.printf("    gsave\n\
     fill\n\
     grestore\n");
-  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_fprintf(out, "    stroke\n\
+  buf.printf("    %lg setlinewidth\n", dx*0.1);
+  buf.printf("    stroke\n\
 } def\n\
 /LV {\n\
     0 0 0 setrgbcolor\n\
     moveto\n");
-  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_fprintf(out, "    0 %lg rmoveto\n", dx*0.5);
-  i_fprintf(out, "    0 %lg rlineto\n", -dx);
-  i_fprintf(out, "    stroke\n\
+  buf.printf("    %lg setlinewidth\n", dx*0.1);
+  buf.printf("    0 %lg rmoveto\n", dx*0.5);
+  buf.printf("    0 %lg rlineto\n", -dx);
+  buf.printf("    stroke\n\
 } def\n\
 /LH {\n");
-  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_fprintf(out, "    0 0 0 setrgbcolor\n\
+  buf.printf("    %lg setlinewidth\n", dx*0.1);
+  buf.printf("    0 0 0 setrgbcolor\n\
     moveto\n");
-  i_fprintf(out, "    %lg 0 rmoveto\n", dx*0.5);
-  i_fprintf(out, "    %lg 0 rlineto\n", -dx);
-  i_fprintf(out, "    stroke\n\
+  buf.printf("    %lg 0 rmoveto\n", dx*0.5);
+  buf.printf("    %lg 0 rlineto\n", -dx);
+  buf.printf("    stroke\n\
 } def\n");
-  i_fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
-  i_fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
-  i_fprintf(out, "    /D { moveto\n\
+  buf.printf("    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
+  buf.printf("    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
+  buf.printf("    /D { moveto\n\
     %lg setlinewidth\n\
     0 0.8 0 setrgbcolor [0 %lg] 0 setdash\n\
     lineto stroke } def\n", 0.6*dx, 3*dx);
   // B for Boundary...
-  i_fprintf(out, "/B {\n\
+  buf.printf("/B {\n\
     0 0 0 setrgbcolor \n\
     newpath dotrad 0 360 arc fill \n\
 } def\n");
@@ -150,65 +199,68 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
 
 static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
                           double fmax, double a, file *out, const char *name) {
-  i_fprintf(out, "%%!PS-Adobe-3.0 EPSF\n");
+  bufprint buf(out);
+  buf.printf("%%!PS-Adobe-3.0 EPSF\n");
   const double size = xmax - xmin;
   const double fsize = (5.0 < 0.2*size)?0.2*size:5.0;
   const double dx = 1.0/a;
-  i_fprintf(out, "%%%%BoundingBox: 0 0 %lg %lg\n",
+  buf.printf("%%%%BoundingBox: 0 0 %lg %lg\n",
            (xmax-xmin)*default_eps_size/size, default_eps_size*fsize/size);
-  i_fprintf(out, "gsave\n");
-  i_fprintf(out, "gsave\n");
-  i_fprintf(out, "/title (%s) def\n", name);
-  i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
-  i_fprintf(out, "%lg %lg translate\n", -xmin, 0.5*fsize);
-  i_fprintf(out, "%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
+  buf.printf("gsave\n");
+  buf.printf("gsave\n");
+  buf.printf("/title (%s) def\n", name);
+  buf.printf("%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
+  buf.printf("%lg %lg translate\n", -xmin, 0.5*fsize);
+  buf.printf("%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
             xmin, xmax, dx*0.1); 
-  i_fprintf(out, "/height %lg def\n", (default_eps_size*0.5*fsize)/size);
-  i_fprintf(out, "/max %lg def\n", fmax);
-  i_fprintf(out, "/fscale %lg def\n", 2.2*fmax/fsize);
-  i_fprintf(out, "/dotrad %lg def\n", dx);
-  i_fprintf(out, "/dx %lg def\n", dx);
-  i_fprintf(out, "/hdx %lg def\n", dx*0.5);
-  i_fprintf(out, "dx 10 div setlinewidth\n");
-  i_fprintf(out, "1 setlinecap\n");
-  i_fprintf(out, "/P {\n\
+  buf.printf("/height %lg def\n", (default_eps_size*0.5*fsize)/size);
+  buf.printf("/max %lg def\n", fmax);
+  buf.printf("/fscale %lg def\n", 2.2*fmax/fsize);
+  buf.printf("/dotrad %lg def\n", dx);
+  buf.printf("/dx %lg def\n", dx);
+  buf.printf("/hdx %lg def\n", dx*0.5);
+  buf.printf("dx 10 div setlinewidth\n");
+  buf.printf("1 setlinecap\n");
+  buf.printf("/P {\n\
     fscale div exch pop \n\
     newpath dotrad 0 360 arc fill \n\
 } def\n");
-  i_fprintf(out, "/LV {\n\
+  buf.printf("/LV {\n\
     0.8 0.8 0 setrgbcolor\n\
     pop dup height moveto height neg lineto\n");
-  i_fprintf(out, "    %lg setlinewidth\n", dx*0.5);
-  i_fprintf(out, "    stroke\n\
+  buf.printf("    %lg setlinewidth\n", dx*0.5);
+  buf.printf("    stroke\n\
 } def\n\
 /LH {\n");
-  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_fprintf(out, "    0 0 0 setrgbcolor\n\
+  buf.printf("    %lg setlinewidth\n", dx*0.1);
+  buf.printf("    0 0 0 setrgbcolor\n\
     moveto\n");
-  i_fprintf(out, "    %lg 0 rmoveto\n", 10*dx*0.5);
-  i_fprintf(out, "    %lg 0 rlineto\n", -10*dx);
-  i_fprintf(out, "    stroke\n\
+  buf.printf("    %lg 0 rmoveto\n", 10*dx*0.5);
+  buf.printf("    %lg 0 rlineto\n", -10*dx);
+  buf.printf("    stroke\n\
 } def\n");
-  i_fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
-  i_fprintf(out, "    /D { moveto\n\
+  buf.printf("    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
+  buf.printf("    /D { moveto\n\
     %lg setlinewidth\n\
     0 0.8 0 setrgbcolor [0 %lg] 0 setdash\n\
     lineto stroke } def\n", 0.6*dx, 3*dx);
 }
 
 static void eps_trailer(file *out) {
-  i_fprintf(out, "grestore\n");
-  i_fprintf(out, " 0.25 0 0.5 setrgbcolor\n");
-  i_fprintf(out, "/Times-Roman findfont 16 scalefont setfont\n");
-  i_fprintf(out, "newpath 5 5 moveto title show\n");
-  i_fprintf(out, "grestore\n");
-  i_fprintf(out, "showpage\n");
-  i_fprintf(out, "%%%%Trailer\n");
-  i_fprintf(out, "%%%%EOF\n");
+  bufprint buf(out);
+  buf.printf("grestore\n");
+  buf.printf(" 0.25 0 0.5 setrgbcolor\n");
+  buf.printf("/Times-Roman findfont 16 scalefont setfont\n");
+  buf.printf("newpath 5 5 moveto title show\n");
+  buf.printf("grestore\n");
+  buf.printf("showpage\n");
+  buf.printf("%%%%Trailer\n");
+  buf.printf("%%%%EOF\n");
 }
 
 // static void eps_dotted(file *out, component m, const double *f, const volume &v,
 //                        const geometric_volume &what) {
+//   bufprint buf(out);
 //   if (!f) return; // Field doesn't exist...
 //   for (int i=0;i<v.ntot();i++)
 //     if (what.contains(v.loc(m,i)))
@@ -218,11 +270,11 @@ static void eps_trailer(file *out) {
 //           ivec next = v.iloc(m,i)+ivec(2,0);
 //           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
 //               f[i]*f[v.index(m,next)] == 0.0)
-//             i_fprintf(out, "%lg\t%lg\tDH\n", v[next].z(), v[next].r() - 0.5/v.a);
+//             buf.printf("%lg\t%lg\tDH\n", v[next].z(), v[next].r() - 0.5/v.a);
 //           next = v.iloc(m,i)+ivec(0,2);
 //           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
 //               f[i]*f[v.index(m,next)] == 0.0)
-//             i_fprintf(out, "%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
+//             buf.printf("%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
 //           break;
 //         }
 //       case D2:
@@ -230,11 +282,11 @@ static void eps_trailer(file *out) {
 //           ivec next = v.iloc(m,i)+ivec2d(2,0);
 //           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
 //               f[i]*f[v.index(m,next)] == 0.0)
-//             i_fprintf(out, "%lg\t%lg\tDH\n", v[next].x() - 0.5/v.a, v[next].y());
+//             buf.printf("%lg\t%lg\tDH\n", v[next].x() - 0.5/v.a, v[next].y());
 //           next = v.iloc(m,i)+ivec2d(0,2);
 //           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
 //               f[i]*f[v.index(m,next)] == 0.0)
-//             i_fprintf(out, "%lg\t%lg\tDV\n", v[next].x(), v[next].y() - 0.5/v.a);
+//             buf.printf("%lg\t%lg\tDV\n", v[next].x(), v[next].y() - 0.5/v.a);
 //           break;
 //         }
 //       case D1: case D3: break;
@@ -242,6 +294,7 @@ static void eps_trailer(file *out) {
 // }
 
 void fields::outline_chunks(file *out) {
+  bufprint buf(out);
   if (v.dim == D1) return;
   if (my_rank()) return;
   for (int i=0;i<num_chunks;i++) {
@@ -266,14 +319,15 @@ void fields::outline_chunks(file *out) {
       yhi = chunks[i]->v.boundary_location(High,Y);
     case D1: abort("Error in outline chunks 1D.\n"); break;
     }
-    i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xlo, yhi, xhi, yhi);
-    i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xhi, yhi, xhi, ylo);
+    buf.printf("%lg\t%lg\t%lg\t%lg\tD\n", xlo, yhi, xhi, yhi);
+    buf.printf("%lg\t%lg\t%lg\t%lg\tD\n", xhi, yhi, xhi, ylo);
   }
 }
 
 static void eps_outline(component m, const double *f,
                         const volume &v, const geometric_volume &what,
                         symmetry S, int symnum, file *out) {
+  bufprint buf(out);
   if (!f) return; // Field doesn't exist...
   for (int i=0;i<v.ntot();i++) {
     const vec here = S.transform(v.loc(m,i),symnum);
@@ -283,11 +337,11 @@ static void eps_outline(component m, const double *f,
         ivec next = v.iloc(m,i)+ivec(2,0);
         vec nextrot = v[S.transform(next - ivec(1,0),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          i_fprintf(out, "%lg\t%lg\tLH\n", nextrot.z(), nextrot.r());
+          buf.printf("%lg\t%lg\tLH\n", nextrot.z(), nextrot.r());
         next = v.iloc(m,i)+ivec(0,2);
         nextrot = v[S.transform(next - ivec(0,1),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), nextrot.r());
+          buf.printf("%lg\t%lg\tLV\n", nextrot.z(), nextrot.r());
         break;
       }
       case D2: {
@@ -295,29 +349,29 @@ static void eps_outline(component m, const double *f,
         vec nextrot = v[(S.transform(next - ivec2d(0,1),symnum))];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
+            buf.printf("%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
         next = v.iloc(m,i)-ivec2d(0,2);
         nextrot = v[S.transform(next + ivec2d(0,1),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
+            buf.printf("%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
         next = v.iloc(m,i)+ivec2d(2,0);
         nextrot = v[S.transform(next - ivec2d(1,0),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
+            buf.printf("%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         next = v.iloc(m,i)-ivec2d(2,0);
         nextrot = v[S.transform(next + ivec2d(1,0),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
+            buf.printf("%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         break;
       }
       case D1: {
         const ivec next = v.iloc(m,i)+ivec(2);
         const vec nextrot = v[S.transform(next - ivec(1),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), 0.0);
+          buf.printf("%lg\t%lg\tLV\n", nextrot.z(), 0.0);
         break;
       }
       case D3: abort("Error in eps_outline.\n"); break;
@@ -328,6 +382,7 @@ static void eps_outline(component m, const double *f,
 static void output_complex_eps_body(component m, double *f[2], const volume &v,
                                     symmetry S, int symnum,
                                     const geometric_volume &what, file *out) {
+  bufprint buf(out);
   if (!f[0] || !f[1]) return; // Field doesn't exist...
   const complex<double> ph = S.phase_shift(m, symnum);
   for (int i=0;i<v.ntot();i++) {
@@ -340,9 +395,9 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
       case D2: x = here.x(); y = here.y(); break;
       case D3: x = here.x(); y = here.y(); break; // FIXME use right directions!
       }
-      if (f[1]) i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
+      if (f[1]) buf.printf("%lg\t%lg\t%lg\tP\n", x, y,
                          real(ph)*f[0][i] - imag(ph)*f[1][i]);
-      else i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
+      else buf.printf("%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
     }
   }
 }
@@ -350,6 +405,7 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
 void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
                                    const geometric_volume &what, file *out,
                                    complex<double> phshift) {
+  bufprint buf(out);
   if (f[c][0]) {
     if (v.a <= default_eps_resolution) {
       output_complex_eps_body(c, f[c], v, S, sn, what, out);
@@ -375,7 +431,7 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
             if (v.contains(S.transform(ilocs[i],sn)))
               fhere += w[i]*real(phshift*get_field(c,ilocs[i]));
           if (fhere != 0.0) // save space by leaving out blanks.
-            i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
+            buf.printf("%lg\t%lg\t%lg\tP\n", x, y, fhere);
         }
       }
     }
@@ -386,6 +442,7 @@ void fields_chunk::output_eps_body(const polarizability_identifier &p,
                                    component c, const symmetry &S, int sn,
                                    const geometric_volume &what, file *out,
                                    complex<double> phshift) {
+  bufprint buf(out);
   if (f[c][0]) {
     if (v.a <= default_eps_resolution) {
       output_complex_eps_body(c, f[c], v, S, sn, what, out);
@@ -411,7 +468,7 @@ void fields_chunk::output_eps_body(const polarizability_identifier &p,
             if (v.contains(S.transform(ilocs[i],sn)))
               fhere += w[i]*real(phshift*get_polarization_field(p,c,ilocs[i]));
           if (fhere != 0.0) // save space by leaving out blanks.
-            i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
+            buf.printf("%lg\t%lg\t%lg\tP\n", x, y, fhere);
         }
       }
     }
@@ -597,14 +654,17 @@ void fields::eps_energy_slice(const geometric_volume &what, const char *name) {
     output_complex_eps_header(v.eps_component(), fmax, user_volume,
                               what, out, n, v.eps_component());
   if (v.dim != D1) abort("Still only works in 1D.  :( \n");
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      for (int sn=0;sn<S.multiplicity();sn++)
-        for (int n=0;n<chunks[i]->v.ntot();n++) {
-          const ivec here = chunks[i]->v.iloc(v.eps_component(), n);
-          i_fprintf(out, "%lg\t0\t%lg\tP\n", chunks[i]->v[S.transform(here,sn)].z(),
-                    chunks[i]->get_polarization_energy(here));
-        }
+  {
+    bufprint buf(out);
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->is_mine())
+        for (int sn=0;sn<S.multiplicity();sn++)
+          for (int n=0;n<chunks[i]->v.ntot();n++) {
+            const ivec here = chunks[i]->v.iloc(v.eps_component(), n);
+            buf.printf("%lg\t0\t%lg\tP\n", chunks[i]->v[S.transform(here,sn)].z(),
+                       chunks[i]->get_polarization_energy(here));
+          }
+  }
   all_wait();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -647,14 +707,17 @@ void fields::eps_energy_slice(const polarizability_identifier &p,
     output_complex_eps_header(v.eps_component(), fmax, user_volume,
                               what, out, n, v.eps_component());
   if (v.dim != D1) abort("Still only works in 1D.  :( \n");
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      for (int sn=0;sn<S.multiplicity();sn++)
-        for (int n=0;n<chunks[i]->v.ntot();n++) {
-          const ivec here = chunks[i]->v.iloc(v.eps_component(), n);
-          i_fprintf(out, "%lg\t0\t%lg\tP\n", chunks[i]->v[S.transform(here,sn)].z(),
-                    chunks[i]->get_polarization_energy(p, here));
-        }
+  {
+    bufprint buf(out);
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->is_mine())
+        for (int sn=0;sn<S.multiplicity();sn++)
+          for (int n=0;n<chunks[i]->v.ntot();n++) {
+            const ivec here = chunks[i]->v.iloc(v.eps_component(), n);
+            buf.printf("%lg\t0\t%lg\tP\n", chunks[i]->v[S.transform(here,sn)].z(),
+                       chunks[i]->get_polarization_energy(p, here));
+          }
+  }
   all_wait();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
