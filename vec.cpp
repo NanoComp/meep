@@ -364,6 +364,7 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
 
 double volume::dv(component c, int ind) const {
   const double pi = 3.141592653589793238462643383276L;
+  if (!owns(loc(c, ind))) return 0.0;
   switch (dim) {
   case dcyl: {
     const double r = loc(c,ind).r();
