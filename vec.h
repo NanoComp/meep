@@ -319,11 +319,12 @@ class volume {
   int index(component, const ivec &) const;
   ivec round_vec(const vec &) const;
   void interpolate(component, const vec &, int indices[8], double weights[8]) const;
+  void interpolate(component, const vec &, ivec locs[8], double weights[8]) const;
 
-  void interpolate_cyl(component c, const vec &p, int m,
-                       int indices[8], double weights[8]) const;
+  void interpolate_cyl(component c, const vec &p,
+                       ivec locs[8], double weights[8], int m=0) const;
   void interpolate_fancy(component c, const vec &p,
-                         int indices[8], double weights[8]) const;
+                         ivec locs[8], double weights[8]) const;
 
   geometric_volume dV(component c, int index) const;
   geometric_volume dV(const ivec &) const;

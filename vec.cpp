@@ -314,17 +314,52 @@ static inline void stupidsort(int *ind, double *w, int l) {
   }
 }
 
+static inline void stupidsort(ivec *locs, double *w, int l) {
+  while (l) {
+    if (fabs(w[0]) < 2e-15) {
+      w[0] = w[l-1];
+      locs[0] = locs[l-1];
+      w[l-1] = 0.0;
+      locs[l-1] = 0;
+    } else {
+      w += 1;
+      locs += 1;
+    }
+    l -= 1;
+  }
+}
+
+void volume::interpolate(component c, const vec &p,
+                         ivec locs[8], double weights[8]) const {
+  if (dim != Dcyl) {
+    interpolate_fancy(c, p, locs, weights);
+  } else {
+    interpolate_cyl(c, p, locs, weights);
+  }
+}
+
 void volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
-  if (dim != Dcyl) {
-    interpolate_fancy(c, p, indices, weights);
-  } else if (dim == Dcyl) {
-    interpolate_cyl(c, p, 0, indices, weights);
-  } else {
-    abort("Can't interpolate in these dimensions.\n");
+  ivec locs[8];
+  interpolate(c, p, locs, weights);
+  for (int i=0;i<8&&weights[i];i++)
+    if (!owns(locs[i])) weights[i] = 0.0;
+  stupidsort(locs, weights, 8);
+  for (int i=0;i<8&&weights[i];i++)
+    indices[i] = index(c, locs[i]);
+  if (!contains(p) && weights[0]) {
+    printf("Error at point %lg %lg\n", p.r(), p.z());
+    printf("Interpolated to point %d %d\n", locs[0].r(), locs[0].z());
+    printf("Or in other words... %lg %lg\n",
+           operator[](locs[0]).r(), operator[](locs[0]).z());
+    printf("I %s own the interpolated point.\n",
+           owns(locs[0])?"actually":"don't");
+    print();
+    abort("Error made in interpolation of %s--fix this bug!!!\n",
+          component_name(c));
   }
   // Throw out out of range indices:
-  for (int i=0;i<8;i++)
+  for (int i=0;i<8&&weights[i];i++)
     if (indices[0] < 0 || indices[0] >= ntot()) weights[i] = 0.0;
   // Stupid very crude code to compactify arrays:
   stupidsort(indices, weights, 8);
@@ -333,143 +368,32 @@ void volume::interpolate(component c, const vec &p,
           component_name(c));
 }
 
-void volume::interpolate_cyl(component c, const vec &p, int m,
-                             int indices[8], double weights[8]) const {
-  const double ir = (p.r() - yee_shift(c).r())*a;
-  const double iz = (p.z() - yee_shift(c).z())*a;
-  // (0,0) must be on grid!
-  const int ioriginr = (int) (origin.r()*a + 0.5);
-  const int ioriginz = (int) (origin.z()*a + 0.5);
-  int irlo = (int)ir - ioriginr, izlo = (int)iz - ioriginz,
-    irhi = irlo+1, izhi = izlo+1;
-  const double dr = p.r()*a - (ioriginr + irlo + 0.5) - yee_shift(c).r()*a;
-  const double dz = p.z()*a - (ioriginz + izlo + 0.5) - yee_shift(c).z()*a;
-  for (int i=0;i<8;i++) indices[i] = 0;
-  for (int i=0;i<8;i++) weights[i] = 0;
-  // Tabulate the actual weights:
-  if (dr+dz > 0.0) {
-    if (dr-dz > 0.0) { // North
-      weights[0] = (1-2*dr)*0.25;
-      weights[1] = (1-2*dr)*0.25;
-      weights[2] = 2*dr*(0.5-dz) + (1-2*dr)*0.25;
-      weights[3] = 2*dr*(0.5+dz) + (1-2*dr)*0.25;
-    } else { // East
-      weights[0] = (1-2*dz)*0.25;
-      weights[2] = (1-2*dz)*0.25;
-      weights[1] = 2*dz*(0.5-dr) + (1-2*dz)*0.25;
-      weights[3] = 2*dz*(0.5+dr) + (1-2*dz)*0.25;
-    }
-  } else {
-    if (dr-dz > 0.0) { // West
-      weights[3] = (1+2*dz)*0.25;
-      weights[1] = (1+2*dz)*0.25;
-      weights[0] = -2*dz*(0.5-dr) + (1+2*dz)*0.25;
-      weights[2] = -2*dz*(0.5+dr) + (1+2*dz)*0.25;
-    } else { // South
-      weights[2] = (1+2*dr)*0.25;
-      weights[3] = (1+2*dr)*0.25;
-      weights[0] = -2*dr*(0.5-dz) + (1+2*dr)*0.25;
-      weights[1] = -2*dr*(0.5+dz) + (1+2*dr)*0.25;
-    }
-  }
-  // These are the four nearest neighbor points:
-  indices[0] = izlo + (1+nz())*irlo; // SW
-  indices[1] = izhi + (1+nz())*irlo; // SE
-  indices[2] = izlo + (1+nz())*irhi; // NW
-  indices[3] = izhi + (1+nz())*irhi; // NE
-  // Figure out which of these points is off the grid in z direction:
-  switch ((component)c) {
-  case Ep: case Er: case Hz:
-    if (izlo <= 0 || izlo > nz()) {
-      weights[0] = 0;
-      weights[2] = 0;
-    }
-    if (izhi <= 0 || izhi > nz()) {
-      weights[1] = 0;
-      weights[3] = 0;
-    }
-    break;
-  case Hp: case Hr: case Ez:
-    if (izlo < 0 || izlo >= nz()) {
-      weights[0] = 0;
-      weights[2] = 0;
-    }
-    if (izhi < 0 || izhi >= nz()) {
-      weights[1] = 0;
-      weights[3] = 0;
-    }
-  }
-  // Figure out which of the points is off the grid in r direction:
-  const int have_r_zero = origin.r() == 0.0;
-  const int odd_field_at_origin = (m == 1 && have_r_zero && (c == Er || c == Hz))
-                               || (m == 0 && have_r_zero && (c == Hp));
+void volume::interpolate_cyl(component c, const vec &p,
+                             ivec locs[8], double weights[8], int m) const {
+  interpolate_fancy(c,p,locs,weights);
   // Ep is also odd, but we don't need to interpolate it to zero.
-  switch ((component)c) {
-  case Ep: case Ez: case Hr:
-    if (irhi > nr() || irhi < 0 || (irhi == 0 && !have_r_zero)) {
-      weights[2] = 0;
-      weights[3] = 0;
-    }
-    if (irlo > nr() || irlo < 0 || (irlo == 0 && !have_r_zero)) {
-      weights[0] = 0;
-      weights[1] = 0;
-    }
-    break;
-  case Hp: case Hz: case Er:
-    if (irhi >= nr() || irhi < 0) {
-      weights[2] = 0;
-      weights[3] = 0;
-    } else if (irhi == -1 && have_r_zero) {
-      indices[2] = izlo + (1+nz())*0; // NW
-      indices[3] = izhi + (1+nz())*0; // NE
-      if (c != Hp) { // These guys are odd!
-        weights[2] = -weights[2];
-        weights[3] = -weights[3];
+  for (int i=0;i<4&&weights[i];i++) {
+    switch ((component)c) {
+    case Hp: case Hz: case Er:
+      if (locs[i].r() < 0) {
+        ivec plus = locs[i];
+        plus.set_direction(R,-locs[i].r());
+        for (int j=0;j<4&&weights[j];j++)
+          if (locs[j] == plus) {
+            if (c != Hp) weights[j] -= weights[i];
+            else weights[j] += weights[i];
+            weights[i] = 0.0;
+          }
       }
-    }
-    if (irlo >= nr() || irlo < 0) {
-      weights[0] = 0;
-      weights[1] = 0;
-    } else if (irlo == -1 && have_r_zero) {
-      if (c != Hp) { // These guys are odd!
-        weights[2] -= weights[0];
-        weights[3] -= weights[1];
-      } else {
-        weights[2] += weights[0];
-        weights[3] += weights[1];
-      }
-      weights[0] = 0;
-      weights[1] = 0;
     }
   }
   // Now I need to reorder them so the points with nonzero weights come
   // first.
-  stupidsort(indices, weights, 4);
-  for (int i=0;i<8&&weights[i];i++)
-    if (!owns(iloc(c, indices[i])))
-      weights[i] = 0.0;
-  stupidsort(indices, weights, 4);
-  if (!contains(p) && weights[0]) {
-    printf("Error made in cyl interpolation--fix this bug!!!\n");
-    printf("%s irlo %d irhi %d izlo %d izhi %d\n",
-           component_name(c), irlo, irhi, izlo, izhi);
-    printf("Point is at %lg %lg -- in real space this is %lg %lg\n",
-           ir, iz, p.r(), p.z());
-    printf("  dr %.20lg dz %.20lg\n", dr, dz);
-    for (int i=0;i<8 &&weights[i];i++) {
-      printf("  Point %lg %lg Weight %.25lg\n",
-             loc(c, indices[i]).r(), loc(c, indices[i]).z(), weights[i]);
-      if (!owns(iloc(c, indices[i]))) {
-        printf("  ...we don't own this index!\n");
-        weights[i] = 0.0;
-      }
-    }
-    abort("aack");
-  }
+  stupidsort(locs, weights, 4);
 }
 
 void volume::interpolate_fancy(component c, const vec &pc,
-                               int indices[8], double weights[8]) const {
+                               ivec locs[8], double weights[8]) const {
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
@@ -478,7 +402,6 @@ void volume::interpolate_fancy(component c, const vec &pc,
   const vec midv = operator[](middle);
   const vec dv = (pc - midv)*(2*a);
   int already_have = 1;
-  ivec locs[8];
   for (int i=0;i<8;i++) {
     locs[i] = round_vec(midv);
     weights[i] = 1.0;
@@ -499,11 +422,18 @@ void volume::interpolate_fancy(component c, const vec &pc,
   for (int i=0;i<already_have;i++) total_weight += weights[i];
   for (int i=0;i<already_have;i++)
     weights[i] += (1.0 - total_weight)*(1.0/already_have);
-  for (int i=0;i<already_have;i++) {
-    if (!owns(locs[i])) weights[i] = 0.0;
-    else indices[i] = index(c,locs[i]);
+  stupidsort(locs, weights, already_have);
+  // The rest of this code is a crude hack to get the weights right when we
+  // are exactly between a few grid points.  i.e. to eliminate roundoff
+  // error.
+  bool all_same = true;
+  for (int i=0;i<8&&weights[i];i++)
+    if (weights[i] != weights[0]) all_same = false;
+  if (all_same) {
+    int num_weights = 0;
+    for (int i=0;i<8&&weights[i];i++) num_weights++;
+    for (int i=0;i<8&&weights[i];i++) weights[i] = 1.0/num_weights;    
   }
-  stupidsort(indices, weights, already_have);
 }
 
 geometric_volume empty_volume(ndim dim) {
@@ -929,6 +859,7 @@ vec volume::center() const {
     return operator[](round_vec(almost_center));
   case D3:
     almost_center = origin + vec(nx()/2*inva, ny()/2*inva, nz()/2*inva);
+    return operator[](round_vec(almost_center));
   }
   abort("Can't do symmetry with these dimensions.\n");
 }
