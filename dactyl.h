@@ -298,11 +298,8 @@ class fields {
   // boundaries.cpp
   void disconnect_chunks();
   void connect_chunks();
-  void connect_adjacent_chunks();
-  void connect_periodic_chunks();
-  void connect_metallic_chunks();
-  void connect_metallic_bigz_chunks();
-  void connect_metallic_bigr_chunks();
+  void connect_the_chunks(); // Intended to be ultra-private...
+  int is_metal(const vec &, const volume &);
   // step.cpp
   void phase_material();
   void step_h();

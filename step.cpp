@@ -466,35 +466,35 @@ void fields_chunk::step_e() {
 
 void fields::step_boundaries(field_type ft) {
   // First copy outgoing data to buffers...
-  for (int i=0;i<num_chunks;i++) {
-    int ind = 0;
+  int *wh = new int[num_chunks];
+
+  for (int i=0;i<num_chunks;i++) wh[i] = 0;
+  for (int i=0;i<num_chunks;i++)
     for (int j=0;j<num_chunks;j++) {
-      const int pair = i+j*num_chunks;
-      for (int n=0;n<comm_sizes[ft][pair];n++) {
-        DOCMP {
-          double stupid = *(chunks[i]->connections[ft][Outgoing][cmp][ind]);
-          comm_blocks[ft][cmp][pair][n] = stupid;
-        }
-        ind++;
-      }
-    }
-  }
-  // Finally, copy incoming data to the fields themselves!
-  for (int i=0;i<num_chunks;i++) {
-    int ind = 0;
-    //for (int j=0;j<num_chunks;j++) {
-    for (int j=num_chunks-1;j>=0;j--) {
       const int pair = j+i*num_chunks;
       for (int n=0;n<comm_sizes[ft][pair];n++) {
-        complex<double> val = chunks[i]->connection_phases[ft][ind]*
-          complex<double>(comm_blocks[ft][0][pair][n],
-                          comm_blocks[ft][1][pair][n]);
-        *(chunks[i]->connections[ft][Incoming][0][ind]) = real(val);
-        *(chunks[i]->connections[ft][Incoming][1][ind]) = imag(val);
-        ind++;
+        DOCMP {
+          double stupid = *(chunks[j]->connections[ft][Outgoing][cmp][wh[j]]);
+          comm_blocks[ft][cmp][pair][n] = stupid;
+        }
+        wh[j]++;
       }
     }
-  }
+  // Finally, copy incoming data to the fields themselves!
+  for (int i=0;i<num_chunks;i++) wh[i] = 0;
+  for (int i=0;i<num_chunks;i++)
+    for (int j=0;j<num_chunks;j++) {
+      const int pair = j+i*num_chunks;
+      for (int n=0;n<comm_sizes[ft][pair];n++) {
+        complex<double> val = chunks[i]->connection_phases[ft][wh[i]]*
+          complex<double>(comm_blocks[ft][0][pair][n],
+                          comm_blocks[ft][1][pair][n]);
+        *(chunks[i]->connections[ft][Incoming][0][wh[i]]) = real(val);
+        *(chunks[i]->connections[ft][Incoming][1][wh[i]]) = imag(val);
+        wh[i]++;
+      }
+    }
+  delete[] wh;
 }
 
 void fields::step_h_source() {
