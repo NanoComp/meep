@@ -212,27 +212,26 @@ void dft_chunk::negate_dft() {
     next_in_dft->negate_dft();
 }
 
-static int dft_chunks_Ntotal(dft_chunk *dft_chunks) {
+static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
   int n = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
     n += cur->N * cur->Nomega * 2;
+  *my_start = partial_sum_to_all(n) - n; // sum(n) for processes before this
   return sum_to_all(n);
 }
 
 // Note: the file must have been created in parallel mode, typically via fields::open_h5file.
 void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 		   const char *dprefix) {
-  int n = dft_chunks_Ntotal(dft_chunks);
+  int istart;
+  int n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
 	   dprefix ? dprefix : "", dprefix ? "_" : "", component_name(c));
   file->create_data(dataname, 1, &n);
 
-  // FIXME: this is WRONG on a parallel machine (all CPUs can't start at 0)
-
-  int ichunk = 0, istart = 0;
-  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     int Nchunk = cur->N * cur->Nomega * 2;
     file->write_chunk(1, &istart, &Nchunk, (double *) cur->dft);
     istart += Nchunk;
@@ -242,7 +241,8 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 
 void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 		   const char *dprefix) {
-  int n = dft_chunks_Ntotal(dft_chunks);
+  int istart;
+  int n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
@@ -252,10 +252,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   if (file_rank != 1 || file_dims != n)
     abort("incorrect dataset size (%d vs. %d) in load_dft_hdf5 %s:%s", file_dims, n, file->file_name(), dataname);
   
-  // FIXME: this is WRONG on a parallel machine (all CPUs can't start at 0)
-
-  int ichunk = 0, istart = 0;
-  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft, ++ichunk) {
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     int Nchunk = cur->N * cur->Nomega * 2;
     file->read_chunk(1, &istart, &Nchunk, (double *) cur->dft);
     istart += Nchunk;

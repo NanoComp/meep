@@ -61,6 +61,7 @@ double sum_to_all(double);
 void sum_to_all(const double *in, double *out, int size);
 long double sum_to_all(long double);
 int sum_to_all(int);
+int partial_sum_to_all(int in);
 complex<double> sum_to_all(complex<double>);
 bool or_to_all(bool in);
 bool and_to_all(bool in);

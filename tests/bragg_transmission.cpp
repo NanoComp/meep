@@ -91,7 +91,7 @@ inline void byP(matrix2x2 m, double n, double w, double dz)
 inline double abs2(complex<double> x) { double ax = abs(x); return ax*ax; }
 
 void bragg_transmission_analytic(double freq_min, double freq_max, int nfreq,
-				 double *T)
+				 double *T, double *R)
 {
   for (int i = 0; i < nfreq; ++i) {
     double omega = 2*pi * (freq_min + i * (freq_max - freq_min) / (nfreq - 1));
@@ -104,11 +104,12 @@ void bragg_transmission_analytic(double freq_min, double freq_max, int nfreq,
     }
     complex<double> refl = - Tm[1][0] / Tm[1][1];
     T[i] = abs2(Tm[0][0] + refl * Tm[0][1]);
+    R[i] = abs2(refl);
   }
 }
 
 void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
-			double *T) {
+			double *T, double *R) {
   const volume v = volone(zsize, a);
 
   structure s(v, eps_bragg);
@@ -121,7 +122,7 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
   fields f0(&s0);
   f0.use_real_fields();
 
-  vec srcpt(0.1), fluxpt(zsize - 0.1);
+  vec srcpt(0.1), Tfluxpt(zsize - 0.1), Rfluxpt(0.1);
 
   gaussian_src_time src((freq_min + freq_max) * 0.5,
 			0.5 / fabs(freq_max - freq_min),
@@ -129,20 +130,39 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
   f.add_point_source(Ex, src, srcpt);
   f0.add_point_source(Ex, src, srcpt);
 
-  dft_flux fp = f.add_dft_flux_plane(geometric_volume(fluxpt, fluxpt),
+  dft_flux ft = f.add_dft_flux_plane(Tfluxpt,
 				     freq_min, freq_max, nfreq);
-  dft_flux fp0 = f0.add_dft_flux_plane(geometric_volume(fluxpt, fluxpt),
+  dft_flux fr = f.add_dft_flux_plane(Rfluxpt,
+				     freq_min, freq_max, nfreq);
+  dft_flux ft0 = f0.add_dft_flux_plane(Tfluxpt,
+				       freq_min, freq_max, nfreq);
+  dft_flux fr0 = f0.add_dft_flux_plane(Rfluxpt,
 				       freq_min, freq_max, nfreq);
 
-  while (f.time() < nfreq / fabs(freq_max - freq_min) / 2) {
-    f.step();
+  while (f0.time() < nfreq / fabs(freq_max - freq_min) / 2)
     f0.step();
-  }
 
-  double *flux = fp.flux();
-  double *flux0 = fp0.flux();
+  /* we want to subtract the fields for the reflection...
+     simulate a "real" case, where the normalization is done
+     by a separate run and saved to a file */
+  h5file *ff = f.open_h5file("flux");
+  fr0.save_hdf5(ff, "reflection");
+  fr.load_hdf5(ff, "reflection");
+  fr.negate_dfts();
+  ff->remove();
+  delete ff;
+
+  while (f.time() < nfreq / fabs(freq_max - freq_min) / 2)
+    f.step();
+
+  double *flux = ft.flux();
+  double *flux0 = ft0.flux();
   for (int i = 0; i < nfreq; ++i)
     T[i] = flux[i] / flux0[i];
+  delete[] flux;
+  flux = fr.flux();
+  for (int i = 0; i < nfreq; ++i)
+    R[i] = -flux[i] / flux0[i];
   delete[] flux;
   delete[] flux0;
 }
@@ -183,32 +203,40 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
 
   double *T = new double[nfreq];
-  bragg_transmission(40.0, freq_min, freq_max, nfreq, T);
+  double *R = new double[nfreq];
+  bragg_transmission(40.0, freq_min, freq_max, nfreq, T, R);
   double *T0 = new double[nfreq];
-  bragg_transmission_analytic(freq_min, freq_max, nfreq, T0);
+  double *R0 = new double[nfreq];
+  bragg_transmission_analytic(freq_min, freq_max, nfreq, T0, R0);
 
   double dfreq = (freq_max - freq_min) / (nfreq - 1);
 
-  if (0) { // output transmissions for debugging
-    master_printf("transmission:, freq (c/a), T\n");
+  if (0) { // output transmission & reflection spectra for debugging
+    master_printf("transmission:, freq (c/a), T, R, T0, R0\n");
     for (int i = 0; i < nfreq; ++i)
-      master_printf("transmission:, %g, %g, %g\n",
+      master_printf("transmission:, %g, %g, %g, %g, %g\n",
 		    freq_min + i * dfreq,
-		    T[i], T0[i]);
+		    T[i], R[i], T0[i], R0[i]);
   }
 
-  double maxerr = 0;
+  double maxerrT = 0, maxerrR = 0;
   for (int i = 0; i < nfreq; ++i) {
-    double err = distance_from_curve(nfreq, dfreq, T0, i * dfreq, T[i])
-      / T0[i];
-    if (err > maxerr) maxerr = err;
-    if (err * sqr(freq_min / (freq_min + i*dfreq)) > 0.01)
-      abort("large rel. error %g at freq = %g: T = %g instead of %g\n",
-	    err, freq_min + i*dfreq, T[i], T0[i]);
+    double errT = distance_from_curve(nfreq, dfreq, T0, i * dfreq, T[i]);
+    double errR = distance_from_curve(nfreq, dfreq, R0, i * dfreq, R[i]);
+    if (errT > maxerrT) maxerrT = errT;
+    if (errR > maxerrR) maxerrR = errR;
+    if (errT * sqr(freq_min / (freq_min + i*dfreq)) > 0.01)
+      abort("large error %g at freq = %g: T = %g instead of %g\n",
+	    errT, freq_min + i*dfreq, T[i], T0[i]);
+    if (errR * sqr(freq_min / (freq_min + i*dfreq)) > 0.01)
+      abort("large error %g at freq = %g: R = %g instead of %g\n",
+	    errR, freq_min + i*dfreq, R[i], R0[i]);
   }
-  master_printf("Done (max. err = %e)\n", maxerr);
+  master_printf("Done (max. err in T = %e, in R = %e)\n", maxerrT, maxerrR);
 
+  delete[] R0;
   delete[] T0;
+  delete[] R;
   delete[] T;
 
   return 0;

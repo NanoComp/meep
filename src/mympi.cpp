@@ -233,6 +233,14 @@ int sum_to_all(int in) {
   return out;
 }
 
+int partial_sum_to_all(int in) {
+  int out = in;
+#ifdef HAVE_MPI
+  MPI_Scan(&in,&out,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;
 #ifdef HAVE_MPI
