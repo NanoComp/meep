@@ -73,6 +73,10 @@ static int is_ok_dir(const char *dirname, const char *sourcename, const char *ba
   char drsrcn[buflen];
   snprintf(drsrcn, buflen, "%s/%s.cpp", dirname, basename);
   if (is_same_file(drsrcn, sourcename)) return 1;
+  
+  FILE *f;
+  if ((f = fopen(drsrcn, "r")) == NULL) return 1;
+  fclose(f);
   return 0;
 }
 
