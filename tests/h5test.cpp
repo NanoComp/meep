@@ -60,7 +60,7 @@ typedef symmetry (*symfunc)(const volume &);
 
 const double tol = 1e-8;
 double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
-  if (fabs(a-b) > fabs(b)*tol || b != b) {
+  if (fabs(a-b) > 1e-15 + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a-b));
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     abort("Error in %s at (%d,%d,%d)\n", nam, i0,i1,i2);
@@ -74,13 +74,18 @@ double get_reim(complex<double> x, int reim)
 }
 
 bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
+	      double kx, double ky,
 	      component src_c, component file_c,
 	      geometric_volume file_gv,
+	      double file_res,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const volume v = vol2d(xsize, ysize, a);
   structure s(v, eps, splitting, Sf(v));
   fields f(&s);
+
+  f.use_bloch(X, real_fields ? 0.0 : kx);
+  f.use_bloch(Y, real_fields ? 0.0 : ky);
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
@@ -92,8 +97,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
   char fname[1024];
   snprintf(fname, 1024, "%s.h5", name);
-  double res = 1.54321 * a;
-  f.output_hdf5(fname, file_c, file_gv, res, false, -1, false, false);
+  f.output_hdf5(fname, file_c, file_gv, file_res, false, -1, false, false);
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
@@ -104,11 +108,11 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
        abort("Failed to read back string test from %s...", fname);
 
   // compute corner coordinate of file data
-  double resinv = 1.0 / res;
+  double resinv = 1.0 / file_res;
   vec loc0(file_gv.get_min_corner());
   LOOP_OVER_DIRECTIONS(loc0.dim, d) {
-     int minpt = int(ceil(file_gv.in_direction_min(d) * res));
-     int maxpt = int(floor(file_gv.in_direction_max(d) * res));
+     int minpt = int(ceil(file_gv.in_direction_min(d) * file_res));
+     int maxpt = int(floor(file_gv.in_direction_max(d) * file_res));
      if (minpt < maxpt)
 	  loc0.set_direction(d, minpt * resinv);
   }
@@ -372,38 +376,44 @@ int main(int argc, char **argv)
 #ifdef HAVE_HDF5
   const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.1;
 
-  geometric_volume gv_2d[3] = {
+  geometric_volume gv_2d[4] = {
        geometric_volume(vec2d(pad1,pad2), vec2d(xsize-pad2,ysize-pad1)),
+       geometric_volume(vec2d(-pad1,-pad2), vec2d(2*xsize-pad2,2*ysize-pad1)),
        geometric_volume(vec2d(pad1,pad2), vec2d(xsize-pad2,pad2)),
        geometric_volume(vec2d(pad1,pad2), vec2d(pad1,pad2)),
   };
-  char gv_2d_name[3][10] = {"plane", "line", "point"};
-  int gv_2d_rank[3] = {2,1,0};
-  component tm_c[5] = {Ez, Dz, Hx, Hy, Dielectric};
+  char gv_2d_name[4][20] = {"plane", "plane-supercell", "line", "point"};
+  int gv_2d_rank[4] = {2,2,1,0};
+  double gv_2d_res[4] = {1.54321, 0.54321, 1.54321, 1.54321};
+  component tm_c[5] = {Dielectric, Ez, Dz, Hx, Hy};
   symfunc Sf2[5] = {make_identity, make_mirrorx, make_mirrory, make_mirrorxy,
 		   make_rotate4z};
   char Sf2_name[5][32] = {"identity", "mirrorx", "mirrory", "mirrorxy",
 			 "rotate4z"};
+  double Sf2_kx[5] = {0.3, 0, 0.3, 0, 0};
+  double Sf2_ky[5] = {0.2, 0.2, 0, 0, 0};
 
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
-      for (int igv = 0; igv < 3; ++igv)
+      for (int igv = 0; igv < 4; ++igv)
 	for (int ic = 0; ic < 5; ++ic)
-	  for (int use_real = 0; use_real <= 1; ++use_real) {
+	  for (int use_real = 1; use_real >= 0; --use_real) {
 	    char name[1024];
 	    snprintf(name, 1024, "check_2d_tm_%s_%d_%s_%s%s",
 		     Sf2_name[iS], splitting, gv_2d_name[igv],
 		     component_name(tm_c[ic]), use_real ? "_r" : "");
 	    master_printf("Checking %s...\n", name);
-	    if (!check_2d(funky_eps_2d, a, splitting, Sf2[iS], Ez, tm_c[ic],
-			  gv_2d[igv], use_real, gv_2d_rank[igv], name))
+	    if (!check_2d(funky_eps_2d, a, splitting,
+			  Sf2[iS], Sf2_kx[iS], Sf2_ky[iS],
+			  Ez, tm_c[ic], gv_2d[igv], gv_2d_res[igv] * a, 
+			  use_real, gv_2d_rank[igv], name))
 	      return 1;
 	  }
   
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
       for (int ic = 0; ic < 4; ++ic)
-	for (int use_real = 0; use_real <= 1; ++use_real) {
+	for (int use_real = 1; use_real >= 0; --use_real) {
 	  char name[1024];
 	  snprintf(name, 1024, "check_2d_monitor_tm_%s_%d_%s%s",
 		   Sf2_name[iS], splitting,

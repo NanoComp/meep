@@ -333,6 +333,13 @@ class geometric_volume {
   geometric_volume operator&(const geometric_volume &a) const {
     return intersect_with(a);
   };
+  geometric_volume operator+(const vec &a) const {
+    return geometric_volume(min_corner + a, max_corner + a);
+  }
+  geometric_volume operator+=(const vec &a) {
+    min_corner += a; max_corner += a;
+    return *this;
+  }
   bool intersects(const geometric_volume &a) const;
   bool operator&&(const geometric_volume &a) const {
     return intersects(a);

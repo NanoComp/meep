@@ -59,21 +59,55 @@ void fields::output_hdf5(const char *filename, const char *dataname,
   for (int sn = 0; sn < S.multiplicity(); ++sn) {
     component cs = S.transform(c, -sn);
     for (int i = 0; i < num_chunks; ++i) {
-      geometric_volume gvs = S.transform(chunks[i]->get_field_gv(cs), sn);
-      if (chunks[i]->is_mine() && chunks[i]->have_component(cs, reim == 1)
-	  && (gvs && vout)) {
-	geometric_volume cgv = gvs & vout;
-	int nvol = 1;
-	for (int j = 0; j < rank; ++j) {
-	  int minpt = int(ceil(cgv.in_direction_min(ds[j]) * res));
-	  int maxpt = int(floor(cgv.in_direction_max(ds[j]) * res));
-	  if (minpt > maxpt) nvol = 0;
-	  else nvol *= maxpt - minpt + 1;
+      geometric_volume gvS = S.transform(chunks[i]->get_field_gv(cs), sn);
+      if (!chunks[i]->is_mine() || !chunks[i]->have_component(cs, reim == 1))
+	continue;
+
+      // figure out range of lattice shifts for which gvS intersects vout:
+      ivec min_ishift(gvS.dim), max_ishift(gvS.dim);
+      LOOP_OVER_DIRECTIONS(gvS.dim, d) {
+	if (boundaries[High][d] == Periodic) {
+	  min_ishift.set_direction(d, int(floor((vout.in_direction_min(d) 
+						 - gvS.in_direction_max(d))
+                                       / lattice_vector(d).in_direction(d))));
+	  max_ishift.set_direction(d, int(ceil((vout.in_direction_max(d) 
+						- gvS.in_direction_min(d))
+                                       / lattice_vector(d).in_direction(d))));
 	}
-	if (nvol > nalloc) nalloc = nvol;
-	if (nvol > 0)
-	  ++parallel_chunks;
+	else {
+	  min_ishift.set_direction(d, 0);
+	  max_ishift.set_direction(d, 0);
+	}
       }
+
+      ivec ishift(min_ishift);
+      do {
+	vec shift(gvS.dim);
+	LOOP_OVER_DIRECTIONS(gvS.dim, d)
+	  shift.set_direction(d,
+                lattice_vector(d).in_direction(d) * ishift.in_direction(d));
+	geometric_volume gvSs(gvS + shift);
+	if (gvSs && vout) {
+	  geometric_volume cgv = gvSs & vout;
+	  int nvol = 1;
+	  for (int j = 0; j < rank; ++j) {
+	    int minpt = int(ceil(cgv.in_direction_min(ds[j]) * res));
+	    int maxpt = int(floor(cgv.in_direction_max(ds[j]) * res));
+	    if (minpt > maxpt) nvol = 0;
+	    else nvol *= maxpt - minpt + 1;
+	  }
+	  if (nvol > nalloc) nalloc = nvol;
+	  if (nvol > 0)
+	    ++parallel_chunks;
+	}
+	LOOP_OVER_DIRECTIONS(gvS.dim, d) {
+	  if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
+	    ishift.set_direction(d, ishift.in_direction(d) + 1);
+	    break;
+	  }
+	  ishift.set_direction(d, min_ishift.in_direction(d));
+	}
+      } while (ishift != min_ishift);
     }
   }
   parallel_chunks = max_to_all(parallel_chunks);
@@ -88,84 +122,125 @@ void fields::output_hdf5(const char *filename, const char *dataname,
   // Finally, fetch the data from each chunk and write it to the file:
   for (int sn = 0; sn < S.multiplicity(); ++sn) {
     component cs = S.transform(c, -sn);
-    complex<double> ph = S.phase_shift(cs, sn);
+    complex<double> phS = S.phase_shift(cs, sn);
     for (int i = 0; i < num_chunks; ++i) {
-      geometric_volume gvs = S.transform(chunks[i]->get_field_gv(cs), sn);
-      if (chunks[i]->is_mine() && chunks[i]->have_component(cs, reim == 1)
-	  && (gvs && vout)) {
-	geometric_volume cgv = gvs & vout;
-	
-	int j;
-	for (j = 0; j < rank; ++j) {
-	  start[j] = int(ceil(cgv.in_direction_min(ds[j]) * res));
-	  count[j] = int(floor(cgv.in_direction_max(ds[j]) * res))- start[j]+1;
-	  loc0.set_direction(ds[j], start[j] * resinv);
-	  start[j] -= start0[j];
-	  if (count[j] <= 0)
-	    break;
-	}
-	if (j < rank)
-	  continue;
+      geometric_volume gvS = S.transform(chunks[i]->get_field_gv(cs), sn);
+      if (!chunks[i]->is_mine() || !chunks[i]->have_component(cs, reim == 1))
+	continue;
 
-	switch (rank) {
-        case 0:
-	  data[0] =
-	    get_reim(chunks[i]->get_field(cs, S.transform(loc0,-sn))*ph,
-		     reim);
-	  break;
-        case 1: {
-	  vec loc = loc0;
-	  for (int i0 = 0; i0 < count[0]; ++i0) {
-	    loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
-	    data[i0] =
-	      get_reim(chunks[i]->get_field(cs, S.transform(loc,-sn))*ph,
-		       reim);
-	  }
-	  break;
+      // figure out range of lattice shifts for which gvS intersects vout:
+      ivec min_ishift(gvS.dim), max_ishift(gvS.dim);
+      LOOP_OVER_DIRECTIONS(gvS.dim, d) {
+	if (boundaries[High][d] == Periodic) {
+	  min_ishift.set_direction(d, int(floor((vout.in_direction_min(d) 
+						 - gvS.in_direction_max(d))
+                                       / lattice_vector(d).in_direction(d))));
+	  max_ishift.set_direction(d, int(ceil((vout.in_direction_max(d) 
+						- gvS.in_direction_min(d))
+                                       / lattice_vector(d).in_direction(d))));
 	}
-        case 2: {
-	  vec loc = loc0;
-	  for (int i0 = 0; i0 < count[0]; ++i0) {
-	    loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
-	    for (int i1 = 0; i1 < count[1]; ++i1) {
-	      loc.set_direction(ds[1], loc0.in_direction(ds[1])
-				+ i1 * resinv);
-	      data[i0 * count[1] + i1] =
+	else {
+	  min_ishift.set_direction(d, 0);
+	  max_ishift.set_direction(d, 0);
+	}
+      }
+
+      ivec ishift(min_ishift);
+      do {
+	complex<double> ph = phS;
+	vec shift(gvS.dim);
+	LOOP_OVER_DIRECTIONS(gvS.dim, d) {
+	  shift.set_direction(d,
+                lattice_vector(d).in_direction(d) * ishift.in_direction(d));
+	  ph *= pow(eikna[d], ishift.in_direction(d));
+	}
+	if (c == Dielectric) ph = 1.0;
+	geometric_volume gvSs(gvS + shift);
+	if (gvSs && vout) {
+	  geometric_volume cgv = gvSs & vout;
+	
+	  int j;
+	  for (j = 0; j < rank; ++j) {
+	    start[j] = int(ceil(cgv.in_direction_min(ds[j]) * res));
+	    count[j] = 
+	      int(floor(cgv.in_direction_max(ds[j]) * res)) - start[j]+1;
+	    loc0.set_direction(ds[j], start[j] * resinv);
+	    start[j] -= start0[j];
+	    if (count[j] <= 0)
+	      break;
+	  }
+	  if (j < rank)
+	    continue;
+
+	  loc0 -= shift;
+	  
+	  switch (rank) {
+	  case 0:
+	    data[0] =
+	      get_reim(chunks[i]->get_field(cs, S.transform(loc0,-sn))*ph,
+		       reim);
+	    break;
+	  case 1: {
+	    vec loc = loc0;
+	    for (int i0 = 0; i0 < count[0]; ++i0) {
+	      loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
+	      data[i0] =
 		get_reim(chunks[i]->get_field(cs, S.transform(loc,-sn))*ph,
 			 reim);
 	    }
+	    break;
 	  }
-	  break;
-	}
-        case 3: {
-	  vec loc = loc0;
-	  for (int i0 = 0; i0 < count[0]; ++i0) {
-	    loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
-	    for (int i1 = 0; i1 < count[1]; ++i1) {
-	      loc.set_direction(ds[1], loc0.in_direction(ds[1])
-				+ i1 * resinv);
-	      for (int i2 = 0; i2 < count[2]; ++i2) {
-		loc.set_direction(ds[2], loc0.in_direction(ds[2])
-				  + i2 * resinv);
-		data[(i0 * count[1] + i1) * count[2] + i2] =
+	  case 2: {
+	    vec loc = loc0;
+	    for (int i0 = 0; i0 < count[0]; ++i0) {
+	      loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
+	      for (int i1 = 0; i1 < count[1]; ++i1) {
+		loc.set_direction(ds[1], loc0.in_direction(ds[1])
+				  + i1 * resinv);
+		data[i0 * count[1] + i1] =
 		  get_reim(chunks[i]->get_field(cs, S.transform(loc,-sn))*ph,
 			   reim);
 	      }
 	    }
+	    break;
 	  }
-	  break;
+	  case 3: {
+	    vec loc = loc0;
+	    for (int i0 = 0; i0 < count[0]; ++i0) {
+	      loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
+	      for (int i1 = 0; i1 < count[1]; ++i1) {
+		loc.set_direction(ds[1], loc0.in_direction(ds[1])
+				  + i1 * resinv);
+		for (int i2 = 0; i2 < count[2]; ++i2) {
+		  loc.set_direction(ds[2], loc0.in_direction(ds[2])
+				    + i2 * resinv);
+		  data[(i0 * count[1] + i1) * count[2] + i2] =
+		    get_reim(chunks[i]->get_field(cs, S.transform(loc,-sn))*ph,
+			     reim);
+		}
+	      }
+	    }
+	    break;
+	  }
+	  default:
+	    abort("unexpected dimensionality > 3 of HDF5 output data");
+	  }
+	  
+	  h5io::write_chunk(filename, dataname,
+			    rank, dims, data, start, count,
+			    true, !chunks_written && (!append_data || !dindex),
+			    append_data, dindex,
+			    append_file, single_precision);
+	  ++chunks_written;
 	}
-        default:
-	  abort("unexpected dimensionality > 3 of HDF5 output data");
+	LOOP_OVER_DIRECTIONS(gvS.dim, d) {
+	  if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
+	    ishift.set_direction(d, ishift.in_direction(d) + 1);
+	    break;
+	  }
+	  ishift.set_direction(d, min_ishift.in_direction(d));
 	}
-	
-	h5io::write_chunk(filename, dataname,
-			  rank, dims, data, start, count,
-			  true, !chunks_written && (!append_data || !dindex),
-			  append_data, dindex,
-			  append_file, single_precision);
-	++chunks_written;
-      }
+      } while (ishift != min_ishift);
     }
   }
 
