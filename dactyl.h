@@ -40,7 +40,7 @@ class mat {
   void make_average_eps();
   void use_pml(int npmlr=16, int npmlz=16);
 
-  void output_slices(const char *name);
+  void output_slices(const char *name = "");
   void set_output_directory(const char *name);
   void mix_with(const mat *, double);
 
@@ -76,8 +76,8 @@ class fields {
   void use_bloch(double kz);
   ~fields();
 
-  void output_slices(const char *name);
-  void output_real_imaginary_slices(const char *name);
+  void output_slices(const char *name = "");
+  void output_real_imaginary_slices(const char *name = "");
   void step();
 
   void use_real_sources();
