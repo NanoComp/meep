@@ -491,7 +491,7 @@ void fields::step_boundaries(field_type ft) {
         }
       }
   // Communicate the data around!
-#if 0
+#if 0 // This is the blocking version, which should always be safe!
   for (int noti=0;noti<num_chunks;noti++)
     for (int j=0;j<num_chunks;j++) {
       const int i = (noti+j)%num_chunks;
