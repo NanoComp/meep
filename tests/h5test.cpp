@@ -4,6 +4,7 @@
 #include "meep.h"
 #include "meep_internals.h"
 #include "h5io.h"
+#include "config.h"
 using namespace meep;
 
 const double xsize = 2.0;
@@ -333,6 +334,7 @@ int main(int argc, char **argv)
 {
   const double a = 10.0;
   initialize mpi(argc, argv);
+#ifdef HAVE_HDF5
   const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.1;
 
   geometric_volume gv_2d[3] = {
@@ -403,7 +405,7 @@ int main(int argc, char **argv)
 		      gv_3d[igv], use_real, gv_3d_rank[igv], name))
 	  return 1;
       }
-
+#endif /* HAVE_HDF5 */
   return 0;
 }
 
