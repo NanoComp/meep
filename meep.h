@@ -218,7 +218,8 @@ class fields_chunk {
   double maxpolenergy() const;
   double minpolenergy() const;
   void output_eps_body(component, const symmetry &, int sn,
-                       const geometric_volume &what, file *);
+                       const geometric_volume &what, file *,
+                       complex<double> phase_shift);
   complex<double> field_mean(component c, bool abs_real, bool abs_imag) const;
 
   double electric_energy_in_box(const geometric_volume &, const symmetry &);

@@ -344,7 +344,8 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
 }
 
 void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
-                                   const geometric_volume &what, file *out) {
+                                   const geometric_volume &what, file *out,
+                                   complex<double> phshift) {
   if (f[c][0]) {
     if (v.a <= default_eps_resolution) {
       output_complex_eps_body(c, f[c], v, S, sn, what, out);
@@ -368,7 +369,7 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
           v.interpolate(c, here, ilocs, w);
           for (int i=0;i<8&&w[i];i++)
             if (v.contains(S.transform(ilocs[i],sn)))
-              fhere += w[i]*real(get_field(c,ilocs[i]));
+              fhere += w[i]*real(phshift*get_field(c,ilocs[i]));
           i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
         }
       }
@@ -801,6 +802,7 @@ void fields::eps_slices(const geometric_volume &what, const char *name) {
       if (am_master())
         output_complex_eps_header(c, fmax, user_volume, what,
                                   out, n, v.eps_component());
+      complex<double> phshift = optimal_phase_shift(c);
       all_wait();
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
@@ -808,7 +810,7 @@ void fields::eps_slices(const geometric_volume &what, const char *name) {
             FOR_COMPONENTS(otherc)
               if (S.transform(otherc,sn) == c)
                 chunks[i]->output_eps_body(otherc,
-                                           S, sn, what, out);
+                                           S, sn, what, out, phshift);
       all_wait();
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
