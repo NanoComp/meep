@@ -75,6 +75,13 @@ void broadcast(int from, complex<double> *data, int size) {
 #endif
 }
 
+complex<double> broadcast(int from, complex<double> data) {
+#ifdef HAVE_MPI
+  MPI_Bcast(&data, 2, MPI_DOUBLE, from, MPI_COMM_WORLD);
+#endif
+  return data;
+}
+
 double max_to_master(double in) {
   double out = in;
 #ifdef HAVE_MPI

@@ -151,9 +151,12 @@ void fields_chunk::record_bands(int tcount) {
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
     if (this == bands->chunk[p])
       for (int c=0;c<10;c++)
-        if (v.has_field((component)c))
-          bands->f[p][c][thet] = cmplx(f[c][0][bands->index[p]],
-                                       f[c][1][bands->index[p]]);
+        if (v.has_field((component)c)) {
+          complex<double> tmp;
+          if (is_mine()) tmp = complex<double>(f[c][0][bands->index[p]],
+                                               f[c][1][bands->index[p]]);
+          bands->f[p][c][thet] = broadcast(my_rank(), tmp);
+        }
 }
 
 #define HARMOUT(o,n,f) ((o)[(n)+(f)*maxbands])
