@@ -21,8 +21,7 @@
 #include <complex>
 
 #include "vec.h"
-
-void abort(char *fmt, ...);  // Since we don't want to include dactyl.h...
+#include "dactyl.h"
 
 static inline double int_to_lattice(int n, double a, double inva=0.0) {
   if (inva == 0.0) inva = 1.0/a;
@@ -116,6 +115,39 @@ void vec::print(file *f) const {
     i_fprintf(f, "I don't know how to print in this dimension!\n");
   }
 }
+
+geometric_volume::geometric_volume(const vec &vec1, const vec &vec2) {
+  dim = vec1.dim; 
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    set_direction_min(d, min(vec1.in_direction(d), vec2.in_direction(d)));
+    set_direction_max(d, max(vec1.in_direction(d), vec2.in_direction(d)));
+  }
+};
+double geometric_volume::computational_volume() {
+  double vol = 1.0; 
+  LOOP_OVER_DIRECTIONS(dim,d) vol *= (in_direction_max(d) - in_direction_min(d));
+  return vol;
+};
+
+double geometric_volume::full_volume() {
+  double vol = 1.0; 
+  LOOP_OVER_DIRECTIONS(dim, d) vol *= (in_direction_max(d) - in_direction_min(d));
+  if (dim == Dcyl) vol *= pi * (in_direction_max(R) + in_direction_min(R));
+  return vol;
+};
+
+geometric_volume geometric_volume::intersect_with(const geometric_volume &a) {
+  geometric_volume result(dim);
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    double minval = max(in_direction_min(d), a.in_direction_min(d));
+    double maxval = min(in_direction_max(d), a.in_direction_max(d));
+    if (minval > maxval)
+      return geometric_volume(zero_vec(dim), zero_vec(dim));
+    result.set_direction_min(d, minval);
+    result.set_direction_max(d, maxval);
+  }
+  return result;
+};
 
 inline int right_ntot(ndim di, const int num[3]) {
   int result = 1;

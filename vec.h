@@ -236,6 +236,22 @@ inline ivec ivec2d(int xx, int yy) {
   ivec v; v.t[X] = xx; v.t[Y] = yy; return v;
 }
 
+class geometric_volume {
+ public:
+  ndim dim;
+  geometric_volume(ndim di) { dim = di; };
+  geometric_volume(const vec &vec1, const vec &vec2);
+  void set_direction_min(direction d, double val) { min_corner.set_direction(d, val); };
+  void set_direction_max(direction d, double val) { max_corner.set_direction(d, val); };
+  double in_direction_min(direction d) const { return min_corner.in_direction(d); };
+  double in_direction_max(direction d) const { return max_corner.in_direction(d); };
+  double computational_volume(); 
+  double full_volume(); 
+  geometric_volume intersect_with(const geometric_volume &a);
+ private:
+  vec min_corner, max_corner;
+};
+
 class volume {
  public:
   volume() {};
