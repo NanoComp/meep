@@ -104,8 +104,7 @@ h5file::h5file(const char *filename_, access_mode mode, bool parallel_) {
   HID(id) = -1;
   HID(cur_id) = -1;
   parallel = parallel_;
-  cur_append_data = false;
-  cur_dindex = 0;
+  extending = 0;
   filename = new char[strlen(filename_) + 1];
   strcpy(filename, filename_);
   
@@ -128,7 +127,7 @@ h5file::h5file(const char *filename_, access_mode mode, bool parallel_) {
 		      access_props);
   else
     HID(id) = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, access_props);
-  
+ 
   H5Pclose(access_props);
 #endif
 }
@@ -140,6 +139,12 @@ h5file::~h5file() {
     H5Fclose(HID(id));
 #endif
   if (cur_dataname) free(cur_dataname);
+  for (h5file::extending_s *cur = extending; cur; ) {
+    h5file::extending_s *next = cur->next;
+    delete cur->dataname;
+    delete cur;
+    cur = next;
+  }
 
   IF_EXCLUSIVE(if (parallel)
 	       end_critical_section(matrixio_critical_section_tag++),
@@ -155,9 +160,24 @@ void h5file::remove() {
 #ifdef HAVE_HDF5
   if (HID(id) >= 0)
     H5Fclose(HID(id));
+  HID(id) = -1;
 #endif
-  if (!std::remove(filename))
+  for (h5file::extending_s *cur = extending; cur; ) {
+    h5file::extending_s *next = cur->next;
+    delete cur->dataname;
+    delete cur;
+    cur = next;
+  }
+
+  if (std::remove(filename))
     abort("error removing file %s", filename);
+}
+
+h5file::extending_s *h5file::get_extending(const char *dataname) const {
+  for (extending_s *cur = extending; cur; cur = cur->next)
+    if (!strcmp(dataname, cur->dataname))
+      return cur;
+  return NULL;
 }
 
 bool h5file::is_cur(const char *dataname) {
@@ -170,8 +190,6 @@ void h5file::unset_cur() {
     H5Dclose(HID(cur_id));
 #endif
   HID(cur_id) = -1;
-  cur_append_data = false;
-  cur_dindex = 0;
   if (cur_dataname)
     cur_dataname[0] = 0;
 }
@@ -182,8 +200,6 @@ void h5file::set_cur(const char *dataname, void *data_id) {
     H5Dclose(HID(cur_id));
 #endif
   HID(cur_id) = HID(data_id);
-  cur_append_data = false;
-  cur_dindex = 0;
   if (!is_cur(dataname)) {
     if (!cur_dataname || strlen(dataname) < strlen(cur_dataname))
       cur_dataname = (char *) realloc(cur_dataname, strlen(dataname) + 1);
@@ -240,7 +256,7 @@ double *h5file::read(const char *dataname,
     hid_t file_id = HID(id), space_id, data_id;
     
     CHECK(file_id >= 0, "error opening HDF5 input file");
-    
+
     if (is_cur(dataname))
       data_id = HID(cur_id);
     else {
@@ -325,7 +341,6 @@ char *h5file::read(const char *dataname)
     H5Tclose(type_id);
     H5Sclose(space_id);	  
     H5Dclose(data_id);
-    H5Fclose(file_id);
   }
   
   if (!parallel) {
@@ -351,6 +366,18 @@ void h5file::remove_data(const char *dataname)
 
   if (is_cur(dataname))
     unset_cur();
+
+  if (get_extending(dataname)) { // delete dataname from extending list
+    extending_s *prev = 0, *cur = extending;
+    for (; cur && strcmp(cur->dataname, dataname); cur = (prev = cur)->next);
+    if (!cur) abort("bug in remove_data: inconsistent get_extending");
+    if (prev)
+      prev->next = cur->next;
+    else
+      extending = cur->next;
+    delete cur->dataname;
+    delete cur;
+  }
 
   if (dataset_exists(file_id, dataname)) {
     /* this is hackish ...need to pester HDF5 developers to make
@@ -444,9 +471,14 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
   set_cur(dataname, &data_id);
   H5Sclose(space_id);
 
-  cur_append_data = append_data;
-  cur_dindex = 0;
-
+  if (append_data) {
+    extending_s *cur = new extending_s;
+    cur->dataname = new char[strlen(dataname) + 1];
+    strcpy(cur->dataname, dataname);
+    cur->dindex = 0;
+    cur->next = extending;
+    extending = cur;
+  }
 #else
   abort("not compiled with HDF5, required for HDF5 output");
 #endif
@@ -459,10 +491,16 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
 void h5file::extend_data(const char *dataname, int rank, const int *dims)
 {
 #ifdef HAVE_HDF5
-  CHECK(is_cur(dataname), "extend_data can only be called on open datasets");
-  CHECK(cur_append_data, "extend_data can only be called on extensible data");
+  extending_s *cur = get_extending(dataname);
+  CHECK(cur, "extend_data can only be called on extensible data");
 
-  hid_t data_id = HID(cur_id);
+  hid_t file_id = HID(id), data_id;
+  if (is_cur(dataname))
+    data_id = HID(cur_id);
+  else {
+    data_id = H5Dopen(file_id, dataname);
+    set_cur(dataname, &data_id);
+  }
   hid_t space_id = H5Dget_space(data_id);
   
   CHECK(rank + 1 == H5Sget_simple_extent_ndims(space_id),
@@ -480,8 +518,8 @@ void h5file::extend_data(const char *dataname, int rank, const int *dims)
   H5Sclose(space_id);
   
   // Allocate more space along unlimited direction
-  ++cur_dindex;
-  dims_copy[rank] = cur_dindex + 1;
+  cur->dindex++;
+  dims_copy[rank] = cur->dindex + 1;
   H5Dextend(data_id, dims_copy);
 
   delete[] dims_copy;
@@ -497,7 +535,7 @@ void h5file::create_or_extend_data(const char *dataname, int rank,
 				   const int *dims,
 				   bool append_data, bool single_precision)
 {
-  if (append_data && is_cur(dataname) && cur_append_data)
+  if (get_extending(dataname))
     extend_data(dataname, rank, dims);
   else
     create_data(dataname, rank, dims, append_data, single_precision);
@@ -526,11 +564,12 @@ void h5file::write_chunk(int rank,
 {
 #ifdef HAVE_HDF5
   int i;
-  bool append_data = cur_append_data;
   bool do_write = true;
   hid_t space_id, mem_space_id, data_id = HID(cur_id);
   int rank1;
-  int dindex = cur_dindex;
+  extending_s *cur = get_extending(cur_dataname);
+  bool append_data = cur != NULL;
+  int dindex = cur ? cur->dindex : 0;
   
   CHECK(data_id >= 0, "create_data must be called before write_chunk");
 

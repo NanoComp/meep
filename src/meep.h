@@ -99,7 +99,16 @@ private:
   void set_cur(const char *dataname, void *data_id);
   char *cur_dataname;
   bool cur_append_data;
-  int cur_dindex;
+  
+  /* linked list to keep track of which datasets we are extending...
+     this is necessary so that create_or_extend_data can know whether
+     to create (overwrite) a dataset or extend it. */
+  struct extending_s {
+    int dindex;
+    char *dataname;
+    struct extending_s *next;
+  } *extending;
+  extending_s *get_extending(const char *dataname) const;
   
   /* store hid_t values as hid_t* cast to void*, so that
      files including meep.h don't need hdf5.h */

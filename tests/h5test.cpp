@@ -408,7 +408,7 @@ int main(int argc, char **argv)
 			  use_real, gv_2d_rank[igv], name))
 	      return 1;
 	  }
-  
+
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
       for (int ic = 0; ic < 4; ++ic)
