@@ -1173,24 +1173,26 @@ void mat::output_sigma_slice(const char *filename) {
 }
 
 void mat::output_slices(const char *name) {
-  char *n = (char *)malloc(1024);
+  const int buflen = 1024;
+  char *n = (char *)malloc(buflen);
   if (!n) {
     printf("Allocation failure!\n");
     exit(1);
   }
-  sprintf(n, "%s-epsilon.sli", name);
+  snprintf(n, buflen, "%s-epsilon.sli", name);
   output_slice(eps, nr, nz, n);
   for (int i=0;i<numpols;i++) {
-    sprintf(n, "%s-freq-%d.sli", name, i);
+    snprintf(n, buflen, "%s-freq-%d.sli", name, i);
     output_slice(freq[i], nr, nz, n);
   }
-  sprintf(n, "%s-sigma.sli", name);
+  snprintf(n, buflen, "%s-sigma.sli", name);
   output_sigma_slice(n);
   free(n);
 }
 
 void fields::output_real_imaginary_slices(const char *name) {
-  char *n = (char *)malloc(1024);
+  const int buflen = 1024;
+  char *n = (char *)malloc(buflen);
   int i;
   if (!n) {
     printf("Allocation failure!\n");
@@ -1198,24 +1200,24 @@ void fields::output_real_imaginary_slices(const char *name) {
   }
   char *r_or_i = "-re";
   for (int cmp=0;cmp<2;cmp++) {
-    if (a == 1) sprintf(n, "%s-hr%s-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-hr%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s-hr%s-%06.0f.sli", name, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s-hr%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(hr[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-hp%s-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-hp%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s-hp%s-%06.0f.sli", name, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s-hp%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(hp[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-hz%s-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-hz%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s-hz%s-%06.0f.sli", name, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s-hz%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(hz[cmp], nr, nz, n);
     
-    if (a == 1) sprintf(n, "%s-er%s-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-er%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s-er%s-%06.0f.sli", name, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s-er%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(er[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-ep%s-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-ep%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s-ep%s-%06.0f.sli", name, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s-ep%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(ep[cmp], nr, nz, n);
-    if (a == 1) sprintf(n, "%s-ez%s-%06.0f.sli", name, r_or_i, t*inva);
-    else sprintf(n, "%s-ez%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s-ez%s-%06.0f.sli", name, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s-ez%s-%07.2f.sli", name, r_or_i, t*inva);
     output_slice(ez[cmp], nr, nz, n);
     r_or_i = "-im";
   }
@@ -1224,36 +1226,37 @@ void fields::output_real_imaginary_slices(const char *name) {
 }
 
 void fields::output_slices(const char *name) {
-  char *n = (char *)malloc(1024);
+  const int buflen = 1024;
+  char *n = (char *)malloc(buflen);
   int i;
   if (!n) {
     printf("Allocation failure!\n");
     exit(1);
   }
   for (i=0;i<numpols;i++) {
-    if (a == 1) sprintf(n, "%s-pol-%d-%06.0f.sli", name, i, t*inva);
-    else sprintf(n, "%s-pol-%d-%07.2f.sli", name, i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s-pol-%d-%06.0f.sli", name, i, t*inva);
+    else snprintf(n, buflen, "%s-pol-%d-%07.2f.sli", name, i, t*inva);
     output_slice(pol[i], nr, nz, n);
   }
 
-  if (a == 1) sprintf(n, "%s-hr-%06.0f.sli", name, t*inva);
-  else sprintf(n, "%s-hr-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s-hr-%06.0f.sli", name, t*inva);
+  else snprintf(n, buflen, "%s-hr-%07.2f.sli", name, t*inva);
   output_complex_slice(hr, nr, nz, n);
-  if (a == 1) sprintf(n, "%s-hp-%06.0f.sli", name, t*inva);
-  else sprintf(n, "%s-hp-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s-hp-%06.0f.sli", name, t*inva);
+  else snprintf(n, buflen, "%s-hp-%07.2f.sli", name, t*inva);
   output_complex_slice(hp, nr, nz, n);
-  if (a == 1) sprintf(n, "%s-hz-%06.0f.sli", name, t*inva);
-  else sprintf(n, "%s-hz-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s-hz-%06.0f.sli", name, t*inva);
+  else snprintf(n, buflen, "%s-hz-%07.2f.sli", name, t*inva);
   output_complex_slice(hz, nr, nz, n);
   
-  if (a == 1) sprintf(n, "%s-er-%06.0f.sli", name, t*inva);
-  else sprintf(n, "%s-er-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s-er-%06.0f.sli", name, t*inva);
+  else snprintf(n, buflen, "%s-er-%07.2f.sli", name, t*inva);
   output_complex_slice(er, nr, nz, n);
-  if (a == 1) sprintf(n, "%s-ep-%06.0f.sli", name, t*inva);
-  else sprintf(n, "%s-ep-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s-ep-%06.0f.sli", name, t*inva);
+  else snprintf(n, buflen, "%s-ep-%07.2f.sli", name, t*inva);
   output_complex_slice(ep, nr, nz, n);
-  if (a == 1) sprintf(n, "%s-ez-%06.0f.sli", name, t*inva);
-  else sprintf(n, "%s-ez-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s-ez-%06.0f.sli", name, t*inva);
+  else snprintf(n, buflen, "%s-ez-%07.2f.sli", name, t*inva);
   output_complex_slice(ez, nr, nz, n);
 
   free(n);
