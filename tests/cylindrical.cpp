@@ -49,7 +49,7 @@ int compare_point(const fields &f1, const fields &f2, const vec &p) {
         printf("Right now I'm looking at %lg %lg, time %lg\n", p.r(), p.z(), f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
-        sync();
+        all_wait();
         return 0;
       }
     }
