@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 {
   const double a = 10.0;
   initialize mpi(argc, argv);
-  const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.25;
+  const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.1;
 
   geometric_volume gv_2d[3] = {
        geometric_volume(vec2d(pad1,pad2), vec2d(xsize-pad2,ysize-pad1)),
