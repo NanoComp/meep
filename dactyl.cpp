@@ -454,7 +454,7 @@ void fields::step_h_right() {
       }
       for (int r=rstart_0(v,m);r<v.nr();r++) {
         const int ir = r*(v.nz()+1);
-        for (int z=0;z<v.nz();z++) f[Hz][cmp][z+ir] = f[Er][cmp][z+ir];
+        for (int z=1;z<=v.nz();z++) f[Hz][cmp][z+ir] = f[Er][cmp][z+ir];
       }
     }
   }
@@ -472,11 +472,11 @@ void fields::step_e_right() {
       for (int r=rstart_1(v,m);r<=v.nr();r++) {
         const int ir = r*(v.nz()+1);
         const int irm1 = (r-1)*(v.nz()+1);
-        for (int z=0;z<v.nz();z++) f[Ep][cmp][z+ir] = f[Hz][cmp][z+irm1];
+        for (int z=1;z<=v.nz();z++) f[Ep][cmp][z+ir] = f[Hz][cmp][z+irm1];
       }
       for (int r=rstart_0(v,m);r<v.nr();r++) {
         const int ir = r*(v.nz()+1);
-        for (int z=0;z<v.nz();z++) f[Er][cmp][z+ir] = f[Hp][cmp][z+ir-1];
+        for (int z=1;z<=v.nz();z++) f[Er][cmp][z+ir] = f[Hp][cmp][z+ir-1];
       }
       for (int r=rstart_1(v,m);r<=v.nr();r++) {
         const int ir = r*(v.nz()+1);
