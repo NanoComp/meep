@@ -65,8 +65,8 @@ fields::~fields() {
 void fields::use_bloch(double tk) {
   if (npmlz) npmlz = 0;
   k = tk;
-  cosknz = cos(k*inva*nz);
-  sinknz = sin(k*inva*nz);
+  cosknz = cos(k*2*pi*inva*nz);
+  sinknz = sin(k*2*pi*inva*nz);
   eiknz = complex<double>(cosknz, sinknz);
 }
 
