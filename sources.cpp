@@ -100,7 +100,8 @@ int fields_chunk::add_point_source(component whichf, double freq,
                                    double cutoff, const vec &p,
                                    complex<double> amp, int is_c, double tim) {
   if (p.dim != v.dim)
-    abort("Error:  source doesn't have right dimensions!\n");
+    abort("Error:  source doesn't have right dimensions! %s %s\n",
+	  dimension_name(p.dim), dimension_name(v.dim));
   if (!v.has_field(whichf))
     abort("Error:  source component %s is invalid.\n", component_name(whichf));
   // Allocate fields if they haven't already been allocated:

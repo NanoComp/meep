@@ -148,17 +148,7 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
   num[0] = na;
   num[1] = nb;
   num[2] = nc;
-  switch (d) {
-  case Dcyl: origin = vec(0,0);
-    break;
-  case D3: origin = vec(0,0,0);
-    break;
-  case D2: origin = vec2d(0,0);
-    break;
-  case D1: origin = vec(0);
-    break;
-    abort("Can't make volume with these dimensions!\n");
-  }
+  origin = zero_vec(dim);
   the_ntot = right_ntot(d, num);
 }
 

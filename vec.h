@@ -47,6 +47,15 @@ inline signed_direction flip(signed_direction d) {
   return D2;
 }
 
+inline bool has_direction(ndim dim, direction d) {
+  switch (dim) {
+  case D2: return d == X || d == Y;
+  case D1: return d == Z;
+  case D3: return d == X || d == Y || d == Z;
+  case Dcyl: return d == Z || d == R;
+  }
+}
+
 inline int is_electric(component c) { return (int) c < 5; }
 inline int is_magnetic(component c) { return (int) c >= 5; }
 inline field_type type(component c) {
@@ -77,7 +86,7 @@ inline component direction_component(component c, direction d) {
 
 class vec {
  public:
-  vec() { dim = D2; t[X] = t[Y] = 0; };
+  vec() {};
   vec(double zz) { dim = D1; t[Z] = zz; };
   vec(double rr, double zz) { dim = Dcyl; t[R] = rr; t[Z] = zz; };
   vec(double xx, double yy, double zz) {
@@ -163,7 +172,7 @@ inline vec zero_vec(ndim di) {
 }
 
 inline vec vec2d(double xx, double yy) {
-  vec v; v.t[X] = xx; v.t[Y] = yy; return v;
+  vec v; v.dim = D2; v.t[X] = xx; v.t[Y] = yy; return v;
 }
 
 class ivec {

@@ -38,6 +38,7 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
                                int num, const symmetry &s) {
   num_chunks = num;
   user_volume = thev;
+  v = thev;
   S = s;
   if (S.multiplicity() > 1) {
     // Have to work out the symmetry point and volume to use.
@@ -49,20 +50,17 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
       const direction d = (direction) dd;
       break_this[d] = false;
       for (int n=0;n<S.multiplicity();n++)
-        if (S.transform(d,n).d != d || S.transform(d,n).flipped) {
+        if (has_direction(thev.dim,(direction)d) && (S.transform(d,n).d != d || S.transform(d,n).flipped)) {
           break_this[d] = true;
           if (thev.num_direction(d) & 1)
             abort("Aaack, odd number of grid points!\n");
         }
     }
-    v = thev;
     for (int d=0;d<3;d++)
       if (break_this[d]) v = v.split_specifically(2,0,(direction)d);
     // Pad the little cell in any direction that we've shrunk:
     for (int d=0;d<3;d++)
       if (break_this[d]) v = v.pad((direction)d);
-  } else {
-    v = thev;
   }
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) {
