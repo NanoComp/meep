@@ -188,7 +188,6 @@ void fields::output_slices(const char *name) {
     snprintf(time_step_string, buflen, "%08.0f", time());
   else
     snprintf(time_step_string, buflen, "%09.2f", time());
-  printf("time format: %s\n", time_step_string);
   {
     polarization *p = pol;
     int polnum = 0;
