@@ -535,16 +535,20 @@ class fields {
                                     const char *name = "");
 
   // h5fields.cpp
-  void output_hdf5(const char *filename,
-		   const geometric_volume &where, double res,
+  void output_hdf5(const char *filename, const char *dataname,
 		   component c, int reim,
-		   bool append_data = false, int dindex = -1,
-		   bool single_precision = false, bool append_file = false);
-  void output_hdf5(const char *filename,
 		   const geometric_volume &where, double res,
-		   component c,
 		   bool append_data = false, int dindex = -1,
 		   bool single_precision = false, bool append_file = false);
+  void output_hdf5(const char *filename, component c,
+		   const geometric_volume &where, double res,
+		   bool append_data = false, int dindex = -1,
+		   bool single_precision = false, bool append_file = false);
+  void output_hdf5(component c,
+		   const geometric_volume &where, double res,
+		   bool append_data = false, int dindex = -1,
+		   bool single_precision = false, bool append_file = false,
+		   const char *prefix = 0);
 
   double maxfieldmag_to_master(component) const;
   double minpolenergy_to_master() const;

@@ -28,9 +28,9 @@ static double get_reim(complex<double> x, int reim)
   return reim ? imag(x) : real(x);
 }
 
-void fields::output_hdf5(const char *filename,
-			 const geometric_volume &where, double res,
+void fields::output_hdf5(const char *filename, const char *dataname,
 			 component c, int reim,
+			 const geometric_volume &where, double res,
 			 bool append_data, int dindex,
                          bool single_precision, bool append_file) {
   geometric_volume vout(where); // FIXME: intersect with computational cell?
@@ -82,9 +82,6 @@ void fields::output_hdf5(const char *filename,
   double resinv = 1.0 / res;
   int start[5], count[5] = {1,1,1,1,1};
   int chunks_written = 0;
-
-  char dataname[256];
-  snprintf(dataname, 256, "%s.%s", component_name(c), reim ? "i" : "r");
 
   // Finally, fetch the data from each chunk and write it to the file:
   for (int sn = 0; sn < S.multiplicity(); ++sn) {
@@ -184,16 +181,41 @@ void fields::output_hdf5(const char *filename,
   }
 }
 
-void fields::output_hdf5(const char *filename,
+void fields::output_hdf5(const char *filename, component c,
 			 const geometric_volume &where, double res,
-			 component c,
 			 bool append_data, int dindex,
                          bool single_precision, bool append_file) {
-  output_hdf5(filename, where, res, c, 0,  // real part
+  char dataname[256];
+
+  snprintf(dataname, 256, "%s%s", component_name(c), is_real ? "" : ".r");
+  output_hdf5(filename, dataname, c, 0, where, res,
 	      append_data, dindex, single_precision, append_file);
-  if (!is_real)
-    output_hdf5(filename, where, res, c, 1,  // imaginary part
+  if (!is_real) {
+    snprintf(dataname, 256, "%s.i", component_name(c));
+    output_hdf5(filename, dataname, c, 1, where, res,
 		append_data, dindex, single_precision, true);
+  }
+}
+
+void fields::output_hdf5(component c,
+			 const geometric_volume &where, double res,
+			 bool append_data, int dindex,
+                         bool single_precision, bool append_file,
+			 const char *prefix) {
+  const int buflen = 1024;
+  char filename[buflen];
+  char dataname[256];
+  char time_step_string[32] = "";
+
+  if (!append_data) snprintf(time_step_string, 32, "-%09.2f", time());
+  snprintf(filename, buflen, "%s/" "%s%s" "%s" "%s" ".h5",
+	   outdir, 
+	   prefix ? prefix : "", prefix && prefix[0] ? "-" : "",
+	   append_file ? "fields" : component_name(c),
+	   time_step_string);
+
+  output_hdf5(filename, c, where, res, append_data, dindex,
+	      single_precision, append_file);
 }
 
 } // meep

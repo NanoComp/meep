@@ -90,7 +90,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   char fname[1024];
   snprintf(fname, 1024, "%s.h5", name);
   double res = 1.54321 * a;
-  f.output_hdf5(fname, file_gv, res, file_c);
+  f.output_hdf5(fname, file_c, file_gv, res);
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
@@ -111,7 +111,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     int rank, dims[2] = {1, 1};
 
     char dataname[256];
-    snprintf(dataname, 256, "%s.%s", component_name(file_c), reim ? "i" : "r");
+    snprintf(dataname, 256, "%s%s", component_name(file_c),
+	     reim ? ".i" : (real_fields ? "" : ".r"));
 
     double *h5data = h5io::read(fname, dataname,
 				&rank, dims, 2);
@@ -192,7 +193,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   char fname[1024];
   snprintf(fname, 1024, "%s.h5", name);
   double res = 0.54321 * a;
-  f.output_hdf5(fname, file_gv, res, file_c);
+  f.output_hdf5(fname, file_c, file_gv, res);
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
@@ -213,7 +214,8 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     int rank, dims[3] = {1, 1, 1};
 
     char dataname[256];
-    snprintf(dataname, 256, "%s.%s", component_name(file_c), reim ? "i" : "r");
+    snprintf(dataname, 256, "%s%s", component_name(file_c),
+	     reim ? ".i" : (real_fields ? "" : ".r"));
 
     double *h5data = h5io::read(fname, dataname,
 				&rank, dims, 3);
@@ -294,7 +296,7 @@ bool check_2d_monitor(double eps(const vec &),
   int NT = int(T / (f.inva * c)) + 2;
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
-    f.output_hdf5(fname, geometric_volume(pt, pt), a, file_c,
+    f.output_hdf5(fname, file_c, geometric_volume(pt, pt), a,
 		  true, f.t);
     mon[f.t] = f.get_field(file_c, pt);
     f.step();
@@ -310,7 +312,8 @@ bool check_2d_monitor(double eps(const vec &),
     int rank, dims[1] = {1};
 
     char dataname[256];
-    snprintf(dataname, 256, "%s.%s", component_name(file_c), reim ? "i" : "r");
+    snprintf(dataname, 256, "%s%s", component_name(file_c),
+	     reim ? ".i" : (real_fields ? "" : ".r"));
 
     double *h5data = h5io::read(fname, dataname, &rank, dims, 2);
     if (!h5data)
