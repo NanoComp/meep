@@ -1,6 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 AC_INIT(step.cpp)
 AC_CONFIG_HEADER(config.h)
+AC_PREREQ(2.50)
 
 VERSION=0.2
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define to the version number string.])
@@ -20,11 +21,6 @@ AC_PROG_INSTALL
 if test "$GCC" = "yes"; then
 	CXXFLAGS="$CXXFLAGS -Wall -W -Wbad-function-cast -Wcast-qual -Wpointer-arith -Wcast-align -pedantic"
 fi
-
-DACTYL_CXX="$CXX"
-DACTYL_CXXFLAGS="$CXXFLAGS"
-AC_SUBST(DACTYL_CXX)
-AC_SUBST(DACTYL_CXXFLAGS)
 
 # check how to transform the name of the installed program:
 AC_ARG_PROGRAM
@@ -121,5 +117,37 @@ fi
 AC_CHECK_FUNC(CGEEV,,AC_CHECK_LIB(lapack, main))
 
 ###########################################################################
+
+
+##############################################################################
+# Check for MPI library
+
+AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
+                  with_mpi=$withval, with_mpi=no)
+if test "x$with_mpi" = "xyes"; then
+        AC_CHECK_PROGS(MPICC, mpicc hcc mpcc mpcc_r, $CC)
+        CC="$MPICC"
+        AC_CHECK_PROGS(MPICXX, mpiCC mpCC, $CXX)
+        CXX="$MPICXX"
+        if test x = x"$MPILIBS"; then
+                AC_CHECK_FUNC(MPI_Init, [MPILIBS=" "])
+        fi
+        if test x = x"$MPILIBS"; then
+                AC_CHECK_LIB(mpi, MPI_Init, [MPILIBS="-lmpi"])
+        fi
+
+        if test x = x"$MPILIBS"; then
+                AC_MSG_ERROR(could not find mpi library for --with-mpi)
+        fi
+
+        LIBS="$MPILIBS $LIBS"
+
+        AC_DEFINE(HAVE_MPI,1,[Define if you have & link an MPI library.])
+fi
+
+DACTYL_CXX="$CXX"
+DACTYL_CXXFLAGS="$CXXFLAGS"
+AC_SUBST(DACTYL_CXX)
+AC_SUBST(DACTYL_CXXFLAGS)
 
 AC_OUTPUT(Makefile doc/Makefile tests/Makefile)

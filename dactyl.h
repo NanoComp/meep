@@ -363,4 +363,11 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL);
 
+// MPI helper routines!
+
+void initialize(int argc, char **argv);
+void finished();
+int count_processors();
+int my_rank();
+
 #endif

@@ -46,6 +46,8 @@ complex<double> checkers(const vec &v) {
 }
 
 int main(int argc, char **argv) {
+  initialize(argc, argv);
+  printf("I've got %d processors!\n", count_processors());
   deal_with_ctrl_c();
   printf("Running example program!\n");
 
@@ -53,7 +55,7 @@ int main(int argc, char **argv) {
   int m=1;
   double ttot = 100;
   
-  mat ma(volcyl(4.0,3.6,a), guided_eps, 40);
+  mat ma(volcyl(4.0,3.6,a), guided_eps, count_processors());
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
   //ma.use_pml_right(1.0);
@@ -81,5 +83,6 @@ int main(int argc, char **argv) {
     }
   }
   delete[] dirname;
+  finished();
 }
 
