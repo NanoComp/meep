@@ -173,68 +173,45 @@ class ivec {
   ~ivec() {};
 
   ivec operator+(const ivec &a) const {
-    switch (dim) {
-    case Dcyl: return ivec(t[R]+a.t[R],t[Z]+a.t[Z]);
-    case D3: return ivec(t[X]+a.t[X],t[Y]+a.t[Y],t[Z]+a.t[Z]);
-    case D2: return ivec2d(t[X]+a.t[X],t[Y]+a.t[Y]);
-    case D1: return ivec(t[Z]+a.t[Z]);
-    }
+    ivec result = a;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] += t[d];
+    return result;
   };
+
   ivec operator+=(const ivec &a) {
-    switch (dim) {
-    case Dcyl: t[R] += a.t[R]; t[Z] += a.t[Z]; return *this;
-    case D3: t[X] += a.t[X]; t[Y] += a.t[Y]; t[Z] += a.t[Z]; return *this;
-    case D2: t[X] += a.t[X]; t[Y] += a.t[Y]; return *this;
-    case D1: t[Z] += a.t[Z]; return ivec(t[Z]+a.t[Z]);
-    }
+    LOOP_OVER_DIRECTIONS(dim, d) t[d] += a.t[d];
   };
-  ivec operator-=(const ivec &a) {
-    switch (dim) {
-    case Dcyl: t[R] -= a.t[R]; t[Z] -= a.t[Z]; return *this;
-    case D3: t[X] -= a.t[X]; t[Y] -= a.t[Y]; t[Z] -= a.t[Z]; return *this;
-    case D2: t[X] -= a.t[X]; t[Y] -= a.t[Y]; return *this;
-    case D1: t[Z] -= a.t[Z]; return ivec(t[Z]-a.t[Z]);
-    }
-  };
+
   ivec operator-(const ivec &a) const {
-    switch (dim) {
-    case Dcyl: return ivec(t[R]-a.t[R],t[Z]-a.t[Z]);
-    case D3: return ivec(t[X]-a.t[X],t[Y]-a.t[Y],t[Z]-a.t[Z]);
-    case D2: return ivec2d(t[X]-a.t[X],t[Y]-a.t[Y]);
-    case D1: return ivec(t[Z]-a.t[Z]);
-    }
+    ivec result = a;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] = t[d] - result.t[d];
+    return result;
   };
+
+  ivec operator-=(const ivec &a) {
+    LOOP_OVER_DIRECTIONS(dim, d) t[d] -= a.t[d];
+  };
+
   bool operator!=(const ivec &a) const {
-    switch (dim) {
-    case Dcyl: return t[R]!=a.t[R] || t[Z]!=a.t[Z];
-    case D3: return t[X]!=a.t[X] || t[Y]!=a.t[Y] || t[Z]!=a.t[Z];
-    case D2: return t[X]!=a.t[X] || t[Y]!=a.t[Y];
-    case D1: return t[Z]!=a.t[Z];
-    }
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] != a.t[d]) return true;
+    return false;
   };
+
   bool operator==(const ivec &a) const {
-    switch (dim) {
-    case Dcyl: return t[R]==a.t[R] && t[Z]==a.t[Z];
-    case D3: return t[X]==a.t[X] && t[Y]==a.t[Y] && t[Z]==a.t[Z];
-    case D2: return t[X]==a.t[X] && t[Y]==a.t[Y];
-    case D1: return t[Z]==a.t[Z];
-    }
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] != a.t[d]) return false;
+    return true;
   };
+
   ivec operator*(int s) const {
-    switch (dim) {
-    case Dcyl: return ivec(t[R]*s,t[Z]*s);
-    case D3: return ivec(t[X]*s,t[Y]*s,t[Z]*s);
-    case D2: return ivec2d(t[X]*s,t[Y]*s);
-    case D1: return ivec(t[Z]*s);
-    }
+    ivec result = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= s;
+    return result;
   };
+
   vec operator*(double s) const {
-    switch (dim) {
-    case Dcyl: return vec(t[R]*s,t[Z]*s);
-    case D3: return vec(t[X]*s,t[Y]*s,t[Z]*s);
-    case D2: return vec2d(t[X]*s,t[Y]*s);
-    case D1: return vec(t[Z]*s);
-    }
+    vec result = zero_vec(dim);
+    LOOP_OVER_DIRECTIONS(dim, d) result.set_direction(d, t[d] * s);
+    return result;
   };
   ndim dim;
 
@@ -251,7 +228,7 @@ class ivec {
 };
 
 inline ivec zero_ivec(ndim di) {
-  ivec v; v.dim = di; for (int d=0;d<5;d++) v.set_direction((direction)d,0);
+  ivec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0);
   return v;
 }
 
