@@ -117,6 +117,47 @@ int test_cyl_metal_mirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
+int test_1d_periodic_mirror(double eps(const vec &), const char *dirname) {
+  master_printf("Testing Z mirror symmetry in 1D...\n");
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = volone(1.0, a);
+  the_center = v.center();
+  const symmetry S = mirror(Z,v);
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+
+  fields f1(&ma1);
+  f1.use_bloch(0.0);
+  f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.5));
+  fields f(&ma);
+  f.use_bloch(0.0);
+  f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.01))) return 0;
+    if (!compare_point(f, f1, vec(0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.50))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
 int test_origin_shift(const char *dirname) {
   master_printf("Testing origin shift in 2D...\n");
   double a = 10.0;
@@ -739,6 +780,9 @@ int main(int argc, char **argv) {
   const char *dirname = "symmetry-out";
   trash_output_directory(dirname);
   master_printf("Testing with various kinds of symmetry...\n");
+
+  if (!test_1d_periodic_mirror(one, dirname))
+    abort("error in test_1d_periodic_mirror vacuum\n");
 
   if (!test_cyl_metal_mirror(one, dirname))
     abort("error in test_cyl_metal_mirror vacuum\n");
