@@ -22,34 +22,41 @@
 #include "meep.h"
 #include "meep_internals.h"
 
-static double get_phase(component c, double *f[2],
-                        const volume &v, const geometric_volume &what) {
-  complex<double> mean=0;
-  for (int i=0;i<v.ntot();i++)
-    mean += v.dV(c,i).full_volume()*complex<double>(f[0][i],f[1][i]);
-  complex<double> meanr=0;
-  for (int i=0;i<v.ntot();i++) {
-    complex<double> val = v.dV(c,i).full_volume()*complex<double>(f[0][i],f[1][i]);
-    if (f[0][i] > 0) meanr += val;
-    else meanr -= val;
-  }
-  complex<double> meani=0;
-  for (int i=0;i<v.ntot();i++) {
-    complex<double> val = v.dV(c,i).full_volume()*complex<double>(f[0][i],f[1][i]);
-    if (f[1][i] > 0) meani += val;
-    else meani -= val;
-  }
-  if (abs(mean) > abs(meanr) && abs(mean) > abs(meani)) return arg(mean);
-  if (abs(meanr) > abs(meani)) return arg(meanr);
-  if (abs(meani) > 0.0) return arg(meani);
-  return 0;
+complex<double> fields::optimal_phase_shift(component c) const {
+  complex<double> mean = field_mean(c, false, false);
+  complex<double> meanr= field_mean(c, true , false);
+  complex<double> meani= field_mean(c, false, true );
+  if (abs(mean) > abs(meanr) && abs(mean) > abs(meani)) return abs(mean)/mean;
+  if (abs(meanr) > abs(meani)) return abs(meanr)/meanr;
+  if (abs(meani) > 0.0) return abs(meani)/meani;
+  return 1.0;
 }
 
-static void output_complex_slice(component m, double *f[2], const volume &v,
+complex<double> fields::field_mean(component c, bool abs_real,
+                                   bool abs_imag) const {
+  complex<double> themean = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    themean += chunks[i]->field_mean(c, abs_real, abs_imag);
+  return sum_to_all(themean);
+}
+
+complex<double> fields_chunk::field_mean(component c, bool abs_real,
+                                         bool abs_imag) const {
+  complex<double> themean = 0.0;
+  if (f[c][0]) for (int i=0;i<v.ntot();i++)
+    themean += (v.dV(c,i) & gv).full_volume()*
+      (abs_real)?fabs(f[c][0][i]):f[c][0][i];
+  if (f[c][1]) for (int i=0;i<v.ntot();i++)
+    themean += (v.dV(c,i) & gv).full_volume()*
+      complex<double>(0,abs_imag?fabs(f[c][1][i]):f[c][1][i]);
+  return themean;
+}
+
+static void output_complex_slice(component m, double *f[2],
+                                 complex<double> phshift, const volume &v,
                                  const geometric_volume &what, file *out) {
   if (!f[0] || ! f[1]) return; // Field doesn't exist...
-  double phase = get_phase(m, f, v, what);
-  double c = cos(phase), s = sin(phase);
+  double c = real(phshift), s = imag(phshift);
   for (int i=0;i<v.ntot();i++) {
     if (what.contains(v.loc(m,i))) {
       v.loc(m,i).print(out);
@@ -68,8 +75,8 @@ static void output_slice(component m, const double *f, const volume &v,
     }
 }
 
-const double default_eps_resolution = 20.0;
-const double default_eps_size = 1000.0;
+static const double default_eps_resolution = 20.0;
+static const double default_eps_size = 1000.0;
 
 static void eps_header(double xmin, double ymin, double xmax, double ymax,
                        double fmax, double a, file *out, const char *name) {
@@ -496,18 +503,19 @@ void fields::output_slices(const geometric_volume &what, const char *name) {
     snprintf(time_step_string, buflen, "%08.0f", time());
   else
     snprintf(time_step_string, buflen, "%09.2f", time());
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c)) {
+  FOR_COMPONENTS(c)
+    if (v.has_field(c)) {
       snprintf(n, buflen, "%s/%s%s-%s.sli", outdir, nname,
-               component_name((component)c), time_step_string);
+               component_name(c), time_step_string);
       file *out = everyone_open_write(n);
       if (!out) {
         printf("Unable to open file '%s' for slice output.\n", n);
         return;
       }
+      complex<double> phshift = optimal_phase_shift(c);
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
-          output_complex_slice((component)c, chunks[i]->f[c],
+          output_complex_slice(c, chunks[i]->f[c], phshift,
                                chunks[i]->v, what, out);
       everyone_close(out);
     }
@@ -556,10 +564,12 @@ void fields::eps_slices(const vec &origin, const vec &xside, const vec &yside,
       }
       if (am_master())
         output_eps_header(fmax, dx, xmin, xmin + xlen, ymin, ymin + ylen, out, n);
+      complex<double> phshift = optimal_phase_shift(c);
       for (double x = xmin; x <= xmin + xlen + dx; x += dx)
         for (double y = ymin; y <= ymin + ylen + dx; y += dx)
           master_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
-                         real(get_field(c, origin + xhat*(x-xmin) + yhat*(y-ymin))));
+                         real(phshift*
+                              get_field(c, origin + xhat*(x-xmin) + yhat*(y-ymin))));
       for (double x = xmin; x <= xmin + xlen + dx; x += 1.0/v.a)
         for (double y = ymin; y <= ymin + ylen + dx; y += 1.0/v.a) {
           vec loc = origin + xhat*(x-xmin) + yhat*(y-ymin);

@@ -205,6 +205,8 @@ class fields_chunk {
   double maxfieldmag(component) const;
   void output_eps_body(component, const symmetry &, int sn,
                        const geometric_volume &what, file *);
+  complex<double> fields_chunk::field_mean(component c, bool abs_real,
+                                           bool abs_imag) const;
 
   double electric_energy_in_box(const geometric_volume &, const symmetry &);
   double magnetic_energy_in_box(const geometric_volume &, const symmetry &);
@@ -332,6 +334,7 @@ class fields {
   void output_real_imaginary_slices(const geometric_volume &what,
                                     const char *name = "");
   double maxfieldmag_to_master(component) const;
+  complex<double> optimal_phase_shift(component) const;
   // step.cpp methods:
   void step();
   void step_old(); // Step using old code.
@@ -428,6 +431,8 @@ class fields {
   // slices.cpp
   void outline_chunks(file *name);
   bool has_eps_interface(vec *loc) const;
+  complex<double> fields::field_mean(component c, bool abs_real = false,
+                                     bool abs_imag = false) const;
   // energy_and_flux.cpp
   // fluxes.cpp
   void update_fluxes();
