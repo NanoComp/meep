@@ -274,6 +274,7 @@ class volume {
   vec origin;
   double a, inva;
 
+  int stride(direction d) const;
   int num_direction(direction d) const {
     return num[((int) d) % 3];
   };

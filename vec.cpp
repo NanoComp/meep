@@ -306,14 +306,19 @@ int volume::has_boundary(boundary_side b,direction d) const {
 
 int volume::index(component c, const ivec &p) const {
   const ivec offset = p - io() - iyee_shift(c);
-  switch (dim) {
-  case Dcyl: return (offset.z() + offset.r()*(nz()+1))/2;
-  case D3: return (offset.z() + offset.y()*(nz()+1) +
-                   offset.x()*(nz()+1)*(ny()+1))/2;
-  case D2: return (offset.y() + offset.x()*(ny()+1))/2;
-  case D1: return offset.z()/2;
+  int idx = 0;
+  LOOP_OVER_DIRECTIONS(dim,d) idx += offset.in_direction(d)/2*stride(d);
+  return idx;
+}
+
+int volume::stride(direction d) const {
+  switch(d) {
+  case Z: return 1;
+  case R: return nz()+1;
+  case X: return stride(Y)*(ny() + 1);
+  case Y: if (dim == D2) return 1;
+          else return nz() + 1;
   }
-  abort("Unsupported dimension in index.\n");
 }
 
 static inline void stupidsort(int *ind, double *w, int l) {
