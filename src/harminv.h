@@ -68,4 +68,3 @@ extern cmplx *harminv_compute_amplitudes(harminv_data d);
 /**************************************************************************/
 
 #endif /* HARMINV_H */
-

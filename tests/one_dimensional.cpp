@@ -159,4 +159,3 @@ int main(int argc, char **argv) {
     if (!test_simple_periodic(one, s, dirname)) abort("error in test_simple_periodic\n");
   exit(0);
 }
-

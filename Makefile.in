@@ -1,0 +1,125 @@
+.SUFFIXES: .dac
+.PHONY: doc clean all test check uninstall bench
+
+CXX = @DACTYL_CXX@
+CXXFLAGS = @DACTYL_CXXFLAGS@
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@
+LIBS = -lgsl -lfftw @LIBS@ -lm
+LDFLAGS = @LDFLAGS@
+INSTALL = @INSTALL@
+prefix = @prefix@
+# c.f. AC_ARG_PROGRAM autoconf docs:
+transform=@program_transform_name@
+@SET_MAKE@
+
+VERSION = @VERSION@
+package = meep
+distdir = $(package)-$(VERSION)
+
+###########################################################################
+
+OBJ_meep = step.o harminv.o bands.o output_directory.o material.o \
+	polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
+	vec.o slices.o initialize.o sources.o fields.o boundaries.o \
+	mympi.o fluxes.o time.o ran.o anisotropic_averaging.o \
+	step_d.o step_h.o update_e_from_d.o update_from_e.o
+OBJ_example = example.o libmeep.a
+
+###########################################################################
+
+all: libmeep.a example
+install: meep-install
+uninstall: meep-uninstall
+
+###########################################################################
+
+anisotropic_averaging.o: threevec.h
+$(OBJ_meep): meep.h meep_internals.h vec.h mympi.h
+example.o: example.cpp meep.h vec.h mympi.h
+update_from_e.o: update_from_e.cpp update_from_e.h \
+		meep.h meep_internals.h vec.h mympi.h
+update_e_from_d.o: update_e_from_d.cpp update_e_from_d.h \
+		meep.h meep_internals.h vec.h mympi.h
+step_d.o: step_d.cpp step_d.h \
+		meep.h meep_internals.h vec.h mympi.h
+step_h.o: step_h.cpp step_h.h \
+		meep.h meep_internals.h vec.h mympi.h
+
+step_h.h: step_h_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o step_h_gen step_h_gen.hs && ./step_h_gen > step_h.h
+update_e_from_d.h: update_e_from_d_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o update_e_from_d_gen update_e_from_d_gen.hs && \
+		./update_e_from_d_gen > update_e_from_d.h
+update_from_e.h: update_from_e_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o update_from_e_gen update_from_e_gen.hs && \
+		./update_from_e_gen > update_from_e.h
+step_d.h: step_d_gen.hs StepGen.lhs Complex.lhs YeeLattice.lhs
+	ghc -fglasgow-exts -package data --make -o step_d_gen step_d_gen.hs && ./step_d_gen > step_d.h
+
+libmeep.a: $(OBJ_meep)
+	ar cru libmeep.a $(OBJ_meep)
+	ranlib libmeep.a
+
+example: $(OBJ_example)
+	$(CXX) $(CFLAGS) $(LDFLAGS) $(OBJ_example) $(LIBS) -o $@
+
+bands_example: bands_example.o libmeep.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) bands_example.o libmeep.a $(LIBS) -o $@
+
+convergence_testing: convergence_testing.o libmeep.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) convergence_testing.o libmeep.a $(LIBS) -o $@
+
+.cpp.o:
+	$(CXX) -c $(DEFS) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
+.o.dac: libmeep.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< libmeep.a $(LIBS) -o $@
+
+###########################################################################
+
+meep-install: meep
+	$(INSTALL) -d $(prefix)/bin
+	$(INSTALL) -d $(prefix)/man/man1
+	$(INSTALL) -m 0755 -s meep $(prefix)/bin/`echo meep|sed '$(transform)'`
+	$(INSTALL) -m 0644 meep.1 $(prefix)/man/man1
+
+meep-uninstall:
+	rm -f $(prefix)/bin/meep
+	rm -f $(prefix)/man/man1/meep.1
+
+###########################################################################
+
+uninstall: $(UNINSTALL_TARGETS)
+
+dist:
+	darcs dist -d $(VERSION)
+
+bench: libmeep.a
+	cd tests && make bench
+
+test: libmeep.a
+	cd tests && make test
+	cd doc && make test
+
+test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
+	rm -rf d_k_0.1pi_pml_m_1-out
+	./d_k_0.1pi_pml_m_1.dac
+	cp reference_slices/d_k_0.1pi_pml_m_1-out/*.sli d_k_0.1pi_pml_m_1-out/
+	cd d_k_0.1pi_pml_m_1-out/ && \
+	    ../diff_slice d_k_0.1pi_pml_m_1-out M_k_0.1pi_pml_m_1 1e-5
+
+doc : documentation
+
+documentation: libmeep.a
+	cd doc && make
+
+clean:
+	rm -f $(OBJ_meep) *.o libmeep.a example core bands_example *.dac debug_out_*
+	cd doc && make clean
+	cd tests && make clean
+
+distclean: clean
+	rm -f config.cache Makefile config.log config.status config.h meep
+
+maintainer-clean: distclean
+	rm -f configure config.h

@@ -35,6 +35,3 @@ void fields_chunk::update_from_e() {
   const int ntot = ma->v.ntot();
 #include "update_from_e.h"
 }
-
-} // namespace meep
-

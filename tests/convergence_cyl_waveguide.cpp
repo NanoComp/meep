@@ -77,4 +77,3 @@ int main(int argc, char **argv) {
   else
     master_printf("Passed convergence test!\n");
 }
-

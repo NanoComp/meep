@@ -34,4 +34,3 @@
 } while (0)
 
 #endif /* CHECK_H */
-

@@ -164,6 +164,3 @@ const char *make_output_directory(const char *exename, const char *jobname) {
 void trash_output_directory(const char *dirname) {
   if (am_master()) mkdir(dirname, 00777);
 }
-
-} // namespace meep
-

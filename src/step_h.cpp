@@ -193,6 +193,3 @@ void fields_chunk::step_h() {
     abort("Can't step H in these dimensions.");
   }
 }
-
-} // namespace meep
-

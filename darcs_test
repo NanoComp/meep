@@ -19,5 +19,3 @@ make
 make check
 popd
 
-rm -rf $distdir */latest_output
-

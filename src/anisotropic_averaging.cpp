@@ -56,6 +56,3 @@ double anisoaverage(component ec, direction d, double eps(const vec &),
   int colnum = d % 3;
   return avg.row[rownum].val[colnum];
 }
-
-} // namespace meep
-

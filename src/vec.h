@@ -484,6 +484,3 @@ symmetry rotate2(direction,const volume &);
 symmetry mirror(direction,const volume &);
 
 } /* namespace meep */
-
-#endif /* MEEP_VEC_H */
-

@@ -170,6 +170,3 @@ void fields_chunk::update_fluxes() {
     mover = mover->next_in_chunk;
   } while (mover);
 }
-
-} // namespace meep
-

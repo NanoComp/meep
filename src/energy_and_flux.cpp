@@ -159,6 +159,3 @@ double fields_chunk::thermo_energy_in_box(const geometric_volume &otherv,
     return 0.0;
   }
 }
-
-} // namespace meep
-

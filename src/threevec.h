@@ -128,6 +128,3 @@ inline tensor operator/(double s, const tensor &t) {
     if (fabs(out.row[i].val[j]) < 1e-50) out.row[i].val[j] = 0.0;
   return out;
 }
-
-} // namespace meep
-

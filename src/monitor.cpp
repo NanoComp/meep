@@ -405,6 +405,3 @@ void monitor_point::harminv(component w,
   delete[] f_im;
   delete[] d;
 }
-
-} // namespace meep
-

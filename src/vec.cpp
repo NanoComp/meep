@@ -1104,6 +1104,3 @@ bool symmetry::is_primitive(const ivec &p) const {
   }
   return true;
 }
-
-} // namespace meep
-
