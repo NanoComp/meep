@@ -310,6 +310,9 @@ fi # if with_libctl
 ##############################################################################
 # Check for libctl library and files
 
+GEN_CTL_IO=gen-ctl-io
+AC_SUBST(GEN_CTL_IO)
+
 if test "x$with_libctl" != xno; then
 
 AC_MSG_CHECKING([for libctl dir])
@@ -332,9 +335,6 @@ AC_CHECK_PROG(gen_ctl_io_ok, gen-ctl-io, yes, no)
 if test x"$gen_ctl_io_ok" = xno; then
 	AC_MSG_ERROR([could not find gen-ctl-io program; check your PATH])
 fi
-
-GEN_CTL_IO=gen-ctl-io
-AC_SUBST(GEN_CTL_IO)
 
 # check for -lctl:
 AC_CHECK_LIB(ctl, ctl_get_vector3, [], [AC_MSG_ERROR([Couldn't find the required libctl library.])])
