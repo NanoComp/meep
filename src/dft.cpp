@@ -191,11 +191,13 @@ static int dft_chunks_Ntotal(dft_chunk *dft_chunks) {
 }
 
 // Note: the file must have been created in parallel mode, typically via fields::open_h5file.
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file) {
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+		   const char *dprefix) {
   int n = dft_chunks_Ntotal(dft_chunks);
 
-  char dataname[128];
-  snprintf(dataname, 128, "%s_dft", component_name(c));
+  char dataname[1024];
+  snprintf(dataname, 1024, "%s%s" "%s_dft", 
+	   dprefix ? dprefix : "", dprefix ? "_" : "", component_name(c));
   file->create_data(dataname, 1, &n);
 
   int ichunk = 0, istart = 0;
@@ -207,11 +209,13 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file) {
   file->done_writing_chunks();
 }
 
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file) {
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+		   const char *dprefix) {
   int n = dft_chunks_Ntotal(dft_chunks);
 
-  char dataname[128];
-  snprintf(dataname, 128, "%s_dft", component_name(c));
+  char dataname[1024];
+  snprintf(dataname, 1024, "%s%s" "%s_dft", 
+	   dprefix ? dprefix : "", dprefix ? "_" : "", component_name(c));
   int file_rank, file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
@@ -262,17 +266,17 @@ double *dft_flux::flux() {
   return Fsum;
 }
 
-void dft_flux::save_hdf5(h5file *file) {
+void dft_flux::save_hdf5(h5file *file, const char *dprefix) {
   for (int i = 0; i < 2; ++i) {
-    save_dft_hdf5(E[i], cE[i], file);
-    save_dft_hdf5(H[i], cH[i], file);
+    save_dft_hdf5(E[i], cE[i], file, dprefix);
+    save_dft_hdf5(H[i], cH[i], file, dprefix);
   }
 }
 
-void dft_flux::load_hdf5(h5file *file) {
+void dft_flux::load_hdf5(h5file *file, const char *dprefix) {
   for (int i = 0; i < 2; ++i) {
-    load_dft_hdf5(E[i], cE[i], file);
-    load_dft_hdf5(H[i], cH[i], file);
+    load_dft_hdf5(E[i], cE[i], file, dprefix);
+    load_dft_hdf5(H[i], cH[i], file, dprefix);
   }
 }
 

@@ -430,8 +430,10 @@ private:
   int avg1, avg2; // index offsets for average to get epsilon grid
 };
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file);
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file);
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+		   const char *dprefix = 0);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+		   const char *dprefix = 0);
 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
@@ -443,8 +445,8 @@ public:
   dft_flux(const dft_flux &f);
 
   double *flux();
-  void save_hdf5(h5file *file);
-  void load_hdf5(h5file *file);
+  void save_hdf5(h5file *file, const char *dprefix = 0);
+  void load_hdf5(h5file *file, const char *dprefix = 0);
 
   void negate_dfts();
 
