@@ -319,15 +319,18 @@ void fields::output_bands_and_modes(FILE *o, const char *name, int maxbands) {
 }
 
 void fields::grace_bands(grace *g, int maxbands) {
-  complex<double> *fad = get_the_bands(maxbands);
+  double *approx_power = new double[maxbands];
+  complex<double> *fad = get_the_bands(maxbands, approx_power);
 
   int num_found = 0;
   for (int i=0;i<maxbands;i++) if (fad[i] != 0) num_found = i+1;
 
   for (int i = 0; i < num_found; ++i) {
-    g->output_out_of_order(i, k, fabs(real(fad[i])), fabs(imag(fad[i])));
+    g->output_out_of_order(i, k, fabs(real(fad[i])), fabs(imag(fad[i])),
+                           approx_power[i]);
   }
   delete[] fad;
+  delete[] approx_power;
 }
 
 void fields::output_bands(FILE *o, const char *name, int maxbands) {
@@ -732,24 +735,6 @@ int bandsdata::get_freqs(cmplx *data, int n,
                freq_re[i], freq_im[i], qminhere);
         printf("qminhere is %lg (with %lg)\n", qminhere, freq_re[i]);
       }
-      for (int j=i;j<num;j++) {
-        freq_re[j] = freq_re[j+1];
-        freq_im[j] = freq_im[j+1];
-        amps[j] = amps[j+1];
-      }
-    }
-  }
-  // Now get rid of any really low power solutions...
-  double powmax = 0.0;
-  for (int i=0;i<num;i++)
-    powmax = max(powmax,abs(amps[i]*amps[i]));
-  double powmin = powmax*fpmin;
-  for (int i=num-1;i>=0;i--) {
-    if (abs(amps[i]*amps[i]) < powmin) {
-      num--;
-      if (verbosity > 2)
-        printf("Trashing a spurious low power solution with freq %lg %lg (%lg vs %lg)\n",
-               freq_re[i], freq_im[i], amps[i], powmin);
       for (int j=i;j<num;j++) {
         freq_re[j] = freq_re[j+1];
         freq_im[j] = freq_im[j+1];
