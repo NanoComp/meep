@@ -44,6 +44,7 @@ void structure::set_output_directory(const char *name) {
 
 void fields::set_output_directory(const char *name) {
   for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(name);
+  outdir = name;
 }
 
 void fields_chunk::set_output_directory(const char *name) {
@@ -90,8 +91,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   char basename[buflen];
   const char * const evil_suffs[] = { ".dac", ".cpp", ".cc", ".cxx", ".C" };
   char stripped_name[buflen];
-  const char *bnp = exename; // stripped_name holds the actual name of the
-                                  // executable (dirs removed).
+  const char *bnp = exename; // stripped_name holds the actual name of the executable (dirs removed).
   const char *t;
   for (t=exename;*t;t++) {
     if (*t == '/') bnp = t+1;
