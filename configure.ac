@@ -208,6 +208,9 @@ fi
 ##############################################################################
 
 AC_CHECK_PROG(HC, ghc, ghc)
+if test x"$HC" = x && test "$USE_MAINTAINER_MODE" = yes; then
+	AC_MSG_ERROR([the ghc Haskell compiler is required in maintainer mode])
+fi
 
 ##############################################################################
 # Libraries and flags (other than -lmeep) required to link Meep:
