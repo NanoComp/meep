@@ -199,11 +199,12 @@ double Jmax(int m, int n) {
   else rlow = Jroot(m, n-1);
   double jplow = Jprime(m,rlow), jptry;
   do {
-    rtry = rlow + (rlow - rhigh)*0.5;
+    rtry = rlow + (rhigh - rlow)*0.5;
     jptry = Jprime(m,rtry);
     if (jplow*jptry < 0) rhigh = rtry;
     else rlow = rtry;
-  } while (rlow != rhigh);
+  } while (rhigh - rlow > rhigh*1e-15);
+  return rtry;
 }
 
 void fields::initialize_with_n_te(int ntot) {
