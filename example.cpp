@@ -17,6 +17,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include <signal.h>
 
 #include "dactyl.h"
@@ -66,7 +70,13 @@ void add_clever_sources(fields &f, double fmin, double fmax, double r) {
   f.use_real_sources();
 }
 
-int main() {
+int main(int argc, char **argv) {
+  char directory[100], target[100], sumwflux_name[100], temp[100];
+  char executable_name[100], source_name[100], target_name[100];
+  DIR *dir;
+  FILE *tempf, *targetf;
+  int c;
+
   signal(SIGINT, handle_control_c);
   printf("Running example program!\n");
   FILE *ban = fopen("bands", "w");
@@ -76,11 +86,33 @@ int main() {
   double k = 0.0;
   int ttot = 8000*rad;
 
+  sprintf(directory,"example/");
+  if ((dir = opendir(directory)) != NULL)
+    closedir(dir);
+  else
+    mkdir(directory, 00777);
+  strcpy(executable_name, argv[0]);
+  sprintf(source_name, "%s.cpp", executable_name);
+  sprintf(target_name, "%s/%s", directory, source_name);
+  if ((tempf = fopen(source_name,"r")) != NULL 
+    && (targetf = fopen(target_name,"w")) != NULL) {
+    while ( (c=getc(tempf)) != EOF) fprintf(targetf, "%c", c);
+    fclose(tempf);
+    fclose(targetf);
+  } else
+    printf("Error, couldn't open source file %s and/or target file %s.\n",
+	   source_name, target_name);
   mat ma(guided_eps, 1.0, 0.0, rad);
   //ma.use_pml(8,8);
   ma.output_slices("example");
   for (m=1;m<2 && !stopnow;m++) {
     for (k=0.3;k<0.31 && !stopnow;k+=0.1) {
+      strcpy(target,directory);
+      sprintf(temp,"m%d",m);
+      strcat(target,temp);
+      strcpy(sumwflux_name,directory);
+      sprintf(temp, "sumwflux-m%d.dat", m);
+      strcat(sumwflux_name,temp);
       printf("Working on k of %g and m = %d with a=%d...\n", k, m, rad);
       fields f(&ma, m);
       f.use_bloch(k);
@@ -109,6 +141,7 @@ int main() {
         f.step();
         f.dft_flux();
       }
+      //FILE *sumwflux = fopen(sumwflux_name, "w");
       //f.fluxw_output(sumwflux, "sumwflux");
       f.output_bands(ban, "band", 15);
     }
