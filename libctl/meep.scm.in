@@ -1,0 +1,116 @@
+; Copyright (C) 2003 Massachusetts Institute of Technology
+;
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 2 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, write to the Free Software
+; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+; ****************************************************************
+
+; Get the number of arguments to a function p.  However, some
+; older versions of Guile (e.g. 1.2) do not support the 'arity
+; property, and procedure-property just returns false.  In
+; this case, we assume that the procedure returns 1 argument,
+; as this is the most useful default for our purposes.  Sigh.
+
+(define (procedure-num-args p) 
+  (let ((arity (procedure-property p 'arity)))
+    (if arity (car arity) 1)))
+
+; ****************************************************************
+
+(define-class material-type no-parent)
+
+(define-class polarizability no-parent
+  (define-property omega no-default 'number)
+  (define-property gamma no-default 'number)
+  (define-property delta-epsilon 1.0 'number)
+  (define-property energy-saturation 0.0 'number))
+
+(define-class dielectric material-type
+  (define-property epsilon no-default 'number)
+  (define-property polarizations '() (make-list-type 'polarizability))
+)
+
+(define-class perfect-metal material-type)
+
+; arbitrary material(x)
+(define-class material-function material-type
+  (define-property material-func no-default 'function
+    (lambda (p) (= 1 (procedure-num-args p)))))
+
+(define (index n) (epsilon (* n n))) ; convenient substitute for epsilon
+
+; use the solid geometry classes, variables, etcetera in libgeom:
+; (one specifications file can include another specifications file)
+(include "@LIBCTL_DIR@/utils/geom.scm")
+
+(set-param! ensure-periodicity false) ; this makes less sense for FDTD
+(define CYLINDRICAL -2) ; special value of dimensions for cylindrical coords
+
+; ****************************************************************
+
+(define-class symmetry no-parent
+  (define-property axis no-default 'integer))
+
+(define-class rotate2-sym symmetry)
+(define-class rotate4-sym symmetry)
+(define-class mirror-sym symmetry)
+
+; ****************************************************************
+
+; More input/output variables (besides those defined by libgeom, above).
+
+; ****************************************************************
+; Add some predefined variables, for convenience:
+
+(define vacuum (make dielectric (epsilon 1.0)))
+(define air vacuum)
+(define metal (make perfect-metal))
+
+(define nothing (make material-type)) ; punches a "hole" through objects
+				      ; to the default/background material
+
+(define infinity 1.0e20) ; big number for infinite dimensions of objects
+
+(set! default-material vacuum)
+
+(define pi (* 4.0 (atan 1.0)))
+
+; ****************************************************************
+; External functions:
+
+(define structure-smob-type 'SCM)
+(define fields-smob-type 'SCM)
+(define grace-smob-type 'SCM)
+
+(define-external-function make-structure false false structure-smob-type
+  'integer 'vector3 'number (make-list-type 'geometric-object)
+  'integer (make-list-type 'symmetry))
+
+; ****************************************************************
+; Utilities
+
+; ****************************************************************
+; Run functions
+
+; ****************************************************************
+
+; Load GNU Readline support, for easier command-line editing support.
+; This is not loaded in by default in Guile 1.3.2+ because readline is
+; licensed under the GPL, which would have caused Guile to effectively
+; be under the GPL itself.  However, since the OmniGuide BPM package is
+; under the GPL too, we can load Readline by default with no problems.
+
+@ACTIVATE_READLINE@  ; command to activate readline is determined by configure
+
+; ****************************************************************

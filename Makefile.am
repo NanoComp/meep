@@ -5,7 +5,13 @@ else
 HSRC =
 endif
 
-SUBDIRS = $(HSRC) src doc tests
+if WITH_LIBCTL
+LIBCTL = libctl
+else
+LIBCTL =
+endif
+
+SUBDIRS = $(HSRC) src $(LIBCTL) doc tests
 
 EXTRA_DIST = COPYRIGHT m4 meep.pc.in
 

@@ -174,6 +174,146 @@ AC_SUBST(MEEPLIBS)
 
 ##############################################################################
 
+# subsequent libraries are only for libctl front end
+meep_save_LIBS=$LIBS
+
+
+AC_ARG_WITH(libctl, [AC_HELP_STRING([--with-libctl=<dir>],[specify libctl directory])], with_libctl=$withval, with_libctl=yes)
+if test "x$with_libctl" = "xno"; then
+        :
+elif test "x$with_libctl" != "xyes"; then
+	LIBCTL_DIR="$with_libctl"
+fi
+
+AM_CONDITIONAL(WITH_LIBCTL, test "x$with_libctl" != xno)
+
+##############################################################################
+# Check for Guile library and its behavior (for libctl front end):
+
+if test "x$with_libctl" != xno; then
+
+AC_CHECK_PROG(HAVE_GUILE_CONFIG, guile-config, yes, no)
+if test "$HAVE_GUILE_CONFIG" = "yes"; then
+        CPPFLAGS="$CPPFLAGS `guile-config compile`"
+        LIBS="`guile-config link` $LIBS"
+	AC_MSG_CHECKING([if linking to guile works])
+	AC_TRY_LINK_FUNC(gh_enter, AC_MSG_RESULT(yes), [
+	AC_MSG_RESULT(no)
+	AC_MSG_ERROR(guile-config is broken)
+	])
+else
+        AC_CHECK_LIB(readline, readline)
+        AC_CHECK_LIB(dl, dlopen)
+        AC_CHECK_LIB(guile, gh_eval_str)
+fi
+
+# Check how smob types work in this Guile version:
+
+AC_CHECK_FUNCS(scm_make_smob_type)
+AC_MSG_CHECKING([for SCM_SMOB_PREDICATE])
+AC_TRY_LINK([#include <guile/gh.h>
+#include <libguile/smob.h>],
+                    [int x; SCM_SMOB_PREDICATE(1,x);],
+                    ok=yes, ok=no)
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_SMOB_PREDICATE, 1, [define if we have SCM_SMOB_PREDICATE])
+fi
+AC_MSG_CHECKING([for SCM_SMOB_DATA])
+AC_TRY_LINK([#include <guile/gh.h>
+#include <libguile/smob.h>],
+                    [int x; SCM_SMOB_DATA(x);],
+                    ok=yes, ok=no)
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_SMOB_DATA, 1, [define if we have SCM_SMOB_DATA])
+fi
+AC_MSG_CHECKING([for SCM_NEWSMOB])
+AC_TRY_LINK([#include <guile/gh.h>
+#include <libguile/smob.h>],
+                    [int x; SCM_NEWSMOB(x,1,0);],
+                    ok=yes, ok=no)
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_NEWSMOB, 1, [define if we have SCM_NEWSMOB])
+fi
+
+# Check how to activate Guile readline support:
+
+ACTIVATE_READLINE=""
+AC_MSG_CHECKING(how to activate readline in Guile)
+ractivate="(use-modules (readline-activator)) (activate-readline)"
+if guile -c "$ractivate" > /dev/null 2>&1; then
+	AC_MSG_RESULT(readline-activator)
+	ACTIVATE_READLINE="$ractivate"
+else
+	ractivate="(use-modules (ice-9 readline)) (activate-readline)"
+	if guile -c "$ractivate" >& /dev/null; then
+	        AC_MSG_RESULT(ice-9 readline)
+	        ACTIVATE_READLINE="$ractivate"
+	else
+		AC_MSG_RESULT(cannot)
+		ACTIVATE_READLINE=""
+	fi
+fi
+AC_SUBST(ACTIVATE_READLINE)
+
+fi # if with_libctl
+
+##############################################################################
+# Check for libctl library and files
+
+if test "x$with_libctl" != xno; then
+
+AC_MSG_CHECKING([for libctl dir])
+if test x != x"$LIBCTL_DIR" -a ! -r "$LIBCTL_DIR/base/ctl.scm"; then
+	LIBCTL_DIR=""
+fi
+if test x = x"$LIBCTL_DIR" -a -r /usr/local/share/libctl/base/ctl.scm; then
+	LIBCTL_DIR="/usr/local/share/libctl"
+fi
+if test x = x"$LIBCTL_DIR" -a -r /usr/share/libctl/base/ctl.scm; then
+        LIBCTL_DIR="/usr/share/libctl"
+fi
+if test x = x"$LIBCTL_DIR"; then
+	AC_MSG_ERROR([could not find libctl files; use --with-libctl=<dir>])
+fi
+AC_MSG_RESULT($LIBCTL_DIR)
+AC_SUBST(LIBCTL_DIR)
+
+AC_CHECK_PROG(gen_ctl_io_ok, gen-ctl-io, yes, no)
+if test x"$gen_ctl_io_ok" = xno; then
+	AC_MSG_ERROR([could not find gen-ctl-io program; check your PATH])
+fi
+
+GEN_CTL_IO=gen-ctl-io
+AC_SUBST(GEN_CTL_IO)
+
+# check for -lctl:
+AC_CHECK_LIB(ctl, ctl_get_vector3, [], [AC_MSG_ERROR([Couldn't find the required libctl library.])])
+
+AC_CHECK_HEADER(ctl.h, [], [AC_MSG_ERROR([Couldn't find the libctl header.])])
+
+# Check libctl version >= LIBCTL_MAJOR.LIBCTL_MINOR.LIBCTL_BUGFIX
+LIBCTL_MAJOR=2; LIBCTL_MINOR=3; LIBCTL_BUGFIX=0
+AC_MSG_CHECKING([whether libctl version is at least ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX}])
+AC_EGREP_CPP(yes, [[
+#include <ctl.h>
+#if LIBCTL_MAJOR_VERSION > $LIBCTL_MAJOR || (LIBCTL_MAJOR_VERSION == $LIBCTL_MAJOR && (LIBCTL_MINOR_VERSION > $LIBCTL_MINOR || (LIBCTL_MINOR_VERSION == $LIBCTL_MINOR && LIBCTL_BUGFIX_VERSION >= $LIBCTL_BUGFIX)))
+  yes
+#endif
+]], [AC_MSG_RESULT(ok)], [AC_MSG_ERROR([libctl version ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX} or later is required])])
+
+fi # if with_libctl
+
+##############################################################################
+
+LIBCTL_LIBS=$LIBS
+AC_SUBST(LIBCTL_LIBS)
+LIBS=$meep_save_LIBS
+
+##############################################################################
+
 AC_CONFIG_FILES([
 	Makefile
 	meep.pc
@@ -181,6 +321,8 @@ AC_CONFIG_FILES([
 	hsrc/Makefile
 	doc/Makefile
 	tests/Makefile
+	libctl/Makefile
+	libctl/meep.scm
 ])
 
 AC_OUTPUT
