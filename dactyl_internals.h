@@ -69,12 +69,14 @@ class polarization {
 class src {
  public:
   double freq, width, peaktime;
-  complex<double> ez, ep, er;
+  complex<double> ez, ep, er, amp_shift;
   int r, z, cutoff;
   int is_real;
   src *next;
   int find_last_source(int guess=0);
   void use_real_sources();
+  complex<double> get_amplitude_at_time(int t) const;
+  double get_envelope_at_time(int t) const;
 };
 
 class bandsdata {

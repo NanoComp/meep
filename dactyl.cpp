@@ -320,6 +320,54 @@ void fields::phase_in_material(const mat *newma, double num_periods) {
   printf("I'm going to take %d time steps to phase in the material.\n", phasein_time);
 }
 
+complex<double> src::get_amplitude_at_time(int t) const {
+  double tt = t - peaktime;
+  if (fabs(tt) > cutoff) {
+    return 0.0;
+  }
+  double envelope = exp(-tt*tt/(2*width*width));
+  if (is_real) return real( (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope );
+  else return (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope;
+}
+
+double src::get_envelope_at_time(int t) const {
+  double tt = t - peaktime;
+  if (fabs(tt) > cutoff) {
+    return 0.0;
+  }
+  return exp(-tt*tt/(2*width*width));
+}
+
+static double integrate_envelope(const src *s) {
+  if (s == NULL) {
+    printf("Bad arg to integrate_envelope!\n");
+    exit(1);
+  }
+  double sofar = 0.0;
+  for (int t=0;1<<30;t++) {
+    double e = s->get_envelope_at_time(t);
+    sofar += e;
+    if (e == 0) break; // But here if there is a source that starts late,
+                       // or a source that never stops.
+  }
+  return sofar;
+}
+
+static complex<double> integrate_source(const src *s) {
+  if (s == NULL) {
+    printf("Bad arg to integrate_source!\n");
+    exit(1);
+  }
+  complex<double> sofar = 0.0;
+  for (int t=0;1<<30;t++) {
+    complex<double> A = s->get_amplitude_at_time(t);
+    sofar += A;
+    if (A == 0) break; // But here if there is a source that starts late,
+                       // or a source that never stops.
+  }
+  return sofar;
+}
+
 void fields::add_src_pt(int r, int z,
                         complex<double> Pr, complex<double> Pp, complex<double> Pz,
                         double freq, double width, double peaktime,
@@ -339,6 +387,7 @@ void fields::add_src_pt(int r, int z,
   tmp->ep = Pp;
   tmp->r = r;
   tmp->z = z;
+  tmp->amp_shift = 0.0;
   tmp->is_real = 0;
   if (is_h) {
     tmp->next = h_sources;
@@ -350,6 +399,9 @@ void fields::add_src_pt(int r, int z,
   tmp->cutoff = 1+ (int)(cutoff*tmp->width);
   tmp->peaktime = peaktime*a;
   if (peaktime <= 0.0) tmp->peaktime = tmp->cutoff;
+  // Apply a shift so that we won't end up with a static polarization when
+  // the source is gone:
+  tmp->amp_shift = integrate_source(tmp)/integrate_envelope(tmp);
 }
 
 void fields::find_source_z_position(double z, double shift, int *z1, int *z2,
@@ -407,7 +459,6 @@ void fields::find_source_z_position(double z, double shift, int *z1, int *z2,
     }
   }
 }
-
 
 void fields::add_hr_source(double freq, double width, double peaktime,
                            double cutoff, double z, complex<double> amp(double r)) {
@@ -1018,15 +1069,11 @@ void fields::step_e_boundaries() {
 
 void fields::step_h_source(const src *s) {
   if (s == NULL) return;
-  double Ar, Ai;
-  double tt = t - s->peaktime;
-  if (fabs(tt) > s->cutoff) {
+  complex<double> A = s->get_amplitude_at_time(t);
+  if (A == 0.0) {
     step_h_source(s->next);
     return;
   }
-  double envelope = exp(-tt*tt/(2*s->width*s->width));
-  complex<double> A = polar(1.0,-2*pi*s->freq*tt)*envelope;
-  if (s->is_real) A = real(A);
   IM(hr,s->r,s->z) += imag(A*s->er);
   IM(hp,s->r,s->z) += imag(A*s->ep);
   IM(hz,s->r,s->z) += imag(A*s->ez);
@@ -1042,16 +1089,11 @@ void fields::step_h_source(const src *s) {
 
 void fields::step_e_source(const src *s) {
   if (s == NULL) return;
-  double Ar, Ai;
-  double tt = t - s->peaktime;
-  if (fabs(tt) > s->cutoff) {
-    Ai = Ar = 0.0;
-    step_e_source(s->next);
+  complex<double> A = s->get_amplitude_at_time(t);
+  if (A == 0.0) {
+    step_h_source(s->next);
     return;
   }
-  double envelope = exp(-tt*tt/(2*s->width*s->width));
-  complex<double> A = polar(1.0,-2*pi*s->freq*tt)*envelope;
-  if (s->is_real) A = real(A);
   IM(er,s->r,s->z) += imag(A*s->er);
   IM(ep,s->r,s->z) += imag(A*s->ep);
   IM(ez,s->r,s->z) += imag(A*s->ez);
