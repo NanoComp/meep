@@ -238,8 +238,8 @@ void fields::initialize_with_nth_te(int np0) {
     double Jm_h = J(m,ktrans*r);
     double Jmp_h = Jprime(m,ktrans*r);
     for (int z=0;z<nz;z++) {
-      double kz = k*inva*z;
-      double kzph = k*inva*(z+0.5);
+      double kz = -k*inva*z;
+      double kzph = -k*inva*(z+0.5);
       DOCMP {
         CM(hz,r,z) += Jm*expi(cmp, kz);
         CM(hr,r,z) += (-kk*c/om)*(-c*inveps/om/funky)*ktrans*Jmp_h
@@ -254,8 +254,8 @@ void fields::initialize_with_nth_te(int np0) {
     }
     DOCMP {
       const int z=nz;
-      double kz = k*inva*z;
-      double kzph = k*inva*(z+0.5);
+      double kz = -k*inva*z;
+      double kzph = -k*inva*(z+0.5);
       CM(hz,r,z) += Jm*expi(cmp, kz);
 
       CM(ep,r,z) += (-c*inveps/om/funky)*ktrans*Jmp_h
