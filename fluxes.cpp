@@ -46,14 +46,12 @@ partial_flux_plane *fields_chunk::new_flux_plane(const vec &p1, const vec &p2) {
 }
 
 partial_flux_plane *fields_chunk::nfp_1d(const vec &p1) {
-  int inds[8];
-  double w[8];
-  v.interpolate(Hy,p1,inds,w);
-  const int indhy = inds[0];
-  const bool havehy = w[0] != 0.0;
-  v.interpolate(Ex,p1,inds,w);
-  const int index = inds[0];
-  const bool haveEx = w[0] != 0.0;
+  const int wherehy = (int) ((p1 - v.yee_shift(Hy)).z()*a + 0.5);
+  const int whereex = (int) ((p1 - v.yee_shift(Ex)).z()*a + 0.5);
+  const int indhy = wherehy - v.iloc(Ex,0).z()/2;
+  const bool havehy = v.owns(ivec(wherehy*2+1));
+  const int index = whereex - v.iloc(Ex,0).z()/2;
+  const bool haveEx = v.owns(ivec(whereex*2));
   const vec lochy = v.loc(Hy,indhy);
   const vec locex = v.loc(Ex,index);
   const double why = fabs(locex.z() - p1.z())/fabs(locex.z() - lochy.z());

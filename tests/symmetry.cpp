@@ -111,6 +111,7 @@ int test_metal_xmirror(double eps(const vec &), const char *dirname) {
     f1.step();
     if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
     if (!compare_point(f, f1, vec2d(0.5  , 0.21))) return 0;
+    if (!compare_point(f, f1, vec2d(0.5  , 0.501))) return 0;
     if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {

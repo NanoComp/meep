@@ -312,11 +312,7 @@ static inline void stupidsort(int *ind, double *w, int l) {
 
 void volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
-  if (dim == D1) {
-    interpolate_one(c, p, indices, weights);
-  } else if (dim == D2) {
-    interpolate_two(c, p, indices, weights);
-  } else if (dim == D3) {
+  if (dim != Dcyl) {
     interpolate_fancy(c, p, indices, weights);
   } else if (dim == Dcyl) {
     interpolate_cyl(c, p, 0, indices, weights);
@@ -331,34 +327,6 @@ void volume::interpolate(component c, const vec &p,
   if (!contains(p) && weights[0])
     abort("Error made in interpolation of %s--fix this bug!!!\n",
           component_name(c));
-}
-
-void volume::interpolate_one(component c, const vec &p,
-                             int indices[8], double weights[8]) const {
-  const double iz = (p.z() - yee_shift(c).z())*a;
-  const int ioriginz = (int) (origin.z()*a + 0.5);
-  const int izlo = (int)iz - ioriginz, izhi = izlo+1;
-  const double dz = p.z()*a - (ioriginz + izlo + 0.5) - yee_shift(c).z()*a;
-  indices[0] = izlo;
-  const int indexshift = (c == Ex)? 1 : 0;
-  for (int i=0;i<8;i++) {
-    indices[i] = -1;
-    weights[i] = 0;
-  }
-  if (izlo - indexshift < nz() && izlo - indexshift >= 0) {
-    indices[0] = izlo;
-    weights[0] = 0.5 - dz;
-  }
-  if (izhi - indexshift < nz() && izhi - indexshift >= 0) {
-    indices[1] = izhi;
-    weights[1] = 0.5 + dz;
-  }
-  stupidsort(indices, weights, 2);
-  if (!contains(p) && weights[0]) {
-    printf("Looks like a bug in one D interpolate!\n");
-    printf("Point   %lg %lg\n", p.r(), p.z());
-    abort("Looks like a bug in one D interpolate!\n");
-  }
 }
 
 void volume::interpolate_cyl(component c, const vec &p, int m,
@@ -496,117 +464,14 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
   }
 }
 
-void volume::interpolate_two(component c, const vec &p,
-                             int indices[8], double weights[8]) const {
-  const double ix = (p.x() - yee_shift(c).x())*a;
-  const double iy = (p.y() - yee_shift(c).y())*a;
-  // (0,0) must be on grid!
-  const int ioriginx = (int) (origin.x()*a + 0.5);
-  const int ioriginy = (int) (origin.y()*a + 0.5);
-  int ixlo = (int)ix - ioriginx, iylo = (int)iy - ioriginy,
-    ixhi = ixlo+1, iyhi = iylo+1;
-  const double dx = p.x()*a - (ioriginx + ixlo + 0.5) - yee_shift(c).x()*a;
-  const double dy = p.y()*a - (ioriginy + iylo + 0.5) - yee_shift(c).y()*a;
-  for (int i=0;i<8;i++) indices[i] = 0;
-  for (int i=0;i<8;i++) weights[i] = 0;
-  // Tabulate the actual weights:
-  if (dx+dy > 0.0) {
-    if (dx-dy > 0.0) { // North
-      weights[0] = (1-2*dx)*0.25;
-      weights[1] = (1-2*dx)*0.25;
-      weights[2] = 2*dx*(0.5-dy) + (1-2*dx)*0.25;
-      weights[3] = 2*dx*(0.5+dy) + (1-2*dx)*0.25;
-    } else { // East
-      weights[0] = (1-2*dy)*0.25;
-      weights[2] = (1-2*dy)*0.25;
-      weights[1] = 2*dy*(0.5-dx) + (1-2*dy)*0.25;
-      weights[3] = 2*dy*(0.5+dx) + (1-2*dy)*0.25;
-    }
-  } else {
-    if (dx-dy > 0.0) { // West
-      weights[3] = (1+2*dy)*0.25;
-      weights[1] = (1+2*dy)*0.25;
-      weights[0] = -2*dy*(0.5-dx) + (1+2*dy)*0.25;
-      weights[2] = -2*dy*(0.5+dx) + (1+2*dy)*0.25;
-    } else { // South
-      weights[2] = (1+2*dx)*0.25;
-      weights[3] = (1+2*dx)*0.25;
-      weights[0] = -2*dx*(0.5-dy) + (1+2*dx)*0.25;
-      weights[1] = -2*dx*(0.5+dy) + (1+2*dx)*0.25;
-    }
-  }
-  // These are the four nearest neighbor points:
-  indices[0] = iylo + (1+ny())*ixlo; // SW
-  indices[1] = iyhi + (1+ny())*ixlo; // SE
-  indices[2] = iylo + (1+ny())*ixhi; // NW
-  indices[3] = iyhi + (1+ny())*ixhi; // NE
-  // Figure out which of these points is off the grid in y direction:
-  switch ((component)c) {
-  case Ez: case Ex: case Hy:
-    if (iylo <= 0 || iylo > ny()) {
-      weights[0] = 0;
-      weights[2] = 0;
-    }
-    if (iyhi <= 0 || iyhi > ny()) {
-      weights[1] = 0;
-      weights[3] = 0;
-    }
-    break;
-  case Hz: case Hx: case Ey:
-    if (iylo < 0 || iylo >= ny()) {
-      weights[0] = 0;
-      weights[2] = 0;
-    }
-    if (iyhi < 0 || iyhi >= ny()) {
-      weights[1] = 0;
-      weights[3] = 0;
-    }
-  }
-  // Figure out which of the points is off the grid in x direction:
-  switch ((component)c) {
-  case Ez: case Ey: case Hx:
-    if (ixhi > nx() || ixhi < 0) {
-      weights[2] = 0;
-      weights[3] = 0;
-    }
-    if (ixlo > nx() || ixlo < 0) {
-      weights[0] = 0;
-      weights[1] = 0;
-    }
-    break;
-  case Hz: case Hy: case Ex:
-    if (ixhi >= nx() || ixhi < 0) {
-      weights[2] = 0;
-      weights[3] = 0;
-    }
-    if (ixlo >= nx() || ixlo < 0) {
-      weights[0] = 0;
-      weights[1] = 0;
-    }
-  }
-  // Now I need to reorder them so the points with nonzero weights come
-  // first.
-  stupidsort(indices, weights, 4);
-  for (int i=0;i<8&&weights[i];i++)
-    if (!owns(iloc(c, indices[i])))
-      weights[i] = 0.0;
-  stupidsort(indices, weights, 4);
-  for (int i=0;i<8&&weights[i];i++)
-    if (!owns(iloc(c, indices[i])))
-      abort("Aaack, I don't actually own this! (2D)\n");
-  if (!contains(p) && weights[0]) {
-    abort("Error made in 2D interpolation--fix this bug!!!\n");
-  }
-}
-
 void volume::interpolate_fancy(component c, const vec &pc,
                                int indices[8], double weights[8]) const {
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
-    middle.set_direction(d, (int) p.in_direction(d)*2+1);
+    middle.set_direction(d, ((int) p.in_direction(d))*2+1);
   middle += iyee_shift(c);
-  const vec midv = this->operator[](middle);
+  const vec midv = operator[](middle);
   const vec dv = (pc - midv)*(2*a);
   int already_have = 1;
   ivec locs[8];
@@ -619,11 +484,9 @@ void volume::interpolate_fancy(component c, const vec &pc,
       locs[already_have+i] = locs[i];
       weights[already_have+i] = weights[i];
       locs[i].set_direction(d,middle.in_direction(d)-1);
-      if (dv.in_direction(d) < 0.0) weights[i] *= -dv.in_direction(d);
-      else weights[i] = 0.0;
+      weights[i] *= 0.5*(1.0-dv.in_direction(d));
       locs[already_have+i].set_direction(d,middle.in_direction(d)+1);
-      if (dv.in_direction(d) > 0.0) weights[already_have+i] *= dv.in_direction(d);
-      else weights[already_have+i] = 0.0;
+      weights[already_have+i] *= 0.5*(1.0+dv.in_direction(d));
     }
     already_have *= 2;
   }
