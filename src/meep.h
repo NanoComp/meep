@@ -18,6 +18,7 @@
 #define MEEP_H
 
 #include <stdio.h>
+#include <math.h>
 
 #include "vec.h"
 #include "mympi.h"
@@ -25,11 +26,19 @@
 namespace meep {
 
 const double c = 0.5;
-const double pi = 3.141592653589793238462643383276L;
+const double pi = 3.141592653589793238462643383276;
 
-// FIXME: silence stupid gcc warning about division by zero.
+#ifdef INFINITY
+const double infinity = INFINITY;
+#else
 const double infinity = 1.0 / 0.0;
+#endif
+
+#ifdef NAN
+const double nan = NAN;
+#else
 const double nan = 0.0 / 0.0;
+#endif
 
 class polarizability_identifier {
  public:
