@@ -54,7 +54,8 @@ AC_SUBST(LATEX2HTML)
 AC_CHECK_LIB(m, sqrt)
 
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
-	[AC_CHECK_LIB(fftw, fftw_create_plan)])
+	[AC_CHECK_LIB(fftw, fftw_create_plan, [],
+		[AC_MSG_WARN([Missing FFTW library...slow DFT will be used for monitor-point Fourier transform])])])
 
 ###########################################################################
 
@@ -66,7 +67,7 @@ sinclude(m4/acx_blas.m4)
 sinclude(m4/acx_lapack.m4)
 
 ACX_BLAS
-ACX_LAPACK
+ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK libraries are required])])
 
 # just use lapack/blas in default libs since we always need them
 LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
@@ -76,7 +77,8 @@ LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
 
 AC_CHECK_FUNC(cblas_cgemm, [], [AC_CHECK_LIB(gslcblas, cblas, cblas_cgemm)])
 
-AC_CHECK_LIB(gsl, gsl_sf_bessel_Jn)
+AC_CHECK_LIB(gsl, gsl_sf_bessel_Jn, [],
+	[AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
 
 ##############################################################################
 # Check for MPI library

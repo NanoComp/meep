@@ -23,11 +23,12 @@
 #include "meep_internals.h"
 
 #include "config.h"
-#ifdef HAVE_LIBFFTW3
+#if defined(HAVE_LIBFFTW3)
 #  include <fftw3.h>
-#else
+#elif defined(HAVE_LIBFFTW)
 #  include <fftw.h>
 #endif
+#define HAVE_SOME_FFTW (defined(HAVE_LIBFFTW3) || defined(HAVE_LIBFFTW))
 
 /* Below are the monitor point routines. */
 
@@ -358,7 +359,14 @@ void monitor_point::fourier_transform(component w,
     mean /= n;
     for (int i=0;i<n;i++) d[i] -= mean;
   }
+#if HAVE_SOME_FFTW
   if ((fmin > 0.0 || fmax > 0.0) && maxbands > 0) {
+#else
+  if ((fmin <= 0.0 && fmax <= 0.0) || maxbands <= 0) {
+    maxbands = n;
+    fmin = 0; fmax = (n-1)*(1.0/(tmax-tmin));
+  }
+#endif
     *a = new complex<double>[maxbands];
     *f = new complex<double>[maxbands];
     *numout = maxbands;
@@ -375,6 +383,7 @@ void monitor_point::fourier_transform(component w,
       }
       (*a)[i] /= (tmax-tmin);
     }
+#if HAVE_SOME_FFTW
   } else {
     *numout = n;
     *a = new complex<double>[n];
@@ -396,6 +405,7 @@ void monitor_point::fourier_transform(component w,
       (*a)[i] *= (tmax-tmin)/n;
     }
   }
+#endif
 }
 
 void monitor_point::harminv(component w,

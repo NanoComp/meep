@@ -22,19 +22,36 @@
 
 #include "meep.h"
 #include "meep_internals.h"
+#include "config.h"
 
 // Cylindrical coordinates:
 
-#include <gsl/gsl_sf_bessel.h>
+#ifdef HAVE_LIBGSL
+#  include <gsl/gsl_sf_bessel.h>
+#endif
 
 namespace meep {
 
-static double J(int m, double kr) { return gsl_sf_bessel_Jn(m, kr); }
+static double J(int m, double kr) {
+#ifdef HAVE_LIBGSL
+  return gsl_sf_bessel_Jn(m, kr);
+#else
+  abort("not compiled with GSL, required for Bessel functions");
+  return 0;
+#endif
+}
 static double Jprime(int m, double kr) { 
   if (m) return 0.5*(J(m-1,kr)-J(m+1,kr));
   else return -J(1,kr);
 }
-static double Jroot(int m, int n) { return gsl_sf_bessel_zero_Jnu(m, n+1); }
+static double Jroot(int m, int n) {
+#ifdef HAVE_LIBGSL
+  return gsl_sf_bessel_zero_Jnu(m, n+1);
+#else
+  abort("not compiled with GSL, required for Bessel functions");
+  return 0;
+#endif
+}
 static double Jmax(int m, int n) {
   double rlow, rhigh = Jroot(m,n), rtry;
   if (n == 0) rlow = 0;
