@@ -131,7 +131,7 @@ double fields_chunk::electric_energy_in_box(const geometric_volume &otherv,
     FOR_ELECTRIC_COMPONENTS(c)
       if (f[c][cmp])
         for (int i=0;i<v.ntot();i++) {
-          const ivec p0 = v.iloc((component)c,i);
+          const ivec p0 = v.iloc(c,i);
           if (S.is_primitive(p0) && v.owns(p0)) {
             int num_times_mapped_to_self = 0;
             for (int sn=0;sn<S.multiplicity();sn++)
@@ -154,19 +154,18 @@ double fields_chunk::magnetic_energy_in_box(const geometric_volume &otherv,
                                             const symmetry &S) {
   double energy = 0;
   DOCMP
-    for (int c=0;c<10;c++)
-      if (f[c][cmp] && is_magnetic((component)c))
+    FOR_MAGNETIC_COMPONENTS(c)
+      if (f[c][cmp])
         for (int i=0;i<v.ntot();i++) {
-          const ivec p0 = v.iloc((component)c,i);
+          const ivec p0 = v.iloc(c,i);
           if (S.is_primitive(p0) && v.owns(p0)) {
             int num_times_mapped_to_self = 0;
             for (int sn=0;sn<S.multiplicity();sn++)
               if (S.transform(p0,sn)==p0) num_times_mapped_to_self++;
             for (int sn=0;sn<S.multiplicity();sn++) {
               const ivec pn = S.transform(p0,sn);
-              if (pn!=p0 || sn==0)
-                energy += otherv.intersect_with(v.dV(pn)).full_volume()*
-                  f[c][cmp][i]*f[c][cmp][i];
+              energy += otherv.intersect_with(v.dV(pn)).full_volume()*
+                f[c][cmp][i]*f[c][cmp][i]/num_times_mapped_to_self;
             }
           }
         }
