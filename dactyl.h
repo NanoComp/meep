@@ -46,7 +46,8 @@ class mat {
       double rmax, double zmax, double a=1.0);
   mat(const mat *);
   void make_average_eps();
-  void use_pml(int npmlr=16, int npmlz=16);
+  void use_integer_pml(int npmlr=16, int npmlz=16);
+  void use_pml(double pmlr=2.0, double pmlz=2.0);
 
   void output_slices(const char *name = "");
   void set_output_directory(const char *name);

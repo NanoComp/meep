@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   FILE *ban = create_output_file(dirname, "bands");
   //FILE *fluxf = create_output_file(dirname, "flux");
   ma.set_output_directory(dirname);
-  //ma.use_pml(8,8);
+  //ma.use_pml();
   ma.output_slices("");
   for (m=0;m<4 && !interrupt;m++) {
     for (k=0.0;k<5.1 && !interrupt;k+=1.0) {

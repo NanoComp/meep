@@ -36,6 +36,7 @@ would be essentially symmetric around the resonant frequency of $0.4$.
 const double rmax  = 2.0;
 const int rad = 20;
 const int npml = 16;
+const double pml_thickness = npml/(double)rad;
 const double zsize = (4+2*npml)/(double)rad;
 const int m = 1;
 
@@ -64,7 +65,7 @@ int main(int argc, char **argv) {
 We use PML in both directions.  Note that the polaritonic material will be
 within the PML.  This is fine.
 \begin{verbatim}
-  ma.use_pml(npml,npml);
+  ma.use_pml(pml_thickness, pml_thickness);
   ma.add_polarizability(one, 0.4, 0.01, 27.63);
 \end{verbatim}
 \begin{comment}

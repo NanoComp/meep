@@ -65,7 +65,7 @@ class polarizability {
   double gamma, omeganot, *sigma, *sr, *sp, *sz;
   polarizability *next;
 
-  void use_pml(int npmlr, int npmlz);
+  void use_integer_pml(int npmlr, int npmlz);
 };
 
 class polarization {

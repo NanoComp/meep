@@ -46,10 +46,14 @@ mat::~mat() {
 
 static double sig(double r);
 
-void mat::use_pml(int numpmlr, int numpmlz) {
+void mat::use_pml(double pmlr, double pmlz) {
+  use_integer_pml((int)(0.5+pmlr*a), (int)(0.5+pmlz*a));
+}
+
+void mat::use_integer_pml(int numpmlr, int numpmlz) {
   npmlz = numpmlz;
   npmlr = numpmlr;
-  if (pb) pb->use_pml(npmlr,npmlz);
+  if (pb) pb->use_integer_pml(npmlr,npmlz);
   if (npmlz * 2 >= nz) {
     printf("Not enough room for the z PML. nz = %d\n", nz);
     exit(1);
@@ -181,7 +185,7 @@ mat::mat(const mat *o) {
   Czer = Czep = Czhr = Czhp = NULL;
   npmlz = 0;
   npmlr = 0;
-  use_pml(o->npmlr,o->npmlz);
+  use_integer_pml(o->npmlr,o->npmlz);
 }
 
 mat::mat(double feps(double r, double z),

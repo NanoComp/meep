@@ -101,10 +101,10 @@ polarizability::polarizability(const polarizability *pb) {
   next = NULL;
 }
 
-void polarizability::use_pml(int new_npmlr, int new_npmlz) {
+void polarizability::use_integer_pml(int new_npmlr, int new_npmlz) {
   npmlz = new_npmlz;
   npmlr = new_npmlr;
-  if (next) next->use_pml(npmlr, npmlz);
+  if (next) next->use_integer_pml(npmlr, npmlz);
 }
 
 polarizability::polarizability(const mat *ma, double sig(double,double),
