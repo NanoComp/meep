@@ -397,8 +397,8 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
       for (int i=0;i<num_match;i++) {
         double errf = (abs(tf[i]-reff[n])+0.1*abs(td[i]-refd[n]))/abs(reff[n]);
         double erra = abs(ta[i]-refa[n])/abs(refa[n]);
-        double err = sqrt(errf*errf + erra*erra);
-        if (err > 10*errf) err = 10*errf;
+        double err = errf;//sqrt(errf*errf + erra*erra);
+        //if (err > 10*errf) err = 10*errf;
         if (err < err_best) {
           best_match = i;
           err_best = err;
