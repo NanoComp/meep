@@ -196,7 +196,7 @@ void fields_chunk::step_h() {
       // Propogate Hr
       if (ma->Cother[Hr])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            double oor = 1.0/(v.origin.r() + r);
+            double oor = 1.0/(v.origin.r()*v.a + r);
             double mor = m*oor;
             const int ir = r*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
@@ -211,7 +211,7 @@ void fields_chunk::step_h() {
           }
       else
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            double oor = 1.0/(v.origin.r() + r);
+            double oor = 1.0/(v.origin.r()*v.a + r);
             double mor = m*oor;
             const int ir = r*(v.nz()+1);
             for (int z=0;z<v.nz();z++)
@@ -221,7 +221,7 @@ void fields_chunk::step_h() {
       // Propogate Hp
       if (ma->Cmain[Hp] || ma->Cother[Hp])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1/(v.origin.r() + r+0.5);
+            double oorph = 1/(v.origin.r()*v.a + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
@@ -240,7 +240,7 @@ void fields_chunk::step_h() {
           }
       else 
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1/(v.origin.r() + r+0.5);
+            double oorph = 1/(v.origin.r()*v.a + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
@@ -252,7 +252,7 @@ void fields_chunk::step_h() {
       // Propogate Hz
       if (ma->Cother[Hz])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-          double oorph = 1/(v.origin.r() + r+0.5);
+          double oorph = 1/(v.origin.r()*v.a + r+0.5);
           double morph = m*oorph;
           const int ir = r*(v.nz()+1);
           const int irp1 = (r+1)*(v.nz()+1);
@@ -260,8 +260,8 @@ void fields_chunk::step_h() {
             const double Crhz = ma->Cother[Hz][z+ir];
             const double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
             const double dhzr =
-              ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*(v.origin.r() + r+1.)-
-                             f[Ep][cmp][z+ir]*(v.origin.r() + r))*oorph
+              ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*(v.origin.r()*v.a + r+1.)-
+                             f[Ep][cmp][z+ir]*(v.origin.r()*v.a + r))*oorph
                          - Crhz*f_pml[Hz][cmp][z+ir]);
             const double hzp = f[Hz][cmp][z+ir] - f_pml[Hz][cmp][z+ir];
             f_pml[Hz][cmp][z+ir] += dhzr;
@@ -270,15 +270,15 @@ void fields_chunk::step_h() {
         }
       else
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-          double oorph = 1/(v.origin.r() + r+0.5);
+          double oorph = 1/(v.origin.r()*v.a + r+0.5);
           double morph = m*oorph;
           const int ir = r*(v.nz()+1);
           const int irp1 = (r+1)*(v.nz()+1);
           for (int z=1;z<=v.nz();z++)
             f[Hz][cmp][z+ir] += c*
               (it(cmp,f[Er],z+ir)*morph
-               - (f[Ep][cmp][z+irp1]*(v.origin.r() + r+1.)-
-                  f[Ep][cmp][z+ir]*(v.origin.r() + r))*oorph);
+               - (f[Ep][cmp][z+irp1]*(v.origin.r()*v.a + r+1.)-
+                  f[Ep][cmp][z+ir]*(v.origin.r()*v.a + r))*oorph);
         }
       // Deal with annoying r==0 boundary conditions...
       if (m == 0) {
@@ -349,7 +349,7 @@ void fields_chunk::step_e() {
       // Propogate Ep
       if (ma->Cmain[Ep] || ma->Cother[Ep])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            const double oor = 1.0/(v.origin.r() + r);
+            const double oor = 1.0/(v.origin.r()*v.a + r);
             const double mor = m*oor;
             const int ir = r*(v.nz()+1);
             const int irm1 = (r-1)*(v.nz()+1);
@@ -370,7 +370,7 @@ void fields_chunk::step_e() {
           }
       else
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            double oor = 1.0/(v.origin.r() + r);
+            double oor = 1.0/(v.origin.r()*v.a + r);
             double mor = m*oor;
             const int ir = r*(v.nz()+1);
             const int irm1 = (r-1)*(v.nz()+1);
@@ -382,7 +382,7 @@ void fields_chunk::step_e() {
       // Propogate Ez
       if (ma->Cother[Ez])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
-          double oor = 1.0/(v.origin.r() + r);
+          double oor = 1.0/(v.origin.r()*v.a + r);
           double mor = m*oor;
           const int ir = r*(v.nz()+1);
           const int irm1 = (r-1)*(v.nz()+1);
@@ -392,8 +392,8 @@ void fields_chunk::step_e() {
               (1+.5*ma->inveps[Ez][z+ir]*Crez);
 
             const double dezr = inveps_plus_Crez*
-              (c*(f[Hp][cmp][z+ir]*(v.origin.r() + r+0.5)-
-                  f[Hp][cmp][z+irm1]*(v.origin.r() + r-0.5))*oor
+              (c*(f[Hp][cmp][z+ir]*(v.origin.r()*v.a + r+0.5)-
+                  f[Hp][cmp][z+irm1]*(v.origin.r()*v.a + r-0.5))*oor
                - Crez*f_pml[Ez][cmp][z+ir]);
             const double ezp = f[Ez][cmp][z+ir]-f_pml[Ez][cmp][z+ir];
             f_pml[Ez][cmp][z+ir] += dezr;
@@ -403,20 +403,20 @@ void fields_chunk::step_e() {
         }
       else
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
-          double oor = 1.0/(v.origin.r() + r);
+          double oor = 1.0/(v.origin.r()*v.a + r);
           double mor = m*oor;
           const int ir = r*(v.nz()+1);
           const int irm1 = (r-1)*(v.nz()+1);
           for (int z=0;z<v.nz();z++)
             f[Ez][cmp][z+ir] += c*ma->inveps[Ez][z+ir]*
-              ((f[Hp][cmp][z+ir]*(v.origin.r() + r+0.5)-
-                f[Hp][cmp][z+irm1]*(v.origin.r() + r-0.5))*oor
+              ((f[Hp][cmp][z+ir]*(v.origin.r()*v.a + r+0.5)-
+                f[Hp][cmp][z+irm1]*(v.origin.r()*v.a + r-0.5))*oor
                - it(cmp,f[Hr],z+ir)*mor);
         }
       // Propogate Er
       if (ma->Cother[Er])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1/(v.origin.r() + r+0.5);
+            double oorph = 1/(v.origin.r()*v.a + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
@@ -433,7 +433,7 @@ void fields_chunk::step_e() {
           }
       else
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1/(v.origin.r() + r+0.5);
+            double oorph = 1/(v.origin.r()*v.a + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
