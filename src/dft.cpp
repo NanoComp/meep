@@ -293,11 +293,13 @@ double *dft_flux::flux() {
 
 void dft_flux::save_hdf5(h5file *file, const char *dprefix) {
   save_dft_hdf5(E, cE, file, dprefix);
+  file->prevent_deadlock(); // hackery
   save_dft_hdf5(H, cH, file, dprefix);
 }
 
 void dft_flux::load_hdf5(h5file *file, const char *dprefix) {
   load_dft_hdf5(E, cE, file, dprefix);
+  file->prevent_deadlock(); // hackery
   load_dft_hdf5(H, cH, file, dprefix);
 }
 

@@ -145,6 +145,8 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
      by a separate run and saved to a file */
   h5file *ff = f.open_h5file("flux");
   fr0.save_hdf5(ff, "reflection");
+  delete ff;
+  ff = f.open_h5file("flux", h5file::READONLY);
   fr.load_hdf5(ff, "reflection");
   fr.negate_dfts();
   ff->remove();

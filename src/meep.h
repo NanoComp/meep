@@ -90,6 +90,7 @@ public:
   
   const char *file_name() const { return filename; }
 
+  void prevent_deadlock(); // hackery for exclusive mode
 private:
   access_mode mode;
   char *filename;

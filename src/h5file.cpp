@@ -123,6 +123,12 @@ void *h5file::get_id() {
   return id;
 }
 
+// hackery: in some circumstances, for the exclusive-access mode
+// we must close the id (i.e. the file) in order to prevent deadlock.
+void h5file::prevent_deadlock() {
+  IF_EXCLUSIVE(if (parallel) close_id(), 0);
+}
+
 void h5file::close_id() {
   unset_cur();
 #ifdef HAVE_HDF5
@@ -176,7 +182,8 @@ void h5file::remove() {
     cur = next;
   }
   extending = 0;
-
+  
+  IF_EXCLUSIVE(if (parallel) all_wait(), 0);
   if (am_master() && std::remove(filename))
     abort("error removing file %s", filename);
 }
@@ -653,9 +660,8 @@ void h5file::done_writing_chunks() {
      I'm assuming(?) that non-extensible datasets will use different
      files, etcetera, for different timesteps.  All of this hackery
      goes away if we just use an MPI-compiled version of HDF5. */
-  IF_EXCLUSIVE(if (parallel
-		   && cur_dataname && get_extending(cur_dataname)) close_id(),
-	       0);
+  if (parallel && cur_dataname && get_extending(cur_dataname))
+    prevent_deadlock(); // closes id
 }
 
 void h5file::write(const char *dataname, int rank, const int *dims,
