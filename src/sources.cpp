@@ -27,11 +27,27 @@ namespace meep {
 
 /*********************************************************************/
 
-src_time *src_time::add_to(src_time *others) const
+// this function is necessary to make equality commutative ... ugh
+bool src_times_equal(const src_time &t1, const src_time &t2)
 {
-  src_time *t = clone();
-  t->next = others;
-  return t;
+     return t1.is_equal(t2) && t2.is_equal(t1);
+}
+
+src_time *src_time::add_to(src_time *others, src_time **added) const
+{
+     if (others) {
+	  if (src_times_equal(*this, *others))
+	       *added = others;
+	  else
+	       add_to(others->next, added);
+	  return others;
+     }
+     else {
+	  src_time *t = clone();
+	  t->next = others;
+	  *added = t;
+	  return t;
+     }
 }
 
 double src_time::last_time_max(double after)
@@ -63,6 +79,16 @@ complex<double> gaussian_src_time::current(double time) const
   return exp(-tt*tt / (2*width*width)) * polar(1.0, -2*pi*freq*tt);
 }
 
+bool gaussian_src_time::is_equal(const src_time &t) const
+{
+     const gaussian_src_time *tp = dynamic_cast<const gaussian_src_time*>(&t);
+     if (tp)
+	  return(tp->freq == freq && tp->width == width &&
+		 tp->peak_time == peak_time && tp->cutoff == cutoff);
+     else
+	  return 0;
+}
+
 continuous_src_time::continuous_src_time(double f, double w, double st, double et, double s)
 {
   freq = f;
@@ -86,12 +112,35 @@ complex<double> continuous_src_time::current(double time) const
     * 0.25;
 }
 
+bool continuous_src_time::is_equal(const src_time &t) const
+{
+     const continuous_src_time *tp = 
+	  dynamic_cast<const continuous_src_time*>(&t);
+     if (tp)
+	  return(tp->freq == freq && tp->width == width &&
+		 tp->start_time == start_time && tp->end_time == end_time &&
+		 tp->slowness == slowness);
+     else
+	  return 0;
+}
+
 /*********************************************************************/
 
+// FIXME: this O(n^2) algorithm is very bad for source planes etc!
 src_pt *src_pt::add_to(src_pt *others) const {
-  src_pt *t = new src_pt(*this);
-  t->next = others;
-  return t;
+  if (others) {
+    if (*this == *others) {
+      others->A += A;
+    }
+    else
+      others->next = add_to(others->next);
+    return others;
+  }
+  else {
+    src_pt *pt = new src_pt(*this);
+    pt->next = others;
+    return pt;
+  }
 }
 
 /*********************************************************************/
@@ -122,13 +171,14 @@ void fields::add_point_source(component whichf, const src_time &src,
   ivec ilocs[8];
   double w[8];
   v.interpolate(whichf, p, ilocs, w);
+  src_time *newsrc;
+  sources = src.add_to(sources, &newsrc);
   for (int argh=0;argh<8&&w[argh];argh++)
-    add_point_source(whichf, src, ilocs[argh], w[argh]*amp);
+    add_point_source(whichf, newsrc, ilocs[argh], w[argh]*amp);
 }
 
-void fields::add_point_source(component whichf, const src_time &src,
+void fields::add_point_source(component whichf, src_time *src,
                               const ivec &p, complex<double> amp) {
-  int added_src = 0;
   const double invmul = 1.0/S.multiplicity();
   int need_to_connect = 0;
   ivec iloc = p;
@@ -140,12 +190,8 @@ void fields::add_point_source(component whichf, const src_time &src,
     const ivec pp = S.transform(iloc,sn);
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->is_mine()) {
-	if (!added_src) {
-	  sources = src.add_to(sources);
-	  added_src = 1;
-	}
         need_to_connect += 
-	    chunks[i]->add_point_source(cc, sources, pp, invmul*ph*amp/kphase);
+	    chunks[i]->add_point_source(cc, src, pp, invmul*ph*amp/kphase);
       }
   }
   if (sum_to_all(need_to_connect)) connect_chunks();

@@ -204,29 +204,33 @@ class src_time {
   double last_time_max() { return last_time_max(0.0); }
   double last_time_max(double after);
   
-  src_time *add_to(src_time *others) const;
+  src_time *add_to(src_time *others, src_time **added) const;
   src_time *next;
 
-  // subclasses should override these three methods:
+  // subclasses should override these methods:
   virtual complex<double> current(double time) const { (void)time; return 0; }
   virtual double last_time() const { return 0.0; }
   virtual src_time *clone() const { return new src_time(*this); }
+  virtual bool is_equal(const src_time &t) const { return 1; }
 
  private:
   double current_time;
   complex<double> current_current;
 };
 
+bool src_times_equal(const src_time &t1, const src_time &t2);
+
 // Gaussian-envelope source with given frequency, width, peak-time, cutoff
 class gaussian_src_time : public src_time {
  public:
   gaussian_src_time(double f, double w, double start_time, double end_time);
   virtual ~gaussian_src_time() {}
-  
+
   virtual complex<double> current(double time) const;
   virtual double last_time() const { return peak_time + cutoff; };
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
-  
+  virtual bool is_equal(const src_time &t) const;
+
  private:
   double freq, width, peak_time, cutoff;
 };
@@ -242,7 +246,8 @@ class continuous_src_time : public src_time {
   virtual complex<double> current(double time) const;
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new continuous_src_time(*this); }
-  
+  virtual bool is_equal(const src_time &t) const;
+
  private:
   double freq, width, start_time, end_time, slowness;
 };
@@ -588,7 +593,7 @@ class fields {
   void out_bands(file *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
   // sources.cpp
-  void add_point_source(component whichf, const src_time &src,
+  void add_point_source(component whichf, src_time *src,
                         const ivec &p, complex<double> amp);
   // slices.cpp
   void outline_chunks(file *name);

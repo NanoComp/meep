@@ -88,6 +88,8 @@ class src_pt {
     return A * t->update_current(time);
   }
 
+  bool operator==(const src_pt &p) const {return p.i==i && p.c==c && p.t==t;}
+
   src_pt *add_to(src_pt *others) const;
   src_pt *next;
 };

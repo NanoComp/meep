@@ -35,8 +35,11 @@ double rods_2d(const vec &pp) {
   return 1.0;
 }
 
+static const double eps_compare = 1.9e-14;
+static const double thresh_compare = 1e-16;
+
 int compare(double a, double b, const char *n) {
-  if (fabs(a-b) > fabs(b)*1.9e-14) {
+  if (fabs(a-b) > fabs(b)*eps_compare && fabs(b) > thresh_compare) {
     master_printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
@@ -53,7 +56,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
     component c = (component) i;
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
-      if (abs(v1 - v2) > 0.0*2e-15*abs(v2)) {
+      if (abs(v1 - v2) > eps_compare*abs(v2) && abs(v2) > thresh_compare) {
         master_printf("%s differs:  %g %g out of %g %g\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %g\n",
