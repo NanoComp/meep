@@ -101,6 +101,12 @@ void fields_chunk::add_point_source(component whichf, double freq,
   int ind[8];
   double w[8];
   v.interpolate(whichf, p, ind, w);
+  if (w[0] == 0.0) {
+    printf("No source here...\n");
+    printf("We go from %lg to %lg (source at %lg)\n",
+           v.origin.z(), v.origin.z()+v.nz()*inva, p.z());
+    return;
+  }
   double prefac = 1.0;
   switch (v.dim) {
   case dcyl: prefac = a; break;

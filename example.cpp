@@ -34,11 +34,12 @@ double guided_eps(const vec &x) {
 }
 
 complex<double> checkers(const vec &v) {
+  const double ther = v.r() + 0.001; // Just to avoid roundoff issues.
   if (v.z() > 0.5) return 0.0;
   int z = (int) (v.z()*5.0);
-  int r = (int) (v.r()*5.0);
+  int r = (int) (ther*5.0);
   int zz = (int) (v.z()*10.0);
-  int rr = (int) (v.r()*10.0);
+  int rr = (int) (ther*10.0);
   if ((r & 1) ^ (z & 1)) return -1.0;
   if ((rr & 1) ^ (zz & 1)) return 1.0;
   return 0.0;
@@ -52,13 +53,13 @@ int main(int argc, char **argv) {
   int m=1;
   double ttot = 100;
   
-  mat ma(volcyl(4.0,3.5,a), guided_eps);
+  mat ma(volcyl(4.0,3.6,a), guided_eps, 2);
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
-  ma.use_pml_right(1.0);
-  ma.use_pml_left(1.0);
-  ma.use_pml_radial(1.0);
-  for (m=0;m<4 && !interrupt;m++) {
+  //ma.use_pml_right(1.0);
+  //ma.use_pml_left(1.0);
+  //ma.use_pml_radial(1.0);
+  for (m=0;m<1 && !interrupt;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     printf("Working on m = %d with a=%lg...\n", m, a);
@@ -68,7 +69,7 @@ int main(int argc, char **argv) {
     //f.initialize_field(Ep, checkers);
 
     double next_print = 0.0;
-    while (f.time() < ttot) {
+    while (f.time() < ttot && !interrupt) {
       if (f.time() >= next_print) {
         printf("Working on time %lg...  ", f.time());
         f.eps_slices(m_str);

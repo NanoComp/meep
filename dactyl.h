@@ -43,9 +43,9 @@ class mat_chunk {
   mat_chunk(const volume &v, double eps(const vec &));
   mat_chunk(const mat_chunk *);
   void make_average_eps();
-  void use_pml_left(double dx);
-  void use_pml_right(double dx);
-  void use_pml_radial(double dx);
+  void use_pml_left(double dx, double zleft);
+  void use_pml_right(double dx, double zright);
+  void use_pml_radial(double dx, double rmax);
 
   void set_output_directory(const char *name);
   void mix_with(const mat_chunk *, double);
@@ -65,9 +65,10 @@ class mat {
 
   ~mat();
   mat();
-  mat(const volume &v, double eps(const vec &));
+  mat(const volume &v, double eps(const vec &), int num_chunks = 1);
   mat(const mat *);
-  void determine_chunkdivision(const volume &v, double eps(const vec &));
+  void choose_chunkdivision(const volume &v, double eps(const vec &),
+                            int num_chunks = 1);
 
   void make_average_eps();
   void use_pml_left(double dx);

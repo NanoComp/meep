@@ -65,6 +65,13 @@ volume::volume() {
   origin = vec(0);
 }
 
+inline int right_ntot(ndim d, const int num[3]) {
+  switch (d) {
+  case d1: return num[2] + 1;
+  case dcyl: return (num[0]+1)*(num[2]+1);
+  }
+}
+
 volume::volume(ndim d, double ta, int na, int nb, int nc) {
   dim = d;
   a = ta;
@@ -73,15 +80,14 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
   num[1] = nb;
   num[2] = nc;
   switch (d) {
-  case dcyl:
-    the_ntot = (na+1)*(nc+1);
-    origin = vec(0,0);
+  case dcyl: origin = vec(0,0);
     break;
-  case d1:
-    the_ntot = nz()+1;
-    origin = vec(0);
+  case d1: origin = vec(0);
     break;
+    printf("Can't make volume with these dimensions!\n");
+    exit(1);
   }
+  the_ntot = right_ntot(d, num);
 }
 
 component volume::eps_component() const {
@@ -188,6 +194,21 @@ int volume::index(component c, const vec &p) const {
   return theindex;
 }
 
+static inline void stupidsort(int *ind, double *w, int l) {
+  while (l) {
+    if (fabs(w[0]) < 1e-15) {
+      w[0] = w[l-1];
+      ind[0] = ind[l-1];
+      w[l-1] = 0.0;
+      ind[l-1] = 0;
+    } else {
+      w += 1;
+      ind += 1;
+    }
+    l -= 1;
+  }
+}
+
 void volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
   const vec offset = p - origin - yee_shift(c);
@@ -224,21 +245,11 @@ void volume::interpolate(component c, const vec &p,
       weights[i] = 0;
     }
   }
-}
-
-static void stupidsort(int *ind, double *w, int l) {
-  while (l) {
-    if (fabs(w[0]) < 1e-15) {
-      w[0] = w[l-1];
-      ind[0] = ind[l-1];
-      w[l-1] = 0.0;
-      ind[l-1] = 0;
-    } else {
-      w += 1;
-      ind += 1;
-    }
-    l -= 1;
-  }
+  // Throw out out of range indices:
+  for (int i=0;i<8;i++)
+    if (indices[0] < 0 || indices[0] >= ntot()) weights[i] = 0.0;
+  // Stupid very crude code to compactify arrays:
+  stupidsort(indices, weights, 8);
 }
 
 void volume::interpolate_cyl(component c, const vec &p, int m,
@@ -389,4 +400,48 @@ volume volone(double zsize, double a) {
 volume volcyl(double rsize, double zsize, double a) {
   if (zsize == 0.0) return volume(dcyl, a, (int) (rsize*a + 0.5), 0, 1);
   else return volume(dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
+}
+
+int volume::can_split_evenly(int n) const {
+  int bestd = -1, bestlen = 0;
+  for (int i=0;i<3;i++)
+    if (num[i] > bestlen && num[i] % n == 0 && num[i] > 1) {
+      bestd = i;
+      bestlen = num[i];
+    }
+  if (bestd == -1) return 0;
+  else return 1 + bestd;
+}
+
+volume volume::split_once(int n, int which) const {
+  if (n == 1) {
+    printf("We aren't really splitting.\n");
+    return *this;
+  }
+  int cse = can_split_evenly(n);
+  if (cse) {
+    int bestd = cse-1;
+    volume retval(dim, a,1);
+    for (int i=0;i<3;i++) retval.num[i] = num[i];
+    switch (dim) {
+    case d1:
+      retval.origin = origin + vec(nz()/n*which/a);
+      break;
+    case dcyl:
+      if (bestd == 0) { // split on r
+        retval.origin = origin + vec(nr()/n*which/a,0.0);
+      } else { // split on z
+        retval.origin = origin + vec(0.0,nz()/n*which/a);
+      }
+      break;
+      printf("Can't split in this dimensionality!\n");
+      exit(1);
+    }
+    retval.num[bestd] /= n;
+    retval.the_ntot = right_ntot(dim, retval.num);
+    return retval;
+  } else {
+    printf("I don't yet know how to split unevenly\n");
+    exit(1);
+  }
 }

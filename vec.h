@@ -108,9 +108,11 @@ class volume {
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);
+
+  int can_split_evenly(int num) const;
+  volume split_once(int num, int which) const;
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);
-
   int num[3];
   int the_ntot;
 };

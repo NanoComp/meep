@@ -460,7 +460,7 @@ void fields::eps_slices(const volume &what, const char *name) {
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
                component_name((component)c), time_step_string);
-      output_complex_eps_header((component)c, chunks[0]->f[c], v,
+      output_complex_eps_header((component)c, chunks[0]->f[c], chunks[0]->v,//FIXME max f
                                 what, n, v.eps_component());
       for (int i=0;i<num_chunks;i++)
         output_complex_eps_body((component)c, chunks[i]->f[c], chunks[i]->v, what, n,

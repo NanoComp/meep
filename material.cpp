@@ -26,16 +26,21 @@ mat::mat() {
   num_chunks = 0;
 }
 
-mat::mat(const volume &thev, double eps(const vec &)) {
-  num_chunks = 1;
-  determine_chunkdivision(thev, eps);
+mat::mat(const volume &thev, double eps(const vec &), int num) {
+  choose_chunkdivision(thev, eps, num);
 }
 
-void mat::determine_chunkdivision(const volume &thev, double eps(const vec &)) {
-  num_chunks = 1;
+void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
+                               int num) {
+  num_chunks = num;
   v = thev;
   chunks = new (mat_chunk *)[num_chunks];
-  chunks[0] = new mat_chunk(v,eps);
+  if (!v.can_split_evenly(num)) {
+    printf("I am stupid code!\n");
+    exit(1);
+  }
+  for (int i=0;i<num_chunks;i++)
+    chunks[i] = new mat_chunk( v.split_once(num_chunks,i), eps );
 }
 
 mat::mat(const mat *m) {
@@ -56,18 +61,17 @@ void mat::make_average_eps() {
   for (int i=0;i<num_chunks;i++) chunks[i]->make_average_eps();
 }
 
-void mat::use_pml_left(double dx) { // FIXME
-  for (int i=0;i<num_chunks;i++) chunks[i]->use_pml_left(dx);
+void mat::use_pml_left(double dx) {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->use_pml_left(dx, v.origin.z());
 }
-void mat::use_pml_right(double dx) { // FIXME
-  for (int i=0;i<num_chunks;i++) chunks[i]->use_pml_right(dx);
+void mat::use_pml_right(double dx) {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->use_pml_right(dx, v.origin.z() + v.nz()/v.a);
 }
-void mat::use_pml_radial(double dx) { // FIXME
-  for (int i=0;i<num_chunks;i++) chunks[i]->use_pml_radial(dx);
-}
-void mat::set_output_directory(const char *name) {
-  outdir = name;
-  for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(name);
+void mat::use_pml_radial(double dx) {
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->use_pml_radial(dx, v.origin.r() + v.nr()/v.a);
 }
 void mat::mix_with(const mat *oth, double f) {
   if (num_chunks != oth->num_chunks) {
@@ -175,9 +179,9 @@ void mat_chunk::make_average_eps() {
 
 const double Cmax = 0.5;
 
-void mat_chunk::use_pml_right(double dx) {
+void mat_chunk::use_pml_right(double dx, double zright) {
   if (v.dim == d1) {
-    const double border = v.nz()/v.a + v.origin.z() - dx;
+    const double border = zright - dx;
     const double prefac = Cmax/(dx*dx);
     if (!Cmain[Hy]) {
       Cmain[Hy] = new double[v.ntot()];
@@ -196,7 +200,7 @@ void mat_chunk::use_pml_right(double dx) {
       if (x > border) Cmain[Ex][i] = prefac*(x-border)*(x-border);
     }
   } else if (v.dim == dcyl) {
-    const double border = v.nz()/v.a + v.origin.z() - dx;
+    const double border = zright - dx;
     const double prefac = Cmax/(dx*dx);
     if (!Cmain[Ep]) {
       Cmain[Ep] = new double[v.ntot()];
@@ -240,9 +244,9 @@ void mat_chunk::use_pml_right(double dx) {
   }
 }
 
-void mat_chunk::use_pml_left(double dx) {
+void mat_chunk::use_pml_left(double dx, double zleft) {
   if (v.dim == d1) {
-    const double border = dx + v.origin.z();
+    const double border = dx + zleft;
     const double prefac = Cmax/(dx*dx);
     if (!Cmain[Hy]) {
       Cmain[Hy] = new double[v.ntot()];
@@ -261,7 +265,7 @@ void mat_chunk::use_pml_left(double dx) {
       if (x < border) Cmain[Ex][i] = prefac*(x-border)*(x-border);
     }
   } else if (v.dim == dcyl) {
-    const double border = dx + v.origin.z();
+    const double border = dx + zleft;
     const double prefac = Cmax/(dx*dx);
     if (!Cmain[Ep]) {
       Cmain[Ep] = new double[v.ntot()];
@@ -305,9 +309,9 @@ void mat_chunk::use_pml_left(double dx) {
   }
 }
 
-void mat_chunk::use_pml_radial(double dx) {
+void mat_chunk::use_pml_radial(double dx, double rmax) {
   if (v.dim == dcyl) {
-    const double border = dx + v.origin.z();
+    const double border = rmax - dx;
     const double prefac = Cmax/(dx*dx);
     if (!Cother[Ep]) {
       Cother[Ep] = new double[v.ntot()];
