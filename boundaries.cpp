@@ -207,10 +207,7 @@ void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) 
   const int tot = num_connections[f][io] + num;
   if (io == Incoming) {
     complex<double> *ph = new complex<double>[tot];
-    if (!ph) {
-      printf("Out of memory!\n");
-      exit(1);
-    }
+    if (!ph) abort("Out of memory!\n");
     for (int x=0;x<num_connections[f][io];x++)
       ph[num+x] = connection_phases[f][x];
     delete[] connection_phases[f];
@@ -218,10 +215,7 @@ void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) 
   }
   DOCMP {
     double **conn = new double *[tot];
-    if (!conn) {
-      printf("Out of memory!\n");
-      exit(1);
-    }
+    if (!conn) abort("Out of memory!\n");
     for (int x=0;x<num_connections[f][io];x++)
       conn[num+x] = connections[f][io][cmp][x];
     delete[] connections[f][io][cmp];

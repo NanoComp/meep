@@ -27,7 +27,7 @@ static int kill_time = 2;
 static void handle_control_c(int i) {
   interrupt++;
   if (interrupt >= kill_time) {
-    exit(1);
+    abort("interrupted");
   } else if (interrupt + 1 == kill_time) {
     printf("Be patient... hit ctrl-C one more time to kill me.\n");
   } else {

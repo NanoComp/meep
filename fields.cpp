@@ -63,8 +63,7 @@ vec fields::lattice_vector() const {
   } else if (v.dim == d1) {
     return vec(v.nz()*inva);
   } else {
-    printf("Don't support lattice_vector in these dimensions.\n");
-    exit(1);
+    abort("Don't support lattice_vector in these dimensions.\n");
   }
 }
 
@@ -80,10 +79,8 @@ fields::~fields() {
   delete bands;
 }
 void fields::use_real_fields() {
-  if (k >= 0.0) {
-    printf("Can't use real fields_chunk with bloch boundary conditions!\n");
-    exit(1);
-  }
+  if (k >= 0.0)
+    abort("Can't use real fields_chunk with bloch boundary conditions!\n");
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
 }
@@ -131,10 +128,7 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
       f[i][cmp] = new double[v.ntot()];
     for (int i=0;i<10;i++) if (v.has_field((component)i)) {
       f_pml[i][cmp] = new double[v.ntot()];
-      if (f_pml[i][cmp] == NULL) {
-        printf("Out of memory!\n");
-        exit(1);
-      }
+      if (f_pml[i][cmp] == NULL) abort("Out of memory!\n");
     }
   }
   DOCMP {
@@ -164,10 +158,8 @@ void fields_chunk::use_real_fields() {
 }
 
 int fields::phase_in_material(const mat *newma, double time) {
-  if (newma->num_chunks != num_chunks) {
-    printf("Can only phase in similar sets of chunks...\n");
-    exit(1);
-  }
+  if (newma->num_chunks != num_chunks)
+    abort("Can only phase in similar sets of chunks...\n");
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->phase_in_material(newma->chunks[i]);

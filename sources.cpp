@@ -48,10 +48,7 @@ src::~src() {
 }
 
 static double integrate_envelope(const src *s, const double inva) {
-  if (s == NULL) {
-    printf("Bad arg to integrate_envelope!\n");
-    exit(1);
-  }
+  if (s == NULL) abort("Bad arg to integrate_envelope!\n");
   double sofar = 0.0;
   for (int t=(int)((s->peaktime-s->cutoff)/inva);t<(1<<30);t++) {
     double e = s->get_envelope_at_time(t*inva);
@@ -63,10 +60,7 @@ static double integrate_envelope(const src *s, const double inva) {
 }
 
 static complex<double> integrate_source(const src *s, const double inva) {
-  if (s == NULL) {
-    printf("Bad arg to integrate_source!\n");
-    exit(1);
-  }
+  if (s == NULL) abort("Bad arg to integrate_source!\n");
   complex<double> sofar = 0.0;
   for (int t=(int)((s->peaktime-s->cutoff)/inva);t<(1<<30);t++) {
     complex<double> A = s->get_amplitude_at_time(t*inva);
@@ -91,13 +85,10 @@ void fields_chunk::add_point_source(component whichf, double freq,
                                     double width, double peaktime,
                                     double cutoff, const vec &p,
                                     complex<double> amp, int is_c, double tim) {
-  if (p.dim != v.dim) {
-    printf("Error:  source doesn't have right dimensions!\n");
-    exit(1);
-  } else if (!v.has_field(whichf)) {
-    printf("Error:  source component %s is invalid.\n", component_name(whichf));
-    exit(1);
-  }
+  if (p.dim != v.dim)
+    abort("Error:  source doesn't have right dimensions!\n");
+  if (!v.has_field(whichf))
+    abort("Error:  source component %s is invalid.\n", component_name(whichf));
   int ind[8];
   double w[8];
   v.interpolate(whichf, p, ind, w);
@@ -128,10 +119,7 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
                                     int is_c, double time) {
   if (v.dim == dcyl) {
     // We ignore norm in this case...
-    if (m != 1) {
-      printf("Can only use plane source with m == 1!\n");
-      exit(1);
-    }
+    if (m != 1) abort("Can only use plane source with m == 1!\n");
     const complex<double> I = complex<double>(0,1);
     const double z = p.z();
     const double eps = sqrt(ma->eps[(int)(z+0.5)]);
@@ -168,18 +156,15 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
     add_point_source(Hy, freq, width, peaktime, cutoff, vec(z),
                      envelope(vec(z))*eps, is_c, time);
   } else {
-    printf("Can't use plane source in this number of dimensions.\n");
-    exit(1);
+    abort("Can't use plane source in this number of dimensions.\n");
   }
 }
 
 void fields_chunk::add_indexed_source(component whichf, double freq, double width,
                                 double peaktime, int cutoff, int theindex, 
                                 complex<double> amp, int is_c, double time) {
-  if (theindex >= v.ntot() || theindex < 0) {
-    printf("Error:  source is outside of cell! (%d)\n", theindex);
-    exit(1);
-  }
+  if (theindex >= v.ntot() || theindex < 0)
+    abort("Error:  source is outside of cell! (%d)\n", theindex);
   src *tmp = new src;
   tmp->freq = freq;
   tmp->width = width/tmp->freq; // this is now time width

@@ -22,13 +22,14 @@
 
 #include "vec.h"
 
+void abort(char *fmt, ...);  // Since we don't want to include dactyl.h...
+
 const char *dimension_name(ndim dim) {
   switch (dim) {
   case d1: return "1D";
   case dcyl: return "Cylindrical";
   }
-  printf("Unsupported dimensionality name.\n");
-  exit(1);
+  abort("Unsupported dimensionality name.\n");
 }
 
 const char *component_name(component c) {
@@ -44,8 +45,7 @@ const char *component_name(component c) {
   case Hx: return "hx";
   case Hy: return "hy";
   }
-  printf("Unsupported case.\n");
-  exit(1);
+  abort("Unsupported case.\n");
 }
 
 void vec::print(FILE *f) const {
@@ -84,8 +84,7 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
     break;
   case d1: origin = vec(0);
     break;
-    printf("Can't make volume with these dimensions!\n");
-    exit(1);
+    abort("Can't make volume with these dimensions!\n");
   }
   the_ntot = right_ntot(d, num);
 }
@@ -95,8 +94,7 @@ component volume::eps_component() const {
   case d1: return Ex;
   case dcyl: return Hp;
   }
-  printf("Unsupported dimensionality eps.\n");
-  exit(1);
+  abort("Unsupported dimensionality eps.\n");
 }
 
 vec volume::yee_shift(component c) const {
@@ -116,12 +114,10 @@ vec volume::yee_shift(component c) const {
     case Hy: return dz()*0.5;
     }
   } else {
-    printf("Invalid component!\n");
-    exit(1);
+    abort("Invalid component!\n");
   }
-  printf("Unsupported dimension! yee shift of %s in %s\n",
-         component_name(c), dimension_name(dim));
-  exit(1);
+  abort("Unsupported dimension! yee shift of %s in %s\n",
+        component_name(c), dimension_name(dim));
 }
 
 int volume::contains(const vec &p) const {
@@ -137,8 +133,7 @@ int volume::contains(const vec &p) const {
   } else if (dim == d1) {
     return o.z() >= -inva && o.z() <= nz()*inva + inva;
   } else {
-    printf("Unsupported dimension.\n");
-    exit(1);
+    abort("Unsupported dimension.\n");
   }
 }
 
@@ -160,8 +155,7 @@ int volume::owns(const vec &p) const {
   } else if (dim == d1) {
     return o.z() >= qinva && o.z() <= nz()*inva + qinva;
   } else {
-    printf("Unsupported dimension.\n");
-    exit(1);
+    abort("Unsupported dimension.\n");
   }
 }
 
@@ -176,8 +170,7 @@ int volume::has_field(component c) const {
   } else if (dim == d1) {
     return c == Ex || c == Hy;
   } else {
-    printf("Aaack unsupported dim! (%d)\n", (int) dim);
-    exit(1);
+    abort("Aaack unsupported dim! (%d)\n", (int) dim);
   }
 }
 
@@ -189,8 +182,7 @@ int volume::index(component c, const vec &p) const {
   } else if (dim == d1) {
     theindex = (int)(offset.z()*a + 0.5);
   } else {
-    printf("Unsupported dimension.\n");
-    exit(1);
+    abort("Unsupported dimension.\n");
   }
   return theindex;
 }
@@ -230,11 +222,9 @@ void volume::interpolate(component c, const vec &p,
     if (indices[0] < 0 || indices[0] >= ntot()) weights[i] = 0.0;
   // Stupid very crude code to compactify arrays:
   stupidsort(indices, weights, 8);
-  if (!contains(p) && weights[0]) {
-    printf("Error made in interpolation of %s--fix this bug!!!\n",
-           component_name(c));
-    exit(1);
-  }
+  if (!contains(p) && weights[0])
+    abort("Error made in interpolation of %s--fix this bug!!!\n",
+          component_name(c));
 }
 
 void volume::interpolate_one(component c, const vec &p,
@@ -261,7 +251,7 @@ void volume::interpolate_one(component c, const vec &p,
   if (!contains(p) && weights[0]) {
     printf("Looks like a bug in one D interpolate!\n");
     printf("Point   %lg %lg\n", p.r(), p.z());
-    exit(1);
+    abort("Looks like a bug in one D interpolate!\n");
   }
 }
 
@@ -396,7 +386,7 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
         weights[i] = 0.0;
       }
     }
-    exit(1);
+    abort("aack");
   }
 }
 
@@ -468,8 +458,7 @@ static int greatest_prime_factor(int n) {
       if (n == 1) return i;
     }
   }
-  printf("Can't calculate gpf of %d!\n", n);
-  exit(1);
+  abort("Can't calculate gpf of %d!\n", n);
 }
 
 volume volume::split(int n, int which) const {
@@ -501,14 +490,12 @@ volume volume::split_once(int n, int which) const {
         retval.origin = origin + vec(0.0,nz()/n*which/a);
       }
       break;
-      printf("Can't split in this dimensionality!\n");
-      exit(1);
+      abort("Can't split in this dimensionality!\n");
     }
     retval.num[bestd] /= n;
     retval.the_ntot = right_ntot(dim, retval.num);
     return retval;
   } else {
-    printf("Can't split when dimensions don't work out right\n");
-    exit(1);
+    abort("Can't split when dimensions don't work out right\n");
   }
 }

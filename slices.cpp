@@ -329,10 +329,7 @@ void mat::output_slices(const volume &what, const char *name) const {
   if (*name) snprintf(nname, buflen, "%s-", name);
   else *nname = 0; // No additional name!
   char *n = new char[buflen];
-  if (!n) {
-    printf("Allocation failure!\n");
-    exit(1);
-  }
+  if (!n) abort("Allocation failure!\n");
   snprintf(n, buflen, "%s/%sepsilon.sli", outdir, nname);
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -353,10 +350,7 @@ void fields::output_real_imaginary_slices(const volume &what, const char *name) 
   else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
   int i;
-  if (!n) {
-    printf("Allocation failure!\n");
-    exit(1);
-  }
+  if (!n) abort("Allocation failure!\n");
   char *r_or_i = "-re";
   DOCMP {
     for (int c=0;c<10;c++)
@@ -384,10 +378,7 @@ void fields::output_slices(const volume &what, const char *name) const {
   else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
   int i;
-  if (!n) {
-    printf("Allocation failure!\n");
-    exit(1);
-  }
+  if (!n) abort("Allocation failure!\n");
   char time_step_string[buflen];
   if (a == 1)
     snprintf(time_step_string, buflen, "%08.0f", time());
@@ -434,10 +425,7 @@ void fields::eps_slices(const volume &what, const char *name) const {
   else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
   int i;
-  if (!n) {
-    printf("Allocation failure!\n");
-    exit(1);
-  }
+  if (!n) abort("Allocation failure!\n");
   char time_step_string[buflen];
   snprintf(time_step_string, buflen, "%09.2f", time());
   /*{

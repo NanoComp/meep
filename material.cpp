@@ -81,10 +81,8 @@ void mat::use_pml_radial(double dx) {
       chunks[i]->use_pml_radial(dx, v.origin.r() + v.nr()/v.a);
 }
 void mat::mix_with(const mat *oth, double f) {
-  if (num_chunks != oth->num_chunks) {
-    printf("You can't phase materials with different chunk topologies...\n");
-    exit(1);
-  }
+  if (num_chunks != oth->num_chunks)
+    abort("You can't phase materials with different chunk topologies...\n");
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->mix_with(oth->chunks[i], f);
@@ -248,8 +246,7 @@ void mat_chunk::use_pml_right(double dx, double zright) {
       if (x > border) Cmain[m][i] = prefac*(x-border)*(x-border);
     }
   } else {
-    printf("Unsupported dimension?!\n");
-    exit(1);
+    abort("Unsupported dimension?!\n");
   }
 }
 
@@ -313,8 +310,7 @@ void mat_chunk::use_pml_left(double dx, double zleft) {
       if (x < border) Cmain[m][i] = prefac*(x-border)*(x-border);
     }
   } else {
-    printf("Unsupported dimension?!\n");
-    exit(1);
+    abort("Unsupported dimension?!\n");
   }
 }
 
@@ -359,8 +355,7 @@ void mat_chunk::use_pml_radial(double dx, double rmax) {
       if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
     }
   } else {
-    printf("Radial pml only works in cylindrical coordinates!\n");
-    exit(1);
+    abort("Radial pml only works in cylindrical coordinates!\n");
   }
 }
 
@@ -373,10 +368,7 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
   the_is_mine = my_rank() == n_proc();
   if (is_mine()) {
     eps = new double[v.ntot()];
-    if (eps == NULL) {
-      printf("Out of memory!\n");
-      exit(1);
-    }
+    if (eps == NULL) abort("Out of memory!\n");
     for (int i=0;i<v.ntot();i++) eps[i] = o->eps[i];
   } else {
     eps = NULL;
@@ -417,17 +409,13 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
   the_is_mine = n_proc() == my_rank();
   if (is_mine()) {
     eps = new double[v.ntot()];
-    if (eps == NULL) {
-      printf("Out of memory!\n");
-      exit(1);
-    }
+    if (eps == NULL) abort("Out of memory!\n");
     if (v.dim == dcyl) {
       for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Hp,i));
     } else if (v.dim == d1) {
       for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Ex,i));
     } else {
-      printf("Unsupported symmetry!\n");
-      exit(1);
+      abort("Unsupported symmetry!\n");
     }
   } else {
     eps = NULL;
@@ -472,8 +460,7 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
     } else if (v.dim == d1) {
       for (int i=0;i<v.ntot();i++) inveps[Ex][i] = 1.0/eps[i];
     } else {
-      printf("Unsupported symmetry!\n");
-      exit(1);
+      abort("Unsupported symmetry!\n");
     }
   // Allocate the conductivity arrays:
   for (int c=0;c<10;c++) {

@@ -464,8 +464,7 @@ void fields_chunk::step_e() {
       }
     }
   } else {
-    printf("Unsupported dimension.\n");
-    exit(1);
+    abort("Unsupported dimension.\n");
   }
 }
 

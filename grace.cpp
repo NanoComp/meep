@@ -52,10 +52,7 @@ grace::grace(const char *fname, const char *dirname) {
     fn[strlen(fn)-4] = 0;
   }
   f = fopen(buf, "w");
-  if (!f) {
-    printf("Unable to open file %s\n", buf);
-    exit(1);
-  }
+  if (!f) abort("Unable to open file %s\n", buf);
   set_num = -1;
   sn = -1;
   pts = NULL;

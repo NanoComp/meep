@@ -47,10 +47,7 @@ static void dumbsort(complex<double> val[8]) {
 }
 
 void fields::get_point(monitor_point *pt, const vec &loc) const {
-  if (pt == NULL) {
-    printf("Error:  get_point passed a null pointer!\n");
-    exit(1);
-  }
+  if (pt == NULL) abort("Error:  get_point passed a null pointer!\n");
   for (int i=0;i<10;i++) pt->f[i] = 0.0;
   pt->loc = loc;
   pt->t = time();

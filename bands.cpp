@@ -116,8 +116,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
 
   if (bands->tend <= bands->tstart) {
     printf("Oi, we don't have any time to take a fourier transform!\n");
-    printf("FT start is %d and end is %d\n", bands->tstart, bands->tend);
-    exit(1);
+    abort("FT start is %d and end is %d\n", bands->tstart, bands->tend);
   }
   bands->ntime = (1+(bands->tend-bands->tstart)/bands->scale_factor);
   bands->a = a;
@@ -127,10 +126,8 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
       if (v.has_field((component)c)) {
         delete[] bands->f[i][c];
         bands->f[i][c] = new cmplx[bands->ntime];
-        if (bands->f[i][c] == NULL) {
-          printf("Unable to allocate bandstructure array!\n");
-          exit(1);
-        }
+        if (bands->f[i][c] == NULL)
+          abort("Unable to allocate bandstructure array!\n");
         for (int j=0;j<bands->ntime;j++) bands->f[i][c][j] = 0.0;
       }
   bands->P = new cmplx[bands->ntime];
@@ -194,10 +191,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands) {
   complex<double> *fad = clever_cluster_bands(maxbands, approx_power);
 
   cmplx *eigen = new cmplx[maxbands*6];
-  if (!eigen) {
-    printf("Error allocating...\n");
-    exit(1);
-  }
+  if (!eigen) abort("Error allocating...\n");
 
   for (int whichf = 0; whichf < 6; whichf++) {
     for (int n=0;n<maxbands;n++) {
@@ -340,10 +334,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   double *td = new double[max_freqs];
   cmplx *ta = new cmplx[max_freqs];
   const int ntime = bands->ntime;
-  if (!ta) {
-    printf("Error allocating...\n");
-    exit(1);
-  }
+  if (!ta) abort("Error allocating...\n");
   int num_found = 0;
   complex<double> *fad = new complex<double>[maxbands];
   for (int i=0;i<maxbands;i++) fad[i] = 0.0;

@@ -48,10 +48,8 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
         // FIXME perhaps shouldn't allocate the PML split fields_chunk if we don't
         // have pml...
         P_pml[c][cmp] = new double[v.ntot()];
-        if (P_pml[c][cmp] == NULL) {
-          printf("Allocation error in polarization!\n");
-          exit(1);
-        }
+        if (P_pml[c][cmp] == NULL)
+          abort("Allocation error in polarization!\n");
         for (int i=0;i<v.ntot();i++) P_pml[c][cmp][i] = 0.0;
       } else {
         P[c][cmp] = NULL;
@@ -157,18 +155,14 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
       s[c] = NULL;
     }
   sigma = new double[v.ntot()];
-  if (sigma == NULL) {
-    printf("Out of memory in polarizability!\n");
-    exit(1);
-  }
+  if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
   if (v.dim == dcyl) {
     for (int i=0;i<v.ntot();i++) sigma[i] = sigscale*sig(v.loc(Hp,i));
   } else if (v.dim == d1) {
     for (int i=0;i<v.ntot();i++) sigma[i] = sigscale*sig(v.loc(Ex,i));
   } else {
-    printf("Unsupported dimensionality!\n");
-    exit(1);
+    abort("Unsupported dimensionality!\n");
   }
   for (int c=0;c<10;c++) if (s[c])
     for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
@@ -205,8 +199,7 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
     // There's just one field point...
     for (int i=0;i<v.ntot();i++) s[Ex][i] = sigma[i];
   } else {
-    printf("Unsupported dimensionality!\n");
-    exit(1);
+    abort("Unsupported dimensionality!\n");
   }
 }
 
@@ -358,8 +351,7 @@ void fields_chunk::update_polarization_saturation(polarization *op, polarization
           //np->s[Ex][i] = (np->energy[Ex][i] - f[Ex][0][i]*np->P[Ex][0][i]/(8*pi))*fac;
           np->s[Ex][i] = np->energy[Ex][i]*fac;
       } else {
-        printf("I don't yet support saturation in this dimension.\n");
-        exit(1);
+        abort("I don't yet support saturation in this dimension.\n");
       }
     }
     if (op->next && np->next) update_polarization_saturation(op->next, np->next);
