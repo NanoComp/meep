@@ -25,6 +25,12 @@
 const double c = 0.5;
 const double pi = 3.141592653589793238462643383276L;
 
+class polarizability_identifier {
+ public:
+  double gamma, omeganot;
+  double energy_saturation, saturated_sigma;
+  bool operator==(const polarizability_identifier &);
+};
 class polarizability;
 class polarization;
 class grace;
@@ -100,8 +106,9 @@ class mat {
   void set_output_directory(const char *name);
   void mix_with(const mat *, double);
 
-  void add_polarizability(double sigma(const vec &), double omega, double gamma,
-                          double delta_epsilon = 1.0, double energy_saturation = 0.0);
+  polarizability_identifier
+     add_polarizability(double sigma(const vec &), double omega, double gamma,
+                        double delta_epsilon = 1.0, double energy_saturation = 0.0);
 
   // monitor.cpp
   double get_eps(const vec &loc) const;
@@ -200,6 +207,8 @@ class fields_chunk {
   complex<double> get_field(component, const ivec &) const;
   double get_polarization_energy(const ivec &) const;
   double my_polarization_energy(const ivec &) const;
+  double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
+  double my_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double get_eps(const ivec &iloc) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
@@ -334,6 +343,9 @@ class fields {
   void eps_slices(const vec &origin, const vec &xside, const vec &yside,
                   const double dx = 0.05, const char *name = "");
   void eps_slices(const geometric_volume &what, const char *name = "");
+  void eps_energy_slice(const polarizability_identifier &, const char *name = "");
+  void eps_energy_slice(const polarizability_identifier &,
+                        const geometric_volume &what, const char *name = "");
   void eps_energy_slice(const char *name = "");
   void eps_energy_slice(const geometric_volume &what, const char *name = "");
   void output_real_imaginary_slices(const char *name = "");
@@ -449,6 +461,8 @@ class fields {
   complex<double> get_field(component c, const vec &loc) const;
   double get_polarization_energy(const ivec &) const;
   double get_polarization_energy(const vec &) const;
+  double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
+  double get_polarization_energy(const polarizability_identifier &, const vec &) const;
   double get_eps(const ivec &iloc) const;
 };
 

@@ -235,10 +235,26 @@ complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
   return broadcast(n_proc(), epsi);
 }
 
-void mat::add_polarizability(double sigma(const vec &), double omega, double gamma,
+polarizability_identifier
+     mat::add_polarizability(double sigma(const vec &), double omega, double gamma,
                              double delta_epsilon, double energy_saturation) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->add_polarizability(sigma, omega, gamma, delta_epsilon, energy_saturation);
+  return chunks[0]->pb->get_identifier();
+}
+
+polarizability_identifier polarizability::get_identifier() const {
+  polarizability_identifier pi;
+  pi.gamma = gamma;
+  pi.omeganot = omeganot;
+  pi.energy_saturation = energy_saturation;
+  pi.saturated_sigma = saturated_sigma;
+  return pi;
+}
+
+bool polarizability_identifier::operator==(const polarizability_identifier &a) {
+  return gamma == a.gamma && omeganot == a.omeganot &&
+    energy_saturation == a.energy_saturation && saturated_sigma == a.saturated_sigma;
 }
 
 void mat_chunk::add_polarizability(double sigma(const vec &),

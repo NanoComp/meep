@@ -45,6 +45,7 @@ class polarizability {
   polarizability *next;
 
   void use_pml();
+  polarizability_identifier get_identifier() const;
 };
 
 class polarization {

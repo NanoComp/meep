@@ -145,6 +145,56 @@ double fields_chunk::my_polarization_energy(const ivec &iloc) const {
   return res;
 }
 
+double fields::get_polarization_energy(const polarizability_identifier &p,
+                                       const vec &loc) const {
+  ivec ilocs[8];
+  double w[8], val[8];
+  for (int i=0;i<8;i++) val[i] = 0.0;
+  v.interpolate(v.eps_component(), loc, ilocs, w);
+  for (int argh=0;argh<8&&w[argh];argh++)
+    val[argh] = w[argh]*get_polarization_energy(p, ilocs[argh]);
+  dumbsort(val);
+  double res = 0.0;
+  for (int i=0;i<8;i++) res += val[i];
+  return res;
+}
+
+double fields::get_polarization_energy(const polarizability_identifier &p,
+                                       const ivec &origloc) const {
+  ivec iloc = origloc;
+  complex<double> aaack = 1.0;
+  locate_point_in_user_volume(&iloc, &aaack);
+  for (int sn=0;sn<S.multiplicity();sn++)
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->v.contains(S.transform(iloc,sn)))
+        return chunks[i]->get_polarization_energy(p, S.transform(iloc,sn));
+  return 0.0;
+}
+
+double fields_chunk::get_polarization_energy(const polarizability_identifier &pi,
+                                             const ivec &iloc) const {
+  double res = 0.0;
+  polarization *p = pol;
+  while (is_mine() && p) {
+    if (p->pb->get_identifier() == pi) res += p->local_energy(iloc);
+    p = p->next;
+  }
+  return broadcast(n_proc(), res);
+}
+
+double fields_chunk::my_polarization_energy(const polarizability_identifier &pi,
+                                            const ivec &iloc) const {
+  if (!is_mine())
+    abort("Can't call my_polarization_energy on someone else's chunk!\n");
+  double res = 0.0;
+  polarization *p = pol;
+  while (p) {
+    if (p->pb->get_identifier() == pi) res += p->local_energy(iloc);
+    p = p->next;
+  }
+  return res;
+}
+
 double fields::get_eps(const ivec &origloc) const {
   ivec iloc = origloc;
   complex<double> aaack = 1.0;
