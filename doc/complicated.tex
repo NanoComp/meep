@@ -77,13 +77,11 @@ the next time we want to print a message.
 To calculate the $Q$ of our cavity, we use a monitor point \verb!p!.  We
 also store the value of $H_y$ at our monitor point in a file named ``hy''
 periodically.  We create this file using \verb!create_output_file!, which
-creates and opens a file in the given output directory.  This utility
-function really isn't what we want here, but I haven't yet written one
-which is analagous to \verb!master_printf! in that you will only get one
-copy of each thing you print to the file.
+creates and opens a file for writing in the given output directory.  This
+utility function works properly whether we are running in parallel or not.
 \begin{verbatim}
   monitor_point *p = NULL;
-  FILE *myout = create_output_file(dirname, "hy");
+  file *myout = create_output_file(dirname, "hy");
   while (f.time() <= 2000.0 && !interrupt) {
     // Now we'll start taking data!
     f.step();
@@ -96,11 +94,13 @@ later use to run harminv and get the $Q$.
     p = f.get_new_point(vec2d(x_center,y_center), p);
 \end{verbatim}
 We use the \verb!get_component! method to extract the (complex) fields from
-the monitor point so we can print them.
+the monitor point so we can print them.  We use the \verb!master_fprintf!
+function because we only want to get one copy of the information even if
+we're running in parallel.
 \begin{verbatim}
-    fprintf(myout, "%lg\t%lg\t%lg\n", f.time(),
-            real(p->get_component(Hy)),
-            imag(p->get_component(Hy)));
+    master_fprintf(myout, "%lg\t%lg\t%lg\n", f.time(),
+                   real(p->get_component(Hy)),
+                   imag(p->get_component(Hy)));
 \end{verbatim}
 Every time we reach the \verb!next_print_time! we print out a copy of the
 slices, along with a little message indicating the time and the total
@@ -120,7 +120,12 @@ processes.
       next_print_time += 500.0;
     }
   }
-  fclose(myout);
+\end{verbatim}
+Files which are opened with \verb!create_output_file! need to be closed
+with \verb!everyone_close!, which does the Right Thing when running in
+parallel.
+\begin{verbatim}
+  everyone_close(myout);
 \end{verbatim}
 Having collected all the monitor point data, we now want to run
 harminv\footnote{If you don't know what harminv is, I'm not going to
@@ -153,18 +158,18 @@ Figure~\ref{complicated_figure}).
   double *freqs, *decays;
   int num;
   
-  FILE *myfreqs = create_output_file(dirname, "freqs");
-  fprintf(myfreqs, "\\begin{verbatim}\n");
+  file *myfreqs = create_output_file(dirname, "freqs");
+  master_fprintf(myfreqs, "\\begin{verbatim}\n");
   master_printf("Harminving Hy...\n");
   interrupt = 0; // Harminv even if we were interrupted.
   p->harminv(Hy, &amp, &freqs, &decays, &num, 0.8*freq, 1.2*freq, 5);
   for (int i=0;i<num;i++) {
-    fprintf(myfreqs, "%lg\t%lg\t%lg\t%lg\t%lg\n",
-            freqs[i], decays[i], -freqs[i]/decays[i],
-            real(amp[i]), imag(amp[i]));
+    master_fprintf(myfreqs, "%lg\t%lg\t%lg\t%lg\t%lg\n",
+                   freqs[i], decays[i], -freqs[i]/decays[i],
+                   real(amp[i]), imag(amp[i]));
   }
-  fprintf(myfreqs, "%cend{verbatim}\n", '\\');
-  fclose(myfreqs);
+  master_fprintf(myfreqs, "%cend{verbatim}\n", '\\');
+  everyone_close(myfreqs);
   delete[] dirname;
   finished();
 }

@@ -104,16 +104,16 @@ const char *component_name(component c) {
 
 void vec::print(file *f) const {
   if (dim == Dcyl) {
-    i_printf(f, "%lg %lg 0", r(), z());
+    i_fprintf(f, "%lg %lg 0", r(), z());
   } else if (dim == D3  ) {
-    i_printf(f, "%lg %lg %lg", x(), y(), z());
+    i_fprintf(f, "%lg %lg %lg", x(), y(), z());
   } else if (dim == D2  ) {
-    i_printf(f, "%lg %lg 0", x(), y());
+    i_fprintf(f, "%lg %lg 0", x(), y());
   } else if (dim == D1  ) {
-    i_printf(f, "0 0 %lg", z());
+    i_fprintf(f, "0 0 %lg", z());
   } else  {
     printf("I don't know how to print in this dimension!\n");
-    i_printf(f, "I don't know how to print in this dimension!\n");
+    i_fprintf(f, "I don't know how to print in this dimension!\n");
   }
 }
 

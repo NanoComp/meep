@@ -45,6 +45,7 @@ class file;
 
 file *everyone_open_write(const char *);
 void everyone_close(file *);
-void i_printf(file *, const char *fmt, ...);
+void i_fprintf(file *, const char *fmt, ...);
+void master_fprintf(file *, const char *fmt, ...);
 
 #endif

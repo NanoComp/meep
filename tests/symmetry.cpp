@@ -282,10 +282,6 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
   double total_energy_check_time = 3.0;
   while (fs[0].time() < ttot) {
     for (int i=0;i<2;i++) fs[i].step();
-    fs[0].eps_slices("single");
-    fs[1].eps_slices("multi");
-    fs[0].output_real_imaginary_slices("single");
-    fs[1].output_real_imaginary_slices("multi");
     if (!compare_point(fs[1], fs[0], vec2d(0.01 ,  0.5))) return 0;
     if (!compare_point(fs[1], fs[0], vec2d(0.21 ,  0.5))) return 0;
     if (!compare_point(fs[1], fs[0], vec2d(0.46 , 0.33))) return 0;
@@ -297,6 +293,8 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
       total_energy_check_time += 3.0;
     }
   }
+  fs[0].eps_slices("mirror_single");
+  fs[1].eps_slices("mirror_multi");
   return 1;
 }
 

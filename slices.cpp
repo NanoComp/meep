@@ -53,7 +53,7 @@ static void output_complex_slice(component m, double *f[2], const volume &v,
   for (int i=0;i<v.ntot();i++) {
     if (what.contains(v.loc(m,i))) {
       v.loc(m,i).print(out);
-      i_printf(out, "\t%lg\n", c*f[0][i]+s*f[1][i]);
+      i_fprintf(out, "\t%lg\n", c*f[0][i]+s*f[1][i]);
     }
   }
 }
@@ -64,7 +64,7 @@ static void output_slice(component m, const double *f, const volume &v,
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i))) {
       v.loc(m,i).print(out);
-      i_printf(out, "\t%.17lg\n", f[i]);
+      i_fprintf(out, "\t%.17lg\n", f[i]);
     }
 }
 
@@ -73,22 +73,22 @@ const double default_eps_size = 1000.0;
 
 static void eps_header(double xmin, double ymin, double xmax, double ymax,
                        double fmax, double a, file *out, const char *name) {
-  i_printf(out, "%%!PS-Adobe-3.0 EPSF\n");
+  i_fprintf(out, "%%!PS-Adobe-3.0 EPSF\n");
   double size = xmax - xmin + ymax - ymin;
-  i_printf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
+  i_fprintf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
            xmin*default_eps_size/size, ymin*default_eps_size/size,
            xmax*default_eps_size/size, ymax*default_eps_size/size);
-  i_printf(out, "gsave\n");
-  i_printf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
-  i_printf(out, "/Times-Roman findfont 20 scalefont setfont\n");
-  i_printf(out, "newpath 140 280 moveto (%s) show\n", name);
-  i_printf(out, "/max %lg def\n", fmax);
+  i_fprintf(out, "gsave\n");
+  i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
+  i_fprintf(out, "/Times-Roman findfont 20 scalefont setfont\n");
+  i_fprintf(out, "newpath 140 280 moveto (%s) show\n", name);
+  i_fprintf(out, "/max %lg def\n", fmax);
   const double dx = 1.0/min(a, default_eps_resolution);
-  i_printf(out, "/dx %lg def\n", dx);
-  i_printf(out, "/hdx %lg def\n", dx*0.5);
-  i_printf(out, "dx 10 div setlinewidth\n");
-  i_printf(out, "1 setlinecap\n");
-  i_printf(out, "/P {\n\
+  i_fprintf(out, "/dx %lg def\n", dx);
+  i_fprintf(out, "/hdx %lg def\n", dx*0.5);
+  i_fprintf(out, "dx 10 div setlinewidth\n");
+  i_fprintf(out, "1 setlinecap\n");
+  i_fprintf(out, "/P {\n\
     max div\n\
     dup 0 lt {\n\
         1 add\n\
@@ -100,36 +100,36 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
     setrgbcolor\n\
     newpath\n\
     moveto\n");
-  i_printf(out, "    %lg %lg rmoveto\n", dx*0.5, dx*0.5);
-  i_printf(out, "    0 %lg rlineto\n", -dx);
-  i_printf(out, "    %lg 0 rlineto\n", -dx);
-  i_printf(out, "    0 dx rlineto\n", dx);
-  i_printf(out, "    dx 0 rlineto\n", dx);
-  i_printf(out, "    gsave\n\
+  i_fprintf(out, "    %lg %lg rmoveto\n", dx*0.5, dx*0.5);
+  i_fprintf(out, "    0 %lg rlineto\n", -dx);
+  i_fprintf(out, "    %lg 0 rlineto\n", -dx);
+  i_fprintf(out, "    0 dx rlineto\n", dx);
+  i_fprintf(out, "    dx 0 rlineto\n", dx);
+  i_fprintf(out, "    gsave\n\
     fill\n\
     grestore\n");
-  i_printf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_printf(out, "    stroke\n\
+  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  i_fprintf(out, "    stroke\n\
 } def\n\
 /LV {\n\
     0 0 0 setrgbcolor\n\
     moveto\n");
-  i_printf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_printf(out, "    0 %lg rmoveto\n", dx*0.5);
-  i_printf(out, "    0 %lg rlineto\n", -dx);
-  i_printf(out, "    stroke\n\
+  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  i_fprintf(out, "    0 %lg rmoveto\n", dx*0.5);
+  i_fprintf(out, "    0 %lg rlineto\n", -dx);
+  i_fprintf(out, "    stroke\n\
 } def\n\
 /LH {\n");
-  i_printf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_printf(out, "    0 0 0 setrgbcolor\n\
+  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  i_fprintf(out, "    0 0 0 setrgbcolor\n\
     moveto\n");
-  i_printf(out, "    %lg 0 rmoveto\n", dx*0.5);
-  i_printf(out, "    %lg 0 rlineto\n", -dx);
-  i_printf(out, "    stroke\n\
+  i_fprintf(out, "    %lg 0 rmoveto\n", dx*0.5);
+  i_fprintf(out, "    %lg 0 rlineto\n", -dx);
+  i_fprintf(out, "    stroke\n\
 } def\n");
-  i_printf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
-  i_printf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
-  i_printf(out, "    /D { moveto\n\
+  i_fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
+  i_fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
+  i_fprintf(out, "    /D { moveto\n\
     %lg setlinewidth\n\
     0 0.8 0 setrgbcolor [0 %lg] 0 setdash\n\
     lineto stroke } def\n", 0.6*dx, 3*dx);
@@ -137,57 +137,57 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
 
 static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
                           double fmax, double a, file *out, const char *name) {
-  i_printf(out, "%%!PS-Adobe-3.0 EPSF\n");
+  i_fprintf(out, "%%!PS-Adobe-3.0 EPSF\n");
   const double size = xmax - xmin;
   const double fsize = (5.0 < 0.2*size)?0.2*size:5.0;
   const double dx = 1.0/a;
-  i_printf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
+  i_fprintf(out, "%%%%BoundingBox: %lg %lg %lg %lg\n",
            xmin*default_eps_size/size, -default_eps_size*0.5*fsize/size,
            xmax*default_eps_size/size, default_eps_size*0.5*fsize/size);
-  i_printf(out, "gsave\n");
-  i_printf(out, "%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
+  i_fprintf(out, "gsave\n");
+  i_fprintf(out, "%lg 0 moveto %lg 0 lineto %lg setlinewidth stroke\n",
            xmin*default_eps_size/size, xmax*default_eps_size/size, dx*0.1); 
-  i_printf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
-  i_printf(out, "/height %lg def\n", (default_eps_size*0.5*fsize)/size);
-  i_printf(out, "/Times-Roman findfont 12 scalefont setfont\n");
-  i_printf(out, "newpath 220 height 0.75 mul moveto (%s) show\n", name);
-  i_printf(out, "/max %lg def\n", fmax);
-  i_printf(out, "/fscale %lg def\n", 2.2*fmax/fsize);
-  i_printf(out, "/dotrad %lg def\n", dx);
-  i_printf(out, "/dx %lg def\n", dx);
-  i_printf(out, "/hdx %lg def\n", dx*0.5);
-  i_printf(out, "dx 10 div setlinewidth\n");
-  i_printf(out, "1 setlinecap\n");
-  i_printf(out, "/P {\n\
+  i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
+  i_fprintf(out, "/height %lg def\n", (default_eps_size*0.5*fsize)/size);
+  i_fprintf(out, "/Times-Roman findfont 12 scalefont setfont\n");
+  i_fprintf(out, "newpath 220 height 0.75 mul moveto (%s) show\n", name);
+  i_fprintf(out, "/max %lg def\n", fmax);
+  i_fprintf(out, "/fscale %lg def\n", 2.2*fmax/fsize);
+  i_fprintf(out, "/dotrad %lg def\n", dx);
+  i_fprintf(out, "/dx %lg def\n", dx);
+  i_fprintf(out, "/hdx %lg def\n", dx*0.5);
+  i_fprintf(out, "dx 10 div setlinewidth\n");
+  i_fprintf(out, "1 setlinecap\n");
+  i_fprintf(out, "/P {\n\
     fscale div exch pop \n\
     newpath dotrad 0 360 arc fill \n\
 } def\n");
-  i_printf(out, "/LV {\n\
+  i_fprintf(out, "/LV {\n\
     0.8 0.8 0 setrgbcolor\n\
     pop dup height moveto height neg lineto\n");
-  i_printf(out, "    %lg setlinewidth\n", dx*0.5);
-  i_printf(out, "    stroke\n\
+  i_fprintf(out, "    %lg setlinewidth\n", dx*0.5);
+  i_fprintf(out, "    stroke\n\
 } def\n\
 /LH {\n");
-  i_printf(out, "    %lg setlinewidth\n", dx*0.1);
-  i_printf(out, "    0 0 0 setrgbcolor\n\
+  i_fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  i_fprintf(out, "    0 0 0 setrgbcolor\n\
     moveto\n");
-  i_printf(out, "    %lg 0 rmoveto\n", 10*dx*0.5);
-  i_printf(out, "    %lg 0 rlineto\n", -10*dx);
-  i_printf(out, "    stroke\n\
+  i_fprintf(out, "    %lg 0 rmoveto\n", 10*dx*0.5);
+  i_fprintf(out, "    %lg 0 rlineto\n", -10*dx);
+  i_fprintf(out, "    stroke\n\
 } def\n");
-  i_printf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
-  i_printf(out, "    /D { moveto\n\
+  i_fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
+  i_fprintf(out, "    /D { moveto\n\
     %lg setlinewidth\n\
     0 0.8 0 setrgbcolor [0 %lg] 0 setdash\n\
     lineto stroke } def\n", 0.6*dx, 3*dx);
 }
 
 static void eps_trailer(file *out) {
-  i_printf(out, "grestore\n");
-  i_printf(out, "showpage\n");
-  i_printf(out, "%%%%Trailer\n");
-  i_printf(out, "%%%%EOF\n");
+  i_fprintf(out, "grestore\n");
+  i_fprintf(out, "showpage\n");
+  i_fprintf(out, "%%%%Trailer\n");
+  i_fprintf(out, "%%%%EOF\n");
 }
 
 static void eps_dotted(file *out, component m, const double *f, const volume &v,
@@ -201,11 +201,11 @@ static void eps_dotted(file *out, component m, const double *f, const volume &v,
           ivec next = v.iloc(m,i)+ivec(2,0);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            i_printf(out, "%lg\t%lg\tDH\n", v[next].z(), v[next].r() - 0.5/v.a);
+            i_fprintf(out, "%lg\t%lg\tDH\n", v[next].z(), v[next].r() - 0.5/v.a);
           next = v.iloc(m,i)+ivec(0,2);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            i_printf(out, "%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
+            i_fprintf(out, "%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
           break;
         }
       case D2:
@@ -213,11 +213,11 @@ static void eps_dotted(file *out, component m, const double *f, const volume &v,
           ivec next = v.iloc(m,i)+ivec2d(2,0);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            i_printf(out, "%lg\t%lg\tDH\n", v[next].x() - 0.5/v.a, v[next].y());
+            i_fprintf(out, "%lg\t%lg\tDH\n", v[next].x() - 0.5/v.a, v[next].y());
           next = v.iloc(m,i)+ivec2d(0,2);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            i_printf(out, "%lg\t%lg\tDV\n", v[next].x(), v[next].y() - 0.5/v.a);
+            i_fprintf(out, "%lg\t%lg\tDV\n", v[next].x(), v[next].y() - 0.5/v.a);
           break;
         }
       }
@@ -241,8 +241,8 @@ void fields::outline_chunks(file *out) {
       xhi = chunks[i]->v.boundary_location(High,X);
       yhi = chunks[i]->v.boundary_location(High,Y);
     }
-    i_printf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xlo, yhi, xhi, yhi);
-    i_printf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xhi, yhi, xhi, ylo);
+    i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xlo, yhi, xhi, yhi);
+    i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xhi, yhi, xhi, ylo);
   }
 }
 
@@ -258,11 +258,11 @@ static void eps_outline(component m, const double *f,
         ivec next = v.iloc(m,i)+ivec(2,0);
         vec nextrot = v[S.transform(next - ivec(1,0),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          i_printf(out, "%lg\t%lg\tLH\n", nextrot.z(), nextrot.r());
+          i_fprintf(out, "%lg\t%lg\tLH\n", nextrot.z(), nextrot.r());
         next = v.iloc(m,i)+ivec(0,2);
         nextrot = v[S.transform(next - ivec(0,1),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          i_printf(out, "%lg\t%lg\tLV\n", nextrot.z(), nextrot.r());
+          i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), nextrot.r());
         break;
       }
       case D2: {
@@ -270,29 +270,29 @@ static void eps_outline(component m, const double *f,
         vec nextrot = v[(S.transform(next - ivec2d(0,1),symnum))];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_printf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
+            i_fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
         next = v.iloc(m,i)-ivec2d(0,2);
         nextrot = v[S.transform(next + ivec2d(0,1),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_printf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
+            i_fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
         next = v.iloc(m,i)+ivec2d(2,0);
         nextrot = v[S.transform(next - ivec2d(1,0),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_printf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
+            i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         next = v.iloc(m,i)-ivec2d(2,0);
         nextrot = v[S.transform(next + ivec2d(1,0),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
-            i_printf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
+            i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         break;
       }
       case D1: {
         const ivec next = v.iloc(m,i)+ivec(2);
         const vec nextrot = v[S.transform(next - ivec(1),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
-          i_printf(out, "%lg\t%lg\tLV\n", nextrot.z(), 0.0);
+          i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), 0.0);
         break;
       }
       }
@@ -313,9 +313,9 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
       case D1: x = here.z(); break;
       case D2: x = here.x(); y = here.y(); break;
       }
-      if (f[1]) i_printf(out, "%lg\t%lg\t%lg\tP\n", x, y,
+      if (f[1]) i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
                          real(ph)*f[0][i] - imag(ph)*f[1][i]);
-      else i_printf(out, "%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
+      else i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, real(ph)*f[0][i]);
     }
   }
 }
@@ -343,7 +343,7 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
           interpolate_field_private(c, here, val, ph);
           double fhere = 0.0;
           for (int j=0;j<8;j++) fhere += real(val[j]);
-          i_printf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
+          i_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, fhere);
         }
       }
     }

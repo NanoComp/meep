@@ -419,7 +419,7 @@ class grace {
 // directory, unless the source file hasn't changed.
 
 const char *make_output_directory(const char *exename, const char *jobname = NULL);
-FILE *create_output_file(const char *dirname, const char *fname);
+file *create_output_file(const char *dirname, const char *fname);
 
 // The following allows you to hit ctrl-C to tell your calculation to stop
 // and clean up.

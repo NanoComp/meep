@@ -95,11 +95,11 @@ static int is_ok_dir(const char *dirname, const char *sourcename, const char *ba
   return 0;
 }
 
-FILE *create_output_file(const char *dirname, const char *fname) {
+file *create_output_file(const char *dirname, const char *fname) {
   const int buflen = 300;
   char n[buflen];
   snprintf(n, buflen, "%s/%s", dirname, fname);
-  FILE *o = fopen(n, "a");
+  file *o = everyone_open_write(n);
   if (!o) abort("Unable to create file %s!\n", n);
   return o;
 }

@@ -186,17 +186,34 @@ void everyone_close(file *f) {
 static const int buflen = 8192;
 static char buf[buflen];
 
-void i_printf(file *f, const char *fmt, ...) {
+void i_fprintf(file *f, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 #ifdef HAVE_MPI
   int written = vsnprintf(buf, buflen, fmt, ap);
   if (written <= 0 || written > buflen)
-    abort("Aaack can't write that much in i_printf!\n");
+    abort("Aaack can't write that much in i_fprintf!\n");
   MPI_Status stat;
   MPI_File_write_shared((MPI_File)f, buf, written, MPI_CHAR, &stat);
 #else
   vfprintf((FILE *)f, fmt, ap);
 #endif
+  va_end(ap);
+}
+
+void master_fprintf(file *f, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  if (my_rank() == 0) {
+#ifdef HAVE_MPI
+    int written = vsnprintf(buf, buflen, fmt, ap);
+    if (written <= 0 || written > buflen)
+      abort("Aaack can't write that much in i_fprintf!\n");
+    MPI_Status stat;
+    MPI_File_write_shared((MPI_File)f, buf, written, MPI_CHAR, &stat);
+#else
+    vfprintf((FILE *)f, fmt, ap);
+#endif
+  }
   va_end(ap);
 }
