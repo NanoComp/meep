@@ -36,13 +36,21 @@ static int count_sphere_pts(const geometric_volume &v) {
      return num_sphere_quad[number_of_directions(v.dim)];
 }
 
+static inline double dmax(double a, double b) { return (a > b ? a : b); }
+
+static double geo_diam(const geometric_volume &v) {
+  double diam = 0.0;
+  LOOP_OVER_DIRECTIONS(v.dim,d) {
+    diam = dmax(diam, v.in_direction_max(d) - v.in_direction_min(d));
+  }
+  return diam;
+}
+
 static vec sphere_pt(const geometric_volume &v, int n, double &weight) {
      geometric_volume gv = v;
      vec cent = geo_center(v);
      vec pt;
-     int d = number_of_directions(v.dim);
-     double R = abs(gv.get_min_corner() - gv.get_max_corner())
-	  / sqrt((double) d) * 0.5;
+     double R = geo_diam(gv) * 0.5;
      switch (v.dim) {
 	 case D1:
 	 {
@@ -102,15 +110,25 @@ static tensor doaverage_inveps(material_function &eps, const geometric_volume &v
                                double minvol) {
   if (vol.full_volume() <= minvol) return diagonal(1.0/eps.eps(geo_center(vol)));
   vec gradient = zero_vec(vol.dim);
+  vec center = geo_center(vol);
   tensor mean = diagonal(0.0), meaninv = diagonal(0.0);
   for (int i=0;i<count_quadrants(vol);i++) {
     geometric_volume here = nth_quadrant(vol, i);
     tensor average_here = doaverage_inveps(eps, here, minvol);
     mean += (1.0/average_here);
     meaninv += average_here;
+#if !USE_SPHERE_QUAD
     double invepshere = trace(average_here);
-    gradient += (geo_center(here) - geo_center(vol))*invepshere;
+    gradient += (geo_center(here) - center)*invepshere;
+#endif
   }
+#if USE_SPHERE_QUAD
+  for (int i = 0; i < count_sphere_pts(vol); ++i) {
+    double weight;
+    vec pt = sphere_pt(vol, i, weight);
+    gradient += (pt - center) * (weight / eps.eps(pt));
+  }
+#endif
   mean = mean*(1.0/count_quadrants(vol));
   meaninv = meaninv*(1.0/count_quadrants(vol));
   threevec normdir;
