@@ -414,7 +414,9 @@ class volume {
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);
+  friend volume vol1d(double zsize, double a);
   friend volume voltwo(double xsize, double ysize, double a);
+  friend volume vol2d(double xsize, double ysize, double a);
   friend volume vol3d(double xsize, double ysize, double zsize, double a);
 
   int can_split_evenly(int num) const;

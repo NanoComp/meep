@@ -687,6 +687,14 @@ volume voltwo(double xsize, double ysize, double a) {
                        (ysize==0)?1:(int) (ysize*a + 0.5),0);
 }
 
+volume vol1d(double zsize, double a) {
+  return volone(zsize, a);
+}
+
+volume vol2d(double xsize, double ysize, double a) {
+  return voltwo(xsize, ysize, a);
+}
+
 volume vol3d(double xsize, double ysize, double zsize, double a) {
   return volume(D3, a,(xsize==0)?1:(int) (xsize*a + 0.5),
                       (ysize==0)?1:(int) (ysize*a + 0.5),
