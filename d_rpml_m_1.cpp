@@ -30,16 +30,19 @@ int main() {
 
   const int a=1;
   const int m=1;
-  mat ma(eps, 20.0, 10.0, a);
-  ma.use_pml(8,0);
+  mat ma(eps, 10.0, 10.0, a);
+  ma.use_pml(4,0);
   ma.output_slices(name);
   fields f(&ma, m);
 
-  f.ep[0][14] = 1;
-  f.ez[0][14] = 0.7;
+  f.ep[0][3+(f.nz+1)*3] = 1;
+  f.ez[0][3+(f.nz+1)*3] = 0.7;
 
-  for (int t=0; t < 30; t++) f.step();
   f.output_real_imaginary_slices(name);
+  for (int t=0; t < 40; t++) {
+    f.step();
+    f.output_real_imaginary_slices(name);
+  }
   printf("t is %d\n", f.t);
 }
 
