@@ -1,3 +1,4 @@
+// -*- C++ -*-
 /* These are functions for the libctl front-end which are exported
    via SWIG. */
 

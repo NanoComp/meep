@@ -1,3 +1,4 @@
+// -*- C++ -*-
 #ifndef MEEP_CTL_H
 #define MEEP_CTL_H 
 

@@ -1,3 +1,4 @@
+// -*- C++ -*-
 /* Meep constants which must be the same in C and Scheme */
 
 #define CYLINDRICAL -2
