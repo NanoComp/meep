@@ -134,12 +134,32 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   fprintf(out, "    %lg 0 rlineto", -dx);
   fprintf(out, "    stroke
 } def\n");
+  fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
+  fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
 }
 
 static void eps_trailer(FILE *out) {
   fprintf(out, "grestore\n");
   fprintf(out, "%%%%Trailer\n");
   fprintf(out, "%%%%EOF\n");
+}
+
+static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
+                       const volume &what) {
+  for (int i=0;i<v.ntot();i++)
+    if (what.contains(v.loc(m,i)))
+      switch (v.dim) {
+      case dcyl:
+        vec next = v.loc(m,i)+v.dr();
+        if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+            f[i]*f[v.index(m,next)] == 0.0)
+          fprintf(out, "%lg\t%lg\tDH\n", next.z(), next.r() - 0.5/v.a);
+        next = v.loc(m,i)+v.dz();
+        if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+            f[i]*f[v.index(m,next)] == 0.0)
+          fprintf(out, "%lg\t%lg\tDV\n", next.z() - 0.5/v.a, next.r());
+        break;
+      }
 }
 
 static void eps_outline(FILE *out, component m, const double *f, const volume &v,
@@ -160,7 +180,8 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
 
 static void output_eps(component m, const double *f, const volume &v,
                        const volume &what, const char *name,
-                       component om = Hx, const double *overlay = NULL) {
+                       component om = Hx, const double *overlay = NULL,
+                       const double *dashed = NULL) {
   FILE *out = fopen(name, "w");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
@@ -198,13 +219,15 @@ static void output_eps(component m, const double *f, const volume &v,
     }
   }
   if (overlay) eps_outline(out, om, overlay, v, what);
+  if (dashed) eps_dotted(out, om, dashed, v, what);
   eps_trailer(out);
   fclose(out);
 }
 
 static void output_complex_eps(component m, double *f[2], const volume &v,
                                const volume &what, const char *name,
-                               component om = Hx, const double *overlay = NULL) {
+                               component om = Hx, const double *overlay = NULL,
+                               const double *dashed = NULL) {
   FILE *out = fopen(name, "w");
   if (!out) {
     printf("Unable to open file '%s' for slice output.\n", name);
@@ -246,6 +269,7 @@ static void output_complex_eps(component m, double *f[2], const volume &v,
     }
   }
   if (overlay) eps_outline(out, om, overlay, v, what);
+  if (dashed) eps_dotted(out, om, dashed, v, what);
   eps_trailer(out);
   fclose(out);
 }
@@ -381,11 +405,19 @@ void fields::eps_slices(const volume &what, const char *name) {
       p = p->next;
     }
   }
+  double *sig = new double[v.ntot()];
+  for (int i=0;i<v.ntot();i++) {
+    sig[i] = 0;
+    for (int c=0;c<10;c++) { // FIXME: should really interpolate here!
+      if (ma->Cmain[c]) sig[i] += ma->Cmain[c][i];
+      if (ma->Cother[c]) sig[i] += ma->Cother[c][i];
+    }
+  }
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
                component_name((component)c), time_step_string);
-      output_complex_eps((component)c, f[c], v, what, n, Hp, ma->eps);
+      output_complex_eps((component)c, f[c], v, what, n, Hp, ma->eps, sig);
     }
   
   if (new_ma) {
@@ -393,5 +425,6 @@ void fields::eps_slices(const volume &what, const char *name) {
     output_eps(Hp, ma->eps, v, what, n);
   }
   
+  delete[] sig;
   free(n);
 }
