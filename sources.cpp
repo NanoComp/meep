@@ -77,6 +77,9 @@ void fields::add_point_source(component whichf, double freq,
                               complex<double> amp, int is_c) {
   const double invmul = 1.0/S.multiplicity();
   int need_to_connect = 0;
+  ivec iloc = p;
+  complex<double> kphase = 1.0;
+  locate_point_in_user_volume(&iloc, &kphase);
   for (int sn=0;sn<S.multiplicity();sn++) {
     component cc = S.transform(whichf,sn);
     complex<double> ph = S.phase_shift(whichf,sn);
@@ -85,7 +88,7 @@ void fields::add_point_source(component whichf, double freq,
       if (chunks[i]->is_mine())
         need_to_connect += 
           chunks[i]->add_point_source(cc, freq, width, peaktime,
-                                      cutoff, pp, invmul*ph*amp, is_c,
+                                      cutoff, pp, invmul*ph*amp/kphase, is_c,
                                       time());
   }
   if (sum_to_all(need_to_connect)) connect_chunks();
