@@ -78,8 +78,8 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
       if (MA(ma->eps,r,z) > epsmax) epsmax = MA(ma->eps,r,z);
     }
   }
-  const double cutoff_freq = 1.84*c/(2*pi)/nr/epsmax;
-  bands->fmin = sqrt(cutoff_freq*cutoff_freq + k*k*c*c);
+  const double cutoff_freq = 1.84*c/(2*pi)/nr/sqrt(epsmax);
+  bands->fmin = sqrt(cutoff_freq*cutoff_freq + k*k*c*c/epsmax);
   bands->fmin = cutoff_freq/(c*inva);
   bands->qmin = qmin;
   // Set fmax and determine how many timesteps to skip over...
