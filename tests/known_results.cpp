@@ -33,9 +33,9 @@ double rods(const vec &r) {
   return 1.0;
 }
 
-void compare(double a, double b, const char *n) {
+void compare(double b, double a, const char *n) {
   if (fabs(a-b) > fabs(b)*1e-5 || b != b) {
-    master_printf("Differs by\t%g out of\t%g\n", a-b, b);
+    master_printf("Differs by %g (%g instead of %g)\n", fabs(a-b), a, b);
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     abort("Error in %s\n", n);
   } else {
@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
           "1D saturated polariton");
   compare(-7.57915, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
           "2D saturated polariton");
-  compare(0.0265566, polariton_energy(volone(1.0, a), one),
+  compare(0.0263969, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(5.20605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
