@@ -109,33 +109,15 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
   bands.a = a;
   bands.inva = inva;
   bands.hr = new cmplx[nr*bands.ntime];
-  for (int r=0;r<nr;r++)
-    for (int t=0;t<bands.ntime;t++)
-      BAND(bands.hr,r,t) = 0.0;
   bands.hp = new cmplx[nr*bands.ntime];
-  for (int r=0;r<nr;r++)
-    for (int t=0;t<bands.ntime;t++)
-      BAND(bands.hp,r,t) = 0.0;
   bands.hz = new cmplx[nr*bands.ntime];
-  for (int r=0;r<nr;r++)
-    for (int t=0;t<bands.ntime;t++)
-      BAND(bands.hz,r,t) = 0.0;
   bands.er = new cmplx[nr*bands.ntime];
-  for (int r=0;r<nr;r++)
-    for (int t=0;t<bands.ntime;t++)
-      BAND(bands.er,r,t) = 0.0;
   bands.ep = new cmplx[nr*bands.ntime];
-  for (int r=0;r<nr;r++)
-    for (int t=0;t<bands.ntime;t++)
-      BAND(bands.ep,r,t) = 0.0;
   bands.ez = new cmplx[nr*bands.ntime];
   if (bands.ez == NULL) {
     printf("Unable to allocate bandstructure array!\n");
     exit(1);
   }
-  for (int r=0;r<nr;r++)
-    for (int t=0;t<bands.ntime;t++)
-      BAND(bands.ez,r,t) = 0.0;
 }
 
 void fields::record_bands() {
