@@ -98,7 +98,8 @@ polarizability::polarizability(const polarizability *pb) {
     sz[i] = pb->sz[i];
     sigma[i] = pb->sigma[i];
   }
-  next = NULL;
+  if (pb->next) next = new polarizability(pb->next);
+  else next = NULL;
 }
 
 void polarizability::use_integer_pml(int new_npmlr, int new_npmlz) {
