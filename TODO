@@ -28,10 +28,6 @@ Support mu?  (i.e. magnetic permeability) (including anisotropic, for Pendry)
 
 Support coordinate origin at center, or arbitrary location?
 
-Generic DFT volumes (& component sets)
-
-Flux planes and DFTs thereof.
-
 Field dump/load (i.e. restarting)?
 
 Make sure epsilon and other material properties respect symmetry,
@@ -40,6 +36,7 @@ periodic boundaries, etc.?
 Clean up monitor point class (redundant with HDF5 output, DFT volumes?).
 
 Reference manual.  Fix crude-looking documentation graphs?
+	-- one possibility: make the manual an online wiki
 
 libctl front-end:
 	Finish.
