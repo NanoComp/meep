@@ -34,7 +34,9 @@ polarization_1d::polarization_1d(const polarizability_1d *the_pb) {
     Px[cmp] = new double[nz+1];
     for (int i=0;i<nz+1;i++) Px[cmp][i] = 0.0;
   }
-  if (Px[1] == NULL) {
+  energy = new double[nz+1]; 
+  for (int i=0;i<nz+1;i++) energy[i] = 0.0; 
+  if (energy == NULL) {
     printf("Allocation error in polarization!\n");
     exit(1);
   }
@@ -50,7 +52,15 @@ polarization_1d::~polarization_1d() {
   DOCMP {
     delete[] Px[cmp];
   }
+  delete[] energy;
   if (next) delete next;
+}
+
+double polarization_1d::total_energy(int nz) {
+  double e = 0.0;
+  for (int i=0;i<nz+1;i++) e += energy[i];
+  if (next) e += next->total_energy(nz);
+  return e;
 }
 
 polarizability_1d::polarizability_1d(const polarizability_1d *pb) {
@@ -104,6 +114,16 @@ void mat_1d::add_polarizability(double sigma(double),
   pb = npb;
 }
 
+void mat_1d::add_plasma(double oneorzero(double), double omega_plasma, double gamma) {
+  const double freq_conversion = 2*pi*c/a;
+  double sigma_scale  = freq_conversion*freq_conversion*omega_plasma*omega_plasma;
+  polarizability_1d *npb = new polarizability_1d(this, oneorzero, 0.0,
+                                                 freq_conversion*gamma,
+                                                 sigma_scale);
+  npb->next = pb;
+  pb = npb;
+}
+
 void fields_1d::initialize_polarizations(polarization_1d *op, polarization_1d *np) {
   // Set this up as a noop for now.
 }
@@ -126,6 +146,28 @@ void fields_1d::step_polarization_itself(polarization_1d *op, polarization_1d *n
           + MA(s,z)*CM(ex,z);
     }
     if (op->next && np->next) step_polarization_itself(op->next, np->next);
+  }
+}
+
+void fields_1d::prepare_step_polarization_energy(polarization_1d *op,
+                                                 polarization_1d *np) {
+  if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
+    // This is the initial call... so I should start running from olpol and pol.
+    prepare_step_polarization_energy(olpol, pol);
+  } else if (op != NULL && np != NULL) {
+    for (int z=0;z<=nz;z++) op->energy[z] = np->energy[z];
+    if (op->next && np->next) prepare_step_polarization_energy(op->next, np->next);
+  }
+}
+
+void fields_1d::half_step_polarization_energy(polarization_1d *op, polarization_1d *np) {
+  if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
+    // This is the initial call... so I should start running from olpol and pol.
+    half_step_polarization_energy(olpol, pol);
+  } else if (op != NULL && np != NULL) {
+    DOCMP for (int z=0;z<=nz;z++)
+      op->energy[z] += 0.5*(CM(np->Px,z) - CM(op->Px,z))*CM(ex,z);
+    if (op->next && np->next) half_step_polarization_energy(op->next, np->next);
   }
 }
 

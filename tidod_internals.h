@@ -54,10 +54,11 @@ class polarization_1d {
  public:
   polarization_1d(const polarizability_1d *the_pb);
   ~polarization_1d();
-  double *(Px[2]);
+  double *(Px[2]), *energy;
   const polarizability_1d *pb;
   polarization_1d *next;
 
+  double total_energy(int nz);
   static polarization_1d *set_up_polarizations(const mat_1d *ma);
 };
 

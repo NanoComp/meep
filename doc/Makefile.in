@@ -22,7 +22,8 @@ TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
 	polaritonbands-out/bands.eps \
 	epsilon_polariton.tex epsilon_polariton.eps omniguide.tex \
 	omniguide-out/bands.eps \
-	lossgain_epsilon.tex lossgain_epsilon-out/eps.eps
+	lossgain_epsilon.tex lossgain_epsilon-out/eps.eps \
+	energy_cons_1d.tex energy_cons_1d-out/energy.eps
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
@@ -43,6 +44,10 @@ dactyl/dactyl.html : $(TEXFILES)
 dactyl.dvi : $(TEXFILES)
 	latex dactyl.tex
 
+energy_cons_1d-out/energy.eps : preproc energy_cons_1d.dac
+	rm -rf energy_cons_1d-out/ && ./energy_cons_1d.dac
+	mv $@ $@-tmp
+	sed -e 's/fill//' $@-tmp > $@
 polaritonbands-out/bands.eps : preproc polaritonbands.dac
 	rm -rf polaritonbands-out/ && ./polaritonbands.dac
 	mv $@ $@-tmp

@@ -122,6 +122,37 @@ void fields_1d::output_real_imaginary_slices(const char *name) {
   free(n);
 }
 
+void fields_1d::energy_slices(const char *name) {
+  const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
+  char *n = (char *)malloc(buflen);
+  int i;
+  if (!n) {
+    printf("Allocation failure!\n");
+    exit(1);
+  }
+  char time_step_string[buflen];
+  if (a == 1)
+    snprintf(time_step_string, buflen, "%08.0f", time());
+  else
+    snprintf(time_step_string, buflen, "%09.2f", time());
+
+  {
+    polarization_1d *p = olpol;
+    int polnum = 0;
+    while (p) {
+      snprintf(n, buflen, "%s/%sup%d-%s.sli", outdir, nname, polnum, time_step_string);
+      output_slice(p->energy, nz, n);
+      polnum++;
+      p = p->next;
+    }
+  }
+  
+  free(n);
+}
+
 void fields_1d::output_slices(const char *name) {
   const int buflen = 1024;
   char nname[buflen];

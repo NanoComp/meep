@@ -82,6 +82,7 @@ class mat_1d {
 
   void add_polarizability(double sigma(double), double omega, double gamma,
                           double delta_epsilon = 1.0);
+  void add_plasma(double oneorzero(double), double omega_plasma, double gamma);
  private:
   void output_sigma_slice(const char *name);
   double pml_fmin;
@@ -113,6 +114,7 @@ class fields_1d {
   ~fields_1d();
 
   void output_slices(const char *name = "");
+  void energy_slices(const char *name = "");
   void output_real_imaginary_slices(const char *name = "");
   void step();
   inline double time() { return t*inva*c; };
@@ -140,6 +142,7 @@ class fields_1d {
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
   double energy_in_box(double zmin, double zmax);
+  double thermo_energy_in_box(double zmin, double zmax);
   double electric_energy_in_box(double zmin, double zmax);
   double magnetic_energy_in_box(double zmin, double zmax);
   double total_energy() {return energy_in_box(0.0, nz*inva);};
@@ -155,6 +158,10 @@ class fields_1d {
   void step_h_source(const src_1d *);
   void step_e();
   void step_polarization_itself(polarization_1d *old = NULL, polarization_1d *newp = NULL);
+  void half_step_polarization_energy(polarization_1d *old = NULL,
+                                     polarization_1d *newp = NULL);
+  void prepare_step_polarization_energy(polarization_1d *old = NULL,
+                                        polarization_1d *newp = NULL);
   void step_e_polarization(polarization_1d *old = NULL, polarization_1d *newp = NULL);
   void step_e_source(const src_1d *);
   void add_src_pt(int z, complex<double> amp,

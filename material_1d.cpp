@@ -93,7 +93,7 @@ double mat_1d::use_integer_pml(int numpmlz, double fmin) {
 
 static double badness(double sig[], int thickness, double epsilon, double fmin) {
   if (thickness < 1) return 1;
-  const double A = .0001/fmin*.1/fmin, K = 6.0/epsilon*2.25/epsilon;
+  const double A = .0001/fmin/fmin, K = 15.0/epsilon/epsilon;
   double sofar = 1.0;
   for (int i=0;i<thickness-1;i++) {
     double first_trans = exp(-K*sig[i+1]);

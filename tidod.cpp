@@ -142,7 +142,7 @@ static double integrate_envelope(const src_1d *s) {
     exit(1);
   }
   double sofar = 0.0;
-  for (int t=1+s->peaktime-s->cutoff;t<(1<<30);t++) {
+  for (int t=(int)(s->peaktime-s->cutoff);t<(1<<30);t++) {
     double e = s->get_envelope_at_time(t);
     sofar += e;
     if (e == 0) break; // But here if there is a source that starts late,
@@ -177,7 +177,7 @@ void fields_1d::add_src_pt(int z, complex<double> amp,
   src_1d *tmp = new src_1d;
   tmp->freq = freq*c*inva;
   tmp->width = width/tmp->freq; // this is now time width
-  tmp->amp = amp;
+  tmp->amp = amp*a; // The factor of a makes the source resolution-independent.
   tmp->z = z;
   tmp->amp_shift = 0.0;
   tmp->is_real = 0;
@@ -280,10 +280,13 @@ void fields_1d::step() {
   step_h();
   step_h_source(h_sources);
 
+  prepare_step_polarization_energy();
+  half_step_polarization_energy();
   step_e();
   step_e_source(e_sources);
-
   step_e_polarization();
+  half_step_polarization_energy();
+
   step_polarization_itself();
 }
 
@@ -367,4 +370,70 @@ void fields_1d::step_e_source(const src_1d *s) {
   IM(ex,s->z) += imag(A*s->amp);
   RE(ex,s->z) += real(A*s->amp);
   step_e_source(s->next);
+}
+
+double fields_1d::energy_in_box(double zmin, double zmax) {
+  if (backup_hy[0] == NULL) {
+    DOCMP {
+      backup_hy[cmp] = new double[nz+1];
+    }
+  }
+
+  DOCMP {
+    for (int z=0;z<=nz;z++)
+      backup_hy[cmp][z] = hy[cmp][z];
+  }
+
+  step_h();
+  step_h_source(h_sources);
+  double next_step_magnetic_energy = magnetic_energy_in_box(zmin, zmax);
+
+  DOCMP {
+    for (int z=0;z<=nz;z++)
+      hy[cmp][z] = backup_hy[cmp][z];
+  }
+
+  return electric_energy_in_box(zmin, zmax) + thermo_energy_in_box(zmin,zmax) +
+    0.5*(next_step_magnetic_energy + magnetic_energy_in_box(zmin, zmax));
+}
+
+double fields_1d::thermo_energy_in_box(double zmin, double zmax) {
+  if (pol) {
+    // FIXME bug here--should only go from zmin to zmax
+    return pol->total_energy(nz)/(4*pi) * 2*pi/(a*a*a);
+  } else {
+    return 0.0;
+  }
+}
+
+double fields_1d::electric_energy_in_box(double zmin, double zmax) {
+  int i_zmin = (int) (zmin*a+0.5);
+  int i_zmax = (int) (zmax*a+0.5);
+
+  double energy = 0;
+  DOCMP {
+    for (int z=i_zmin;z<=i_zmax;z++) {
+      double thispol = 0.0;
+      polarization_1d *p = pol;
+      while (p) {
+        thispol += CM(p->Px,z);
+        p = p->next;
+      }
+      energy += CM(ex,z)*((1./MA(ma->inveps,z))*CM(ex,z) + 0*thispol);
+    }
+  }
+  return energy/(8*pi) * 2*pi/(a*a*a);
+}
+
+double fields_1d::magnetic_energy_in_box(double zmin, double zmax) {
+  int i_zmin = (int) (zmin*a+0.5);
+  int i_zmax = (int) (zmax*a+0.5);
+
+  double energy = 0;
+  DOCMP {
+    for (int z=i_zmin;z<=i_zmax;z++) {
+      energy += CM(hy,z)*CM(hy,z);
+    }
+  }
+  return energy/(8*pi) * 2*pi/(a*a*a);
 }
