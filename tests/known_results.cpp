@@ -127,6 +127,30 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   return real(p.get_component(Ex));
 }
 
+double polariton_energy(const volume &v, double eps(const vec &)) {
+  const double ttot = 10.0;
+  mat ma(v, eps);
+  ma.add_polarizability(one, 0.3, 0.1, 7.63);
+  fields f(&ma);
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.use_metal_everywhere();
+  while (f.time() < ttot) f.step();
+  return f.total_energy();
+}
+
+double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
+  const double ttot = 10.0;
+  mat ma(v, eps);
+  ma.add_polarizability(one, 0.3, 0.1, 7.63, 0.1);
+  fields f(&ma);
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.use_metal_everywhere();
+  while (f.time() < ttot) f.step();
+  monitor_point p;
+  f.get_point(&p, v.center());
+  return real(p.get_component(Ex));
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   const char *dirname = "known_results-out";
@@ -136,6 +160,10 @@ int main(int argc, char **argv) {
 
   compare(-0.0131064, polariton_ex(volone(1.0, a), one),
           "1D polariton");
+  compare(-0.0104927, saturated_polariton_ex(volone(1.0, a), one),
+          "1D saturated polariton");
+  compare(0.000252279, polariton_energy(volone(1.0, a), one),
+          "1D polariton energy");
   compare(0.520605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
   compare(0.0874797, using_pml_ez(voltwo(3.0, 3.0, a), one),
