@@ -293,10 +293,12 @@ vec volume::yee_shift(component c) const {
   return operator[](iyee_shift(c));
 }
 
-/* Return array offsets to average with a given array location of c
-   in order to get c on the "dielectric" grid.  Non-zero offsets
-   should be ignored, so that 1, 2, or 4 locations can be averaged.
-   If only one offset is zero, it will be offset2. */
+/* Return array offsets to average with a given array location of c in
+   order to get c on the "dielectric" grid.  Then, to get the
+   dielectric grid point i, you should average c over the four
+   locations: i, i+offset1, i+offset2, i+offset1+offset2. 
+   (offset2, and possibly offset1, may be zero if only 2 or 1
+   locations need to be averaged). */
 void volume::yee2diel_offsets(component c, int &offset1, int &offset2) {
   offset1 = offset2 = 0;
   LOOP_OVER_DIRECTIONS(dim,d) {
