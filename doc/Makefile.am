@@ -2,13 +2,21 @@ noinst_PROGRAMS = example
 
 TEX = complicated.tex energy_cons.tex energy_cons_1d.tex epsilon_polariton_1d.tex gpl.tex lossgain_epsilon.tex meep.tex omniguide.tex polaritonbands.tex simple.tex simplebands.tex
 
-EPS = polaritonbands-out/bands.eps epsilon_polariton_1d-out/eps.eps omniguide-out/bands.eps lossgain_epsilon-out/eps.eps energy_cons_1d-out/energy.eps energy_cons-out/energy.eps energy_cons-out/energy.eps simple-out/ez-000200-00.eps Yee_bulk.eps
+EPSGEN = polaritonbands-out/bands.eps epsilon_polariton_1d-out/eps.eps omniguide-out/bands.eps lossgain_epsilon-out/eps.eps energy_cons_1d-out/energy.eps energy_cons-out/energy.eps energy_cons-out/energy.eps simple-out/ez-000200-00.eps
+
+EPS = $(EPSGEN) Yee_bulk.eps
 
 PDF = $(EPS:.eps=.pdf)
 
 FREQS = complicated-out/freqs
 
-EXTRA_DIST = html meep.pdf $(TEX) Yee_bulk.eps preproc.pl
+if WITH_DOC
+DOC = html meep.pdf
+else
+DOC = 
+endif
+
+EXTRA_DIST = $(DOC) $(TEX) Yee_bulk.eps preproc.pl
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
@@ -95,7 +103,7 @@ check-local: simplebands.dac complicated.dac polaritonbands.dac \
 
 
 clean-local:
-	rm -rf *.o *.hi *.dac *-out *-out-* *.ps *.dvi *.doc *.log *.hi *.dac $(PDF) $(EPS)
+	rm -rf *.o *.hi *.dac *-out *-out-* *.ps *.dvi *.doc *.log *.hi *.dac $(PDF) $(EPSGEN)
 
 maintainer-clean-local:
 	rm -rf html *.pdf

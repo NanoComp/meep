@@ -23,4 +23,8 @@ libmeep: generator
 	cd src && $(MAKE)
 
 # add a fake dependency to make sure stuff is built before 'make dist'
+if WITH_DOC
 COPYRIGHT: generator libmeep
+else
+COPYRIGHT: generator
+endif

@@ -2,7 +2,7 @@
 
 set -ev
 
-sh autogen.sh # --verbose
+sh autogen.sh --disable-static --enable-shared --without-doc # --verbose
 
 version=`grep PACKAGE_VERSION config.h |cut -d' ' -f3 |tr -d \"`
 distdir="meep-$version"
@@ -14,8 +14,9 @@ tar xzf $tarfile
 rm $tarfile
 
 pushd $distdir
-./configure
+./configure --disable-static --enable-shared
 make
 make check
 popd
 
+rm -rf $distdir */latest_output

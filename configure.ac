@@ -19,7 +19,7 @@ fi
 
 # Checks for programs.
 AC_PROG_CXX
-AM_PROG_LIBTOOL
+AC_PROG_LIBTOOL
 
 AC_CHECK_PROG(LATEX2HTML, latex2html, latex2html)
 if test -z "$LATEX2HTML"; then
