@@ -256,11 +256,16 @@ void volume::interpolate(component c, const vec &p,
 
 void volume::interpolate_cyl(component c, const vec &p, int m,
                              int indices[8], double weights[8]) const {
-  const vec indexpt = p - origin - yee_shift(c);
-  const double ir = indexpt.r()*a, iz = indexpt.z()*a;
-  int irlo = (int) floor(ir), izlo = (int) floor(iz),
+  if (p.z() == 0.701 && c == Ez && 0)
+    printf("\nDoing cylindrical interp of %lg %lg\n", p.r(), p.z());
+  const double ir = (p.r() - yee_shift(c).r())*a, iz = (p.z() - yee_shift(c).z())*a;
+  // (0,0) must be on grid!
+  const int ioriginr = (int) floor((origin.r() + yee_shift(c).r())*a + 0.5);
+  const int ioriginz = (int) floor((origin.z() + yee_shift(c).z())*a + 0.5);
+  int irlo = (int) floor(ir) - ioriginr, izlo = (int) floor(iz) - ioriginz,
     irhi = irlo+1, izhi = izlo+1;
-  double dr = ir - (irlo + 0.5), dz = iz - (izlo + 0.5);
+  //printf("In integer terms, I am at %lg %lg\n", ir, iz);
+  const double dr = ir - (ioriginr + irlo + 0.5), dz = iz - (ioriginz + izlo + 0.5);
   for (int i=0;i<8;i++) indices[i] = 0;
   for (int i=0;i<8;i++) weights[i] = 0;
   // Tabulate the actual weights:
