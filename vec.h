@@ -154,7 +154,7 @@ class vec {
 };
 
 inline vec zero_vec(ndim di) {
-  vec v; v.dim = di; for (int d=0;d<5;d++) v.set_direction((direction)d,0.0);
+  vec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0.0);
   return v;
 }
 
