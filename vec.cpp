@@ -413,6 +413,28 @@ int volume::can_split_evenly(int n) const {
   else return 1 + bestd;
 }
 
+static int greatest_prime_factor(int n) {
+  for (int i=2;i<=n;i++) {
+    if (n % i == 0) {
+      while (n % i == 0) n /= i;
+      if (n == 1) return i;
+    }
+  }
+  printf("Can't calculate gpf of %d!\n", n);
+  exit(1);
+}
+
+volume volume::split(int n, int which) const {
+  if (n == 1) return *this;
+  int spl = greatest_prime_factor(n);
+  if (spl == n) {
+    return split_once(n, which);
+  } else {
+    volume v = split_once(spl, which % spl);
+    return v.split(n/spl, which/spl);
+  }
+}
+
 volume volume::split_once(int n, int which) const {
   if (n == 1) return *this;
   int cse = can_split_evenly(n);
@@ -438,7 +460,7 @@ volume volume::split_once(int n, int which) const {
     retval.the_ntot = right_ntot(dim, retval.num);
     return retval;
   } else {
-    printf("I don't yet know how to split unevenly\n");
+    printf("Can't split when dimensions don't work out right\n");
     exit(1);
   }
 }

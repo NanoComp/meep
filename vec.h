@@ -110,6 +110,7 @@ class volume {
   friend volume volone(double zsize, double a);
 
   int can_split_evenly(int num) const;
+  volume split(int num, int which) const;
   volume split_once(int num, int which) const;
  private:
   volume(ndim, double a, int na, int nb=1, int nc=1);

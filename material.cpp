@@ -35,12 +35,8 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
   num_chunks = num;
   v = thev;
   chunks = new (mat_chunk *)[num_chunks];
-  if (!v.can_split_evenly(num)) {
-    printf("I am stupid code!\n");
-    exit(1);
-  }
   for (int i=0;i<num_chunks;i++)
-    chunks[i] = new mat_chunk( v.split_once(num_chunks,i), eps );
+    chunks[i] = new mat_chunk( v.split(num_chunks,i), eps );
 }
 
 mat::mat(const mat *m) {

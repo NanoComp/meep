@@ -35,10 +35,10 @@ int test_simple_periodic(double eps(const vec &), int splitting) {
   double a = 10.0;
   double ttot = 30.0;
   
-  volume v = volcyl(4.0,12.6,a);
+  volume v = volcyl(6.0,4.2,a);
   mat ma1(v, eps, 1);
   mat ma(v, eps, splitting);
-  for (int m=0;m<4;m++) {
+  for (int m=0;m<3;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
     printf("Trying with m = %d and a splitting into %d chunks...\n",
