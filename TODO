@@ -1,3 +1,6 @@
+Split harminv into separate executable + library (i.e. the way it used
+to be) and release the darn thing.
+
 PNG slices.
 
 HDF5 output should support epsilon, energy density, and Poynting vector.
