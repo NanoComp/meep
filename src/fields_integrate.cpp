@@ -350,7 +350,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	     volume.  Rather, we just want to make sure to get *all*
 	     of the chunk points that intersect where.  Hence, add a little
 	     padding to make sure we don't miss any points due to rounding. */
-	  vec pad(one_ivec(v.dim) * v.a * 1e-3);
+	  vec pad(one_ivec(v.dim) * v.inva * 1e-3);
 	  gvS = geometric_volume(chunks[i]->v.loc(Dielectric,0) - pad,
 				 chunks[i]->v.loc(Dielectric,
 						  chunks[i]->v.ntot()-1) +pad);
