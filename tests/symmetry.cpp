@@ -57,54 +57,16 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %lg\n",
                abs(v1 - v2)/abs(v2));
-        if (p.dim == D2)
-          master_printf("Right now I'm looking at %lg %lg, time %lg\n",
-                        p.x(), p.y(), f1.time());
-        else if (p.dim == D3)
-          master_printf("Right now I'm looking at %lg %lg %lg, time %lg\n",
-                        p.x(), p.y(), p.z(), f1.time());
+        master_printf("Right now I'm looking at ");
+        LOOP_OVER_DIRECTIONS(p.dim,d)
+          master_printf("%s = %lg, ", direction_name(d), p.in_direction(d));
+        master_printf("time %lg\n", f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
         f1.eps_slices("multi");
         f2.eps_slices("single");
         return 0;
       }
-    }
-  }
-  return 1;
-}
-
-int test_origin_shift(const char *dirname) {
-  master_printf("Testing origin shift in 2D...\n");
-  double a = 10.0;
-  double ttot = 3.0;
-
-  const volume v = voltwo(1.0, 1.0, a);
-  volume vcentered = v;
-  vcentered.origin -= v.center();
-  mat ma(vcentered, one);
-  mat ma1(v, one);
-  ma.set_output_directory(dirname);
-  ma1.set_output_directory(dirname);
-
-  fields f1(&ma1);
-  fields f(&ma);
-  f1.use_metal_everywhere();
-  f.use_metal_everywhere();
-  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, v.center());
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, v.center());
-  f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec2d(0.0,0.0));
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(0.0,0.0));
-  while (f.time() < ttot) {
-    f.step();
-    f1.step();
-    if (!compare(f.total_energy(), f1.total_energy(), "   total energy")) {
-      master_printf("Time is %lg\n", f.time());
-      f1.output_real_imaginary_slices("unshifted");
-      f.output_real_imaginary_slices("shifted");
-      f1.eps_slices("unshifted");
-      f.eps_slices("shifted");
-      return 0;
     }
   }
   return 1;
@@ -696,6 +658,9 @@ int main(int argc, char **argv) {
   const char *dirname = "symmetry-out";
   trash_output_directory(dirname);
   master_printf("Testing with various kinds of symmetry...\n");
+
+  if (!test_cyl_metal_mirror(one, dirname))
+    abort("error in test_cyl_metal_mirror vacuum\n");
 
   if (!test_yperiodic_ymirror(one, dirname))
     abort("error in test_yperiodic_ymirror vacuum\n");

@@ -873,6 +873,9 @@ vec volume::center() const {
   case D3:
     almost_center = origin + vec(nx()/2*inva, ny()/2*inva, nz()/2*inva);
     return operator[](round_vec(almost_center));
+  case Dcyl:
+    almost_center = vec(0.0, origin.in_direction(Z) + nz()/2*inva);
+    return operator[](round_vec(almost_center));    
   }
   abort("Can't do symmetry with these dimensions.\n");
 }
