@@ -25,6 +25,7 @@
 
 void fields::step_right() {
   t += 1;
+  for (int i=0;i<num_chunks;i++) chunks[i]->t++;
 
   phase_material();
 
@@ -44,29 +45,9 @@ void fields::step_right() {
   step_polarization_itself();
 }
 
-void fields_chunk::step_right() {
-  t += 1;
-
-  phase_material();
-
-  step_h_right();
-  step_h_source(h_sources);
-  step_h_boundaries();
-
-  prepare_step_polarization_energy();
-  half_step_polarization_energy();
-  step_e_right();
-  step_e_source(e_sources);
-  step_e_polarization();
-  step_e_boundaries();
-  half_step_polarization_energy();
-
-  update_polarization_saturation();
-  step_polarization_itself();
-}
-
 void fields::step() {
   t += 1;
+  for (int i=0;i<num_chunks;i++) chunks[i]->t++;
 
   phase_material();
 

@@ -163,7 +163,6 @@ class fields_chunk {
   ~fields_chunk();
 
   void step();
-  void step_right();
   inline double time() { return t*inva*c; };
 
   void use_real_fields();

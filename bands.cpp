@@ -74,11 +74,11 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   {
     int ind[8];
     double w[8];
+    int indind = 0;
+    while (bands->index[indind] != -1 && indind < num_bandpts) indind++;
     for (int h=0;h<num_chunks;h++)
       if (chunks[h]->v.contains(p)) {
-        v.interpolate(v.eps_component(), p, ind, w);
-        int indind = 0;
-        while (bands->index[indind] != -1 && indind < num_bandpts) indind++;
+        chunks[h]->v.interpolate(chunks[h]->v.eps_component(), p, ind, w);
         for (int i=0;i<8&&w[i]&&indind<num_bandpts;i++) {
           bands->chunk[indind] = chunks[h];
           bands->index[indind++] = ind[i];
@@ -141,13 +141,13 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
 }
 
 void fields::record_bands() {
+  if (t > bands->tend || t < bands->tstart) return;
+  if (t % bands->scale_factor != 0) return;
   for (int i=0;i<num_chunks;i++)
     chunks[i]->record_bands();
 }
 
 void fields_chunk::record_bands() {
-  if (t > bands->tend || t < bands->tstart) return;
-  if (t % bands->scale_factor != 0) return;
   int thet = (t-bands->tstart)/bands->scale_factor;
   if (thet >= bands->ntime) return;
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
