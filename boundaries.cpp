@@ -227,7 +227,7 @@ void fields::find_metals() {
 }
 
 void fields::connect_the_chunks() {
-  int *nc[2][2];
+  int *nc[NUM_FIELD_TYPES][2];
   FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++) {
       nc[f][io] = new int[num_chunks];
@@ -283,7 +283,7 @@ void fields::connect_the_chunks() {
   FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++) delete[] nc[f][io];
   // Next start setting up the connections...
-  int *wh[2][2];
+  int *wh[NUM_FIELD_TYPES][2];
   FOR_FIELD_TYPES(f)
     for (int io=0;io<2;io++) {
       wh[f][io] = new int[num_chunks];
