@@ -53,12 +53,13 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
     last_source = e_sources->find_last_source();
   if (h_sources != NULL)
     last_source = max(last_source, h_sources->find_last_source());
-  last_source = max(last_source, phasein_time);
+  last_source = max(last_source, t + phasein_time);
   if (fmax == 0) fmax = preferred_fmax;
   else preferred_fmax = fmax;
   if (!bands) bands = new bandsdata;
-  bands->tstart = (int) (last_source + a*qmin/fmax/c);
-  bands->tend = ttot-1;
+  bands->tstart = last_source+1;
+  if (bands->tstart < t) bands->tstart = t;
+  bands->tend = t + ttot-1;
 
   if (z >= nz) {
     printf("Specify a lower z for your band structure! (%d > %d)\n",
