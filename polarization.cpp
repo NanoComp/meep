@@ -56,6 +56,25 @@ polarization::polarization(const polarizability *the_pb) {
       energy[c] = NULL;
     }
   pb = the_pb;
+  // Initialize the s[] arrays that point to sigma.
+  for (int c=0;c<10;c++)
+    if (pb->energy_saturation != 0.0) {
+      if (pb->s[c]) {
+        s[c] = new double[v.ntot()];
+        for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
+      } else s[c] = NULL;
+    } else s[c] = pb->s[c];
+  // Deal with saturation stuff.
+  if (pb->energy_saturation != 0.0) {
+    saturation_factor = pb->saturated_sigma/pb->energy_saturation;
+    const double isf = 1.0/saturation_factor;
+    for (int c=0;c<10;c++)
+      if (pb->s[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = -isf*s[c][i];
+  } else {
+    saturation_factor = 0.0;
+    for (int c=0;c<10;c++)
+      if (energy[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = 0.0;
+  }
   if (pb->next == NULL) {
     next = NULL;
   } else {
@@ -69,6 +88,8 @@ polarization::~polarization() {
     for (int c=0;c<10;c++) delete[] P_pml[c][cmp];
   }
   for (int c=0;c<10;c++) delete[] energy[c];
+  if (saturation_factor != 0.0)
+    for (int c=0;c<10;c++) delete[] s[c];
   if (next) delete next;
 }
 
@@ -84,11 +105,32 @@ double polarization::total_energy(const volume &what) {
   return e;
 }
 
+void polarization::update_sigma() {
+  if (saturation_factor != 0.0) {
+    const volume v = pb->v;
+    const double fac = saturation_factor;
+    if (v.dim == d1) {
+      if (fac > 0.0)
+        for (int i=0;i<v.ntot();i++) {
+          const double shere = -energy[Ex][i]*fac;
+          if (shere < 0.0) s[Ex][i] = 0;
+          else s[Ex][i] = shere;
+        }
+      else for (int i=0;i<v.ntot();i++) s[Ex][i] = energy[Ex][i]*fac;
+    } else {
+      printf("I don't yet support saturation in this dimension.\n");
+      exit(1);
+    }
+  }
+}
+
 polarizability::polarizability(const polarizability *pb) {
   omeganot = pb->omeganot;
   gamma = pb->gamma;
   v = pb->v;
   
+  energy_saturation = pb->energy_saturation;
+  saturated_sigma = pb->saturated_sigma;
   sigma = new double[v.ntot()];
   for (int i=0;i<v.ntot();i++) sigma[i] = pb->sigma[i];
   for (int c=0;c<10;c++)
@@ -108,11 +150,14 @@ void polarizability::use_pml() {
 }
 
 polarizability::polarizability(const mat *ma, double sig(const vec &),
-                               double om, double ga, double sigscale) {
+                               double om, double ga, double sigscale,
+                               double energy_sat) {
   v = ma->v;
   omeganot = om;
   gamma = ga;
   next = NULL;
+  energy_saturation = energy_sat;
+  saturated_sigma = sigscale;
 
   for (int c=0;c<10;c++)
     if (v.has_field((component)c) && is_electric((component)c)) {
@@ -180,13 +225,14 @@ polarizability::~polarizability() {
 }
 
 void mat::add_polarizability(double sigma(const vec &),
-                             double omega, double gamma, double delta_epsilon) {
+                             double omega, double gamma, double delta_epsilon,
+                             double energy_sat) {
   const double freq_conversion = 2*pi*c/a;
   double sigma_scale  = freq_conversion*freq_conversion*omega*omega*delta_epsilon;
   polarizability *npb = new polarizability(this, sigma,
                                            freq_conversion*omega,
                                            freq_conversion*gamma,
-                                           sigma_scale);
+                                           sigma_scale, energy_sat);
   npb->next = pb;
   pb = npb;
 }
@@ -221,9 +267,9 @@ void fields::prepare_step_polarization_energy(polarization *op, polarization *np
     prepare_step_polarization_energy(olpol, pol);
   } else if (op != NULL && np != NULL) {
     for (int c=0;c<10;c++)
-      if (op->energy[c])
+      if (np->energy[c])
         for (int i=0;i<v.ntot();i++)
-          op->energy[c][i] = np->energy[c][i];
+          np->energy[c][i] = op->energy[c][i];
     if (op->next && np->next) prepare_step_polarization_energy(op->next, np->next);
   }
 }
@@ -235,9 +281,9 @@ void fields::half_step_polarization_energy(polarization *op, polarization *np) {
   } else if (op != NULL && np != NULL) {
     DOCMP
       for (int c=0;c<10;c++)
-        if (op->energy[c])
+        if (np->energy[c])
           for (int i=0;i<v.ntot();i++)
-            op->energy[c][i] += 0.5*(np->P[c][cmp][i] - op->P[c][cmp][i])*f[c][cmp][i];
+            np->energy[c][i] += 0.5*(np->P[c][cmp][i] - op->P[c][cmp][i])*f[c][cmp][i];
     if (op->next && np->next) half_step_polarization_energy(op->next, np->next);
   }
 }
@@ -253,19 +299,19 @@ void fields::step_polarization_itself(polarization *op, polarization *np) {
     const double g = op->pb->gamma;
     const double om = op->pb->omeganot;
     const double funinv = 1.0/(1+0.5*g);
-
+    np->update_sigma();
     DOCMP {
       for (int cc=0;cc<10;cc++)
         if (v.has_field((component)cc) && is_electric((component)cc)) {
           for (int i=0;i<v.ntot();i++)
             op->P[cc][cmp][i] = funinv*((2-om*om)*np->P[cc][cmp][i]+
                                         (0.5*g-1)*op->P[cc][cmp][i])+
-              np->pb->s[cc][i]*f[cc][cmp][i];
+              np->s[cc][i]*f[cc][cmp][i];
           if (f_pml[cc][cmp])
             for (int i=0;i<v.ntot();i++)
               op->P_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_pml[cc][cmp][i]+
                                               (0.5*g-1)*op->P_pml[cc][cmp][i])+
-                np->pb->s[cc][i]*f_pml[cc][cmp][i];
+                np->s[cc][i]*f_pml[cc][cmp][i];
         }
     }
     if (op->next && np->next) step_polarization_itself(op->next, np->next);

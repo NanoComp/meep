@@ -53,7 +53,7 @@ class mat {
   void mix_with(const mat *, double);
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
-                          double delta_epsilon = 1.0);
+                          double delta_epsilon = 1.0, double energy_saturation = 0.0);
  private:
   void output_sigma_slice(const volume &what, const char *name);
   double pml_fmin;

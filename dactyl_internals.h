@@ -58,10 +58,12 @@ class polarizability {
  public:
   volume v;
   polarizability(const mat *, double sig(const vec &),
-                 double om, double ga, double sigscale);
+                 double om, double ga, double sigscale,
+                 double energy_saturation = 0.0);
   polarizability(const polarizability *);
   ~polarizability();
   double gamma, omeganot, *sigma, *s[10];
+  double energy_saturation, saturated_sigma;
   polarizability *next;
 
   void use_pml();
@@ -71,12 +73,15 @@ class polarization {
  public:
   polarization(const polarizability *the_pb);
   ~polarization();
-  double *(P[10][2]), *(P_pml[10][2]), *(energy[10]);
+  double saturation_factor;
+  double *(P[10][2]), *(P_pml[10][2]), *(energy[10]), *(s[10]);
   const polarizability *pb;
   polarization *next;
 
   double total_energy(const volume &);
   static polarization *set_up_polarizations(const mat *ma);
+
+  void update_sigma(); // This is to deal with saturation.
 };
 
 class src {

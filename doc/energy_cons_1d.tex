@@ -59,15 +59,16 @@ the heck of it.
   f.add_point_source(Ex, 0.33, 1.8, 0.0, 8.0, vec(2.0));
 \end{verbatim}
 \begin{comment}
+  const double ezero = f.total_energy();
   double next_printtime = 1;
   while (f.time() < ttot && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 1;
       printf("Working on time %lg...  ", f.time());
-      printf("energy is %lg\n", f.total_energy());
+      printf("energy is %lg\n", f.total_energy() - ezero);
       //printf("magnetic energy is %lg\n", f.magnetic_energy_in_box(f.v));
       //printf("electric energy is %lg\n", f.electric_energy_in_box(f.v));
-      //printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v));
+      printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v) - ezero);
       //f.eps_slices();
 \end{comment}
 We plot the total energy, the electromagnetic energy and the
@@ -75,12 +76,12 @@ We plot the total energy, the electromagnetic energy and the
 polarization, or has been converted into heat, or (if we had a saturating
 gain system) perhaps is stored in a population inversion.
 \begin{verbatim}
-      g.output_out_of_order(0, f.time(), f.total_energy());
+      g.output_out_of_order(0, f.time(), f.total_energy() - ezero);
       g.output_out_of_order(1, f.time(),
                             f.electric_energy_in_box(f.v)
                           + f.magnetic_energy_in_box(f.v));
       g.output_out_of_order(2, f.time(),
-                            f.thermo_energy_in_box(f.v));
+                            f.thermo_energy_in_box(f.v) - ezero);
 \end{verbatim}
 \begin{comment}
     }
