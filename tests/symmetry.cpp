@@ -763,12 +763,14 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
   fS.use_real_fields();
-  f.use_bloch(0.0);
-  fS.use_bloch(0.0);
+  f.use_bloch(zero_vec(v.dim));
+  fS.use_bloch(zero_vec(v.dim));
   while (f.time() < ttot) {
     f.step();
     fS.step();
     if (!compare_point(fS, f, v.center())) return 0;
+    if (!compare_point(fS, f, zero_vec(v.dim))) return 0;
+    if (!compare_point(fS, f, v.center()*0.3)) return 0;
   }
   return 1;
 }
@@ -780,6 +782,9 @@ int main(int argc, char **argv) {
   master_printf("Testing with various kinds of symmetry...\n");
 
   if (!polariton_ex(vol1d(1.0, 10.0), one))
+    abort("error in 1D polariton vacuum\n");
+
+  if (!polariton_ex(vol2d(1.0, 1.0, 10.0), one))
     abort("error in 1D polariton vacuum\n");
 
   if (!test_1d_periodic_mirror(one, dirname))
