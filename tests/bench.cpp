@@ -204,12 +204,10 @@ bench bench_2d_te_nonlinear(const double xmax, const double ymax,
   return b;
 }
 
-#define showbench(name, bb) \
-  master_printf("%s\n", name); \
-  { \
+#define showbench(name, bb) { \
     bench b = bb; \
-    master_printf("  total time:    \t%g s\n  normalized time:\t%g s/Mgs\n", \
-                  b.time, b.time*1e6/b.gridsteps); \
+    master_printf("bench:, %s, %g, %g\n", \
+                  name, b.time, b.time*1e6/b.gridsteps); \
   }
 
 // 3D benchmarks:
@@ -266,6 +264,8 @@ bench bench_3d(const double xmax, const double ymax, const double zmax,
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   master_printf("Benchmarking...\n");
+
+  master_printf("bench:, test, total time (s), normalized time (s/Mgs)\n");
 
   showbench("Periodic 6x4 ", bench_periodic(6.0, 4.0, one));
   showbench("Periodic 12x1", bench_periodic(12.0, 1.0, one));
