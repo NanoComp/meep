@@ -194,8 +194,49 @@ int flux_2d(const double xmax, const double ymax,
     f.step();
     fluxL += -(c/a) * (left->flux() - right->flux()
 		       + bottom->flux() - top->flux());
-    if (f.t % 20 == 0)
-      master_printf("  flux(%g) = %g\n", f.time(), (double) fluxL);
+  }
+  double flux = fluxL;
+  double del_energy = f.energy_in_box(geometric_volume(lb, rt)) - init_energy;
+  master_printf("Final energy is %g\n", 
+		f.energy_in_box(geometric_volume(lb, rt)));
+  master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
+		del_energy, flux, del_energy/flux);
+  return compare(del_energy, flux, 0.06, "Flux");
+}
+
+int flux_cyl(const double xmax, const double ymax,
+            double eps(const vec &), int m) {
+  const double a = 8.0;
+
+  master_printf("\nFlux_cyl(%g,%g) test...\n", xmax, ymax);
+
+  volume v = volcyl(xmax,ymax,a);
+  structure s(v, eps);
+  s.use_pml_everywhere((xmax > ymax ? xmax : ymax)/6);
+
+  fields f(&s, m);
+  // f.use_real_fields();
+  f.add_point_source(Ep, 0.25, 3.5, 0., 8., vec(xmax/6+0.1, ymax/6+0.3), 1.);
+  
+  // corners of flux planes and energy box:
+  vec lb(vec(xmax/3, ymax/3)), rb(vec(2*xmax/3, ymax/3));
+  vec lt(vec(xmax/3, 2*ymax/3)), rt(vec(2*xmax/3, 2*ymax/3));
+
+  flux_box *left = f.add_flux_plane(lb, lt);
+  flux_box *right = f.add_flux_plane(rb, rt);
+  flux_box *bottom = f.add_flux_plane(lb, rb);
+  flux_box *top = f.add_flux_plane(lt, rt);
+
+  const double ttot = 130;
+
+  f.step();
+  double init_energy = f.energy_in_box(geometric_volume(lb, rt));
+  master_printf("Initial energy is %g\n", init_energy);
+  long double fluxL = 0;
+  while (f.time() < ttot) {
+    f.step();
+    fluxL += (c/a) * (left->flux() - right->flux()
+		      + bottom->flux() - top->flux());
   }
   double flux = fluxL;
   double del_energy = f.energy_in_box(geometric_volume(lb, rt)) - init_energy;
@@ -230,6 +271,9 @@ int main(int argc, char **argv) {
 
   width = 10.0;
   attempt("Flux 2D 10", flux_2d(30.0, 30.0, bump));
+
+  width = 10.0;
+  attempt("Flux cylindrical 10", flux_cyl(30.0, 30.0, bump, 1));
 
   exit(0);
 }
