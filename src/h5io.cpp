@@ -86,6 +86,50 @@ static bool dataset_exists(hid_t id, const char *name)
 }
 #endif
 
+/*****************************************************************************/
+
+bool h5io::read_size(const char *filename, const char *dataname,
+		     int *rank, int *dims, int maxrank)
+{
+#ifdef HAVE_HDF5
+  if (am_master()) {
+    hid_t file_id, space_id, data_id;
+    
+    file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+    CHECK(file_id >= 0, "error opening HDF5 input file");
+    
+    CHECK(dataset_exists(file_id, dataname),
+	  "missing dataset in HDF5 file");
+    
+    data_id = H5Dopen(file_id, dataname);
+    space_id = H5Dget_space(data_id);
+    
+    *rank = H5Sget_simple_extent_ndims(space_id);
+    CHECK(*rank <= maxrank, "input array rank is too big");
+    
+    hsize_t *dims_copy = new hsize_t[*rank];
+    hsize_t *maxdims = new hsize_t[*rank];
+    H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
+    delete[] maxdims;
+    delete[] dims_copy;
+    H5Sclose(space_id);
+    
+    H5Dclose(data_id);
+    H5Fclose(file_id);
+  }
+  
+  *rank = broadcast(0, *rank);
+  broadcast(0, dims, *rank);
+
+  if (*rank == 1 && dims[0] == 1)
+    *rank = 0;
+  
+  return true;
+#else
+  return false;
+#endif
+}
+
 double *h5io::read(const char *filename, const char *dataname,
 		   int *rank, int *dims, int maxrank)
 {
@@ -133,7 +177,7 @@ double *h5io::read(const char *filename, const char *dataname,
     data = new double[N];
   broadcast(0, data, N);
   
-  if (N == 1)
+  if (*rank == 1 && dims[0] == 1)
     *rank = 0;
   
   return data;
@@ -141,6 +185,55 @@ double *h5io::read(const char *filename, const char *dataname,
   return NULL;
 #endif
 }
+
+char *h5io::read(const char *filename, const char *dataname)
+{
+#ifdef HAVE_HDF5
+  char *data = 0;
+  int len = 0;
+  if (am_master()) {
+    hid_t file_id, space_id, data_id, type_id;
+    
+    file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+    CHECK(file_id >= 0, "error opening HDF5 input file");
+    
+    CHECK(dataset_exists(file_id, dataname),
+	  "missing dataset in HDF5 file");
+    
+    data_id = H5Dopen(file_id, dataname);
+    space_id = H5Dget_space(data_id);
+    type_id = H5Dget_type(data_id);
+    
+    CHECK(H5Sget_simple_extent_npoints(space_id) == 1,
+	  "expected single string in HDF5 file, but didn't get one");
+    
+    len = H5Tget_size(type_id);
+    H5Tclose(type_id);
+    type_id = H5Tcopy(H5T_C_S1);
+    H5Tset_size(type_id, len);
+    
+    data = new char[len];
+    H5Dread(data_id, type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+	    (void *) data);
+    
+    H5Tclose(type_id);
+    H5Sclose(space_id);	  
+    H5Dclose(data_id);
+    H5Fclose(file_id);
+  }
+  
+  len = broadcast(0, len);
+  if (!am_master())
+    data = new char[len];
+  broadcast(0, data, len);
+  
+  return data;
+#else
+  return NULL;
+#endif
+}
+
+/*****************************************************************************/
 
 /* Write a chunk of data to dataset <dataname> in HDF5 file
    <filename>.  The dataset has dimension dims[rank], and we are
@@ -192,8 +285,9 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 
      // stupid HDF5 has problems with rank 0
      rank1 = (rank == 0 && !append_data) ? 1 : rank;
-
-     all_wait();
+     
+     if (parallel)
+       all_wait();
 
      hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
 #  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
@@ -404,50 +498,118 @@ void h5io::write(const char *filename, const char *dataname,
 #endif
 }
 
-char *h5io::read(const char *filename, const char *dataname)
+/*****************************************************************************/
+
+/* Inverse of write_chunk, above.  The caller should get the 
+   total dataset's rank and dims first by calling read_size, above. */
+
+void h5io::read_chunk(const char *filename, const char *dataname,
+		      int rank, const int *dims,
+		      double *data,
+		      const int *chunk_start, const int *chunk_dims,
+		      bool parallel)
 {
 #ifdef HAVE_HDF5
-  char *data = 0;
-  int len = 0;
-  if (am_master()) {
-    hid_t file_id, space_id, data_id, type_id;
-    
-    file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-    CHECK(file_id >= 0, "error opening HDF5 input file");
-    
-    CHECK(dataset_exists(file_id, dataname),
-	  "missing dataset in HDF5 file");
-    
-    data_id = H5Dopen(file_id, dataname);
-    space_id = H5Dget_space(data_id);
-    type_id = H5Dget_type(data_id);
-    
-    CHECK(H5Sget_simple_extent_npoints(space_id) == 1,
-	  "expected single string in HDF5 file, but didn't get one");
-    
-    len = H5Tget_size(type_id);
-    H5Tclose(type_id);
-    type_id = H5Tcopy(H5T_C_S1);
-    H5Tset_size(type_id, len);
-    
-    data = new char[len];
-    H5Dread(data_id, type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-	    (void *) data);
-    
-    H5Tclose(type_id);
-    H5Sclose(space_id);	  
-    H5Dclose(data_id);
-    H5Fclose(file_id);
+  int i;
+  bool do_read = true;
+  hid_t file_id, space_id, mem_space_id, data_id;
+  int rank1;
+  
+  CHECK(rank >= 0, "negative rank");
+  CHECK(rank > 0 || dims[0] == 1, "invalid dims[0] for rank 0");
+  CHECK(rank > 0 || chunk_dims[0] == 0 || chunk_dims[0] == 1,
+	"invalid chunk_dims[0] for rank 0");
+  
+  // stupid HDF5 has problems with rank 0
+  rank1 = rank == 0 ? 1 : rank;
+  
+  if (parallel)
+    all_wait();
+  
+  hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
+#  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
+  if (parallel)
+    H5Pset_fapl_mpio(access_props, MPI_COMM_WORLD, MPI_INFO_NULL);
+#  else
+  if (parallel)
+    begin_critical_section(matrixio_critical_section_tag);
+#  endif
+  
+  file_id = H5Fopen(filename, H5F_ACC_RDONLY, access_props);
+  
+  H5Pclose(access_props);
+  
+  CHECK(file_id >= 0, "error opening HDF5 output file");     
+  
+  data_id = H5Dopen(file_id, dataname);
+  space_id = H5Dget_space(data_id);
+  
+  // check that the caller passed correct dimensions
+  CHECK(H5Sget_simple_extent_ndims(space_id) == rank1,
+	"unexpected rank in HDF5 file");
+  
+  hsize_t *dims_copy = new hsize_t[rank1];
+  hsize_t *maxdims = new hsize_t[rank1];
+  H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
+  delete[] maxdims;
+  for (i = 0; i < rank; ++i)
+    CHECK(dims[i] == (int)dims_copy[i], "unexpected dimension in HDF5 file");
+  if (!rank)
+    CHECK(dims_copy[0] == 1, "unexpected non-unit dimension in HDF5");
+  delete[] dims_copy;
+  
+  /*******************************************************************/
+  /* Before we can write the data to the data set, we must define
+     the dimensions and "selections" of the arrays to be read & written: */
+  
+  hssize_t *start = new hssize_t[rank1];
+  hsize_t *count = new hsize_t[rank1];
+  
+  int count_prod = 1;
+  for (i = 0; i < rank; ++i) {
+    start[i] = chunk_start[i];
+    count[i] = chunk_dims[i];
+    count_prod *= count[i];
+  }
+  if (!rank) {
+    start[0] = 0;
+    count[0] = chunk_dims[0]; // see comment at top
+    count_prod *= count[0];
   }
   
-  len = broadcast(0, len);
-  if (!am_master())
-    data = new char[len];
-  broadcast(0, data, len);
+  if (count_prod > 0) {
+    H5Sselect_hyperslab(space_id, H5S_SELECT_SET,
+			start, NULL, count, NULL);
+    mem_space_id = H5Screate_simple(rank1, count, NULL);
+    H5Sselect_all(mem_space_id);
+  }
+  else { /* this can happen on leftover processes in MPI */
+    H5Sselect_none(space_id);
+    mem_space_id = H5Scopy(space_id); /* can't create an empty space */
+    H5Sselect_none(mem_space_id);
+    do_read = false; /* HDF5 complains about empty dataspaces */
+  }
   
-  return data;
+  delete[] count;
+  delete[] start;
+  
+  /*******************************************************************/
+  /* Write the data, then free all the stuff we've allocated. */
+  
+  if (do_read)
+    H5Dread(data_id, H5T_NATIVE_DOUBLE, mem_space_id, space_id, H5P_DEFAULT,
+	    (void *) data);
+  
+  H5Sclose(mem_space_id);
+  H5Sclose(space_id);
+  H5Dclose(data_id);
+  H5Fclose(file_id);
+  
+  IF_EXCLUSIVE(if (parallel)
+	       end_critical_section(matrixio_critical_section_tag++),
+	       (void) 0);
 #else
-  return NULL;
+  abort("not compiled with HDF5, required for HDF5 input");
 #endif
 }
 

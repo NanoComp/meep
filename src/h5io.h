@@ -19,32 +19,37 @@
 #define H5IO_H
 
 namespace meep {
-     namespace h5io {
-
-	  double *read(const char *filename, const char *dataname,
-		       int *rank, int *dims, int maxrank);
-	  
-	  void write_chunk(const char *filename, const char *dataname,
-			   int rank, const int *dims,
-			   double *data,
-			   const int *chunk_start, const int *chunk_dims,
-			   bool parallel, bool first_chunk,
-			   bool append_data = false, int dindex = -1,
-			   bool append_file = false,
-			   bool single_precision = true);
-
-	  void write(const char *filename, const char *dataname,
-		     double *data, int rank, const int *dims,
+  namespace h5io {
+    
+    bool read_size(const char *filename, const char *dataname,
+		   int *rank, int *dims, int maxrank);
+    double *read(const char *filename, const char *dataname,
+		 int *rank, int *dims, int maxrank);
+    
+    void write_chunk(const char *filename, const char *dataname,
+		     int rank, const int *dims,
+		     double *data,
+		     const int *chunk_start, const int *chunk_dims,
+		     bool parallel, bool first_chunk,
+		     bool append_data = false, int dindex = -1,
 		     bool append_file = false,
 		     bool single_precision = true);
+    void read_chunk(const char *filename, const char *dataname,
+		    int rank, const int *dims,
+		    double *data,
+		    const int *chunk_start, const int *chunk_dims,
+		    bool parallel);
+    
+    void write(const char *filename, const char *dataname,
+	       double *data, int rank, const int *dims,
+	       bool append_file = false,
+	       bool single_precision = true);
+    
+    char *read(const char *filename, const char *dataname);
+    void write(const char *filename, const char *dataname, const char *data,
+	       bool append_file);
 
-
-	  char *read(const char *filename, const char *dataname);
-	  void write(const char *filename, const char *dataname,
-		     const char *data,
-		     bool append_file);
-
-     } // namespace h5io
+  } // namespace h5io
 } // namespace meep
 
 #endif /* H5IO_H */
