@@ -204,12 +204,15 @@ void fields::out_bands(file *o, const char *name, int maxbands) {
   for (int i=0;i<maxbands;i++) if (fad[i] != 0.0) num_found = i+1;
 
   for (int i = 0; i < num_found; ++i) {
-    // k m index freq decay Q
-    master_fprintf(o, "%s %lg %d %d %lg %lg %lg %lg\n", name,
-                   k, m, i, fabs(real(fad[i])), imag(fad[i]),
+    // k k k m index freq decay Q approx_power
+    master_fprintf(o, "%s\t%lg\t%lg\t%lg\t%d\t%d\t%lg \t%lg \t%lg \t%lg\n", 
+                   name, 
+                   real(k[0]), real(k[1]), real(k[2]),   
+                   m, i, fabs(real(fad[i])), imag(fad[i]),
                    -fabs(real(fad[i])) / (2 * imag(fad[i])),
                    approx_power[i]);
   }
+  i_flush(o);
   delete[] approx_power;
   delete[] fad;
 }
