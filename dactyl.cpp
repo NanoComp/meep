@@ -366,7 +366,7 @@ void fields::add_src_pt(int r, int z,
   }
   src *tmp = new src;
   tmp->freq = freq*c*inva;
-  tmp->width = width/tmp->freq*(2*pi); // this is now time width
+  tmp->width = width/tmp->freq; // this is now time width
   tmp->ez = Pz;
   tmp->er = Pr;
   tmp->ep = Pp;
@@ -946,7 +946,6 @@ void fields::step_e_source(const src *s) {
       return;
     }
     const double pi = 3.14159265358979323846;
-    double period = 1./s->freq;
     double envelope = exp(-tt*tt/(2*s->width*s->width));
     Ar = cos(2*pi*s->freq*tt)*envelope;
     Ai = -sin(2*pi*s->freq*tt)*envelope;
