@@ -146,6 +146,7 @@ class fields {
   void output_slices(const volume &what, const char *name = "");
   void eps_slices(const char *name = "");
   void eps_slices(const volume &what, const char *name = "");
+  void output_real_imaginary_slices(const char *name = "");
   void output_real_imaginary_slices(const volume &what, const char *name = "");
   void step();
   void step_right();

@@ -271,6 +271,10 @@ void mat::output_slices(const volume &what, const char *name) {
   delete[] n;
 }
 
+void fields::output_real_imaginary_slices(const char *name) {
+  output_real_imaginary_slices(v,name);
+}
+
 void fields::output_real_imaginary_slices(const volume &what, const char *name) {
   const int buflen = 1024;
   char nname[buflen];
