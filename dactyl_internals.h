@@ -42,3 +42,6 @@
 
 inline double max(double a, double b) { return (a > b) ? a : b; }
 inline int max(int a, int b) { return (a > b) ? a : b; }
+
+const double pi = 3.141592653589793238462643383276L;
+

@@ -25,8 +25,6 @@
 
 #define BAND(b,r,t) ((b)[(r)+(t)*nr])
 
-const double pi = 3.141592653589793238462643383276;
-
 bandsdata::bandsdata() {
   maxbands = -1;
   tstart = nr = z = 0;
