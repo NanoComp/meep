@@ -1344,4 +1344,67 @@ bool symmetry::is_primitive(const ivec &p) const {
   return true;
 }
 
+/* given a list of geometric volumes, produce a new list with appropriate
+   weights that is minimized according to the symmetry.  */
+geometric_volume_list *symmetry::reduce(const geometric_volume_list *gl) const {
+  geometric_volume_list *glnew = 0;
+  for (const geometric_volume_list *g = gl; g; g = g->next) {
+    int sn;
+    for (sn = 0; sn < multiplicity(); ++sn) {
+      geometric_volume gS(transform(g->gv, sn));
+      int cS = transform(g->c, sn);
+      geometric_volume_list *gn;
+      for (gn = glnew; gn; gn = gn->next)
+	if (gn->c == cS && gn->gv.round_float() == gS.round_float())
+	  break;
+      if (gn) { // found a match
+	gn->weight += g->weight * phase_shift(g->c, sn);
+	break;
+      }
+    }
+    if (sn == multiplicity() && g->weight != 0.0) { // no match, add to glnew
+      geometric_volume_list *gn = 
+	new geometric_volume_list(g->gv, g->c, g->weight, glnew);
+      glnew = gn;
+    }
+  }
+
+  // reduce gv's redundant with themselves & delete elements with zero weight:
+  geometric_volume_list *gprev = 0, *g = glnew;
+  while (g) {
+    // first, see if g->gv is redundant with itself
+    bool halve[5] = {false,false,false,false,false};
+    complex<double> weight = g->weight;
+    for (int sn = 1; sn < multiplicity(); ++sn)
+      if (g->c == transform(g->c, sn) && 
+	  g->gv.round_float() == transform(g->gv, sn).round_float()) {
+	LOOP_OVER_DIRECTIONS(g->gv.dim, d)
+	  if (transform(d,sn).flipped) {
+	    halve[d] = true;
+	    break;
+	  }
+	g->weight += weight * phase_shift(g->c, sn);
+      }
+    LOOP_OVER_DIRECTIONS(g->gv.dim, d)
+      if (halve[d])
+	g->gv.set_direction_max(d, g->gv.in_direction_min(d) +
+				0.5 * g->gv.in_direction(d));
+    
+      // now, delete it if it has zero weight
+    if (g->weight == 0.0) {
+      if (gprev)
+	gprev->next = g->next;
+      else // g == glnew
+	glnew = g->next;
+      g->next = 0; // necessary so that g->next is not deleted recursively
+      delete g;
+      g = gprev ? gprev->next : glnew;
+    }
+    else
+      g = (gprev = g)->next;
+  }
+
+  return glnew;
+}
+
 } // namespace meep

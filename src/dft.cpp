@@ -138,12 +138,14 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
   return data.dft_chunks;
 }
 
-dft_chunk *fields::add_dft(component c, const geometric_volume_list *where,
+dft_chunk *fields::add_dft(const geometric_volume_list *where,
 			   double freq_min, double freq_max, int Nfreq,
 			   bool include_dV) {
   dft_chunk *chunks = 0;
   while (where) {
-    chunks = add_dft(c, where->gv, freq_min, freq_max, Nfreq, include_dV,
+    if (is_derived(where->c)) abort("derived_component invalid for dft");
+    chunks = add_dft(component(where->c), where->gv,
+		     freq_min, freq_max, Nfreq, include_dV,
 		     where->weight, chunks);
     where = where->next;
   }
@@ -308,31 +310,29 @@ void dft_flux::negate_dfts() {
   if (H) H->negate_dft();
 }
 
-// requires d to be an array of the same length as where list!!
-dft_flux fields::add_dft_flux(const direction *d,
-			      const geometric_volume_list *where,
+dft_flux fields::add_dft_flux(const geometric_volume_list *where_,
 			      double freq_min, double freq_max, int Nfreq) {
   dft_chunk *E = 0, *H = 0;
   component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
-  
+
+  geometric_volume_list *where = S.reduce(where_);
   while (where) {
-    if (coordinate_mismatch(v.dim, *d))
+    derived_component c = derived_component(where->c);
+    if (coordinate_mismatch(v.dim, component_direction(c)))
       abort("coordinate-type mismatch in add_dft_flux");
     
-    switch (*d) {
-    case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
-    case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
-    case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
-    case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
-    case Z:
+    switch (c) {
+    case Sx: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
+    case Sy: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
+    case Sr: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
+    case Sp: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
+    case Sz:
       if (v.dim == Dcyl)
 	cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
       else
 	cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
       break;
-    case NO_DIRECTION:
-    default:
-      abort("cannot get flux in unknown direction!");
+    default: abort("invalid flux component!");
     }
     
     for (int i = 0; i < 2; ++i) {
@@ -343,57 +343,34 @@ dft_flux fields::add_dft_flux(const direction *d,
     }
     
     where = where->next;
-    ++d;
   }
 
   return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq);
 }
 
-dft_flux fields::add_dft_flux(direction d,
-			      const geometric_volume_list *where,
-			      double freq_min, double freq_max, int Nfreq) {
-  int nd = 0;
-  for (const geometric_volume_list *cur = where; cur; cur = cur->next)
-    ++nd;
-  direction *ds = new direction[nd];
-  for (int id = 0; id < nd; ++id)
-    ds[id] = d;
-  dft_flux flux = add_dft_flux(ds, where, freq_min, freq_max, Nfreq);
-  delete[] ds;
-  return flux;
-}
-
 dft_flux fields::add_dft_flux(direction d, const geometric_volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
-  geometric_volume_list gvl(where);
-  return add_dft_flux(d, &gvl, freq_min, freq_max, Nfreq);
+  geometric_volume_list gvl(where, direction_component(Sx, d));
+  return add_dft_flux(&gvl, freq_min, freq_max, Nfreq);
 }
 
 dft_flux fields::add_dft_flux_box(const geometric_volume &where,
 				  double freq_min, double freq_max, int Nfreq){
-  int nfaces = 0;
-  LOOP_OVER_DIRECTIONS(where.dim, d)
-    if (where.in_direction(d) > 0) ++nfaces;
-  nfaces *= 2;
-  direction *ds = new direction[nfaces];
-
   geometric_volume_list *faces = 0;
   int ifaces = 0;
   LOOP_OVER_DIRECTIONS(where.dim, d)
     if (where.in_direction(d) > 0) {
       geometric_volume face(where);
+      derived_component c = direction_component(Sx, d);
       face.set_direction_min(d, where.in_direction_max(d));
-      faces = new geometric_volume_list(face, +1, faces);
-      ds[nfaces - ++ifaces] = d;
+      faces = new geometric_volume_list(face, c, +1, faces);
       face.set_direction_min(d, where.in_direction_min(d));
       face.set_direction_max(d, where.in_direction_min(d));
-      faces = new geometric_volume_list(face, -1, faces);
-      ds[nfaces - ++ifaces] = d;
+      faces = new geometric_volume_list(face, c, -1, faces);
     }
 
-  dft_flux flux = add_dft_flux(ds, faces, freq_min, freq_max, Nfreq);
+  dft_flux flux = add_dft_flux(faces, freq_min, freq_max, Nfreq);
   delete faces;
-  delete ds;
   return flux;
 }
 

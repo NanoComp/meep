@@ -826,7 +826,7 @@ class fields {
 		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
-  dft_chunk *add_dft(component c, const geometric_volume_list *where,
+  dft_chunk *add_dft(const geometric_volume_list *where,
 		     double freq_min, double freq_max, int Nfreq,
 		     bool include_dV = true);
   void update_dfts();
@@ -836,9 +836,7 @@ class fields {
 			    double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux_plane(const geometric_volume &where,
 			      double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux(const direction *d, const geometric_volume_list *where,
-			double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux(direction d, const geometric_volume_list *where,
+  dft_flux add_dft_flux(const geometric_volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
   
   // monitor.cpp

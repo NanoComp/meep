@@ -294,6 +294,12 @@ class vec {
     return true;
   };
 
+  vec round_float(void) const {
+    vec result = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] = float(result.t[d]);
+    return result;
+  }
+
   vec operator*(double s) const {
     vec result = *this;
     LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= s;
@@ -510,6 +516,12 @@ class geometric_volume {
     min_corner -= a; max_corner -= a;
     return *this;
   }
+  bool operator==(const geometric_volume &a) const {
+    return (min_corner == a.min_corner && max_corner == a.max_corner);
+  }
+  geometric_volume round_float(void) const {
+    return geometric_volume(min_corner.round_float(),max_corner.round_float());
+  }
   bool intersects(const geometric_volume &a) const;
   bool operator&&(const geometric_volume &a) const {
     return intersects(a);
@@ -660,6 +672,8 @@ class volume {
   int the_ntot;
 };
 
+class geometric_volume_list;
+
 class symmetry {
  public:
   symmetry();
@@ -684,6 +698,8 @@ class symmetry {
   int multiplicity() const;
   bool is_primitive(const ivec &) const;
 
+  geometric_volume_list *reduce(const geometric_volume_list *gl) const;
+
   symmetry operator+(const symmetry &) const;
   symmetry operator*(double) const;
   void operator=(const symmetry &);
@@ -702,15 +718,15 @@ symmetry rotate4(direction,const volume &);
 symmetry rotate2(direction,const volume &);
 symmetry mirror(direction,const volume &);
 
-class geometric_volume_list;
 class geometric_volume_list {
- public:
-     geometric_volume_list(const geometric_volume &gv, complex<double> weight = 1.0, geometric_volume_list *next = 0) : gv(gv), weight(weight), next(next) {}
-     ~geometric_volume_list() { delete next; }
-
-     geometric_volume gv;
-     complex<double> weight;
-     geometric_volume_list *next;
+public:
+  geometric_volume_list(const geometric_volume &gv, int c, complex<double> weight = 1.0, geometric_volume_list *next = 0) : gv(gv), c(c), weight(weight), next(next) {}
+  ~geometric_volume_list() { delete next; }
+  
+  geometric_volume gv;
+  int c; // component or derived component associated with gv (e.g. for flux)
+  complex<double> weight;
+  geometric_volume_list *next;
 };
 
 } /* namespace meep */
