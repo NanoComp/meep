@@ -362,7 +362,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
     // k m index freq decay Q
     fprintf(o, "%s %lg %d %d %lg %lg %lg %lg\n", name,
             k, m, i, fabs(real(fad[i])), imag(fad[i]),
-            fabs(real(fad[i])) / (2 * imag(fad[i])), approx_power[i]);
+            -fabs(real(fad[i])) / (2 * imag(fad[i])), approx_power[i]);
     if (and_modes) {
       for (int r=0;r<nr;r++) {
         fprintf(o, "%s-fields %lg %d %d %lg", name, k, m, i, r*inva);
@@ -833,10 +833,10 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
   double *tmperrors = harminv_compute_frequency_errors(hd);
 
   freq_re[0] = a*harminv_get_freq(hd, 0)/c/sampling_rate;
-  freq_im[0] = 1/(2*pi)*a*harminv_get_decay(hd, 0)/c/sampling_rate;
+  freq_im[0] = -1/(2*pi)*a*harminv_get_decay(hd, 0)/c/sampling_rate;
   for (int i = 1; i < harminv_get_num_freqs(hd); ++i) {
     freq_re[i] = a*harminv_get_freq(hd, i)/c/sampling_rate;
-    freq_im[i] = 1/(2*pi)*a*harminv_get_decay(hd, i)/c/sampling_rate;
+    freq_im[i] = -1/(2*pi)*a*harminv_get_decay(hd, i)/c/sampling_rate;
     for (int j=i; j>0;j--) {
       if (freq_re[j]<freq_re[j-1]) {
         double t1 = freq_re[j], t2 = freq_im[j], e = tmperrors[j];
