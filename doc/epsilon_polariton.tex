@@ -1,0 +1,170 @@
+\begin{comment}
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+
+#include "dactyl.h"
+
+const char header[] = "# Grace project file
+#
+@page size 792, 612
+@page scroll 5%
+@page inout 5%
+@default symbol size 0.330000\n
+@    s0 line color 1
+@    s0 symbol color 1
+@    s0 legend  \"\\x\\e\\s1\\N\"
+@    s1 line color 2
+@    s1 symbol color 2
+@    s1 legend  \"\\x\\e\\s2\\N\"
+";
+\end{comment}
+
+\section{Computing epsilon of a polaritonic material}
+
+In this example, we compute epsilon as a function of frequency for a simple
+polaritonic material.
+
+\begin{figure}
+\label{epsilon_polariton}
+\caption{Epsilong of a polaritonic material.}
+\epsfig{file=epsilon_polariton.eps,width=8.8cm}
+\end{figure}
+
+In order to calculate epsilon, we want to generate a simple plane wave.
+Unfortunately, a simple plane wave is anything but simple in cylindrical
+coordinates.  We approximate one by using a cell with a large radius but
+which is small in the z direction.  We then use a plane wave source (one of
+the source options in dactyl) with a gaussian profile.  In order to use a
+plane wave source, $m$ obviously has to be 1.  If this isn't obvious to
+you, think about it for a moment.
+
+One thing to be aware of when using polaritonic materials, is that
+generally you will be needing a rather higher grid resolution than you may
+be used to in order to properly model the material.  Here I am using an $a$
+of just 20, and if you look at figure~\ref{epsilon_polariton}, you can see
+that the curve deviates significantly from the predicted result, which
+would be essentially symmetric around the resonant frequency of $0.4$.
+
+\begin{verbatim}
+const double rmax  = 2.0;
+const int rad = 20;
+const int npml = 16;
+const double zsize = (4+2*npml)/(double)rad;
+const int m = 1;
+
+complex<double> source_broad(double r) {
+  double sig = rmax*0.3;
+  return exp(-r*r/(2*sig*sig));
+}
+\end{verbatim}
+
+For our example polaritonic material, we'll use an $\epsilon(0)$ of 13.4.
+
+\begin{verbatim}
+double eps(double r, double z) { return 13.4; }
+\end{verbatim}
+\begin{comment}
+double one(double r, double z) { return 1; }
+
+int main(int argc, char **argv) {
+  deal_with_ctrl_c();
+  const double ttot = 600.0;
+  mat ma(eps, rmax + npml/(double)rad, zsize, rad);
+  const char *dirname = make_output_directory(argv[0]);
+  printf("Storing output in directory %s/\n", dirname);
+  ma.set_output_directory(dirname);
+\end{comment}
+We use PML in both directions.  Note that the polaritonic material will be
+within the PML.  This is fine.
+\begin{verbatim}
+  ma.use_pml(npml,npml);
+  ma.add_polarizability(one, 0.4, 0.01, 27.63);
+\end{verbatim}
+\begin{comment}
+  fields f(&ma, m);
+\end{comment}
+We use several plane wave sources, to cover a broad frequency range
+(probably we really only need one).
+\begin{verbatim}
+  double sourceloc = (npml+1.0)/(double)rad;
+  f.add_plane_source(0.6 , 0.8, 0.0, 8.0, sourceloc+0.0, source_broad);
+  f.add_plane_source(0.4 , 0.8, 0.0, 8.0, sourceloc+0.0, source_broad);
+  f.add_plane_source(0.33, 0.8, 0.0, 8.0, sourceloc+0.0, source_broad);
+\end{verbatim}
+\begin{comment}
+  printf("Working on m = %d with a=%d...\n", m, rad);
+\end{comment}
+We use a couple of monitor points to determine epsilon.
+\begin{verbatim}
+  monitor_point *left = NULL, *right = NULL;
+\end{verbatim}
+\begin{comment}
+  double next_printtime = 50;
+  while (f.time() < ttot && !interrupt) {
+    if (f.time() >= next_printtime) {
+      next_printtime += 50;
+      printf("Working on time %lg...  ", f.time());
+      printf("energy is %lg\n", f.total_energy()/3.66e-6);
+    }
+\end{comment}
+The monitor points are located one grid spacing from one another.  The
+\verb*|get_new_point| method appends the fields at a given time to a
+monitor point linked list.
+\begin{verbatim}
+    left  = f.get_new_point(0.2, sourceloc+1.0/rad, left );
+    right = f.get_new_point(0.2, sourceloc+2.0/rad, right);
+\end{verbatim}
+\begin{comment}
+    f.step();
+  }
+  FILE *epsfile = create_output_file(dirname, "eps");
+  fprintf(epsfile, header);
+  complex<double> *al, *ar, *freqs;
+  int numl, numr;
+  printf("Working on left fourier transform...\n");
+\end{comment}
+When the time stepping is over, we take a fourier transform of the fields
+at the two monitor points.
+\begin{verbatim}
+  left->fourier_transform(Ep, &al, &freqs, &numl, 0.301, 0.5, 1000);
+\end{verbatim}
+\begin{comment}
+  delete[] freqs;
+  printf("Working on right fourier transform...\n");
+\end{comment}
+\begin{verbatim}
+  right->fourier_transform(Ep, &ar, &freqs, &numr, 0.301, 0.5, 1000);
+\end{verbatim}
+\begin{comment}
+  if (numl != numr) printf("Aaack you need both nums to be the same!\n");
+  fprintf(epsfile, "@target G0.S0\n@type xy\n");
+\end{comment}
+Finally we calculate the complex index of refraction using the equation
+\begin{equation*}
+i \omega \Delta x n(\omega) = \log \left(\frac{E'(\omega)}{E(\omega)}\right)
+\end{equation*}
+\begin{verbatim}
+  for (int i=0;i<numl;i++) {
+    complex<double> I = complex<double>(0,1);
+    complex<double> n = (log(ar[i]/al[i]))/(I*(1.0/rad)*2*pi*freqs[i]);
+    fprintf(epsfile, "%lg\t%lg\n",
+            real(freqs[i]), real(n*n));
+  }
+\end{verbatim}
+\begin{comment}
+  fprintf(epsfile, "@target G0.S1\n@type xy\n");
+  for (int i=0;i<numl;i++) {
+    complex<double> I = complex<double>(0,1);
+    complex<double> n = (log(ar[i]/al[i]))/(I*(1.0/rad)*2*pi*freqs[i]);
+    fprintf(epsfile, "%lg\t%lg\n",
+            real(freqs[i]), imag(n*n));
+  }
+  fclose(epsfile);
+  char gracecmd[500];
+  snprintf(gracecmd, 500, "gracebat -hdevice EPS -printfile %s/eps.eps -hardcopy %s/eps",
+           dirname, dirname);
+  system(gracecmd);
+}
+\end{comment}
+

@@ -18,7 +18,8 @@ all: dactyl.ps dactyl/dactyl.html preproc
 
 ###########################################################################
 
-TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex polaritonbands.eps
+TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex polaritonbands.eps \
+	epsilon_polariton.tex epsilon_polariton.eps
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
@@ -46,7 +47,13 @@ polaritonbands.eps : polaritonbands-out/bands
 polaritonbands-out/bands : preproc polaritonbands.dac
 	rm -rf polaritonbands-out/ && ./polaritonbands.dac
 
-test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac
+epsilon_polariton.eps : epsilon_polariton-out/eps.eps
+	cp $< $@
+epsilon_polariton-out/eps.eps : preproc epsilon_polariton.dac
+	rm -rf epsilon_polariton-out/
+	./epsilon_polariton.dac
+
+test: ../libdactyl.a preproc simplebands.dac polaritonbands.dac epsilon_polariton.dac
 
 doc: doc/dactyl.ps
 
