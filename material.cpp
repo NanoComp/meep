@@ -137,7 +137,8 @@ void mat::make_average_eps() {
 
 mat::mat(const mat *o) {
   outdir = o->outdir;
-  numpols = o->numpols;
+  if (o->pb) pb = new polarizability(o->pb);
+  else pb = NULL;
   a = o->a;
   nr = o->nr;
   nz = o->nz;
@@ -172,7 +173,7 @@ mat::mat(double feps(double r, double z),
          double rmax, double zmax, double ta) {
   int r,z;
   outdir = ".";
-  numpols = 0;
+  pb = NULL;
   a = ta;
   nr = (int) (rmax*a);
   nz = (int) (zmax*a);

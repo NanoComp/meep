@@ -61,8 +61,9 @@ fields::~fields() {
     delete[] hpw[cmp];
     delete[] hzw[cmp];
   }
-  for (int i=0;i<numpols;i++) delete[] pol[i];
   if (nfreq) delete[] freqs;
+  if (bands) delete bands;
+  delete pol;
 }
 
 void fields::use_bloch(double tk) {
@@ -81,6 +82,7 @@ fields::fields(const mat *the_ma, int tm) {
   m = tm;
   phasein_time = 0;
   new_ma = NULL;
+  bands = NULL;
   k = -1;
   a = ma->a;
   inva = 1.0/a;
@@ -88,7 +90,7 @@ fields::fields(const mat *the_ma, int tm) {
                         // frequency... (assuming a has a value on the
                         // order of your frequency).
   t = 0;
-  numpols = ma->numpols;
+  pol = polarization::set_up_polarizations(ma);
   h_sources = e_sources = NULL;
   hr[0] = new double[(nr+1)*(nz+1)];
   hp[0] = new double[nr*(nz+1)];

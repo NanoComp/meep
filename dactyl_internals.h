@@ -45,3 +45,53 @@ inline int max(int a, int b) { return (a > b) ? a : b; }
 
 const double pi = 3.141592653589793238462643383276L;
 
+class polarizability {
+ public:
+  int nr, nz;
+  polarizability(const mat *, double sig(double,double), double om, double ga);
+  polarizability(const polarizability *);
+  ~polarizability();
+  double gamma, omeganot, *sigma, *sr, *sp, *sz;
+  polarizability *next;
+};
+
+class polarization {
+ public:
+  polarization(const int nr, const int nz, const polarizability *the_pb);
+  ~polarization();
+  double *(Pr[2]), *(Pp[2]), *(Pz[2]);
+  const polarizability *pb;
+  polarization *next;
+
+  static polarization *set_up_polarizations(const mat *ma);
+};
+
+class src {
+ public:
+  double freq, width, peaktime;
+  double ez, ep, er;
+  int r, z, cutoff;
+  int is_real;
+  src *next;
+  int find_last_source(int guess=0);
+  void use_real_sources();
+};
+
+class bandsdata {
+ public:
+  bandsdata();
+  ~bandsdata();
+
+  complex<double> *hr, *hp, *hz, *er, *ep, *ez;
+  int tstart, tend, z, nr, maxbands, scale_factor;
+  double a, inva, fmin, fmax, qmin;
+  int ntime;
+
+  void get_fields(complex<double> *eigen, double *f, double *d,
+                  int nbands, int n);
+  int get_both_freqs(complex<double> *data1, complex<double> *data2, int n,
+                     complex<double> *amps1, complex<double> *amps2, 
+                     double *freqs, double *decays);
+  int get_freqs(complex<double> *data, int n,
+                complex<double> *amps, double *freqs, double *decays);
+};

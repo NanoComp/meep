@@ -191,10 +191,6 @@ void mat::output_slices(const char *name) {
   }
   snprintf(n, buflen, "%s/%sepsilon.sli", outdir, nname);
   output_slice(eps, nr, nz, n);
-  for (int i=0;i<numpols;i++) {
-    snprintf(n, buflen, "%s/%sfreq-%d.sli", outdir, nname, i);
-    output_slice(freq[i], nr, nz, n);
-  }
   snprintf(n, buflen, "%s/%ssigma.sli", outdir, nname);
   output_sigma_slice(n);
   free(n);
@@ -248,11 +244,6 @@ void fields::output_slices(const char *name) {
   if (!n) {
     printf("Allocation failure!\n");
     exit(1);
-  }
-  for (i=0;i<numpols;i++) {
-    if (a == 1) snprintf(n, buflen, "%s/%spol-%d-%08.0f.sli", outdir, nname, i, t*inva);
-    else snprintf(n, buflen, "%s/%spol-%d-%09.2f.sli", outdir, nname, i, t*inva);
-    output_slice(pol[i], nr, nz, n);
   }
 
   if (a == 1) snprintf(n, buflen, "%s/%shr-%08.0f.sli", outdir, nname, t*inva);

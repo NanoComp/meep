@@ -56,16 +56,17 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
   last_source = max(last_source, phasein_time);
   if (fmax == 0) fmax = preferred_fmax;
   else preferred_fmax = fmax;
-  bands.tstart = (int) (last_source + a*qmin/fmax/c);
-  bands.tend = ttot-1;
+  if (!bands) bands = new bandsdata;
+  bands->tstart = (int) (last_source + a*qmin/fmax/c);
+  bands->tend = ttot-1;
 
   if (z >= nz) {
     printf("Specify a lower z for your band structure! (%d > %d)\n",
            z, nz);
     exit(1);
   }
-  bands.z = z;
-  bands.nr = nr;
+  bands->z = z;
+  bands->nr = nr;
 
   // Set fmin properly...
   double epsmax = 1;
@@ -75,59 +76,59 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
     }
   }
   const double cutoff_freq = 1.84*c/(2*pi)/nr/epsmax;
-  bands.fmin = sqrt(cutoff_freq*cutoff_freq + k*k*c*c);
-  bands.fmin = cutoff_freq;
-  bands.qmin = qmin;
+  bands->fmin = sqrt(cutoff_freq*cutoff_freq + k*k*c*c);
+  bands->fmin = cutoff_freq;
+  bands->qmin = qmin;
   // Set fmax and determine how many timesteps to skip over...
-  bands.fmax = fmax*(c*inva);
+  bands->fmax = fmax*(c*inva);
   {
     // for when there are too many data points...
-    double decayconst = bands.fmax/qmin*8.0;
-    double smalltime = 1./(decayconst + bands.fmax);
-    bands.scale_factor = (int)(0.16*smalltime);
-    if (bands.scale_factor < 1) bands.scale_factor = 1;
+    double decayconst = bands->fmax/qmin*8.0;
+    double smalltime = 1./(decayconst + bands->fmax);
+    bands->scale_factor = (int)(0.16*smalltime);
+    if (bands->scale_factor < 1) bands->scale_factor = 1;
     printf("scale_factor is %d (%lg,%lg)\n",
-           bands.scale_factor, bands.fmax, decayconst);
+           bands->scale_factor, bands->fmax, decayconst);
   }
 
-  if (bands.tend <= bands.tstart) {
+  if (bands->tend <= bands->tstart) {
     printf("Oi, we don't have any time to take a fourier transform!\n");
-    printf("FT start is %d and end is %d\n", bands.tstart, bands.tend);
+    printf("FT start is %d and end is %d\n", bands->tstart, bands->tend);
     exit(1);
   }
-  bands.ntime = (1+(bands.tend-bands.tstart)/bands.scale_factor);
-  bands.a = a;
-  bands.inva = inva;
-  bands.hr = new cmplx[nr*bands.ntime];
-  bands.hp = new cmplx[nr*bands.ntime];
-  bands.hz = new cmplx[nr*bands.ntime];
-  bands.er = new cmplx[nr*bands.ntime];
-  bands.ep = new cmplx[nr*bands.ntime];
-  bands.ez = new cmplx[nr*bands.ntime];
-  if (bands.ez == NULL) {
+  bands->ntime = (1+(bands->tend-bands->tstart)/bands->scale_factor);
+  bands->a = a;
+  bands->inva = inva;
+  bands->hr = new cmplx[nr*bands->ntime];
+  bands->hp = new cmplx[nr*bands->ntime];
+  bands->hz = new cmplx[nr*bands->ntime];
+  bands->er = new cmplx[nr*bands->ntime];
+  bands->ep = new cmplx[nr*bands->ntime];
+  bands->ez = new cmplx[nr*bands->ntime];
+  if (bands->ez == NULL) {
     printf("Unable to allocate bandstructure array!\n");
     exit(1);
   }
 }
 
 void fields::record_bands() {
-  if (t > bands.tend || t < bands.tstart) return;
-  if (t % bands.scale_factor != 0) return;
-  int thet = (t-bands.tstart)/bands.scale_factor;
-  if (thet >= bands.ntime) return;
+  if (t > bands->tend || t < bands->tstart) return;
+  if (t % bands->scale_factor != 0) return;
+  int thet = (t-bands->tstart)/bands->scale_factor;
+  if (thet >= bands->ntime) return;
   for (int r=0;r<nr;r++) {
-    BAND(bands.hr,r,thet) =
-      cmplx(RE(hr,r,bands.z), IM(hr,r,bands.z));
-    BAND(bands.hp,r,thet) =
-      cmplx(RE(hp,r,bands.z), IM(hp,r,bands.z));
-    BAND(bands.hz,r,thet) =
-      cmplx(RE(hz,r,bands.z), IM(hz,r,bands.z));
-    BAND(bands.er,r,thet) =
-      cmplx(RE(er,r,bands.z), IM(er,r,bands.z));
-    BAND(bands.ep,r,thet) =
-      cmplx(RE(ep,r,bands.z), IM(ep,r,bands.z));
-    BAND(bands.ez,r,thet) =
-      cmplx(RE(ez,r,bands.z), IM(ez,r,bands.z));
+    BAND(bands->hr,r,thet) =
+      cmplx(RE(hr,r,bands->z), IM(hr,r,bands->z));
+    BAND(bands->hp,r,thet) =
+      cmplx(RE(hp,r,bands->z), IM(hp,r,bands->z));
+    BAND(bands->hz,r,thet) =
+      cmplx(RE(hz,r,bands->z), IM(hz,r,bands->z));
+    BAND(bands->er,r,thet) =
+      cmplx(RE(er,r,bands->z), IM(er,r,bands->z));
+    BAND(bands->ep,r,thet) =
+      cmplx(RE(ep,r,bands->z), IM(ep,r,bands->z));
+    BAND(bands->ez,r,thet) =
+      cmplx(RE(ez,r,bands->z), IM(ez,r,bands->z));
   }
 }
 
@@ -318,14 +319,14 @@ void fields::output_bands(FILE *o, const char *name, int maxbands) {
 void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
   const double pi = 3.14159;
 
-  bands.maxbands = maxbands;
+  bands->maxbands = maxbands;
   double *tf = new double[maxbands];
   double *td = new double[maxbands];
   cmplx *ta = new cmplx[maxbands];
   double *heref = new double[maxbands];
   double *hered = new double[maxbands];
   cmplx *herea = new cmplx[maxbands];
-  const int ntime = bands.ntime;
+  const int ntime = bands->ntime;
 
   cmplx *eigen = new cmplx[nr*maxbands*6];
   cmplx *simple_data = new cmplx[ntime];
@@ -346,17 +347,17 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
   double *reff = new double[maxbands], *refd = new double[maxbands];
   cmplx *refa = new complex<double>[maxbands];
   cmplx *refdata = new complex<double>[maxbands*ntime];
-  for (int r=0;r<nr;r+=1+(int)(bands.scale_factor/c*1.99)) {
+  for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*1.99)) {
     cmplx *bdata;
     for (int whichf = 0; whichf < 6; whichf++) {
       //printf("Looking at (%d.%d)\n", r, whichf);
       switch (whichf) {
-      case 0: bdata = bands.er; break;
-      case 1: bdata = bands.ep; break;
-      case 2: bdata = bands.ez; break;
-      case 3: bdata = bands.hr; break;
-      case 4: bdata = bands.hp; break;
-      case 5: bdata = bands.hz; break;
+      case 0: bdata = bands->er; break;
+      case 1: bdata = bands->ep; break;
+      case 2: bdata = bands->ez; break;
+      case 3: bdata = bands->hr; break;
+      case 4: bdata = bands->hp; break;
+      case 5: bdata = bands->hz; break;
       }
       int not_empty = 0;
       for (int t=0;t<ntime;t++) {
@@ -365,7 +366,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
       }
       if (not_empty) {
         if (numref == 0) { // Have no reference bands so far...
-          numref = bands.get_freqs(simple_data, ntime, refa, reff, refd);
+          numref = bands->get_freqs(simple_data, ntime, refa, reff, refd);
           for (int n=0;n<numref;n++) {
             HARMOUT(eigen,r,n,whichf) = refa[n];
             refr[n] = r;
@@ -378,7 +379,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
         } else {
           for (int n=0;n<numref;n++) {
             //printf("Comparing with (%d.%d)\n", refr[n], refw[n]);
-            int num_match = bands.get_both_freqs(refdata+n*ntime,simple_data,ntime,
+            int num_match = bands->get_both_freqs(refdata+n*ntime,simple_data,ntime,
                                                  ta, herea, tf, td);
             //printf("See %d modes at (%d.%d)\n", num_match, r, whichf);
             int best_match=-1;
@@ -432,7 +433,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
               }
             }
           }
-          int num_here = bands.get_freqs(simple_data, ntime, herea, heref, hered);
+          int num_here = bands->get_freqs(simple_data, ntime, herea, heref, hered);
           if (num_here > numref || 1) {
             // It looks like we see a new mode at this point...
             for (int i=0;i<num_here;i++) refnum[i] = -1;
@@ -508,7 +509,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
     }
   }
 
-  if (and_modes) bands.get_fields(eigen,reff,refd,numref,ntime);
+  if (and_modes) bands->get_fields(eigen,reff,refd,numref,ntime);
 
   for (int i = 0; i < numref; ++i) {
     //printf("Nice mode with freq %lg %lg\n", freqs[i], decays[i]);

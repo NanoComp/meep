@@ -19,16 +19,18 @@
 
 #define MAXFLUXPLANES 20
 
+class polarizability;
+class polarization;
+
 class mat {
  public:
   double *eps, *invepser, *invepsez, *invepsep, a;
   double *Crez, *Crep, *Crhz, *Crhp;
   double *Cper, *Cpez, *Cphr, *Cphz;
   double *Czer, *Czep, *Czhr, *Czhp;
-  long *pols;
-  int nr, nz, numpols;
+  int nr, nz;
   int npmlr, npmlz; // Amount of pml
-  double *freq[32], *width[32], height[32];
+  polarizability *pb;
   const char *outdir;
 
   ~mat();
@@ -45,48 +47,21 @@ class mat {
   void output_sigma_slice(const char *name);
 };
 
-class src {
- public:
-  double freq, width, peaktime;
-  double ez, ep, er;
-  int r, z, cutoff;
-  int is_real;
-  src *next;
-  int find_last_source(int guess=0);
-  void use_real_sources();
-};
-
-class bandsdata {
- public:
-  bandsdata();
-  ~bandsdata();
-
-  complex<double> *hr, *hp, *hz, *er, *ep, *ez;
-  int tstart, tend, z, nr, maxbands, scale_factor;
-  double a, inva, fmin, fmax, qmin;
-  int ntime;
-
-  void get_fields(complex<double> *eigen, double *f, double *d,
-                  int nbands, int n);
-  int get_both_freqs(complex<double> *data1, complex<double> *data2, int n,
-                     complex<double> *amps1, complex<double> *amps2, 
-                     double *freqs, double *decays);
-  int get_freqs(complex<double> *data, int n,
-                complex<double> *amps, double *freqs, double *decays);
-};
+class src;
+class bandsdata;
 
 class fields {
  public:
   double *(hr[2]), *(hp[2]), *(hz[2]), *(er[2]), *(ep[2]), *(ez[2]);
   double *(hrp[2]), *(hpz[2]), *(hzr[2]), *(erp[2]), *(epz[2]), *(ezr[2]);
   double *(z_hrp[2][2]), *(z_hpz[2][2]), *(z_erp[2][2]), *(z_epz[2][2]);
-  double *pol[32];
+  polarization *pol;
   double a, inva; // The "lattice constant" and its inverse!
-  int nr, nz, numpols;
+  int nr, nz;
   int npmlr, npmlz; // Amount of pml
   int m, t, phasein_time;
   double k, cosknz, sinknz;
-  bandsdata bands;
+  bandsdata *bands;
   src *e_sources, *h_sources;
   const mat *new_ma;
   mat *ma;
