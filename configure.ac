@@ -25,7 +25,7 @@ if test "$enable_debug" = "yes"; then
 fi
 
 DEFAULTFLAGS="no"
-if test "x" == "x$CXXFLAGS"; then
+if test "x" = "x$CXXFLAGS"; then
    DEFAULTFLAGS=""
 fi
 
@@ -163,7 +163,7 @@ AC_SUBST(RUNCODE)
 # FIXME: see how FFTW does it
 
 # Try to guess some good optimization flags if CXXFLAGS is empty...
-if test "x" == "x$DEFAULTFLAGS"; then
+if test "x" = "x$DEFAULTFLAGS"; then
    CXXFLAGS_my_saved="-g"
    CFLAGS_my_saved="$CFLAGS"
    CFLAGS="$CXXFLAGS_my_saved -O3"
