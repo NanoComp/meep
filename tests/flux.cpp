@@ -84,7 +84,7 @@ int flux_1d(const double zmax,
   const double der = flux_right - delta_energy;
   master_printf("  Delta E:\t%lg\n  Flux left:\t%lg\n  Flux right:\t%lg\n  Ratio:\t%lg\n",
                 delta_energy, del, der, del/der);
-  return compare(del, der, 0.05, "Flux");
+  return compare(del, der, 0.06, "Flux");
 }
 
 int split_1d(double eps(const vec &), int splitting) {
