@@ -71,7 +71,7 @@ double fields_chunk::peek_field(component c, const vec &where) {
     broadcast(n_proc(), &hello, 1);
     return hello;
   }
-  //abort("Got no such %s field at %g %lg!\n",
+  //abort("Got no such %s field at %g %g!\n",
   //      component_name(c), v[ilocs[0]].x(), v[ilocs[0]].y());
   return 0.0;
 }

@@ -56,7 +56,7 @@ int radiating_2D(const double xmax) {
   double ratio = pow(abs(amp1)/abs(amp2), 2.0) ;
   
   if (ratio > 2.12 || ratio < 1.88)
-    abort("Failed: amp1 = (%g, %g), amp2 = (%lg, %lg)\n abs(amp1/amp2)^2 = %lg, too far from 2.0\n",
+    abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2)^2 = %g, too far from 2.0\n",
 	  real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;
 }
@@ -90,7 +90,7 @@ int radiating_3D() {
       complex<double> amp1 = p1.get_component(Ez);
       complex<double> amp2 = p2.get_component(Ez);
       const double ratio = abs(amp1)/abs(amp2);
-      //printf("At time %g ratio is %g from %lg and %lg\n",
+      //printf("At time %g ratio is %g from %g and %g\n",
       //       f.time(), ratio, abs(amp1), abs(amp2));
       next_print_time += 1.0;
     }
@@ -104,10 +104,10 @@ int radiating_3D() {
   complex<double> amp2 = p2.get_component(Ez);
 
   const double ratio = abs(amp1)/abs(amp2);
-  printf("Ratio is %g from (%g %lg) and (%lg %lg)\n",
+  printf("Ratio is %g from (%g %g) and (%g %g)\n",
          ratio, real(amp1), imag(amp1), real(amp2), imag(amp2));
   if (ratio > 2.05 || ratio < 1.87)
-    abort("Failed: amp1 = (%g, %g), amp2 = (%lg, %lg)\n abs(amp1/amp2)^2 = %lg, too far from 2.0\n",
+    abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2)^2 = %g, too far from 2.0\n",
 	  real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;
 }

@@ -112,11 +112,11 @@ void grace::new_curve() {
 
 void grace::output_point(double x, double y, double dy, double extra) {
   if (dy >= 0 && extra != -1) {
-    master_fprintf(f, "%g\t%lg\t%lg\t%lg\n", x, y, dy, extra);
+    master_fprintf(f, "%g\t%g\t%g\t%g\n", x, y, dy, extra);
   } else if (dy >= 0) {
-    master_fprintf(f, "%g\t%lg\t%lg\n", x, y, dy);
+    master_fprintf(f, "%g\t%g\t%g\n", x, y, dy);
   } else {
-    master_fprintf(f, "%g\t%lg\n", x, y);
+    master_fprintf(f, "%g\t%g\n", x, y);
   }
 }
 

@@ -83,7 +83,7 @@ int flux_1d(const double zmax,
                 f.electric_energy_in_box(mid.surroundings()));
   const double del = flux_left;
   const double der = flux_right - delta_energy;
-  master_printf("  Delta E:\t%g\n  Flux left:\t%g\n  Flux right:\t%lg\n  Ratio:\t%lg\n",
+  master_printf("  Delta E:\t%g\n  Flux left:\t%g\n  Flux right:\t%g\n  Ratio:\t%g\n",
                 delta_energy, del, der, del/der);
   return compare(del, der, 0.06, "Flux");
 }

@@ -50,11 +50,11 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > 0.0*2e-15*abs(v2)) {
-        master_printf("%s differs:  %g %g out of %lg %lg\n",
+        master_printf("%s differs:  %g %g out of %g %g\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %g\n",
                abs(v1 - v2)/abs(v2));
-        master_printf("Right now I'm looking at %g %g, time %lg\n",
+        master_printf("Right now I'm looking at %g %g, time %g\n",
                       p.x(), p.y(), f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
@@ -227,7 +227,7 @@ int test_pml(double eps(const vec &), int splitting, const char *dirname) {
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
       if (new_energy > last_energy*1e-7) {
-        master_printf("Energy decaying too slowly: from %g to %g (%lg)\n",
+        master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
       } else {
@@ -274,7 +274,7 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *dirname) {
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
       if (new_energy > last_energy*3e-7) {
-        master_printf("Energy decaying too slowly: from %g to %g (%lg)\n",
+        master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
       } else {
@@ -323,7 +323,7 @@ int test_pml_te(double eps(const vec &), int splitting, const char *dirname) {
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
       if (new_energy > last_energy*1.1e-6) {
-        master_printf("Energy decaying too slowly: from %g to %g (%lg)\n",
+        master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
       } else {
