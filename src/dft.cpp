@@ -141,66 +141,48 @@ void fields_chunk::update_dfts(double timeE, double timeH) {
 }
 
 void dft_chunk::update_dft(double time) {
+  if (!fc->f[c][0]) return;
+
   for (int i = 0; i < Nomega; ++i)
     dft_phase[i] = polar(1.0, (omega_min + i*domega)*time) * shift_sym_phase;
 
-  if (fc->f[c][1]) // complex fields
-    LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-      double w1 = IVEC_LOOP_WEIGHT(1);
-      double dV = dV0 + dV1 * loop_i2;
-      double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
-      double w123 = w12 * IVEC_LOOP_WEIGHT(3);
+  int numcmp = fc->f[c][1] ? 2 : 1;
 
-      (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
-      
-      complex<double> f; // field value at epsilon point
-      if (avg2 == 0) {
-	if (avg1 == 0)
-	  f = w123 * complex<double>(fc->f[c][0][idx], fc->f[c][1][idx]);
-	else
-	  f = (w123 * 0.5) * 
-	    (complex<double>(fc->f[c][0][idx], fc->f[c][1][idx]) +
-	     complex<double>(fc->f[c][0][idx+avg1], fc->f[c][1][idx+avg1]));
-      }
-      else { // avg1 != 0, avg2 != 0, avg2 != avg1
-	f = (w123 * 0.25) * 
-	  (complex<double>(fc->f[c][0][idx], fc->f[c][1][idx]) +
-	   complex<double>(fc->f[c][0][idx+avg1], fc->f[c][1][idx+avg1]) +
-	   complex<double>(fc->f[c][0][idx+avg2], fc->f[c][1][idx+avg2]) +
-	   complex<double>(fc->f[c][0][idx+(avg1+avg2)], 
-			   fc->f[c][1][idx+(avg1+avg2)]));
-      }
-      
-      int idx_dft = loop_i3 + loop_n3 * (loop_i2 + loop_n2 * loop_i1);
-      for (int i = 0; i < Nomega; ++i)
-	dft[Nomega * idx_dft + i] += dft_phase[i] * f;
+  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+    double w1 = IVEC_LOOP_WEIGHT(1);
+    double dV = dV0 + dV1 * loop_i2;
+    double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
+    double w123 = w12 * IVEC_LOOP_WEIGHT(3);
+    
+    (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
+    
+    double f[2]; // real/imag field value at epsilon point
+    if (avg2 == 0) {
+      if (avg1 == 0)
+	for (int cmp=0; cmp < numcmp; ++cmp)
+	  f[cmp] = w123 * fc->f[c][cmp][idx];
+      else
+	for (int cmp=0; cmp < numcmp; ++cmp)
+	  f[cmp] = (w123*0.5) * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]);
     }
-  else // real fields
-    LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-      double w1 = IVEC_LOOP_WEIGHT(1);
-      double dV = dV0 + dV1 * loop_i2;
-      double w12 = w1 * IVEC_LOOP_WEIGHT(2) * dV;
-      double w123 = w12 * IVEC_LOOP_WEIGHT(3);
-      
-      (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
-      
-      double f; // field value at epsilon point
-      if (avg2 == 0) {
-	if (avg1 == 0)
-	  f = w123 * fc->f[c][0][idx];
-	else
-	  f = (w123 * 0.5) * (fc->f[c][0][idx] + fc->f[c][0][idx+avg1]);
-      }
-      else { // avg1 != 0, avg2 != 0, avg2 != avg1
-	f = (w123 * 0.25) * 
-	  (fc->f[c][0][idx] + fc->f[c][0][idx+avg1] + fc->f[c][0][idx+avg2] +
-	   fc->f[c][0][idx+(avg1+avg2)]);
-      }
-      
-      int idx_dft = loop_i3 + loop_n3 * (loop_i2 + loop_n2 * loop_i1);
+    else // avg1 != 0, avg2 != 0, avg2 != avg1
+      for (int cmp=0; cmp < numcmp; ++cmp)
+	f[cmp] = (w123 * 0.25) * 
+	  (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]
+	   + fc->f[c][cmp][idx+avg2] + fc->f[c][cmp][idx+(avg1+avg2)]);
+    
+    int idx_dft = loop_i3 + loop_n3 * (loop_i2 + loop_n2 * loop_i1);
+    if (numcmp == 2) {
+      complex<double> fc(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
-	dft[Nomega * idx_dft + i] += dft_phase[i] * f;
+	dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
     }
+    else {
+      double fr = f[0];
+      for (int i = 0; i < Nomega; ++i)
+	dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
+    }
+  }
 }
 
 void dft_chunk::negate_dft() {
