@@ -147,3 +147,56 @@ monitor_point *fields::get_new_point(double r, double z, monitor_point *the_list
   p->next = the_list;
   return p;
 }
+
+complex<double> monitor_point::get_component(component w) {
+  switch (w) {
+  case Er: return e.r;
+  case Ep: return e.p;
+  case Ez: return e.z;
+  case Hr: return h.r;
+  case Hp: return h.p;
+  case Hz: return h.z;
+  }
+}
+
+#include <fftw.h>
+
+void monitor_point::fourier_transform(component w,
+                                      complex<double> **a, complex<double> **f,
+                                      int *numout, double fmin, double fmax,
+                                      int maxbands) {
+  int n = 1;
+  monitor_point *p = next;
+  double tmax = t, tmin = t;
+  while (p) {
+    n++;
+    if (p->t > tmax) tmax = p->t;
+    if (p->t < tmin) tmin = p->t;
+    p = p->next;
+  }
+  p = this;
+  complex<double> *d = new complex<double>[n];
+  for (int i=0;i<n;i++,p=p->next) {
+    d[i] = p->get_component(w);
+  }
+  if (fmin > 0.0 || fmax > 0.0) {
+    printf("I haven't yet trained the code to use harminv.\n");
+    *a = NULL;
+    *f = NULL;
+    *numout = 0;
+  } else {
+    *numout = n;
+    *a = new complex<double>[n];
+    *f = d;
+    fftw_complex *in = (fftw_complex *) d, *out = (fftw_complex *) *a;
+    fftw_plan p;
+    p = fftw_create_plan(n, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_one(p, in, out);
+    fftw_destroy_plan(p);
+    for (int i=0;i<n;i++) {
+      (*f)[i] = i*(1.0/(tmax-tmin));
+      if (real((*f)[i]) > 0.5*n/(tmax-tmin)) (*f)[i] -= n/(tmax-tmin);
+      (*a)[i] *= (tmax-tmin)/n;
+    }
+  }
+}

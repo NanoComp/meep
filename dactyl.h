@@ -19,6 +19,8 @@
 
 #define MAXFLUXPLANES 20
 
+enum component { Er=0, Ep, Ez, Hr, Hp, Hz };
+
 class polarizability;
 class polarization;
 
@@ -72,6 +74,25 @@ class monitor_point {
   double r, z, t;
   a_field h, e, *p;
   monitor_point *next;
+
+  complex<double> get_component(component);
+
+  // When called with only its first four arguments, fourier_transform
+  // performs an FFT on its monitor points, putting the frequencies in f
+  // and the amplitudes in a.  Yes, the frequencies are trivial and
+  // redundant, but this saves you the risk of making a mistake in
+  // converting your units.  Note also, that in this case f is always a
+  // real number, although it's stored in a float.
+  //
+  // Note that in either case, fourier_transform assumes that the monitor
+  // points are all equally spaced in time.
+  //
+  // When fourier_transform is called with the other arguments as well,
+  // harminv is run, with its output amplitudes and frequencies being
+  // stored in a and f.
+  void fourier_transform(component w,
+                         complex<double> **a, complex<double> **f, int *numout,
+                         double fmin=0.0, double fmax=0.0, int maxbands=100);
 };
 
 class fields {
