@@ -159,6 +159,8 @@ src_vol *src_vol::add_to(src_vol *others) const {
     if (*this == *others) {
       if (npts != others->npts)
         abort("Cannot add volume sources with different number of points\n");
+      /* Compare all of the indices...if this ever becomes too slow,
+	 we can just compare the first and last indices. */
       for (int j=0; j<npts; j++) {
         if (others->index[j] != index[j])
           abort("Different indices\n");
