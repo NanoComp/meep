@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   char *lastptr, *currptr;
   DIR *dir;
   FILE *tempf, *targetf;
-  int c;
+  int myc;
 
   signal(SIGINT, handle_control_c);
   printf("Running example program!\n");
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
   sprintf(target_name, "%s/%s", directory, source_name);
   if ((tempf = fopen(source_name,"r")) != NULL 
     && (targetf = fopen(target_name,"w")) != NULL) {
-    while ( (c=getc(tempf)) != EOF) fprintf(targetf, "%c", c);
+    while ( (myc=getc(tempf)) != EOF) fprintf(targetf, "%c", myc);
     fclose(tempf);
     fclose(targetf);
   } else
