@@ -55,25 +55,29 @@ inline int rmin_bulk(int m) {
 
 class polarizability {
  public:
-  int nr, nz;
+  int nr, nz, npmlr, npmlz;
   polarizability(const mat *, double sig(double,double),
                  double om, double ga, double sigscale);
   polarizability(const polarizability *);
   ~polarizability();
   double gamma, omeganot, *sigma, *sr, *sp, *sz;
   polarizability *next;
+
+  void use_pml(int npmlr, int npmlz);
 };
 
 class polarization {
  public:
-  polarization(const int nr, const int nz, const polarizability *the_pb);
+  polarization(const polarizability *the_pb);
   ~polarization();
   double *(Pr[2]), *(Pp[2]), *(Pz[2]);
+  // The PML split polarization fields:
+  double *(Prp[2]), *(Ppz[2]), *(Pzr[2]);
+  double *(z_Prp[2][2]), *(z_Ppz[2][2]);
   const polarizability *pb;
   polarization *next;
 
   static polarization *set_up_polarizations(const mat *ma);
-  void step_polarization(const polarization *newer_pol);
 };
 
 class src {

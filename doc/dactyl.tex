@@ -114,6 +114,58 @@ Here are the field equations for a PML material:
 \epsilon\frac{dE_{z\phi}}{dt} &=-c \frac{im}r H_r               - \sigma_\phi E_{z\phi} 
 \end{align}
 
+\chapter{Of polaritons and plasmons}
+
+Most real materials, at least in some frequency range, have polarizations
+that are not actually instantaneously proportional to the local electric
+field.  We model these polaritonic and plasmonic effects by introducing one
+or more additional polarization fields, to be propogated along with the
+electric and magnetic field.  The polarization field, $\mathbf{P}$, is a
+vector field which exists on the electric field Yee lattice points.
+
+The polarization field obeys a second order differential equation, which
+means that we need to keep track of the polarization at two time steps, in
+order to integrate it.
+
+\begin{equation}
+\frac{d^2\mathbf{P}}{dt^2} + \gamma \frac{d\mathbf{P}}{dt}
++ \omega^2 \mathbf{P} = \Delta\epsilon\ \omega^2 \mathbf{E}
+\end{equation}
+
+To this, we need add one more term to maxwell's equation for $\mathbf E$:
+
+\begin{equation}
+c \nabla \times \mathbf{H} = \epsilon_\infty \frac{d\mathbf{E}}{dt}
+ + \frac{d\mathbf{P}}{dt}
+\end{equation}
+
+So far, the polarization is beautifully simple.  However, we would love to
+be able to put polaritonic materials into our PML regions, and
+unfortunately in the PML region the electric field has been split into two
+components, so we need to figure out which of the two components gets the
+contribution from $\frac{d\mathbf{P}}{dt}$.  The obvious solution to this
+(well, maybe not exactly obvious, but it is the solution) is to split the
+polarization field also into two components in the PML region, just as we
+split the electric and magnetic fields.
+
+The electric field propogation equations in PML then become:
+\begin{align}
+\epsilon\frac{dE_{r\phi}}{dt} &=   c \frac{im}r H_z
+             - \sigma_\phi E_{r\phi} - \frac{dP_{r\phi}}{dt} \\
+\epsilon\frac{dE_{\phi z}}{dt} &=   c \frac{dH_r}{dz}
+             - \sigma_z E_{\phi z} - \frac{dP_{\phi z}}{dt} \\
+\epsilon\frac{dE_{zr}}{dt} &=   c \frac1r\frac{d(rH_\phi)}{dr}
+             - \sigma_r E_{zr} - \frac{dP_{zr}}{dt}
+\end{align}
+\begin{align}
+\epsilon\frac{dE_{rz}}{dt} &= -c\frac{dH_\phi}{dz}
+             - \sigma_z E_{rz} - \frac{dP_{rz}}{dt}\\
+\epsilon\frac{dE_{\phi r}}{dt} &=-c \frac{dH_z}{dr}
+             - \sigma_r E_{\phi r} - \frac{dP_{\phi r}}{dt} \\
+\epsilon\frac{dE_{z\phi}}{dt} &=-c \frac{im}r H_r
+             - \sigma_\phi E_{z\phi} - \frac{dP_{z\phi}}{dt}
+\end{align}
+
 \chapter{Tutorial}
 
 \input{simplebands.tex}

@@ -184,7 +184,9 @@ class fields {
   void step_e_pml();
   void step_e_boundaries();
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
+  void step_polarization_pml(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
+  void step_e_pml_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *);
   void add_src_pt(int r, int z,
                   complex<double> Pr, complex<double> Pp, complex<double> Pz,

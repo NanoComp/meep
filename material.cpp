@@ -49,6 +49,7 @@ static double sig(double r);
 void mat::use_pml(int numpmlr, int numpmlz) {
   npmlz = numpmlz;
   npmlr = numpmlr;
+  if (pb) pb->use_pml(npmlr,npmlz);
   if (npmlz * 2 >= nz) {
     printf("Not enough room for the z PML. nz = %d\n", nz);
     exit(1);

@@ -581,7 +581,9 @@ void fields::step() {
   step_e_source(e_sources);
 
   step_e_polarization();
+  step_e_pml_polarization();
   step_polarization_itself();
+  step_polarization_pml();
 }
 
 void fields::phase_material() {
