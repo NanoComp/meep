@@ -56,9 +56,9 @@ double fields::find_last_source() {
 double fields_chunk::find_last_source() {
   double last_source = 0;
   if (e_sources != NULL)
-    last_source = inva*c*e_sources->find_last_source();
+    last_source = e_sources->find_last_source();
   if (h_sources != NULL)
-    last_source = max(last_source, inva*c*h_sources->find_last_source());
+    last_source = max(last_source, h_sources->find_last_source());
   return last_source;  
 }
 

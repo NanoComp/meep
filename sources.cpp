@@ -180,7 +180,7 @@ void fields_chunk::add_indexed_source(component whichf, double freq, double widt
     tmp->next = e_sources;
     e_sources = tmp;
   }
-  tmp->cutoff = inva+ (int)(cutoff*tmp->width);
+  tmp->cutoff = inva+ cutoff*tmp->width;
   tmp->peaktime = peaktime;
   if (peaktime <= 0.0) tmp->peaktime = time+tmp->cutoff;
   // Apply a shift so that we won't end up with a static polarization when
