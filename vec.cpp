@@ -21,7 +21,7 @@
 #include <complex>
 
 #include "vec.h"
-#include "dactyl.h"
+#include "meep.h"
 
 static inline int min(int a, int b) { return (a<b)?a:b; };
 static inline int max(int a, int b) { return (a>b)?a:b; };

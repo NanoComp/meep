@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "dactyl.h"
-#include "dactyl_internals.h"
+#include "meep.h"
+#include "meep_internals.h"
 #include "harminv.h"
 
 #define BAND(b,r,t) ((b)[(r)+(t)*nr])

@@ -33,9 +33,9 @@ uninstall: dactyl-uninstall
 
 ###########################################################################
 
-$(OBJ_dactyl): dactyl.h dactyl_internals.h vec.h mympi.h
-example.o: example.cpp dactyl.h vec.h mympi.h
-step.o: step.cpp step_h.h step_e.h dactyl.h dactyl_internals.h vec.h mympi.h
+$(OBJ_dactyl): meep.h meep_internals.h vec.h mympi.h
+example.o: example.cpp meep.h vec.h mympi.h
+step.o: step.cpp step_h.h step_e.h meep.h meep_internals.h vec.h mympi.h
 
 step_h.h: step_h.hs StepGen.lhs
 	ghc -fglasgow-exts -package data --make -o step_h step_h.hs && ./step_h > step_h.h

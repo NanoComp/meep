@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "dactyl.h"
+#include "meep.h"
 
 double one(const vec &) { return 1.0; }
 static double width = 20.0;

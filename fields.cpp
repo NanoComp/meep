@@ -20,8 +20,8 @@
 #include <math.h>
 #include <complex>
 
-#include "dactyl.h"
-#include "dactyl_internals.h"
+#include "meep.h"
+#include "meep_internals.h"
 
 fields::fields(const mat *ma, int tm) {
   verbosity = 0;

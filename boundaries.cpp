@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <complex>
 
-#include "dactyl.h"
-#include "dactyl_internals.h"
+#include "meep.h"
+#include "meep_internals.h"
 
 void fields::set_boundary(boundary_side b,direction d,
                           boundary_condition cond, bool autoconnect,

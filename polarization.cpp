@@ -20,8 +20,8 @@
 #include <math.h>
 #include <complex>
 
-#include "dactyl.h"
-#include "dactyl_internals.h"
+#include "meep.h"
+#include "meep_internals.h"
 
 polarization *polarization::set_up_polarizations(const mat_chunk *ma, int is_r) {
   if (ma->pb == NULL) return NULL;

@@ -20,7 +20,7 @@ all: dactyl.ps dactyl/dactyl.html
 
 ###########################################################################
 
-TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
+TEXFILES = meep.tex simplebands.tex polaritonbands.tex \
 	polaritonbands-out/bands.eps \
 	epsilon_polariton_1d.tex epsilon_polariton_1d-out/eps.eps \
 	omniguide.tex omniguide-out/bands.eps \
@@ -30,7 +30,7 @@ TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
 	simple.tex simple-out/ez-000200.00.eps \
 	complicated.tex complicated-out/freqs
 
-.cpp.o: ../dactyl.h ../vec.h ../dactyl_internals.h
+.cpp.o: ../meep.h ../vec.h ../meep_internals.h
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
 .o.dac: ../libdactyl.a
 	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
@@ -41,10 +41,10 @@ dactyl.ps : dactyl.dvi
 	dvips -o dactyl.ps dactyl.dvi
 
 dactyl/dactyl.html : $(TEXFILES)
-	@LATEX2HTML@ -split +1 -local_icons dactyl.tex
+	@LATEX2HTML@ -split +1 -local_icons meep.tex
 
 dactyl.dvi : $(TEXFILES)
-	latex dactyl.tex
+	latex meep.tex
 
 simple-out/ez-000200.00.eps: simple.dac
 	rm -rf simple-out/ && $(RUNCODE) ./simple.dac

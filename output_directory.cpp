@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "dactyl.h"
+#include "meep.h"
 
 const char symlink_name[] = "latest_output";
 

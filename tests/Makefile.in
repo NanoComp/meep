@@ -28,7 +28,7 @@ DONEFILES = known_results.done step_algorithm.done symmetry.done \
 	cylindrical.done one_dimensional.done two_dimensional.done \
 	three_d.done bench.done flux.done physical.done
 
-$(OBJFILES): ../dactyl.h ../vec.h
+$(OBJFILES): ../meep.h ../vec.h
 $(TESTFILES): ../libdactyl.a
 
 .cpp.o:

@@ -24,8 +24,8 @@
 
 % Definition of title page:
 \title{
-    Dactyl\\
-{\Large \it CYLindrical Time DomAin}
+    Meep\\
+{\Large \it MIT Electromagnetic Equation Propogation}
 }
 \author{
     David Roundy, Mihai Ibanescu, Peter Bermel
@@ -87,7 +87,7 @@ radial surface.  The value of $\sigma_\phi$ at a given radius is equal to
 
 If we had a IDTD (Infinitesimal Difference Time Domain) code, PML would be
 perfectly absorbing, regardless of the variation of $\sigma$ with position.
-However, since dactyl is a lowly FDTD code, we have to make sure that
+However, since meep is a lowly FDTD code, we have to make sure that
 $\sigma$ varies only slowly from one grid point to the next.  We do this by
 making $\sigma_z$ (for example) vary as $z^2$, with a maximum value of
 $\sigma_{max}$ right in front of the boundary.  At the edge of the PML

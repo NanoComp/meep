@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "dactyl.h"
-#include "dactyl_internals.h"
+#include "meep.h"
+#include "meep_internals.h"
 
 static double get_phase(component c, double *f[2],
                         const volume &v, const geometric_volume &what) {

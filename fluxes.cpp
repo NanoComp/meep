@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "dactyl.h"
-#include "dactyl_internals.h"
+#include "meep.h"
+#include "meep_internals.h"
 
 flux_plane *fields::add_flux_plane(const vec &p1, const vec &p2) {
   partial_flux_plane *hello_world = NULL;

@@ -17,7 +17,7 @@
 
 #include <time.h>
 
-#include "dactyl.h"
+#include "meep.h"
 
 #ifdef WITH_TIMINGS
 void fields::finished_working() {

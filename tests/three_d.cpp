@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "dactyl.h"
+#include "meep.h"
 
 double one(const vec &) { return 1.0; }
 double targets(const vec &v) {

@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "dactyl.h"
+#include "meep.h"
 
 double guided_eps(const vec &x) {
   return 1.0;

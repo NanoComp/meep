@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "dactyl.h"
+#include "meep.h"
 
 int interrupt = 0;
 static int kill_time = 2;

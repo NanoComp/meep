@@ -20,8 +20,8 @@
 #include <math.h>
 #include <complex>
 
-#include "dactyl.h"
-#include "dactyl_internals.h"
+#include "meep.h"
+#include "meep_internals.h"
 
 complex<double> src::get_amplitude_at_time(double time) const {
   double envelope = get_envelope_at_time(time);

@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "dactyl.h"
+#include "meep.h"
 
 double eps(const vec &) { return 2.0; }
 

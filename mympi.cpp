@@ -17,7 +17,7 @@
 
 #include <stdarg.h>
 
-#include "dactyl.h"
+#include "meep.h"
 #include "config.h"
 
 #ifdef HAVE_MPI
