@@ -208,7 +208,7 @@ void fields::connect_the_chunks() {
         new_comm_sizes[ft][j] = comm_sizes[ft][j+i*num_chunks];
     for (int j=0;j<num_chunks;j++)
       for (int corig=0;corig<10;corig++)
-        if (chunks[i]->f[corig][0])
+        if (vi.has_field((component)corig))
           for (int n=0;n<vi.ntot();n++) {
             component c = (component)corig;
             vec here = vi.loc(c, n);
@@ -216,13 +216,14 @@ void fields::connect_the_chunks() {
               // We're looking at a border element...
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here)) {
+                if (chunks[j]->v.owns(here) && !is_metal(here) &&
+                    (chunks[i]->f[corig][0] || chunks[j]->f[c][0])) {
                   // Adjacent, periodic or rotational...
                   nc[type((component)corig)][Incoming][i]++;
                   nc[type(c)][Outgoing][j]++;
                   new_comm_sizes[type(c)][j]++;
                 }
-            } else if (j == i && is_metal(here)) {
+            } else if (j == i && is_metal(here) && chunks[i]->f[c][0] ) {
               // Try metallic...
               nc[type(c)][Incoming][i]++;
               nc[type(c)][Outgoing][i]++;
@@ -257,7 +258,7 @@ void fields::connect_the_chunks() {
     const volume vi = chunks[i]->v;
     for (int j=0;j<num_chunks;j++)
       for (int corig=0;corig<10;corig++)
-        if (chunks[i]->f[corig][0])
+        if (vi.has_field((component)corig))
           for (int n=0;n<vi.ntot();n++) {
             component c = (component)corig;
 #define FT (type(c))
@@ -266,7 +267,8 @@ void fields::connect_the_chunks() {
               // We're looking at a border element...
               complex<double> thephase = 1.0;
               if (locate_component_point(&c,&here,&thephase))
-                if (chunks[j]->v.owns(here) && !is_metal(here)) {
+                if (chunks[j]->v.owns(here) && !is_metal(here) &&
+                    (chunks[i]->f[corig][0] || chunks[j]->f[c][0])) {
                   // Adjacent, periodic or rotational...
                   // index is deprecated, but ok in this case:
                   const int m = chunks[j]->v.index(c, here);
@@ -280,7 +282,7 @@ void fields::connect_the_chunks() {
                   wh[FT][Incoming][i]++;
                   wh[FT][Outgoing][j]++;
                 }
-            } else if (j == i && is_metal(here)) {
+            } else if (j == i && is_metal(here) && chunks[i]->f[c][0]) {
               // Try metallic...
               DOCMP {
                 chunks[i]->connections[FT][Incoming][cmp][wh[FT][Incoming][i]]
