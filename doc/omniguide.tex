@@ -1,0 +1,158 @@
+\begin{comment}
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "dactyl.h"
+
+const int a = 10;
+\end{comment}
+
+\section{Computing the band structure of an omniguide}
+
+In this section we give as an example of a more complicated band structure,
+a computation of the band structure of an omniguide.  The output of this
+program is shown in Figure~\ref{omniguidebands}.
+
+\begin{verbatim}
+const int num_layers = 3;
+const double rcore = 3.0;
+
+double guided_eps(double r, double z) {
+  double rr = r - rcore;
+  if (rr > num_layers + 0.3) return 1.0; // outside the entire waveguide
+  if (rr < 0.0) return 1.0;   // vacuum in the core
+  while (rr > 1.0) rr -= 1.0; // calculate (r - rcore) % 1
+  if (rr < 0.3) return 21.16; // in the high dielectric
+  return 1.6*1.6;             // in the low dielectric
+}
+\end{verbatim}
+
+\begin{comment}
+int main(int argc, char **argv) {
+  deal_with_ctrl_c();
+  printf("Running omniguide!\n");
+
+  int ttot = 15000;
+  mat ma(guided_eps, rcore + num_layers + 0.3, 0.0, a);
+  const char *dirname = make_output_directory(argv[0]);
+\end{comment}
+
+For this band structure example, we use the grace object to create our
+plot.
+\begin{verbatim}
+  grace g("bands", dirname);
+  g.set_range(0.0, 0.5, 0.0, 0.5);
+\end{verbatim}
+\begin{comment}
+  ma.set_output_directory(dirname);
+  ma.output_slices("");
+  mat vac(&ma);
+  vac.make_average_eps();
+\end{comment}
+
+Since the m = 0 modes are pure TE or TM, it makes sense to calculate the
+two polarizations separately.  Not only does this give us more interesting
+output, but it doesn't cost us any time, to speak of, and actually makes
+the band structure much easier to converge.  However, for brevity, I won't
+include here in the manual computation of the TM modes, but will skip
+straight to the TE modes.
+
+\begin{comment}
+  {
+    const int m=0;
+    g.new_set();
+    g.set_legend("m = 0, TM");
+    for (double k=0.0;k<0.51 && !interrupt;k=(k)?k*sqrt(sqrt(10)):0.05) {
+      char k_and_m[10];
+      snprintf(k_and_m, 10, "%g-%d", k, m);
+      printf("Working on k of %g and m=0 TM with a=%d...\n", k, a);
+      fields f(&vac, m);
+      f.use_bloch(k);
+      f.verbose(1);
+      f.phase_in_material(&ma, 1000);
+      f.initialize_with_n_tm(12);
+      double next_slice_time = 0.0;
+      while (f.is_phasing() && !interrupt) {
+        if (f.time() >= next_slice_time && 0) {
+          next_slice_time += 100.0;
+          printf("Phasing in time %lg...  ", f.time());
+          printf("energy is %lg\n", f.total_energy());
+          f.output_slices(k_and_m);
+        }
+        f.step();
+      }
+      f.prepare_for_bands(0, ttot, .5, 10000, 0.0);
+      for (int t=0; t < ttot+1 && !interrupt; t++) {
+        if (t % (500*a) == 0) {
+          printf("Working on time %lg...  ", f.time());
+          printf("energy is %lg\n", f.total_energy());
+          f.output_slices(k_and_m);
+        }
+        f.record_bands();
+        f.step();
+      }
+      f.grace_bands(&g, 40);
+    }
+  }
+\end{comment}
+
+\begin{figure}
+\label{omniguidebands}
+\caption{Omniguide band structure.}
+\epsfig{file=omniguide-out/bands.eps,width=8.8cm}
+\end{figure}
+
+\begin{verbatim}
+  for (int m=0;m<2 && !interrupt;m++) {
+    g.new_set();
+    char m_string[30];
+    if (m) snprintf(m_string, 30, "m = %d", m);
+    else snprintf(m_string, 30, "m = 0, TE");
+    g.set_legend(m_string);
+    for (double k=0.0;k<0.51 && !interrupt;k=(k)?k*sqrt(sqrt(10)):0.05) {
+\end{verbatim}
+\begin{comment}
+      printf("Working on k of %g and %s with a=%d...\n", k, m_string, a);
+      fields f(&vac, m);
+      f.use_bloch(k);
+      f.verbose(1);
+      f.phase_in_material(&ma, 1000);
+\end{comment}
+We initialize the fields with both TE and TM modes, and then phase in the
+epsilon as usual.
+\begin{verbatim}
+      f.initialize_with_n_te(12);
+      if (m) f.initialize_with_n_tm(12);
+\end{verbatim}
+\begin{comment}
+      while (f.is_phasing() && !interrupt) f.step();
+\end{comment}
+Again, the band structure code is pretty normal, with the only real
+difference being that in this case we \emph{really} want to have specify a
+large $Q_{min}$, to help dactyl to distinguish between real modes and
+spurious noise.  Note that we are using metallic boundary conditions, so
+all physical modes should have infinite lifetime.
+\begin{verbatim}
+      f.prepare_for_bands(0, ttot, .5, 10000, 1e-4);
+      for (int t=0; t < ttot+1 && !interrupt; t++) {
+        if (t % (500*a) == 0) {
+          printf("Working on time %lg...  ", f.time());
+          printf("energy is %lg\n", f.total_energy());
+        }
+        f.record_bands();
+        f.step();
+      }
+\end{verbatim}
+Finally, we just need to compute and output the bands.  We are careful here
+to keep in mind that when $m > 0$, there are twice as many bands, since
+there are both TM and TE modes.
+\begin{verbatim}
+      f.grace_bands(&g, m?60:20);
+    }
+\end{verbatim}
+The band is actually printed to disk only when the grace object is
+destroyed, which in this case happens just before the program exits.
+\begin{comment}
+  }
+}
+\end{comment}

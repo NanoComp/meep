@@ -383,6 +383,8 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
                                    complex<double> *refa,
                                    complex<double> *refdata,
                                    int numref) {
+  const double total_time = (tend-tstart)*c/a;
+  const double deltaf = 2.0/total_time;
   if (numref == 0) { // Have no reference bands so far...
     numref = get_freqs(simple_data, ntime, refa, reff, refd);
     for (int n=0;n<numref;n++) {
@@ -423,10 +425,7 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
       int best_match=-1;
       double err_best = 1e300;
       for (int i=0;i<num_match;i++) {
-        double errf = (abs(tf[i]-reff[n])+0.25*abs(td[i]-refd[n]))/abs(reff[n]);
-        double erra = abs(ta[i]-refa[n])/abs(refa[n]);
-        double err = errf;//sqrt(errf*errf + erra*erra);
-        //if (err > 10*errf) err = 10*errf;
+        double err = (abs(tf[i]-reff[n])+0.25*abs(td[i]-refd[n]));
         if (err < err_best) {
           best_match = i;
           err_best = err;
@@ -434,10 +433,12 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
       }
       //printf("Setting amp to %lg (vs %lg)\n",
       //       abs(herea[best_match]), abs(ta[best_match]));
-      if (err_best > 0.02 && err_best < 1e299) {
+      const double err_limit = deltaf;
+      if (err_best > err_limit && err_best < 1e299) {
         if (verbosity > 2 && abs(herea[best_match]) != 0.0)
-          printf("Missed a match at %d between %lg and %lg (%lg vs %lg) -- %lg\n",
-                 n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]), err_best);
+          printf("Missed a match at %d between %lg and %lg (%lg vs %lg) -- %lg vs %lg\n",
+                 n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]),
+                 err_best, err_limit);
         /*printf("OOOOOOOOO\n");
         printf("---------\n");
         if (err_best > 0.02) {
@@ -453,13 +454,16 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
         } 
         printf("---------\n");
         printf("OOOOOOOOO\n");*/
-      } else if (err_best < 0.02) {
+      } else if (err_best < err_limit) {
         if (verbosity > 2 && abs(herea[best_match]) != 0.0)
-          printf("Found a match at %d between %lg and %lg (%lg vs %lg) -- %lg\n",
-                 n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]), err_best);
+          printf("Found a match at %d between %lg and %lg (%lg vs %lg) -- %lg vs %lg\n",
+                 n, tf[best_match], reff[n], abs(herea[best_match]), abs(refa[n]),
+                 err_best, err_limit);
         if (abs(herea[best_match]) > abs(refa[n])) { // Change reference...
-          if (verbosity > 1) printf("Changing reference %d...\n", n);
-          if (verbosity > 1) printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
+          if (verbosity > 1) printf("Changing reference %d... (%lg vs %lg)\n",
+                                    n, err_best, err_limit);
+          if (verbosity > 1) printf("Freq goes from (%lg,%lg) to (%lg,%lg).\n",
+                                    reff[n], refd[n], tf[best_match], td[best_match]);
           //printf("best_err is %lg\n", err_best);
           //printf("amp (%lg,%lg) (%lg,%lg)\n", 
           //       real(refa[n]),imag(refa[n]),
@@ -474,8 +478,6 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
     }
     int num_here = get_freqs(simple_data, ntime, herea, heref, hered);
     if (num_here > numref || 1) {
-      double total_time = (tend-tstart)*c/a;
-      double deltaf = 2.0/total_time;
       if (verbosity > 1) printf("Deltaf here is %lg\n", deltaf);
       // It looks like we see a new mode at this point...
       int *refnum = new int[maxbands];
@@ -484,8 +486,7 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
         int best_match=-1;
         double err_best = 1e300;
         for (int i=0;i<num_here;i++) {
-          double err =
-            (abs(heref[i]-reff[n])+0.1*abs(hered[i]-refd[n]))/abs(reff[n]);
+          double err = abs(heref[i]-reff[n])+0.1*abs(hered[i]-refd[n]);
           //printf("heref[%d] %lg vs reff[%d] %lg gives %lg\n",
           //       i, heref[i], n, reff[n], err);
           if (err < err_best && refnum[i] == -1) {
@@ -493,7 +494,7 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
             err_best = err;
           }
         }
-        if (err_best < 0.025+deltaf/reff[n]) {
+        if (err_best < 0.025*reff[n]+deltaf) {
           refnum[best_match] = n;
           if (verbosity > 1)
             printf("Matched %d: %10lg Got a best err of %8lg on an f of %lg %d (%lg)\n",
@@ -645,6 +646,8 @@ complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
 int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
                               cmplx *amps1, cmplx *amps2, 
                               double *freqs, double *decays) {
+  const double total_time = (tend-tstart)*c/a;
+  const double deltaf = 2.0/total_time;
   double phi = 0.5;
   int numfound = 0;
   double mag1 = 0, mag2 = 0;
@@ -689,7 +692,7 @@ int bandsdata::get_both_freqs(cmplx *data1, cmplx *data2, int n,
         //}
         for (int i=0;i<numfound;i++) {
           freqs[i] = 0.5*(fp[i]+fm[i]);
-          if (0.5*(fp[i]-fm[i]) > 0.1*freqs[i]) {
+          if (0.5*(fp[i]-fm[i]) > 0.2*deltaf) {
             numplus--; // Try another phi...
             if (verbosity > 3)
               printf("We've got some weird frequencies: %lg and %lg\n",fp[i],fm[i]);
@@ -772,7 +775,7 @@ int bandsdata::get_freqs(cmplx *data, int n,
   }
   // Now get rid of any spurious transient solutions...
   for (int i=num-1;i>=0;i--) {
-    double qminhere = 1.0/(1.0/qmin + 0.4/(freq_re[i]*total_time));
+    double qminhere = 1.0/(1.0/qmin + 0.25/(freq_re[i]*total_time));
     double qhere = 0.5*fabs(fabs(freq_re[i])/freq_im[i]);
     if (qhere < qminhere) {
       num--;
