@@ -121,12 +121,15 @@ double mat::use_integer_pml(int numpmlr, int numpmlz, double fmin) {
   }
   meaneps /= nr*(nz+1);
   reverse(Crhz, npmlr);
+  double oldrefl = 1e6;
   double reflection = 0;
   for (int i=0;i<npmlr*20;i++) {
     for (int r=0;r<npmlr;r++) {
-      double oldrefl = reflection;
+      reflection = minimize_badness(Crhz, npmlr, meaneps, fmin/a*c, r);
+      reflection = minimize_badness(Crhz, npmlr, meaneps, fmin/a*c, r);
       reflection = minimize_badness(Crhz, npmlr, meaneps, fmin/a*c, r);
       if (oldrefl == reflection) break;
+      oldrefl = reflection;
     }
   }
   reverse(Crhz, npmlr);
@@ -134,8 +137,9 @@ double mat::use_integer_pml(int numpmlr, int numpmlz, double fmin) {
     Crhp[r] = Crhz[r];
     if (r==0) Crep[r] = Crez[r] = 0.5*Crhz[r];
     else Crep[r] = Crez[r] = 0.5*(Crhz[r]+Crhz[r-1]);
-    if (r==0) Cphr[r] = Cpez[r] = 0.5*Cphz[r];
-    else Cphr[r] = Cpez[r] = 0.5*(Cphz[r]+Crhz[r-1]);
+    //if (r==0) Cphr[r] = Cpez[r] = 0.5*Cphz[r];
+    //else Cphr[r] = Cpez[r] = 0.5*(Cphz[r]+Crhz[r-1]);
+    Cphr[r] = Cpez[r] = 0.0; // Avoid instability...
   }
   for (int z=0;z<npmlz;z++) {
     double rr = (z)/(double)npmlz;
@@ -146,9 +150,11 @@ double mat::use_integer_pml(int numpmlr, int numpmlz, double fmin) {
   reflection = 0;
   for (int i=0;i<npmlz*20;i++) {
     for (int z=0;z<npmlz;z++) {
-      double oldrefl = reflection;
+      reflection = minimize_badness(Czhr, npmlz, meaneps, fmin/a*c, z);
+      reflection = minimize_badness(Czhr, npmlz, meaneps, fmin/a*c, z);
       reflection = minimize_badness(Czhr, npmlz, meaneps, fmin/a*c, z);
       if (oldrefl == reflection) break;
+      oldrefl = reflection;
     }
   }
   reverse(Czhr, npmlz);
@@ -196,7 +202,6 @@ static double minimize_badness(double sig[], int thickness,
     tried = badness(sig, thickness, epsilon, fmin);
   } while (tried < now);
   sig[i] *= 1.001;
-  //if (sig[i]>0.3) sig[i] = 0.3;
   return badness(sig, thickness, epsilon, fmin);
 }
 
