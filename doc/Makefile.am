@@ -22,6 +22,9 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
+DAC = $(SRC:.cpp=.dac)
+$(DAC) : $(LIBMEEP)
+
 example_SOURCES = example.cpp
 example_LDADD = $(LIBMEEP)
 

@@ -45,7 +45,7 @@ update_from_e_gen: $(UPDATE_FROM_E_GEN_OBJ)
 clean-local:
 	rm -f *.o *.hi $(noinst_SCRIPTS)
 
-depend:
+depend: $(SRC)
 	(cd ${srcdir}; $(HC) -M -optdep-f -optdep.depend $(HC_FLAGS) $(SRC))
 
 include .depend
