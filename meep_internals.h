@@ -71,12 +71,15 @@ class src {
   src();
   ~src();
   double freq, width, peaktime, cutoff;
-  complex<double> A[NUM_FIELD_COMPONENTS], amp_shift;
+  complex<double> A[NUM_FIELD_COMPONENTS], pol_now;
   int i, is_continuous;
   src *next;
   double find_last_source(double guess=0);
   void use_real_sources();
-  complex<double> get_amplitude_at_time(double t) const;
+  complex<double> get_dPdt_at_time(double t, double dt) const;
+  complex<double> get_dipole_at_time(double t) const;
+  void update_dipole(double time);
+  complex<double> get_dipole_now() const { return pol_now; };
   double get_envelope_at_time(double t) const;
   src *add_to(src *others) const;
 };

@@ -334,8 +334,6 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
 }
 
 complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power) {
-  const double total_time = (bands->tend-bands->tstart)*c/a;
-  const double deltaf = 1.0/total_time;
   bands->maxbands = maxbands;
   const int max_harminvs = 120;
   const int max_freqs = max_harminvs*maxbands;
@@ -350,7 +348,6 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   int freqs_so_far = 0;
   int fields_considered = 0;
 
-  cmplx *bdata;
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
     for (int whichf = 0; whichf < 10; whichf++)
       if (v.has_field((component)whichf) && maxbands < max_freqs - freqs_so_far) {

@@ -18,10 +18,12 @@ store_e_plus = if_ "have_p_pml" $ doexp $
 store_derivs =
     docode [if_ "have_m" (doexp "const double m_deriv_m = f_m[ind]-f_m[ind+stride_m]"),
             if_ "have_p" (doexp "const double deriv_p = f_p[ind+stride_p]-f_p[ind]"),
-            if_ "have_m" (doexp ("const double m_change"|=|
-                                 decay_m |*| ("c" |*| m_deriv_m |-| sig_m |*| "em"))),
-            if_ "have_p" (doexp ("const double p_change"|=|
-                                 decay_p |*| ("c" |*| deriv_p |-| sig_p |*| "ep")))
+            if_ "have_m" $ if_have_pml $
+                (doexp ("const double m_change"|=|
+                        decay_m |*| ("c" |*| m_deriv_m |-| sig_m |*| "em"))),
+            if_ "have_p" $ if_have_pml $
+                (doexp ("const double p_change"|=|
+                        decay_p |*| ("c" |*| deriv_p |-| sig_p |*| "ep")))
            ]
 update_f_pml :: Code
 update_f_pml = docode [if_ "have_p_pml" $ if_ "have_m" $
@@ -33,6 +35,9 @@ update_f = doexp $ "the_f[ind]" |+=| m_p_update
 
 p_update = ("have_p")|?|"p_change"|:|"0"
 m_update = ("have_m")|?|"m_change"|:|"0"
+if_have_pml job =
+    ifelse_ "have_p_pml" job $
+    ifelse_ "have_m_pml" job $ doexp ""
 m_p_update =
     ("have_p_pml")
         |?| (m_update |+| p_update)

@@ -24,8 +24,7 @@
 #include "meep_internals.h"
 
 fields::fields(const mat *ma, int tm) :
-  v(ma->v), gv(ma->gv), user_volume(ma->user_volume),
-  S(ma->S)
+  S(ma->S), v(ma->v), user_volume(ma->user_volume), gv(ma->gv)
 {
   verbosity = 0;
   outdir = ma->outdir;
@@ -46,7 +45,8 @@ fields::fields(const mat *ma, int tm) :
   am_now_working_on(Other);
 
   num_chunks = ma->num_chunks;
-  chunks = new (fields_chunk *)[num_chunks];
+  typedef fields_chunk *fields_chunk_ptr;
+  chunks = new fields_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new fields_chunk(ma->chunks[i], outdir, m);
   FOR_FIELD_TYPES(ft) {
@@ -56,7 +56,8 @@ fields::fields(const mat *ma, int tm) :
     for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][i] = 0;
     for (int i=0;i<num_chunks*num_chunks;i++) comm_num_complex[ft][i] = 0;
     for (int i=0;i<num_chunks*num_chunks;i++) comm_num_negate[ft][i] = 0;
-    comm_blocks[ft] = new (double *)[num_chunks*num_chunks];
+    typedef double *double_ptr;
+    comm_blocks[ft] = new double_ptr[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
   }
@@ -189,8 +190,6 @@ void fields_chunk::figure_out_step_plan() {
     if (f[c1][0]) {
       const direction dc1 = component_direction(c1);
       // Figure out which field components contribute.
-      component c_p=Ex, c_m=Ex;
-      bool var_have_p = false, var_have_m = false;
       FOR_COMPONENTS(c2)
         if ((is_electric(c1) && is_magnetic(c2)) ||
             (is_D(c1) && is_magnetic(c2)) ||

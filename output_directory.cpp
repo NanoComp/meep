@@ -48,17 +48,17 @@ void fields_chunk::set_output_directory(const char *name) {
   outdir = name;
 }
 
-static int is_same_file(const char *a, const char *b) {
-  FILE *fa = fopen(a,"r");
-  FILE *fb = fopen(b,"r");
-  if (!fa || !fb) return 0;
-  int ca;
-  do {
-    ca = getc(fa);
-    if (ca != getc(fb)) return 0;
-  } while (ca != EOF);
-  return 1;
-}
+// static int is_same_file(const char *a, const char *b) {
+//   FILE *fa = fopen(a,"r");
+//   FILE *fb = fopen(b,"r");
+//   if (!fa || !fb) return 0;
+//   int ca;
+//   do {
+//     ca = getc(fa);
+//     if (ca != getc(fb)) return 0;
+//   } while (ca != EOF);
+//   return 1;
+// }
 
 static void cp(const char *a, const char *b) {
   FILE *fa = fopen(a,"r");
@@ -76,7 +76,7 @@ static void cp(const char *a, const char *b) {
 
 static bool is_ok_dir(const char *dirname, const char *sourcename,
                       const char *basename) {
-  const int buflen = 300;
+//    const int buflen = 300;
 
   DIR *dir;
   bool direxists;

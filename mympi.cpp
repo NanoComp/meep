@@ -238,8 +238,10 @@ void i_flush(file *f) {
 #endif
 }
 
+#ifdef HAVE_MPI
 static const int buflen = 8192;
 static char buf[buflen];
+#endif
 
 void i_fprintf(file *f, const char *fmt, ...) {
   va_list ap;

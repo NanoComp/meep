@@ -34,6 +34,8 @@ mat::mat()
   S = identity();
 }
 
+typedef mat_chunk *mat_chunk_ptr;
+
 mat::mat(const volume &thev, double eps(const vec &), int num, const symmetry &s)
   : gv(D1) // Aaack, this is very hokey.
 {
@@ -110,7 +112,7 @@ void mat::redefine_chunks(const int Nv, const volume *new_volumes,
   if (sum != v_grid_points)
     abort("v_grid_points = %d, sum(new_volumes) = %d\n", v_grid_points, sum);
 
-  mat_chunk **new_chunks = new (mat_chunk *)[Nv];
+  mat_chunk **new_chunks = new mat_chunk_ptr[Nv];
   for (int j=0; j<Nv; j++)
     new_chunks[j] = NULL;
   for (int j=0; j<Nv; j++) {
@@ -260,7 +262,7 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
     for (int d=0;d<3;d++)
       if (break_this[d]) v = v.pad((direction)d);
   }
-  chunks = new (mat_chunk *)[num_chunks];
+  chunks = new mat_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++) {
     const int proc = i*count_processors()/num_chunks;
     chunks[i] = new mat_chunk( v.split(num_chunks,i), eps, gv, proc);
@@ -274,7 +276,7 @@ mat::mat(const mat *m) : gv(m->gv) {
   v = m->v;
   S = m->S;
   user_volume = m->user_volume;
-  chunks = new (mat_chunk *)[num_chunks];
+  chunks = new mat_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m->chunks[i]);
   num_effort_volumes = m->num_effort_volumes;
   effort_volumes = new volume[num_effort_volumes];
@@ -292,7 +294,7 @@ mat::mat(const mat &m) : gv(m.gv) {
   v = m.v;
   S = m.S;
   user_volume = m.user_volume;
-  chunks = new (mat_chunk *)[num_chunks];
+  chunks = new mat_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m.chunks[i]);
   num_effort_volumes = m.num_effort_volumes;
   effort_volumes = new volume[num_effort_volumes];
@@ -363,59 +365,59 @@ mat_chunk::~mat_chunk() {
   if (pb) delete pb;
 }
 
-static double sig(double r, double power);
+// static double sig(double r, double power);
 
-static double minimize_badness(double sig[], int thickness, double eps, double fmin, int i);
-inline void reverse(double sig[], int l) {
-  for (int i=0;i<l/2;i++) {
-    double temp = sig[i];
-    sig[i] = sig[l-1-i];
-    sig[l-1-i] = temp;
-  }
-}
+// static double minimize_badness(double sig[], int thickness, double eps, double fmin, int i);
+// inline void reverse(double sig[], int l) {
+//   for (int i=0;i<l/2;i++) {
+//     double temp = sig[i];
+//     sig[i] = sig[l-1-i];
+//     sig[l-1-i] = temp;
+//   }
+// }
 
-static double badness(double sig[], int thickness, double epsilon, double fmin) {
-  if (thickness < 1) return 1;
-  const double A = .0001/fmin*.1/fmin, K = 6.0/epsilon*2.25/epsilon;
-  double sofar = 1.0;
-  for (int i=0;i<thickness-1;i++) {
-    double first_trans = exp(-K*sig[i+1]);
-    double refl = A*fabs(sig[i]-sig[i+1])*fabs(sig[i]-sig[i+1]);
-    double total_trans = exp(-K*sig[i])*first_trans;
-    sofar = refl + (1-refl)*total_trans*sofar;
-    if (sofar > 1.0) sofar = 1.0;
-  }
-  double last_refl = A*fabs(sig[thickness-1]);
-  sofar = last_refl + (1-last_refl)*sofar;
-  return sofar;
-}
+// static double badness(double sig[], int thickness, double epsilon, double fmin) {
+//   if (thickness < 1) return 1;
+//   const double A = .0001/fmin*.1/fmin, K = 6.0/epsilon*2.25/epsilon;
+//   double sofar = 1.0;
+//   for (int i=0;i<thickness-1;i++) {
+//     double first_trans = exp(-K*sig[i+1]);
+//     double refl = A*fabs(sig[i]-sig[i+1])*fabs(sig[i]-sig[i+1]);
+//     double total_trans = exp(-K*sig[i])*first_trans;
+//     sofar = refl + (1-refl)*total_trans*sofar;
+//     if (sofar > 1.0) sofar = 1.0;
+//   }
+//   double last_refl = A*fabs(sig[thickness-1]);
+//   sofar = last_refl + (1-last_refl)*sofar;
+//   return sofar;
+// }
 
-static double minimize_badness(double sig[], int thickness,
-                               double epsilon, double fmin, int i) {
-  double behind_reflection = badness(sig, i-1, epsilon, fmin);
+// static double minimize_badness(double sig[], int thickness,
+//                                double epsilon, double fmin, int i) {
+//   double behind_reflection = badness(sig, i-1, epsilon, fmin);
   
 
-  double now = badness(sig, thickness, epsilon, fmin);
-  double tried = now;
-  do {
-    now = tried;
-    sig[i] *= 1.001;
-    tried = badness(sig, thickness, epsilon, fmin);
-  } while (tried < now);
-  sig[i] /= 1.001;
-  tried = now = badness(sig, thickness, epsilon, fmin);
-  do {
-    now = tried;
-    sig[i] /= 1.001;
-    tried = badness(sig, thickness, epsilon, fmin);
-  } while (tried < now);
-  sig[i] *= 1.001;
-  return badness(sig, thickness, epsilon, fmin);
-}
+//   double now = badness(sig, thickness, epsilon, fmin);
+//   double tried = now;
+//   do {
+//     now = tried;
+//     sig[i] *= 1.001;
+//     tried = badness(sig, thickness, epsilon, fmin);
+//   } while (tried < now);
+//   sig[i] /= 1.001;
+//   tried = now = badness(sig, thickness, epsilon, fmin);
+//   do {
+//     now = tried;
+//     sig[i] /= 1.001;
+//     tried = badness(sig, thickness, epsilon, fmin);
+//   } while (tried < now);
+//   sig[i] *= 1.001;
+//   return badness(sig, thickness, epsilon, fmin);
+// }
 
-static double sig(double r, double power) {
-  return pow(r, power);
-}
+// static double sig(double r, double power) {
+//   return pow(r, power);
+// }
 
 void mat_chunk::mix_with(const mat_chunk *n, double f) {
   for (int i=0;i<v.ntot();i++)

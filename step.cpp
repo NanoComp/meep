@@ -26,6 +26,7 @@
 
 void fields::step() {
   am_now_working_on(Stepping);
+  calc_source_phases();
   phase_material();
 
   //for (int i=0;i<num_chunks;i++)
@@ -37,13 +38,12 @@ void fields::step() {
   am_now_working_on(Stepping);
 
   step_d();
-  step_e_source();
   step_boundaries(D_stuff);
 
   prepare_step_polarization_energy();
   half_step_polarization_energy();
   update_e_from_d();
-  //step_boundaries(E_stuff);  FIXME: Need to enable this when I encode anisotropy, etc.
+  step_boundaries(E_stuff);
 
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
@@ -198,8 +198,6 @@ void fields_chunk::step_h() {
       // Propogate Hp
       if (ma->C[Z][Hp] || ma->C[R][Hp])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
-            double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
@@ -207,8 +205,6 @@ void fields_chunk::step_h() {
               const double Crhp = (ma->C[R][Hp])?ma->C[R][Hp][z+ir]:0;
               const double ooop_Czhp = (ma->Cdecay[Z][Hp][P]) ?
                 ma->Cdecay[Z][Hp][P][z+ir]:1.0;
-              const double ooop_Crhp = (ma->Cdecay[R][Hp][P]) ?
-                ma->Cdecay[R][Hp][P][z+ir]:1.0;
               const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
                                              - Czhp*f_p_pml[Hp][cmp][z+ir]);
               const double hpr = f[Hp][cmp][z+ir]-f_p_pml[Hp][cmp][z+ir];
@@ -219,8 +215,6 @@ void fields_chunk::step_h() {
           }
       else 
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-            double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
-            double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++)
@@ -242,7 +236,6 @@ void fields_chunk::step_h() {
               ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*((int)(v.origin.r()*v.a+0.5) + r+1.)-
                              f[Ep][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r))*oorph
                          - Crhz*f_p_pml[Hz][cmp][z+ir]);
-            const double hzp = f[Hz][cmp][z+ir] - f_p_pml[Hz][cmp][z+ir];
             f_p_pml[Hz][cmp][z+ir] += dhzr;
             f[Hz][cmp][z+ir] += dhzr + c*(it(cmp,f[Er],z+ir)*morph);
           }
@@ -339,8 +332,6 @@ void fields_chunk::step_d() {
       if (f[Dp][cmp])
         if (ma->C[Z][Dp] || ma->C[R][Dp])
           for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            const double oor = 1.0/((int)(v.origin.r()*v.a + 0.5) + r);
-            const double mor = m*oor;
             const int ir = r*(v.nz()+1);
             const int irm1 = (r-1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++) {
@@ -382,7 +373,6 @@ void fields_chunk::step_d() {
                 (c*(f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
                     f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
                  - Crez*f_p_pml[Dz][cmp][z+ir]);
-              const double ezp = f[Dz][cmp][z+ir]-f_p_pml[Dz][cmp][z+ir];
               f_p_pml[Dz][cmp][z+ir] += dezr;
               f[Dz][cmp][z+ir] += dezr + c*(-it(cmp,f[Hr],z+ir)*mor);
             }
@@ -406,7 +396,6 @@ void fields_chunk::step_d() {
             double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
-            const int irp1 = (r+1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++) {
               const double Czer = ma->C[Z][Dr][z+ir];
               const double ooop_Czer = (ma->Cdecay[Z][Dr][R]) ?
@@ -423,7 +412,6 @@ void fields_chunk::step_d() {
             double oorph = 1.0/((int)(v.origin.r()*v.a+0.5) + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
-            const int irp1 = (r+1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++)
               f[Dr][cmp][z+ir] += c*
                 (it(cmp,f[Hz],z+ir)*morph - (f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]));
@@ -440,7 +428,6 @@ void fields_chunk::step_d() {
               ma->Cdecay[Z][Dp][P][z] : 1.0;
             const double depz = ooop_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
                                                   - Czep*f_p_pml[Dp][cmp][z]);
-            const double epr = f[Dp][cmp][z] - f_p_pml[Dp][cmp][z];
             f_p_pml[Dp][cmp][z] += depz;
             f[Dp][cmp][z] += depz + c*(-f[Hz][cmp][z]*2.0);
           }
@@ -469,8 +456,6 @@ void fields::update_e_from_d() {
     if (chunks[i]->is_mine())
       chunks[i]->update_e_from_d();
 }
-
-#define FOR_POLARIZATIONS(init, p) for (polarization *p = init; p; p = p->next)
 
 void fields_chunk::update_e_from_d() {
   const int ntot = ma->v.ntot();
@@ -582,7 +567,7 @@ void fields::step_h_source() {
 
 void fields_chunk::step_h_source(const src *s, double time) {
   if (s == NULL) return;
-  complex<double> A = s->get_amplitude_at_time(time);
+  complex<double> A = s->get_dPdt_at_time(time, inva*c);
   if (A == 0.0) {
     step_h_source(s->next, time);
     return;
@@ -602,9 +587,20 @@ void fields::step_e_source() {
       chunks[i]->step_e_source(chunks[i]->e_sources, tim);
 }
 
+void fields::calc_source_phases() {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->calc_source_phases(time());
+}
+
+void fields_chunk::calc_source_phases(double time) {
+  for (src *s = e_sources; s; s = s->next) s->update_dipole(time);
+  for (src *s = h_sources; s; s = s->next) s->update_dipole(time-0.5*inva*c);
+}
+
 void fields_chunk::step_e_source(const src *s, double time) {
   if (s == NULL) return;
-  complex<double> A = s->get_amplitude_at_time(time);
+  complex<double> A = s->get_dPdt_at_time(time, inva*c);
   if (A == 0.0) {
     step_e_source(s->next, time);
     return;

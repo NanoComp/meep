@@ -23,12 +23,20 @@
 #include "meep.h"
 #include "meep_internals.h"
 
-complex<double> src::get_amplitude_at_time(double time) const {
+complex<double> src::get_dPdt_at_time(double time, double dt) const {
+  return (get_dipole_at_time(time) - get_dipole_at_time(time - dt))/dt;
+}
+
+complex<double> src::get_dipole_at_time(double time) const {
   double envelope = get_envelope_at_time(time);
   if (envelope == 0.0)
     return 0.0;
   double tt = time - peaktime;
-  return (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope;
+  return polar(1.0,-2*pi*freq*tt)*envelope;
+}
+
+void src::update_dipole(double time) {
+  pol_now = get_dipole_at_time(time);
 }
 
 double src::get_envelope_at_time(double time) const {
@@ -49,30 +57,6 @@ src::src() {
 
 src::~src() {
   delete next;
-}
-
-static double integrate_envelope(const src *s, const double inva) {
-  if (s == NULL) abort("Bad arg to integrate_envelope!\n");
-  double sofar = 0.0;
-  for (int t=(int)((s->peaktime-s->cutoff)/inva);t<(1<<30);t++) {
-    double e = s->get_envelope_at_time(t*inva);
-    sofar += e;
-    if (e == 0) break; // Bug here if there is a source that starts late,
-                       // or a source that never stops.
-  }
-  return sofar*inva;
-}
-
-static complex<double> integrate_source(const src *s, const double inva) {
-  if (s == NULL) abort("Bad arg to integrate_source!\n");
-  complex<double> sofar = 0.0;
-  for (int t=(int)((s->peaktime-s->cutoff)/inva);t<(1<<30);t++) {
-    complex<double> A = s->get_amplitude_at_time(t*inva);
-    sofar += A;
-    if (A == 0.0) break; // Bug here if there is a source that starts late,
-                         // or a source that never stops.
-  }
-  return sofar*inva;
 }
 
 void fields::add_point_source(component whichf, double freq,
@@ -124,6 +108,9 @@ int fields_chunk::add_point_source(component whichf, double freq,
       alloc_f(Ex); alloc_f(Ey); alloc_f(Dx); alloc_f(Dy); alloc_f(Hz); break;
     case Hx: case Hy: case Ez:
       alloc_f(Hx); alloc_f(Hy); alloc_f(Ez); alloc_f(Dz); break;
+    case Dx: case Dy: case Dz: case Dp: case Dr:
+    case Er: case Ep: case Hr: case Hp: case Dielectric:
+      abort("Invalid source component in 2D.\n");
     }
     need_reconnection = 1;
   }
@@ -152,7 +139,6 @@ void fields_chunk::add_indexed_source(component whichf, double freq, double widt
   for (int com=0;com<10;com++) tmp.A[com] = 0;
   tmp.A[whichf] = amp;
   tmp.i = theindex;
-  tmp.amp_shift = 0.0;
   tmp.is_continuous = is_c;
   tmp.cutoff = inva+ cutoff*tmp.width;
   while (exp(-tmp.cutoff*tmp.cutoff/(2*tmp.width*tmp.width)) == 0.0)
@@ -161,8 +147,6 @@ void fields_chunk::add_indexed_source(component whichf, double freq, double widt
   if (peaktime <= 0.0) tmp.peaktime = time+tmp.cutoff;
   // Apply a shift so that we won't end up with a static polarization when
   // the source is gone:  (FIXME: is there a bug here?)
-  if (is_c) tmp.amp_shift = 0.0;
-  else tmp.amp_shift = integrate_source(&tmp, inva)/integrate_envelope(&tmp, inva);
   if (is_magnetic(whichf)) {
     h_sources = tmp.add_to(h_sources);
   } else {

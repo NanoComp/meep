@@ -103,6 +103,8 @@ inline bool has_direction(ndim dim, direction d) {
   return false;
 }
 
+void abort(const char *, ...);
+
 inline int is_electric(component c) { return c < Hx; }
 inline int is_magnetic(component c) { return c >= Hx && c < Dx; }
 inline int is_D(component c) { return c >= Dx && c < Dielectric; }
@@ -110,10 +112,13 @@ inline field_type type(component c) {
   if (is_electric(c)) return E_stuff;
   else if (is_magnetic(c)) return H_stuff;
   else if (is_D(c)) return D_stuff;
+  abort("Invalid field in type.\n");
+  return E_stuff; // This is never reached.
 }
 const char *component_name(component c);
 const char *direction_name(direction);
 const char *dimension_name(ndim);
+
 inline direction component_direction(component c) {
   switch (c) {
   case Ex: case Hx: case Dx: return X;
@@ -121,7 +126,9 @@ inline direction component_direction(component c) {
   case Ez: case Hz: case Dz: return Z;
   case Er: case Hr: case Dr: return R;
   case Ep: case Hp: case Dp: return P;
+  case Dielectric: abort("Dielectric has no direction!\n");
   }
+  return X; // This code is never reached...
 }
 inline component direction_component(component c, direction d) {
   component start_point;
@@ -135,6 +142,7 @@ inline component direction_component(component c, direction d) {
   case R: return (component) (start_point + 2);
   case P: return (component) (start_point + 3);
   }
+  return Ex; // This is never reached.
 }
 
 class file;
@@ -207,7 +215,7 @@ class vec {
   double y() const { return t[Y]; };
   double z() const { return t[Z]; };
   double in_direction(direction d) const { return t[d]; };
-  double set_direction(direction d, double val) { t[d] = val; };
+  void set_direction(direction d, double val) { t[d] = val; };
 
   double project_to_boundary(direction, double boundary_loc);
   void print(file *) const;
@@ -246,6 +254,7 @@ class ivec {
 
   ivec operator+=(const ivec &a) {
     LOOP_OVER_DIRECTIONS(dim, d) t[d] += a.t[d];
+    return *this;
   };
 
   ivec operator-(const ivec &a) const {
@@ -256,6 +265,7 @@ class ivec {
 
   ivec operator-=(const ivec &a) {
     LOOP_OVER_DIRECTIONS(dim, d) t[d] -= a.t[d];
+    return *this;
   };
 
   bool operator!=(const ivec &a) const {
@@ -286,7 +296,7 @@ class ivec {
   int y() const { return t[Y]; };
   int z() const { return t[Z]; };
   int in_direction(direction d) const { return t[d]; };
-  int set_direction(direction d, int val) { t[d] = val; };
+  void set_direction(direction d, int val) { t[d] = val; };
 
   friend ivec zero_ivec(ndim);
  private:

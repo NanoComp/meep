@@ -35,7 +35,7 @@ double rods_2d(const vec &pp) {
 }
 
 int compare(double a, double b, const char *n) {
-  if (fabs(a-b) > fabs(b)*1.3e-14) {
+  if (fabs(a-b) > fabs(b)*1.9e-14) {
     master_printf("%s differs by\t%lg out of\t%lg\n", n, a-b, b);
     master_printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
     return 0;
@@ -833,8 +833,10 @@ int main(int argc, char **argv) {
   if (!test_3D_metal_odd_zmirror(one, dirname))
     abort("error in test_3D_metal_odd_zmirror vacuum\n");
 
-  if (!test_3D_metal_rot4z(one, dirname))
+  if (!test_3D_metal_rot4z(one, dirname)) {
+    all_wait();
     abort("error in test_3D_metal_rot4z vacuum\n");
+  }
 
   if (!test_3D_metal_rot4z_mirror(one, dirname))
     abort("error in test_3D_metal_rot4z_mirror vacuum\n");

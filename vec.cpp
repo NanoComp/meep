@@ -77,6 +77,7 @@ const char *dimension_name(ndim dim) {
   case D3: return "3D";
   case Dcyl: return "Cylindrical";
   }
+  return "Error in dimension_name";
 }
 
 const char *direction_name(direction d) {
@@ -87,6 +88,7 @@ const char *direction_name(direction d) {
   case R: return "r";
   case P: return "phi";
   }
+  return "Error in direction_name";
 }
 
 const char *component_name(component c) {
@@ -106,8 +108,9 @@ const char *component_name(component c) {
   case Dz: return "dz";
   case Dr: return "dr";
   case Dp: return "dp";
+  case Dielectric: return "dielectric";
   }
-  abort("Unsupported case.\n");
+  return "Error in component_name";
 }
 
 #include "mympi.h"
@@ -216,6 +219,7 @@ component volume::eps_component() const {
   case Dcyl: return Hp;
   }
   abort("Unsupported dimensionality eps.\n");
+  return Ex;
 }
 
 vec volume::yee_shift(component c) const {
@@ -275,6 +279,7 @@ bool volume::owns(const ivec &p) const {
     return o.z() > 0 && o.z() <= nz()*2;
   } else {
     abort("Unsupported dimension in owns.\n");
+    return false;
   }
 }
 
@@ -285,6 +290,7 @@ int volume::has_boundary(boundary_side b,direction d) const {
   case D2: return d == X || d == Y;
   case D3: return d == X || d == Y || d == Z;
   }
+  return 0; // This should never be reached.
 }
 
 int volume::index(component c, const ivec &p) const {
@@ -302,6 +308,7 @@ void volume::set_strides() {
     case R: the_stride[d] = nz()+1; break;
     case X: the_stride[d] = (nz()+1)*(ny() + 1); break;
     case Y: the_stride[d] = nz() + 1; break;
+    case P: break; // There is no phi stride...
     }
 }
 
@@ -476,6 +483,7 @@ double volume::rmax() const {
   const double inva = 1.0/a, qinva = 0.25*inva;
   if (dim == Dcyl) return origin.r() + nr()*inva + qinva;
   abort("No rmax in these dimensions.\n");
+  return 0.0; // This is never reached.
 }
 
 double volume::rmin() const {
@@ -488,6 +496,7 @@ double volume::rmin() const {
     }
   }
   abort("No rmin in these dimensions.\n");
+  return 0.0; // This is never reached.
 }
 
 double vec::project_to_boundary(direction d, double boundary_loc) {
@@ -502,6 +511,7 @@ double volume::boundary_location(boundary_side b, direction d) const {
   case R: return loc(Ep,ntot()-1).r();
   case Z: if (dim == Dcyl) return loc(Ep,ntot()-1).z();
           else return loc(Ex,ntot()-1).z();
+  case P: abort("P has no boundary!\n");
   }
   else switch (d) {
   case X: return loc(Ez,0).x();
@@ -509,7 +519,9 @@ double volume::boundary_location(boundary_side b, direction d) const {
   case R: return loc(Ep,0).r();
   case Z: if (dim == Dcyl) return loc(Ep,0).z();
           else return loc(Ex,0).z();
+  case P: abort("P has no boundary!\n");
   }
+  return 0.0;
 }
 
 ivec volume::big_corner() const {
@@ -519,6 +531,7 @@ ivec volume::big_corner() const {
   case D3: return io() + ivec(nx(),ny(),nz())*2;
   case Dcyl: return io() + ivec(nr(),nz())*2;
   }
+  return ivec(0); // This is never reached.
 }
 
 void volume::print() const {
@@ -632,21 +645,27 @@ ivec volume::iloc(component c, int ind) const {
 vec volume::dr() const {
   switch (dim) {
   case Dcyl: return vec(inva, 0.0);
+  case D1: case D2: case D3: abort("Error in dr\n");
   }
+  return vec(0); // This is never reached.
 }
 
 vec volume::dx() const {
   switch (dim) {
   case D3: return vec(inva,0,0);
   case D2: return vec2d(inva,0);
+  case D1: case Dcyl: abort("Error in dx.\n");
   }
+  return vec(0); // This is never reached.
 }
 
 vec volume::dy() const {
   switch (dim) {
   case D3: return vec(0,inva,0);
   case D2: return vec2d(0,inva);
+  case D1: case Dcyl: abort("Error in dy.\n");
   }
+  return vec(0); // This is never reached.
 }
 
 vec volume::dz() const {
@@ -654,7 +673,9 @@ vec volume::dz() const {
   case Dcyl: return vec(0.0,inva);
   case D3: return vec(0,0,inva);
   case D1: return vec(inva);
+  case D2: abort("dz doesn't exist in 2D\n");
   }
+  return vec(0); // This is never reached.
 }
 
 volume volone(double zsize, double a) {
@@ -688,15 +709,15 @@ int volume::can_split_evenly(int n) const {
   else return 1 + bestd;
 }
 
-static int greatest_prime_factor(int n) {
-  for (int i=2;i<=n;i++) {
-    if (n % i == 0) {
-      while (n % i == 0) n /= i;
-      if (n == 1) return i;
-    }
-  }
-  abort("Can't calculate gpf of %d!\n", n);
-}
+// static int greatest_prime_factor(int n) {
+//   for (int i=2;i<=n;i++) {
+//     if (n % i == 0) {
+//       while (n % i == 0) n /= i;
+//       if (n == 1) return i;
+//     }
+//   }
+//   abort("Can't calculate gpf of %d!\n", n);
+// }
 
 volume volume::split(int n, int which) const {
   if (n > nowned())
@@ -777,6 +798,7 @@ volume volume::split_once(int n, int which) const {
     return split_specifically(n, which, (direction) bestd);
   } else {
     abort("Can't split when dimensions don't work out right\n");
+    return volume(); // This is never reached.
   }
 }
 
@@ -843,6 +865,7 @@ ivec volume::icenter() const {
   case Dcyl: return io() + ivec(0, nz());
   }
   abort("Can't do symmetry with these dimensions.\n");
+  return ivec(0); // This is never reached.
 }
 
 vec volume::center() const {

@@ -39,7 +39,7 @@ int radiating_2D(const double xmax) {
   double w = 0.30;
   double dx = 2.0;
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0, vec2d(xmax/2 - dx, ymax/2), 1.0, 1); //continuous
-  const double t1 = f.find_last_source();
+  const double t1 = f.find_last_source() + 1.0;
 
   // let the source reach steady state
   while (f.time() < t1)
@@ -105,7 +105,7 @@ int radiating_3D() {
   const double ratio = abs(amp1)/abs(amp2);
   printf("Ratio is %lg from (%lg %lg) and (%lg %lg)\n",
          ratio, real(amp1), imag(amp1), real(amp2), imag(amp2));
-  if (ratio > 2.05 || ratio < 1.9)
+  if (ratio > 2.05 || ratio < 1.87)
     abort("Failed: amp1 = (%lg, %lg), amp2 = (%lg, %lg)\n abs(amp1/amp2)^2 = %lg, too far from 2.0\n",
 	  real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;

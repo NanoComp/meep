@@ -66,33 +66,22 @@ ivec fields::ilattice_vector(direction d) const {
     switch (d) {
     case X: return ivec2d(user_volume.nx()*2,0);
     case Y: return ivec2d(0,user_volume.ny()*2);
+    case Z: case R: case P: break;
     }
   case D3:
     switch (d) {
     case X: return ivec(user_volume.nx()*2,0,0);
     case Y: return ivec(0,user_volume.ny()*2,0);
     case Z: return ivec(0,0,user_volume.nz()*2);
+    case R: case P: break;
     }
   }
+  abort("Aaack in ilattice_vector.\n");
+  return ivec(0);
 }
 
 vec fields::lattice_vector(direction d) const {
-  if (user_volume.dim == Dcyl) {
-    return vec(0,user_volume.nz()*inva); // Only Z direction here...
-  } else if (user_volume.dim == D1) {
-    return vec(user_volume.nz()*inva); // Only Z direction here...
-  } else if (user_volume.dim == D2) {
-    switch (d) {
-    case X: return vec2d(user_volume.nx()*inva,0);
-    case Y: return vec2d(0,user_volume.ny()*inva);
-    }
-  } else if (user_volume.dim == D3) {
-    switch (d) {
-    case X: return vec(user_volume.nx()*inva,0,0);
-    case Y: return vec(0,user_volume.ny()*inva,0);
-    case Z: return vec(0,0,user_volume.nz()*inva);
-    }
-  }
+  return v[ilattice_vector(d)];
 }
 
 void fields::disconnect_chunks() {
@@ -127,8 +116,6 @@ void fields::connect_chunks() {
   connect_the_chunks();
   finished_working();
 }
-
-static double zero = 0.0;
 
 inline int fields::is_metal(const ivec &here) {
   LOOP_OVER_DIRECTIONS(v.dim, d) {
@@ -215,7 +202,8 @@ void fields::find_metals() {
             for (int n=0;n<vi.ntot();n++)
               if (vi.owns(vi.iloc(c,n)) && is_metal(vi.iloc(c,n)))
                 chunks[i]->num_zeroes[ft]++;
-        chunks[i]->zeroes[ft] = new (double *)[chunks[i]->num_zeroes[ft]];
+        typedef double *double_ptr;
+        chunks[i]->zeroes[ft] = new double_ptr[chunks[i]->num_zeroes[ft]];
         int num = 0;
         DOCMP FOR_COMPONENTS(c)
           if (type(c) == ft && chunks[i]->f[c][cmp])
@@ -373,7 +361,8 @@ void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) 
     delete[] connection_phases[f];
     connection_phases[f] = new complex<double>[tot]; // This is larger than necesary...
   }
-  double **conn = new (double *)[tot];
+  typedef double *double_ptr;
+  double **conn = new double_ptr[tot];
   if (!conn) abort("Out of memory!\n");
   delete[] connections[f][io];
   connections[f][io] = conn;

@@ -261,10 +261,6 @@ void fields_chunk::initialize_polarizations(polarization *op, polarization *np) 
   if (op == NULL && np == NULL && olpol != NULL && pol != NULL) {
     initialize_polarizations(olpol, pol);
   } else if (olpol != NULL && pol != NULL) {
-    double omt = op->pb->omeganot;
-    double amp_shift = exp(op->pb->gamma);
-    double sinkz = sin(-omt);
-    double coskz = cos(-omt);
     DOCMP {
       FOR_ELECTRIC_COMPONENTS(c)
         if (v.has_field(c))

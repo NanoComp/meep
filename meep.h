@@ -218,15 +218,14 @@ class fields_chunk {
   double minpolenergy() const;
   void output_eps_body(component, const symmetry &, int sn,
                        const geometric_volume &what, file *);
-  complex<double> fields_chunk::field_mean(component c, bool abs_real,
-                                           bool abs_imag) const;
+  complex<double> field_mean(component c, bool abs_real, bool abs_imag) const;
 
   double electric_energy_in_box(const geometric_volume &, const symmetry &);
   double magnetic_energy_in_box(const geometric_volume &, const symmetry &);
   double thermo_energy_in_box(const geometric_volume &, const symmetry &);
 
-  double backup_h();
-  double restore_h();
+  void backup_h();
+  void restore_h();
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
@@ -265,6 +264,7 @@ class fields_chunk {
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *, double);
+  void calc_source_phases(double time);
   // polarization.cpp
   void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
@@ -441,6 +441,7 @@ class fields {
   void step_polarization_itself();
   void step_e_polarization();
   void step_e_source();
+  void calc_source_phases();
   void prepare_step_polarization_energy();
   void half_step_polarization_energy();
   void update_polarization_saturation();
@@ -455,8 +456,8 @@ class fields {
   // slices.cpp
   void outline_chunks(file *name);
   bool has_eps_interface(vec *loc) const;
-  complex<double> fields::field_mean(component c, bool abs_real = false,
-                                     bool abs_imag = false) const;
+  complex<double> field_mean(component c, bool abs_real = false,
+                             bool abs_imag = false) const;
   // energy_and_flux.cpp
   // fluxes.cpp
   void update_fluxes();

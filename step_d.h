@@ -174,8 +174,6 @@ if (have_m) {
               for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=1) {
                 const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
                 const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-                const double m_change = c*m_deriv_m;
-                const double p_change = c*deriv_p;
                 the_f[ind] += c*(m_deriv_m + deriv_p);
               }
           } else {
@@ -183,8 +181,6 @@ if (have_m) {
               for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
                 const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
                 const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-                const double m_change = c*m_deriv_m;
-                const double p_change = c*deriv_p;
                 the_f[ind] += c*(m_deriv_m + deriv_p);
               }
           }
@@ -195,8 +191,6 @@ if (have_m) {
                 for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=1) {
                   const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
                   const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-                  const double m_change = c*m_deriv_m;
-                  const double p_change = c*deriv_p;
                   the_f[ind] += c*(m_deriv_m + deriv_p);
                 }
           } else {
@@ -205,8 +199,6 @@ if (have_m) {
                 for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
                   const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
                   const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-                  const double m_change = c*m_deriv_m;
-                  const double p_change = c*deriv_p;
                   the_f[ind] += c*(m_deriv_m + deriv_p);
                 }
           }
@@ -260,14 +252,12 @@ if (have_m) {
           for (int i1=0; i1<n1; i1++)
             for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=1) {
               const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
-              const double m_change = c*m_deriv_m;
               the_f[ind] += c*m_deriv_m;
             }
         } else {
           for (int i1=0; i1<n1; i1++)
             for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
               const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
-              const double m_change = c*m_deriv_m;
               the_f[ind] += c*m_deriv_m;
             }
         }
@@ -277,7 +267,6 @@ if (have_m) {
             for (int i2=0; i2<n2; i2++)
               for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=1) {
                 const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
-                const double m_change = c*m_deriv_m;
                 the_f[ind] += c*m_deriv_m;
               }
         } else {
@@ -285,7 +274,6 @@ if (have_m) {
             for (int i2=0; i2<n2; i2++)
               for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
                 const double m_deriv_m = f_m[ind]-f_m[ind+stride_m];
-                const double m_change = c*m_deriv_m;
                 the_f[ind] += c*m_deriv_m;
               }
         }
@@ -339,14 +327,12 @@ if (have_m) {
         for (int i1=0; i1<n1; i1++)
           for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=1) {
             const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-            const double p_change = c*deriv_p;
             the_f[ind] += c*deriv_p;
           }
       } else {
         for (int i1=0; i1<n1; i1++)
           for (int i2=0, ind=i1*s1; i2<n2; i2++,ind+=s2) {
             const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-            const double p_change = c*deriv_p;
             the_f[ind] += c*deriv_p;
           }
       }
@@ -356,7 +342,6 @@ if (have_m) {
           for (int i2=0; i2<n2; i2++)
             for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=1) {
               const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-              const double p_change = c*deriv_p;
               the_f[ind] += c*deriv_p;
             }
       } else {
@@ -364,7 +349,6 @@ if (have_m) {
           for (int i2=0; i2<n2; i2++)
             for (int i3=0, ind=i1*s1+i2*s2; i3<n3; i3++, ind+=s3) {
               const double deriv_p = f_p[ind+stride_p]-f_p[ind];
-              const double p_change = c*deriv_p;
               the_f[ind] += c*deriv_p;
             }
       }

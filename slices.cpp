@@ -203,38 +203,39 @@ static void eps_trailer(file *out) {
   i_fprintf(out, "%%%%EOF\n");
 }
 
-static void eps_dotted(file *out, component m, const double *f, const volume &v,
-                       const geometric_volume &what) {
-  if (!f) return; // Field doesn't exist...
-  for (int i=0;i<v.ntot();i++)
-    if (what.contains(v.loc(m,i)))
-      switch (v.dim) {
-      case Dcyl:
-        {
-          ivec next = v.iloc(m,i)+ivec(2,0);
-          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
-              f[i]*f[v.index(m,next)] == 0.0)
-            i_fprintf(out, "%lg\t%lg\tDH\n", v[next].z(), v[next].r() - 0.5/v.a);
-          next = v.iloc(m,i)+ivec(0,2);
-          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
-              f[i]*f[v.index(m,next)] == 0.0)
-            i_fprintf(out, "%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
-          break;
-        }
-      case D2:
-        {
-          ivec next = v.iloc(m,i)+ivec2d(2,0);
-          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
-              f[i]*f[v.index(m,next)] == 0.0)
-            i_fprintf(out, "%lg\t%lg\tDH\n", v[next].x() - 0.5/v.a, v[next].y());
-          next = v.iloc(m,i)+ivec2d(0,2);
-          if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
-              f[i]*f[v.index(m,next)] == 0.0)
-            i_fprintf(out, "%lg\t%lg\tDV\n", v[next].x(), v[next].y() - 0.5/v.a);
-          break;
-        }
-      }
-}
+// static void eps_dotted(file *out, component m, const double *f, const volume &v,
+//                        const geometric_volume &what) {
+//   if (!f) return; // Field doesn't exist...
+//   for (int i=0;i<v.ntot();i++)
+//     if (what.contains(v.loc(m,i)))
+//       switch (v.dim) {
+//       case Dcyl:
+//         {
+//           ivec next = v.iloc(m,i)+ivec(2,0);
+//           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+//               f[i]*f[v.index(m,next)] == 0.0)
+//             i_fprintf(out, "%lg\t%lg\tDH\n", v[next].z(), v[next].r() - 0.5/v.a);
+//           next = v.iloc(m,i)+ivec(0,2);
+//           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+//               f[i]*f[v.index(m,next)] == 0.0)
+//             i_fprintf(out, "%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
+//           break;
+//         }
+//       case D2:
+//         {
+//           ivec next = v.iloc(m,i)+ivec2d(2,0);
+//           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+//               f[i]*f[v.index(m,next)] == 0.0)
+//             i_fprintf(out, "%lg\t%lg\tDH\n", v[next].x() - 0.5/v.a, v[next].y());
+//           next = v.iloc(m,i)+ivec2d(0,2);
+//           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
+//               f[i]*f[v.index(m,next)] == 0.0)
+//             i_fprintf(out, "%lg\t%lg\tDV\n", v[next].x(), v[next].y() - 0.5/v.a);
+//           break;
+//         }
+//       case D1: case D3: break;
+//       }
+// }
 
 void fields::outline_chunks(file *out) {
   if (v.dim == D1) return;
@@ -259,6 +260,7 @@ void fields::outline_chunks(file *out) {
       ylo = chunks[i]->v.boundary_location(Low,Y);
       xhi = chunks[i]->v.boundary_location(High,X);
       yhi = chunks[i]->v.boundary_location(High,Y);
+    case D1: abort("Error in outline chunks 1D.\n"); break;
     }
     i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xlo, yhi, xhi, yhi);
     i_fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xhi, yhi, xhi, ylo);
@@ -314,6 +316,7 @@ static void eps_outline(component m, const double *f,
           i_fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), 0.0);
         break;
       }
+      case D3: abort("Error in eps_outline.\n"); break;
       }
   }
 }
@@ -357,6 +360,7 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
           case Dcyl: x = there.z(); y = there.r(); break;
           case D1: x = there.z(); break;
           case D2: x = there.x(); y = there.y(); break;
+          case D3: abort("Don't support 3D o_e_b\n"); break;
           }
           ivec ilocs[8];
           double w[8];
@@ -460,7 +464,6 @@ void fields::output_real_imaginary_slices(const geometric_volume &what,
   if (*name) snprintf(nname, buflen, "%s-", name);
   else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
-  int i;
   if (!n) abort("Allocation failure!\n");
   char *r_or_i = "-re";
   DOCMP {
@@ -496,7 +499,6 @@ void fields::output_slices(const geometric_volume &what, const char *name) {
   if (*name) snprintf(nname, buflen, "%s-", name);
   else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
-  int i;
   if (!n) abort("Allocation failure!\n");
   char time_step_string[buflen];
   if (a == 1)
@@ -641,7 +643,6 @@ void fields::eps_slices(const vec &origin, const vec &xside, const vec &yside,
   if (*name) snprintf(nname, buflen, "%s-", name);
   else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
-  int i;
   if (!n) abort("Allocation failure!\n");
   char time_step_string[buflen];
   snprintf(time_step_string, buflen, "%09.2f", time());
@@ -727,7 +728,6 @@ void fields::eps_slices(const geometric_volume &what, const char *name) {
   if (*name) snprintf(nname, buflen, "%s-", name);
   else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
-  int i;
   if (!n) abort("Allocation failure!\n");
   char time_step_string[buflen];
   snprintf(time_step_string, buflen, "%09.2f", time());

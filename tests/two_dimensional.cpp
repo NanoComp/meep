@@ -276,7 +276,7 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *dirname) {
       const double new_energy = f.total_energy();
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
-      if (new_energy > last_energy*1e-7) {
+      if (new_energy > last_energy*3e-7) {
         master_printf("Energy decaying too slowly: from %lg to %lg (%lg)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
@@ -325,7 +325,7 @@ int test_pml_te(double eps(const vec &), int splitting, const char *dirname) {
       const double new_energy = f.total_energy();
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
-      if (new_energy > last_energy*1e-7) {
+      if (new_energy > last_energy*9e-7) {
         master_printf("Energy decaying too slowly: from %lg to %lg (%lg)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;

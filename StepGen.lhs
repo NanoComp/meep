@@ -1,9 +1,10 @@
 \begin{code}
 module StepGen ( Code, Expression, gencode,
-                 doexp, docode, doline,
+                 doexp, docode, doline, doblock,
                  if_, ifelse_, (|?|), (|:|),
                  whether_or_not, declare, for_loop,
-                 (|+|), (|-|), (|*|), (|+=|), (|=|), (<<),
+                 for_true_false,
+                 (|+|), (|-|), (|*|), (|+=|), (|-=|), (|=|), (<<),
                ) where
 
 import FiniteMap
@@ -26,6 +27,17 @@ gencode (CC code) = unlines $ snd $ code emptyFM
 \end{code}
 
 \begin{code}
+for_true_false :: CODE a => String -> a -> Code
+for_true_false s x = do check <- istrueCC s
+                        if check == Nothing
+                           then do docode [doline "{",
+                                           indent $ withCC s True $ docode x,
+                                           doline "}",
+                                           doline "{",
+                                           indent $ withCC s False $ docode x,
+                                           doline "}"]
+                           else docode x
+
 for_loop :: CODE a => String -> String -> a -> Code
 for_loop i num inside =
     ifelse_ (num++"==1") (
@@ -106,12 +118,17 @@ x |+=| y = do xe <- expression x
               ye <- expression y
               if ye == "0" then return ""
                  else return $ xe++" += "++ye
+(|-=|) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
+infixr 3 |-=|
+x |-=| y = do xe <- expression x
+              ye <- expression y
+              if ye == "0" then return ""
+                 else return $ xe++" -= "++ye
 (|=|) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
 infixr 3 |=|
 x |=| y = do xe <- expression x
              ye <- expression y
-             if ye == "0" then return ""
-                else return $ xe++" = "++ye
+             return $ xe++" = "++ye
 (|*|) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
 infixr 6 |*|
 (|*|) x y = do xe <- expression x
@@ -168,6 +185,14 @@ instance CODE Code where
 instance CODE a => CODE [a] where
     docode co = do c <- sequence $ map docode co
                    return $ concat c
+doblock :: (EXPRESSION a, CODE b) => a -> b -> Code
+doblock thefor job = docode [doline $ add_brace $ expression thefor,
+                             indent job,
+                             doline "}"]
+    where add_brace :: Expression -> Expression
+          add_brace = liftM (++" {")
+indent :: CODE a => a -> Code
+indent c = liftM (map ("  "++)) $ docode c
 \end{code}
 
 \begin{code}
@@ -176,6 +201,9 @@ istrueCC s = CC $ \st -> (st, lookupFM st s)
 
 setCC :: String -> Bool -> CC ()
 setCC s b = CC $ \st -> (addToFM (delFromFM st s) s b, ())
+
+withCC :: String -> Bool -> CC a -> CC a
+withCC s b (CC x) = CC $ \st -> (st, snd $ x $ addToFM (delFromFM st s) s b)
 
 ifelseorCC :: String -> CC a -> CC a -> CC a -> CC a
 ifelseorCC s thendo elsedo eitherdo = do istrue <- istrueCC s

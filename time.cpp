@@ -50,8 +50,9 @@ const char *ts2n(time_sink s) {
   case Boundaries: return "copying borders";
   case MpiTime: return "communicating";
   case Slicing: return "outputting slices";
+  case Other: break;
   }
-  return "everythings else";
+  return "everything else";
 }
 
 static inline void pt(double ts[], time_sink s) {

@@ -121,27 +121,27 @@ int main(int argc, char **argv) {
   master_printf("Testing with some known results...\n");
   const double a = 10.0;
 
-  compare(0.294573, metallic_ez(voltwo(1.0, 1.0, a), one),
+  compare(0.520605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
-  compare(0.816553, using_pml_ez(voltwo(3.0, 3.0, a), one),
+  compare(0.0874797, using_pml_ez(voltwo(3.0, 3.0, a), one),
           "1x1 PML 2D TM");
-  compare(-0.0443493, x_periodic(voltwo(1.0, 1.0, a), one),
+  compare(0.0110425, x_periodic(voltwo(1.0, 1.0, a), one),
           "1x1 X periodic 2D TM");
-  compare(0.139809, periodic_ez(voltwo(1.0, 3.0, a), rods),
+  compare(-0.478767, periodic_ez(voltwo(1.0, 3.0, a), rods),
           "1x1 fully periodic 2D TM rods");
-  compare(0.333574, periodic_ez(voltwo(1.0, 3.0, a), one),
+  compare(0.112502, periodic_ez(voltwo(1.0, 3.0, a), one),
           "1x1 fully periodic 2D TM");
-  compare(1.25203, x_periodic_y_pml(voltwo(1.0, 2.0, a), one),
+  compare(0.0191973, x_periodic_y_pml(voltwo(1.0, 2.0, a), one),
           "1x1 X periodic Y PML 2D TM");
-  compare(-26.3698, metallic_ez(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-41.8057, metallic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 metallic 3D");
-  compare(-222.593, x_periodic(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-100.758, x_periodic(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 X periodic 3D");
-  compare(-210.372, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
+  compare(-101.191, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
           "1x1x1 X periodic Y PML 3D");
-  compare(-178.414, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
+  compare(-95.3455, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
           "1x1x1 fully periodic 3D rods");
-  compare(-223.131, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
+  compare(-99.1618, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 fully periodic 3D");
 
   return 0;

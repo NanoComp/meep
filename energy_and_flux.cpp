@@ -91,10 +91,9 @@ double fields::thermo_energy_in_box(const geometric_volume &otherv) {
   return sum_to_all(energy);
 }
 
-double fields_chunk::backup_h() {
-  DOCMP {
-    for (int c=0;c<10;c++)
-      if (f[c][cmp] && is_magnetic((component)c)) {
+void fields_chunk::backup_h() {
+  DOCMP FOR_MAGNETIC_COMPONENTS(c)
+      if (f[c][cmp]) {
         if (f_backup[c][cmp] == NULL)
           f_backup[c][cmp] = new double[v.ntot()];
         if (f_backup_m_pml[c][cmp] == NULL)
@@ -102,42 +101,34 @@ double fields_chunk::backup_h() {
         if (f_backup_p_pml[c][cmp] == NULL)
           f_backup_p_pml[c][cmp] = new double[v.ntot()];
       }
-  }
-  DOCMP {
-    for (int c=0;c<10;c++)
-      if (f[c][cmp] && is_magnetic((component)c)) {
+  DOCMP FOR_MAGNETIC_COMPONENTS(c)
+      if (f[c][cmp]) {
         for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = f[c][cmp][i];
         for (int i=0;i<v.ntot();i++) f_backup_p_pml[c][cmp][i] = f_p_pml[c][cmp][i];
         for (int i=0;i<v.ntot();i++) f_backup_m_pml[c][cmp][i] = f_m_pml[c][cmp][i];
       }
-  }
 }
 
-double fields_chunk::restore_h() {
-  DOCMP {
-    for (int c=0;c<10;c++)
-      if (f[c][cmp] && is_magnetic((component)c)) {
+void fields_chunk::restore_h() {
+  DOCMP FOR_MAGNETIC_COMPONENTS(c)
+      if (f[c][cmp]) {
         for (int i=0;i<v.ntot();i++) f[c][cmp][i] = f_backup[c][cmp][i];
         for (int i=0;i<v.ntot();i++) f_p_pml[c][cmp][i] = f_backup_p_pml[c][cmp][i];
         for (int i=0;i<v.ntot();i++) f_m_pml[c][cmp][i] = f_backup_m_pml[c][cmp][i];
       }
-  }
 }
 
 double fields_chunk::electric_energy_in_box(const geometric_volume &otherv,
                                             const symmetry &S) {
   double energy = 0;
   DOCMP
-    FOR_ELECTRIC_COMPONENTS(c)
+    FOR_E_AND_D(c,dc)
       if (f[c][cmp])
         for (int i=0;i<v.ntot();i++) {
           const ivec p0 = v.iloc(c,i);
           for (int sn=0;sn<S.multiplicity();sn++)
-            // FIXME I need to rewrite this to deal with anisotropic
-            // dielectric stuff.
             energy += (otherv & S.transform(gv & v.dV(p0),sn)).full_volume()*
-              f[c][cmp][i]*
-              (1./ma->inveps[c][component_direction(c)][i]*f[c][cmp][i]);
+              f[c][cmp][i]*f[dc][cmp][i];
         }
   return energy*(1.0/(8*pi));
 }
