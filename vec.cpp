@@ -35,7 +35,7 @@ static inline double int_to_lattice(int n, double a, double inva=0.0) {
 
 static inline int lattice_to_int(double x, double a, double inva=0.0) {
   if (inva == 0.0) inva = 1.0/a;
-  return (int)(x*(2.0*a) + 0.5)/2;
+  return (int)floor(x*(2.0*a) + 0.5)/2;
 }
 
 static inline double yee_to_lattice(int n, double a, double inva=0.0) {
@@ -44,7 +44,7 @@ static inline double yee_to_lattice(int n, double a, double inva=0.0) {
 }
 
 static inline int lattice_to_yee(double x, double a, double inva=0.0) {
-  return (int)(x*(2.0*a) + 0.5);
+  return (int)floor(x*(2.0*a) + 0.5);
 }
 
 inline ivec volume::round_vec(const vec &p) const {
@@ -60,7 +60,7 @@ ivec volume::io() const {
 
 static inline double rtl(double x, double a, double inva=0.0) {
   // Rounds to a value somewhere on the yee lattice.
-  return ((int)(x*(2.0*a) + 0.5))*(0.5*inva);
+  return ((int)floor(x*(2.0*a) + 0.5))*(0.5*inva);
 }
 
 static inline vec round_to_lattice(const vec &p, double a, double inva=0.0) {
@@ -401,6 +401,7 @@ void volume::interpolate_fancy(component c, const vec &pc,
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
+    //middle.set_direction(d, ((int) floor(p.in_direction(d)))*2+1);
     middle.set_direction(d, ((int) p.in_direction(d))*2+1);
   middle += iyee_shift(c);
   const vec midv = operator[](middle);
@@ -622,7 +623,7 @@ vec volume::loc_at_resolution(int index, double res) const {
     const direction d = (direction) dd;
     if (has_boundary(High,d)) {
       const double dist = boundary_location(High,d)-boundary_location(Low,d);
-      const int nhere = max(1,(int)(dist*res+0.5));
+      const int nhere = max(1,(int)floor(dist*res+0.5));
       where.set_direction(d,origin.in_direction(d) +
                           ((index % nhere)+0.5)*(1.0/res));
       index /= nhere;
