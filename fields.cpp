@@ -48,6 +48,7 @@ fields::fields(const mat *ma, int tm) {
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
   }
+  for (int b=0;b<2;b++) for (int d=0;d<5;d++) boundaries[b][d] = None;
   connect_chunks();
 }
 void fields::use_bloch(double kz) { // FIXME for more D

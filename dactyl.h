@@ -238,6 +238,8 @@ class fields_chunk {
   partial_flux_plane *nfp_1d(const vec &);
 };
 
+enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
+
 class fields {
  public:
   int num_chunks;
@@ -254,6 +256,7 @@ class fields {
   int m, t, phasein_time, is_real;
   double k, cosknz, sinknz;
   complex<double> eiknz;
+  boundary_condition boundaries[2][5];
   bandsdata *bands;
   const char *outdir;
   // fields.cpp methods:
@@ -262,6 +265,11 @@ class fields {
   void use_bloch(double kz);
   void use_real_fields();
   vec lattice_vector() const;
+  // boundaries.cpp
+  void set_boundary(boundary_side,direction,
+                    boundary_condition, bool autoconnect=true,
+                    complex<double> kcomponent=0.0);
+  void use_metal_everywhere();
   // slices.cpp methods:
   void output_slices(const char *name = "") const;
   void output_slices(const volume &what, const char *name = "") const;

@@ -131,6 +131,14 @@ class volume {
   int ny() const { return num[1]; }
   int nx() const { return num[0]; }
   int nr() const { return num[0]; }
+  int num_direction(direction d) const {
+    switch (d) {
+    case X: return nx();
+    case Y: return ny();
+    case Z: return nz();
+    case R: return nr();
+    }
+  };
 
   int has_field(component) const;
   int has_boundary(boundary_side,direction) const;

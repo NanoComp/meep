@@ -21,6 +21,21 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
+void fields::set_boundary(boundary_side b,direction d,
+                          boundary_condition cond, bool autoconnect,
+                          complex<double> kcomponent) {
+  boundaries[b][d] = cond;
+  if (autoconnect) connect_chunks();
+}
+
+void fields::use_metal_everywhere() {
+  for (int b=0;b<2;b++)
+    for (int d=0;d<5;d++)
+      if (v.has_boundary((boundary_side)b, (direction)d))
+        set_boundary((boundary_side)b,(direction)d,Metallic, false);
+  connect_chunks();
+}
+
 void fields::disconnect_chunks() {
   for (int i=0;i<num_chunks;i++) {
     DOCMP {
@@ -55,11 +70,27 @@ static double zero = 0.0;
 
 inline int fields::is_metal(const vec &here, const volume &vi) {
   if (!v.owns(here)) return 0;
-  return
-    // Check if it is on the big r border...
-    (v.dim == dcyl && here.r() > v.origin.r() + (v.nr()-0.2)*inva) ||
-    // Check if it is on the big z border...
-    (k == -1 && (v.dim != d2) && here.z() > v.origin.z() + (v.nz()-0.2)*inva);
+  for (int bb=0;bb<2;bb++) for (int dd=0;dd<5;dd++)
+    if (v.has_boundary((boundary_side)bb, (direction)dd) &&
+        (boundaries[bb][dd]==Metallic || boundaries[bb][dd]==Magnetic)) {
+      const direction d = (direction) dd;
+      const boundary_side b = (boundary_side) bb;
+      switch (d) {
+      case X:
+      case Y:
+      case Z:
+        return (b == High && boundaries[b][d] == Metallic &&
+                here.in_direction(d) > v.origin.in_direction(d) +
+                (v.num_direction(d)-0.2)*inva) ||
+          (b == Low && boundaries[b][d] == Magnetic &&
+           here.in_direction(d) < v.origin.in_direction(d) + 0.2*inva);
+      case R:
+        return b == High && boundaries[b][d] == Magnetic &&
+          here.in_direction(d) > v.origin.in_direction(d) +
+          (v.num_direction(d)-0.2)*inva;
+      }
+    }
+  return 0;
 }
 
 void fields::connect_the_chunks() {

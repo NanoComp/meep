@@ -78,9 +78,11 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
 
   master_printf("Trying splitting into %d chunks...\n", splitting);
   fields f(&ma);
+  f.use_metal_everywhere();
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
   fields f1(&ma1);
+  f1.use_metal_everywhere();
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec2d(0.3,0.5), 1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec2d(1.299,0.401), 1.0);
   double total_energy_check_time = 8.0;

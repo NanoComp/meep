@@ -67,18 +67,16 @@ void mat::make_average_eps() {
 
 void mat::use_pml(direction d, boundary_side b, double dx) {
   for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->use_pml(d, dx, v.boundary_location(b,d));
+    chunks[i]->use_pml(d, dx, v.boundary_location(b,d));
 }
 
 void mat::use_pml_everywhere(double dx) {
   for (int b=0;b<2;b++) for (int d=0;d<5;d++)
     if (v.has_boundary((boundary_side)b, (direction)d))
       for (int i=0;i<num_chunks;i++)
-        if (chunks[i]->is_mine())
-          chunks[i]->use_pml((direction)d, dx,
-                             v.boundary_location((boundary_side)b,
-                                                 (direction)d));
+        chunks[i]->use_pml((direction)d, dx,
+                           v.boundary_location((boundary_side)b,
+                                               (direction)d));
 }
 
 void mat::mix_with(const mat *oth, double f) {
@@ -188,20 +186,21 @@ const double Cmax = 0.5;
 
 void mat_chunk::use_pml(direction d, double dx, double bloc) {
   const double prefac = Cmax/(dx*dx);
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && component_direction((component)c) != d) {
-      if (!C[d][c]) {
-        C[d][c] = new double[v.ntot()];
-        for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
+  if (is_mine())
+    for (int c=0;c<10;c++)
+      if (v.has_field((component)c) && component_direction((component)c) != d) {
+        if (!C[d][c]) {
+          C[d][c] = new double[v.ntot()];
+          for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
+        }
+        const double loborder = bloc - dx;
+        const double hiborder = bloc + dx;
+        for (int i=0;i<v.ntot();i++) {
+          const double x = dx -
+            fabs(bloc - v.loc((component)c,i).in_direction(d));
+          if (x > 0) C[d][c][i] = prefac*x*x;
+        }
       }
-      const double loborder = bloc - dx;
-      const double hiborder = bloc + dx;
-      for (int i=0;i<v.ntot();i++) {
-        const double x = dx -
-          fabs(bloc - v.loc((component)c,i).in_direction(d));
-        if (x > 0) C[d][c][i] = prefac*x*x;
-      }
-    }
 }
 
 mat_chunk::mat_chunk(const mat_chunk *o) {
