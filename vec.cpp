@@ -281,10 +281,10 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
       weights[0] = -2*dz*(0.5-dr) + (1+2*dz)*0.25;
       weights[2] = -2*dz*(0.5+dr) + (1+2*dz)*0.25;
     } else { // South
-      weights[2] = (1-2*dr)*0.25;
-      weights[3] = (1-2*dr)*0.25;
-      weights[0] = 2*dr*(0.5-dz) + (1-2*dr)*0.25;
-      weights[1] = 2*dr*(0.5+dz) + (1-2*dr)*0.25;
+      weights[2] = (1+2*dr)*0.25;
+      weights[3] = (1+2*dr)*0.25;
+      weights[0] = -2*dr*(0.5-dz) + (1+2*dr)*0.25;
+      weights[1] = -2*dr*(0.5+dz) + (1+2*dr)*0.25;
     }
   }
   // These are the four nearest neighbor points:
@@ -304,6 +304,7 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
       weights[3] = 0;
     }
     break;
+  case Hp: case Hr: case Ez:
     if (izlo < 0 || izlo >= nz()) {
       weights[0] = 0;
       weights[2] = 0;
