@@ -2,13 +2,13 @@ noinst_PROGRAMS = example
 
 TEX = complicated.tex energy_cons.tex energy_cons_1d.tex epsilon_polariton_1d.tex gpl.tex lossgain_epsilon.tex meep.tex omniguide.tex polaritonbands.tex simple.tex simplebands.tex
 
-EPS = polaritonbands-out/bands.eps epsilon_polariton_1d-out/eps.eps omniguide-out/bands.eps lossgain_epsilon-out/eps.eps energy_cons_1d-out/energy.eps energy_cons-out/energy.eps energy_cons-out/energy.eps simple-out/ez-000200.00.eps
+EPS = polaritonbands-out/bands.eps epsilon_polariton_1d-out/eps.eps omniguide-out/bands.eps lossgain_epsilon-out/eps.eps energy_cons_1d-out/energy.eps energy_cons-out/energy.eps energy_cons-out/energy.eps simple-out/ez-000200-00.eps Yee_bulk.eps
 
 PDF = $(EPS:.eps=.pdf)
 
 FREQS = complicated-out/freqs
 
-EXTRA_DIST = html meep.ps $(TEX) preproc.pl
+EXTRA_DIST = html meep.pdf $(TEX) Yee_bulk.eps preproc.pl
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
@@ -35,7 +35,6 @@ html: $(TEX) $(EPS) $(FREQS)
 	mkdir $@
 	@LATEX2HTML@ -split +1 -local_icons -dir $@ meep
 
-# FIXME: use \includegraphics for figures
 meep.pdf: $(TEX) $(PDF) $(FREQS)
 	pdflatex meep
 
@@ -47,8 +46,9 @@ meep.dvi: $(TEX) $(EPS) $(FREQS)
 
 ###########################################################################
 
-simple-out/ez-000200.00.eps: simple.dac
-	rm -rf simple-out/ && $(RUNCODE) ./simple.dac
+simple-out/ez-000200-00.eps: simple.dac
+	rm -rf simple-out && $(RUNCODE) ./simple.dac
+	mv simple-out/ez-000200.00.eps $@
 
 complicated-out/freqs: complicated.dac
 	rm -rf complicated-out/ && $(RUNCODE) ./complicated.dac
