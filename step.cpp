@@ -22,6 +22,8 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
+#define RESTRICT __restrict__
+
 void fields::step_old() {
   am_now_working_on(Stepping);
   phase_material();
@@ -266,16 +268,16 @@ void fields_chunk::step_h() {
         const int stride_m = (have_m)?v.stride(d_deriv_m):0;
         // The following lines "promise" the compiler that the values of
         // these arrays won't change during this loop.
-        const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
-        const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
-        const double *decay_m = (!have_m_pml)?NULL:
+        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
+        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
+        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
           ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
-        const double *decay_p = (!have_p_pml)?NULL:
+        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
           ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
-        const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
-        const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
-        double *the_f = f[cc][cmp] + yee_idx;
-        double *the_f_pml = f_pml[cc][cmp] + yee_idx;
+        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
+        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
+        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_pml = f_pml[cc][cmp] + yee_idx;
 #include "step_h.h"
       }
   } else if (v.dim == Dcyl) {
@@ -658,17 +660,17 @@ void fields_chunk::step_e() {
         const int stride_m = (have_m)?v.stride(d_deriv_m):0;
         // The following lines "promise" the compiler that the values of
         // these arrays won't change during this loop.
-        const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
-        const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
-        const double *decay_m = (!have_m_pml)?NULL:
+        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
+        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
+        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
           ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
-        const double *decay_p = (!have_p_pml)?NULL:
+        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
           ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
-        const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
-        const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
-        const double *inveps = ma->inveps[cc][component_direction(cc)] + yee_idx;
-        double *the_f = f[cc][cmp] + yee_idx;
-        double *the_f_pml = f_pml[cc][cmp] + yee_idx;
+        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
+        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
+        RESTRICT const double *inveps = ma->inveps[cc][component_direction(cc)] + yee_idx;
+        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_pml = f_pml[cc][cmp] + yee_idx;
 #include "step_e.h"
       }
   } else if (v.dim == Dcyl) {
