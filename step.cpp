@@ -443,7 +443,7 @@ void fields_chunk::step_e() {
           }
       // Deal with annoying r==0 boundary conditions...
       if (m == 0 && v.origin.r() == 0.0) {
-        for (int z=1;z<=v.nz();z++)
+        for (int z=0;z<=v.nz();z++)
           f[Ez][cmp][z] += c*ma->inveps[Ez][z]*(f[Hp][cmp][z] + it(cmp,f[Hr],z)*m);
       } else if (m == 1 && v.origin.r() == 0.0) {
         if (ma->Cmain[Ep])
