@@ -198,7 +198,7 @@ int volume::index(component c, const vec &p) const {
 
 static inline void stupidsort(int *ind, double *w, int l) {
   while (l) {
-    if (fabs(w[0]) < 1e-15) {
+    if (fabs(w[0]) < 2e-15) {
       w[0] = w[l-1];
       ind[0] = ind[l-1];
       w[l-1] = 0.0;
