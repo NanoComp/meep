@@ -719,11 +719,11 @@ class fields {
 
   // h5fields.cpp:
   void output_hdf5(h5file *file, component c,
-		   const geometric_volume &where, double res,
+		   const geometric_volume &where,
 		   bool append_data = false,
 		   bool single_precision = true);
   void output_hdf5(component c,
-		   const geometric_volume &where, double res,
+		   const geometric_volume &where,
 		   bool single_precision = true,
 		   const char *prefix = NULL);
   h5file *open_h5file(const char *name, 
@@ -732,7 +732,7 @@ class fields {
   // low-level function
   void output_hdf5(h5file *file, const char *dataname,
 		   component c, int reim,
-		   const geometric_volume &where, double res,
+		   const geometric_volume &where,
 		   bool append_data = false,
 		   bool single_precision = true);
 

@@ -22,251 +22,219 @@
 
 namespace meep {
 
-static double get_reim(complex<double> x, int reim)
+static inline int min(int a, int b) { return (a<b)?a:b; }
+static inline int max(int a, int b) { return (a>b)?a:b; }
+static inline int abs(int a) { return a < 0 ? -a : a; }
+
+typedef struct {
+  h5file *file;
+  ivec min_corner, max_corner;
+  int num_chunks;
+  component c;
+  int reim;
+  double *buf;
+  int bufsz;
+  int rank;
+  direction ds[3];
+} h5_output_data;
+
+static void update_datasize(h5_output_data *data, fields_chunk *fc,
+			    const ivec is, const ivec ie,
+			    const ivec shift, const symmetry &S, int sn)
 {
-  return reim ? imag(x) : real(x);
+    ivec isS = S.transform(is, sn) + shift;
+    ivec ieS = S.transform(ie, sn) + shift;
+    data->min_corner = min(data->min_corner, min(isS, ieS));
+    data->max_corner = max(data->max_corner, max(isS, ieS));
+    data->num_chunks++;
+    int bufsz = 1;
+    LOOP_OVER_DIRECTIONS(fc->v.dim, d)
+      bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+    data->bufsz = max(data->bufsz, bufsz);
+}
+
+static void h5_findsize_integrand(fields_chunk *fc, component cgrid,
+				  ivec is, ivec ie,
+				  vec s0, vec s1, vec e0, vec e1,
+				  double dV0, double dV1,
+				  ivec shift, complex<double> shift_phase,
+				  const symmetry &S, int sn,
+				  void *data_)
+{
+  h5_output_data *data = (h5_output_data *) data_;
+  component cS = S.transform(data->c, -sn);
+  double *f = cS == Dielectric ? fc->s->eps : fc->f[cS][data->reim];
+  if (f) update_datasize(data, fc, is, ie, shift, S, sn);
+}
+
+static void get_output_dimensions(int start[3], int count[3],
+				  int offset[3], int stride[3],
+				  h5_output_data *data, fields_chunk *fc,
+				  const ivec &is, const ivec &ie,
+				  const ivec &shift, const symmetry &S, int sn)
+{
+    ivec isS = S.transform(is, sn) + shift;
+    ivec ieS = S.transform(ie, sn) + shift;
+
+    for (int i = 0; i < 3; ++i) {
+      start[i] = offset[i] = 0;
+      count[i] = stride[i] = 1;
+    }
+
+    // figure out what yucky_directions (in LOOP_OVER_IVECS)
+    // correspond to what directions in the transformed vectors (in output).
+    ivec permute(zero_ivec(fc->v.dim));
+    for (int i = 0; i < 3; ++i) 
+      permute.set_direction(fc->v.yucky_direction(i), i);
+    permute = S.transform_unshifted(permute, sn);
+    LOOP_OVER_DIRECTIONS(permute.dim, d)
+      permute.set_direction(d, abs(permute.in_direction(d)));
+
+    // compute the size of the chunk to output, and its strides etc.
+    for (int i = 0; i < data->rank; ++i) {
+      direction d = data->ds[i];
+      int isd = isS.in_direction(d), ied = ieS.in_direction(d);
+      start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
+      count[i] = abs(ied - isd) / 2 + 1;
+      int j = permute.in_direction(d);
+      if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
+    }
+    for (int i = 0; i < data->rank; ++i) {
+      direction d = data->ds[i];
+      int j = permute.in_direction(d);
+      for (int k = i + 1; k < data->rank; ++k) stride[j] *= count[k];
+      offset[j] *= stride[j];
+      if (offset[j]) stride[j] *= -1;
+    }
+}
+
+static void h5_output_integrand(fields_chunk *fc, component cgrid,
+				ivec is, ivec ie,
+				vec s0, vec s1, vec e0, vec e1,
+				double dV0, double dV1,
+				ivec shift, complex<double> shift_phase,
+				const symmetry &S, int sn,
+				void *data_)
+{
+  h5_output_data *data = (h5_output_data *) data_;
+  component cS = S.transform(data->c, -sn);
+  double *f = cS == Dielectric ? fc->s->eps : fc->f[cS][data->reim];
+  if (f) {
+    int start[3], count[3], offset[3], stride[3];
+    get_output_dimensions(start, count, offset, stride,
+			  data, fc, is, ie, shift, S, sn);
+
+    // cgrid is Dielectric grid, so we need to average onto it:
+    int o1, o2;
+    fc->v.yee2diel_offsets(cS, o1, o2);
+
+    shift_phase *= S.phase_shift(cS, sn); // vector component may flip
+    
+    // Copy data to buffer, taking shift_phase into account:
+    if (cS == Dielectric) { // no phase
+      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+	int idx2 = ((((offset[0] + offset[1] + offset[2])
+		      + loop_i1 * stride[0]) 
+		     + loop_i2 * stride[1]) + loop_i3 * stride[2]);
+	data->buf[idx2] = f[idx];
+      }
+    }
+    else if (imag(shift_phase) == 0.0) { // real phase (possibly real field)
+      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+	int idx2 = ((((offset[0] + offset[1] + offset[2])
+		      + loop_i1 * stride[0]) 
+		     + loop_i2 * stride[1]) + loop_i3 * stride[2]);
+	data->buf[idx2] = (f[idx] + f[idx+o1] + f[idx+o2] + f[idx+o1+o2])
+	  * (0.25 * real(shift_phase));
+      }
+    }
+    else { // complex phase: do complex multiplication with complex field
+      double *fr = fc->f[cS][0], *fi = fc->f[cS][1];
+      if (!fi) abort("complex Bloch boundary condition with real field!");
+      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+	int idx2 = ((((offset[0] + offset[1] + offset[2])
+		      + loop_i1 * stride[0])
+		     + loop_i2 * stride[1]) + loop_i3 * stride[2]);
+	double re = 0.25 * (fr[idx] + fr[idx+o1] + fr[idx+o2] + fr[idx+o1+o2]);
+	double im = 0.25 * (fi[idx] + fi[idx+o1] + fi[idx+o2] + fi[idx+o1+o2]);
+	data->buf[idx2] = data->reim 
+	  ? re * imag(shift_phase) + im * real(shift_phase)
+	  : re * real(shift_phase) - im * imag(shift_phase);
+      }
+    }
+    data->file->write_chunk(data->rank, start, count, data->buf);
+  }
 }
 
 void fields::output_hdf5(h5file *file, const char *dataname,
 			 component c, int reim,
-			 const geometric_volume &where, double res,
+			 const geometric_volume &where,
 			 bool append_data,
                          bool single_precision) {
-  geometric_volume vout(where); // FIXME: intersect with computational cell?
-  vec loc0(vout.dim);
+  h5_output_data data;
 
-  // First, get total dimensions of output HDF5 file:
-  int rank = 0, dims[5], start0[5];
-  direction ds[5];
-  LOOP_OVER_DIRECTIONS(vout.dim, d) {
-    int minpt = int(ceil(vout.in_direction_min(d) * res));
-    int maxpt = int(floor(vout.in_direction_max(d) * res));
-    if (minpt < maxpt) {
-      ds[rank] = d;
-      start0[rank] = minpt;
-      dims[rank++] = maxpt - minpt + 1;
-    }
-    else
-      loc0.set_direction(d, 0.5 * (vout.in_direction_min(d) + 
-				   vout.in_direction_max(d)));
-  }
+  data.file = file;
+  data.min_corner = v.round_vec(where.get_max_corner()) + one_ivec(v.dim);
+  data.max_corner = v.round_vec(where.get_min_corner()) - one_ivec(v.dim);
+  data.num_chunks = 0;
+  data.bufsz = 0;
+  data.c = c; data.reim = reim;
 
-  // Next, determine number of parallel chunks to write, and required storage
-  int parallel_chunks = 0;
-  int nalloc = 1;
-  for (int sn = 0; sn < S.multiplicity(); ++sn) {
-    component cs = S.transform(c, -sn);
-    for (int i = 0; i < num_chunks; ++i) {
-      geometric_volume gvS = S.transform(chunks[i]->get_field_gv(cs), sn);
-      if (!chunks[i]->is_mine() || !chunks[i]->have_component(cs, reim == 1))
-	continue;
+  integrate(h5_findsize_integrand, (void *) &data, 
+	    where, Dielectric, true, true);
 
-      // figure out range of lattice shifts for which gvS intersects vout:
-      ivec min_ishift(gvS.dim), max_ishift(gvS.dim);
-      LOOP_OVER_DIRECTIONS(gvS.dim, d) {
-	if (boundaries[High][d] == Periodic) {
-	  min_ishift.set_direction(d, int(floor((vout.in_direction_min(d) 
-						 - gvS.in_direction_max(d))
-                                       / lattice_vector(d).in_direction(d))));
-	  max_ishift.set_direction(d, int(ceil((vout.in_direction_max(d) 
-						- gvS.in_direction_min(d))
-                                       / lattice_vector(d).in_direction(d))));
-	}
-	else {
-	  min_ishift.set_direction(d, 0);
-	  max_ishift.set_direction(d, 0);
-	}
-      }
+  data.max_corner = max_to_all(data.max_corner);
+  data.min_corner = -max_to_all(-data.min_corner); // i.e., min_to_all
+  data.num_chunks = sum_to_all(data.num_chunks);
+  if (data.num_chunks == 0 || !(data.min_corner <= data.max_corner))
+    return; // no data to write;
 
-      ivec ishift(min_ishift);
-      do {
-	vec shift(gvS.dim);
-	LOOP_OVER_DIRECTIONS(gvS.dim, d)
-	  shift.set_direction(d,
-                lattice_vector(d).in_direction(d) * ishift.in_direction(d));
-	geometric_volume gvSs(gvS + shift);
-	if (gvSs && vout) {
-	  geometric_volume cgv = gvSs & vout;
-	  int nvol = 1;
-	  for (int j = 0; j < rank; ++j) {
-	    int minpt = int(ceil(cgv.in_direction_min(ds[j]) * res));
-	    int maxpt = int(floor(cgv.in_direction_max(ds[j]) * res));
-	    if (minpt > maxpt) nvol = 0;
-	    else nvol *= maxpt - minpt + 1;
-	  }
-	  if (nvol > nalloc) nalloc = nvol;
-	  if (nvol > 0)
-	    ++parallel_chunks;
-	}
-	LOOP_OVER_DIRECTIONS(gvS.dim, d) {
-	  if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
-	    ishift.set_direction(d, ishift.in_direction(d) + 1);
-	    break;
-	  }
-	  ishift.set_direction(d, min_ishift.in_direction(d));
-	}
-      } while (ishift != min_ishift);
+  int rank = 0, dims[3];
+  LOOP_OVER_DIRECTIONS(v.dim, d) {
+    if (rank >= 3) abort("too many dimensions in output_hdf5");
+    int n = (data.max_corner.in_direction(d)
+	     - data.min_corner.in_direction(d)) / 2 + 1;
+    if (n > 1) {
+      data.ds[rank] = d;
+      dims[rank++] = n;
     }
   }
-  parallel_chunks = max_to_all(parallel_chunks);
-  if (parallel_chunks == 0) return; // no data to write
+  data.rank = rank;
 
   file->create_or_extend_data(dataname, rank, dims,
-			      append_data, single_precision);
+                              append_data, single_precision);
 
-  double *data = new double[nalloc];
+  data.buf = new double[data.bufsz];
 
-  double resinv = 1.0 / res;
-  int start[5], count[5] = {1,1,1,1,1};
+  integrate(h5_output_integrand, (void *) &data, 
+	    where, Dielectric, true, true);
 
-  // Finally, fetch the data from each chunk and write it to the file:
-  for (int sn = 0; sn < S.multiplicity(); ++sn) {
-    component cs = S.transform(c, -sn);
-    complex<double> phS = S.phase_shift(cs, sn);
-    for (int i = 0; i < num_chunks; ++i) {
-      geometric_volume gvS = S.transform(chunks[i]->get_field_gv(cs), sn);
-      if (!chunks[i]->is_mine() || !chunks[i]->have_component(cs, reim == 1))
-	continue;
-
-      // figure out range of lattice shifts for which gvS intersects vout:
-      ivec min_ishift(gvS.dim), max_ishift(gvS.dim);
-      LOOP_OVER_DIRECTIONS(gvS.dim, d) {
-	if (boundaries[High][d] == Periodic) {
-	  min_ishift.set_direction(d, int(floor((vout.in_direction_min(d) 
-						 - gvS.in_direction_max(d))
-                                       / lattice_vector(d).in_direction(d))));
-	  max_ishift.set_direction(d, int(ceil((vout.in_direction_max(d) 
-						- gvS.in_direction_min(d))
-                                       / lattice_vector(d).in_direction(d))));
-	}
-	else {
-	  min_ishift.set_direction(d, 0);
-	  max_ishift.set_direction(d, 0);
-	}
-      }
-
-      ivec ishift(min_ishift);
-      do {
-	complex<double> ph = phS;
-	vec shift(gvS.dim);
-	LOOP_OVER_DIRECTIONS(gvS.dim, d) {
-	  shift.set_direction(d,
-                lattice_vector(d).in_direction(d) * ishift.in_direction(d));
-	  ph *= pow(eikna[d], ishift.in_direction(d));
-	}
-	if (c == Dielectric) ph = 1.0;
-	geometric_volume gvSs(gvS + shift);
-	if (gvSs && vout) {
-	  geometric_volume cgv = gvSs & vout;
-	
-	  int j;
-	  for (j = 0; j < rank; ++j) {
-	    start[j] = int(ceil(cgv.in_direction_min(ds[j]) * res));
-	    count[j] = 
-	      int(floor(cgv.in_direction_max(ds[j]) * res)) - start[j]+1;
-	    loc0.set_direction(ds[j], start[j] * resinv);
-	    start[j] -= start0[j];
-	    if (count[j] <= 0)
-	      break;
-	  }
-	  if (j < rank)
-	    goto next_shift;
-
-	  loc0 -= shift;
-	  
-	  switch (rank) {
-	  case 0:
-	    data[0] =
-	      get_reim(chunks[i]->get_field(cs, S.transform(loc0,-sn))*ph,
-		       reim);
-	    break;
-	  case 1: {
-	    vec loc = loc0;
-	    for (int i0 = 0; i0 < count[0]; ++i0) {
-	      loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
-	      data[i0] =
-		get_reim(chunks[i]->get_field(cs, S.transform(loc,-sn))*ph,
-			 reim);
-	    }
-	    break;
-	  }
-	  case 2: {
-	    vec loc = loc0;
-	    for (int i0 = 0; i0 < count[0]; ++i0) {
-	      loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
-	      for (int i1 = 0; i1 < count[1]; ++i1) {
-		loc.set_direction(ds[1], loc0.in_direction(ds[1])
-				  + i1 * resinv);
-		data[i0 * count[1] + i1] =
-		  get_reim(chunks[i]->get_field(cs, S.transform(loc,-sn))*ph,
-			   reim);
-	      }
-	    }
-	    break;
-	  }
-	  case 3: {
-	    vec loc = loc0;
-	    for (int i0 = 0; i0 < count[0]; ++i0) {
-	      loc.set_direction(ds[0], loc0.in_direction(ds[0]) + i0 * resinv);
-	      for (int i1 = 0; i1 < count[1]; ++i1) {
-		loc.set_direction(ds[1], loc0.in_direction(ds[1])
-				  + i1 * resinv);
-		for (int i2 = 0; i2 < count[2]; ++i2) {
-		  loc.set_direction(ds[2], loc0.in_direction(ds[2])
-				    + i2 * resinv);
-		  data[(i0 * count[1] + i1) * count[2] + i2] =
-		    get_reim(chunks[i]->get_field(cs, S.transform(loc,-sn))*ph,
-			     reim);
-		}
-	      }
-	    }
-	    break;
-	  }
-	  default:
-	    abort("unexpected dimensionality > 3 of HDF5 output data");
-	  }
-	  
-	  file->write_chunk(rank, start, count, data);
-	}
-      next_shift:
-	LOOP_OVER_DIRECTIONS(gvS.dim, d) {
-	  if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
-	    ishift.set_direction(d, ishift.in_direction(d) + 1);
-	    break;
-	  }
-	  ishift.set_direction(d, min_ishift.in_direction(d));
-	}
-      } while (ishift != min_ishift);
-    }
-  }
-
-  delete[] data;
-
+  delete[] data.buf;
   file->done_writing_chunks();
 }
 
 void fields::output_hdf5(h5file *file, component c,
-			 const geometric_volume &where, double res,
+			 const geometric_volume &where,
 			 bool append_data,
                          bool single_precision) {
   char dataname[256];
   bool has_imag = !is_real && c != Dielectric;
 
   snprintf(dataname, 256, "%s%s", component_name(c), has_imag ? ".r" : "");
-  output_hdf5(file, dataname, c, 0, where,res, append_data, single_precision);
+  output_hdf5(file, dataname, c, 0, where, append_data, single_precision);
   if (has_imag) {
     snprintf(dataname, 256, "%s.i", component_name(c));
-    output_hdf5(file, dataname, c, 1, where,res, append_data,single_precision);
+    output_hdf5(file, dataname, c, 1, where, append_data,single_precision);
   }
 }
 
 void fields::output_hdf5(component c,
-			 const geometric_volume &where, double res,
+			 const geometric_volume &where,
 			 bool single_precision, 
 			 const char *prefix) {
   h5file *file = open_h5file(component_name(c), h5file::WRITE,
 			     prefix, true);
-  output_hdf5(file, c, where, res, false, single_precision);
+  output_hdf5(file, c, where, false, single_precision);
   delete file;
 }
 

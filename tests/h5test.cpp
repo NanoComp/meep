@@ -76,7 +76,6 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      double kx, double ky,
 	      component src_c, component file_c,
 	      geometric_volume file_gv,
-	      double file_res,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const volume v = vol2d(xsize, ysize, a);
@@ -95,7 +94,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     f.step();
 
   h5file *file = f.open_h5file(name);
-  f.output_hdf5(file, file_c, file_gv, file_res, false, false);
+  f.output_hdf5(file, file_c, file_gv, false, false);
 
   file->write("stringtest", "Hello, world!\n");
 
@@ -109,14 +108,16 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
        abort("Failed to read back string test from %s...", name);
 
   // compute corner coordinate of file data
-  double resinv = 1.0 / file_res;
   vec loc0(file_gv.get_min_corner());
-  LOOP_OVER_DIRECTIONS(loc0.dim, d) {
-     int minpt = int(ceil(file_gv.in_direction_min(d) * file_res));
-     int maxpt = int(floor(file_gv.in_direction_max(d) * file_res));
-     if (minpt < maxpt)
-	  loc0.set_direction(d, minpt * resinv);
+  ivec iloc0(v.dim);
+  LOOP_OVER_DIRECTIONS(v.dim, d) {
+    iloc0.set_direction(d, 1+2*int(floor(loc0.in_direction(d)*a-.5)));
+    if (file_gv.in_direction(d) == 0.0 &&
+	1. - file_gv.in_direction_min(d)*a + 0.5*iloc0.in_direction(d)
+	<= 1. + file_gv.in_direction_max(d)*a - 0.5*(iloc0.in_direction(d)+2))
+      iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
+  loc0 = v[iloc0];
 
   double data_min = infinity, data_max = -infinity;
   double err_max = 0;
@@ -141,8 +142,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     vec loc(loc0.dim);
     for (int i0 = 0; i0 < dims[0]; ++i0) {
       for (int i1 = 0; i1 < dims[1]; ++i1) {
-	loc.set_direction(X, loc0.in_direction(X) + i0 * resinv);
-	loc.set_direction(Y, loc0.in_direction(Y) + i1 * resinv);
+	loc.set_direction(X, loc0.in_direction(X) + i0 * v.inva);
+	loc.set_direction(Y, loc0.in_direction(Y) + i1 * v.inva);
 	int idx = i0 * dims[1] + i1;
 
 	/* Ugh, for rotational symmetries (which mix up components etc.),
@@ -206,8 +207,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     f.step();
 
   h5file *file = f.open_h5file(name);
-  double res = 0.54321 * a;
-  f.output_hdf5(file, file_c, file_gv, res, false, false);
+  f.output_hdf5(file, file_c, file_gv, false, false);
 
   file->write("stringtest", "Hello, world!\n");
 
@@ -221,14 +221,16 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
        abort("Failed to read back string test from %s...", name);
 
   // compute corner coordinate of file data
-  double resinv = 1.0 / res;
   vec loc0(file_gv.get_min_corner());
-  LOOP_OVER_DIRECTIONS(loc0.dim, d) {
-     int minpt = int(ceil(file_gv.in_direction_min(d) * res));
-     int maxpt = int(floor(file_gv.in_direction_max(d) * res));
-     if (minpt < maxpt)
-	  loc0.set_direction(d, minpt * resinv);
+  ivec iloc0(v.dim);
+  LOOP_OVER_DIRECTIONS(v.dim, d) {
+    iloc0.set_direction(d, 1+2*int(floor(loc0.in_direction(d)*a-.5)));
+    if (file_gv.in_direction(d) == 0.0 &&
+	1. - file_gv.in_direction_min(d)*a + 0.5*iloc0.in_direction(d)
+	<= 1. + file_gv.in_direction_max(d)*a - 0.5*(iloc0.in_direction(d)+2))
+      iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
+  loc0 = v[iloc0];
 
   double data_min = infinity, data_max = -infinity;
   double err_max = 0;
@@ -249,9 +251,9 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     for (int i0 = 0; i0 < dims[0]; ++i0) {
       for (int i1 = 0; i1 < dims[1]; ++i1) {
 	for (int i2 = 0; i2 < dims[2]; ++i2) {
-	  loc.set_direction(X, loc0.in_direction(X) + i0 * resinv);
-	  loc.set_direction(Y, loc0.in_direction(Y) + i1 * resinv);
-	  loc.set_direction(Z, loc0.in_direction(Z) + i2 * resinv);
+	  loc.set_direction(X, loc0.in_direction(X) + i0 * v.inva);
+	  loc.set_direction(Y, loc0.in_direction(Y) + i1 * v.inva);
+	  loc.set_direction(Z, loc0.in_direction(Z) + i2 * v.inva);
 	  int idx = (i0 * dims[1] + i1) * dims[2] + i2;
 	  
 	  /* Ugh, for rotational symmetries (which mix up components etc.),
@@ -315,12 +317,22 @@ bool check_2d_monitor(double eps(const vec &),
 
   h5file *file = f.open_h5file(name);
 
+  // compute pt snapped onto dielectric grid
+  ivec iloc0(v.dim);
+  LOOP_OVER_DIRECTIONS(v.dim, d) {
+    iloc0.set_direction(d, 1+2*int(floor(pt.in_direction(d)*a-.5)));
+    if (1. - pt.in_direction(d)*a + 0.5*iloc0.in_direction(d)
+	<= 1. + pt.in_direction(d)*a - 0.5*(iloc0.in_direction(d)+2))
+      iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
+  }
+  vec pt0(v[iloc0]);
+
   const double T = 3.0;
   int NT = int(T / f.dt) + 2;
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
-    f.output_hdf5(file, file_c, geometric_volume(pt, pt), a, true, false);
-    mon[f.t] = f.get_field(file_c, pt);
+    f.output_hdf5(file, file_c, geometric_volume(pt, pt), true, false);
+    mon[f.t] = f.get_field(file_c, pt0);
     f.step();
   }
 
@@ -383,7 +395,6 @@ int main(int argc, char **argv)
   };
   char gv_2d_name[4][20] = {"plane", "plane-supercell", "line", "point"};
   int gv_2d_rank[4] = {2,2,1,0};
-  double gv_2d_res[4] = {1.54321, 0.54321, 1.54321, 1.54321};
   component tm_c[5] = {Dielectric, Ez, Dz, Hx, Hy};
   symfunc Sf2[5] = {make_identity, make_mirrorx, make_mirrory, make_mirrorxy,
 		   make_rotate4z};
@@ -404,7 +415,7 @@ int main(int argc, char **argv)
 	    master_printf("Checking %s...\n", name);
 	    if (!check_2d(funky_eps_2d, a, splitting,
 			  Sf2[iS], Sf2_kx[iS], Sf2_ky[iS],
-			  Ez, tm_c[ic], gv_2d[igv], gv_2d_res[igv] * a, 
+			  Ez, tm_c[ic], gv_2d[igv],
 			  use_real, gv_2d_rank[igv], name))
 	      return 1;
 	  }
