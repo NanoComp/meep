@@ -58,11 +58,11 @@ symmetry make_rotate4z(const volume &v)
 typedef symmetry (*symfunc)(const volume &);
 
 const double tol = 1e-8;
-double compare(double a, double b, const char *nam) {
+double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
   if (fabs(a-b) > fabs(b)*tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a-b));
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
-    abort("Error in %s\n", nam);
+    abort("Error in %s at (%d,%d,%d)\n", nam, i0,i1,i2);
   }
   return fabs(a-b);
 }
@@ -83,6 +83,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
+
+  if (file_c == Dielectric) real_fields = true;
 
   while (f.time() <= 3.0 && !interrupt)
     f.step();
@@ -157,7 +159,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
 	double err = compare(h5data[idx],
 			     get_reim(f.get_field(cs, loc) * ph, reim),
-			     name);
+			     name, i0,i1,0);
 	err_max = max(err, err_max);
 	data_min = min(data_min, h5data[idx]);
 	data_max = max(data_max, h5data[idx]);
@@ -186,6 +188,8 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
+
+  if (file_c == Dielectric) real_fields = true;
 
   while (f.time() <= 3.0 && !interrupt)
     f.step();
@@ -257,7 +261,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	  
 	  double err = compare(h5data[idx],
 			       get_reim(f.get_field(cs, loc)*ph,reim),
-			       name);
+			       name, i0,i1,i2);
 	  err_max = max(err, err_max);
 	  data_min = min(data_min, h5data[idx]);
 	  data_max = max(data_max, h5data[idx]);
@@ -288,6 +292,8 @@ bool check_2d_monitor(double eps(const vec &),
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
+
+  if (file_c == Dielectric) real_fields = true;
 
   char fname[1024];
   snprintf(fname, 1024, "%s.h5", name);
@@ -324,7 +330,7 @@ bool check_2d_monitor(double eps(const vec &),
       abort("incorrect size of monitor-point data");
 
     for (int i = 0; i < f.t; ++i) {
-      double err = compare(h5data[i], get_reim(mon[i], reim), name);
+      double err = compare(h5data[i], get_reim(mon[i], reim), name, i,0,0);
       err_max = max(err, err_max);
       data_min = min(data_min, h5data[i]);
       data_max = max(data_max, h5data[i]);
@@ -357,7 +363,7 @@ int main(int argc, char **argv)
   };
   char gv_2d_name[3][10] = {"plane", "line", "point"};
   int gv_2d_rank[3] = {2,1,0};
-  component tm_c[4] = {Ez, Dz, Hx, Hy};
+  component tm_c[5] = {Ez, Dz, Hx, Hy, Dielectric};
   symfunc Sf2[5] = {make_identity, make_mirrorx, make_mirrory, make_mirrorxy,
 		   make_rotate4z};
   char Sf2_name[5][32] = {"identity", "mirrorx", "mirrory", "mirrorxy",
@@ -366,7 +372,7 @@ int main(int argc, char **argv)
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
       for (int igv = 0; igv < 3; ++igv)
-	for (int ic = 0; ic < 4; ++ic)
+	for (int ic = 0; ic < 5; ++ic)
 	  for (int use_real = 0; use_real <= 1; ++use_real) {
 	    char name[1024];
 	    snprintf(name, 1024, "check_2d_tm_%s_%d_%s_%s%s",
@@ -400,25 +406,25 @@ int main(int argc, char **argv)
   };
   char gv_3d_name[4][10] = {"volume", "plane", "line", "point"};
   int gv_3d_rank[4] = {3,2,1,0};
-  component c3d[6] = {Ex,Ey,Ez, Hx,Hy,Hz};
+  component c3d[7] = {Ex,Dielectric,Ey,Ez, Hx,Hy,Hz};
   symfunc Sf3[3] = {make_identity, make_mirrorxy, make_rotate4z};
   char Sf3_name[3][32] = {"identity", "mirrorxy", "rotate4z"};
 
   for (int iS = 0; iS < 3; ++iS)
     for (int splitting = 0; splitting < 5; splitting += 3)
       for (int igv = 0; igv < 4; ++igv) {
-	int ic = 0;
-	bool use_real = true;
-	char name[1024];
-	snprintf(name, 1024, "check_3d_ezsrc_%s_%d_%s_%s%s", Sf3_name[iS],
-		 splitting, gv_3d_name[igv], component_name(c3d[ic]),
-		 use_real ? "_r" : "");
-	master_printf("Checking %s...\n", name);
-	if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic],
-		      gv_3d[igv], use_real, gv_3d_rank[igv], name))
-	  return 1;
+	for (int ic = 0; ic < 1; ++ic) {
+	  bool use_real = true;
+	  char name[1024];
+	  snprintf(name, 1024, "check_3d_ezsrc_%s_%d_%s_%s%s", Sf3_name[iS],
+		   splitting, gv_3d_name[igv], component_name(c3d[ic]),
+		   use_real ? "_r" : "");
+	  master_printf("Checking %s...\n", name);
+	  if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic],
+			gv_3d[igv], use_real, gv_3d_rank[igv], name))
+	    return 1;
+	}
       }
 #endif /* HAVE_HDF5 */
   return 0;
 }
-

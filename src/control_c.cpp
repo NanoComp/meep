@@ -27,6 +27,7 @@ int interrupt = 0;
 static int kill_time = 2;
 
 static void handle_control_c(int i) {
+  (void) i; // unused: should equal SIGINT
   interrupt++;
   if (interrupt >= kill_time) {
     abort("interrupted");
@@ -38,7 +39,7 @@ static void handle_control_c(int i) {
 }
 
 void deal_with_ctrl_c(int stop_now) {
-  kill_time = 2;
+  kill_time = stop_now;
   signal(SIGINT, handle_control_c);
 }
 

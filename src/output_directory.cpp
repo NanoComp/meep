@@ -50,18 +50,6 @@ void fields_chunk::set_output_directory(const char *name) {
   outdir = name;
 }
 
-// static int is_same_file(const char *a, const char *b) {
-//   FILE *fa = fopen(a,"r");
-//   FILE *fb = fopen(b,"r");
-//   if (!fa || !fb) return 0;
-//   int ca;
-//   do {
-//     ca = getc(fa);
-//     if (ca != getc(fb)) return 0;
-//   } while (ca != EOF);
-//   return 1;
-// }
-
 static void cp(const char *a, const char *b) {
   FILE *fa = fopen(a,"r");
   FILE *fb = fopen(b,"w");
@@ -76,10 +64,7 @@ static void cp(const char *a, const char *b) {
   fclose(fb);
 }
 
-static bool is_ok_dir(const char *dirname, const char *sourcename,
-                      const char *basename) {
-//    const int buflen = 300;
-
+static bool is_ok_dir(const char *dirname) {
   DIR *dir;
   bool direxists;
   if (am_master()) {
@@ -89,15 +74,6 @@ static bool is_ok_dir(const char *dirname, const char *sourcename,
   }
   direxists = broadcast(0, direxists);
   return !direxists;
-
-//   char drsrcn[buflen];
-//   snprintf(drsrcn, buflen, "%s/%s", dirname, sourcename);
-//   if (is_same_file(drsrcn, sourcename)) return 1;
-  
-//   FILE *f;
-//   if ((f = fopen(drsrcn, "r")) == NULL) return 1;
-//   fclose(f);
-//   return true;
 }
 
 file *create_output_file(const char *dirname, const char *fname) {
@@ -122,11 +98,11 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   }
   
   snprintf(stripped_name, buflen, "%s", bnp);
-  for (int i = 0; i < (int) sizeof(evil_suffs) / sizeof(evil_suffs[0]); ++i) {
+  for (int i = 0; i < (int)(sizeof(evil_suffs) / sizeof(evil_suffs[0])); ++i) {
     int sufflen = strlen(evil_suffs[i]);
     if (strcmp(stripped_name + strlen(stripped_name) - sufflen, 
 	       evil_suffs[i]) == 0
-	&& strlen(stripped_name) > sufflen) {
+	&& strlen(stripped_name) > size_t(sufflen)) {
       stripped_name[strlen(stripped_name) - sufflen] = (char)0;
       break;
     }
@@ -144,12 +120,11 @@ const char *make_output_directory(const char *exename, const char *jobname) {
 
   char outdirname[buflen];
   snprintf(outdirname, buflen, "%s-out", basename);
-  if (!is_ok_dir(outdirname, sourcename, basename)) {
-    for (int i=1;i<1000;i++) {
-      master_printf("Source files %s  and %s/%s differ!\n",
-                    sourcename, outdirname, sourcename);  
-      snprintf(outdirname, buflen, "%s-out-%d", basename, i);
-      if (is_ok_dir(outdirname, sourcename, basename)) break;
+  {
+    int i = 0;
+    while (!is_ok_dir(outdirname)) {
+      master_printf("Output directory %s already exists!\n", outdirname);
+      snprintf(outdirname, buflen, "%s-out-%d", basename, i++);
     }
   }
   char outsrcname[buflen];

@@ -59,7 +59,8 @@ void fields::output_hdf5(const char *filename, const char *dataname,
     component cs = S.transform(c, -sn);
     for (int i = 0; i < num_chunks; ++i) {
       geometric_volume gvs = S.transform(chunks[i]->get_field_gv(cs), sn);
-      if (chunks[i]->is_mine() && chunks[i]->f[cs][reim] && (gvs && vout)) {
+      if (chunks[i]->is_mine() && chunks[i]->have_component(cs, reim == 1)
+	  && (gvs && vout)) {
 	geometric_volume cgv = gvs & vout;
 	int nvol = 1;
 	for (int j = 0; j < rank; ++j) {
@@ -89,7 +90,8 @@ void fields::output_hdf5(const char *filename, const char *dataname,
     complex<double> ph = S.phase_shift(cs, sn);
     for (int i = 0; i < num_chunks; ++i) {
       geometric_volume gvs = S.transform(chunks[i]->get_field_gv(cs), sn);
-      if (chunks[i]->is_mine() && chunks[i]->f[cs][reim] && (gvs && vout)) {
+      if (chunks[i]->is_mine() && chunks[i]->have_component(cs, reim == 1)
+	  && (gvs && vout)) {
 	geometric_volume cgv = gvs & vout;
 	
 	int j;
@@ -186,11 +188,12 @@ void fields::output_hdf5(const char *filename, component c,
 			 bool append_data, int dindex,
                          bool single_precision, bool append_file) {
   char dataname[256];
+  bool has_imag = !is_real && c != Dielectric;
 
-  snprintf(dataname, 256, "%s%s", component_name(c), is_real ? "" : ".r");
+  snprintf(dataname, 256, "%s%s", component_name(c), has_imag ? ".r" : "");
   output_hdf5(filename, dataname, c, 0, where, res,
 	      append_data, dindex, single_precision, append_file);
-  if (!is_real) {
+  if (has_imag) {
     snprintf(dataname, 256, "%s.i", component_name(c));
     output_hdf5(filename, dataname, c, 1, where, res,
 		append_data, dindex, single_precision, true);
@@ -204,7 +207,6 @@ void fields::output_hdf5(component c,
 			 const char *prefix) {
   const int buflen = 1024;
   char filename[buflen];
-  char dataname[256];
   char time_step_string[32] = "";
 
   if (!append_data) snprintf(time_step_string, 32, "-%09.2f", time());

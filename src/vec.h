@@ -32,7 +32,7 @@ enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
 enum ndim { D1=0, D2, D3, Dcyl };
 enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, P_stuff=3 };
 enum boundary_side { High=0, Low };
-enum direction { X=0,Y,Z,R,P };
+enum direction { X=0,Y,Z,R,P, NO_DIRECTION };
 struct signed_direction {
   signed_direction(direction dd=X,bool f=false, complex<double> ph=1.0) {
     d = dd; flipped = f; phase = ph;
@@ -128,7 +128,7 @@ inline direction component_direction(component c) {
   case Ez: case Hz: case Dz: return Z;
   case Er: case Hr: case Dr: return R;
   case Ep: case Hp: case Dp: return P;
-  case Dielectric: abort("Dielectric has no direction!\n");
+  case Dielectric: return NO_DIRECTION;
   }
   return X; // This code is never reached...
 }
@@ -137,6 +137,7 @@ inline component direction_component(component c, direction d) {
   if (is_electric(c)) start_point = Ex;
   else if (is_magnetic(c)) start_point = Hx;
   else if (is_D(c)) start_point = Dx;
+  else if (c == Dielectric && d == NO_DIRECTION) return Dielectric;
   else abort("unknown field component %d", c);
   switch (d) {
   case X: return start_point;
@@ -144,6 +145,7 @@ inline component direction_component(component c, direction d) {
   case Z: return (component) (start_point + 4);
   case R: return (component) (start_point + 2);
   case P: return (component) (start_point + 3);
+  case NO_DIRECTION: abort("vector %d component in NO_DIRECTION", c);
   }
   return Ex; // This is never reached.
 }

@@ -41,6 +41,7 @@ flux_plane *fields::add_flux_plane(const vec &p1, const vec &p2) {
 }
 
 partial_flux_plane *fields_chunk::new_flux_plane(const vec &p1, const vec &p2) {
+  (void) p2; // unused/unsupported
   switch (v.dim) {
   case D1: return nfp_1d(p1);
   case D2: case D3: case Dcyl: break;

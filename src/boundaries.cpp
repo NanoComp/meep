@@ -63,14 +63,14 @@ ivec fields::ilattice_vector(direction d) const {
     switch (d) {
     case X: return ivec2d(user_volume.nx()*2,0);
     case Y: return ivec2d(0,user_volume.ny()*2);
-    case Z: case R: case P: break;
+    case Z: case R: case P: case NO_DIRECTION: break;
     }
   case D3:
     switch (d) {
     case X: return ivec(user_volume.nx()*2,0,0);
     case Y: return ivec(0,user_volume.ny()*2,0);
     case Z: return ivec(0,0,user_volume.nz()*2);
-    case R: case P: break;
+    case R: case P: case NO_DIRECTION: break;
     }
   }
   abort("Aaack in ilattice_vector.\n");

@@ -100,7 +100,7 @@ void structure::optimize_chunks() {
   delete[] procs;
 }
 
-inline double zero_function(const vec &v) { return 0.0; }
+inline double zero_function(const vec &v) { (void) v; return 0.0; }
 
 static inline void copy_from(int from, int to,
                              double *f, double *t, int size=1) {

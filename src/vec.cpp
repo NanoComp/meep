@@ -26,24 +26,24 @@
 
 namespace meep {
 
-static inline int min(int a, int b) { return (a<b)?a:b; };
-static inline int max(int a, int b) { return (a>b)?a:b; };
-static inline double min(double a, double b) { return (a<b)?a:b; };
-static inline double max(double a, double b) { return (a>b)?a:b; };
+static inline int min(int a, int b) { return (a<b)?a:b; }
+static inline int max(int a, int b) { return (a>b)?a:b; }
+static inline double min(double a, double b) { return (a<b)?a:b; }
+static inline double max(double a, double b) { return (a>b)?a:b; }
 
 static inline double yee_to_lattice(int n, double a, double inva=0.0) {
   if (inva == 0.0) inva = 1.0/a;
   return n*(0.5*inva);
 }
 
-static inline int lattice_to_yee(double x, double a, double inva=0.0) {
+static inline int lattice_to_yee(double x, double a) {
   return (int)floor(x*(2.0*a) + 0.5);
 }
 
 inline ivec volume::round_vec(const vec &p) const {
   ivec result(dim);
   LOOP_OVER_DIRECTIONS(dim, d)
-    result.set_direction(d, lattice_to_yee(p.in_direction(d),a,inva));
+    result.set_direction(d, lattice_to_yee(p.in_direction(d),a));
   return result;
 }
 
@@ -80,6 +80,7 @@ const char *direction_name(direction d) {
   case Z: return "z";
   case R: return "r";
   case P: return "phi";
+  case NO_DIRECTION: return "no_direction";
   }
   return "Error in direction_name";
 }
@@ -101,7 +102,7 @@ const char *component_name(component c) {
   case Dz: return "dz";
   case Dr: return "dr";
   case Dp: return "dp";
-  case Dielectric: return "dielectric";
+  case Dielectric: return "epsilon";
   }
   return "Error in component_name";
 }
@@ -127,19 +128,19 @@ geometric_volume::geometric_volume(const vec &vec1, const vec &vec2) {
     set_direction_min(d, min(vec1.in_direction(d), vec2.in_direction(d)));
     set_direction_max(d, max(vec1.in_direction(d), vec2.in_direction(d)));
   }
-};
+}
 double geometric_volume::computational_volume() {
   double vol = 1.0; 
   LOOP_OVER_DIRECTIONS(dim,d) vol *= (in_direction_max(d) - in_direction_min(d));
   return vol;
-};
+}
 
 double geometric_volume::full_volume() const {
   double vol = 1.0; 
   LOOP_OVER_DIRECTIONS(dim, d) vol *= (in_direction_max(d) - in_direction_min(d));
   if (dim == Dcyl) vol *= pi * (in_direction_max(R) + in_direction_min(R));
   return vol;
-};
+}
 
 geometric_volume geometric_volume::intersect_with(const geometric_volume &a) const {
   if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
@@ -153,7 +154,7 @@ geometric_volume geometric_volume::intersect_with(const geometric_volume &a) con
     result.set_direction_max(d, maxval);
   }
   return result;
-};
+}
 
 bool geometric_volume::intersects(const geometric_volume &a) const {
   if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
@@ -164,7 +165,7 @@ bool geometric_volume::intersects(const geometric_volume &a) const {
       return false;
   }
   return true;
-};
+}
 
 int volume::yucky_num(int n) const {
   if (has_direction(dim, yucky_direction(n)))
@@ -311,6 +312,7 @@ void volume::set_strides() {
     case X: the_stride[d] = (nz()+1)*(ny() + 1); break;
     case Y: the_stride[d] = nz() + 1; break;
     case P: break; // There is no phi stride...
+    case NO_DIRECTION: break; // no stride here, either
     }
 }
 
@@ -524,6 +526,7 @@ double volume::boundary_location(boundary_side b, direction d) const {
   case Z: if (dim == Dcyl) return loc(Ep,ntot()-1).z();
           else return loc(Ex,ntot()-1).z();
   case P: abort("P has no boundary!\n");
+  case NO_DIRECTION: abort("NO_DIRECTION has no boundary!\n");
   }
   else switch (d) {
   case X: return loc(Ez,0).x();
@@ -532,6 +535,7 @@ double volume::boundary_location(boundary_side b, direction d) const {
   case Z: if (dim == Dcyl) return loc(Ep,0).z();
           else return loc(Ex,0).z();
   case P: abort("P has no boundary!\n");
+  case NO_DIRECTION: abort("NO_DIRECTION has no boundary!\n");
   }
   return 0.0;
 }
@@ -1021,6 +1025,7 @@ signed_direction signed_direction::operator*(complex<double> p) {
 
 signed_direction symmetry::transform(direction d, int n) const {
   // Returns transformed direction + phase/flip; -n indicates inverse transform
+  if (d == NO_DIRECTION) return signed_direction(d);
   const int nme = n < 0 ? (g - (-n) % g) % g : n % g;
   const int nrest = n < 0 ? -((-n) / g) : n / g;
   if (nme == 0) {

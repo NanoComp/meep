@@ -42,7 +42,7 @@ void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1,2);
 void all_wait();
 int count_processors();
 int my_rank();
-inline int am_master() { return my_rank() == 0; };
+inline int am_master() { return my_rank() == 0; }
 
 void send(int from, int to, double *data, int size=1);
 void broadcast(int from, double *data, int size);

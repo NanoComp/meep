@@ -22,7 +22,6 @@ namespace meep {
 
 void fields_chunk::update_e_from_d_sources(double *d_minus_p[5][2],
                                            bool have_d_minus_p) {
-  const int ntot = s->v.ntot();
 #include "update_e_from_d_sources.h"
 }
 

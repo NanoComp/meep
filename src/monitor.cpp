@@ -77,17 +77,22 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
 }
 
 complex<double> fields::get_field(component c, const vec &loc) const {
-  ivec ilocs[8];
-  double w[8];
-  complex<double> val[8];
-  for (int i=0;i<8;i++) val[i] = 0.0;
-  v.interpolate(c, loc, ilocs, w);
-  for (int argh=0;argh<8&&w[argh];argh++)
-    val[argh] = w[argh]*get_field(c,ilocs[argh]);
-  dumbsort(val);
-  complex<double> res = 0.0;
-  for (int i=0;i<8;i++) res += val[i];
-  return res;
+  switch (c) {
+  case Dielectric:
+    return get_eps(loc);
+  default:
+    ivec ilocs[8];
+    double w[8];
+    complex<double> val[8];
+    for (int i=0;i<8;i++) val[i] = 0.0;
+    v.interpolate(c, loc, ilocs, w);
+    for (int argh=0;argh<8&&w[argh];argh++)
+      val[argh] = w[argh]*get_field(c,ilocs[argh]);
+    dumbsort(val);
+    complex<double> res = 0.0;
+    for (int i=0;i<8;i++) res += val[i];
+    return res;
+  }
 }
 
 complex<double> fields::get_field(component c, const ivec &origloc) const {
@@ -113,7 +118,12 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
    largest box in which you can interpolate the fields without communication.
    It is *not* necessarily non-overlapping with other chunks. */
 geometric_volume fields_chunk::get_field_gv(component c) const {
-  return geometric_volume(v.loc(c, 0), v.loc(c, v.ntot() - 1));
+  switch (c) {
+  case Dielectric:
+    c = v.eps_component();
+  default:
+    return geometric_volume(v.loc(c, 0), v.loc(c, v.ntot() - 1));
+  }
 }
 
 /* Non-collective, zero-communication get_field... loc *must*
@@ -121,15 +131,30 @@ geometric_volume fields_chunk::get_field_gv(component c) const {
 complex<double> fields_chunk::get_field(component c, const vec &loc) const {
   ivec ilocs[8];
   double w[8];
-  v.interpolate(c, loc, ilocs, w);
-  complex<double> res = 0.0;
-  for (int i = 0; i < 8 && w[i] != 0.0; ++i) {
-    if (!v.contains(ilocs[i]))
-      abort("invalid loc in chunk get_field, weight = %g", w[i]);
-    if (f[c][0] && f[c][1]) res += getcm(f[c], v.index(c, ilocs[i])) * w[i];
-    else if (f[c][0]) res += f[c][0][v.index(c,ilocs[i])] * w[i];
+  switch (c) {
+  case Dielectric: {
+    c = v.eps_component();
+    v.interpolate(c, loc, ilocs, w);
+    double res = 0.0;
+    for (int i = 0; i < 8 && w[i] != 0.0; ++i) {
+      if (!v.contains(ilocs[i]))
+	abort("invalid loc in chunk get_field, weight = %g", w[i]);
+      res += s->eps[v.index(c,ilocs[i])] * w[i];
+    }
+    return res;
   }
-  return res;
+  default: {
+    v.interpolate(c, loc, ilocs, w);
+    complex<double> res = 0.0;
+    for (int i = 0; i < 8 && w[i] != 0.0; ++i) {
+      if (!v.contains(ilocs[i]))
+	abort("invalid loc in chunk get_field, weight = %g", w[i]);
+      if (f[c][0] && f[c][1]) res += getcm(f[c], v.index(c, ilocs[i])) * w[i];
+      else if (f[c][0]) res += f[c][0][v.index(c,ilocs[i])] * w[i];
+    }
+    return res;
+  }
+  }
 }
 
 complex<double> fields_chunk::get_polarization_field(const polarizability_identifier &p,
@@ -257,44 +282,46 @@ double fields_chunk::get_eps(const ivec &iloc) const {
 }
 
 double fields::get_eps(const vec &loc) const {
-  double theeps = 0.0;
+  ivec ilocs[8];
+  double w[8];
   double val[8];
   for (int i=0;i<8;i++) val[i] = 0.0;
-  for (int i=0;i<num_chunks;i++) {
-    if (chunks[i]->v.contains(loc))
-      chunks[i]->s->interpolate_eps(loc, val);
-      dumbsort(val);
-      for (int i=0;i<8;i++) theeps += val[i];
-    }
-  return theeps;
+  v.interpolate(v.eps_component(), loc, ilocs, w);
+  for (int argh=0;argh<8&&w[argh];argh++)
+    val[argh] = w[argh]*get_eps(ilocs[argh]);
+  dumbsort(val);
+  double res = 0.0;
+  for (int i=0;i<8;i++) res += val[i];
+  return res;
+}
+
+double structure::get_eps(const ivec &origloc) const {
+  ivec iloc = origloc;
+  for (int sn=0;sn<S.multiplicity();sn++)
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->v.contains(S.transform(iloc,sn)))
+        return chunks[i]->get_eps(S.transform(iloc,sn));
+  return 0.0;
+}
+
+double structure_chunk::get_eps(const ivec &iloc) const {
+  double res = 0.0;
+  if (is_mine()) res = eps[v.index(v.eps_component(), iloc)];
+  return broadcast(n_proc(), res);
 }
 
 double structure::get_eps(const vec &loc) const {
-  double theeps = 0.0;
+  ivec ilocs[8];
+  double w[8];
   double val[8];
   for (int i=0;i<8;i++) val[i] = 0.0;
-  for (int i=0;i<num_chunks;i++) {
-    if (chunks[i]->v.contains(loc))
-      chunks[i]->interpolate_eps(loc, val);
-      dumbsort(val);
-      for (int i=0;i<8;i++) theeps += val[i];
-    }
-  return theeps;
-}
-
-void structure_chunk::interpolate_eps(const vec &loc, double val[8]) const {
-  if (is_mine()) {
-    int ind[8];
-    double w[8];
-    v.interpolate(v.eps_component(),loc,ind,w);
-    int startingat = 0;
-    for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
-    for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
-      val[i+startingat] = w[i]*eps[ind[i]];
-      if (val[i+startingat] == 0.0) startingat--;
-    }
-  }
-  broadcast(n_proc(), val, 8);
+  v.interpolate(v.eps_component(), loc, ilocs, w);
+  for (int argh=0;argh<8&&w[argh];argh++)
+    val[argh] = w[argh]*get_eps(ilocs[argh]);
+  dumbsort(val);
+  double res = 0.0;
+  for (int i=0;i<8;i++) res += val[i];
+  return res;
 }
 
 monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) const {

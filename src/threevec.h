@@ -103,7 +103,7 @@ inline tensor diagonal(double v) {
   tensor o;
   FOR3(i) FOR3(j) o.row[i].val[j] = (i==j)?v:0;
   return o;
-};
+}
 
 inline tensor transpose(const tensor &t) {
   return t.transpose();

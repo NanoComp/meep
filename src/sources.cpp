@@ -201,7 +201,7 @@ void fields::add_point_source(component whichf, double freq,
   }
 }
 
-complex<double> one(const vec &v) {return 1.0;}
+complex<double> one(const vec &v) {(void) v; return 1.0;}
 void fields::add_point_source(component whichf, const src_time &src,
 			      const vec &p, complex<double> amp) {
   add_volume_source(whichf, src, p, p, one, amp);

@@ -80,10 +80,10 @@ class material_function {
 				     double delta_epsilon,
 				     double energy_saturation) {}
 
-  // Kerr coefficient
-
-  virtual bool has_kerr() { return false; }
-  virtual double kerr(const vec &r) { return 0.0; }
+     // Kerr coefficient
+     
+     virtual bool has_kerr() { return false; }
+     virtual double kerr(const vec &r) { return 0.0; }
 
      // TODO: dielectric tensor, ...
 };
@@ -134,7 +134,7 @@ class structure_chunk {
   int is_mine() const { return the_is_mine; }
 
   // monitor.cpp
-  void interpolate_eps(const vec &loc, double val[8]) const;
+  double get_eps(const ivec &iloc) const;
   double max_eps() const;
  private:
   double pml_fmin;
@@ -193,6 +193,7 @@ class structure {
                         double delta_epsilon = 1.0, double energy_saturation = 0.0);
 
   // monitor.cpp
+  double get_eps(const ivec &origloc) const;
   double get_eps(const vec &loc) const;
   double max_eps() const;
  private:
@@ -366,6 +367,15 @@ class fields_chunk {
   double peek_field(component, const vec &);
 
   void use_real_fields();
+  bool have_component(component c, bool is_complex) {
+    switch (c) {
+    case Dielectric:
+      return !is_complex;
+    default:
+      return (f[c][0] && f[c][is_complex]);
+    }
+  }
+
   double last_source_time();
   // monitor.cpp
   complex<double> get_field(component, const ivec &) const;
