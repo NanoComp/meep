@@ -82,9 +82,11 @@ int main(int argc, char **argv) {
   }
   ma.set_output_directory(outdirname);
   //ma.use_pml(8,8);
-  ma.output_slices("example");
+  ma.output_slices("");
   for (m=0;m<2 && !stopnow;m++) {
     for (k=0.0;k<0.31 && !stopnow;k+=0.1) {
+      char k_and_m[10];
+      snprintf(k_and_m, 10, "%g-%d", k, m);
       printf("Working on k of %g and m = %d with a=%d...\n", k, m, rad);
       fields f(&ma, m);
       f.use_bloch(k);
@@ -100,7 +102,7 @@ int main(int argc, char **argv) {
       for (int t=0; t < ttot+1 && !stopnow; t++) {
         if (t % (1000*rad) == 0 && t > 137*rad) {
           printf("Working on time step %d...  ", t);
-          f.output_slices("example");
+          f.output_slices(k_and_m);
           printf("energy is %lg\n", f.total_energy()/3.66e-6);
           //printf("flux is %lg\n", f.zflux(0,22,83));
         }
