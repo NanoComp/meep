@@ -273,9 +273,6 @@ int main(int argc, char **argv) {
   const char *dirname = "cylindrical-out";
   trash_output_directory(dirname);
   master_printf("Testing cylindrical coords under different splittings...\n");
-  
-  for (int s=2;s<6;s++)
-    if (!test_pml(one, s, dirname)) abort("error in test_pml\n");
 
   for (int s=2;s<8;s++)
     if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
@@ -295,6 +292,9 @@ int main(int argc, char **argv) {
     abort("error in crazy test_simple_metallic\n");
   if (!test_simple_metallic(one, 120, dirname))
     abort("error in crazy test_simple_metallic\n");
+  
+  for (int s=2;s<6;s++)
+    if (!test_pml(one, s, dirname)) abort("error in test_pml\n");
 
   exit(0);
 }

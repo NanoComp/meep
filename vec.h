@@ -28,9 +28,16 @@ enum field_type { E_stuff=0, H_stuff=1 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P };
 struct signed_direction {
-  signed_direction(direction dd=X,bool f=false) { d = dd; flipped = f; };
+  signed_direction(direction dd=X,bool f=false, complex<double> ph=1.0) {
+    d = dd; flipped = f; phase = ph;
+  };
+  signed_direction(const signed_direction &sd) {
+    d = sd.d; flipped = sd.flipped; phase = sd.phase;
+  }
+  signed_direction operator*(complex<double> ph);
   direction d;
   bool flipped;
+  complex<double> phase;
 };
 
 inline int number_of_directions(ndim dim) {
@@ -410,9 +417,11 @@ class symmetry {
   bool is_primitive(const ivec &) const;
 
   symmetry operator+(const symmetry &) const;
+  symmetry operator*(double) const;
   void operator=(const symmetry &);
  private:
   signed_direction S[5];
+  complex<double> ph;
   vec symmetry_point;
   double a, inva;
   int g; // g is the multiplicity of the symmetry.

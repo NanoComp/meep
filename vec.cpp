@@ -363,9 +363,13 @@ void volume::interpolate(component c, const vec &p,
     if (indices[0] < 0 || indices[0] >= ntot()) weights[i] = 0.0;
   // Stupid very crude code to compactify arrays:
   stupidsort(indices, weights, 8);
-  if (!contains(p) && weights[0])
+  if (!contains(p) && weights[0]) {
+    printf("Error at point %lg %lg\n", p.r(), p.z());
+    printf("Interpolated to point %d %d\n", locs[0].r(), locs[0].z());
+    print();
     abort("Error made in interpolation of %s--fix this bug!!!\n",
           component_name(c));
+  }
 }
 
 void volume::interpolate_cyl(component c, const vec &p,
@@ -546,7 +550,7 @@ ivec volume::big_corner() const {
 
 void volume::print() const {
   LOOP_OVER_DIRECTIONS(dim, d)
-    printf("%s=%5g-%5g (%5g) \t", 
+    printf("%s =%5g - %5g (%5g) \t", 
       direction_name(d), origin.in_direction(d), 
       origin.in_direction(d)+num_direction(d)/a, num_direction(d)/a); 
   printf("\n");
@@ -909,6 +913,7 @@ symmetry identity() {
 
 symmetry::symmetry() {
   g = 1;
+  ph = 1.0;
   for (int d=0;d<5;d++) {
     S[d].d = (direction)d;
     S[d].flipped = false;
@@ -924,6 +929,7 @@ symmetry::symmetry(const symmetry &s) {
     S[d].d = s.S[d].d;
     S[d].flipped = s.S[d].flipped;
   }
+  ph = s.ph;
   symmetry_point = s.symmetry_point;
   if (s.next) next = new symmetry(*s.next);
   else next = NULL;
@@ -937,6 +943,7 @@ void symmetry::operator=(const symmetry &s) {
     S[d].d = s.S[d].d;
     S[d].flipped = s.S[d].flipped;
   }
+  ph = s.ph;
   symmetry_point = s.symmetry_point;
   if (s.next) next = new symmetry(*s.next);
   else next = NULL;
@@ -959,6 +966,18 @@ symmetry symmetry::operator+(const symmetry &b) const {
   return s;
 }
 
+symmetry symmetry::operator*(double p) const {
+  symmetry s = *this;
+  s.ph *= p;
+  return s;
+}
+
+signed_direction signed_direction::operator*(complex<double> p) {
+  signed_direction sd = *this;
+  sd.phase *= p;
+  return sd;
+}
+
 signed_direction symmetry::transform(direction d, int n) const {
   // Returns direction or if opposite, 
   const int nme = n % g;
@@ -973,10 +992,10 @@ signed_direction symmetry::transform(direction d, int n) const {
     else sd = transform(S[d].d, nme-1);
 
     if (next && nrest) {
-      if (sd.flipped) return flip(next->transform(sd.d, nrest));
-      else return next->transform(sd.d, nrest);
+      if (sd.flipped) return flip(next->transform(sd.d, nrest))*ph;
+      else return next->transform(sd.d, nrest)*ph;
     } else {
-      return sd;
+      return sd*ph;
     }
   }
 }
@@ -1012,6 +1031,7 @@ component symmetry::transform(component c, int n) const {
 }
 
 complex<double> symmetry::phase_shift(component c, int n) const {
+  complex<double> phase = transform(component_direction(c),n).phase;
   if (is_magnetic(c)) {
     // Because H is a pseudovector, here we have to figure out if it is an
     // inversion... to do this we'll figure out what happens when we
@@ -1027,11 +1047,11 @@ complex<double> symmetry::phase_shift(component c, int n) const {
     if (((3+transform(d2,n).d - transform(d1,n).d)%3) == 2) flip = !flip;
     if (transform(d1,n).flipped) flip = !flip;
     if (transform(d2,n).flipped) flip = !flip;
-    if (flip) return -1.0;
-    else return 1.0;
+    if (flip) return -phase;
+    else return phase;
   } else {
-    if (transform(component_direction(c),n).flipped) return -1.0;
-    else return 1.0;
+    if (transform(component_direction(c),n).flipped) return -phase;
+    else return phase;
   }
 }
 
@@ -1047,10 +1067,12 @@ bool symmetry::is_primitive(const ivec &p) const {
           p.y() > p.x() && pp.y() <= pp.x()) return false;
       break;
     case D3:
-      if (pp.x()+pp.y()+pp.z() < p.x()+p.y()+p.z()) return false;
+      if (pp.x()+pp.y()+pp.z() <  p.x()+p.y()+p.z()) return false;
       if (pp.x()+pp.y()+pp.z() == p.x()+p.y()+p.z() &&
-          pp.y() > pp.x() && p.y() <= p.x()) return false;
-      abort("there is a known bug in 3d is_primitive!\n");// FIXME!
+          pp.x()+pp.y()-pp.z() <  p.x()+p.y()-p.z()) return false;
+      if (pp.x()+pp.y()+pp.z() == p.x()+p.y()+p.z() &&
+          pp.x()+pp.y()-pp.z() == p.x()+p.y()-p.z() &&
+          pp.x()-pp.y()-pp.z() <  p.x()-p.y()-p.z()) return false;
       break;
     case D1: case Dcyl:
       if (pp.z() < p.z()) return false;

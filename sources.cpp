@@ -126,9 +126,16 @@ int fields_chunk::add_point_source(component whichf, double freq,
   case D2: prefac = a; break; // FIXME: verify that this works right.
   case D1: prefac = 1; break;
   }
-  for (int i=0;i<8 && w[i];i++)
+  for (int i=0;i<8 && w[i];i++) {
+    //printf("Adding %s source at %.19lg %.19lg %.19lg with weight %.19lg (%lg)\n",
+    //       component_name(whichf),
+    //       v.loc(whichf,ind[i]).x(),
+    //       v.loc(whichf,ind[i]).y(),
+    //       v.loc(whichf,ind[i]).z(),
+    //       real(amp*w[i]*prefac), prefac);
     add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i],
-                       amp*prefac*w[i], is_c, tim);
+                       amp*w[i]*prefac, is_c, tim);
+  }
   return need_reconnection;
 }
 

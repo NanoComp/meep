@@ -46,8 +46,12 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %lg\n",
                abs(v1 - v2)/abs(v2));
-        master_printf("Right now I'm looking at %lg %lg, time %lg\n",
-                      p.x(), p.y(), f1.time());
+        if (p.dim == D2)
+          master_printf("Right now I'm looking at %lg %lg, time %lg\n",
+                        p.x(), p.y(), f1.time());
+        else if (p.dim == D3)
+          master_printf("Right now I'm looking at %lg %lg %lg, time %lg\n",
+                        p.x(), p.y(), p.z(), f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
         f1.eps_slices("multi");
@@ -88,6 +92,216 @@ int test_metal_xmirror(double eps(const vec &), const char *dirname) {
     if (!compare_point(f, f1, vec2d(0.5  , 0.501))) return 0;
     if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int test_3D_metal_xmirror(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = vol3d(1.0, 1.0, 1.0, a);
+  const symmetry S = mirror(X,v);
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  master_printf("Testing X mirror symmetry in 3D...\n");
+
+  fields f1(&ma1);
+  f1.use_metal_everywhere();
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.21 , 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.5))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int test_3D_metal_zmirror(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = vol3d(1.1, 0.6, 1.0, a);
+  const symmetry S = mirror(Z,v);
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  master_printf("Testing Z mirror symmetry in 3D...\n");
+
+  fields f1(&ma1);
+  f1.use_metal_everywhere();
+  f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.21 , 0.15))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int test_3D_metal_odd_zmirror(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = vol3d(1.1, 0.6, 1.0, a);
+  const symmetry S = mirror(Z,v)*(-1.0);
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  master_printf("Testing odd Z mirror symmetry in 3D...\n");
+
+  fields f1(&ma1);
+  f1.use_metal_everywhere();
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.21 , 0.15))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int test_3D_metal_rot4z(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = vol3d(1.0, 1.0, 1.0, a);
+  const symmetry S = rotate4(Z,v);
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  master_printf("Testing Z fourfold rotational symmetry in 3D...\n");
+
+  fields f1(&ma1);
+  f1.use_metal_everywhere();
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.21 , 0.15))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
+    if (f.time() >= total_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
+                   "electric energy")) return 0;
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
+                   "magnetic energy")) return 0;
+      if (!compare(f.total_energy(), f1.total_energy(),
+                   "   total energy")) return 0;
+      total_energy_check_time += 1.0;
+    }
+  }
+  return 1;
+}
+
+int test_3D_metal_rot4z_mirror(double eps(const vec &), const char *dirname) {
+  double a = 10.0;
+  double ttot = 3.0;
+
+  const volume v = vol3d(1.0, 1.0, 1.0, a);
+  const symmetry S = rotate4(Z,v) + mirror(Z,v);
+  mat ma(v, eps, 0, S);
+  mat ma1(v, eps, 0, identity());
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  master_printf("Testing Z fourfold rotational symmetry in 3D with horizontal mirror...\n");
+
+  fields f1(&ma1);
+  f1.use_metal_everywhere();
+  f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
+  fields f(&ma);
+  f.use_metal_everywhere();
+  f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
+  double total_energy_check_time = 1.0;
+  while (f.time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.21 , 0.15))) return 0;
+    if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
+    if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -379,6 +593,21 @@ int main(int argc, char **argv) {
   const char *dirname = "symmetry-out";
   trash_output_directory(dirname);
   master_printf("Testing with various kinds of symmetry...\n");
+
+  if (!test_3D_metal_xmirror(one, dirname))
+    abort("error in test_3D_metal_xmirror vacuum\n");
+
+  if (!test_3D_metal_zmirror(one, dirname))
+    abort("error in test_3D_metal_zmirror vacuum\n");
+
+  if (!test_3D_metal_odd_zmirror(one, dirname))
+    abort("error in test_3D_metal_zmirror vacuum\n");
+
+  if (!test_3D_metal_rot4z(one, dirname))
+    abort("error in test_3D_metal_rot4z vacuum\n");
+
+  if (!test_3D_metal_rot4z_mirror(one, dirname))
+    abort("error in test_3D_metal_rot4z_mirror vacuum\n");
 
   if (!pml_twomirrors(one, dirname))
     abort("error in pml_twomirrors vacuum\n");
