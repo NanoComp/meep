@@ -128,6 +128,7 @@ bool continuous_src_time::is_equal(const src_time &t) const
 
 src_vol::src_vol(component cc, src_time *st, int n, int *ind, complex<double> *amps) {
   c = cc;
+  if (is_D(c)) c = direction_component(Ex, component_direction(c));
   t = st; next = NULL;
   npts = n;
   index = ind;
@@ -244,6 +245,8 @@ static void src_vol_chunkloop(fields_chunk *fc, component c,
 
   complex<double> amp = data->amp * conj(shift_phase);
 
+  direction cd = component_direction(c);
+
   double inva = fc->v.inva;
   int idx_vol = 0;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
@@ -251,6 +254,12 @@ static void src_vol_chunkloop(fields_chunk *fc, component c,
     loc += shift * (0.5*inva) - data->center;
 
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
+
+    /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
+       right because it doesn't handle non-diagonal inveps! */
+    if (is_D(c) && fc->s->inveps[c][cd]) 
+      amps_array[idx_vol] /= fc->s->inveps[c][cd][idx];
+
     index_array[idx_vol++] = idx;
   }
 
