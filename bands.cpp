@@ -391,6 +391,24 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
       for (int t=0;t<ntime;t++)
         refdata[t+n*ntime] = simple_data[t];
     }
+  } else if (numref < 0) { // Don't try to match these new bands...
+    int tempmaxbands = maxbands;
+    if (tempmaxbands+numref > 0) {
+      maxbands = maxbands+numref;
+      int moreref = get_freqs(simple_data, ntime,
+                              refa+abs(numref), reff+abs(numref), refd+abs(numref));
+      maxbands = tempmaxbands;
+      numref = moreref - numref;
+      for (int n=numref-moreref;n<numref;n++) {
+        if (verbosity > 1)
+          printf("HERE's a mode (%10lg,%10lg) (%10lg,%10lg) -- %d\n",
+                 reff[n], refd[n], real(refa[n]),imag(refa[n]), n);
+        for (int t=0;t<ntime;t++)
+          refdata[t+n*ntime] = simple_data[t];
+      }
+    } else if (verbosity) {
+      printf("Yikes, running out of room in bandsdata!\n");
+    }
   } else {
     double *tf = new double[maxbands];
     double *heref = new double[maxbands];
@@ -541,7 +559,15 @@ complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
   double *reff = new double[maxbands], *refd = new double[maxbands];
   cmplx *refa = new complex<double>[maxbands];
   cmplx *refdata = new complex<double>[maxbands*ntime];
-  bands->look_for_more_bands(bands->P, reff, refd, refa, refdata, numref);
+  if ((k==0.0 || m==0) && nz==1) { // We have pure TE and TM modes!
+    for (int t=0;t<ntime;t++)
+      simple_data[t] = BAND(bands->ez,nr/2,t);
+    numref = bands->look_for_more_bands(simple_data, reff, refd, refa, refdata, numref);
+    for (int t=0;t<ntime;t++)
+      simple_data[t] = BAND(bands->hz,nr/2,t);
+    numref = bands->look_for_more_bands(simple_data, reff, refd, refa, refdata,-numref);
+  }
+  numref = bands->look_for_more_bands(bands->P, reff, refd, refa, refdata, numref);
   if (numref && verbosity) printf("I found %d bands in the polarization...\n", numref);
   for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*3.99)) {
     cmplx *bdata;
@@ -747,12 +773,12 @@ int bandsdata::get_freqs(cmplx *data, int n,
   // Now get rid of any spurious transient solutions...
   for (int i=num-1;i>=0;i--) {
     double qminhere = 1.0/(1.0/qmin + 0.4/(freq_re[i]*total_time));
-    if (0.5*fabs(fabs(freq_re[i])/freq_im[i]) < qminhere) {
+    double qhere = 0.5*fabs(fabs(freq_re[i])/freq_im[i]);
+    if (qhere < qminhere) {
       num--;
-      if (verbosity > 2) {
-        printf("Trashing a spurious low Q solution with freq %lg %lg (vs %lg)\n",
-               freq_re[i], freq_im[i], qminhere);
-        printf("qminhere is %lg (with %lg)\n", qminhere, freq_re[i]);
+      if (verbosity > 2 || (verbosity > 1 && qhere > 0.5*qminhere)) {
+        printf("Trashing a spurious low Q solution with freq %lg %lg (%lg vs %lg)\n",
+               freq_re[i], freq_im[i], qhere, qminhere);
       }
       for (int j=i;j<num;j++) {
         freq_re[j] = freq_re[j+1];
