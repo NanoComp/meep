@@ -40,11 +40,24 @@ int radiating_2D(const double xmax) {
   double w = 0.30;
   double dx = 2.0;
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0, vec2d(xmax/2 - dx, ymax/2), 1.0, 1); //continuous
-  const double t1 = f.last_source_time() + 1.0;
+  const double t1 = 15 / w + dx / c;
 
   // let the source reach steady state
-  while (f.time() < t1)
+  double next_print_time = 1.0;
+  while (f.time() < t1) {
     f.step();
+    if (f.time() > next_print_time) {
+      monitor_point p1, p2;
+      f.get_point(&p1, vec2d(xmax/2, ymax/2));
+      f.get_point(&p2, vec2d(xmax/2 + dx, ymax/2));
+      complex<double> amp1 = p1.get_component(Ez);
+      complex<double> amp2 = p2.get_component(Ez);
+      double ratio = pow(abs(amp1)/abs(amp2), 2.0) ;
+      master_printf("At time %g ratio^2 is %g from %g and %g\n",
+		    f.time(), ratio, abs(amp1), abs(amp2));
+      next_print_time += 1.0;
+    }
+  }
 
   monitor_point p1, p2;
   f.get_point(&p1, vec2d(xmax/2, ymax/2));
@@ -77,11 +90,11 @@ int radiating_3D() {
   fields f(&s);
   f.add_point_source(Ez, w, 3.0, 0.0, 2.0,
                      vec(xmax/2, ymax/2, ymax/2), 1.0, 1); //continuous
-  const double t1 = f.last_source_time();
+  const double t1 = 12 / w + dx / c;
 
   // let the source reach steady state
   double next_print_time = 1.0;
-  while (f.time() < t1*2 + 2*xmax + 2*ymax) {
+  while (f.time() < t1) {
     f.step();
     if (f.time() > next_print_time) {
       monitor_point p1, p2;
@@ -90,8 +103,8 @@ int radiating_3D() {
       complex<double> amp1 = p1.get_component(Ez);
       complex<double> amp2 = p2.get_component(Ez);
       const double ratio = abs(amp1)/abs(amp2);
-      //printf("At time %g ratio is %g from %g and %g\n",
-      //       f.time(), ratio, abs(amp1), abs(amp2));
+      master_printf("At time %g ratio is %g from %g and %g\n",
+		    f.time(), ratio, abs(amp1), abs(amp2));
       next_print_time += 1.0;
     }
   }
