@@ -37,16 +37,10 @@ void mat::set_output_directory(const char *name) {
     unlink(symlink_name);
   }
   symlink(name, symlink_name);
-  for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(name);
-}
-
-void mat_chunk::set_output_directory(const char *name) {
   outdir = name;
 }
 
 void fields::set_output_directory(const char *name) {
-  if (strcmp(name, chunks[0]->ma->outdir) != 0)
-    printf("Using output directory %s/ for these fields_chunk.\n", name);
   for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(name);
 }
 

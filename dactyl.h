@@ -37,7 +37,6 @@ class mat_chunk {
   double *Cother[10];
   volume v;
   polarizability *pb;
-  const char *outdir;
 
   ~mat_chunk();
   mat_chunk(const volume &v, double eps(const vec &));
@@ -75,8 +74,8 @@ class mat {
   void use_pml_right(double dx);
   void use_pml_radial(double dx);
 
-  void output_slices(const char *name = "");
-  void output_slices(const volume &what, const char *name = "");
+  void output_slices(const char *name = "") const;
+  void output_slices(const volume &what, const char *name = "") const;
   void set_output_directory(const char *name);
   void mix_with(const mat *, double);
 
@@ -160,7 +159,7 @@ class fields_chunk {
   mat_chunk *ma;
   const char *outdir;
 
-  fields_chunk(const mat_chunk *, int m=0);
+  fields_chunk(const mat_chunk *, const char *outdir, int m=0);
   void use_bloch(double kz);
   ~fields_chunk();
 
@@ -169,7 +168,7 @@ class fields_chunk {
   void use_real_fields();
   double find_last_source();
 
-  void get_point(monitor_point *p, const vec &, double time);
+  void get_point(monitor_point *p, const vec &, double time) const;
   void output_point(FILE *, const vec &, const char *name, double time);
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
@@ -238,16 +237,16 @@ class fields {
   void use_real_fields();
   vec lattice_vector();
   // slices.cpp methods:
-  void output_slices(const char *name = "");
-  void output_slices(const volume &what, const char *name = "");
-  void eps_slices(const char *name = "");
-  void eps_slices(const volume &what, const char *name = "");
-  void output_real_imaginary_slices(const char *name = "");
-  void output_real_imaginary_slices(const volume &what, const char *name = "");
+  void output_slices(const char *name = "") const;
+  void output_slices(const volume &what, const char *name = "") const;
+  void eps_slices(const char *name = "") const;
+  void eps_slices(const volume &what, const char *name = "") const;
+  void output_real_imaginary_slices(const char *name = "") const;
+  void output_real_imaginary_slices(const volume &what, const char *name = "") const;
   // step.cpp methods:
   void step();
   void step_right();
-  inline double time() { return t*inva*c; };
+  inline double time() const { return t*inva*c; };
 
   double find_last_source();
   void add_point_source(component whichf, double freq, double width, double peaktime,
@@ -266,8 +265,8 @@ class fields {
   int phase_in_material(const mat *ma, double time);
   int is_phasing();
 
-  void get_point(monitor_point *p, const vec &);
-  monitor_point *get_new_point(const vec &, monitor_point *p=NULL);
+  void get_point(monitor_point *p, const vec &) const;
+  monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
   void output_point(FILE *, const vec &, const char *name);
   complex<double> analytic_epsilon(double freq, const vec &) const;
   

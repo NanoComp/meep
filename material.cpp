@@ -24,9 +24,11 @@
 
 mat::mat() {
   num_chunks = 0;
+  outdir = ".";
 }
 
 mat::mat(const volume &thev, double eps(const vec &), int num) {
+  outdir = ".";
   choose_chunkdivision(thev, eps, num);
 }
 
@@ -41,6 +43,7 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
 
 mat::mat(const mat *m) {
   num_chunks = m->num_chunks;
+  outdir = m->outdir;
   v = m->v;
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m->chunks[i]);
@@ -352,7 +355,6 @@ void mat_chunk::use_pml_radial(double dx, double rmax) {
 }
 
 mat_chunk::mat_chunk(const mat_chunk *o) {
-  outdir = o->outdir;
   if (o->pb) pb = new polarizability(o->pb);
   else pb = NULL;
   a = o->a;
@@ -391,7 +393,6 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
 
 mat_chunk::mat_chunk(const volume &thev, double feps(const vec &)) {
   pml_fmin = 0.2;
-  outdir = ".";
   pb = NULL;
   v = thev;
   a = thev.a;

@@ -39,7 +39,7 @@ fields::fields(const mat *ma, int tm=0) {
   num_chunks = ma->num_chunks;
   chunks = new (fields_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++)
-    chunks[i] = new fields_chunk(ma->chunks[i], m);
+    chunks[i] = new fields_chunk(ma->chunks[i], outdir, m);
   connect_chunks();
 }
 void fields::use_bloch(double kz) { // FIXME
@@ -96,11 +96,11 @@ fields_chunk::~fields_chunk() {
   delete olpol;
 }
 
-fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
+fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
   ma = new mat_chunk(the_ma);
   verbosity = 0;
   v = ma->v;
-  outdir = ma->outdir;
+  outdir = od;
   m = tm;
   new_ma = NULL;
   bands = NULL;
