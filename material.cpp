@@ -212,6 +212,9 @@ const double Cmax = 0.5;
 
 void mat_chunk::use_pml(direction d, double dx, double bloc) {
   const double prefac = Cmax/(dx*dx);
+  // Don't bother with PML if we don't even overlap with the PML region...
+  if (bloc > v.boundary_location(High,d) + dx + 1.0/a ||
+      bloc < v.boundary_location(Low,d) - dx - 1.0/a) return;
   if (is_mine())
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && component_direction((component)c) != d) {
