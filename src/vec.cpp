@@ -100,6 +100,25 @@ const char *component_name(component c) {
   return "Error in component_name";
 }
 
+const char *component_name(derived_component c) {
+  switch (c) {
+  case Sr: return "sr";
+  case Sp: return "sp";
+  case Sz: return "sz";
+  case Sx: return "sx";
+  case Sy: return "sy";
+  case EnergyDensity: return "energy";
+  case D_EnergyDensity: return "denergy";
+  case H_EnergyDensity: return "henergy";
+  }
+  return "Error in component_name";
+}
+
+const char *component_name(int c) {
+  return (is_derived(c) ? component_name(derived_component(c))
+	  : component_name(component(c)));
+}
+
 void vec::print(file *f) const {
   if (dim == Dcyl) {
     i_fprintf(f, "%g %g 0", r(), z());
@@ -1252,6 +1271,15 @@ component symmetry::transform(component c, int n) const {
   return direction_component(c,transform(component_direction(c),n).d);
 }
 
+derived_component symmetry::transform(derived_component c, int n) const {
+  return direction_component(c,transform(component_direction(c),n).d);
+}
+
+int symmetry::transform(int c, int n) const {
+  return (is_derived(c) ? int(transform(derived_component(c), n))
+	  : int(transform(component(c), n)));
+}
+
 complex<double> symmetry::phase_shift(component c, int n) const {
   complex<double> phase = transform(component_direction(c),n).phase;
   // flip tells us if we need to flip the sign.  For vectors (E), it is
@@ -1271,6 +1299,20 @@ complex<double> symmetry::phase_shift(component c, int n) const {
   }
   if (flip) return -phase;
   else return phase;
+}
+
+complex<double> symmetry::phase_shift(derived_component c, int n) const {
+  if (is_poynting(c)) {
+    signed_direction ds = transform(component_direction(c),n);
+    return (ds.flipped ? -ds.phase : ds.phase);
+  }
+  else /* energy density */
+    return 1.0;
+}
+
+complex<double> symmetry::phase_shift(int c, int n) const {
+  return (is_derived(c) ? phase_shift(derived_component(c), n)
+	  : phase_shift(component(c), n));
 }
 
 bool symmetry::is_primitive(const ivec &p) const {

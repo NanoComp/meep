@@ -760,6 +760,12 @@ class fields {
 		   bool append_data = false,
 		   bool single_precision = false,
 		   const char *prefix = 0);
+  void output_hdf5(derived_component c,   // OUTPUT DERIVED FIELD COMPONENT
+		   const geometric_volume &where,
+		   h5file *file = 0,
+		   bool append_data = false,
+		   bool single_precision = false,
+		   const char *prefix = 0);
   h5file *open_h5file(const char *name, 
 		      h5file::access_mode mode = h5file::WRITE,
 		      const char *prefix = NULL, bool timestamp = false);
@@ -849,6 +855,8 @@ class fields {
   void grace_bands(grace *, int maxbands=100);
   void output_bands(file *, const char *, int maxbands=100);
   complex<double> get_field(component c, const vec &loc) const;
+  double get_field(derived_component c, const vec &loc) const;
+  complex<double> get_field(int c, const vec &loc) const;
 
   // energy_and_flux.cpp
   double energy_in_box(const geometric_volume &);

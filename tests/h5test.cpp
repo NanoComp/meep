@@ -74,7 +74,7 @@ double get_reim(complex<double> x, int reim)
 
 bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      double kx, double ky,
-	      component src_c, component file_c,
+	      component src_c, int file_c,
 	      geometric_volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
@@ -88,13 +88,16 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
 
-  if (file_c == Dielectric) real_fields = true;
+  if (file_c >= int(Dielectric)) real_fields = true;
 
   while (f.time() <= 3.0 && !interrupt)
     f.step();
 
   h5file *file = f.open_h5file(name);
-  f.output_hdf5(file_c, file_gv, file);
+  if (is_derived(file_c))
+    f.output_hdf5(derived_component(file_c), file_gv, file);
+  else
+    f.output_hdf5(component(file_c), file_gv, file);
 
   file->write("stringtest", "Hello, world!\n");
 
@@ -150,13 +153,13 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	   we can't guarantee that a component is *exactly* the
 	   same as its rotated version, and we don't know which one
 	   was written to the file. */
-	component cs = file_c;
+	int cs = file_c;
 	complex<double> ph = 1.0;
 	double diff = fabs(get_reim(f.get_field(file_c, loc), reim) -
 			   h5data[idx]);
 	for (int sn = 1; sn < f.S.multiplicity(); ++sn) {
 	  vec loc2(f.S.transform(loc, sn));
-	  component cs2 = f.S.transform(file_c, sn);
+	  int cs2 = f.S.transform(file_c, sn);
 	  complex<double> ph2 = f.S.phase_shift(cs2, -sn);
 	  double diff2 = fabs(get_reim(f.get_field(cs2, loc2)*ph2, reim) -
 			      h5data[idx]);
@@ -190,7 +193,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 }
 
 bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
-	      component src_c, component file_c,
+	      component src_c, int file_c,
 	      geometric_volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
@@ -201,13 +204,16 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
 
-  if (file_c == Dielectric) real_fields = true;
+  if (file_c >= Dielectric) real_fields = true;
 
   while (f.time() <= 3.0 && !interrupt)
     f.step();
 
   h5file *file = f.open_h5file(name);
-  f.output_hdf5(file_c, file_gv, file);
+  if (is_derived(file_c))
+    f.output_hdf5(derived_component(file_c), file_gv, file);
+  else
+    f.output_hdf5(component(file_c), file_gv, file);
 
   file->write("stringtest", "Hello, world!\n");
 
@@ -260,13 +266,13 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	     we can't guarantee that a component is *exactly* the
 	     same as its rotated version, and we don't know which one
 	     was written to the file. */
-	  component cs = file_c;
+	  int cs = file_c;
 	  complex<double> ph = 1.0;
 	  double diff = fabs(get_reim(f.get_field(file_c, loc), reim) -
 			     h5data[idx]);
 	  for (int sn = 1; sn < f.S.multiplicity(); ++sn) {
 	    vec loc2(f.S.transform(loc, sn));
-	    component cs2 = f.S.transform(file_c, sn);
+	    int cs2 = f.S.transform(file_c, sn);
 	    complex<double> ph2 = f.S.phase_shift(cs2, -sn);
 	    double diff2 = fabs(get_reim(f.get_field(cs2, loc2)*ph2, reim) -
 				h5data[idx]);
@@ -302,7 +308,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
 bool check_2d_monitor(double eps(const vec &),
 		      double a, int splitting, symfunc Sf,
-		      component src_c, component file_c,
+		      component src_c, int file_c,
 		      const vec &pt,
 		      bool real_fields,
 		      const char *name) {
@@ -313,7 +319,7 @@ bool check_2d_monitor(double eps(const vec &),
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
   if (real_fields) f.use_real_fields();
 
-  if (file_c == Dielectric) real_fields = true;
+  if (file_c >= Dielectric) real_fields = true;
 
   h5file *file = f.open_h5file(name);
 
@@ -331,7 +337,10 @@ bool check_2d_monitor(double eps(const vec &),
   int NT = int(T / f.dt) + 2;
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
-    f.output_hdf5(file_c, geometric_volume(pt, pt), file, true);
+    if (is_derived(file_c))
+      f.output_hdf5(derived_component(file_c), geometric_volume(pt, pt), file, true);
+    else
+      f.output_hdf5(component(file_c), geometric_volume(pt, pt), file, true);
     mon[f.t] = f.get_field(file_c, pt0);
     f.step();
   }
@@ -395,7 +404,7 @@ int main(int argc, char **argv)
   };
   char gv_2d_name[4][20] = {"plane", "plane-supercell", "line", "point"};
   int gv_2d_rank[4] = {2,2,1,0};
-  component tm_c[5] = {Dielectric, Ez, Dz, Hx, Hy};
+  int tm_c[5] = {Dielectric, Ez, Hy, Sx, D_EnergyDensity};
   symfunc Sf2[5] = {make_identity, make_mirrorx, make_mirrory, make_mirrorxy,
 		   make_rotate4z};
   char Sf2_name[5][32] = {"identity", "mirrorx", "mirrory", "mirrorxy",
@@ -442,7 +451,7 @@ int main(int argc, char **argv)
   };
   char gv_3d_name[4][10] = {"volume", "plane", "line", "point"};
   int gv_3d_rank[4] = {3,2,1,0};
-  component c3d[7] = {Ex,Dielectric,Ey,Ez, Hx,Hy,Hz};
+  int c3d[7] = {Ex,Dielectric,Dy,Ez, Sz,H_EnergyDensity,EnergyDensity};
   symfunc Sf3[3] = {make_identity, make_mirrorxy, make_rotate4z};
   char Sf3_name[3][32] = {"identity", "mirrorxy", "rotate4z"};
 

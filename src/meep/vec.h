@@ -30,6 +30,8 @@ const int NUM_FIELD_TYPES = 4;
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
                  Dx, Dy, Dr, Dp, Dz, Dielectric };
+enum derived_component { Sx=100, Sy, Sr, Sp, Sz, EnergyDensity,
+			 D_EnergyDensity, H_EnergyDensity };
 enum ndim { D1=0, D2, D3, Dcyl };
 enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, P_stuff=3 };
 enum boundary_side { High=0, Low };
@@ -161,9 +163,12 @@ inline bool coordinate_mismatch(ndim dim, direction d) {
 
 extern void abort(const char *, ...); // mympi.cpp
 
-inline int is_electric(component c) { return c < Hx; }
-inline int is_magnetic(component c) { return c >= Hx && c < Dx; }
-inline int is_D(component c) { return c >= Dx && c < Dielectric; }
+inline bool is_electric(component c) { return c < Hx; }
+inline bool is_magnetic(component c) { return c >= Hx && c < Dx; }
+inline bool is_D(component c) { return c >= Dx && c < Dielectric; }
+inline bool is_derived(int c) { return c >= Sx; }
+inline bool is_poynting(derived_component c) { return c < EnergyDensity; }
+inline bool is_energydensity(derived_component c) { return c>=EnergyDensity; }
 inline field_type type(component c) {
   if (is_electric(c)) return E_stuff;
   else if (is_magnetic(c)) return H_stuff;
@@ -172,6 +177,8 @@ inline field_type type(component c) {
   return E_stuff; // This is never reached.
 }
 const char *component_name(component c);
+const char *component_name(derived_component c);
+const char *component_name(int c);
 const char *direction_name(direction);
 const char *dimension_name(ndim);
 
@@ -183,6 +190,18 @@ inline direction component_direction(component c) {
   case Er: case Hr: case Dr: return R;
   case Ep: case Hp: case Dp: return P;
   case Dielectric: return NO_DIRECTION;
+  }
+  return X; // This code is never reached...
+}
+inline direction component_direction(derived_component c) {
+  switch (c) {
+  case Sx: return X;
+  case Sy: return Y;
+  case Sz: return Z;
+  case Sr: return R;
+  case Sp: return P;
+  case EnergyDensity: case D_EnergyDensity: case H_EnergyDensity:
+    return NO_DIRECTION;
   }
   return X; // This code is never reached...
 }
@@ -202,6 +221,21 @@ inline component direction_component(component c, direction d) {
   case NO_DIRECTION: abort("vector %d component in NO_DIRECTION", c);
   }
   return Ex; // This is never reached.
+}
+inline derived_component direction_component(derived_component c, direction d) {
+  derived_component start_point;
+  if (is_poynting(c)) start_point = Sx;
+  else if (is_energydensity(c) && d == NO_DIRECTION) return c;
+  else abort("unknown field component %d", c);
+  switch (d) {
+  case X: return start_point;
+  case Y: return (derived_component) (start_point + 1);
+  case Z: return (derived_component) (start_point + 4);
+  case R: return (derived_component) (start_point + 2);
+  case P: return (derived_component) (start_point + 3);
+  case NO_DIRECTION: abort("vector %d derived_component in NO_DIRECTION", c);
+  }
+  return Sx; // This is never reached.
 }
 
 inline bool coordinate_mismatch(ndim dim, component c) {
@@ -643,6 +677,10 @@ class symmetry {
   geometric_volume transform(const geometric_volume &, int n) const;
   component transform(component, int n) const;
   complex<double> phase_shift(component, int n) const;
+  derived_component transform(derived_component, int n) const;
+  complex<double> phase_shift(derived_component, int n) const;
+  int transform(int, int n) const;
+  complex<double> phase_shift(int, int n) const;
   int multiplicity() const;
   bool is_primitive(const ivec &) const;
 

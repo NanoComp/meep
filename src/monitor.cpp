@@ -78,6 +78,42 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
       pt->f[c] = get_field(c,loc);
 }
 
+complex<double> fields::get_field(int c, const vec &loc) const {
+  return (is_derived(c) ? get_field(derived_component(c), loc)
+	  : get_field(component(c), loc));
+}
+
+double fields::get_field(derived_component c, const vec &loc) const {
+  component c1, c2;
+  double sum = 0;
+  switch (c) {
+  case Sx: case Sy: case Sz: case Sr: case Sp:
+    switch (c) {
+    case Sx: c1 = Ey; c2 = Hz; break;
+    case Sy: c1 = Ez; c2 = Hx; break;
+    case Sz: c1 = Ex; c2 = Hy; break;
+    case Sr: c1 = Ep; c2 = Hz; break;
+    case Sp: c1 = Ez; c2 = Hr; break;
+    }
+    sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
+    sum -= real(conj(get_field(direction_component(Ex, component_direction(c2)), loc)) * get_field(direction_component(Hx, component_direction(c1)), loc));
+    return sum / (4*pi);
+  case EnergyDensity: case D_EnergyDensity: case H_EnergyDensity:
+    if (c != H_EnergyDensity)
+      FOR_ELECTRIC_COMPONENTS(c1) if (v.has_field(c1)) {
+	c2 = direction_component(Dx, component_direction(c1));
+	sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
+      }
+    if (c != D_EnergyDensity)
+      FOR_MAGNETIC_COMPONENTS(c1) if (v.has_field(c1)) {
+	complex<double> f = get_field(c1, loc);
+	sum += real(conj(f) * f);
+      }
+    return sum / (8*pi);
+  default: abort("unknown derived_component in get_field");
+  }
+}
+
 complex<double> fields::get_field(component c, const vec &loc) const {
   switch (c) {
   case Dielectric:
