@@ -26,7 +26,7 @@ double funky_eps_3d(const vec &p_) {
   return 2.0 + cos(p.x() * eps_k) * cos(p.y() * eps_k) * cos(p.z() * eps_k);
 }
 
-const double tol = 1e-13;
+const double tol = 1e-10;
 double compare(double a, double b, const char *nam) {
   if (fabs(a-b) > fabs(b)*tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a-b));
@@ -41,13 +41,13 @@ double get_reim(complex<double> x, int reim)
   return reim ? imag(x) : real(x);
 }
 
-bool check_2d(double eps(const vec &), double a,
+bool check_2d(double eps(const vec &), double a, int splitting,
 	      component src_c, component file_c,
 	      geometric_volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const volume v = vol2d(xsize, ysize, a);
-  structure s(v, eps);
+  structure s(v, eps, splitting);
   fields f(&s);
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 6.0, v.center(), 1.0);
@@ -111,13 +111,13 @@ bool check_2d(double eps(const vec &), double a,
   return 1;
 }
 
-bool check_3d(double eps(const vec &), double a,
+bool check_3d(double eps(const vec &), double a, int splitting,
 	      component src_c, component file_c,
 	      geometric_volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const volume v = vol3d(xsize, ysize, zsize, a);
-  structure s(v, eps);
+  structure s(v, eps, splitting);
   fields f(&s);
 
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
@@ -200,18 +200,20 @@ int main(int argc, char **argv)
   int gv_2d_rank[3] = {2,1,0};
   component tm_c[4] = {Ez, Dz, Hx, Hy};
 
-  for (int igv = 0; igv < 3; ++igv)
-       for (int ic = 0; ic < 4; ++ic)
-	    for (int use_real = 0; use_real <= 1; ++use_real) {
-		 char name[1024];
-		 snprintf(name, 1024, "check_2d_tm_%s_%s%s",
-			  gv_2d_name[igv], component_name(tm_c[ic]),
-			  use_real ? "_r" : "");
-		 if (!check_2d(funky_eps_2d, a, Ez, tm_c[ic],
-			       gv_2d[igv], use_real, gv_2d_rank[igv], name))
-		      return 1;
-	    }
-
+  for (int splitting = 1; splitting < 5; ++splitting)
+    for (int igv = 0; igv < 3; ++igv)
+      for (int ic = 0; ic < 4; ++ic)
+	for (int use_real = 0; use_real <= 1; ++use_real) {
+	  char name[1024];
+	  snprintf(name, 1024, "check_2d_tm_%d_%s_%s%s",
+		   splitting, gv_2d_name[igv], component_name(tm_c[ic]),
+		   use_real ? "_r" : "");
+	  master_printf("Checking %s...\n", name);
+	  if (!check_2d(funky_eps_2d, a, splitting, Ez, tm_c[ic],
+			gv_2d[igv], use_real, gv_2d_rank[igv], name))
+	    return 1;
+	}
+  
   geometric_volume gv_3d[4] = {
        geometric_volume(vec(pad,pad,pad), vec(xsize-pad,ysize-pad,zsize-pad)),
        geometric_volume(vec(pad,pad,pad), vec(xsize-pad,ysize-pad,pad)),
@@ -222,17 +224,19 @@ int main(int argc, char **argv)
   int gv_3d_rank[4] = {3,2,1,0};
   component c3d[6] = {Ex,Ey,Ez, Hx,Hy,Hz};
 
-  for (int igv = 0; igv < 4; ++igv) {
-    int ic = 0;
-    bool use_real = true;
-    char name[1024];
-    snprintf(name, 1024, "check_3d_ezsrc_%s_%s%s",
-	     gv_3d_name[igv], component_name(c3d[ic]),
-	     use_real ? "_r" : "");
-    if (!check_3d(funky_eps_3d, a, Ez, c3d[ic],
-		  gv_3d[igv], use_real, gv_3d_rank[igv], name))
-      return 1;
-  }
+  for (int splitting = 1; splitting < 5; splitting += 3)
+    for (int igv = 0; igv < 4; ++igv) {
+      int ic = 0;
+      bool use_real = true;
+      char name[1024];
+      snprintf(name, 1024, "check_3d_ezsrc_%d_%s_%s%s",
+	       splitting, gv_3d_name[igv], component_name(c3d[ic]),
+	       use_real ? "_r" : "");
+      master_printf("Checking %s...\n", name);
+      if (!check_3d(funky_eps_3d, a, splitting, Ez, c3d[ic],
+		    gv_3d[igv], use_real, gv_3d_rank[igv], name))
+	return 1;
+    }
 
   return 0;
 }

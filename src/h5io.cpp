@@ -226,7 +226,7 @@ void h5io::write_chunk(const char *filename, const char *dataname,
 	  IF_EXCLUSIVE((void) 0, if (parallel) all_wait());
      }
      
-     if (first_chunk || (IF_EXCLUSIVE(!parallel || am_master(), 1))) {
+     if (first_chunk && (IF_EXCLUSIVE(!parallel || am_master(), 1))) {
 	  hsize_t *dims_copy = new hsize_t[rank1 + append_data];
 	  hsize_t *maxdims = new hsize_t[rank1 + append_data];
 	  for (i = 0; i < rank; ++i)
