@@ -340,7 +340,22 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
       for (int i = 0; i < num_chunks; ++i) {
 	if (!chunks[i]->is_mine()) continue;
 	// Chunk integration boundaries:
-	geometric_volume gvS = S.transform(chunks[i]->gv, sn);
+	geometric_volume gvS(v.dim);
+
+	if (use_symmetry)
+	  gvS = S.transform(chunks[i]->gv, sn);
+	else {
+	  /* If we're not using symmetry, it's because (as in src_vol)
+	     we don't care about correctly counting the points in the
+	     volume.  Rather, we just want to make sure to get *all*
+	     of the chunk points that intersect where.  Hence, add a little
+	     padding to make sure we don't miss any points due to rounding. */
+	  vec pad(one_ivec(v.dim) * v.a * 1e-3);
+	  gvS = geometric_volume(chunks[i]->v.loc(Dielectric,0) - pad,
+				 chunks[i]->v.loc(Dielectric,
+						  chunks[i]->v.ntot()-1) +pad);
+	}
+
 	ivec iscS(max(is-shifti, vec2diel_ceil(gvS.get_min_corner(),
 					       v.a, one_ivec(v.dim) * 2)));
 	ivec iecS(min(ie-shifti, vec2diel_floor(gvS.get_max_corner(),

@@ -242,7 +242,7 @@ class src_time {
   virtual complex<double> dipole(double time) const { (void)time; return 0; }
   virtual double last_time() const { return 0.0; }
   virtual src_time *clone() const { return new src_time(*this); }
-  virtual bool is_equal(const src_time &t) const { return 1; }
+  virtual bool is_equal(const src_time &t) const { (void)t; return 1; }
 
  private:
   double current_time;
@@ -459,6 +459,11 @@ class fields_chunk {
   // polarization.cpp
   void initialize_polarization_energy(const polarizability_identifier &,
                                       double energy(const vec &));
+
+  // fields.cpp
+  void alloc_f(component c);
+  void zero_fields();
+
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
@@ -483,18 +488,7 @@ class fields_chunk {
   void update_e_from_d();
   void update_from_e();
   void calc_sources(double time);
-  // fields.cpp
-  void alloc_f(component c);
-  void zero_fields();
-  // monitor.cpp
-  // sources.cpp
 
-  // add_volume_source returns 1 if the connections between chunks need to
-  // be recalculated.  This allows us to avoid allocating TE or TM fields
-  // until we know which is desired.
-  // add_volume_source - amp is an overall amplitude by which A() is multiplied
-  int add_volume_source(component whichf, src_time *src, const vec &, const vec &,
-                        complex<double> A(const vec &), complex<double> amp, symmetry S, int sn);
   // initialize.cpp
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
@@ -610,13 +604,15 @@ class fields {
   inline double time() const { return t*inva*c; };
 
   double last_source_time();
-  void add_point_source(component whichf, double freq, double width, double peaktime,
+  void add_point_source(component c, double freq, double width, double peaktime,
                         double cutoff, const vec &, complex<double> amp = 1.0,
                         int is_continuous = 0);
-  void add_point_source(component whichf, const src_time &src,
+  void add_point_source(component c, const src_time &src,
                         const vec &, complex<double> amp = 1.0);
-  void add_volume_source(component whichf, const src_time &src,
-                        const vec &, const vec &, complex<double> A(const vec &), complex<double> amp);
+  void add_volume_source(component c, const src_time &src,
+			 const geometric_volume &, 
+			 complex<double> A(const vec &),
+			 complex<double> amp = 1.0);
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_A(complex<double> A(component, const vec &), double freq);
   void initialize_with_nth_te(int n);
@@ -716,9 +712,6 @@ class fields {
                                   complex<double> *fad, double *approx_power);
   void out_bands(file *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
-  // sources.cpp
-  void add_point_source(component whichf, src_time *src,
-                        const ivec &p, complex<double> amp);
   // slices.cpp
   void outline_chunks(file *name);
   bool has_eps_interface(vec *loc) const;

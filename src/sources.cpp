@@ -126,16 +126,12 @@ bool continuous_src_time::is_equal(const src_time &t) const
 
 /*********************************************************************/
 
-src_vol::src_vol(component cc, src_time *st, int n, const int *ind, const complex<double> *amps) {
+src_vol::src_vol(component cc, src_time *st, int n, int *ind, complex<double> *amps) {
   c = cc;
   t = st; next = NULL;
   npts = n;
-  index = new int[npts];
-  A = new complex<double>[npts];
-  for (int j=0; j<npts; j++) {
-    index[j] = ind[j];
-    A[j] = amps[j];
-  }
+  index = ind;
+  A = amps;
 }
 
 src_vol::src_vol(const src_vol &sv) {
@@ -154,7 +150,7 @@ src_vol::src_vol(const src_vol &sv) {
     next = NULL;
 }
 
-src_vol *src_vol::add_to(src_vol *others) const {
+src_vol *src_vol::add_to(src_vol *others) {
   if (others) {
     if (*this == *others) {
       if (npts != others->npts)
@@ -172,15 +168,14 @@ src_vol *src_vol::add_to(src_vol *others) const {
     return others;
   }
   else {
-    src_vol *sv = new src_vol(*this);
-    sv->next = others;
-    return sv;
+    next = others;
+    return this;
   }
 }
 
 /*********************************************************************/
 
-void fields::add_point_source(component whichf, double freq,
+void fields::add_point_source(component c, double freq,
                               double width, double peaktime,
                               double cutoff, const vec &p,
                               complex<double> amp, int is_c) {
@@ -188,7 +183,7 @@ void fields::add_point_source(component whichf, double freq,
 
   if (is_c) { // TODO: don't ignore peaktime?
     continuous_src_time src(freq, width, time(), infinity, cutoff);
-    add_point_source(whichf, src, p, amp);
+    add_point_source(c, src, p, amp);
   }
   else {
     cutoff = inva + cutoff * width;
@@ -197,115 +192,105 @@ void fields::add_point_source(component whichf, double freq,
   
     gaussian_src_time src(freq, width,
 			     peaktime - cutoff, peaktime + cutoff);
-    add_point_source(whichf, src, p, amp);
+    add_point_source(c, src, p, amp);
   }
 }
 
 complex<double> one(const vec &v) {(void) v; return 1.0;}
-void fields::add_point_source(component whichf, const src_time &src,
+void fields::add_point_source(component c, const src_time &src,
 			      const vec &p, complex<double> amp) {
-  add_volume_source(whichf, src, p, p, one, amp);
+  add_volume_source(c, src, geometric_volume(p, p), one, amp);
 }
 
-void fields::add_volume_source(component whichf, const src_time &src,
-                               const vec &p1, const vec &p2,
-                               complex<double> A(const vec &), complex<double> amp) {
-  src_time *newsrc;
-  sources = src.add_to(sources, &newsrc);
+struct src_vol_integrand_data {
+  complex<double> (*A)(const vec &);
+  complex<double> amp;
+  src_time *src;
+  vec center;
+};
 
-  amp = 8.0*(0.125*amp); // this puts three 0's at the end to prevent floating point errors below 
-  const double invmul = 1.0/S.multiplicity();
-  int need_to_connect = 0;
+/* Adding source volumes can be treated as a kind of "integration"
+   problem, since we need to loop over all the chunks that intersect
+   the source volume, with appropriate interpolation weights at the
+   boundaries so that the integral of the current is fixed regardless
+   of resolution.  Unlike most uses of fields::integrate, however, we
+   set use_symmetry=false: we only find the intersection of the volume
+   with the untransformed chunks (since the transformed versions are
+   implicit). */
+static void src_vol_integrand(fields_chunk *fc, component c,
+			     ivec is, ivec ie,
+			     vec s0, vec s1, vec e0, vec e1,
+			     double dV0, double dV1,
+			     vec shift, complex<double> shift_phase, 
+			     const symmetry &S, int sn,
+			     void *data_)
+{
+  src_vol_integrand_data *data = (src_vol_integrand_data *) data_;
   
-  LOOP_OVER_DIRECTIONS(v.dim, d) 
-    if (abs((p1-p2).in_direction(d)) > 
-        user_volume.boundary_location(High, d) - user_volume.boundary_location(Low, d)) 
-      abort("Cannot accept source width larger than cell width in %s direction!\n", direction_name(d));
-  vec newp1[8], newp2[8];
-  complex<double> kphase[8];
-  int ncopies;
-  // possibly make copies of volume source if periodic boundary conditions are used
-  locate_volume_source_in_user_volume(p1, p2, newp1, newp2, kphase, ncopies);
-  
-  for (int j=0; j<ncopies; j++)
-    for (int sn=0;sn<S.multiplicity();sn++) {
-    component cc = S.transform(whichf,sn);
-    complex<double> ph = S.phase_shift(whichf,sn);
-    const vec rotated1 = S.transform(newp1[j],sn);
-    const vec rotated2 = S.transform(newp2[j],sn);
-    for (int i=0;i<num_chunks;i++)
-      if (chunks[i]->is_mine()) {
-        need_to_connect += 
-	    chunks[i]->add_volume_source(cc, newsrc, rotated1, rotated2, A, invmul*ph*amp/kphase[j], S, sn);
-      }
-    }
-  if (sum_to_all(need_to_connect)) connect_chunks();
-}
+  (void) S; (void) sn; // these should be the identity
+  (void) dV0; (void) dV1; // volume weighting is included in data->amp
 
-int fields_chunk::add_volume_source(component whichf, src_time *src, const vec &p1, const vec &p2,
-                                    complex<double> A(const vec &), complex<double> amp, symmetry S, int sn) {
-  // Allocate fields if they haven't already been allocated:
-  int need_reconnection = 0;
-  if (!f[whichf][0]) {
-    alloc_f(whichf);
-    need_reconnection = 1;
+  int npts = 1;
+  LOOP_OVER_DIRECTIONS(is.dim, d)
+    npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+  int *index_array = new int[npts];
+  complex<double> *amps_array = new complex<double>[npts];
+
+  complex<double> amp = data->amp * conj(shift_phase);
+
+  vec loc(fc->v.dim, 0.0);
+  double inva = fc->v.inva;
+  int idx_vol = 0;
+  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+    double w1 = IVEC_LOOP_WEIGHT(1);
+    double w12 = w1 * IVEC_LOOP_WEIGHT(2);
+    double w123 = w12 * IVEC_LOOP_WEIGHT(3);
+
+    loc.set_direction(direction(loop_d1), (loop_is1*0.5 + loop_i1) * inva);
+    loc.set_direction(direction(loop_d2), (loop_is2*0.5 + loop_i2) * inva);
+    loc.set_direction(direction(loop_d3), (loop_is3*0.5 + loop_i3) * inva);
+    loc += shift - data->center;
+
+    amps_array[idx_vol] = w123 * amp * data->A(loc);
+    index_array[idx_vol++] = idx;
   }
 
-  geometric_volume vbig = (v.pad()).surroundings();
-  if (vbig.intersects(geometric_volume(p1, p2))) {
-    geometric_volume Vinters = vbig.intersect_with(geometric_volume(p1, p2));
-    int minindex = v.ntot(), maxindex = -1;
-    int npts = 0;
-    int nmax = 1;
-    LOOP_OVER_DIRECTIONS(v.dim, d)
-      nmax *= (2 + (int)ceil(v.a*abs((p1-p2).in_direction(d))));
-    if (nmax > v.ntot()) nmax = v.ntot();
-    int *index_array = new int[nmax];
-    complex<double> *amps_array = new complex<double>[nmax];
-    for (int index=0; index<v.ntot(); index++) {
-      vec here = v.loc(whichf, index);
-      double weight = 1.0;
-      LOOP_OVER_DIRECTIONS(v.dim, d)
-        if (p1.in_direction(d) == p2.in_direction(d)) { // delta function in this direction
-          // using 1.0 below gives floating point errors in tests
-          if (abs(here.in_direction(d) - p1.in_direction(d)) * v.a < 1.0 - 3e-15) 
-            // multiply by v.a below to have radiated power indpendent of a
-            weight *= (1 - v.a*abs(here.in_direction(d) - p1.in_direction(d))) * v.a;
-          else
-            weight = 0;
-        }
-        else { // finite thickness
-          double dhere = abs((here - (p1+p2)*0.5).in_direction(d));
-          double half_width = abs(((p1-p2)*0.5).in_direction(d));
-          if (dhere < 0.5*inva + half_width) {
-            if (dhere > half_width - 0.5*inva)
-              weight *= 1 - v.a*(dhere - (half_width - 0.5*inva)); // border
-            else
-              weight *= 1.0; // completely inside
-          }
-          else
-            weight = 0; // outside
-        }
-      if (weight > 0) {
-        if (minindex > index) minindex = index;
-        if (maxindex < index) maxindex = index;
-        index_array[npts] = index;
-        vec original_vec = S.transform(here, -sn); // inv(S,sn) * here
-        amps_array[npts] = weight * amp * A(original_vec);  
-        npts++;
-      }
-    }
-    src_vol tmp(whichf, src, npts, index_array, amps_array);
-    if (is_magnetic(whichf)) {
-      h_sources = tmp.add_to(h_sources);
-    } else {
-      e_sources = tmp.add_to(e_sources);
-    }
-    delete[] index_array;
-    delete[] amps_array;
-  }  
+  src_vol *tmp = new src_vol(c, data->src, npts, index_array, amps_array);
+  if (is_magnetic(c))
+    fc->h_sources = tmp->add_to(fc->h_sources);
+  else
+    fc->e_sources = tmp->add_to(fc->e_sources);
+}
 
-  return need_reconnection;
+void fields::add_volume_source(component c, const src_time &src,
+                               const geometric_volume &where,
+                               complex<double> A(const vec &), 
+			       complex<double> amp) {
+  if (v.dim != where.dim)
+    abort("incorrect source volume dimensionality in add_volume_source");
+  LOOP_OVER_DIRECTIONS(v.dim, d) 
+    if (where.in_direction(d) > (user_volume.boundary_location(High, d) 
+				 - user_volume.boundary_location(Low, d)))
+      abort("Source width > cell width in %s direction!\n", direction_name(d));
+
+  src_vol_integrand_data data;
+  data.A = A;
+  data.amp = amp;
+  LOOP_OVER_DIRECTIONS(v.dim, d)
+    if (where.in_direction(d) == 0.0) // delta-function direction
+      data.amp *= v.a; // correct units for J delta-function amplitude
+  sources = src.add_to(sources, &data.src);
+  data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
+  integrate(src_vol_integrand, (void *) &data, where, c, false);
+
+  // allocate fields if they haven't been allocated yet for this component
+  int need_to_reconnect = 0;
+  for (int i = 0; i < num_chunks; ++i)
+    if (!chunks[i]->f[c][0]) {
+      chunks[i]->alloc_f(c);
+      need_to_reconnect++;
+    }
+  if (sum_to_all(need_to_reconnect)) connect_chunks();
 }
 
 } // namespace meep

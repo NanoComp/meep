@@ -87,7 +87,7 @@ class polarization {
 
 class src_vol {
  public:
-  src_vol(component cc, src_time *st, int n, const int *ind, const complex<double> *amps);
+  src_vol(component cc, src_time *st, int n, int *ind, complex<double> *amps);
   src_vol(const src_vol &sv);
   ~src_vol() { delete next; delete[] index; delete[] A;}
 
@@ -107,7 +107,7 @@ class src_vol {
     return sv.index[0]==index[0] && sv.index[sv.npts-1]==index[npts-1] && sv.c==c && sv.t==t;
   }
 
-  src_vol *add_to(src_vol *others) const;
+  src_vol *add_to(src_vol *others);
   src_vol *next;
 };
 

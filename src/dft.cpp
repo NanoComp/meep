@@ -62,12 +62,9 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   Nomega = data->Nomega;
   dft_phase = new complex<double>[Nomega];
   
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    (void) loop_is1; (void) loop_is2; (void) loop_is3; // unused
-    N = loop_n1 * loop_n2 * loop_n3;
-    goto stoploop; // we only need one loop iteration to get params
-  }
- stoploop:
+  N = 1;
+  LOOP_OVER_DIRECTIONS(is.dim, d)
+    N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   dft = new complex<double>[N * Nomega];
   for (int i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
@@ -150,6 +147,7 @@ void dft_chunk::update_dft(double time) {
 
   int numcmp = fc->f[c][1] ? 2 : 1;
 
+  int idx_dft = 0;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
     double w1 = IVEC_LOOP_WEIGHT(1);
     double dV = dV0 + dV1 * loop_i2;
@@ -171,7 +169,6 @@ void dft_chunk::update_dft(double time) {
       for (int cmp=0; cmp < numcmp; ++cmp)
 	f[cmp] = w123 * fc->f[c][cmp][idx];
     
-    int idx_dft = loop_i3 + loop_n3 * (loop_i2 + loop_n2 * loop_i1);
     if (numcmp == 2) {
       complex<double> fc(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
@@ -182,6 +179,7 @@ void dft_chunk::update_dft(double time) {
       for (int i = 0; i < Nomega; ++i)
 	dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
     }
+    idx_dft++;
   }
 }
 
