@@ -44,6 +44,8 @@ int compare(double a, double b, double eps, const char *n) {
   }
 }
 
+static inline double min(double a, double b) { return (a<b)?a:b; }
+
 int flux_1d(const double zmax,
                   double eps(const vec &)) {
   const double a = 10.0;
