@@ -621,7 +621,7 @@ complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
   for (int i=numref-1;i>=0;i--) {
     if (abs(refa[i]*refa[i]) < powmin) {
       numref--;
-      if (verbosity > -2)
+      if (verbosity > 2)
         printf("Trashing a low power solution with freq %lg %lg (%lg vs %lg)\n",
                reff[i], refd[i], abs(refa[i]*refa[i]), powmin);
       for (int j=i;j<numref;j++) {
@@ -780,7 +780,7 @@ int bandsdata::get_freqs(cmplx *data, int n,
     double qhere = 0.5*fabs(fabs(freq_re[i])/freq_im[i]);
     if (qhere < qminhere) {
       num--;
-      if (verbosity > 2 || (verbosity > 1 && qhere > 0.5*qminhere)) {
+      if (verbosity > 2) {
         printf("Trashing a spurious low Q solution with freq %lg %lg (%lg vs %lg)\n",
                freq_re[i], freq_im[i], qhere, qminhere);
       }
