@@ -314,11 +314,16 @@ void fields::initialize_with_nth_tm(int np1) {
   }
 }
 
-void fields::phase_in_material(const mat *newma, double num_periods) {
-  double period = a/(preferred_fmax*c);
+int fields::phase_in_material(const mat *newma, double time) {
   new_ma = newma;
-  phasein_time = 1 + (int) (period*num_periods);
+  phasein_time = (int) (time*a/c);
+  if (phasein_time == 0) phasein_time = 1;
   printf("I'm going to take %d time steps to phase in the material.\n", phasein_time);
+  return phasein_time;
+}
+
+int fields::is_phasing() {
+  return phasein_time > 0;
 }
 
 complex<double> src::get_amplitude_at_time(int t) const {
@@ -584,7 +589,7 @@ void fields::step() {
 }
 
 void fields::phase_material() {
-  if (new_ma && phasein_time) {
+  if (new_ma && phasein_time > 0) {
     ma->mix_with(new_ma, 1.0/phasein_time);
     phasein_time--;
   }

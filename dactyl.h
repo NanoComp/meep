@@ -143,7 +143,8 @@ class fields {
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
-  void phase_in_material(const mat *ma, double num_periods);
+  int phase_in_material(const mat *ma, double time);
+  int is_phasing();
 
   void get_point(monitor_point *p, double r, double z);
   monitor_point *get_new_point(double r, double z, monitor_point *p=NULL);
