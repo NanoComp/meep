@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
           //printf("flux is %lg\n", f.zflux(0,22,83));
         }
         f.record_bands();
-        f.output_point(ban, 0, 0, "point");
+        //f.output_point(ban, 0, 0, "point");
         f.step();
         f.dft_flux();
       }
