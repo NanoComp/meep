@@ -12,6 +12,7 @@ prefix = @prefix@
 # c.f. AC_ARG_PROGRAM autoconf docs:
 transform=@program_transform_name@
 @SET_MAKE@
+RUNCODE=@RUNCODE@
 
 VERSION = @VERSION@
 
@@ -32,8 +33,8 @@ $(TESTFILES): ../libdactyl.a
 
 test: $(TESTFILES)
 	set -e
-	./one_dimensional.dac
-	./cylindrical.dac
+	$(RUNCODE) ./one_dimensional.dac
+	$(RUNCODE) ./cylindrical.dac
 
 clean:
 	rm -rf *.o *.dac

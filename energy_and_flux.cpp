@@ -27,8 +27,9 @@
 double fields::count_volume(component c) {
   double vol = 0;
   for (int i=0;i<num_chunks;i++)
-    vol += chunks[i]->count_volume(c);
-  return vol;
+    if (chunks[i]->is_mine())
+      vol += chunks[i]->count_volume(c);
+  return sum_to_all(vol);
 }
 
 double fields_chunk::count_volume(component c) {
@@ -51,12 +52,16 @@ double fields::energy_in_box(const volume &otherv) {
 }
 
 double fields::field_energy_in_box(const volume &otherv) {
-  for (int i=0;i<num_chunks;i++) chunks[i]->backup_h();
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->backup_h();
   step_h();
   step_boundaries(H_stuff);
   step_h_source();
   double next_step_magnetic_energy = magnetic_energy_in_box(otherv);
-  for (int i=0;i<num_chunks;i++) chunks[i]->restore_h();
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->restore_h();
 
   return electric_energy_in_box(otherv) +
     0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(otherv);
@@ -65,22 +70,25 @@ double fields::field_energy_in_box(const volume &otherv) {
 double fields::electric_energy_in_box(const volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
-    energy += chunks[i]->electric_energy_in_box(otherv);
-  return energy;
+    if (chunks[i]->is_mine())
+      energy += chunks[i]->electric_energy_in_box(otherv);
+  return sum_to_all(energy);
 }
 
 double fields::magnetic_energy_in_box(const volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
-    energy += chunks[i]->magnetic_energy_in_box(otherv);
-  return energy;
+    if (chunks[i]->is_mine())
+      energy += chunks[i]->magnetic_energy_in_box(otherv);
+  return sum_to_all(energy);
 }
 
 double fields::thermo_energy_in_box(const volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
-    energy += chunks[i]->thermo_energy_in_box(otherv);
-  return energy;
+    if (chunks[i]->is_mine())
+      energy += chunks[i]->thermo_energy_in_box(otherv);
+  return sum_to_all(energy);
 }
 
 double fields_chunk::backup_h() {

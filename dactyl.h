@@ -39,7 +39,7 @@ class mat_chunk {
   polarizability *pb;
 
   ~mat_chunk();
-  mat_chunk(const volume &v, double eps(const vec &));
+  mat_chunk(const volume &v, double eps(const vec &), int proc_num=0);
   mat_chunk(const mat_chunk *);
   void make_average_eps();
   void use_pml_left(double dx, double zleft);
@@ -51,8 +51,12 @@ class mat_chunk {
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
+  int n_proc() { return the_proc; } // Says which proc owns me!
+  int is_mine() { return the_is_mine; }
  private:
   double pml_fmin;
+  int the_proc;
+  int the_is_mine;
 };
 
 class mat {
@@ -64,7 +68,7 @@ class mat {
 
   ~mat();
   mat();
-  mat(const volume &v, double eps(const vec &), int num_chunks = 1);
+  mat(const volume &v, double eps(const vec &), int num_chunks = 0);
   mat(const mat *);
   void choose_chunkdivision(const volume &v, double eps(const vec &),
                             int num_chunks = 1);
@@ -171,6 +175,9 @@ class fields_chunk {
                          complex<double> phase = 1.0) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
+  // slices.cpp
+  double maxfieldmag(component) const;
+
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);
   double thermo_energy_in_box(const volume &);
@@ -183,6 +190,9 @@ class fields_chunk {
 
   double count_volume(component);
   friend class fields;
+
+  int n_proc() { return ma->n_proc(); };
+  int is_mine() { return ma->is_mine(); };
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   void record_bands(int tcount);
@@ -249,6 +259,7 @@ class fields {
   void eps_slices(const volume &what, const char *name = "") const;
   void output_real_imaginary_slices(const char *name = "") const;
   void output_real_imaginary_slices(const volume &what, const char *name = "") const;
+  double maxfieldmag_to_master(component) const;
   // step.cpp methods:
   void step();
   void step_right();
@@ -367,7 +378,16 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 
 void initialize(int argc, char **argv);
 void finished();
+void abort(char *fmt, ...);
+void sync();
 int count_processors();
 int my_rank();
+inline int am_master() { return my_rank() == 0; };
+void master_printf(char *fmt, ...);
+
+void send(int from, int to, double *data, int size);
+double max_to_master(double); // Only returns the correct value to proc 0.
+double sum_to_master(double); // Only returns the correct value to proc 0.
+double sum_to_all(double);
 
 #endif

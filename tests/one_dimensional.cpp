@@ -21,18 +21,12 @@
 
 #include "dactyl.h"
 
-int die(const char *msg) {
-  puts(msg);
-  exit(1);
-  return 1;
-}
-
 double one(const vec &) { return 1.0; }
 
 int compare(double a, double b, const char *n) {
   if (fabs(a-b) > fabs(b)*8e-15) {
-    printf("%s differs by\t%lg out of\t%lg\n", n, a-b, b);
-    printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
+    master_printf("%s differs by\t%lg out of\t%lg\n", n, a-b, b);
+    master_printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
     return 1;
@@ -48,11 +42,11 @@ int compare_point(const fields &f1, const fields &f2, const vec &p) {
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > 0.0*2e-15*abs(v2)) {
-        printf("%s differs:  %lg %lg out of %lg %lg\n",
+        master_printf("%s differs:  %lg %lg out of %lg %lg\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
-        printf("This comes out to a fractional error of %lg\n",
+        master_printf("This comes out to a fractional error of %lg\n",
                abs(v1 - v2)/abs(v2));
-        printf("Right now I'm looking at %lg, time %lg\n", p.z(), f1.time());
+        master_printf("Right now I'm looking at %lg, time %lg\n", p.z(), f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
         return 0;
@@ -72,7 +66,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
   ma.set_output_directory(dirname);
   ma1.set_output_directory(dirname);
 
-  printf("Trying splitting into %d chunks...\n", splitting);
+  master_printf("Trying splitting into %d chunks...\n", splitting);
   fields f(&ma);
   f.use_bloch(0.0);
   f.add_point_source(Hy, 0.7, 2.5, 0.0, 4.0, vec(0.5), 1.0);
@@ -123,7 +117,7 @@ int test_pattern(double eps(const vec &), int splitting,
   ma.set_output_directory(dirname);
   ma1.set_output_directory(dirname);
 
-  printf("Trying test pattern with %d chunks...\n", splitting);
+  master_printf("Trying test pattern with %d chunks...\n", splitting);
   fields f(&ma);
   f.use_bloch(0.0);
   fields f1(&ma1);
@@ -149,21 +143,23 @@ int test_pattern(double eps(const vec &), int splitting,
 }
 
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   const char *dirname = make_output_directory(argv[0]);
-  printf("Testing one dimension under different splittings...\n");
+  master_printf("Testing one dimension under different splittings...\n");
 
   for (int s=2;s<7;s++)
-    test_pattern(one, s, dirname) || die("error in test_pattern\n");
-  test_pattern(one, 30, dirname) || die("error in crazy test_pattern\n");
-  test_pattern(one, 60, dirname) || die("error in crazy test_pattern\n");
+    if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
+  if (!test_pattern(one, 30, dirname)) abort("error in crazy test_pattern\n");
+  if (!test_pattern(one, 60, dirname)) abort("error in crazy test_pattern\n");
 
   for (int s=2;s<7;s++)
-    test_simple_periodic(one, s, dirname) || die("error in test_simple_periodic\n");
-  test_simple_periodic(one, 30, dirname)
-    || die("error in crazy test_simple_periodic\n");
-  test_simple_periodic(one, 60, dirname)
-    || die("error in crazy test_simple_periodic\n");
+    if (!test_simple_periodic(one, s, dirname)) abort("error in test_simple_periodic\n");
+  if (!test_simple_periodic(one, 30, dirname))
+    abort("error in crazy test_simple_periodic\n");
+  if (!test_simple_periodic(one, 60, dirname))
+    abort("error in crazy test_simple_periodic\n");
   delete[] dirname;
+  finished();
   exit(0);
 }
 

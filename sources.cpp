@@ -82,8 +82,9 @@ void fields::add_point_source(component whichf, double freq,
                               double cutoff, const vec &p,
                               complex<double> amp, int is_c) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->add_point_source(whichf, freq, width, peaktime,
-                                cutoff, p, amp, is_c, time());
+    if (chunks[i]->is_mine())
+      chunks[i]->add_point_source(whichf, freq, width, peaktime,
+                                  cutoff, p, amp, is_c, time());
 }
 
 void fields_chunk::add_point_source(component whichf, double freq,
@@ -116,8 +117,9 @@ void fields::add_plane_source(double freq, double width, double peaktime,
                               const vec &p, const vec &norm,
                               int is_c) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->add_plane_source(freq, width, peaktime,
-                                cutoff, envelope, p, norm, is_c, time());
+    if (chunks[i]->is_mine())
+      chunks[i]->add_plane_source(freq, width, peaktime,
+                                  cutoff, envelope, p, norm, is_c, time());
 }
 
 void fields_chunk::add_plane_source(double freq, double width, double peaktime,

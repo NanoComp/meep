@@ -21,12 +21,6 @@
 
 #include "dactyl.h"
 
-int die(const char *msg) {
-  puts(msg);
-  exit(1);
-  return 1;
-}
-
 double one(const vec &) { return 1.0; }
 
 int compare(double a, double b, const char *n) {
@@ -84,25 +78,25 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
     f1.use_bloch(0.0);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
-    compare(f1.count_volume(Ep), f.count_volume(Ep), "volume") || die("");
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
     printf("Chunks are %lg by %lg\n",
            f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 29.0;
     while (f.time() < ttot) {
       f.step();
       f1.step();
-      compare_point(f, f1, vec(0.5, 0.4)) || die("");
-      compare_point(f, f1, vec(0.46, 0.36)) || die("");
-      compare_point(f, f1, vec(1.0, 0.4)) || die("");
-      compare_point(f, f1, vec(0.01, 0.02)) || die("");
-      compare_point(f, f1, vec(0.601, 0.701)) || die("");
+      if (!compare_point(f, f1, vec(0.5, 0.4))) return 0;
+      if (!compare_point(f, f1, vec(0.46, 0.36))) return 0;
+      if (!compare_point(f, f1, vec(1.0, 0.4))) return 0;
+      if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
+      if (!compare_point(f, f1, vec(0.601, 0.701))) return 0;
       if (f.time() >= total_energy_check_time) {
-        compare(f.total_energy(), f1.total_energy(),
-                "   total energy") || die("");
-        compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
-                "electric energy") || die("");
-        compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
-                "magnetic energy") || die("");
+        if (!compare(f.total_energy(), f1.total_energy(),
+                     "   total energy")) return 0;
+        if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+                     "electric energy")) return 0;
+        if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+                     "magnetic energy")) return 0;
 
         total_energy_check_time += 5.0;
         if (splitting == 2 && 0) {
@@ -152,7 +146,7 @@ int test_pattern(double eps(const vec &), int splitting,
     f.use_bloch(0.0);
     fields f1(&ma1, m);
     f1.use_bloch(0.0);
-    compare(f1.count_volume(Ep), f.count_volume(Ep), "volume") || die("");
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
     printf("Chunks are %lg by %lg\n",
            f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     f1.initialize_field(Hp, checkers);
@@ -160,35 +154,37 @@ int test_pattern(double eps(const vec &), int splitting,
 
     f.step();
     f1.step();
-    compare_point(f, f1, vec(0.751, 0.401)) || die("");
-    compare_point(f, f1, vec(0.01, 0.02)) || die("");
-    compare_point(f, f1, vec(1.0, 0.7)) || die("");
-    compare(f.total_energy(), f1.total_energy(),
-            "   total energy") || die("");
-    compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
-            "electric energy") || die("");
-    compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
-            "magnetic energy") || die("");
+    if (!compare_point(f, f1, vec(0.751, 0.401))) return 0;
+    if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
+    if (!compare_point(f, f1, vec(1.0, 0.7))) return 0;
+    if (!compare(f.total_energy(), f1.total_energy(),
+                 "   total energy")) return 0;
+    if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+                 "electric energy")) return 0;
+    if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+                 "magnetic energy")) return 0;
   }
   return 1;
 }
 
 int main(int argc, char **argv) {
+  initialize(argc, argv);
   const char *dirname = make_output_directory(argv[0]);
   printf("Testing cylindrical coords under different splittings...\n");
 
   for (int s=2;s<7;s++)
-    test_pattern(one, s, dirname) || die("error in test_pattern\n");
-  test_pattern(one, 8, dirname) || die("error in crazy test_pattern\n");
-  test_pattern(one, 120, dirname) || die("error in crazy test_pattern\n");
-
+    if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
+  if (!test_pattern(one, 8, dirname)) abort("error in crazy test_pattern\n");
+  if (!test_pattern(one, 120, dirname)) abort("error in crazy test_pattern\n");
+  
   for (int s=2;s<7;s++)
-    test_simple_periodic(one, s, dirname) || die("error in test_simple_periodic\n");
-  test_simple_periodic(one, 8, dirname)
-    || die("error in crazy test_simple_periodic\n");
-  test_simple_periodic(one, 120, dirname)
-    || die("error in crazy test_simple_periodic\n");
+    if (!test_simple_periodic(one, s, dirname)) abort("error in test_simple_periodic\n");
+  if (!test_simple_periodic(one, 8, dirname))
+    abort("error in crazy test_simple_periodic\n");
+  if (!test_simple_periodic(one, 120, dirname))
+    abort("error in crazy test_simple_periodic\n");
   delete[] dirname;
+  finished();
   exit(0);
 }
 

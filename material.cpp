@@ -29,6 +29,7 @@ mat::mat() {
 
 mat::mat(const volume &thev, double eps(const vec &), int num) {
   outdir = ".";
+  if (num == 0) num = count_processors();
   choose_chunkdivision(thev, eps, num);
 }
 
@@ -37,8 +38,10 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
   num_chunks = num;
   v = thev;
   chunks = new (mat_chunk *)[num_chunks];
-  for (int i=0;i<num_chunks;i++)
-    chunks[i] = new mat_chunk( v.split(num_chunks,i), eps );
+  for (int i=0;i<num_chunks;i++) {
+    int proc = i*count_processors()/num_chunks;
+    chunks[i] = new mat_chunk( v.split(num_chunks,i), eps, proc);
+  }
 }
 
 mat::mat(const mat *m) {
@@ -57,27 +60,34 @@ mat::~mat() {
 }
 
 void mat::make_average_eps() {
-  for (int i=0;i<num_chunks;i++) chunks[i]->make_average_eps();
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->make_average_eps(); // FIXME
 }
 
 void mat::use_pml_left(double dx) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->use_pml_left(dx, v.origin.z());
+    if (chunks[i]->is_mine())
+      chunks[i]->use_pml_left(dx, v.origin.z());
 }
 void mat::use_pml_right(double dx) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->use_pml_right(dx, v.origin.z() + v.nz()/v.a);
+    if (chunks[i]->is_mine())
+      chunks[i]->use_pml_right(dx, v.origin.z() + v.nz()/v.a);
 }
 void mat::use_pml_radial(double dx) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->use_pml_radial(dx, v.origin.r() + v.nr()/v.a);
+    if (chunks[i]->is_mine())
+      chunks[i]->use_pml_radial(dx, v.origin.r() + v.nr()/v.a);
 }
 void mat::mix_with(const mat *oth, double f) {
   if (num_chunks != oth->num_chunks) {
     printf("You can't phase materials with different chunk topologies...\n");
     exit(1);
   }
-  for (int i=0;i<num_chunks;i++) chunks[i]->mix_with(oth->chunks[i], f);
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->mix_with(oth->chunks[i], f);
 }
 
 mat_chunk::~mat_chunk() {
@@ -359,14 +369,20 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
   else pb = NULL;
   a = o->a;
   v = o->v;
-  eps = new double[v.ntot()];
-  if (eps == NULL) {
-    printf("Out of memory!\n");
-    exit(1);
+  the_proc = o->the_proc;
+  the_is_mine = my_rank() == n_proc();
+  if (is_mine()) {
+    eps = new double[v.ntot()];
+    if (eps == NULL) {
+      printf("Out of memory!\n");
+      exit(1);
+    }
+    for (int i=0;i<v.ntot();i++) eps[i] = o->eps[i];
+  } else {
+    eps = NULL;
   }
-  for (int i=0;i<v.ntot();i++) eps[i] = o->eps[i];
   for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c)) {
+    if (is_mine() && v.has_field((component)c) && is_electric((component)c)) {
       inveps[c] = new double[v.ntot()];
       for (int i=0;i<v.ntot();i++) inveps[c][i] = o->inveps[c][i];
     } else {
@@ -378,81 +394,87 @@ mat_chunk::mat_chunk(const mat_chunk *o) {
     Cother[c] = NULL;
   }
   // Copy over the conductivity arrays:
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c)) {
-      if (o->Cmain[c]) {
-        Cmain[c] = new double[v.ntot()];
-        for (int i=0;i<v.ntot();i++) Cmain[c][i] = o->Cmain[c][i];
+  if (is_mine())
+    for (int c=0;c<10;c++)
+      if (v.has_field((component)c)) {
+        if (o->Cmain[c]) {
+          Cmain[c] = new double[v.ntot()];
+          for (int i=0;i<v.ntot();i++) Cmain[c][i] = o->Cmain[c][i];
+        }
+        if (o->Cother[c]) {
+          Cother[c] = new double[v.ntot()];
+          for (int i=0;i<v.ntot();i++) Cother[c][i] = o->Cother[c][i];
+        }
       }
-      if (o->Cother[c]) {
-        Cother[c] = new double[v.ntot()];
-        for (int i=0;i<v.ntot();i++) Cother[c][i] = o->Cother[c][i];
-      }
-    }
 }
 
-mat_chunk::mat_chunk(const volume &thev, double feps(const vec &)) {
+mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
   pml_fmin = 0.2;
   pb = NULL;
   v = thev;
   a = thev.a;
-  eps = new double[v.ntot()];
-  if (eps == NULL) {
-    printf("Out of memory!\n");
-    exit(1);
-  }
-
-  if (v.dim == dcyl) {
-    for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Hp,i));
-  } else if (v.dim == d1) {
-    for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Ex,i));
+  the_proc = pr;
+  the_is_mine = n_proc() == my_rank();
+  if (is_mine()) {
+    eps = new double[v.ntot()];
+    if (eps == NULL) {
+      printf("Out of memory!\n");
+      exit(1);
+    }
+    if (v.dim == dcyl) {
+      for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Hp,i));
+    } else if (v.dim == d1) {
+      for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Ex,i));
+    } else {
+      printf("Unsupported symmetry!\n");
+      exit(1);
+    }
   } else {
-    printf("Unsupported symmetry!\n");
-    exit(1);
-  } 
+    eps = NULL;
+  }
   for (int c=0;c<10;c++)
-    if (v.has_field((component)c) && is_electric((component)c)) {
+    if (is_mine() && v.has_field((component)c) && is_electric((component)c)) {
       inveps[c] = new double[v.ntot()];
       // Initialize eps to 1;
       for (int i=0;i<v.ntot();i++) inveps[c][i] = 1;
     } else {
       inveps[c] = NULL;
     }
-
-  if (v.dim == dcyl) {
-    const vec dr = v.dr()*0.5; // The distance between Yee field components
-    const vec dz = v.dz()*0.5; // The distance between Yee field components
-    for (int r=1;r<v.nr();r++) {
-      const int ir = r*(v.nz()+1);
-      const int irm1 = (r-1)*(v.nz()+1);
-      for (int z=1;z<=v.nz();z++) {
-        inveps[Er][z + ir] = 2./(eps[z+ir] + eps[z+ir-1]);
-        inveps[Ep][z + ir] = 4./(eps[z+ir] + eps[z+ir-1] +
-                               eps[z+irm1] + eps[z+irm1-1]);
-        inveps[Ez][z + ir] = 2./(eps[z+ir] + eps[z+irm1]);
+  if (is_mine())
+    if (v.dim == dcyl) {
+      const vec dr = v.dr()*0.5; // The distance between Yee field components
+      const vec dz = v.dz()*0.5; // The distance between Yee field components
+      for (int r=1;r<v.nr();r++) {
+        const int ir = r*(v.nz()+1);
+        const int irm1 = (r-1)*(v.nz()+1);
+        for (int z=1;z<=v.nz();z++) {
+          inveps[Er][z + ir] = 2./(eps[z+ir] + eps[z+ir-1]);
+          inveps[Ep][z + ir] = 4./(eps[z+ir] + eps[z+ir-1] +
+                                   eps[z+irm1] + eps[z+irm1-1]);
+          inveps[Ez][z + ir] = 2./(eps[z+ir] + eps[z+irm1]);
+        }
       }
+      for (int r=0;r<v.nr();r++) {
+        const int ir = r*(v.nz()+1);
+        const vec here = v.loc(Ep,ir);
+        inveps[Er][ir] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
+        inveps[Ep][ir] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
+                             feps(here+dr-dz) + feps(here-dr-dz));
+        inveps[Ez][ir] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
+      }
+      for (int z=0;z<v.nz();z++) {
+        const vec here = v.loc(Ep,z);
+        inveps[Er][z] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
+        inveps[Ep][z] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
+                            feps(here+dr-dz) + feps(here-dr-dz));
+        inveps[Ez][z] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
+      }
+    } else if (v.dim == d1) {
+      for (int i=0;i<v.ntot();i++) inveps[Ex][i] = 1.0/eps[i];
+    } else {
+      printf("Unsupported symmetry!\n");
+      exit(1);
     }
-    for (int r=0;r<v.nr();r++) {
-      const int ir = r*(v.nz()+1);
-      const vec here = v.loc(Ep,ir);
-      inveps[Er][ir] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
-      inveps[Ep][ir] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
-                         feps(here+dr-dz) + feps(here-dr-dz));
-      inveps[Ez][ir] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
-    }
-    for (int z=0;z<v.nz();z++) {
-      const vec here = v.loc(Ep,z);
-      inveps[Er][z] = 2./(feps(here+dr+dz) + feps(here+dr-dz));
-      inveps[Ep][z] = 4./(feps(here+dr+dz) + feps(here-dr+dz) +
-                        feps(here+dr-dz) + feps(here-dr-dz));
-      inveps[Ez][z] = 2./(feps(here+dr+dz) + feps(here-dr+dz));
-    }
-  } else if (v.dim == d1) {
-    for (int i=0;i<v.ntot();i++) inveps[Ex][i] = 1.0/eps[i];
-  } else {
-    printf("Unsupported symmetry!\n");
-    exit(1);
-  }
   // Allocate the conductivity arrays:
   for (int c=0;c<10;c++) {
     Cmain[c] = NULL;

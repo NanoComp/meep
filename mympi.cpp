@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <stdarg.h>
+
 #include "dactyl.h"
 #include "config.h"
 
@@ -25,13 +27,71 @@
 void initialize(int argc, char **argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
-  if (!my_rank()) printf("Using MPI!!!\n");
+  master_printf("Using MPI...\n");
 #endif
 }
 
 void finished() {
 #ifdef HAVE_MPI
   MPI_Finalize();
+#endif
+}
+
+void abort(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vprintf(fmt, ap);
+  va_end(ap);
+#ifdef HAVE_MPI
+  MPI_Abort(MPI_COMM_WORLD, 1);
+#endif
+  exit(1);
+}
+
+void send(int from, int to, double *data, int size) {
+#ifdef HAVE_MPI
+  if (from == to) return;
+  const int me = my_rank();
+  MPI_Request req;
+  MPI_Status stat;
+  if (from == me) {
+    MPI_Isend(data, size, MPI_DOUBLE, to, 1, MPI_COMM_WORLD, &req);
+    MPI_Wait(&req, &stat);
+  }
+  if (to == me) {
+    MPI_Irecv(data, size, MPI_DOUBLE, from, 1, MPI_COMM_WORLD, &req);
+    MPI_Wait(&req, &stat);
+  }
+#endif
+}
+
+double max_to_master(double in) {
+  double out = in;
+#ifdef HAVE_MPI
+  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
+double sum_to_master(double in) {
+  double out = in;
+#ifdef HAVE_MPI
+  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
+double sum_to_all(double in) {
+  double out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
+void sync() {
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
 #endif
 }
 
@@ -53,4 +113,11 @@ int count_processors() {
 #else
   return 1;
 #endif
+}
+
+void master_printf(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  if (am_master()) vprintf(fmt, ap);
+  va_end(ap);
 }

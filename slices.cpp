@@ -271,10 +271,10 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
   }
 }
 
-static void output_complex_eps_header(component m, double *f[2], const volume &v,
+static void output_complex_eps_header(component m, double fmax, const volume &v,
                                       const volume &what, const char *name,
                                       component om = Hx) {
-  double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300, fmax = 0.0;
+  double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300;
   switch (v.dim) {
   case dcyl:
     xmin = what.origin.z();
@@ -289,9 +289,6 @@ static void output_complex_eps_header(component m, double *f[2], const volume &v
     xmax = what.origin.z() + what.nz()*what.inva;
     break;
   }
-  for (int i=0;i<v.ntot();i++)
-    if (what.contains(v.loc(m,i)))
-      fmax = max(fmax, fabs(f[0][i]));
   if (ymax == ymin) ymax = ymin + 1.0/v.a;
   if (fmax == 0.0) fmax = 0.0001;
   if (v.dim == d1 && 0) {
@@ -338,7 +335,8 @@ void mat::output_slices(const volume &what, const char *name) const {
   }
   snprintf(n, buflen, "%s/%sepsilon.sli", outdir, nname);
   for (int i=0;i<num_chunks;i++)
-    output_slice(v.eps_component(), chunks[i]->eps, chunks[i]->v, what, n);
+    if (chunks[i]->is_mine())
+      output_slice(v.eps_component(), chunks[i]->eps, chunks[i]->v, what, n);
   //snprintf(n, buflen, "%s/%ssigma.sli", outdir, nname);
   //output_sigma_slice(n);
   delete[] n;
@@ -367,7 +365,8 @@ void fields::output_real_imaginary_slices(const volume &what, const char *name) 
                  outdir, nname, component_name((component)c),
                  r_or_i, time());
         for (int i=0;i<num_chunks;i++)
-          output_slice((component)c, chunks[i]->f[c][cmp], chunks[i]->v, what, n);
+          if (chunks[i]->is_mine())
+            output_slice((component)c, chunks[i]->f[c][cmp], chunks[i]->v, what, n);
       }
     r_or_i = "-im";
   }
@@ -413,7 +412,8 @@ void fields::output_slices(const volume &what, const char *name) const {
       snprintf(n, buflen, "%s/%s%s-%s.sli", outdir, nname,
                component_name((component)c), time_step_string);
       for (int i=0;i<num_chunks;i++)
-        output_complex_slice((component)c, chunks[i]->f[c], chunks[i]->v, what, n);
+        if (chunks[i]->is_mine())
+          output_complex_slice((component)c, chunks[i]->f[c], chunks[i]->v, what, n);
     }
   //if (new_ma) {
   //  snprintf(n, buflen, "%s/%sepsilon-%s.sli", outdir, nname, time_step_string);
@@ -423,7 +423,8 @@ void fields::output_slices(const volume &what, const char *name) const {
 }
 
 void fields::eps_slices(const char *name) const {
-  eps_slices(v, name);
+  if (v.dim == dcyl || v.dim == d1)
+    eps_slices(v, name);
 }
 
 void fields::eps_slices(const volume &what, const char *name) const {
@@ -460,12 +461,37 @@ void fields::eps_slices(const volume &what, const char *name) const {
     if (v.has_field((component)c)) {
       snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
                component_name((component)c), time_step_string);
-      output_complex_eps_header((component)c, chunks[0]->f[c], chunks[0]->v,//FIXME max f
-                                what, n, v.eps_component());
+      const double fmax = maxfieldmag_to_master((component)c);
+      if (am_master())
+        output_complex_eps_header((component)c, fmax,
+                                  chunks[0]->v, what, n, v.eps_component());
+      sync();
       for (int i=0;i<num_chunks;i++)
-        output_complex_eps_body((component)c, chunks[i]->f[c], chunks[i]->v, what, n,
-                                v.eps_component(), chunks[i]->ma->eps);
-      output_complex_eps_tail((component)c, v, what, n);
+        if (chunks[i]->is_mine())
+          output_complex_eps_body((component)c, chunks[i]->f[c], chunks[i]->v, what, n,
+                                  v.eps_component(), chunks[i]->ma->eps);
+      sync();
+      if (am_master())
+        output_complex_eps_tail((component)c, v, what, n);
     }
   free(n);
+}
+
+double fields::maxfieldmag_to_master(component c) const {
+  double themax = 0.0;
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      themax = max(themax,chunks[i]->maxfieldmag(c));
+  return max_to_master(themax);
+}
+
+double fields_chunk::maxfieldmag(component c) const {
+  double themax = 0.0;
+  if (f[c][0])
+    for (int i=0;i<v.ntot();i++) {
+      double norm = 0.0;
+      DOCMP norm += f[c][cmp][i]*f[c][cmp][i];
+      themax = max(themax,sqrt(norm));
+    }
+  return themax;
 }

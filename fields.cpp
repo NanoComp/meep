@@ -161,8 +161,8 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
 
 void fields_chunk::use_real_fields() {
   is_real = 1;
-  if (pol) pol->use_real_fields();
-  if (olpol) olpol->use_real_fields();
+  if (is_mine() && pol) pol->use_real_fields();
+  if (is_mine() && olpol) olpol->use_real_fields();
 }
 
 int fields::phase_in_material(const mat *newma, double time) {
@@ -171,7 +171,8 @@ int fields::phase_in_material(const mat *newma, double time) {
     exit(1);
   }
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->phase_in_material(newma->chunks[i]);
+    if (chunks[i]->is_mine())
+      chunks[i]->phase_in_material(newma->chunks[i]);
   phasein_time = (int) (time*a/c);
   printf("I'm going to take %d time steps to phase in the material.\n",
          phasein_time);

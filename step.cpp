@@ -67,7 +67,8 @@ void fields::step() {
 
 void fields::phase_material() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->phase_material(phasein_time);
+    if (chunks[i]->is_mine())
+      chunks[i]->phase_material(phasein_time);
   phasein_time--;
 }
 
@@ -111,7 +112,8 @@ inline int rstart_1(const volume &v, int m) {
 
 void fields::step_h_right() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_h_right();
+    if (chunks[i]->is_mine())
+      chunks[i]->step_h_right();
 }
 
 void fields_chunk::step_h_right() {
@@ -142,7 +144,8 @@ void fields_chunk::step_h_right() {
 
 void fields::step_e_right() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_e_right();
+    if (chunks[i]->is_mine())
+      chunks[i]->step_e_right();
 }
 
 void fields_chunk::step_e_right() {
@@ -173,7 +176,8 @@ void fields_chunk::step_e_right() {
 
 void fields::step_h() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_h();
+    if (chunks[i]->is_mine())
+      chunks[i]->step_h();
 }
 
 void fields_chunk::step_h() {
@@ -312,7 +316,8 @@ void fields_chunk::step_h() {
 
 void fields::step_e() {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_e();
+    if (chunks[i]->is_mine())
+      chunks[i]->step_e();
 }
 
 void fields_chunk::step_e() {
@@ -473,26 +478,41 @@ void fields::step_boundaries(field_type ft) {
     for (int j=0;j<num_chunks;j++) {
       const int pair = j+i*num_chunks;
       for (int n=0;n<comm_sizes[ft][pair];n++) {
-        DOCMP {
-          double stupid = *(chunks[j]->connections[ft][Outgoing][cmp][wh[j]]);
-          comm_blocks[ft][cmp][pair][n] = stupid;
-        }
-        wh[j]++;
+         if (chunks[j]->is_mine()) {
+           DOCMP {
+             double stupid = *(chunks[j]->connections[ft][Outgoing][cmp][wh[j]]);
+             comm_blocks[ft][cmp][pair][n] = stupid;
+           }
+         } else { // FIXME --this will be unneeded once we have real mpi comm.
+           comm_blocks[ft][1][pair][n] = comm_blocks[ft][0][pair][n] = 0;
+         }
+         wh[j]++;
       }
     }
+  // Communicate the data around!
+  for (int i=0;i<num_chunks;i++)
+    for (int j=0;j<num_chunks;j++) {
+      const int pair = j+i*num_chunks;
+      DOCMP {
+        send(chunks[j]->n_proc(), chunks[i]->n_proc(),
+             comm_blocks[ft][cmp][pair], comm_sizes[ft][pair]);
+      }
+    }
+  
   // Finally, copy incoming data to the fields themselves!
   for (int i=0;i<num_chunks;i++) wh[i] = 0;
   for (int i=0;i<num_chunks;i++)
     for (int j=0;j<num_chunks;j++) {
       const int pair = j+i*num_chunks;
-      for (int n=0;n<comm_sizes[ft][pair];n++) {
-        complex<double> val = chunks[i]->connection_phases[ft][wh[i]]*
-          complex<double>(comm_blocks[ft][0][pair][n],
-                          comm_blocks[ft][1][pair][n]);
-        *(chunks[i]->connections[ft][Incoming][0][wh[i]]) = real(val);
-        *(chunks[i]->connections[ft][Incoming][1][wh[i]]) = imag(val);
-        wh[i]++;
-      }
+      for (int n=0;n<comm_sizes[ft][pair];n++)
+        if (chunks[i]->is_mine()) {
+          complex<double> val = chunks[i]->connection_phases[ft][wh[i]]*
+            complex<double>(comm_blocks[ft][0][pair][n],
+                            comm_blocks[ft][1][pair][n]);
+          *(chunks[i]->connections[ft][Incoming][0][wh[i]]) = real(val);
+          *(chunks[i]->connections[ft][Incoming][1][wh[i]]) = imag(val);
+          wh[i]++;
+        }
     }
   delete[] wh;
 }
@@ -500,7 +520,8 @@ void fields::step_boundaries(field_type ft) {
 void fields::step_h_source() {
   const double tim = time();
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_h_source(chunks[i]->h_sources, tim);
+    if (chunks[i]->is_mine())
+      chunks[i]->step_h_source(chunks[i]->h_sources, tim);
 }
 
 void fields_chunk::step_h_source(const src *s, double time) {
@@ -521,7 +542,8 @@ void fields_chunk::step_h_source(const src *s, double time) {
 void fields::step_e_source() {
   const double tim = time()+0.5*inva*c;
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->step_e_source(chunks[i]->e_sources, tim);
+    if (chunks[i]->is_mine())
+      chunks[i]->step_e_source(chunks[i]->e_sources, tim);
 }
 
 void fields_chunk::step_e_source(const src *s, double time) {

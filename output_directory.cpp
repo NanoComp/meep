@@ -31,7 +31,7 @@ const char symlink_name[] = "latest_output";
 void mat::set_output_directory(const char *name) {
   char buf[300];
   outdir = name;
-  printf("Using output directory %s/\n", name);
+  master_printf("Using output directory %s/\n", name);
   if (readlink(symlink_name, buf, 300) > 0) {
     // Link already exists.
     unlink(symlink_name);
@@ -99,7 +99,7 @@ FILE *create_output_file(const char *dirname, const char *fname) {
   const int buflen = 300;
   char n[buflen];
   snprintf(n, buflen, "%s/%s", dirname, fname);
-  FILE *o = fopen(n, "w");
+  FILE *o = fopen(n, "a");
   if (!o) {
     printf("Unable to create file %s!\n", n);
     exit(1);
