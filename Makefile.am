@@ -13,7 +13,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
 
 generator:
-	cd $(HSRC) && $(MAKE) depend && $(MAKE)
+	cd hsrc && $(MAKE) depend && $(MAKE)
 
-dist-hook: generator
+# add a fake dependency to make sure the generator is built before 'make dist'
+COPYRIGHT: generator
 
