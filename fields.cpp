@@ -363,12 +363,11 @@ void fields_chunk::alloc_f(component the_c) {
 
 void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
-    delete[] f[c][cmp];
-    delete[] f_p_pml[c][cmp];
-    delete[] f_m_pml[c][cmp];
-    f[c][cmp] = 0;
-    f_p_pml[c][cmp] = 0;
-    f_m_pml[c][cmp] = 0;
+    if (f[c][cmp]) for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
+    if (f_p_pml[c][cmp])
+      for (int i=0;i<v.ntot();i++) f_p_pml[c][cmp][i] = 0.0;
+    if (f_m_pml[c][cmp])
+      for (int i=0;i<v.ntot();i++) f_m_pml[c][cmp][i] = 0.0;
   }
 }
 

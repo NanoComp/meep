@@ -147,8 +147,8 @@ void fields::initialize_A(complex<double> A(component, const vec &), double freq
   f_static = &tmp;
   const double dt = inva*c;
   const complex<double> I = complex<double>(0.0,1.0);
-  const complex<double> h_prefac = 1.0/dt;exp(-0.5*I*(2*pi)*freq*dt);
-  const complex<double> d_prefac = h_prefac/dt / (I*freq*(2*pi));
+  const complex<double> h_prefac = sqrt(a);
+  const complex<double> d_prefac = h_prefac / (I*freq*(2*pi));
   FOR_COMPONENTS(c) {
     c_static = c;
     prefactor_static = (is_magnetic(c))? h_prefac : d_prefac;
