@@ -62,7 +62,8 @@ static void integrate_chunkloop(fields_chunk *fc, component cgrid,
     if (cS[i] == Dielectric)
       ph[i] = 1.0;
     else {
-      fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
+      if (cgrid == Dielectric)
+	fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
       ph[i] = shift_phase * S.phase_shift(cS[i], sn);
     }
   }
