@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
   printf("Running omniguide!\n");
 
   const double ttot = 1000.0;
-  mat_chunk ma(volcyl(rcore + num_layers + 0.3, 0.0, a), guided_eps);
+  mat ma(volcyl(rcore + num_layers + 0.3, 0.0, a), guided_eps);
   const char *dirname = make_output_directory(argv[0]);
 \end{comment}
 
@@ -45,7 +45,7 @@ plot.
 \end{verbatim}
 \begin{comment}
   ma.set_output_directory(dirname);
-  mat_chunk vac(&ma);
+  mat vac(&ma);
   vac.make_average_eps();
 \end{comment}
 
@@ -65,7 +65,7 @@ straight to the TE modes.
       char k_and_m[10];
       snprintf(k_and_m, 10, "%g-%d", k, m);
       printf("Working on k of %g and m=0 TM with a=%d...\n", k, a);
-      fields_chunk f(&vac, m);
+      fields f(&vac, m);
       f.use_bloch(k);
       f.verbose(1);
       f.phase_in_material(&ma, 1000);
@@ -104,7 +104,7 @@ straight to the TE modes.
 \end{verbatim}
 \begin{comment}
       printf("Working on k of %g and %s with a=%d...\n", k, m_string, a);
-      fields_chunk f(&vac, m);
+      fields f(&vac, m);
       f.use_bloch(k);
       f.verbose(1);
       f.phase_in_material(&ma, 1000);

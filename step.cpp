@@ -110,6 +110,7 @@ void fields_chunk::step() {
 void fields::phase_material() {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->phase_material();
+  phasein_time = chunks[0]->phasein_time;
 }
 
 void fields_chunk::phase_material() {

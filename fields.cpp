@@ -47,6 +47,7 @@ void fields::use_bloch(double kz) { // FIXME
 fields::~fields() {
   for (int i=0;i<num_chunks;i++) delete chunks[i];
   delete[] chunks;
+  delete bands;
 }
 void fields::use_real_fields() {
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
@@ -69,7 +70,6 @@ fields_chunk::~fields_chunk() {
   delete[] h_phases;
   delete h_sources;
   delete e_sources;
-  delete bands;
   delete pol;
   delete olpol;
 }
@@ -171,9 +171,6 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, int tm) {
   is_real = 0;
   a = ma->a;
   inva = 1.0/a;
-  preferred_fmax = 2.5; // Some sort of reasonable maximum
-                        // frequency... (assuming a has a value on the
-                        // order of your frequency).
   t = 0;
   pol = polarization::set_up_polarizations(ma, is_real);
   olpol = polarization::set_up_polarizations(ma, is_real);
@@ -280,12 +277,27 @@ void fields_chunk::use_real_fields() {
   if (olpol) olpol->use_real_fields();
 }
 
+int fields::phase_in_material(const mat *newma, double time) {
+  if (newma->num_chunks != num_chunks) {
+    printf("Can only phase in similar sets of chunks...\n");
+    exit(1);
+  }
+  for (int i=0;i<num_chunks;i++)
+    phasein_time = chunks[i]->phase_in_material(newma->chunks[i], time);
+  printf("I'm going to take %d time steps to phase in the material.\n",
+         phasein_time);
+  return phasein_time;
+}
+
 int fields_chunk::phase_in_material(const mat_chunk *newma, double time) {
   new_ma = newma;
   phasein_time = (int) (time*a/c);
   if (phasein_time == 0) phasein_time = 1;
-  printf("I'm going to take %d time steps to phase in the material.\n", phasein_time);
   return phasein_time;
+}
+
+int fields::is_phasing() {
+  return phasein_time > 0;
 }
 
 int fields_chunk::is_phasing() {

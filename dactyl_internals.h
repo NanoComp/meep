@@ -77,7 +77,8 @@ class src {
   double get_envelope_at_time(int t) const;
 };
 
-const int num_bandpts = 16;
+const int num_bandpts = 32;
+class fields_chunk;
 
 class bandsdata {
  public:
@@ -90,6 +91,7 @@ class bandsdata {
   // phonon bands).
   complex<double> *P;
   int tstart, tend, index[num_bandpts], maxbands, scale_factor;
+  fields_chunk *chunk[num_bandpts];
   double a, inva, fmin, fmax, qmin, fpmin;
   int ntime;
   int verbosity;

@@ -157,7 +157,6 @@ class fields_chunk {
   const mat_chunk *new_ma;
   mat_chunk *ma;
   const char *outdir;
-  double preferred_fmax;
 
   fields_chunk(const mat_chunk *, int m=0);
   void use_bloch(double kz);
@@ -179,8 +178,6 @@ class fields_chunk {
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
-  void initialize_with_n_te(int n);
-  void initialize_with_n_tm(int n);
   void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
   int phase_in_material(const mat_chunk *ma, double time);
   int is_phasing();
@@ -189,12 +186,7 @@ class fields_chunk {
   void output_point(FILE *, const vec &, const char *name);
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
-  void prepare_for_bands(const vec &, double end_time, double fmax=0,
-                         double qmin=1e300, double frac_pow_min=0.0);
   void record_bands();
-  complex<double> get_band(int n, int maxbands=100);
-  void grace_bands(grace *, int maxbands=100);
-  void output_bands(FILE *, const char *, int maxbands=100);
   double electric_energy_in_box(const volume &);
   double magnetic_energy_in_box(const volume &);
   double thermo_energy_in_box(const volume &);
@@ -220,14 +212,9 @@ class fields_chunk {
   void prepare_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void half_step_polarization_energy(polarization *op = NULL, polarization *np = NULL);
   void update_polarization_saturation(polarization *op = NULL, polarization *np = NULL);
-  int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
-                                  int num_freqs, int fields_considered, int maxbands,
-                                  complex<double> *fad, double *approx_power);
   void add_indexed_source(component whichf, double freq, double width,
                           double peaktime, int cutoff, int theindex, 
                           complex<double> amp, int is_c);
-  void out_bands(FILE *, const char *, int maxbands);
-  complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
 };
 
 class fields {
@@ -272,7 +259,7 @@ class fields {
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
   void initialize_polarizations();
-  int phase_in_material(const mat_chunk *ma, double time);
+  int phase_in_material(const mat *ma, double time);
   int is_phasing();
 
   void get_point(monitor_point *p, const vec &);
@@ -315,9 +302,6 @@ class fields {
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);
-  void add_indexed_source(component whichf, double freq, double width,
-                          double peaktime, int cutoff, int theindex, 
-                          complex<double> amp, int is_c);
   void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
 };
