@@ -114,9 +114,11 @@ int test_metal_xmirror(double eps(const vec &), const char *dirname) {
     if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -155,9 +157,11 @@ int test_metal_ymirror(double eps(const vec &), const char *dirname) {
     if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -200,9 +204,11 @@ int approx_metal_rot2y(double eps(const vec &), const char *dirname) {
     if (!approx_point(f, f1, vec2d(0.46 , 0.33))) return 0;
     if (!approx_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -241,9 +247,11 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
     if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -287,8 +295,8 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
     if (!compare_point(fs[1], fs[0], vec2d(0.46 , 0.33))) return 0;
     if (!compare_point(fs[1], fs[0], vec2d(0.2  , 0.2 ))) return 0;
     if (fs[0].time() >= total_energy_check_time) {
-      if (!compare(fs[0].electric_energy_in_box(v),
-                   fs[1].electric_energy_in_box(v),
+      if (!compare(fs[0].electric_energy_in_box(v.surroundings()),
+                   fs[1].electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
       total_energy_check_time += 3.0;
     }
@@ -328,9 +336,11 @@ int exact_metal_rot4z(double eps(const vec &), const char *dirname) {
     if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -370,9 +380,11 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
     if (!compare_point(f, f1, vec2d(1.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec2d(1.2  , 1.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;

@@ -70,8 +70,8 @@ polarization, or has been converted into heat, or (if we had a saturating
 gain system) perhaps is stored in a population inversion.
 \begin{verbatim}
       g.output_out_of_order(0, f.time(), f.total_energy());
-      g.output_out_of_order(1, f.time(), f.field_energy_in_box(f.v));
-      g.output_out_of_order(2, f.time(), f.thermo_energy_in_box(f.v));
+      g.output_out_of_order(1, f.time(), f.field_energy_in_box(f.v.surroundings()));
+      g.output_out_of_order(2, f.time(), f.thermo_energy_in_box(f.v.surroundings()));
 \end{verbatim}
 \begin{comment}
     }

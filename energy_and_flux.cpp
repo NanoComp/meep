@@ -35,23 +35,23 @@ double fields::count_volume(component c) {
 double fields_chunk::count_volume(component c) {
   double vol = 0;
   for (int i=0;i<v.ntot();i++)
-    vol += v.dV((component)c,i).intersection(v.dV((component)c,i));
+    vol += v.dV(c,i).full_volume();
   return vol;
 }
 
 double fields::total_energy() {
-  return energy_in_box(user_volume);
+  return energy_in_box(user_volume.surroundings());
 }
 
 double fields::field_energy() {
-  return field_energy_in_box(user_volume);
+  return field_energy_in_box(user_volume.surroundings());
 }
 
-double fields::energy_in_box(const volume &otherv) {
+double fields::energy_in_box(const geometric_volume &otherv) {
   return thermo_energy_in_box(otherv) + field_energy_in_box(otherv);
 }
 
-double fields::field_energy_in_box(const volume &otherv) {
+double fields::field_energy_in_box(const geometric_volume &otherv) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->backup_h();
@@ -67,7 +67,7 @@ double fields::field_energy_in_box(const volume &otherv) {
     0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(otherv);
 }
 
-double fields::electric_energy_in_box(const volume &otherv) {
+double fields::electric_energy_in_box(const geometric_volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -75,7 +75,7 @@ double fields::electric_energy_in_box(const volume &otherv) {
   return sum_to_all(energy);
 }
 
-double fields::magnetic_energy_in_box(const volume &otherv) {
+double fields::magnetic_energy_in_box(const geometric_volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -83,7 +83,7 @@ double fields::magnetic_energy_in_box(const volume &otherv) {
   return sum_to_all(energy);
 }
 
-double fields::thermo_energy_in_box(const volume &otherv) {
+double fields::thermo_energy_in_box(const geometric_volume &otherv) {
   double energy = 0.0;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -120,7 +120,7 @@ double fields_chunk::restore_h() {
   }
 }
 
-double fields_chunk::electric_energy_in_box(const volume &otherv,
+double fields_chunk::electric_energy_in_box(const geometric_volume &otherv,
                                             const symmetry &S) {
   double energy = 0;
   DOCMP
@@ -134,20 +134,19 @@ double fields_chunk::electric_energy_in_box(const volume &otherv,
               if (S.transform(p0,sn)==p0) num_times_mapped_to_self++;
             for (int sn=0;sn<S.multiplicity();sn++) {
               const ivec pn = S.transform(p0,sn);
-              if (otherv.owns(pn))
-                // FIXME I need to rewrite this to deal with anisotropic
-                // dielectric stuff.
-                energy += otherv.intersection(v.dV(pn))*
-                  f[c][cmp][i]*
-                  (1./ma->inveps[c][component_direction(c)][i]*f[c][cmp][i])
-                  /num_times_mapped_to_self;
+              // FIXME I need to rewrite this to deal with anisotropic
+              // dielectric stuff.
+              energy += otherv.intersect_with(v.dV(pn)).full_volume()*
+                f[c][cmp][i]*
+                (1./ma->inveps[c][component_direction(c)][i]*f[c][cmp][i])
+                /num_times_mapped_to_self;
             }
           }
         }
   return energy*(1.0/(8*pi));
 }
 
-double fields_chunk::magnetic_energy_in_box(const volume &otherv,
+double fields_chunk::magnetic_energy_in_box(const geometric_volume &otherv,
                                             const symmetry &S) {
   double energy = 0;
   DOCMP
@@ -161,8 +160,8 @@ double fields_chunk::magnetic_energy_in_box(const volume &otherv,
               if (S.transform(p0,sn)==p0) num_times_mapped_to_self++;
             for (int sn=0;sn<S.multiplicity();sn++) {
               const ivec pn = S.transform(p0,sn);
-              if ((pn!=p0 || sn==0) && otherv.owns(pn))
-                energy += otherv.intersection(v.dV(pn))*
+              if (pn!=p0 || sn==0)
+                energy += otherv.intersect_with(v.dV(pn)).full_volume()*
                   f[c][cmp][i]*f[c][cmp][i];
             }
           }
@@ -170,7 +169,7 @@ double fields_chunk::magnetic_energy_in_box(const volume &otherv,
   return energy*(1.0/(8*pi));
 }
 
-double fields_chunk::thermo_energy_in_box(const volume &otherv,
+double fields_chunk::thermo_energy_in_box(const geometric_volume &otherv,
                                           const symmetry &S) {
   // FIXME this is buggy when either parallel or using symmetry.
   if (pol) {

@@ -260,7 +260,8 @@ class geometric_volume {
   double in_direction_max(direction d) const { return max_corner.in_direction(d); };
   double computational_volume(); 
   double full_volume(); 
-  geometric_volume intersect_with(const geometric_volume &a);
+  bool contains(const vec &h) const;
+  geometric_volume intersect_with(const geometric_volume &a) const;
  private:
   vec min_corner, max_corner;
 };
@@ -302,10 +303,8 @@ class volume {
   void interpolate_cyl(component c, const vec &p, int m,
                        int indices[8], double weights[8]) const;
 
-  double dv(component c, int index) const;
-  volume dV(component c, int index) const;
-  volume dV(const ivec &) const;
-  double intersection(const volume &) const;
+  geometric_volume dV(component c, int index) const;
+  geometric_volume dV(const ivec &) const;
   double rmin() const;
   double rmax() const;
   double xmin() const;
@@ -329,6 +328,7 @@ class volume {
   bool contains(const vec &) const;
   bool contains(const ivec &) const;
   bool owns(const ivec &) const;
+  geometric_volume surroundings() const;
 
   friend volume volcyl(double rsize, double zsize, double a);
   friend volume volone(double zsize, double a);

@@ -141,7 +141,7 @@ double geometric_volume::full_volume() {
   return vol;
 };
 
-geometric_volume geometric_volume::intersect_with(const geometric_volume &a) {
+geometric_volume geometric_volume::intersect_with(const geometric_volume &a) const {
   geometric_volume result(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
     double minval = max(in_direction_min(d), a.in_direction_min(d));
@@ -153,6 +153,15 @@ geometric_volume geometric_volume::intersect_with(const geometric_volume &a) {
   }
   return result;
 };
+
+geometric_volume volume::surroundings() const {
+  geometric_volume res(dim);
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    res.set_direction_min(d, operator[](little_corner()).in_direction(d));
+    res.set_direction_max(d, operator[](big_corner()).in_direction(d));
+  }
+  return res;
+}
 
 inline int right_ntot(ndim di, const int num[3]) {
   int result = 1;
@@ -209,6 +218,14 @@ ivec volume::iyee_shift(component c) const {
 
 inline vec volume::yee_shift(component c) const {
   return operator[](iyee_shift(c));
+}
+
+bool geometric_volume::contains(const vec &p) const {
+  LOOP_OVER_DIRECTIONS(dim,d) {
+    if (p.in_direction(d) > in_direction_max(d) ||
+        p.in_direction(d) < in_direction_min(d)) return false;
+  }
+  return true;
 }
 
 bool volume::contains(const ivec &p) const {
@@ -607,32 +624,32 @@ void volume::interpolate_two(component c, const vec &p,
   }
 }
 
-volume volume::dV(const ivec &here) const {
-  // Aaack, this function produces a "volume" that uses a different a, in
-  // order to center the volume on a yee grid point.
-  const double thqinva = 0.625*inva;
-  const volume &v = *this;
-  volume out;
-  switch (dim) {
-  case Dcyl: {
-    out = volcyl(inva, inva, 2*a);
-    out.origin = v[here] - vec(thqinva, thqinva);
-    return out;
+geometric_volume empty_volume(ndim dim) {
+  geometric_volume out(dim);
+  LOOP_OVER_DIRECTIONS(dim,d) {
+    out.set_direction_max(d,0.0);
+    out.set_direction_min(d,0.0);
   }
-  case D2:
-    out = voltwo(inva, inva, 2*a);
-    out.origin = v[here] - vec2d(thqinva, thqinva);
-    return out;
-  case D1:
-    out = volone(inva, 2*a);
-    out.origin = v[here] - vec(thqinva);
-    return out;
-  }
-  abort("Aaaack can't do dV in this number of dimensions\n");
+  return out;
 }
 
-volume volume::dV(component c, int ind) const {
-  if (!owns(iloc(c, ind))) return volume(dim, a, 0, 0, 0);
+geometric_volume volume::dV(const ivec &here) const {
+  const double hinva = 0.5*inva;
+  const volume &v = *this;
+  const vec h = v[here];
+  geometric_volume out(dim);
+  LOOP_OVER_DIRECTIONS(dim,d) {
+    out.set_direction_max(d,h.in_direction(d)+hinva);
+    out.set_direction_min(d,h.in_direction(d)-hinva);
+  }
+  if (dim == Dcyl && here.r() == 0) {
+    out.set_direction_min(R,0.0);
+  }
+  return out;
+}
+
+geometric_volume volume::dV(component c, int ind) const {
+  if (!owns(iloc(c, ind))) return empty_volume(dim);
   return dV(iloc(c,ind));
 }
 
@@ -713,6 +730,19 @@ ivec volume::big_corner() const {
   case D3: return io() + ivec(nx(),ny(),nz())*2;
   case Dcyl: return io() + ivec(nr(),nz())*2;
   }
+}
+
+static inline int max(int a, int b) {
+  return (a>b)?a:b;
+}
+
+
+static inline double max(double a, double b) {
+  return (a>b)?a:b;
+}
+
+static inline double min(double a, double b) {
+  return (a<b)?a:b;
 }
 
 double volume::intersection(const volume &o) const {

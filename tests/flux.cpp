@@ -67,19 +67,19 @@ int flux_1d(const double zmax,
   volume mid = volone(zmax/3,a);
   mid.origin = vec(zmax/3);
   double flux_left=0.0, flux_right=0.0;
-  double delta_energy = f.energy_in_box(mid);
-  master_printf("Initial energy is %lg\n", f.energy_in_box(mid));
+  double delta_energy = f.energy_in_box(mid.surroundings());
+  master_printf("Initial energy is %lg\n", f.energy_in_box(mid.surroundings()));
   master_printf("Initial electric energy is %lg\n",
-                f.electric_energy_in_box(mid));
+                f.electric_energy_in_box(mid.surroundings()));
   while (f.time() < ttot) {
     f.step();
     flux_left  +=  (c/a)*left->flux();
     flux_right +=  (c/a)*right->flux();
   }
-  delta_energy -= f.energy_in_box(mid);
-  master_printf("Final energy is %lg\n", f.energy_in_box(mid));
+  delta_energy -= f.energy_in_box(mid.surroundings());
+  master_printf("Final energy is %lg\n", f.energy_in_box(mid.surroundings()));
   master_printf("Final electric energy is %lg\n",
-                f.electric_energy_in_box(mid));
+                f.electric_energy_in_box(mid.surroundings()));
   const double del = flux_left;
   const double der = flux_right - delta_energy;
   master_printf("  Delta E:\t%lg\n  Flux left:\t%lg\n  Flux right:\t%lg\n  Ratio:\t%lg\n",
@@ -153,14 +153,14 @@ int cavity_1d(const double boxwidth, const double timewait,
   while (f.time() < f.find_last_source()) f.step();
   const double ttot = f.time() + timewait;
   double flux_left=0.0, flux_right=0.0;
-  const double start_energy = f.energy_in_box(mid);
+  const double start_energy = f.energy_in_box(mid.surroundings());
   master_printf("  Energy starts at\t%lg\n", start_energy);
   while (f.time() < ttot) {
     f.step();
     flux_left  +=  (c/a)*left->flux();
     flux_right +=  (c/a)*right->flux();
   }
-  const double delta_energy = start_energy - f.energy_in_box(mid);
+  const double delta_energy = start_energy - f.energy_in_box(mid.surroundings());
   const double defl = flux_right - flux_left;
   master_printf("  Delta E:         \t%lg\n  Integrated Flux:\t%lg\n",
                 delta_energy, defl);

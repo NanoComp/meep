@@ -95,9 +95,11 @@ int test_metal(double eps(const vec &), int splitting, const char *dirname) {
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }
@@ -134,9 +136,11 @@ int test_periodic(double eps(const vec &), int splitting, const char *dirname) {
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }
@@ -171,9 +175,11 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *dirname
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+      if (!compare(f.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                   f1.magnetic_energy_in_box(v.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }

@@ -23,19 +23,19 @@
 #include "dactyl_internals.h"
 
 static double get_phase(component c, double *f[2],
-                        const volume &v, const volume &what) {
+                        const volume &v, const geometric_volume &what) {
   complex<double> mean=0;
   for (int i=0;i<v.ntot();i++)
-    mean += v.dv(c,i)*complex<double>(f[0][i],f[1][i]);
+    mean += v.dV(c,i).full_volume()*complex<double>(f[0][i],f[1][i]);
   complex<double> meanr=0;
   for (int i=0;i<v.ntot();i++) {
-    complex<double> val = v.dv(c,i)*complex<double>(f[0][i],f[1][i]);
+    complex<double> val = v.dV(c,i).full_volume()*complex<double>(f[0][i],f[1][i]);
     if (f[0][i] > 0) meanr += val;
     else meanr -= val;
   }
   complex<double> meani=0;
   for (int i=0;i<v.ntot();i++) {
-    complex<double> val = v.dv(c,i)*complex<double>(f[0][i],f[1][i]);
+    complex<double> val = v.dV(c,i).full_volume()*complex<double>(f[0][i],f[1][i]);
     if (f[1][i] > 0) meani += val;
     else meani -= val;
   }
@@ -46,7 +46,7 @@ static double get_phase(component c, double *f[2],
 }
 
 static void output_complex_slice(component m, double *f[2], const volume &v,
-                                 const volume &what, file *out) {
+                                 const geometric_volume &what, file *out) {
   if (!f[0] || ! f[1]) return; // Field doesn't exist...
   double phase = get_phase(m, f, v, what);
   double c = cos(phase), s = sin(phase);
@@ -59,7 +59,7 @@ static void output_complex_slice(component m, double *f[2], const volume &v,
 }
 
 static void output_slice(component m, const double *f, const volume &v,
-                         const volume &what, file *out) {
+                         const geometric_volume &what, file *out) {
   if (!f) return; // Field doesn't exist...
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i))) {
@@ -191,7 +191,7 @@ static void eps_trailer(file *out) {
 }
 
 static void eps_dotted(file *out, component m, const double *f, const volume &v,
-                       const volume &what) {
+                       const geometric_volume &what) {
   if (!f) return; // Field doesn't exist...
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
@@ -247,7 +247,7 @@ void fields::outline_chunks(file *out) {
 }
 
 static void eps_outline(component m, const double *f,
-                        const volume &v, const volume &what,
+                        const volume &v, const geometric_volume &what,
                         symmetry S, int symnum, file *out) {
   if (!f) return; // Field doesn't exist...
   for (int i=0;i<v.ntot();i++) {
@@ -301,7 +301,7 @@ static void eps_outline(component m, const double *f,
 
 static void output_complex_eps_body(component m, double *f[2], const volume &v,
                                     symmetry S, int symnum,
-                                    const volume &what, file *out) {
+                                    const geometric_volume &what, file *out) {
   if (!f[0] || !f[1]) return; // Field doesn't exist...
   const complex<double> ph = S.phase_shift(m, symnum);
   for (int i=0;i<v.ntot();i++) {
@@ -321,7 +321,7 @@ static void output_complex_eps_body(component m, double *f[2], const volume &v,
 }
 
 void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
-                                   const volume &what, file *out) {
+                                   const geometric_volume &what, file *out) {
   if (f[c][0]) {
     if (v.a <= default_eps_resolution) {
       output_complex_eps_body(c, f[c], v, S, sn, what, out);
@@ -351,30 +351,21 @@ void fields_chunk::output_eps_body(component c, const symmetry &S, int sn,
 }
 
 static void output_complex_eps_header(component m, double fmax, const volume &v,
-                                      const volume &what, file *out,
+                                      const geometric_volume &what, file *out,
                                       const char *name, component om = Hx) {
   double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300;
+  direction xdir, ydir;
   switch (v.dim) {
-  case Dcyl:
-    xmin = what.origin.z();
-    xmax = what.origin.z() + what.nz()*what.inva;
-    ymin = what.origin.r();
-    ymax = what.origin.r() + what.nr()*what.inva;
-    break;
-  case D2:
-    xmin = what.origin.x();
-    xmax = what.origin.x() + what.nx()*what.inva;
-    ymin = what.origin.y();
-    ymax = what.origin.y() + what.ny()*what.inva;
-    break;
-  case D1:
-    ymin = -v.inva*0.5;
-    ymax = v.inva*0.5;
-    xmin = what.origin.z();
-    xmax = what.origin.z() + what.nz()*what.inva;
-    break;
+  case Dcyl: xdir = Z; ydir = R; break;
+  case D2: xdir = X; ydir = Y; break;
+  case D1: xdir = Z; ydir = Z; break; // a tad ugly...
   }
-  if (ymax == ymin) ymax = ymin + 1.0/v.a;
+  xmin = what.in_direction_min(xdir);
+  xmax = what.in_direction_max(xdir);
+  ymin = what.in_direction_min(ydir);
+  ymax = what.in_direction_max(ydir);
+  if (v.dim == D1) { ymin = -v.inva*0.5; ymax = -ymin; }
+  if (ymax == ymin) ymax = ymin + v.inva;
   if (fmax == 0.0) fmax = 0.0001;
   if (v.dim == D1) {
     // Make a 1D line plot!
@@ -390,9 +381,9 @@ static void output_complex_eps_tail(file *out) {
 }
 
 void mat::output_slices(const char *name) const {
-  output_slices(v,name);
+  output_slices(v.surroundings(),name);
 }
-void mat::output_slices(const volume &what, const char *name) const {
+void mat::output_slices(const geometric_volume &what, const char *name) const {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -413,10 +404,10 @@ void mat::output_slices(const volume &what, const char *name) const {
 }
 
 void fields::output_real_imaginary_slices(const char *name) {
-  output_real_imaginary_slices(v,name);
+  output_real_imaginary_slices(v.surroundings(),name);
 }
 
-void fields::output_real_imaginary_slices(const volume &what,
+void fields::output_real_imaginary_slices(const geometric_volume &what,
                                           const char *name) {
   const int buflen = 1024;
   char nname[buflen];
@@ -450,9 +441,9 @@ void fields::output_real_imaginary_slices(const volume &what,
 }
 
 void fields::output_slices(const char *name) {
-  output_slices(v, name);
+  output_slices(v.surroundings(), name);
 }
-void fields::output_slices(const volume &what, const char *name) {
+void fields::output_slices(const geometric_volume &what, const char *name) {
   am_now_working_on(Slicing);
   const int buflen = 1024;
   char nname[buflen];
@@ -491,10 +482,10 @@ void fields::output_slices(const volume &what, const char *name) {
 
 void fields::eps_slices(const char *name) {
   if (v.dim == Dcyl || v.dim == D1 || v.dim == D2)
-    eps_slices(user_volume, name);
+    eps_slices(user_volume.surroundings(), name);
 }
 
-void fields::eps_slices(const volume &what, const char *name) {
+void fields::eps_slices(const geometric_volume &what, const char *name) {
   am_now_working_on(Slicing);
   const int buflen = 1024;
   char nname[buflen];

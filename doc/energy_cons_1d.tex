@@ -67,7 +67,7 @@ the heck of it.
       next_printtime += 10;
       master_printf("Working on time %lg...  ", f.time());
       master_printf("energy is %lg\n", f.total_energy() - ezero);
-      master_printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v) - ezero);
+      master_printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v.surroundings()) - ezero);
       //f.eps_slices();
 \end{comment}
 We plot the total energy, the electromagnetic energy and the
@@ -77,10 +77,10 @@ gain system) perhaps is stored in a population inversion.
 \begin{verbatim}
       g.output_out_of_order(0, f.time(), f.total_energy() - ezero);
       g.output_out_of_order(1, f.time(),
-                            f.electric_energy_in_box(f.v)
-                          + f.magnetic_energy_in_box(f.v));
+                            f.electric_energy_in_box(f.v.surroundings())
+                          + f.magnetic_energy_in_box(f.v.surroundings()));
       g.output_out_of_order(2, f.time(),
-                            f.thermo_energy_in_box(f.v) - ezero);
+                            f.thermo_energy_in_box(f.v.surroundings()) - ezero);
 \end{verbatim}
 \begin{comment}
     }

@@ -101,14 +101,13 @@ polarization::~polarization() {
   if (next) delete next;
 }
 
-double polarization::total_energy(const volume &what) {
+double polarization::total_energy(const geometric_volume &what) {
   const volume v = pb->v;
   double e = 0.0;
-  for (int c=0;c<10;c++)
+  FOR_ELECTRIC_COMPONENTS(c)
     if (energy[c])
       for (int i=0;i<v.ntot();i++)
-        if (what.contains(v.loc((component)c,i)))
-          e += v.dv((component)c,i)*energy[c][i];
+        e += what.intersect_with(v.dV(c,i)).full_volume()*energy[c][i];
   if (next) e += next->total_energy(what);
   return e;
 }

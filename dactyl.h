@@ -84,7 +84,7 @@ class mat {
   void use_pml_everywhere(double dx);
 
   void output_slices(const char *name = "") const;
-  void output_slices(const volume &what, const char *name = "") const;
+  void output_slices(const geometric_volume &what, const char *name = "") const;
   void set_output_directory(const char *name);
   void mix_with(const mat *, double);
 
@@ -186,11 +186,11 @@ class fields_chunk {
   // slices.cpp
   double maxfieldmag(component) const;
   void output_eps_body(component, const symmetry &, int sn,
-                       const volume &what, file *);
+                       const geometric_volume &what, file *);
 
-  double electric_energy_in_box(const volume &, const symmetry &);
-  double magnetic_energy_in_box(const volume &, const symmetry &);
-  double thermo_energy_in_box(const volume &, const symmetry &);
+  double electric_energy_in_box(const geometric_volume &, const symmetry &);
+  double magnetic_energy_in_box(const geometric_volume &, const symmetry &);
+  double thermo_energy_in_box(const geometric_volume &, const symmetry &);
 
   double backup_h();
   double restore_h();
@@ -294,11 +294,12 @@ class fields {
   vec lattice_vector(direction) const;
   // slices.cpp methods:
   void output_slices(const char *name = "");
-  void output_slices(const volume &what, const char *name = "");
+  void output_slices(const geometric_volume &what, const char *name = "");
   void eps_slices(const char *name = "");
-  void eps_slices(const volume &what, const char *name = "");
+  void eps_slices(const geometric_volume &what, const char *name = "");
   void output_real_imaginary_slices(const char *name = "");
-  void output_real_imaginary_slices(const volume &what, const char *name = "");
+  void output_real_imaginary_slices(const geometric_volume &what,
+                                    const char *name = "");
   double maxfieldmag_to_master(component) const;
   // step.cpp methods:
   void step();
@@ -336,12 +337,12 @@ class fields {
   void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
   // energy_and_flux.cpp
-  double energy_in_box(const volume &);
-  double electric_energy_in_box(const volume &);
-  double magnetic_energy_in_box(const volume &);
-  double thermo_energy_in_box(const volume &);
+  double energy_in_box(const geometric_volume &);
+  double electric_energy_in_box(const geometric_volume &);
+  double magnetic_energy_in_box(const geometric_volume &);
+  double thermo_energy_in_box(const geometric_volume &);
   double total_energy();
-  double field_energy_in_box(const volume &);
+  double field_energy_in_box(const geometric_volume &);
   double field_energy();
 
   void set_output_directory(const char *name);
