@@ -708,7 +708,8 @@ void structure_chunk::set_epsilon(material_function &epsilon, double minvol,
     if (minvol == 0.0) minvol = v.dV(zero_ivec(v.dim)).full_volume()/100.0;
     FOR_ELECTRIC_COMPONENTS(c)
       if (v.has_field(c))
-        LOOP_OVER_DIRECTIONS(v.dim,d) {
+	FOR_ELECTRIC_COMPONENTS(c2) if (v.has_field(c2)) {
+	  direction d = component_direction(c2);
           if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
           if (!inveps[c][d]) abort("Memory allocation error.\n");
 	  LOOP_OVER_VOL(v, c, i) {

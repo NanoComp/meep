@@ -20,10 +20,10 @@ double holey_shifted_2d(const vec &xx) {
   return holey_2d(xx + vec(pi*0.01, 3 - pi)*0.5);
 }
 
-double get_the_freq(monitor_point *p) {
+double get_the_freq(monitor_point *p, component c) {
   complex<double> *amp, *freqs;
   int num;
-  p->harminv(Ey, &amp, &freqs, &num, 0.15, 0.20, 8);
+  p->harminv(c, &amp, &freqs, &num, 0.15, 0.20, 8);
   if (!num) return 0.0;
   double best_amp = abs(amp[0]), best_freq = fabs(real(freqs[0]));
   for (int i=1;i<num;i++)
@@ -37,15 +37,15 @@ double get_the_freq(monitor_point *p) {
   return best_freq;
 }
 
-double freq_at_resolution(double e(const vec &), double a) {
+double freq_at_resolution(double e(const vec &), double a, component c) {
   const volume v = vol2d(2.0,1.0,a);
   structure s(v, e);
   s.set_epsilon(e, 0.0, true);
 
   fields f(&s);
-  f.use_bloch(vec(0,0));
-  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec(0.5,0.5), 1.0);
-  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec(1.5,0.5),-1.0);
+  f.use_bloch(vec2d(0,0));
+  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(0.5,0.5), 1.0);
+  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(1.5,0.5),-1.0);
   f.use_real_fields();
 
   while (f.time() <= f.last_source_time() + 10.0 && !interrupt) f.step();
@@ -56,24 +56,23 @@ double freq_at_resolution(double e(const vec &), double a) {
     f.step();
     p = f.get_new_point(vec(0.5,0.5), p);
   }
-  const double freq = get_the_freq(p);
+  const double freq = get_the_freq(p, c);
   delete p;
   return freq;
 }
 
-int main(int argc, char **argv) {
-  initialize mpi(argc, argv);
-#ifdef HAVE_HARMINV
-  master_printf("Running square holes resolution convergence test.\n");
+void check_convergence(component c, double best_guess)
+{
   const double amin = 5.0, amax = 30.0, adelta = 5.0;
-  double best_guess = 0.0;
 
-  best_guess = 0.179944; // from MPB; correct to at least 4 decimal places
-  master_printf("The frequency is approximately %g\n", best_guess);
+  master_printf("Checking convergence for %s field...\n",
+		component_name(c));
+  if (best_guess)
+    master_printf("(The correct frequency should be %g.)\n", best_guess);
 
   for (double a=amax; a >= amin; a-=adelta) {
-    const double freq = freq_at_resolution(holey_2d, a);
-    const double freq_shifted = freq_at_resolution(holey_shifted_2d, a);
+    const double freq = freq_at_resolution(holey_2d, a, c);
+    const double freq_shifted = freq_at_resolution(holey_shifted_2d, a, c);
 
     // Initialize best guess at the correct freq.
     if (!best_guess) {
@@ -98,7 +97,20 @@ int main(int argc, char **argv) {
     if (fabs(freq - freq_shifted)*a*a > 0.4)
       abort("Frequency difference = doesn't converge properly with a.\n");
   }
-  master_printf("Passed 2D resolution convergence test!\n");
+  master_printf("Passed 2D resolution convergence test for %s!\n",
+		component_name(c));
+}
+
+int main(int argc, char **argv) {
+  initialize mpi(argc, argv);
+#ifdef HAVE_HARMINV
+  master_printf("Running holes square-lattice resolution convergence test.\n");
+  double best_guess = 0.0;
+
+  check_convergence(Ey, 0.179944); // from MPB; correct to >= 4 decimal places
+
+  check_convergence(Ez, 0.166998); // from MPB; correct to >= 4 decimal places
+
 #endif
   return 0;
 }
