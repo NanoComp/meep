@@ -48,7 +48,7 @@ grace::grace(const char *fname, const char *dirname) {
   snprintf(buf,300,"%s/%s", dirname, fname);
   f = fopen(buf, "w");
   if (!f) {
-    printf("Unable to open file %f\n", buf);
+    printf("Unable to open file %s\n", buf);
     exit(1);
   }
   set_num = -1;

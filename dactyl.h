@@ -229,7 +229,7 @@ enum grace_type { XY, ERROR_BARS };
 
 class grace {
  public:
-  grace(const char *fname, const char *dirname = "");
+  grace(const char *fname, const char *dirname = ".");
   ~grace();
   
   void new_set(grace_type t = XY);

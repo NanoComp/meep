@@ -228,13 +228,12 @@ static void output_complex_eps(component m, double *f[2], const volume &v,
                                const volume &what, const char *name,
                                component om = Hx, const double *overlay = NULL,
                                const double *dashed = NULL) {
-  FILE *out = fopen(name, "w");
-  if (!out) {
-    printf("Unable to open file '%s' for slice output.\n", name);
-    return;
+  double phase = 1.0;
+  double c = 1.0, s = 0.0;
+  if (f[1]) {
+    phase = get_phase(m, f, v, what);
+    c = cos(phase), s = sin(phase);
   }
-  double phase = get_phase(m, f, v, what);
-  double c = cos(phase), s = sin(phase);
 
   double xmin = 1e300, ymin = 1e300, xmax = -1e300, ymax = -1e300, fmax = 0.0;
   switch (v.dim) {
@@ -253,25 +252,39 @@ static void output_complex_eps(component m, double *f[2], const volume &v,
   }
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i)))
-      fmax = max(fmax, fabs(c*f[0][i]+s*f[1][i]));
+      fmax = max(fmax, fabs(c*f[0][i]+((f[1])?s*f[1][i]:0)));
   if (ymax == ymin) ymax = ymin + 1.0/v.a;
   if (fmax == 0.0) fmax = 0.0001;
-  eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
-  for (int i=0;i<v.ntot();i++) {
-    if (what.contains(v.loc(m,i))) {
-      double x = 0, y = 0;
-      switch (v.dim) {
-      case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
-      case d1: x = v.loc(m,i).z(); break;
-      case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
-      }
-      fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, c*f[0][i]+s*f[1][i]);
+  if (v.dim == d1) {
+    // Make a 1D line plot!
+    grace g(name);
+    for (int i=0;i<v.ntot();i++)
+      if (what.contains(v.loc(m,i)))
+        g.output_point(v.loc(m,i).z(), c*f[0][i]+((f[1])?s*f[1][i]:0));
+  } else {
+    // Make a 2D color plot!
+    FILE *out = fopen(name, "w");
+    if (!out) {
+      printf("Unable to open file '%s' for slice output.\n", name);
+      return;
     }
+    eps_header(xmin, ymin, xmax, ymax, fmax, v.a, out, name);
+    for (int i=0;i<v.ntot();i++) {
+      if (what.contains(v.loc(m,i))) {
+        double x = 0, y = 0;
+        switch (v.dim) {
+        case dcyl: x = v.loc(m,i).z(); y = v.loc(m,i).r(); break;
+        case d1: x = v.loc(m,i).z(); break;
+        case d2: x = v.loc(m,i).x(); y = v.loc(m,i).y(); break;
+        }
+        fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y, c*f[0][i]+((f[1])?s*f[1][i]:0));
+      }
+    }
+    if (overlay) eps_outline(out, om, overlay, v, what);
+    if (dashed) eps_dotted(out, om, dashed, v, what);
+    eps_trailer(out);
+    fclose(out);
   }
-  if (overlay) eps_outline(out, om, overlay, v, what);
-  if (dashed) eps_dotted(out, om, dashed, v, what);
-  eps_trailer(out);
-  fclose(out);
 }
 
 void mat::output_slices(const char *name) {
