@@ -444,7 +444,7 @@ void volume::interpolate(component c, const vec &p,
 
 void volume::interpolate(component c, const vec &pc,
                          ivec locs[8], double weights[8]) const {
-  const double SMALL = 1e-14;
+  const double SMALL = 1e-13;
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
