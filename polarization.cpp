@@ -235,11 +235,8 @@ void fields::step_e_polarization(polarization *op, polarization *np) {
     step_e_polarization(olpol, pol);
   } else if (olpol != NULL && pol != NULL) {
     DOCMP {
-      for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++) {
-        if (CM(op->Pr,r,z) != CM(op->Pr,r,z)) printf("nan in op pr\n");
-        if (CM(np->Pr,r,z) != CM(np->Pr,r,z)) printf("nan in np pr\n");
+      for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
         CM(er,r,z) -= MA(ma->invepser,r,z)*(CM(np->Pr,r,z)-CM(op->Pr,r,z));
-      }
       for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
         CM(ep,r,z) -= MA(ma->invepsep,r,z)*(CM(np->Pp,r,z)-CM(op->Pp,r,z));
       for (int r=0;r<nr;r++) for (int z=0;z<nz;z++)
