@@ -353,6 +353,16 @@ fields::fields(const mat *the_ma, int tm) {
   setifreqmax_and_iposmax(0, 0);
 }
 
+void fields::use_real_sources() {
+  if (e_sources) e_sources->use_real_sources();
+  if (h_sources) h_sources->use_real_sources();
+}
+
+void src::use_real_sources() {
+  is_real = 1;
+  if (next) next->use_real_sources();
+}
+
 void fields::add_src_pt(int r, int z,
                         double Pr, double Pp, double Pz,
                         double freq, double width, double peaktime,
@@ -372,6 +382,7 @@ void fields::add_src_pt(int r, int z,
   tmp->ep = Pp;
   tmp->r = r;
   tmp->z = z;
+  tmp->is_real = 0;
   if (is_h) {
     tmp->next = h_sources;
     h_sources = tmp;
@@ -970,7 +981,8 @@ void fields::step_h_source(const src *s) {
   const double pi = 3.14159265358979323846;
   double envelope = exp(-tt*tt/(2*s->width*s->width));
   Ar = cos(2*pi*s->freq*tt)*envelope;
-  Ai = -sin(2*pi*s->freq*tt)*envelope;
+  if (s->is_real) Ai = 0;
+  else Ai = -sin(2*pi*s->freq*tt)*envelope;
   IM(hr,s->r,s->z) += Ai*s->er;
   IM(hp,s->r,s->z) += Ai*s->ep;
   IM(hz,s->r,s->z) += Ai*s->ez;

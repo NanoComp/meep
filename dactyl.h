@@ -45,8 +45,10 @@ class src {
   double freq, width, peaktime;
   double ez, ep, er;
   int r, z, cutoff;
+  int is_real;
   src *next;
   int find_last_source(int guess=0);
+  void use_real_sources();
 };
 
 class bandsdata {
@@ -91,6 +93,7 @@ class fields {
   void output_real_imaginary_slices(const char *name);
   void step();
 
+  void use_real_sources();
   void add_er_source(double freq, double width, double peaktime,
                      double cutoff, int z, double amp(double r));
   void add_ep_source(double freq, double width, double peaktime,

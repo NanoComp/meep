@@ -63,6 +63,7 @@ void add_clever_sources(fields &f, double fmin, double fmax, double r) {
   f.add_ez_source(0.33*fmin, 0.13*fmin/fmax, 0.0, 8.0*(1+1*fmin/fmax*A), 0.0, source_sharp);
   f.add_hp_source(0.33*fmin, 0.13*fmin/fmax, 0.0, 8.0*(1+2*fmin/fmax*A), 0.0, source_sharp);
   f.add_hz_source(0.33*fmin, 0.13*fmin/fmax, 0.0, 8.0*(1+3*fmin/fmax*A), 0.0, source_sharp);
+  f.use_real_sources();
 }
 
 int main() {
