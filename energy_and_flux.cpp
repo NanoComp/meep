@@ -24,6 +24,20 @@
 
 /* Energy calculation */
 
+double fields::count_volume(component c) {
+  double vol = 0;
+  for (int i=0;i<num_chunks;i++)
+    vol += chunks[i]->count_volume(c);
+  return vol;
+}
+
+double fields_chunk::count_volume(component c) {
+  double vol = 0;
+  for (int i=0;i<v.ntot();i++)
+    vol += v.dv((component)c,i);
+  return vol;
+}
+
 double fields::total_energy() {
   return energy_in_box(v);
 }

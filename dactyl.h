@@ -180,6 +180,7 @@ class fields_chunk {
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
 
+  double count_volume(component);
   friend class fields;
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
@@ -286,6 +287,7 @@ class fields {
 
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
+  double count_volume(component);
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   // boundaries.cpp
