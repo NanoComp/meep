@@ -46,6 +46,11 @@ grace::grace(const char *fname, const char *dirname) {
   strcpy(dn, dirname);
   char buf[300];
   snprintf(buf,300,"%s/%s", dirname, fname);
+  if (!strcmp(fname+strlen(fname)-4,".eps") && !strcmp(dirname,".")) {
+    snprintf(buf,300,"%s", fn);
+    buf[strlen(buf)-4] = 0;
+    fn[strlen(fn)-4] = 0;
+  }
   f = fopen(buf, "w");
   if (!f) {
     printf("Unable to open file %s\n", buf);
