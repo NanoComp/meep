@@ -29,9 +29,13 @@ struct integrate_data {
   complex<double> *ph;
   complex<double> *fields;
   int *offsets;
+  int ninveps;
+  component inveps_cs[3];
+  direction inveps_ds[3];
+  int inveps_offsets[6];
   complex<long double> sum;
   double maxabs;
-  field_integrand integrand;
+  field_function integrand;
   void *integrand_data_;
 };
 
@@ -49,16 +53,21 @@ static void integrate_chunkloop(fields_chunk *fc, component cgrid,
   complex<double> *fields = data->fields, *ph = data->ph;
   complex<long double> sum = 0.0;
   double maxabs = 0;
+  const component *iecs = data->inveps_cs;
+  const direction *ieds = data->inveps_ds;
+  int *ieos = data->inveps_offsets;
 
   for (int i = 0; i < data->num_fields; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
-    if (cgrid == Dielectric)
-      fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
     if (cS[i] == Dielectric)
       ph[i] = 1.0;
-    else
+    else {
+      fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
       ph[i] = shift_phase * S.phase_shift(cS[i], sn);
+    }
   }
+  for (int k = 0; k < data->ninveps; ++k)
+    fc->v.yee2diel_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
 
   vec rshift(shift * (0.5*fc->v.inva));
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
@@ -66,8 +75,15 @@ static void integrate_chunkloop(fields_chunk *fc, component cgrid,
     loc = S.transform(loc, sn) + rshift;
 
     for (int i = 0; i < data->num_fields; ++i) {
-      if (cS[i] == Dielectric)
-	fields[i] = fc->s->eps[idx];
+      if (cS[i] == Dielectric) {
+	double tr = 0.0;
+	for (int k = 0; k < data->ninveps; ++k)
+	  tr += (fc->s->inveps[iecs[k]][ieds[k]][idx]
+		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[2*k]]
+		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[1+2*k]]
+		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[2*k]+ieos[1+2*k]]);
+	fields[i] = (4 * data->ninveps) / tr;
+      }
       else {
 	double f[2];
 	for (int k = 0; k < 2; ++k)
@@ -93,7 +109,7 @@ static void integrate_chunkloop(fields_chunk *fc, component cgrid,
 }
 
 complex<double> fields::integrate(int num_fields, const component *components,
-				  field_integrand integrand,
+				  field_function integrand,
 				  const geometric_volume &where,
 				  void *integrand_data_,
 				  double *maxabs)
@@ -121,6 +137,20 @@ complex<double> fields::integrate(int num_fields, const component *components,
   data.integrand = integrand;
   data.integrand_data_ = integrand_data_;
 
+  /* compute inverse-epsilon directions and averaging offsets for
+     computing Dielectric fields */
+  data.ninveps = 0;
+  bool needs_dielectric = false;
+  for (int i = 0; i < num_fields; ++i)
+    if (components[i] == Dielectric) { needs_dielectric = true; break; }
+  if (needs_dielectric) 
+    FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c)) {
+      if (data.ninveps == 3) abort("more than 3 field components??");
+      data.inveps_cs[data.ninveps] = c;
+      data.inveps_ds[data.ninveps] = component_direction(c);
+      ++data.ninveps;
+    }
+  
   data.offsets = new int[2 * num_fields];
   for (int i = 0; i < 2 * num_fields; ++i)
     data.offsets[i] = 0;
@@ -140,7 +170,7 @@ complex<double> fields::integrate(int num_fields, const component *components,
 }
 
 double fields::max_abs(int num_fields, const component *components,
-		       field_integrand integrand,
+		       field_function integrand,
 		       const geometric_volume &where,
 		       void *integrand_data_)
 {

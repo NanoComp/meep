@@ -15,6 +15,9 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+/* HDF5 output of fields and arbitrary functions thereof.  Works
+   very similarly to integrate.cpp (using fields::loop_in_chunks). */
+
 #include <stdio.h>
 #include <math.h>
 
@@ -26,32 +29,36 @@ static inline int min(int a, int b) { return (a<b)?a:b; }
 static inline int max(int a, int b) { return (a>b)?a:b; }
 static inline int abs(int a) { return a < 0 ? -a : a; }
 
+/***************************************************************************/
+
 typedef struct {
+  // information related to the HDF5 dataset (its size, etcetera)
   h5file *file;
   ivec min_corner, max_corner;
   int num_chunks;
-  component c;
-  int reim;
   double *buf;
   int bufsz;
   int rank;
   direction ds[3];
-} h5_output_data;
 
-static void update_datasize(h5_output_data *data, fields_chunk *fc,
-			    const ivec is, const ivec ie,
-			    const ivec shift, const symmetry &S, int sn)
-{
-    ivec isS = S.transform(is, sn) + shift;
-    ivec ieS = S.transform(ie, sn) + shift;
-    data->min_corner = min(data->min_corner, min(isS, ieS));
-    data->max_corner = max(data->max_corner, max(isS, ieS));
-    data->num_chunks++;
-    int bufsz = 1;
-    LOOP_OVER_DIRECTIONS(fc->v.dim, d)
-      bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
-    data->bufsz = max(data->bufsz, bufsz);
-}
+  int reim; // whether to output the real or imaginary part
+
+  // the function to output and related info (offsets for averaging, etc.)
+  int num_fields;
+  const component *components;
+  component *cS;
+  complex<double> *ph;
+  complex<double> *fields;
+  int *offsets;
+  int ninveps;
+  component inveps_cs[3];
+  direction inveps_ds[3];
+  int inveps_offsets[6];
+  complex<long double> sum;
+  double maxabs;
+  field_function fun;
+  void *fun_data_;
+} h5_output_data;
 
 static void h5_findsize_chunkloop(fields_chunk *fc, component cgrid,
 				  ivec is, ivec ie,
@@ -62,50 +69,15 @@ static void h5_findsize_chunkloop(fields_chunk *fc, component cgrid,
 				  void *data_)
 {
   h5_output_data *data = (h5_output_data *) data_;
-  component cS = S.transform(data->c, -sn);
-  double *f = cS == Dielectric ? fc->s->eps : fc->f[cS][data->reim];
-  if (f) update_datasize(data, fc, is, ie, shift, S, sn);
-}
-
-static void get_output_dimensions(int start[3], int count[3],
-				  int offset[3], int stride[3],
-				  h5_output_data *data, fields_chunk *fc,
-				  const ivec &is, const ivec &ie,
-				  const ivec &shift, const symmetry &S, int sn)
-{
-    ivec isS = S.transform(is, sn) + shift;
-    ivec ieS = S.transform(ie, sn) + shift;
-
-    for (int i = 0; i < 3; ++i) {
-      start[i] = offset[i] = 0;
-      count[i] = stride[i] = 1;
-    }
-
-    // figure out what yucky_directions (in LOOP_OVER_IVECS)
-    // correspond to what directions in the transformed vectors (in output).
-    ivec permute(zero_ivec(fc->v.dim));
-    for (int i = 0; i < 3; ++i) 
-      permute.set_direction(fc->v.yucky_direction(i), i);
-    permute = S.transform_unshifted(permute, sn);
-    LOOP_OVER_DIRECTIONS(permute.dim, d)
-      permute.set_direction(d, abs(permute.in_direction(d)));
-
-    // compute the size of the chunk to output, and its strides etc.
-    for (int i = 0; i < data->rank; ++i) {
-      direction d = data->ds[i];
-      int isd = isS.in_direction(d), ied = ieS.in_direction(d);
-      start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
-      count[i] = abs(ied - isd) / 2 + 1;
-      int j = permute.in_direction(d);
-      if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
-    }
-    for (int i = 0; i < data->rank; ++i) {
-      direction d = data->ds[i];
-      int j = permute.in_direction(d);
-      for (int k = i + 1; k < data->rank; ++k) stride[j] *= count[k];
-      offset[j] *= stride[j];
-      if (offset[j]) stride[j] *= -1;
-    }
+  ivec isS = S.transform(is, sn) + shift;
+  ivec ieS = S.transform(ie, sn) + shift;
+  data->min_corner = min(data->min_corner, min(isS, ieS));
+  data->max_corner = max(data->max_corner, max(isS, ieS));
+  data->num_chunks++;
+  int bufsz = 1;
+  LOOP_OVER_DIRECTIONS(fc->v.dim, d)
+    bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+  data->bufsz = max(data->bufsz, bufsz);
 }
 
 static void h5_output_chunkloop(fields_chunk *fc, component cgrid,
@@ -117,58 +89,113 @@ static void h5_output_chunkloop(fields_chunk *fc, component cgrid,
 				void *data_)
 {
   h5_output_data *data = (h5_output_data *) data_;
-  component cS = S.transform(data->c, -sn);
-  double *f = cS == Dielectric ? fc->s->eps : fc->f[cS][data->reim];
-  if (f) {
-    int start[3], count[3], offset[3], stride[3];
-    get_output_dimensions(start, count, offset, stride,
-			  data, fc, is, ie, shift, S, sn);
 
-    // cgrid is Dielectric grid, so we need to average onto it:
-    int o1, o2;
-    fc->v.yee2diel_offsets(cS, o1, o2);
+  //-----------------------------------------------------------------------//
+  // Find output chunk dimensions and strides, etc.
 
-    shift_phase *= S.phase_shift(cS, sn); // vector component may flip
-    
-    // Copy data to buffer, taking shift_phase into account:
-    if (cS == Dielectric) { // no phase
-      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-	int idx2 = ((((offset[0] + offset[1] + offset[2])
-		      + loop_i1 * stride[0]) 
-		     + loop_i2 * stride[1]) + loop_i3 * stride[2]);
-	data->buf[idx2] = f[idx];
-      }
-    }
-    else if (imag(shift_phase) == 0.0) { // real phase (possibly real field)
-      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-	int idx2 = ((((offset[0] + offset[1] + offset[2])
-		      + loop_i1 * stride[0]) 
-		     + loop_i2 * stride[1]) + loop_i3 * stride[2]);
-	data->buf[idx2] = (f[idx] + f[idx+o1] + f[idx+o2] + f[idx+o1+o2])
-	  * (0.25 * real(shift_phase));
-      }
-    }
-    else { // complex phase: do complex multiplication with complex field
-      double *fr = fc->f[cS][0], *fi = fc->f[cS][1];
-      if (!fi) abort("complex Bloch boundary condition with real field!");
-      LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-	int idx2 = ((((offset[0] + offset[1] + offset[2])
-		      + loop_i1 * stride[0])
-		     + loop_i2 * stride[1]) + loop_i3 * stride[2]);
-	double re = 0.25 * (fr[idx] + fr[idx+o1] + fr[idx+o2] + fr[idx+o1+o2]);
-	double im = 0.25 * (fi[idx] + fi[idx+o1] + fi[idx+o2] + fi[idx+o1+o2]);
-	data->buf[idx2] = data->reim 
-	  ? re * imag(shift_phase) + im * real(shift_phase)
-	  : re * real(shift_phase) - im * imag(shift_phase);
-      }
-    }
-    data->file->write_chunk(data->rank, start, count, data->buf);
+  int start[3]={0,0,0}, count[3]={1,1,1};
+  int offset[3]={0,0,0}, stride[3]={1,1,1};
+
+  ivec isS = S.transform(is, sn) + shift;
+  ivec ieS = S.transform(ie, sn) + shift;
+  
+  // figure out what yucky_directions (in LOOP_OVER_IVECS)
+  // correspond to what directions in the transformed vectors (in output).
+  ivec permute(zero_ivec(fc->v.dim));
+  for (int i = 0; i < 3; ++i) 
+    permute.set_direction(fc->v.yucky_direction(i), i);
+  permute = S.transform_unshifted(permute, sn);
+  LOOP_OVER_DIRECTIONS(permute.dim, d)
+    permute.set_direction(d, abs(permute.in_direction(d)));
+  
+  // compute the size of the chunk to output, and its strides etc.
+  for (int i = 0; i < data->rank; ++i) {
+    direction d = data->ds[i];
+    int isd = isS.in_direction(d), ied = ieS.in_direction(d);
+    start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
+    count[i] = abs(ied - isd) / 2 + 1;
+    int j = permute.in_direction(d);
+    if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }
+  for (int i = 0; i < data->rank; ++i) {
+    direction d = data->ds[i];
+    int j = permute.in_direction(d);
+    for (int k = i + 1; k < data->rank; ++k) stride[j] *= count[k];
+    offset[j] *= stride[j];
+    if (offset[j]) stride[j] *= -1;
+  }
+  
+  //-----------------------------------------------------------------------//
+  // Compute the function to output, exactly as in fields::integrate,
+  // except that here we store its values in a buffer instead of integrating.
+
+  int *off = data->offsets;
+  component *cS = data->cS;
+  complex<double> *fields = data->fields, *ph = data->ph;
+  complex<long double> sum = 0.0;
+  double maxabs = 0;
+  const component *iecs = data->inveps_cs;
+  const direction *ieds = data->inveps_ds;
+  int *ieos = data->inveps_offsets;
+
+  for (int i = 0; i < data->num_fields; ++i) {
+    cS[i] = S.transform(data->components[i], -sn);
+    if (cS[i] == Dielectric)
+      ph[i] = 1.0;
+    else {
+      fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
+      ph[i] = shift_phase * S.phase_shift(cS[i], sn);
+    }
+  }
+  for (int k = 0; k < data->ninveps; ++k)
+    fc->v.yee2diel_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
+
+  vec rshift(shift * (0.5*fc->v.inva));
+  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+    IVEC_LOOP_LOC(fc->v, loc);
+    loc = S.transform(loc, sn) + rshift;
+
+    for (int i = 0; i < data->num_fields; ++i) {
+      if (cS[i] == Dielectric) {
+	double tr = 0.0;
+	for (int k = 0; k < data->ninveps; ++k)
+	  tr += (fc->s->inveps[iecs[k]][ieds[k]][idx]
+		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[2*k]]
+		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[1+2*k]]
+		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[2*k]+ieos[1+2*k]]);
+	fields[i] = (4 * data->ninveps) / tr;
+      }
+      else {
+	double f[2];
+	for (int k = 0; k < 2; ++k)
+	  if (fc->f[cS[i]][k])
+	    f[k] = 0.25 * (fc->f[cS[i]][k][idx]
+			   + fc->f[cS[i]][k][idx+off[2*i]]
+			   + fc->f[cS[i]][k][idx+off[2*i+1]]
+			   + fc->f[cS[i]][k][idx+off[2*i]+off[2*i+1]]);
+	  else
+	    f[k] = 0;
+	fields[i] = complex<double>(f[0], f[1]) * ph[i];
+      }
+    }
+
+    complex<double> fun = data->fun(fields, loc, data->fun_data_);
+    int idx2 = ((((offset[0] + offset[1] + offset[2])
+		  + loop_i1 * stride[0]) 
+		 + loop_i2 * stride[1]) + loop_i3 * stride[2]);
+    data->buf[idx2] = data->reim ? imag(fun) : real(fun);
+  }
+
+  //-----------------------------------------------------------------------//
+
+  data->file->write_chunk(data->rank, start, count, data->buf);
 }
 
 void fields::output_hdf5(h5file *file, const char *dataname,
-			 component c, int reim,
+			 int num_fields, const component *components,
+			 field_function fun, int reim,
 			 const geometric_volume &where,
+			 void *fun_data_,
 			 bool append_data,
                          bool single_precision) {
   h5_output_data data;
@@ -178,7 +205,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   data.max_corner = v.round_vec(where.get_min_corner()) - one_ivec(v.dim);
   data.num_chunks = 0;
   data.bufsz = 0;
-  data.c = c; data.reim = reim;
+  data.reim = reim;
 
   loop_in_chunks(h5_findsize_chunkloop, (void *) &data, 
 	    where, Dielectric, true, true);
@@ -206,11 +233,114 @@ void fields::output_hdf5(h5file *file, const char *dataname,
 
   data.buf = new double[data.bufsz];
 
-  loop_in_chunks(h5_output_chunkloop, (void *) &data, 
-	    where, Dielectric, true, true);
+  data.num_fields = num_fields;
+  data.components = components;
+  data.cS = new component[num_fields];
+  data.ph = new complex<double>[num_fields];
+  data.fields = new complex<double>[num_fields];
+  data.sum = 0;
+  data.maxabs = 0;
+  data.fun = fun;
+  data.fun_data_ = fun_data_;
 
+  /* compute inverse-epsilon directions and averaging offsets for
+     computing Dielectric fields */
+  data.ninveps = 0;
+  bool needs_dielectric = false;
+  for (int i = 0; i < num_fields; ++i)
+    if (components[i] == Dielectric) { needs_dielectric = true; break; }
+  if (needs_dielectric) 
+    FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c)) {
+      if (data.ninveps == 3) abort("more than 3 field components??");
+      data.inveps_cs[data.ninveps] = c;
+      data.inveps_ds[data.ninveps] = component_direction(c);
+      ++data.ninveps;
+    }
+  
+  data.offsets = new int[2 * num_fields];
+  for (int i = 0; i < 2 * num_fields; ++i)
+    data.offsets[i] = 0;
+  
+  loop_in_chunks(h5_output_chunkloop, (void *) &data, 
+		 where, Dielectric, true, true);
+
+  delete[] data.offsets;
+  delete[] data.fields;
+  delete[] data.ph;
+  delete[] data.cS;
   delete[] data.buf;
   file->done_writing_chunks();
+}
+
+/***************************************************************************/
+
+typedef struct {
+  field_rfunction fun;
+  void *fun_data_;
+} rintegrand_data;
+
+static complex<double> rintegrand_fun(const complex<double> *fields,
+                                     const vec &loc,
+                                     void *data_)
+{
+  rintegrand_data *data = (rintegrand_data *) data_;
+  return data->fun(fields, loc, data->fun_data_);
+}
+
+void fields::output_hdf5(h5file *file, const char *dataname,
+                         int num_fields, const component *components,
+                         field_rfunction fun,
+                         const geometric_volume &where,
+                         void *fun_data_,
+                         bool append_data,
+                         bool single_precision)
+{
+  rintegrand_data data; data.fun = fun; data.fun_data_ = fun_data_;
+  output_hdf5(file, dataname, num_fields, components, rintegrand_fun, 0, where,
+	      (void *) &data, append_data, single_precision);
+}
+
+/***************************************************************************/
+
+static complex<double> component_fun(const complex<double> *fields,
+				     const vec &loc,
+				     void *data_)
+{
+     (void) loc; // unused
+     (void) data_; // unused
+     return fields[0];
+}
+
+void fields::output_hdf5(h5file *file, const char *dataname,
+			 component c, int reim,
+			 const geometric_volume &where,
+			 bool append_data,
+                         bool single_precision) {
+     output_hdf5(file, dataname, 1, &c, component_fun, reim, where, 0,
+		 append_data, single_precision);
+}
+
+/***************************************************************************/
+
+void fields::output_hdf5(h5file *file, const char *dataname,
+                         int num_fields, const component *components,
+                         field_function fun,
+                         const geometric_volume &where,
+                         void *fun_data_,
+                         bool append_data,
+                         bool single_precision)
+{
+  int len = strlen(dataname) + 5;
+  char *dataname2;
+
+  dataname2 = new char[len];
+  snprintf(dataname2, len, "%s%s", dataname, ".r");
+  output_hdf5(file, dataname, num_fields, components, fun, 0, where,
+              fun_data_, append_data, single_precision);
+  snprintf(dataname2, len, "%s%s", dataname, ".i");
+  output_hdf5(file, dataname, num_fields, components, fun, 1, where,
+              fun_data_, append_data, single_precision);
+  delete[] dataname2;
 }
 
 void fields::output_hdf5(h5file *file, component c,
@@ -228,15 +358,44 @@ void fields::output_hdf5(h5file *file, component c,
   }
 }
 
+/***************************************************************************/
+
+void fields::output_hdf5(const char *dataname,
+			 int num_fields, const component *components,
+                         field_function fun,
+			 const geometric_volume &where,
+			 void *fun_data_,
+			 bool single_precision, 
+			 const char *prefix) {
+  h5file *file = open_h5file(dataname, h5file::WRITE, prefix, true);
+  output_hdf5(file, dataname, num_fields, components, fun, where, fun_data_,
+	      false, single_precision);
+  delete file;
+}
+
+void fields::output_hdf5(const char *dataname,
+			 int num_fields, const component *components,
+                         field_rfunction fun,
+			 const geometric_volume &where,
+			 void *fun_data_,
+			 bool single_precision, 
+			 const char *prefix) {
+  h5file *file = open_h5file(dataname, h5file::WRITE, prefix, true);
+  output_hdf5(file, dataname, num_fields, components, fun, where, fun_data_,
+	      false, single_precision);
+  delete file;
+}
+
 void fields::output_hdf5(component c,
 			 const geometric_volume &where,
 			 bool single_precision, 
 			 const char *prefix) {
-  h5file *file = open_h5file(component_name(c), h5file::WRITE,
-			     prefix, true);
+  h5file *file = open_h5file(component_name(c), h5file::WRITE, prefix, true);
   output_hdf5(file, c, where, false, single_precision);
   delete file;
 }
+
+/***************************************************************************/
 
 h5file *fields::open_h5file(const char *name, h5file::access_mode mode, 
 			    const char *prefix, bool timestamp)
@@ -254,4 +413,4 @@ h5file *fields::open_h5file(const char *name, h5file::access_mode mode,
   return new h5file(filename, mode, true);
 }
 
-} // meep
+} // namespace meep

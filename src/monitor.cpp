@@ -283,47 +283,102 @@ double fields_chunk::get_eps(const ivec &iloc) const {
   return broadcast(n_proc(), res);
 }
 
-double fields::get_eps(const vec &loc) const {
-  ivec ilocs[8];
-  double w[8];
-  double val[8];
-  for (int i=0;i<8;i++) val[i] = 0.0;
-  v.interpolate(v.eps_component(), loc, ilocs, w);
-  for (int argh=0;argh<8&&w[argh];argh++)
-    val[argh] = w[argh]*get_eps(ilocs[argh]);
-  dumbsort(val);
-  double res = 0.0;
-  for (int i=0;i<8;i++) res += val[i];
-  return res;
-}
-
-double structure::get_eps(const ivec &origloc) const {
+double fields::get_inveps(component c, direction d,
+			  const ivec &origloc) const {
   ivec iloc = origloc;
+  complex<double> aaack = 1.0;
+  locate_point_in_user_volume(&iloc, &aaack);
   for (int sn=0;sn<S.multiplicity();sn++)
     for (int i=0;i<num_chunks;i++)
-      if (chunks[i]->v.contains(S.transform(iloc,sn)))
-        return chunks[i]->get_eps(S.transform(iloc,sn));
+      if (chunks[i]->v.contains(S.transform(iloc,sn))) {
+	signed_direction ds = S.transform(d,sn);
+        return chunks[i]->get_inveps(S.transform(c,sn), ds.d,
+				     S.transform(iloc,sn))
+	     * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
+		? -1 : 1);
+      }
   return 0.0;
 }
 
-double structure_chunk::get_eps(const ivec &iloc) const {
+double fields_chunk::get_inveps(component c, direction d,
+			     const ivec &iloc) const {
   double res = 0.0;
-  if (is_mine()) res = eps[v.index(v.eps_component(), iloc)];
+  if (is_mine()) res = s->inveps[c][d] ? s->inveps[c][d][v.index(c, iloc)] : 0;
   return broadcast(n_proc(), res);
 }
 
-double structure::get_eps(const vec &loc) const {
+double fields::get_inveps(component c, direction d,
+			  const vec &loc) const {
   ivec ilocs[8];
   double w[8];
   double val[8];
   for (int i=0;i<8;i++) val[i] = 0.0;
-  v.interpolate(v.eps_component(), loc, ilocs, w);
+  v.interpolate(c, loc, ilocs, w);
   for (int argh=0;argh<8&&w[argh];argh++)
-    val[argh] = w[argh]*get_eps(ilocs[argh]);
+    val[argh] = w[argh]*get_inveps(c,d,ilocs[argh]);
   dumbsort(val);
   double res = 0.0;
   for (int i=0;i<8;i++) res += val[i];
   return res;
+}
+
+double fields::get_eps(const vec &loc) const {
+  double tr = 0;
+  int nc = 0;
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (v.has_field(c)) {
+      tr += get_inveps(c, component_direction(c), loc);
+      ++nc;
+    }
+  return nc / tr;
+}
+
+double structure::get_inveps(component c, direction d,
+			     const ivec &origloc) const {
+  ivec iloc = origloc;
+  for (int sn=0;sn<S.multiplicity();sn++)
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->v.contains(S.transform(iloc,sn))) {
+	signed_direction ds = S.transform(d,sn);
+        return chunks[i]->get_inveps(S.transform(c,sn), ds.d,
+				     S.transform(iloc,sn))
+	     * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
+		? -1 : 1);
+      }
+  return 0.0;
+}
+
+double structure_chunk::get_inveps(component c, direction d,
+				   const ivec &iloc) const {
+  double res = 0.0;
+  if (is_mine()) res = inveps[c][d] ? inveps[c][d][v.index(c, iloc)] : 0;
+  return broadcast(n_proc(), res);
+}
+
+double structure::get_inveps(component c, direction d,
+			     const vec &loc) const {
+  ivec ilocs[8];
+  double w[8];
+  double val[8];
+  for (int i=0;i<8;i++) val[i] = 0.0;
+  v.interpolate(c, loc, ilocs, w);
+  for (int argh=0;argh<8&&w[argh];argh++)
+    val[argh] = w[argh]*get_inveps(c,d,ilocs[argh]);
+  dumbsort(val);
+  double res = 0.0;
+  for (int i=0;i<8;i++) res += val[i];
+  return res;
+}
+
+double structure::get_eps(const vec &loc) const {
+  double tr = 0;
+  int nc = 0;
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (v.has_field(c)) {
+      tr += get_inveps(c, component_direction(c), loc);
+      ++nc;
+    }
+  return nc / tr;
 }
 
 monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) const {

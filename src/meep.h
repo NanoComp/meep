@@ -207,7 +207,7 @@ class structure_chunk {
   int is_mine() const { return the_is_mine; }
 
   // monitor.cpp
-  double get_eps(const ivec &iloc) const;
+  double get_inveps(component, direction, const ivec &iloc) const;
   double max_eps() const;
  private:
   double pml_fmin;
@@ -309,7 +309,8 @@ class structure {
   void mix_with(const structure *, double);
 
   // monitor.cpp
-  double get_eps(const ivec &origloc) const;
+  double get_inveps(component, direction, const ivec &origloc) const;
+  double get_inveps(component, direction, const vec &loc) const;
   double get_eps(const vec &loc) const;
   double max_eps() const;
 
@@ -571,6 +572,7 @@ class fields_chunk {
   double my_polarization_energy(const ivec &) const;
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double my_polarization_energy(const polarizability_identifier &, const ivec &) const;
+  double get_inveps(component, direction, const ivec &iloc) const;
   double get_eps(const ivec &iloc) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
@@ -655,9 +657,12 @@ typedef void (*field_chunkloop)(fields_chunk *fc, component cgrid,
 				ivec shift, complex<double> shift_phase, 
 				const symmetry &S, int sn,
 				void *chunkloop_data);
-typedef complex<double> (*field_integrand)(const complex<double> *fields,
+typedef complex<double> (*field_function)(const complex<double> *fields,
 					   const vec &loc,
 					   void *integrand_data_);
+typedef double (*field_rfunction)(const complex<double> *fields,
+				   const vec &loc,
+				   void *integrand_data_);
 
 class fields {
  public:
@@ -721,23 +726,59 @@ class fields {
                                     const char *name = "");
 
   // h5fields.cpp:
-  void output_hdf5(h5file *file, component c,
+  // low-level function:
+  void output_hdf5(h5file *file, const char *dataname,
+		   int num_fields, const component *components,
+		   field_function fun, int reim,
 		   const geometric_volume &where,
+		   void *fun_data_ = 0,
 		   bool append_data = false,
-		   bool single_precision = true);
-  void output_hdf5(component c,
+		   bool single_precision = false);
+  // higher-level functions
+  void output_hdf5(h5file *file, const char *dataname,
+		   int num_fields, const component *components,
+		   field_rfunction fun,
 		   const geometric_volume &where,
-		   bool single_precision = true,
-		   const char *prefix = NULL);
-  h5file *open_h5file(const char *name, 
-		      h5file::access_mode mode = h5file::WRITE,
-		      const char *prefix = NULL, bool timestamp = false);
-  // low-level function
+		   void *fun_data_ = 0,
+		   bool append_data = false,
+		   bool single_precision = false);
   void output_hdf5(h5file *file, const char *dataname,
 		   component c, int reim,
 		   const geometric_volume &where,
 		   bool append_data = false,
-		   bool single_precision = true);
+		   bool single_precision = false);
+  void output_hdf5(h5file *file, const char *dataname,
+		   int num_fields, const component *components,
+		   field_function fun,
+		   const geometric_volume &where,
+		   void *fun_data_ = 0,
+		   bool append_data = false,
+		   bool single_precision = false);
+  void output_hdf5(h5file *file, component c,
+		   const geometric_volume &where,
+		   bool append_data = false,
+		   bool single_precision = false);
+  void output_hdf5(const char *dataname,
+		   int num_fields, const component *components,
+		   field_function fun,
+		   const geometric_volume &where,
+		   void *fun_data_ = 0,
+		   bool single_precision = false,
+		   const char *prefix = 0);
+  void output_hdf5(const char *dataname,
+		   int num_fields, const component *components,
+		   field_rfunction fun,
+		   const geometric_volume &where,
+		   void *fun_data_ = 0,
+		   bool single_precision = false,
+		   const char *prefix = 0);
+  void output_hdf5(component c,
+		   const geometric_volume &where,
+		   bool single_precision = false,
+		   const char *prefix = 0);
+  h5file *open_h5file(const char *name, 
+		      h5file::access_mode mode = h5file::WRITE,
+		      const char *prefix = NULL, bool timestamp = false);
 
   double maxfieldmag_to_master(component) const;
   double minpolenergy_to_master() const;
@@ -779,12 +820,12 @@ class fields {
   
   // integrate.cpp
   complex<double> integrate(int num_fields, const component *components,
-			    field_integrand integrand,
+			    field_function integrand,
 			    const geometric_volume &where,
 			    void *integrand_data_ = 0,
 			    double *maxabs = 0);
   double max_abs(int num_fields, const component *components,
-		 field_integrand integrand,
+		 field_function integrand,
 		 const geometric_volume &where,
 		 void *integrand_data = 0);
   
@@ -811,6 +852,7 @@ class fields {
 			double freq_min, double freq_max, int Nfreq);
   
   // monitor.cpp
+  double get_inveps(component, direction, const vec &loc) const;
   double get_eps(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
@@ -905,6 +947,7 @@ class fields {
   double get_polarization_energy(const vec &) const;
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double get_polarization_energy(const polarizability_identifier &, const vec &) const;
+  double get_inveps(component, direction, const ivec &iloc) const;
   double get_eps(const ivec &iloc) const;
 };
 
