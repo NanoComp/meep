@@ -38,7 +38,7 @@ int main(int argc, const char *argv[]) {
   if (argc != 4) usage();
   const char *name1 = argv[1];
   const char *name2 = argv[2];
-  char time[7] = "000000";
+  char time[9] = "00000000";
   const double little = atof(argv[3]);
   printf("Comparing %s with %s, small number being %lg.\n",
          name1, name2, little);
@@ -64,7 +64,7 @@ int main(int argc, const char *argv[]) {
       char *name = namelist[n]->d_name;
       if (strcmp(name+strlen(name)-4,".sli") == 0 &&
           strncmp(name, lookfor, strlen(lookfor)) == 0) {
-        strncpy(time, name + strlen(name)-10, 6);
+        strncpy(time, name + strlen(name)-12, 8);
         int err = 0;
         hey("Checking time %s", time);
         // Check Hr:
