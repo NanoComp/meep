@@ -35,12 +35,18 @@ uninstall: meep-uninstall
 
 $(OBJ_meep): meep.h meep_internals.h vec.h mympi.h
 example.o: example.cpp meep.h vec.h mympi.h
-step.o: step.cpp step_h.h step_e.h meep.h meep_internals.h vec.h mympi.h
+step.o: step.cpp step_h.h step_e.h step_d.h meep.h meep_internals.h vec.h mympi.h \
+		step_e_old.h
 
 step_h.h: step_h.hs StepGen.lhs
 	ghc -fglasgow-exts -package data --make -o step_h step_h.hs && ./step_h > step_h.h
 step_e.h: step_e.hs StepGen.lhs
 	ghc -fglasgow-exts -package data --make -o step_e step_e.hs && ./step_e > step_e.h
+step_e_old.h: step_e_old.hs StepGen.lhs
+	ghc -fglasgow-exts -package data --make -o step_e_old step_e_old.hs \
+		&& ./step_e_old > step_e_old.h
+step_d.h: step_d.hs StepGen.lhs
+	ghc -fglasgow-exts -package data --make -o step_d step_d.hs && ./step_d > step_d.h
 
 libmeep.a: $(OBJ_meep)
 	ar cru libmeep.a $(OBJ_meep)

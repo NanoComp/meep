@@ -170,7 +170,41 @@ void fields::step_h_old() {
 }
 
 void fields_chunk::step_h_old() {
-  if (v.dim == D1) {
+  if (v.dim == D3) {
+    const int n1 = num_each_direction[0];
+    const int n2 = num_each_direction[1];
+    const int n3 = num_each_direction[2];
+    const int s1 = stride_each_direction[0];
+    const int s2 = stride_each_direction[1];
+    const int s3 = stride_each_direction[2];
+    DOCMP FOR_MAGNETIC_COMPONENTS(cc)
+      if (f[cc][cmp]) {
+        const int yee_idx = v.yee_index(cc);
+        const component c_p=plus_component[cc], c_m=minus_component[cc];
+        const direction d_deriv_p = plus_deriv_direction[cc];
+        const direction d_deriv_m = minus_deriv_direction[cc];
+        const bool have_p = have_plus_deriv[cc];
+        const bool have_m = have_minus_deriv[cc];
+        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
+        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
+        const int stride_p = (have_p)?v.stride(d_deriv_p):0;
+        const int stride_m = (have_m)?v.stride(d_deriv_m):0;
+        // The following lines "promise" the compiler that the values of
+        // these arrays won't change during this loop.
+        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
+        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
+        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
+          ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
+        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
+          ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
+        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
+        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
+        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
+#include "step_h.h"
+      }
+  } else if (v.dim == D1) {
     DOCMP {
       if (ma->C[Z][Hy])
         for (int z=0;z<v.nz();z++) {
@@ -567,7 +601,42 @@ void fields::step_e_old() {
 
 void fields_chunk::step_e_old() {
   const volume v = this->v;
-  if (v.dim == D1) {
+  if (v.dim == D3) {
+    const int n1 = num_each_direction[0];
+    const int n2 = num_each_direction[1];
+    const int n3 = num_each_direction[2];
+    const int s1 = stride_each_direction[0];
+    const int s2 = stride_each_direction[1];
+    const int s3 = stride_each_direction[2];
+    DOCMP FOR_ELECTRIC_COMPONENTS(cc)
+      if (f[cc][cmp]) {
+        const int yee_idx = v.yee_index(cc);
+        const component c_p=plus_component[cc], c_m=minus_component[cc];
+        const direction d_deriv_p = plus_deriv_direction[cc];
+        const direction d_deriv_m = minus_deriv_direction[cc];
+        const bool have_p = have_plus_deriv[cc];
+        const bool have_m = have_minus_deriv[cc];
+        const bool have_p_pml = have_p && ma->C[d_deriv_p][cc];
+        const bool have_m_pml = have_m && ma->C[d_deriv_m][cc];
+        const int stride_p = (have_p)?v.stride(d_deriv_p):0;
+        const int stride_m = (have_m)?v.stride(d_deriv_m):0;
+        // The following lines "promise" the compiler that the values of
+        // these arrays won't change during this loop.
+        RESTRICT const double *C_m = (have_m_pml)?ma->C[d_deriv_m][cc] + yee_idx:NULL;
+        RESTRICT const double *C_p = (have_p_pml)?ma->C[d_deriv_p][cc] + yee_idx:NULL;
+        RESTRICT const double *decay_m = (!have_m_pml)?NULL:
+          ma->Cdecay[d_deriv_m][cc][component_direction(cc)] + yee_idx;
+        RESTRICT const double *decay_p = (!have_p_pml)?NULL:
+          ma->Cdecay[d_deriv_p][cc][component_direction(cc)] + yee_idx;
+        RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
+        RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
+        RESTRICT const double *inveps = ma->inveps[cc][component_direction(cc)] + yee_idx;
+        RESTRICT double *the_f = f[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
+#include "step_e_old.h"
+      }
+  } else if (v.dim == D1) {
     DOCMP {
       if (ma->C[Z][Ex])
         for (int z=1;z<=v.nz();z++) {

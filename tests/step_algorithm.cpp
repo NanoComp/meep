@@ -268,6 +268,41 @@ bool step_pml_2d_te(const char *dirname) {
   return 1;
 }
 
+bool step_3d_metal(const char *dirname) {
+  double a = 10.0;
+  double ttot = 1.0;
+
+  const volume v = vol3d(0.7, 0.7, 0.7, a);
+
+  mat ma(v, eps);
+  mat ma_old(v, eps);
+  ma.use_pml_everywhere(0.3);
+  ma_old.use_pml_everywhere(0.3);
+  ma.set_output_directory(dirname);
+  ma_old.set_output_directory(dirname);
+  master_printf("Testing step algorithm in 3D with metal...\n");
+
+  fields f(&ma);
+  f.add_point_source(Ez, 0.2, 2.5, 0.0, 4.0, vec(0.2, .4,.503));
+  fields f_old(&ma);
+  f_old.add_point_source(Ez, 0.2, 2.5, 0.0, 4.0, vec(0.2, .4,.503));
+  while (f.time() < ttot) {
+    f.step();
+    f_old.step_old();
+    if (!compare_point(f, f_old, vec(0.2, 0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f_old, vec(0.5, .401 ,  .5))) return 0;
+    if (!compare_point(f, f_old, vec(0.21, .29 , 0.53))) return 0;
+    if (!compare_point(f, f_old, vec(0.2, .2  , .2 ))) return 0;
+    if (!compare(f.electric_energy_in_box(v.surroundings()),
+                 f_old.electric_energy_in_box(v.surroundings()),
+                 "electric energy")) return 0;
+    if (!compare(f.magnetic_energy_in_box(v.surroundings()),
+                 f_old.magnetic_energy_in_box(v.surroundings()),
+                 "magnetic energy")) return 0;
+  }
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   const char *dirname = "step_algorithm-out";
@@ -290,6 +325,9 @@ int main(int argc, char **argv) {
 
   if (!step_pml_2d_te(dirname))
     abort("error in step_pml_2d_te\n");
+
+  if (!step_3d_metal(dirname))
+    abort("error in step_3d_metal\n");
 
   return 0;
 }
