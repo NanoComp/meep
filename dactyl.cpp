@@ -720,12 +720,14 @@ void fields::step_h_pml() {
             for (int iz=0;iz<npmlz;iz++,z+=lr) {
               double Czhr = ma->Czhr[iz];
               double Czhp = ma->Czhp[iz];
+              double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
+              double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
               double dhrp = c*(-IT(ez,r,z)*mor);
               double hrz = CM(hr,r,z) - PMLZ(z_hrp,r);
               PMLZ(z_hrp,r) += dhrp;
-              CM(hr,r,z)+= dhrp + (c*(CM(ep,r,z+1)-CM(ep,r,z))*(1-0.5*Czhr) - Czhr*hrz);
+              CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
               
-              double dhpz = (-c*(CM(er,r,z+1)-CM(er,r,z))*(1-0.5*Czhp)-Czhp*PMLZ(z_hpz,r));
+              double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLZ(z_hpz,r));
               PMLZ(z_hpz,r) += dhpz;
               CM(hp,r,z)+= dhpz + c*(CM(ez,r+1,z)-CM(ez,r,z));
             }
@@ -754,7 +756,8 @@ void fields::step_h_pml() {
         int z = z0;
         for (int iz=0;iz<npmlz;iz++,z+=lr) { // False boundary layer!
           double Czhp = ma->Czhp[iz];
-          double dhpz = (-c*(CM(er,r,z+1)-CM(er,r,z))*(1-0.5*Czhp)-Czhp*PMLZ(z_hpz,r));
+          double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
+          double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLZ(z_hpz,r));
           PMLZ(z_hpz,r) += dhpz;
           CM(hp,r,z)+= dhpz + c*(CM(ez,r+1,z)-CM(ez,r,z));
         }
@@ -767,11 +770,11 @@ void fields::step_h_pml() {
         for (int iz=0;iz<npmlz;iz++,z+=lr) {
           const int r=0;
           double Czhr = ma->Czhr[iz];
+          double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
           double dhrp = c*(-IT(ez,r+1,z)*m/* /1.0 */);
           double hrz = CM(hr,r,z) - PMLZ(z_hrp,r);
           PMLZ(z_hrp,r) += dhrp;
-          CM(hr,r,z)+= dhrp +
-            (c*(CM(ep,r,z+1)-CM(ep,r,z))*(1-0.5*Czhr) - Czhr*hrz);
+          CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
         }
       }
     }
@@ -787,6 +790,10 @@ void fields::step_h_pml() {
         double Crhp = ma->Crhp[r-nr+npmlr];
         double Crhz = ma->Crhz[r-nr+npmlr];
         double Cphz = ma->Cphz[r-nr+npmlr];
+        double ooop_Cphr = 1.0/(1.0+0.5*Cphr);
+        double ooop_Crhp = 1.0/(1.0+0.5*Crhp);
+        double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
+        double ooop_Cphz = 1.0/(1.0+0.5*Cphz);
         for (int z=1;z<nz;z++) {
           double Czhp, Czhr;
           if (z < npmlz) {
@@ -799,21 +806,22 @@ void fields::step_h_pml() {
             Czhr = 0;
             Czhp = 0;
           }
-          double dhrp = (- c*IT(ez,r,z)*mor*(1-0.5*Cphr)-Cphr*PMLR(hrp,r,z) );
+          double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
+          double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
+
+          double dhrp = ooop_Cphr*(- c*IT(ez,r,z)*mor-Cphr*PMLR(hrp,r,z) );
           double hrz = CM(hr,r,z) - PMLR(hrp,r,z);
           PMLR(hrp,r,z) += dhrp;
-          CM(hr,r,z)+= dhrp + (c*(CM(ep,r,z+1)-CM(ep,r,z))*(1-0.5*Czhr) - Czhr*hrz);
-          double dhpz = (-c*(CM(er,r,z+1)-CM(er,r,z))*(1-0.5*Czhp)-Czhp*PMLR(hpz,r,z));
+          CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
+          double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLR(hpz,r,z));
           double hpr = CM(hp,r,z)-PMLR(hpz,r,z);
           PMLR(hpz,r,z) += dhpz;
-          CM(hp,r,z)+= dhpz + 
-            (c*(CM(ez,r+1,z)-CM(ez,r,z))*(1-0.5*Crhp) - Crhp*hpr);
-          double dhzr = (-c*(CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph*(1-0.5*Crhz)
-                           - Crhz*PMLR(hzr,r,z));
+          CM(hp,r,z)+= dhpz + ooop_Crhp*(c*(CM(ez,r+1,z)-CM(ez,r,z)) - Crhp*hpr);
+          double dhzr = ooop_Crhz*(-c*(CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph
+                                   - Crhz*PMLR(hzr,r,z));
           double hzp = CM(hz,r,z) - PMLR(hzr,r,z);
           PMLR(hzr,r,z) += dhzr;
-          CM(hz,r,z)+= dhzr +
-            (c*IT(er,r,z)*morph*(1-0.5*Cphz) - Cphz*hzp);
+          CM(hz,r,z)+= dhzr + ooop_Cphz*(c*IT(er,r,z)*morph - Cphz*hzp);
         }
       }
       for (int r=nr-npmlr;r<nr;r++) {
@@ -831,15 +839,18 @@ void fields::step_h_pml() {
         double oorph = 1/(r+0.5);
         double Cphr = ma->Cphr[r-nr+npmlr];
         double Crhp = ma->Crhp[r-nr+npmlr];
-        double dhrp = (- c*IT(ez,r,z)*mor*(1-0.5*Cphr)-Cphr*PMLR(hrp,r,z) );
+        double ooop_Cphr = 1.0/(1.0+0.5*Cphr);
+        double ooop_Crhp = 1.0/(1.0+0.5*Crhp);
+        double ooop_Czhr = 1.0/(1.0+0.5*Czhr);
+        double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
+        double dhrp = ooop_Cphr*(- c*IT(ez,r,z)*mor-Cphr*PMLR(hrp,r,z) );
         double hrz = CM(hr,r,z) - PMLR(hrp,r,z);
         PMLR(hrp,r,z) += dhrp;
-        CM(hr,r,z)+= dhrp + (c*(CM(ep,r,z+1)-CM(ep,r,z))*(1-0.5*Czhr) - Czhr*hrz);
-        double dhpz = (-c*(CM(er,r,z+1)-CM(er,r,z))*(1-0.5*Czhp)-Czhp*PMLR(hpz,r,z));
+        CM(hr,r,z)+= dhrp + ooop_Czhr*(c*(CM(ep,r,z+1)-CM(ep,r,z)) - Czhr*hrz);
+        double dhpz = ooop_Czhp*(-c*(CM(er,r,z+1)-CM(er,r,z))-Czhp*PMLR(hpz,r,z));
         double hpr = CM(hp,r,z)-PMLR(hpz,r,z);
         PMLR(hpz,r,z) += dhpz;
-        CM(hp,r,z)+= dhpz + 
-          (c*(CM(ez,r+1,z)-CM(ez,r,z))*(1-0.5*Crhp) - Crhp*hpr);
+        CM(hp,r,z)+= dhpz + ooop_Crhp*(c*(CM(ez,r+1,z)-CM(ez,r,z)) - Crhp*hpr);
       }
     }
     if (k >= 0.0 && npmlr) { // k < 0 indicates metallic axial boundaries.
@@ -849,12 +860,13 @@ void fields::step_h_pml() {
           double morph = m*oorph;
           double Crhz = ma->Crhz[r-nr+npmlr];
           double Cphz = ma->Cphz[r-nr+npmlr];
-          double dhzr = (-c*(CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph*(1-0.5*Crhz)
-                           - Crhz*PMLR(hzr,r,z));
+          double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
+          double ooop_Cphz = 1.0/(1.0+0.5*Cphz);
+          double dhzr = ooop_Crhz*(-c*(CM(ep,r+1,z)*(r+1.)-CM(ep,r,z)*r)*oorph
+                                   - Crhz*PMLR(hzr,r,z));
           double hzp = CM(hz,r,z) - PMLR(hzr,r,z);
           PMLR(hzr,r,z) += dhzr;
-          CM(hz,r,z)+= dhzr +
-            (c*IT(er,r,z)*morph*(1-0.5*Cphz) - Cphz*hzp);
+          CM(hz,r,z)+= dhzr + ooop_Cphz*(c*IT(er,r,z)*morph - Cphz*hzp);
         }
       }
     }
@@ -932,13 +944,13 @@ void fields::step_e_pml() {
           for (int iz=0;iz<npmlz;iz++,z+=lr) {
             double Czer = ma->Czer[iz];
             double Czep = ma->Czep[iz];
+            double inveps_plus_Czer = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Czer);
+            double inveps_plus_Czep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Czep);
             double derp = c*MA(ma->invepser,r,z)*(IT(hz,r,z)*morph);
             double erz = CM(er,r,z) - PMLZ(z_erp,r);
             PMLZ(z_erp,r) += derp;
-            CM(er,r,z)+= derp + MA(ma->invepser,r,z)*
-              (-c*(CM(hp,r,z)-CM(hp,r,z-1))*(1-0.5*MA(ma->invepser,r,z)*Czer) - Czer*erz);
-            double depz = MA(ma->invepsep,r,z)*(c*(CM(hr,r,z)-CM(hr,r,z-1))*(1-.5*MA(ma->invepsep,r,z)*Czep)
-                                               - Czep*PMLZ(z_epz,r));
+            CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-CM(hp,r,z-1)) - Czer*erz);
+            double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-CM(hr,r,z-1)) - Czep*PMLZ(z_epz,r));
             double epr = CM(ep,r,z) - PMLZ(z_epz,r);
             PMLZ(z_epz,r) += depz;
             CM(ep,r,z)+= depz + MA(ma->invepsep,r,z)*
@@ -963,12 +975,11 @@ void fields::step_e_pml() {
           double oorph = 1/(r+0.5);
           double morph = m*oorph; /* false boundary layer */
           double Czer = ma->Czer[iz];
-          double Czep = ma->Czep[iz];
+          double inveps_plus_Czer = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Czer);
           double derp = c*MA(ma->invepser,r,z)*(IT(hz,r,z)*morph);
           double erz = CM(er,r,z) - PMLZ(z_erp,r);
           PMLZ(z_erp,r) += derp;
-          CM(er,r,z)+= derp + MA(ma->invepser,r,z)*
-            (-c*(CM(hp,r,z)-CM(hp,r,z-1))*(1-0.5*MA(ma->invepser,r,z)*Czer) - Czer*erz);
+          CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-CM(hp,r,z-1)) - Czer*erz);
         }
       }
     }
@@ -979,8 +990,8 @@ void fields::step_e_pml() {
         for (int iz=0;iz<npmlz;iz++,z+=lr) {
           const int r=0;
           double Czep = ma->Czep[iz];
-          double depz = MA(ma->invepsep,r,z)*(c*(CM(hr,r,z)-CM(hr,r,z-1))*(1-.5*MA(ma->invepsep,r,z)*Czep)
-                                             - Czep*PMLZ(z_epz,r));
+          double inveps_plus_Czep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Czep);
+          double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-CM(hr,r,z-1)) - Czep*PMLZ(z_epz,r));
           PMLZ(z_epz,r) += depz;
           CM(ep,r,z)+= depz + c*MA(ma->invepsep,r,z)*(-(CM(hz,r,z)*2.0));
         }
@@ -1009,25 +1020,27 @@ void fields::step_e_pml() {
           Czer = 0;
           Czep = 0;
         }
-        double derp = MA(ma->invepser,r,z)*(c*IT(hz,r,z)*morph*(1-.5*MA(ma->invepser,r,z)*Cper)
-                                           - Cper*PMLR(erp,r,z));
+        double inveps_plus_Cper = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Cper);
+        double inveps_plus_Czer = MA(ma->invepser,r,z)/(1+.5*MA(ma->invepser,r,z)*Czer);
+        double derp = inveps_plus_Cper*(c*IT(hz,r,z)*morph - Cper*PMLR(erp,r,z));
         double erz = CM(er,r,z) - PMLR(erp,r,z);
         PMLR(erp,r,z) += derp;
-        CM(er,r,z)+= derp + MA(ma->invepser,r,z)*
-          (-c*(CM(hp,r,z)-CM(hp,r,z-1))*(1-0.5*MA(ma->invepser,r,z)*Czer) - Czer*erz);
-        double depz = MA(ma->invepsep,r,z)*(c*(CM(hr,r,z)-CM(hr,r,z-1))*(1-.5*MA(ma->invepsep,r,z)*Czep)
-                                           - Czep*PMLR(epz,r,z));
+        CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-CM(hp,r,z-1)) - Czer*erz);
+
+        double inveps_plus_Czep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Czep);
+        double inveps_plus_Crep = MA(ma->invepsep,r,z)/(1+.5*MA(ma->invepsep,r,z)*Crep);
+        double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-CM(hr,r,z-1)) - Czep*PMLR(epz,r,z));
         double epr = CM(ep,r,z) - PMLR(epz,r,z);
         PMLR(epz,r,z) += depz;
-        CM(ep,r,z)+= depz + MA(ma->invepsep,r,z)*
-          (-c*(CM(hz,r,z)-CM(hz,r-1,z))*(1-.5*MA(ma->invepsep,r,z)*Crep)-Crep*epr);
-        double dezr = MA(ma->invepsez,r,z)*
-          (c*(CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor*(1-.5*MA(ma->invepsez,r,z)*Crez)
-           - Crez*PMLR(ezr,r,z));
+        CM(ep,r,z)+= depz + inveps_plus_Crep*(-c*(CM(hz,r,z)-CM(hz,r-1,z)) - Crep*epr);
+
+        double inveps_plus_Crez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Crez);
+        double inveps_plus_Cpez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Cpez);
+        double dezr = inveps_plus_Crez*(c*(CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor
+                                        - Crez*PMLR(ezr,r,z));
         double ezp = CM(ez,r,z)- PMLR(ezr,r,z);
         PMLR(ezr,r,z) += dezr;
-        CM(ez,r,z)+= dezr + MA(ma->invepsez,r,z)*
-          (-c*IT(hr,r,z)*mor*(1-.5*MA(ma->invepsez,r,z)*Cpez)-Cpez*ezp);
+        CM(ez,r,z)+= dezr + inveps_plus_Cpez*(-c*IT(hr,r,z)*mor - Cpez*ezp);
       }
     }
     for (int r=nr-npmlr;r<nr;r++) {
@@ -1038,13 +1051,14 @@ void fields::step_e_pml() {
       double mor = m*oor;
       double Crez = ma->Crez[r-nr+npmlr];
       double Cpez = ma->Cpez[r-nr+npmlr];
-      double dezr = MA(ma->invepsez,r,z)*
-        (c*(CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor*(1-.5*MA(ma->invepsez,r,z)*Crez)
-         - Crez*PMLR(ezr,r,z));
+
+      double inveps_plus_Crez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Crez);
+      double inveps_plus_Cpez = MA(ma->invepsez,r,z)/(1+.5*MA(ma->invepsez,r,z)*Cpez);
+      double dezr = inveps_plus_Crez*(c*(CM(hp,r,z)*(r+0.5)-CM(hp,r-1,z)*(r-0.5))*oor
+                                      - Crez*PMLR(ezr,r,z));
       double ezp = CM(ez,r,z)- PMLR(ezr,r,z);
       PMLR(ezr,r,z) += dezr;
-      CM(ez,r,z)+= dezr + MA(ma->invepsez,r,z)*
-        (-c*IT(hr,r,z)*mor*(1-.5*MA(ma->invepsez,r,z)*Cpez)-Cpez*ezp);
+      CM(ez,r,z)+= dezr + inveps_plus_Cpez*(-c*IT(hr,r,z)*mor - Cpez*ezp);
     }
     if (k >= 0.0) { // k < 0 indicates metallic axial boundaries.
       for (int r=nr-npmlr;r<nr;r++) {
@@ -1056,35 +1070,32 @@ void fields::step_e_pml() {
         double Czer = 0;
         double Czep = 0;
         double Crep = ma->Crep[r-nr+npmlr];
+        double inveps_plus_Cper = MA(ma->invepser,r,0)/(1+.5*MA(ma->invepser,r,0)*Cper);
+        double inveps_plus_Czer = MA(ma->invepser,r,0)/(1+.5*MA(ma->invepser,r,0)*Czer);
+        double inveps_plus_Czep = MA(ma->invepsep,r,0)/(1+.5*MA(ma->invepsep,r,0)*Czep);
+        double inveps_plus_Crep = MA(ma->invepsep,r,0)/(1+.5*MA(ma->invepsep,r,0)*Crep);
         {
           int z=0;
-          double derp = MA(ma->invepser,r,z)*(c*IT(hz,r,z)*morph*(1-.5*MA(ma->invepser,r,z)*Cper)
-                                             - Cper*PMLR(erp,r,z));
+          double derp = inveps_plus_Cper*(c*IT(hz,r,z)*morph - Cper*PMLR(erp,r,z));
           double erz = CM(er,r,z) - PMLR(erp,r,z);
           PMLR(erp,r,z) += derp;
-          CM(er,r,z)+= derp + MA(ma->invepser,r,z)*
-            (-c*(CM(hp,r,z)-EMIKZ(hp,r,nz-1))*(1-0.5*MA(ma->invepser,r,z)*Czer) - Czer*erz);
-          double depz = MA(ma->invepsep,r,z)*(c*(CM(hr,r,z)-EMIKZ(hr,r,nz-1))*(1-.5*MA(ma->invepsep,r,z)*Czep)
-                                             - Czep*PMLR(epz,r,z));
+          CM(er,r,z)+= derp + inveps_plus_Czer*(-c*(CM(hp,r,z)-EMIKZ(hp,r,nz-1)) - Czer*erz);
+
+          double depz = inveps_plus_Czep*(c*(CM(hr,r,z)-EMIKZ(hr,r,nz-1)) - Czep*PMLR(epz,r,z));
           double epr = CM(ep,r,z) - PMLR(epz,r,z);
           PMLR(epz,r,z) += depz;
-          CM(ep,r,z)+= depz + MA(ma->invepsep,r,z)*
-            (-c*(CM(hz,r,z)-CM(hz,r-1,z))*(1-.5*MA(ma->invepsep,r,z)*Crep)-Crep*epr);
+          CM(ep,r,z)+= depz + inveps_plus_Crep*(-c*(CM(hz,r,z)-CM(hz,r-1,z)) - Crep*epr);
         }
         { // z=nz
           int z=nz;
-          double derp = MA(ma->invepser,r,z)*(c*IT(hz,r,z)*morph*(1-.5*MA(ma->invepser,r,z)*Cper)
-                                             - Cper*PMLR(erp,r,z));
+          double derp = inveps_plus_Cper*(c*IT(hz,r,z)*morph - Cper*PMLR(erp,r,z));
           double erz = CM(er,r,z) - PMLR(erp,r,z);
           PMLR(erp,r,z) += derp;
-          CM(er,r,z)+= derp + MA(ma->invepser,r,z)*
-            (-c*(EIKZ(hp,r,0)-CM(hp,r,z-1))*(1-0.5*MA(ma->invepser,r,z)*Czer) - Czer*erz);
-          double depz = MA(ma->invepsep,r,z)*(c*(EIKZ(hr,r,0)-CM(hr,r,z-1))*(1-.5*MA(ma->invepsep,r,z)*Czep)
-                                             - Czep*PMLR(epz,r,z));
+          CM(er,r,z)+= derp + inveps_plus_Czep*(-c*(EIKZ(hp,r,0)-CM(hp,r,z-1)) - Czer*erz);
+          double depz = inveps_plus_Czep*(c*(EIKZ(hr,r,0)-CM(hr,r,z-1)) - Czep*PMLR(epz,r,z));
           double epr = CM(ep,r,z) - PMLR(epz,r,z);
           PMLR(epz,r,z) += depz;
-          CM(ep,r,z)+= depz + MA(ma->invepsep,r,z)*
-            (-c*(CM(hz,r,z)-CM(hz,r-1,z))*(1-.5*MA(ma->invepsep,r,z)*Crep)-Crep*epr);
+          CM(ep,r,z)+= depz + inveps_plus_Crep*(-c*(CM(hz,r,z)-CM(hz,r-1,z))-Crep*epr);
         }
       }
     }
