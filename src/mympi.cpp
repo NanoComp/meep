@@ -57,7 +57,7 @@ initialize::~initialize() {
 void abort(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  fprintf("meep: ");
+  fprintf(stderr, "meep: ");
   vfprintf(stderr, fmt, ap);
   va_end(ap);
 #ifdef HAVE_MPI
