@@ -168,8 +168,7 @@ class fields_chunk {
   void use_real_fields();
   double find_last_source();
 
-  void get_point(monitor_point *p, const vec &, double time) const;
-  void output_point(FILE *, const vec &, const char *name, double time);
+  void get_point(monitor_point *p, const vec &) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   double electric_energy_in_box(const volume &);

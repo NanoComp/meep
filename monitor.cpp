@@ -32,39 +32,29 @@ monitor_point::~monitor_point() {
   if (next) delete next;
 }
 
-void fields_chunk::output_point(FILE *o, const vec &loc, const char *name, double time) {
-  monitor_point tmp;
-  get_point(&tmp, loc, time);
-  fprintf(o, "%s\t%8lg", name, time);
-  for (int c=0;c<10;c++)
-    if (v.has_field((component)c))
-      fprintf(o, "\t%8lg\t%8lg", real(tmp.f[c]), imag(tmp.f[c]));
-  fprintf(o, "\n");
-}
-
 inline complex<double> getcm(const double * const f[2], int i) {
   return complex<double>(f[0][i],f[1][i]);
 }
 
 void fields::get_point(monitor_point *pt, const vec &loc) const {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->v.contains(loc))
-      chunks[i]->get_point(pt, loc, time());
-}
-
-void fields_chunk::get_point(monitor_point *pt, const vec &loc, double time) const {
   if (pt == NULL) {
     printf("Error:  get_point passed a null pointer!\n");
     exit(1);
   }
+  for (int i=0;i<10;i++) pt->f[i] = 0.0;
   pt->loc = loc;
-  pt->t = time;
+  pt->t = time();
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->v.contains(loc))
+      chunks[i]->get_point(pt, loc);
+}
+
+void fields_chunk::get_point(monitor_point *pt, const vec &loc) const {
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
       int ind[8];
       double w[8];
       v.interpolate((component)c,loc,ind,w);
-      pt->f[c] = 0;
       for (int i=0;i<8&&w[i];i++)
         pt->f[c] += getcm(f[c],ind[i]);
     }
