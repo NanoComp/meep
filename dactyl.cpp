@@ -317,8 +317,16 @@ void fields::add_point_source(component whichf, double freq, double width, doubl
     printf("Error:  source component %s is invalid.\n", component_name(whichf));
     exit(1);
   }
-  int theindex = v.index(whichf, p);
-  add_indexed_source(whichf, freq, width, peaktime, cutoff, theindex, amp, is_c);
+  int ind[8];
+  double w[8];
+  v.interpolate(whichf, p, ind, w);
+  double prefac = 1.0;
+  switch (v.dim) {
+  case dcyl: prefac = a; break;
+  case d1: prefac = 1; break;
+  }
+  for (int i=0;i<8 && w[i];i++)
+    add_indexed_source(whichf, freq, width, peaktime, cutoff, ind[i], amp*prefac*w[i], is_c);
 }
 
 void fields::add_plane_source(double freq, double width, double peaktime,
