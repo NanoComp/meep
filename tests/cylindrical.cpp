@@ -21,21 +21,28 @@
 
 #include "dactyl.h"
 
+int die(const char *msg) {
+  puts(msg);
+  exit(1);
+  return 1;
+}
+
 double one(const vec &) {
   return 1.0;
 }
 
-int test_simple_periodic(int splitting) {
-  double a = 10;
-  double ttot = 30;
+int test_simple_periodic(double eps(const vec &), int splitting) {
+  double a = 10.0;
+  double ttot = 30.0;
   
-  mat ma1(volcyl(2.0,1.5,a), one, 1);
-  mat ma(volcyl(2.0,1.5,a), one, splitting);
+  volume v = volcyl(4.0,12.6,a);
+  mat ma1(v, eps, 1);
+  mat ma(v, eps, splitting);
   for (int m=0;m<4;m++) {
     char m_str[10];
     snprintf(m_str, 10, "%d", m);
-    printf("Trying m = %d with a=%lg and a splitting into %d chunks...\n",
-           m, a, splitting);
+    printf("Trying with m = %d and a splitting into %d chunks...\n",
+           m, splitting);
     fields f(&ma, m);
     f.use_bloch(0.0);
     f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.6, 1.2), 1.0);
@@ -47,12 +54,14 @@ int test_simple_periodic(int splitting) {
       f1.step();
     }
   }
-  return 0;
+  return 1;
 }
 
 int main(int argc, char **argv) {
   printf("Testing cylindrical coords under different splittings...\n");
 
-  return test_simple_periodic(3);
+  for (int s=2;s<11;s++) {
+    test_simple_periodic(one, s) || die("error in test_simple_periodic\n");
+  }
 }
 
