@@ -212,10 +212,8 @@ class fields_chunk {
   void phase_in_material(const mat_chunk *ma);
   void phase_material(int phasein_time);
   void step_h();
-  void step_h_right();
   void step_h_source(const src *, double);
   void step_e();
-  void step_e_right();
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
   void step_e_source(const src *, double);
@@ -303,7 +301,6 @@ class fields {
   double maxfieldmag_to_master(component) const;
   // step.cpp methods:
   void step();
-  void step_right();
   inline double time() const { return t*inva*c; };
 
   double find_last_source();
@@ -372,10 +369,8 @@ class fields {
   // step.cpp
   void phase_material();
   void step_h();
-  void step_h_right();
   void step_h_source();
   void step_e();
-  void step_e_right();
   void step_boundaries(field_type);
   void step_polarization_itself();
   void step_e_polarization();

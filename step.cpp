@@ -22,28 +22,6 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-void fields::step_right() {
-  phase_material();
-
-  step_h_right();
-  step_h_source();
-  step_boundaries(H_stuff);
-
-  prepare_step_polarization_energy();
-  half_step_polarization_energy();
-  step_e_right();
-  step_e_source();
-  step_e_polarization();
-  step_boundaries(E_stuff);
-  half_step_polarization_energy();
-
-  update_polarization_saturation();
-  step_polarization_itself();
-
-  update_fluxes();
-  t += 1;
-}
-
 void fields::step() {
   am_now_working_on(Stepping);
   phase_material();
@@ -136,70 +114,6 @@ inline int rstart_0(const volume &v, int m) {
 }
 inline int rstart_1(const volume &v, int m) {
   return (int) max(1.0, (double)m - (int)(v.origin.r()*v.a+0.5));
-}
-
-void fields::step_h_right() {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->step_h_right();
-}
-
-void fields_chunk::step_h_right() {
-  const volume v = this->v;
-  if (v.dim == D1) {
-    DOCMP {
-      for (int z=0;z<v.nz();z++)
-        f[Hy][cmp][z] = f[Ex][cmp][z];
-    }
-  } else if (v.dim == Dcyl) {
-    DOCMP {
-      for (int r=rstart_1(v,m);r<=v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        for (int z=0;z<v.nz();z++) f[Hr][cmp][z+ir] = f[Ep][cmp][z+ir];
-      }
-      for (int r=rstart_0(v,m);r<v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        const int irp1 = (r+1)*(v.nz()+1);
-        for (int z=0;z<v.nz();z++) f[Hp][cmp][z+ir] = f[Ez][cmp][z+irp1];
-      }
-      for (int r=rstart_0(v,m);r<v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        for (int z=1;z<=v.nz();z++) f[Hz][cmp][z+ir] = f[Er][cmp][z+ir];
-      }
-    }
-  }
-}
-
-void fields::step_e_right() {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->step_e_right();
-}
-
-void fields_chunk::step_e_right() {
-  const volume v = this->v;
-  if (v.dim == D1) {
-    DOCMP {
-      for (int z=0;z<v.nz();z++)
-        f[Hy][cmp][z] = f[Ex][cmp][z];
-    }
-  } else if (v.dim == Dcyl) {
-    DOCMP {
-      for (int r=rstart_1(v,m);r<=v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        const int irm1 = (r-1)*(v.nz()+1);
-        for (int z=1;z<=v.nz();z++) f[Ep][cmp][z+ir] = f[Hz][cmp][z+irm1];
-      }
-      for (int r=rstart_0(v,m);r<v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        for (int z=1;z<=v.nz();z++) f[Er][cmp][z+ir] = f[Hp][cmp][z+ir-1];
-      }
-      for (int r=rstart_1(v,m);r<=v.nr();r++) {
-        const int ir = r*(v.nz()+1);
-        for (int z=0;z<v.nz();z++) f[Ez][cmp][z+ir] = f[Hr][cmp][z+ir];
-      }
-    }
-  }
 }
 
 void fields::step_h() {
