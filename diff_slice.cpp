@@ -51,7 +51,7 @@ int main(int argc, const char *argv[]) {
   sprintf(n2, "%s-sigma.sli", name2);
   if (compare_files(n1, n2, little)) ack("Sigma differs!");
 
-  char *lookfor = new char[strlen(name1)+1+5];
+  char *lookfor = new char[strlen(name1)+1+50];
   strcpy(lookfor,name1);
   strcat(lookfor,"-hz-re-");
 
