@@ -49,7 +49,8 @@ static inline int lattice_to_yee(double x, double a, double inva=0.0) {
 
 inline ivec volume::round_vec(const vec &p) const {
   ivec result(dim);
-  LOOP_OVER_DIRECTIONS(dim, d) result.set_direction(d, lattice_to_yee(p.in_direction(d),a,inva));
+  LOOP_OVER_DIRECTIONS(dim, d)
+    result.set_direction(d, lattice_to_yee(p.in_direction(d),a,inva));
   return result;
 }
 
@@ -288,10 +289,8 @@ void volume::set_strides() {
     switch(d) {
     case Z: the_stride[d] = 1; break;
     case R: the_stride[d] = nz()+1; break;
-    case X: the_stride[d] = stride(Y)*(ny() + 1); break;
-    case Y: if (dim == D2) the_stride[d] = 1;
-            else the_stride[d] = nz() + 1;
-            break;
+    case X: the_stride[d] = (nz()+1)*(ny() + 1); break;
+    case Y: the_stride[d] = nz() + 1; break;
     }
 }
 
