@@ -137,6 +137,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
 }
 
 void fields::record_bands() {
+  if (!bands) return;
   if (t > bands->tend || t < bands->tstart) return;
   if (t % bands->scale_factor != 0) return;
   for (int i=0;i<num_chunks;i++)
