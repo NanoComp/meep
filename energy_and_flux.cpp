@@ -214,6 +214,15 @@ double fields::energy_in_box(double rmin, double rmax, double zmin, double zmax)
       backup_hr[cmp] = new double[(nr+1)*(nz+1)];
       backup_hp[cmp] = new double[(nr+1)*(nz+1)];
       backup_hz[cmp] = new double[(nr+1)*(nz+1)];
+
+      backup_hrp[cmp] = new double[npmlr*(nz+1)];
+      backup_hpz[cmp] = new double[npmlr*(nz+1)];
+      backup_hzr[cmp] = new double[npmlr*(nz+1)];
+
+      backup_z_hrp[cmp][0] = new double[npmlz*(nr+1)];
+      backup_z_hrp[cmp][1] = new double[npmlz*(nr+1)];
+      backup_z_hpz[cmp][0] = new double[npmlz*(nr+1)];
+      backup_z_hpz[cmp][1] = new double[npmlz*(nr+1)];
     }
   }
 
@@ -224,6 +233,22 @@ double fields::energy_in_box(double rmin, double rmax, double zmin, double zmax)
       backup_hp[cmp][j] = hp[cmp][j];
     for (int j=0; j<(nr+1)*(nz+1); j++)
       backup_hz[cmp][j] = hz[cmp][j];
+    
+    for (int j=0; j<npmlr*(nz+1); j++)
+      backup_hrp[cmp][j] = hrp[cmp][j];
+    for (int j=0; j<npmlr*(nz+1); j++)
+      backup_hpz[cmp][j] = hpz[cmp][j];
+    for (int j=0; j<npmlr*(nz+1); j++)
+      backup_hzr[cmp][j] = hzr[cmp][j];
+
+    for (int j=0; j<npmlz*(nr+1); j++)
+      backup_z_hrp[cmp][0][j] = z_hrp[cmp][0][j];
+    for (int j=0; j<npmlz*(nr+1); j++)
+      backup_z_hrp[cmp][1][j] = z_hrp[cmp][1][j];
+    for (int j=0; j<npmlz*(nr+1); j++)
+      backup_z_hpz[cmp][0][j] = z_hpz[cmp][0][j];
+    for (int j=0; j<npmlz*(nr+1); j++)
+      backup_z_hpz[cmp][1][j] = z_hpz[cmp][1][j];
   }
 
   step_h_bulk();
@@ -239,6 +264,22 @@ double fields::energy_in_box(double rmin, double rmax, double zmin, double zmax)
       hp[cmp][j] = backup_hp[cmp][j];
     for (int j=0; j<(nr+1)*(nz+1); j++)
       hz[cmp][j] = backup_hz[cmp][j];
+
+    for (int j=0; j<npmlr*(nz+1); j++)
+      hrp[cmp][j] = backup_hrp[cmp][j];
+    for (int j=0; j<npmlr*(nz+1); j++)
+      hpz[cmp][j] = backup_hpz[cmp][j];
+    for (int j=0; j<npmlr*(nz+1); j++)
+      hzr[cmp][j] = backup_hzr[cmp][j];
+    
+    for (int j=0; j<npmlz*(nr+1); j++)
+      z_hrp[cmp][0][j] = backup_z_hrp[cmp][0][j];
+    for (int j=0; j<npmlz*(nr+1); j++)
+      z_hrp[cmp][1][j] = backup_z_hrp[cmp][1][j];
+    for (int j=0; j<npmlz*(nr+1); j++)
+      z_hpz[cmp][0][j] = backup_z_hpz[cmp][0][j];
+    for (int j=0; j<npmlz*(nr+1); j++)
+      z_hpz[cmp][1][j] = backup_z_hpz[cmp][1][j];
   }
 
  return electric_energy_in_box(rmin, rmax, zmin, zmax) + 

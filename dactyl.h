@@ -120,7 +120,9 @@ class fields {
   double *(hr[2]), *(hp[2]), *(hz[2]), *(er[2]), *(ep[2]), *(ez[2]);
   double *(backup_hr[2]), *(backup_hp[2]), *(backup_hz[2]);
   double *(hrp[2]), *(hpz[2]), *(hzr[2]), *(erp[2]), *(epz[2]), *(ezr[2]);
+  double *(backup_hrp[2]), *(backup_hpz[2]), *(backup_hzr[2]);
   double *(z_hrp[2][2]), *(z_hpz[2][2]), *(z_erp[2][2]), *(z_epz[2][2]);
+  double *(backup_z_hrp[2][2]), *(backup_z_hpz[2][2]);
   polarization *pol, *olpol;
   double a, inva; // The "lattice constant" and its inverse!
   int nr, nz;
