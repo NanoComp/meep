@@ -286,15 +286,13 @@ void fields::initialize_with_nth_tm(int np1) {
       double kzmh = k*inva*(z-0.5);
       DOCMP {
         CM(ez,r,z) += Jm*expi(cmp, kz);
-        if (r > 0) CM(hr,r,z) += m*c/(r*om)*Jm*expi(cmp, kz+omt)/funky;
-        CM(hp,r,z) += (c/om)*(ktrans*Jmp)
-                      *expi(cmp, kz+omt+pi/2)/funky;
+        if (r > 0) CM(hr,r,z) += (m*c/(r*om)/funky)*Jm*expi(cmp, kz+omt);
+        CM(hp,r,z) += (c/om/funky)*(ktrans*Jmp_h)
+                      *expi(cmp, kz+omt+pi/2);
         
-        if (r > 0) CM(ep,r,z) += m*c/(r*om)*Jm*expi(cmp, kzmh)/funky
-                     *(-kk*c*inveps/om);
-        CM(er,r,z) += (c/om)*(ktrans*Jmp_h)
-                      *expi(cmp, kzmh+pi/2)/funky
-                      *kk*c*inveps/om;
+        if (r > 0) CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/(r*om)/funky)*Jm*expi(cmp, kzmh);
+        CM(er,r,z) += (kk*c*inveps/om)*(c/om/funky)*(ktrans*Jmp_h)
+                      *expi(cmp, kzmh+pi/2);
       }
     }
     DOCMP {
