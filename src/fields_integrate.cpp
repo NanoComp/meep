@@ -100,9 +100,9 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
      "epsilon grid"). */
   ivec is(vec2diel_floor(where.get_min_corner(), v.a, zero_ivec(v.dim)));
   ivec ie(vec2diel_ceil(where.get_max_corner(), v.a, zero_ivec(v.dim)));
-  vec s0(v.dim), e0(v.dim), s1(v.dim), e1(v.dim);
   
   /* Integration weights at boundaries (c.f. long comment at bottom). */
+  vec s0(v.dim), e0(v.dim), s1(v.dim), e1(v.dim);
   LOOP_OVER_DIRECTIONS(v.dim, d) {
     double w0, w1;
     w0 = 1. - where.in_direction_min(d)*v.a + 0.5*is.in_direction(d);
