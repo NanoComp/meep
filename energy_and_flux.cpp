@@ -127,7 +127,8 @@ double fields_chunk::electric_energy_in_box(const volume &otherv) {
       if (v.has_field((component)c) && is_electric((component)c))
         for (int i=0;i<v.ntot();i++)
           if (otherv.owns(v.loc((component)c,i)))
-            energy += v.dv((component)c,i)*f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
+            energy += otherv.intersection(v.dV((component)c,i))*
+              f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
   }
   return energy/(8*pi);
 }
@@ -140,7 +141,8 @@ double fields_chunk::magnetic_energy_in_box(const volume &otherv) {
         for (int i=0;i<v.ntot();i++) {
           vec here = v.loc((component)c,i);
           if (v.owns(here) && otherv.owns(here))
-            energy += v.dv((component)c,i)*f[c][cmp][i]*f[c][cmp][i];
+            energy += otherv.intersection(v.dV((component)c,i))*
+              f[c][cmp][i]*f[c][cmp][i];
         }
   }
   return energy/(8*pi);

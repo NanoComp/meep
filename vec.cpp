@@ -390,6 +390,79 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
   }
 }
 
+volume volume::dV(component c, int ind) const {
+  if (!owns(loc(c, ind))) return volume(dim, a, 0, 0, 0);
+  const vec here = loc(c,ind);
+  const double thqinva = 0.75*inva;
+  volume out;
+  switch (dim) {
+  case dcyl: {
+    out = volcyl(inva, inva, a);
+    out.origin = here - vec(thqinva, thqinva);
+    return out;
+  }
+  case d1:
+    out = volone(inva, a);
+    out.origin = vec(here.z()-thqinva);
+    return out;
+  }
+  abort("Aaaack can't do dV in this number of dimensions\n");
+}
+
+double volume::zmax() const {
+  const double inva = 1.0/a, qinva = 0.25*inva;
+  return origin.z() + nz()*inva + qinva;
+}
+
+double volume::zmin() const {
+  const double inva = 1.0/a, qinva = 0.25*inva;
+  return origin.z() + qinva;
+}
+
+double volume::rmax() const {
+  const double inva = 1.0/a, qinva = 0.25*inva;
+  if (dim == dcyl) return origin.r() + nr()*inva + qinva;
+  abort("No rmin in these dimensions.\n");
+}
+
+double volume::rmin() const {
+  const double inva = 1.0/a, qinva = 0.25*inva;
+  if (dim == dcyl) {
+    if (origin.r() == 0.0) {
+      return 0.0;
+    } else {
+      return origin.r() + qinva;
+    }
+  }
+  abort("No rmin in these dimensions.\n");
+}
+
+double max(double a, double b) {
+  return (a>b)?a:b;
+}
+
+double min(double a, double b) {
+  return (a<b)?a:b;
+}
+
+double volume::intersection(const volume &o) const {
+  const double pi = 3.141592653589793238462643383276L;
+  const double inva = 1.0/a;
+  switch (dim) {
+  case dcyl: {
+    const double r_min = max(rmin(), o.rmin());
+    const double r_max = min(rmax(), o.rmax());
+    const double z_min = max(zmin(), o.zmin());
+    const double z_max = min(zmax(), o.zmax());
+    return (z_max-z_min)*inva*pi*(r_max*r_max-r_min*r_min);
+  }
+  case d1:
+    const double z_min = max(zmin(), o.zmin());
+    const double z_max = min(zmax(), o.zmax());
+    return z_max-z_min;
+  }
+}
+
 double volume::dv(component c, int ind) const {
   const double pi = 3.141592653589793238462643383276L;
   if (!owns(loc(c, ind))) return 0.0;

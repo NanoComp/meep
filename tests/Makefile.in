@@ -16,8 +16,6 @@ RUNCODE=@RUNCODE@
 
 VERSION = @VERSION@
 
-all: dactyl.ps dactyl/dactyl.html preproc
-
 ###########################################################################
 
 OBJFILES = cylindrical.o one_dimensional.o bench.o flux.o
@@ -30,6 +28,8 @@ $(TESTFILES): ../libdactyl.a
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
 .o.dac:
 	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
+
+all: $(TESTFILES)
 
 test: $(TESTFILES) bench
 	set -e

@@ -85,8 +85,8 @@ bench: libdactyl.a
 	cd tests && make bench
 
 test: libdactyl.a
-	cd tests && make test
 	cd doc && make test
+	cd tests && make test
 
 test_d_k_0.1pi_pml_m_1: diff_slice d_k_0.1pi_pml_m_1.dac
 	rm -rf d_k_0.1pi_pml_m_1-out

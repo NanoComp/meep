@@ -112,6 +112,12 @@ class volume {
                        int indices[8], double weights[8]) const;
 
   double dv(component c, int index) const;
+  volume dV(component c, int index) const;
+  double intersection(const volume &) const;
+  double rmin() const;
+  double rmax() const;
+  double zmin() const;
+  double zmax() const;
   vec loc(component, int index) const;
   vec yee_shift(component) const;
   component eps_component() const;
