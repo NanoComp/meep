@@ -130,16 +130,15 @@ void fields::initialize_field(component c, complex<double> func(const vec &)) {
 }
 
 void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
-  bool have_f = false;
-  for (int i=0;i<v.ntot();i++)
-    if (func(v.loc(c,i)) != 0.0) have_f = true;
-  if (!have_f) return;
-
-  if (!f[c][0]) alloc_f(c);
-  for (int i=0;i<v.ntot();i++) {
-    complex<double> val = func(v.loc(c,i));
-    f[c][0][i] += real(val);
-    f[c][1][i] += imag(val);
+  LOOP_OVER_VOL(v, c, i) {
+    IVEC_LOOP_LOC(v, here);
+    complex<double> val = func(here);
+    if (val != 0.0) {
+      if (!f[c][0])
+	alloc_f(c);
+      f[c][0][i] += real(val);
+      f[c][1][i] += imag(val);
+    }
   }
 }
 
