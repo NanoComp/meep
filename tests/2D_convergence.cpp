@@ -43,9 +43,9 @@ double freq_at_resolution(double e(const vec &), double a, component c) {
   s.set_epsilon(e, 0.0, true);
 
   fields f(&s);
-  f.use_bloch(vec2d(0,0));
-  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(0.5,0.5), 1.0);
-  f.add_point_source(Ey, 0.18, 2.5, 0.0, 6.0, vec2d(1.5,0.5),-1.0);
+  f.use_bloch(vec(0,0));
+  f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(0.5,0.5), 1.0);
+  f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(1.5,0.5),-1.0);
   f.use_real_fields();
 
   while (f.time() <= f.last_source_time() + 10.0 && !interrupt) f.step();
