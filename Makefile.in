@@ -101,7 +101,7 @@ documentation: libdactyl.a
 	cd doc && make
 
 clean:
-	rm -f $(OBJ_dactyl) *.o libdactyl.a example core bands_example *.dac
+	rm -f $(OBJ_dactyl) *.o libdactyl.a example core bands_example *.dac debug_out_*
 	cd doc && make clean
 	cd tests && make clean
 
