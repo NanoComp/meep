@@ -266,15 +266,15 @@ static complex<double> dot_fx_integrand(const complex<double> *fields,
   return (real(conj(fields[0]) * fields[1]) * fx(loc));
 }
 
-/* computes integral of f(x) * |E|^2 / (8*pi) / integral epsilon*|E|^2 */
-double fields::electric_sqr_weighted_integral(double (*deps)(const vec &),
+/* computes integral of f(x) * |E|^2 / integral epsilon*|E|^2 */
+double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
 					     const geometric_volume &where) {
   double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c) 
     if (!coordinate_mismatch(v.dim, component_direction(c))) {
       component cs[2];
       cs[0] = cs[1] = direction_component(Ex, component_direction(c));
-      sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) deps));
+      sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) f));
     }
   return sum / (8*pi) / electric_energy_in_box(where);
 }
