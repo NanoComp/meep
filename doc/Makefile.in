@@ -38,7 +38,7 @@ dactyl.ps : dactyl.dvi
 	dvips -o dactyl.ps dactyl.dvi
 
 dactyl/dactyl.html : $(TEXFILES)
-	latex2html -split +1 -local_icons dactyl.tex
+	@LATEX2HTML@ -split +1 -local_icons dactyl.tex
 
 dactyl.dvi : $(TEXFILES)
 	latex dactyl.tex

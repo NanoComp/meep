@@ -16,6 +16,13 @@ AC_PROG_CXX
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 
+AC_CHECK_PROG(LATEX2HTML, latex2html, latex2html)
+if test -z "$LATEX2HTML"; then
+    AC_MSG_WARN([Cannot find latex2html in your path!])
+    LATEX2HTML='echo not running latex2html...'
+fi
+AC_SUBST(LATEX2HTML)
+
 # Add lots of compiler warnings to check for if we are using gcc:
 # (The variable $GCC is set to "yes" by AC_PROG_CC if we are using gcc.)
 if test "$GCC" = "yes"; then
