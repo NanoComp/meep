@@ -302,7 +302,12 @@ double monitor_point::poynting_in_direction(vec v) {
   return result;
 }
 
-#include <fftw.h>
+#include "config.h"
+#ifdef HAVE_LIBFFTW3
+#  include <fftw3.h>
+#else
+#  include <fftw.h>
+#endif
 
 void monitor_point::fourier_transform(component w,
                                       complex<double> **a, complex<double> **f,
@@ -351,9 +356,15 @@ void monitor_point::fourier_transform(component w,
     *f = d;
     fftw_complex *in = (fftw_complex *) d, *out = (fftw_complex *) *a;
     fftw_plan p;
+#ifdef HAVE_LIBFFTW3
+    p = fftw_plan_dft_1d(n, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftw_execute(p);
+    fftw_destroy_plan(p);
+#else
     p = fftw_create_plan(n, FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_one(p, in, out);
     fftw_destroy_plan(p);
+#endif
     for (int i=0;i<n;i++) {
       (*f)[i] = i*(1.0/(tmax-tmin));
       if (real((*f)[i]) > 0.5*n/(tmax-tmin)) (*f)[i] -= n/(tmax-tmin);
@@ -392,3 +403,5 @@ void monitor_point::harminv(component w,
   delete[] f_im;
   delete[] d;
 }
+
+

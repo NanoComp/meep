@@ -39,3 +39,4 @@ void deal_with_ctrl_c(int stop_now) {
   kill_time = 2;
   signal(SIGINT, handle_control_c);
 }
+

@@ -315,3 +315,4 @@ void polarization::initialize_energy(double the_energy(const vec &)) {
       for (int i=0;i<pb->v.ntot();i++)
         energy[c][i] = inv_num_components*the_energy(pb->v.loc(c, i));
 }
+

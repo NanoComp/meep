@@ -59,3 +59,4 @@ void i_fprintf(file *, const char *fmt, ...);
 void master_fprintf(file *, const char *fmt, ...);
 
 #endif
+

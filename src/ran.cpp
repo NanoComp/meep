@@ -76,3 +76,4 @@ double exponential() {
   do { dum = ran(); } while (dum == 0.0);
   return -log(dum);
 }
+

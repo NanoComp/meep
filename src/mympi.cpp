@@ -278,3 +278,4 @@ void master_fprintf(file *f, const char *fmt, ...) {
   }
   va_end(ap);
 }
+

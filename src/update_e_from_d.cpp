@@ -33,3 +33,4 @@ void fields_chunk::update_e_from_d() {
   const int ntot = ma->v.ntot();
 #include "update_e_from_d.h"
 }
+

@@ -482,3 +482,4 @@ symmetry rotate2(direction,const volume &);
 symmetry mirror(direction,const volume &);
 
 #endif
+

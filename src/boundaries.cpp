@@ -374,6 +374,7 @@ void fields::connect_the_chunks() {
           }
 
       // Now connect up the polarizations...
+#undef FT
 #define FT P_stuff
       // First the complex connections:
       FOR_ELECTRIC_COMPONENTS(corig)
@@ -512,3 +513,4 @@ void fields_chunk::alloc_extra_connections(field_type f, in_or_out io, int num) 
   connections[f][io] = conn;
   num_connections[f][io] += num;
 }
+

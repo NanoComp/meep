@@ -400,3 +400,4 @@ void fields_chunk::phase_in_material(const mat_chunk *newma) {
 int fields::is_phasing() {
   return phasein_time > 0;
 }
+

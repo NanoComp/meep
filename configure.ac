@@ -1,12 +1,16 @@
 # Process this file with autoconf to produce a configure script.
 AC_INIT(meep, 0.2, meep@ab-initio.mit.edu)
 AC_CONFIG_SRCDIR(src/step.cpp)
-AC_PREREQ(2.50)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.)
 SHARED_VERSION_INFO="0:0:0"
+
+AM_INIT_AUTOMAKE(1.6)
+AM_CONFIG_HEADER(config.h)
+AM_MAINTAINER_MODE
+AC_SUBST(SHARED_VERSION_INFO)
 
 DEFAULTFLAGS="no"
 if test "x" == "x$CXXFLAGS"; then
@@ -15,8 +19,7 @@ fi
 
 # Checks for programs.
 AC_PROG_CXX
-AC_PROG_MAKE_SET
-AC_PROG_INSTALL
+AC_PROG_LIBTOOL
 
 AC_CHECK_PROG(LATEX2HTML, latex2html, latex2html)
 if test -z "$LATEX2HTML"; then
@@ -28,9 +31,15 @@ AC_SUBST(LATEX2HTML)
 
 AC_CHECK_LIB(m, sqrt)
 
+AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
+	[AC_CHECK_LIB(fftw, fftw_create_plan)])
+
 ###########################################################################
 
 # Checks for BLAS/LAPACK libraries:
+
+sinclude(m4/acx_blas.m4)
+sinclude(m4/acx_lapack.m4)
 
 ACX_BLAS
 ACX_LAPACK
@@ -39,14 +48,23 @@ ACX_LAPACK
 LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
 
 ##############################################################################
+# GNU Scientific Library
+
+AC_CHECK_FUNC(cblas_cgemm, [], [AC_CHECK_LIB(gslcblas, cblas, cblas_cgemm)])
+
+AC_CHECK_LIB(gsl, gsl_sf_bessel_Jn)
+
+##############################################################################
 # Check for MPI library
+
+sinclude(m4/acx_mpi.m4)
 
 AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
                   with_mpi=$withval, with_mpi=no)
 
 if test "x$with_mpi" = "xyes"; then
 	AC_LANG_PUSH([C++])
-	ACX_MPI([], [AC_MSG_ERROR(could not find mpi library for --with-mpi)])
+	ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
 	CXX=$MPICXX
 	AC_LANG_POP([C++])
 fi
