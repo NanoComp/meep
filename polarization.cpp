@@ -174,23 +174,23 @@ void fields::step_polarization_itself(polarization *op, polarization *np) {
   } else if (olpol != NULL && pol != NULL) {
     const double g = op->pb->gamma;
     const double om = op->pb->omeganot;
-    const double funinv = 1.0/(1-0.5*g);
+    const double funinv = 1.0/(1+0.5*g);
     const double *sr = np->pb->sr;
     const double *sp = np->pb->sp;
     const double *sz = np->pb->sz;
     DOCMP {
       for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
         CM(op->Pr,r,z) = funinv*((2-om*om)*CM(np->Pr,r,z)+
-                                 (0.5*g-1)*CM(op->Pr,r,z)+
-                                 MA(sr,r,z)*CM(er,r,z));
+                                 (0.5*g-1)*CM(op->Pr,r,z))+
+                         MA(sr,r,z)*CM(er,r,z);
       for (int r=0;r<nr;r++) for (int z=0;z<=nz;z++)
         CM(op->Pp,r,z) = funinv*((2-om*om)*CM(np->Pp,r,z)+
-                                 (0.5*g-1)*CM(op->Pp,r,z)+
-                                 MA(sp,r,z)*CM(ep,r,z));
+                                 (0.5*g-1)*CM(op->Pp,r,z))+
+                         MA(sp,r,z)*CM(ep,r,z);
       for (int r=0;r<nr;r++) for (int z=0;z<nz;z++)
         CM(op->Pz,r,z) = funinv*((2-om*om)*CM(np->Pz,r,z)+
-                                 (0.5*g-1)*CM(op->Pz,r,z)+
-                                 MA(sz,r,z)*CM(ez,r,z));
+                                 (0.5*g-1)*CM(op->Pz,r,z))+
+                         MA(sz,r,z)*CM(ez,r,z);
     }
     if (op->next && np->next) step_polarization_itself(op->next, np->next);
   }
