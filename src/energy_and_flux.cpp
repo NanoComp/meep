@@ -153,8 +153,6 @@ double fields_chunk::magnetic_energy_in_box(const geometric_volume &otherv,
 double fields_chunk::thermo_energy_in_box(const geometric_volume &otherv,
                                           const symmetry &S) {
   // FIXME this is buggy when either parallel or using symmetry.
-  if (S.multiplicity() != 1)
-    abort("symmetry is unsupported in thermo_energy_in_box");
   if (pol) {
     return pol->total_energy(otherv);
   } else {
