@@ -16,7 +16,7 @@ rm $tarfile
 pushd $distdir
 mkdir OBJ
 cd OBJ
-../configure --without-libctl --disable-static --enable-shared
+../configure --without-libctl # --disable-static --enable-shared
 make
 make check
 popd
