@@ -255,28 +255,31 @@ int exact_metal_rot2y(double eps(const vec &), const char *dirname) {
 
 int pml_twomirrors(double eps(const vec &), const char *dirname) {
   double a = 10.0;
-  double ttot = 5.0;
+  double ttot = 10.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
+  const volume v = voltwo(2.0, 2.0, a);
   const symmetry S = mirror(X,v) + mirror(Y,v);
 
   mat ma_mm(v, eps, 0, S);
   mat ma1(v, eps, 0, identity());
   mat mas[2] = { ma1, ma_mm };
 
-  for (int i=0;i<2;i++) mas[i].set_output_directory(dirname);
-  master_printf("Testing two mirrors...\n");
+  for (int i=0;i<2;i++) {
+    mas[i].set_output_directory(dirname);
+    mas[i].use_pml_everywhere(0.5);
+  }
+  master_printf("Testing two mirrors with PML...\n");
 
   fields fs[2] = { fields(&mas[0]), fields(&mas[1]) };
   for (int i=0;i<2;i++) {
     fs[i].use_metal_everywhere();
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.5,0.5),-1.5);
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.25));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.25));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.25,0.75));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.0,1.0),-1.5);
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,0.75));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(0.75,1.25));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.25,0.75));
+    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec2d(1.25,1.25));
   }
-  double total_energy_check_time = 1.0;
+  double total_energy_check_time = 3.0;
   while (fs[0].time() < ttot) {
     for (int i=0;i<2;i++) fs[i].step();
     fs[0].eps_slices("single");
@@ -291,7 +294,7 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
       if (!compare(fs[0].electric_energy_in_box(v),
                    fs[1].electric_energy_in_box(v),
                    "electric energy")) return 0;
-      total_energy_check_time += 1.0;
+      total_energy_check_time += 3.0;
     }
   }
   return 1;
