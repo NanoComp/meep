@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sh autogen.sh && ./configure && make && cd doc && make test

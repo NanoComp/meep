@@ -1,0 +1,50 @@
+.SUFFIXES: .dac .tex
+
+CXX = @DACTYL_CXX@
+CXXFLAGS = @DACTYL_CXXFLAGS@
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@
+LIBS = @LIBS@ -lgsl -lfftw -lm
+LDFLAGS = @LDFLAGS@
+INSTALL = @INSTALL@
+prefix = @prefix@
+# c.f. AC_ARG_PROGRAM autoconf docs:
+transform=@program_transform_name@
+@SET_MAKE@
+
+VERSION = @VERSION@
+
+all: dactyl.ps dactyl/dactyl.html preproc
+
+###########################################################################
+
+TEXFILES = dactyl.tex simplebands.tex
+
+.cpp.o:
+	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
+.o.dac: ../libdactyl.a
+	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
+.tex.cpp: preproc
+	./preproc $< > $@
+
+preproc: preproc.hs
+	ghc -o preproc -package text preproc.hs
+
+dactyl.ps : dactyl.dvi
+	dvips -o dactyl.ps dactyl.dvi
+
+dactyl/dactyl.html : $(TEXFILES)
+	latex2html -split +1 -local_icons dactyl.tex
+
+dactyl.dvi : $(TEXFILES)
+	latex dactyl.tex
+
+test: ../libdactyl.a preproc simplebands.dac
+
+doc: doc/dactyl.ps
+
+testclean:
+	rm -rf *.o *.hi *.cpp *.dac
+
+clean:
+	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.cpp *.dac dactyl/
