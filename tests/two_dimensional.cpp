@@ -370,5 +370,5 @@ int main(int argc, char **argv) {
     if (!test_periodic_tm(one, s, mydirname))
       abort("error in test_periodic_tm vacuum\n");
 
-  exit(0);
+  return 0;
 }

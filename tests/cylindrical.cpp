@@ -341,5 +341,5 @@ int main(int argc, char **argv) {
   for (int s=2;s<6;s++)
     if (!test_pml(one, s, mydirname)) abort("error in test_pml\n");
 
-  exit(0);
+  return 0;
 }

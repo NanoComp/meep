@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include <meep.h>
 using namespace meep;
@@ -45,10 +44,10 @@ bench bench_periodic(const double rmax, const double zmax,
   f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
 
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < ttot) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -75,13 +74,13 @@ bench bench_flux_1d(const double zmax,
   volume mid = volone(zmax/3,a);
   mid.set_origin(vec(zmax/3));
   double flux_energy=0.0;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < ttot) {
     f.step();
     flux_energy += f.dt*(right->flux() - left->flux());
   }
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -101,10 +100,10 @@ bench bench_2d(const double xmax, const double ymax,
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < tend) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -126,10 +125,10 @@ bench bench_2d_tm_nonlinear(const double xmax, const double ymax,
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < tend) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -148,10 +147,10 @@ bench bench_2d_tm(const double xmax, const double ymax,
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < tend) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -171,10 +170,10 @@ bench bench_2d_te(const double xmax, const double ymax,
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < tend) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -195,10 +194,10 @@ bench bench_2d_te_nonlinear(const double xmax, const double ymax,
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < tend) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -230,10 +229,10 @@ bench bench_3d_periodic(const double xmax, const double ymax, const double zmax,
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < tend) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -252,10 +251,10 @@ bench bench_3d(const double xmax, const double ymax, const double zmax,
 
   while (f.time() < f.last_source_time()) f.step();
   const double tend = f.time() + ttot;
-  clock_t start = clock();
+  double start = wall_time();
   while (f.time() < tend) f.step();
   bench b;
-  b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
+  b.time = (wall_time() - start);
   b.gridsteps = ttot*a*2*gridpts;
   //f.print_times();
   return b;
@@ -302,5 +301,5 @@ int main(int argc, char **argv) {
 
   master_printf("\nnote: 1 Mgs = 1 million grid point time steps\n");
 
-  exit(0);
+  return 0;
 }

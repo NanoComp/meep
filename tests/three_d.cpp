@@ -260,5 +260,5 @@ int main(int argc, char **argv) {
     if (!test_pml_splitting(one, s, mydirname))
       abort("error in test_pml_splitting vacuum\n");
 
-  exit(0);
+  return 0;
 }

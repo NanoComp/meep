@@ -24,10 +24,15 @@ namespace meep {
 
 // MPI helper routines!
 
+double wall_time(void);
+
 class initialize {
  public:
   initialize(int argc, char **argv);
   ~initialize();
+  double elapsed_time() { return wall_time() - t_start; }
+ private:
+  double t_start;
 };
 
 #ifdef __GNUC__

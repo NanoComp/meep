@@ -15,27 +15,25 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#include <time.h>
-
 #include "meep.h"
 
 namespace meep {
 
 #ifdef WITH_TIMINGS
 void fields::finished_working() {
-  unsigned long now = clock();
-  if (last_time)
-    times_spent[working_on] += (now - last_time)*(1.0/CLOCKS_PER_SEC);
-  last_time = now;
+  double now = wall_time();
+  if (last_wall_time >= 0)
+    times_spent[working_on] += now - last_wall_time;
+  last_wall_time = now;
   working_on = was_working_on;
   was_working_on = Other;
 }
 
 void fields::am_now_working_on(time_sink s) {
-  unsigned long now = clock();
-  if (last_time)
-    times_spent[working_on] += (now - last_time)*(1.0/CLOCKS_PER_SEC);
-  last_time = now;
+  double now = wall_time();
+  if (last_wall_time >= 0)
+    times_spent[working_on] += now - last_wall_time;
+  last_wall_time = now;
   was_working_on = working_on;
   working_on = s;
 }

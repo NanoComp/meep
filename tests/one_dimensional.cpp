@@ -157,5 +157,5 @@ int main(int argc, char **argv) {
 
   for (int s=2;s<7;s++)
     if (!test_simple_periodic(one, s, mydirname)) abort("error in test_simple_periodic\n");
-  exit(0);
+  return 0;
 }

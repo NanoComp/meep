@@ -334,7 +334,7 @@ int main(int argc, char **argv) {
   width = 5.0;
   attempt("Flux cylindrical 5", flux_cyl(20.0, 10.0, bump2, 1));
 
-  exit(0);
+  return 0;
 }
 
 

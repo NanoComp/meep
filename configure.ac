@@ -395,6 +395,13 @@ if test $ignore_sigfpe = yes; then
 fi
 
 ##############################################################################
+# Miscellaneous function and header checks
+
+AC_HEADER_TIME
+AC_CHECK_HEADERS([sys/time.h])
+AC_CHECK_FUNCS([BSDgettimeofday gettimeofday])
+
+##############################################################################
 
 AC_CONFIG_FILES([
 	Makefile

@@ -39,6 +39,23 @@ extern "C" int feenableexcept (int EXCEPTS);
 #  endif
 #endif
 
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_BSDGETTIMEOFDAY
+#  ifndef HAVE_GETTIMEOFDAY
+#    define gettimeofday BSDgettimeofday
+#    define HAVE_GETTIMEOFDAY 1
+#  endif
+#endif
+
 #define UNUSED(x) (void) x // silence compiler warnings
 
 namespace meep {
@@ -59,11 +76,25 @@ initialize::initialize(int argc, char **argv) {
 #ifdef IGNORE_SIGFPE
   signal(SIGFPE, SIG_IGN);
 #endif
+  t_start = wall_time();
 }
 
 initialize::~initialize() {
+  master_printf("Elapsed run time = %g s\n", elapsed_time());
 #ifdef HAVE_MPI
   MPI_Finalize();
+#endif
+}
+
+double wall_time(void) {
+#ifdef HAVE_MPI
+  return MPI_Wtime();
+#elif HAVE_GETTIMEOFDAY
+  struct timeval tv;
+  gettimeofday(&tv, 0);
+  return(tv.tv_sec + tv.tv_usec * 1e-6);
+#else
+  return (clock() * 1.0 / CLOCKS_PER_SECOND);
 #endif
 }
 

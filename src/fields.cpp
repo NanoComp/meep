@@ -44,7 +44,7 @@ fields::fields(const structure *s, int tm) :
   // Time stuff:
   was_working_on = working_on = Other;
   for (int i=0;i<=Other;i++) times_spent[i] = 0.0;
-  last_time = 0;
+  last_wall_time = -1;
   am_now_working_on(Other);
 
   num_chunks = s->num_chunks;
@@ -88,7 +88,7 @@ fields::fields(const fields &thef) :
   // Time stuff:
   was_working_on = working_on = Other;
   for (int i=0;i<=Other;i++) times_spent[i] = 0.0;
-  last_time = 0;
+  last_wall_time = -1;
   am_now_working_on(Other);
 
   num_chunks = thef.num_chunks;

@@ -782,7 +782,7 @@ class fields {
                                       double energy(const vec &));
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
-  unsigned long last_time;
+  double last_wall_time;
   time_sink working_on, was_working_on;
   double times_spent[Other+1];
   // fields.cpp
