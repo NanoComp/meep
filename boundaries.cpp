@@ -222,7 +222,7 @@ void fields::connect_the_chunks() {
         comm_num_complex[ft][j+i*num_chunks] = 0;
         comm_num_negate[ft][j+i*num_chunks] = 0;
       }
-    for (int j=0;j<num_chunks;j++)
+    for (int j=0;j<num_chunks;j++) {
       FOR_COMPONENTS(corig)
         if (have_component(corig))
           for (int n=0;n<vi.ntot();n++) {
@@ -246,6 +246,35 @@ void fields::connect_the_chunks() {
                 }
             }
         }
+      FOR_ELECTRIC_COMPONENTS(corig)
+        if (have_component(corig))
+          for (int n=0;n<vi.ntot();n++) {
+            component c = corig;
+            ivec here = vi.iloc(c, n);
+            if (!vi.owns(here)) {
+              // We're looking at a border element...
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here) && !is_metal(here)) {
+                  // Adjacent, periodic or rotational...
+                  int common_pols = 0;
+                  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+                    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+                      if (pi->pb->get_identifier() == pj->pb->get_identifier())
+                        common_pols += 1;
+                  const int nn = (is_real?1:2) * common_pols;
+                  const int pair = j+i*num_chunks;
+                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
+                    comm_num_complex[P_stuff][pair] += nn;
+                  else if (thephase == -1.0)
+                    comm_num_negate[P_stuff][pair] += nn;
+                  nc[P_stuff][Incoming][i] += nn;
+                  nc[P_stuff][Outgoing][j] += nn;
+                  comm_sizes[P_stuff][pair] += nn;
+                }
+            }
+        }
+    }
     // Allocating comm blocks as we go...
     FOR_FIELD_TYPES(ft)
       for (int j=0;j<num_chunks;j++) {
@@ -340,6 +369,86 @@ void fields::connect_the_chunks() {
                 }
             }
           }
+
+      // Now connect up the polarizations...
+#define FT P_stuff
+      // First the complex connections:
+      FOR_ELECTRIC_COMPONENTS(corig)
+        if (have_component(corig))
+          for (int n=0;n<vi.ntot();n++) {
+            component c = corig;
+            ivec here = vi.iloc(c, n);
+            if (!vi.owns(here)) {
+              // We're looking at a border element...
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here) && !is_metal(here))
+                  if (imag(thephase) != 0.0 || fabs(real(thephase)) != 1.0)
+                    for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+                      for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+                          const int m = chunks[j]->v.index(c, here);
+                          chunks[i]->connection_phases[FT][wh[FT][Incoming][i]/2] = thephase;
+                          DOCMP {
+                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                              = pi->P[corig][cmp] + n;
+                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                              = pj->P[c][cmp] + m;
+                          }
+                        }
+            }
+          }
+      // Now the negative connections:
+      FOR_ELECTRIC_COMPONENTS(corig)
+        if (have_component(corig))
+          for (int n=0;n<vi.ntot();n++) {
+            component c = corig;
+            ivec here = vi.iloc(c, n);
+            if (!vi.owns(here)) {
+              // We're looking at a border element...
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here) && !is_metal(here))
+                  if (thephase == -1.0)
+                    for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+                      for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+                          const int m = chunks[j]->v.index(c, here);
+                          DOCMP {
+                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                              = pi->P[corig][cmp] + n;
+                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                              = pj->P[c][cmp] + m;
+                          }
+                        }
+            }
+          }
+      // Finally the plain old copied connections:
+      FOR_ELECTRIC_COMPONENTS(corig)
+        if (have_component(corig))
+          for (int n=0;n<vi.ntot();n++) {
+            component c = corig;
+            ivec here = vi.iloc(c, n);
+            if (!vi.owns(here)) {
+              // We're looking at a border element...
+              complex<double> thephase = 1.0;
+              if (locate_component_point(&c,&here,&thephase))
+                if (chunks[j]->v.owns(here) && !is_metal(here))
+                  if (thephase == 1.0)
+                    for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
+                      for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+                        if (pi->pb->get_identifier() == pj->pb->get_identifier()) {
+                          const int m = chunks[j]->v.index(c, here);
+                          DOCMP {
+                            chunks[i]->connections[FT][Incoming][wh[FT][Incoming][i]++]
+                              = pi->P[corig][cmp] + n;
+                            chunks[j]->connections[FT][Outgoing][wh[FT][Outgoing][j]++]
+                              = pj->P[c][cmp] + m;
+                          }
+                        }
+            }
+          }
+      // Finished connecting up the polarizations...
     }
   }
   FOR_FIELD_TYPES(f)

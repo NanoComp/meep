@@ -23,12 +23,12 @@
 using namespace std;
 
 const int NUM_FIELD_COMPONENTS = 15;
-const int NUM_FIELD_TYPES = 3;
+const int NUM_FIELD_TYPES = 4;
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
                  Dx, Dy, Dr, Dp, Dz, Dielectric };
 enum ndim { D1=0, D2, D3, Dcyl };
-enum field_type { E_stuff=0, H_stuff=1, D_stuff=2 };
+enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, P_stuff=3 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P };
 struct signed_direction {
@@ -57,7 +57,7 @@ inline direction stop_at_direction(ndim dim) {
 }
 
 #define FOR_FIELD_TYPES(ft) for (field_type ft = E_stuff; \
-                                 ft <= D_stuff; ft = (field_type) (ft+1))
+                                 ft <= P_stuff; ft = (field_type) (ft+1))
 #define FOR_ELECTRIC_COMPONENTS(c) for (component c = Ex; \
                                         c < Hx; c = (component) (c+1))
 #define FOR_MAGNETIC_COMPONENTS(c) for (component c = Hz; \

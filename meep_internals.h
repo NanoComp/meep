@@ -37,11 +37,13 @@ class polarizability {
   volume v;
   polarizability(const mat_chunk *, double sig(const vec &),
                  double om, double ga, double sigscale,
-                 double energy_saturation = 0.0);
+                 double energy_saturation = 0.0, bool mine = true);
   polarizability(const polarizability *);
   ~polarizability();
   double gamma, omeganot, *sigma, *s[NUM_FIELD_COMPONENTS];
   double energy_saturation, saturated_sigma;
+  bool is_mine() { return is_it_mine; };
+  bool is_it_mine;
   polarizability *next;
 
   polarizability_identifier get_identifier() const;

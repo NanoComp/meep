@@ -116,6 +116,7 @@ polarizability::polarizability(const polarizability *pb) {
   
   energy_saturation = pb->energy_saturation;
   saturated_sigma = pb->saturated_sigma;
+  is_it_mine = pb->is_it_mine;
   sigma = new double[v.ntot()];
   for (int i=0;i<v.ntot();i++) sigma[i] = pb->sigma[i];
   FOR_COMPONENTS(c) s[c] = NULL;
@@ -130,8 +131,9 @@ polarizability::polarizability(const polarizability *pb) {
 
 polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
                                double om, double ga, double sigscale,
-                               double energy_sat) {
+                               double energy_sat, bool mine) {
   v = ma->v;
+  is_it_mine = mine;
   omeganot = om;
   gamma = ga;
   next = NULL;
@@ -143,29 +145,34 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
     if (v.has_field(c)) {
       s[c] = new double[v.ntot()];
     }
-  sigma = new double[v.ntot()];
-  if (sigma == NULL) abort("Out of memory in polarizability!\n");
+  if (is_mine()) {
+    sigma = new double[v.ntot()];
+    if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
-  for (int i=0;i<v.ntot();i++)
-    sigma[i] = sigscale*sig(v.loc(v.eps_component(),i));
-  FOR_COMPONENTS(c) if (s[c])
-    for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
-  // Average out sigma over the grid...
-  if (v.dim == Dcyl) {
-    const vec dr = v.dr()*0.5; // The distance between Yee field components
-    const vec dz = v.dz()*0.5; // The distance between Yee field components
-    for (int i=0;i<v.ntot();i++) {
-      const vec here = v.loc(Ep,i);
-      s[Er][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here+dr-dz));
-      s[Ep][i] = 0.25*sigscale*(sig(here+dr+dz) + sig(here-dr+dz) +
-                                sig(here+dr-dz) + sig(here-dr-dz));
-      s[Ez][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
+    for (int i=0;i<v.ntot();i++)
+      sigma[i] = sigscale*sig(v.loc(v.eps_component(),i));
+    FOR_COMPONENTS(c) if (s[c])
+      for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
+    // Average out sigma over the grid...
+    if (v.dim == Dcyl) {
+      const vec dr = v.dr()*0.5; // The distance between Yee field components
+      const vec dz = v.dz()*0.5; // The distance between Yee field components
+      for (int i=0;i<v.ntot();i++) {
+        const vec here = v.loc(Ep,i);
+        s[Er][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here+dr-dz));
+        s[Ep][i] = 0.25*sigscale*(sig(here+dr+dz) + sig(here-dr+dz) +
+                                  sig(here+dr-dz) + sig(here-dr-dz));
+        s[Ez][i] = 0.5*sigscale*(sig(here+dr+dz) + sig(here-dr+dz));
+      }
+    } else if (v.dim == D1) {
+      // There's just one field point...
+      for (int i=0;i<v.ntot();i++) s[Ex][i] = sigma[i];
+    } else {
+      abort("Unsupported dimensionality!\n");
     }
-  } else if (v.dim == D1) {
-    // There's just one field point...
-    for (int i=0;i<v.ntot();i++) s[Ex][i] = sigma[i];
-  } else {
-    abort("Unsupported dimensionality!\n");
+  } else { // Not mine, don't store arrays...
+    sigma = 0;
+    FOR_COMPONENTS(c) s[c] = 0;
   }
 }
 
@@ -210,9 +217,10 @@ complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
   return broadcast(n_proc(), epsi);
 }
 
-polarizability_identifier
-     mat::add_polarizability(double sigma(const vec &), double omega, double gamma,
-                             double delta_epsilon, double energy_saturation) {
+polarizability_identifier mat::add_polarizability(double sigma(const vec &),
+                                                  double omega, double gamma,
+                                                  double delta_epsilon,
+                                                  double energy_saturation) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->add_polarizability(sigma, omega, gamma, delta_epsilon, energy_saturation);
   return chunks[0]->pb->get_identifier();
@@ -240,7 +248,8 @@ void mat_chunk::add_polarizability(double sigma(const vec &),
   polarizability *npb = new polarizability(this, sigma,
                                            freq_conversion*omega,
                                            freq_conversion*gamma,
-                                           sigma_scale, energy_sat);
+                                           sigma_scale, energy_sat,
+                                           is_mine());
   npb->next = pb;
   pb = npb;
 }

@@ -47,6 +47,7 @@ void fields::step() {
   am_now_working_on(Stepping);
 
   update_from_e();
+  step_boundaries(P_stuff);
 
   update_fluxes();
   t += 1;
