@@ -171,7 +171,9 @@ class fields {
   void ttow(complex<double> field, double *retarget, double *imtarget, double time);
   void fluxw_output(FILE *outpf, char *header);
   void set_output_directory(const char *name);
+  void verbose(int v=1) { verbosity = v; }
  private: 
+  int verbosity; // Turn on verbosity for debugging purposes...
   double *(erw[2]), *(epw[2]), *(ezw[2]), *(hrw[2]), *(hpw[2]), *(hzw[2]);
   int iposmax, ifreqmax, nfreq, nzflux, *(nzfluxplane[MAXFLUXPLANES]);
   int nrflux, *(nrfluxplane[MAXFLUXPLANES]);

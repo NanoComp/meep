@@ -26,6 +26,7 @@
 #define BAND(b,r,t) ((b)[(r)+(t)*nr])
 
 bandsdata::bandsdata() {
+  verbosity = 0;
   maxbands = -1;
   tstart = nr = z = 0;
   tend = -1;
@@ -90,8 +91,8 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
     double smalltime = 1./(decayconst + bands->fmax*(c*inva));
     bands->scale_factor = (int)(0.12*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
-    printf("scale_factor is %d (%lg,%lg)\n",
-           bands->scale_factor, bands->fmax, decayconst);
+    if (verbosity) printf("scale_factor is %d (%lg,%lg)\n",
+                          bands->scale_factor, bands->fmax*(c*inva), decayconst);
   }
 
   if (bands->tend <= bands->tstart) {
@@ -114,6 +115,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
     printf("Unable to allocate bandstructure array!\n");
     exit(1);
   }
+  bands->verbosity = verbosity;
 }
 
 void fields::record_bands() {
@@ -240,7 +242,7 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
   } else {
     numfit = nbands;
   }
-  printf("Looking at %d bands using least squares...\n", numfit);
+  if (verbosity) printf("Looking at %d bands using least squares...\n", numfit);
   if (numfit < 2) {
     printf("It looks like we can't do the least squares fit, since we\n");
     printf("only have %d frequencies to fit.\n", numfit);
@@ -272,7 +274,7 @@ void bandsdata::get_fields(cmplx *eigen, cmplx *fad,
             work,&worksize,rwork,&dummy);
     // Unhermitian conjugate V
     for (int j=0;j<num_param;j++) {
-      printf("S[%d] value is %lg.\n", j, S[j]);
+      if (verbosity) printf("S[%d] value is %lg.\n", j, S[j]);
       for (int i=0;i<num_param;i++) {
         V[i*num_param+j] = conj( VT[j*num_param+i]);
       }
@@ -389,8 +391,8 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
   if (numref == 0) { // Have no reference bands so far...
     numref = get_freqs(simple_data, ntime, refa, reff, refd);
     for (int n=0;n<numref;n++) {
-      //printf("Here's a mode (%10lg,%10lg) (%10lg,%10lg) -- %d (%d.%d)\n",
-      //       reff[n], refd[n], real(refa[n]),imag(refa[n]), n, r, whichf);
+      if (verbosity > 1) printf("Here's a mode (%10lg,%10lg) (%10lg,%10lg) -- %d\n",
+                                reff[n], refd[n], real(refa[n]),imag(refa[n]), n);
       for (int t=0;t<ntime;t++)
         refdata[t+n*ntime] = simple_data[t];
     }
@@ -473,19 +475,22 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
         }
         if (err_best < 0.025) {
           refnum[best_match] = n;
-          //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
-          //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
+          if (verbosity > 1)
+            printf("Matched %d: %10lg Got a best err of %8lg on an f of %lg %d (%lg)\n",
+                   n, heref[best_match], err_best, reff[n], n, abs(herea[best_match]));
         } else if (err_best < 1e299) {
-          //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
-          //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
+          if (verbosity > 1)
+            printf("Missed %d:  %10lg Got a best err of %8lg on an f of %lg %d (%lg)\n",
+                   n, heref[best_match], err_best, reff[n], n, abs(herea[best_match]));
         }
       }
       for (int i=0;i<num_here;i++) {
         if (refnum[i] == -1) { // New mode!!! Change reference...
           reff[numref] = heref[i];
           refd[numref] = hered[i];
-          //printf("Found one more mode! (%10lg,%10lg) -- %d (%d.%d)\n",
-          //       heref[i], refd[numref], numref, r, whichf);
+          if (verbosity > 1)
+            printf("Found one more mode (was i == %d)! (%10lg,%10lg) -- %d\n",
+                   i, heref[i], refd[numref], numref);
           refa[numref] = herea[i];
           for (int t=0;t<ntime;t++) 
             refdata[t+numref*ntime] = simple_data[t];
@@ -535,11 +540,11 @@ complex<double> *fields::get_the_bands(int maxbands) {
   cmplx *refa = new complex<double>[maxbands];
   cmplx *refdata = new complex<double>[maxbands*ntime];
   bands->look_for_more_bands(bands->P, reff, refd, refa, refdata, numref);
-  if (numref) printf("I found %d bands in the polarization...\n", numref);
+  if (numref && verbosity) printf("I found %d bands in the polarization...\n", numref);
   for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*1.99)) {
     cmplx *bdata;
     for (int whichf = 0; whichf < 6; whichf++) {
-      //printf("Looking at (%d.%d)\n", r, whichf);
+      if (verbosity>1) printf("Looking at r == %lg, field %d\n", r*inva, whichf);
       switch (whichf) {
       case 0: bdata = bands->er; break;
       case 1: bdata = bands->ep; break;

@@ -106,6 +106,7 @@ class bandsdata {
   int tstart, tend, z, nr, maxbands, scale_factor;
   double a, inva, fmin, fmax, qmin;
   int ntime;
+  int verbosity;
 
   void get_fields(complex<double> *eigen, complex<double> *f_and_d,
                   int nbands, int n);

@@ -73,6 +73,7 @@ void fields::use_bloch(double tk) {
 fields::fields(const mat *the_ma, int tm) {
   int r, z;
   ma = new mat(the_ma);
+  verbosity = 0;
   nr = ma->nr;
   nz = ma->nz;
   outdir = ma->outdir;
