@@ -182,23 +182,6 @@ void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
              f[i], d[i]);
     }
   }
-
-  /*complex<double> *overlap = new complex<double>[(nbands+1)*(nbands+1)];
-  for (int i=0;i<=nbands;i++) {
-    for (int j=0;j<=nbands;j++) {
-      complex<double> sum = 0;
-      for (int t=0;t<n;t++) {
-        complex<double> now = 1;
-        if (i < nbands) now *= exp(cmplx(0.0,unitconvert*f[i]*t));
-        if (j < nbands) now *= exp(cmplx(0.0,-unitconvert*f[j]*t));
-        sum += now;
-      }
-      overlap[i*(nbands+1)+j] = sum;
-    }
-  }
-  //zpotrf;
-  //zpotri;
-  delete[] overlap;*/
   // First, we want to take a fourier transform of each mode that has zero
   // decay, and subtract off its power.
   int numfit = 0;
