@@ -60,37 +60,37 @@ void fields::use_bloch(const vec &k, bool autoconnect) {
 }
 
 ivec fields::ilattice_vector(direction d) const {
-  switch (v.dim) {
-  case Dcyl: case D1: return ivec(0,2*v.nz()); // Only Z direction here...
+  switch (user_volume.dim) {
+  case Dcyl: case D1: return ivec(0,2*user_volume.nz()); // Only Z direction here...
   case D2:
     switch (d) {
-    case X: return ivec2d(v.nx()*2,0);
-    case Y: return ivec2d(0,v.ny()*2);
+    case X: return ivec2d(user_volume.nx()*2,0);
+    case Y: return ivec2d(0,user_volume.ny()*2);
     }
   case D3:
     switch (d) {
-    case X: return ivec(v.nx()*2,0,0);
-    case Y: return ivec(0,v.ny()*2,0);
-    case Z: return ivec(0,0,v.nz()*2);
+    case X: return ivec(user_volume.nx()*2,0,0);
+    case Y: return ivec(0,user_volume.ny()*2,0);
+    case Z: return ivec(0,0,user_volume.nz()*2);
     }
   }
 }
 
 vec fields::lattice_vector(direction d) const {
-  if (v.dim == Dcyl) {
-    return vec(0,v.nz()*inva); // Only Z direction here...
-  } else if (v.dim == D1) {
-    return vec(v.nz()*inva); // Only Z direction here...
-  } else if (v.dim == D2) {
+  if (user_volume.dim == Dcyl) {
+    return vec(0,user_volume.nz()*inva); // Only Z direction here...
+  } else if (user_volume.dim == D1) {
+    return vec(user_volume.nz()*inva); // Only Z direction here...
+  } else if (user_volume.dim == D2) {
     switch (d) {
-    case X: return vec2d(v.nx()*inva,0);
-    case Y: return vec2d(0,v.ny()*inva);
+    case X: return vec2d(user_volume.nx()*inva,0);
+    case Y: return vec2d(0,user_volume.ny()*inva);
     }
-  } else if (v.dim == D3) {
+  } else if (user_volume.dim == D3) {
     switch (d) {
-    case X: return vec(v.nx()*inva,0,0);
-    case Y: return vec(0,v.ny()*inva,0);
-    case Z: return vec(0,0,v.nz()*inva);
+    case X: return vec(user_volume.nx()*inva,0,0);
+    case Y: return vec(0,user_volume.ny()*inva,0);
+    case Z: return vec(0,0,user_volume.nz()*inva);
     }
   }
 }
@@ -131,18 +131,19 @@ void fields::connect_chunks() {
 static double zero = 0.0;
 
 inline int fields::is_metal(const ivec &here) {
-  if (!user_volume.owns(here)) return 0;
   LOOP_OVER_DIRECTIONS(v.dim, d) {
     if (user_volume.has_boundary(High, d) &&
         here.in_direction(d) == user_volume.big_corner().in_direction(d)) {
       if (boundaries[High][d] == Metallic) return true;
     }
-    if (user_volume.has_boundary(Low, d)) {
-      if (boundaries[Low][d] == Magnetic &&
-          here.in_direction(d) ==
-          user_volume.little_corner().in_direction(d)+1)
-        return true;
-    }
+    if (boundaries[Low][d] == Magnetic &&
+        here.in_direction(d) ==
+        user_volume.little_corner().in_direction(d)+1)
+      return true;
+    if (boundaries[Low][d] == Metallic &&
+        here.in_direction(d) ==
+        user_volume.little_corner().in_direction(d))
+      return true;
   }
   return false;
 }
@@ -151,23 +152,24 @@ bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) co
   // Check if a translational symmetry is needed to bring the point in...
   if (!user_volume.owns(*there))
     FOR_DIRECTIONS(d) {
-      if (boundaries[Low][d] == Periodic &&
-          there->in_direction(d) <= user_volume.origin.in_direction(d)) {
+      if (boundaries[High][d] == Periodic &&
+          there->in_direction(d) <= user_volume.little_corner().in_direction(d)) {
         while (there->in_direction(d) <=
-               user_volume.origin.in_direction(d)) {
+               user_volume.little_corner().in_direction(d)) {
           *there += ilattice_vector(d);
           *phase *= conj(eikna[d]);
         }
       } else if (boundaries[High][d] == Periodic &&
                  there->in_direction(d)-ilattice_vector(d).in_direction(d)
-                 > user_volume.origin.in_direction(d)) {
+                 > user_volume.little_corner().in_direction(d)) {
         while (there->in_direction(d)-ilattice_vector(d).in_direction(d)
-               > user_volume.origin.in_direction(d)) {
+               > user_volume.little_corner().in_direction(d)) {
           *there -= ilattice_vector(d);
           *phase *= eikna[d];
         }
       }
     }
+  return user_volume.owns(*there);
 }
 
 bool fields::locate_component_point(component *c, ivec *there,
