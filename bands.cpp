@@ -96,7 +96,7 @@ void fields::prepare_for_bands(int z, int ttot, double fmax,
     // for when there are too many data points...
     double decayconst = bands->fmax*(c*inva)/qmin*8.0;
     double smalltime = 1./(decayconst + bands->fmax*(c*inva));
-    bands->scale_factor = (int)(0.12*smalltime);
+    bands->scale_factor = (int)(0.06*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
     if (verbosity) printf("scale_factor is %d (%lg,%lg)\n",
                           bands->scale_factor, bands->fmax*(c*inva), decayconst);
@@ -405,7 +405,7 @@ int bandsdata::look_for_more_bands(complex<double> *simple_data,
       int best_match=-1;
       double err_best = 1e300;
       for (int i=0;i<num_match;i++) {
-        double errf = (abs(tf[i]-reff[n])+0.1*abs(td[i]-refd[n]))/abs(reff[n]);
+        double errf = (abs(tf[i]-reff[n])+0.25*abs(td[i]-refd[n]))/abs(reff[n]);
         double erra = abs(ta[i]-refa[n])/abs(refa[n]);
         double err = errf;//sqrt(errf*errf + erra*erra);
         //if (err > 10*errf) err = 10*errf;
@@ -543,7 +543,7 @@ complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
   cmplx *refdata = new complex<double>[maxbands*ntime];
   bands->look_for_more_bands(bands->P, reff, refd, refa, refdata, numref);
   if (numref && verbosity) printf("I found %d bands in the polarization...\n", numref);
-  for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*1.99)) {
+  for (int r=0;r<nr;r+=1+(int)(bands->scale_factor/c*3.99)) {
     cmplx *bdata;
     for (int whichf = 0; whichf < 6; whichf++) {
       if (verbosity>1) printf("Looking at r == %lg, field %d\n", r*inva, whichf);
@@ -578,9 +578,28 @@ complex<double> *fields::get_the_bands(int maxbands, double *approx_power) {
         refd[j] = refd[j-1];
         reff[j-1] = t1;
         refd[j-1] = t2;
-	complex<double> temp = refa[j];
-	refa[j] = refa[j-1];
-	refa[j-1] = temp;
+        complex<double> temp = refa[j];
+        refa[j] = refa[j-1];
+        refa[j-1] = temp;
+      }
+    }
+  }
+
+  // Now get rid of any really low power solutions...
+  double powmax = 0.0;
+  for (int i=0;i<numref;i++)
+    powmax = max(powmax,abs(refa[i]*refa[i]));
+  double powmin = powmax*bands->fpmin;
+  for (int i=numref-1;i>=0;i--) {
+    if (abs(refa[i]*refa[i]) < powmin) {
+      numref--;
+      if (verbosity > -2)
+        printf("Trashing a low power solution with freq %lg %lg (%lg vs %lg)\n",
+               reff[i], refd[i], abs(refa[i]*refa[i]), powmin);
+      for (int j=i;j<numref;j++) {
+        reff[j] = reff[j+1];
+        refd[j] = refd[j+1];
+        refa[j] = refa[j+1];
       }
     }
   }
@@ -727,7 +746,7 @@ int bandsdata::get_freqs(cmplx *data, int n,
   }
   // Now get rid of any spurious transient solutions...
   for (int i=num-1;i>=0;i--) {
-    double qminhere = 1.0/(1.0/qmin + 0.25/(freq_re[i]*total_time));
+    double qminhere = 1.0/(1.0/qmin + 0.4/(freq_re[i]*total_time));
     if (0.5*fabs(fabs(freq_re[i])/freq_im[i]) < qminhere) {
       num--;
       if (verbosity > 2) {
