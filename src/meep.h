@@ -189,7 +189,6 @@ class structure_chunk {
   void set_epsilon(material_function &eps, double minvol,
                    bool use_anisotropic_averaging);
   void set_kerr(material_function &eps);
-  void make_average_eps();
   void use_pml(direction, double dx, double boundary_loc);
   void update_pml_arrays();
   void update_Cdecay();
@@ -247,7 +246,6 @@ class structure {
   void choose_chunkdivision(const volume &v, material_function &eps,
                             int num_chunks = 1,
                             const symmetry &s = meep::identity());
-  void make_average_eps();
   void use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks = true);
   void use_pml_everywhere(double dx, bool recalculate_chunks = true);
 

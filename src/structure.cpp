@@ -354,12 +354,6 @@ structure::~structure() {
   delete[] effort;
 }
 
-void structure::make_average_eps() {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->make_average_eps(); // FIXME
-}
-
 void structure::set_epsilon(material_function &eps, double minvol,
                       bool use_anisotropic_averaging) {
   for (int i=0;i<num_chunks;i++)
@@ -501,20 +495,6 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
     po = po->next;
     pn = pn->next;
   }
-}
-
-void structure_chunk::make_average_eps() {
-  double meaneps = 0;
-  for (int i=0;i<v.ntot();i++) {
-    meaneps += eps[i]; // This is totally wrong, as it needs parallelization.
-  }
-  meaneps /= v.ntot();
-  for (int i=0;i<v.ntot();i++)
-    eps[i] = meaneps;
-  FOR_ELECTRIC_COMPONENTS(c)
-    if (v.has_field(c))
-      for (int i=0;i<v.ntot();i++)
-        inveps[c][component_direction(c)][i] = 1/meaneps;
 }
 
 const double Cmax = 0.5;
