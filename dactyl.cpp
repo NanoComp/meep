@@ -273,7 +273,7 @@ fields::fields(const mat *the_ma, int tm) {
   inva = 1.0/a;
   t = 0;
   numpols = ma->numpols;
-  sources = NULL;
+  h_sources = e_sources = NULL;
   hr[0] = new double[(nr+1)*(nz+1)];
   hp[0] = new double[nr*(nz+1)];
   hz[0] = new double[nr*(nz+1)];
@@ -356,7 +356,7 @@ fields::fields(const mat *the_ma, int tm) {
 void fields::add_src_pt(int r, int z,
                         double Pr, double Pp, double Pz,
                         double freq, double width, double peaktime,
-                        double cutoff) {
+                        double cutoff, int is_h) {
   const double pi=3.14159265;
   if (m!=0 && r <= rmin_bulk(m)-1) return;
   if (r >= nr - npmlr) return;
@@ -372,11 +372,40 @@ void fields::add_src_pt(int r, int z,
   tmp->ep = Pp;
   tmp->r = r;
   tmp->z = z;
-  tmp->next = sources;
+  if (is_h) {
+    tmp->next = h_sources;
+    h_sources = tmp;
+  } else {
+    tmp->next = e_sources;
+    e_sources = tmp;
+  }
   tmp->cutoff = 1+ (int)(cutoff*tmp->width);
   tmp->peaktime = peaktime*a;
   if (peaktime <= 0.0) tmp->peaktime = tmp->cutoff;
-  sources = tmp;
+}
+
+void fields::add_hr_source(double freq, double width, double peaktime,
+                   double cutoff, int z, double amp(double r)) {
+  int r;
+  for (r=0;r<nr;r++)
+    if (amp(r*inva) != 0.0)
+      add_src_pt(r, z, amp((r+0.5)*inva), 0.0, 0.0, freq, width, peaktime, cutoff, 1);
+}
+
+void fields::add_hp_source(double freq, double width, double peaktime,
+                   double cutoff, int z, double amp(double r)) {
+  int r;
+  for (r=0;r<nr;r++)
+    if (amp((r+0.5)*inva) != 0.0)
+      add_src_pt(r, z, 0.0 , amp(r*inva), 0.0, freq, width, peaktime, cutoff, 1);
+}
+
+void fields::add_hz_source(double freq, double width, double peaktime,
+                   double cutoff, int z, double amp(double r)) {
+  int r;
+  for (r=0;r<nr;r++)
+    if (amp((r+0.5)*inva) != 0.0)
+      add_src_pt(r, z, 0.0, 0.0, amp(r*inva), freq, width, peaktime, cutoff, 1);
 }
 
 void fields::add_er_source(double freq, double width, double peaktime,
@@ -409,11 +438,12 @@ void fields::step() {
   step_h_bulk();
   step_h_pml();
   step_h_boundaries();
+  step_h_source(h_sources);
 
   step_e_bulk();
   step_e_pml();
   step_e_boundaries();
-  step_e_source(sources);
+  step_e_source(e_sources);
 }
 
 void fields::step_h_bulk() {
@@ -929,32 +959,44 @@ void fields::step_e_boundaries() {
   }
 }
 
+void fields::step_h_source(const src *s) {
+  if (s == NULL) return;
+  double Ar, Ai;
+  double tt = t - s->peaktime;
+  if (fabs(tt) > s->cutoff) {
+    step_h_source(s->next);
+    return;
+  }
+  const double pi = 3.14159265358979323846;
+  double envelope = exp(-tt*tt/(2*s->width*s->width));
+  Ar = cos(2*pi*s->freq*tt)*envelope;
+  Ai = -sin(2*pi*s->freq*tt)*envelope;
+  IM(hr,s->r,s->z) += Ai*s->er;
+  IM(hp,s->r,s->z) += Ai*s->ep;
+  IM(hz,s->r,s->z) += Ai*s->ez;
+  RE(hr,s->r,s->z) += Ar*s->er;
+  RE(hp,s->r,s->z) += Ar*s->ep;
+  RE(hz,s->r,s->z) += Ar*s->ez;
+  if (s->z == 0) {
+    IM(hz,s->r,nz) += s->ez*(Ai*cosknz + Ar*sinknz);
+    RE(hz,s->r,nz) += s->ez*(Ar*cosknz - Ai*sinknz);
+  }
+  step_h_source(s->next);
+}
+
 void fields::step_e_source(const src *s) {
   if (s == NULL) return;
-  static double oldfreq=-1;
-  static double oldwidth;
-  static double oldpeak;
-  static double Ar=-1.2;
-  static double Ai=-1.2;
-  static int oldt;
-  if (oldt != t || oldfreq != s->freq ||
-      oldwidth != s->width || oldpeak != s->peaktime) {
-    double tt = t - s->peaktime;
-    if (fabs(tt) > s->cutoff) {
-      Ai = Ar = 0.0;
-      step_e_source(s->next);
-      return;
-    }
-    const double pi = 3.14159265358979323846;
-    double envelope = exp(-tt*tt/(2*s->width*s->width));
-    Ar = cos(2*pi*s->freq*tt)*envelope;
-    Ai = -sin(2*pi*s->freq*tt)*envelope;
-
-    oldt = t;
-    oldpeak = s->peaktime;
-    oldwidth = s->width;
-    oldfreq = s->freq;
+  double Ar, Ai;
+  double tt = t - s->peaktime;
+  if (fabs(tt) > s->cutoff) {
+    Ai = Ar = 0.0;
+    step_e_source(s->next);
+    return;
   }
+  const double pi = 3.14159265358979323846;
+  double envelope = exp(-tt*tt/(2*s->width*s->width));
+  Ar = cos(2*pi*s->freq*tt)*envelope;
+  Ai = -sin(2*pi*s->freq*tt)*envelope;
   IM(er,s->r,s->z) += Ai*s->er;
   IM(ep,s->r,s->z) += Ai*s->ep;
   IM(ez,s->r,s->z) += Ai*s->ez;

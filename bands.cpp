@@ -57,10 +57,15 @@ int src::find_last_source(int sofar) {
   return next->find_last_source(sofar);
 }
 
+inline double max(double a, double b) { return (a > b) ? a : b; }
+inline int max(int a, int b) { return (a > b) ? a : b; }
+
 void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
   int last_source = 0;
-  if (sources != NULL)
-    last_source = sources->find_last_source();
+  if (e_sources != NULL)
+    last_source = e_sources->find_last_source();
+  if (h_sources != NULL)
+    last_source = max(last_source, h_sources->find_last_source());
   bands.tstart = (int) (last_source + a*qmin/fmax/c);
   bands.tend = ttot-1;
 
@@ -170,7 +175,6 @@ extern "C" {
 }
 
 inline int min(int a, int b) { return (a<b)? a : b; }
-inline int max(int a, int b) { return (a>b)? a : b; }
 
 void bandsdata::get_fields(cmplx *eigen, double *f, double *d,
                            int nbands, int n) {

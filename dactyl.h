@@ -80,7 +80,7 @@ class fields {
   int m, t;
   double k, cosknz, sinknz;
   bandsdata bands;
-  src *sources;
+  src *e_sources, *h_sources;
   const mat *ma;
 
   fields(const mat *, int m);
@@ -96,6 +96,12 @@ class fields {
   void add_ep_source(double freq, double width, double peaktime,
                      double cutoff, int z, double amp(double r));
   void add_ez_source(double freq, double width, double peaktime,
+                     double cutoff, int z, double amp(double r));
+  void add_hr_source(double freq, double width, double peaktime,
+                     double cutoff, int z, double amp(double r));
+  void add_hp_source(double freq, double width, double peaktime,
+                     double cutoff, int z, double amp(double r));
+  void add_hz_source(double freq, double width, double peaktime,
                      double cutoff, int z, double amp(double r));
 
   void output_point(FILE *, double r, double z, const char *name);
@@ -121,6 +127,7 @@ class fields {
   void step_h_bulk();
   void step_h_pml();
   void step_h_boundaries();
+  void step_h_source(const src *);
   void step_e_bulk();
   void step_e_pml();
   void step_e_boundaries();
@@ -128,7 +135,7 @@ class fields {
   void add_src_pt(int r, int z,
                   double Pr, double Pp, double Pz,
                   double freq, double width, double peaktime,
-                  double cutoff);
+                  double cutoff, int is_h = 0);
   int setifreqmax_and_iposmax(int ifreq, int ipos);
 };
 
