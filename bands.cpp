@@ -50,13 +50,22 @@ int src::find_last_source(int sofar) {
   return next->find_last_source(sofar);
 }
 
+v v v v v v v
+int fields::find_last_source() {
+*************
 void fields::prepare_for_bands(int z, int ttot, double fmax,
                                double qmin, double frac_pow_min) {
+^ ^ ^ ^ ^ ^ ^
   int last_source = 0;
   if (e_sources != NULL)
     last_source = e_sources->find_last_source();
   if (h_sources != NULL)
     last_source = max(last_source, h_sources->find_last_source());
+  return last_source;  
+}
+
+void fields::prepare_for_bands(int z, int ttot, double fmax, double qmin) {
+  int last_source = find_last_source();
   last_source = max(last_source, t + phasein_time);
   if (fmax == 0) fmax = preferred_fmax;
   else preferred_fmax = fmax;

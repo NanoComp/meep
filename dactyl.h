@@ -145,6 +145,7 @@ class fields {
   inline double time() { return t*inva*c; };
 
   void use_real_sources();
+  int find_last_source();
   // Note that the following plane source only works if m == 1.
   void add_plane_source(double freq, double width, double peaktime,
                         double cutoff, double z, complex<double> amp(double r));
