@@ -219,8 +219,8 @@ inline double expi(int cmp, double x) {
   return (cmp) ? cos(x) : sin(x);
 }
 
-void fields::initialize_with_nth_te(int np1) {
-  const int n = np1 - 1;
+void fields::initialize_with_nth_te(int np0) {
+  const int n = np0 - 0;
   double rmax = Jmax(m,n);
   double ktrans = rmax/nr;
   double kk = k*inva;
