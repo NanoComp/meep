@@ -8,7 +8,7 @@ using namespace ctlio;
 
 /***********************************************************************/
 
-vector3 ctlio::vec2vector3(const meep::vec &v)
+vector3 vec2vector3(const meep::vec &v)
 {
      vector3 v3;
 
@@ -188,10 +188,10 @@ double geom_epsilon::eps(const meep::vec &r)
 
 /***********************************************************************/
 
-meep::structure *make_structure(integer dims, vector3 size, number resolution,
+meep::structure *make_structure(int dims, vector3 size, double resolution,
 				geometric_object_list geometry,
-				integer desired_num_chunks,
-				meep::symmetry S)
+				int desired_num_chunks,
+				const meep::symmetry &S)
 {
      master_printf("-----------\nInitializing structure...\n");
 

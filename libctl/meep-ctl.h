@@ -8,9 +8,7 @@
 #include "config.h"
 #include "ctl-io.h"
 
-namespace ctlio {
-  vector3 vec2vector3(const meep::vec &v);
-}
+#include "meep-ctl-swig.h"
 
 extern int verbose; // in main.c
 

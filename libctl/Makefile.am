@@ -13,7 +13,7 @@ meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx meep_renames.i
 
-meep_wrap.cxx: meep.i meep_renames.i $(LIBHDRS)
+meep_wrap.cxx: meep.i meep_renames.i ctl-io.i meep-ctl-swig.h $(LIBHDRS)
 	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
 
 meep_renames.i: $(LIBHDRS)
@@ -50,8 +50,8 @@ CTL_DEFS = -DCTL_SCM='"'$(LIBCTL_DIR)/base/ctl.scm'"' \
 
 ##############################################################################
 
-ctl-io.cpp ctl-io.h: $(SPECIFICATION_FILE)
-	$(GEN_CTL_IO) $(SPECIFICATION_FILE) $(LIBCTL_DIR) --cxx
+ctl-io.cpp ctl-io.h ctl-io.i: $(SPECIFICATION_FILE)
+	$(GEN_CTL_IO) --cxx --swig $(srcdir)/$(SPECIFICATION_FILE) $(LIBCTL_DIR)
 
 main.cpp: $(LIBCTL_DIR)/base/main.c ctl-io.h
 	cp -f $(LIBCTL_DIR)/base/main.c $@

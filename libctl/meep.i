@@ -27,3 +27,11 @@ SwigComplex_Check(SCM o)
 %include "meep/vec.h"
 %include "meep/mympi.h"
 %include "meep.h"
+
+%include "ctl-io.i"
+
+%{
+#include "meep-ctl-swig.h"
+%}
+
+%include "meep-ctl-swig.h"
