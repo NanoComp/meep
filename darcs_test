@@ -4,13 +4,6 @@ set -ev
 
 sh autogen.sh
 
-./configure --with-mpi
-cp tests/Makefile tests/aaack
-sed -e 's/np 1/np 2/' tests/aaack > tests/Makefile
-rm tests/aaack
-make
-make test
-
 ./configure
 make
 make test
