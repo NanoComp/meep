@@ -121,8 +121,10 @@ void fields::disconnect_chunks() {
 }
 
 void fields::connect_chunks() {
+  am_now_working_on(Connecting);
   disconnect_chunks();
   connect_the_chunks();
+  finished_working();
 }
 
 static double zero = 0.0;

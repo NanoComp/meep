@@ -22,7 +22,7 @@ distdir = $(package)-$(VERSION)
 OBJ_dactyl = step.o harminv.o bands.o output_directory.o material.o \
 	polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
 	vec.o slices.o initialize.o sources.o fields.o boundaries.o \
-	mympi.o fluxes.o
+	mympi.o fluxes.o time.o
 OBJ_example = example.o libdactyl.a
 
 ###########################################################################

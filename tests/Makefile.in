@@ -42,8 +42,7 @@ all: $(TESTFILES)
 
 test: $(DONEFILES)
 
-bench: $(TESTFILES)
-	set -e
+bench: bench.dac
 	$(RUNCODE) ./bench.dac
 
 clean:

@@ -49,6 +49,7 @@ bench bench_periodic(const double rmax, const double zmax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
+  f.print_times();
   return b;
 }
 
@@ -81,6 +82,7 @@ bench bench_flux_1d(const double zmax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
+  f.print_times();
   return b;
 }
 
@@ -104,6 +106,7 @@ bench bench_2d(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
+  f.print_times();
   return b;
 }
 
@@ -126,6 +129,7 @@ bench bench_2d_tm(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
+  f.print_times();
   return b;
 }
 
@@ -149,13 +153,17 @@ bench bench_2d_te(const double xmax, const double ymax,
   bench b;
   b.time = (clock()-start)*(1.0/CLOCKS_PER_SEC);
   b.gridsteps = ttot*a*2*gridpts;
+  f.print_times();
   return b;
 }
 
-void showbench(const char *name, const bench &b) {
-  master_printf("%s\n  total time:    \t%lg s\n  normalized time:\t%lg s/Mgs\n",
-                name, b.time, b.time*1e6/b.gridsteps);
-}
+#define showbench(name, bb) \
+  master_printf("%s\n", name); \
+  { \
+    bench b = bb; \
+    master_printf("  total time:    \t%lg s\n  normalized time:\t%lg s/Mgs\n", \
+                  b.time, b.time*1e6/b.gridsteps); \
+  }
 
 int main(int argc, char **argv) {
   initialize(argc, argv);

@@ -244,6 +244,8 @@ class fields_chunk {
 };
 
 enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
+enum time_sink { Connecting, Stepping, Boundaries, MpiTime,
+                 Slicing, Other };
 
 class fields {
  public:
@@ -269,6 +271,9 @@ class fields {
   fields(const mat *, int m=0);
   ~fields();
   void use_real_fields();
+  // time.cpp
+  double time_spent_on(time_sink);
+  void print_times();
   // boundaries.cpp
   void set_boundary(boundary_side,direction,
                     boundary_condition, bool autoconnect=true,
@@ -278,12 +283,12 @@ class fields {
   void use_bloch(const vec &k, bool autoconnect=true);
   vec lattice_vector(direction) const;
   // slices.cpp methods:
-  void output_slices(const char *name = "") const;
-  void output_slices(const volume &what, const char *name = "") const;
-  void eps_slices(const char *name = "") const;
-  void eps_slices(const volume &what, const char *name = "") const;
-  void output_real_imaginary_slices(const char *name = "") const;
-  void output_real_imaginary_slices(const volume &what, const char *name = "") const;
+  void output_slices(const char *name = "");
+  void output_slices(const volume &what, const char *name = "");
+  void eps_slices(const char *name = "");
+  void eps_slices(const volume &what, const char *name = "");
+  void output_real_imaginary_slices(const char *name = "");
+  void output_real_imaginary_slices(const volume &what, const char *name = "");
   double maxfieldmag_to_master(component) const;
   // step.cpp methods:
   void step();
@@ -336,8 +341,14 @@ class fields {
   flux_plane *add_flux_plane(const vec &, const vec &);
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
+  unsigned long last_time;
+  time_sink working_on, was_working_on;
+  double times_spent[Other+1];
   // field.cpp
   bool have_component(component);
+  // time.cpp
+  void am_now_working_on(time_sink);
+  void finished_working();
   // boundaries.cpp
   void disconnect_chunks();
   void connect_chunks();

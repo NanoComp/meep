@@ -45,6 +45,7 @@ void fields::step_right() {
 }
 
 void fields::step() {
+  am_now_working_on(Stepping);
   phase_material();
 
   //for (int i=0;i<num_chunks;i++)
@@ -52,6 +53,8 @@ void fields::step() {
   step_h();
   step_h_source();
   step_boundaries(H_stuff);
+  // because step_boundaries overruns the timing stack...
+  am_now_working_on(Stepping);
 
   prepare_step_polarization_energy();
   half_step_polarization_energy();
@@ -59,6 +62,8 @@ void fields::step() {
   step_e_source();
   step_e_polarization();
   step_boundaries(E_stuff);
+  // because step_boundaries overruns the timing stack...
+  am_now_working_on(Stepping);
 
   half_step_polarization_energy();
 
@@ -67,6 +72,7 @@ void fields::step() {
 
   update_fluxes();
   t += 1;
+  finished_working();
 }
 
 double fields_chunk::peek_field(component c, const vec &where) {
@@ -664,6 +670,7 @@ void fields::step_boundaries(field_type ft) {
     }
 #endif
 #ifdef HAVE_MPI
+  am_now_working_on(MpiTime);
   const int maxreq = num_chunks*num_chunks;
   MPI_Request *reqs = new MPI_Request[maxreq];
   MPI_Status *stats = new MPI_Status[maxreq];
@@ -694,6 +701,7 @@ void fields::step_boundaries(field_type ft) {
   if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
   delete[] reqs;
   delete[] stats;
+  finished_working();
 #endif
   
   // Finally, copy incoming data to the fields themselves!

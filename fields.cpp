@@ -38,6 +38,11 @@ fields::fields(const mat *ma, int tm) {
   inva = 1.0/a;
   t = 0;
   fluxes = NULL;
+  // Time stuff:
+  was_working_on = working_on = Other;
+  for (int i=0;i<=Other;i++) times_spent[i] = 0.0;
+  last_time = 0;
+  am_now_working_on(Other);
 
   num_chunks = ma->num_chunks;
   chunks = new (fields_chunk *)[num_chunks];

@@ -40,7 +40,7 @@ int compare(double a, double b, const char *n) {
   }
 }
 
-int compare_point(const fields &f1, const fields &f2, const vec &p) {
+int compare_point(fields &f1, fields &f2, const vec &p) {
   monitor_point m1, m_test;
   f1.get_point(&m_test, p);
   f2.get_point(&m1, p);

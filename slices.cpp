@@ -385,12 +385,12 @@ void mat::output_slices(const volume &what, const char *name) const {
   delete[] n;
 }
 
-void fields::output_real_imaginary_slices(const char *name) const {
+void fields::output_real_imaginary_slices(const char *name) {
   output_real_imaginary_slices(v,name);
 }
 
 void fields::output_real_imaginary_slices(const volume &what,
-                                          const char *name) const {
+                                          const char *name) {
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -415,10 +415,11 @@ void fields::output_real_imaginary_slices(const volume &what,
   free(n);
 }
 
-void fields::output_slices(const char *name) const {
+void fields::output_slices(const char *name) {
   output_slices(v, name);
 }
-void fields::output_slices(const volume &what, const char *name) const {
+void fields::output_slices(const volume &what, const char *name) {
+  am_now_working_on(Slicing);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -444,14 +445,16 @@ void fields::output_slices(const volume &what, const char *name) const {
   //  output_slice(v.eps_component(), ma->eps, v, what, n);
   //}
   free(n);
+  finished_working();
 }
 
-void fields::eps_slices(const char *name) const {
+void fields::eps_slices(const char *name) {
   if (v.dim == dcyl || v.dim == d1 || v.dim == d2)
     eps_slices(user_volume, name);
 }
 
-void fields::eps_slices(const volume &what, const char *name) const {
+void fields::eps_slices(const volume &what, const char *name) {
+  am_now_working_on(Slicing);
   const int buflen = 1024;
   char nname[buflen];
   if (*name) snprintf(nname, buflen, "%s-", name);
@@ -492,6 +495,7 @@ void fields::eps_slices(const volume &what, const char *name) const {
       if (am_master()) output_complex_eps_tail(n);
     }
   free(n);
+  finished_working();
 }
 
 double fields::maxfieldmag_to_master(component c) const {
