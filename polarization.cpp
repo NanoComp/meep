@@ -261,10 +261,11 @@ void fields::step_polarization_itself(polarization *op, polarization *np) {
             op->P[cc][cmp][i] = funinv*((2-om*om)*np->P[cc][cmp][i]+
                                         (0.5*g-1)*op->P[cc][cmp][i])+
               np->pb->s[cc][i]*f[cc][cmp][i];
-          for (int i=0;i<v.ntot();i++)
-            op->P_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_pml[cc][cmp][i]+
-                                            (0.5*g-1)*op->P_pml[cc][cmp][i])+
-              np->pb->s[cc][i]*f_pml[cc][cmp][i];
+          if (f_pml[cc][cmp])
+            for (int i=0;i<v.ntot();i++)
+              op->P_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_pml[cc][cmp][i]+
+                                              (0.5*g-1)*op->P_pml[cc][cmp][i])+
+                np->pb->s[cc][i]*f_pml[cc][cmp][i];
         }
     }
     if (op->next && np->next) step_polarization_itself(op->next, np->next);
@@ -281,9 +282,10 @@ void fields::step_e_polarization(polarization *op, polarization *np) {
         if (op->P[cc][cmp]) {
           for (int i=0;i<v.ntot();i++)
             f[cc][cmp][i] -= ma->inveps[cc][i]*(np->P[cc][cmp][i]-op->P[cc][cmp][i]);
-          for (int i=0;i<v.ntot();i++)
-            f_pml[cc][cmp][i] -=
-              ma->inveps[cc][i]*(np->P_pml[cc][cmp][i]-op->P_pml[cc][cmp][i]);
+          if (f_pml[cc][cmp])
+            for (int i=0;i<v.ntot();i++)
+              f_pml[cc][cmp][i] -=
+                ma->inveps[cc][i]*(np->P_pml[cc][cmp][i]-op->P_pml[cc][cmp][i]);
         }
     }
     if (op->next && np->next) step_e_polarization(op->next, np->next);
