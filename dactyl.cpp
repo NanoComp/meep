@@ -180,6 +180,14 @@ void src::use_real_sources() {
   if (next) next->use_real_sources();
 }
 
+void fields::initialize_with_n_te(int ntot) {
+  for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
+}
+
+void fields::initialize_with_n_tm(int ntot) {
+  for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
+}
+
 #define EIKZR (cmp? coskz : sinkz)
 #define IEIKZR (cmp? -sinkz : coskz)
 #define EIKZRH (cmp? hcoskz : hsinkz)
@@ -207,43 +215,42 @@ double Jmax(int m, int n) {
   return rtry;
 }
 
-void fields::initialize_with_n_te(int ntot) {
-  for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
-}
-
-void fields::initialize_with_n_tm(int ntot) {
-  for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
+inline double expi(int cmp, double x) {
+  return (cmp) ? cos(x) : sin(x);
 }
 
 void fields::initialize_with_nth_te(int np1) {
   const int n = np1 - 1;
   double rmax = Jmax(m,n);
-  double ktrans = nr/rmax;
-  double freq = sqrt(ktrans*ktrans + k*k);
-  if (freq > preferred_fmax) preferred_fmax = freq;
+  double ktrans = rmax/nr;
+  double kk = k*inva;
+  double om = c*sqrt(ktrans*ktrans + kk*kk);
+  double omt = om*0.5*inva;
+  double eps = ma->eps[1];
+  double inveps = 1.0/eps;
+  printf("Freq is %lg\n", om/(2*pi));
+  if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
+  double funky_minus = 1-kk*kk*c*c/(eps*om*om);
   for (int r=0;r<nr;r++) {
-    double Jm = J(m,ktrans*r);
-    double Jmp1 = J(m+1,ktrans*r);
-    double Jmm1 = J(m-1,ktrans*r);
-    double Jm_h = J(m,ktrans*(r+0.5));
-    double Jmp1_h = J(m+1,ktrans*(r+0.5));
-    double Jmm1_h = J(m-1,ktrans*(r+0.5));
-    double f2ok2c2 = freq*freq/(k*k*c*c);
+    double Jm = J(m,ktrans*(r+0.5));
+    double Jmp1 = J(m+1,ktrans*(r+0.5));
+    double Jmm1 = J(m-1,ktrans*(r+0.5));
+    double Jm_h = J(m,ktrans*r);
+    double Jmp1_h = J(m+1,ktrans*r);
+    double Jmm1_h = J(m-1,ktrans*r);
     for (int z=0;z<nz;z++) {
-      double coskz = 1.0, sinkz = 0.0;
-      if (z > 0) {
-        coskz = cos(k*inva*z);
-        sinkz = sin(k*inva*z);
-      }
-      double hcoskz = cos(k*inva*z-freq*0.5);
-      double hsinkz = sin(k*inva*z-freq*0.5);
-      DOCMP { // FIXME this is TM, not TE!!!
-        CM(ez,r,z) += EIKZR*Jm;
-        if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
-        CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+      double kz = k*inva*z;
+      double kzph = k*inva*(z+0.5);
+      DOCMP {
+        CM(hz,r,z) += Jm*expi(cmp, kz);
+        CM(hr,r,z) += kk*c/om*c*inveps/om*0.5*(Jmm1_h - Jmp1_h)
+          *expi(cmp, kzph-pi/2)/funky_minus;
+        if (r > 0) CM(hp,r,z) += kk*c/om*(-m*c*inveps/(r*om))
+                     *Jm_h*expi(cmp, kzph)/funky_minus;
         
-        if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
-        CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+        CM(ep,r,z) += c*inveps/om*0.5*(Jmm1 - Jmp1)
+          *expi(cmp, kz-omt-pi/2)/funky_minus;
+        if (r > 0) CM(er,r,z) += -m*c*inveps/(r*om)*Jm*expi(cmp, kz-omt)/funky_minus;
       }
     }
   }
@@ -253,8 +260,14 @@ void fields::initialize_with_nth_tm(int np1) {
   const int n = np1 - 1;
   double rroot = Jroot(m,n);
   double ktrans = rroot/nr;
-  double freq = sqrt(ktrans*ktrans + k*k);
-  if (freq > preferred_fmax) preferred_fmax = freq;
+  double kk = k*inva;
+  double om = c*sqrt(ktrans*ktrans + kk*kk);
+  double omt = om*0.5*inva;
+  double eps = ma->eps[1];
+  double inveps = 1.0/eps;
+  printf("Freq is %lg\n", om/(2*pi));
+  if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
+  double funky_minus = 1-kk*kk*c*c/(eps*om*om);
   for (int r=0;r<nr;r++) {
     double Jm = J(m,ktrans*r);
     double Jmp1 = J(m+1,ktrans*r);
@@ -262,22 +275,20 @@ void fields::initialize_with_nth_tm(int np1) {
     double Jm_h = J(m,ktrans*(r+0.5));
     double Jmp1_h = J(m+1,ktrans*(r+0.5));
     double Jmm1_h = J(m-1,ktrans*(r+0.5));
-    double f2ok2c2 = freq*freq/(k*k*c*c);
     for (int z=0;z<nz;z++) {
-      double coskz = 1.0, sinkz = 0.0;
-      if (z > 0) {
-        coskz = cos(k*inva*z);
-        sinkz = sin(k*inva*z);
-      }
-      double hcoskz = cos(k*inva*z-freq*0.5);
-      double hsinkz = sin(k*inva*z-freq*0.5);
+      double kz = k*inva*z;
+      double kzmh = k*inva*(z-0.5);
       DOCMP {
-        CM(ez,r,z) += EIKZR*Jm;
-        if (r > 0) CM(hr,r,z) += (-c/freq)*EIKZRH*Jm*m/(r*(1-f2ok2c2));
-        CM(hp,r,z) += (-c/freq)*IEIKZRH*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+        CM(ez,r,z) += Jm*expi(cmp, kz);
+        if (r > 0) CM(hr,r,z) += m*c/(r*om)*Jm*expi(cmp, kz+omt)/funky_minus;
+        CM(hp,r,z) += (c/om)*(ktrans*0.5*(Jmm1-Jmp1))
+                      *expi(cmp, kz+omt+pi/2)/funky_minus;
         
-        if (r > 0) CM(ep,r,z) += (c*k/freq)*(-c/freq)*EIKZR*Jm*m/(r*(1-f2ok2c2));
-        CM(er,r,z) += (c*k/freq)*(-c/freq)*IEIKZR*Jm_h*0.5*(Jmm1_h-Jmp1_h)/(1+f2ok2c2);
+        if (r > 0) CM(ep,r,z) += m*c/(r*om)*Jm*expi(cmp, kzmh)/funky_minus
+                     *(-kk*c*inveps/om);
+        CM(er,r,z) += (c/om)*(ktrans*0.5*(Jmm1_h-Jmp1_h))
+                      *expi(cmp, kzmh+pi/2)/funky_minus
+                      *kk*c*inveps/om;
       }
     }
   }
