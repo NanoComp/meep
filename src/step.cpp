@@ -37,7 +37,7 @@ void fields::step() {
   phase_material();
 
   //for (int i=0;i<num_chunks;i++)
-  //  master_printf("Field is now %lg\n", chunks[i]->peek_field(Ex,vec2d(1.55,0.6)));
+  //  master_printf("Field is now %g\n", chunks[i]->peek_field(Ex,vec2d(1.55,0.6)));
   step_h();
   step_h_source();
   step_boundaries(H_stuff);
@@ -71,7 +71,7 @@ double fields_chunk::peek_field(component c, const vec &where) {
     broadcast(n_proc(), &hello, 1);
     return hello;
   }
-  //abort("Got no such %s field at %lg %lg!\n",
+  //abort("Got no such %s field at %g %lg!\n",
   //      component_name(c), v[ilocs[0]].x(), v[ilocs[0]].y());
   return 0.0;
 }

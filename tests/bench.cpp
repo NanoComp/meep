@@ -161,7 +161,7 @@ bench bench_2d_te(const double xmax, const double ymax,
   master_printf("%s\n", name); \
   { \
     bench b = bb; \
-    master_printf("  total time:    \t%lg s\n  normalized time:\t%lg s/Mgs\n", \
+    master_printf("  total time:    \t%g s\n  normalized time:\t%g s/Mgs\n", \
                   b.time, b.time*1e6/b.gridsteps); \
   }
 

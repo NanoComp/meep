@@ -71,20 +71,20 @@ int main(int argc, char **argv) {
     // Initialize best guess at the correct freq.
     if (!best_guess) {
       best_guess = freq + 0.5*(freq_shifted - freq);
-      master_printf("The frequency is approximately %lg\n", best_guess);
+      master_printf("The frequency is approximately %g\n", best_guess);
     } else {
-      master_printf("Unshifted freq error is %lg/%lg/%lg\n",
+      master_printf("Unshifted freq error is %g/%g/%lg\n",
                     (freq - best_guess)*a*a, a, a);
       if (fabs(freq - best_guess)*a*a > 0.3)
         abort("Frequency doesn't converge properly with a.\n");
-      master_printf("Shifted freq error is %lg/%lg/%lg\n",
+      master_printf("Shifted freq error is %g/%g/%lg\n",
                     (freq_shifted - best_guess)*a*a, a, a);
       if (fabs(freq_shifted - best_guess)*a*a > 0.3)
         abort("Frequency doesn't converge properly with a.\n");
     }    
 
     // Check frequency difference...
-    master_printf("Frequency difference with a of %lg is %lg/%lg/%lg\n",
+    master_printf("Frequency difference with a of %g is %g/%lg/%lg\n",
                   a, (freq - freq_shifted)*a*a, a, a);
     if (fabs(freq - freq_shifted)*a*a > 0.3)
       abort("Frequency difference = doesn't converge properly with a.\n");

@@ -110,7 +110,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     double smalltime = 1./(decayconst + bands->fmax*(c*inva));
     bands->scale_factor = (int)(0.06*smalltime);
     if (bands->scale_factor < 1) bands->scale_factor = 1;
-    if (verbosity) master_printf("scale_factor is %d (%lg,%lg)\n",
+    if (verbosity) master_printf("scale_factor is %d (%g,%lg)\n",
                                  bands->scale_factor, bands->fmax*(c*inva),
                                  decayconst);
   }
@@ -207,7 +207,7 @@ void fields::out_bands(file *o, const char *name, int maxbands) {
 
   for (int i = 0; i < num_found; ++i) {
     // k k k m index freq decay Q approx_power
-    master_fprintf(o, "%s\t%lg\t%lg\t%lg\t%d\t%d\t%lg \t%lg \t%lg \t%lg\n", 
+    master_fprintf(o, "%s\t%g\t%lg\t%lg\t%d\t%d\t%lg \t%lg \t%lg \t%lg\n", 
                    name, 
                    real(k[0]), real(k[1]), real(k[2]),   
                    m, i, fabs(real(fad[i])), imag(fad[i]),
@@ -299,7 +299,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
     get_cluster(tf,freqs_so_far,fields_considered,deltaf,&lo,&hi);
     int mid = lo + (hi-lo)/2;
     if (tf[hi]-tf[lo] < deltaf) {
-      master_printf("Got a cluster from %lg to %lg (%d freqs)\n",
+      master_printf("Got a cluster from %g to %lg (%d freqs)\n",
                     tf[lo], tf[hi], 1+hi-lo);
       fad[num_found] = complex<double>(tf[mid],td[mid]);
       if (approx_power) {
@@ -314,7 +314,7 @@ int fields::cluster_some_bands_cleverly(double *tf, double *td, complex<double> 
       num_found++;
       if (num_found >= maxbands) num_found--;
     } else {
-      master_printf("Rejected a cluster from %lg to %lg (%d freqs out of %d)\n",
+      master_printf("Rejected a cluster from %g to %lg (%d freqs out of %d)\n",
                     tf[lo], tf[hi], 1+hi-lo, fields_considered);
       if (verbosity > 1) master_printf("width is %g vs %g\n",
                                        tf[hi] - tf[lo], deltaf);
@@ -415,8 +415,8 @@ int bandsdata::get_freqs(cmplx *data, int n, cmplx *amps,
       for (int j=i+1;j<num;j++) {
         if (abs(freq_re[j]+freq_re[i]) < 2.0/total_time) {
           if (verbosity > 2 && freq_re[i] != 0.0) {
-            master_printf("Got a plus/minus freq match at %lg\n",freq_re[j]); 
-            master_printf("Total time: %lg and delta freq limit %lg\n",
+            master_printf("Got a plus/minus freq match at %g\n",freq_re[j]); 
+            master_printf("Total time: %g and delta freq limit %lg\n",
                    total_time, 2.0/total_time);
           }
           freq_re[i] = -0.0; // It will get cleaned up later...
@@ -424,7 +424,7 @@ int bandsdata::get_freqs(cmplx *data, int n, cmplx *amps,
       }
       freq_re[i] = -freq_re[i];
       if (verbosity > 2 && freq_re[i] != 0.0)
-        master_printf("Flipping sign of a negative freq:  %lg %lg\n",
+        master_printf("Flipping sign of a negative freq:  %g %lg\n",
                       freq_re[i], freq_im[i]);
     }
   }
@@ -449,9 +449,9 @@ int bandsdata::get_freqs(cmplx *data, int n, cmplx *amps,
   for (int i=0;i<orignum;i++) {
     if (freq_re[0] < fmin*.9) {
       if (verbosity > 2 && freq_re[0] != 0.0) {
-        master_printf("Trashing a spurious low frequency solution with freq %lg %lg\n",
+        master_printf("Trashing a spurious low frequency solution with freq %g %lg\n",
                freq_re[0], freq_im[0]);
-        //master_printf("For your info, fmin is %lg\n", fmin);
+        //master_printf("For your info, fmin is %g\n", fmin);
       }
       for (int j=0;j<num-1;j++) {
         freq_re[j]=freq_re[j+1];
@@ -468,7 +468,7 @@ int bandsdata::get_freqs(cmplx *data, int n, cmplx *amps,
     if (qhere < qminhere) {
       num--;
       if (verbosity > 2) {
-        master_printf("Trashing a spurious low Q solution with freq %lg %lg (%lg vs %lg)\n",
+        master_printf("Trashing a spurious low Q solution with freq %g %lg (%lg vs %lg)\n",
                       freq_re[i], freq_im[i], qhere, qminhere);
       }
       for (int j=i;j<num;j++) {

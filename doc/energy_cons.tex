@@ -62,8 +62,8 @@ the heck of it.
   while (f.time() < ttot && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 50;
-      master_printf("Working on time %lg...  ", f.time());
-      master_printf("energy is %lg\n", f.total_energy());
+      master_printf("Working on time %g...  ", f.time());
+      master_printf("energy is %g\n", f.total_energy());
 \end{comment}
 We plot the total energy, the electromagnetic energy and the
 ``thermodynamic energy'' which is the energy that is either stored in the

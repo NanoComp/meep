@@ -35,8 +35,8 @@ double rods(const vec &r) {
 
 void compare(double a, double b, const char *n) {
   if (fabs(a-b) > fabs(b)*1e-5 || b != b) {
-    master_printf("Differs by\t%lg out of\t%lg\n", a-b, b);
-    master_printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
+    master_printf("Differs by\t%g out of\t%g\n", a-b, b);
+    master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     abort("Error in %s\n", n);
   } else {
     master_printf("Passed %s\n", n);

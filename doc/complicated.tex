@@ -98,7 +98,7 @@ the monitor point so we can print them.  We use the \verb!master_fprintf!
 function because we only want to get one copy of the information even if
 we're running in parallel.
 \begin{verbatim}
-    master_fprintf(myout, "%lg\t%lg\t%lg\n", f.time(),
+    master_fprintf(myout, "%g\t%lg\t%lg\n", f.time(),
                    real(p->get_component(Hy)),
                    imag(p->get_component(Hy)));
 \end{verbatim}
@@ -115,7 +115,7 @@ processes.
 \begin{verbatim}
     if (f.time() >= next_print_time) {
       f.eps_slices();
-      master_printf("Energy is %lg at time %lg\n",
+      master_printf("Energy is %g at time %lg\n",
                     f.total_energy(), f.time());
       next_print_time += 500.0;
     }
@@ -163,7 +163,7 @@ Figure~\ref{complicated_figure}).
   interrupt = 0; // Harminv even if we were interrupted.
   p->harminv(Hy, &amp, &freqs, &num, 0.8*freq, 1.2*freq, 5);
   for (int i=0;i<num;i++) {
-    master_fprintf(myfreqs, "%lg\t%lg\t%lg\t%lg\t%lg\n",
+    master_fprintf(myfreqs, "%g\t%lg\t%lg\t%lg\t%lg\n",
                    real(freqs[i]), imag(freqs[i]),
                    -real(freqs[i])/imag(freqs[i]),
                    real(amp[i]), imag(amp[i]));

@@ -76,8 +76,8 @@ We use a couple of monitor points to determine epsilon.
   while (f.time() <= ttot && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 100;
-      master_printf("Working on time %lg...  ", f.time());
-      master_printf("energy is %lg\n", f.field_energy());
+      master_printf("Working on time %g...  ", f.time());
+      master_printf("energy is %g\n", f.field_energy());
     }
 \end{comment}
 The monitor points are located one grid spacing from one another.  The

@@ -35,8 +35,8 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const char *dirname = make_output_directory(__FILE__);
-  master_printf("Using pml of %lg thickness.\n", pml);
-  master_printf("Using an rmax of %lg\n", rmax);
+  master_printf("Using pml of %g thickness.\n", pml);
+  master_printf("Using an rmax of %g\n", rmax);
   structure s(volcyl(rmax + pml, zsize, a), eps);
   s.use_pml_everywhere(pml);
   s.set_output_directory(dirname);
@@ -72,15 +72,15 @@ range of interest.
   f.add_point_source(Ep, 0.3,  0.8, 0.0, 8.0, vec(rmax*0.5,sourceloc));
 \end{verbatim}
 \begin{comment}
-  master_printf("Working with a=%lg...\n", a);
+  master_printf("Working with a=%g...\n", a);
   monitor_point *left = NULL, *right = NULL, *middle = NULL,
                 *top = NULL, *bottom = NULL;
   double next_printtime = 10;
   while (f.time() < 130 && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 10;
-      master_printf("Working on time %lg...  ", f.time());
-      master_printf("energy is %lg\n", f.field_energy());
+      master_printf("Working on time %g...  ", f.time());
+      master_printf("energy is %g\n", f.field_energy());
       //if (f.time() > -90) f.eps_slices();
     }
     f.step();

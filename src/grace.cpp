@@ -87,10 +87,10 @@ void grace::new_set(grace_type pt) {
 
 void grace::set_range(double xmin, double xmax, double ymin, double ymax) {
   master_fprintf(f, "@ version 1\n"); // Stupid nasty hack to make grace recognize the range.
-  master_fprintf(f, "@    world xmin %lg\n", xmin);
-  master_fprintf(f, "@    world xmax %lg\n", xmax);
-  master_fprintf(f, "@    world ymin %lg\n", ymin);
-  master_fprintf(f, "@    world ymax %lg\n", ymax);
+  master_fprintf(f, "@    world xmin %g\n", xmin);
+  master_fprintf(f, "@    world xmax %g\n", xmax);
+  master_fprintf(f, "@    world ymin %g\n", ymin);
+  master_fprintf(f, "@    world ymax %g\n", ymax);
   master_fprintf(f, "@    view xmin 0.15\n");
   master_fprintf(f, "@    view xmax 0.95\n");
   master_fprintf(f, "@    view ymin 0.15\n");
@@ -112,11 +112,11 @@ void grace::new_curve() {
 
 void grace::output_point(double x, double y, double dy, double extra) {
   if (dy >= 0 && extra != -1) {
-    master_fprintf(f, "%lg\t%lg\t%lg\t%lg\n", x, y, dy, extra);
+    master_fprintf(f, "%g\t%lg\t%lg\t%lg\n", x, y, dy, extra);
   } else if (dy >= 0) {
-    master_fprintf(f, "%lg\t%lg\t%lg\n", x, y, dy);
+    master_fprintf(f, "%g\t%lg\t%lg\n", x, y, dy);
   } else {
-    master_fprintf(f, "%lg\t%lg\n", x, y);
+    master_fprintf(f, "%g\t%lg\n", x, y);
   }
 }
 

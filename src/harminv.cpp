@@ -466,7 +466,7 @@ void harminv_solve(harminv_data d)
      /* find maximum |eigenvalue| */
      for (i = 0; i < J; ++i) {
 	  double v = cabs(v0[i]);
-      //      printf("v[%d] is %lg\n", i, v);
+      //      printf("v[%d] is %g\n", i, v);
 	  if (v > max_v0)
 	       max_v0 = v;
      }

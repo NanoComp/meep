@@ -37,8 +37,8 @@ double cavity(const vec &v) {
 
 int compare(double a, double b, double eps, const char *n) {
   if (fabs(a-b) > fabs(b)*eps) {
-    printf("%s differs by\t%lg out of\t%lg\n", n, a-b, b);
-    printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
+    printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
+    printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
     return 1;
@@ -69,8 +69,8 @@ int flux_1d(const double zmax,
   mid.origin = vec(zmax/3);
   double flux_left=0.0, flux_right=0.0;
   double delta_energy = f.energy_in_box(mid.surroundings());
-  master_printf("Initial energy is %lg\n", f.energy_in_box(mid.surroundings()));
-  master_printf("Initial electric energy is %lg\n",
+  master_printf("Initial energy is %g\n", f.energy_in_box(mid.surroundings()));
+  master_printf("Initial electric energy is %g\n",
                 f.electric_energy_in_box(mid.surroundings()));
   while (f.time() < ttot) {
     f.step();
@@ -78,12 +78,12 @@ int flux_1d(const double zmax,
     flux_right +=  -(c/a)*right->flux();
   }
   delta_energy -= f.energy_in_box(mid.surroundings());
-  master_printf("Final energy is %lg\n", f.energy_in_box(mid.surroundings()));
-  master_printf("Final electric energy is %lg\n",
+  master_printf("Final energy is %g\n", f.energy_in_box(mid.surroundings()));
+  master_printf("Final electric energy is %g\n",
                 f.electric_energy_in_box(mid.surroundings()));
   const double del = flux_left;
   const double der = flux_right - delta_energy;
-  master_printf("  Delta E:\t%lg\n  Flux left:\t%lg\n  Flux right:\t%lg\n  Ratio:\t%lg\n",
+  master_printf("  Delta E:\t%g\n  Flux left:\t%g\n  Flux right:\t%lg\n  Ratio:\t%lg\n",
                 delta_energy, del, der, del/der);
   return compare(del, der, 0.06, "Flux");
 }
@@ -145,7 +145,7 @@ int cavity_1d(const double boxwidth, const double timewait,
   const double ttot = f.time() + timewait;
   double flux_left=0.0, flux_right=0.0;
   const double start_energy = f.energy_in_box(mid.surroundings());
-  master_printf("  Energy starts at\t%lg\n", start_energy);
+  master_printf("  Energy starts at\t%g\n", start_energy);
   while (f.time() < ttot) {
     f.step();
     flux_left  +=  -(c/a)*left->flux();
@@ -153,10 +153,10 @@ int cavity_1d(const double boxwidth, const double timewait,
   }
   const double delta_energy = start_energy - f.energy_in_box(mid.surroundings());
   const double defl = flux_right - flux_left;
-  master_printf("  Delta E:         \t%lg\n  Integrated Flux:\t%lg\n",
+  master_printf("  Delta E:         \t%g\n  Integrated Flux:\t%g\n",
                 delta_energy, defl);
-  master_printf("  Ratio:         \t%lg\n", delta_energy/defl);
-  master_printf("  Fractional error:\t%lg\n",
+  master_printf("  Ratio:         \t%g\n", delta_energy/defl);
+  master_printf("  Fractional error:\t%g\n",
                 (delta_energy - defl)/start_energy);
   return compare(start_energy - delta_energy,
                  start_energy - defl,

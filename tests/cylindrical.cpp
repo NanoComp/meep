@@ -26,8 +26,8 @@ double one(const vec &) { return 1.0; }
 
 int compare(double a, double b, const char *n, double eps=4e-15) {
   if (fabs(a-b) > fabs(b)*eps) {
-    printf("%s differs by\t%lg out of\t%lg\n", n, a-b, b);
-    printf("This gives a fractional error of %lg\n", fabs(a-b)/fabs(b));
+    printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
+    printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
     return 1;
@@ -43,11 +43,11 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > 0.0*2e-15*abs(v2)) {
-        printf("%s differs:  %lg %lg out of %lg %lg\n",
+        printf("%s differs:  %g %g out of %lg %lg\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
-        printf("This comes out to a fractional error of %lg\n",
+        printf("This comes out to a fractional error of %g\n",
                abs(v1 - v2)/abs(v2));
-        printf("Right now I'm looking at %lg %lg, time %lg\n", p.r(), p.z(), f1.time());
+        printf("Right now I'm looking at %g %g, time %lg\n", p.r(), p.z(), f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
         all_wait();
@@ -81,7 +81,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
-    master_printf("Chunks are %lg by %lg\n",
+    master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 29.0;
     while (f.time() < ttot) {
@@ -130,7 +130,7 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *dir
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
-    master_printf("Chunks are %lg by %lg\n",
+    master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 29.0;
     while (f.time() < ttot) {
@@ -196,7 +196,7 @@ int test_r_equals_zero(double eps(const vec &), const char *dirname) {
     }
     if (p.get_component(Hp) != 0.0 && !(m & 1)) {
       f.eps_slices();
-      printf("Got non-zero Hp of %lg %lg with m == %d\n",
+      printf("Got non-zero Hp of %g %g with m == %d\n",
              real(p.get_component(Hp)), imag(p.get_component(Hp)), m);
       return 0;
     }
@@ -229,7 +229,7 @@ int test_pml(double eps(const vec &), int splitting, const char *dirname) {
     f.eps_slices("multi");
     f1.eps_slices("single");
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume", 3e-14)) return 0;
-    master_printf("Chunks are %lg by %lg\n",
+    master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 10.0;
     while (f.time() < ttot) {
@@ -289,7 +289,7 @@ int test_pattern(double eps(const vec &), int splitting,
     fields f1(&s1, m);
     f1.use_bloch(0.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
-    master_printf("First chunk is %lg by %lg\n",
+    master_printf("First chunk is %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     f1.initialize_field(Hp, checkers);
     f.initialize_field(Hp, checkers);

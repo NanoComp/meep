@@ -118,13 +118,13 @@ const char *component_name(component c) {
 
 void vec::print(file *f) const {
   if (dim == Dcyl) {
-    i_fprintf(f, "%lg %lg 0", r(), z());
+    i_fprintf(f, "%g %lg 0", r(), z());
   } else if (dim == D3  ) {
-    i_fprintf(f, "%lg %lg %lg", x(), y(), z());
+    i_fprintf(f, "%g %lg %lg", x(), y(), z());
   } else if (dim == D2  ) {
-    i_fprintf(f, "%lg %lg 0", x(), y());
+    i_fprintf(f, "%g %lg 0", x(), y());
   } else if (dim == D1  ) {
-    i_fprintf(f, "0 0 %lg", z());
+    i_fprintf(f, "0 0 %g", z());
   } else  {
     printf("I don't know how to print in this dimension!\n");
     i_fprintf(f, "I don't know how to print in this dimension!\n");
@@ -353,9 +353,9 @@ void volume::interpolate(component c, const vec &p,
   for (int i=0;i<8&&weights[i];i++)
     indices[i] = index(c, locs[i]);
   if (!contains(p) && weights[0]) {
-    printf("Error at point %lg %lg\n", p.r(), p.z());
+    printf("Error at point %g %lg\n", p.r(), p.z());
     printf("Interpolated to point %d %d\n", locs[0].r(), locs[0].z());
-    printf("Or in other words... %lg %lg\n",
+    printf("Or in other words... %g %lg\n",
            operator[](locs[0]).r(), operator[](locs[0]).z());
     printf("I %s own the interpolated point.\n",
            owns(locs[0])?"actually":"don't");
@@ -369,7 +369,7 @@ void volume::interpolate(component c, const vec &p,
   // Stupid very crude code to compactify arrays:
   stupidsort(indices, weights, 8);
   if (!contains(p) && weights[0]) {
-    printf("Error at point %lg %lg\n", p.r(), p.z());
+    printf("Error at point %g %lg\n", p.r(), p.z());
     printf("Interpolated to point %d %d\n", locs[0].r(), locs[0].z());
     print();
     abort("Error made in interpolation of %s--fix this bug!!!\n",

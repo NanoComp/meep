@@ -58,7 +58,7 @@ const char *ts2n(time_sink s) {
 }
 
 static inline void pt(double ts[], time_sink s) {
-  if (ts[s]) master_printf("    %18s:\t%lg s\n", ts2n(s), ts[s]);
+  if (ts[s]) master_printf("    %18s:\t%g s\n", ts2n(s), ts[s]);
 }
 
 void fields::print_times() {
