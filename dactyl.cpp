@@ -486,6 +486,14 @@ void fields::step_e_right() {
   }
 }
 
+void fields::initialize_field(component c, complex<double> func(const vec &)) {
+  for (int i=0;i<v.ntot();i++) {
+    complex<double> val = func(v.loc(c,i));
+    f[c][0][i] = real(val);
+    f[c][1][i] = imag(val);
+  }
+}
+
 void fields::step_h() {
   const volume v = this->v;
   if (v.dim == d1) {

@@ -158,7 +158,9 @@ class fields {
                   double cutoff, complex<double> amp(const vec &),
                   int is_continuous = 0);
   void add_point_source(component whichf, double freq, double width, double peaktime,
-                        double cutoff, const vec &, complex<double> amp, int is_continuous = 0);
+                        double cutoff, const vec &, complex<double> amp,
+                        int is_continuous = 0);
+  void initialize_field(component, complex<double> f(const vec &));
   //void initialize_with_nth_te(int n);
   //void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
