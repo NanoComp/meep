@@ -35,17 +35,114 @@
 
 \tableofcontents
 
-\chapter{The Yee lattice}
+\chapter{Discretizing Maxwell's equations}
+
+Maxwell's equations in the absense of sources are:
+\begin{align}
+\frac{d\mathbf H}{dt} &= -c \mathbf \nabla \times \mathbf E\\
+\frac{d\mathbf D}{dt} &= c \mathbf \nabla \times \mathbf H
+\end{align}
+If the material is a simple isotropic dielectric, we can simply write
+$\mathbf D = \epsilon \mathbf E$ and get on with our lives.  Alas, all too
+often this is not the case!  We need to be able to deal with anisotropic
+dielectrics in which $\mathbf \epsilon$ is a tensor quantity, nonlinear
+materials in which $\mathbf \epsilon$ is a function of $\mathbf E$ itself,
+and polaritonic and polaronic materials in which $\mathbf \epsilon$ is a
+function of frequency.
+
+\subsection{Frequency-dependent epsilon}
+
+In the case of a frequency-dependent $\mathbf \epsilon$, we write
+\begin{equation}
+\mathbf D = \mathbf \epsilon_{\infty} \mathbf E + \mathbf P
+\end{equation}
+where $\mathbf P$ is the polarization as a function of time associated with
+the frequency dependence of $\mathbf \epsilon$.  Actually, in general there
+will be a set of polarizations, and we'll need a summation here.  For
+simplicity we'll only describe the case of a single polarization in this
+section.  The time dependence of a single polarization is given by
+\begin{equation}
+\frac{d^2\mathbf{P}}{dt^2} + \gamma \frac{d\mathbf{P}}{dt}
++ \omega_0^2 \mathbf{P} = \Delta\epsilon\ \omega_0^2 \mathbf{E}
+\end{equation}
+where $\gamma$, $\omega_0$ and $\Delta\epsilon$ are material parameters.
+The energy lost due to the absorption by this resonance is simply
+\begin{equation}
+\Delta U = \mathbf P \frac{d\mathbf E}{dt}
+\end{equation}
+In fact, if one sets $\Delta\epsilon$ to be negative, we can model gain
+effectively in this way, and in this case keeping track of the energy
+allows us to model a situation in which there is a depleteable population
+inversion which is causing the gain---this is the situation of gain with
+saturation.
+
+\subsection{Nonlinear dielectrics}
+
+In nonlinear dielectrics $\mathbf D$ is typically given by a cubic function
+of $\mathbf E$.
+\begin{equation}
+  \mathbf D = \left(\epsilon + \xi \left|\mathbf E\right|^2 \right)\mathbf E
+\end{equation}
+
+\subsection{Anisotropic dielectrics}
+In anisotropic dielectrics the dielectric constant is a tensor quantity
+rather than a scalar quantity.  In this case we write (FIXME: how to do a
+tensor in latex?)
+\begin{align}
+  \mathbf D = \bar{\bar \epsilon} \mathbf E\\
+  \mathbf E = \bar{\bar \epsilon}^{-1} \mathbf D\\
+\end{align}
+
+\subsection{Putting it all together}
+
+Putting it all together, we get a simplified time stepping of something
+like
+\begin{align}
+\frac{d\mathbf H}{dt} &= -c \mathbf \nabla \times \mathbf E\\
+\frac{d\mathbf E}{dt} &= \left( \bar{\bar{\epsilon}}_\infty +
+                                \mathbf E \cdot \bar{\bar \xi} \cdot \mathbf E
+                         \right)^{-1}
+  \left(
+  c \mathbf \nabla \times \mathbf H
+  - \sum_i \frac{d\mathbf P_i}{dt}
+  \right)
+\end{align}
+\begin{align}
+\frac{d^2\mathbf{P}_i}{dt^2} + \gamma_i \frac{d\mathbf{P}_i}{dt}
++ {\omega_0}_i^2 \mathbf{P}_i = \Delta\epsilon_i\ {\omega_0}_i^2 \mathbf{E}
+\end{align}
+
+\section{The Yee lattice}
+
+In discretizing Maxwell's equations, we need to put $\mathbf E$ and
+$\mathbf H$ on a grid.  Because we only need to calculate the curl of these
+quantities, we only need to know them at limited locations--this gives us
+the accuracy of a fine grid while only requiring as much data as a grid
+twice as coarse.  This trick is called the Yee lattice.
+Figure~\ref{yee_fig} shows the Yee lattice in cylindrical coordinates (with
+$\hat z$ being to the right).  The gray squares indicate the locations at
+which $\epsilon$ is stored.
 
 \begin{figure}
 \caption{Yee lattice in cylindrical coordinates.
 \label{yee_fig}}
 \centering
 \mbox{\epsfig{file=Yee_bulk.eps,width=7.8cm}}
-\vspace{13cm}
 \end{figure}
 
-\chapter{Maxwell's equations in cylindrical coordinates}
+The Yee lattice has the property that all the derivatives needed for
+$\mathbf \nabla \times \mathbf H$ are known at the Yee lattice points of
+$\mathbf E$.  For example, if you look at the $H_\phi$ location.
+$\frac{dH_\phi}{dt}$ depends on $\frac{dE_r}{dz}$ and $\frac{dE_z}{dr}$.
+This is great, because $E_r$ is known to the right and left of $H_\phi$,
+and $E_z$ is known above and below $H_\phi$.
+
+The same principle that the Yee lattice does with space, we also do with
+time.  $\mathbf E$ and $\mathbf H$ are known at different times, so that
+the time derivative of $\mathbf E$ is known at a $\mathbf H$ time and vice
+versa.
+
+\section{Maxwell's equations in cylindrical coordinates}
 
 Here are Maxwell's equations in cylindrical coordinates.  We take the
 fields to be of the form:
