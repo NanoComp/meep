@@ -22,7 +22,8 @@ distdir = $(package)-$(VERSION)
 OBJ_meep = step.o harminv.o bands.o output_directory.o material.o \
 	polarization.o monitor.o control_c.o grace.o energy_and_flux.o \
 	vec.o slices.o initialize.o sources.o fields.o boundaries.o \
-	mympi.o fluxes.o time.o ran.o
+	mympi.o fluxes.o time.o ran.o \
+	step_d.o step_h.o update_e_from_d.o update_from_e.o
 OBJ_example = example.o libmeep.a
 
 ###########################################################################
@@ -35,7 +36,13 @@ uninstall: meep-uninstall
 
 $(OBJ_meep): meep.h meep_internals.h vec.h mympi.h
 example.o: example.cpp meep.h vec.h mympi.h
-step.o: step.cpp step_h.h update_from_e.h update_e_from_d.h step_d.h \
+update_from_e.o: update_from_e.cpp update_from_e.h \
+		meep.h meep_internals.h vec.h mympi.h
+update_e_from_d.o: update_e_from_d.cpp update_e_from_d.h \
+		meep.h meep_internals.h vec.h mympi.h
+step_d.o: step_d.cpp step_d.h \
+		meep.h meep_internals.h vec.h mympi.h
+step_h.o: step_h.cpp step_h.h \
 		meep.h meep_internals.h vec.h mympi.h
 
 step_h.h: step_h.hs StepGen.lhs
