@@ -227,7 +227,7 @@ void fields::initialize_with_nth_te(int np0) {
   double eps = ma->eps[1];
   double inveps = 1.0/eps;
   double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
-  double omt = om*0.5*inva;
+  double omt = om*0.5;
   printf("Freq is %lg\n", om/(2*pi));
   if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
   double funky = 1-kk*kk*c*c/(eps*om*om);
@@ -272,7 +272,7 @@ void fields::initialize_with_nth_tm(int np1) {
   double eps = ma->eps[1];
   double inveps = 1.0/eps;
   double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
-  double omt = om*0.5*inva;
+  double omt = om*0.5;
   printf("Freq is %lg\n", om/(2*pi));
   if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
   double funky = 1-kk*kk*c*c/(eps*om*om);
