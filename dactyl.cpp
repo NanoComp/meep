@@ -125,10 +125,6 @@ fields::fields(const mat *the_ma, int tm) {
     z_epz[cmp][0] = new double[npmlz*(nr+1)];
     z_epz[cmp][1] = new double[npmlz*(nr+1)];
   }
-  if ( z_epz[1][1] == NULL) {
-    printf("Out of memory!\n");
-    exit(1);
-  }
   DOCMP {
     for (r=0;r<nr+1;r++) for (z=0;z<nz+1;z++)
       CM(hr,r,z) = 0.0;
