@@ -95,44 +95,44 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   fprintf(out, "/hdx %lg def\n", dx*0.5);
   fprintf(out, "dx 10 div setlinewidth\n");
   fprintf(out, "1 setlinecap\n");
-  fprintf(out, "/P {\
-    max div\
-    dup 0 lt {\
-        1 add\
-        dup 1\
-    }{\
-        neg 1 add\
-        dup 1 3 1 roll\
-    } ifelse\
-    setrgbcolor\
-    newpath\
+  fprintf(out, "/P {\n\
+    max div\n\
+    dup 0 lt {\n\
+        1 add\n\
+        dup 1\n\
+    }{\n\
+        neg 1 add\n\
+        dup 1 3 1 roll\n\
+    } ifelse\n\
+    setrgbcolor\n\
+    newpath\n\
     moveto\n");
   fprintf(out, "    %lg %lg rmoveto\n", dx*0.5, dx*0.5);
   fprintf(out, "    0 %lg rlineto\n", -dx);
   fprintf(out, "    %lg 0 rlineto\n", -dx);
   fprintf(out, "    0 dx rlineto\n", dx);
   fprintf(out, "    dx 0 rlineto\n", dx);
-  fprintf(out, "    gsave\
-    fill\
+  fprintf(out, "    gsave\n\
+    fill\n\
     grestore\n");
   fprintf(out, "    %lg setlinewidth\n", dx*0.1);
-  fprintf(out, "    stroke\
-} def\
-/LV {\
-    0 0 0 setrgbcolor\
+  fprintf(out, "    stroke\n\
+} def\n\
+/LV {\n\
+    0 0 0 setrgbcolor\n\
     moveto\n");
-  fprintf(out, "    %lg setlinewidth", dx*0.1);
-  fprintf(out, "    0 %lg rmoveto", dx*0.5);
-  fprintf(out, "    0 %lg rlineto", -dx);
-  fprintf(out, "    stroke\
-} def\
+  fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  fprintf(out, "    0 %lg rmoveto\n", dx*0.5);
+  fprintf(out, "    0 %lg rlineto\n", -dx);
+  fprintf(out, "    stroke\n\
+} def\n\
 /LH {\n");
-  fprintf(out, "    %lg setlinewidth", dx*0.1);
-  fprintf(out, "    0 0 0 setrgbcolor\
+  fprintf(out, "    %lg setlinewidth\n", dx*0.1);
+  fprintf(out, "    0 0 0 setrgbcolor\n\
     moveto\n");
-  fprintf(out, "    %lg 0 rmoveto", dx*0.5);
-  fprintf(out, "    %lg 0 rlineto", -dx);
-  fprintf(out, "    stroke\
+  fprintf(out, "    %lg 0 rmoveto\n", dx*0.5);
+  fprintf(out, "    %lg 0 rlineto\n", -dx);
+  fprintf(out, "    stroke\n\
 } def\n");
   fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
   fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
@@ -329,7 +329,7 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
   case dcyl:
     xmin = what.origin.z();
     xmax = what.origin.z() + what.nz()*what.inva;
-    ymin = ymax = what.origin.r();
+    ymin = what.origin.r();
     ymax = what.origin.r() + what.nr()*what.inva;
     break;
   case d1:
