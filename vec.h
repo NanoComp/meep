@@ -169,6 +169,19 @@ class vec {
     LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= s;
     return result;
   };
+
+  vec operator/(double s) const {
+    vec result = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= (1.0/s);
+    return result;
+  };
+
+  // I use & as a dot product.
+  double operator&(const vec &a) const {
+    double result = 0.0;
+    LOOP_OVER_DIRECTIONS(dim, d) result += t[d] * a.t[d];
+    return result;
+  };
   ndim dim;
 
   double r() const { return t[R]; };
@@ -184,6 +197,8 @@ class vec {
  private:
   double t[5];
 };
+
+inline double abs(const vec &v) { return sqrt(v & v); }
 
 inline vec zero_vec(ndim di) {
   vec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0.0);

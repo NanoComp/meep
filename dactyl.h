@@ -194,6 +194,7 @@ class fields_chunk {
   double find_last_source();
   // monitor.cpp
   complex<double> get_field(component, const ivec &) const;
+  double get_eps(const ivec &iloc) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   // slices.cpp
@@ -323,6 +324,8 @@ class fields {
   void output_slices(const char *name = "");
   void output_slices(const geometric_volume &what, const char *name = "");
   void eps_slices(const char *name = "");
+  void eps_slices(const vec &origin, const vec &xside, const vec &yside,
+                  const double dx = 0.05, const char *name = "");
   void eps_slices(const geometric_volume &what, const char *name = "");
   void output_real_imaginary_slices(const char *name = "");
   void output_real_imaginary_slices(const geometric_volume &what,
@@ -401,7 +404,8 @@ class fields {
   void connect_the_chunks(); // Intended to be ultra-private...
   int is_metal(const ivec &);
   ivec ilattice_vector(direction) const;
-  bool locate_component_point(component *, ivec *, complex<double> *);
+  bool locate_component_point(component *, ivec *, complex<double> *) const;
+  bool locate_point_in_user_volume(ivec *, complex<double> *phase) const;
   // step.cpp
   void phase_material();
   void step_h();
@@ -423,9 +427,14 @@ class fields {
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
   // slices.cpp
   void outline_chunks(file *name);
+  bool has_eps_interface(vec *loc) const;
   // energy_and_flux.cpp
   // fluxes.cpp
   void update_fluxes();
+  // monitor.cpp
+  complex<double> get_field(component c, const ivec &iloc) const;
+  complex<double> get_field(component c, const vec &loc) const;
+  double get_eps(const ivec &iloc) const;
 };
 
 class grace_point;

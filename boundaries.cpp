@@ -155,8 +155,31 @@ inline int fields::is_metal(const ivec &here) {
   return false;
 }
 
+bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) const {
+  // Check if a translational symmetry is needed to bring the point in...
+  if (!user_volume.owns(*there))
+    FOR_DIRECTIONS(d) {
+      if (boundaries[Low][d] == Periodic &&
+          there->in_direction(d) <= user_volume.origin.in_direction(d)) {
+        while (there->in_direction(d) <=
+               user_volume.origin.in_direction(d)) {
+          *there += ilattice_vector(d);
+          *phase *= conj(eikna[d]);
+        }
+      } else if (boundaries[High][d] == Periodic &&
+                 there->in_direction(d)-ilattice_vector(d).in_direction(d)
+                 > user_volume.origin.in_direction(d)) {
+        while (there->in_direction(d)-ilattice_vector(d).in_direction(d)
+               > user_volume.origin.in_direction(d)) {
+          *there -= ilattice_vector(d);
+          *phase *= eikna[d];
+        }
+      }
+    }
+}
+
 bool fields::locate_component_point(component *c, ivec *there,
-                                    complex<double> *phase) {
+                                    complex<double> *phase) const {
   // returns true if this point and component exist in the user_volume.  If
   // that is the case, on return *c and *there store the component and
   // location of where the point actually is, and *phase determines holds
@@ -165,45 +188,19 @@ bool fields::locate_component_point(component *c, ivec *there,
 
   // Check if nothing tricky is needed...
   *phase = 1.0;
-  bool try_again = false;
-  do {
-    try_again = false;
-    // Check if a rotation or inversion brings the point in...
-    if (user_volume.owns(*there))
-      for (int sn=0;sn<S.multiplicity();sn++) {
-        const ivec here=S.transform(*there,sn);
-        if (v.owns(here)) {
-          *there = here;
-          *phase *= S.phase_shift(*c,sn);
-          *c = direction_component(*c,
-                                   S.transform(component_direction(*c),sn).d);
-          return true;
-        }
+  if (!locate_point_in_user_volume(there, phase)) return false;
+  // Check if a rotation or inversion brings the point in...
+  if (user_volume.owns(*there))
+    for (int sn=0;sn<S.multiplicity();sn++) {
+      const ivec here=S.transform(*there,sn);
+      if (v.owns(here)) {
+        *there = here;
+        *phase *= S.phase_shift(*c,sn);
+        *c = direction_component(*c,
+                                 S.transform(component_direction(*c),sn).d);
+        return true;
       }
-    // Check if a translational symmetry is needed to bring the point in...
-    if (!user_volume.owns(*there))
-      for (int dd=0;dd<5;dd++) {
-        const direction d = (direction) dd;
-        if (boundaries[Low][d] == Periodic &&
-            there->in_direction(d) <= user_volume.origin.in_direction(d)) {
-          while (there->in_direction(d) <=
-                 user_volume.origin.in_direction(d)) {
-            *there += ilattice_vector(d);
-            *phase *= conj(eikna[d]);
-          }
-          try_again = true;
-        } else if (boundaries[High][d] == Periodic &&
-                   there->in_direction(d)-ilattice_vector(d).in_direction(d)
-                   > user_volume.origin.in_direction(d)) {
-          while (there->in_direction(d)-ilattice_vector(d).in_direction(d)
-                 > user_volume.origin.in_direction(d)) {
-            *there -= ilattice_vector(d);
-            *phase *= eikna[d];
-          }
-          try_again = true;
-        }
-      }
-  } while (try_again);
+    }
   return false;
 }
 

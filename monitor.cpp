@@ -62,25 +62,33 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
   pt->loc = loc;
   pt->t = time();
   FOR_COMPONENTS(c)
-    if (v.has_field(c)) {
-      ivec ilocs[8];
-      double w[8];
-      complex<double> val[8];
-      for (int i=0;i<8;i++) val[i] = 0.0;
-      v.interpolate(c, loc, ilocs, w);
-      for (int argh=0;argh<8&&w[argh];argh++) {
-        bool got_it = false;
-        for (int sn=0;sn<S.multiplicity() && !got_it;sn++)
-          for (int i=0;i<num_chunks && !got_it;i++)
-            if (chunks[i]->v.contains(S.transform(ilocs[argh],sn))) {
-              got_it = true;
-              val[argh] = w[argh]*S.phase_shift(c,sn)*
-                chunks[i]->get_field(S.transform(c,sn),S.transform(ilocs[argh],sn));
-            }
-      }
-      dumbsort(val);
-      for (int i=0;i<8;i++) pt->f[c] += val[i];
-    }
+    if (v.has_field(c))
+      pt->f[c] = get_field(c,loc);
+}
+
+complex<double> fields::get_field(component c, const vec &loc) const {
+  ivec ilocs[8];
+  double w[8];
+  complex<double> val[8];
+  for (int i=0;i<8;i++) val[i] = 0.0;
+  v.interpolate(c, loc, ilocs, w);
+  for (int argh=0;argh<8&&w[argh];argh++)
+    val[argh] = w[argh]*get_field(c,ilocs[argh]);
+  dumbsort(val);
+  complex<double> res = 0.0;
+  for (int i=0;i<8;i++) res += val[i];
+  return res;
+}
+
+complex<double> fields::get_field(component c, const ivec &origloc) const {
+  ivec iloc = origloc;
+  complex<double> kphase = 1.0;
+  locate_point_in_user_volume(&iloc, &kphase);
+  for (int sn=0;sn<S.multiplicity();sn++)
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->v.contains(S.transform(iloc,sn)))
+        return S.phase_shift(c,sn)*kphase*
+          chunks[i]->get_field(S.transform(c,sn),S.transform(iloc,sn));
 }
 
 complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
@@ -89,6 +97,23 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
     if (f[c][0] && f[c][1]) res = getcm(f[c], v.index(c, iloc));
     else if (f[c][0]) res = f[c][0][v.index(c,iloc)];
   }
+  return broadcast(n_proc(), res);
+}
+
+double fields::get_eps(const ivec &origloc) const {
+  ivec iloc = origloc;
+  complex<double> aaack = 1.0;
+  locate_point_in_user_volume(&iloc, &aaack);
+  for (int sn=0;sn<S.multiplicity();sn++)
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->v.contains(S.transform(iloc,sn)))
+        return chunks[i]->get_eps(S.transform(iloc,sn));
+  return 0.0;
+}
+
+double fields_chunk::get_eps(const ivec &iloc) const {
+  double res = 0.0;
+  if (is_mine()) res = ma->eps[v.index(v.eps_component(), iloc)];
   return broadcast(n_proc(), res);
 }
 
@@ -126,7 +151,7 @@ void mat_chunk::interpolate_eps(const vec &loc, double val[8]) const {
     int startingat = 0;
     for (int i=0;i<8 && val[i]!=0.0;i++) startingat = i+1;
     for (int i=0;i<8 && w[i] && (i+startingat<8);i++) {
-      val[i+startingat] = eps[ind[i]];
+      val[i+startingat] = w[i]*eps[ind[i]];
       if (val[i+startingat] == 0.0) startingat--;
     }
   }

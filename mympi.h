@@ -36,6 +36,7 @@ void broadcast(int from, double *data, int size);
 void broadcast(int from, complex<double> *data, int size);
 bool broadcast(int from, bool);
 complex<double> broadcast(int from, complex<double> data);
+double broadcast(int from, double data);
 double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);
 double sum_to_master(double); // Only returns the correct value to proc 0.

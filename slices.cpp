@@ -87,6 +87,7 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   i_fprintf(out, "/dx %lg def\n", dx);
   i_fprintf(out, "/hdx %lg def\n", dx*0.5);
   i_fprintf(out, "dx 10 div setlinewidth\n");
+  i_fprintf(out, "/dotrad %lg def\n", dx*0.25);
   i_fprintf(out, "1 setlinecap\n");
   i_fprintf(out, "/P {\n\
     max div\n\
@@ -133,6 +134,11 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
     %lg setlinewidth\n\
     0 0.8 0 setrgbcolor [0 %lg] 0 setdash\n\
     lineto stroke } def\n", 0.6*dx, 3*dx);
+  // B for Boundary...
+  i_fprintf(out, "/B {\n\
+    0 0 0 setrgbcolor \n\
+    newpath dotrad 0 360 arc fill \n\
+} def\n");
 }
 
 static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
@@ -386,6 +392,15 @@ static void output_complex_eps_header(component m, double fmax, const volume &v,
   }
 }
 
+static void output_eps_header(double fmax, double dx,
+                              const double xmin, const double xmax,
+                              const double ymin, const double ymax,
+                              file *out, const char *name) {
+  if (fmax == 0.0) fmax = 0.0001;
+  // Make a 2D color plot!
+  eps_header(xmin, ymin, xmax, ymax, fmax, 1.0/dx, out, name);
+}
+
 static void output_complex_eps_tail(file *out) {
   eps_trailer(out);
 }
@@ -507,6 +522,93 @@ void fields::output_slices(const geometric_volume &what, const char *name) {
 void fields::eps_slices(const char *name) {
   if (v.dim == Dcyl || v.dim == D1 || v.dim == D2)
     eps_slices(user_volume.surroundings(), name);
+}
+
+void fields::eps_slices(const vec &origin, const vec &xside, const vec &yside,
+                        const double dx, const char *name) {
+  am_now_working_on(Slicing);
+  const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
+  char *n = (char *)malloc(buflen);
+  int i;
+  if (!n) abort("Allocation failure!\n");
+  char time_step_string[buflen];
+  snprintf(time_step_string, buflen, "%09.2f", time());
+  // Define some convenient grid-related values:
+  const vec xhat = xside / abs(xside);
+  const vec yhat = yside / abs(yside);
+  const double xlen = abs(xside);
+  const double ylen = abs(yside);
+  const double xmin = origin & xhat;
+  const double ymin = origin & yhat;
+  // Now start outputing pretty pictures.
+  FOR_COMPONENTS(c)
+    if (v.has_field(c)) {
+      snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
+               component_name(c), time_step_string);
+      const double fmax = maxfieldmag_to_master(c);
+      file *out = everyone_open_write(n);
+      if (!out) {
+        printf("Unable to open file '%s' for slice output.\n", n);
+        return;
+      }
+      if (am_master())
+        output_eps_header(fmax, dx, xmin, xmin + xlen, ymin, ymin + ylen, out, n);
+      for (double x = xmin; x <= xmin + xlen + dx; x += dx)
+        for (double y = ymin; y <= ymin + ylen + dx; y += dx)
+          master_fprintf(out, "%lg\t%lg\t%lg\tP\n", x, y,
+                         real(get_field(c, origin + xhat*(x-xmin) + yhat*(y-ymin))));
+      for (double x = xmin; x <= xmin + xlen + dx; x += 1.0/v.a)
+        for (double y = ymin; y <= ymin + ylen + dx; y += 1.0/v.a) {
+          vec loc = origin + xhat*(x-xmin) + yhat*(y-ymin);
+          if (has_eps_interface(&loc))
+            master_fprintf(out, "%lg\t%lg\tB\n", loc & xhat, loc & yhat);
+        }
+      //outline_chunks(out);
+      //all_wait();
+      if (am_master()) output_complex_eps_tail(out);
+      everyone_close(out);
+    }
+  free(n);
+  finished_working();
+}
+
+bool fields::has_eps_interface(vec *loc) const {
+  ivec ilocs[8];
+  double w[8];
+  double val[8];
+  for (int i=0;i<8;i++) val[i] = 0.0;
+  v.interpolate(v.eps_component(), *loc, ilocs, w);
+  for (int argh=0;argh<8&&w[argh];argh++)
+    val[argh] = get_eps(ilocs[argh]);
+  double epshere = 0.0, epsmin = 1e100, epsmax = -1e100;
+  for (int argh=0;argh<8&&w[argh];argh++) {
+    epsmin = min(epsmin, val[argh]);
+    epsmax = max(epsmax, val[argh]);
+    epshere += w[argh] * val[argh];
+  }
+  vec grad = zero_vec(v.dim);
+  vec center = zero_vec(v.dim);
+  double norm = 0.0, mean = 0.0;
+  for (int argh=0;argh<8&&w[argh];argh++) {
+    center += v[ilocs[argh]];
+    mean += val[argh];
+    norm++;
+  }
+  center = center/norm;
+  mean *= 1.0/norm;
+  for (int argh=0;argh<8&&w[argh];argh++) {
+    const vec dist = v[ilocs[argh]] - center;
+    grad += dist*(val[argh] - mean)/(dist & dist);
+  }
+  for (int argh=0;argh<8&&w[argh];argh++)
+    if (val[argh] != val[0]){
+      *loc = *loc + grad*(0.5*(epsmax - epshere) - mean)/abs(grad & grad);
+      return true;
+    }
+  return false;
 }
 
 void fields::eps_slices(const geometric_volume &what, const char *name) {
