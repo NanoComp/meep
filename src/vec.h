@@ -586,9 +586,9 @@ class volume {
   }
 
   vec get_origin() const { return origin; }
-  vec set_origin(const vec &o) { origin = o; update_io(); }
-  vec shift_origin(const vec &s) { origin += s; update_io(); }
-  vec origin_set_direction(direction d, double v) { 
+  void set_origin(const vec &o) { origin = o; update_io(); }
+  void shift_origin(const vec &s) { origin += s; update_io(); }
+  void origin_set_direction(direction d, double v) { 
     origin.set_direction(d, v); update_io();
   }
   double origin_in_direction(direction d) const{return origin.in_direction(d);}
