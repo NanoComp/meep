@@ -672,7 +672,7 @@ structure_chunk::structure_chunk(const volume &thev, material_function &epsilon,
     } else {
       inveps[c][d] = NULL;
     }
-  if (is_mine()) set_epsilon(epsilon, 0.0, false);
+  set_epsilon(epsilon, 0.0, false);
   // Allocate the conductivity arrays:
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
   FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;
