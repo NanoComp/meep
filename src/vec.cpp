@@ -38,7 +38,7 @@ static inline int lattice_to_yee(double x, double a) {
   return (int)floor(x*(2.0*a) + 0.5);
 }
 
-inline ivec volume::round_vec(const vec &p) const {
+ivec volume::round_vec(const vec &p) const {
   ivec result(dim);
   LOOP_OVER_DIRECTIONS(dim, d)
     result.set_direction(d, lattice_to_yee(p.in_direction(d),a));
