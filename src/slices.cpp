@@ -108,9 +108,17 @@ static void output_complex_slice(component m, double *f[2],
   double c = real(phshift), s = imag(phshift);
   bufprint buf(out);
   for (int i=0;i<v.ntot();i++) {
-    if (what.contains(v.loc(m,i))) {
-      v.loc(m,i).print(out);
-      buf.printf("\t%g\n", c*f[0][i]+s*f[1][i]);
+    vec here = v.loc(m,i);
+    if (what.contains( here)) {
+      if (v.dim == Dcyl) {
+        buf.printf("%lg\t%lg\t0\t%lg\n", here.r(), here.z(), c*f[0][i]+s*f[1][i]);
+      } else if (v.dim == D3  ) {
+        buf.printf("%lg\t%lg\t%lg\t%lg\n", here.x(), here.y(), here.z(), c*f[0][i]+s*f[1][i]);
+      } else if (v.dim == D2  ) {
+        buf.printf("%lg\t%lg\t0\t%lg\n", here.x(), here.y(), c*f[0][i]+s*f[1][i]);
+      } else if (v.dim == D1  ) {
+        buf.printf("0\t0\t%lg\t%lg\n", here.z(), c*f[0][i]+s*f[1][i]);
+      }
     }
   }  
 }
@@ -119,11 +127,20 @@ static void output_slice(component m, const double *f, const volume &v,
                          const geometric_volume &what, file *out) {
   if (!f) return; // Field doesn't exist...
   bufprint buf(out);
-  for (int i=0;i<v.ntot();i++)
-    if (what.contains(v.loc(m,i))) {
-      v.loc(m,i).print(out);
-      buf.printf("\t%.18lg\n", f[i]);
+  for (int i=0;i<v.ntot();i++) {
+    vec here = v.loc(m,i);
+    if (what.contains(here)) {
+      if (v.dim == Dcyl) {
+        buf.printf("%lg\t%lg\t0\t%lg\n", here.r(), here.z(), f[i]);
+      } else if (v.dim == D3  ) {
+        buf.printf("%lg\t%lg\t%lg\t%lg\n", here.x(), here.y(), here.z(), f[i]);
+      } else if (v.dim == D2  ) {
+        buf.printf("%lg\t%lg\t0\t%lg\n", here.x(), here.y(), f[i]);
+      } else if (v.dim == D1  ) {
+        buf.printf("0\t0\t%lg\t%lg\n", here.z(), f[i]);
+      }
     }
+  }
 }
 
 static const double default_eps_resolution = 20.0;
