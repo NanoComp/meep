@@ -206,6 +206,13 @@ if test "x" == "x$DEFAULTFLAGS"; then
    CFLAGS="$CFLAGS_my_saved"
 fi
 
+AC_ARG_WITH(timings,
+          [  --with-timings          calculate timings of various operations)],,with_timings=no)
+AC_MSG_RESULT($with_timings)
+if test "$with_timings" = "yes"; then
+    CXXFLAGS="$CXXFLAGS -DWITH_TIMINGS"
+fi
+
 DACTYL_CXX="$CXX"
 DACTYL_CXXFLAGS="$CXXFLAGS"
 AC_SUBST(DACTYL_CXX)

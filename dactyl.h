@@ -387,8 +387,13 @@ class fields {
   // material.cpp
   double max_eps() const;
   // time.cpp
+#ifdef WITH_TIMINGS
   void am_now_working_on(time_sink);
   void finished_working();
+#else
+  void am_now_working_on(time_sink) { return; }
+  void finished_working() { return; }
+#endif
   // boundaries.cpp
   void find_metals();
   void disconnect_chunks();

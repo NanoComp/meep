@@ -19,6 +19,7 @@
 
 #include "dactyl.h"
 
+#ifdef WITH_TIMINGS
 void fields::finished_working() {
   unsigned long now = clock();
   if (last_time)
@@ -36,6 +37,7 @@ void fields::am_now_working_on(time_sink s) {
   was_working_on = working_on;
   working_on = s;
 }
+#endif
 
 double fields::time_spent_on(time_sink s) {
   return times_spent[s];
