@@ -855,8 +855,8 @@ void fields::step_h_source(const src *s) {
   }
   for (int c=0;c<10;c++)
     if (v.has_field((component)c) && is_magnetic((component)c)) {
-      f[c][0][s->i] += imag(A*s->A[c]);
-      if (!is_real) f[c][1][s->i] += real(A*s->A[c]);
+      f[c][0][s->i] += real(A*s->A[c]);
+      if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }
   step_h_source(s->next);
 }
@@ -870,8 +870,8 @@ void fields::step_e_source(const src *s) {
   }
   for (int c=0;c<10;c++)
     if (v.has_field((component)c) && is_electric((component)c)) {
-      f[c][0][s->i] += imag(A*s->A[c]);
-      if (!is_real) f[c][1][s->i] += real(A*s->A[c]);
+      f[c][0][s->i] += real(A*s->A[c]);
+      if (!is_real) f[c][1][s->i] += imag(A*s->A[c]);
     }
   step_e_source(s->next);
 }
