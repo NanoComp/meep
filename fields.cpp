@@ -78,7 +78,7 @@ fields::~fields() {
 }
 void fields::use_real_fields() {
   for (int d=0;d<5;d++)
-    if (boundaries[High][d] == Periodic)
+    if (boundaries[High][d] == Periodic && k[d] != 0.0)
       abort("Can't use real fields_chunk with bloch boundary conditions!\n");
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
