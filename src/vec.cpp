@@ -135,20 +135,40 @@ void ivec::print(file *f) const {
   }
 }
 
+vec min(const vec &vec1, const vec &vec2) {
+  vec m(vec1.dim);
+  LOOP_OVER_DIRECTIONS(vec1.dim, d)
+    m.set_direction(d, min(vec1.in_direction(d), vec2.in_direction(d)));
+}
+
+vec max(const vec &vec1, const vec &vec2) {
+  vec m(vec1.dim);
+  LOOP_OVER_DIRECTIONS(vec1.dim, d)
+    m.set_direction(d, max(vec1.in_direction(d), vec2.in_direction(d)));
+}
+
+ivec min(const ivec &ivec1, const ivec &ivec2) {
+  ivec m(ivec1.dim);
+  LOOP_OVER_DIRECTIONS(ivec1.dim, d)
+    m.set_direction(d, min(ivec1.in_direction(d), ivec2.in_direction(d)));
+}
+
+ivec max(const ivec &ivec1, const ivec &ivec2) {
+  ivec m(ivec1.dim);
+  LOOP_OVER_DIRECTIONS(ivec1.dim, d)
+    m.set_direction(d, max(ivec1.in_direction(d), ivec2.in_direction(d)));
+}
+
 geometric_volume::geometric_volume(const vec &vec1, const vec &vec2) {
-  min_corner.dim = max_corner.dim = dim = vec1.dim; 
-  LOOP_OVER_DIRECTIONS(dim, d) {
-    set_direction_min(d, min(vec1.in_direction(d), vec2.in_direction(d)));
-    set_direction_max(d, max(vec1.in_direction(d), vec2.in_direction(d)));
-  }
+  min_corner = min(vec1, vec2);
+  max_corner = max(vec1, vec2);
+  dim = vec1.dim; 
 }
 
 geometric_volume::geometric_volume(const vec &pt) {
-  min_corner.dim = max_corner.dim = dim = pt.dim; 
-  LOOP_OVER_DIRECTIONS(dim, d) {
-    set_direction_min(d, pt.in_direction(d));
-    set_direction_max(d, pt.in_direction(d));
-  }
+  dim = pt.dim; 
+  min_corner = pt;
+  max_corner = pt;
 }
 
 double geometric_volume::computational_volume() {

@@ -437,6 +437,12 @@ inline ivec iveccyl(int rr, int zz) {
   ivec v(Dcyl); v.t[R] = rr; v.t[Z] = zz; return v;
 }
 
+vec max(const vec &vec1, const vec &vec2);
+vec min(const vec &vec1, const vec &vec2);
+ivec max(const ivec &ivec1, const ivec &ivec2);
+ivec min(const ivec &ivec1, const ivec &ivec2);
+ivec max_to_all(const ivec &v); // in mympi.cpp
+
 class geometric_volume {
  public:
   ndim dim;
