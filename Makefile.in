@@ -60,6 +60,9 @@ convergence_testing: convergence_testing.o libdactyl.a
 doc/dactyl.ps : doc/dactyl.dvi
 	cd doc && dvips -o dactyl.ps dactyl.dvi
 
+doc/dactyl/dactyl.html : doc/dactyl.tex
+	cd doc && latex2html -split +1 -local_icons dactyl.tex
+
 doc/dactyl.dvi : doc/dactyl.tex
 	cd doc && latex dactyl.tex
 
