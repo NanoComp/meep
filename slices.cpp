@@ -85,6 +85,7 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   i_fprintf(out, "%%%%BoundingBox: 0 0 %lg %lg\n",
            (xmax-xmin)*default_eps_size/size, (ymax-ymin)*default_eps_size/size);
   i_fprintf(out, "gsave\n");
+  i_fprintf(out, "gsave\n");
   i_fprintf(out, "/title (%s) def\n", name);
   i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
   i_fprintf(out, "%lg %lg translate\n", -xmin, -ymin);
@@ -156,6 +157,7 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
   i_fprintf(out, "%%%%BoundingBox: 0 0 %lg %lg\n",
            (xmax-xmin)*default_eps_size/size, default_eps_size*fsize/size);
   i_fprintf(out, "gsave\n");
+  i_fprintf(out, "gsave\n");
   i_fprintf(out, "/title (%s) def\n", name);
   i_fprintf(out, "%lg %lg scale\n", default_eps_size/size, default_eps_size/size);
   i_fprintf(out, "%lg %lg translate\n", -xmin, 0.5*fsize);
@@ -196,8 +198,10 @@ static void eps_1d_header(double xmin, double ymin, double xmax, double ymax,
 
 static void eps_trailer(file *out) {
   i_fprintf(out, "grestore\n");
+  i_fprintf(out, " 1 0 0 setrgbcolor\n");
   i_fprintf(out, "/Times-Roman findfont 16 scalefont setfont\n");
   i_fprintf(out, "newpath 5 5 moveto title show\n");
+  i_fprintf(out, "grestore\n");
   i_fprintf(out, "showpage\n");
   i_fprintf(out, "%%%%Trailer\n");
   i_fprintf(out, "%%%%EOF\n");
