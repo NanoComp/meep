@@ -1085,7 +1085,6 @@ ivec symmetry::transform(const ivec &ov, int n) const {
 
 vec symmetry::transform(const vec &ov, int n) const {
   if (n == 0) return ov;
-  vec out = ov;
   int ddmin = X, ddmax = 4;
   if (ov.dim == d2) {
     ddmin = X; ddmax = Y;
@@ -1096,24 +1095,15 @@ vec symmetry::transform(const vec &ov, int n) const {
   } else if (ov.dim == dcyl) {
     ddmin = Z; ddmax = R;
   }
+  vec delta = ov;
   for (int dd=ddmin;dd<=ddmax;dd++) {
     const direction d = (direction) dd;
     const signed_direction s = transform(d,n);
-    // Here we do some nasty trickery to make 'g++ -ffloat-store' give
-    // correct results.
-    int sym_yee_d = lattice_to_yee(symmetry_point.in_direction(d),a,inva);
-    int yeed = lattice_to_yee(ov.in_direction(d),a,inva) - sym_yee_d;
-    double temp = yee_to_lattice(yeed+sym_yee_d,a,inva);
-    double deltad = ov.in_direction(d) - temp;
-    int sym_yee_sd = lattice_to_yee(symmetry_point.in_direction(s.d),a,inva);
-    double temp2 = yee_to_lattice(sym_yee_sd - yeed,a,inva);
-    double temp3 = yee_to_lattice(sym_yee_sd + yeed,a,inva);
-    if (s.flipped)
-      out.set_direction(s.d, temp2 - deltad);
-    else
-      out.set_direction(s.d, temp3 + deltad);
+    double deltad = ov.in_direction(d) - symmetry_point.in_direction(d);
+    if (s.flipped) delta.set_direction(s.d, -deltad);
+    else delta.set_direction(s.d, deltad);
   }
-  return out;
+  return symmetry_point + delta;
 }
 
 component symmetry::transform(component c, int n) const {
