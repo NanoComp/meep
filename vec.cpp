@@ -212,29 +212,8 @@ static inline void stupidsort(int *ind, double *w, int l) {
 
 void volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
-  const vec offset = p - origin - yee_shift(c);
   if (dim == d1) {
-    indices[0] = (int)(offset.z()*a);
-    if (indices[0] < nz()) {
-      indices[1] = indices[0] + 1;
-      const double lowfrac = offset.z()*a - indices[0];
-      if (lowfrac < 1e-15) {
-        indices[0] = indices[1];
-        weights[0] = 1.0;
-        weights[1] = 0.0;
-      } else {
-        weights[0] = lowfrac;
-        weights[1] = 1.0 - lowfrac;
-      }
-    } else {
-      weights[0] = 1.0;
-      weights[1] = 0.0;
-      indices[1] = 0;
-    }
-    for (int i=2;i<8;i++) {
-      indices[i] = 0;
-      weights[i] = 0;
-    }
+    interpolate_one(c, p, indices, weights);
   } else if (dim == dcyl) {
     interpolate_cyl(c, p, 0, indices, weights);
   } else {
@@ -254,6 +233,33 @@ void volume::interpolate(component c, const vec &p,
   if (!contains(p) && weights[0]) {
     printf("Error made in interpolation of %s--fix this bug!!!\n",
            component_name(c));
+    exit(1);
+  }
+}
+
+void volume::interpolate_one(component c, const vec &p,
+                             int indices[8], double weights[8]) const {
+  const double iz = (p.z() - yee_shift(c).z())*a;
+  const int ioriginz = (int) (origin.z()*a + 0.5);
+  const int izlo = (int)iz - ioriginz, izhi = izlo+1;
+  const double dz = p.z()*a - (ioriginz + izlo + 0.5) - yee_shift(c).z()*a;
+  indices[0] = izlo;
+  const int indexshift = (c == Ex)? 1 : 0;
+  for (int i=0;i<8;i++) {
+    indices[i] = -1;
+    weights[i] = 0;
+  }
+  if (izlo - indexshift < nz() && izlo - indexshift >= 0) {
+    indices[0] = izlo;
+    weights[0] = 0.5 - dz;
+  }
+  if (izhi - indexshift < nz() && izhi - indexshift >= 0) {
+    indices[1] = izhi;
+    weights[1] = 0.5 + dz;
+  }
+  stupidsort(indices, weights, 2);
+  if (!contains(p) && weights[0]) {
+    printf("Looks like a bug in one D interpolate!\n");
     printf("Point   %lg %lg\n", p.r(), p.z());
     exit(1);
   }

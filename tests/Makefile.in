@@ -19,8 +19,8 @@ all: dactyl.ps dactyl/dactyl.html preproc
 
 ###########################################################################
 
-OBJFILES = cylindrical.o
-TESTFILES = cylindrical.dac
+OBJFILES = cylindrical.o one_dimensional.o
+TESTFILES = cylindrical.dac one_dimensional.dac
 
 $(OBJFILES): ../dactyl.h
 $(TESTFILES): ../libdactyl.a
@@ -32,6 +32,7 @@ $(TESTFILES): ../libdactyl.a
 
 test: $(TESTFILES)
 	set -e
+	./one_dimensional.dac
 	./cylindrical.dac
 
 clean:

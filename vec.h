@@ -101,6 +101,8 @@ class volume {
   int index(component, const vec &) const; // DEPRECATED!
   void interpolate(component, const vec &, int indices[8], double weights[8]) const;
 
+  void interpolate_one(component c, const vec &p,
+                       int indices[8], double weights[8]) const;
   void interpolate_cyl(component c, const vec &p, int m,
                        int indices[8], double weights[8]) const;
 
