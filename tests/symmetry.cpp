@@ -82,9 +82,6 @@ int test_metal(double eps(const vec &), const char *dirname) {
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    f.eps_slices("multi");
-    f.output_real_imaginary_slices("multi");
-    f1.output_real_imaginary_slices("single");
     if (!compare_point(f, f1, vec2d(0.5  , 0.01))) return 0;
     if (!compare_point(f, f1, vec2d(0.5  , 0.21))) return 0;
     if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
