@@ -750,7 +750,7 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
 
 double polariton_ex(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
-  printf("Testing polariton in %s...\n", dimension_name(v.dim));
+  master_printf("Testing polariton in %s...\n", dimension_name(v.dim));
   the_center = v.center();
   const symmetry S = mirror(Z,v);
   mat ma(v, eps);
@@ -777,7 +777,7 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
 
 double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
-  printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
+  master_printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
   the_center = v.center();
   const symmetry S = mirror(Z,v)*(-1);
   mat ma(v, eps);
