@@ -250,6 +250,52 @@ void mat::use_pml_left(double dx) {
   }
 }
 
+void mat::use_pml_radial(double dx) {
+  if (v.dim == dcyl) {
+    const double border = dx + v.origin.z();
+    const double prefac = Cmax/(dx*dx);
+    if (!Cother[Ep]) {
+      Cother[Ep] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) Cother[Ep][i] = 0.0;
+    }
+    if (!Cother[Hp]) {
+      Cother[Hp] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) Cother[Hp][i] = 0.0;
+    }
+    if (!Cother[Ez]) {
+      Cother[Ez] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) Cother[Ez][i] = 0.0;
+    }
+    if (!Cother[Hz]) {
+      Cother[Hz] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) Cother[Hz][i] = 0.0;
+    }
+    component m=Ez;
+    for (int i=0;i<v.ntot();i++) {
+      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
+      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
+    }
+    m=Hz;
+    for (int i=0;i<v.ntot();i++) {
+      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
+      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
+    }
+    m=Ep;
+    for (int i=0;i<v.ntot();i++) {
+      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
+      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
+    }
+    m=Hp;
+    for (int i=0;i<v.ntot();i++) {
+      double x = v.origin.r() + v.nr()/v.a - v.loc(m,i).r();
+      if (x < border) Cother[m][i] = prefac*(x-border)*(x-border);
+    }
+  } else {
+    printf("Radial pml only works in cylindrical coordinates!\n");
+    exit(1);
+  }
+}
+
 mat::mat(const mat *o) {
   outdir = o->outdir;
   if (o->pb) pb = new polarizability(o->pb);

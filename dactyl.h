@@ -45,6 +45,7 @@ class mat {
   void make_average_eps();
   void use_pml_left(double dx);
   void use_pml_right(double dx);
+  void use_pml_radial(double dx);
 
   void output_slices(const char *name = "");
   void output_slices(const volume &what, const char *name = "");

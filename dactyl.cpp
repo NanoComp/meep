@@ -516,20 +516,23 @@ void fields::step_h() {
                 ((f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - it(cmp,f[Ez],z+ir)*mor);
           }
       // Propogate Hp
-      if (ma->Cmain[Hp])
+      if (ma->Cmain[Hp] || ma->Cother[Hp])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
             double oorph = 1/(v.origin.r() + r+0.5);
             double morph = m*oorph;
             const int ir = r*(v.nz()+1);
             const int irp1 = (r+1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
-              const double Czhp = ma->Cmain[Hp][z+ir];
+              const double Czhp = (ma->Cmain[Hp])?ma->Cmain[Hp][z+ir]:0;
+              const double Crhp = (ma->Cother[Hp])?ma->Cother[Hp][z+ir]:0;
               const double ooop_Czhp = 1.0/(1.0+0.5*Czhp);
+              const double ooop_Crhp = 1.0/(1.0+0.5*Crhp);
               const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
                                              - Czhp*f_pml[Hp][cmp][z+ir]);
               const double hpr = f[Hp][cmp][z+ir]-f_pml[Hp][cmp][z+ir];
               f_pml[Hp][cmp][z+ir] += dhpz;
-              f[Hp][cmp][z+ir] += dhpz + c*(f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir]);
+              f[Hp][cmp][z+ir] += dhpz +
+                ooop_Czhp*(c*(f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir]) - Crhp*hpr);
             }
           }
       else 
@@ -544,7 +547,25 @@ void fields::step_h() {
                  - (f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir]));
           }
       // Propogate Hz
-      for (int r=rstart_0(v,m);r<v.nr();r++) {
+      if (ma->Cother[Hz])
+        for (int r=rstart_0(v,m);r<v.nr();r++) {
+          double oorph = 1/(v.origin.r() + r+0.5);
+          double morph = m*oorph;
+          const int ir = r*(v.nz()+1);
+          const int irp1 = (r+1)*(v.nz()+1);
+          for (int z=1;z<=v.nz();z++) {
+            const double Crhz = ma->Cother[Hz][z+ir];
+            const double ooop_Crhz = 1.0/(1.0+0.5*Crhz);
+            const double dhzr =
+              ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*(r+1.)-f[Ep][cmp][z+ir]*r)*oorph
+                         - Crhz*f_pml[Hz][cmp][z+ir]);
+            const double hzp = f[Hz][cmp][z+ir] - f_pml[Hz][cmp][z+ir];
+            f_pml[Hz][cmp][z+ir] += dhzr;
+            f[Hz][cmp][z+ir] += dhzr + c*(it(cmp,f[Er],z+ir)*morph);
+          }
+        }
+      else
+        for (int r=rstart_0(v,m);r<v.nr();r++) {
           double oorph = 1/(v.origin.r() + r+0.5);
           double morph = m*oorph;
           const int ir = r*(v.nz()+1);
@@ -603,22 +624,25 @@ void fields::step_e() {
   } else if (v.dim == dcyl) {
     for (int cmp=0;cmp<=1;cmp++) {
       // Propogate Ep
-      if (ma->Cmain[Ep])
+      if (ma->Cmain[Ep] || ma->Cother[Ep])
         for (int r=rstart_1(v,m);r<=v.nr();r++) {
             const double oor = 1.0/(v.origin.r() + r);
             const double mor = m*oor;
             const int ir = r*(v.nz()+1);
             const int irm1 = (r-1)*(v.nz()+1);
             for (int z=1;z<=v.nz();z++) {
-              const double Czep = ma->Cmain[Ep][z+ir];
+              const double Czep = (ma->Cmain[Ep])?ma->Cmain[Ep][z+ir]:0;
+              const double Crep = (ma->Cmain[Er])?ma->Cmain[Er][z+ir]:0;
               const double inveps_plus_Czep = ma->inveps[Ep][z+ir]/
                 (1+.5*ma->inveps[Ep][z+ir]*Czep);
+              const double inveps_plus_Crep = ma->inveps[Ep][z+ir]/
+                (1+.5*ma->inveps[Ep][z+ir]*Crep);
               const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
                                                     - Czep*f_pml[Ep][cmp][z+ir]);
               const double epr = f[Ep][cmp][z+ir] - f_pml[Ep][cmp][z+ir];
               f_pml[Ep][cmp][z+ir] += depz;
               f[Ep][cmp][z+ir] += depz +
-                c*ma->inveps[Ep][z+ir]*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
+                inveps_plus_Crep*(c*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1])) - Crep*epr);
             }
           }
       else
@@ -633,7 +657,28 @@ void fields::step_e() {
                  - (f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1]));
           }
       // Propogate Ez
-      for (int r=rstart_1(v,m);r<=v.nr();r++) {
+      if (ma->Cother[Ez])
+        for (int r=rstart_1(v,m);r<=v.nr();r++) {
+          double oor = 1.0/(v.origin.r() + r);
+          double mor = m*oor;
+          const int ir = r*(v.nz()+1);
+          const int irm1 = (r-1)*(v.nz()+1);
+          for (int z=0;z<v.nz();z++) {
+            const double Crez = ma->Cother[Ez][z+ir];
+            const double inveps_plus_Crez = ma->inveps[Ez][z+ir]/
+              (1+.5*ma->inveps[Ez][z+ir]*Crez);
+
+            const double dezr = inveps_plus_Crez*
+              (c*(f[Hp][cmp][z+ir]*(r+0.5)-f[Hp][cmp][z+irm1]*(r-0.5))*oor
+               - Crez*f_pml[Ez][cmp][z+ir]);
+            const double ezp = f[Ez][cmp][z+ir]-f_pml[Ez][cmp][z+ir];
+            f_pml[Ez][cmp][z+ir] += dezr;
+            f[Ez][cmp][z+ir] += dezr +
+              c*ma->inveps[Ez][z+ir]*(-it(cmp,f[Hr],z+ir)*mor);
+          }
+        }
+      else
+        for (int r=rstart_1(v,m);r<=v.nr();r++) {
           double oor = 1.0/(v.origin.r() + r);
           double mor = m*oor;
           const int ir = r*(v.nz()+1);
