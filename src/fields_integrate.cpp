@@ -184,7 +184,7 @@ void fields::integrate(field_integrand integrand, void *integrand_data,
 	// Chunk integration boundaries:
 	geometric_volume gvS = S.transform(chunks[i]->gv, sn);
 	ivec iscS(max(is-shifti, vec2diel_ceil(gvS.get_min_corner(),
-					       v.a, one_ivec(v.dim))));
+					       v.a, one_ivec(v.dim) * 2)));
 	ivec iecS(min(ie-shifti, vec2diel_floor(gvS.get_max_corner(),
 						v.a, zero_ivec(v.dim))));
 	if (iscS <= iecS) {
