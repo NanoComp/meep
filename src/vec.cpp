@@ -435,16 +435,17 @@ int volume::index(component c, const ivec &p) const {
 }
 
 void volume::set_strides() {
-  for (int d=0;d<5;d++) the_stride[d] = 1; // Yuck yuck yuck.
+  for (int d=0;d<5;d++) the_stride0[d] = 0; // Yuck yuck yuck.
   LOOP_OVER_DIRECTIONS(dim,d)
     switch(d) {
-    case Z: the_stride[d] = 1; break;
-    case R: the_stride[d] = nz()+1; break;
-    case X: the_stride[d] = (nz()+1)*(ny() + 1); break;
-    case Y: the_stride[d] = nz() + 1; break;
+    case Z: the_stride0[d] = 1; break;
+    case R: the_stride0[d] = nz()+1; break;
+    case X: the_stride0[d] = (nz()+1)*(ny() + 1); break;
+    case Y: the_stride0[d] = nz() + 1; break;
     case P: break; // There is no phi stride...
     case NO_DIRECTION: break; // no stride here, either
     }
+  for (int d=0;d<5;d++) the_stride[d] = the_stride0[d] ? the_stride0[d] : 1;
 }
 
 static inline void stupidsort(int *ind, double *w, int l) {

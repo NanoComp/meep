@@ -92,9 +92,9 @@ inline direction stop_at_direction(ndim dim) {
            loop_d1 = (v).yucky_direction(0), \
            loop_d2 = (v).yucky_direction(1), \
            loop_d3 = (v).yucky_direction(2), \
-           loop_s1 = (v).stride((direction) loop_d1), \
-           loop_s2 = (v).stride((direction) loop_d2), \
-           loop_s3 = (v).stride((direction) loop_d3), \
+           loop_s1 = (v).stride0((direction) loop_d1), \
+           loop_s2 = (v).stride0((direction) loop_d2), \
+           loop_s3 = (v).stride0((direction) loop_d3), \
            idx0 = (is - (v).little_corner()).yucky_val(0) / 2 * loop_s1 \
                 + (is - (v).little_corner()).yucky_val(1) / 2 * loop_s2 \
                 + (is - (v).little_corner()).yucky_val(2) / 2 * loop_s3,\
@@ -118,9 +118,10 @@ inline direction stop_at_direction(ndim dim) {
 	loop_ibound++) \
      LOOP_OVER_IVECS(v, loop_notowned_is, loop_notowned_ie, idx)
 
-#define IVEC_LOOP_AT_BOUNDARY (loop_i1 == 0 || loop_i1 == loop_n1-1 || \
-                               loop_i2 == 0 || loop_i2 == loop_n2-1 || \
-                               loop_i3 == 0 || loop_i3 == loop_n3-1)
+#define IVEC_LOOP_AT_BOUNDARY 					\
+ ((loop_s1 != 0 && (loop_i1 == 0 || loop_i1 == loop_n1-1)) ||	\
+  (loop_s2 != 0 && (loop_i2 == 0 || loop_i2 == loop_n2-1)) ||	\
+  (loop_s3 != 0 && (loop_i3 == 0 || loop_i3 == loop_n3-1)))
 
 #define IVEC_LOOP_ILOC(v, iloc) \
   ivec iloc((v).dim); \
@@ -488,6 +489,7 @@ class volume {
 
   void print() const;
   int stride(direction d) const { return the_stride[d]; };
+  int stride0(direction d) const { return the_stride0[d]; };
   int num_direction(direction d) const {
     return num[((int) d) % 3];
   };
@@ -613,7 +615,7 @@ class volume {
   void set_strides();
   void num_changed() { update_ntot(); set_strides(); }
   int num[3];
-  int the_stride[5];
+  int the_stride0[5], the_stride[5];
   int the_ntot;
 };
 
