@@ -392,7 +392,7 @@ void fields::add_indexed_source(component whichf, double freq, double width,
   tmp->amp_shift = 0.0;
   tmp->is_real = 0;
   tmp->is_continuous = is_c;
-  if (whichf == Hz || whichf == Hr || whichf == Hp) {
+  if (is_magnetic(whichf)) {
     tmp->next = h_sources;
     h_sources = tmp;
   } else {
