@@ -313,4 +313,107 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
   return add_flux_plane(geometric_volume(p1, p2));
 }
 
+/************************************************************************/
+
+struct max_integrand_data {
+  component c1[3], c2[3]; // field components to take dot product of
+  double max;
+};
+
+static void max_integrand(fields_chunk *fc, component cgrid,
+			  ivec is, ivec ie,
+			  vec s0, vec s1, vec e0, vec e1,
+			  double dV0, double dV1,
+			  ivec shift, complex<double> shift_phase,
+			  const symmetry &S, int sn,
+			  void *data_) {
+  max_integrand_data *data = (max_integrand_data *) data_;
+
+  (void) shift; // unused
+  (void) shift_phase; // unused
+  (void) cgrid; // == Dielectric
+  (void) s0;
+  (void) s1;
+  (void) e0;
+  (void) e1;
+  (void) dV0;
+  (void) dV1;
+  (void) S;
+  (void) sn;
+
+  // We're taking the maximum of E * D*, and we assume that
+  // S.phase_shift(E,sn) == S.phase_shift(D,sn), so the phases all cancel
+
+
+  // offsets to average E and D components onto the Dielectric grid
+  // (assume c1 and c2 are stored at the same grid point, so have same offset)
+  int oA[3], oB[3];
+  for (int i = 0; i < 3; ++i)
+    fc->v.yee2diel_offsets(data->c1[i], oA[i], oB[i]);
+
+  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+    double dot = 0.0;
+    for (int i = 0; i < 3; ++i) {
+      for (int cmp = 0; cmp < 2; ++cmp) {
+	component c1i, c2i;
+	if (fc->f[c1i = data->c1[i]][cmp] && fc->f[c2i = data->c2[i]][cmp]) {
+	  if (oB[i]) // average over 4 points:
+	    dot += 0.0625 *
+	      (fc->f[c1i][cmp][idx] +
+	       fc->f[c1i][cmp][idx + oA[i]] +
+	       fc->f[c1i][cmp][idx + oB[i]] +
+	       fc->f[c1i][cmp][idx + oA[i] + oB[i]]) *
+	      (fc->f[c2i][cmp][idx] +
+	       fc->f[c2i][cmp][idx + oA[i]] +
+	       fc->f[c2i][cmp][idx + oB[i]] +
+	       fc->f[c2i][cmp][idx + oA[i] + oB[i]]);
+	  else if (oA[i]) // average over 2 points:
+	    dot += 0.25 *
+	      (fc->f[c1i][cmp][idx] + fc->f[c1i][cmp][idx + oA[i]]) *
+	      (fc->f[c2i][cmp][idx] + fc->f[c2i][cmp][idx + oA[i]]);
+	  else // no average
+	    dot += fc->f[c1i][cmp][idx] * fc->f[c2i][cmp][idx];
+	}
+      }
+    }
+    if (dot > data->max)
+      data->max = dot;
+  }
+
+
+}
+
+double fields::electric_energy_max_in_box(const geometric_volume &where) {
+  max_integrand_data data;
+
+  if (v.dim == Dcyl) {
+    data.c1[0] = Er;
+    data.c1[1] = Ep;
+    data.c1[2] = Ez;
+    data.c2[0] = Dr;
+    data.c2[1] = Dp;
+    data.c2[2] = Dz;
+  }
+  else {
+    data.c1[0] = Ex;
+    data.c1[1] = Ey;
+    data.c1[2] = Ez;
+    data.c2[0] = Dx;
+    data.c2[1] = Dy;
+    data.c2[2] = Dz;
+  }
+
+  data.max = 0.0;
+  integrate(max_integrand, (void *) &data, where, Dielectric);
+  return max_to_all(data.max) / (8*pi);
+}
+
+/* "modal" volume according to definition in:
+      E. M. Purcell, Phys. Rev. B 69, 681 (1946).
+    (based on spontaneous emission enhancement). */
+double fields::modal_volume_in_box(const geometric_volume &where) {
+  return electric_energy_in_box(where) / electric_energy_max_in_box(where);
+}
+
 } // namespace meep
+
