@@ -736,45 +736,28 @@ class fields {
 		   bool append_data = false,
 		   bool single_precision = false);
   // higher-level functions
-  void output_hdf5(h5file *file, const char *dataname,
-		   int num_fields, const component *components,
-		   field_rfunction fun,
-		   const geometric_volume &where,
-		   void *fun_data_ = 0,
-		   bool append_data = false,
-		   bool single_precision = false);
-  void output_hdf5(h5file *file, const char *dataname,
-		   component c, int reim,
-		   const geometric_volume &where,
-		   bool append_data = false,
-		   bool single_precision = false);
-  void output_hdf5(h5file *file, const char *dataname,
+  void output_hdf5(const char *dataname,  // OUTPUT COMPLEX-VALUED FUNCTION
 		   int num_fields, const component *components,
 		   field_function fun,
 		   const geometric_volume &where,
 		   void *fun_data_ = 0,
+		   h5file *file = 0,
 		   bool append_data = false,
-		   bool single_precision = false);
-  void output_hdf5(h5file *file, component c,
-		   const geometric_volume &where,
-		   bool append_data = false,
-		   bool single_precision = false);
-  void output_hdf5(const char *dataname,
-		   int num_fields, const component *components,
-		   field_function fun,
-		   const geometric_volume &where,
-		   void *fun_data_ = 0,
 		   bool single_precision = false,
 		   const char *prefix = 0);
-  void output_hdf5(const char *dataname,
+  void output_hdf5(const char *dataname,  // OUTPUT REAL-VALUED FUNCTION
 		   int num_fields, const component *components,
 		   field_rfunction fun,
 		   const geometric_volume &where,
 		   void *fun_data_ = 0,
+		   h5file *file = 0,
+		   bool append_data = false,
 		   bool single_precision = false,
 		   const char *prefix = 0);
-  void output_hdf5(component c,
+  void output_hdf5(component c,   // OUTPUT FIELD COMPONENT (or Dielectric)
 		   const geometric_volume &where,
+		   h5file *file = 0,
+		   bool append_data = false,
 		   bool single_precision = false,
 		   const char *prefix = 0);
   h5file *open_h5file(const char *name, 

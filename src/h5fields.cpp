@@ -274,6 +274,37 @@ void fields::output_hdf5(h5file *file, const char *dataname,
 
 /***************************************************************************/
 
+void fields::output_hdf5(const char *dataname,
+                         int num_fields, const component *components,
+                         field_function fun,
+                         const geometric_volume &where,
+                         void *fun_data_,
+			 h5file *file,
+                         bool append_data,
+                         bool single_precision,
+			 const char *prefix)
+{
+  bool delete_file;
+  if ((delete_file = !file))
+    file = open_h5file(dataname, h5file::WRITE, prefix, true);
+
+  int len = strlen(dataname) + 5;
+  char *dataname2;
+
+  dataname2 = new char[len];
+  snprintf(dataname2, len, "%s%s", dataname, ".r");
+  output_hdf5(file, dataname, num_fields, components, fun, 0, where,
+              fun_data_, append_data, single_precision);
+  snprintf(dataname2, len, "%s%s", dataname, ".i");
+  output_hdf5(file, dataname, num_fields, components, fun, 1, where,
+              fun_data_, append_data, single_precision);
+  delete[] dataname2;
+
+  if (delete_file) delete file;
+}
+
+/***************************************************************************/
+
 typedef struct {
   field_rfunction fun;
   void *fun_data_;
@@ -287,17 +318,25 @@ static complex<double> rintegrand_fun(const complex<double> *fields,
   return data->fun(fields, loc, data->fun_data_);
 }
 
-void fields::output_hdf5(h5file *file, const char *dataname,
+void fields::output_hdf5(const char *dataname,
                          int num_fields, const component *components,
                          field_rfunction fun,
                          const geometric_volume &where,
                          void *fun_data_,
+			 h5file *file,
                          bool append_data,
-                         bool single_precision)
+                         bool single_precision,
+			 const char *prefix)
 {
+  bool delete_file;
+  if ((delete_file = !file))
+    file = open_h5file(dataname, h5file::WRITE, prefix, true);
+
   rintegrand_data data; data.fun = fun; data.fun_data_ = fun_data_;
   output_hdf5(file, dataname, num_fields, components, rintegrand_fun, 0, where,
 	      (void *) &data, append_data, single_precision);
+
+  if (delete_file) delete file;
 }
 
 /***************************************************************************/
@@ -311,88 +350,29 @@ static complex<double> component_fun(const complex<double> *fields,
      return fields[0];
 }
 
-void fields::output_hdf5(h5file *file, const char *dataname,
-			 component c, int reim,
+void fields::output_hdf5(component c,
 			 const geometric_volume &where,
+			 h5file *file,
 			 bool append_data,
-                         bool single_precision) {
-     output_hdf5(file, dataname, 1, &c, component_fun, reim, where, 0,
-		 append_data, single_precision);
-}
-
-/***************************************************************************/
-
-void fields::output_hdf5(h5file *file, const char *dataname,
-                         int num_fields, const component *components,
-                         field_function fun,
-                         const geometric_volume &where,
-                         void *fun_data_,
-                         bool append_data,
-                         bool single_precision)
-{
-  int len = strlen(dataname) + 5;
-  char *dataname2;
-
-  dataname2 = new char[len];
-  snprintf(dataname2, len, "%s%s", dataname, ".r");
-  output_hdf5(file, dataname, num_fields, components, fun, 0, where,
-              fun_data_, append_data, single_precision);
-  snprintf(dataname2, len, "%s%s", dataname, ".i");
-  output_hdf5(file, dataname, num_fields, components, fun, 1, where,
-              fun_data_, append_data, single_precision);
-  delete[] dataname2;
-}
-
-void fields::output_hdf5(h5file *file, component c,
-			 const geometric_volume &where,
-			 bool append_data,
-                         bool single_precision) {
+                         bool single_precision,
+			 const char *prefix) {
   char dataname[256];
   bool has_imag = !is_real && c != Dielectric;
 
+  bool delete_file;
+  if ((delete_file = !file))
+    file = open_h5file(component_name(c), h5file::WRITE, prefix, true);
+
   snprintf(dataname, 256, "%s%s", component_name(c), has_imag ? ".r" : "");
-  output_hdf5(file, dataname, c, 0, where, append_data, single_precision);
+  output_hdf5(file, dataname, 1, &c, component_fun, 0, where, 0,
+	      append_data, single_precision);
   if (has_imag) {
     snprintf(dataname, 256, "%s.i", component_name(c));
-    output_hdf5(file, dataname, c, 1, where, append_data,single_precision);
+    output_hdf5(file, dataname, 1, &c, component_fun, 1, where, 0,
+		append_data, single_precision);
   }
-}
 
-/***************************************************************************/
-
-void fields::output_hdf5(const char *dataname,
-			 int num_fields, const component *components,
-                         field_function fun,
-			 const geometric_volume &where,
-			 void *fun_data_,
-			 bool single_precision, 
-			 const char *prefix) {
-  h5file *file = open_h5file(dataname, h5file::WRITE, prefix, true);
-  output_hdf5(file, dataname, num_fields, components, fun, where, fun_data_,
-	      false, single_precision);
-  delete file;
-}
-
-void fields::output_hdf5(const char *dataname,
-			 int num_fields, const component *components,
-                         field_rfunction fun,
-			 const geometric_volume &where,
-			 void *fun_data_,
-			 bool single_precision, 
-			 const char *prefix) {
-  h5file *file = open_h5file(dataname, h5file::WRITE, prefix, true);
-  output_hdf5(file, dataname, num_fields, components, fun, where, fun_data_,
-	      false, single_precision);
-  delete file;
-}
-
-void fields::output_hdf5(component c,
-			 const geometric_volume &where,
-			 bool single_precision, 
-			 const char *prefix) {
-  h5file *file = open_h5file(component_name(c), h5file::WRITE, prefix, true);
-  output_hdf5(file, c, where, false, single_precision);
-  delete file;
+  if (delete_file) delete file;
 }
 
 /***************************************************************************/

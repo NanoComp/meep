@@ -94,7 +94,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     f.step();
 
   h5file *file = f.open_h5file(name);
-  f.output_hdf5(file, file_c, file_gv, false, false);
+  f.output_hdf5(file_c, file_gv, file);
 
   file->write("stringtest", "Hello, world!\n");
 
@@ -207,7 +207,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     f.step();
 
   h5file *file = f.open_h5file(name);
-  f.output_hdf5(file, file_c, file_gv, false, false);
+  f.output_hdf5(file_c, file_gv, file);
 
   file->write("stringtest", "Hello, world!\n");
 
@@ -331,7 +331,7 @@ bool check_2d_monitor(double eps(const vec &),
   int NT = int(T / f.dt) + 2;
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
-    f.output_hdf5(file, file_c, geometric_volume(pt, pt), true, false);
+    f.output_hdf5(file_c, geometric_volume(pt, pt), file, true);
     mon[f.t] = f.get_field(file_c, pt0);
     f.step();
   }
