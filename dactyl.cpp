@@ -247,15 +247,8 @@ void fields::use_real_fields() {
     exit(1);
   }
   is_real = 1;
-  if (e_sources) e_sources->use_real_sources();
-  if (h_sources) h_sources->use_real_sources();
   if (pol) pol->use_real_fields();
   if (olpol) olpol->use_real_fields();
-}
-
-void src::use_real_sources() {
-  is_real = 1;
-  if (next) next->use_real_sources();
 }
 
 int fields::phase_in_material(const mat *newma, double time) {
@@ -275,8 +268,7 @@ complex<double> src::get_amplitude_at_time(int t) const {
   if (envelope == 0.0)
     return 0.0;
   double tt = t - peaktime;
-  if (is_real) return real( (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope );
-  else return (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope;
+  return (polar(1.0,-2*pi*freq*tt) - amp_shift)*envelope;
 }
 
 double src::get_envelope_at_time(int t) const {
@@ -404,7 +396,6 @@ void fields::add_indexed_source(component whichf, double freq, double width,
   tmp->A[whichf] = amp;
   tmp->i = theindex;
   tmp->amp_shift = 0.0;
-  tmp->is_real = 0;
   tmp->is_continuous = is_c;
   if (is_magnetic(whichf)) {
     tmp->next = h_sources;
@@ -860,7 +851,7 @@ void fields::step_h_source(const src *s) {
   for (int c=0;c<10;c++)
     if (v.has_field((component)c) && is_magnetic((component)c)) {
       f[c][0][s->i] += imag(A*s->A[c]);
-      f[c][1][s->i] += real(A*s->A[c]);
+      if (!is_real) f[c][1][s->i] += real(A*s->A[c]);
     }
   step_h_source(s->next);
 }
@@ -875,7 +866,7 @@ void fields::step_e_source(const src *s) {
   for (int c=0;c<10;c++)
     if (v.has_field((component)c) && is_electric((component)c)) {
       f[c][0][s->i] += imag(A*s->A[c]);
-      f[c][1][s->i] += real(A*s->A[c]);
+      if (!is_real) f[c][1][s->i] += real(A*s->A[c]);
     }
   step_e_source(s->next);
 }
