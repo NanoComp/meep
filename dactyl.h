@@ -148,6 +148,7 @@ class fields {
   void eps_slices(const volume &what, const char *name = "");
   void output_real_imaginary_slices(const volume &what, const char *name = "");
   void step();
+  void step_right();
   inline double time() { return t*inva*c; };
 
   void use_real_sources();
@@ -190,9 +191,11 @@ class fields {
   int verbosity; // Turn on verbosity for debugging purposes...
   void phase_material();
   void step_h();
+  void step_h_right();
   void step_h_boundaries();
   void step_h_source(const src *);
   void step_e();
+  void step_e_right();
   void step_e_boundaries();
   void step_polarization_itself(polarization *old = NULL, polarization *newp = NULL);
   void step_e_polarization(polarization *old = NULL, polarization *newp = NULL);
