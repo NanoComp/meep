@@ -628,6 +628,61 @@ void fields::eps_energy_slice(const polarizability_identifier &p,
   finished_working();
 }
 
+void fields::eps_envelope(const char *name) {
+  if (v.dim != D1) abort("Envelope only supported in 1D so far.\n");
+  if (v.dim == D3) abort("Specify directions for EPS slices in 3D\n");
+  geometric_volume what = user_volume.surroundings();
+  if (v.dim == Dcyl) what.set_direction_min(R,-what.in_direction_max(R));
+  eps_envelope(what,name);
+}
+
+void fields::eps_envelope(const geometric_volume &what, const char *name) {
+  am_now_working_on(Slicing);
+  const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
+  char *n = (char *)malloc(buflen);
+  if (!n) abort("Allocation failure!\n");
+  char time_step_string[buflen];
+  snprintf(time_step_string, buflen, "%09.2f", time());
+  FOR_COMPONENTS(c)
+    if (v.has_field(c)) {
+      snprintf(n, buflen, "%s/%s%s-%s.eps", outdir, nname,
+               component_name((component)c), time_step_string);
+      const double fmax = maxfieldmag_to_master(c);
+      file *out = everyone_open_write(n);
+      if (!out) {
+        printf("Unable to open file '%s' for slice output.\n", n);
+        return;
+      }
+      if (am_master())
+        output_complex_eps_header(c, fmax,
+                                  user_volume, what,
+                                  out, n, v.eps_component());
+      for (double z = 0.0 + inva; z < user_volume.ntot(); z += inva)
+        if (real(get_field(c, vec(z))) > real(get_field(c, vec(z)-inva)) &&
+            real(get_field(c, vec(z))) > real(get_field(c, vec(z)+inva)) &&
+            real(get_field(c, vec(z))) > 0.0)
+          master_fprintf(out, "%lg\t0\t%lg\tP\n", z, real(get_field(c, vec(z))));
+      all_wait();
+      for (int i=0;i<num_chunks;i++)
+        if (chunks[i]->is_mine())
+          for (int sn=0;sn<S.multiplicity();sn++)
+            FOR_COMPONENTS(otherc)
+              if (S.transform(otherc,sn) == c)
+                eps_outline(v.eps_component(), chunks[i]->ma->eps,
+                            chunks[i]->v, what, S, sn, out);
+      all_wait();
+      outline_chunks(out);
+      all_wait();
+      if (am_master()) output_complex_eps_tail(out);
+      everyone_close(out);
+    }
+  free(n);
+  finished_working();
+}
+
 void fields::eps_slices(const char *name) {
   if (v.dim == D3) abort("Specify directions for EPS slices in 3D\n");
   geometric_volume what = user_volume.surroundings();

@@ -335,6 +335,8 @@ class fields {
   // slices.cpp methods:
   void output_slices(const char *name = "");
   void output_slices(const geometric_volume &what, const char *name = "");
+  void eps_envelope(const char *name = "");
+  void eps_envelope(const geometric_volume &what, const char *name = "");
   void eps_slices(const char *name = "");
   void eps_slices(const vec &origin, const vec &xside, const vec &yside,
                   const double dx = 0.05, const char *name = "");
