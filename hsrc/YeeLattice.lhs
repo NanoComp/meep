@@ -118,23 +118,28 @@ mean_component e = with_symmetry domean
                                                   e "ec_2" "i-s_2+s_ec")))
 
 sum_over_components :: (String -> String -> Expression) -> Expression
-sum_over_components e = with_symmetry sumit
-    where sumit "1D" = e "ec" "i"
-          sumit "2DTM" = e "ec" "i"
-          sumit "2DTE" = e "ec" "i" |+|
-              "0.25"|*|(e "ec_1" "i" |+|
-                        e "ec_1" "i-s_1" |+|
-                        e "ec_1" "i+s_ec" |+|
-                        e "ec_1" "i-s_1+s_ec")
-          sumit _ =  e "ec" "i" |+|
-              "0.25"|*|(e "ec_1" "i" |+|
-                        e "ec_1" "i-s_1" |+|
-                        e "ec_1" "i+s_ec" |+|
-                        e "ec_1" "i-s_1+s_ec") |+|
-              "0.25"|*|(e "ec_2" "i" |+|
-                        e "ec_2" "i-s_2" |+|
-                        e "ec_2" "i+s_ec" |+|
-                        e "ec_2" "i-s_2+s_ec")
+sum_over_components = sum_over_gen_component "ec"
+
+sum_over_gen_component :: String -> (String -> String -> Expression) -> Expression
+sum_over_gen_component c e = with_symmetry sumit
+    where sumit "1D" = e c "i"
+          sumit "2DTM" = e c "i"
+          sumit "2DTE" = e c "i" |+|
+              "0.25"|*|(e c_1 "i" |+|
+                        e c_1 "i-s_1" |+|
+                        e c_1 "i+s_ec" |+|
+                        e c_1 "i-s_1+s_ec")
+          sumit _ =  e c "i" |+|
+              "0.25"|*|(e c_1 "i" |+|
+                        e c_1 "i-s_1" |+|
+                        e c_1 "i+s_ec" |+|
+                        e c_1 "i-s_1+s_ec") |+|
+              "0.25"|*|(e c_2 "i" |+|
+                        e c_2 "i-s_2" |+|
+                        e c_2 "i+s_ec" |+|
+                        e c_2 "i-s_2+s_ec")
+          c_1 = c ++ "_1"
+          c_2 = c ++ "_2"
 
 sum_over_components_with_prefactor :: (String -> Expression)
                                    -> (String -> String -> Expression) -> Expression
