@@ -41,7 +41,7 @@ dactyl.dvi : $(TEXFILES)
 
 polaritonbands.eps : polaritonbands-out/bands
 	../plot polaritonbands-out/bands band && \
-	mv polaritonbands-out/bands.ps polaritonbands.eps
+	mv polaritonbands-out/bands.eps polaritonbands.eps
 
 polaritonbands-out/bands : preproc polaritonbands.dac
 	rm -rf polaritonbands-out/ && ./polaritonbands.dac

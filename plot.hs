@@ -18,7 +18,7 @@ main = do
   (fname:bname:rest) <- getArgs;
   bls <- liftM (parse_band_file bname) (readFile fname)
   writeFile (fname++".xmgr") $ write_bands bls
-  system $ "gracebat -printfile "++fname++".ps -hardcopy "++fname++".xmgr"
+  system $ "gracebat -hdevice EPS -printfile "++fname++".eps -hardcopy "++fname++".xmgr"
   exitWith ExitSuccess
 
 newtype WaveVector = K Double
