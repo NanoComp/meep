@@ -337,6 +337,8 @@ class fields {
   flux_plane *add_flux_plane(const vec &, const vec &);
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
+  // field.cpp
+  bool have_component(component);
   // boundaries.cpp
   void disconnect_chunks();
   void connect_chunks();

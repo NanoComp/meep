@@ -74,6 +74,14 @@ void fields::use_real_fields() {
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
 }
 
+bool fields::have_component(component c) {
+  if (v.dim != d2) return v.has_field(c);
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      return chunks[i]->f[c][0] != NULL;
+  return false;
+}
+
 fields_chunk::~fields_chunk() {
   delete ma;
   is_real = 0; // So that we can make sure to delete everything...
