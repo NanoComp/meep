@@ -110,4 +110,9 @@ class bandsdata {
                      double *freqs, double *decays);
   int get_freqs(complex<double> *data, int n,
                 complex<double> *amps, double *freqs, double *decays);
+  int look_for_more_bands(complex<double> *simple_data,
+                          double *reff, double *refd,
+                          complex<double> *refa,
+                          complex<double> *refdata,
+                          int numref);
 };

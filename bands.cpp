@@ -356,6 +356,130 @@ void fields::out_bands(FILE *o, const char *name, int maxbands, int and_modes) {
   delete[] fad;
 }
 
+int bandsdata::look_for_more_bands(complex<double> *simple_data,
+                                   double *reff, double *refd,
+                                   complex<double> *refa,
+                                   complex<double> *refdata,
+                                   int numref) {
+  if (numref == 0) { // Have no reference bands so far...
+    numref = get_freqs(simple_data, ntime, refa, reff, refd);
+    for (int n=0;n<numref;n++) {
+      //printf("Here's a mode (%10lg,%10lg) (%10lg,%10lg) -- %d (%d.%d)\n",
+      //       reff[n], refd[n], real(refa[n]),imag(refa[n]), n, r, whichf);
+      for (int t=0;t<ntime;t++)
+        refdata[t+n*ntime] = simple_data[t];
+    }
+  } else {
+    double *tf = new double[maxbands];
+    double *heref = new double[maxbands];
+    double *td = new double[maxbands];
+    double *hered = new double[maxbands];
+    cmplx *ta = new cmplx[maxbands];
+    cmplx *herea = new cmplx[maxbands];
+    for (int n=0;n<numref;n++) {
+      int num_match = get_both_freqs(refdata+n*ntime,simple_data,ntime,
+                                     ta, herea, tf, td);
+      //printf("See %d modes at (%d.%d)\n", num_match, r, whichf);
+      int best_match=-1;
+      double err_best = 1e300;
+      for (int i=0;i<num_match;i++) {
+        double errf = (abs(tf[i]-reff[n])+0.1*abs(td[i]-refd[n]))/abs(reff[n]);
+        double erra = abs(ta[i]-refa[n])/abs(refa[n]);
+        double err = sqrt(errf*errf + erra*erra);
+        if (err > 10*errf) err = 10*errf;
+        if (err < err_best) {
+          best_match = i;
+          err_best = err;
+        }
+      }
+      //printf("Setting amp to %lg (vs %lg)\n",
+      //       abs(herea[best_match]), abs(ta[best_match]));
+      if (err_best > 0.02 && err_best < 1e299) {
+        /*printf("OOOOOOOOO\n");
+          printf("---------\n");
+          if (err_best > 0.02) {
+          printf("Didn't find a nice frequency! (%lg) (%d.%d) vs (%d.%d)\n",
+          err_best, r, whichf, refr[n], refw[n]);
+          } else {
+          printf("Found a nice frequency! (%lg) (%d.%d) vs (%d.%d)\n",
+          err_best, r, whichf, refr[n], refw[n]);
+          }
+          printf("Ref %d: %10lg %10lg\t(%10lg ,%10lg)\n",
+          n, reff[n], refd[n], refa[n]);
+          for (int i=0;i<num_match;i++) {
+          printf("%5d: %10lg %10lg\t(%10lg ,%10lg)\n",
+          i, tf[i], td[i], ta[i]);
+          } 
+          printf("---------\n");
+          printf("OOOOOOOOO\n");*/
+      } else if (err_best < 0.02) {
+        if (abs(herea[best_match]) > abs(refa[n])) { // Change reference...
+          //printf("Changing reference %d to (%d.%d)\n", n, r, whichf);
+          //printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
+          //printf("best_err is %lg\n", err_best);
+          //printf("amp (%lg,%lg) (%lg,%lg)\n", 
+          //       real(refa[n]),imag(refa[n]),
+          //       real(ta[best_match]), imag(ta[best_match]));
+          reff[n] = tf[best_match];
+          refd[n] = td[best_match];
+          refa[n] = herea[best_match];
+          for (int t=0;t<ntime;t++)
+            refdata[t+n*ntime] = simple_data[t];
+        }
+      }
+    }
+    int num_here = get_freqs(simple_data, ntime, herea, heref, hered);
+    if (num_here > numref || 1) {
+      // It looks like we see a new mode at this point...
+      int *refnum = new int[maxbands];
+      for (int i=0;i<num_here;i++) refnum[i] = -1;
+      for (int n=0;n<numref;n++) {
+        int best_match=-1;
+        double err_best = 1e300;
+        for (int i=0;i<num_here;i++) {
+          double err =
+            (abs(heref[i]-reff[n])+0.1*abs(hered[i]-refd[n]))/abs(reff[n]);
+          //printf("heref[%d] %lg vs reff[%d] %lg gives %lg %lg -- %lg\n",
+          //       i, heref[i], n, reff[n], errf, erra, abs(mya));
+          if (err < err_best && refnum[i] == -1) {
+            best_match = i;
+            err_best = err;
+          }
+        }
+        if (err_best < 0.025) {
+          refnum[best_match] = n;
+          //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
+          //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
+        } else if (err_best < 1e299) {
+          //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
+          //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
+        }
+      }
+      for (int i=0;i<num_here;i++) {
+        if (refnum[i] == -1) { // New mode!!! Change reference...
+          reff[numref] = heref[i];
+          refd[numref] = hered[i];
+          //printf("Found one more mode! (%10lg,%10lg) -- %d (%d.%d)\n",
+          //       heref[i], refd[numref], numref, r, whichf);
+          refa[numref] = herea[i];
+          for (int t=0;t<ntime;t++) 
+            refdata[t+numref*ntime] = simple_data[t];
+          numref++;
+          if (numref > maxbands-2) numref = maxbands-2;
+        }
+      }
+      delete[] refnum;
+    }
+    delete[] ta;
+    delete[] tf;
+    delete[] td;
+    delete[] herea;
+    delete[] heref;
+    delete[] hered;
+  }
+  return numref;
+}
+
 complex<double> *fields::get_the_bands(int maxbands) {
   bands->maxbands = maxbands;
   double *tf = new double[maxbands];
@@ -397,132 +521,10 @@ complex<double> *fields::get_the_bands(int maxbands) {
       case 4: bdata = bands->hp; break;
       case 5: bdata = bands->hz; break;
       }
-      int not_empty = 0;
       for (int t=0;t<ntime;t++) {
         simple_data[t] = BAND(bdata,r,t);
-        if (simple_data[t] != 0.0) not_empty = 1;
       }
-      if (not_empty) {
-        if (numref == 0) { // Have no reference bands so far...
-          numref = bands->get_freqs(simple_data, ntime, refa, reff, refd);
-          for (int n=0;n<numref;n++) {
-            HARMOUT(eigen,r,n,whichf) = refa[n];
-            refr[n] = r;
-            refw[n] = whichf;
-            //printf("Here's a mode (%10lg,%10lg) (%10lg,%10lg) -- %d (%d.%d)\n",
-            //       reff[n], refd[n], real(refa[n]),imag(refa[n]), n, r, whichf);
-            for (int t=0;t<ntime;t++)
-              refdata[t+n*ntime] = BAND(bdata,r,t);
-          }
-        } else {
-          for (int n=0;n<numref;n++) {
-            //printf("Comparing with (%d.%d)\n", refr[n], refw[n]);
-            int num_match = bands->get_both_freqs(refdata+n*ntime,simple_data,ntime,
-                                                 ta, herea, tf, td);
-            //printf("See %d modes at (%d.%d)\n", num_match, r, whichf);
-            int best_match=-1;
-            double err_best = 1e300;
-            for (int i=0;i<num_match;i++) {
-              double errf = (abs(tf[i]-reff[n])+0.1*abs(td[i]-refd[n]))/abs(reff[n]);
-              double erra = abs(ta[i]-refa[n])/abs(refa[n]);
-              double err = sqrt(errf*errf + erra*erra);
-              if (err > 10*errf) err = 10*errf;
-              if (err < err_best) {
-                best_match = i;
-                err_best = err;
-              }
-            }
-            //printf("Setting amp to %lg (vs %lg)\n",
-            //       abs(herea[best_match]), abs(ta[best_match]));
-            if (err_best > 0.02 && err_best < 1e299) {
-              /*printf("OOOOOOOOO\n");
-              printf("---------\n");
-              if (err_best > 0.02) {
-                printf("Didn't find a nice frequency! (%lg) (%d.%d) vs (%d.%d)\n",
-                       err_best, r, whichf, refr[n], refw[n]);
-              } else {
-                printf("Found a nice frequency! (%lg) (%d.%d) vs (%d.%d)\n",
-                       err_best, r, whichf, refr[n], refw[n]);
-              }
-              printf("Ref %d: %10lg %10lg\t(%10lg ,%10lg)\n",
-                     n, reff[n], refd[n], refa[n]);
-              for (int i=0;i<num_match;i++) {
-                printf("%5d: %10lg %10lg\t(%10lg ,%10lg)\n",
-                       i, tf[i], td[i], ta[i]);
-              } 
-              printf("---------\n");
-              printf("OOOOOOOOO\n");*/
-            } else if (err_best < 0.02) {
-              HARMOUT(eigen,r,n,whichf) = herea[best_match];
-              if (abs(herea[best_match]) > abs(refa[n])) { // Change reference...
-                //printf("Changing reference %d to (%d.%d)\n", n, r, whichf);
-                //printf("Freq goes from %lg to %lg.\n", reff[n], tf[best_match]);
-                //printf("best_err is %lg\n", err_best);
-                //printf("amp (%lg,%lg) (%lg,%lg)\n", 
-                //       real(refa[n]),imag(refa[n]),
-                //       real(ta[best_match]), imag(ta[best_match]));
-                reff[n] = tf[best_match];
-                refd[n] = td[best_match];
-                refa[n] = herea[best_match];
-                refr[n] = r;
-                refw[n] = whichf;
-                for (int t=0;t<ntime;t++)
-                  refdata[t+n*ntime] = BAND(bdata,r,t);
-              }
-            }
-          }
-          int num_here = bands->get_freqs(simple_data, ntime, herea, heref, hered);
-          if (num_here > numref || 1) {
-            // It looks like we see a new mode at this point...
-            for (int i=0;i<num_here;i++) refnum[i] = -1;
-            for (int n=0;n<numref;n++) {
-              int best_match=-1;
-              double err_best = 1e300;
-              double best_erra;
-              cmplx mya = HARMOUT(eigen,r,n,whichf);
-              for (int i=0;i<num_here;i++) {
-                double errf =
-                  (abs(heref[i]-reff[n])+abs(hered[i]-refd[n]))/abs(reff[n]);
-                double erra = abs(herea[i]-mya)/abs(refa[n]);
-                double err = sqrt(errf*errf + erra*erra);
-                err = errf;
-                if (err > 10*errf) err = 10*errf;
-                //printf("heref[%d] %lg vs reff[%d] %lg gives %lg %lg -- %lg\n",
-                //       i, heref[i], n, reff[n], errf, erra, abs(mya));
-                if (err < err_best && refnum[i] == -1) {
-                  best_match = i;
-                  err_best = err;
-                  best_erra = erra;
-                }
-              }
-              if (err_best < 0.025) {
-                refnum[best_match] = n;
-                //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
-                //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
-              } else if (err_best < 1e299) {
-                //printf("%10lg Got a best err of %8lg (%8lg) on an f of %lg %d (%d.%d)\n",
-                //       heref[best_match], err_best, best_erra, reff[n], n, r, whichf);
-              }
-            }
-            for (int i=0;i<num_here;i++) {
-              if (refnum[i] == -1) { // New mode!!! Change reference...
-                reff[numref] = heref[i];
-                refd[numref] = hered[i];
-                //printf("Found one more mode! (%10lg,%10lg) -- %d (%d.%d)\n",
-                //       heref[i], refd[numref], numref, r, whichf);
-                refa[numref] = herea[i];
-                refa[numref] = HARMOUT(eigen,r,numref,whichf);
-                refr[numref] = r;
-                refw[numref] = whichf;
-                for (int t=0;t<ntime;t++) 
-                  refdata[t+numref*ntime] = BAND(bdata,r,t);
-                numref++;
-                if (numref > maxbands-2) numref = maxbands-2;
-              }
-            }
-          }
-        }
-      }
+      numref = bands->look_for_more_bands(simple_data, reff, refd, refa, refdata, numref);
     }
   }
   delete[] refdata;
