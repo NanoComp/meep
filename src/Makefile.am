@@ -1,5 +1,4 @@
 lib_LTLIBRARIES = libmeep.la
-noinst_PROGRAMS = example
 
 BUILT_SOURCES = step_d.h step_h.h update_e_from_d.h update_from_e.h
 
@@ -14,9 +13,6 @@ sources.cpp step.cpp step_d.cpp step_h.cpp time.cpp			\
 update_e_from_d.cpp update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)
 
 libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
-
-example_SOURCES = example.cpp
-example_LDADD = libmeep.la
 
 # Generate built sources only in maintainer mode
 if MAINTAINER_MODE

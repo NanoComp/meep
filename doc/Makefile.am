@@ -1,3 +1,5 @@
+noinst_PROGRAMS = example
+
 TEX = complicated.tex energy_cons.tex energy_cons_1d.tex epsilon_polariton_1d.tex gpl.tex lossgain_epsilon.tex meep.tex omniguide.tex polaritonbands.tex simple.tex simplebands.tex
 
 EPS = polaritonbands-out/bands.eps epsilon_polariton_1d-out/eps.eps omniguide-out/bands.eps lossgain_epsilon-out/eps.eps energy_cons_1d-out/energy.eps energy_cons-out/energy.eps energy_cons-out/energy.eps simple-out/ez-000200.00.eps
@@ -10,15 +12,14 @@ EXTRA_DIST = html meep.ps $(TEX) preproc.pl
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
-# need a dummy program to trick automake into including C++ compiler stuff
-noinst_PROGRAMS = dummy
-dummy_SOURCES = dummy.cpp
+LIBMEEP = $(top_builddir)/src/libmeep.la
+
+example_SOURCES = example.cpp
+example_LDADD = $(LIBMEEP)
 
 ###########################################################################
 
 SUFFIXES = .dac .tex .dvi .ps .pdf .eps
-
-LIBMEEP = $(top_builddir)/src/libmeep.la
 
 .o.dac: $(LIBMEEP)
 	$(CXXLINK) $< $(LIBMEEP) $(LIBS)
