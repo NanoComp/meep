@@ -417,7 +417,7 @@ void fields::add_src_pt(int r, int z,
     e_sources = tmp;
   }
   tmp->cutoff = 1+ (int)(cutoff*tmp->width);
-  tmp->peaktime = peaktime*a;
+  tmp->peaktime = peaktime*a/c;
   if (peaktime <= 0.0) tmp->peaktime = t+tmp->cutoff;
   // Apply a shift so that we won't end up with a static polarization when
   // the source is gone:
