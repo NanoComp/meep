@@ -478,7 +478,7 @@ void fields::add_plane_source(double freq, double width, double peaktime,
     complex<double> A = amp(r*inva), Ah = amp(rh*inva),
       Ap = amp(rp*inva), Amh = amp(rmh*inva);;
 
-    double eps = MA(ma->eps, r, thez);
+    double eps = sqrt(MA(ma->eps, r, thez));
     if (A != 0.0) {
       // E_phi
       add_src_pt(r, thez, 0.0, A, 0.0, freq, width, peaktime, cutoff, 0);
