@@ -22,12 +22,21 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "dactyl.h"
 
+const char symlink_name[] = "latest_output";
+
 void mat::set_output_directory(const char *name) {
+  char buf[300];
   outdir = name;
   printf("Using output directory %s/\n", name);
+  if (readlink(symlink_name, buf, 300) > 0) {
+    // Link already exists.
+    unlink(symlink_name);
+  }
+  symlink(name, symlink_name);
 }
 
 void fields::set_output_directory(const char *name) {
