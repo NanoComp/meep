@@ -410,13 +410,7 @@ mat_chunk::mat_chunk(const volume &thev, double feps(const vec &), int pr) {
   if (is_mine()) {
     eps = new double[v.ntot()];
     if (eps == NULL) abort("Out of memory!\n");
-    if (v.dim == dcyl) {
-      for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Hp,i));
-    } else if (v.dim == d1) {
-      for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(Ex,i));
-    } else {
-      abort("Unsupported symmetry!\n");
-    }
+    for (int i=0;i<v.ntot();i++) eps[i] = feps(v.loc(v.eps_component(),i));
   } else {
     eps = NULL;
   }
