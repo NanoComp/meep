@@ -102,16 +102,15 @@ void fields::add_point_source(component whichf, double freq,
                               complex<double> amp, int is_c) {
   width /= freq;
 
-  cutoff = c * inva + cutoff * width;
-  
-  if (peaktime <= 0.0)
-    peaktime = time() + cutoff;
-  
-  if (is_c) { /* constant CW source, no slow turn-on (TODO: why not?) */
-    continuous_src_time src(freq, 0.0, -infinity, peaktime + cutoff);
+  if (is_c) { // TODO: don't ignore peaktime?
+    continuous_src_time src(freq, width, time(), infinity, cutoff);
     add_point_source(whichf, src, p, amp);
   }
   else {
+    cutoff = c * inva + cutoff * width;
+    if (peaktime <= 0.0)
+      peaktime = time() + cutoff;
+  
     gaussian_src_time src(freq, width,
 			     peaktime - cutoff, peaktime + cutoff);
     add_point_source(whichf, src, p, amp);
