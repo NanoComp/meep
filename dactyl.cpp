@@ -33,6 +33,7 @@ inline int rmin_bulk(int m) {
 }
 
 fields::~fields() {
+  delete ma;
   DOCMP {
     delete[] hr[cmp];
     delete[] hp[cmp];
@@ -64,6 +65,7 @@ fields::~fields() {
   if (nfreq) delete[] freqs;
   if (bands) delete bands;
   delete pol;
+  delete olpol;
 }
 
 void fields::use_bloch(double tk) {
@@ -83,6 +85,7 @@ fields::fields(const mat *the_ma, int tm) {
   phasein_time = 0;
   new_ma = NULL;
   bands = NULL;
+  freqs = NULL;
   k = -1;
   a = ma->a;
   inva = 1.0/a;
