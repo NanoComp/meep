@@ -39,6 +39,11 @@ namespace meep {
 		     bool single_precision = true);
 
 
+	  char *read(const char *filename, const char *dataname);
+	  void write(const char *filename, const char *dataname,
+		     const char *data,
+		     bool append_file);
+
      } // namespace h5io
 } // namespace meep
 

@@ -1,6 +1,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "meep.h"
 #include "meep_internals.h"
@@ -96,6 +97,11 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
+
+  h5io::write(fname, "stringtest", "Hello, world!\n", true);
+  char *str = h5io::read(fname, "stringtest");
+  if (strcmp(str, "Hello, world!\n"))
+       abort("Failed to read back string test from %s...", fname);
 
   // compute corner coordinate of file data
   double resinv = 1.0 / res;
@@ -201,6 +207,11 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
+
+  h5io::write(fname, "stringtest", "Hello, world!\n", true);
+  char *str = h5io::read(fname, "stringtest");
+  if (strcmp(str, "Hello, world!\n"))
+       abort("Failed to read back string test from %s...", fname);
 
   // compute corner coordinate of file data
   double resinv = 1.0 / res;
@@ -310,6 +321,11 @@ bool check_2d_monitor(double eps(const vec &),
 
   sync(); // flush the filesystem buffers before we read back
   all_wait();
+
+  h5io::write(fname, "stringtest", "Hello, world!\n", true);
+  char *str = h5io::read(fname, "stringtest");
+  if (strcmp(str, "Hello, world!\n"))
+       abort("Failed to read back string test from %s...", fname);
 
   double data_min = infinity, data_max = -infinity;
   double err_max = 0;

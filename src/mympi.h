@@ -46,6 +46,7 @@ inline int am_master() { return my_rank() == 0; }
 
 void send(int from, int to, double *data, int size=1);
 void broadcast(int from, double *data, int size);
+void broadcast(int from, char *data, int size);
 void broadcast(int from, int *data, int size);
 void broadcast(int from, complex<double> *data, int size);
 complex<double> broadcast(int from, complex<double> data);

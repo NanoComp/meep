@@ -90,55 +90,55 @@ double *h5io::read(const char *filename, const char *dataname,
 		   int *rank, int *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
-     double *data;
-     if (am_master()) {
-	  int i, N;
-	  hid_t file_id, space_id, data_id;
-	  
-	  file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	  CHECK(file_id >= 0, "error opening HDF5 input file");
-	  
-	  if (!dataset_exists(file_id, dataname))
-	       return NULL;
-	  
-	  data_id = H5Dopen(file_id, dataname);
-	  space_id = H5Dget_space(data_id);
-	  
-	  *rank = H5Sget_simple_extent_ndims(space_id);
-	  CHECK(*rank <= maxrank, "input array rank is too big");
-	  
-	  hsize_t *dims_copy = new hsize_t[*rank];
-	  hsize_t *maxdims = new hsize_t[*rank];
-	  H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
-	  delete[] maxdims;
-	  for (N = 1, i = 0; i < *rank; ++i)
-	       N *= (dims[i] = dims_copy[i]);
-	  delete[] dims_copy;
-	  H5Sclose(space_id);
-	  
-	  data = new double[N];
-	  H5Dread(data_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-		  (void *) data);
-	  
-	  H5Dclose(data_id);
-	  H5Fclose(file_id);
-     }
-
-     *rank = broadcast(0, *rank);
-     broadcast(0, dims, *rank);
-     int N = 1;
-     for (int i = 0; i < *rank; ++i)
-	  N *= dims[i];
-     if (!am_master())
-	  data = new double[N];
-     broadcast(0, data, N);
-
-     if (N == 1)
-	  *rank = 0;
-
-     return data;
+  double *data;
+  if (am_master()) {
+    int i, N;
+    hid_t file_id, space_id, data_id;
+    
+    file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+    CHECK(file_id >= 0, "error opening HDF5 input file");
+    
+    CHECK(dataset_exists(file_id, dataname),
+	  "missing dataset in HDF5 file");
+    
+    data_id = H5Dopen(file_id, dataname);
+    space_id = H5Dget_space(data_id);
+    
+    *rank = H5Sget_simple_extent_ndims(space_id);
+    CHECK(*rank <= maxrank, "input array rank is too big");
+    
+    hsize_t *dims_copy = new hsize_t[*rank];
+    hsize_t *maxdims = new hsize_t[*rank];
+    H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
+    delete[] maxdims;
+    for (N = 1, i = 0; i < *rank; ++i)
+      N *= (dims[i] = dims_copy[i]);
+    delete[] dims_copy;
+    H5Sclose(space_id);
+    
+    data = new double[N];
+    H5Dread(data_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+	    (void *) data);
+    
+    H5Dclose(data_id);
+    H5Fclose(file_id);
+  }
+  
+  *rank = broadcast(0, *rank);
+  broadcast(0, dims, *rank);
+  int N = 1;
+  for (int i = 0; i < *rank; ++i)
+    N *= dims[i];
+  if (!am_master())
+    data = new double[N];
+  broadcast(0, data, N);
+  
+  if (N == 1)
+    *rank = 0;
+  
+  return data;
 #else
-     return NULL;
+  return NULL;
 #endif
 }
 
@@ -367,6 +367,88 @@ void h5io::write(const char *filename, const char *dataname,
 		      single_precision);
     delete[] start;
   }
+}
+
+void h5io::write(const char *filename, const char *dataname,
+                 const char *data,
+                 bool append_file)
+{
+#ifdef HAVE_HDF5
+  if (am_master()) {
+    hid_t file_id, type_id, data_id, space_id;
+    
+    if (append_file)
+      file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+    else
+      file_id = H5Fcreate(filename, H5F_ACC_TRUNC,
+			  H5P_DEFAULT, H5P_DEFAULT);
+    CHECK(file_id >= 0, "error opening HDF5 output file");     
+    
+    if (dataset_exists(file_id, dataname))
+      H5Gunlink(file_id, dataname);  /* delete it */
+    
+    type_id = H5Tcopy(H5T_C_S1);;
+    H5Tset_size(type_id, strlen(data) + 1);
+    space_id = H5Screate(H5S_SCALAR);
+    
+    data_id = H5Dcreate(file_id, dataname, type_id, space_id, H5P_DEFAULT);
+    H5Dwrite(data_id, type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+    
+    H5Sclose(space_id);
+    H5Tclose(type_id);
+    H5Dclose(data_id);
+    H5Fclose(file_id);
+  }
+#else
+  abort("not compiled with HDF5, required for HDF5 output");
+#endif
+}
+
+char *h5io::read(const char *filename, const char *dataname)
+{
+#ifdef HAVE_HDF5
+  char *data = 0;
+  int len = 0;
+  if (am_master()) {
+    hid_t file_id, space_id, data_id, type_id;
+    
+    file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+    CHECK(file_id >= 0, "error opening HDF5 input file");
+    
+    CHECK(dataset_exists(file_id, dataname),
+	  "missing dataset in HDF5 file");
+    
+    data_id = H5Dopen(file_id, dataname);
+    space_id = H5Dget_space(data_id);
+    type_id = H5Dget_type(data_id);
+    
+    CHECK(H5Sget_simple_extent_npoints(space_id) == 1,
+	  "expected single string in HDF5 file, but didn't get one");
+    
+    len = H5Tget_size(type_id);
+    H5Tclose(type_id);
+    type_id = H5Tcopy(H5T_C_S1);
+    H5Tset_size(type_id, len);
+    
+    data = new char[len];
+    H5Dread(data_id, type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+	    (void *) data);
+    
+    H5Tclose(type_id);
+    H5Sclose(space_id);	  
+    H5Dclose(data_id);
+    H5Fclose(file_id);
+  }
+  
+  len = broadcast(0, len);
+  if (!am_master())
+    data = new char[len];
+  broadcast(0, data, len);
+  
+  return data;
+#else
+  return NULL;
+#endif
 }
 
 } // namespace meep

@@ -98,6 +98,17 @@ void broadcast(int from, double *data, int size) {
 #endif
 }
 
+void broadcast(int from, char *data, int size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, size, MPI_CHAR, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
+#endif
+}
+
 void broadcast(int from, complex<double> *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
