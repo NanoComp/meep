@@ -10,60 +10,6 @@ using namespace ctlio;
 
 /***********************************************************************/
 
-class geom_epsilon : public meep::material_function {
-     geometric_object_list geometry;
-     geom_box_tree geometry_tree;
-     geom_box_tree restricted_tree;
-
-public:
-     geom_epsilon(geometric_object_list g);
-     virtual ~geom_epsilon();
-
-     virtual void set_volume(const meep::geometric_volume &gv);
-     virtual void unset_volume(void);
-     virtual double eps(const meep::vec &r);
-     
-};
-
-geom_epsilon::geom_epsilon(geometric_object_list g)
-{
-     geometry = g; // don't bother making a copy, only used in one place
-
-     if (meep::am_master()) {
-	  for (int i = 0; i < geometry.num_items; ++i) {
-               display_geometric_object_info(5, geometry.items[i]);
-	       
-               if (geometry.items[i].material.which_subclass 
-		   == MTS::DIELECTRIC)
-                    printf("%*sdielectric constant epsilon = %g\n",
-                           5 + 5, "",
-                           geometry.items[i].material.
-                           subclass.dielectric_data->epsilon);
-          }
-     }
-
-     geom_fix_objects0(geometry);
-     geometry_tree = create_geom_box_tree0(geometry);
-     if (verbose && meep::am_master()) {
-          printf("Geometric-object bounding-box tree:\n");
-          display_geom_box_tree(5, geometry_tree);
-
-	  int tree_depth, tree_nobjects;
-	  geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
-	  master_printf("Geometric object tree has depth %d "
-			"and %d object nodes (vs. %d actual objects)\n",
-			tree_depth, tree_nobjects, geometry.num_items);
-     }
-
-     restricted_tree = geometry_tree;
-}
-
-geom_epsilon::~geom_epsilon()
-{
-     unset_volume();
-     destroy_geom_box_tree(geometry_tree);
-}
-
 static vector3 vec2vector3(const meep::vec &v)
 {
      vector3 v3;
@@ -93,6 +39,73 @@ static vector3 vec2vector3(const meep::vec &v)
      return v3;
 }
 
+static geom_box gv2box(const meep::geometric_volume &gv)
+{
+  geom_box box;
+  box.low = vec2vector3(gv.get_min_corner());
+  box.high = vec2vector3(gv.get_max_corner());
+  return box;
+}
+
+/***********************************************************************/
+
+class geom_epsilon : public meep::material_function {
+     geometric_object_list geometry;
+     geom_box_tree geometry_tree;
+     geom_box_tree restricted_tree;
+
+public:
+     geom_epsilon(geometric_object_list g,
+		  const meep::geometric_volume &gv);
+     virtual ~geom_epsilon();
+
+     virtual void set_volume(const meep::geometric_volume &gv);
+     virtual void unset_volume(void);
+     virtual double eps(const meep::vec &r);
+     
+};
+
+geom_epsilon::geom_epsilon(geometric_object_list g,
+			   const meep::geometric_volume &gv)
+{
+     geometry = g; // don't bother making a copy, only used in one place
+
+     if (meep::am_master()) {
+	  for (int i = 0; i < geometry.num_items; ++i) {
+               display_geometric_object_info(5, geometry.items[i]);
+	       
+               if (geometry.items[i].material.which_subclass 
+		   == MTS::DIELECTRIC)
+                    printf("%*sdielectric constant epsilon = %g\n",
+                           5 + 5, "",
+                           geometry.items[i].material.
+                           subclass.dielectric_data->epsilon);
+          }
+     }
+
+     geom_fix_objects0(geometry);
+     geom_box box = gv2box(gv);
+     geometry_tree = create_geom_box_tree0(geometry, box);
+     if (verbose && meep::am_master()) {
+          printf("Geometric-object bounding-box tree:\n");
+          display_geom_box_tree(5, geometry_tree);
+
+	  int tree_depth, tree_nobjects;
+	  geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
+	  master_printf("Geometric object tree has depth %d "
+			"and %d object nodes (vs. %d actual objects)\n",
+			tree_depth, tree_nobjects, geometry.num_items);
+     }
+
+     restricted_tree = geometry_tree;
+}
+
+geom_epsilon::~geom_epsilon()
+{
+     unset_volume();
+     destroy_geom_box_tree(geometry_tree);
+}
+
 void geom_epsilon::unset_volume(void)
 {
   if (restricted_tree != geometry_tree) {
@@ -105,11 +118,8 @@ void geom_epsilon::set_volume(const meep::geometric_volume &gv)
 {
   unset_volume();
   
-  geom_box box;
-  box.low = vec2vector3(gv.get_min_corner());
-  box.high = vec2vector3(gv.get_max_corner());
-  
-  restricted_tree = restrict_geom_box_tree(geometry_tree, &box);
+  geom_box box = gv2box(gv);
+  restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
 static material_type eval_material_func(function material_func, vector3 p)
@@ -200,6 +210,7 @@ SCM ctlio::make_structure(integer dims, vector3 size, number resolution,
      };
      vector3 center0 = {0,0,0};
 
+     geometry_lattice = cart_lattice;
      geometry_lattice.size = size;
      geometry_center = center0;
      meep::symmetry S;
@@ -237,7 +248,7 @@ SCM ctlio::make_structure(integer dims, vector3 size, number resolution,
 	      CK(0, "unsupported dimensionality");
      }
 
-     for (int i; i = 0; i < symmetries.num_items) {
+     for (int i = 0; i < symmetries.num_items; ++i) {
 	  switch (symmetries.items[i].which_subclass) {
 	      case symmetry::ROTATE2_SYM:
 		   S = S + meep::rotate2((meep::direction)
@@ -254,7 +265,7 @@ SCM ctlio::make_structure(integer dims, vector3 size, number resolution,
 	  }
      }
 
-     geom_epsilon geps(geometry);
+     geom_epsilon geps(geometry, v.pad().surroundings());
 
      meep::structure *s = new meep::structure(v, geps, desired_num_chunks, S);
 
