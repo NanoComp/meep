@@ -1,0 +1,172 @@
+\begin{comment}
+/*
+\end{comment}
+\section{A considerably more complicated 2D example.}
+\begin{comment}
+*/
+\end{comment}
+
+This example demonstrates a lot more of what you can do using dactyl.  The
+system is the same as in the previous example, but this time we will
+calculate the quality factor of the cavity.  Again, the entire control file
+will be included here, but I'll skip over sections that have already been
+explained.
+
+\begin{verbatim}
+#include "dactyl.h"
+
+const double half_cavity_width = 0.5*0.68, air_slit_width = 0.38,
+             grating_periodicity = 0.48,
+             half_waveguide_width = 1.0,
+             num_air_slits = 15.0,
+             high_dielectric = 12.0, low_dielectric = 11.5;
+const double pml_thickness = 1.0;
+const double x_center = 7.7 + pml_thickness;
+const double y_center = 10.5 + pml_thickness;
+double eps(const vec &rr) {
+  // Displacement from center of cavity is r:
+  const vec r = rr - vec2d(x_center, y_center);
+  // First the air slits:
+  double dx = fabs(r.x()) - half_cavity_width;
+  if (dx < num_air_slits*grating_periodicity && dx > 0.0) {
+    while (dx > grating_periodicity) dx -= grating_periodicity;
+    if (dx < air_slit_width) return 1.0;
+  }
+  // Now check if the y value is within the waveguide:
+  if (fabs(r.y()) < half_waveguide_width) return high_dielectric;
+  // Otherwise we must be in the surrounding low dielectric:
+  return low_dielectric;
+}
+\end{verbatim}
+This time we use the \verb!deal_with_ctrl_c();! function.  This is a handy
+utility function that is useful when running your dactyl code
+interactively.  It traps the SIGINT signal, so when you hit cntl-C, rather
+than simply exiting, the global variable \verb!interrupt! is incremented.
+If you really want to exit, just hit cntl-C again, and when
+\verb!interrupt! reaches 2, the program will exit.
+\begin{verbatim}
+int main(int argc, char *argv[]) {
+  deal_with_ctrl_c();
+  initialize(argc, argv);
+  const double amicron = 10; // a micron is this many grid points.
+  const symmetry S = mirror(Y, voltwo(2*x_center, 2*y_center, amicron));
+  mat ma(voltwo(2*x_center, 2*y_center, amicron), eps, 0, S);
+  ma.use_pml_everywhere(pml_thickness);
+  const char *dirname = make_output_directory(argv[0]);
+  ma.set_output_directory(dirname);
+  fields f(&ma);
+  const double wavelength = 1.72;
+  const double freq = 1.0/wavelength;
+  f.add_point_source(Hy, freq, 5.0, 0.0, 5.0, vec2d(x_center,y_center));
+  f.use_metal_everywhere();
+\end{verbatim}
+We add an additional check below ``\verb!&& !interrupt!'' so that when the
+user hits cntl-C we exit the loop.
+\begin{verbatim}
+  while (f.time() < f.find_last_source() && !interrupt) f.step();
+  f.eps_slices();
+  while (f.time() < 400.0 && !interrupt) f.step();
+\end{verbatim}
+This time we're going to run the simulation longer, so we would like to get
+occasional informative messages.  To do this we define a variable to hold
+the next time we want to print a message.
+\begin{verbatim}
+  double next_print_time = 500.0;
+\end{verbatim}
+To calculate the $Q$ of our cavity, we use a monitor point \verb!p!.  We
+also store the value of $H_y$ at our monitor point in a file named ``hy''
+periodically.  We create this file using \verb!create_output_file!, which
+creates and opens a file in the given output directory.  This utility
+function really isn't what we want here, but I haven't yet written one
+which is analagous to \verb!master_printf! in that you will only get one
+copy of each thing you print to the file.
+\begin{verbatim}
+  monitor_point *p = NULL, *p1 = NULL, *p2 = NULL;
+  FILE *myout = create_output_file(dirname, "hy");
+  const double monitor_period = 0.2;
+  double monitor_time = 0.0;
+  while (f.time() <= 2000.0 && !interrupt) {
+    // Now we'll start taking data!
+    f.step();
+    if (f.time() > monitor_time) {
+      monitor_time = f.time() + monitor_period;
+\end{verbatim}
+To get the monitor point data we use the \verb!get_new_point! method of
+\verb!fields!.  This ends up creating a linked list containing the values
+of the field at the monitor point as a function of time, which we will
+later use to run harminv and get the $Q$.
+\begin{verbatim}
+      p = f.get_new_point(vec2d(x_center,y_center), p);
+\end{verbatim}
+We use the \verb!get_component! method to extract the (complex) fields from
+the monitor point so we can print them.
+\begin{verbatim}
+      fprintf(myout, "%lg\t%lg\t%lg\n", f.time(),
+              real(p->get_component(Hy)),
+              imag(p->get_component(Hy)));
+    }
+\end{verbatim}
+Every time we reach the \verb!next_print_time! we print out a copy of the
+slices, along with a little message indicating the time and the total
+energy (which should be decaying at this point).  The function
+\verb!master_printf! is a utility function that works basically like
+\verb!printf!, except that when running in parallel only one of the
+processors (the ``master'') does the printing.  You should use this
+function rather than something like
+``\verb!if (my_rank()==0) printf(...)!'', since the latter can cause
+problems if the arguments to printf require synchronization between the
+processes.
+\begin{verbatim}
+    if (f.time() == next_print_time) {
+      f.eps_slices();
+      master_printf("Energy is %lg at time %lg\n",
+                    f.total_energy(), f.time());
+      next_print_time += 500.0;
+    }
+  }
+  fclose(myout);
+\end{verbatim}
+Having collected all the monitor point data, we now want to run
+harminv\footnote{If you don't know what harminv is, I'm not going to
+explain it here, so you may as well ask me in person (or even better, ask
+Steven...} on it to find the $Q$ of our resonant cavity.  The
+\verb!harminv! method gives us the complex amplitudes, the frequencies and
+the decay rates.  The decay rate is given in the same units as the
+frequency, so you could choose to view it as the imaginary part of the
+frequency if you like.
+
+This harminv step is the real reason for using the ctrl-C trick, since if
+while running this example we get impatient and decide we have enough data
+we can just hit ctrl-C and get the results using what data we have.  This
+means you can just set the code to run for an excessively long time without
+risking losing everything if you lose patience.
+\begin{figure}
+\label{complicated_figure}
+\caption{Contents of ``freqs'' file}
+\input{complicated-out/freqs}
+\end{figure}
+
+In case you're wondering about the ``\verb!\begin{verbatim}!'', it's there
+so I can easily include the output in this manual (see
+Figure~\ref{complicated_figure}).
+\begin{verbatim}
+  complex<double> *amp;
+  double *freqs, *decays;
+  int num;
+  
+  FILE *myfreqs = create_output_file(dirname, "freqs");
+  fprintf(myfreqs, "\\begin{verbatim}\n");
+  master_printf("Harminving Hy...\n");
+  interrupt = 0; // Harminv even if we were interrupted.
+  p->harminv(Hy, &amp, &freqs, &decays, &num, 0.8*freq, 1.2*freq, 5);
+  for (int i=0;i<num;i++) {
+    fprintf(myfreqs, "%lg\t%lg\t%lg\t%lg\t%lg\n",
+            freqs[i], decays[i], -freqs[i]/decays[i],
+            real(amp[i]), imag(amp[i]));
+  }
+  fprintf(myfreqs, "%cend{verbatim}\n", '\\');
+  fclose(myfreqs);
+  delete[] dirname;
+  finished();
+}
+\end{verbatim}

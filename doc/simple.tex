@@ -52,7 +52,7 @@ double eps(const vec &rr) {
 \label{simple_figure}
 \caption{$E_z$}
 \begin{center}
-\epsfig{file=simple-out/ez-001000.00.eps,width=4.8cm}
+\epsfig{file=simple-out/ez-000200.00.eps,width=4.8cm}
 \end{center}
 \end{figure}
 The main function should always start with a call to the initialize
@@ -70,7 +70,7 @@ the high Q mode in the cavity.
 \begin{verbatim}
   const double amicron = 10; // a micron is this many grid points.
   const symmetry S = mirror(Y, voltwo(2*x_center, 2*y_center, amicron));
-  mat ma(voltwo(2*x_center, 2*y_center, amicron), eps, 15, S);
+  mat ma(voltwo(2*x_center, 2*y_center, amicron), eps, 0, S);
   ma.use_pml_everywhere(pml_thickness);
 \end{verbatim}
 To avoid clutter, we'll create a directory to hold the output.  The
@@ -90,9 +90,9 @@ use metal boundary conditions (behind the PML) everywhere to avoid a
 decrease in symmetry that I don't want to bother explaining here.
 \begin{verbatim}
   fields f(&ma);
-  const double wavelength = 1.55;
+  const double wavelength = 1.72;
   const double freq = 1.0/wavelength;
-  f.add_point_source(Hy, freq, 1.6, 0.0, 8.0, vec2d(x_center,y_center));
+  f.add_point_source(Hy, freq, 10.0, 0.0, 5.0, vec2d(x_center,y_center));
   f.use_metal_everywhere();
 \end{verbatim}
 I'm not interested in seeing the source itself, so I'll keep time stepping
@@ -101,9 +101,10 @@ running.
 \begin{verbatim}
   while (f.time() < f.find_last_source()) f.step();
 \end{verbatim}
-Now we'll take a snapshot of the fields in encapsulated postscript format.
+Now we'll wait a bit (to let the low-Q modes die off) and then take a
+snapshot of the fields in encapsulated postscript format.
 \begin{verbatim}
-  while (f.time() < 100.0) f.step();
+  while (f.time() < 200.0) f.step();
   f.eps_slices();
 \end{verbatim}
 And now we're done, although you might wonder if we've done anything
