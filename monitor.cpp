@@ -68,16 +68,16 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
       for (int i=0;i<num_chunks;i++) {
         if (chunks[i]->v.contains(loc))
           chunks[i]->interpolate_field((component)c, loc, val);
-        if (k != -1 && 0)
+        if (0)
           for (int i=0;i<num_chunks;i++) {
-            if (chunks[i]->v.contains(loc + lattice_vector()))
+            if (chunks[i]->v.contains(loc + lattice_vector(Z)))
               chunks[i]->interpolate_field((component)c,
-                                           loc - lattice_vector(),
-                                           val, conj(eiknz));
-            if (chunks[i]->v.contains(loc - lattice_vector()))
+                                           loc - lattice_vector(Z),
+                                           val, conj(eikna[Z]));
+            if (chunks[i]->v.contains(loc - lattice_vector(Z)))
               chunks[i]->interpolate_field((component)c,
-                                           loc - lattice_vector(),
-                                           val, eiknz);
+                                           loc - lattice_vector(Z),
+                                           val, eikna[Z]);
           }
       }
       dumbsort(val);

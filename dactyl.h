@@ -165,7 +165,6 @@ class fields_chunk {
   const char *outdir;
 
   fields_chunk(const mat_chunk *, const char *outdir, int m=0);
-  void use_bloch(double kz);
   ~fields_chunk();
 
   // step.cpp
@@ -254,22 +253,23 @@ class fields {
   double a, inva; // The "lattice constant" and its inverse!
   volume v;
   int m, t, phasein_time, is_real;
-  double k, cosknz, sinknz;
-  complex<double> eiknz;
+  complex<double> k[5], eikna[5];
+  double coskna[5], sinkna[5];
   boundary_condition boundaries[2][5];
   bandsdata *bands;
   const char *outdir;
   // fields.cpp methods:
   fields(const mat *, int m=0);
   ~fields();
-  void use_bloch(double kz);
   void use_real_fields();
-  vec lattice_vector() const;
   // boundaries.cpp
   void set_boundary(boundary_side,direction,
                     boundary_condition, bool autoconnect=true,
                     complex<double> kcomponent=0.0);
   void use_metal_everywhere();
+  void use_bloch(direction, complex<double> kz, bool autoconnect=true);
+  void use_bloch(const vec &k, bool autoconnect=true);
+  vec lattice_vector(direction) const;
   // slices.cpp methods:
   void output_slices(const char *name = "") const;
   void output_slices(const volume &what, const char *name = "") const;
@@ -373,7 +373,7 @@ class grace {
   void output_point(double x, double y,
                     double dy = -1.0, double extra = -1.0);
   void output_out_of_order(int n, double x, double y,
-                                  double dy = -1.0, double extra= -1.0);
+                           double dy = -1.0, double extra= -1.0);
  private:
   void flush_pts();
   FILE *f;

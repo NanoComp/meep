@@ -58,7 +58,7 @@ static complex<double> JP(const vec &v) {
 
 void fields::initialize_with_nth_te(int np0) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->initialize_with_nth_te(np0, k);
+    chunks[i]->initialize_with_nth_te(np0, real(k[Z]));
 }
 
 void fields_chunk::initialize_with_nth_te(int np0, double kz) {
@@ -76,7 +76,7 @@ void fields_chunk::initialize_with_nth_te(int np0, double kz) {
 
 void fields::initialize_with_nth_tm(int np0) {
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->initialize_with_nth_tm(np0, k);
+    chunks[i]->initialize_with_nth_tm(np0, real(k[Z]));
 }
 
 void fields_chunk::initialize_with_nth_tm(int np1, double kz) {

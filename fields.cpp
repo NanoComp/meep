@@ -30,7 +30,7 @@ fields::fields(const mat *ma, int tm) {
   m = tm;
   phasein_time = 0;
   bands = NULL;
-  k = -1;
+  for (int d=0;d<5;d++) k[d] = 0.0;
   is_real = 0;
   a = v.a;
   inva = 1.0/a;
@@ -51,23 +51,6 @@ fields::fields(const mat *ma, int tm) {
   for (int b=0;b<2;b++) for (int d=0;d<5;d++) boundaries[b][d] = None;
   connect_chunks();
 }
-void fields::use_bloch(double kz) { // FIXME for more D
-  k = kz;
-  const double cosknz = cos(k*2*pi*inva*v.nz());
-  const double sinknz = sin(k*2*pi*inva*v.nz());
-  eiknz = complex<double>(cosknz, sinknz);
-  connect_chunks();
-}
-
-vec fields::lattice_vector() const {
-  if (v.dim == dcyl) {
-    return vec(0,v.nz()*inva);
-  } else if (v.dim == d1) {
-    return vec(v.nz()*inva);
-  } else {
-    abort("Don't support lattice_vector in these dimensions.\n");
-  }
-}
 
 fields::~fields() {
   for (int i=0;i<num_chunks;i++) delete chunks[i];
@@ -82,8 +65,9 @@ fields::~fields() {
   delete bands;
 }
 void fields::use_real_fields() {
-  if (k >= 0.0)
-    abort("Can't use real fields_chunk with bloch boundary conditions!\n");
+  for (int d=0;d<5;d++)
+    if (boundaries[High][d] == Periodic)
+      abort("Can't use real fields_chunk with bloch boundary conditions!\n");
   is_real = 1;
   for (int i=0;i<num_chunks;i++) chunks[i]->use_real_fields();
 }

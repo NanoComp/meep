@@ -36,6 +36,48 @@ void fields::use_metal_everywhere() {
   connect_chunks();
 }
 
+void fields::use_bloch(direction d, complex<double> kk, bool autoconnect) {
+  k[d] = kk;
+  for (int b=0;b<2;b++) boundaries[b][d] = Periodic;
+  const complex<double> I = complex<double>(0.0,1.0);
+  eikna[d] = exp(I*kk*((2*pi)*inva*v.num_direction(d)));
+  coskna[d] = real(eikna[d]);
+  sinkna[d] = imag(eikna[d]);
+  if (autoconnect) connect_chunks();
+}
+
+void fields::use_bloch(const vec &k, bool autoconnect) {
+  // Note that I allow a 1D k input when in cylindrical, since in that case
+  // it is unambiguous.
+  if (k.dim != v.dim && !(k.dim == d1 && v.dim == dcyl))
+    abort("Aaaack, k has wrong dimensions!\n");
+  for (int dd=0;dd<5;dd++) {
+    const direction d = (direction) dd;
+    if (v.has_boundary(Low,d) && d != R)
+      use_bloch(d, k.in_direction(d), false);
+  }
+  if (autoconnect) connect_chunks();
+}
+
+vec fields::lattice_vector(direction d) const {
+  if (v.dim == dcyl) {
+    return vec(0,v.nz()*inva); // Only Z direction here...
+  } else if (v.dim == d1) {
+    return vec(v.nz()*inva); // Only Z direction here...
+  } else if (v.dim == d2) {
+    switch (d) {
+    case X: return vec2d(v.nx()*inva,0);
+    case Y: return vec2d(0,v.ny()*inva);
+    }
+  } else if (v.dim == d3) {
+    switch (d) {
+    case X: return vec(v.nx()*inva,0,0);
+    case Y: return vec(0,v.ny()*inva,0);
+    case Z: return vec(0,0,v.nz()*inva);
+    }
+  }
+}
+
 void fields::disconnect_chunks() {
   for (int i=0;i<num_chunks;i++) {
     DOCMP {
@@ -120,18 +162,28 @@ void fields::connect_the_chunks() {
                 nc[type((component)c)][Incoming][i]++;
                 nc[type((component)c)][Outgoing][j]++;
                 new_comm_sizes[type((component)c)][j]++;
-              } else if (k != -1 && here.z() == v.origin.z() &&
-                         chunks[j]->v.owns(here + lattice_vector())) {
-                // Periodic...
-                nc[type((component)c)][Incoming][i]++;
-                nc[type((component)c)][Outgoing][j]++;
-                new_comm_sizes[type((component)c)][j]++;
-              } else if (k != -1 && here.z() > v.origin.z() + lattice_vector().z() &&
-                         chunks[j]->v.owns(here - lattice_vector())) {
-                // Periodic...
-                nc[type((component)c)][Incoming][i]++;
-                nc[type((component)c)][Outgoing][j]++;
-                new_comm_sizes[type((component)c)][j]++;
+              } else {
+                for (int dd=0;dd<5;dd++) {
+                  const direction d = (direction) dd;
+                  if (boundaries[Low][d] == Periodic &&
+                      here.in_direction(d) == v.origin.in_direction(d) &&
+                      chunks[j]->v.owns(here + lattice_vector(d))) {
+                    // Periodic...
+                    nc[type((component)c)][Incoming][i]++;
+                    nc[type((component)c)][Outgoing][j]++;
+                    new_comm_sizes[type((component)c)][j]++;
+                    break;
+                  } else if (boundaries[High][d] == Periodic &&
+                             here.in_direction(d) > v.origin.in_direction(d)
+                             + lattice_vector(d).in_direction(d) &&
+                             chunks[j]->v.owns(here - lattice_vector(d))) {
+                    // Periodic...
+                    nc[type((component)c)][Incoming][i]++;
+                    nc[type((component)c)][Outgoing][j]++;
+                    new_comm_sizes[type((component)c)][j]++;
+                    break;
+                  }
+                }
               }
             } else if (j == i && is_metal(here, vi)) {
               // Try metallic...
@@ -186,34 +238,48 @@ void fields::connect_the_chunks() {
                 chunks[i]->connection_phases[ft][wh[ft][Incoming][i]] = 1.0;
                 wh[ft][Incoming][i]++;
                 wh[ft][Outgoing][j]++;
-              } else if (k != -1 && here.z() == v.origin.z() &&
-                         chunks[j]->v.owns(here + lattice_vector())) {
-                // Periodic...
-                // index is deprecated, but ok in this case:
-                const int m = chunks[j]->v.index((component)c, here + lattice_vector());
-                DOCMP {
-                  chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
-                    = chunks[i]->f[c][cmp] + n;
-                  chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
-                    = chunks[j]->f[c][cmp] + m;
+              } else {
+                for (int dd=0;dd<5;dd++) {
+                  const direction d = (direction) dd;
+                  if (boundaries[Low][d] == Periodic &&
+                      here.in_direction(d) == v.origin.in_direction(d) &&
+                      chunks[j]->v.owns(here + lattice_vector(d))) {
+                    // Periodic...
+                    // index is deprecated, but ok in this case:
+                    const int m = chunks[j]->v.index((component)c,
+                                                     here + lattice_vector(d));
+                    DOCMP {
+                      chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
+                        = chunks[i]->f[c][cmp] + n;
+                      chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
+                        = chunks[j]->f[c][cmp] + m;
+                    }
+                    chunks[i]->connection_phases[ft][wh[ft][Incoming][i]]
+                      = eikna[d];
+                    wh[ft][Incoming][i]++;
+                    wh[ft][Outgoing][j]++;
+                    break;
+                  } else if (boundaries[High][d] == Periodic &&
+                             here.in_direction(d) > v.origin.in_direction(d)
+                             + lattice_vector(d).in_direction(d) &&
+                             chunks[j]->v.owns(here - lattice_vector(d))) {
+                    // Periodic...
+                    // index is deprecated, but ok in this case:
+                    const int m = chunks[j]->v.index((component)c,
+                                                     here - lattice_vector(d));
+                    DOCMP {
+                      chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
+                        = chunks[i]->f[c][cmp] + n;
+                      chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
+                        = chunks[j]->f[c][cmp] + m;
+                    }
+                    chunks[i]->connection_phases[ft][wh[ft][Incoming][i]]
+                      = conj(eikna[d]);
+                    wh[ft][Incoming][i]++;
+                    wh[ft][Outgoing][j]++;
+                    break;
+                  }
                 }
-                chunks[i]->connection_phases[ft][wh[ft][Incoming][i]] = eiknz;
-                wh[ft][Incoming][i]++;
-                wh[ft][Outgoing][j]++;
-              } else if (k != -1 && here.z() > v.origin.z() + lattice_vector().z() &&
-                         chunks[j]->v.owns(here - lattice_vector())) {
-                // Periodic...
-                // index is deprecated, but ok in this case:
-                const int m = chunks[j]->v.index((component)c, here - lattice_vector());
-                DOCMP {
-                  chunks[i]->connections[ft][Incoming][cmp][wh[ft][Incoming][i]]
-                    = chunks[i]->f[c][cmp] + n;
-                  chunks[j]->connections[ft][Outgoing][cmp][wh[ft][Outgoing][j]]
-                    = chunks[j]->f[c][cmp] + m;
-                }
-                chunks[i]->connection_phases[ft][wh[ft][Incoming][i]] = conj(eiknz);
-                wh[ft][Incoming][i]++;
-                wh[ft][Outgoing][j]++;
               }
             } else if (j == i && is_metal(here, vi)) {
               // Try metallic...

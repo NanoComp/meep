@@ -100,7 +100,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     cutoff_freq = 1.84*c/(2*pi)/v.nr()/sqrt(epsmax);
     if (m == 0) cutoff_freq *= 0.5;
   }
-  bands->fmin = sqrt(cutoff_freq*cutoff_freq + k*k*c*c/epsmax);
+  bands->fmin = sqrt(cutoff_freq*cutoff_freq + abs(k[Z])*abs(k[Z])*c*c/epsmax); // FIXME
   bands->fmin = cutoff_freq*a/c;
   bands->qmin = qmin;
   // Set fmax and determine how many timesteps to skip over...
@@ -175,8 +175,8 @@ void fields::grace_bands(grace *g, int maxbands) {
   for (int i=0;i<maxbands;i++) if (fad[i] != 0.0) num_found = i+1;
 
   for (int i = 0; i < num_found; ++i) {
-    g->output_out_of_order(i, k, fabs(real(fad[i])), fabs(imag(fad[i])),
-                           approx_power[i]);
+    g->output_out_of_order(i, abs(k[Z]), fabs(real(fad[i])), fabs(imag(fad[i])),
+                           approx_power[i]); // FIXME
   }
   delete[] fad;
   delete[] approx_power;
