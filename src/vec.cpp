@@ -380,6 +380,7 @@ void volume::interpolate(component c, const vec &p,
 
 void volume::interpolate(component c, const vec &pc,
                          ivec locs[8], double weights[8]) const {
+  const double SMALL = 1e-14;
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
@@ -408,6 +409,15 @@ void volume::interpolate(component c, const vec &pc,
   for (int i=0;i<already_have;i++) total_weight += weights[i];
   for (int i=0;i<already_have;i++)
     weights[i] += (1.0 - total_weight)*(1.0/already_have);
+  for (int i=0;i<already_have;i++) {
+    if (weights[i] < 0.0) {
+      if (-weights[i] >= SMALL)
+        abort("large negative interpolation weight[%d] = %e\n", i, weights[i]);
+      weights[i] = 0.0;
+    }
+    else if (weights[i] < SMALL)
+      weights[i] = 0.0;
+  }
   stupidsort(locs, weights, already_have);
   // The rest of this code is a crude hack to get the weights right when we
   // are exactly between a few grid points.  i.e. to eliminate roundoff
