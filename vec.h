@@ -34,12 +34,14 @@ class vec {
   vec(double rr, double zz) { dim = dcyl; tr = rr; tz = zz; };
   vec(double xx, double yy, double zz) {
     dim = d3; tx = xx; ty = yy; tz = zz; };
+  friend vec vec2d(double xx, double yy);
   ~vec() {};
 
   vec operator+(const vec &a) const {
     switch (dim) {
     case dcyl: return vec(tr+a.tr,tz+a.tz);
     case d3: return vec(tx+a.tx,ty+a.ty,tz+a.tz);
+    case d2: return vec2d(tx+a.tx,ty+a.ty);
     case d1: return vec(tz+a.tz);
     }
   };
@@ -47,6 +49,7 @@ class vec {
     switch (dim) {
     case dcyl: tr += a.tr; tz += a.tz; return *this;
     case d3: tx += a.tx; ty += a.ty; tz += a.tz; return *this;
+    case d2: tx += a.tx; ty += a.ty; return *this;
     case d1: tz += a.tz; return vec(tz+a.tz);
     }
   };
@@ -54,6 +57,7 @@ class vec {
     switch (dim) {
     case dcyl: return vec(tr-a.tr,tz-a.tz);
     case d3: return vec(tx-a.tx,ty-a.ty,tz-a.tz);
+    case d2: return vec2d(tx-a.tx,ty-a.ty);
     case d1: return vec(tz-a.tz);
     }
   };
@@ -62,6 +66,7 @@ class vec {
     switch (dim) {
     case dcyl: return vec(tr*s,tz*s);
     case d3: return vec(tx*s,ty*s,tz*s);
+    case d2: return vec2d(tx*s,ty*s);
     case d1: return vec(tz*s);
     }
   };
@@ -76,6 +81,10 @@ class vec {
  private:
   double tx, ty, tz, tr;
 };
+
+inline vec vec2d(double xx, double yy) {
+  vec v; v.tx = xx; v.ty = yy; return v;
+}
 
 class plane {
  public:

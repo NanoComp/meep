@@ -27,6 +27,7 @@ void abort(char *fmt, ...);  // Since we don't want to include dactyl.h...
 const char *dimension_name(ndim dim) {
   switch (dim) {
   case d1: return "1D";
+  case d2: return "2D";
   case d3: return "3D";
   case dcyl: return "Cylindrical";
   }
@@ -54,6 +55,8 @@ void vec::print(FILE *f) const {
     fprintf(f, "%lg %lg 0", r(), z());
   } else if (dim == d3  ) {
     fprintf(f, "%lg %lg %lg", x(), y(), z());
+  } else if (dim == d2  ) {
+    fprintf(f, "%lg %lg 0", x(), y());
   } else if (dim == d1  ) {
     fprintf(f, "0 0 %lg", z());
   } else  {
@@ -71,6 +74,7 @@ volume::volume() {
 inline int right_ntot(ndim d, const int num[3]) {
   switch (d) {
   case d1: return num[2] + 1;
+  case d2: return (num[0]+1)*(num[1]+1);
   case d3: return (num[0]+1)*(num[1]+1)*(num[2]+1);
   case dcyl: return (num[0]+1)*(num[2]+1);
   }
@@ -87,6 +91,8 @@ volume::volume(ndim d, double ta, int na, int nb, int nc) {
   case dcyl: origin = vec(0,0);
     break;
   case d3: origin = vec(0,0,0);
+    break;
+  case d2: origin = vec2d(0,0);
     break;
   case d1: origin = vec(0);
     break;
@@ -141,6 +147,10 @@ int volume::contains(const vec &p) const {
       o.x() >= -inva && o.x() <= nx()*inva + inva &&
       o.y() >= -inva && o.y() <= ny()*inva + inva &&
       o.z() >= -inva && o.z() <= nz()*inva + inva;
+  } else if (dim == d2) {
+    return
+      o.x() >= -inva && o.x() <= nx()*inva + inva &&
+      o.y() >= -inva && o.y() <= ny()*inva + inva;
   } else if (dim == d1) {
     return o.z() >= -inva && o.z() <= nz()*inva + inva;
   } else {
@@ -168,6 +178,10 @@ int volume::owns(const vec &p) const {
       o.x() >= qinva && o.x() <= nx()*inva + qinva &&
       o.y() >= qinva && o.y() <= ny()*inva + qinva &&
       o.z() >= qinva && o.z() <= nz()*inva + qinva;
+  } else if (dim == d2) {
+    return
+      o.x() >= qinva && o.x() <= nx()*inva + qinva &&
+      o.y() >= qinva && o.y() <= ny()*inva + qinva;
   } else if (dim == d1) {
     return o.z() >= qinva && o.z() <= nz()*inva + qinva;
   } else {
@@ -185,6 +199,8 @@ int volume::has_field(component c) const {
     return is_r || is_p || is_z;
   } else if (dim == d3) {
     return is_x || is_y || is_z;
+  } else if (dim == d2) {
+    return is_x || is_y || is_z;
   } else if (dim == d1) {
     return c == Ex || c == Hy;
   } else {
@@ -200,6 +216,8 @@ int volume::index(component c, const vec &p) const {
   } else if (dim == d3) {
     theindex = (int)((offset.z() + offset.y()*(nz()+1) +
                       offset.x()*(nz()+1)*(ny()+1))*a + 0.5);
+  } else if (dim == d2) {
+    theindex = (int)((offset.y() + offset.x()*(ny()+1))*a + 0.5);
   } else if (dim == d1) {
     theindex = (int)(offset.z()*a + 0.5);
   } else {
@@ -506,6 +524,13 @@ double volume::intersection(const volume &o) const {
     const double y_max = min(ymax(), o.ymax());
     return (z_max-z_min)*(x_max-x_min)*(y_max-y_min);
   }
+  case d2: {
+    const double x_min = max(xmin(), o.xmin());
+    const double x_max = min(xmax(), o.xmax());
+    const double y_min = max(ymin(), o.ymin());
+    const double y_max = min(ymax(), o.ymax());
+    return (x_max-x_min)*(y_max-y_min);
+  }
   case d1:
     const double z_min = max(zmin(), o.zmin());
     const double z_max = min(zmax(), o.zmax());
@@ -524,15 +549,16 @@ double volume::dv(component c, int ind) const {
     else return inva*pi*(r+Dr)*(r+Dr);
   }
   case d3: return inva*inva*inva;
+  case d2: return inva*inva;
   case d1: return inva;
   }
 }
 
 vec volume::loc(component c, int ind) const {
-  const int oz = (int)(origin.z()*a+0.5);
   switch (dim) {
   case dcyl:
     {
+      const int oz = (int)(origin.z()*a+0.5);
       const int o_r = (int)(origin.r()*a+0.5);
       return yee_shift(c) + vec(inva*(o_r+ind/(nz()+1)),
                               inva*(oz+(ind%(nz()+1))));
@@ -541,11 +567,23 @@ vec volume::loc(component c, int ind) const {
     {
       const int ox = (int)(origin.x()*a+0.5);
       const int oy = (int)(origin.y()*a+0.5);
+      const int oz = (int)(origin.z()*a+0.5);
       return yee_shift(c) + vec(inva*(ox+ind/((nz()+1)*(ny()+1))),
                                 inva*(oy+(ind%((nz()+1)*(ny()+1)))/(nz()+1)),
                                 inva*(oz+(ind%(nz()+1))));
     }
-  case d1: return yee_shift(c) + vec(inva*(oz+ind));
+  case d2:
+    {
+      const int ox = (int)(origin.x()*a+0.5);
+      const int oy = (int)(origin.y()*a+0.5);
+      return yee_shift(c) + vec2d(inva*(ox+ind/((ny()+1))),
+                                  inva*(oy+(ind%(ny()+1))));
+    }
+  case d1:
+    {
+      const int oz = (int)(origin.z()*a+0.5);
+      return yee_shift(c) + vec(inva*(oz+ind));
+    }
   }
 }
 
@@ -559,12 +597,14 @@ vec volume::dr() const {
 vec volume::dx() const {
   switch (dim) {
   case d3: return vec(inva,0,0);
+  case d2: return vec2d(inva,0);
   }
 }
 
 vec volume::dy() const {
   switch (dim) {
   case d3: return vec(0,inva,0);
+  case d2: return vec2d(0,inva);
   }
 }
 
@@ -627,6 +667,13 @@ volume volume::split_once(int n, int which) const {
     switch (dim) {
     case d1:
       retval.origin = origin + vec(nz()/n*which/a);
+      break;
+    case d2:
+      if (bestd==0) { // split on x
+        retval.origin = origin + vec2d(nx()/n*which/a,0);
+      } else { // split on y
+        retval.origin = origin + vec2d(0,nz()/n*which/a);
+      }
       break;
     case d3:
       if (bestd==0) { // split on x
