@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
   showbench("Periodic 12x1", bench_periodic(12.0, 1.0, one));
   showbench("Periodic 1x12", bench_periodic(1.0, 12.0, one));
   showbench("Periodic 12x0", bench_periodic(12.0, 0.0, one));
+  showbench("Periodic 12x12", bench_periodic(12.0, 12.0, one));
 
   master_printf("\nnote: 1 Mgs = 1 million grid point time steps\n");
 
