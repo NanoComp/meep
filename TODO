@@ -1,0 +1,28 @@
+PNG slices.
+
+HDF5 output should support epsilon, energy density, and Poynting vector.
+
+Fix bug: divergence in saturated polarization (tests/symmetry.cpp)
+
+User-specified anisotropic dielectric constant.
+
+Support mu?  (i.e. magnetic permeability)
+
+Support coordinate origin at center, or arbitrary location?
+
+Generic DFT volumes (& component sets)
+
+Flux planes and DFTs thereof.
+
+Field dump/load (i.e. restarting)?
+
+Make sure epsilon and other material properties respect symmetry,
+periodic boundaries, etc.?
+
+Clean up monitor point class (redundant with HDF5 output, DFT volumes?).
+
+Reference manual.  Fix crude-looking documentation graphs?
+
+libctl front-end:
+	Finish.
+	Integrate MPB mode solver.
