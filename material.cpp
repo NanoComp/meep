@@ -81,9 +81,21 @@ mat::mat(const mat *m) {
   for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m->chunks[i]);
 }
 
+mat::mat(const mat &m) {
+  num_chunks = m.num_chunks;
+  outdir = m.outdir;
+  v = m.v;
+  S = m.S;
+  user_volume = m.user_volume;
+  chunks = new (mat_chunk *)[num_chunks];
+  for (int i=0;i<num_chunks;i++) chunks[i] = new mat_chunk(m.chunks[i]);
+  
+}
+
 mat::~mat() {
   for (int i=0;i<num_chunks;i++) {
     delete chunks[i];
+    chunks[i] = NULL; // Just to be sure...
   }
   delete[] chunks;
 }

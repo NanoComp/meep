@@ -72,6 +72,7 @@ class mat {
   mat(const volume &v, double eps(const vec &), int num_chunks = 0,
       const symmetry &s = identity());
   mat(const mat *);
+  mat(const mat &);
   void choose_chunkdivision(const volume &v, double eps(const vec &),
                             int num_chunks = 1,
                             const symmetry &s = identity());
