@@ -95,7 +95,7 @@ test: simplebands.dac complicated.dac polaritonbands.dac \
 doc: dactyl.ps
 
 testclean:
-	rm -rf *.o *.hi *.cpp *.dac *-out *-out-*
+	rm -rf *.o *.hi *.dac *-out *-out-*
 
 clean:
-	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.cpp *.dac dactyl/ *-out *-out-*
+	rm -rf *.o *.ps *.dvi *.doc *.log *.hi *.dac dactyl/

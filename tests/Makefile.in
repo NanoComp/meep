@@ -46,4 +46,4 @@ bench: bench.dac
 	$(RUNCODE) ./bench.dac
 
 clean:
-	rm -rf *.o *.dac *-out/ *-out-*/ debug_out_* *.done
+	rm -rf *.o *.dac debug_out_* *.done
