@@ -49,6 +49,7 @@ int compare_point(const fields &f1, const fields &f2, const vec &p) {
         printf("Right now I'm looking at %lg %lg, time %lg\n", p.r(), p.z(), f1.time());
         f1.output_real_imaginary_slices("multi");
         f2.output_real_imaginary_slices("single");
+        sync();
         return 0;
       }
     }
@@ -76,6 +77,53 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *dir
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     fields f1(&ma1, m);
     f1.use_bloch(0.0);
+    f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
+    f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
+    master_printf("Chunks are %lg by %lg\n",
+                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+    double total_energy_check_time = 29.0;
+    while (f.time() < ttot) {
+      f.step();
+      f1.step();
+      if (!compare_point(f, f1, vec(0.5, 0.4))) return 0;
+      if (!compare_point(f, f1, vec(0.46, 0.36))) return 0;
+      if (!compare_point(f, f1, vec(1.0, 0.4))) return 0;
+      if (!compare_point(f, f1, vec(0.01, 0.02))) return 0;
+      if (!compare_point(f, f1, vec(0.601, 0.701))) return 0;
+      if (f.time() >= total_energy_check_time) {
+        if (!compare(f.total_energy(), f1.total_energy(),
+                     "   total energy")) return 0;
+        if (!compare(f.electric_energy_in_box(v), f1.electric_energy_in_box(v),
+                     "electric energy")) return 0;
+        if (!compare(f.magnetic_energy_in_box(v), f1.magnetic_energy_in_box(v),
+                     "magnetic energy")) return 0;
+
+        total_energy_check_time += 5.0;
+      }
+    }
+  }
+  return 1;
+}
+
+int test_simple_metallic(double eps(const vec &), int splitting, const char *dirname) {
+  double a = 10.0;
+  double ttot = 30.0;
+  
+  volume v = volcyl(1.5,0.8,a);
+  mat ma1(v, eps, 1);
+  mat ma(v, eps, splitting);
+  ma.set_output_directory(dirname);
+  ma1.set_output_directory(dirname);
+  for (int m=0;m<3;m++) {
+    char m_str[10];
+    snprintf(m_str, 10, "%d", m);
+    master_printf("Metallic with m = %d and a splitting into %d chunks...\n",
+                  m, splitting);
+    fields f(&ma, m);
+    f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
+    f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
+    fields f1(&ma1, m);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
@@ -171,6 +219,14 @@ int main(int argc, char **argv) {
     abort("error in crazy test_simple_periodic\n");
   if (!test_simple_periodic(one, 120, dirname))
     abort("error in crazy test_simple_periodic\n");
+  
+  for (int s=2;s<7;s++)
+    if (!test_simple_metallic(one, s, dirname)) abort("error in test_simple_metallic\n");
+  if (!test_simple_metallic(one, 8, dirname))
+    abort("error in crazy test_simple_metallic\n");
+  if (!test_simple_metallic(one, 120, dirname))
+    abort("error in crazy test_simple_metallic\n");
+
   delete[] dirname;
   finished();
   exit(0);
