@@ -276,7 +276,23 @@ void fields::output_slices(const char *name) {
     printf("Allocation failure!\n");
     exit(1);
   }
-
+  {
+    polarization *p = pol;
+    int polnum = 0;
+    while (p) {
+      if (a == 1) snprintf(n, buflen, "%s/%sp%dr-%08.0f.sli", outdir, nname, polnum, t*inva);
+      else snprintf(n, buflen, "%s/%sp%dr-%09.2f.sli", outdir, nname, polnum, t*inva);
+      output_complex_slice(p->Pr, nr, nz, n);
+      if (a == 1) snprintf(n, buflen, "%s/%sp%dp-%08.0f.sli", outdir, nname, polnum, t*inva);
+      else snprintf(n, buflen, "%s/%sp%dp-%09.2f.sli", outdir, nname, polnum, t*inva);
+      output_complex_slice(p->Pp, nr, nz, n);
+      if (a == 1) snprintf(n, buflen, "%s/%sp%dz-%08.0f.sli", outdir, nname, polnum, t*inva);
+      else snprintf(n, buflen, "%s/%sp%dz-%09.2f.sli", outdir, nname, polnum, t*inva);
+      output_complex_slice(p->Pz, nr, nz, n);
+      polnum++;
+      p = p->next;
+    }
+  }
   if (a == 1) snprintf(n, buflen, "%s/%shr-%08.0f.sli", outdir, nname, t*inva);
   else snprintf(n, buflen, "%s/%shr-%09.2f.sli", outdir, nname, t*inva);
   output_complex_slice(hr, nr, nz, n);
