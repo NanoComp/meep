@@ -29,6 +29,7 @@ class mat {
   int nr, nz, numpols;
   int npmlr, npmlz; // Amount of pml
   double *freq[32], *width[32], height[32];
+  const char *outdir;
 
   ~mat();
   mat(double eps(double r, double z),
@@ -36,6 +37,7 @@ class mat {
   void use_pml(int npmlr=16, int npmlz=16);
 
   void output_slices(const char *name);
+  void set_output_directory(const char *name);
  private:
   void output_sigma_slice(const char *name);
 };
@@ -84,6 +86,7 @@ class fields {
   bandsdata bands;
   src *e_sources, *h_sources;
   const mat *ma;
+  const char *outdir;
 
   fields(const mat *, int m);
   void use_bloch(double kz);
@@ -122,6 +125,7 @@ class fields {
   int set_frequency_range(double wl, double wu, double deltaw);
   void ttow(complex<double> field, double *retarget, double *imtarget, double time);
   void fluxw_output(FILE *outpf, char *header);
+  void set_output_directory(const char *name);
  private: 
   double *(erw[2]), *(epw[2]), *(ezw[2]), *(hrw[2]), *(hpw[2]), *(hzw[2]);
   int iposmax, ifreqmax, nfreq, nzflux, *(nzfluxplane[MAXFLUXPLANES]);
@@ -143,3 +147,9 @@ class fields {
 };
 
 const double c = 0.5;
+
+// The following is a utility function to parse the executable name use it
+// to come up with a directory name, avoiding overwriting any existing
+// directory, unless the source file hasn't changed.
+
+const char *make_output_directory(const char *exename);

@@ -149,6 +149,7 @@ static double sig(double r) {
 mat::mat(double feps(double r, double z),
          double rmax, double zmax, double ta) {
   int r,z;
+  outdir = ".";
   numpols = 0;
   a = ta;
   nr = (int) (rmax*a);
@@ -266,6 +267,7 @@ fields::fields(const mat *the_ma, int tm) {
   ma = the_ma;
   nr = ma->nr;
   nz = ma->nz;
+  outdir = ma->outdir;
   m = tm;
   k = -1;
   a = ma->a;
@@ -1174,24 +1176,30 @@ void mat::output_sigma_slice(const char *filename) {
 
 void mat::output_slices(const char *name) {
   const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
   if (!n) {
     printf("Allocation failure!\n");
     exit(1);
   }
-  snprintf(n, buflen, "%s-epsilon.sli", name);
+  snprintf(n, buflen, "%s/%sepsilon.sli", outdir, nname);
   output_slice(eps, nr, nz, n);
   for (int i=0;i<numpols;i++) {
-    snprintf(n, buflen, "%s-freq-%d.sli", name, i);
+    snprintf(n, buflen, "%s/%sfreq-%d.sli", outdir, nname, i);
     output_slice(freq[i], nr, nz, n);
   }
-  snprintf(n, buflen, "%s-sigma.sli", name);
+  snprintf(n, buflen, "%s/%ssigma.sli", outdir, nname);
   output_sigma_slice(n);
   free(n);
 }
 
 void fields::output_real_imaginary_slices(const char *name) {
   const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
   int i;
   if (!n) {
@@ -1200,24 +1208,24 @@ void fields::output_real_imaginary_slices(const char *name) {
   }
   char *r_or_i = "-re";
   for (int cmp=0;cmp<2;cmp++) {
-    if (a == 1) snprintf(n, buflen, "%s-hr%s-%06.0f.sli", name, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s-hr%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%shr%s-%06.0f.sli", outdir, nname, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s/%shr%s-%07.2f.sli", outdir, nname, r_or_i, t*inva);
     output_slice(hr[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s-hp%s-%06.0f.sli", name, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s-hp%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%shp%s-%06.0f.sli", outdir, nname, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s/%shp%s-%07.2f.sli", outdir, nname, r_or_i, t*inva);
     output_slice(hp[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s-hz%s-%06.0f.sli", name, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s-hz%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%shz%s-%06.0f.sli", outdir, nname, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s/%shz%s-%07.2f.sli", outdir, nname, r_or_i, t*inva);
     output_slice(hz[cmp], nr, nz, n);
     
-    if (a == 1) snprintf(n, buflen, "%s-er%s-%06.0f.sli", name, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s-er%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%ser%s-%06.0f.sli", outdir, nname, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s/%ser%s-%07.2f.sli", outdir, nname, r_or_i, t*inva);
     output_slice(er[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s-ep%s-%06.0f.sli", name, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s-ep%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%sep%s-%06.0f.sli", outdir, nname, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s/%sep%s-%07.2f.sli", outdir, nname, r_or_i, t*inva);
     output_slice(ep[cmp], nr, nz, n);
-    if (a == 1) snprintf(n, buflen, "%s-ez%s-%06.0f.sli", name, r_or_i, t*inva);
-    else snprintf(n, buflen, "%s-ez%s-%07.2f.sli", name, r_or_i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%sez%s-%06.0f.sli", outdir, nname, r_or_i, t*inva);
+    else snprintf(n, buflen, "%s/%sez%s-%07.2f.sli", outdir, nname, r_or_i, t*inva);
     output_slice(ez[cmp], nr, nz, n);
     r_or_i = "-im";
   }
@@ -1227,6 +1235,9 @@ void fields::output_real_imaginary_slices(const char *name) {
 
 void fields::output_slices(const char *name) {
   const int buflen = 1024;
+  char nname[buflen];
+  if (*name) snprintf(nname, buflen, "%s-", name);
+  else *nname = 0; // No additional name!
   char *n = (char *)malloc(buflen);
   int i;
   if (!n) {
@@ -1234,29 +1245,29 @@ void fields::output_slices(const char *name) {
     exit(1);
   }
   for (i=0;i<numpols;i++) {
-    if (a == 1) snprintf(n, buflen, "%s-pol-%d-%06.0f.sli", name, i, t*inva);
-    else snprintf(n, buflen, "%s-pol-%d-%07.2f.sli", name, i, t*inva);
+    if (a == 1) snprintf(n, buflen, "%s/%spol-%d-%06.0f.sli", outdir, nname, i, t*inva);
+    else snprintf(n, buflen, "%s/%spol-%d-%07.2f.sli", outdir, nname, i, t*inva);
     output_slice(pol[i], nr, nz, n);
   }
 
-  if (a == 1) snprintf(n, buflen, "%s-hr-%06.0f.sli", name, t*inva);
-  else snprintf(n, buflen, "%s-hr-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%shr-%06.0f.sli", outdir, nname, t*inva);
+  else snprintf(n, buflen, "%s/%shr-%07.2f.sli", outdir, nname, t*inva);
   output_complex_slice(hr, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s-hp-%06.0f.sli", name, t*inva);
-  else snprintf(n, buflen, "%s-hp-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%shp-%06.0f.sli", outdir, nname, t*inva);
+  else snprintf(n, buflen, "%s/%shp-%07.2f.sli", outdir, nname, t*inva);
   output_complex_slice(hp, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s-hz-%06.0f.sli", name, t*inva);
-  else snprintf(n, buflen, "%s-hz-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%shz-%06.0f.sli", outdir, nname, t*inva);
+  else snprintf(n, buflen, "%s/%shz-%07.2f.sli", outdir, nname, t*inva);
   output_complex_slice(hz, nr, nz, n);
   
-  if (a == 1) snprintf(n, buflen, "%s-er-%06.0f.sli", name, t*inva);
-  else snprintf(n, buflen, "%s-er-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%ser-%06.0f.sli", outdir, nname, t*inva);
+  else snprintf(n, buflen, "%s/%ser-%07.2f.sli", outdir, nname, t*inva);
   output_complex_slice(er, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s-ep-%06.0f.sli", name, t*inva);
-  else snprintf(n, buflen, "%s-ep-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%sep-%06.0f.sli", outdir, nname, t*inva);
+  else snprintf(n, buflen, "%s/%sep-%07.2f.sli", outdir, nname, t*inva);
   output_complex_slice(ep, nr, nz, n);
-  if (a == 1) snprintf(n, buflen, "%s-ez-%06.0f.sli", name, t*inva);
-  else snprintf(n, buflen, "%s-ez-%07.2f.sli", name, t*inva);
+  if (a == 1) snprintf(n, buflen, "%s/%sez-%06.0f.sli", outdir, nname, t*inva);
+  else snprintf(n, buflen, "%s/%sez-%07.2f.sli", outdir, nname, t*inva);
   output_complex_slice(ez, nr, nz, n);
 
   free(n);
