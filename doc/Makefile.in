@@ -30,7 +30,7 @@ TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
 	simple.tex simple-out/ez-000200.00.eps \
 	complicated.tex complicated-out/freqs
 
-.cpp.o:
+.cpp.o: ../dactyl.h ../vec.h ../dactyl_internals.h
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
 .o.dac: ../libdactyl.a
 	$(CXX) $(CFLAGS) $(LDFLAGS) $< ../libdactyl.a $(LIBS) -o $@
