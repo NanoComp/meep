@@ -285,7 +285,7 @@ static double integrate_envelope(const src *s) {
   for (int t=(int)s->peaktime-s->cutoff;t<(1<<30);t++) {
     double e = s->get_envelope_at_time(t);
     sofar += e;
-    if (e == 0) break; // But here if there is a source that starts late,
+    if (e == 0) break; // Bug here if there is a source that starts late,
                        // or a source that never stops.
   }
   return sofar;
@@ -300,7 +300,7 @@ static complex<double> integrate_source(const src *s) {
   for (int t=0;1<<30;t++) {
     complex<double> A = s->get_amplitude_at_time(t);
     sofar += A;
-    if (A == 0) break; // But here if there is a source that starts late,
+    if (A == 0) break; // Bug here if there is a source that starts late,
                        // or a source that never stops.
   }
   return sofar;
