@@ -204,6 +204,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file) {
     file->write_chunk(1, &istart, &Nchunk, (double *) cur->dft);
     istart += Nchunk;
   }
+  file->done_writing_chunks();
 }
 
 void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file) {

@@ -241,6 +241,8 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   }
 
   delete[] data;
+
+  file->done_writing_chunks();
 }
 
 void fields::output_hdf5(h5file *file, component c,

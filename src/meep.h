@@ -62,7 +62,7 @@ public:
   h5file(const char *filename_, access_mode m=READWRITE, bool parallel_=true);
   ~h5file(); // closes the files (and any open dataset)
   
-  bool ok() const;
+  bool ok();
   
   double *read(const char *dataname, int *rank, int *dims, int maxrank);
   void write(const char *dataname, int rank, const int *dims, double *data,
@@ -80,6 +80,7 @@ public:
 			     bool append_data, bool single_precision);
   void write_chunk(int rank, const int *chunk_start, const int *chunk_dims,
 		   double *data);
+  void done_writing_chunks();
   
   void read_size(const char *dataname, int *rank, int *dims, int maxrank);
   void read_chunk(int rank, const int *chunk_start, const int *chunk_dims,
@@ -91,6 +92,7 @@ public:
   const char *file_name() const { return filename; }
 
 private:
+  access_mode mode;
   char *filename;
   bool parallel;
 
@@ -114,6 +116,9 @@ private:
      files including meep.h don't need hdf5.h */
   void *id; /* file */
   void *cur_id; /* dataset, if any */
+
+  void *get_id(); // get current (file) id, opening/creating file if needed
+  void close_id();
 };
 
 /* This class is used to compute position-dependent material properties

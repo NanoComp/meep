@@ -95,49 +95,61 @@ static bool dataset_exists(hid_t id, const char *name)
 
 namespace meep {
 
+// lazy file creation & locking
+void *h5file::get_id() {
+  if (HID(id) < 0) {
+    if (parallel)
+      all_wait();
+
+#ifdef HAVE_HDF5
+    hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
+#  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
+    if (parallel)
+      H5Pset_fapl_mpio(access_props, MPI_COMM_WORLD, MPI_INFO_NULL);
+#  else
+    if (parallel)
+      begin_critical_section(matrixio_critical_section_tag);
+#  endif
+    
+    if (mode != WRITE || IF_EXCLUSIVE(parallel && !am_master(), 1))
+      HID(id) = H5Fopen(filename,
+			mode == READONLY ? H5F_ACC_RDONLY : H5F_ACC_RDWR,
+			access_props);
+    else
+      HID(id) = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, access_props);
+    
+    H5Pclose(access_props);
+#endif
+  }
+  return id;
+}
+
+void h5file::close_id() {
+  unset_cur();
+#ifdef HAVE_HDF5
+  if (HID(id) >= 0)
+    H5Fclose(HID(id));
+  HID(id) = -1;
+#endif
+}
+
 /* note: if parallel is true, then *all* processes must call this,
    and all processes will use I/O. */
-h5file::h5file(const char *filename_, access_mode mode, bool parallel_) {
+h5file::h5file(const char *filename_, access_mode m, bool parallel_) {
   cur_dataname = NULL;
   id = (void*) (new hid_t);
   cur_id = (void*) (new hid_t);
   HID(id) = -1;
   HID(cur_id) = -1;
-  parallel = parallel_;
   extending = 0;
   filename = new char[strlen(filename_) + 1];
   strcpy(filename, filename_);
-  
-  if (parallel)
-    all_wait();
-  
-#ifdef HAVE_HDF5
-  hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
-#  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
-  if (parallel)
-    H5Pset_fapl_mpio(access_props, MPI_COMM_WORLD, MPI_INFO_NULL);
-#  else
-  if (parallel)
-    begin_critical_section(matrixio_critical_section_tag);
-#  endif
-  
-  if (mode != WRITE || IF_EXCLUSIVE(parallel && !am_master(), 1))
-    HID(id) = H5Fopen(filename,
-		      mode == READONLY ? H5F_ACC_RDONLY : H5F_ACC_RDWR,
-		      access_props);
-  else
-    HID(id) = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, access_props);
- 
-  H5Pclose(access_props);
-#endif
+  mode = m;
+  parallel = parallel_;
 }
 
 h5file::~h5file() {
-  unset_cur();
-#ifdef HAVE_HDF5
-  if (HID(id) >= 0)
-    H5Fclose(HID(id));
-#endif
+  close_id();
   if (cur_dataname) free(cur_dataname);
   for (h5file::extending_s *cur = extending; cur; ) {
     h5file::extending_s *next = cur->next;
@@ -151,25 +163,22 @@ h5file::~h5file() {
 	       (void) 0);
 }
 
-bool h5file::ok() const {
-  return (HID(id) >= 0);
+bool h5file::ok() {
+  return (HID(get_id()) >= 0);
 }
 
 void h5file::remove() {
-  unset_cur();
-#ifdef HAVE_HDF5
-  if (HID(id) >= 0)
-    H5Fclose(HID(id));
-  HID(id) = -1;
-#endif
+  close_id();
+  if (mode == READWRITE) mode = WRITE; // now need to re-create file
   for (h5file::extending_s *cur = extending; cur; ) {
     h5file::extending_s *next = cur->next;
     delete cur->dataname;
     delete cur;
     cur = next;
   }
+  extending = 0;
 
-  if (std::remove(filename))
+  if (am_master() && std::remove(filename))
     abort("error removing file %s", filename);
 }
 
@@ -211,7 +220,7 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
   if (parallel || am_master()) {
-    hid_t file_id = HID(id), space_id, data_id;
+    hid_t file_id = HID(get_id()), space_id, data_id;
     
     CHECK(file_id >= 0, "error opening HDF5 input file");
     
@@ -253,7 +262,7 @@ double *h5file::read(const char *dataname,
   double *data;
   if (parallel || am_master()) {
     int i, N;
-    hid_t file_id = HID(id), space_id, data_id;
+    hid_t file_id = HID(get_id()), space_id, data_id;
     
     CHECK(file_id >= 0, "error opening HDF5 input file");
 
@@ -312,7 +321,7 @@ char *h5file::read(const char *dataname)
   char *data = 0;
   int len = 0;
   if (parallel || am_master()) {
-    hid_t file_id = HID(id), space_id, data_id, type_id;
+    hid_t file_id = HID(get_id()), space_id, data_id, type_id;
     
     CHECK(file_id >= 0, "error opening HDF5 input file");
     
@@ -362,7 +371,7 @@ char *h5file::read(const char *dataname)
    by all processors. */
 void h5file::remove_data(const char *dataname)
 {
-  hid_t file_id = HID(id);
+  hid_t file_id = HID(get_id());
 
   if (is_cur(dataname))
     unset_cur();
@@ -398,7 +407,7 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
 {
 #ifdef HAVE_HDF5
   int i;
-  hid_t file_id = HID(id), space_id, data_id;
+  hid_t file_id = HID(get_id()), space_id, data_id;
   int rank1;
 
   CHECK(rank >= 0, "negative rank");
@@ -494,7 +503,7 @@ void h5file::extend_data(const char *dataname, int rank, const int *dims)
   extending_s *cur = get_extending(dataname);
   CHECK(cur, "extend_data can only be called on extensible data");
 
-  hid_t file_id = HID(id), data_id;
+  hid_t file_id = HID(get_id()), data_id;
   if (is_cur(dataname))
     data_id = HID(cur_id);
   else {
@@ -636,6 +645,18 @@ void h5file::write_chunk(int rank,
 #endif
 }
 
+// collective call after completing all write_chunk calls
+void h5file::done_writing_chunks() {
+  /* hackery: in order to not deadlock when writing extensible datasets
+     with a non-parallel version of HDF5, we need to close the file
+     and release the lock after writing extensible chunks  ...here,
+     I'm assuming(?) that non-extensible datasets will use different
+     files, etcetera, for different timesteps.  All of this hackery
+     goes away if we just use an MPI-compiled version of HDF5. */
+  IF_EXCLUSIVE(if (cur_dataname && get_extending(cur_dataname)) close_id(),
+	       0);
+}
+
 void h5file::write(const char *dataname, int rank, const int *dims,
 		   double *data, bool single_precision)
 {
@@ -645,6 +666,7 @@ void h5file::write(const char *dataname, int rank, const int *dims,
     create_data(dataname, rank, dims, false, single_precision);
     if (am_master())
       write_chunk(rank, start, dims, data);
+    done_writing_chunks();
     unset_cur();
     delete[] start;
   }
@@ -654,7 +676,7 @@ void h5file::write(const char *dataname, const char *data)
 {
 #ifdef HAVE_HDF5
   if (parallel || am_master()) {
-    hid_t file_id = HID(id), type_id, data_id, space_id;
+    hid_t file_id = HID(get_id()), type_id, data_id, space_id;
     
     CHECK(file_id >= 0, "error opening HDF5 output file");     
     
