@@ -245,24 +245,22 @@ void fields::outline_chunks(const char *name) {
     return;
   }
   for (int i=0;i<num_chunks;i++) {
-    double x1, y1, x2, y2, x3, y3, x4, y4;
+    double xlo, xhi, ylo, yhi;
     switch (v.dim) {
     case Dcyl:
-      x1 = chunks[i]->v.zmin(); y1 = chunks[i]->v.rmin();
-      x2 = chunks[i]->v.zmin(); y2 = chunks[i]->v.rmax();
-      x3 = chunks[i]->v.zmax(); y3 = chunks[i]->v.rmax();
-      x4 = chunks[i]->v.zmax(); y4 = chunks[i]->v.rmin();
+      xlo = chunks[i]->v.boundary_location(Low,Z);
+      xhi = chunks[i]->v.boundary_location(High,Z);
+      ylo = chunks[i]->v.boundary_location(Low,R);
+      yhi = chunks[i]->v.boundary_location(High,R);
     break;
     case D2:
-      x1 = chunks[i]->v.xmin(); y1 = chunks[i]->v.ymin();
-      x2 = chunks[i]->v.xmin(); y2 = chunks[i]->v.ymax();
-      x3 = chunks[i]->v.xmax(); y3 = chunks[i]->v.ymax();
-      x4 = chunks[i]->v.xmax(); y4 = chunks[i]->v.ymin();
+      xlo = chunks[i]->v.boundary_location(Low,X);
+      ylo = chunks[i]->v.boundary_location(Low,Y);
+      xhi = chunks[i]->v.boundary_location(High,X);
+      yhi = chunks[i]->v.boundary_location(High,Y);
     }
-    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x1, y1, x2, y2);
-    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x2, y2, x3, y3);
-    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x3, y3, x4, y4);
-    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", x4, y4, x1, y1);
+    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xlo, yhi, xhi, yhi);
+    fprintf(out, "%lg\t%lg\t%lg\t%lg\tD\n", xhi, yhi, xhi, ylo);
   }
   fclose(out);
 }
