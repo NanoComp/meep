@@ -76,6 +76,7 @@ bufprint::bufprint(file *out) {
 
 bufprint::~bufprint() {
   flushme();
+  delete[] buf;
 }
 
 void bufprint::flushme() {
