@@ -162,8 +162,8 @@ void volume::interpolate(component c, const vec &p,
       indices[i] = 0;
       weights[i] = 0;
     }
-    //} else if (dim == dcyl) { FIXME the cylindrical interpolation is buggy!
-    //interpolate_cyl(c, p, 0, indices, weights);
+  } else if (dim == dcyl) {
+    interpolate_cyl(c, p, 0, indices, weights);
   } else {
     // by default use the 'index' routine.
     indices[0] = index(c,p);
@@ -175,18 +175,31 @@ void volume::interpolate(component c, const vec &p,
   }
 }
 
+static void stupidsort(int *ind, double *w, int l) {
+  while (l) {
+    if (fabs(w[0]) < 1e-15) {
+      w[0] = w[l-1];
+      ind[0] = ind[l-1];
+      w[l-1] = 0.0;
+      ind[l-1] = 0;
+    } else {
+      w += 1;
+      ind += 1;
+    }
+    l -= 1;
+  }
+}
+
 void volume::interpolate_cyl(component c, const vec &p, int m,
                              int indices[8], double weights[8]) const {
-  const vec yeept = p - origin - yee_shift(c);
-  const double r = yeept.r()*a, z = yeept.z()*a;
-  int rlo = (int) r, zlo = (int) z, rhi = rlo+1, zhi = zlo+1;
-  double dr = r - (rlo + 0.5), dz = z - (zlo + 0.5);
-  for (int i=4;i<8;i++) indices[i] = 0;
-  for (int i=4;i<8;i++) weights[i] = 0;
-  indices[0] = zlo + (1+nz())*rlo;
-  indices[1] = zhi + (1+nz())*rlo;
-  indices[2] = zlo + (1+nz())*rhi;
-  indices[3] = zhi + (1+nz())*rhi;
+  const vec indexpt = p - origin - yee_shift(c);
+  const double ir = indexpt.r()*a, iz = indexpt.z()*a;
+  int irlo = (int) floor(ir), izlo = (int) floor(iz),
+    irhi = irlo+1, izhi = izlo+1;
+  double dr = ir - (irlo + 0.5), dz = iz - (izlo + 0.5);
+  for (int i=0;i<8;i++) indices[i] = 0;
+  for (int i=0;i<8;i++) weights[i] = 0;
+  // Tabulate the actual weights:
   if (dr+dz > 0.0) {
     if (dr-dz > 0.0) { // North  
       weights[0] = (1-2*dr)*0.25;
@@ -194,17 +207,17 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
       weights[2] = 2*dr*(0.5-dz) + (1-2*dr)*0.25;
       weights[3] = 2*dr*(0.5+dz) + (1-2*dr)*0.25;
     } else { // East
-      weights[0] = (1-2*dz)*0.25;
-      weights[2] = (1-2*dz)*0.25;
-      weights[1] = 2*dz*(0.5-dr) + (1-2*dz)*0.25;
-      weights[3] = 2*dz*(0.5+dr) + (1-2*dz)*0.25;
+      weights[0] = (1+2*dz)*0.25;
+      weights[2] = (1+2*dz)*0.25;
+      weights[1] = -2*dz*(0.5-dr) + (1+2*dz)*0.25;
+      weights[3] = -2*dz*(0.5+dr) + (1+2*dz)*0.25;
     }
   } else {
     if (dr-dz > 0.0) { // West
-      weights[3] = (1-2*dz)*0.25;
-      weights[1] = (1-2*dz)*0.25;
-      weights[0] = 2*dz*(0.5-dr) + (1-2*dz)*0.25;
-      weights[2] = 2*dz*(0.5+dr) + (1-2*dz)*0.25;
+      weights[3] = (1+2*dz)*0.25;
+      weights[1] = (1+2*dz)*0.25;
+      weights[0] = -2*dz*(0.5-dr) + (1+2*dz)*0.25;
+      weights[2] = -2*dz*(0.5+dr) + (1+2*dz)*0.25;
     } else { // South
       weights[2] = (1-2*dr)*0.25;
       weights[3] = (1-2*dr)*0.25;
@@ -212,6 +225,76 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
       weights[1] = 2*dr*(0.5+dz) + (1-2*dr)*0.25;
     }
   }
+  // These are the four nearest neighbor points:
+  indices[0] = izlo + (1+nz())*irlo; // SW
+  indices[1] = izhi + (1+nz())*irlo; // SE
+  indices[2] = izlo + (1+nz())*irhi; // NW
+  indices[3] = izhi + (1+nz())*irhi; // NE
+  // Figure out which of these points is off the grid in z direction:
+  switch ((component)c) {
+  case Ep: case Er: case Hz:
+    if (izlo <= 0 || izlo > nz()) {
+      weights[0] = 0;
+      weights[2] = 0;
+    }
+    if (izhi <= 0 || izhi > nz()) {
+      weights[1] = 0;
+      weights[3] = 0;
+    }
+    break;
+    if (izlo < 0 || izlo >= nz()) {
+      weights[0] = 0;
+      weights[2] = 0;
+    }
+    if (izhi < 0 || izhi >= nz()) {
+      weights[1] = 0;
+      weights[3] = 0;
+    }
+  }
+  // Figure out which of the points is off the grid in r direction:
+  const int have_r_zero = origin.r() == 0.0;
+  const int odd_field_at_origin = m == 1 && have_r_zero && (c == Er || c == Hz);
+  // Ep is also odd, but we don't need to interpolate it to zero.
+  switch ((component)c) {
+  case Ep: case Ez: case Hr:
+    if (irhi > nr() || irhi < 0 || (irhi == 0 && !have_r_zero)) {
+      weights[2] = 0;
+      weights[3] = 0;
+    }
+    if (irlo > nr() || irlo < 0 || (irlo == 0 && !have_r_zero)) {
+      weights[0] = 0;
+      weights[1] = 0;
+    }
+    break;
+    if (irhi > nr() || irhi < 0 || (irhi == 0 && !have_r_zero)) {
+      weights[2] = 0;
+      weights[3] = 0;
+    } else if (irhi == -1) {
+      indices[2] = izlo + (1+nz())*0; // NW
+      indices[3] = izhi + (1+nz())*0; // NE
+      if (c != Hp) { // These guys are odd!
+        weights[2] = -weights[2];
+        weights[3] = -weights[3];
+      }
+    }
+    if (irlo > nr() || irlo < 0 || (irlo == 0 && !have_r_zero)) {
+      weights[0] = 0;
+      weights[1] = 0;
+    } else if (irlo == -1) {
+      if (c != Hp) { // These guys are odd!
+        weights[2] -= weights[0];
+        weights[3] -= weights[1];
+      } else {
+        weights[2] += weights[0];
+        weights[3] += weights[1];
+      }
+      weights[0] = 0;
+      weights[1] = 0;
+    }
+  }
+  // Now I need to reorder them so the points with nonzero weights come
+  // first.
+  stupidsort(indices, weights, 4);
 }
 
 double volume::dv(component c, int ind) const {

@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
   mat ma(volcyl(rmax + pml, zsize, a), eps);
   ma.use_pml_right(pml);
   ma.use_pml_left(pml);
+  ma.use_pml_radial(pml);
   ma.set_output_directory(dirname);
 \end{comment}
 
@@ -70,22 +71,19 @@ For sources, we use a series of broad point sources covering the frequency
 range of interest.
 
 \begin{verbatim}
-  f.add_point_source(Ep, 0.13, 0.8, 0.0, 8.0, vec(rmax,sourceloc));
-  f.add_point_source(Ep, 0.21, 0.8, 0.0, 8.0, vec(rmax,sourceloc));
-  f.add_point_source(Ep, 0.3 , 0.8, 0.0, 8.0, vec(rmax,sourceloc));
-  f.add_point_source(Ep, 0.43, 0.8, 0.0, 8.0, vec(rmax,sourceloc));
+  f.add_point_source(Ep, 0.9, 0.8, 0.0, 8.0, vec(rmax*.5,sourceloc));
 \end{verbatim}
 \begin{comment}
   printf("Working with a=%d...\n", a);
   monitor_point *left = NULL, *right = NULL, *middle = NULL,
                 *top = NULL, *bottom = NULL;
   double next_printtime = 10;
-  while (f.time() < 510 && !interrupt) {
+  while (f.time() < 130 && !interrupt) {
     if (f.time() >= next_printtime) {
       next_printtime += 10;
       printf("Working on time %lg...  ", f.time());
       printf("energy is %lg\n", f.field_energy());
-      //if (f.time() > -90) f.output_slices();
+      //if (f.time() > -90) f.eps_slices();
     }
     f.step();
 \end{comment}

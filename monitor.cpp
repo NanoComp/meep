@@ -52,7 +52,7 @@ void fields::get_point(monitor_point *pt, const vec &loc) {
     exit(1);
   }
   pt->loc = loc;
-  pt->t = t*inva*c;
+  pt->t = time();
   for (int c=0;c<10;c++)
     if (v.has_field((component)c)) {
       int ind[8];
