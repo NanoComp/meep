@@ -81,6 +81,28 @@ inline direction stop_at_direction(ndim dim) {
                                      loop_stop_directi = stop_at_direction(dim); \
                                      d < loop_stop_directi; d = (direction) (d+1))
 
+// loop over indices idx from is to ie (inclusive) in v
+#define LOOP_OVER_IVECS(v, is, ie, idx) \
+  for (int loop_n1 = (ie.yucky_val(0) - is.yucky_val(0)) / 2 + 1, \
+           loop_n2 = (ie.yucky_val(1) - is.yucky_val(1)) / 2 + 1, \
+           loop_n3 = (ie.yucky_val(2) - is.yucky_val(2)) / 2 + 1, \
+           loop_d1 = v.yucky_direction(0), \
+           loop_d2 = v.yucky_direction(1), \
+           loop_d3 = v.yucky_direction(2), \
+           loop_is1 = is.yucky_val(0), \
+           loop_is2 = is.yucky_val(1), \
+           loop_is3 = is.yucky_val(2), \
+           loop_s1 = v.stride((direction) loop_d1), \
+           loop_s2 = v.stride((direction) loop_d2), \
+           loop_s3 = v.stride((direction) loop_d3), \
+           idx0 = (is - v.little_corner()).yucky_val(0) / 2 * loop_s1 \
+                + (is - v.little_corner()).yucky_val(1) / 2 * loop_s2 \
+                + (is - v.little_corner()).yucky_val(2) / 2 * loop_s3,\
+           loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
+    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
+      for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
+           loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
+
 #define LOOP_OVER_OWNED(v, idx) \
   for (int loop_n1 = v.yucky_num(0), \
            loop_n2 = v.yucky_num(1), \
@@ -88,8 +110,7 @@ inline direction stop_at_direction(ndim dim) {
            loop_s1 = v.stride(v.yucky_direction(0)), \
            loop_s2 = v.stride(v.yucky_direction(1)), \
            loop_s3 = v.stride(v.yucky_direction(2)), \
-           loop_stupid=0; loop_stupid < 1; loop_stupid++) \
-    for (int loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
+           loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
       for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
         for (int idx = loop_i1*loop_s1 + loop_i2*loop_s2, \
                  loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
@@ -180,6 +201,12 @@ class vec {
     return result;
   };
 
+  vec operator-(void) const {
+    vec result(dim);
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] = -t[d];
+    return result;
+  };
+
   vec operator-=(const vec &a) {
     LOOP_OVER_DIRECTIONS(dim, d) t[d] -= a.t[d];
     return *this;
@@ -251,6 +278,10 @@ class ivec {
   friend ivec ivec2d(int xx, int yy);
   ~ivec() {};
 
+  // Only an idiot (or a macro) would use a yucky function.  Don't be an
+  // idiot.
+  int yucky_val(int) const;
+
   ivec operator+(const ivec &a) const {
     ivec result = a;
     LOOP_OVER_DIRECTIONS(dim, d) result.t[d] += t[d];
@@ -268,6 +299,12 @@ class ivec {
     return result;
   };
 
+  ivec operator-(void) const {
+    ivec result(dim);
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] = -t[d];
+    return result;
+  };
+
   ivec operator-=(const ivec &a) {
     LOOP_OVER_DIRECTIONS(dim, d) t[d] -= a.t[d];
     return *this;
@@ -280,6 +317,11 @@ class ivec {
 
   bool operator==(const ivec &a) const {
     LOOP_OVER_DIRECTIONS(dim, d) if (t[d] != a.t[d]) return false;
+    return true;
+  };
+
+  bool operator<=(const ivec &a) const {
+    LOOP_OVER_DIRECTIONS(dim, d) if (t[d] > a.t[d]) return false;
     return true;
   };
 
@@ -304,12 +346,24 @@ class ivec {
   void set_direction(direction d, int val) { t[d] = val; };
 
   friend ivec zero_ivec(ndim);
+  friend ivec one_ivec(ndim);
  private:
   int t[5];
 };
 
 inline ivec zero_ivec(ndim di) {
   ivec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0);
+  return v;
+}
+
+inline ivec one_ivec(ndim di) {
+  ivec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 1);
+  return v;
+}
+
+inline ivec unit_ivec(ndim di, direction d) {
+  ivec v(zero_ivec(di));
+  v.set_direction(d, 1);
   return v;
 }
 
@@ -338,6 +392,13 @@ class geometric_volume {
   }
   geometric_volume operator+=(const vec &a) {
     min_corner += a; max_corner += a;
+    return *this;
+  }
+  geometric_volume operator-(const vec &a) const {
+    return geometric_volume(min_corner - a, max_corner - a);
+  }
+  geometric_volume operator-=(const vec &a) {
+    min_corner -= a; max_corner -= a;
     return *this;
   }
   bool intersects(const geometric_volume &a) const;

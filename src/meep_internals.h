@@ -26,6 +26,19 @@ inline double min(double a, double b) { return (a < b) ? a : b; }
 inline int max(int a, int b) { return (a > b) ? a : b; }
 inline int min(int a, int b) { return (a < b) ? a : b; }
 
+inline ivec min(const ivec &a, const ivec &b) {
+  ivec v(a.dim);
+  LOOP_OVER_DIRECTIONS(a.dim, d) 
+    v.set_direction(d, min(a.in_direction(d), b.in_direction(d)));
+  return v;
+}
+inline ivec max(const ivec &a, const ivec &b) {
+  ivec v(a.dim);
+  LOOP_OVER_DIRECTIONS(a.dim, d) 
+    v.set_direction(d, max(a.in_direction(d), b.in_direction(d)));
+  return v;
+}
+
 inline int small_r_metal(int m) {
   return m-1;
 }

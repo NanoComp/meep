@@ -202,6 +202,22 @@ double sum_to_all(double in) {
   return out;
 }
 
+long double sum_to_all(long double in) {
+  long double out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
+int sum_to_all(int in) {
+  int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+#endif
+  return out;
+}
+
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;
 #ifdef HAVE_MPI

@@ -167,20 +167,35 @@ bool geometric_volume::intersects(const geometric_volume &a) const {
   return true;
 }
 
+/* Used for n=0,1,2 nested loops in macros.  We should arrange
+   the ordering so that this gives most efficient traversal of
+   a field array, where n=2 is the innermost loop. */
+static direction yucky_dir(ndim dim, int n) {
+  if (dim == Dcyl)
+    switch (n) {
+    case 0: return P;
+    case 1: return R;
+    case 2: return Z;
+    }
+  else if (dim == D2)
+    return (direction) ((n + 2) % 3); /* n = 0,1,2 gives Z, X, Y */
+  return (direction) n ;
+}
+
+int ivec::yucky_val(int n) const {
+  if (has_direction(dim, yucky_dir(dim, n)))
+    return in_direction(yucky_dir(dim, n));
+  return 0;
+}
+
 int volume::yucky_num(int n) const {
-  if (has_direction(dim, yucky_direction(n)))
-    return num_direction(yucky_direction(n));
+  if (has_direction(dim, yucky_dir(dim, n)))
+    return num_direction(yucky_dir(dim, n));
   return 1;
 }
 
 direction volume::yucky_direction(int n) const {
-  if (dim == Dcyl)
-    switch (n) {
-    case 0: return X;
-    case 1: return R;
-    case 2: return Z;
-    }
-  return (direction) n;
+  return yucky_dir(dim, n);
 }
 
 geometric_volume volume::surroundings() const {

@@ -480,6 +480,14 @@ enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
 enum time_sink { Connecting, Stepping, Boundaries, MpiTime,
                  Slicing, Other };
 
+typedef void (*field_integrand)(fields_chunk *fc,
+				ivec is, ivec ie,
+				vec s0, vec s1, vec e0, vec e1,
+				double dV0, double dV1,
+				vec shift, complex<double> shift_phase, 
+				const symmetry &S, int sn,
+				void *integrand_data);
+
 class fields {
  public:
   int num_chunks;
@@ -588,6 +596,10 @@ class fields {
   void initialize_polarizations();
   int phase_in_material(const structure *s, double time);
   int is_phasing();
+
+  // fields_integrate.cpp
+  void integrate(field_integrand integrand, void *integrand_data,
+		 const geometric_volume &where);
 
   // monitor.cpp
   double get_eps(const vec &loc) const;
