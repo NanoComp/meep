@@ -12,5 +12,8 @@ EXTRA_DIST = COPYRIGHT m4 meep.pc.in
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
 
-dist-hook: $(HSRC) src
+generator:
+	cd $(HSRC) && $(MAKE) depend && $(MAKE)
+
+dist-hook: generator
 
