@@ -189,10 +189,10 @@ if test "x" == "x$DEFAULTFLAGS"; then
    AC_COMPILE_IFELSE([int main() { return 0; }],
        [echo Looks like -funroll-loops is good && CXXFLAGS_my_saved="$CFLAGS"],
        [echo Looks like -funroll-loops is bad  && CFLAGS="$CXXFLAGS_my_saved"])
-   CFLAGS="$CFLAGS -msse2"
+   CFLAGS="$CFLAGS -msse"
    AC_COMPILE_IFELSE([int main() { return 0; }],
-       [echo Looks like -msse2 is good && CXXFLAGS_my_saved="$CFLAGS"],
-       [echo Looks like -msse2 is bad  && CFLAGS="$CXXFLAGS_my_saved"])
+       [echo Looks like -msse is good && CXXFLAGS_my_saved="$CFLAGS"],
+       [echo Looks like -msse is bad  && CFLAGS="$CXXFLAGS_my_saved"])
    CFLAGS="$CFLAGS -mfpmath=sse"
    AC_COMPILE_IFELSE([int main() { return 0; }],
        [echo Looks like -mfpmath=sse is good && CXXFLAGS_my_saved="$CFLAGS"],
