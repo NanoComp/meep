@@ -161,6 +161,10 @@ class fields {
   void add_point_source(component whichf, double freq, double width, double peaktime,
                         double cutoff, const vec &, complex<double> amp = 1.0,
                         int is_continuous = 0);
+  void add_plane_source(double freq, double width, double peaktime,
+                        double cutoff, double envelope (const vec &),
+                        const vec &p, const vec &norm = vec(0),
+                        int is_continuous = 0);
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);

@@ -321,6 +321,53 @@ void fields::add_point_source(component whichf, double freq, double width, doubl
   add_indexed_source(whichf, freq, width, peaktime, cutoff, theindex, amp, is_c);
 }
 
+void fields::add_plane_source(double freq, double width, double peaktime,
+                              double cutoff, double envelope (const vec &),
+                              const vec &p, const vec &norm,
+                              int is_c) {
+  if (v.dim == dcyl) {
+    // We ignore norm in this case...
+    if (m != 1) {
+      printf("Can only use plane source with m == 1!\n");
+      exit(1);
+    }
+    const complex<double> I = complex<double>(0,1);
+    const double z = p.z();
+    const double eps = sqrt(ma->eps[(int)(z+0.5)]);
+    for (int ir=0;ir<v.nr();ir++) {
+      {
+        const double r = ir*inva;
+        // E_phi
+        add_point_source(Ep, freq, width, peaktime, cutoff, vec(r,z),
+                         envelope(vec(r,z)), is_c);        
+        // iH_r = d(rH_phi)/dr
+        const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
+                              (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
+        add_point_source(Hr, freq, width, peaktime, cutoff, vec(r,z), -eps*slope, is_c);
+      }
+      {
+        const double r = (ir+0.5)*inva;
+        const double sc = (ir == 0)?0.5:1.0;
+        // iE_r = d(rE_phi)/dr
+        const double slope = ((r+0.5)*envelope(vec(r+0.5*inva,z)) -
+                              (r-0.5)*envelope(vec(r-0.5*inva,z)))*a;
+        add_point_source(Er, freq, width, peaktime, cutoff, vec(r,z), -I*sc*slope, is_c);
+        // H_phi
+        add_point_source(Hp, freq, width, peaktime, cutoff, vec(r,z),
+                         -I*eps*sc*envelope(vec(r,z)), is_c);
+      }
+    }
+  } else if (v.dim == d1) {
+    const double z = p.z();
+    const double eps = sqrt(ma->eps[(int)(z+0.5)]);
+    add_point_source(Ex, freq, width, peaktime, cutoff, vec(z), envelope(vec(z)), is_c);
+    add_point_source(Hy, freq, width, peaktime, cutoff, vec(z), envelope(vec(z))*eps, is_c);
+  } else {
+    printf("Can't use plane source in this number of dimensions.\n");
+    exit(1);
+  }
+}
+
 void fields::add_indexed_source(component whichf, double freq, double width,
                                 double peaktime, int cutoff, int theindex, 
                                 complex<double> amp, int is_c) {
@@ -485,8 +532,16 @@ void fields::step_h() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
-      for (int z=0;z<v.nz();z++)
-        f[Hy][cmp][z] += -c*(f[Ex][cmp][z+1] - f[Ex][cmp][z]);
+      if (ma->Cmain[Hy])
+        for (int z=0;z<v.nz();z++) {
+          const double C = ma->Cmain[Hy][z];
+          const double ooop_C = 1.0/(1.0+0.5*C);
+          f[Hy][cmp][z] += ooop_C*(-c*(f[Ex][cmp][z+1] - f[Ex][cmp][z])
+                                   - C*f[Hy][cmp][z]);
+        }
+      else
+        for (int z=0;z<v.nz();z++)
+          f[Hy][cmp][z] += -c*(f[Ex][cmp][z+1] - f[Ex][cmp][z]);
     }
   } else if (v.dim == dcyl) {
     for (int cmp=0;cmp<=1;cmp++) {
@@ -618,8 +673,16 @@ void fields::step_e() {
   const volume v = this->v;
   if (v.dim == d1) {
     DOCMP {
-      for (int z=1;z<=v.nz();z++)
-        f[Ex][cmp][z] += -c*ma->inveps[Ex][z]*(f[Hy][cmp][z] - f[Hy][cmp][z-1]);
+      if (ma->Cmain[Ex])
+        for (int z=1;z<=v.nz();z++) {
+          const double C = ma->Cmain[Ex][z];
+          const double inveps_plus_C = ma->inveps[Ex][z]/(1.0+0.5*ma->inveps[Ex][z]*C);
+          f[Ex][cmp][z] += inveps_plus_C*(-c*(f[Hy][cmp][z] - f[Hy][cmp][z-1])
+                                          - C*f[Ex][cmp][z]);
+        }
+      else 
+        for (int z=1;z<=v.nz();z++)
+          f[Ex][cmp][z] += -c*ma->inveps[Ex][z]*(f[Hy][cmp][z] - f[Hy][cmp][z-1]);
     }
   } else if (v.dim == dcyl) {
     for (int cmp=0;cmp<=1;cmp++) {

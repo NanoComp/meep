@@ -23,10 +23,12 @@ const int a = 10;
 \end{comment}
 
 For our example polaritonic material, we'll use an $\epsilon(0)$ of 13.4.
+We will put the polaritons in just one quarter of our system to add a
+little extra excitement.
 
 \begin{verbatim}
 double eps(const vec &) { return 13.4; }
-double one(const vec &) { return 1; }
+double one(const vec &p) { return (p.z() > 15.0)?1:0; }
 \end{verbatim}
 \begin{comment}
 int main(int argc, char **argv) {
@@ -36,35 +38,37 @@ int main(int argc, char **argv) {
 We create a 1D system by making the volume with the ``\verb!volone!''
 function, and making sure any vecs we use are one dimensional.
 \begin{verbatim}
-  mat ma(volone(10.0, a), eps);
+  mat ma(volone(20.0, a), eps);
 \end{verbatim}
 \begin{comment}
   const char *dirname = make_output_directory(argv[0]);
   ma.set_output_directory(dirname);
 \end{comment}
-The polarizability is added as usual...
+The polarizability is added as usual... in this case we use a very sharp
+resonance, which means that our energy will only be very slowly absorbed.
 \begin{verbatim}
-  ma.add_polarizability(one, 0.25, 0.01, 3.0);
+  ma.add_polarizability(one, 0.25, 0.0001, 3.0);
   fields f(&ma);
   grace g("energy", dirname);
 \end{verbatim}
 We use several plane wave sources, to cover a broad frequency range, just
 for the heck of it.
 \begin{verbatim}
-  f.add_point_source(Ex, 0.6 , 0.8, 0.0, 8.0, vec(2.0));
-  f.add_point_source(Ex, 0.4 , 0.8, 0.0, 8.0, vec(2.0));
-  f.add_point_source(Ex, 0.33, 0.8, 0.0, 8.0, vec(2.0));
+  f.add_point_source(Ex, 0.6 , 1.8, 0.0, 8.0, vec(2.0));
+  f.add_point_source(Ex, 0.4 , 1.8, 0.0, 8.0, vec(2.0));
+  f.add_point_source(Ex, 0.33, 1.8, 0.0, 8.0, vec(2.0));
 \end{verbatim}
 \begin{comment}
-  double next_printtime = 10;
+  double next_printtime = 1;
   while (f.time() < ttot && !interrupt) {
     if (f.time() >= next_printtime) {
-      next_printtime += 10;
+      next_printtime += 1;
       printf("Working on time %lg...  ", f.time());
       printf("energy is %lg\n", f.total_energy());
-      printf("magnetic energy is %lg\n", f.magnetic_energy_in_box(f.v));
-      printf("electric energy is %lg\n", f.electric_energy_in_box(f.v));
-      printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v));
+      //printf("magnetic energy is %lg\n", f.magnetic_energy_in_box(f.v));
+      //printf("electric energy is %lg\n", f.electric_energy_in_box(f.v));
+      //printf("thermo energy is %lg\n", f.thermo_energy_in_box(f.v));
+      //f.eps_slices();
 \end{comment}
 We plot the total energy, the electromagnetic energy and the
 ``thermodynamic energy'' which is the energy that is either stored in the
