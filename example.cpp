@@ -21,12 +21,6 @@
 
 #include "dactyl.h"
 
-static int stopnow = 0;
-void handle_control_c(int i) {
-  printf("Be patient, I'll stop as soon as it's convenient...\n");
-  stopnow = 1;
-}
-
 int rad;
 
 double guided_eps(double r, double z) {
@@ -60,7 +54,7 @@ void add_clever_sources(fields &f, double fmin, double fmax, double r) {
 }
 
 int main(int argc, char **argv) {
-  signal(SIGINT, handle_control_c);
+  deal_with_ctrl_c();
   printf("Running example program!\n");
 
   rad = 10;
@@ -76,8 +70,8 @@ int main(int argc, char **argv) {
   ma.set_output_directory(dirname);
   //ma.use_pml(8,8);
   ma.output_slices("");
-  for (m=0;m<4 && !stopnow;m++) {
-    for (k=0.0;k<5.1 && !stopnow;k+=1.0) {
+  for (m=0;m<4 && !interrupt;m++) {
+    for (k=0.0;k<5.1 && !interrupt;k+=1.0) {
       char k_and_m[10];
       snprintf(k_and_m, 10, "%g-%d", k, m);
       printf("Working on k of %g and m = %d with a=%d...\n", k, m, rad);
@@ -91,8 +85,8 @@ int main(int argc, char **argv) {
 //      f.add_ez_source(0.125, 0.02,  0.0, 8.0, 0.0*rad, source_sharp);
       //f.set_frequency_range(0.0,0.4, ((double) f.a) / (c * ((double)ttot)) );
       //f.add_zfluxplane(0,(int)(5*rad),80);
-      
-      for (int t=0; t < ttot+1 && !stopnow; t++) {
+
+      for (int t=0; t < ttot+1 && !interrupt; t++) {
         if (t % (1000*rad) == 0 && t > 137*rad) {
           printf("Working on time step %d...  ", t);
           f.output_slices(k_and_m);

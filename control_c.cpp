@@ -1,0 +1,41 @@
+/* Copyright (C) 2003 Massachusetts Institute of Technology  
+%
+%  This program is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2, or (at your option)
+%  any later version.
+%
+%  This program is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details.
+%
+%  You should have received a copy of the GNU General Public License
+%  along with this program; if not, write to the Free Software Foundation,
+%  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+
+#include "dactyl.h"
+
+int interrupt = 0;
+static int kill_time = 2;
+
+static void handle_control_c(int i) {
+  interrupt++;
+  if (interrupt >= kill_time) {
+    exit(1);
+  } else if (interrupt + 1 == kill_time) {
+    printf("Be patient... hit ctrl-C one more time to kill me.\n");
+  } else {
+    printf("Be patient... hit ctrl-C %d more times to kill me.\n", kill_time - interrupt);
+  }
+}
+
+void deal_with_ctrl_c(int stop_now = 2) {
+  kill_time = 2;
+  signal(SIGINT, handle_control_c);
+}

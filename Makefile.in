@@ -19,7 +19,7 @@ distdir = $(package)-$(VERSION)
 ###########################################################################
 
 OBJ_dactyl = dactyl.o harminv.o bands.o output_directory.o material.o \
-	slices.o polarization.o monitor.o
+	slices.o polarization.o monitor.o control_c.o
 OBJ_example = example.o libdactyl.a
 
 ###########################################################################

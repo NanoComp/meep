@@ -208,6 +208,13 @@ const double pi = 3.141592653589793238462643383276L;
 const char *make_output_directory(const char *exename);
 FILE *create_output_file(const char *dirname, const char *fname);
 
+// The following allows you to hit ctrl-C to tell your calculation to stop
+// and clean up.
+void deal_with_ctrl_c(int stop_now = 2);
+// When a ctrl_c is called, the following variable (which starts with a
+// zero value) is incremented.
+extern int interrupt;
+
 int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL);
