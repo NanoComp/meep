@@ -160,8 +160,10 @@ class fields_chunk {
  public:
   double *(f[10][2]);
   double *(f_backup[10][2]);
-  double *(f_pml[10][2]);
-  double *(f_backup_pml[10][2]);
+  double *(f_p_pml[10][2]);
+  double *(f_m_pml[10][2]);
+  double *(f_backup_p_pml[10][2]);
+  double *(f_backup_m_pml[10][2]);
 
   double **(connections[2][2][2]);
   int num_connections[2][2];

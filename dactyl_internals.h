@@ -52,7 +52,7 @@ class polarization {
   polarization(const polarizability *the_pb, int is_real);
   ~polarization();
   double saturation_factor;
-  double *(P[10][2]), *(P_pml[10][2]), *(energy[10]), *(s[10]);
+  double *(P[10][2]), *(P_p_pml[10][2]), *(P_m_pml[10][2]), *(energy[10]), *(s[10]);
   int is_real;
   const polarizability *pb;
   polarization *next;

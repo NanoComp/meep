@@ -30,10 +30,12 @@ polarization *polarization::set_up_polarizations(const mat_chunk *ma, int is_r) 
 
 void polarization::use_real_fields() {
   is_real = 1;
-  for (int c=0;c<10;c++) delete[] P[c][1];
-  for (int c=0;c<10;c++) delete[] P_pml[c][1];
-  for (int c=0;c<10;c++) P[c][1] = NULL;
-  for (int c=0;c<10;c++) P_pml[c][1] = NULL;
+  FOR_COMPONENTS(c) delete[] P[c][1];
+  FOR_COMPONENTS(c) delete[] P_p_pml[c][1];
+  FOR_COMPONENTS(c) delete[] P_m_pml[c][1];
+  FOR_COMPONENTS(c) P[c][1] = NULL;
+  FOR_COMPONENTS(c) P_p_pml[c][1] = NULL;
+  FOR_COMPONENTS(c) P_m_pml[c][1] = NULL;
   if (next) next->use_real_fields();
 }
 
@@ -47,13 +49,16 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
         for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0.0;
         // FIXME perhaps shouldn't allocate the PML split fields_chunk if we don't
         // have pml...
-        P_pml[c][cmp] = new double[v.ntot()];
-        if (P_pml[c][cmp] == NULL)
+        P_p_pml[c][cmp] = new double[v.ntot()];
+        P_m_pml[c][cmp] = new double[v.ntot()];
+        if (P_m_pml[c][cmp] == NULL)
           abort("Allocation error in polarization!\n");
-        for (int i=0;i<v.ntot();i++) P_pml[c][cmp][i] = 0.0;
+        for (int i=0;i<v.ntot();i++) P_p_pml[c][cmp][i] = 0.0;
+        for (int i=0;i<v.ntot();i++) P_m_pml[c][cmp][i] = 0.0;
       } else {
         P[c][cmp] = NULL;
-        P_pml[c][cmp] = NULL;
+        P_p_pml[c][cmp] = NULL;
+        P_m_pml[c][cmp] = NULL;
       }
   }
   for (int c=0;c<10;c++)
@@ -92,8 +97,9 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
 
 polarization::~polarization() {
   DOCMP {
-    for (int c=0;c<10;c++) delete[] P[c][cmp];
-    for (int c=0;c<10;c++) delete[] P_pml[c][cmp];
+    FOR_COMPONENTS(c) delete[] P[c][cmp];
+    FOR_COMPONENTS(c) delete[] P_p_pml[c][cmp];
+    FOR_COMPONENTS(c) delete[] P_m_pml[c][cmp];
   }
   for (int c=0;c<10;c++) delete[] energy[c];
   if (saturation_factor != 0.0)
@@ -359,11 +365,16 @@ void fields_chunk::step_polarization_itself(polarization *op, polarization *np) 
             op->P[cc][cmp][i] = funinv*((2-om*om)*np->P[cc][cmp][i]+
                                         (0.5*g-1)*op->P[cc][cmp][i])+
               np->s[cc][i]*f[cc][cmp][i];
-          if (f_pml[cc][cmp])
+          if (f_p_pml[cc][cmp])
             for (int i=0;i<v.ntot();i++)
-              op->P_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_pml[cc][cmp][i]+
-                                              (0.5*g-1)*op->P_pml[cc][cmp][i])+
-                np->s[cc][i]*f_pml[cc][cmp][i];
+              op->P_p_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_p_pml[cc][cmp][i]+
+                                              (0.5*g-1)*op->P_p_pml[cc][cmp][i])+
+                np->s[cc][i]*f_p_pml[cc][cmp][i];
+          if (f_m_pml[cc][cmp])
+            for (int i=0;i<v.ntot();i++)
+              op->P_m_pml[cc][cmp][i] = funinv*((2-om*om)*np->P_m_pml[cc][cmp][i]+
+                                              (0.5*g-1)*op->P_m_pml[cc][cmp][i])+
+                np->s[cc][i]*f_m_pml[cc][cmp][i];
         }
     }
     if (op->next && np->next) step_polarization_itself(op->next, np->next);
@@ -387,11 +398,16 @@ void fields_chunk::step_e_polarization(polarization *op, polarization *np) {
           for (int i=0;i<v.ntot();i++)
             f[cc][cmp][i] -= ma->inveps[cc][component_direction(cc)][i]*
               (np->P[cc][cmp][i]-op->P[cc][cmp][i]);
-          if (f_pml[cc][cmp])
+          if (f_p_pml[cc][cmp])
             for (int i=0;i<v.ntot();i++)
-              f_pml[cc][cmp][i] -=
+              f_p_pml[cc][cmp][i] -=
                 ma->inveps[cc][component_direction(cc)][i]*
-                (np->P_pml[cc][cmp][i]-op->P_pml[cc][cmp][i]);
+                (np->P_p_pml[cc][cmp][i]-op->P_p_pml[cc][cmp][i]);
+          if (f_m_pml[cc][cmp])
+            for (int i=0;i<v.ntot();i++)
+              f_m_pml[cc][cmp][i] -=
+                ma->inveps[cc][component_direction(cc)][i]*
+                (np->P_m_pml[cc][cmp][i]-op->P_m_pml[cc][cmp][i]);
         }
     }
     if (op->next && np->next) step_e_polarization(op->next, np->next);

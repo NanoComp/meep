@@ -6,47 +6,30 @@ main = putStr $ gencode $ job
 job = in_any_case $ loop_over $
       docode [store_h_minus,
               store_h_plus,
+              store_derivs,
               update_f_pml,
               update_f
              ]
 
-store_h_minus = if_ "have_m_pml" (
-                  ifelse_ "have_p" (
-                    ifelse_ "have_p_pml" (
-                      doexp "const double hm = the_f[ind] - the_f_pml[ind]"
-                    ) (
-                      doexp "const double hm = the_f_pml[ind]"
-                    )
-                  ) (
-                    doexp "const double hm = the_f[ind]"
-                  )
-                )
-store_h_plus = if_ "have_p_pml" (
-                 ifelse_ "have_m" (
-                   doexp "const double hp = the_f_pml[ind]"
-                 ) (
-                   doexp "const double hp = the_f[ind]"
-                 )
-               )
+store_h_minus = if_ "have_m_pml" $ doexp $
+               "const double hm" |=| ("have_p")|?|"the_f_m_pml[ind]"|:|"the_f[ind]"
+store_h_plus = if_ "have_p_pml" $ doexp $
+               "const double hp" |=| ("have_m")|?|"the_f_p_pml[ind]"|:|"the_f[ind]"
+store_derivs =
+    docode [if_ "have_m" (doexp "const double deriv_m = f_m[ind]-f_m[ind-stride_m]"),
+            if_ "have_p" (doexp "const double m_deriv_p = f_p[ind-stride_p]-f_p[ind]")]
 update_f_pml :: Code
-update_f_pml = ifelse_ "have_p_pml" (
-                 if_ "have_m" (
-                   doexp ("the_f_pml[ind]" |+=| p_update)
-                 )
-               ) (
-                 if_ "have_m_pml" (
-                   if_ "have_p" (
-                     doexp ("the_f_pml[ind]" |+=| m_update)
-                   )
-                 )
-               )
+update_f_pml = docode [if_ "have_p_pml" $ if_ "have_m" $
+                       doexp $ "the_f_p_pml[ind]" |+=| p_update,
+                       if_ "have_m_pml" $ if_ "have_p" $
+                       doexp $ "the_f_m_pml[ind]" |+=| m_update]
 
 update_f :: Code
 update_f = doexp $ "the_f[ind]" |+=| m_p_update
 
 m_update = decay_m |*| ("c" |*| deriv_m |-| sig_m |*| "hm")
 p_update = decay_p |*| ("c" |*| m_deriv_p |-| sig_p |*| "hp")
-m_p_update = 
+m_p_update =
     ("have_p_pml")
         |?| (m_update |+| p_update)
         |:| ("have_m_pml")
@@ -57,8 +40,8 @@ decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "1"
 decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "1"
 sig_m = ("have_m_pml") |?| "C_m[ind]" |:| "0"
 sig_p = ("have_p_pml") |?| "C_p[ind]" |:| "0"
-deriv_m = ("have_m") |?| "(f_m[ind]-f_m[ind-stride_m])" |:| "0"
-m_deriv_p = ("have_p") |?| "(f_p[ind-stride_p]-f_p[ind])" |:| "0"
+deriv_m = ("have_m") |?| "deriv_m" |:| "0"
+m_deriv_p = ("have_p") |?| "m_deriv_p" |:| "0"
 
 if_have_p_else x y = ifelse_ "have_p" x
                      (declare "have_p_pml" False $ declare "have_m" True y)

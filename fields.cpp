@@ -91,10 +91,12 @@ fields_chunk::~fields_chunk() {
   delete ma;
   is_real = 0; // So that we can make sure to delete everything...
   DOCMP {
-    for (int i=0;i<10;i++) delete[] f[i][cmp];
-    for (int i=0;i<10;i++) delete[] f_backup[i][cmp];
-    for (int i=0;i<10;i++) delete[] f_pml[i][cmp];
-    for (int i=0;i<10;i++) delete[] f_backup_pml[i][cmp];
+    FOR_COMPONENTS(i) delete[] f[i][cmp];
+    FOR_COMPONENTS(i) delete[] f_backup[i][cmp];
+    FOR_COMPONENTS(i) delete[] f_p_pml[i][cmp];
+    FOR_COMPONENTS(i) delete[] f_m_pml[i][cmp];
+    FOR_COMPONENTS(i) delete[] f_backup_p_pml[i][cmp];
+    FOR_COMPONENTS(i) delete[] f_backup_m_pml[i][cmp];
     for (int ft=0;ft<2;ft++)
       for (int io=0;io<2;io++)
         delete[] connections[ft][io][cmp];
@@ -123,28 +125,35 @@ fields_chunk::fields_chunk(const mat_chunk *the_ma, const char *od, int tm) {
   olpol = polarization::set_up_polarizations(ma, is_real);
   h_sources = e_sources = NULL;
   DOCMP {
-    for (int i=0;i<10;i++) f[i][cmp] = NULL;
-    for (int i=0;i<10;i++) f_backup[i][cmp] = NULL;
-    for (int i=0;i<10;i++) f_pml[i][cmp] = NULL;
-    for (int i=0;i<10;i++) f_backup_pml[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_backup[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_p_pml[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_m_pml[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_backup_p_pml[i][cmp] = NULL;
+    FOR_COMPONENTS(i) f_backup_m_pml[i][cmp] = NULL;
 
-    for (int i=0;i<10;i++) if (v.dim != D2 && v.has_field((component)i))
+    FOR_COMPONENTS(i) if (v.dim != D2 && v.has_field((component)i))
       f[i][cmp] = new double[v.ntot()];
-    for (int i=0;i<10;i++) if (f[i][cmp]) {
-      f_pml[i][cmp] = new double[v.ntot()];
-      if (f_pml[i][cmp] == NULL) abort("Out of memory!\n");
+    FOR_COMPONENTS(i) if (f[i][cmp]) {
+      f_p_pml[i][cmp] = new double[v.ntot()];
+      f_m_pml[i][cmp] = new double[v.ntot()];
+      if (f_m_pml[i][cmp] == NULL) abort("Out of memory!\n");
     }
   }
   DOCMP {
-    for (int c=0;c<10;c++)
+    FOR_COMPONENTS(c)
       if (f[c][cmp])
         for (int i=0;i<v.ntot();i++)
           f[c][cmp][i] = 0.0;
     // Now for pml extra fields_chunk...
-    for (int c=0;c<10;c++)
-      if (f[c][cmp])
+    FOR_COMPONENTS(c)
+      if (f_p_pml[c][cmp])
         for (int i=0;i<v.ntot();i++)
-          f_pml[c][cmp][i] = 0.0;
+          f_p_pml[c][cmp][i] = 0.0;
+    FOR_COMPONENTS(c)
+      if (f_m_pml[c][cmp])
+        for (int i=0;i<v.ntot();i++)
+          f_m_pml[c][cmp][i] = 0.0;
   }
   num_connections[E_stuff][Incoming] = num_connections[E_stuff][Outgoing] = 0;
   num_connections[H_stuff][Incoming] = num_connections[H_stuff][Outgoing] = 0;
@@ -202,10 +211,12 @@ void fields_chunk::figure_out_step_plan() {
 void fields_chunk::alloc_f(component c) {
   DOCMP {
     f[c][cmp] = new double[v.ntot()];
-    f_pml[c][cmp] = new double[v.ntot()];
+    f_p_pml[c][cmp] = new double[v.ntot()];
+    f_m_pml[c][cmp] = new double[v.ntot()];
     for (int i=0;i<v.ntot();i++) {
       f[c][cmp][i] = 0.0;
-      f_pml[c][cmp][i] = 0.0;
+      f_p_pml[c][cmp][i] = 0.0;
+      f_m_pml[c][cmp][i] = 0.0;
     }
   }
   figure_out_step_plan();

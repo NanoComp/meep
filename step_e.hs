@@ -6,59 +6,46 @@ main = putStr $ gencode $ job
 job = in_any_case $ loop_over $
       docode [store_e_minus,
               store_e_plus,
+              store_derivs,
               update_f_pml,
               update_f
              ]
 
-store_e_minus = if_ "have_m_pml" (
-                  ifelse_ "have_p" (
-                    ifelse_ "have_p_pml" (
-                      doexp "const double em = the_f[ind] - the_f_pml[ind]"
-                    ) (
-                      doexp "const double em = the_f_pml[ind]"
-                    )
-                  ) (
-                    doexp "const double em = the_f[ind]"
-                  )
-                )
-store_e_plus = if_ "have_p_pml" (
-                 ifelse_ "have_m" (
-                   doexp "const double ep = the_f_pml[ind]"
-                 ) (
-                   doexp "const double ep = the_f[ind]"
-                 )
-               )
+store_e_minus = if_ "have_m_pml" $ doexp $
+               "const double em" |=| ("have_p")|?|"the_f_m_pml[ind]"|:|"the_f[ind]"
+store_e_plus = if_ "have_p_pml" $ doexp $
+               "const double ep" |=| ("have_m")|?|"the_f_p_pml[ind]"|:|"the_f[ind]"
+store_derivs =
+    docode [if_ "have_m" (doexp "const double m_deriv_m = f_m[ind]-f_m[ind+stride_m]"),
+            if_ "have_p" (doexp "const double deriv_p = f_p[ind+stride_p]-f_p[ind]"),
+            if_ "have_m" (doexp ("const double m_change"|=|
+                                 decay_m |*| ("c" |*| m_deriv_m |-| sig_m |*| "em"))),
+            if_ "have_p" (doexp ("const double p_change"|=|
+                                 decay_p |*| ("c" |*| deriv_p |-| sig_p |*| "ep")))
+           ]
 update_f_pml :: Code
-update_f_pml = ifelse_ "have_p_pml" (
-                 if_ "have_m" (
-                   doexp ("the_f_pml[ind]" |+=| p_update)
-                 )
-               ) (
-                 if_ "have_m_pml" (
-                   if_ "have_p" (
-                     doexp ("the_f_pml[ind]" |+=| m_update)
-                   )
-                 )
-               )
-
+update_f_pml = docode [if_ "have_p_pml" $ if_ "have_m" $
+                       doexp $ "the_f_p_pml[ind]" |+=| p_update,
+                       if_ "have_m_pml" $ if_ "have_p" $
+                       doexp $ "the_f_m_pml[ind]" |+=| m_update]
 update_f :: Code
 update_f = doexp $ "the_f[ind]" |+=| m_p_update
 
-m_update = decay_m |*| ("c" |*| m_deriv_m |-| sig_m |*| "em")
-p_update = decay_p |*| ("c" |*| deriv_p |-| sig_p |*| "ep")
-m_p_update = 
+p_update = ("have_p")|?|"p_change"|:|"0"
+m_update = ("have_m")|?|"m_change"|:|"0"
+m_p_update =
     ("have_p_pml")
         |?| (m_update |+| p_update)
         |:| ("have_m_pml")
             |?| (m_update |+| p_update)
-            |:| ("c*inveps[ind]" |*| (m_deriv_m |+| deriv_p))
+            |:| ("inveps[ind]*c" |*| (m_deriv_m |+| deriv_p))
 
 decay_p = ("have_p_pml") |?| "decay_p[ind]" |:| "inveps[ind]"
 decay_m = ("have_m_pml") |?| "decay_m[ind]" |:| "inveps[ind]"
 sig_m = ("have_m_pml") |?| "C_m[ind]" |:| "0"
 sig_p = ("have_p_pml") |?| "C_p[ind]" |:| "0"
-m_deriv_m = ("have_m") |?| "(f_m[ind]-f_m[ind+stride_m])" |:| "0"
-deriv_p = ("have_p") |?| "(f_p[ind+stride_p]-f_p[ind])" |:| "0"
+m_deriv_m = ("have_m") |?| "m_deriv_m" |:| "0"
+deriv_p = ("have_p") |?| "deriv_p" |:| "0"
 
 if_have_p_else x y = ifelse_ "have_p" x
                      (declare "have_p_pml" False $ declare "have_m" True y)

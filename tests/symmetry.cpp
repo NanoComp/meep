@@ -59,32 +59,6 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
-int approx_point(fields &f1, fields &f2, const vec &p) {
-  monitor_point m1, m_test;
-  f1.get_point(&m_test, p);
-  f2.get_point(&m1, p);
-  for (int i=0;i<10;i++) {
-    component c = (component) i;
-    if (f1.v.has_field(c)) {
-      complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
-      if (abs(v1 - v2) > 3e-14*abs(v2)) {
-        master_printf("%s differs:  %lg %lg out of %lg %lg\n",
-               component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
-        master_printf("This comes out to a fractional error of %lg\n",
-               abs(v1 - v2)/abs(v2));
-        master_printf("Right now I'm looking at %lg %lg, time %lg\n",
-                      p.x(), p.y(), f1.time());
-        f1.output_real_imaginary_slices("multi");
-        f2.output_real_imaginary_slices("single");
-        f1.eps_slices("multi");
-        f2.eps_slices("single");
-        return 0;
-      }
-    }
-  }
-  return 1;
-}
-
 int test_metal_xmirror(double eps(const vec &), const char *dirname) {
   double a = 10.0;
   double ttot = 3.0;
@@ -172,7 +146,7 @@ int test_metal_ymirror(double eps(const vec &), const char *dirname) {
   return 1;
 }
 
-int approx_metal_rot2y(double eps(const vec &), const char *dirname) {
+int test_metal_rot2y(double eps(const vec &), const char *dirname) {
   double a = 10.0;
   double ttot = 5.0;
 
@@ -182,7 +156,7 @@ int approx_metal_rot2y(double eps(const vec &), const char *dirname) {
   mat ma1(v, eps, 0, identity());
   ma.set_output_directory(dirname);
   ma1.set_output_directory(dirname);
-  master_printf("Testing approximate Y twofold rotational symmetry...\n");
+  master_printf("Testing Y twofold rotational symmetry...\n");
 
   fields f1(&ma1);
   f1.use_metal_everywhere();
@@ -200,10 +174,10 @@ int approx_metal_rot2y(double eps(const vec &), const char *dirname) {
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (!approx_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
-    if (!approx_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
-    if (!approx_point(f, f1, vec2d(0.46 , 0.33))) return 0;
-    if (!approx_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
+    if (!compare_point(f, f1, vec2d(0.01 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec2d(0.21 ,  0.5))) return 0;
+    if (!compare_point(f, f1, vec2d(0.46 , 0.33))) return 0;
+    if (!compare_point(f, f1, vec2d(0.2  , 0.2 ))) return 0;
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
@@ -275,10 +249,9 @@ int pml_twomirrors(double eps(const vec &), const char *dirname) {
 
   for (int i=0;i<2;i++) {
     mas[i].set_output_directory(dirname);
-    //mas[i].use_pml_everywhere(0.5); 
+    mas[i].use_pml_everywhere(0.5);
   }
   master_printf("Testing two mirrors with PML...\n");
-  master_printf("*** FIXME: Not using PML here because it would fail...\n");  
 
   fields fs[2] = { fields(&mas[0]), fields(&mas[1]) };
   for (int i=0;i<2;i++) {
@@ -363,10 +336,9 @@ int exact_pml_rot2x_tm(double eps(const vec &), const char *dirname) {
   mat ma1(v, eps, 0, identity());
   ma.set_output_directory(dirname);
   ma1.set_output_directory(dirname);
-  //ma.use_pml_everywhere(1.0);
-  //ma1.use_pml_everywhere(1.0);
+  ma.use_pml_everywhere(1.0);
+  ma1.use_pml_everywhere(1.0);
   master_printf("Testing X twofold rotational symmetry with PML...\n");
-  master_printf("*** FIXME: Not using PML here because it would fail...\n");  
 
   fields f1(&ma1);
   f1.use_metal_everywhere();
@@ -420,8 +392,8 @@ int main(int argc, char **argv) {
   if (!test_metal_ymirror(one, dirname))
     abort("error in test_metal_ymirror vacuum\n");
 
-  if (!approx_metal_rot2y(one, dirname))
-    abort("error in approx_metal_rot2y vacuum\n");
+  if (!test_metal_rot2y(one, dirname))
+    abort("error in test_metal_rot2y vacuum\n");
 
   if (!exact_metal_rot2y(one, dirname))
     abort("error in exact_metal_rot2y vacuum\n");

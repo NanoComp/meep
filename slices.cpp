@@ -64,7 +64,7 @@ static void output_slice(component m, const double *f, const volume &v,
   for (int i=0;i<v.ntot();i++)
     if (what.contains(v.loc(m,i))) {
       v.loc(m,i).print(out);
-      i_fprintf(out, "\t%.17lg\n", f[i]);
+      i_fprintf(out, "\t%.18lg\n", f[i]);
     }
 }
 

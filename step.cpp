@@ -120,9 +120,13 @@ void fields_chunk::phase_material(int phasein_time) {
           for (int i=0;i<v.ntot();i++)
             f[c][cmp][i] /= ma->inveps[c][component_direction(c)][i];
       FOR_ELECTRIC_COMPONENTS(c)
-        if (f[c][cmp])
+        if (f_p_pml[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f_pml[c][cmp][i] /= ma->inveps[c][component_direction(c)][i];
+            f_p_pml[c][cmp][i] /= ma->inveps[c][component_direction(c)][i];
+      FOR_ELECTRIC_COMPONENTS(c)
+        if (f_m_pml[c][cmp])
+          for (int i=0;i<v.ntot();i++)
+            f_m_pml[c][cmp][i] /= ma->inveps[c][component_direction(c)][i];
     }
     // Then change epsilon...
     ma->mix_with(new_ma, 1.0/phasein_time);
@@ -133,9 +137,13 @@ void fields_chunk::phase_material(int phasein_time) {
           for (int i=0;i<v.ntot();i++)
             f[c][cmp][i] *= ma->inveps[c][component_direction(c)][i];
       FOR_ELECTRIC_COMPONENTS(c)
-        if (f[c][cmp])
+        if (f_p_pml[c][cmp])
           for (int i=0;i<v.ntot();i++)
-            f_pml[c][cmp][i] *= ma->inveps[c][component_direction(c)][i];
+            f_p_pml[c][cmp][i] *= ma->inveps[c][component_direction(c)][i];
+      FOR_ELECTRIC_COMPONENTS(c)
+        if (f_m_pml[c][cmp])
+          for (int i=0;i<v.ntot();i++)
+            f_m_pml[c][cmp][i] *= ma->inveps[c][component_direction(c)][i];
     }
   }
 }
@@ -190,9 +198,9 @@ void fields_chunk::step_h_old() {
             const double ooop_Cyhz = (ma->Cdecay[Y][Hz][Z]) ?
               ma->Cdecay[Y][Hz][Z][y+ix] : 1.0;
             const double dhzx = ooop_Cxhz*
-              (c*(f[Ey][cmp][y+ixp1] - f[Ey][cmp][y+ix]) - Cxhz*f_pml[Hz][cmp][y+ix]);
-            const double hzy = f[Hz][cmp][y+ix] - f_pml[Hz][cmp][y+ix];
-            f_pml[Hz][cmp][y+ix] += dhzx;
+              (c*(f[Ey][cmp][y+ixp1] - f[Ey][cmp][y+ix]) - Cxhz*f_p_pml[Hz][cmp][y+ix]);
+            const double hzy = f[Hz][cmp][y+ix] - f_p_pml[Hz][cmp][y+ix];
+            f_p_pml[Hz][cmp][y+ix] += dhzx;
             f[Hz][cmp][y+ix] += dhzx +
               ooop_Cyhz*(c*(-(f[Ex][cmp][y+ix+1] - f[Ex][cmp][y+ix])) - Cyhz*hzy);
           }
@@ -277,7 +285,8 @@ void fields_chunk::step_h() {
         RESTRICT const double *f_p = (have_p)?f[c_p][cmp] + v.yee_index(c_p):NULL;
         RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
         RESTRICT double *the_f = f[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_pml = f_pml[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
 #include "step_h.h"
       }
   } else if (v.dim == Dcyl) {
@@ -292,8 +301,8 @@ void fields_chunk::step_h() {
               const double Czhr = ma->C[Z][Hr][z+ir];
               const double ooop_Czhr = ma->Cdecay[Z][Hr][R][z+ir];
               double dhrp = c*(-it(cmp,f[Ez],z+ir)*mor);
-              double hrz = f[Hr][cmp][z+ir] - f_pml[Hr][cmp][z+ir];
-              f_pml[Hr][cmp][z+ir] += dhrp;
+              double hrz = f[Hr][cmp][z+ir] - f_p_pml[Hr][cmp][z+ir];
+              f_p_pml[Hr][cmp][z+ir] += dhrp;
               f[Hr][cmp][z+ir] += dhrp +
                 ooop_Czhr*(c*(f[Ep][cmp][z+ir+1]-f[Ep][cmp][z+ir]) - Czhr*hrz);
             }
@@ -322,9 +331,9 @@ void fields_chunk::step_h() {
               const double ooop_Crhp = (ma->Cdecay[R][Hp][P]) ?
                 ma->Cdecay[R][Hp][P][z+ir]:1.0;
               const double dhpz = ooop_Czhp*(-c*(f[Er][cmp][z+ir+1]-f[Er][cmp][z+ir])
-                                             - Czhp*f_pml[Hp][cmp][z+ir]);
-              const double hpr = f[Hp][cmp][z+ir]-f_pml[Hp][cmp][z+ir];
-              f_pml[Hp][cmp][z+ir] += dhpz;
+                                             - Czhp*f_p_pml[Hp][cmp][z+ir]);
+              const double hpr = f[Hp][cmp][z+ir]-f_p_pml[Hp][cmp][z+ir];
+              f_p_pml[Hp][cmp][z+ir] += dhpz;
               f[Hp][cmp][z+ir] += dhpz +
                 ooop_Czhp*(c*(f[Ez][cmp][z+irp1]-f[Ez][cmp][z+ir]) - Crhp*hpr);
             }
@@ -353,9 +362,9 @@ void fields_chunk::step_h() {
             const double dhzr =
               ooop_Crhz*(-c*(f[Ep][cmp][z+irp1]*((int)(v.origin.r()*v.a+0.5) + r+1.)-
                              f[Ep][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r))*oorph
-                         - Crhz*f_pml[Hz][cmp][z+ir]);
-            const double hzp = f[Hz][cmp][z+ir] - f_pml[Hz][cmp][z+ir];
-            f_pml[Hz][cmp][z+ir] += dhzr;
+                         - Crhz*f_p_pml[Hz][cmp][z+ir]);
+            const double hzp = f[Hz][cmp][z+ir] - f_p_pml[Hz][cmp][z+ir];
+            f_p_pml[Hz][cmp][z+ir] += dhzr;
             f[Hz][cmp][z+ir] += dhzr + c*(it(cmp,f[Er],z+ir)*morph);
           }
         }
@@ -380,8 +389,8 @@ void fields_chunk::step_h() {
             const double Czhr = ma->C[Z][Hr][z];
             const double ooop_Czhr = ma->Cdecay[Z][Hr][R][z];
             const double dhrp = c*(-it(cmp,f[Ez],z+(v.nz()+1))/* /1.0 */);
-            const double hrz = f[Hr][cmp][z] - f_pml[Hr][cmp][z];
-            f_pml[Hr][cmp][z] += dhrp;
+            const double hrz = f[Hr][cmp][z] - f_p_pml[Hr][cmp][z];
+            f_p_pml[Hr][cmp][z] += dhrp;
             f[Hr][cmp][z] += dhrp +
               ooop_Czhr*(c*(f[Ep][cmp][z+1]-f[Ep][cmp][z]) - Czhr*hrz);
           }
@@ -393,8 +402,8 @@ void fields_chunk::step_h() {
         for (int r=0;r<=v.nr() && (int)(v.origin.r()*v.a+0.5) + r < m;r++) {
           const int ir = r*(v.nz()+1);
           for (int z=0;z<=v.nz();z++) f[Hr][cmp][z+ir] = 0;
-          if (f_pml[Hr][cmp])
-            for (int z=0;z<=v.nz();z++) f_pml[Hr][cmp][z+ir] = 0;
+          if (f_p_pml[Hr][cmp])
+            for (int z=0;z<=v.nz();z++) f_p_pml[Hr][cmp][z+ir] = 0;
         }
       }
     }
@@ -446,9 +455,9 @@ void fields_chunk::step_e_old() {
             const double inveps_plus_Cyez = (ma->Cdecay[Y][Ez][Z]) ?
               ma->Cdecay[Y][Ez][Z][y+ix] : ma->inveps[Ez][Z][y+ix];
             const double dezx = inveps_plus_Cxez*
-              (-c*(f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) - Cxez*f_pml[Ez][cmp][y+ix]);
-            const double ezy = f[Ez][cmp][y+ix] - f_pml[Ez][cmp][y+ix];
-            f_pml[Ez][cmp][y+ix] += dezx;
+              (-c*(f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) - Cxez*f_p_pml[Ez][cmp][y+ix]);
+            const double ezy = f[Ez][cmp][y+ix] - f_p_pml[Ez][cmp][y+ix];
+            f_p_pml[Ez][cmp][y+ix] += dezx;
             f[Ez][cmp][y+ix] += dezx +
               inveps_plus_Cyez*(-c*(-(f[Hx][cmp][y+ix] - f[Hx][cmp][y+ix-1])) - Cyez*ezy);
           }
@@ -521,9 +530,9 @@ void fields_chunk::step_e_old() {
               const double inveps_plus_Crep = (ma->Cdecay[R][Ep][P]) ?
                 ma->Cdecay[R][Ep][P][z+ir] : ma->inveps[Ep][P][z+ir];
               const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
-                                                    - Czep*f_pml[Ep][cmp][z+ir]);
-              const double epr = f[Ep][cmp][z+ir] - f_pml[Ep][cmp][z+ir];
-              f_pml[Ep][cmp][z+ir] += depz;
+                                                    - Czep*f_p_pml[Ep][cmp][z+ir]);
+              const double epr = f[Ep][cmp][z+ir] - f_p_pml[Ep][cmp][z+ir];
+              f_p_pml[Ep][cmp][z+ir] += depz;
               f[Ep][cmp][z+ir] += depz +
                 inveps_plus_Crep*(c*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1])) - Crep*epr);
             }
@@ -551,9 +560,9 @@ void fields_chunk::step_e_old() {
             const double dezr = inveps_plus_Crez*
               (c*(f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
                   f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
-               - Crez*f_pml[Ez][cmp][z+ir]);
-            const double ezp = f[Ez][cmp][z+ir]-f_pml[Ez][cmp][z+ir];
-            f_pml[Ez][cmp][z+ir] += dezr;
+               - Crez*f_p_pml[Ez][cmp][z+ir]);
+            const double ezp = f[Ez][cmp][z+ir]-f_p_pml[Ez][cmp][z+ir];
+            f_p_pml[Ez][cmp][z+ir] += dezr;
             f[Ez][cmp][z+ir] += dezr +
               c*ma->inveps[Ez][Z][z+ir]*(-it(cmp,f[Hr],z+ir)*mor);
           }
@@ -582,8 +591,8 @@ void fields_chunk::step_e_old() {
               const double inveps_plus_Czer = (ma->Cdecay[Z][Er][R]) ?
                 ma->Cdecay[Z][Er][R][z+ir] : ma->inveps[Er][R][z+ir];
               double derp = c*ma->inveps[Er][R][z+ir]*(it(cmp,f[Hz],z+ir)*morph);
-              double erz = f[Er][cmp][z+ir] - f_pml[Er][cmp][z+ir];
-              f_pml[Er][cmp][z+ir] += derp;
+              double erz = f[Er][cmp][z+ir] - f_p_pml[Er][cmp][z+ir];
+              f_p_pml[Er][cmp][z+ir] += derp;
               f[Er][cmp][z+ir] += derp + inveps_plus_Czer*
                 (-c*(f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]) - Czer*erz);
             }
@@ -610,9 +619,9 @@ void fields_chunk::step_e_old() {
             const double inveps_plus_Czep = (ma->Cdecay[Z][Ep][P]) ?
               ma->Cdecay[Z][Ep][P][z] : ma->inveps[Ep][P][z];
             const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
-                                                  - Czep*f_pml[Ep][cmp][z]);
-            const double epr = f[Ep][cmp][z] - f_pml[Ep][cmp][z];
-            f_pml[Ep][cmp][z] += depz;
+                                                  - Czep*f_p_pml[Ep][cmp][z]);
+            const double epr = f[Ep][cmp][z] - f_p_pml[Ep][cmp][z];
+            f_p_pml[Ep][cmp][z] += depz;
             f[Ep][cmp][z] += depz +
               c*ma->inveps[Ep][P][z]*(-f[Hz][cmp][z]*2.0);
           }
@@ -624,11 +633,11 @@ void fields_chunk::step_e_old() {
         for (int r=0;r<=v.nr() && (int)(v.origin.r()*v.a+0.5) + r < m;r++) {
           const int ir = r*(v.nz()+1);
           for (int z=0;z<=v.nz();z++) f[Ep][cmp][z+ir] = 0;
-          if (f_pml[Ep][cmp])
-            for (int z=0;z<=v.nz();z++) f_pml[Ep][cmp][z+ir] = 0;
+          if (f_p_pml[Ep][cmp])
+            for (int z=0;z<=v.nz();z++) f_p_pml[Ep][cmp][z+ir] = 0;
           for (int z=0;z<=v.nz();z++) f[Ez][cmp][z+ir] = 0;
-          if (f_pml[Ez][cmp])
-            for (int z=0;z<=v.nz();z++) f_pml[Ez][cmp][z+ir] = 0;
+          if (f_p_pml[Ez][cmp])
+            for (int z=0;z<=v.nz();z++) f_p_pml[Ez][cmp][z+ir] = 0;
         }
       }
     }
@@ -670,7 +679,8 @@ void fields_chunk::step_e() {
         RESTRICT const double *f_m = (have_m)?f[c_m][cmp] + v.yee_index(c_m):NULL;
         RESTRICT const double *inveps = ma->inveps[cc][component_direction(cc)] + yee_idx;
         RESTRICT double *the_f = f[cc][cmp] + yee_idx;
-        RESTRICT double *the_f_pml = f_pml[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
+        RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
 #include "step_e.h"
       }
   } else if (v.dim == Dcyl) {
@@ -690,9 +700,9 @@ void fields_chunk::step_e() {
               const double inveps_plus_Crep = (ma->Cdecay[R][Ep][P]) ?
                 ma->Cdecay[R][Ep][P][z+ir] : ma->inveps[Ep][P][z+ir];
               const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z+ir]-f[Hr][cmp][z+ir-1])
-                                                    - Czep*f_pml[Ep][cmp][z+ir]);
-              const double epr = f[Ep][cmp][z+ir] - f_pml[Ep][cmp][z+ir];
-              f_pml[Ep][cmp][z+ir] += depz;
+                                                    - Czep*f_p_pml[Ep][cmp][z+ir]);
+              const double epr = f[Ep][cmp][z+ir] - f_p_pml[Ep][cmp][z+ir];
+              f_p_pml[Ep][cmp][z+ir] += depz;
               f[Ep][cmp][z+ir] += depz +
                 inveps_plus_Crep*(c*(-(f[Hz][cmp][z+ir]-f[Hz][cmp][z+irm1])) - Crep*epr);
             }
@@ -720,9 +730,9 @@ void fields_chunk::step_e() {
             const double dezr = inveps_plus_Crez*
               (c*(f[Hp][cmp][z+ir]*((int)(v.origin.r()*v.a+0.5) + r+0.5)-
                   f[Hp][cmp][z+irm1]*((int)(v.origin.r()*v.a+0.5) + r-0.5))*oor
-               - Crez*f_pml[Ez][cmp][z+ir]);
-            const double ezp = f[Ez][cmp][z+ir]-f_pml[Ez][cmp][z+ir];
-            f_pml[Ez][cmp][z+ir] += dezr;
+               - Crez*f_p_pml[Ez][cmp][z+ir]);
+            const double ezp = f[Ez][cmp][z+ir]-f_p_pml[Ez][cmp][z+ir];
+            f_p_pml[Ez][cmp][z+ir] += dezr;
             f[Ez][cmp][z+ir] += dezr +
               c*ma->inveps[Ez][Z][z+ir]*(-it(cmp,f[Hr],z+ir)*mor);
           }
@@ -751,8 +761,8 @@ void fields_chunk::step_e() {
               const double inveps_plus_Czer = (ma->Cdecay[Z][Er][R]) ?
                 ma->Cdecay[Z][Er][R][z+ir] : ma->inveps[Er][R][z+ir];
               double derp = c*ma->inveps[Er][R][z+ir]*(it(cmp,f[Hz],z+ir)*morph);
-              double erz = f[Er][cmp][z+ir] - f_pml[Er][cmp][z+ir];
-              f_pml[Er][cmp][z+ir] += derp;
+              double erz = f[Er][cmp][z+ir] - f_p_pml[Er][cmp][z+ir];
+              f_p_pml[Er][cmp][z+ir] += derp;
               f[Er][cmp][z+ir] += derp + inveps_plus_Czer*
                 (-c*(f[Hp][cmp][z+ir]-f[Hp][cmp][z+ir-1]) - Czer*erz);
             }
@@ -779,9 +789,9 @@ void fields_chunk::step_e() {
             const double inveps_plus_Czep = (ma->Cdecay[Z][Ep][P]) ?
               ma->Cdecay[Z][Ep][P][z] : ma->inveps[Ep][P][z];
             const double depz = inveps_plus_Czep*(c*(f[Hr][cmp][z]-f[Hr][cmp][z-1])
-                                                  - Czep*f_pml[Ep][cmp][z]);
-            const double epr = f[Ep][cmp][z] - f_pml[Ep][cmp][z];
-            f_pml[Ep][cmp][z] += depz;
+                                                  - Czep*f_p_pml[Ep][cmp][z]);
+            const double epr = f[Ep][cmp][z] - f_p_pml[Ep][cmp][z];
+            f_p_pml[Ep][cmp][z] += depz;
             f[Ep][cmp][z] += depz +
               c*ma->inveps[Ep][P][z]*(-f[Hz][cmp][z]*2.0);
           }
@@ -793,11 +803,11 @@ void fields_chunk::step_e() {
         for (int r=0;r<=v.nr() && (int)(v.origin.r()*v.a+0.5) + r < m;r++) {
           const int ir = r*(v.nz()+1);
           for (int z=0;z<=v.nz();z++) f[Ep][cmp][z+ir] = 0;
-          if (f_pml[Ep][cmp])
-            for (int z=0;z<=v.nz();z++) f_pml[Ep][cmp][z+ir] = 0;
+          if (f_p_pml[Ep][cmp])
+            for (int z=0;z<=v.nz();z++) f_p_pml[Ep][cmp][z+ir] = 0;
           for (int z=0;z<=v.nz();z++) f[Ez][cmp][z+ir] = 0;
-          if (f_pml[Ez][cmp])
-            for (int z=0;z<=v.nz();z++) f_pml[Ez][cmp][z+ir] = 0;
+          if (f_p_pml[Ez][cmp])
+            for (int z=0;z<=v.nz();z++) f_p_pml[Ez][cmp][z+ir] = 0;
         }
       }
     }

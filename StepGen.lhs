@@ -3,7 +3,7 @@ module StepGen ( Code, Expression, gencode,
                  doexp, docode, doline,
                  if_, ifelse_, (|?|), (|:|),
                  whether_or_not, declare, for_loop,
-                 (|+|), (|-|), (|*|), (|+=|), (<<),
+                 (|+|), (|-|), (|*|), (|+=|), (|=|), (<<),
                ) where
 
 import FiniteMap
@@ -67,7 +67,7 @@ infixl 8 |?|
 (|?|) b x y = ifelseCC b (expression x) (expression y) $ \xx yy ->
               return $ "("++b++") ? "++p xx++" : "++p yy
 (|:|) :: a -> a
-infixr 0 |:|
+infixr 4 |:|
 (|:|) a = a
 declare :: CODE a => String -> Bool -> a -> Code
 declare s b x = do check <- istrueCC s
@@ -101,11 +101,17 @@ infixr 5 |+|
                   else if ye == "0" then return xe
                        else return $ padd xe++" + "++p ye
 (|+=|) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
-infixr 4 |+=|
+infixr 3 |+=|
 x |+=| y = do xe <- expression x
               ye <- expression y
               if ye == "0" then return ""
                  else return $ xe++" += "++ye
+(|=|) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
+infixr 3 |=|
+x |=| y = do xe <- expression x
+             ye <- expression y
+             if ye == "0" then return ""
+                else return $ xe++" = "++ye
 (|*|) :: (EXPRESSION a, EXPRESSION b) => a -> b -> Expression
 infixr 6 |*|
 (|*|) x y = do xe <- expression x

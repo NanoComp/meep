@@ -97,15 +97,18 @@ double fields_chunk::backup_h() {
       if (f[c][cmp] && is_magnetic((component)c)) {
         if (f_backup[c][cmp] == NULL)
           f_backup[c][cmp] = new double[v.ntot()];
-        if (f_backup_pml[c][cmp] == NULL)
-          f_backup_pml[c][cmp] = new double[v.ntot()];
+        if (f_backup_m_pml[c][cmp] == NULL)
+          f_backup_m_pml[c][cmp] = new double[v.ntot()];
+        if (f_backup_p_pml[c][cmp] == NULL)
+          f_backup_p_pml[c][cmp] = new double[v.ntot()];
       }
   }
   DOCMP {
     for (int c=0;c<10;c++)
       if (f[c][cmp] && is_magnetic((component)c)) {
         for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = f[c][cmp][i];
-        for (int i=0;i<v.ntot();i++) f_backup_pml[c][cmp][i] = f_pml[c][cmp][i];
+        for (int i=0;i<v.ntot();i++) f_backup_p_pml[c][cmp][i] = f_p_pml[c][cmp][i];
+        for (int i=0;i<v.ntot();i++) f_backup_m_pml[c][cmp][i] = f_m_pml[c][cmp][i];
       }
   }
 }
@@ -115,7 +118,8 @@ double fields_chunk::restore_h() {
     for (int c=0;c<10;c++)
       if (f[c][cmp] && is_magnetic((component)c)) {
         for (int i=0;i<v.ntot();i++) f[c][cmp][i] = f_backup[c][cmp][i];
-        for (int i=0;i<v.ntot();i++) f_pml[c][cmp][i] = f_backup_pml[c][cmp][i];
+        for (int i=0;i<v.ntot();i++) f_p_pml[c][cmp][i] = f_backup_p_pml[c][cmp][i];
+        for (int i=0;i<v.ntot();i++) f_m_pml[c][cmp][i] = f_backup_m_pml[c][cmp][i];
       }
   }
 }
