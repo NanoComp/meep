@@ -27,7 +27,15 @@ class initialize {
   ~initialize();
 };
 
-void abort(const char *fmt, ...);
+#ifdef __GNUC__
+#  define NORETURN_ATTR __attribute__((noreturn))
+#  define PRINTF_ATTR(f,a) __attribute__((format(printf, f, a)))
+#else
+#  define NORETURN_ATTR 
+#  define PRINTF_ATTR(f,a) 
+#endif
+
+void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1,2);
 void all_wait();
 int count_processors();
 int my_rank();
@@ -46,8 +54,8 @@ double sum_to_all(double);
 complex<double> sum_to_all(complex<double>);
 
 // IO routines:
-void master_printf(const char *fmt, ...);
-void debug_printf(const char *fmt, ...);
+void master_printf(const char *fmt, ...) PRINTF_ATTR(1,2);
+void debug_printf(const char *fmt, ...) PRINTF_ATTR(1,2);
 
 // File is an abstract type to keep you from accidentally using it in an
 // unsafe manner.
@@ -57,8 +65,8 @@ file *everyone_open_write(const char *);
 file *everyone_open_write(const char *filename, const char *directory);
 void everyone_close(file *);
 void i_flush(file *f);
-void i_fprintf(file *, const char *fmt, ...);
-void master_fprintf(file *, const char *fmt, ...);
+void i_fprintf(file *, const char *fmt, ...) PRINTF_ATTR(2,3);
+void master_fprintf(file *, const char *fmt, ...) PRINTF_ATTR(2,3);
 
 } /* namespace meep */
 
