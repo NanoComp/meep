@@ -190,6 +190,14 @@ void everyone_close(file *f) {
 #endif
 }
 
+void i_flush(file *f) {
+#ifdef HAVE_MPI
+  // I don't know how to flush over MPI...
+#else
+  fflush((FILE *)f);
+#endif
+}
+
 static const int buflen = 8192;
 static char buf[buflen];
 
