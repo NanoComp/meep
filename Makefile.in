@@ -38,9 +38,9 @@ example.o: example.cpp dactyl.h vec.h mympi.h
 step.o: step.cpp step_h.h step_e.h dactyl.h dactyl_internals.h vec.h mympi.h
 
 step_h.h: step_h.hs StepGen.lhs
-	ghc -fglasgow-exts --make -o step_h step_h.hs && ./step_h > step_h.h
+	ghc -fglasgow-exts -package data --make -o step_h step_h.hs && ./step_h > step_h.h
 step_e.h: step_e.hs StepGen.lhs
-	ghc -fglasgow-exts --make -o step_e step_e.hs && ./step_e > step_e.h
+	ghc -fglasgow-exts -package data --make -o step_e step_e.hs && ./step_e > step_e.h
 
 libdactyl.a: $(OBJ_dactyl)
 	ar cru libdactyl.a $(OBJ_dactyl)

@@ -6,7 +6,7 @@ module StepGen ( Code, Expression, gencode,
                  (|+|), (|-|), (|*|), (|+=|), (<<),
                ) where
 
-import Data.FiniteMap
+import FiniteMap
 import Monad ( liftM )
 \end{code}
 
