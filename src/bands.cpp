@@ -404,23 +404,26 @@ int bandsdata::get_freqs(complex<double> *data, int n, complex<double> *amps,
   const double total_time = n*scale_factor*c/a;
   const double qminhere = 1.0/(1.0/qmin + 0.25/(fmin*total_time));
   return do_harminv(data, n, scale_factor, a, fmin, fmax, maxbands,
-		    amps,  freq_re, freq_im, NULL, 100, qminhere);
+		    amps,  freq_re, freq_im, NULL, 1.1, qminhere);
 }
 
 int do_harminv(complex<double> *data, int n, int sampling_rate, double a, 
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors,
-	       int numfreqs, double Q_thresh, double rel_err_thresh, double err_thresh, double rel_amp_thresh, double amp_thresh) {
+	       double spectral_density, double Q_thresh, double rel_err_thresh, double err_thresh, double rel_amp_thresh, double amp_thresh) {
 #ifndef HAVE_HARMINV
   abort("compiled without Harminv library, required for do_harminv");
   return 0;
 #else
-  // data is a size n array.
+  double dt = sampling_rate * c / a;
+  int numfreqs = fabs(fmax-fmin)*dt*n*spectral_density; // c.f. 'man harminv'
+  if (numfreqs < 2) numfreqs = 2;
 
   if (maxbands > numfreqs)
        numfreqs = maxbands;
 
   // check for all zeros in input
+  // data is a size n array.
   {
     int i;
     for (i = 0; i < n && data[i] == 0.0; i++)
@@ -442,7 +445,6 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
   }
 #endif
 
-  double dt = sampling_rate * c / a;
   harminv_data hd = harminv_data_create(n, data, fmin*dt, fmax*dt, numfreqs);
   harminv_solve(hd);
 
