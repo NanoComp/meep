@@ -283,7 +283,8 @@ bool check_2d_monitor(double eps(const vec &),
   snprintf(fname, 1024, "%s.h5", name);
 
   const double T = 3.0;
-  complex<double> *mon = new complex<double>[int(T / (f.inva * c)) + 2];
+  int NT = int(T / (f.inva * c)) + 2;
+  complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
     f.output_hdf5(fname, geometric_volume(pt, pt), a, file_c,
 		  true, f.t);
