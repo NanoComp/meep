@@ -224,43 +224,44 @@ void fields::initialize_with_nth_te(int np0) {
   const int n = np0 - 0;
   double rmax = Jmax(m,n);
   double ktrans = rmax/nr;
-  double kk = k*inva;
+  double kk = k*2*pi*inva;
   double eps = ma->eps[1];
   double inveps = 1.0/eps;
-  double rootinveps = sqrt(inveps);
   double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
   double omt = om*0.5;
   if (om/(2*pi) > preferred_fmax) preferred_fmax = om/(2*pi);
-  double funky = 1-kk*kk*c*c/(eps*om*om);
-  for (int r=0;r<nr;r++) {
+  for (int r=rmin_bulk(m)-1;r<nr;r++) {
     double Jm = J(m,ktrans*(r+0.5));
-    double Jmp = Jprime(m, ktrans*(r+0.5));
-    double Jm_h = J(m,ktrans*r);
-    double Jmp_h = Jprime(m,ktrans*r);
+    double Jmp_h = (Jm-J(m,ktrans*(r-0.5)))/ktrans;//Jprime(m,ktrans*r);//
+    if (!r) Jmp_h = 2.0*Jm/ktrans;
     for (int z=0;z<nz;z++) {
-      double kz = -k*2*pi*inva*z;
-      double kzph = -k*2*pi*inva*(z+0.5);
+      double kz = -kk*z;
+      double kzph = -kk*(z+0.5);
       DOCMP {
         CM(hz,r,z) += Jm*expi(cmp, kz);
-        CM(hr,r,z) += (-kk*c/om)*(-c*rootinveps/om/funky)*ktrans*Jmp_h
+        CM(hr,r,z) += (-kk*c/om)*(-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
           *expi(cmp, kzph+pi/2);
-        if (r > 0) CM(hp,r,z) += (kk*c/om)*(-m*c*rootinveps/(r*om)/funky)
-                     *Jm*expi(cmp, kzph);
+        CM(hp,r,z) += (kk*c/om)*(-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))
+          *Jm*expi(cmp, kzph);
         
-        CM(ep,r,z) += (-c*rootinveps/om/funky)*ktrans*Jmp_h
-          *expi(cmp, kz-omt+pi/2);
-        if (r > 0) CM(er,r,z) += (-m*c*rootinveps/(r*om)/funky)*Jm*expi(cmp, kz-omt);
+        if (r >= rmin_bulk(m) || m == 1)
+          CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
+            *expi(cmp, kz-omt+pi/2);
+        if (r >= rmin_bulk(m) || m < 2)
+          CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
       }
     }
     DOCMP {
       const int z=nz;
-      double kz = -k*2*pi*inva*z;
-      double kzph = -k*2*pi*inva*(z+0.5);
+      double kz = -kk*z;
+      double kzph = -kk*(z+0.5);
       CM(hz,r,z) += Jm*expi(cmp, kz);
 
-      CM(ep,r,z) += (-c*rootinveps/om/funky)*ktrans*Jmp_h
-        *expi(cmp, kz-omt+pi/2);
-      if (r > 0) CM(er,r,z) += (-m*c*rootinveps/(r*om)/funky)*Jm*expi(cmp, kz-omt);
+      if (r >= rmin_bulk(m) || m == 1)
+        CM(ep,r,z) += (-c*inveps*om/(ktrans*ktrans))*ktrans*Jmp_h
+          *expi(cmp, kz-omt+pi/2);
+      if (r >= rmin_bulk(m) || m < 2)
+        CM(er,r,z) += (-m*c*inveps/(r+0.5)*om/(ktrans*ktrans))*Jm*expi(cmp, kz-omt);
     }
   }
 }
@@ -269,43 +270,46 @@ void fields::initialize_with_nth_tm(int np1) {
   const int n = np1 - 1;
   double rroot = Jroot(m,n);
   double ktrans = rroot/nr;
-  double kk = k*inva;
+  double kk = k*2*pi*inva;
   double eps = ma->eps[1];
   double inveps = 1.0/eps;
-  double rootinveps = sqrt(inveps);
   double om = c*sqrt(inveps*(ktrans*ktrans + kk*kk));
   double omt = om*0.5;
   if (abs(om/(2*pi)) > preferred_fmax) preferred_fmax = om/(2*pi);
-  double funky = 1-kk*kk*c*c/(eps*om*om);
-  for (int r=0;r<nr;r++) {
+  for (int r=rmin_bulk(m)-1;r<nr;r++) {
     double Jm = J(m,ktrans*r);
     double Jmp = Jprime(m,ktrans*r);
     double Jm_h = J(m,ktrans*(r+0.5));
     double Jmp_h = Jprime(m,ktrans*(r+0.5));
     for (int z=0;z<nz;z++) {
-      double kz = k*2*pi*inva*z;
-      double kzmh = k*2*pi*inva*(z-0.5);
+      double kz = kk*z;
+      double kzmh = kk*(z-0.5);
       DOCMP {
-        CM(ez,r,z) += Jm*expi(cmp, kz);
-        if (r > 0) CM(hr,r,z) += (m*c/(r*om)/funky)*Jm*expi(cmp, kz+omt);
-        CM(hp,r,z) += (c/om/funky)*(ktrans*Jmp_h)
+        if (r >= rmin_bulk(m) || m == 0)
+          CM(ez,r,z) += Jm*expi(cmp, kz);
+        if (r >= rmin_bulk(m))
+          CM(hr,r,z) += (m*c/r*om/(ktrans*ktrans))*Jm*expi(cmp, kz+omt);
+        if (r == 0 && m == 1)
+          CM(hr,r,z) += (-m*c*om/(ktrans*ktrans))*ktrans*Jmp*expi(cmp, kz+omt);
+        CM(hp,r,z) += (c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
                       *expi(cmp, kz+omt+pi/2);
         
-        if (r > 0) CM(ep,r,z) += (-kk*c*rootinveps/om)*(m*c/(r*om)/funky)*Jm
-                     *expi(cmp, kzmh);
-        CM(er,r,z) += (kk*c*rootinveps/om)*(c/om/funky)*(ktrans*Jmp_h)
+        if (r >= rmin_bulk(m))
+          CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
+            *expi(cmp, kzmh);
+        CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
                       *expi(cmp, kzmh+pi/2);
       }
     }
     DOCMP {
       const int z=nz;
-      double kz = k*2*pi*inva*z;
-      double kzmh = k*2*pi*inva*(z-0.5);
-      if (r > 0) CM(ep,r,z) += m*c/(r*om)*Jm*expi(cmp, kzmh)/funky
-                   *(-kk*c*rootinveps/om);
-      CM(er,r,z) += (c/om)*(ktrans*Jmp_h)
-        *expi(cmp, kzmh+pi/2)/funky
-        *kk*c*rootinveps/om;
+      double kz = kk*z;
+      double kzmh = kk*(z-0.5);
+      if (r >= rmin_bulk(m))
+        CM(ep,r,z) += (-kk*c*inveps/om)*(m*c/r*om/(ktrans*ktrans))*Jm
+          *expi(cmp, kzmh);
+      CM(er,r,z) += (kk*c*inveps/om)*(c*om/(ktrans*ktrans))*(ktrans*Jmp_h)
+        *expi(cmp, kzmh+pi/2);
     }
   }
 }
