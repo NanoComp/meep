@@ -784,6 +784,7 @@ class fields {
   complex<double> optimal_phase_shift(component) const;
   // step.cpp methods:
   double last_step_output_wall_time;
+  int last_step_output_t;
   void step();
   inline double time() const { return t*dt; };
 

@@ -35,11 +35,17 @@ namespace meep {
 
 void fields::step() {
   am_now_working_on(Stepping);
-  if (!t) last_step_output_wall_time = wall_time();
 
-  if (!quiet && wall_time() > last_step_output_wall_time + MIN_OUTPUT_TIME) {
-    master_printf("on time step %d (time=%g)\n", t, time());
+  if (!t) {
     last_step_output_wall_time = wall_time();
+    last_step_output_t = t;
+  }
+  if (!quiet && wall_time() > last_step_output_wall_time + MIN_OUTPUT_TIME) {
+    master_printf("on time step %d (time=%g), %g s/step\n", t, time(), 
+		  (wall_time() - last_step_output_wall_time) / 
+		  (t - last_step_output_t));
+    last_step_output_wall_time = wall_time();
+    last_step_output_t = t;
   }
 
   phase_material();
