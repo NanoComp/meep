@@ -93,9 +93,9 @@
 (define fields-smob-type 'SCM)
 (define grace-smob-type 'SCM)
 
-(define-external-function make-structure false false structure-smob-type
-  'integer 'vector3 'number (make-list-type 'geometric-object)
-  'integer (make-list-type 'symmetry))
+;(define-external-function make-structure false false structure-smob-type
+;  'integer 'vector3 'number (make-list-type 'geometric-object)
+;  'integer (make-list-type 'symmetry))
 
 ; ****************************************************************
 ; Utilities

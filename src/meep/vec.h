@@ -156,7 +156,7 @@ inline bool coordinate_mismatch(ndim dim, direction d) {
 	  (dim == Dcyl && (d == X || d == Y)));
 }
 
-void abort(const char *, ...);
+extern void abort(const char *, ...); // mympi.cpp
 
 inline int is_electric(component c) { return c < Hx; }
 inline int is_magnetic(component c) { return c >= Hx && c < Dx; }

@@ -1,5 +1,4 @@
 #include "meep-ctl.h"
-#include "ctl-io.h"
 
 using namespace meep;
 
@@ -20,9 +19,11 @@ void ctl_stop_hook(void)
   delete meep_init;
 }
 
+extern "C" void SWIG_init();
+
 void ctl_export_hook(void)
 {
-  register_structure_smobs();
+  SWIG_init();
 }
 
 /**************************************************************************/

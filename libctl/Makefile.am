@@ -3,13 +3,21 @@ EXTRA_DIST = meep.scm.in
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
-HDRS = meep-ctl.h meep-ctl-const.h my-smob.h
+HDRS = meep-ctl.h meep-ctl-const.h
 
-meep_SOURCES = meep.cpp structure.cpp $(HDRS)
-nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h
+LIBHDRS = $(top_srcdir)/src/meep.h $(top_srcdir)/src/meep/vec.h $(top_srcdir)/src/meep/mympi.h
+
+meep_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i
+nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i
 meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
-BUILT_SOURCES = $(nodist_meep_SOURCES)
+BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx meep_renames.i
+
+meep_wrap.cxx: meep.i meep_renames.i $(LIBHDRS)
+	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
+
+meep_renames.i: $(LIBHDRS)
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; sed 's/^ *class *\([A-Za-z_0-9:]*\) *{ *$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename") > $@
 
 ##############################################################################
 #      stuff below is based on example Makefile.in included with libctl

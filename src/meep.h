@@ -194,7 +194,6 @@ class structure_chunk {
   void update_pml_arrays();
   void update_Cdecay();
 
-  void set_output_directory(const char *name);
   void mix_with(const structure_chunk *, double);
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
@@ -229,9 +228,9 @@ class structure {
   ~structure();
   structure();
   structure(const volume &v, material_function &eps, int num_chunks = 0,
-      const symmetry &s = identity());
+      const symmetry &s = meep::identity());
   structure(const volume &v, double eps(const vec &), int num_chunks = 0,
-      const symmetry &s = identity());
+      const symmetry &s = meep::identity());
   structure(const structure *);
   structure(const structure &);
   void set_epsilon(material_function &eps, double minvol = 0.0,
@@ -246,7 +245,7 @@ class structure {
   void optimize_chunks();
   void choose_chunkdivision(const volume &v, material_function &eps,
                             int num_chunks = 1,
-                            const symmetry &s = identity());
+                            const symmetry &s = meep::identity());
   void make_average_eps();
   void use_pml(direction d, boundary_side b, double dx, bool recalculate_chunks = true);
   void use_pml_everywhere(double dx, bool recalculate_chunks = true);
@@ -461,18 +460,18 @@ enum in_or_out { Incoming=0, Outgoing=1 };
 
 class fields_chunk {
  public:
-  double *(f[NUM_FIELD_COMPONENTS][2]);
-  double *(f_backup[NUM_FIELD_COMPONENTS][2]);
-  double *(f_p_pml[NUM_FIELD_COMPONENTS][2]);
-  double *(f_m_pml[NUM_FIELD_COMPONENTS][2]);
-  double *(f_backup_p_pml[NUM_FIELD_COMPONENTS][2]);
-  double *(f_backup_m_pml[NUM_FIELD_COMPONENTS][2]);
+  double *f[NUM_FIELD_COMPONENTS][2];
+  double *f_backup[NUM_FIELD_COMPONENTS][2];
+  double *f_p_pml[NUM_FIELD_COMPONENTS][2];
+  double *f_m_pml[NUM_FIELD_COMPONENTS][2];
+  double *f_backup_p_pml[NUM_FIELD_COMPONENTS][2];
+  double *f_backup_m_pml[NUM_FIELD_COMPONENTS][2];
 
   dft_chunk *dft_chunks;
 
   double **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   int num_zeroes[NUM_FIELD_TYPES];
-  double **(connections[NUM_FIELD_TYPES][2]);
+  double **connections[NUM_FIELD_TYPES][2];
   int num_connections[NUM_FIELD_TYPES][2];
   complex<double> *connection_phases[NUM_FIELD_TYPES];
   double *connection_factors[NUM_FIELD_TYPES];
@@ -493,7 +492,6 @@ class fields_chunk {
   ~fields_chunk();
 
   // step.cpp
-  void step();
   double peek_field(component, const vec &);
 
   void use_real_fields();
@@ -735,7 +733,6 @@ class fields {
   double get_eps(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
-  void output_point(file *, const vec &, const char *name);
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   void prepare_for_bands(const vec &, double end_time, double fmax=0,

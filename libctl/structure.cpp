@@ -1,6 +1,4 @@
 #include "meep-ctl.h"
-#include "config.h"
-#include "ctl-io.h"
 #include <ctlgeom.h>
 
 using namespace ctlio;
@@ -10,7 +8,7 @@ using namespace ctlio;
 
 /***********************************************************************/
 
-static vector3 vec2vector3(const meep::vec &v)
+vector3 ctlio::vec2vector3(const meep::vec &v)
 {
      vector3 v3;
 
@@ -190,12 +188,10 @@ double geom_epsilon::eps(const meep::vec &r)
 
 /***********************************************************************/
 
-extern SCM structure2scm(structure_smob *p);
-
-SCM ctlio::make_structure(integer dims, vector3 size, number resolution,
-		   geometric_object_list geometry,
-		   integer desired_num_chunks, 
-		   symmetry_list symmetries)
+meep::structure *make_structure(integer dims, vector3 size, number resolution,
+				geometric_object_list geometry,
+				integer desired_num_chunks,
+				meep::symmetry S)
 {
      master_printf("-----------\nInitializing structure...\n");
 
@@ -213,7 +209,6 @@ SCM ctlio::make_structure(integer dims, vector3 size, number resolution,
      geometry_lattice = cart_lattice;
      geometry_lattice.size = size;
      geometry_center = center0;
-     meep::symmetry S;
      
      number no_size = 2.0 / ctl_get_number("infinity");
      if (size.x <= no_size)
@@ -248,102 +243,12 @@ SCM ctlio::make_structure(integer dims, vector3 size, number resolution,
 	      CK(0, "unsupported dimensionality");
      }
 
-     for (int i = 0; i < symmetries.num_items; ++i) {
-	  switch (symmetries.items[i].which_subclass) {
-	      case symmetry::ROTATE2_SYM:
-		   S = S + meep::rotate2((meep::direction)
-					 symmetries.items[i].axis, v);
-		   break;
-	      case symmetry::ROTATE4_SYM:
-		   S = S + meep::rotate4((meep::direction)
-					 symmetries.items[i].axis, v);
-		   break;
-	      case symmetry::MIRROR_SYM:
-		   S = S + meep::mirror((meep::direction)
-					symmetries.items[i].axis, v);
-		   break;
-	  }
-     }
-
      geom_epsilon geps(geometry, v.pad().surroundings());
 
      meep::structure *s = new meep::structure(v, geps, desired_num_chunks, S);
 
      master_printf("-----------\n");
 
-     return structure2scm(s);
-}
-
-/*************************************************************************/
-
-long scm_tc16_smob_structure_smob = 0;
-
-static SCM structure_p(SCM obj)
-{
-     return gh_bool2scm(STRUCTURE_P(obj));
-}
-
-static int print_structure_smob(SCM obj, SCM port, scm_print_state *pstate)
-{
-     char buf[256];
-     structure_smob *s = STRUCTURE(obj);
-     (void) pstate; /* unused argument */
-
-     scm_puts("#<structure ", port);
-     switch (s->v.dim) {
-	 case meep::D1:
-	      sprintf(buf, "1d nx=%d", s->v.nx());
-	      break;
-	 case meep::D2:
-	      sprintf(buf, "2d nx=%d ny=%d", s->v.nx(), s->v.ny());
-	      break;
-	 case meep::D3:
-	      sprintf(buf, "3d nx=%d ny=%d nz=%d", 
-		      s->v.nx(), s->v.ny(), s->v.nz());
-	      break;
-	 case meep::Dcyl:
-	      sprintf(buf, "cylindrical nr=%d nz=%d", s->v.nr(), s->v.nz());
-	      break;
-     }
-     scm_puts(buf, port);
-     scm_putc('>', port);
-     return 1;
-}
-
-static size_t free_structure_smob(SCM obj)
-{
-     structure_smob *s = STRUCTURE(obj);
-     delete s;
-     return 0;
-}
-
-#define mark_structure_smob mark_null
-
-SCM structure2scm(structure_smob *p)
-{
-     SCM obj;
-     NEWCELL_SMOB(obj, structure_smob, p);
-     return obj;
-}
-
-void register_structure_smobs(void)
-{
-#ifdef HAVE_SCM_MAKE_SMOB_TYPE
-     scm_tc16_smob_structure_smob = scm_make_smob_type("structure", 0);
-     scm_set_smob_free(scm_tc16_smob_structure_smob, free_structure_smob);
-     scm_set_smob_print(scm_tc16_smob_structure_smob, print_structure_smob);
-#else /* old way to register smobs */
-     MAKE_SMOBFUNS(structure_smob);
-     REGISTER_SMOBFUNS(structure_smob);
-#endif
-
-     gh_new_procedure("structure?", (SCM (*)()) structure_p, 1, 0, 0);
-}
-
-structure_smob *assert_structure_smob(SCM fo)
-{
-     structure_smob *s = SAFE_STRUCTURE(fo);
-     CK(s, "wrong type argument: expecting structure");
      return s;
 }
 
