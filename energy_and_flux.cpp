@@ -122,20 +122,19 @@ double fields_chunk::restore_h() {
 
 double fields_chunk::electric_energy_in_box(const volume &otherv) {
   double energy = 0;
-  DOCMP {
+  DOCMP
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && is_electric((component)c))
         for (int i=0;i<v.ntot();i++)
           if (otherv.owns(v.loc((component)c,i)))
             energy += otherv.intersection(v.dV((component)c,i))*
               f[c][cmp][i]*(1./ma->inveps[c][i]*f[c][cmp][i]);
-  }
   return energy/(8*pi);
 }
 
 double fields_chunk::magnetic_energy_in_box(const volume &otherv) {
   double energy = 0;
-  DOCMP {
+  DOCMP
     for (int c=0;c<10;c++)
       if (v.has_field((component)c) && is_magnetic((component)c))
         for (int i=0;i<v.ntot();i++) {
@@ -144,7 +143,6 @@ double fields_chunk::magnetic_energy_in_box(const volume &otherv) {
             energy += otherv.intersection(v.dV((component)c,i))*
               f[c][cmp][i]*f[c][cmp][i];
         }
-  }
   return energy/(8*pi);
 }
 

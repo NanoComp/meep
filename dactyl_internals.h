@@ -112,12 +112,13 @@ class partial_flux_plane {
   component cE, cH;
   double *weights;
   int *indE, *indH, numpts;
-  partial_flux_plane *next;
+  partial_flux_plane *next, *next_in_chunk;
   fields_chunk *f;
 
   double *oldE[2];
 
   void append(partial_flux_plane *);
+  void append_in_chunk(partial_flux_plane *);
  private:
 };
 

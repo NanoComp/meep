@@ -62,6 +62,7 @@ partial_flux_plane *fields_chunk::nfp_1d(const vec &p1) {
     temp->cE = Ex;
     temp->cH = Hy;
     temp->next = out;
+    temp->next_in_chunk = out;
     out = temp;
   }
   if (v.owns(locex)) {
@@ -73,7 +74,12 @@ partial_flux_plane *fields_chunk::nfp_1d(const vec &p1) {
     temp->cE = Ex;
     temp->cH = Hy;
     temp->next = out;
+    temp->next_in_chunk = out;
     out = temp;
+  }
+  if (out) {
+    out->append_in_chunk(fluxes);
+    fluxes = out;
   }
   return out;
 }
@@ -84,18 +90,24 @@ void partial_flux_plane::append(partial_flux_plane *n) {
   mover->next = n;
 }
 
+void partial_flux_plane::append_in_chunk(partial_flux_plane *n) {
+  partial_flux_plane *mover = this;
+  while (mover->next_in_chunk) mover = mover->next_in_chunk;
+  mover->next_in_chunk = n;
+}
+
 partial_flux_plane::partial_flux_plane(fields_chunk *thech, int s) {
   numpts = s;
-  next = NULL;
+  next = next_in_chunk = NULL;
   weights = new double[s];
   f = thech;
   indE = new int[s];
   indH = new int[s];
-  //for (int i=0;i<numpts;i++)
-  //  weights[i] = indE[i] = indH[i] = 0;
   oldE[1] = NULL;
-  for (int cmp=0;cmp<2;cmp++)
+  for (int cmp=0;cmp<2;cmp++) {
     oldE[cmp] = new double[s];
+    for (int i=0;i<s;i++) oldE[cmp][i] = 0.0;
+  }
 }
 
 partial_flux_plane::~partial_flux_plane() {
@@ -104,7 +116,7 @@ partial_flux_plane::~partial_flux_plane() {
   delete[] indH;
   for (int cmp=0;cmp<2;cmp++)
     delete[] oldE[cmp];
-  delete next;
+  delete next_in_chunk;
 }
 
 flux_plane::flux_plane(partial_flux_plane *p) {
@@ -122,14 +134,13 @@ double flux_plane::flux() {
     const int is_real = partials->f->is_real;
     partial_flux_plane *mover = partials;
     do {
-      DOCMP {
-        debug_printf("Hello world %d\n", mover->numpts);
+      DOCMP
         for (int n=0;n<mover->numpts;n++) {
-          fl += 0.5*(mover->f->f[mover->cE][cmp][mover->indE[n]] +
-                     mover->oldE[cmp][n])
-            *mover->f->f[mover->cH][cmp][mover->indH[n]]*(1.0/pi/8);
+          const double enew = mover->f->f[mover->cE][cmp][mover->indE[n]];
+          const double eold = mover->oldE[cmp][n];
+          fl += (enew + eold) * 0.5 *(1.0/(4.0*pi))*mover->weights[n]*
+            mover->f->f[mover->cH][cmp][mover->indH[n]];
         }
-      }
       mover = mover->next;
     } while (mover);
   }
@@ -147,9 +158,8 @@ void fields_chunk::update_fluxes() {
   partial_flux_plane *mover = fluxes;
   do {
     DOCMP
-      for (int i=0;i<mover->numpts;i++) {
+      for (int i=0;i<mover->numpts;i++)
         mover->oldE[cmp][i] = f[mover->cE][cmp][mover->indE[i]];
-      }
-    mover = mover->next;
+    mover = mover->next_in_chunk;
   } while (mover);
 }
