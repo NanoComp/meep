@@ -155,6 +155,12 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
       sigma[i] = sigscale*sig(v.loc(v.eps_component(),i));
     FOR_COMPONENTS(c) if (s[c])
       for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
+    double inv_num_components = 1.0;
+    if (energy_saturation) {
+      inv_num_components = 0.0;
+      FOR_ELECTRIC_COMPONENTS(c) if (s[c]) inv_num_components += 1.0;
+      inv_num_components = 1.0/inv_num_components;
+    }
     // Average out sigma over the grid...
     if (v.dim == Dcyl) {
       const vec dr = v.dr()*0.5; // The distance between Yee field components
@@ -170,7 +176,7 @@ polarizability::polarizability(const mat_chunk *ma, double sig(const vec &),
       // There's just one field point...
       for (int i=0;i<v.ntot();i++) s[Ex][i] = sigma[i];
     } else {
-      // FIXME:  we should be doing clever averaging here...
+      // FIXME:  should we be doing clever averaging here?
       FOR_ELECTRIC_COMPONENTS(c) if (s[c])
         for (int i=0;i<v.ntot();i++)
           s[c][i] = sigscale*sig(v.loc(c,i));
@@ -305,8 +311,11 @@ void fields_chunk::initialize_polarization_energy(const polarizability_identifie
 }
 
 void polarization::initialize_energy(double the_energy(const vec &)) {
-  FOR_COMPONENTS(c)
+  double inv_num_components = 0.0;
+  FOR_ELECTRIC_COMPONENTS(c) if (energy[c]) inv_num_components += 1.0;
+  inv_num_components = 1.0/inv_num_components;
+  FOR_ELECTRIC_COMPONENTS(c)
     if (energy[c])
       for (int i=0;i<pb->v.ntot();i++)
-        energy[c][i] = the_energy(pb->v.loc(c, i));
+        energy[c][i] = inv_num_components*the_energy(pb->v.loc(c, i));
 }

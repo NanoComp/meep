@@ -135,7 +135,7 @@ double polariton_energy(const volume &v, double eps(const vec &)) {
 double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   mat ma(v, eps);
-  ma.add_polarizability(one, 0.3, 0.1, 7.63, 0.1);
+  polarizability_identifier thep = ma.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
   fields f(&ma);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_real_fields();
@@ -154,11 +154,11 @@ int main(int argc, char **argv) {
 
   compare(-0.00894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
-  //compare(5.0, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
-  //        "3D saturated polariton");
-  compare(-0.00681265, saturated_polariton_ex(volone(1.0, a), one),
+  compare(-25.3439, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
+          "3D saturated polariton");
+  compare(-0.00370281, saturated_polariton_ex(volone(1.0, a), one),
           "1D saturated polariton");
-  compare(-0.169332, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
+  compare(-0.810025, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
           "2D saturated polariton");
   compare(0.000265566, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
