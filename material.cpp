@@ -311,6 +311,8 @@ mat::~mat() {
     chunks[i] = NULL; // Just to be sure...
   }
   delete[] chunks;
+  delete[] effort_volumes;
+  delete[] effort;
 }
 
 void mat::make_average_eps() {
@@ -358,8 +360,8 @@ mat_chunk::~mat_chunk() {
       delete[] inveps[c][d];
   delete[] eps;
 
-  FOR_ELECTRIC_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] C[d][c];
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] C[d][c];
+  FOR_COMPONENTS(c)
     FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2)
         delete[] Cdecay[d][c][d2];
   if (pb) delete pb;
