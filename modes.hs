@@ -93,7 +93,7 @@ plot_mode k m n bls =
 plot_field ((r,f):ps) = show r++" "++show f++"\n"++plot_field ps
 plot_field [] = "\n"
 circle set = "@    s"++show set++" symbol 1\n"
-star   set = "@    s"++show set++" symbol 9\n"
+star   set = "@    s"++show set++" symbol 9\n@    s"++show set++" symbol size 0.66\n"
 square set = "@    s"++show set++" symbol 2\n"
 red  set = "@    s"++show set++" line color 2
 @    s"++show set++" symbol color 2\n"
