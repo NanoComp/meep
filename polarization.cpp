@@ -132,8 +132,6 @@ polarizability::polarizability(const mat *ma, double sig(double,double),
     }
   }
   // Average out sigma over the grid...
-  //for (int i=0;i<nr*(nz+1);i++)
-  //  sr[i] = sp[i] = sz[i] = sqrt(-1);
   for (int r=1;r<nr;r++) {
     for (int z=1;z<=nz;z++) {
       MA(sr,r,z) = 0.5*(MA(sigma,r,z)+MA(sigma,r,z-1));
