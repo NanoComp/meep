@@ -4,6 +4,10 @@ using namespace meep;
 
 double eps(const vec &v) { return ((v.r() < 0.5+1e-6) ? 9.0 : 1.0); }
 
+#define MINRES 10
+#define MAXRES 25
+#define RESSTEP 3 // should be odd
+
 int find_exponent(double a_mean, double a_meansqr,
                   double a2_mean, double a2_meansqr,
                   const char *name) {
@@ -30,7 +34,7 @@ void test_convergence_without_averaging() {
   int n[2] = {0,0};
   double a_mean[2] = {0,0}, a_meansqr[2] = {0,0}, a2_mean[2] = {0,0}, a2_meansqr[2] = {0,0}; 
 
-  for (int a=10; a <= 25; a+=3) {
+  for (int a = MINRES; a <= MAXRES; a += RESSTEP) {
     volume vol = volcyl(1.0,0.0,a);  
     structure s(vol, eps, 0);
     fields f(&s, 1);
@@ -88,7 +92,7 @@ void test_convergence_with_averaging() {
   int n[2] = {0,0};
   double a_mean[2] = {0,0}, a_meansqr[2] = {0,0}, a2_mean[2] = {0,0}, a2_meansqr[2] = {0,0}; 
 
-  for (int a=10; a <= 25; a+=3) {
+  for (int a = MINRES; a <= MAXRES; a += RESSTEP) {
     volume vol = volcyl(1.0,0.0,a);  
     structure s(vol, eps, 0);
     s.set_epsilon(eps, 0.0, true);
