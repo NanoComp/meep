@@ -271,10 +271,10 @@ void volume::interpolate_cyl(component c, const vec &p, int m,
       weights[2] = 2*dr*(0.5-dz) + (1-2*dr)*0.25;
       weights[3] = 2*dr*(0.5+dz) + (1-2*dr)*0.25;
     } else { // East
-      weights[0] = (1+2*dz)*0.25;
-      weights[2] = (1+2*dz)*0.25;
-      weights[1] = -2*dz*(0.5-dr) + (1+2*dz)*0.25;
-      weights[3] = -2*dz*(0.5+dr) + (1+2*dz)*0.25;
+      weights[0] = (1-2*dz)*0.25;
+      weights[2] = (1-2*dz)*0.25;
+      weights[1] = 2*dz*(0.5-dr) + (1-2*dz)*0.25;
+      weights[3] = 2*dz*(0.5+dr) + (1-2*dz)*0.25;
     }
   } else {
     if (dr-dz > 0.0) { // West
