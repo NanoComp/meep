@@ -51,17 +51,25 @@ void abort(char *fmt, ...) {
 void send(int from, int to, double *data, int size) {
 #ifdef HAVE_MPI
   if (from == to) return;
+  if (size == 0) return;
   const int me = my_rank();
-  MPI_Request req;
+  if (from == me) MPI_Send(data, size, MPI_DOUBLE, to, 1, MPI_COMM_WORLD);
   MPI_Status stat;
-  if (from == me) {
-    MPI_Isend(data, size, MPI_DOUBLE, to, 1, MPI_COMM_WORLD, &req);
-    MPI_Wait(&req, &stat);
-  }
-  if (to == me) {
-    MPI_Irecv(data, size, MPI_DOUBLE, from, 1, MPI_COMM_WORLD, &req);
-    MPI_Wait(&req, &stat);
-  }
+  if (to == me) MPI_Recv(data, size, MPI_DOUBLE, from, 1, MPI_COMM_WORLD, &stat);
+#endif
+}
+
+void broadcast(int from, double *data, int size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, size, MPI_DOUBLE, from, MPI_COMM_WORLD);
+#endif
+}
+
+void broadcast(int from, complex<double> *data, int size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, 2*size, MPI_DOUBLE, from, MPI_COMM_WORLD);
 #endif
 }
 

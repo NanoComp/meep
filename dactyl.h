@@ -51,8 +51,8 @@ class mat_chunk {
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
-  int n_proc() { return the_proc; } // Says which proc owns me!
-  int is_mine() { return the_is_mine; }
+  int n_proc() const { return the_proc; } // Says which proc owns me!
+  int is_mine() const { return the_is_mine; }
  private:
   double pml_fmin;
   int the_proc;
@@ -191,8 +191,8 @@ class fields_chunk {
   double count_volume(component);
   friend class fields;
 
-  int n_proc() { return ma->n_proc(); };
-  int is_mine() { return ma->is_mine(); };
+  int n_proc() const { return ma->n_proc(); };
+  int is_mine() const { return ma->is_mine(); };
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   void record_bands(int tcount);
@@ -386,6 +386,8 @@ inline int am_master() { return my_rank() == 0; };
 void master_printf(char *fmt, ...);
 
 void send(int from, int to, double *data, int size);
+void broadcast(int from, double *data, int size);
+void broadcast(int from, complex<double> *data, int size);
 double max_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
