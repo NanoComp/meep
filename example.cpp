@@ -86,9 +86,9 @@ int main() {
         }
         //f.record_bands();
         f.step();
-        f.dft_zflux();
+        f.dft_flux();
       }
-      //f.zfluxw_output(sumwflux, "sumwflux");
+      //f.fluxw_output(sumwflux, "sumwflux");
       //f.output_bands(ban, "band", 10);
     }
   }

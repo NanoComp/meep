@@ -44,6 +44,7 @@
 #define FW(f,ipos) &((f)[0][ipos*ifreqmax]), &((f)[1][ipos*ifreqmax])
 #define FPW(f,ipos,freq) (complex<double>((f)[0][(ipos)*ifreqmax+(freq)], \
                                   (f)[1][(ipos)*ifreqmax+(freq)]))
+#define SWAP(a,b) {(a) += (b); (b) = (a)-(b); (a) -= (b); }
 
 inline int rmin_bulk(int m) {
   if (m<2) return 1;
@@ -233,8 +234,15 @@ fields::~fields() {
     delete[] z_erp[cmp][1];
     delete[] z_epz[cmp][0];
     delete[] z_epz[cmp][1];
+    delete[] erw[cmp];
+    delete[] epw[cmp];
+    delete[] ezw[cmp];
+    delete[] hrw[cmp];
+    delete[] hpw[cmp];
+    delete[] hzw[cmp];
   }
   for (int i=0;i<numpols;i++) delete[] pol[i];
+  delete[] freqs;
 }
 
 void fields::use_bloch(double tk) {
@@ -331,6 +339,7 @@ fields::fields(const mat *the_ma, int tm) {
     }
   }
   nzflux = 0;
+  nrflux = 0;
   setifreqmax_and_iposmax(0, 0);
 }
 
@@ -338,7 +347,7 @@ void fields::add_src_pt(int r, int z,
                         double Pr, double Pp, double Pz,
                         double freq, double width, double peaktime,
                         double cutoff) {
-  const double pi=3.15159265;
+  const double pi=3.14159265;
   if (r <= rmin_bulk(m)-1) return;
   if (r >= nr - npmlr) return;
   if (z >= nz || z < 0) {
@@ -973,6 +982,30 @@ double fields::total_energy() {
   return energy/norm/(8*pi);
 }
 
+double fields::zflux(int ri, int ro, int z) {
+  double flux = 0;
+  double rph, rtemp;
+ 
+  if (ri > ro) SWAP(ri,ro)
+  DOCMP
+    for (int r=ri;r<=ro;r++) {
+      rph   = ((double)r) + 0.5;
+      flux += rph*CM(er,r,z)*CM(hp,r,z)-((double)r)*CM(ep,r,z)*CM(hr,r,z);
+    }
+  return flux;
+}
+
+double fields::rflux(int zl, int zu, int r) {
+  double flux = 0;
+  double rph, rtemp;
+
+  if (zl > zu) SWAP(zl,zu)
+  DOCMP
+    for (int z=zl;z<=zu;z++)
+      flux += CM(ep,r,z)*CM(hz,r,z) - CM(hp,r,z) * CM(ez,r,z);
+  return sqrt(((double)r)*(((double)r)+0.5))*flux;
+}
+
 void fields::output_point(FILE *o, double r, double z, const char *name) {
   fprintf(o, 
           "%s\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\t%lg\n",
@@ -1240,8 +1273,21 @@ int fields::add_zfluxplane(int ri, int ro, int z) {
   return 0;
 }
 
-void fields::dft_zflux() {
-  int n, r, z, ri, ro;
+int fields::add_rfluxplane(int zl, int zu, int r) {
+  nrfluxplane[nrflux] = new int[3];
+  if (zl > zu) SWAP(zl,zu)
+  nrfluxplane[nrflux][0] = zl;
+  nrfluxplane[nrflux][1] = zu;
+  nrfluxplane[nrflux][2] = r;
+  nrflux++;
+  setifreqmax_and_iposmax(-1,iposmax+(zu-zl+1));
+  return 0;
+}
+
+
+
+void fields::dft_flux() {
+  int n, r, ri, ro, z, zl, zu;
   int ipos;
   complex<double> cer, cep, cez, chr, chp, chz;
 
@@ -1267,6 +1313,28 @@ void fields::dft_zflux() {
 	ipos++;
     }
   }
+  for (n=0;n<nrflux;n++) {
+    zl = nrfluxplane[n][0];
+    zu = nrfluxplane[n][1];
+    r  = nrfluxplane[n][2];
+    for (z = zl; z <= zu; z++) {
+      //may want to average as appropriate over Yee-type lattice
+      cer = complex<double>(RE(er,r,z),IM(er,r,z));
+      cep = complex<double>(RE(ep,r,z),IM(ep,r,z));
+      cez = complex<double>(RE(ez,r,z),IM(ez,r,z));
+      chr = complex<double>(RE(hr,r,z),IM(hr,r,z));
+      chp = complex<double>(RE(hp,r,z),IM(hp,r,z));
+      chz = complex<double>(RE(hz,r,z),IM(hz,r,z));
+      ttow(cer, FW(erw,ipos), ((double) t));
+      ttow(cep, FW(epw,ipos), ((double) t));
+      ttow(cez, FW(ezw,ipos), ((double) t));
+      ttow(chr, FW(hrw,ipos), ((double)t)+0.5);
+      ttow(chp, FW(hpw,ipos), ((double)t)+0.5);
+      ttow(chz, FW(hzw,ipos), ((double)t)+0.5);
+      ipos++;
+    }
+  }
+  return;
 }
 
 
@@ -1287,21 +1355,26 @@ void fields::ttow(complex<double> field, double *retarget, double *imtarget, dou
   }
 }
 
-void fields::zfluxw_output(FILE *outpf, char *header) {
-  int ri, ro, z, ipos, freq;
-  double rph, *(sr[nzflux]);
-  int nz;
+void fields::fluxw_output(FILE *outpf, char *header) {
+  int r, ri, ro, z, zl, zu, ipos, freq;
+  double rph, *(sr[nzflux]), *(s[nrflux]);
+  int nz, nr;
+  int i, j;
 
   ipos = 0;
-  for (int i=0;i<nzflux;i++) {
+  for (i=0;i<nzflux;i++) {
     sr[i] = new double[nfreq];
-    for (int j=0;j<nfreq;j++) sr[i][j] = 0.0;
+    for (j=0;j<nfreq;j++) sr[i][j] = 0.0;
+  }
+  for (i=0;i<nrflux;i++) {
+    s[i] = new double[nfreq];
+    for (j=0;j<nfreq;j++) s[i][j] = 0.0;
   }
   for (nz=0;nz<nzflux;nz++) {
     ri = nzfluxplane[nz][0];
     ro = nzfluxplane[nz][1];
     z  = nzfluxplane[nz][2];
-    for (int r=ri;r<=ro;r++) {
+    for (r=ri;r<=ro;r++) {
       rph = ((double) r) + 0.5;
       for (freq=0;freq<nfreq;freq++) {
         if (abs(FPW(erw,ipos,freq))>1000) printf("large erw at %d.\n",freq);
@@ -1314,11 +1387,31 @@ void fields::zfluxw_output(FILE *outpf, char *header) {
       ipos++;
     }
   }
+  for (nr=0;nr<nrflux;nr++) {
+    zl = nrfluxplane[nr][0];
+    zu = nrfluxplane[nr][1];
+    r  = nrfluxplane[nr][2];
+    for (z=zl;z<=zu;z++) {
+      for (freq=0;freq<nfreq;freq++) {
+        s[nr][freq] += real(conj(FPW(epw,ipos,freq))*FPW(hzw,ipos,freq))
+	  - real(conj(FPW(hpw,ipos,freq))*FPW(ezw,ipos,freq));
+      }
+      ipos++;
+    }
+    for (freq=0;freq<nfreq;freq++)
+      s[nr][freq] *= sqrt( ((double) r) * ((double) (r+0.5)) );
+  }
   for (freq=0;freq<nfreq;freq++) {
     fprintf(outpf, "%s: %10.6g, ", header, freqs[freq]);
     for (nz=0;nz<nzflux;nz++)
       fprintf(outpf, "%10.6g ", sr[nz][freq]);
+    for (nr=0;nr<nrflux;nr++)
+      fprintf(outpf, "%10.6g ", s[nr][freq]);
     fprintf(outpf, "\n");
   }
+  for (nr=0;nr<nrflux;nr++)
+    delete[] s[nr];
+  for (nz=0;nz<nzflux;nz++)
+    delete[] sr[nz];
   return;
 }

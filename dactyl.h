@@ -106,14 +106,16 @@ class fields {
   void output_bands(FILE *, const char *, int maxbands=100);
   double total_energy();
   double zflux(int ri, int ro, int z);
-  void dft_zflux();
+  void dft_flux();
   int add_zfluxplane(int ri, int ro, int z);
+  int add_rfluxplane(int zl, int zu, int r);
   int set_frequency_range(double wl, double wu, double deltaw);
   void ttow(complex<double> field, double *retarget, double *imtarget, double time);
-  void zfluxw_output(FILE *outpf, char *header);
+  void fluxw_output(FILE *outpf, char *header);
  private: 
   double *(erw[2]), *(epw[2]), *(ezw[2]), *(hrw[2]), *(hpw[2]), *(hzw[2]);
   int iposmax, ifreqmax, nfreq, nzflux, *(nzfluxplane[MAXFLUXPLANES]);
+  int nrflux, *(nrfluxplane[MAXFLUXPLANES]);
   double *freqs;
   void step_h_bulk();
   void step_h_pml();
