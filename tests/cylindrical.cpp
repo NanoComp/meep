@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
   const char *dirname = make_output_directory(argv[0]);
   master_printf("Testing cylindrical coords under different splittings...\n");
 
-  for (int s=2;s<7;s++)
+  for (int s=2;s<8;s++)
     if (!test_pattern(one, s, dirname)) abort("error in test_pattern\n");
   if (!test_pattern(one, 8, dirname)) abort("error in crazy test_pattern\n");
   if (!test_pattern(one, 120, dirname)) abort("error in crazy test_pattern\n");

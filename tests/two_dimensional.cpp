@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
     if (!test_pml_te(one, s, dirname))
       abort("error in test_pml_te vacuum\n");
 
-  for (int s=2;s<7;s++)
+  for (int s=2;s<8;s++)
     if (!test_metal(one, s, dirname)) abort("error in test_metal vacuum\n");
   if (!test_metal(one, 200, dirname)) abort("error in test_metal vacuum\n");
 
@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
   if (!test_periodic(one, 200, dirname))
     abort("error in test_periodic targets\n");
 
-  for (int s=2;s<7;s++)
+  for (int s=2;s<8;s++)
     if (!test_periodic_tm(one, s, dirname))
       abort("error in test_periodic_tm vacuum\n");
 

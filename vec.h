@@ -237,6 +237,7 @@ class volume {
   int can_split_evenly(int num) const;
   volume split(int num, int which) const;
   volume split_once(int num, int which) const;
+  volume split_at_fraction(bool want_high, int numer) const;
   volume split_specifically(int num, int which, direction d) const;
   volume pad(direction d) const;
  private:

@@ -866,12 +866,60 @@ static int greatest_prime_factor(int n) {
 volume volume::split(int n, int which) const {
   if (n == 1) return *this;
   int spl = greatest_prime_factor(n);
-  if (spl == n) {
-    return split_once(n, which);
+  if (can_split_evenly(spl)) {
+    // Deal with case where we can split evenly by this big prime factor.
+    if (spl == n) {
+      return split_once(n, which);
+    } else {
+      volume v = split_once(spl, which % spl);
+      return v.split(n/spl, which/spl);
+    }
   } else {
-    volume v = split_once(spl, which % spl);
-    return v.split(n/spl, which/spl);
+    // Try to get as close as we can...
+    int biglen = 0;
+    for (int i=0;i<3;i++) if (num[i] > biglen) biglen = num[i];
+    const int split_point = (int)(biglen*(n/2)/(double)n + 0.5);
+    const int num_low = (int)(split_point*n/biglen + 0.5);
+    if (which < num_low)
+      return split_at_fraction(false, split_point).split(num_low,which);
+    else
+      return split_at_fraction(true, split_point).split(n-num_low,which-num_low);
   }
+}
+
+volume volume::split_once(int n, int which) const {
+  if (n == 1) return *this;
+  int cse = can_split_evenly(n);
+  if (cse) {
+    const int bestd = cse-1;
+    return split_specifically(n, which, (direction) bestd);
+  } else {
+    abort("Can't split when dimensions don't work out right\n");
+  }
+}
+
+volume volume::split_at_fraction(bool want_high, int numer) const {
+  int bestd = -1, bestlen = 1;
+  for (int i=0;i<3;i++)
+    if (num[i] > bestlen) {
+      bestd = i;
+      bestlen = num[i];
+    }
+  if (bestd == -1) abort("Crazy weird splitting error.\n");
+  volume retval(dim, a,1);
+  for (int i=0;i<3;i++) retval.num[i] = num[i];
+  if (numer >= num[bestd])
+    abort("Aaack bad bug in split_at_fraction.\n");
+  direction d = (direction) bestd;
+  if (dim == dcyl && d == X) d = R;
+  retval.origin = origin;
+  if (want_high)
+    retval.origin.set_direction(d,origin.in_direction(d)+numer/a);
+
+  if (want_high) retval.num[bestd] -= numer;
+  else retval.num[bestd] = numer;
+  retval.the_ntot = right_ntot(dim, retval.num);
+  return retval;
 }
 
 volume volume::split_specifically(int n, int which, direction d) const {
@@ -908,18 +956,7 @@ volume volume::split_specifically(int n, int which, direction d) const {
   }
   retval.num[d % 3] /= n;
   retval.the_ntot = right_ntot(dim, retval.num);
-  return retval;  
-}
-
-volume volume::split_once(int n, int which) const {
-  if (n == 1) return *this;
-  int cse = can_split_evenly(n);
-  if (cse) {
-    const int bestd = cse-1;
-    return split_specifically(n, which, (direction) bestd);
-  } else {
-    abort("Can't split when dimensions don't work out right\n");
-  }
+  return retval;
 }
 
 volume volume::pad(direction d) const {
