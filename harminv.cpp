@@ -129,7 +129,7 @@ extern void ZSCAL(int*, cmplx*, cmplx*,int*);
 static cmplx cpow_i(cmplx c, int n)
 {
      if (n < 0)
-	  return (1 / cpow_i(c, -n));
+	  return (1.0 / cpow_i(c, -n));
      else {
 	  cmplx result = 1;
 	  while (n > 1) {
@@ -186,9 +186,9 @@ static void generate_U(cmplx *U, cmplx *U1,
      CHK_MALLOC(G_M, cmplx, J);
      CHK_MALLOC(D, cmplx, J);
      for (i = 0; i < J; ++i) {
-	  z_inv[i] = 1/z[i];
+	  z_inv[i] = 1.0/z[i];
 	  z_m[i] = 1;
-	  z_M[i] = 1 / cpow_i(z[i], M);
+	  z_M[i] = 1.0 / cpow_i(z[i], M);
 	  D[i] = G[i] = G_M[i] = 0;
      }
      if (z2 != z) {
@@ -198,9 +198,9 @@ static void generate_U(cmplx *U, cmplx *U1,
 	  CHK_MALLOC(G2, cmplx, J2);
 	  CHK_MALLOC(G2_M, cmplx, J2);
 	  for (i = 0; i < J2; ++i) {
-	       z2_inv[i] = 1/z2[i];
+	       z2_inv[i] = 1.0/z2[i];
 	       z2_m[i] = 1;
-	       z2_M[i] = 1 / cpow_i(z2[i], M);
+	       z2_M[i] = 1.0 / cpow_i(z2[i], M);
 	       G2[i] = G2_M[i] = 0;
 	  }
      }
@@ -433,7 +433,7 @@ static void solve_eigenvects(int n, cmplx *A, cmplx *V, cmplx *v)
      {
 	  int i, one = 1;
 	  for (i = 0; i < n; ++i) {
-	       cmplx norm = 1 / csqrt(symmetric_dot(n, V+i*n, V+i*n));
+	       cmplx norm = 1.0 / csqrt(symmetric_dot(n, V+i*n, V+i*n));
 	       ZSCAL(&n, &norm, V+i*n, &one);
 	  }
      }
@@ -485,14 +485,14 @@ void harminv_solve(harminv_data d)
 	       int j;
 	       /* move the eigenvector to the first "hole" left by
 		  deleting singular eigenvalues: */
-	       for (j = 0; j < i && v0[j] != 0; ++j)
+	       for (j = 0; j < i && v0[j] != 0.0; ++j)
 		    ;
 	       if (j < i) {
 		    ZCOPY(&J, V0 + i*J, &one, V0 + j*J, &one);
 		    v0[j] = v0[i];
 		    v0[i] = 0; /* tag as a "hole" */
 	       }
-	       s = 1 / csqrt(v0[j]);
+	       s = 1.0 / csqrt(v0[j]);
 	       ZSCAL(&J, &s, V0 + j*J, &one);
 	  }
      }

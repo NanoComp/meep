@@ -97,7 +97,7 @@ double sum_to_all(double in) {
   return out;
 }
 
-void sync() {
+void all_wait() {
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif

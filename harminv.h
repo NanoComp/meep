@@ -24,6 +24,8 @@
 
 #include <complex>
 
+using namespace std;
+
 #include "config.h"
 
 /**************************************************************************/

@@ -24,12 +24,12 @@
 
 /* Below are some routines to output to a grace file. */
 
-const char grace_header[] = "# Grace project file
-#
-@page size 792, 612
-@default symbol size 0.330000
-@g0 on
-@with g0
+const char grace_header[] = "# Grace project file\
+#\
+@page size 792, 612\
+@default symbol size 0.330000\
+@g0 on\
+@with g0\
 ";
 
 class grace_point {

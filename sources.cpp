@@ -65,8 +65,8 @@ static complex<double> integrate_source(const src *s, const double inva) {
   for (int t=(int)((s->peaktime-s->cutoff)/inva);t<(1<<30);t++) {
     complex<double> A = s->get_amplitude_at_time(t*inva);
     sofar += A;
-    if (A == 0) break; // Bug here if there is a source that starts late,
-                       // or a source that never stops.
+    if (A == 0.0) break; // Bug here if there is a source that starts late,
+                         // or a source that never stops.
   }
   return sofar*inva;
 }
@@ -161,8 +161,8 @@ void fields_chunk::add_plane_source(double freq, double width, double peaktime,
 }
 
 void fields_chunk::add_indexed_source(component whichf, double freq, double width,
-                                double peaktime, int cutoff, int theindex, 
-                                complex<double> amp, int is_c, double time) {
+                                      double peaktime, double cutoff, int theindex, 
+                                      complex<double> amp, int is_c, double time) {
   if (theindex >= v.ntot() || theindex < 0)
     abort("Error:  source is outside of cell! (%d)\n", theindex);
   src *tmp = new src;

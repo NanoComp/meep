@@ -95,44 +95,44 @@ static void eps_header(double xmin, double ymin, double xmax, double ymax,
   fprintf(out, "/hdx %lg def\n", dx*0.5);
   fprintf(out, "dx 10 div setlinewidth\n");
   fprintf(out, "1 setlinecap\n");
-  fprintf(out, "/P {
-    max div
-    dup 0 lt {
-        1 add
-        dup 1
-    }{
-        neg 1 add
-        dup 1 3 1 roll
-    } ifelse
-    setrgbcolor
-    newpath
+  fprintf(out, "/P {\
+    max div\
+    dup 0 lt {\
+        1 add\
+        dup 1\
+    }{\
+        neg 1 add\
+        dup 1 3 1 roll\
+    } ifelse\
+    setrgbcolor\
+    newpath\
     moveto\n");
   fprintf(out, "    %lg %lg rmoveto\n", dx*0.5, dx*0.5);
   fprintf(out, "    0 %lg rlineto\n", -dx);
   fprintf(out, "    %lg 0 rlineto\n", -dx);
   fprintf(out, "    0 dx rlineto\n", dx);
   fprintf(out, "    dx 0 rlineto\n", dx);
-  fprintf(out, "    gsave
-    fill
+  fprintf(out, "    gsave\
+    fill\
     grestore\n");
   fprintf(out, "    %lg setlinewidth\n", dx*0.1);
-  fprintf(out, "    stroke
-} def
-/LV {
-    0 0 0 setrgbcolor
+  fprintf(out, "    stroke\
+} def\
+/LV {\
+    0 0 0 setrgbcolor\
     moveto\n");
   fprintf(out, "    %lg setlinewidth", dx*0.1);
   fprintf(out, "    0 %lg rmoveto", dx*0.5);
   fprintf(out, "    0 %lg rlineto", -dx);
-  fprintf(out, "    stroke
-} def
+  fprintf(out, "    stroke\
+} def\
 /LH {\n");
   fprintf(out, "    %lg setlinewidth", dx*0.1);
-  fprintf(out, "    0 0 0 setrgbcolor
+  fprintf(out, "    0 0 0 setrgbcolor\
     moveto\n");
   fprintf(out, "    %lg 0 rmoveto", dx*0.5);
   fprintf(out, "    %lg 0 rlineto", -dx);
-  fprintf(out, "    stroke
+  fprintf(out, "    stroke\
 } def\n");
   fprintf(out, "    /DV { [0 %lg] 0 setdash LV } def\n", dx/4);
   fprintf(out, "    /DH { [0 %lg] 0 setdash LH } def\n", dx/4);
@@ -453,12 +453,12 @@ void fields::eps_slices(const volume &what, const char *name) const {
       if (am_master())
         output_complex_eps_header((component)c, fmax,
                                   chunks[0]->v, what, n, v.eps_component());
-      sync();
+      all_wait();
       for (int i=0;i<num_chunks;i++)
         if (chunks[i]->is_mine())
           output_complex_eps_body((component)c, chunks[i]->f[c], chunks[i]->v, what, n,
                                   v.eps_component(), chunks[i]->ma->eps);
-      sync();
+      all_wait();
       if (am_master())
         output_complex_eps_tail((component)c, v, what, n);
     }

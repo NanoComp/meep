@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <complex>
 
+using namespace std;
+
 #include "vec.h"
 
 const double c = 0.5;
@@ -218,7 +220,7 @@ class fields_chunk {
                         const vec &p, const vec &norm,
                         int is_continuous, double time);
   void add_indexed_source(component whichf, double freq, double width,
-                          double peaktime, int cutoff, int theindex, 
+                          double peaktime, double cutoff, int theindex, 
                           complex<double> amp, int is_c, double time);
   // initialize.cpp
   void initialize_field(component, complex<double> f(const vec &));
@@ -379,7 +381,7 @@ int do_harminv(complex<double> *data, int n, int sampling_rate, double a,
 void initialize(int argc, char **argv);
 void finished();
 void abort(char *fmt, ...);
-void sync();
+void all_wait();
 int count_processors();
 int my_rank();
 inline int am_master() { return my_rank() == 0; };

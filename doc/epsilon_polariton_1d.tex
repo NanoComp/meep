@@ -118,7 +118,7 @@ Finally we calculate epsilon from the second derivative of the field using
 \begin{verbatim}
   complex<double> *epsilon = new complex<double>[numl];
   for (int i=0;i<numl;i++) {
-    complex<double> ksqr = -(ar[i]+al[i]-2*am[i])*a*a/am[i];
+    complex<double> ksqr = -(ar[i]+al[i]-2.0*am[i])*a*a/am[i];
     epsilon[i] = ksqr/freqs[i]/freqs[i]/(2*pi*2*pi);
   } 
   for (int i=0;i<numl;i++)

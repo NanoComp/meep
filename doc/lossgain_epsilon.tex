@@ -140,10 +140,10 @@ $-k^2 H_z(\omega)$, from which we extract epsilon.
 
 \begin{verbatim}
   for (int i=0;i<numl;i++) {
-    complex<double> ksqr = -(ar[i]+al[i]-2*am[i]
+    complex<double> ksqr = -(ar[i]+al[i]-2.0*am[i]
                              + at[i]*0.5*(1+(r_look+d)/r_look) +
-                               ab[i]*0.5*(1+(r_look-d)/r_look) - 2*am[i]
-                             - m*m*am[i]/r_look/r_look*a*a
+                               ab[i]*0.5*(1+(r_look-d)/r_look) - 2.0*am[i]
+                             - m*m*1.0*am[i]/r_look/r_look*a*a
                              )*a*a/am[i];
     epsilon[i] = ksqr/freqs[i]/freqs[i]/(2*pi*2*pi);
   }

@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <complex>
 
 #include "dactyl.h"
 #include "dactyl_internals.h"

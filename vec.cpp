@@ -409,8 +409,8 @@ vec volume::loc(component c, int ind) const {
   switch (dim) {
   case dcyl:
     {
-      const int or = (int)(origin.r()*a+0.5);
-      return yee_shift(c) + vec(inva*(or+ind/(nz()+1)),
+      const int o_r = (int)(origin.r()*a+0.5);
+      return yee_shift(c) + vec(inva*(o_r+ind/(nz()+1)),
                               inva*(oz+(ind%(nz()+1))));
     }
   case d1: return yee_shift(c) + vec(inva*(oz+ind));

@@ -23,7 +23,7 @@
 #include "dactyl.h"
 #include "dactyl_internals.h"
 
-fields::fields(const mat *ma, int tm=0) {
+fields::fields(const mat *ma, int tm) {
   verbosity = 0;
   v = ma->v;
   outdir = ma->outdir;

@@ -171,7 +171,7 @@ void fields::grace_bands(grace *g, int maxbands) {
   complex<double> *fad = clever_cluster_bands(maxbands, approx_power);
 
   int num_found = 0;
-  for (int i=0;i<maxbands;i++) if (fad[i] != 0) num_found = i+1;
+  for (int i=0;i<maxbands;i++) if (fad[i] != 0.0) num_found = i+1;
 
   for (int i = 0; i < num_found; ++i) {
     g->output_out_of_order(i, k, fabs(real(fad[i])), fabs(imag(fad[i])),
@@ -199,7 +199,7 @@ void fields::out_bands(FILE *o, const char *name, int maxbands) {
     }
   }
   int num_found = 0;
-  for (int i=0;i<maxbands;i++) if (fad[i] != 0) num_found = i+1;
+  for (int i=0;i<maxbands;i++) if (fad[i] != 0.0) num_found = i+1;
 
   for (int i = 0; i < num_found; ++i) {
     // k m index freq decay Q
@@ -485,7 +485,7 @@ int do_harminv(cmplx *data, int n, int sampling_rate, double a,
   {
     int all_zeros = 1;
     for (int i=0; i<n; i++)
-      if (data[i] != 0) all_zeros = 0;
+      if (data[i] != 0.0) all_zeros = 0;
     if (all_zeros)
       return 0;
   }
