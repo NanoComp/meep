@@ -27,7 +27,7 @@ TEXFILES = dactyl.tex simplebands.tex polaritonbands.tex \
 	lossgain_epsilon.tex lossgain_epsilon-out/eps.eps \
 	energy_cons_1d.tex energy_cons_1d-out/energy.eps \
 	energy_cons.tex energy_cons-out/energy.eps \
-	simple.tex simple-out/ez-000128.20.eps
+	simple.tex simple-out/ez-001000.00.eps
 
 .cpp.o:
 	$(CXX) -c $(DEFS) $(CPPFLAGS) -I.. $(CXXFLAGS) $< -o $@
@@ -45,7 +45,7 @@ dactyl/dactyl.html : $(TEXFILES)
 dactyl.dvi : $(TEXFILES)
 	latex dactyl.tex
 
-simple-out/ez-000128.20.eps: simple.dac
+simple-out/ez-001000.00.eps: simple.dac
 	rm -rf simple-out/ && $(RUNCODE) ./simple.dac
 
 energy_cons_1d-out/energy.eps : energy_cons_1d.dac

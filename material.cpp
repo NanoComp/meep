@@ -66,7 +66,7 @@ void mat::choose_chunkdivision(const volume &thev, double eps(const vec &),
   }
   chunks = new (mat_chunk *)[num_chunks];
   for (int i=0;i<num_chunks;i++) {
-    int proc = i*count_processors()/num_chunks;
+    const int proc = i*count_processors()/num_chunks;
     chunks[i] = new mat_chunk( v.split(num_chunks,i), eps, proc);
   }
 }

@@ -276,7 +276,6 @@ class fields {
   void use_metal_everywhere();
   void use_bloch(direction, complex<double> kz, bool autoconnect=true);
   void use_bloch(const vec &k, bool autoconnect=true);
-  bool locate_component_point(component *, vec *, complex<double> *);
   vec lattice_vector(direction) const;
   // slices.cpp methods:
   void output_slices(const char *name = "") const;
@@ -343,7 +342,9 @@ class fields {
   void disconnect_chunks();
   void connect_chunks();
   void connect_the_chunks(); // Intended to be ultra-private...
-  int is_metal(const vec &);
+  int is_metal(const ivec &);
+  ivec ilattice_vector(direction) const;
+  bool locate_component_point(component *, ivec *, complex<double> *);
   // step.cpp
   void phase_material();
   void step_h();

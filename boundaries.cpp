@@ -59,6 +59,23 @@ void fields::use_bloch(const vec &k, bool autoconnect) {
   if (autoconnect) connect_chunks();
 }
 
+ivec fields::ilattice_vector(direction d) const {
+  switch (v.dim) {
+  case dcyl: case d1: return ivec(0,2*v.nz()); // Only Z direction here...
+  case d2:
+    switch (d) {
+    case X: return ivec2d(v.nx()*2,0);
+    case Y: return ivec2d(0,v.ny()*2);
+    }
+  case d3:
+    switch (d) {
+    case X: return ivec(v.nx()*2,0,0);
+    case Y: return ivec(0,v.ny()*2,0);
+    case Z: return ivec(0,0,v.nz()*2);
+    }
+  }
+}
+
 vec fields::lattice_vector(direction d) const {
   if (v.dim == dcyl) {
     return vec(0,v.nz()*inva); // Only Z direction here...
@@ -110,7 +127,7 @@ void fields::connect_chunks() {
 
 static double zero = 0.0;
 
-inline int fields::is_metal(const vec &here) {
+inline int fields::is_metal(const ivec &here) {
   if (!user_volume.owns(here)) return 0;
   for (int bb=0;bb<2;bb++) for (int dd=0;dd<5;dd++)
     if (user_volume.has_boundary((boundary_side)bb, (direction)dd) &&
@@ -122,23 +139,21 @@ inline int fields::is_metal(const vec &here) {
       case Y:
       case Z:
         if (b == High && boundaries[b][d] == Metallic &&
-            here.in_direction(d) > user_volume.origin.in_direction(d) +
-            (user_volume.num_direction(d)-0.2)*inva)
+            here.in_direction(d) == user_volume.big_corner().in_direction(d))
           return true;
         if (b == Low && boundaries[b][d] == Magnetic &&
-            here.in_direction(d) < user_volume.origin.in_direction(d) + 0.2*inva)
+            here.in_direction(d) == user_volume.little_corner().in_direction(d)+1)
           return true;
       case R:
         if (b == High && boundaries[b][d] == Magnetic &&
-            here.in_direction(d) > user_volume.origin.in_direction(d) +
-            (user_volume.num_direction(d)-0.2)*inva)
+            here.in_direction(d) == user_volume.big_corner().in_direction(d))
           return true;
       }
     }
-  return 0;
+  return false;
 }
 
-bool fields::locate_component_point(component *c, vec *there,
+bool fields::locate_component_point(component *c, ivec *there,
                                     complex<double> *phase) {
   // returns true if this point and component exist in the user_volume.  If
   // that is the case, on return *c and *there store the component and
@@ -155,7 +170,7 @@ bool fields::locate_component_point(component *c, vec *there,
     // Check if a rotation or inversion brings the point in...
     if (S.multiplicity() > 1 && user_volume.owns(*there))
       for (int sn=1;sn<S.multiplicity();sn++) {
-        const vec here=S.transform(*there,sn);
+        const ivec here=S.transform(*there,sn);
         if (v.owns(here)) {
           *there = here;
           *phase = S.phase_shift(*c,sn);
@@ -172,16 +187,16 @@ bool fields::locate_component_point(component *c, vec *there,
             there->in_direction(d) <= user_volume.origin.in_direction(d)) {
           while (there->in_direction(d) <=
                  user_volume.origin.in_direction(d)) {
-            *there += lattice_vector(d);
+            *there += ilattice_vector(d);
             *phase *= conj(eikna[d]);
           }
           try_again = true;
         } else if (boundaries[High][d] == Periodic &&
-                   there->in_direction(d)-lattice_vector(d).in_direction(d)
+                   there->in_direction(d)-ilattice_vector(d).in_direction(d)
                    > user_volume.origin.in_direction(d)) {
-          while (there->in_direction(d)-lattice_vector(d).in_direction(d)
+          while (there->in_direction(d)-ilattice_vector(d).in_direction(d)
                  > user_volume.origin.in_direction(d)) {
-            *there -= lattice_vector(d);
+            *there -= ilattice_vector(d);
             *phase *= eikna[d];
           }
           try_again = true;
@@ -211,7 +226,7 @@ void fields::connect_the_chunks() {
         if (have_component((component)corig))
           for (int n=0;n<vi.ntot();n++) {
             component c = (component)corig;
-            vec here = vi.loc(c, n);
+            ivec here = vi.iloc(c, n);
             if (!vi.owns(here)) {
               // We're looking at a border element...
               complex<double> thephase = 1.0;
@@ -261,7 +276,7 @@ void fields::connect_the_chunks() {
           for (int n=0;n<vi.ntot();n++) {
             component c = (component)corig;
 #define FT (type(c))
-            vec here = vi.loc(c, n);
+            ivec here = vi.iloc(c, n);
             if (!vi.owns(here)) {
               // We're looking at a border element...
               complex<double> thephase = 1.0;

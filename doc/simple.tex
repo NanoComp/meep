@@ -21,22 +21,25 @@ Next we create a function to define epsilon.  This function accepts a
 ``vec'' argument, and returns a double, which is the value of epsilon.  For
 this example, we use an index-guided waveguide with some air slits cut in
 it.  You can choose whatever units you like in which to define your
-structure.  In this case we choose to make the grating periodicity our unit
-of distance.
+structure.  In this case we choose the width of the waveguide as our unit,
+which is also equal to 1 micron.
 
 \begin{verbatim}
-const double half_cavity_width = 0.6001, air_slit_width = 0.2,
-             half_waveguide_width = 0.40001,
-             num_air_slits = 4.0,
-             high_dielectric = 12.0, low_dielectric = 4.0;
-const double x_center = 6.0, y_center = 6.0;
+const double half_cavity_width = 0.5*0.68, air_slit_width = 0.38,
+             grating_periodicity = 0.48,
+             half_waveguide_width = 1.0,
+             num_air_slits = 15.0,
+             high_dielectric = 12.0, low_dielectric = 11.5;
+const double pml_thickness = 1.0;
+const double x_center = 7.7 + pml_thickness;
+const double y_center = 10.5 + pml_thickness;
 double eps(const vec &rr) {
   // Displacement from center of cavity is r:
   const vec r = rr - vec2d(x_center, y_center);
   // First the air slits:
   double dx = fabs(r.x()) - half_cavity_width;
-  if (dx < num_air_slits && dx > 0.0) {
-    while (dx > 1.0) dx -= 1.0;
+  if (dx < num_air_slits*grating_periodicity && dx > 0.0) {
+    while (dx > grating_periodicity) dx -= grating_periodicity;
     if (dx < air_slit_width) return 1.0;
   }
   // Now check if the y value is within the waveguide:
@@ -49,7 +52,7 @@ double eps(const vec &rr) {
 \label{simple_figure}
 \caption{$E_z$}
 \begin{center}
-\epsfig{file=simple-out/ez-000128.20.eps,width=4.8cm}
+\epsfig{file=simple-out/ez-001000.00.eps,width=4.8cm}
 \end{center}
 \end{figure}
 The main function should always start with a call to the initialize
@@ -65,9 +68,10 @@ the epsilon function we defined earlier.  Here we also choose to use PML
 absorbing boundary conditions in all directions, since we are interested in
 the high Q mode in the cavity.
 \begin{verbatim}
-  const double a = 10;
-  mat ma(voltwo(2*x_center, 2*y_center, a), eps);
-  ma.use_pml_everywhere(1.0);
+  const double amicron = 10; // a micron is this many grid points.
+  const symmetry S = mirror(Y, voltwo(2*x_center, 2*y_center, amicron));
+  mat ma(voltwo(2*x_center, 2*y_center, amicron), eps, 15, S);
+  ma.use_pml_everywhere(pml_thickness);
 \end{verbatim}
 To avoid clutter, we'll create a directory to hold the output.  The
 function \verb!make_output_directory! creates a directory based on the name
@@ -86,7 +90,9 @@ use metal boundary conditions (behind the PML) everywhere to avoid a
 decrease in symmetry that I don't want to bother explaining here.
 \begin{verbatim}
   fields f(&ma);
-  f.add_point_source(Ez, 0.2, 1.6, 0.0, 8.0, vec2d(x_center,y_center));
+  const double wavelength = 1.55;
+  const double freq = 1.0/wavelength;
+  f.add_point_source(Hy, freq, 1.6, 0.0, 8.0, vec2d(x_center,y_center));
   f.use_metal_everywhere();
 \end{verbatim}
 I'm not interested in seeing the source itself, so I'll keep time stepping
@@ -97,6 +103,7 @@ running.
 \end{verbatim}
 Now we'll take a snapshot of the fields in encapsulated postscript format.
 \begin{verbatim}
+  while (f.time() < 100.0) f.step();
   f.eps_slices();
 \end{verbatim}
 And now we're done, although you might wonder if we've done anything

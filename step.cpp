@@ -59,6 +59,7 @@ void fields::step() {
   step_e_source();
   step_e_polarization();
   step_boundaries(E_stuff);
+
   half_step_polarization_energy();
 
   update_polarization_saturation();
@@ -69,7 +70,10 @@ void fields::step() {
 }
 
 double fields_chunk::peek_field(component c, const vec &where) {
-  const int ind = v.index(c,where);
+  int inds[8];
+  double w[8];
+  v.interpolate(c,where,inds,w);
+  const int ind = inds[0];
   if (ind >= 0 && ind < v.ntot()) {
     double hello = 0.0;
     if (is_mine()) {
@@ -446,10 +450,11 @@ void fields_chunk::step_e() {
         for (int x=1;x<=v.nx();x++) {
           const int ix = x*(v.ny()+1);
           const int ixm1 = (x-1)*(v.ny()+1);
-          for (int y=1;y<=v.ny();y++)
+          for (int y=1;y<=v.ny();y++) {
             f[Ez][cmp][y+ix] += -c*ma->inveps[Ez][y+ix]*
               ((f[Hy][cmp][y+ix] - f[Hy][cmp][y+ixm1]) -
                (f[Hx][cmp][y+ix] - f[Hx][cmp][y+ix-1]));
+          }
         }
       // Propogate Ex
       if (ma->C[Y][Ex] && f[Ex][cmp])

@@ -197,26 +197,26 @@ static void eps_dotted(FILE *out, component m, const double *f, const volume &v,
       switch (v.dim) {
       case dcyl:
         {
-          vec next = v.loc(m,i)+v.dr();
+          ivec next = v.iloc(m,i)+ivec(2,0);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            fprintf(out, "%lg\t%lg\tDH\n", next.z(), next.r() - 0.5/v.a);
-          next = v.loc(m,i)+v.dz();
+            fprintf(out, "%lg\t%lg\tDH\n", v[next].z(), v[next].r() - 0.5/v.a);
+          next = v.iloc(m,i)+ivec(0,2);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            fprintf(out, "%lg\t%lg\tDV\n", next.z() - 0.5/v.a, next.r());
+            fprintf(out, "%lg\t%lg\tDV\n", v[next].z() - 0.5/v.a, v[next].r());
           break;
         }
       case d2:
         {
-          vec next = v.loc(m,i)+v.dx();
+          ivec next = v.iloc(m,i)+ivec2d(2,0);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            fprintf(out, "%lg\t%lg\tDH\n", next.x() - 0.5/v.a, next.y());
-          next = v.loc(m,i)+v.dy();
+            fprintf(out, "%lg\t%lg\tDH\n", v[next].x() - 0.5/v.a, v[next].y());
+          next = v.iloc(m,i)+ivec2d(0,2);
           if (v.contains(next) && f[i] + f[v.index(m,next)] != 0.0 &&
               f[i]*f[v.index(m,next)] == 0.0)
-            fprintf(out, "%lg\t%lg\tDV\n", next.x(), next.y() - 0.5/v.a);
+            fprintf(out, "%lg\t%lg\tDV\n", v[next].x(), v[next].y() - 0.5/v.a);
           break;
         }
       }
@@ -231,42 +231,42 @@ static void eps_outline(FILE *out, component m, const double *f, const volume &v
     if (what.contains(here))
       switch (v.dim) {
       case dcyl: {
-        vec next = v.loc(m,i)+v.dr();
-        vec nextrot = S.transform(next - vec(0.5/v.a,0),symnum);
+        ivec next = v.iloc(m,i)+ivec(2,0);
+        vec nextrot = v[S.transform(next - ivec(1,0),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
           fprintf(out, "%lg\t%lg\tLH\n", nextrot.z(), nextrot.r());
-        next = v.loc(m,i)+v.dz();
-        nextrot = S.transform(next - vec(0,0.5/v.a),symnum);
+        next = v.iloc(m,i)+ivec(0,2);
+        nextrot = v[S.transform(next - ivec(0,1),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
           fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), nextrot.r());
         break;
       }
       case d2: {
-        vec next = v.loc(m,i)+v.dy();
-        vec nextrot = S.transform(next - vec2d(0,0.5/v.a),symnum);
+        ivec next = v.iloc(m,i)+ivec2d(0,2);
+        vec nextrot = v[(S.transform(next - ivec2d(0,1),symnum))];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
             fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
-        next = v.loc(m,i)-v.dy();
-        nextrot = S.transform(next + vec2d(0,0.5/v.a),symnum);
+        next = v.iloc(m,i)-ivec2d(0,2);
+        nextrot = v[S.transform(next + ivec2d(0,1),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
             fprintf(out, "%lg\t%lg\tLH\n", nextrot.x(), nextrot.y());
-        next = v.loc(m,i)+v.dx();
-        nextrot = S.transform(next - vec2d(0.5/v.a,0),symnum);
+        next = v.iloc(m,i)+ivec2d(2,0);
+        nextrot = v[S.transform(next - ivec2d(1,0),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
             fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
-        next = v.loc(m,i)-v.dx();
-        nextrot = S.transform(next + vec2d(0.5/v.a,0),symnum);
+        next = v.iloc(m,i)-ivec2d(2,0);
+        nextrot = v[S.transform(next + ivec2d(1,0),symnum)];
         if (v.owns(next))
           if (f[i] != f[v.index(m,next)])
             fprintf(out, "%lg\t%lg\tLV\n", nextrot.x(), nextrot.y());
         break;
       }
       case d1: {
-        const vec next = v.loc(m,i)+v.dz();
-        const vec nextrot = S.transform(next - vec(0.5/v.a),symnum);
+        const ivec next = v.iloc(m,i)+ivec(2);
+        const vec nextrot = v[S.transform(next - ivec(1),symnum)];
         if (v.contains(next) && f[i] != f[v.index(m,next)])
           fprintf(out, "%lg\t%lg\tLV\n", nextrot.z(), 0.0);
         break;
