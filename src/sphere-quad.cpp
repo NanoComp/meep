@@ -179,10 +179,47 @@ void spherical_quadrature_points(double *x, double *y, double *z,
 #define NQUAD2 12
 /**********************************************************************/
 
+double sqr(double x) { return x * x; }
+double dist2(double x1, double y1, double z1,
+	     double x2, double y2, double z2)
+{
+  return sqr(x1-x2) + sqr(y1-y2) + sqr(z1-z2);
+}
+double min2(double a, double b) { return a < b ? a : b; }
+
+/* sort the array to maximize the spacing of each point with the
+   previous points */
+void sort_by_distance(int n, double x[], double y[], double z[], double w[])
+{
+  for (int i = 1; i < n; ++i) {
+    double d2max = 0;
+    double d2maxsum = 0;
+    int jmax = i;
+    for (int j = i; j < n; ++j) {
+      double d2min = 1e20, d2sum = 0;
+      for (int k = 0; k < i; ++k) {
+	double d2 = float(dist2(x[k],y[k],z[k], x[j],y[j],z[j]));
+	d2min = min2(d2min, d2);
+	d2sum += d2;
+      }
+      if (d2min > d2max ||
+	  d2min == d2max && d2sum > d2maxsum) {
+	d2max = d2min;
+	d2maxsum = d2sum;
+	jmax = j;
+      }
+    }
+    double xi = x[i], yi = y[i], zi = z[i], wi = w[i];
+    x[i] = x[jmax]; y[i] = y[jmax]; z[i] = z[jmax]; w[i] = w[jmax];
+    x[jmax] = xi; y[jmax] = yi; z[jmax] = zi; w[jmax] = wi;
+  }
+}
+
 int main(void)
 {
      int i;
-     double x[NQUAD3], y[NQUAD3], z[NQUAD3], weight[NQUAD3];
+     double x2[NQUAD2], y2[NQUAD2], z2[NQUAD2], w2[NQUAD2];
+     double x3[NQUAD3], y3[NQUAD3], z3[NQUAD3], w3[NQUAD3];
 
      printf(
 "/* For 1d, 2d, and 3d, quadrature points and weights on a unit sphere.\n"
@@ -198,21 +235,26 @@ int main(void)
 
      printf("    { {0,0,1,0.5}, {0,0,-1,0.5} },\n");
 
+     for (i = 0; i < NQUAD2; ++i) {
+       x2[i] = cos(2*i * K_PI / NQUAD2);
+       y2[i] = sin(2*i * K_PI / NQUAD2);
+       z2[i] = 0.0;
+       w2[i] = 1.0 / NQUAD2;
+     }
+     sort_by_distance(NQUAD2,x2,y2,z2,w2);
      printf("    {\n");
      for (i = 0; i < NQUAD2; ++i) {
 	  printf("        { %0.20g, %0.20g, %0.20g, %0.20g },\n",
-		 cos(2*i * K_PI / NQUAD2),
-		 sin(2*i * K_PI / NQUAD2),
-		 0.0,
-		 1.0 / NQUAD2);
+		 x2[i], y2[i], z2[i], w2[i]);
      }
      printf("    },\n");
 
      printf("    {\n");
-     spherical_quadrature_points(x,y,z, weight, NQUAD3);
+     spherical_quadrature_points(x3,y3,z3, w3, NQUAD3);
+     sort_by_distance(NQUAD3,x3,y3,z3,w3);
      for (i = 0; i < NQUAD3; ++i) {
 	  printf("        { %0.20g, %0.20g, %0.20g, %0.20g },\n",
-		 x[i], y[i], z[i], weight[i]);
+		 x3[i], y3[i], z3[i], w3[i]);
      }
      printf("    }\n");
 
