@@ -602,7 +602,7 @@ void h5file::write_chunk(int rank,
   /* Before we can write the data to the data set, we must define
      the dimensions and "selections" of the arrays to be read & written: */
   
-  hssize_t *start = new hssize_t[rank1 + append_data];
+  hsize_t *start = new hsize_t[rank1 + append_data];
   hsize_t *count = new hsize_t[rank1 + append_data];
   
   int count_prod = 1;
@@ -736,7 +736,7 @@ void h5file::read_chunk(int rank,
   /* Before we can read the data from the data set, we must define
      the dimensions and "selections" of the arrays to be read & written: */
   
-  hssize_t *start = new hssize_t[rank1];
+  hsize_t *start = new hsize_t[rank1];
   hsize_t *count = new hsize_t[rank1];
   
   int count_prod = 1;
