@@ -378,6 +378,7 @@ char *h5file::read(const char *dataname)
    by all processors. */
 void h5file::remove_data(const char *dataname)
 {
+#ifdef HAVE_HDF5
   hid_t file_id = HID(get_id());
 
   if (is_cur(dataname))
@@ -404,6 +405,7 @@ void h5file::remove_data(const char *dataname)
     }
     IF_EXCLUSIVE((void) 0, if (parallel) all_wait());
   }
+#endif
 }
 
 /* Create a dataset, for writing chunks etc.  Note that, in parallel mode,
