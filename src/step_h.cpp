@@ -27,7 +27,9 @@
 
 namespace meep {
 
-inline double it(int cmp, double *(f[2]), int ind) { return (1-2*cmp)*f[1-cmp][ind]; }
+static inline double it(int cmp, double *(f[2]), int ind) {
+  return (f[1-cmp]) ? (1-2*cmp)*f[1-cmp][ind] : 0;
+}
 
 inline int rstart_0(const volume &v, int m) {
   return (int) max(0.0, m - (int)(v.origin_r()*v.a+0.5) - 1.0);
