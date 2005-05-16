@@ -328,16 +328,20 @@ void fields_chunk::alloc_f(component the_c) {
           f[c][cmp] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
           if (!f_p_pml[c][cmp] && !is_electric(c)) {
-            f_p_pml[c][cmp] = new double[v.ntot()];
-            f_m_pml[c][cmp] = new double[v.ntot()];
+	    bool need_pml = false;
+	    LOOP_OVER_DIRECTIONS(v.dim, d)
+	      if (s->C[d][c]) { need_pml = true; break; }
+	    if (need_pml) {
+	      f_p_pml[c][cmp] = new double[v.ntot()];
+	      f_m_pml[c][cmp] = new double[v.ntot()];
+	      for (int i=0;i<v.ntot();i++) {
+		f_p_pml[c][cmp][i] = 0.0;
+		f_m_pml[c][cmp][i] = 0.0;
+	      }
+	    }
           }
-          if (!is_electric(c))
-            for (int i=0;i<v.ntot();i++) {
-              f_p_pml[c][cmp][i] = 0.0;
-              f_m_pml[c][cmp][i] = 0.0;
-            }
-        }
-      }
+	}
+    }
   figure_out_step_plan();
 }
 

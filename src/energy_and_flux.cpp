@@ -115,16 +115,20 @@ void fields_chunk::backup_h() {
     if (f[c][cmp]) {
       if (f_backup[c][cmp] == NULL)
 	f_backup[c][cmp] = new double[v.ntot()];
-      if (f_backup_m_pml[c][cmp] == NULL)
-	f_backup_m_pml[c][cmp] = new double[v.ntot()];
-      if (f_backup_p_pml[c][cmp] == NULL)
-	f_backup_p_pml[c][cmp] = new double[v.ntot()];
+      if (f_p_pml[c][cmp]) {
+	if (f_backup_m_pml[c][cmp] == NULL)
+	  f_backup_m_pml[c][cmp] = new double[v.ntot()];
+	if (f_backup_p_pml[c][cmp] == NULL)
+	  f_backup_p_pml[c][cmp] = new double[v.ntot()];
+      }
     }
   DOCMP FOR_MAGNETIC_COMPONENTS(c)
     if (f[c][cmp]) {
       memcpy(f_backup[c][cmp], f[c][cmp], v.ntot()*sizeof(double));
-      memcpy(f_backup_p_pml[c][cmp], f_p_pml[c][cmp], v.ntot()*sizeof(double));
-      memcpy(f_backup_m_pml[c][cmp], f_m_pml[c][cmp], v.ntot()*sizeof(double));
+      if (f_p_pml[c][cmp]) {
+	memcpy(f_backup_p_pml[c][cmp], f_p_pml[c][cmp], v.ntot()*sizeof(double));
+	memcpy(f_backup_m_pml[c][cmp], f_m_pml[c][cmp], v.ntot()*sizeof(double));
+      }
     }
 }
   
@@ -132,8 +136,10 @@ void fields_chunk::restore_h() {
   DOCMP FOR_MAGNETIC_COMPONENTS(c)
     if (f[c][cmp]) {
       memcpy(f[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(double));
-      memcpy(f_p_pml[c][cmp], f_backup_p_pml[c][cmp], v.ntot()*sizeof(double));
-      memcpy(f_m_pml[c][cmp], f_backup_m_pml[c][cmp], v.ntot()*sizeof(double));
+      if (f_p_pml[c][cmp]) {
+	memcpy(f_p_pml[c][cmp], f_backup_p_pml[c][cmp], v.ntot()*sizeof(double));
+	memcpy(f_m_pml[c][cmp], f_backup_m_pml[c][cmp], v.ntot()*sizeof(double));
+      }
     }
 }
 
