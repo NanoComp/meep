@@ -74,8 +74,8 @@ int flux_1d(const double zmax,
                 f.electric_energy_in_box(mid.surroundings()));
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  -f.dt*left->flux();
-    flux_right +=  -f.dt*right->flux();
+    flux_left  +=  f.dt*left->flux();
+    flux_right +=  f.dt*right->flux();
   }
   delta_energy -= f.energy_in_box(mid.surroundings());
   master_printf("Final energy is %g\n", f.energy_in_box(mid.surroundings()));
@@ -144,8 +144,8 @@ int cavity_1d(const double boxwidth, const double timewait,
   master_printf("  Energy starts at\t%g\n", start_energy);
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  -f.dt*left->flux();
-    flux_right +=  -f.dt*right->flux();
+    flux_left  +=  f.dt*left->flux();
+    flux_right +=  f.dt*right->flux();
   }
   const double delta_energy = start_energy - f.energy_in_box(mid.surroundings());
   const double defl = flux_right - flux_left;
@@ -202,8 +202,8 @@ int flux_2d(const double xmax, const double ymax,
   long double fluxL = 0;
   while (f.time() < ttot) {
     f.step();
-    fluxL += -f.dt * (left->flux() - right->flux()
-		       + bottom->flux() - top->flux());
+    fluxL += f.dt * (left->flux() - right->flux()
+		     + bottom->flux() - top->flux());
   }
   double flux = fluxL;
   double del_energy = f.energy_in_box(box) - init_energy;

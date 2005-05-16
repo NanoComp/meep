@@ -280,7 +280,7 @@ void fields_chunk::figure_out_step_plan() {
           if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
               has_direction(v.dim,cross(dc1,dc2))) {
             direction d_deriv = cross(dc1,dc2);
-            if (cross_negative(dc1, dc2)) {
+            if (cross_negative(dc2, dc1)) {
               minus_component[c1] = c2;
               have_minus_deriv[c1] = true;
               minus_deriv_direction[c1] = d_deriv;
