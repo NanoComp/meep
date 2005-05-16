@@ -532,6 +532,9 @@ class fields_chunk {
   double *f_backup_p_pml[NUM_FIELD_COMPONENTS][2];
   double *f_backup_m_pml[NUM_FIELD_COMPONENTS][2];
 
+  bool have_d_minus_p;
+  double *d_minus_p[5][2];
+
   dft_chunk *dft_chunks;
 
   double **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
@@ -639,9 +642,9 @@ class fields_chunk {
   void step_h();
   void step_h_source(src_vol *, double);
   void step_d();
-  void update_e_from_d_prepare(double *d_minus_p[5][2], bool have_d_minus_p);
-  void update_e_from_d_sources(double *d_minus_p[5][2], bool have_d_minus_p);
-  void update_e_from_d_update(double *d_minus_p[5][2], bool have_d_minus_p);
+  void update_e_from_d_prepare(void);
+  void update_e_from_d_sources(void);
+  void update_e_from_d_update(void);
   void update_e_from_d();
   void update_from_e();
   void calc_sources(double time);

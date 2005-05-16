@@ -25,8 +25,7 @@ namespace meep {
     return 1.0 - (alpha*Dsqr)/(e + 3*(alpha*Dsqr));
   }
 
-void fields_chunk::update_e_from_d_update(double *d_minus_p[5][2],
-                                          bool have_d_minus_p) {
+  void fields_chunk::update_e_from_d_update(void) {
   const int ntot = s->v.ntot();
 #include "update_e_from_d_update.h"
 }

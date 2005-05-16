@@ -20,8 +20,7 @@
 
 namespace meep {
 
-void fields_chunk::update_e_from_d_sources(double *d_minus_p[5][2],
-                                           bool have_d_minus_p) {
+void fields_chunk::update_e_from_d_sources(void) {
 #include "update_e_from_d_sources.h"
 }
 

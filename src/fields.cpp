@@ -156,6 +156,7 @@ fields_chunk::~fields_chunk() {
       for (int io=0;io<2;io++)
 	delete[] connections[ft][ip][io];
   FOR_FIELD_TYPES(ft) delete[] connection_phases[ft];
+  FOR_DIRECTIONS(d) DOCMP2 delete[] d_minus_p[d][cmp];
   delete h_sources;
   delete e_sources;
   delete pol;
@@ -198,6 +199,8 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
+  have_d_minus_p = false;
+  FOR_DIRECTIONS(d) DOCMP2 d_minus_p[d][cmp] = NULL;
   figure_out_step_plan();
 }
 
@@ -253,6 +256,8 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
+  have_d_minus_p = thef.have_d_minus_p;
+  FOR_DIRECTIONS(d) DOCMP2 d_minus_p[d][cmp] = thef.d_minus_p[d][cmp];
   figure_out_step_plan();
 }
 
