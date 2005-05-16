@@ -228,7 +228,19 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
 
 /************************************************************************/
 
-static complex<double> dot3_integrand(const complex<double> *fields,
+/* Note that computation of modal volume by this definition is
+   somewhat problematic computationally, because we need to compute
+   max|D*E|, which requires averaging discontinuous functions.  Hence,
+   except for the special case of 2d TM polarization, the computed
+   value tends to have a large error bar if the maximum lies on a
+   dielectric boundary as it commonly does. 
+
+   A better method would be to average only continuous quantities in
+   order to compute the fields on the Dielectric grid, but this
+   is more expensive and requires us to know the boundary orientation, and
+   does not seem worth the trouble at this point. */
+
+static complex<double> dot3_max_integrand(const complex<double> *fields,
 				      const vec &loc, void *data_)
 {
   (void) loc; (void) data_; // unused;
@@ -248,7 +260,7 @@ double fields::electric_energy_max_in_box(const geometric_volume &where) {
     cs[3+0] = Dx; cs[3+1] = Dy; cs[3+2] = Dz;
   }
   
-  return max_abs(6, cs, dot3_integrand, where) / (8*pi);
+  return max_abs(6, cs, dot3_max_integrand, where) / (8*pi);
 }
 
 /* "modal" volume according to definition in:
