@@ -195,7 +195,7 @@ class structure_chunk {
   void set_epsilon(material_function &eps,
                    bool use_anisotropic_averaging, double minvol);
   void set_kerr(material_function &eps);
-  void use_pml(direction, double dx, double boundary_loc);
+  void use_pml(direction, double dx, double boundary_loc, double strength);
   void update_pml_arrays();
   void update_Cdecay();
 
@@ -224,20 +224,18 @@ public:
   typedef enum { NOTHING_SPECIAL, PML } boundary_region_kind;
   
   boundary_region() :
-    kind(NOTHING_SPECIAL), thickness(0), d(NO_DIRECTION), side(Low), next(0) {}
-  boundary_region(boundary_region_kind kind, double thickness, direction d,
-		  boundary_side side, boundary_region *next) :
-    kind(kind), thickness(thickness), d(d), side(side), next(next) {}
+    kind(NOTHING_SPECIAL), thickness(0.0), strength(1.0), d(NO_DIRECTION), side(Low), next(0) {}
+  boundary_region(boundary_region_kind kind, double thickness, double strength, direction d, boundary_side side, boundary_region *next) : kind(kind), thickness(thickness), strength(strength), d(d), side(side), next(next) {}
 
-  boundary_region(const boundary_region &r) :
-    kind(r.kind), thickness(r.thickness), d(r.d), side(r.side) { 
+  boundary_region(const boundary_region &r) : kind(r.kind), thickness(r.thickness), strength(r.strength), d(r.d), side(r.side) { 
     next = r.next ? new boundary_region(*r.next) : 0;
   }
 
   ~boundary_region() { if (next) delete next; }
   
   void operator=(const boundary_region &r) {
-    kind = r.kind; thickness = r.thickness; d = r.d; side = r.side;
+    kind = r.kind; thickness = r.thickness; strength = r.strength;
+    d = r.d; side = r.side;
     if (next) delete next;
     next = r.next ? new boundary_region(*r.next) : 0;
   }
@@ -248,12 +246,21 @@ public:
     return r;
   }
 
+  boundary_region operator*(double strength_mult) const {
+    boundary_region r(*this), *cur = &r;
+    while (cur) {
+      cur->strength *= strength_mult;
+      cur = cur->next;
+    }
+    return r;
+  }
+
   void apply(structure *s) const;
   void apply(const structure *s, structure_chunk *sc) const;
 
 private:
   boundary_region_kind kind;
-  double thickness;
+  double thickness, strength;
   direction d;
   boundary_side side;
   boundary_region *next;
@@ -320,7 +327,7 @@ class structure {
   friend class boundary_region;
 
  private:
-  void use_pml(direction d, boundary_side b, double dx);
+  void use_pml(direction d, boundary_side b, double dx, double strength);
   void add_to_effort_volumes(const volume &new_effort_volume, 
 			     double extra_effort);
   void choose_chunkdivision(const volume &v, int num_chunks,

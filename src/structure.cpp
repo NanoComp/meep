@@ -129,7 +129,7 @@ void boundary_region::apply(structure *s) const {
   if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)) {
     switch (kind) {
     case NOTHING_SPECIAL: break;
-    case PML: s->use_pml(d, side, thickness); break;
+    case PML: s->use_pml(d, side, thickness, strength); break;
     default: abort("unknown boundary region kind");
     }
   }
@@ -142,7 +142,8 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     switch (kind) {
     case NOTHING_SPECIAL: break;
     case PML: 
-      sc->use_pml(d, thickness, s->user_volume.boundary_location(side, d)); 
+      sc->use_pml(d, thickness, s->user_volume.boundary_location(side, d),
+		  strength); 
       break;
     default: abort("unknown boundary region kind");
     }
@@ -152,7 +153,7 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
 }
 
 boundary_region pml(double thickness, direction d, boundary_side side) {
-  return boundary_region(boundary_region::PML, thickness, d, side, NULL);
+  return boundary_region(boundary_region::PML, thickness, 1.0, d, side, NULL);
 }
 boundary_region pml(double thickness, direction d) {
   return (pml(thickness, d, Low) + pml(thickness, d, High));
@@ -313,7 +314,9 @@ void structure::set_kerr(double eps(const vec &)) {
   set_kerr(epsilon);
 }
 
-void structure::use_pml(direction d, boundary_side b, double dx) {
+void structure::use_pml(direction d, boundary_side b, double dx,
+			double strength) {
+  if (strength == 0.0 || dx <= 0.0) return;
   volume pml_volume = v;
   pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if ((boundary_side) b == High)
@@ -368,8 +371,10 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
 
 const double Cmax = 0.5;
 
-void structure_chunk::use_pml(direction d, double dx, double bloc) {
-  const double prefac = Cmax/(dx*dx);
+void structure_chunk::use_pml(direction d, double dx, double bloc,
+			      double strength) {
+  if (strength == 0.0 || dx <= 0.0) return;
+  const double prefac = strength * Cmax/(dx*dx);
   // Don't bother with PML if we don't even overlap with the PML region...
   if (bloc > v.boundary_location(High,d) + dx + 1.0/a ||
       bloc < v.boundary_location(Low,d) - dx - 1.0/a) return;
