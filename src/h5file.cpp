@@ -32,9 +32,20 @@
 
 #ifdef HAVE_HDF5
 #  include <hdf5.h>
+
+/* HDF5 changed this datatype in their interfaces starting in version 1.6.4 */
+#  if H5_VERS_MAJOR > 1 \
+   || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 6) \
+   || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR == 6 && H5_VERS_RELEASE > 3)
+     typedef hsize_t start_t;
+#  else
+     typedef hssize_t start_t;
+#  endif
+
 #else
 typedef int hid_t;
 #endif
+
 
 #define HID(x) (*((hid_t *) (x)))
 
@@ -604,7 +615,7 @@ void h5file::write_chunk(int rank,
   /* Before we can write the data to the data set, we must define
      the dimensions and "selections" of the arrays to be read & written: */
   
-  hsize_t *start = new hsize_t[rank1 + append_data];
+  start_t *start = new start_t[rank1 + append_data];
   hsize_t *count = new hsize_t[rank1 + append_data];
   
   int count_prod = 1;
@@ -738,7 +749,7 @@ void h5file::read_chunk(int rank,
   /* Before we can read the data from the data set, we must define
      the dimensions and "selections" of the arrays to be read & written: */
   
-  hsize_t *start = new hsize_t[rank1];
+  start_t *start = new start_t[rank1];
   hsize_t *count = new hsize_t[rank1];
   
   int count_prod = 1;
