@@ -568,7 +568,8 @@ class volume {
   vec dz() const;
 
   int ntot() const { return the_ntot; }
-  int nowned() const { int n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= num_direction(d); return n; }
+  int nowned_min() const { int n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= num_direction(d); return n; }
+  int nowned(component c) const;
   vec operator[](const ivec &p) const { return p*(0.5*inva); };
   int index(component, const ivec &) const;
   ivec round_vec(const vec &) const;

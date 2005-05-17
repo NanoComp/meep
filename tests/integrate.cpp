@@ -293,6 +293,9 @@ void check_loop_vol(const volume &v, component c)
   if (count != v.ntot())
     abort("FAILED: LOOP_OVER_VOL has %d iterations instead of ntot=%d\n",
 	  count, v.ntot());
+  if (count_owned != v.nowned(c))
+    abort("FAILED: LOOP_OVER_VOL has %d owned points instead of nowned=%d\n",
+	  count_owned, v.nowned(c));
   if (min_i != 0)
     abort("FAILED: LOOP_OVER_VOL has minimum index %d instead of 0\n", min_i);
   if (max_i != v.ntot() - 1)

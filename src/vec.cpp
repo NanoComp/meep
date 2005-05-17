@@ -431,6 +431,13 @@ ivec volume::little_owned_corner(component c) const {
   return iloc;
 }
 
+int volume::nowned(component c) const {
+  int n = 1;
+  ivec v = big_corner() - little_owned_corner(c);
+  LOOP_OVER_DIRECTIONS(dim, d) n *= v.in_direction(d) / 2 + 1;
+  return n;
+}
+
 bool volume::owns(const ivec &p) const {
   // owns returns true if the point "owned" by this volume, meaning that it
   // is the volume that would timestep the point.
@@ -924,8 +931,8 @@ int volume::can_split_evenly(int n) const {
 // }
 
 volume volume::split(int n, int which) const {
-  if (n > nowned())
-    abort("Cannot split %d grid points into %d parts\n", nowned(), n);
+  if (n > nowned_min())
+    abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
   if (n == 1) return *this;
 
   // Try to get as close as we can...
@@ -940,9 +947,9 @@ volume volume::split(int n, int which) const {
 }
 
 volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, double *effort) const {
-  const int grid_points_owned = nowned();
+  const int grid_points_owned = nowned_min();
   if (n > grid_points_owned)
-    abort("Cannot split %d grid points into %d parts\n", nowned(), n);
+    abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
   if (n == 1) return *this;
   int biglen = 0;
   direction splitdir;
