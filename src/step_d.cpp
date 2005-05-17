@@ -19,9 +19,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "meep.h"
-#include "meep_internals.h"
-#include "ran.h"
+#include "meep.hpp"
+#include "meep_internals.hpp"
+#include "ran.hpp"
 
 #define RESTRICT
 
@@ -78,7 +78,7 @@ void fields_chunk::step_d() {
         RESTRICT double *the_f = f[cc][cmp] + yee_idx;
         RESTRICT double *the_f_p_pml = f_p_pml[cc][cmp] + yee_idx;
         RESTRICT double *the_f_m_pml = f_m_pml[cc][cmp] + yee_idx;
-#include "step_d.h"
+#include "step_d.hpp"
       }
   } else if (v.dim == Dcyl) {
     DOCMP {

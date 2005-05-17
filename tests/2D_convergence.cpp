@@ -1,4 +1,4 @@
-#include "meep.h"
+#include <meep.hpp>
 using namespace meep;
 #include "config.h"
 

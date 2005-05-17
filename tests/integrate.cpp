@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "meep.h"
+#include <meep.hpp>
 using namespace meep;
 
 double size[3] = {3.0,3.0,2.6};

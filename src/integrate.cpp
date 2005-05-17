@@ -15,8 +15,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "meep.h"
-#include "meep_internals.h"
+#include "meep.hpp"
+#include "meep_internals.hpp"
 
 /* generic integration and related routines, based fields::loop_in_chunk */
 

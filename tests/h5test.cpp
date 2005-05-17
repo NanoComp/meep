@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "meep.h"
-#include "meep_internals.h"
+#include <meep.hpp>
+#include "meep_internals.hpp"
 #include "config.h"
 using namespace meep;
 

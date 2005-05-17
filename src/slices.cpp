@@ -20,8 +20,8 @@
 #include <math.h>
 #include <stdarg.h>
 
-#include "meep.h"
-#include "meep_internals.h"
+#include "meep.hpp"
+#include "meep_internals.hpp"
 
 namespace meep {
 

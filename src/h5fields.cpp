@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "meep_internals.h"
+#include "meep_internals.hpp"
 
 namespace meep {
 

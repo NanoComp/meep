@@ -1,4 +1,3 @@
-// -*- C++ -*-
 namespace meep {
 
 void init_ran(int seed);

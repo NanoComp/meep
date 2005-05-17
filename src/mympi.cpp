@@ -18,7 +18,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "meep.h"
+#include "meep.hpp"
 #include "config.h"
 
 #ifdef HAVE_MPI

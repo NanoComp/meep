@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <complex>
 
-#include "meep.h"
-#include "meep_internals.h"
+#include "meep.hpp"
+#include "meep_internals.hpp"
 
 #define UNUSED(x) (void) x // silence compiler warnings
 

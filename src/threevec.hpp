@@ -1,4 +1,3 @@
-// -*- C++ -*-
 namespace meep {
 
 #define FOR3(i) for (int i=0;i<3;i++)

@@ -19,9 +19,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "meep.h"
-#include "meep_internals.h"
-#include "ran.h"
+#include "meep.hpp"
+#include "meep_internals.hpp"
+#include "ran.hpp"
 
 namespace meep {
 
@@ -33,7 +33,7 @@ void fields::update_from_e() {
 
 void fields_chunk::update_from_e() {
   const int ntot = s->v.ntot();
-#include "update_from_e.h"
+#include "update_from_e.hpp"
 }
 
 } // namespace meep

@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <meep.h>
+#include <meep.hpp>
 using namespace meep;
 
 const double nhi = 3, nlo = 1;

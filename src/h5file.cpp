@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "meep.h"
+#include "meep.hpp"
 
 #define CHECK(condition, message) do { \
      if (!(condition))  { \

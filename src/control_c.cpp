@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "meep.h"
+#include "meep.hpp"
 
 namespace meep {
 

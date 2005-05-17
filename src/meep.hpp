@@ -1,4 +1,3 @@
-// -*- C++ -*-
 /* Copyright (C) 2003 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
@@ -21,8 +20,8 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "meep/vec.h"
-#include "meep/mympi.h"
+#include "meep/vec.hpp"
+#include "meep/mympi.hpp"
 
 namespace meep {
 

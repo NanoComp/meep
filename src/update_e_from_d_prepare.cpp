@@ -15,15 +15,15 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#include "meep.h"
-#include "meep_internals.h"
-#include "ran.h"
+#include "meep.hpp"
+#include "meep_internals.hpp"
+#include "ran.hpp"
 
 namespace meep {
 
 void fields_chunk::update_e_from_d_prepare(void) {
   const int ntot = s->v.ntot();
-#include "update_e_from_d_prepare.h"
+#include "update_e_from_d_prepare.hpp"
 }
 
 } // namespace meep

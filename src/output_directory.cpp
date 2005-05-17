@@ -24,7 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "meep.h"
+#include "meep.hpp"
 
 namespace meep {
 

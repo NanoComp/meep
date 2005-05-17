@@ -1,5 +1,5 @@
 #include "math.h"
-#include "ran.h"
+#include "ran.hpp"
 
 namespace meep {
 

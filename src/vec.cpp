@@ -20,7 +20,7 @@
 #include <math.h>
 #include <complex>
 
-#include "meep_internals.h"
+#include "meep_internals.hpp"
 
 namespace meep {
 

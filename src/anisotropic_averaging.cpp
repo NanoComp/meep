@@ -1,7 +1,7 @@
 #include <math.h>
 
-#include "meep.h"
-#include "threevec.h"
+#include "meep.hpp"
+#include "threevec.hpp"
 
 namespace meep {
 

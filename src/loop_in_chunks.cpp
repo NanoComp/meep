@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "meep.h"
-#include "meep_internals.h"
+#include "meep.hpp"
+#include "meep_internals.hpp"
 
 /* This file contains a generic function for looping over all of the
    points in all of the chunks that intersect some given volume.  This

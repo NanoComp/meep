@@ -1,4 +1,3 @@
-// -*- C++ -*-
 /* Copyright (C) 2003 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
@@ -16,7 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#include "meep.h"
+#include "meep.hpp"
 
 namespace meep {
 
