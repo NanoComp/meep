@@ -337,6 +337,7 @@ void fields_chunk::alloc_f(component the_c) {
 	    LOOP_OVER_DIRECTIONS(v.dim, d)
 	      if (s->C[d][c]) { need_pml = true; break; }
 	    if (need_pml) {
+	      // FIXME: we don't necessarily need both f_p_pml and f_m_pml
 	      f_p_pml[c][cmp] = new double[v.ntot()];
 	      f_m_pml[c][cmp] = new double[v.ntot()];
 	      for (int i=0;i<v.ntot();i++) {
