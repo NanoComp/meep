@@ -132,6 +132,11 @@ int bicgstabL(const int L, const int n, double *x,
   A(x, r[0], Adata);
   for (int m = 0; m < n; ++m) rtilde[m] = r[0][m] = b[m] - r[0][m];
 
+  { /* Sleipjen normalizes rtilde in his code; it seems to help slightly */
+    double s = 1.0 / norm2(n, rtilde);
+    for (int m = 0; m < n; ++m) rtilde[m] *= s;
+  }
+
   memset(u[0], 0, sizeof(double) * n); // u[0] = 0
 
   double rho = 1.0, alpha = 0, omega = 1;
