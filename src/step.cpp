@@ -238,13 +238,11 @@ void fields::step_boundaries(field_type ft) {
 }
 
 void fields::step_h_source() {
-  const double tim = time();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_h_source(chunks[i]->h_sources, tim);
+      chunks[i]->step_h_source(chunks[i]->h_sources);
 }
-
-void fields_chunk::step_h_source(src_vol *sv, double time) {
+void fields_chunk::step_h_source(src_vol *sv) {
   if (sv == NULL) return;
   component c = sv->c;
   if (f[c][0] && is_magnetic(c))
@@ -254,7 +252,29 @@ void fields_chunk::step_h_source(src_vol *sv, double time) {
       f[c][0][i] += real(A);
       if (!is_real) f[c][1][i] += imag(A);
     }
-  step_h_source(sv->next, time);
+  step_h_source(sv->next);
+}
+
+/* NOTE: the time-stepping doesn't (normally) actually use
+         step_d_source(), since it uses update_e_from_d_sources()
+	 instead and adds the integral of J to the polarization P. */
+void fields::step_d_source() {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->step_d_source(chunks[i]->e_sources);
+}
+void fields_chunk::step_d_source(src_vol *sv) {
+  if (sv == NULL) return;
+  component c = direction_component(Dx, component_direction(sv->c));
+  if (f[c][0] && is_electric(sv->c)) {
+    for (int j=0; j<sv->npts; j++) {
+      const complex<double> A = sv->current(j);
+      const int i = sv->index[j];
+      f[c][0][i] -= real(A);
+      if (!is_real) f[c][1][i] -= imag(A);
+    }
+  }
+  step_d_source(sv->next);
 }
 
 void fields::calc_sources(double tim) {

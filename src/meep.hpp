@@ -644,8 +644,9 @@ class fields_chunk {
   void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
   void step_h();
-  void step_h_source(src_vol *, double);
+  void step_h_source(src_vol *);
   void step_d();
+  void step_d_source(src_vol *);
   void update_e_from_d_prepare(void);
   void update_e_from_d_sources(void);
   void update_e_from_d_update(void);
@@ -949,6 +950,7 @@ class fields {
   void step_h();
   void step_h_source();
   void step_d();
+  void step_d_source();
   void update_e_from_d();
   void update_from_e();
   void step_boundaries(field_type);

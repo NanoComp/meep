@@ -122,16 +122,11 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 
   // get J amplitudes from current time step
   zero_fields(); // note that we've saved the fields in x above
-  step(); // sets fields = dt * J
-  // hack: because of way we do electric currents, set d <- d_minus_p
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      FOR_E_AND_D(ce,cd)
-        if (chunks[i]->f[cd][0]
-	    && chunks[i]->have_d_minus_p && chunks[i]->d_minus_p[ce][0]) {
-	  DOCMP for (int idx = 0; idx < chunks[i]->v.ntot(); ++idx)
-	    chunks[i]->f[cd][cmp][idx] = chunks[i]->d_minus_p[ce][cmp][idx];
-	}
+  calc_sources(time());
+  step_h_source();
+  step_boundaries(H_stuff);
+  step_d_source();
+  step_boundaries(D_stuff);
   fields_to_array(*this, b);
   double mdt_inv = -1.0 / dt;
   for (int i = 0; i < N/2; ++i) b[i] *= mdt_inv;
