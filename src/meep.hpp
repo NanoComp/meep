@@ -799,7 +799,7 @@ class fields {
   inline double time() const { return t*dt; };
 
   // cw_fields.cpp:
-  bool solve_cw(double tol, int maxiters, complex<double> frequency);
+  bool solve_cw(double tol, int maxiters, complex<double> frequency, int L=2);
 
   // sources.cpp:
   double last_source_time();

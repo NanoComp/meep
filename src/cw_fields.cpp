@@ -87,8 +87,20 @@ static void fieldop(const double *xr, double *yr, void *data_)
   data->iters++;
 }
 
-bool fields::solve_cw(double tol, int maxiters, complex<double> frequency) {
+/* Solve for the CW (constant frequency) field response at the given
+   frequency to the sources (with amplitude given by the current sources
+   at the current time).  The solver halts at a fractional convergence
+   of tol, or when maxiters is reached, or when convergence fails;
+   returns true if convergence succeeds and false if it fails.
+
+   The parameter L determines the order of the iterative algorithm
+   that is used.  L should always be positive and should normally be
+   >= 2.  Larger values of L will often lead to faster convergence, at
+   the expense of more memory and more work per iteration. */
+bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
+		      int L) {
   if (is_real) abort("solve_cw is incompatible with use_real_fields()");
+  if (L < 1) abort("solve_cw called with L = %d < 1", L);
 
   int N = 0; // size of linear system (on this processor, at least)
   for (int i=0;i<num_chunks;i++)
@@ -98,8 +110,8 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency) {
 	  N += 2 * chunks[i]->v.nowned(c)
 	    * (1 + !chunks[i]->f_p_pml[c][0] + !chunks[i]->f_m_pml[c][0]);
 	}
-  
-  int nwork = bicgstab(N, 0, 0, 0, 0, tol, &maxiters, 0, true);
+
+  int nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
   double *work = new double[nwork + 2*N];
   complex<double> *x = reinterpret_cast<complex<double>*>(work + nwork);
   complex<double> *b = reinterpret_cast<complex<double>*>(work + nwork + N);
@@ -139,9 +151,9 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency) {
   bool save_disable_sources = disable_sources;
   disable_sources = true;
 
-  int ierr = bicgstab(N, reinterpret_cast<double*>(x),
-		      fieldop, &data, reinterpret_cast<double*>(b),
-		      tol, &maxiters, work, quiet);
+  int ierr = bicgstabL(L, N, reinterpret_cast<double*>(x),
+		       fieldop, &data, reinterpret_cast<double*>(b),
+		       tol, &maxiters, work, quiet);
 
   if (!quiet) {
     master_printf("Finished solve_cw after %d steps and %d CG iters.\n", 

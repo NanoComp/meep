@@ -389,7 +389,7 @@ fi
 
 AC_HEADER_TIME
 AC_CHECK_HEADERS([sys/time.h])
-AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot])
+AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
 
 ##############################################################################
 
