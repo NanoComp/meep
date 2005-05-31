@@ -133,8 +133,8 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 	    chunks[i]->f[cd][cmp][idx] = chunks[i]->d_minus_p[ce][cmp][idx];
 	}
   fields_to_array(*this, b);
-  double dt_inv = 1.0 / dt;
-  for (int i = 0; i < N/2; ++i) b[i] *= dt_inv;
+  double mdt_inv = -1.0 / dt;
+  for (int i = 0; i < N/2; ++i) b[i] *= mdt_inv;
   {
     int i;
     for (i = 0; i < N/2; ++i) if (b[i] != 0.0) break;
@@ -145,7 +145,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   data.f = this;
   data.n = N / 2;
   data.iomega = ((1.0 - exp(complex<double>(0.,-1.) * (2*pi*frequency) * dt))
-		 * dt_inv);
+		 * (1.0 / dt));
   data.iters = 0;
 
   bool save_disable_sources = disable_sources;
