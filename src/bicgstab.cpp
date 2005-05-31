@@ -93,6 +93,8 @@ static double xpay(int n, double *x, double a, const double *y) {
 }
 #endif
 
+#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
+
 /* BiCGSTAB(L) algorithm for the n-by-n problem Ax = b */
 int bicgstabL(const int L, const int n, double *x,
 	      bicgstab_op A, void *Adata, const double *b,
@@ -114,6 +116,7 @@ int bicgstabL(const int L, const int n, double *x,
   if (bnrm == 0.0) bnrm = 1.0;
   
   int iter = 0;
+  double last_output_wall_time = wall_time();
 
   double *gamma = new double[L + 1];
   double *gamma_p = new double[L + 1];
@@ -144,7 +147,10 @@ int bicgstabL(const int L, const int n, double *x,
   double resid;
   while ((resid = norm2(n, r[0])) > tol * bnrm) {
     ++iter;
-    if (!quiet) master_printf("residual[%d] = %g\n", iter, resid / bnrm);
+    if (!quiet && wall_time() > last_output_wall_time + MIN_OUTPUT_TIME) {
+      master_printf("residual[%d] = %g\n", iter, resid / bnrm);
+      last_output_wall_time = wall_time();
+    }
 
     rho = -omega * rho;
     for (int j = 0; j < L; ++j) {
