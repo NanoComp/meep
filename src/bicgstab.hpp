@@ -9,7 +9,8 @@ int bicgstab(int n, double *x,
              bicgstab_op A, void *Adata, const double *b,
              double tol, 
 	     int *iters, // input *iters = max iters, output = actual iters
-	     double *work); // if you pass work=NULL, bicgstab returns nwork
+	     double *work, // if you pass work=NULL, bicgstab returns nwork
+	     bool quiet);
 
 } // namespace meep
 

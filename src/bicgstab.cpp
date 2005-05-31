@@ -28,7 +28,8 @@ int bicgstab(int n, double *x,
 	     bicgstab_op A, void *Adata, const double *b,
 	     double tol,
 	     int *iters,
-	     double *work)
+	     double *work,
+	     bool quiet)
 {
   if (!work) return 5*n; // required workspace
   double *r = work, *p = work+n, *v = work+2*n, *rtilde = work+3*n, *t = work + 4*n;
