@@ -19,28 +19,7 @@ static double dot(int n, const double *x, const double *y)
 }
 #endif
 
-static inline double sqr(double x) { return x * x; }
-
-static double norm2(int n, const double *x) { 
-#if 1
-  return sqrt(dot(n, x, x)); 
-#else // stabilized variant, seems unnecessary(?)
-  // based on the dnrm2 reference BLAS function
-  double scale = 0.0, ssq = 1.0;
-  for (int i = 0; i < n; ++i) {
-    if (x[i] != 0.0) {
-      double absx = fabs(x[i]);
-      if (scale < absx) {
-	ssq = 1.0 + ssq * sqr(scale / absx);
-	scale = absx;
-      }
-      else
-	ssq += sqr(absx / scale);
-    }
-  }
-  return scale * sqrt(ssq);
-#endif
-}
+static double norm2(int n, const double *x) { return sqrt(dot(n, x, x)); }
 
 /* Stablilized Biconjugate Gradient algorithm for Ax = b,
    based on book _Templates for the Solution of Linear Systems_ */
