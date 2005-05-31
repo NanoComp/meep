@@ -404,7 +404,7 @@ class gaussian_src_time : public src_time {
 // Continuous (CW) source with (optional) slow turn-on and/or turn-off.
 class continuous_src_time : public src_time {
  public:
-  continuous_src_time(double f, double w, 
+  continuous_src_time(double f, double w = 0.0, 
 		      double st = 0.0, double et = infinity,
 		      double s = 3.0);
   virtual ~continuous_src_time() {}
@@ -712,6 +712,7 @@ class fields {
   void use_real_fields();
   void zero_fields();
   void remove_sources();
+  bool disable_sources; // set to true to turn off sources (w/o deleting)
   // time.cpp
   double time_spent_on(time_sink);
   void print_times();
@@ -796,6 +797,9 @@ class fields {
   int last_step_output_t;
   void step();
   inline double time() const { return t*dt; };
+
+  // cw_fields.cpp:
+  bool solve_cw(double tol, int maxiters, complex<double> frequency);
 
   // sources.cpp:
   double last_source_time();
@@ -906,15 +910,19 @@ class fields {
   // polarization.cpp
   void initialize_polarization_energy(const polarizability_identifier &,
                                       double energy(const vec &));
+
+  // fields.cpp
+  bool have_component(component);
+  // material.cpp
+  double max_eps() const;
+  // step.cpp
+  void force_consistency(field_type ft);
+
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   double last_wall_time;
   time_sink working_on, was_working_on;
   double times_spent[Other+1];
-  // fields.cpp
-  bool have_component(component);
-  // material.cpp
-  double max_eps() const;
   // time.cpp
   void am_now_working_on(time_sink);
   void finished_working();

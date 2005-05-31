@@ -92,7 +92,7 @@ bool gaussian_src_time::is_equal(const src_time &t) const
 continuous_src_time::continuous_src_time(double f, double w, double st, double et, double s)
 {
   freq = f;
-  width = w == 0.0 ? 1e-20 : w; // hack to prevent NaN in dipole(t), below
+  width = w;
   start_time = st;
   end_time = et;
   slowness = s;
@@ -103,13 +103,17 @@ complex<double> continuous_src_time::dipole(double time) const
   if (time < start_time || time > end_time)
     return 0.0;
 
-  double ts = (time - start_time) / width - slowness;
-  double te = (end_time - time) / width - slowness;
-
-  return polar(1.0, -2*pi*freq*time) 
-    * (1.0 + tanh(ts))  // goes from 0 to 2
-    * (1.0 + tanh(te))  // goes from 2 to 0
-    * 0.25;
+  if (width == 0.0)
+    return polar(1.0, -2*pi*freq*time);
+  else {
+    double ts = (time - start_time) / width - slowness;
+    double te = (end_time - time) / width - slowness;
+    
+    return polar(1.0, -2*pi*freq*time) 
+      * (1.0 + tanh(ts))  // goes from 0 to 2
+      * (1.0 + tanh(te))  // goes from 2 to 0
+      * 0.25;
+  }
 }
 
 bool continuous_src_time::is_equal(const src_time &t) const

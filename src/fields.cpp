@@ -40,6 +40,7 @@ fields::fields(const structure *s, int tm) :
   dt = s->dt;
   t = 0;
   sources = NULL;
+  disable_sources = false;
   fluxes = NULL;
   // Time stuff:
   was_working_on = working_on = Other;
@@ -82,6 +83,7 @@ fields::fields(const fields &thef) :
   dt = thef.dt;
   t = thef.t;
   sources = NULL;
+  disable_sources = thef.disable_sources;
   fluxes = NULL;
   // Time stuff:
   was_working_on = working_on = Other;

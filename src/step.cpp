@@ -53,7 +53,7 @@ void fields::step() {
   calc_sources(time() - 0.5 * dt); // for H sources
 
   step_h();
-  step_h_source();
+  if (!disable_sources) step_h_source();
   step_boundaries(H_stuff);
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
@@ -106,6 +106,26 @@ void fields_chunk::phase_material(int phasein_time) {
   if (new_s && phasein_time > 0) {
     s->mix_with(new_s, 1.0/phasein_time);
     update_e_from_d(); // ensure E = 1/eps * D
+  }
+}
+
+// Some fields, e.g. the boundaries and E, are not independent
+// of the other fields...this routine forces everything to
+// be in a consistent state, and should be called if fields
+// of the given type ft were updated "manually" (not by timestepping).
+void fields::force_consistency(field_type ft)
+{
+  switch (ft) {
+  case H_stuff:
+    step_boundaries(ft);
+    break;
+  case D_stuff: case P_stuff:
+    step_boundaries(ft);
+    update_e_from_d();
+    step_boundaries(E_stuff);
+    break;
+  case E_stuff:
+    abort("we do not know how to update D from E");
   }
 }
 
