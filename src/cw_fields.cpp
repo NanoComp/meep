@@ -108,7 +108,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
       FOR_COMPONENTS(c)
 	if (chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {
 	  N += 2 * chunks[i]->v.nowned(c)
-	    * (1 + !chunks[i]->f_p_pml[c][0] + !chunks[i]->f_m_pml[c][0]);
+	    * (1 + !!chunks[i]->f_p_pml[c][0] + !!chunks[i]->f_m_pml[c][0]);
 	}
 
   int nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
