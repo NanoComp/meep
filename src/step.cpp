@@ -96,10 +96,13 @@ double fields_chunk::peek_field(component c, const vec &where) {
 }
 
 void fields::phase_material() {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->phase_material(phasein_time);
-  phasein_time--;
+  if (phasein_time > 0) {
+    for (int i=0;i<num_chunks;i++)
+      if (chunks[i]->is_mine())
+	chunks[i]->phase_material(phasein_time);
+    step_boundaries(E_stuff);
+    phasein_time--;
+  }
 }
 
 void fields_chunk::phase_material(int phasein_time) {
