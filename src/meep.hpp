@@ -378,6 +378,7 @@ class src_time {
   virtual double last_time() const { return 0.0; }
   virtual src_time *clone() const { return new src_time(*this); }
   virtual bool is_equal(const src_time &t) const { (void)t; return 1; }
+  virtual double frequency() const { return 0.0; }
 
  private:
   double current_time;
@@ -396,6 +397,7 @@ class gaussian_src_time : public src_time {
   virtual double last_time() const { return peak_time + cutoff; };
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
+  virtual double frequency() const { return freq; }
 
  private:
   double freq, width, peak_time, cutoff;
@@ -413,6 +415,7 @@ class continuous_src_time : public src_time {
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
+  virtual double frequency() const { return freq; }
 
  private:
   double freq, width, start_time, end_time, slowness;
@@ -800,6 +803,7 @@ class fields {
 
   // cw_fields.cpp:
   bool solve_cw(double tol, int maxiters, complex<double> frequency, int L=2);
+  bool solve_cw(double tol = 1e-8, int maxiters = 1000, int L=2);
 
   // sources.cpp:
   double last_source_time();

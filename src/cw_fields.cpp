@@ -171,4 +171,19 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   return !ierr;
 }
 
+/* as solve_cw, but infers frequency from sources */
+bool fields::solve_cw(double tol, int maxiters, int L) {
+  complex<double> freq = 0.0;
+  for (src_time *s = sources; s; s = s->next) {
+    complex<double> sf = s->frequency();
+    if (sf != freq && freq != 0.0 && sf != 0.0)
+      abort("must pass frequency to solve_cw if sources do not agree");
+    if (sf != 0.0)
+      freq = sf;
+  }
+  if (freq == 0.0)
+    abort("must pass frequency to solve_cw if sources do not specify one");
+  solve_cw(tol, maxiters, freq, L);
+}
+
 } // namespace meep
