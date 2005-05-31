@@ -378,7 +378,7 @@ class src_time {
   virtual double last_time() const { return 0.0; }
   virtual src_time *clone() const { return new src_time(*this); }
   virtual bool is_equal(const src_time &t) const { (void)t; return 1; }
-  virtual double frequency() const { return 0.0; }
+  virtual complex<double> frequency() const { return 0.0; }
 
  private:
   double current_time;
@@ -397,7 +397,7 @@ class gaussian_src_time : public src_time {
   virtual double last_time() const { return peak_time + cutoff; };
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
-  virtual double frequency() const { return freq; }
+  virtual complex<double> frequency() const { return freq; }
 
  private:
   double freq, width, peak_time, cutoff;
@@ -406,19 +406,21 @@ class gaussian_src_time : public src_time {
 // Continuous (CW) source with (optional) slow turn-on and/or turn-off.
 class continuous_src_time : public src_time {
  public:
-  continuous_src_time(double f, double w = 0.0, 
+  continuous_src_time(complex<double> f, double w = 0.0, 
 		      double st = 0.0, double et = infinity,
-		      double s = 3.0);
+		      double s = 3.0) : freq(f), width(w), start_time(st),
+					end_time(et), slowness(s) {}
   virtual ~continuous_src_time() {}
   
   virtual complex<double> dipole(double time) const;
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
-  virtual double frequency() const { return freq; }
-
+  virtual complex<double> frequency() const { return freq; }
+  
  private:
-  double freq, width, start_time, end_time, slowness;
+  complex<double> freq;
+  double width, start_time, end_time, slowness;
 };
 
 class monitor_point {

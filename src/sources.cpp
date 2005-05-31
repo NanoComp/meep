@@ -89,27 +89,18 @@ bool gaussian_src_time::is_equal(const src_time &t) const
 	  return 0;
 }
 
-continuous_src_time::continuous_src_time(double f, double w, double st, double et, double s)
-{
-  freq = f;
-  width = w;
-  start_time = st;
-  end_time = et;
-  slowness = s;
-}
-
 complex<double> continuous_src_time::dipole(double time) const
 {
   if (time < start_time || time > end_time)
     return 0.0;
 
   if (width == 0.0)
-    return polar(1.0, -2*pi*freq*time);
+    return exp(complex<double>(0,-1.0) * (2*pi)*freq*time);
   else {
     double ts = (time - start_time) / width - slowness;
     double te = (end_time - time) / width - slowness;
     
-    return polar(1.0, -2*pi*freq*time) 
+    return exp(complex<double>(0,-1.0) * (2*pi)*freq*time)
       * (1.0 + tanh(ts))  // goes from 0 to 2
       * (1.0 + tanh(te))  // goes from 2 to 0
       * 0.25;
@@ -180,6 +171,7 @@ src_vol *src_vol::add_to(src_vol *others) {
 
 /*********************************************************************/
 
+// THIS VARIANT IS FOR BACKWARDS COMPATIBILITY, and is DEPRECATED:
 void fields::add_point_source(component c, double freq,
                               double width, double peaktime,
                               double cutoff, const vec &p,
