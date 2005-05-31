@@ -803,7 +803,7 @@ class fields {
 
   // cw_fields.cpp:
   bool solve_cw(double tol, int maxiters, complex<double> frequency, int L=2);
-  bool solve_cw(double tol = 1e-8, int maxiters = 1000, int L=2);
+  bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L=2);
 
   // sources.cpp:
   double last_source_time();
