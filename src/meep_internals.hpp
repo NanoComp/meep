@@ -88,9 +88,7 @@ class src_vol {
   complex<double> *A; // list of amplitudes
 
   complex<double> dipole(int j) { return A[j] * t->dipole(); }
-  complex<double> dipole(int j, double time) { return A[j] * t->dipole(time); }
   complex<double> current(int j) { return A[j] * t->current(); }
-  complex<double> current(int j, double T, double dt) { return A[j] * t->current(T,dt); }
   void update(double time, double dt) { t->update(time, dt); }
 
   bool operator==(const src_vol &sv) const {

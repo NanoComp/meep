@@ -364,7 +364,7 @@ class src_time {
   }
 
   complex<double> current(double time, double dt) const { 
-    return (dipole(time) - dipole(time - dt)) / dt;
+    return ((dipole(time + dt) - dipole(time)) / dt);
   }
 
   double last_time_max() { return last_time_max(0.0); }
