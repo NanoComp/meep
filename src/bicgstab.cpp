@@ -16,6 +16,7 @@
  */
 
 #include <math.h>
+#include <string.h>
 
 #include "meep/mympi.hpp"
 #include "bicgstab.hpp"
