@@ -247,7 +247,7 @@ void fields_chunk::step_h_source(src_vol *sv) {
   component c = sv->c;
   if (f[c][0] && is_magnetic(c))
     for (int j=0; j<sv->npts; j++) {
-      const complex<double> A = sv->current(j);
+      const complex<double> A = sv->current(j) * dt;
       const int i = sv->index[j];
       f[c][0][i] += real(A);
       if (!is_real) f[c][1][i] += imag(A);
@@ -268,7 +268,7 @@ void fields_chunk::step_d_source(src_vol *sv) {
   component c = direction_component(Dx, component_direction(sv->c));
   if (f[c][0] && is_electric(sv->c)) {
     for (int j=0; j<sv->npts; j++) {
-      const complex<double> A = sv->current(j);
+      const complex<double> A = sv->current(j) * dt;
       const int i = sv->index[j];
       f[c][0][i] -= real(A);
       if (!is_real) f[c][1][i] -= imag(A);
