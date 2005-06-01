@@ -36,3 +36,8 @@ COPYRIGHT: generator libmeep
 else
 COPYRIGHT: generator
 endif
+
+if MAINTAINER_MODE
+dist-hook:
+	darcs changes --summary > $(distdir)/ChangeLog
+endif
