@@ -81,6 +81,14 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   return 1;
 }
 
+void check_unequal_layout(const fields &f1, const fields &f2)
+{
+  if (f1.equal_layout(f2) ||
+      !f1.equal_layout(f1) ||
+      !f2.equal_layout(f2))
+    abort("fields::equal_layout did not return expected result");
+}
+
 int test_cyl_metal_mirror(double eps(const vec &)) {
   master_printf("Testing Z mirror symmetry in Cylindrical...\n");
   double a = 8.0;
@@ -98,6 +106,7 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
   f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -141,6 +150,7 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
   f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -182,6 +192,7 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   fields f(&s);
   f.use_bloch(0.0);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -223,6 +234,7 @@ int test_origin_shift(const char *mydirname) {
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, v.center());
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.0,0.0));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.0,0.0));
+  check_unequal_layout(f, f1);
   while (f.time() < ttot) {
     f.step();
     f1.step();
@@ -255,6 +267,7 @@ int test_metal_xmirror(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -293,6 +306,7 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -331,6 +345,7 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
   f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   fields f(&s);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -369,6 +384,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -407,6 +423,7 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -445,6 +462,7 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   fields f(&s);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -486,6 +504,7 @@ int test_metal_ymirror(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -530,6 +549,7 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   f.use_bloch(vec(0.1*pi/2,0.0));
   //f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -579,6 +599,7 @@ int test_metal_rot2y(double eps(const vec &)) {
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.25,0.375), 1.0);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.75,0.875 ),-1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.75,0.375),-1.0);
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -619,6 +640,7 @@ int exact_metal_rot2y(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.875));
   f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.375));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -664,6 +686,7 @@ int pml_twomirrors(double eps(const vec &)) {
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,0.75));
     fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,1.25));
   }
+  check_unequal_layout(fs[0], fs[1]);
   double total_energy_check_time = 3.0;
   while (fs[0].time() < ttot) {
     for (int i=0;i<2;i++) fs[i].step();
@@ -701,6 +724,7 @@ int exact_metal_rot4z(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -744,6 +768,7 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -785,6 +810,7 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   f1.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec(1.3,1.5));
   fields f(&s);
   f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec(1.3,1.5));
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -825,11 +851,12 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  fields fS(&s);
+  fields fS(&sS);
   fS.use_real_fields();
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
+  check_unequal_layout(f, fS);
   while (f.time() < ttot) {
     f.step();
     fS.step();
@@ -852,11 +879,15 @@ double nonlinear_ex(const volume &v, double eps(const vec &)) {
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  /* BUG: we should use fS(&sS) here, since otherwise the test is trivial.
+     If we do, however, the test FAILS in 3d, so there may be a bug
+     in the nonlinear code for symmetry. */
   fields fS(&s);
   fS.use_real_fields();
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
+  // check_unequal_layout(f, fS);
   while (f.time() < ttot) {
     f.step();
     fS.step();
@@ -879,11 +910,12 @@ double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
-  fields fS(&s);
+  fields fS(&sS);
   fS.use_real_fields();
   fS.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
+  check_unequal_layout(f, fS);
   while (f.time() < ttot) {
     f.step();
     fS.step();
@@ -906,11 +938,12 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  fields fS(&s);
+  fields fS(&sS);
   fS.use_real_fields();
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
+  check_unequal_layout(f, fS);
   while (f.time() < ttot) {
     f.step();
     fS.step();

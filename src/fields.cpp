@@ -410,4 +410,20 @@ int fields::is_phasing() {
   return phasein_time > 0;
 }
 
+bool fields::equal_layout(const fields &f) const {
+  if (a != f.a || 
+      num_chunks != f.num_chunks ||
+      gv != f.gv ||
+      S != f.S)
+    return false;
+  for (int d=0;d<5;d++)
+    if (k[d] != f.k[d])
+      return false;
+  for (int i = 0; i < num_chunks; ++i)
+    if (chunks[i]->a != f.chunks[i]->a ||
+	chunks[i]->gv != f.chunks[i]->gv)
+      return false;
+  return true;
+}
+
 } // namespace meep

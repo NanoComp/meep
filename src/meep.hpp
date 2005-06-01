@@ -317,6 +317,8 @@ class structure {
   void set_output_directory(const char *name);
   void mix_with(const structure *, double);
 
+  bool equal_layout(const structure &) const;
+
   // monitor.cpp
   double get_inveps(component, direction, const ivec &origloc) const;
   double get_inveps(component, direction, const vec &loc) const;
@@ -715,6 +717,7 @@ class fields {
   fields(const structure *, int m=0);
   fields(const fields &);
   ~fields();
+  bool equal_layout(const fields &f) const;
   void use_real_fields();
   void zero_fields();
   void remove_sources();

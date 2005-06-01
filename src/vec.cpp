@@ -1171,6 +1171,17 @@ void symmetry::operator=(const symmetry &s) {
   else next = NULL;
 }
 
+bool symmetry::operator==(const symmetry &sym) const {
+  int gtot = multiplicity();
+  if (gtot != sym.multiplicity())
+    return false;
+  for (int sn = 1; sn < gtot; ++sn)
+    FOR_DIRECTIONS(d)
+      if (transform(d, sn) != sym.transform(d, sn))
+	return false;
+  return true;
+}
+
 symmetry::~symmetry() {
   delete next;
 }

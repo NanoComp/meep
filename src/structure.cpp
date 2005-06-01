@@ -623,4 +623,17 @@ double structure_chunk::max_eps() const {
   return themax;
 }
 
+bool structure::equal_layout(const structure &s) const {
+  if (a != s.a || 
+      num_chunks != s.num_chunks ||
+      gv != s.gv ||
+      S != s.S)
+    return false;
+  for (int i = 0; i < num_chunks; ++i)
+    if (chunks[i]->a != s.chunks[i]->a ||
+	chunks[i]->gv != s.chunks[i]->gv)
+      return false;
+  return true;
+}
+
 } // namespace meep

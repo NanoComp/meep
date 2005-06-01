@@ -44,6 +44,10 @@ struct signed_direction {
     d = sd.d; flipped = sd.flipped; phase = sd.phase;
   }
   signed_direction operator*(complex<double> ph);
+  bool operator==(const signed_direction &sd) const { return (d == sd.d &&
+						       flipped == sd.flipped
+						       && phase == sd.phase); }
+  bool operator!=(const signed_direction &sd) const { return !(*this == sd); }
   direction d;
   bool flipped;
   complex<double> phase;
@@ -519,6 +523,7 @@ class geometric_volume {
   bool operator==(const geometric_volume &a) const {
     return (min_corner == a.min_corner && max_corner == a.max_corner);
   }
+  bool operator!=(const geometric_volume &a) const { return !(*this == a); };
   geometric_volume round_float(void) const {
     return geometric_volume(min_corner.round_float(),max_corner.round_float());
   }
@@ -704,6 +709,8 @@ class symmetry {
   symmetry operator+(const symmetry &) const;
   symmetry operator*(double) const;
   void operator=(const symmetry &);
+  bool operator==(const symmetry &) const;
+  bool operator!=(const symmetry &S) const { return !(*this == S); };
  private:
   signed_direction S[5];
   complex<double> ph;
