@@ -220,7 +220,7 @@ struct src_vol_chunkloop_data {
    set use_symmetry=false: we only find the intersection of the volume
    with the untransformed chunks (since the transformed versions are
    implicit). */
-static void src_vol_chunkloop(fields_chunk *fc, component c,
+static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 			      ivec is, ivec ie,
 			      vec s0, vec s1, vec e0, vec e1,
 			      double dV0, double dV1,

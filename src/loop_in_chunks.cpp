@@ -455,7 +455,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 				- yee_c).in_direction(R));
 	  }
 	 
-	  chunkloop(chunks[i], cS,
+	  chunkloop(chunks[i], i, cS,
 		    isc - iyee_cS, iec - iyee_cS,
 		    s0c, s1c, e0c, e1c,
 		    dV0, dV1,

@@ -56,7 +56,7 @@ typedef struct {
   void *fun_data_;
 } h5_output_data;
 
-static void h5_findsize_chunkloop(fields_chunk *fc, component cgrid,
+static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
 				  ivec is, ivec ie,
 				  vec s0, vec s1, vec e0, vec e1,
 				  double dV0, double dV1,
@@ -76,7 +76,7 @@ static void h5_findsize_chunkloop(fields_chunk *fc, component cgrid,
   data->bufsz = max(data->bufsz, bufsz);
 }
 
-static void h5_output_chunkloop(fields_chunk *fc, component cgrid,
+static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,

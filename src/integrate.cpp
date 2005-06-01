@@ -39,7 +39,7 @@ struct integrate_data {
   void *integrand_data_;
 };
 
-static void integrate_chunkloop(fields_chunk *fc, component cgrid,
+static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,
