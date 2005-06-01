@@ -178,7 +178,7 @@ bool fields::solve_cw(double tol, int maxiters, int L) {
   }
   if (freq == 0.0)
     abort("must pass frequency to solve_cw if sources do not specify one");
-  solve_cw(tol, maxiters, freq, L);
+  return solve_cw(tol, maxiters, freq, L);
 }
 
 } // namespace meep
