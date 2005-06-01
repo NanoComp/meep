@@ -38,7 +38,7 @@
       Numerical Algorithms 7, 75-109 (1994).
 
    This is a generalization of the stabilized biconjugate-gradient
-   (BiCGSTAB) algorithm descrbed by van der Vorst (and also described
+   (BiCGSTAB) algorithm proposed by van der Vorst (and described
    in the book _Templates for the Solution of Linear Systems_ by
    Barrett et al.)  BiCGSTAB(1) is equivalent to BiCGSTAB, and
    BiCGSTAB(2) is a slightly more efficient version of the BiCGSTAB2
@@ -52,7 +52,7 @@
    our problem (the eigenvalues of the timestep operator are i*omega),
    and we observed precisely such stagnation of convergence.  The
    BiCGSTAB(2) algorithm was reported to fix most such convergence
-   problems. */
+   problems, and indeed L > 1 seems to converge well for us. */
 
 /* Other variations to explore:
 
