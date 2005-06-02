@@ -94,6 +94,7 @@ double fields::get_field(derived_component c, const vec &loc) const {
     case Sz: c1 = Ex; c2 = Hy; break;
     case Sr: c1 = Ep; c2 = Hz; break;
     case Sp: c1 = Ez; c2 = Hr; break;
+    default: break; // never
     }
     sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
     sum -= real(conj(get_field(direction_component(Ex, component_direction(c2)), loc)) * get_field(direction_component(Hx, component_direction(c1)), loc));
