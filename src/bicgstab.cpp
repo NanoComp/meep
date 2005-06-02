@@ -96,6 +96,8 @@ static double xpay(int n, double *x, double a, const double *y) {
 
 #define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
+typedef double *pdouble; // grr, ISO C++ forbids new (double*)[...]
+
 /* BiCGSTAB(L) algorithm for the n-by-n problem Ax = b */
 int bicgstabL(const int L, const int n, double *x,
 	      bicgstab_op A, void *Adata, const double *b,
@@ -106,8 +108,8 @@ int bicgstabL(const int L, const int n, double *x,
 {
   if (!work) return (2*L+3)*n; // required workspace
 
-  double **r = new (double*)[L+1];
-  double **u = new (double*)[L+1];
+  pdouble *r = new pdouble[L+1];
+  pdouble *u = new pdouble[L+1];
   for (int i = 0; i <= L; ++i) {
     r[i] = work + i * n;
     u[i] = work + (L+1 + i) * n;
