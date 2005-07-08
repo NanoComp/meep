@@ -39,7 +39,7 @@ src_time *src_time::add_to(src_time *others, src_time **added) const
 	  if (src_times_equal(*this, *others))
 	       *added = others;
 	  else
-	       add_to(others->next, added);
+	       others->next = add_to(others->next, added);
 	  return others;
      }
      else {
