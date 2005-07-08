@@ -304,8 +304,10 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
 
   fields f1(&s1);
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
+  f1.add_point_source(Hx, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401,0.43));
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
+  f.add_point_source(Hx, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401,0.43));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -343,8 +345,10 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
 
   fields f1(&s1);
   f1.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  f1.add_point_source(Ey, 0.8, 0.6, 0.0, 4.0, vec(0.43,0.401,0.5));
   fields f(&s);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
+  f.add_point_source(Ey, 0.8, 0.6, 0.0, 4.0, vec(0.43,0.401,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -421,8 +425,10 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
 
   fields f1(&s1);
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
+  f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5,0.43));
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
+  f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5,0.43));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
