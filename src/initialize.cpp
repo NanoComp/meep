@@ -82,11 +82,12 @@ void fields::initialize_with_nth_te(int np0) {
 }
 
 void fields_chunk::initialize_with_nth_te(int np0, double kz) {
-  const int n = (m==0) ? np0 - 0 : np0 - 1;
-  const double rmax = Jmax(m,n);
+  const int im = int(m);
+  const int n = (im==0) ? np0 - 0 : np0 - 1;
+  const double rmax = Jmax(im,n);
   ktrans = rmax*a/v.nr();
   kax = kz*2*pi/a;
-  m_for_J = m;
+  m_for_J = im;
   initialize_field(Hz, JJ);
 }
 
@@ -98,11 +99,12 @@ void fields::initialize_with_nth_tm(int np0) {
 }
 
 void fields_chunk::initialize_with_nth_tm(int np1, double kz) {
+  const int im = int(m);
   const int n = np1 - 1;
-  const double rroot = Jroot(m,n);
+  const double rroot = Jroot(im,n);
   ktrans = rroot*a/v.nr();
   kax = kz*2*pi/a;
-  m_for_J = m;
+  m_for_J = im;
   initialize_field(Ez, JJ);
   initialize_field(Hp, JP);
 }

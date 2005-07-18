@@ -25,13 +25,13 @@
 
 namespace meep {
 
-fields::fields(const structure *s, int tm) :
-  S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv)
+fields::fields(const structure *s, double m) :
+  S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m)
 {
   verbosity = 0;
   outdir = s->outdir;
-  m = tm;
-  if (v.dim == Dcyl) S = S + r_to_minus_r_symmetry(m);
+  if (v.dim == Dcyl && m == int(m))
+    S = S + r_to_minus_r_symmetry(int(m));
   phasein_time = 0;
   bands = NULL;
   for (int d=0;d<5;d++) k[d] = 0.0;
@@ -167,12 +167,11 @@ fields_chunk::~fields_chunk() {
   delete[] zeroes[1];
 }
 
-fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od, int tm)
-  : v(the_s->v), gv(the_s->gv) {
+fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od,
+			   double m) : v(the_s->v), gv(the_s->gv), m(m) {
   s = new structure_chunk(the_s);
   verbosity = 0;
   outdir = od;
-  m = tm;
   new_s = NULL;
   bands = NULL;
   is_real = 0;

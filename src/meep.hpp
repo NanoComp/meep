@@ -553,14 +553,15 @@ class fields_chunk {
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   volume v;
   geometric_volume gv;
-  int m, is_real;
+  double m;
+  int is_real;
   bandsdata *bands;
   src_vol *e_sources, *h_sources;
   const structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
 
-  fields_chunk(const structure_chunk *, const char *outdir, int m);
+  fields_chunk(const structure_chunk *, const char *outdir, double m);
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
@@ -707,14 +708,15 @@ class fields {
   double a, dt; // The resolution a and timestep dt=Courant/a
   volume v, user_volume;
   geometric_volume gv;
-  int m, t, phasein_time, is_real;
+  double m;
+  int t, phasein_time, is_real;
   complex<double> k[5], eikna[5];
   double coskna[5], sinkna[5];
   boundary_condition boundaries[2][5];
   bandsdata *bands;
   const char *outdir;
   // fields.cpp methods:
-  fields(const structure *, int m=0);
+  fields(const structure *, double m=0);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;

@@ -31,11 +31,11 @@ static inline double it(int cmp, double *(f[2]), int ind) {
   return (f[1-cmp]) ? (1-2*cmp)*f[1-cmp][ind] : 0;
 }
 
-inline int rstart_0(const volume &v, int m) {
+inline int rstart_0(const volume &v, double m) {
   return (int) max(0.0, m - (int)(v.origin_r()*v.a+0.5) - 1.0);
 }
-inline int rstart_1(const volume &v, int m) {
-  return (int) max(1.0, (double)m - (int)(v.origin_r()*v.a+0.5));
+inline int rstart_1(const volume &v, double m) {
+  return (int) max(1.0, m - (int)(v.origin_r()*v.a+0.5));
 }
 
 void fields::step_d() {
