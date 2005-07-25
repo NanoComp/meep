@@ -120,8 +120,8 @@ void *h5file::get_id() {
     if (parallel)
       begin_critical_section(h5io_critical_section_tag);
 #  endif
-    
-    if (mode != WRITE || IF_EXCLUSIVE(parallel && !am_master(), 1))
+
+    if (mode != WRITE || IF_EXCLUSIVE(parallel && !am_master(), 0))
       HID(id) = H5Fopen(filename,
 			mode == READONLY ? H5F_ACC_RDONLY : H5F_ACC_RDWR,
 			access_props);
