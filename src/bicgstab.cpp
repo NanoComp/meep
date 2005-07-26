@@ -89,7 +89,7 @@ static double norm2(int n, const double *x) { return sqrt(dot(n, x, x)); }
    extern "C" void cblas_daxpy(const int N, const double alpha, const double *X, const int incX, double *Y, const int incY);
 #  define xpay(n,x,a,y) cblas_daxpy(n, a,y,1, x,1)
 #else
-static double xpay(int n, double *x, double a, const double *y) {
+static void xpay(int n, double *x, double a, const double *y) {
   for (int m = 0; m < n; ++m) x[m] += a * y[m];
 }
 #endif
