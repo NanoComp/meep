@@ -201,7 +201,7 @@ void fields::out_bands(file *o, const char *name, int maxbands) {
 
   for (int i = 0; i < num_found; ++i) {
     // k k k m index freq decay Q approx_power
-    master_fprintf(o, "%s\t%g\t%g\t%g\t%d\t%d\t%g \t%g \t%g \t%g\n", 
+    master_fprintf(o, "%s\t%g\t%g\t%g\t%g\t%d\t%g \t%g \t%g \t%g\n", 
                    name, 
                    real(k[0]), real(k[1]), real(k[2]),   
                    m, i, fabs(real(fad[i])), imag(fad[i]),
