@@ -62,7 +62,7 @@ namespace meep {
 
 bool quiet = false; // defined in meep.h
 
-initialize::initialize(int argc, char **argv) {
+initialize::initialize(int &argc, char** &argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
   int major, minor;
