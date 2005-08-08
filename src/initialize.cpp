@@ -127,11 +127,13 @@ void fields::initialize_field(component c, complex<double> func(const vec &)) {
 }
 
 void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
-  LOOP_OVER_VOL(v, c, i) {
-    IVEC_LOOP_LOC(v, here);
-    complex<double> val = func(here);
-    f[c][0][i] += real(val);
-    if (!is_real) f[c][1][i] += imag(val);
+  if (f[c][0]) {
+    LOOP_OVER_VOL(v, c, i) {
+      IVEC_LOOP_LOC(v, here);
+      complex<double> val = func(here);
+      f[c][0][i] += real(val);
+      if (!is_real) f[c][1][i] += imag(val);
+    }
   }
 }
 
