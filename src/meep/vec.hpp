@@ -708,6 +708,8 @@ class symmetry {
 
   symmetry operator+(const symmetry &) const;
   symmetry operator*(double) const;
+  symmetry operator-(const symmetry &b) const { return *this + b * (-1.0); }
+  symmetry operator-(void) const { return *this * (-1.0); }
   void operator=(const symmetry &);
   bool operator==(const symmetry &) const;
   bool operator!=(const symmetry &S) const { return !(*this == S); };

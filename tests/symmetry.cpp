@@ -379,7 +379,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
   double ttot = 3.0;
 
   const volume v = vol3d(1.1, 0.6, 1.0, a);
-  const symmetry S = mirror(Z,v)*(-1.0);
+  const symmetry S = -mirror(Z,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
   master_printf("Testing odd Z mirror symmetry in 3D...\n");
@@ -916,7 +916,7 @@ double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   master_printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
   the_center = v.center();
-  const symmetry S = mirror(Z,v)*(-1);
+  const symmetry S = -mirror(Z,v);
   structure s(v, eps);
   structure sS(v, eps, no_pml(), S);
   s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
@@ -944,7 +944,7 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   master_printf("Testing saturated gain in %s...\n", dimension_name(v.dim));
   the_center = v.center();
-  const symmetry S = mirror(X,v)*(-1);
+  const symmetry S = -mirror(X,v);
   structure s(v, eps);
   structure sS(v, eps, no_pml(), S);
   s.add_polarizability(one, 0.3, -0.1, 7.63, 0.5);
