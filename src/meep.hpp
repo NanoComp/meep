@@ -553,7 +553,7 @@ class fields_chunk {
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   volume v;
   geometric_volume gv;
-  double m;
+  double m, rshift;
   int is_real;
   bandsdata *bands;
   src_vol *e_sources, *h_sources;
@@ -925,6 +925,7 @@ class fields {
 
   // fields.cpp
   bool have_component(component);
+  void set_rshift(double rshift);
   // material.cpp
   double max_eps() const;
   // step.cpp

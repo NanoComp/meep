@@ -170,6 +170,7 @@ fields_chunk::~fields_chunk() {
 fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od,
 			   double m) : v(the_s->v), gv(the_s->gv), m(m) {
   s = new structure_chunk(the_s);
+  rshift = 0;
   verbosity = 0;
   outdir = od;
   new_s = NULL;
@@ -208,6 +209,7 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od,
 fields_chunk::fields_chunk(const fields_chunk &thef)
   : v(thef.v), gv(thef.gv) {
   s = new structure_chunk(thef.s);
+  rshift = thef.rshift;
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
@@ -407,6 +409,15 @@ void fields_chunk::phase_in_material(const structure_chunk *snew) {
 
 int fields::is_phasing() {
   return phasein_time > 0;
+}
+
+// This is used for phasing the *radial origin* of a cylindrical structure
+void fields::set_rshift(double rshift) {
+  if (v.dim != Dcyl) abort("set_rshift is only for cylindrical coords");
+  if (gv.in_direction_min(R) <= 0 && gv.in_direction_max(R) >= 0)
+    abort("set_rshift is invalid if volume contains r=0");
+  for (int i = 0; i < num_chunks; ++i)
+    chunks[i]->rshift = rshift;
 }
 
 bool fields::equal_layout(const fields &f) const {

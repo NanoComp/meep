@@ -81,6 +81,7 @@ void fields_chunk::step_d() {
 #include "step_d.hpp"
       }
   } else if (v.dim == Dcyl) {
+    int ir0 = int((v.origin_r() + rshift) * v.a + 0.5);
     DOCMP {
       // Propogate Dp
       if (f[Dp][cmp])
@@ -115,8 +116,8 @@ void fields_chunk::step_d() {
       if (f[Dz][cmp])
         if (s->C[R][Dz])
           for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            double oor = 1.0/((int)(v.origin_r()*v.a + 0.5) + r);
-            double mor = m*oor;
+            double oor = 1.0/(ir0 + r);
+	    double mor = m/((int)(v.origin_r()*v.a + 0.5) + r);
             const int ir = r*(v.nz()+1);
             const int irm1 = (r-1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++) {
@@ -124,8 +125,8 @@ void fields_chunk::step_d() {
               const double ooop_Crez = (s->Cdecay[R][Dz][Z]) ?
                 s->Cdecay[R][Dz][Z][z+ir] : 1.0;
               const double dezr = ooop_Crez*
-                (Courant*(f[Hp][cmp][z+ir]*((int)(v.origin_r()*v.a+0.5) + r+0.5)-
-                    f[Hp][cmp][z+irm1]*((int)(v.origin_r()*v.a+0.5) + r-0.5))*oor
+                (Courant*(f[Hp][cmp][z+ir]*(ir0 + r+0.5)-
+                    f[Hp][cmp][z+irm1]*(ir0 + r-0.5))*oor
                  - Crez*f_p_pml[Dz][cmp][z+ir]);
               f_p_pml[Dz][cmp][z+ir] += dezr;
               f[Dz][cmp][z+ir] += dezr + Courant*(-it(cmp,f[Hr],z+ir)*mor);
@@ -133,14 +134,14 @@ void fields_chunk::step_d() {
           }
         else
           for (int r=rstart_1(v,m);r<=v.nr();r++) {
-            double oor = 1.0/((int)(v.origin_r()*v.a + 0.5) + r);
-            double mor = m*oor;
+            double oor = 1.0/(ir0 + r);
+	    double mor = m/((int)(v.origin_r()*v.a + 0.5) + r);
             const int ir = r*(v.nz()+1);
             const int irm1 = (r-1)*(v.nz()+1);
             for (int z=0;z<v.nz();z++)
               f[Dz][cmp][z+ir] += Courant*
-                ((f[Hp][cmp][z+ir]*((int)(v.origin_r()*v.a+0.5) + r+0.5)-
-                  f[Hp][cmp][z+irm1]*((int)(v.origin_r()*v.a+0.5) + r-0.5))*oor
+                ((f[Hp][cmp][z+ir]*(ir0 + r+0.5)-
+                  f[Hp][cmp][z+irm1]*(ir0 + r-0.5))*oor
                  - it(cmp,f[Hr],z+ir)*mor);
           }
       // Propogate Dr

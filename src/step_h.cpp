@@ -81,6 +81,7 @@ void fields_chunk::step_h() {
 #include "step_h.hpp"
       }
   } else if (v.dim == Dcyl) {
+    int ir0 = int((v.origin_r() + rshift) * v.a + 0.5);
     DOCMP {
       // Propogate Hr
       if (s->C[Z][Hr])
@@ -137,16 +138,16 @@ void fields_chunk::step_h() {
       // Propogate Hz
       if (s->C[R][Hz])
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-          double oorph = 1.0/((int)(v.origin_r()*v.a+0.5) + r+0.5);
-          double morph = m*oorph;
+          double oorph = 1.0/(ir0 + r+0.5);
+          double morph = m/((int)(v.origin_r()*v.a+0.5) + r+0.5);
           const int ir = r*(v.nz()+1);
           const int irp1 = (r+1)*(v.nz()+1);
           for (int z=1;z<=v.nz();z++) {
             const double Crhz = s->C[R][Hz][z+ir];
             const double ooop_Crhz = s->Cdecay[R][Hz][Z][z+ir];
             const double dhzr =
-              ooop_Crhz*(-Courant*(f[Ep][cmp][z+irp1]*((int)(v.origin_r()*v.a+0.5) + r+1.)-
-                             f[Ep][cmp][z+ir]*((int)(v.origin_r()*v.a+0.5) + r))*oorph
+              ooop_Crhz*(-Courant*(f[Ep][cmp][z+irp1]*(ir0 + r+1.)-
+                             f[Ep][cmp][z+ir]*(ir0 + r))*oorph
                          - Crhz*f_p_pml[Hz][cmp][z+ir]);
             f_p_pml[Hz][cmp][z+ir] += dhzr;
             f[Hz][cmp][z+ir] += dhzr + Courant*(it(cmp,f[Er],z+ir)*morph);
@@ -154,15 +155,15 @@ void fields_chunk::step_h() {
         }
       else
         for (int r=rstart_0(v,m);r<v.nr();r++) {
-          double oorph = 1.0/((int)(v.origin_r()*v.a+0.5) + r+0.5);
-          double morph = m*oorph;
+          double oorph = 1.0/(ir0 + r+0.5);
+          double morph = m/((int)(v.origin_r()*v.a+0.5) + r+0.5);
           const int ir = r*(v.nz()+1);
           const int irp1 = (r+1)*(v.nz()+1);
           for (int z=1;z<=v.nz();z++)
             f[Hz][cmp][z+ir] += Courant*
               (it(cmp,f[Er],z+ir)*morph
-               - (f[Ep][cmp][z+irp1]*((int)(v.origin_r()*v.a+0.5) + r+1.)-
-                  f[Ep][cmp][z+ir]*((int)(v.origin_r()*v.a+0.5) + r))*oorph);
+               - (f[Ep][cmp][z+irp1]*(ir0 + r+1.)-
+                  f[Ep][cmp][z+ir]*(ir0 + r))*oorph);
         }
       // Deal with annoying r==0 boundary conditions...
       if (m == 0) {
