@@ -131,9 +131,12 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   double mdt_inv = -1.0 / dt;
   for (int i = 0; i < N/2; ++i) b[i] *= mdt_inv;
   {
-    int i;
-    for (i = 0; i < N/2; ++i) if (b[i] != 0.0) break;
-    if (i == N/2) abort("zero current amplitudes in solve_cw");
+    double bmax = 0;
+    for (int i = 0; i < N/2; ++i) {
+      double babs = abs(b[i]);
+      if (babs > bmax) bmax = babs;
+    }
+    if (max_to_all(bmax) == 0.0) abort("zero current amplitudes in solve_cw");
   }
 
   fieldop_data data;
