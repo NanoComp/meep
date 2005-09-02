@@ -338,6 +338,7 @@ class structure {
 
 class src_vol;
 class bandsdata;
+class fields;
 class fields_chunk;
 class flux_vol;
 
@@ -515,8 +516,11 @@ public:
   dft_flux(const dft_flux &f);
 
   double *flux();
+
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
+  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0);
+  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0);
 
   void scale_dfts(complex<double> scale);
 

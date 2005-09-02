@@ -305,6 +305,18 @@ void dft_flux::load_hdf5(h5file *file, const char *dprefix) {
   load_dft_hdf5(H, cH, file, dprefix);
 }
 
+void dft_flux::save_hdf5(fields &f, const char *fname, const char *dprefix) {
+  h5file *ff = f.open_h5file(fname);
+  save_hdf5(ff, dprefix);
+  delete ff;
+}
+
+void dft_flux::load_hdf5(fields &f, const char *fname, const char *dprefix) {
+  h5file *ff = f.open_h5file(fname, h5file::READONLY);
+  load_hdf5(ff, dprefix);
+  delete ff;
+}
+
 void dft_flux::scale_dfts(complex<double> scale) {
   if (E) E->scale_dft(scale);
   if (H) H->scale_dft(scale);
