@@ -1,4 +1,6 @@
 dnl @synopsis ACX_MPI([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+dnl @summary figure out how to compile/link code with MPI
+dnl @category InstalledPackages
 dnl
 dnl This macro tries to find out how to compile programs that
 dnl use MPI (Message Passing Interface), a standard API for
@@ -16,6 +18,10 @@ dnl
 dnl     CC="$MPICC" #OR# CXX="$MPICXX" #OR# F77="$MPIF77"
 dnl     LIBS="$MPILIBS $LIBS"
 dnl
+dnl NOTE: The above assumes that you will use $CC (or whatever)
+dnl       for linking as well as for compiling.  (This is the
+dnl       default for automake and most Makefiles.)
+dnl
 dnl The user can force a particular library/compiler by setting the
 dnl MPICC/MPICXX/MPIF77 and/or MPILIBS environment variables.
 dnl
@@ -24,7 +30,8 @@ dnl library is found, and ACTION-IF-NOT-FOUND is a list of commands
 dnl to run it if it is not found.  If ACTION-IF-FOUND is not specified,
 dnl the default action will define HAVE_MPI.
 dnl
-dnl @version $Id: acx_mpi.m4,v 1.8 2004/11/05 17:43:23 stevenj Exp $
+dnl @version 2005-09-02
+dnl @license GPLWithACException
 dnl @author Steven G. Johnson <stevenj@alum.mit.edu>
 
 AC_DEFUN([ACX_MPI], [
@@ -41,7 +48,7 @@ AC_LANG_CASE([C], [
 [C++], [
 	AC_REQUIRE([AC_PROG_CXX])
 	AC_ARG_VAR(MPICXX,[MPI C++ compiler command])
-	AC_CHECK_PROGS(MPICXX, mpic++ mpiCC mpCC hcp mpxlC mpxlC_r cmpic++, $CXX)
+	AC_CHECK_PROGS(MPICXX, mpic++ mpiCC mpicxx mpCC hcp mpxlC mpxlC_r cmpic++, $CXX)
 	acx_mpi_save_CXX="$CXX"
 	CXX="$MPICXX"
 	AC_SUBST(MPICXX)
