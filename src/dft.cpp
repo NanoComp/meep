@@ -214,6 +214,18 @@ void dft_chunk::scale_dft(complex<double> scale) {
     next_in_dft->scale_dft(scale);
 }
 
+void dft_chunk::operator-=(const dft_chunk &chunk) {
+  if (c != chunk.c || N * Nomega != chunk.N * chunk.Nomega) abort("Mismatched chunks in dft_chunk::operator-=");
+
+  for (int i = 0; i < N * Nomega; ++i)
+    dft[i] -= chunk.dft[i];
+
+  if (next_in_dft) {
+    if (!chunk.next_in_dft) abort("Mismatched chunk lists in dft_chunk::operator-=");
+    *next_in_dft -= *chunk.next_in_dft;
+  }
+}
+
 static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
   int n = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)

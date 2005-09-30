@@ -109,7 +109,7 @@ void bragg_transmission_analytic(double freq_min, double freq_max, int nfreq,
 }
 
 void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
-			double *T, double *R) {
+			double *T, double *R, bool use_hdf5) {
   const volume v = volone(zsize, a);
 
   structure s(v, eps_bragg, pml(0.5));
@@ -143,12 +143,12 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
   /* we want to subtract the fields for the reflection...
      simulate a "real" case, where the normalization is done
      by a separate run and saved to a file */
-  fr0.save_hdf5(f, "flux", "reflection");
-  fr.load_hdf5(f, "flux", "reflection");
+  h5file *ff = f.open_h5file("flux");
+  fr0.save_hdf5(ff, "reflection");
+  delete ff;
+  ff = f.open_h5file("flux", h5file::READONLY);
+  fr.load_hdf5(ff, "reflection");
   fr.scale_dfts(-1.0);
-
-  // clean up after ourselves: delete the file
-  h5file *ff = f.open_h5file("flux", h5file::READONLY);
   ff->remove();
   delete ff;
 
@@ -197,15 +197,13 @@ double distance_from_curve(int n, double dx, double ys[], double x, double y)
   return d;
 }
 
-int main(int argc, char **argv) {
+void doit(bool use_hdf5) {
   const int nfreq = 100;
   const double freq_min = 0.1, freq_max = 0.5;
-  initialize mpi(argc, argv);
-  quiet = true;
 
   double *T = new double[nfreq];
   double *R = new double[nfreq];
-  bragg_transmission(40.0, freq_min, freq_max, nfreq, T, R);
+  bragg_transmission(40.0, freq_min, freq_max, nfreq, T, R, use_hdf5);
   double *T0 = new double[nfreq];
   double *R0 = new double[nfreq];
   bragg_transmission_analytic(freq_min, freq_max, nfreq, T0, R0);
@@ -239,6 +237,14 @@ int main(int argc, char **argv) {
   delete[] T0;
   delete[] R;
   delete[] T;
+}
+
+int main(int argc, char **argv) {
+  initialize mpi(argc, argv);
+  quiet = true;
+
+  doit(true);
+  doit(false);
 
   return 0;
 }

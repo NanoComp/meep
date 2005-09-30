@@ -476,6 +476,8 @@ public:
 
   void scale_dft(complex<double> scale);
 
+  void operator-=(const dft_chunk &chunk);
+
   // the frequencies to loop_in_chunks
   double omega_min, domega;
   int Nomega;
@@ -519,8 +521,6 @@ public:
 
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
-  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0);
-  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0);
 
   void scale_dfts(complex<double> scale);
 
