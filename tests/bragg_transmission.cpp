@@ -140,17 +140,21 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
   while (f0.time() < nfreq / fabs(freq_max - freq_min) / 2)
     f0.step();
 
-  /* we want to subtract the fields for the reflection...
-     simulate a "real" case, where the normalization is done
-     by a separate run and saved to a file */
-  h5file *ff = f.open_h5file("flux");
-  fr0.save_hdf5(ff, "reflection");
-  delete ff;
-  ff = f.open_h5file("flux", h5file::READONLY);
-  fr.load_hdf5(ff, "reflection");
-  fr.scale_dfts(-1.0);
-  ff->remove();
-  delete ff;
+  /* we want to subtract the fields for the reflection... */
+  if (use_hdf5) {
+    /* simulate a case where the normalization is done
+       by a separate run and saved to a file */
+    fr0.save_hdf5(f, "flux", "reflection");
+    fr.load_hdf5(f, "flux", "reflection");
+    fr.scale_dfts(-1.0);
+    
+    // clean up after ourselves: delete the file
+    h5file *ff = f.open_h5file("flux", h5file::READONLY);
+    ff->remove();
+    delete ff;
+  }
+  else
+    fr -= fr0;
 
   while (f.time() < nfreq / fabs(freq_max - freq_min) / 2)
     f.step();

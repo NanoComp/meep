@@ -522,6 +522,11 @@ public:
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
 
+  void operator-=(const dft_flux &fl) { if (E && fl.E) *E -= *fl.E; if (H && fl.H) *H -= *fl.H; }
+
+  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0);
+  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0);
+
   void scale_dfts(complex<double> scale);
 
   double freq_min, dfreq;
