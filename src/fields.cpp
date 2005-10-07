@@ -158,13 +158,12 @@ fields_chunk::~fields_chunk() {
       for (int io=0;io<2;io++)
 	delete[] connections[ft][ip][io];
   FOR_FIELD_TYPES(ft) delete[] connection_phases[ft];
-  FOR_DIRECTIONS(d) DOCMP2 delete[] d_minus_p[d][cmp];
+  FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 delete[] d_minus_p[ec][cmp];
   delete h_sources;
   delete e_sources;
   delete pol;
   delete olpol;
-  delete[] zeroes[0];
-  delete[] zeroes[1];
+  FOR_FIELD_TYPES(ft) delete[] zeroes[ft];
 }
 
 fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od,
@@ -202,7 +201,7 @@ fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od,
     num_zeroes[ft] = 0;
   }
   have_d_minus_p = false;
-  FOR_DIRECTIONS(d) DOCMP2 d_minus_p[d][cmp] = NULL;
+  FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 d_minus_p[ec][cmp] = NULL;
   figure_out_step_plan();
 }
 
@@ -260,7 +259,12 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
     num_zeroes[ft] = 0;
   }
   have_d_minus_p = thef.have_d_minus_p;
-  FOR_DIRECTIONS(d) DOCMP2 d_minus_p[d][cmp] = thef.d_minus_p[d][cmp];
+  FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 
+    if (thef.d_minus_p[ec][cmp]) {
+      d_minus_p[ec][cmp] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++)
+	d_minus_p[ec][cmp][i] = thef.d_minus_p[ec][cmp][i];
+    }
   figure_out_step_plan();
 }
 
@@ -367,6 +371,10 @@ void fields::remove_sources() {
     chunks[i]->remove_sources();
 }
 
+void fields::remove_fluxes() {
+  delete fluxes;
+}
+
 void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
     if (f[c][cmp]) for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
@@ -380,6 +388,13 @@ void fields_chunk::zero_fields() {
 void fields::zero_fields() {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->zero_fields();
+}
+
+void fields::reset() {
+  remove_sources();
+  remove_fluxes();
+  zero_fields();
+  t = 0;
 }
 
 void fields_chunk::use_real_fields() {

@@ -118,7 +118,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
     snprintf(basename, buflen, "%s", stripped_name);
   }
 
-  char outdirname[buflen];
+  static char outdirname[buflen];
   snprintf(outdirname, buflen, "%s-out", basename);
   {
     int i = 0;
@@ -132,9 +132,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   snprintf(outsrcname, buflen, "%s/%s", outdirname, sourcename);
   cp(sourcename, outsrcname);
 
-  char *dirname = new char[strlen(outdirname)+1];
-  snprintf(dirname, strlen(outdirname)+1, "%s", outdirname);
-  return dirname;
+  return outdirname;
 }
 
 void trash_output_directory(const char *dirname) {

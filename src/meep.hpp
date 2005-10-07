@@ -548,7 +548,7 @@ class fields_chunk {
   double *f_backup_m_pml[NUM_FIELD_COMPONENTS][2];
 
   bool have_d_minus_p;
-  double *d_minus_p[5][2];
+  double *d_minus_p[NUM_FIELD_COMPONENTS][2];
 
   dft_chunk *dft_chunks;
 
@@ -732,6 +732,8 @@ class fields {
   void use_real_fields();
   void zero_fields();
   void remove_sources();
+  void remove_fluxes();
+  void reset();
   bool disable_sources; // set to true to turn off sources (w/o deleting)
   // time.cpp
   double time_spent_on(time_sink);

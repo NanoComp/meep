@@ -338,9 +338,11 @@ void structure::mix_with(const structure *oth, double f) {
 }
 
 structure_chunk::~structure_chunk() {
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_ELECTRIC_COMPONENTS(c) {
     FOR_DIRECTIONS(d)
       delete[] inveps[c][d];
+    delete[] kerr[c];
+  }
   delete[] eps;
 
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] C[d][c];
