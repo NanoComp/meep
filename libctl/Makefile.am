@@ -3,9 +3,9 @@ EXTRA_DIST = meep.scm.in
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
-HDRS = meep-ctl.h meep-ctl-const.h
+HDRS = meep-ctl.hpp meep-ctl-const.hpp
 
-LIBHDRS = $(top_srcdir)/src/meep.h $(top_srcdir)/src/meep/vec.h $(top_srcdir)/src/meep/mympi.h
+LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
 
 meep_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i
 nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i
@@ -14,7 +14,7 @@ meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx
 
 if WITH_LIBCTL
-meep_wrap.cxx: meep.i meep_renames.i ctl-io.i meep-ctl-swig.h $(LIBHDRS)
+meep_wrap.cxx: meep.i meep_renames.i ctl-io.i meep-ctl-swig.hpp $(LIBHDRS)
 	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
 else
 meep_wrap.cxx:
@@ -55,13 +55,19 @@ CTL_DEFS = -DCTL_SCM='"'$(LIBCTL_DIR)/base/ctl.scm'"' \
 
 ##############################################################################
 
-ctl-io.cpp ctl-io.h ctl-io.i: $(SPECIFICATION_FILE)
-	$(GEN_CTL_IO) --cxx --swig $(srcdir)/$(SPECIFICATION_FILE) $(LIBCTL_DIR)
+ctl-io.cpp: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm
+	$(GEN_CTL_IO) --cxx --code -o $@ $(srcdir)/$(SPECIFICATION_FILE) $(LIBCTL_DIR)
 
-main.cpp: $(LIBCTL_DIR)/base/main.c ctl-io.h
+ctl-io.h: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm
+	$(GEN_CTL_IO) --cxx --header -o $@ $(srcdir)/$(SPECIFICATION_FILE) $(LIBCTL_DIR)
+
+ctl-io.i: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm
+	$(GEN_CTL_IO) --cxx --swig -o $@ $(srcdir)/$(SPECIFICATION_FILE) $(LIBCTL_DIR)
+
+main.cpp: $(LIBCTL_DIR)/base/main.c
 	cp -f $(LIBCTL_DIR)/base/main.c $@
 
-geom.cpp: $(LIBCTL_DIR)/utils/geom.c ctl-io.h
+geom.cpp: $(LIBCTL_DIR)/utils/geom.c
 	cp -f $(LIBCTL_DIR)/utils/geom.c $@
 
 clean-local:

@@ -1,6 +1,7 @@
 %module meep
 %{
-#include "meep.h"
+#include "meep.hpp"
+using namespace meep;
 
 static inline int
 SwigComplex_Check(SCM o)
@@ -24,14 +25,14 @@ SwigComplex_Check(SCM o)
 
 %include "meep_renames.i"
 
-%include "meep/vec.h"
-%include "meep/mympi.h"
-%include "meep.h"
+%include "meep/vec.hpp"
+%include "meep/mympi.hpp"
+%include "meep.hpp"
 
 %include "ctl-io.i"
 
 %{
-#include "meep-ctl-swig.h"
+#include "meep-ctl-swig.hpp"
 %}
 
-%include "meep-ctl-swig.h"
+%include "meep-ctl-swig.hpp"

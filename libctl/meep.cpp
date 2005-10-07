@@ -1,4 +1,4 @@
-#include "meep-ctl.h"
+#include "meep-ctl.hpp"
 
 using namespace meep;
 

@@ -2,14 +2,14 @@
 #ifndef MEEP_CTL_H
 #define MEEP_CTL_H 
 
-#include "meep.h"
+#include "meep.hpp"
 
-#include "meep-ctl-const.h"
+#include "meep-ctl-const.hpp"
 
 #include "config.h"
 #include "ctl-io.h"
 
-#include "meep-ctl-swig.h"
+#include "meep-ctl-swig.hpp"
 
 extern int verbose; // in main.c
 
