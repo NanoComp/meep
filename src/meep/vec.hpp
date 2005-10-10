@@ -83,6 +83,10 @@ inline direction stop_at_direction(ndim dim) {
                                d != loop_stop_di; \
                                d = (direction)((d+1)%5), \
                                loop_stop_di = X)
+#define FOR_SIDES(s) for (boundary_side s = High, loop_stop_bi=Low; \
+			  s != loop_stop_bi; \
+			  s = (boundary_side) ((s+1) % 2), \
+			  loop_stop_bi = High)
 
 #define LOOP_OVER_DIRECTIONS(dim, d) for (direction d = start_at_direction(dim), \
                                      loop_stop_directi = stop_at_direction(dim); \
@@ -243,6 +247,9 @@ inline derived_component direction_component(derived_component c, direction d) {
 }
 
 inline bool coordinate_mismatch(ndim dim, component c) {
+  return coordinate_mismatch(dim, component_direction(c));
+}
+inline bool coordinate_mismatch(ndim dim, derived_component c) {
   return coordinate_mismatch(dim, component_direction(c));
 }
 
@@ -707,7 +714,7 @@ class symmetry {
   geometric_volume_list *reduce(const geometric_volume_list *gl) const;
 
   symmetry operator+(const symmetry &) const;
-  symmetry operator*(double) const;
+  symmetry operator*(complex<double>) const;
   symmetry operator-(const symmetry &b) const { return *this + b * (-1.0); }
   symmetry operator-(void) const { return *this * (-1.0); }
   void operator=(const symmetry &);

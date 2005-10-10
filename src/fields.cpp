@@ -126,6 +126,12 @@ fields::~fields() {
   delete bands;
   if (!quiet) print_times();
 }
+
+void fields::verbose(int v) {
+  verbosity = v;
+  for (int i=0;i<num_chunks;i++) chunks[i]->verbose(v);
+}
+
 void fields::use_real_fields() {
   LOOP_OVER_DIRECTIONS(v.dim, d)
     if (boundaries[High][d] == Periodic && k[d] != 0.0)

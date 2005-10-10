@@ -353,6 +353,14 @@ void fields::output_hdf5(component c,
 			 bool append_data,
                          bool single_precision,
 			 const char *prefix) {
+  if (is_derived(int(c))) {
+    output_hdf5(derived_component(c), 
+		where, file, append_data, single_precision, prefix);
+    return;
+  }
+
+  if (coordinate_mismatch(v.dim, c)) return;
+
   char dataname[256];
   bool has_imag = !is_real && c != Dielectric;
 
@@ -400,6 +408,14 @@ void fields::output_hdf5(derived_component c,
 			 bool append_data,
                          bool single_precision,
 			 const char *prefix) {
+  if (!is_derived(int(c))) {
+    output_hdf5(component(c), 
+		where, file, append_data, single_precision, prefix);
+    return;
+  }
+
+  if (coordinate_mismatch(v.dim, c)) return;
+
   field_rfunction fun;
   int nfields;
   component cs[6];
@@ -433,7 +449,8 @@ void fields::output_hdf5(derived_component c,
       }
     if (nfields > 6) abort("too many field components");
     break;
-  default: abort("unknown derived_component in output_hdf5");
+  default: 
+    abort("unknown derived_component in output_hdf5");
   }
 
   output_hdf5(component_name(c), nfields, cs, fun, where, &nfields,
@@ -455,6 +472,8 @@ h5file *fields::open_h5file(const char *name, h5file::access_mode mode,
 	   outdir,
 	   prefix ? prefix : "", prefix && prefix[0] ? "-" : "",
 	   name, time_step_string);
+  if (mode == h5file::WRITE)
+    master_printf("creating output file \"%s\"...\n", filename);
   return new h5file(filename, mode, true);
 }
 

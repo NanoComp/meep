@@ -1202,7 +1202,7 @@ symmetry symmetry::operator+(const symmetry &b) const {
   return s;
 }
 
-symmetry symmetry::operator*(double p) const {
+symmetry symmetry::operator*(complex<double> p) const {
   symmetry s = *this;
   s.ph *= p;
   return s;

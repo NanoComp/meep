@@ -92,6 +92,8 @@ public:
   
   const char *file_name() const { return filename; }
 
+  void close() { close_id(); } // force file closure
+
   void prevent_deadlock(); // hackery for exclusive mode
 private:
   access_mode mode;
@@ -224,7 +226,7 @@ public:
   
   boundary_region() :
     kind(NOTHING_SPECIAL), thickness(0.0), strength(1.0), d(NO_DIRECTION), side(Low), next(0) {}
-  boundary_region(boundary_region_kind kind, double thickness, double strength, direction d, boundary_side side, boundary_region *next) : kind(kind), thickness(thickness), strength(strength), d(d), side(side), next(next) {}
+  boundary_region(boundary_region_kind kind, double thickness, double strength, direction d, boundary_side side, boundary_region *next = 0) : kind(kind), thickness(thickness), strength(strength), d(d), side(side), next(next) {}
 
   boundary_region(const boundary_region &r) : kind(r.kind), thickness(r.thickness), strength(r.strength), d(r.d), side(r.side) { 
     next = r.next ? new boundary_region(*r.next) : 0;
@@ -928,7 +930,7 @@ class fields {
 					   const geometric_volume &where);
 
   void set_output_directory(const char *name);
-  void verbose(int v=1) { verbosity = v; }
+  void verbose(int v=1);
   double count_volume(component);
   // polarization.cpp
   void initialize_polarization_energy(const polarizability_identifier &,
