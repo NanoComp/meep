@@ -472,7 +472,7 @@ h5file *fields::open_h5file(const char *name, h5file::access_mode mode,
 	   outdir,
 	   prefix ? prefix : "", prefix && prefix[0] ? "-" : "",
 	   name, time_step_string);
-  if (mode == h5file::WRITE)
+  if (!quiet && mode == h5file::WRITE)
     master_printf("creating output file \"%s\"...\n", filename);
   return new h5file(filename, mode, true);
 }
