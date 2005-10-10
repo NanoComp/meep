@@ -7,22 +7,39 @@ HDRS = meep-ctl.hpp meep-ctl-const.hpp
 
 LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
 
-meep_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i
-nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i
+meep_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i
+nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i meep_enum_renames.i meep-enums.scm meep_swig_bug_workaround.i
 meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx
 
 if WITH_LIBCTL
-meep_wrap.cxx: meep.i meep_renames.i ctl-io.i meep-ctl-swig.hpp $(LIBHDRS)
+if MAINTAINER_MODE
+meep_wrap.cxx: meep.i meep_op_renames.i meep_enum_renames.i meep_renames.i ctl-io.i meep-ctl-swig.hpp meep_swig_bug_workaround.i $(LIBHDRS)
 	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
 else
 meep_wrap.cxx:
-	echo "/* need --with-libctl to generate this file */" > $@
+	echo "/* need --with-maintainer-mode to generate this file */" 1>&2
+	exit 1
+endif
+else
+meep_wrap.cxx:
+	echo "/* need --with-libctl to generate this file */" 
 endif
 
+# workaround missing namespace prefix in swig
 meep_renames.i: $(LIBHDRS)
-	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; sed 's/^ *class *\([A-Za-z_0-9:]*\) *{ *$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename") > $@
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; sed 's/^ *class \+\([A-Za-z_0-9:]*\) *{ *$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename"; echo; grep -hv typedef $(LIBHDRS) | sed 's/\(inline\|const\|extern\|static\) \+//g' | sed 's/^[A-Za-z_0-9:<>]\+[* ]\+\([A-Za-z_0-9:]*\) *(.*$$/%rename(meep_\1) meep::\1;/' | grep "%rename" | sort -u; ) > $@
+
+# work around bug in swig, where it doesn't prepend namespace to friend funcs
+meep_swig_bug_workaround.i: $(LIBHDRS)
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; grep -h friend $(LIBHDRS) | sed 's/^ *friend \+[A-Za-z_0-9:<>]\+[* ]\+\([A-Za-z_0-9:]*\) *(.*$$/%ignore \1;/' | grep "%ignore" | sort -u;) > $@
+
+meep_enum_renames.i: $(LIBHDRS)
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; for f in $(LIBHDRS); do egrep "^enum" $$f | sed 's/enum \+\([A-Za-z_0-9:]\+\).*$$/\1/g' | while read enum; do cat $$f | tr -d '\n' | sed 's/.*enum \+'$${enum}' *{\([^}]*\)}.*/\1/g' | sed 's/= *[0-9]\+//g' |tr -d ' \t' | tr ',' '\n' | sed 's/^.*$$/'"%rename(meep_$${enum}_\0) meep::\0;/g"; echo; done; done;) > $@
+
+meep-enums.scm: meep_enum_renames.i
+	sed 's/%rename(\([A-Za-z0-9_]*\)) *\([A-Za-z0-9:_]*\);$$/(define \2 (\1))/' meep_enum_renames.i | sed 's/[A-Za-z0-9:_]*:://g' | sed 's/_/-/g' | sed 's,//,;,' > $@
 
 ##############################################################################
 #      stuff below is based on example Makefile.in included with libctl
@@ -71,4 +88,15 @@ geom.cpp: $(LIBCTL_DIR)/utils/geom.c
 	cp -f $(LIBCTL_DIR)/utils/geom.c $@
 
 clean-local:
-	rm -f ctl-io.* main.* geom.*
+	rm -f $(nodist_meep_SOURCES) ctl-io.* main.* geom.*
+
+install-data-local:
+	$(INSTALL) -c -m 644 $(SPECIFICATION_FILE) $(prefix)/share/libctl/specs/$(SPECIFICATION_FILE)
+	$(INSTALL) -c -m 644 meep-enums.scm $(prefix)/share/libctl/specs/meep-enums.scm
+
+uninstall-local:
+	rm -f $(prefix)/share/libctl/specs/$(SPECIFICATION_FILE)
+	rm -f $(prefix)/share/libctl/specs/meep-enums.scm
+
+maintainer-clean-local:
+	rm -f $(BUILT_SOURCES)

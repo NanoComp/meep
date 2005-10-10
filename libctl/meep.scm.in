@@ -39,6 +39,7 @@
 (define-class dielectric material-type
   (define-property epsilon no-default 'number)
   (define-property polarizations '() (make-list-type 'polarizability))
+  (define-property n2 0 'number)
 )
 
 (define-class perfect-metal material-type)
@@ -54,21 +55,134 @@
 ; (one specifications file can include another specifications file)
 (include "@LIBCTL_DIR@/utils/geom.scm")
 
+(if (defined? 'meep-component-Ex) (include "meep-enums.scm"))
+
 (set-param! ensure-periodicity false) ; this makes less sense for FDTD
 (define CYLINDRICAL -2) ; special value of dimensions for cylindrical coords
 
 ; ****************************************************************
+; some utilities
+
+(define (vector3->vec v)
+  (cond
+   ((= dimensions 1) (new-meep-vec (vector3-z v)))
+   ((= dimensions 2) (new-meep-vec (vector3-x v) (vector3-y v)))
+   ((= dimensions 3) (new-meep-vec (vector3-x v) (vector3-y v) (vector3-z v)))
+   ((= dimensions CYLINDRICAL) (meep-veccyl (vector3-x v) (vector3-y v)))))
+
+(define (vec->vector3 v) (vec2vector3 v))
+
+(define (volume p1 p2)
+  (new-meep-geometric-volume (vector3->vec p1) (vector3->vec p2)))
+
+; ****************************************************************
+; Setting up the structure
 
 (define-class symmetry no-parent
-  (define-property axis no-default 'integer))
-
+  (define-property direction no-default 'integer)
+  (define-property phase 1.0 'cnumber))
 (define-class rotate2-sym symmetry)
 (define-class rotate4-sym symmetry)
 (define-class mirror-sym symmetry)
 
-; ****************************************************************
+(define-class pml no-parent
+  (define-property thickness no-default 'number)
+  (define-property direction -1 'integer)
+  (define-property side -1 'integer)
+  (define-property strength 1.0 'number))
 
-; More input/output variables (besides those defined by libgeom, above).
+(define-input-var symmetries '() (make-list-type 'symmetry))
+(define-input-var pml-layers '() (make-list-type 'pml))
+(define-input-var num-chunks 0 'integer)
+(define-input-var Courant 0.5 'number)
+
+(define structure '())
+
+(define (init-structure)
+  (set! structure (make-structure 
+		   dimensions
+		   (object-property-value geometry-lattice 'size)
+		   resolution
+		   geometry default-material
+		   pml-layers symmetries num-chunks Courant)))
+
+; ****************************************************************
+; Setting up the fields
+
+(define-param m 0)
+(define-param real-fields? false)
+(define-param k (vector3 0 0 0))
+
+(define fields '())
+
+(define (init-fields)
+  (if (null? structure) (init-structure))
+  (if (= dimensions CYLINDRICAL)
+      (set! fields (new-meep-fields structure m))
+      (set! fields (new-meep-fields structure)))
+  (if verbose? (meep-fields-verbose fields))
+  (if real-fields? (meep-fields-use-real-fields fields))
+  (meep-fields-use-bloch fields (vector3->vec k)))
+
+; ****************************************************************
+; Output functions (can only be called after init-fields).
+
+(define-param filename-prefix "")
+(define (get-filename-prefix)
+  (if (and (not (null? include-files))
+           (string-null? filename-prefix))
+      (string-append
+       (strip-suffix ".scm"
+        (strip-suffix ".ctl" (cdr (split-pathname (car include-files)))))
+       "-")
+      filename-prefix))
+
+(define-param output-volume '()) ; region to output; NULL for everywhere
+
+(define (output-component c . h5file)
+  (if (null? fields) (error "init-fields is required before output-component"))
+  (meep-fields-output-hdf5 
+   fields c 
+   (if (null? output-volume)
+       (meep-volume-surroundings (meep-fields-v-get fields))
+       output-volume)
+   (if (null? h5file) '() (car h5file)) false false 
+   (get-filename-prefix)))
+
+(define (output-components fname . cs)
+  (if (null? fields) (error "init-fields is required before output-component"))
+  (let ((f (meep-fields-open-h5file fields fname (meep-h5file-WRITE)
+				    (get-filename-prefix) true)))
+    (map (lambda (c) (output-component c f)) cs)
+    (meep-h5file-close f)))
+
+; convenience functions, similar to MPB:
+(define (output-epsilon) (output-component Dielectric))
+(define (output-hpwr) (output-component H-EnergyDensity))
+(define (output-dpwr) (output-component D-EnergyDensity))
+(define (output-tot-pwr) (output-component EnergyDensity))
+(defmacro-public define-output-field (name cp CP)
+  `(begin
+     (define (,(symbol-append 'output- cp))
+       (output-components ,name
+			  ,(symbol-append CP 'x)
+			  ,(symbol-append CP 'y)
+			  ,(symbol-append CP 'z)
+			  ,(symbol-append CP 'r) ,(symbol-append CP 'p)))
+     (define (,(symbol-append 'output- cp '-x))
+       (output-component ,(symbol-append CP 'x)))
+     (define (,(symbol-append 'output- cp '-y))
+       (output-component ,(symbol-append CP 'y)))
+     (define (,(symbol-append 'output- cp '-z))
+       (output-component ,(symbol-append CP 'z)))
+     (define (,(symbol-append 'output- cp '-r))
+       (output-component ,(symbol-append CP 'r)))
+     (define (,(symbol-append 'output- cp '-p))
+       (output-component ,(symbol-append CP 'p)))))
+(define-output-field "h" hfield H)
+(define-output-field "e" efield E)
+(define-output-field "d" dfield D)
+(define-output-field "s" poynting S)
 
 ; ****************************************************************
 ; Add some predefined variables, for convenience:
@@ -76,9 +190,6 @@
 (define vacuum (make dielectric (epsilon 1.0)))
 (define air vacuum)
 (define metal (make perfect-metal))
-
-(define nothing (make material-type)) ; punches a "hole" through objects
-				      ; to the default/background material
 
 (define infinity 1.0e20) ; big number for infinite dimensions of objects
 

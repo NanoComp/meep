@@ -1,7 +1,6 @@
 %module meep
 %{
 #include "meep.hpp"
-using namespace meep;
 
 static inline int
 SwigComplex_Check(SCM o)
@@ -24,6 +23,9 @@ SwigComplex_Check(SCM o)
 }
 
 %include "meep_renames.i"
+%include "meep_enum_renames.i"
+%include "meep_op_renames.i"
+%include "meep_swig_bug_workaround.i"
 
 %include "meep/vec.hpp"
 %include "meep/mympi.hpp"

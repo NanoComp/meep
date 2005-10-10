@@ -14,9 +14,9 @@ vector3 vec2vector3(const meep::vec &v)
   
   switch (v.dim) {
   case meep::D1:
-    v3.x = v.x();
+    v3.x = 0;
     v3.y = 0;
-    v3.z = 0;
+    v3.z = v.z();
     break;
   case meep::D2:
     v3.x = v.x();
@@ -189,25 +189,20 @@ double geom_epsilon::eps(const meep::vec &r)
 
 meep::structure *make_structure(int dims, vector3 size, double resolution,
 				geometric_object_list geometry,
-				int desired_num_chunks,
-				const meep::symmetry &S)
+				material_type default_mat,
+				pml_list pml_layers,
+				symmetry_list symmetries,
+				int num_chunks, double Courant)
 {
   master_printf("-----------\nInitializing structure...\n");
   
   // only cartesian lattices, centered at the origin, are currently allowed
-  lattice cart_lattice = {
-    {1,0,0},{0,1,0},{0,0,1},
-    {0,0,0},
-    {1,1,1},
-    {1,0,0},{0,1,0},{0,0,1},
-    { {1,0,0},{0,1,0},{0,0,1} },
-    { {1,0,0},{0,1,0},{0,0,1} }
-  };
-  vector3 center0 = {0,0,0};
-  
-  geometry_lattice = cart_lattice;
+  geom_fix_lattice();
+  geometry_center.x = geometry_center.y = geometry_center.z = 0;
+
   geometry_lattice.size = size;
-  geometry_center = center0;
+
+  default_material = default_mat;
   
   number no_size = 2.0 / ctl_get_number("infinity");
   if (size.x <= no_size)
@@ -243,8 +238,72 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   }
   
   geom_epsilon geps(geometry, v.pad().surroundings());
+
+  meep::symmetry S;
+  for (int i = 0; i < symmetries.num_items; ++i) 
+    switch (symmetries.items[i].which_subclass) {
+    case symmetry::SYMMETRY_SELF: break; // identity
+    case symmetry::MIRROR_SYM:
+      S = S + meep::mirror(meep::direction(symmetries.items[i].direction), v)
+	* complex<double>(symmetries.items[i].phase.re,
+			  symmetries.items[i].phase.im);
+      break;
+    case symmetry::ROTATE2_SYM:
+      S = S + meep::rotate2(meep::direction(symmetries.items[i].direction), v)
+	* complex<double>(symmetries.items[i].phase.re,
+			  symmetries.items[i].phase.im);
+      break;
+    case symmetry::ROTATE4_SYM:
+      S = S + meep::rotate4(meep::direction(symmetries.items[i].direction), v)
+	* complex<double>(symmetries.items[i].phase.re,
+			  symmetries.items[i].phase.im);
+      break;
+    }
+
+  meep::boundary_region br;
+  for (int i = 0; i < pml_layers.num_items; ++i) {
+    using namespace meep;
+    if (pml_layers.items[i].direction == -1) {
+      LOOP_OVER_DIRECTIONS(v.dim, d) {
+	if (pml_layers.items[i].side == -1) {
+	  FOR_SIDES(b)
+	    br = br + meep::boundary_region(meep::boundary_region::PML,
+					    pml_layers.items[i].thickness,
+					    pml_layers.items[i].strength,
+					    d, b);
+	}
+	else
+	  br = br + meep::boundary_region(meep::boundary_region::PML,
+					  pml_layers.items[i].thickness,
+					  pml_layers.items[i].strength,
+					  d,
+					  (meep::boundary_side) 
+					  pml_layers.items[i].side);
+      }
+    }
+    else {
+	if (pml_layers.items[i].side == -1) {
+	  FOR_SIDES(b)
+	    br = br + meep::boundary_region(meep::boundary_region::PML,
+					    pml_layers.items[i].thickness,
+					    pml_layers.items[i].strength,
+					    (meep::direction)
+					    pml_layers.items[i].direction,
+					    b);
+	}
+	else
+	  br = br + meep::boundary_region(meep::boundary_region::PML,
+					  pml_layers.items[i].thickness,
+					  pml_layers.items[i].strength,
+					  (meep::direction)
+					  pml_layers.items[i].direction,
+					  (meep::boundary_side) 
+					  pml_layers.items[i].side);
+    }
+  }
   
-  meep::structure *s = new meep::structure(v, geps, meep::no_pml(), S);
+  meep::structure *s = new meep::structure(v, geps, br, S, 
+					   num_chunks, Courant);
   
   master_printf("-----------\n");
   
