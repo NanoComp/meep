@@ -1,11 +1,20 @@
+// -*- C++ -*-   
 %module meep
 %{
-#include "meep.hpp"
+#include "meep-ctl.hpp"
 
-static inline int
-SwigComplex_Check(SCM o)
-{
+static inline int SwigComplex_Check(SCM o) {
   return SCM_COMPLEXP(o);
+}
+
+/* Unfortunately, this is not re-entrant.  Damn dynamic scoping. 
+   Hopefully, it should be good enough for our purposes. */
+static SCM my_complex_func_scm;
+static inline complex<double> my_complex_func(meep::vec const &v) {
+  SCM ret = gh_call1(my_complex_func_scm, 
+		     ctl_convert_vector3_to_scm(vec2vector3(v)));
+  return std::complex<double>(gh_scm2double(scm_real_part(ret)),
+			      gh_scm2double(scm_imag_part(ret)));
 }
 %}
 
@@ -14,12 +23,17 @@ SwigComplex_Check(SCM o)
 }
 
 %typemap(guile,out) complex, complex<double>, std::complex<double> {
-  $result = scm_make_rectangular( gh_double2scm ($1.real ()),
-           gh_double2scm ($1.imag ()) );
+  $result = scm_make_rectangular(gh_double2scm($1.real()),
+				 gh_double2scm($1.imag()) );
 }
 %typemap(guile,in) complex, complex<double>, std::complex<double> {
-  $1 = std::complex<double>( gh_scm2double (scm_real_part ($input)),
-           gh_scm2double (scm_imag_part ($input)) );
+  $1 = std::complex<double>(gh_scm2double(scm_real_part($input)),
+			    gh_scm2double(scm_imag_part($input)));
+}
+
+%typemap(guile,in) complex<double>(*)(meep::vec const &) {
+  my_complex_func_scm = $input;
+  $1 = my_complex_func;
 }
 
 %include "meep_renames.i"

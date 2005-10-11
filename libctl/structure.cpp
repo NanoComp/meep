@@ -223,15 +223,19 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   switch (dims) {
   case 0: case 1:
     v = meep::vol1d(size.x, resolution);
+    v.shift_origin(meep::vec(size.x * -0.5));
     break;
   case 2:
     v = meep::vol2d(size.x, size.y, resolution);
+    v.shift_origin(meep::vec(size.x * -0.5, size.y * -0.5));
     break;
   case 3:
     v = meep::vol3d(size.x, size.y, size.z, resolution);
+    v.shift_origin(meep::vec(size.x * -0.5, size.y * -0.5, size.z * -0.5));
     break;
   case CYLINDRICAL:
     v = meep::volcyl(size.x, size.y, resolution);
+    v.shift_origin(meep::veccyl(0, size.y * -0.5));
     break;
   default:
     CK(0, "unsupported dimensionality");
