@@ -395,6 +395,7 @@ bool src_times_equal(const src_time &t1, const src_time &t2);
 // Gaussian-envelope source with given frequency, width, peak-time, cutoff
 class gaussian_src_time : public src_time {
  public:
+  gaussian_src_time(double f, double w, double s = 5.0);
   gaussian_src_time(double f, double w, double start_time, double end_time);
   virtual ~gaussian_src_time() {}
 
@@ -426,6 +427,25 @@ class continuous_src_time : public src_time {
  private:
   complex<double> freq;
   double width, start_time, end_time, slowness;
+};
+
+// user-specified source function with start and end times
+class custom_src_time : public src_time {
+ public:
+  custom_src_time(complex<double> (*func)(double t, void *), void *data,
+		      double st = -infinity, double et = infinity)
+    : func(func), data(data), start_time(st), end_time(et) {}
+  virtual ~custom_src_time() {}
+  
+  virtual complex<double> dipole(double time) const { return func(time,data); }
+  virtual double last_time() const { return end_time; };
+  virtual src_time *clone() const { return new custom_src_time(*this); }
+  virtual bool is_equal(const src_time &t) const;
+  
+ private:
+  complex<double> (*func)(double t, void *);
+  void *data;
+  double start_time, end_time;
 };
 
 class monitor_point {

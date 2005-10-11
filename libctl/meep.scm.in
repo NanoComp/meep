@@ -75,6 +75,8 @@
 (define (volume p1 p2)
   (new-meep-geometric-volume (vector3->vec p1) (vector3->vec p2)))
 
+(define infinity 1.0e20) ; big number for infinite dimensions of objects
+
 ; ****************************************************************
 ; Setting up the structure
 
@@ -107,6 +109,78 @@
 		   pml-layers symmetries num-chunks Courant)))
 
 ; ****************************************************************
+; Adding sources
+
+(define-class src-time no-parent)
+(define-class continuous-src src-time
+  (define-property frequency no-default 'number)
+  (define-property start-time 0 'number)
+  (define-property end-time infinity 'number)
+  (define-property width 0 'number)
+  (define-property cutoff 3.0 'number)
+  (define-derived-property swigval 'SCM
+    (lambda (o) 
+      (new-meep-continuous-src-time 
+       (object-property-value o 'frequency)
+       (object-property-value o 'width)
+       (object-property-value o 'start-time)
+       (object-property-value o 'end-time)
+       (object-property-value o 'cutoff)))))
+(define-class gaussian-src src-time
+  (define-property frequency no-default 'number)
+  (define-property width no-default 'number)
+  (define-property start-time 0 'number)
+  (define-property cutoff 3.0 'number)
+  (define-derived-property swigval 'SCM
+    (lambda (o) 
+      (new-meep-gaussian-src-time
+       (object-property-value 'frequency)
+       (object-property-value o 'width)
+       (object-property-value o 'start-time)
+       (+ (object-property-value o 'start-time)
+	  (* 2 (object-property-value o 'width) 
+	     (object-property-value o 'cutoff)))))))
+(define-class custom-src src-time
+  (define-property src-func no-default 'function)
+  (define-property start-time (- infinity) 'number)
+  (define-property end-time infinity 'number)
+  (define-derived-property swigval 'SCM
+    (lambda (o) 
+      (new-meep-custom-src-time 
+       (object-property-value 'src-function)
+       (object-property-value 'src-function)
+       (object-property-value o 'start-time)
+       (object-property-value o 'end-time)))))
+
+(define-class src-vol no-parent
+  (define-property src no-default 'src-time)
+  (define-property component no-default 'integer)
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3)
+  (define-property amplitude 1.0 'cnumber)
+  (define-property amp-func '() 'function))
+
+; list of sources added by init-fields (below)
+(define-param sources '())
+
+(define (add-source s f) ; add source s to fields f
+  (let ((A (object-property-value s 'amp-func))
+	(cen (object-property-value s 'center))
+	(sz (object-property-value s 'size)))
+    (if (null? A)
+	(meep-fields-add-volume-src
+	 (object-property-value s 'component)
+	 (object-property-value (object-property-value s 'src) 'swigval)
+	 (volume (vector3- cen (vector3-scale 0.5 sz))
+		 (vector3+ cen (vector3-scale 0.5 sz)))
+	 (object-property-value s 'amplitude))
+	(meep-fields-add-volume-src
+	 (object-property-value s 'component)
+	 (volume (vector3- cen (vector3-scale 0.5 sz))
+		 (vector3+ cen (vector3-scale 0.5 sz)))
+	 A (object-property-value s 'amplitude)))))
+
+; ****************************************************************
 ; Setting up the fields
 
 (define-param m 0)
@@ -122,7 +196,8 @@
       (set! fields (new-meep-fields structure)))
   (if verbose? (meep-fields-verbose fields))
   (if real-fields? (meep-fields-use-real-fields fields))
-  (meep-fields-use-bloch fields (vector3->vec k)))
+  (meep-fields-use-bloch fields (vector3->vec k))
+  (map (lambda (s) (add-source s fields)) sources))
 
 ; ****************************************************************
 ; Output functions (can only be called after init-fields).

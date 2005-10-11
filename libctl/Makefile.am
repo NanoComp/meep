@@ -29,7 +29,7 @@ endif
 
 # workaround missing namespace prefix in swig
 meep_renames.i: $(LIBHDRS)
-	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; sed 's/^ *class \+\([A-Za-z_0-9:]*\) *{ *$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename"; echo; grep -hv typedef $(LIBHDRS) | sed 's/\(inline\|const\|extern\|static\) \+//g' | sed 's/^[A-Za-z_0-9:<>]\+[* ]\+\([A-Za-z_0-9:]*\) *(.*$$/%rename(meep_\1) meep::\1;/' | grep "%rename" | sort -u; ) > $@
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; sed 's/^ *class \+\([A-Za-z_0-9:]*\)\( *\| *:[^{]*\){.*$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename" | sort -u; echo; grep -hv typedef $(LIBHDRS) | sed 's/\(inline\|const\|extern\|static\) \+//g' | sed 's/^[A-Za-z_0-9:<>]\+[* ]\+\([A-Za-z_0-9:]*\) *(.*$$/%rename(meep_\1) meep::\1;/' | grep "%rename" | sort -u; ) > $@
 
 # work around bug in swig, where it doesn't prepend namespace to friend funcs
 meep_swig_bug_workaround.i: $(LIBHDRS)

@@ -16,6 +16,12 @@ static inline complex<double> my_complex_func(meep::vec const &v) {
   return std::complex<double>(gh_scm2double(scm_real_part(ret)),
 			      gh_scm2double(scm_imag_part(ret)));
 }
+
+static inline complex<double> my_complex_func2(double t, void *f) {
+  SCM ret = gh_call1((SCM) f, gh_double2scm(t));
+  return std::complex<double>(gh_scm2double(scm_real_part(ret)),
+			      gh_scm2double(scm_imag_part(ret)));
+}
 %}
 
 %typecheck(SWIG_TYPECHECK_COMPLEX) complex<double> {
@@ -35,6 +41,11 @@ static inline complex<double> my_complex_func(meep::vec const &v) {
   my_complex_func_scm = $input;
   $1 = my_complex_func;
 }
+
+%typemap(guile,in) complex<double>(*)(double, void*) {
+  $1 = my_complex_func2; // the actual function had better be the next arg
+}
+%typemap(guile,in) void* { $1 = (void*) ($input); }
 
 %include "meep_renames.i"
 %include "meep_enum_renames.i"

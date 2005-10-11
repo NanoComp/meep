@@ -59,6 +59,18 @@ double src_time::last_time_max(double after)
     return after;
 }
 
+gaussian_src_time::gaussian_src_time(double f, double w, double s)
+{
+  freq = f;
+  width = w;
+  peak_time = w * s;
+  cutoff = w * s * 2;
+
+  // this is to make last_source_time as small as possible
+  while (exp(-cutoff*cutoff / (2*width*width)) == 0.0)
+    cutoff *= 0.9;
+}
+
 gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
 {
   freq = f;
@@ -66,7 +78,7 @@ gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
   peak_time = 0.5 * (st + et);
   cutoff = (et - st) * 0.5;
 
-  // TODO: why bother with this?
+  // this is to make last_source_time as small as possible
   while (exp(-cutoff*cutoff / (2*width*width)) == 0.0)
     cutoff *= 0.9;
 }
@@ -115,6 +127,16 @@ bool continuous_src_time::is_equal(const src_time &t) const
 	  return(tp->freq == freq && tp->width == width &&
 		 tp->start_time == start_time && tp->end_time == end_time &&
 		 tp->slowness == slowness);
+     else
+	  return 0;
+}
+
+bool custom_src_time::is_equal(const src_time &t) const
+{
+     const custom_src_time *tp = dynamic_cast<const custom_src_time*>(&t);
+     if (tp)
+	  return(tp->start_time == start_time && tp->end_time == end_time &&
+		 tp->func == func && tp->data == data);
      else
 	  return 0;
 }
