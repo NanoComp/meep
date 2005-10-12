@@ -395,7 +395,7 @@ bool src_times_equal(const src_time &t1, const src_time &t2);
 // Gaussian-envelope source with given frequency, width, peak-time, cutoff
 class gaussian_src_time : public src_time {
  public:
-  gaussian_src_time(double f, double w, double s = 5.0);
+  gaussian_src_time(double f, double fwidth, double s = 5.0);
   gaussian_src_time(double f, double w, double start_time, double end_time);
   virtual ~gaussian_src_time() {}
 

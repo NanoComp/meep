@@ -59,12 +59,12 @@ double src_time::last_time_max(double after)
     return after;
 }
 
-gaussian_src_time::gaussian_src_time(double f, double w, double s)
+gaussian_src_time::gaussian_src_time(double f, double fwidth, double s)
 {
   freq = f;
-  width = w;
-  peak_time = w * s;
-  cutoff = w * s * 2;
+  width = 1.0 / fwidth;
+  peak_time = width * s;
+  cutoff = width * s * 2;
 
   // this is to make last_source_time as small as possible
   while (exp(-cutoff*cutoff / (2*width*width)) == 0.0)

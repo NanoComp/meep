@@ -179,6 +179,8 @@
        (object-property-value o 'start-time)
        (object-property-value o 'end-time)))))
 
+(define (fwidth df) (width (/ df))) ; to specify frequency width instead
+
 (define-class src-vol no-parent
   (define-property src no-default 'src-time)
   (define-property component no-default 'integer)
