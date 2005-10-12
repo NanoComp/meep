@@ -61,6 +61,19 @@
 (define CYLINDRICAL -2) ; special value of dimensions for cylindrical coords
 
 ; ****************************************************************
+; Add some predefined variables, for convenience:
+
+(define vacuum (make dielectric (epsilon 1.0)))
+(define air vacuum)
+(define metal (make perfect-metal))
+
+(define infinity 1.0e20) ; big number for infinite dimensions of objects
+
+(set! default-material vacuum)
+
+(define pi (* 4.0 (atan 1.0)))
+
+; ****************************************************************
 ; some utilities
 
 (define (vector3->vec v)
@@ -72,8 +85,10 @@
 
 (define (vec->vector3 v) (vec2vector3 v))
 
-(define (volume p1 p2)
-  (new-meep-geometric-volume (vector3->vec p1) (vector3->vec p2)))
+(define (volume cen sz)
+  (new-meep-geometric-volume 
+   (vector3->vec (vector3- cen (vector3-scale 0.5 sz)))
+   (vector3->vec (vector3+ cen (vector3-scale 0.5 sz)))))
 
 (define infinity 1.0e20) ; big number for infinite dimensions of objects
 
@@ -171,14 +186,69 @@
 	(meep-fields-add-volume-src
 	 (object-property-value s 'component)
 	 (object-property-value (object-property-value s 'src) 'swigval)
-	 (volume (vector3- cen (vector3-scale 0.5 sz))
-		 (vector3+ cen (vector3-scale 0.5 sz)))
+	 (volume cen sz)
 	 (object-property-value s 'amplitude))
 	(meep-fields-add-volume-src
 	 (object-property-value s 'component)
-	 (volume (vector3- cen (vector3-scale 0.5 sz))
-		 (vector3+ cen (vector3-scale 0.5 sz)))
+	 (volume cen sz)
 	 A (object-property-value s 'amplitude)))))
+
+; ****************************************************************
+; Flux spectra
+
+(define-class flux-region no-parent
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3)
+  (define-property direction -1 'integer)
+  (define-property weight 1.0 'cnumber))
+
+(define (do-flux fmin fmax nfreq . fluxes)
+  (define gvl '()) ; geometric_volume_list of flux regions
+  (map (lambda (f)
+	 (let* ((gv (volume (object-property-value f 'center)
+			   (object-property-value f 'size)))
+		(d0 (object-property-value f 'direction))
+		(d (if (negative? d0)
+		       (meep-geometric-volume-normal-direction gv)
+		       d0))
+		(c (meep-direction-component Sx d)))
+	   (set! gvl
+		 (new-geometric-volume-list
+		  (volume (object-property-value f 'center)
+			  (object-property-value f 'size))
+		  c
+		  (object-property-value f 'weight)
+		  gvl))))
+       fluxes)
+  (meep-fields-add-dft-flux gvl fmin fmax nfreq))
+
+(define (scale-flux-fields s f)
+  (meep-dft-flux-scale-dfts f s))
+
+(define (get-flux-freqs f)
+  (arith-sequence
+   (meep-dft-flux-freq-min-get f)
+   (meep-dft-flux-dfreq-get f)
+   (meep-dft-flux-Nfreq-get f)))
+
+(set! exported-type-list (cons (make-list-type 'number) exported-type-list))
+(define (get-fluxes f)
+  (dft-flux-flux f))
+
+; display fluxes as comma-delimited text, assuming all of the
+; fluxes use the same frequency list
+(define (display-fluxes . fs)
+  (if (not (null? fs))
+      (apply
+       map
+       (cons
+	(lambda (freq . fluxes)
+	  (print "flux:, " freq)
+	  (map (lambda (f) (print ", " f)) fluxes)
+	  (print "\n"))
+	(cons
+	 (get-flux-freqs (car fs))
+	 (map get-fluxes fs))))))
 
 ; ****************************************************************
 ; Setting up the fields
@@ -189,6 +259,7 @@
 
 (define fields '())
 
+(define init-fields-hooks '()) ; list of thunks to execute after init-fields
 (define (init-fields)
   (if (null? structure) (init-structure))
   (if (= dimensions CYLINDRICAL)
@@ -197,12 +268,20 @@
   (if verbose? (meep-fields-verbose fields))
   (if real-fields? (meep-fields-use-real-fields fields))
   (meep-fields-use-bloch fields (vector3->vec k))
-  (map (lambda (s) (add-source s fields)) sources))
+  (map (lambda (s) (add-source s fields)) sources)
+  (map (lambda (thunk) (thunk)) init-fields-hooks))
 
 (define (meep-time) (meep-fields-time fields))
 
 (define (get-field-point c pt)
   (meep-fields-get-field fields c (vector3->vec pt)))
+
+(define (get-epsilon-point pt)
+  (meep-fields-get-eps fields (vector3->vec pt)))
+
+(define (restart-fields)
+  (meep-fields-t-set fields 0)
+  (meep-fields-zero-fields fields))
 
 ; ****************************************************************
 ; Output functions (can only be called after init-fields).
@@ -216,6 +295,23 @@
         (strip-suffix ".ctl" (cdr (split-pathname (car include-files)))))
        "-")
       filename-prefix))
+
+; Use output directory instead of outputting in same directory;
+; uses init-fields-hooks to handle fields not yet initted.
+(define (use-output-directory . dname_)
+  (let ((dname (if (null? dname_)
+		   (string-append (get-filename-prefix "-out"))
+		   (car dname_))))
+    (let ((hook
+	   (let ((trashed? false)) ; only trash output directory once per run
+	     (lambda ()
+	       (print "Meep: using output directory \"" dname "\"\n")
+	       (meep-fields-set-output-directory fields dname)
+	       (if (not trashed?) (meep-trash-output-directory dname))
+	       (set! trashed? true)))))
+      (set! init-fields-hooks (cons hook init-fields-hooks))
+      (if (not (null? fields)) (hook))
+      dname)))
 
 (define-param output-volume '()) ; region to output; NULL for everywhere
 
@@ -286,6 +382,7 @@
 	    (set! done? true))))))
 
 ; ****************************************************************
+; harminv functions for extracting bands, etcetera
 
 (define-input-var harminv-data '() (make-list-type 'cnumber))
 (define (collect-harminv c pt)
@@ -350,36 +447,6 @@
 (define (run-sources . output-funcs)
   (if (null? fields) (init-fields))
   (apply run-until (cons (meep-fields-last-source-time fields) output-funcs)))
-
-; ****************************************************************
-; Add some predefined variables, for convenience:
-
-(define vacuum (make dielectric (epsilon 1.0)))
-(define air vacuum)
-(define metal (make perfect-metal))
-
-(define infinity 1.0e20) ; big number for infinite dimensions of objects
-
-(set! default-material vacuum)
-
-(define pi (* 4.0 (atan 1.0)))
-
-; ****************************************************************
-; External functions:
-
-(define structure-smob-type 'SCM)
-(define fields-smob-type 'SCM)
-(define grace-smob-type 'SCM)
-
-;(define-external-function make-structure false false structure-smob-type
-;  'integer 'vector3 'number (make-list-type 'geometric-object)
-;  'integer (make-list-type 'symmetry))
-
-; ****************************************************************
-; Utilities
-
-; ****************************************************************
-; Run functions
 
 ; ****************************************************************
 

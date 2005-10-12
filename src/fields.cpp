@@ -29,7 +29,7 @@ fields::fields(const structure *s, double m) :
   S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m)
 {
   verbosity = 0;
-  outdir = s->outdir;
+  outdir = new char[strlen(s->outdir) + 1]; strcpy(outdir, s->outdir);
   if (v.dim == Dcyl && m == int(m))
     S = S + r_to_minus_r_symmetry(int(m));
   phasein_time = 0;
@@ -73,7 +73,7 @@ fields::fields(const fields &thef) :
   S(thef.S), v(thef.v), user_volume(thef.user_volume), gv(thef.gv)
 {
   verbosity = 0;
-  outdir = thef.outdir;
+  outdir = new char[strlen(thef.outdir) + 1]; strcpy(outdir, thef.outdir);
   m = thef.m;
   phasein_time = thef.phasein_time;
   bands = NULL;
@@ -124,6 +124,7 @@ fields::~fields() {
   delete sources;
   delete fluxes;
   delete bands;
+  delete[] outdir;
   if (!quiet) print_times();
 }
 

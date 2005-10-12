@@ -55,3 +55,13 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
   delete[] amp;
   return res;
 }
+
+/**************************************************************************/
+
+ctlio::number_list dft_flux_flux(dft_flux *f)
+{
+  ctlio::number_list res;
+  res.num_items = f->Nfreq;
+  res.items = f->flux();
+  return res;
+}

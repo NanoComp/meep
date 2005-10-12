@@ -43,8 +43,9 @@ void structure::set_output_directory(const char *name) {
 }
 
 void fields::set_output_directory(const char *name) {
-  for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(name);
-  outdir = name;
+  delete[] outdir;
+  outdir = new char[strlen(name) + 1]; strcpy(outdir, name);
+  for (int i=0;i<num_chunks;i++) chunks[i]->set_output_directory(outdir);
 }
 
 void fields_chunk::set_output_directory(const char *name) {
