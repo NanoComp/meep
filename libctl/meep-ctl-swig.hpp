@@ -2,7 +2,8 @@
 /* These are functions for the libctl front-end which are exported
    via SWIG. */
 
-vector3 vec2vector3(const meep::vec &v);
+vector3 vec_to_vector3(const meep::vec &v);
+meep::vec vector3_to_vec(const vector3 v3);
 
 meep::structure *make_structure(int dims, vector3 size, double resolution,
 				ctlio::geometric_object_list geometry,

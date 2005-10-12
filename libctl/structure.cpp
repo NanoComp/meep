@@ -6,9 +6,11 @@ using namespace ctlio;
 #define master_printf meep::master_printf
 #define MTS material_type_struct
 
+static meep::ndim dim = meep::D3;
+
 /***********************************************************************/
 
-vector3 vec2vector3(const meep::vec &v)
+vector3 vec_to_vector3(const meep::vec &v)
 {
   vector3 v3;
   
@@ -37,11 +39,25 @@ vector3 vec2vector3(const meep::vec &v)
   return v3;
 }
 
+meep::vec vector3_to_vec(const vector3 v3)
+{
+  switch (dim) {
+  case meep::D1:
+    return meep::vec(v3.z);
+  case meep::D2:
+    return meep::vec(v3.x, v3.y);
+  case meep::D3:
+    return meep::vec(v3.x, v3.y, v3.z);
+  case meep::Dcyl:
+    return meep::veccyl(v3.x, v3.y);
+  }
+}
+
 static geom_box gv2box(const meep::geometric_volume &gv)
 {
   geom_box box;
-  box.low = vec2vector3(gv.get_min_corner());
-  box.high = vec2vector3(gv.get_max_corner());
+  box.low = vec_to_vector3(gv.get_min_corner());
+  box.high = vec_to_vector3(gv.get_max_corner());
   return box;
 }
 
@@ -151,7 +167,7 @@ static material_type eval_material_func(function material_func, vector3 p)
 double geom_epsilon::eps(const meep::vec &r)
 {
   double eps = 1.0;
-  vector3 p = vec2vector3(r);
+  vector3 p = vec_to_vector3(r);
   boolean inobject;
   material_type material =
     material_of_point_in_tree_inobject(p, restricted_tree, &inobject);
@@ -197,10 +213,8 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   master_printf("-----------\nInitializing structure...\n");
   
   // only cartesian lattices, centered at the origin, are currently allowed
-  geom_fix_lattice();
-  geometry_center.x = geometry_center.y = geometry_center.z = 0;
-
-  geometry_lattice.size = size;
+  geom_initialize();
+  // note that ensure_periodicity is 1...should we make this an option?
 
   default_material = default_mat;
   
@@ -212,11 +226,17 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   if (size.z <= no_size)
     size.z = 0.0;
   
-  if (dims == CYLINDRICAL)
+  if (dims == CYLINDRICAL) {
     dimensions = 2;
-  else
+    dim = meep::Dcyl;
+  }
+  else {
     dimensions = dims;
+    dim = meep::ndim(dims - 1);
+  }
   
+  geometry_lattice.size = size;
+
   master_printf("Working in %d dimensions.\n", dimensions);
   
   meep::volume v;
