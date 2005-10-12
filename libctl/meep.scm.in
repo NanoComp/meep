@@ -468,6 +468,9 @@
 ; ****************************************************************
 ; run functions
 
+; default time interval (seconds) between progress printouts
+(define-param progress-interval 4)
+
 ; display progress from T0 until T, every dt seconds (wall time)
 (define (display-progress T0 T dt)
   (let ((t0 (meep-wall-time)) (tlast (meep-wall-time)))
@@ -492,7 +495,8 @@
       (let ((T0 (meep-time))) ; current Meep time
 	(apply run-until (cons (lambda () (>= (meep-time) 
 					      (+ T0 cond?)))
-			       (cons (display-progress T0 (+ T0 cond?) 2)
+			       (cons (display-progress T0 (+ T0 cond?) 
+						       progress-interval)
 				     output-funcs))))
       (begin ; otherwise, cond? is a boolean thunk
 	(map (lambda (f) (eval-output-func f 'output)) output-funcs)
