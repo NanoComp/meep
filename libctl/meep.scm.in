@@ -199,6 +199,11 @@
   (meep-fields-use-bloch fields (vector3->vec k))
   (map (lambda (s) (add-source s fields)) sources))
 
+(define (meep-time) (meep-fields-time fields))
+
+(define (get-field-point c pt)
+  (meep-fields-get-field fields c (vector3->vec pt)))
+
 ; ****************************************************************
 ; Output functions (can only be called after init-fields).
 
@@ -258,6 +263,93 @@
 (define-output-field "e" efield E)
 (define-output-field "d" dfield D)
 (define-output-field "s" poynting S)
+
+; Some convenient wrappers for output functions passed to run:
+
+(define (at-every dT . output-funcs)
+  (let ((Tlast (meep-time)))
+    (lambda ()
+      (let ((T (meep-time)))
+	(if (>= T (+ Tlast dT))
+	    (begin
+	      (map (lambda (f) (f)) output-funcs)
+	      (set! Tlast T)))))))
+
+; the user could just call functions, but this functions saves the user
+; from having to manually call init-fields
+(define (at-beginning . output-funcs)
+  (let ((done? false))
+    (lambda ()
+      (if (not done?)
+	  (begin
+	    (map (lambda (f) (f)) output-funcs)
+	    (set! done? true))))))
+
+; ****************************************************************
+
+(define-input-var harminv-data '() (make-list-type 'cnumber))
+(define (collect-harminv c pt)
+  (lambda ()
+    (set! harminv-data 
+	  (cons (get-field-point c pt) harminv-data))))
+
+(define-output-var harminv-results (make-list-type 'cvector3))
+(define (analyze-harminv fmin fmax maxbands)
+  (print "harminv:, frequency, imag. freq., Q, |amp|, amplitude, error\n")
+  (let ((bands (do-harminv (reverse harminv-data) fields.dt 
+			   fmin fmax maxbands)))
+    (map (lambda (b) ; b = vector of (freq, amp, error)
+	   (print "harminv:, " 
+		  (real-part (vector3-x b)) ", "
+		  (imag-part (vector3-x b)) ", "
+		  (/ (real-part (vector3-x b))
+		     (* -2 (imag-part (vector3-x b)))) ", "
+		  (magnitude (vector3-y b)) ", "
+		  (vector3-y b) ", " 
+		  (vector3-z b) "\n"))
+	 bands)
+    (set! harminv-results bands)
+    bands))
+
+; ****************************************************************
+; run functions
+
+; display progress from T0 until T, every dt seconds (wall time)
+(define (display-progress T0 T dt)
+  (let ((t0 (meep-wall-time)) (tlast (meep-wall-time)))
+    (lambda ()
+      (let ((t (meep-wall-time)))
+	(if (>= (- t tlast) dt)
+	    (begin
+	      (print "Meep progress: " 
+		     (- (meep-time) T0) "/" T " = "
+		     (/ (- (meep-time) T0) (* 0.01 T)) "% done"
+		     " in " (- t t0) "s, " 
+		     ( - (* (- t t0) (/ T (- (meep-time) T0)))
+			 t) "s to go\n")
+	      (set! tlast t)))))))
+
+; run until (cond?) is true or, if cond? is a number, until time cond?
+; (in Meep units) has elapsed, calling output-funcs at every time step.
+(define (run-until cond? . output-funcs)
+  (if (null? fields) (init-fields))
+  (if (number? cond?) ; cond? is a time to run for
+      (let ((T0 (meep-time))) ; current Meep time
+	(apply run-until (cons (lambda () (>= (meep-time) 
+					      (+ T0 cond?)))
+			       (cons (display-progress T0 (+ T0 cond?) 5)
+				     output-funcs))))
+      (begin ; otherwise, cond? is a boolean thunk
+	(map (lambda (f) (f)) output-funcs)
+	(if (not (cond?))
+	    (begin
+	      (meep-fields-step fields)
+	      (apply run-until (cons cond? output-funcs)))))))
+
+; run until all sources are finished
+(define (run-sources . output-funcs)
+  (if (null? fields) (init-fields))
+  (apply run-until (cons (meep-fields-last-source-time fields) output-funcs)))
 
 ; ****************************************************************
 ; Add some predefined variables, for convenience:

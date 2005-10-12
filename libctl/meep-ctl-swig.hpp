@@ -10,3 +10,6 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
 				ctlio::pml_list pml_layers,
 				ctlio::symmetry_list symmetries,
 				int num_chunks, double Courant);
+
+ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, 
+				double fmin, double fmax, int maxbands);

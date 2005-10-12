@@ -27,3 +27,31 @@ void ctl_export_hook(void)
 }
 
 /**************************************************************************/
+
+ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, 
+				double fmin, double fmax, int maxbands)
+{
+  complex<double> *amp = new complex<double>[maxbands];
+  double *freq_re = new double[maxbands];
+  double *freq_im = new double[maxbands];
+  double *freq_err = new double[maxbands];
+  maxbands = do_harminv(reinterpret_cast<complex<double>*>(vals.items),
+			vals.num_items, dt, fmin, fmax, maxbands,
+			amp, freq_re, freq_im, freq_err);
+  ctlio::cvector3_list res;
+  res.num_items = maxbands;
+  res.items = new cvector3[maxbands];
+  for (int i = 0; i < maxbands; ++i) {
+    res.items[i].x.re = freq_re[i];
+    res.items[i].x.im = freq_im[i];
+    res.items[i].y.re = real(amp[i]);
+    res.items[i].y.im = imag(amp[i]);
+    res.items[i].z.re = freq_err[i];
+    res.items[i].z.im = 0;
+  }
+  delete[] freq_err;
+  delete[] freq_im;
+  delete[] freq_re;
+  delete[] amp;
+  return res;
+}
