@@ -4,7 +4,7 @@
 #include "meep-ctl.hpp"
 
 static inline int SwigComplex_Check(SCM o) {
-  return SCM_COMPLEXP(o);
+  return SCM_REALP(o) || SCM_COMPLEXP(o);
 }
 
 static inline int SwigVector3_Check(SCM o) {
@@ -17,14 +17,14 @@ static SCM my_complex_func_scm;
 static inline complex<double> my_complex_func(meep::vec const &v) {
   SCM ret = gh_call1(my_complex_func_scm, 
 		     ctl_convert_vector3_to_scm(vec_to_vector3(v)));
-  return std::complex<double>(gh_scm2double(scm_real_part(ret)),
-			      gh_scm2double(scm_imag_part(ret)));
+  cnumber cret = ctl_convert_cnumber_to_c(ret);
+  return std::complex<double>(cret.re, cret.im);
 }
 
 static inline complex<double> my_complex_func2(double t, void *f) {
   SCM ret = gh_call1((SCM) f, gh_double2scm(t));
-  return std::complex<double>(gh_scm2double(scm_real_part(ret)),
-			      gh_scm2double(scm_imag_part(ret)));
+  cnumber cret = ctl_convert_cnumber_to_c(ret);
+  return std::complex<double>(cret.re, cret.im);
 }
 %}
 
@@ -34,11 +34,11 @@ static inline complex<double> my_complex_func2(double t, void *f) {
 
 %typemap(guile,out) complex, complex<double>, std::complex<double> {
   $result = scm_make_rectangular(gh_double2scm($1.real()),
-				 gh_double2scm($1.imag()) );
+				 gh_double2scm($1.imag()));
 }
 %typemap(guile,in) complex, complex<double>, std::complex<double> {
-  $1 = std::complex<double>(gh_scm2double(scm_real_part($input)),
-			    gh_scm2double(scm_imag_part($input)));
+  cnumber cnum = ctl_convert_cnumber_to_c($input);
+  $1 = std::complex<double>(cnum.re, cnum.im);
 }
 
 %typemap(guile,in) complex<double>(*)(meep::vec const &) {

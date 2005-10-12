@@ -195,12 +195,14 @@
 	(cen (object-property-value s 'center))
 	(sz (object-property-value s 'size)))
     (if (null? A)
-	(meep-fields-add-volume-src
+	(meep-fields-add-volume-source
+	 fields
 	 (object-property-value s 'component)
 	 (object-property-value (object-property-value s 'src) 'swigval)
 	 (volume cen sz)
 	 (object-property-value s 'amplitude))
-	(meep-fields-add-volume-src
+	(meep-fields-add-volume-source
+	 fields
 	 (object-property-value s 'component)
 	 (volume cen sz)
 	 A (object-property-value s 'amplitude)))))
@@ -292,8 +294,7 @@
            (string-null? filename-prefix))
       (string-append
        (strip-suffix ".scm"
-        (strip-suffix ".ctl" (cdr (split-pathname (car include-files)))))
-       "-")
+        (strip-suffix ".ctl" (cdr (split-pathname (car include-files))))))
       filename-prefix))
 
 ; Use output directory instead of outputting in same directory;
@@ -479,24 +480,27 @@
 		     (/ (- (meep-time) T0) (* 0.01 T)) "% done"
 		     " in " (- t t0) "s, " 
 		     ( - (* (- t t0) (/ T (- (meep-time) T0)))
-			 t) "s to go\n")
+			 (- t t0)) "s to go\n")
 	      (set! tlast t)))))))
 
 ; run until (cond?) is true or, if cond? is a number, until time cond?
 ; (in Meep units) has elapsed, calling output-funcs at every time step.
 (define (run-until cond? . output-funcs)
+  (set! interactive? false)
   (if (null? fields) (init-fields))
   (if (number? cond?) ; cond? is a time to run for
       (let ((T0 (meep-time))) ; current Meep time
 	(apply run-until (cons (lambda () (>= (meep-time) 
 					      (+ T0 cond?)))
-			       (cons (display-progress T0 (+ T0 cond?) 5)
+			       (cons (display-progress T0 (+ T0 cond?) 2)
 				     output-funcs))))
       (begin ; otherwise, cond? is a boolean thunk
 	(map (lambda (f) (eval-output-func f 'output)) output-funcs)
 	(if (cond?)
 	    (begin
 	      (map (lambda (f) (eval-output-func f 'cleanup)) output-funcs)
+	      (print "run " run-index " finished at t = " (meep-time)
+		     " (" (meep-fields-t-get fields) " timesteps)\n")
 	      (set! run-index (+ run-index 1)))
 	    (begin
 	      (meep-fields-step fields)
