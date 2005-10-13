@@ -181,7 +181,7 @@
 
 (define (fwidth df) (width (/ df))) ; to specify frequency width instead
 
-(define-class src-vol no-parent
+(define-class source no-parent
   (define-property src no-default 'src-time)
   (define-property component no-default 'integer)
   (define-property center no-default 'vector3)
@@ -386,6 +386,8 @@
       (set! output-volume gv)
       (map (lambda (f) (eval-output-func f to-do)) output-funcs)
       (set! output-volume gv-save))))
+(define (in-point pt . output-funcs)
+  (apply in-volume (cons (volume pt (vector3 0)) output-funcs)))
 
 ; Meep supports outputting d+1 dimensional HDF5 files where the last
 ; dimension is time.
@@ -410,6 +412,30 @@
 	    (begin
 	      (map (lambda (f) (eval-output-func f to-do)) output-funcs)
 	      (set! Tlast T)))))))
+
+(define (after-time T . output-funcs)
+  (let ((T0 (meep-time)))
+    (lambda (to-do)
+      (if (or (eq? to-do 'cleanup) (> (meep-time) (+ T0 T)))
+	  (map (lambda (f) (eval-output-func f to-do)) output-funcs)))))
+
+(define (before-time T . output-funcs)
+  (let ((T0 (meep-time)))
+    (lambda (to-do)
+      (if (or (eq? to-do 'cleanup) (<= (meep-time) (+ T0 T)))
+	  (map (lambda (f) (eval-output-func f to-do)) output-funcs)))))
+
+(define (after-sources . output-funcs)
+  (if (null? fields) (init-fields))
+  (apply after-time
+	 (cons (- (meep-fields-last-source-time fields) (meep-time))
+	       output-funcs)))
+
+(define (during-sources . output-funcs)
+  (if (null? fields) (init-fields))
+  (apply before-time
+	 (cons (- (meep-fields-last-source-time fields) (meep-time))
+	       output-funcs)))
 
 ; the user could just call functions, but this functions saves the user
 ; from having to manually call init-fields
@@ -438,33 +464,37 @@
 	  (cons (get-field-point c pt) harminv-data))))
 
 (export-type (make-list-type 'cvector3)) ; for do-harminv
-(define (analyze-harminv fmin fmax maxbands)
+(define (analyze-harminv fcen fwid maxbands)
   (display-run-data 
    "harminv"
    (list "frequency" "imag. freq." "Q" "|amp|" "amplitude" "error"))
-  (let ((bands (do-harminv (reverse harminv-data) fields.dt 
-			   fmin fmax maxbands)))
+  (let ((bands (do-harminv (reverse harminv-data) 
+			   (meep-fields-dt-get fields)
+			   (- fcen (* 0.5 fwid)) (+ fcen (* 0.5 fwid))
+			   maxbands)))
     (map (lambda (b) ; b = vector of (freq, amp, error)
 	   (display-run-data 
 	    "harminv"
 	    (list
-	     (real-part (vector3-x b)) ", "
-	     (imag-part (vector3-x b)) ", "
+	     (real-part (vector3-x b))
+	     (imag-part (vector3-x b))
 	     (/ (real-part (vector3-x b))
-		(* -2 (imag-part (vector3-x b)))) ", "
-		(magnitude (vector3-y b)) ", "
-		(vector3-y b) ", " 
-		(vector3-z b) "\n")))
+		(* -2 (imag-part (vector3-x b)))) 
+		(magnitude (vector3-y b))
+		(vector3-y b)
+		(vector3-z b))))
 	 bands)
     bands))
 
 ; collect + analyze and store in harminv-results
 (define harminv-results '())
-(define (harminv c pt fmin fmax maxbands)
+(define (harminv c pt fcen fwid . maxbands)
   (set! harminv-data '())
   (lambda (to-do)
     (if (eq? to-do 'cleanup)
-	(set! harminv-results (analyze-harminv fmin fmax maxbands))
+	(set! harminv-results 
+	      (analyze-harminv fcen fwid
+			       (if (null? maxbands) 200 (car maxbands))))
 	((collect-harminv c pt)))))
 
 ; ****************************************************************
