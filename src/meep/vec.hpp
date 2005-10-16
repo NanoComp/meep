@@ -190,6 +190,8 @@ const char *component_name(int c);
 const char *direction_name(direction);
 const char *dimension_name(ndim);
 
+direction component_direction(int c);
+int direction_component(int c, direction d);
 inline direction component_direction(component c) {
   switch (c) {
   case Ex: case Hx: case Dx: return X;
@@ -212,6 +214,12 @@ inline direction component_direction(derived_component c) {
     return NO_DIRECTION;
   }
   return X; // This code is never reached...
+}
+inline direction component_direction(int c) {
+  if (is_derived(c))
+    return component_direction(derived_component(c));
+  else
+    return component_direction(component(c));
 }
 inline component direction_component(component c, direction d) {
   component start_point;
@@ -244,6 +252,12 @@ inline derived_component direction_component(derived_component c, direction d) {
   case NO_DIRECTION: abort("vector %d derived_component in NO_DIRECTION", c);
   }
   return Sx; // This is never reached.
+}
+inline int direction_component(int c, direction d) {
+  if (is_derived(c))
+    return int(direction_component(derived_component(c), d));
+  else
+    return int(direction_component(component(c), d));
 }
 
 inline bool coordinate_mismatch(ndim dim, component c) {

@@ -87,12 +87,14 @@ dft_chunk::~dft_chunk() {
 
   // delete from fields_chunk list
   dft_chunk *cur = fc->dft_chunks;
-  while (cur && cur->next_in_chunk)
+  while (cur && cur->next_in_chunk && cur->next_in_chunk != this)
     cur = cur->next_in_chunk;
   if (cur && cur->next_in_chunk == this)
     cur->next_in_chunk = next_in_chunk;
   else if (fc->dft_chunks == this)
     fc->dft_chunks = next_in_chunk;
+
+  delete next_in_dft;
 }
 
 static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,

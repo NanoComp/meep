@@ -538,6 +538,7 @@ public:
 	   dft_chunk *E_, dft_chunk *H_,
 	   double fmin, double fmax, int Nf);
   dft_flux(const dft_flux &f);
+  ~dft_flux() { delete E; delete H; }
 
   double *flux();
 
@@ -924,9 +925,9 @@ class fields {
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
   void output_bands(file *, const char *, int maxbands=100);
+  complex<double> get_field(int c, const vec &loc) const;
   complex<double> get_field(component c, const vec &loc) const;
   double get_field(derived_component c, const vec &loc) const;
-  complex<double> get_field(int c, const vec &loc) const;
 
   // energy_and_flux.cpp
   double energy_in_box(const geometric_volume &);
