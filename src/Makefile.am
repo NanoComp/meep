@@ -3,8 +3,7 @@ include_HEADERS = meep.hpp
 pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp
 
 BUILT_SOURCES = step_d.hpp step_h.hpp update_from_e.hpp	\
-update_e_from_d_prepare.hpp update_e_from_d_sources.hpp	\
-update_e_from_d_update.hpp sphere-quad.h
+update_e_from_d_prepare.hpp update_e_from_d_update.hpp sphere-quad.h
 
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp ran.hpp threevec.hpp	\
 meep/vec.hpp bicgstab.hpp
@@ -43,9 +42,6 @@ step_h.hpp: $(HSRC)/step_h_gen
 
 update_e_from_d_prepare.hpp: $(HSRC)/update_e_from_d_gen
 	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen prepare) > $@
-
-update_e_from_d_sources.hpp: $(HSRC)/update_e_from_d_gen
-	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen sources) > $@
 
 update_e_from_d_update.hpp: $(HSRC)/update_e_from_d_gen
 	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen update) > $@

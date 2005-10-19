@@ -21,7 +21,19 @@
 namespace meep {
 
 void fields_chunk::update_e_from_d_sources(void) {
-#include "update_e_from_d_sources.hpp"
+  if (have_d_minus_p) {
+    for (src_vol *sv = e_sources; sv; sv = sv->next) {  
+      if (f[sv->c][0]) {
+	for (int j = 0; j < sv->npts; ++j) { 
+	  const complex<double> A = sv->dipole(j);
+	  DOCMP {
+	    d_minus_p[sv->c][cmp][sv->index[j]] -= 
+	      (cmp) ? imag(A) :  real(A);
+	  }
+	}
+      }
+    }
+  }
 }
 
 } // namespace meep
