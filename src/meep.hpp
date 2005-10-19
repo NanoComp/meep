@@ -32,13 +32,13 @@ const double pi = 3.141592653589793238462643383276;
 #ifdef INFINITY
 const double infinity = INFINITY;
 #else
-const double infinity = 1.0 / 0.0;
+const double infinity = 1e20; // this should be big enough for us
 #endif
 
 #ifdef NAN
 const double nan = NAN;
 #else
-const double nan = 0.0 / 0.0;
+const double nan = 0.0; // nan is really only a debugging thing, so 0 is fine
 #endif
 
 class polarizability_identifier {
