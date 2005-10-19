@@ -92,8 +92,13 @@ if test $have_harminv = no; then
 	ACX_BLAS
 	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
 
+        save_CC=$CC
+	CC=$CXX # harminv test must use $CXX since harminv may be a C++ lib
+
 	# just use lapack/blas in default libs since we always need them
 	AC_CHECK_LIB(harminv, harminv_get_freq_error, [have_harminv=yes; LIBS="-lharminv $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
+
+	CC=$save_CC
 fi
 
 if test $have_harminv = yes; then
