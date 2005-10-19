@@ -218,7 +218,7 @@
   (define-property direction -1 'integer)
   (define-property weight 1.0 'cnumber))
 
-(define (do-flux fmin fmax nfreq . fluxes)
+(define (fields-add-flux fields fmin fmax nfreq . fluxes)
   (define gvl '()) ; geometric_volume_list of flux regions
   (map (lambda (f)
 	 (let* ((gv (volume (object-property-value f 'center)
@@ -229,14 +229,18 @@
 		       d0))
 		(c (meep-direction-component Sx d)))
 	   (set! gvl
-		 (new-geometric-volume-list
+		 (new-meep-geometric-volume-list
 		  (volume (object-property-value f 'center)
 			  (object-property-value f 'size))
 		  c
 		  (object-property-value f 'weight)
 		  gvl))))
        fluxes)
-  (meep-fields-add-dft-flux gvl fmin fmax nfreq))
+  (meep-fields-add-dft-flux fields gvl fmin fmax nfreq))
+
+(define (add-flux fmin fmax nfreq . fluxes)
+  (if (null? fields) (init-fields))
+  (apply fields-add-flux (append (list fields fmin fmax nfreq) fluxes)))
 
 (define (scale-flux-fields s f)
   (meep-dft-flux-scale-dfts f s))
@@ -287,7 +291,93 @@
   (meep-fields-zero-fields fields))
 
 ; ****************************************************************
-; Output functions (can only be called after init-fields).
+; Generic step functions: these are functions which are called
+; (potentially) at every time step.  They can either be a thunk
+; or they can take one argument, to-do.  to-do is either 'step
+; or 'finish, where 'step means to output (or whatever)
+; normally, and 'finish is passed once at the end of the run
+; (and is used to close files, print summary output, etcetera).
+
+; step functions can be either thunks (the common case), or
+; can take a "to-do" argument that is currently either 'step
+; or 'finish (so that they can clean up at the end of a run).
+(define (eval-step-func func to-do)
+  (if (= 0 (procedure-num-args func))
+      (if (eq? to-do 'step) (func))
+      (func to-do)))
+ 
+; Some convenient wrappers for step functions passed to run.  These
+; can be used to only output at certain times, instead of at every time step.
+
+; generic wrapper
+(define (when-true-funcs cond? step-funcs)
+  (lambda (to-do)
+    (if (or (eq? to-do 'finish) (cond?))
+	(map (lambda (f) (eval-step-func f to-do)) step-funcs))))
+
+; evaluate step-funcs whenever (cond?) is true.
+(define (when-true cond? . step-funcs) (when-true-funcs cond? step-funcs))
+
+; output at an interval of dT (in meep/simulation time).
+(define (at-every dT . step-funcs)
+  (if (null? fields) (init-fields))
+  (let ((Tlast (meep-time)))
+    (lambda (to-do)
+      (let ((T (meep-time)))
+	(if (or (eq? to-do 'finish) (>= T (+ Tlast dT)))
+	    (begin
+	      (map (lambda (f) (eval-step-func f to-do)) step-funcs)
+	      (set! Tlast T)))))))
+
+(define (after-time T . step-funcs)
+  (if (null? fields) (init-fields))
+  (let ((T0 (meep-time)))
+    (when-true-funcs (lambda () (> (meep-time) (+ T0 T))) step-funcs)))
+
+(define (before-time T . step-funcs)
+  (if (null? fields) (init-fields))
+  (let ((T0 (meep-time)))
+    (when-true-funcs (lambda () (<= (meep-time) (+ T0 T))) step-funcs)))
+
+(define (after-sources . step-funcs)
+  (if (null? fields) (init-fields))
+  (apply after-time
+	 (cons (- (meep-fields-last-source-time fields) (meep-time))
+	       step-funcs)))
+
+; after sources plus a time T.
+(define (after-sources+ T . step-funcs)
+  (if (null? fields) (init-fields))
+  (apply after-time
+	 (cons (- (+ (meep-fields-last-source-time fields) T) (meep-time))
+	       step-funcs)))
+
+(define (during-sources . step-funcs)
+  (if (null? fields) (init-fields))
+  (apply before-time
+	 (cons (- (meep-fields-last-source-time fields) (meep-time))
+	       step-funcs)))
+
+; the user could just call functions, but this functions saves the user
+; from having to manually call init-fields
+(define (at-beginning . step-funcs)
+  (let ((done? false))
+    (lambda (to-do)
+      (if (not done?)
+	  (begin
+	    (map (lambda (f) (eval-step-func f to-do)) step-funcs)
+	    (set! done? true))))))
+
+; for completeness (although the user could just do this after running):
+(define (at-end . step-funcs)
+  (lambda (to-do)
+    (if (eq? to-do 'finish)
+	(begin
+	  (map (lambda (f) (eval-step-func f 'step)) step-funcs)
+	  (map (lambda (f) (eval-step-func f 'finish)) step-funcs)))))
+
+; ****************************************************************
+; File output functions (can only be called after init-fields).
 
 (define-param filename-prefix "")
 (define (get-filename-prefix)
@@ -316,14 +406,6 @@
       (if (not (null? fields)) (hook))
       (set! filename-prefix false)
       dname)))
-
-; output functions can be either thunks (the common case), or
-; can take a "to-do" argument that is currently either 'output
-; or 'cleanup (so that they can clean up at the end of a run).
-(define (eval-output-func func to-do)
-  (if (= 0 (procedure-num-args func))
-      (if (eq? to-do 'output) (func))
-      (func to-do)))
 
 (define-param output-volume '()) ; region to output; NULL for everywhere
 
@@ -379,121 +461,77 @@
 (define-output-field "d" dfield D)
 (define-output-field "s" poynting S)
 
-; change output-volume for a few output-funcs to gv
-(define (in-volume gv . output-funcs)
+; change output-volume for a few step-funcs to gv
+(define (in-volume gv . step-funcs)
   (lambda (to-do)
     (let ((gv-save output-volume))
       (set! output-volume gv)
-      (map (lambda (f) (eval-output-func f to-do)) output-funcs)
+      (map (lambda (f) (eval-step-func f to-do)) step-funcs)
       (set! output-volume gv-save))))
-(define (in-point pt . output-funcs)
-  (apply in-volume (cons (volume pt (vector3 0)) output-funcs)))
+(define (in-point pt . step-funcs)
+  (apply in-volume (cons (volume pt (vector3 0)) step-funcs)))
 
 ; Meep supports outputting d+1 dimensional HDF5 files where the last
 ; dimension is time.
-(define (to-appended fname . output-funcs)
+(define (to-appended fname . step-funcs)
   (if (null? fields) (init-fields))
   (let ((h5 (meep-fields-open-h5file fields fname (meep-h5file-WRITE)
 				     (get-filename-prefix))))
     (lambda (to-do)
       (let ((h5save output-append-h5))
 	(set! output-append-h5 h5)
-	(map (lambda (f) (eval-output-func f to-do)) output-funcs)
-	(if (eq? to-do 'cleanup) (meep-h5file-close h5))
+	(map (lambda (f) (eval-step-func f to-do)) step-funcs)
+	(if (eq? to-do 'finish) (meep-h5file-close h5))
 	(set! output-append-h5 h5save)))))
-
-; Some convenient wrappers for output functions passed to run:
-
-(define (at-every dT . output-funcs)
-  (let ((Tlast (meep-time)))
-    (lambda (to-do)
-      (let ((T (meep-time)))
-	(if (>= T (+ Tlast dT))
-	    (begin
-	      (map (lambda (f) (eval-output-func f to-do)) output-funcs)
-	      (set! Tlast T)))))))
-
-(define (after-time T . output-funcs)
-  (let ((T0 (meep-time)))
-    (lambda (to-do)
-      (if (or (eq? to-do 'cleanup) (> (meep-time) (+ T0 T)))
-	  (map (lambda (f) (eval-output-func f to-do)) output-funcs)))))
-
-(define (before-time T . output-funcs)
-  (let ((T0 (meep-time)))
-    (lambda (to-do)
-      (if (or (eq? to-do 'cleanup) (<= (meep-time) (+ T0 T)))
-	  (map (lambda (f) (eval-output-func f to-do)) output-funcs)))))
-
-(define (after-sources . output-funcs)
-  (if (null? fields) (init-fields))
-  (apply after-time
-	 (cons (- (meep-fields-last-source-time fields) (meep-time))
-	       output-funcs)))
-
-(define (during-sources . output-funcs)
-  (if (null? fields) (init-fields))
-  (apply before-time
-	 (cons (- (meep-fields-last-source-time fields) (meep-time))
-	       output-funcs)))
-
-; the user could just call functions, but this functions saves the user
-; from having to manually call init-fields
-(define (at-beginning . output-funcs)
-  (let ((done? false))
-    (lambda (to-do)
-      (if (not done?)
-	  (begin
-	    (map (lambda (f) (eval-output-func f to-do)) output-funcs)
-	    (set! done? true))))))
-
-; for completeness:
-(define (at-end . output-funcs)
-  (lambda (to-do)
-    (if (eq? to-do 'cleanup)
-	(map (lambda (f) (eval-output-func f to-do)) output-funcs))))
 
 ; ****************************************************************
 ; harminv functions for extracting bands, etcetera
 
+ ; for do-harminv
 (export-type (make-list-type 'cnumber))
-(define-param harminv-data '())
-(define (collect-harminv c pt)
-  (lambda ()
-    (set! harminv-data 
-	  (cons (get-field-point c pt) harminv-data))))
+(export-type (make-list-type 'cvector3))
 
-(export-type (make-list-type 'cvector3)) ; for do-harminv
-(define (analyze-harminv fcen fwid maxbands)
+(define harminv-data '())
+(define (collect-harminv c pt)
+  (lambda () (set! harminv-data (cons (get-field-point c pt) harminv-data))))
+
+; do-harminv returns a (freq, amp, err) vector3; define accessor functions:
+(define harminv-freq vector3-x)
+(define (harminv-freq-re b) (real-part (vector3-x b)))
+(define (harminv-freq-im b) (imag-part (vector3-x b)))
+(define (harminv-Q b) (/ (harminv-freq-re b)
+			 (* -2 (harminv-freq-im b))))
+(define harminv-amp vector3-y)
+(define harminv-err vector3-z)
+
+(define (analyze-harminv data fmin fmax maxbands)
   (display-run-data 
    "harminv"
    (list "frequency" "imag. freq." "Q" "|amp|" "amplitude" "error"))
-  (let ((bands (do-harminv (reverse harminv-data) 
+  (let ((bands (do-harminv (reverse data) 
 			   (meep-fields-dt-get fields)
-			   (- fcen (* 0.5 fwid)) (+ fcen (* 0.5 fwid))
-			   maxbands)))
+			   fmin fmax maxbands)))
     (map (lambda (b) ; b = vector of (freq, amp, error)
 	   (display-run-data 
 	    "harminv"
 	    (list
-	     (real-part (vector3-x b))
-	     (imag-part (vector3-x b))
-	     (/ (real-part (vector3-x b))
-		(* -2 (imag-part (vector3-x b)))) 
-		(magnitude (vector3-y b))
-		(vector3-y b)
-		(vector3-z b))))
+	     (harminv-freq-re b)
+	     (harminv-freq-im b)
+	     (harminv-Q b)
+	     (magnitude (harminv-amp b))
+	     (harminv-amp b)
+	     (harminv-err b))))
 	 bands)
     bands))
 
-; collect + analyze and store in harminv-results
+; collect in harminv-data + analyze and store in harminv-results
 (define harminv-results '())
-(define (harminv c pt fcen fwid . maxbands)
+(define (harminv c pt fmin fmax . maxbands)
   (set! harminv-data '())
   (lambda (to-do)
-    (if (eq? to-do 'cleanup)
+    (if (eq? to-do 'finish)
 	(set! harminv-results 
-	      (analyze-harminv fcen fwid
+	      (analyze-harminv harminv-data fmin fmax
 			       (if (null? maxbands) 200 (car maxbands))))
 	((collect-harminv c pt)))))
 
@@ -519,8 +557,8 @@
 	      (set! tlast t)))))))
 
 ; run until (cond?) is true or, if cond? is a number, until time cond?
-; (in Meep units) has elapsed, calling output-funcs at every time step.
-(define (run-until cond? . output-funcs)
+; (in Meep units) has elapsed, calling step-funcs at every time step.
+(define (run-until cond? . step-funcs)
   (set! interactive? false)
   (if (null? fields) (init-fields))
   (if (number? cond?) ; cond? is a time to run for
@@ -529,33 +567,33 @@
 					      (+ T0 cond?)))
 			       (cons (display-progress T0 (+ T0 cond?) 
 						       progress-interval)
-				     output-funcs))))
+				     step-funcs))))
       (begin ; otherwise, cond? is a boolean thunk
-	(map (lambda (f) (eval-output-func f 'output)) output-funcs)
+	(map (lambda (f) (eval-step-func f 'step)) step-funcs)
 	(if (cond?)
 	    (begin
-	      (map (lambda (f) (eval-output-func f 'cleanup)) output-funcs)
+	      (map (lambda (f) (eval-step-func f 'finish)) step-funcs)
 	      (print "run " run-index " finished at t = " (meep-time)
 		     " (" (meep-fields-t-get fields) " timesteps)\n")
 	      (set! run-index (+ run-index 1)))
 	    (begin
 	      (meep-fields-step fields)
-	      (apply run-until (cons cond? output-funcs)))))))
+	      (apply run-until (cons cond? step-funcs)))))))
 
 ; run until all sources are finished and cond? is true.  If cond? is a number
 ; T, run until all sources are finished + a time T.
-(define (run-sources+ cond? . output-funcs)
+(define (run-sources+ cond? . step-funcs)
   (if (null? fields) (init-fields))
   (let ((Ts (meep-fields-last-source-time fields)))
   (apply run-until 
 	 (cons (if (number? cond?)
 		   (+ (- Ts (meep-time)) cond?)
 		   (lambda () (and (>= (meep-time) Ts) (cond?))))
-	       output-funcs))))
+	       step-funcs))))
 
 ; run until all sources are finished
-(define (run-sources . output-funcs)
-  (apply run-sources+ (cons 0 output-funcs)))
+(define (run-sources . step-funcs)
+  (apply run-sources+ (cons 0 step-funcs)))
 
 ; ****************************************************************
 
