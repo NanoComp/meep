@@ -170,13 +170,14 @@ h5file::h5file(const char *filename_, access_mode m, bool parallel_) {
 
 h5file::~h5file() {
   close_id();
-  if (cur_dataname) free(cur_dataname);
+  if (cur_dataname) free(cur_dataname); // allocated with realloc
   for (h5file::extending_s *cur = extending; cur; ) {
     h5file::extending_s *next = cur->next;
     delete cur->dataname;
     delete cur;
     cur = next;
   }
+  delete filename;
 }
 
 bool h5file::ok() {
