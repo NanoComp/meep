@@ -388,7 +388,7 @@ static double poynting_fun(const complex<double> *fields,
      (void) loc; // unused
      (void) data_; // unused
      return (real(conj(fields[0]) * fields[1])
-	     - real(conj(fields[2])*fields[3])) / (4*pi);
+	     - real(conj(fields[2])*fields[3]));
 }
 
 static double energy_fun(const complex<double> *fields,
@@ -399,7 +399,7 @@ static double energy_fun(const complex<double> *fields,
      double sum = 0;
      for (int k = 0; k < nfields; ++k)
        sum += real(conj(fields[2*k]) * fields[2*k+1]);
-     return sum / (8*pi);
+     return sum * 0.5;
 }
 
 void fields::output_hdf5(derived_component c,

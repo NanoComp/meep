@@ -300,7 +300,7 @@ double *dft_flux::flux() {
     for (int k = 0; k < curE->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
 	F[i] += real(curE->dft[k*Nfreq + i]
-		     * conj(curH->dft[k*Nfreq + i])) / (4*pi);
+		     * conj(curH->dft[k*Nfreq + i]));
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, Nfreq);
   delete[] F;

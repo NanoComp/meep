@@ -136,11 +136,11 @@ double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
   polarizability_identifier thep = s.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
   fields f(&s);
   f.use_real_fields();
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(), 1/sqrt(4*pi));
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
-  return real(p.get_component(Ex));
+  return real(p.get_component(Ex)) * sqrt(4*pi);
 }
 
 int main(int argc, char **argv) {
@@ -153,13 +153,13 @@ int main(int argc, char **argv) {
 
   compare(-0.0894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
-  compare(-23.8506, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
-          "3D saturated polariton");
   compare(-0.0384049, saturated_polariton_ex(volone(1.0, a), one),
           "1D saturated polariton");
   compare(-7.57915, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
           "2D saturated polariton");
-  compare(0.0263969, polariton_energy(volone(1.0, a), one),
+  compare(-23.8506, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
+          "3D saturated polariton");
+  compare(0.0263969 * 4*pi, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(5.20605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");

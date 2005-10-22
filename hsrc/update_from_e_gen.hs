@@ -19,7 +19,7 @@ swap_polarizations = docode [
 finish_polarizations =
     whether_or_not "is_real" $ loop_new_and_old_polarizations $
     docode [doexp "const double om_psqr = fabs(op->pb->saturated_sigma)",
-            doexp "const double oo_ep_om_psqr = 1.0/(8*pi*om_psqr)",
+            doexp "const double oo_ep_om_psqr = 0.5/(om_psqr)",
             doexp "const double oo_e_sat = 1.0/op->pb->energy_saturation",
             doexp "const double om_sqr = op->pb->omeganot*op->pb->omeganot",
             doexp "const double g = op->pb->gamma",
@@ -42,7 +42,7 @@ dP, of course).
 -}
 
 half_step_polarization_energy =
-    doexp $ "np->energy[ec][i] += (0.5/(4*pi))*(np->P[ec]["<<cmp<<"][i] - "<<
+    doexp $ "np->energy[ec][i] += (0.5)*(np->P[ec]["<<cmp<<"][i] - "<<
               "op->P[ec]["<<cmp<<"][i])*f[ec]["<<cmp<<"][i]"
 
 step_saturable_polarization =

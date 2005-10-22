@@ -93,7 +93,7 @@ double fields::field_energy_in_box(component c,
   else
     abort("invalid field component in field_energy_in_box");
 
-  return real(integrate(2, cs, dot_integrand, where)) / (8*pi);
+  return real(integrate(2, cs, dot_integrand, where)) * 0.5;
 }
 
 double fields::electric_energy_in_box(const geometric_volume &where) {
@@ -193,7 +193,7 @@ double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
     cs[0] = cE[i]; cs[1] = cH[i];
     sum += real(integrate(2, cs, dot_integrand, where)) * (1 - 2*i);
   }
-  return sum_to_all(sum) / (4*pi);
+  return sum_to_all(sum);
 }
 
 double fields::flux_in_box(direction d, const geometric_volume &where) {
@@ -260,7 +260,7 @@ double fields::electric_energy_max_in_box(const geometric_volume &where) {
     cs[3+0] = Dx; cs[3+1] = Dy; cs[3+2] = Dz;
   }
   
-  return max_abs(6, cs, dot3_max_integrand, where) / (8*pi);
+  return max_abs(6, cs, dot3_max_integrand, where) * 0.5;
 }
 
 /* "modal" volume according to definition in:
@@ -272,7 +272,7 @@ double fields::modal_volume_in_box(const geometric_volume &where) {
 
 /************************************************************************/
 
-  /* compute integral f(x) * Re[conj(f1)*f2] / (8*pi), which is useful for
+  /* compute integral f(x) * Re[conj(f1)*f2] * 0.5, which is useful for
      perturbation theory, etcetera, where f1 and f2 are two field components
      on the same Yee lattice (e.g. Hx and Hx or Ex and Dx). */
 
@@ -294,7 +294,7 @@ double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
       cs[0] = cs[1] = direction_component(Ex, component_direction(c));
       sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) f));
     }
-  return sum / (8*pi) / electric_energy_in_box(where);
+  return sum * 0.5 / electric_energy_in_box(where);
 }
 
 /* computes integral of f(x) * epsilon*|E|^2 / integral epsilon*|E|^2 */
@@ -308,7 +308,7 @@ double fields::electric_energy_weighted_integral(double (*f)(const vec &),
       cs[1] = direction_component(Dx, component_direction(c));
       sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) f));
     }
-  return sum / (8*pi) / electric_energy_in_box(where);
+  return sum * 0.5 / electric_energy_in_box(where);
 }
 
 } // namespace meep

@@ -98,7 +98,7 @@ double fields::get_field(derived_component c, const vec &loc) const {
     }
     sum += real(conj(get_field(c1, loc)) * get_field(c2, loc));
     sum -= real(conj(get_field(direction_component(Ex, component_direction(c2)), loc)) * get_field(direction_component(Hx, component_direction(c1)), loc));
-    return sum / (4*pi);
+    return sum;
   case EnergyDensity: case D_EnergyDensity: case H_EnergyDensity:
     if (c != H_EnergyDensity)
       FOR_ELECTRIC_COMPONENTS(c1) if (v.has_field(c1)) {
@@ -110,7 +110,7 @@ double fields::get_field(derived_component c, const vec &loc) const {
 	complex<double> f = get_field(c1, loc);
 	sum += real(conj(f) * f);
       }
-    return sum / (8*pi);
+    return sum * 0.5;
   default: abort("unknown derived_component in get_field");
   }
 }
