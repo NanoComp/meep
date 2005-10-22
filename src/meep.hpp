@@ -92,8 +92,6 @@ public:
   
   const char *file_name() const { return filename; }
 
-  void close() { close_id(); } // force file closure
-
   void prevent_deadlock(); // hackery for exclusive mode
 private:
   access_mode mode;
@@ -538,7 +536,6 @@ public:
 	   dft_chunk *E_, dft_chunk *H_,
 	   double fmin, double fmax, int Nf);
   dft_flux(const dft_flux &f);
-  ~dft_flux() { delete E; delete H; }
 
   double *flux();
 
@@ -551,6 +548,8 @@ public:
   void load_hdf5(fields &f, const char *fname, const char *dprefix = 0);
 
   void scale_dfts(complex<double> scale);
+
+  void remove() { delete E; delete H; E = H = 0; }
 
   double freq_min, dfreq;
   int Nfreq;
