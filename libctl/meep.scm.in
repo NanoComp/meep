@@ -255,6 +255,13 @@
 (define (get-fluxes f)
   (dft-flux-flux f))
 
+(define (display-fluxes . fluxes)
+  (if (not (null? fluxes))
+      (apply display-csv
+	     (append (list "flux"
+			   (get-flux-freqs (car fluxes)))
+		     (map get-fluxes fluxes)))))
+
 ; ****************************************************************
 ; Setting up the fields
 
@@ -306,8 +313,12 @@
       (if (eq? to-do 'step) (func))
       (func to-do)))
  
-; Some convenient wrappers for step functions passed to run.  These
-; can be used to only output at certain times, instead of at every time step.
+; Some convenient wrappers for step functions passed to run.  e.g., these
+; can be used to only output at certain times, instead of ata every time step.
+
+(define (combine-step-funcs . step-funcs)
+  (lambda (to-do)
+    (map (lambda (f) (eval-step-func f to-do)) step-funcs)))
 
 ; generic wrapper
 (define (when-true-funcs cond? step-funcs)
@@ -431,7 +442,7 @@
 					    (get-filename-prefix) true))
 	     '())))
     (map (lambda (c) (apply output-component (cons c f))) cs)
-    (meep-h5file-close f)))
+    (delete-meep-h5file f)))
 
 ; convenience functions, similar to MPB:
 (define (output-epsilon) (output-component Dielectric))
@@ -481,7 +492,7 @@
       (let ((h5save output-append-h5))
 	(set! output-append-h5 h5)
 	(map (lambda (f) (eval-step-func f to-do)) step-funcs)
-	(if (eq? to-do 'finish) (meep-h5file-close h5))
+	(if (eq? to-do 'finish) (delete-meep-h5file h5))
 	(set! output-append-h5 h5save)))))
 
 ; ****************************************************************
@@ -491,9 +502,15 @@
 (export-type (make-list-type 'cnumber))
 (export-type (make-list-type 'cvector3))
 
-(define harminv-data '())
-(define (collect-harminv c pt)
-  (lambda () (set! harminv-data (cons (get-field-point c pt) harminv-data))))
+; generic data-collection function
+(defmacro-public collect-harminv (data data-dt)
+  `(lambda (c pt)
+     (set! ,data '())
+     (let ((t0 0))
+       (lambda () 
+	 (set! ,data-dt (- (meep-time) t0))
+	 (set! t0 (meep-time))
+	 (set! ,data (cons (get-field-point c pt) ,data))))))
 
 ; do-harminv returns a (freq, amp, err) vector3; define accessor functions:
 (define harminv-freq vector3-x)
@@ -504,12 +521,14 @@
 (define harminv-amp vector3-y)
 (define harminv-err vector3-z)
 
-(define (analyze-harminv data fmin fmax maxbands)
+(define (analyze-harminv data fmin fmax maxbands . dt)
   (display-run-data 
    "harminv"
    (list "frequency" "imag. freq." "Q" "|amp|" "amplitude" "error"))
-  (let ((bands (do-harminv (reverse data) 
-			   (meep-fields-dt-get fields)
+  (let ((bands (do-harminv data
+			   (if (null? dt)
+			       (meep-fields-dt-get fields)
+			       (car dt))
 			   fmin fmax maxbands)))
     (map (lambda (b) ; b = vector of (freq, amp, error)
 	   (display-run-data 
@@ -525,15 +544,20 @@
     bands))
 
 ; collect in harminv-data + analyze and store in harminv-results
+(define harminv-data '())
+(define harminv-data-dt 0)
 (define harminv-results '())
 (define (harminv c pt fmin fmax . maxbands)
   (set! harminv-data '())
-  (lambda (to-do)
-    (if (eq? to-do 'finish)
-	(set! harminv-results 
-	      (analyze-harminv harminv-data fmin fmax
-			       (if (null? maxbands) 200 (car maxbands))))
-	((collect-harminv c pt)))))
+  (combine-step-funcs
+   (at-end
+    (lambda ()
+      (set! harminv-data (reverse harminv-data)) ; put in correct order
+      (set! harminv-results 
+	    (analyze-harminv harminv-data fmin fmax
+			     (if (null? maxbands) 100 (car maxbands))
+			     harminv-data-dt))))
+   ((collect-harminv harminv-data harminv-data-dt) c pt)))
 
 ; ****************************************************************
 ; run functions

@@ -65,6 +65,12 @@ static inline complex<double> my_complex_func2(double t, void *f) {
   $1 = SwigVector3_Check($input);
 }
 
+// Need to tell SWIG about any method that returns a new object
+// which needs to be garbage-collected.
+%newobject meep::fields::open_h5file;
+%newobject *::clone;
+%newobject meep::dft_flux::flux;
+
 %include "meep_renames.i"
 %include "meep_enum_renames.i"
 %include "meep_op_renames.i"
