@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libmeep.la
+lib_LTLIBRARIES = libmeep@MEEP_SUFFIX@.la
 include_HEADERS = meep.hpp
 pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp
 
@@ -8,7 +8,7 @@ update_e_from_d_prepare.hpp update_e_from_d_update.hpp sphere-quad.h
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp ran.hpp threevec.hpp	\
 meep/vec.hpp bicgstab.hpp
 
-libmeep_la_SOURCES = anisotropic_averaging.cpp bands.cpp		\
+libmeep@MEEP_SUFFIX@_la_SOURCES = anisotropic_averaging.cpp bands.cpp		\
 boundaries.cpp bicgstab.cpp control_c.cpp cw_fields.cpp dft.cpp		\
 energy_and_flux.cpp fields.cpp loop_in_chunks.cpp grace.cpp		\
 h5fields.cpp h5file.cpp initialize.cpp integrate.cpp monitor.cpp	\
@@ -18,7 +18,7 @@ update_e_from_d.cpp update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)	\
 update_e_from_d_prepare.cpp update_e_from_d_sources.cpp			\
 update_e_from_d_update.cpp
 
-libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
+libmeep@MEEP_SUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
 noinst_PROGRAMS = sphere_quad
 sphere_quad_SOURCES = sphere-quad.cpp

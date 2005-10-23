@@ -13,6 +13,8 @@ AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
 AM_ENABLE_SHARED(no) dnl shared libs cause too many headaches to be default
 
+MEEP_SUFFIX=""
+
 ##############################################################################
 
 AC_ARG_ENABLE(debug, [AC_HELP_STRING([--enable-debug,compile for debugging])],
@@ -52,6 +54,7 @@ if test "x$with_mpi" = "xyes"; then
 	ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
 	CXX=$MPICXX
 	AC_LANG_POP([C++])
+	MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
 fi
 
 ##############################################################################
@@ -400,6 +403,11 @@ fi
 AC_HEADER_TIME
 AC_CHECK_HEADERS([sys/time.h])
 AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
+
+##############################################################################
+
+AC_SUBST(MEEP_SUFFIX)
+program_transform_name="s,_,-,g;$program_transform_name"
 
 ##############################################################################
 

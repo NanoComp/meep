@@ -1,15 +1,15 @@
-bin_PROGRAMS = meep
+bin_PROGRAMS = meep@MEEP_SUFFIX@
 EXTRA_DIST = meep.scm.in
 
-LIBMEEP = $(top_builddir)/src/libmeep.la
+LIBMEEP = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
 
 HDRS = meep-ctl.hpp meep-ctl-const.hpp
 
 LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
 
-meep_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i
-nodist_meep_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i meep_enum_renames.i meep-enums.scm meep_swig_bug_workaround.i
-meep_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
+meep@MEEP_SUFFIX@_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i
+nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i meep_enum_renames.i meep-enums.scm meep_swig_bug_workaround.i
+meep@MEEP_SUFFIX@_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx
 
