@@ -266,7 +266,7 @@
 ; Setting up the fields
 
 (define-param m 0)
-(define-param real-fields? false)
+(define-param force-complex-fields? false)
 (define-param k (vector3 0 0 0))
 
 (define fields '())
@@ -278,7 +278,10 @@
       (set! fields (new-meep-fields structure m))
       (set! fields (new-meep-fields structure)))
   (if verbose? (meep-fields-verbose fields))
-  (if real-fields? (meep-fields-use-real-fields fields))
+  (if (not (or force-complex-fields?
+	       (and (= dimensions CYLINDRICAL) (not (zero? m 0)))
+	       (not (vector3= k (vector3 0)))))
+      (meep-fields-use-real-fields fields))
   (meep-fields-use-bloch fields k)
   (map (lambda (s) (add-source s fields)) sources)
   (map (lambda (thunk) (thunk)) init-fields-hooks))
