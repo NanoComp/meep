@@ -592,7 +592,7 @@ void volume::interpolate(component c, const vec &pc,
     weights[i] += (1.0 - total_weight)*(1.0/already_have);
   for (int i=0;i<already_have;i++) {
     if (weights[i] < 0.0) {
-      if (-weights[i] >= SMALL)
+      if (-weights[i] >= SMALL * 1e5)
         abort("large negative interpolation weight[%d] = %e\n", i, weights[i]);
       weights[i] = 0.0;
     }
