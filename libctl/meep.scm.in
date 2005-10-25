@@ -127,10 +127,17 @@
 
 (define structure '())
 
-(define (init-structure)
+(define (init-structure . k_)
+  (let ((k (if (null? k_) false (car k)))
+	(s (object-property-value geometry-lattice 'size)))
   (set! structure (make-structure 
-		   dimensions
-		   (object-property-value geometry-lattice 'size)
+		   (if (and k (= dimensions 3)) ; infer dimensions
+		       (if (and (= (vector3-z s) no-size)
+				(zero? (vector3-z k)))
+			   2
+			   3)
+		       dimensions)
+		   s
 		   resolution
 		   geometry default-material
 		   pml-layers symmetries num-chunks Courant)))
@@ -273,7 +280,7 @@
 
 (define init-fields-hooks '()) ; list of thunks to execute after init-fields
 (define (init-fields)
-  (if (null? structure) (init-structure))
+  (if (null? structure) (init-structure k))
   (if (= dimensions CYLINDRICAL)
       (set! fields (new-meep-fields structure m))
       (set! fields (new-meep-fields structure)))
