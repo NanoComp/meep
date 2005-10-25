@@ -24,7 +24,7 @@ meep_wrap.cxx:
 endif
 else
 meep_wrap.cxx:
-	echo "/* need --with-libctl to generate this file */" 
+	echo "/* need --with-libctl to generate this file */" > $@
 endif
 
 # workaround missing namespace prefix in swig
