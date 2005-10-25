@@ -10,7 +10,7 @@ HC_FLAGS = -fglasgow-exts -package data
 
 noinst_SCRIPTS = step_d_gen step_h_gen update_e_from_d_gen update_from_e_gen
 
-SUFFIXES = .o .hs .lhs .hi
+.SUFFIXES = .o .hs .lhs .hi
 
 .o.hi:
 	@:

@@ -36,7 +36,7 @@ example_LDADD = $(LIBMEEP)
 
 ###########################################################################
 
-SUFFIXES = .dac .tex .dvi .ps .pdf .eps
+.SUFFIXES = .dac .tex .dvi .ps .pdf .eps
 
 .o.dac: $(LIBMEEP)
 	$(CXXLINK) $< $(LIBMEEP) $(LIBS)

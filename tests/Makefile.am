@@ -12,7 +12,7 @@ DONE = $(SRC:.cpp=.done)
 LIBMEEP = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
-SUFFIXES = .dac .done
+.SUFFIXES = .dac .done
 
 noinst_PROGRAMS = bench
 
