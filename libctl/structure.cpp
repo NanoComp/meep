@@ -204,6 +204,7 @@ double geom_epsilon::eps(const meep::vec &r)
 /***********************************************************************/
 
 meep::structure *make_structure(int dims, vector3 size, double resolution,
+				bool ensure_periodicity_p,
 				geometric_object_list geometry,
 				material_type default_mat,
 				pml_list pml_layers,
@@ -214,7 +215,7 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   
   // only cartesian lattices, centered at the origin, are currently allowed
   geom_initialize();
-  // note that ensure_periodicity is 1...should we make this an option?
+  ensure_periodicity = ensure_periodicity_p;
 
   default_material = default_mat;
   

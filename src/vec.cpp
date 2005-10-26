@@ -292,8 +292,18 @@ direction volume::yucky_direction(int n) const {
 geometric_volume volume::surroundings() const {
   geometric_volume res(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
-    res.set_direction_min(d, operator[](little_corner()).in_direction(d)+0.0/a);
-    res.set_direction_max(d, operator[](big_corner()).in_direction(d)-0.0/a);
+    res.set_direction_min(d, operator[](little_corner()).in_direction(d));
+    res.set_direction_max(d, operator[](big_corner()).in_direction(d));
+  }
+  return res;
+}
+
+geometric_volume volume::interior() const {
+  geometric_volume res(dim);
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    res.set_direction_min(d, operator[](little_corner()).in_direction(d));
+    res.set_direction_max(d, operator[](big_corner() - one_ivec(dim) * 2)
+			  .in_direction(d));
   }
   return res;
 }

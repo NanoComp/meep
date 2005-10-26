@@ -640,6 +640,7 @@ class volume {
   ivec little_owned_corner(component c) const;
   bool owns(const ivec &) const;
   geometric_volume surroundings() const;
+  geometric_volume interior() const;
 
   bool get_boundary_icorners(component c, int ib, ivec *cs, ivec *ce) const;
 

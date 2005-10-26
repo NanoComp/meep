@@ -128,19 +128,20 @@
 (define structure '())
 
 (define (init-structure . k_)
-  (let ((k (if (null? k_) false (car k)))
+  (let ((k (if (null? k_) false (car k_)))
 	(s (object-property-value geometry-lattice 'size)))
-  (set! structure (make-structure 
-		   (if (and k (= dimensions 3)) ; infer dimensions
-		       (if (and (= (vector3-z s) no-size)
-				(zero? (vector3-z k)))
-			   2
-			   3)
-		       dimensions)
-		   s
-		   resolution
-		   geometry default-material
-		   pml-layers symmetries num-chunks Courant)))
+    (set! structure (make-structure 
+		     (if (and k (= dimensions 3)) ; infer dimensions
+			 (if (and (= (vector3-z s) no-size)
+				  (zero? (vector3-z k)))
+			     2
+			     3)
+			 dimensions)
+		     s
+		     resolution
+		     ensure-periodicity
+		     geometry default-material
+		     pml-layers symmetries num-chunks Courant))))
 
 ; ****************************************************************
 ; Adding sources
@@ -187,6 +188,7 @@
        (object-property-value o 'end-time)))))
 
 (define (fwidth df) (width (/ df))) ; to specify frequency width instead
+(define (wavelength lam) (frequency (/ lam)))
 
 (define-class source no-parent
   (define-property src no-default 'src-time)
@@ -302,6 +304,13 @@
 
 (define (get-epsilon-point pt)
   (meep-fields-get-eps fields pt))
+
+; ****************************************************************
+; Various ways to restart all or part of the simulation.
+
+(define (reset-meep)
+  (delete-meep-fields fields) (set! fields '())
+  (delete-meep-structure structure) (set! structure '()))
 
 (define (restart-fields)
   (meep-fields-t-set fields 0)
@@ -437,7 +446,7 @@
   (meep-fields-output-hdf5 
    fields c 
    (if (null? output-volume)
-       (meep-volume-surroundings (meep-fields-v-get fields))
+       (meep-volume-interior (meep-fields-v-get fields))
        output-volume)
    (if (null? h5file) output-append-h5 (car h5file)) 
    (and (null? h5file) (not (null? output-append-h5)))
@@ -642,4 +651,3 @@
 (set! scm-repl-prompt "meep> ")
 
 ; ****************************************************************
-
