@@ -76,10 +76,17 @@
 ; ****************************************************************
 ; some utilities
 
-(define (volume cen sz)
-  (new-meep-geometric-volume 
-   (vector3- cen (vector3-scale 0.5 sz))
-   (vector3+ cen (vector3-scale 0.5 sz))))
+(define-class volume-class no-parent
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3))
+
+(define (volume . args)
+  (let ((v (apply make (cons volume-class args))))
+    (let ((cen (object-property-value v 'center))
+	  (sz (object-property-value v 'size)))
+      (new-meep-geometric-volume 
+       (vector3- cen (vector3-scale 0.5 sz))
+       (vector3+ cen (vector3-scale 0.5 sz))))))
 
 (define infinity 1.0e20) ; big number for infinite dimensions of objects
 
@@ -210,12 +217,12 @@
 	 fields
 	 (object-property-value s 'component)
 	 (object-property-value (object-property-value s 'src) 'swigval)
-	 (volume cen sz)
+	 (volume (center cen) (size sz))
 	 (object-property-value s 'amplitude))
 	(meep-fields-add-volume-source
 	 fields
 	 (object-property-value s 'component)
-	 (volume cen sz)
+	 (volume (center cen) (size sz))
 	 A (object-property-value s 'amplitude)))))
 
 ; ****************************************************************
@@ -230,8 +237,8 @@
 (define (fields-add-flux fields fmin fmax nfreq . fluxes)
   (define gvl '()) ; geometric_volume_list of flux regions
   (map (lambda (f)
-	 (let* ((gv (volume (object-property-value f 'center)
-			   (object-property-value f 'size)))
+	 (let* ((gv (volume (center (object-property-value f 'center))
+			    (size (object-property-value f 'size))))
 		(d0 (object-property-value f 'direction))
 		(d (if (negative? d0)
 		       (meep-geometric-volume-normal-direction gv)
@@ -239,8 +246,8 @@
 		(c (meep-direction-component Sx d)))
 	   (set! gvl
 		 (new-meep-geometric-volume-list
-		  (volume (object-property-value f 'center)
-			  (object-property-value f 'size))
+		  (volume (center (object-property-value f 'center))
+			  (size (object-property-value f 'size)))
 		  c
 		  (object-property-value f 'weight)
 		  gvl))))
@@ -270,6 +277,15 @@
 	     (append (list "flux"
 			   (get-flux-freqs (car fluxes)))
 		     (map get-fluxes fluxes)))))
+
+(define (load-minus-flux fname flux)
+  (if (null? fields) (init-fields))
+  (meep-dft-flux-load-hdf5 flux fields fname)
+  (meep-dft-flux-scale-dfts flux -1.0))
+
+(define (save-flux fname flux)
+  (if (null? fields) (init-fields))
+  (meep-dft-flux-save-hdf5 flux fields fname))
 
 ; ****************************************************************
 ; Setting up the fields
@@ -441,6 +457,10 @@
 
 (define output-append-h5 '()) ; h5 file to append data to (NULL if none)
 
+; hook function called with the filename after every HDF5 files is created;
+; this can be used to convert the file into other formats, etcetera.
+(define output-h5-hook (lambda (fname) false)) ; default is no-op
+
 (define (output-component c . h5file)
   (if (null? fields) (error "init-fields is required before output-component"))
   (meep-fields-output-hdf5 
@@ -451,8 +471,11 @@
    (if (null? h5file) output-append-h5 (car h5file)) 
    (and (null? h5file) (not (null? output-append-h5)))
    false 
-   (get-filename-prefix)))
-
+   (get-filename-prefix))
+  (if (null? h5file)
+      (output-h5-hook (meep-fields-h5file-name fields
+		       (meep-component-name c) (get-filename-prefix) true))))
+					       
 (define (output-components fname . cs)
   (if (null? fields) (error "init-fields is required before output-component"))
   (let ((f 
@@ -461,7 +484,10 @@
 					    (get-filename-prefix) true))
 	     '())))
     (map (lambda (c) (apply output-component (cons c f))) cs)
-    (delete-meep-h5file f)))
+    (if (null? output-append-h5) (delete-meep-h5file (car f))))
+  (if (null? output-append-h5)
+      (output-h5-hook (meep-fields-h5file-name 
+		       fields fname (get-filename-prefix) true))))
 
 ; convenience functions, similar to MPB:
 (define (output-epsilon) (output-component Dielectric))
@@ -499,7 +525,7 @@
       (map (lambda (f) (eval-step-func f to-do)) step-funcs)
       (set! output-volume gv-save))))
 (define (in-point pt . step-funcs)
-  (apply in-volume (cons (volume pt (vector3 0)) step-funcs)))
+  (apply in-volume (cons (volume (center pt)) step-funcs)))
 
 ; Meep supports outputting d+1 dimensional HDF5 files where the last
 ; dimension is time.
@@ -511,8 +537,40 @@
       (let ((h5save output-append-h5))
 	(set! output-append-h5 h5)
 	(map (lambda (f) (eval-step-func f to-do)) step-funcs)
-	(if (eq? to-do 'finish) (delete-meep-h5file h5))
+	(if (eq? to-do 'finish) 
+	    (begin 
+	      (delete-meep-h5file h5)
+	      (output-h5-hook (meep-fields-h5file-name
+			       fields fname (get-filename-prefix)))))
 	(set! output-append-h5 h5save)))))
+
+(define (convert-h5 convert-cmd . step-funcs)
+  (define (convert fname)
+    (if (zero? (system (string-append convert-cmd " " fname)))
+	(system (string-append "rm " fname))))
+  (lambda (to-do)
+    (let ((hooksave output-h5-hook))
+      (set! output-h5-hook convert)
+      (map (lambda (f) (eval-step-func f to-do)) step-funcs)
+      (set! output-h5-hook hooksave))))
+
+(define (h5topng options . step-funcs)
+  (apply convert-h5 (cons (string-append "h5topng " options) step-funcs)))
+
+(define (output-png c options)
+  (let ((maxabs 0.0)) ; keep track of amplitude for image scaling
+    (lambda (to-do)
+      (if (eq? to-do 'step)
+	  (begin
+	    (set! maxabs 
+		  (max maxabs
+		       (meep-fields-max-abs 
+			fields c
+			(if (null? output-volume)
+			    (meep-volume-interior (meep-fields-v-get fields))
+			    output-volume))))
+	    ((h5topng (string-append "-M " (number->string maxabs) " " options)
+		      (lambda () (output-component c))) to-do))))))
 
 ; ****************************************************************
 ; harminv functions for extracting bands, etcetera

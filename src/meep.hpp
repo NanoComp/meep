@@ -831,6 +831,8 @@ class fields {
   h5file *open_h5file(const char *name, 
 		      h5file::access_mode mode = h5file::WRITE,
 		      const char *prefix = NULL, bool timestamp = false);
+  const char *h5file_name(const char *name,
+			  const char *prefix = NULL, bool timestamp = false);
 
   double maxfieldmag_to_master(component) const;
   double minpolenergy_to_master() const;
@@ -890,6 +892,7 @@ class fields {
 		 field_function integrand,
 		 const geometric_volume &where,
 		 void *integrand_data = 0);
+  double max_abs(component c, const geometric_volume &where);
   
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,

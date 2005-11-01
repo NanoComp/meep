@@ -79,6 +79,7 @@ const char *direction_name(direction d) {
 }
 
 const char *component_name(component c) {
+  if (is_derived(int(c))) return component_name(derived_component(c));
   switch (c) {
   case Er: return "er";
   case Ep: return "ep";
@@ -101,6 +102,7 @@ const char *component_name(component c) {
 }
 
 const char *component_name(derived_component c) {
+  if (!is_derived(int(c))) return component_name(component(c));
   switch (c) {
   case Sr: return "sr";
   case Sp: return "sp";

@@ -180,4 +180,18 @@ double fields::max_abs(int num_fields, const component *components,
   return maxabs;
 }
 
+static complex<double> return_the_field(const complex<double> *fields,
+					const vec &loc,
+					void *integrand_data_)
+{
+  (void) integrand_data_; (void) loc; // unused
+  return fields[0];
+}
+
+double fields::max_abs(component c, const geometric_volume &where)
+{
+  component cs[1]; cs[0] = c;
+  return max_abs(1, cs, return_the_field, where, 0);
+}
+
 } // namespace meep

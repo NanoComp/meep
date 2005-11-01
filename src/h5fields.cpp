@@ -459,8 +459,8 @@ void fields::output_hdf5(derived_component c,
 
 /***************************************************************************/
 
-h5file *fields::open_h5file(const char *name, h5file::access_mode mode, 
-			    const char *prefix, bool timestamp)
+const char *fields::h5file_name(const char *name, 
+				const char *prefix, bool timestamp)
 {
   const int buflen = 1024;
   char filename[buflen];
@@ -472,6 +472,13 @@ h5file *fields::open_h5file(const char *name, h5file::access_mode mode,
 	   outdir,
 	   prefix ? prefix : "", prefix && prefix[0] ? "-" : "",
 	   name, time_step_string);
+  return filename;
+}
+
+h5file *fields::open_h5file(const char *name, h5file::access_mode mode, 
+			    const char *prefix, bool timestamp)
+{
+  const char *filename = h5file_name(name, prefix, timestamp);
   if (!quiet && mode == h5file::WRITE)
     master_printf("creating output file \"%s\"...\n", filename);
   return new h5file(filename, mode, true);
