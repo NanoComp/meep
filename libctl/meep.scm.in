@@ -78,6 +78,9 @@
 
 (define infinity 1.0e20) ; big number for infinite dimensions of objects
 
+; round x to dig digits after the decimal place
+(define (round-dig dig x) (/ (round (* x (expt 10 dig))) (expt 10 dig)))
+
 ; display a comma-delimited list of values, prefixed by the data-name
 ; and the run index, with data a list of values.
 (define-param run-index 0)
@@ -678,10 +681,10 @@
 	    (begin
 	      (print "Meep progress: " 
 		     (- (meep-time) T0) "/" T " = "
-		     (/ (- (meep-time) T0) (* 0.01 T)) "% done"
-		     " in " (- t t0) "s, " 
-		     ( - (* (- t t0) (/ T (- (meep-time) T0)))
-			 (- t t0)) "s to go\n")
+		     (round-dig 1 (/ (- (meep-time) T0) (* 0.01 T))) "% done"
+		     " in " (round-dig 1 (- t t0)) "s, " 
+		     (round-dig 1 ( - (* (- t t0) (/ T (- (meep-time) T0)))
+				      (- t t0))) "s to go\n")
 	      (set! tlast t)))))))
 
 ; run until (cond?) is true or, if cond? is a number, until time cond?
