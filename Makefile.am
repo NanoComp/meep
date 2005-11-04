@@ -15,7 +15,7 @@ ACLOCAL_AMFLAGS=-I ./m4
 
 SUBDIRS = $(HSRC) src $(LIBCTL) doc tests
 
-EXTRA_DIST = COPYRIGHT m4 meep.pc.in
+EXTRA_DIST = COPYRIGHT m4 meep.pc.in examples
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc

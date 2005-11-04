@@ -527,6 +527,10 @@ class geometric_volume {
   geometric_volume operator&(const geometric_volume &a) const {
     return intersect_with(a);
   };
+  geometric_volume operator|(const geometric_volume &a) const {
+    return geometric_volume(min(min_corner, a.min_corner),
+			    max(max_corner, a.max_corner));
+  };
   geometric_volume operator+(const vec &a) const {
     return geometric_volume(min_corner + a, max_corner + a);
   }

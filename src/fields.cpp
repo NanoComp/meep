@@ -459,4 +459,13 @@ bool fields::equal_layout(const fields &f) const {
   return true;
 }
 
+// total computational volume, including regions redundant by symmetry
+geometric_volume fields::total_volume(void) const {
+  geometric_volume gv0 = v.interior();
+  geometric_volume gv = gv0;
+  for (int n = 1; n < S.multiplicity(); ++n)
+    gv = gv | S.transform(gv0, n);
+  return gv;
+}
+
 } // namespace meep

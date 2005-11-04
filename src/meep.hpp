@@ -788,6 +788,8 @@ class fields {
   void output_real_imaginary_slices(const geometric_volume &what,
                                     const char *name = "");
 
+  geometric_volume total_volume(void) const;
+
   // h5fields.cpp:
   // low-level function:
   void output_hdf5(h5file *file, const char *dataname,

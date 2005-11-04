@@ -493,7 +493,7 @@
   (meep-fields-output-hdf5 
    fields c 
    (if (null? output-volume)
-       (meep-volume-interior (meep-fields-v-get fields))
+       (meep-fields-total-volume fields)
        output-volume)
    (if (null? h5file) output-append-h5 (car h5file)) 
    (and (null? h5file) (not (null? output-append-h5)))
@@ -594,7 +594,7 @@
 		       (meep-fields-max-abs 
 			fields c
 			(if (null? output-volume)
-			    (meep-volume-interior (meep-fields-v-get fields))
+			    (meep-fields-total-volume fields)
 			    output-volume))))
 	    ((h5topng (string-append "-M " (number->string maxabs) " " options)
 		      (lambda () (output-component c))) to-do))))))
