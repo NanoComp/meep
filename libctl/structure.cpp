@@ -10,6 +10,18 @@ static meep::ndim dim = meep::D3;
 
 /***********************************************************************/
 
+void set_dimensions(int dims)
+{
+  if (dims == CYLINDRICAL) {
+    dimensions = 2;
+    dim = meep::Dcyl;
+  }
+  else {
+    dimensions = dims;
+    dim = meep::ndim(dims - 1);
+  }
+}
+
 vector3 vec_to_vector3(const meep::vec &v)
 {
   vector3 v3;
@@ -227,18 +239,11 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   if (size.z <= no_size)
     size.z = 0.0;
   
-  if (dims == CYLINDRICAL) {
-    dimensions = 2;
-    dim = meep::Dcyl;
-  }
-  else {
-    dimensions = dims;
-    dim = meep::ndim(dims - 1);
-  }
+  set_dimensions(dims);
   
   geometry_lattice.size = size;
 
-  master_printf("Working in %d dimensions.\n", dimensions);
+  master_printf("Working in %s dimensions.\n", meep::dimension_name(dim));
   
   meep::volume v;
   switch (dims) {

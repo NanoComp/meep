@@ -76,18 +76,6 @@
 ; ****************************************************************
 ; some utilities
 
-(define-class volume-class no-parent
-  (define-property center no-default 'vector3)
-  (define-property size (vector3 0 0 0) 'vector3))
-
-(define (volume . args)
-  (let ((v (apply make (cons volume-class args))))
-    (let ((cen (object-property-value v 'center))
-	  (sz (object-property-value v 'size)))
-      (new-meep-geometric-volume 
-       (vector3- cen (vector3-scale 0.5 sz))
-       (vector3+ cen (vector3-scale 0.5 sz))))))
-
 (define infinity 1.0e20) ; big number for infinite dimensions of objects
 
 ; display a comma-delimited list of values, prefixed by the data-name
@@ -107,6 +95,21 @@
        (cons 
 	(lambda (. vs) (display-run-data name vs))
 	ds))))
+
+; ****************************************************************
+; More input variables
+
+(define structure '())
+
+; list of sources added by init-fields (below)
+(define-param sources '())
+
+(define-param m 0)
+(define-param force-complex-fields? false)
+
+(define-param k-point (vector3 0 0 0))
+
+(define fields '())
 
 ; ****************************************************************
 ; Setting up the structure
@@ -132,18 +135,35 @@
 (define-param num-chunks 0)
 (define-param Courant 0.5)
 
-(define structure '())
+(define (infer-dimensions k)
+  (if (and k (= dimensions 3)) ; infer dimensions            
+      (if (and (= (vector3-z (object-property-value geometry-lattice 'size)) 
+		  no-size)
+	       (zero? (vector3-z k)))
+	  2
+	  3)
+      dimensions))
+(define (require-dimensions!)
+  (if (null? structure) (set-dimensions (infer-dimensions k-point))))
+
+(define-class volume-class no-parent
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3))
+
+(define (volume . args)
+  (require-dimensions!)
+  (let ((v (apply make (cons volume-class args))))
+    (let ((cen (object-property-value v 'center))
+	  (sz (object-property-value v 'size)))
+      (new-meep-geometric-volume 
+       (vector3- cen (vector3-scale 0.5 sz))
+       (vector3+ cen (vector3-scale 0.5 sz))))))
 
 (define (init-structure . k_)
   (let ((k (if (null? k_) false (car k_)))
 	(s (object-property-value geometry-lattice 'size)))
     (set! structure (make-structure 
-		     (if (and k (= dimensions 3)) ; infer dimensions
-			 (if (and (= (vector3-z s) no-size)
-				  (zero? (vector3-z k)))
-			     2
-			     3)
-			 dimensions)
+		     (infer-dimensions k)
 		     s
 		     resolution
 		     ensure-periodicity
@@ -172,7 +192,7 @@
   (define-property frequency no-default 'number)
   (define-property width no-default 'number)
   (define-property start-time 0 'number)
-  (define-property cutoff 3.0 'number)
+  (define-property cutoff 5.0 'number)
   (define-derived-property swigval 'SCM
     (lambda (o) 
       (new-meep-gaussian-src-time
@@ -205,9 +225,6 @@
   (define-property amplitude 1.0 'cnumber)
   (define-property amp-func '() 'SCM))
 
-; list of sources added by init-fields (below)
-(define-param sources '())
-
 (define (add-source s f) ; add source s to fields f
   (let ((A (object-property-value s 'amp-func))
 	(cen (object-property-value s 'center))
@@ -226,88 +243,20 @@
 	 A (object-property-value s 'amplitude)))))
 
 ; ****************************************************************
-; Flux spectra
-
-(define-class flux-region no-parent
-  (define-property center no-default 'vector3)
-  (define-property size (vector3 0 0 0) 'vector3)
-  (define-property direction -1 'integer)
-  (define-property weight 1.0 'cnumber))
-
-(define (fields-add-flux fields fmin fmax nfreq . fluxes)
-  (define gvl '()) ; geometric_volume_list of flux regions
-  (map (lambda (f)
-	 (let* ((gv (volume (center (object-property-value f 'center))
-			    (size (object-property-value f 'size))))
-		(d0 (object-property-value f 'direction))
-		(d (if (negative? d0)
-		       (meep-geometric-volume-normal-direction gv)
-		       d0))
-		(c (meep-direction-component Sx d)))
-	   (set! gvl
-		 (new-meep-geometric-volume-list
-		  (volume (center (object-property-value f 'center))
-			  (size (object-property-value f 'size)))
-		  c
-		  (object-property-value f 'weight)
-		  gvl))))
-       fluxes)
-  (meep-fields-add-dft-flux fields gvl fmin fmax nfreq))
-
-(define (add-flux fmin fmax nfreq . fluxes)
-  (if (null? fields) (init-fields))
-  (apply fields-add-flux (append (list fields fmin fmax nfreq) fluxes)))
-
-(define (scale-flux-fields s f)
-  (meep-dft-flux-scale-dfts f s))
-
-(define (get-flux-freqs f)
-  (arith-sequence
-   (meep-dft-flux-freq-min-get f)
-   (meep-dft-flux-dfreq-get f)
-   (meep-dft-flux-Nfreq-get f)))
-
-(export-type (make-list-type 'number))
-(define (get-fluxes f)
-  (dft-flux-flux f))
-
-(define (display-fluxes . fluxes)
-  (if (not (null? fluxes))
-      (apply display-csv
-	     (append (list "flux"
-			   (get-flux-freqs (car fluxes)))
-		     (map get-fluxes fluxes)))))
-
-(define (load-minus-flux fname flux)
-  (if (null? fields) (init-fields))
-  (meep-dft-flux-load-hdf5 flux fields fname)
-  (meep-dft-flux-scale-dfts flux -1.0))
-
-(define (save-flux fname flux)
-  (if (null? fields) (init-fields))
-  (meep-dft-flux-save-hdf5 flux fields fname))
-
-; ****************************************************************
 ; Setting up the fields
-
-(define-param m 0)
-(define-param force-complex-fields? false)
-(define-param k (vector3 0 0 0))
-
-(define fields '())
 
 (define init-fields-hooks '()) ; list of thunks to execute after init-fields
 (define (init-fields)
-  (if (null? structure) (init-structure k))
+  (if (null? structure) (init-structure k-point))
   (if (= dimensions CYLINDRICAL)
       (set! fields (new-meep-fields structure m))
       (set! fields (new-meep-fields structure)))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m 0)))
-	       (not (vector3= k (vector3 0)))))
+	       (not (vector3= k-point (vector3 0)))))
       (meep-fields-use-real-fields fields))
-  (meep-fields-use-bloch fields k)
+  (meep-fields-use-bloch fields k-point)
   (map (lambda (s) (add-source s fields)) sources)
   (map (lambda (thunk) (thunk)) init-fields-hooks))
 
@@ -331,6 +280,76 @@
 (define (restart-fields)
   (meep-fields-t-set fields 0)
   (meep-fields-zero-fields fields))
+
+; ****************************************************************
+; Flux spectra
+
+(define-class flux-region no-parent
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3)
+  (define-property direction -1 'integer)
+  (define-property weight 1.0 'cnumber))
+
+(define (fields-add-flux fields fcen df nfreq . fluxes)
+  (define gvl '()) ; geometric_volume_list of flux regions
+  (map (lambda (f)
+	 (let* ((gv (volume (center (object-property-value f 'center))
+			    (size (object-property-value f 'size))))
+		(d0 (object-property-value f 'direction))
+		(d (if (negative? d0)
+		       (meep-geometric-volume-normal-direction gv)
+		       d0))
+		(c (meep-direction-component Sx d)))
+	   (set! gvl
+		 (new-meep-geometric-volume-list
+		  (volume (center (object-property-value f 'center))
+			  (size (object-property-value f 'size)))
+		  c
+		  (object-property-value f 'weight)
+		  gvl))))
+       fluxes)
+  (meep-fields-add-dft-flux fields gvl 
+			    (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq))
+
+(define (add-flux fcen df nfreq . fluxes)
+  (if (null? fields) (init-fields))
+  (apply fields-add-flux (append (list fields fcen df nfreq) fluxes)))
+
+(define (scale-flux-fields s f)
+  (meep-dft-flux-scale-dfts f s))
+
+(define (get-flux-freqs f)
+  (arith-sequence
+   (meep-dft-flux-freq-min-get f)
+   (meep-dft-flux-dfreq-get f)
+   (meep-dft-flux-Nfreq-get f)))
+
+(export-type (make-list-type 'number))
+(define (get-fluxes f)
+  (dft-flux-flux f))
+
+(define (display-fluxes . fluxes)
+  (if (not (null? fluxes))
+      (apply display-csv
+	     (append (list "flux"
+			   (get-flux-freqs (car fluxes)))
+		     (map get-fluxes fluxes)))))
+
+(define (load-flux fname flux)
+  (if (null? fields) (init-fields))
+  (meep-dft-flux-load-hdf5 flux fields 
+			   (meep-fields-h5file-name 
+			    fields fname (get-filename-prefix) false)))
+
+(define (save-flux fname flux)
+  (if (null? fields) (init-fields))
+  (meep-dft-flux-save-hdf5 flux fields 
+			   (meep-fields-h5file-name
+                            fields fname (get-filename-prefix) false)))
+
+(define (load-minus-flux fname flux)
+  (load-flux fname flux)
+  (meep-dft-flux-scale-dfts flux -1.0))
 
 ; ****************************************************************
 ; Generic step functions: these are functions which are called
@@ -378,12 +397,19 @@
 (define (after-time T . step-funcs)
   (if (null? fields) (init-fields))
   (let ((T0 (meep-time)))
-    (when-true-funcs (lambda () (> (meep-time) (+ T0 T))) step-funcs)))
+    (when-true-funcs (lambda () (>= (meep-time) (+ T0 T))) step-funcs)))
 
 (define (before-time T . step-funcs)
   (if (null? fields) (init-fields))
   (let ((T0 (meep-time)))
-    (when-true-funcs (lambda () (<= (meep-time) (+ T0 T))) step-funcs)))
+    (when-true-funcs (lambda () (< (meep-time) (+ T0 T))) step-funcs)))
+
+(define (at-time T . step-funcs)
+  (let ((done? false))
+    (after-time T (lambda (to-do)
+		    (if (or (not done?) (eq? to-do 'finish))
+			(map (lambda (f) (eval-step-func f to-do)) step-funcs))
+		    (set! done? (or done? (eq? to-do 'step)))))))
 
 (define (after-sources . step-funcs)
   (if (null? fields) (init-fields))
@@ -427,19 +453,20 @@
 
 (define-param filename-prefix "")
 (define (get-filename-prefix)
-  (if (and (not (null? include-files))
-	   (not (eq? filename-prefix false))
-           (string-null? filename-prefix))
-      (string-append
-       (strip-suffix ".scm"
-        (strip-suffix ".ctl" (cdr (split-pathname (car include-files))))))
-      filename-prefix))
+  (if (eq? filename-prefix false)
+      ""
+      (if (and (not (null? include-files))
+	       (string-null? filename-prefix))
+	  (string-append
+	   (strip-suffix ".scm"
+	     (strip-suffix ".ctl" (cdr (split-pathname (car include-files))))))
+	  filename-prefix)))
 
 ; Use output directory instead of outputting in same directory;
 ; uses init-fields-hooks to handle fields not yet initted.
 (define (use-output-directory . dname_)
   (let ((dname (if (null? dname_)
-		   (string-append (get-filename-prefix "-out"))
+		   (string-append (get-filename-prefix) "-out")
 		   (car dname_))))
     (let ((hook
 	   (let ((trashed? false)) ; only trash output directory once per run
@@ -598,7 +625,7 @@
 (define harminv-amp vector3-y)
 (define harminv-err vector3-z)
 
-(define (analyze-harminv data fmin fmax maxbands . dt)
+(define (analyze-harminv data fcen df maxbands . dt)
   (display-run-data 
    "harminv"
    (list "frequency" "imag. freq." "Q" "|amp|" "amplitude" "error"))
@@ -606,7 +633,7 @@
 			   (if (null? dt)
 			       (meep-fields-dt-get fields)
 			       (car dt))
-			   fmin fmax maxbands)))
+			   (- fcen (/ df 2)) (+ fcen (/ df 2)) maxbands)))
     (map (lambda (b) ; b = vector of (freq, amp, error)
 	   (display-run-data 
 	    "harminv"
@@ -624,14 +651,14 @@
 (define harminv-data '())
 (define harminv-data-dt 0)
 (define harminv-results '())
-(define (harminv c pt fmin fmax . maxbands)
+(define (harminv c pt fcen df . maxbands)
   (set! harminv-data '())
   (combine-step-funcs
    (at-end
     (lambda ()
       (set! harminv-data (reverse harminv-data)) ; put in correct order
       (set! harminv-results 
-	    (analyze-harminv harminv-data fmin fmax
+	    (analyze-harminv harminv-data fcen df
 			     (if (null? maxbands) 100 (car maxbands))
 			     harminv-data-dt))))
    ((collect-harminv harminv-data harminv-data-dt) c pt)))
@@ -689,12 +716,34 @@
   (apply run-until 
 	 (cons (if (number? cond?)
 		   (+ (- Ts (meep-time)) cond?)
-		   (lambda () (and (>= (meep-time) Ts) (cond?))))
+		   (lambda () (and (cond?) (>= (meep-time) Ts))))
 	       step-funcs))))
 
 ; run until all sources are finished
 (define (run-sources . step-funcs)
   (apply run-sources+ (cons 0 step-funcs)))
+
+; condition function, designed to be used in conjunction with run-sources+,
+; that returns true when |field|^2 at a given point has decayed more than
+; a certain amount, always running for at least steps of dT.
+(define (stop-when-fields-decayed dT c pt decay-by)
+  (if (null? fields) (init-fields))
+  (let ((T0 (meep-time))
+	(max-abs (sqr (magnitude (meep-fields-get-field fields c pt))))
+	(cur-max 0))
+    (lambda ()
+      (let ((fabs (sqr (magnitude (meep-fields-get-field fields c pt)))))
+	(set! cur-max (max cur-max fabs))
+	(if (<= (meep-time) (+ T0 dT))
+	    false ; don't stop yet
+	    (let ((old-cur cur-max))
+	      (set! cur-max 0)
+	      (set! T0 (meep-time))
+	      (set! max-abs (max max-abs old-cur))
+	      (print "field decay(t = " (meep-time)"): "
+		     old-cur " / " max-abs " = " (/ old-cur max-abs) "\n")
+	      (<= old-cur (* max-abs decay-by))))))))
+	    
 
 ; ****************************************************************
 

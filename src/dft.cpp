@@ -160,9 +160,11 @@ dft_chunk *fields::add_dft_pt(component c, const vec &where,
 }
 
 void fields::update_dfts() {
+  am_now_working_on(FourierTransforming);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       chunks[i]->update_dfts(time(), time() - 0.5 * dt);
+  finished_working();
 }
 
 void fields_chunk::update_dfts(double timeE, double timeH) {

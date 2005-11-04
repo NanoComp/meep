@@ -48,6 +48,7 @@ static const char *ts2n(time_sink s) {
   case Boundaries: return "copying borders";
   case MpiTime: return "communicating";
   case FieldOutput: return "outputting fields";
+  case FourierTransforming: return "Fourier transforming";
   case Other: break;
   }
   return "everything else";

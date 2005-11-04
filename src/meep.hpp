@@ -701,7 +701,7 @@ class fields_chunk {
 
 enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
 enum time_sink { Connecting, Stepping, Boundaries, MpiTime,
-                 FieldOutput, Other };
+                 FieldOutput, FourierTransforming, Other };
 
 typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid,
 				ivec is, ivec ie,
