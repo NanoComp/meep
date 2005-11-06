@@ -180,6 +180,17 @@ double geom_epsilon::eps(const meep::vec &r)
 {
   double eps = 1.0;
   vector3 p = vec_to_vector3(r);
+
+#ifdef DEBUG
+  if (p.x < restricted_tree->b.low.x ||
+      p.y < restricted_tree->b.low.y ||
+      p.z < restricted_tree->b.low.z ||
+      p.x > restricted_tree->b.high.x ||
+      p.y > restricted_tree->b.high.y ||
+      p.z > restricted_tree->b.high.z)
+    meep::abort("invalid point (%g,%g,%g)\n", p.x,p.y,p.z);
+#endif
+
   boolean inobject;
   material_type material =
     material_of_point_in_tree_inobject(p, restricted_tree, &inobject);

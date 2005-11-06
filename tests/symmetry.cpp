@@ -1048,6 +1048,8 @@ int main(int argc, char **argv) {
 
   if (!test_yperiodic_ymirror(one))
     abort("error in test_yperiodic_ymirror vacuum\n");
+  if (!test_yperiodic_ymirror(rods_2d))
+    abort("error in test_yperiodic_ymirror rods2d\n");
 
   if (!pml_twomirrors(one))
     abort("error in pml_twomirrors vacuum\n");

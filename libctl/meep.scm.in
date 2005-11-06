@@ -57,7 +57,6 @@
 
 (if (defined? 'meep-component-Ex) (include "meep-enums.scm"))
 
-(set-param! ensure-periodicity false) ; this makes less sense for FDTD
 (define CYLINDRICAL -2) ; special value of dimensions for cylindrical coords
 
 ; ****************************************************************
@@ -110,7 +109,7 @@
 (define-param m 0)
 (define-param force-complex-fields? false)
 
-(define-param k-point (vector3 0 0 0))
+(define-param k-point false)
 
 (define fields '())
 
@@ -139,10 +138,10 @@
 (define-param Courant 0.5)
 
 (define (infer-dimensions k)
-  (if (and k (= dimensions 3)) ; infer dimensions            
+  (if (and (not (null? k)) (= dimensions 3)) ; infer dimensions            
       (if (and (= (vector3-z (object-property-value geometry-lattice 'size)) 
 		  no-size)
-	       (zero? (vector3-z k)))
+	       (or (not k) (zero? (vector3-z k))))
 	  2
 	  3)
       dimensions))
@@ -163,13 +162,13 @@
        (vector3+ cen (vector3-scale 0.5 sz))))))
 
 (define (init-structure . k_)
-  (let ((k (if (null? k_) false (car k_)))
+  (let ((k (if (null? k_) '() (car k_)))
 	(s (object-property-value geometry-lattice 'size)))
     (set! structure (make-structure 
 		     (infer-dimensions k)
 		     s
 		     resolution
-		     ensure-periodicity
+		     (and ensure-periodicity (not (not k)))
 		     geometry default-material
 		     pml-layers symmetries num-chunks Courant))))
 
@@ -257,9 +256,9 @@
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m 0)))
-	       (not (vector3= k-point (vector3 0)))))
+	       (not (or (not k-point) (vector3= k-point (vector3 0))))))
       (meep-fields-use-real-fields fields))
-  (meep-fields-use-bloch fields k-point)
+  (if k-point (meep-fields-use-bloch fields k-point))
   (map (lambda (s) (add-source s fields)) sources)
   (map (lambda (thunk) (thunk)) init-fields-hooks))
 
@@ -276,13 +275,26 @@
 ; ****************************************************************
 ; Various ways to restart all or part of the simulation.
 
+(define (change-k-point! k)
+  (set! k-point k)
+  (if (not (null? fields))
+      (if (and (not (or (not k-point) (vector3= k-point (vector3 0))))
+	       (not (zero? (meep-fields-is-real-get fields))))
+	  (begin (delete-meep-fields fields) 
+		 (set! fields '())
+		 (init-fields))
+	  (if k-point (meep-fields-use-bloch fields k-point)))))
+
 (define (reset-meep)
   (delete-meep-fields fields) (set! fields '())
   (delete-meep-structure structure) (set! structure '()))
 
 (define (restart-fields)
-  (meep-fields-t-set fields 0)
-  (meep-fields-zero-fields fields))
+  (if (not (null? fields))
+      (begin
+	(meep-fields-t-set fields 0)
+	(meep-fields-zero-fields fields))
+      (init-fields)))
 
 ; ****************************************************************
 ; Flux spectra
@@ -747,6 +759,54 @@
 		     old-cur " / " max-abs " = " (/ old-cur max-abs) "\n")
 	      (<= old-cur (* max-abs decay-by))))))))
 	    
+
+; ****************************************************************
+; band diagrams
+
+(define (run-k-points T k-points)
+  (define k-index 0)
+  (define cs (map (lambda (o) (object-property-value o 'component)) sources))
+  (define pts (map (lambda (o) (object-property-value o 'center)) sources))
+  (define As (map (lambda (o) (object-property-value o 'amplitude)) sources))
+  (define fmin 
+    (max 0 (apply min (map (lambda (o)
+			     (let ((t (object-property-value o 'src)))
+			       (if (object-member? 'gaussian-src t)
+				   (- (object-property-value t 'frequency)
+				      (/ 1 (object-property-value t 'width) 2))
+				   infinity)))
+			   sources))))
+  (define fmax 
+    (apply max (map (lambda (o)
+		      (let ((t (object-property-value o 'src)))
+			(if (object-member? 'gaussian-src t)
+			    (+ (object-property-value t 'frequency)
+			       (/ 1 (object-property-value t 'width) 2))
+			    0)))
+		    sources)))
+  (if (or (null? cs) (> fmin fmax))
+      (error "run-k-points requires a gaussian-src source"))
+  ; TODO: apply harminv to multiple points and only accept freqs
+  ; with correct relative amplitudes?
+  (map (lambda (k)
+	 (set! k-index (+ k-index 1))
+	 (change-k-point! k)
+	 (restart-fields)
+	 (if (= k-index 1) (output-epsilon))
+	 (run-sources+ T (after-sources 
+			  (harminv (car cs) (car pts) 
+				   (* 0.5 (+ fmin fmax)) (- fmax fmin))))
+	 (print "freqs:, " k-index 
+		", " (vector3-x k) ", " (vector3-y k) ", " (vector3-z k))
+	 (map (lambda (x) (print ", " x)) 
+	      (map harminv-freq-re harminv-results))
+	 (print "\n")
+	 (print "freqs-im:, " k-index 
+		", " (vector3-x k) ", " (vector3-y k) ", " (vector3-z k))
+	 (map (lambda (x) (print ", " x)) 
+	      (map harminv-freq-im harminv-results))
+	 (print "\n"))
+       k-points))
 
 ; ****************************************************************
 

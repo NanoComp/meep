@@ -25,17 +25,16 @@
 
 namespace meep {
 
-void fields::set_boundary(boundary_side b,direction d,
-                          boundary_condition cond,
-                          complex<double> kcomponent) {
-  UNUSED(kcomponent);
-  boundaries[b][d] = cond;
-  chunk_connections_valid = false;
+void fields::set_boundary(boundary_side b,direction d,boundary_condition cond){
+  if (boundaries[b][d] != cond) {
+    boundaries[b][d] = cond;
+    chunk_connections_valid = false;
+  }
 }
 
 void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
-  for (int b=0;b<2;b++) boundaries[b][d] = Periodic;
+  for (int b=0;b<2;b++) set_boundary(boundary_side(b), d, Periodic);
   if (real(kk) * v.num_direction(d) == 0.5 * a) // check b.z. edge exactly
     eikna[d] = -exp(-imag(kk) * ((2*pi/a)*v.num_direction(d)));
   else {

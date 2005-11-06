@@ -761,8 +761,7 @@ class fields {
   double time_spent_on(time_sink);
   void print_times();
   // boundaries.cpp
-  void set_boundary(boundary_side,direction,
-                    boundary_condition, complex<double> kcomponent=0.0);
+  void set_boundary(boundary_side,direction,boundary_condition);
   void use_bloch(direction d, double k) { use_bloch(d, (complex<double>) k); }
   void use_bloch(direction, complex<double> kz);
   void use_bloch(const vec &k);
