@@ -227,6 +227,7 @@ double geom_epsilon::eps(const meep::vec &r)
 /***********************************************************************/
 
 meep::structure *make_structure(int dims, vector3 size, double resolution,
+				bool enable_averaging,
 				bool ensure_periodicity_p,
 				geometric_object_list geometry,
 				material_type default_mat,
@@ -345,6 +346,8 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   
   meep::structure *s = new meep::structure(v, geps, br, S, 
 					   num_chunks, Courant);
+  if (enable_averaging)
+    s->set_epsilon(geps, true);
   
   master_printf("-----------\n");
   

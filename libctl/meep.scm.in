@@ -162,6 +162,8 @@
        (vector3- cen (vector3-scale 0.5 sz))
        (vector3+ cen (vector3-scale 0.5 sz))))))
 
+(define-param eps-averaging? false) ; still slow and experimental
+
 (define (init-structure . k_)
   (let ((k (if (null? k_) '() (car k_)))
 	(s (object-property-value geometry-lattice 'size)))
@@ -169,6 +171,7 @@
 		     (infer-dimensions k)
 		     s
 		     resolution
+		     eps-averaging?
 		     (and ensure-periodicity (not (not k)))
 		     geometry default-material
 		     pml-layers symmetries num-chunks Courant))))

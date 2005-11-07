@@ -7,6 +7,7 @@ meep::vec vector3_to_vec(const vector3 v3);
 void set_dimensions(int dims);
 
 meep::structure *make_structure(int dims, vector3 size, double resolution,
+				bool enable_averaging,
 				bool ensure_periodicity_p,
 				ctlio::geometric_object_list geometry,
 				ctlio::material_type default_mat,
