@@ -44,8 +44,8 @@ vector3 vec_to_vector3(const meep::vec &v)
     break;
   case meep::Dcyl:
     v3.x = v.r();
-    v3.y = v.z();
-    v3.z = 0;
+    v3.y = 0;
+    v3.z = v.z();
     break;
   }
   return v3;
@@ -61,7 +61,7 @@ meep::vec vector3_to_vec(const vector3 v3)
   case meep::D3:
     return meep::vec(v3.x, v3.y, v3.z);
   case meep::Dcyl:
-    return meep::veccyl(v3.x, v3.y);
+    return meep::veccyl(v3.x, v3.z);
   }
 }
 

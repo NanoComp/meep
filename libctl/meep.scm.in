@@ -33,13 +33,13 @@
 (define-class polarizability no-parent
   (define-property omega no-default 'number)
   (define-property gamma no-default 'number)
-  (define-property delta-epsilon 1.0 'number)
+  (define-property sigma 1.0 'number)
   (define-property energy-saturation 0.0 'number))
 
 (define-class dielectric material-type
   (define-property epsilon no-default 'number)
   (define-property polarizations '() (make-list-type 'polarizability))
-  (define-property n2 0 'number)
+  (define-property chi2 0 'number)
 )
 
 (define-class perfect-metal material-type)
@@ -123,10 +123,11 @@
 (define-class rotate4-sym symmetry)
 (define-class mirror-sym symmetry)
 
+(define ALL -1) ; special value for directions, when all values
 (define-class pml no-parent
   (define-property thickness no-default 'number)
-  (define-property direction -1 'integer)
-  (define-property side -1 'integer)
+  (define-property direction ALL 'integer)
+  (define-property side ALL 'integer)
   (define-property strength 1.0 'number))
 
 (export-type (make-list-type 'symmetry))
@@ -218,6 +219,7 @@
 
 (define (fwidth df) (width (/ df))) ; to specify frequency width instead
 (define (wavelength lam) (frequency (/ lam)))
+(define (period T) (frequency (/ T)))
 
 (define-class source no-parent
   (define-property src no-default 'src-time)
@@ -256,6 +258,10 @@
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m 0)))
+	       (not (for-all? symmetries
+			      (lambda (s)
+				(zero? (imag-part 
+					(object-property-value s 'phase))))))
 	       (not (or (not k-point) (vector3= k-point (vector3 0))))))
       (meep-fields-use-real-fields fields))
   (if k-point (meep-fields-use-bloch fields k-point))
@@ -299,10 +305,11 @@
 ; ****************************************************************
 ; Flux spectra
 
+(define AUTOMATIC -1) ; special value for directions, when auto-determined
 (define-class flux-region no-parent
   (define-property center no-default 'vector3)
   (define-property size (vector3 0 0 0) 'vector3)
-  (define-property direction -1 'integer)
+  (define-property direction AUTOMATIC 'integer)
   (define-property weight 1.0 'cnumber))
 
 (define (fields-add-flux fields fcen df nfreq . fluxes)
