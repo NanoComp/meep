@@ -34,8 +34,8 @@ fi
 ##############################################################################
 
 AC_ARG_WITH(doc,
-	[AC_HELP_STRING([--without-doc], [omit documentation from dist])],
-	with_doc=$withval,with_doc=yes)
+	[AC_HELP_STRING([--with-doc], [include old documentation in dist])],
+	with_doc=$withval,with_doc=no)
 
 AM_CONDITIONAL(WITH_DOC, test "x$with_doc" = xyes)
 
@@ -228,7 +228,7 @@ AC_SUBST(MEEPLIBS)
 # subsequent libraries are only for libctl front end
 meep_save_LIBS=$LIBS
 
-AC_ARG_WITH(libctl, [AC_HELP_STRING([--with-libctl=<dir>],[specify libctl directory])], with_libctl=$withval, with_libctl=no)
+AC_ARG_WITH(libctl, [AC_HELP_STRING([--with-libctl=<dir>],[specify libctl directory])], with_libctl=$withval, with_libctl=yes)
 if test "x$with_libctl" = "xno"; then
         :
 elif test "x$with_libctl" != "xyes"; then
@@ -345,7 +345,7 @@ AC_CHECK_LIB(ctl, ctl_get_vector3, [], [AC_MSG_ERROR([Couldn't find the required
 AC_CHECK_HEADER(ctl.h, [], [AC_MSG_ERROR([Couldn't find the libctl header.])])
 
 # Check libctl version >= LIBCTL_MAJOR.LIBCTL_MINOR.LIBCTL_BUGFIX
-LIBCTL_MAJOR=2; LIBCTL_MINOR=3; LIBCTL_BUGFIX=0
+LIBCTL_MAJOR=3; LIBCTL_MINOR=0; LIBCTL_BUGFIX=0
 AC_MSG_CHECKING([whether libctl version is at least ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX}])
 AC_EGREP_CPP(yes, [[
 #include <ctl.h>

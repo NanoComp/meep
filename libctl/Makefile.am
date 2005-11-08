@@ -3,7 +3,7 @@ EXTRA_DIST = meep.scm.in
 
 LIBMEEP = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
 
-HDRS = meep-ctl.hpp meep-ctl-const.hpp
+HDRS = meep-ctl.hpp meep-ctl-const.hpp meep-ctl-swig.hpp
 
 LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
 
