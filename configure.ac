@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 0.2, meep@ab-initio.mit.edu)
+AC_INIT(meep, 0.8, meep@ab-initio.mit.edu)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is

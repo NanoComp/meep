@@ -46,7 +46,7 @@ meep-enums.scm: meep_enum_renames.i
 ##############################################################################
 
 # what is printed out when invoking your program with --version:
-VERSION_STRING = "Meep @VERSION@, Copyright (C) 2003 Massachusetts Insitute of Technology."
+VERSION_STRING = "Meep @VERSION@, Copyright (C) 2005 Massachusetts Insitute of Technology."
 
 MY_DEFS = -DHAVE_CTL_HOOKS=1 -DHAVE_CTL_EXPORT_HOOK=1
 
