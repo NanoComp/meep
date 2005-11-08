@@ -36,17 +36,17 @@ AC_ARG_ENABLE(portable-binary, [AC_HELP_STRING([--enable-portable-binary], [disa
 if test "$ac_test_CXXFLAGS" != "set"; then
   CXXFLAGS=""
   case $ax_cv_cxx_compiler_vendor in
-    dec) CXXFLAGS="-w0 -O5 -ansi_alias -ansi_args -fp_reorder -tune host"
+    dec) CXXFLAGS="-w0 -O5 -tune host" # -ansi_alias -ansi_args -fp_reorder ?
 	 if test "x$acx_maxopt_portable" = xno; then
            CXXFLAGS="$CXXFLAGS -arch host"
          fi;;
 
-    sun) CXXFLAGS="-native -fast -xO5 -dalign"
+    sun) CXXFLAGS="-native -fast -dalign" # -xO5 ?
 	 if test "x$acx_maxopt_portable" = xyes; then
 	   CXXFLAGS="$CXXFLAGS -xarch=generic"
          fi;;
 
-    hp)  CXXFLAGS="+Oall +Optrs_ansi +DSnative"
+    hp)  CXXFLAGS="+Oall +DSnative" # +Optrs_ansi ?
 	 if test "x$acx_maxopt_portable" = xyes; then
 	   CXXFLAGS="$CXXFLAGS +DAportable"
 	 fi;;
@@ -71,7 +71,7 @@ if test "$ac_test_CXXFLAGS" != "set"; then
                 echo "******************************************************"])
          ;;
 
-    intel) CXXFLAGS="-O3 -ansi_alias"
+    intel) CXXFLAGS="-O3" #  -ansi_alias ?
 	if test "x$acx_maxopt_portable" = xno; then
 	  icc_archflag=unknown
 	  icc_flags=""
@@ -109,9 +109,10 @@ if test "$ac_test_CXXFLAGS" != "set"; then
      # -malign-double for x86 systems
      AX_CHECK_COMPILER_FLAGS(-malign-double, CXXFLAGS="$CXXFLAGS -malign-double")
 
+     # -fstrict-aliasing causes error for g++ 3.3.5 (WTF?)
      #  -fstrict-aliasing for gcc-2.95+
-     AX_CHECK_COMPILER_FLAGS(-fstrict-aliasing,
-	CXXFLAGS="$CXXFLAGS -fstrict-aliasing")
+     # AX_CHECK_COMPILER_FLAGS(-fstrict-aliasing,
+     #	CXXFLAGS="$CXXFLAGS -fstrict-aliasing")
 
      # -ffast-math gives us NaN results in bragg_transmission.cpp
      # for g++ 3.3.5.  Grrr.
