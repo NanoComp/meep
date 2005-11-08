@@ -2,7 +2,7 @@
 
 set -ev
 
-sh autogen.sh --without-libctl --without-doc # --verbose
+sh autogen.sh --without-doc # --verbose
 
 version=`grep PACKAGE_VERSION config.h |cut -d' ' -f3 |tr -d \"`
 distdir="meep-$version"
@@ -16,7 +16,7 @@ rm $tarfile
 pushd $distdir
 mkdir OBJ
 cd OBJ
-../configure --without-libctl # --disable-static --enable-shared
+../configure --with-doc # --disable-static --enable-shared
 make
 make check
 popd

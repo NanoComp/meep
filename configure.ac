@@ -17,22 +17,6 @@ MEEP_SUFFIX=""
 
 ##############################################################################
 
-AC_ARG_ENABLE(debug, [AC_HELP_STRING([--enable-debug,compile for debugging])],
-	      enable_debug=$enableval, enable_debug=no)
-if test "$enable_debug" = "yes"; then
-	CFLAGS="-g"
-	CXXFLAGS="-g"
-	FFLAGS="-g"
-	AC_DEFINE(DEBUG,1,[define to enable debugging code])
-fi
-
-DEFAULTFLAGS="no"
-if test "x" = "x$CXXFLAGS"; then
-   DEFAULTFLAGS=""
-fi
-
-##############################################################################
-
 AC_ARG_WITH(doc,
 	[AC_HELP_STRING([--with-doc], [include old documentation in dist])],
 	with_doc=$withval,with_doc=no)
@@ -172,36 +156,18 @@ fi
 AC_SUBST(RUNCODE)
 
 ##############################################################################
+# Compiler flags
 
-# FIXME: see how FFTW does it
-
-# Try to guess some good optimization flags if CXXFLAGS is empty...
-if test "x" = "x$DEFAULTFLAGS"; then
-   CXXFLAGS_my_saved="-g"
-   CFLAGS_my_saved="$CFLAGS"
-   CFLAGS="$CXXFLAGS_my_saved -O3"
-   AC_COMPILE_IFELSE([int main() { return 0; }],
-       [echo Looks like -O3 is good && CXXFLAGS_my_saved="$CFLAGS"],
-       [echo Looks like -O3 is bad  && CFLAGS="$CXXFLAGS_my_saved"])
-   CFLAGS="$CFLAGS -funroll-loops"
-   AC_COMPILE_IFELSE([int main() { return 0; }],
-       [echo Looks like -funroll-loops is good && CXXFLAGS_my_saved="$CFLAGS"],
-       [echo Looks like -funroll-loops is bad  && CFLAGS="$CXXFLAGS_my_saved"])
-   CFLAGS="$CFLAGS -msse"
-   AC_COMPILE_IFELSE([int main() { return 0; }],
-       [echo Looks like -msse is good && CXXFLAGS_my_saved="$CFLAGS"],
-       [echo Looks like -msse is bad  && CFLAGS="$CXXFLAGS_my_saved"])
-   CFLAGS="$CFLAGS -mfpmath=sse"
-   AC_COMPILE_IFELSE([int main() { return 0; }],
-       [echo Looks like -mfpmath=sse is good && CXXFLAGS_my_saved="$CFLAGS"],
-       [echo Looks like -mfpmath=sse is bad  && CFLAGS="$CXXFLAGS_my_saved"])
-   CFLAGS="$CFLAGS -mcpu=pentium4"
-   AC_COMPILE_IFELSE([int main() { return 0; }],
-       [echo Looks like -mcpu=pentium4 is good && CXXFLAGS_my_saved="$CFLAGS"],
-       [echo Looks like -mcpu=pentium4 is bad  && CFLAGS="$CXXFLAGS_my_saved"])
-
-   CXXFLAGS="$CFLAGS"
-   CFLAGS="$CFLAGS_my_saved"
+AC_ARG_ENABLE(debug, [AC_HELP_STRING([--enable-debug,compile for debugging])],
+	      enable_debug=$enableval, enable_debug=no)
+if test "$enable_debug" = "yes"; then
+	CFLAGS="-g"
+	CXXFLAGS="-g"
+	FFLAGS="-g"
+	AC_DEFINE(DEBUG,1,[define to enable debugging code])
+else
+  # Pick "good" compiler flags(?)
+  AX_CXX_MAXOPT
 fi
 
 # Add lots of compiler warnings in maintainer mode if we are using gcc:
@@ -209,7 +175,7 @@ fi
 if test "$GXX" = "yes" && test "$USE_MAINTAINER_MODE" = yes; then
         CXXFLAGS="$CXXFLAGS -Wall -W -pedantic"
 fi
- 
+
 ##############################################################################
 
 AC_CHECK_PROG(HC, ghc, ghc)
