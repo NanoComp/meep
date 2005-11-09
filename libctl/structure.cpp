@@ -198,7 +198,7 @@ double geom_epsilon::eps(const meep::vec &r)
 
   boolean inobject;
   material_type material =
-    material_of_point_in_tree_inobject(p, restricted_tree, &inobject);
+    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
   
   int destroy_material = 0;
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
@@ -249,7 +249,7 @@ double geom_epsilon::kerr(const meep::vec &r) {
 
   boolean inobject;
   material_type material =
-    material_of_point_in_tree_inobject(p, restricted_tree, &inobject);
+    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
   
   int destroy_material = 0;
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
@@ -282,7 +282,7 @@ double geom_epsilon::sigma(const meep::vec &r) {
 
   boolean inobject;
   material_type material =
-    material_of_point_in_tree_inobject(p, restricted_tree, &inobject);
+    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
   
   int destroy_material = 0;
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
