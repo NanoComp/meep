@@ -88,6 +88,11 @@ public:
   virtual void set_volume(const meep::geometric_volume &gv);
   virtual void unset_volume(void);
   virtual double eps(const meep::vec &r);
+  virtual bool has_kerr();
+  virtual double kerr(const meep::vec &r);
+
+  virtual double sigma(const meep::vec &r);
+  void add_polarizabilities(meep::structure *s);
 };
 
 geom_epsilon::geom_epsilon(geometric_object_list g,
@@ -200,8 +205,7 @@ double geom_epsilon::eps(const meep::vec &r)
     material = default_material;
   }
   else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
-    material = eval_material_func(
-				  material.subclass.
+    material = eval_material_func(material.subclass.
 				  material_function_data->material_func,
 				  p);
     destroy_material = 1;
@@ -224,6 +228,138 @@ double geom_epsilon::eps(const meep::vec &r)
   return eps;
 }
 
+bool geom_epsilon::has_kerr()
+{
+  for (int i = 0; i < geometry.num_items; ++i) {
+    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
+      if (geometry.items[i].material.subclass.dielectric_data->chi2 != 0)
+	return true; 
+    }
+  }
+    /* FIXME: what to do about material-functions?
+       Currently, we require that at least *one* ordinary material
+       property have non-zero chi2 for Kerr to be enabled.   It might
+       be better to have set_kerr automatically delete kerr[] if the
+       chi2's are all zero. */
+  return false;
+}
+
+double geom_epsilon::kerr(const meep::vec &r) {
+  vector3 p = vec_to_vector3(r);
+
+  boolean inobject;
+  material_type material =
+    material_of_point_in_tree_inobject(p, restricted_tree, &inobject);
+  
+  int destroy_material = 0;
+  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
+    material = default_material;
+  }
+  else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+    material = eval_material_func(material.subclass.
+				  material_function_data->material_func,
+				  p);
+    destroy_material = 1;
+  }
+  
+  double chi2;
+  switch (material.which_subclass) {
+  case MTS::DIELECTRIC:
+    chi2 = material.subclass.dielectric_data->chi2;
+    break;
+  default:
+    chi2 = 0;
+  }
+  
+  if (destroy_material)
+    material_type_destroy(material);
+  
+  return chi2;
+}
+
+double geom_epsilon::sigma(const meep::vec &r) {
+  vector3 p = vec_to_vector3(r);
+
+  boolean inobject;
+  material_type material =
+    material_of_point_in_tree_inobject(p, restricted_tree, &inobject);
+  
+  int destroy_material = 0;
+  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
+    material = default_material;
+  }
+  else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+    material = eval_material_func(material.subclass.
+				  material_function_data->material_func,
+				  p);
+    destroy_material = 1;
+  }
+  
+  double sigma;
+  switch (material.which_subclass) {
+  case MTS::DIELECTRIC:
+    polarizability_list plist = 
+      material.subclass.dielectric_data->polarizations;
+    for (int j = 0; j < plist.num_items; ++j)
+      if (plist.items[j].omega == omega &&
+	  plist.items[j].gamma == gamma &&
+	  plist.items[j].delta_epsilon == deps &&
+	  plist.items[j].energy_saturation == energy_sat)
+	sigma = plist.items[j].sigma;
+    break;
+  default:
+    sigma = 0;
+  }
+  
+  if (destroy_material)
+    material_type_destroy(material);
+  
+  return sigma;
+}
+
+void geom_epsilon::add_polarizabilities(meep::structure *s) {
+
+  // construct a list of the unique polarizabilities in the geometry:
+  struct pol {
+    double omega, gamma, deps, esat;
+    struct pol *next;
+  } *pols = 0;
+  for (int i = 0; i < geometry.num_items; ++i) {
+    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
+      polarizability_list plist = 
+	geometry.items[i].material.subclass.dielectric_data->polarizations;
+      for (int j = 0; j < plist.num_items; ++j) {
+	struct pol *p = pols;
+	while (p 
+	       && p->omega != plist.items[j].omega
+	       && p->gamma != plist.items[j].gamma
+	       && p->deps != plist.items[j].delta_epsilon
+	       && p->esat != plist.items[j].energy_saturation)
+	  p = p->next;
+	if (!p) {
+	  p = new struct pol;
+	  p->omega = plist.items[j].omega;
+	  p->gamma = plist.items[j].gamma;
+	  p->deps = plist.items[j].delta_epsilon;
+	  p->esat = plist.items[j].energy_saturation;
+	  p->next = pols;
+	  pols = p;
+	}
+      }
+    }
+  }
+    
+  for (struct pol *p = pols; p; p = p->next) {
+    s->add_polarizability(*this, p->omega, p->gamma, p->deps, p->esat);
+  }
+  
+  while (pols) {
+    struct pol *p = pols;
+    pols = pols->next;
+    delete p;
+  }
+}
+
 /***********************************************************************/
 
 meep::structure *make_structure(int dims, vector3 size, double resolution,
@@ -239,9 +375,6 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   
   // only cartesian lattices, centered at the origin, are currently allowed
   geom_initialize();
-  ensure_periodicity = ensure_periodicity_p;
-
-  default_material = default_mat;
   
   number no_size = 2.0 / ctl_get_number("infinity");
   if (size.x <= no_size)
@@ -279,8 +412,6 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
     CK(0, "unsupported dimensionality");
   }
   
-  geom_epsilon geps(geometry, v.pad().surroundings());
-
   meep::symmetry S;
   for (int i = 0; i < symmetries.num_items; ++i) 
     switch (symmetries.items[i].which_subclass) {
@@ -344,11 +475,16 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
     }
   }
   
+  ensure_periodicity = ensure_periodicity_p;
+  default_material = default_mat;
+  geom_epsilon geps(geometry, v.pad().surroundings());
+
   meep::structure *s = new meep::structure(v, geps, br, S, 
-					   num_chunks, Courant);
-  if (enable_averaging)
-    s->set_epsilon(geps, true);
-  
+					   num_chunks, Courant,
+					   enable_averaging);
+
+  geps.add_polarizabilities(s);
+
   master_printf("-----------\n");
   
   return s;
