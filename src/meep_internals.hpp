@@ -72,6 +72,7 @@ class polarization {
   // for total energy, use fields::thermo_energy_in_box
   static polarization *set_up_polarizations(const structure_chunk *s, int is_real);
   void use_real_fields();
+  void zero_fields();
   void initialize_energy(double energy(const vec &));
 };
 

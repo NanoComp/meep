@@ -39,58 +39,69 @@ void polarization::use_real_fields() {
   if (next) next->use_real_fields();
 }
 
+void polarization::zero_fields() {
+  const volume &v = pb->v;
+  DOCMP FOR_COMPONENTS(c) if (P[c][cmp])
+    for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0;
+  if (pb->energy_saturation != 0.0) {
+    FOR_COMPONENTS(c) if (s[c] && pb->s[c])
+      for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
+    double num_components = 0.0;
+    FOR_ELECTRIC_COMPONENTS(c) if (s[c]) num_components += 1.0;
+    const double isf = 1.0/saturation_factor/num_components;
+    FOR_COMPONENTS(c) if (energy[c] && s[c])
+      for (int i=0;i<v.ntot();i++) energy[c][i] = isf*s[c][i];
+  }
+  else
+    FOR_COMPONENTS(c) if (energy[c])
+      for (int i=0;i<v.ntot();i++) energy[c][i] = 0;
+  if (next) next->zero_fields();
+}
+
 polarization::polarization(const polarizability *the_pb, int is_r) {
   const volume &v = the_pb->v;
   is_real = is_r;
   DOCMP {
     FOR_COMPONENTS(c)
-      if (v.has_field(c) && is_electric(c)) {
+      if (v.has_field(c) && is_electric(c))
         P[c][cmp] = new double[v.ntot()];
-        for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0.0;
-      } else {
+      else
         P[c][cmp] = NULL;
-      }
   }
   FOR_COMPONENTS(c)
-    if (v.has_field(c) && is_electric(c)) {
+    if (v.has_field(c) && is_electric(c))
       energy[c] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++) energy[c][i] = 0.0;
-    } else {
+    else
       energy[c] = NULL;
-    }
   pb = the_pb;
   // Initialize the s[] arrays that point to sigma.
-  FOR_COMPONENTS(c)
+  FOR_COMPONENTS(c) {
     if (pb->energy_saturation != 0.0) {
-      if (pb->s[c]) {
+      if (pb->s[c])
         s[c] = new double[v.ntot()];
-        for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
-      } else s[c] = NULL;
-    } else s[c] = pb->s[c];
+      else 
+	s[c] = NULL;
+    } 
+    else 
+      s[c] = pb->s[c];
+  }
   // Deal with saturation stuff.
-  if (pb->energy_saturation != 0.0) {
+  if (pb->energy_saturation != 0.0)
     saturation_factor = pb->saturated_sigma/pb->energy_saturation;
-    double num_components = 0.0;
-    FOR_ELECTRIC_COMPONENTS(c) if (s[c]) num_components += 1.0;
-    const double isf = 1.0/saturation_factor/num_components;
-    FOR_COMPONENTS(c)
-      if (pb->s[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = isf*s[c][i];
-  } else {
+  else
     saturation_factor = 0.0;
-    FOR_COMPONENTS(c)
-      if (energy[c]) for (int i=0;i<v.ntot();i++) energy[c][i] = 0.0;
-  }
-  if (pb->next == NULL) {
-    next = NULL;
-  } else {
+
+  next = NULL;
+  zero_fields();
+
+  if (pb->next)
     next = new polarization(pb->next, is_r);
-  }
 }
 
 polarization::~polarization() {
   DOCMP FOR_COMPONENTS(c) delete[] P[c][cmp];
   FOR_COMPONENTS(c) delete[] energy[c];
-  if (saturation_factor != 0.0)
+  if (pb->energy_saturation != 0.0)
     FOR_COMPONENTS(c) delete[] s[c];
   if (next) delete next;
 }
