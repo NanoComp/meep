@@ -47,7 +47,8 @@ double using_pml_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps, pml(1.0));
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+		     complex<double>(0,-2*pi*0.2));
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -58,7 +59,8 @@ double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps, pml(1.0, Y));
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+		     complex<double>(0,-2*pi*0.2));
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -70,7 +72,8 @@ double x_periodic(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+		     complex<double>(0,-2*pi*0.2));
   f.use_bloch(X, 0.1);
   while (f.time() < ttot) f.step();
   monitor_point p;
@@ -82,7 +85,8 @@ double periodic_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+		     complex<double>(0,-2*pi*0.2));
   vec k;
   switch (v.dim) {
   case D1: k = vec(0.3); break;
@@ -101,7 +105,8 @@ double metallic_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+		     complex<double>(0,-2*pi*0.2));
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -113,7 +118,8 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   structure s(v, eps);
   s.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&s);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(),
+		     complex<double>(0,-2*pi*0.2));
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());
@@ -125,7 +131,8 @@ double polariton_energy(const volume &v, double eps(const vec &)) {
   structure s(v, eps);
   s.add_polarizability(one, 0.3, 0.1, 7.63);
   fields f(&s);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(),
+		     complex<double>(0,-2*pi*0.2));
   while (f.time() < ttot) f.step();
   return f.total_energy();
 }
@@ -136,7 +143,8 @@ double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
   polarizability_identifier thep = s.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
   fields f(&s);
   f.use_real_fields();
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(), 1/sqrt(4*pi));
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(), 
+		     1/sqrt(4*pi) * complex<double>(0,-2*pi*0.2));
   while (f.time() < ttot) f.step();
   monitor_point p;
   f.get_point(&p, v.center());

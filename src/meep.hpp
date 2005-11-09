@@ -442,7 +442,7 @@ class continuous_src_time : public src_time {
 class custom_src_time : public src_time {
  public:
   custom_src_time(complex<double> (*func)(double t, void *), void *data,
-		      double st = -infinity, double et = infinity)
+		  double st = -infinity, double et = infinity)
     : func(func), data(data), start_time(st), end_time(et) {}
   virtual ~custom_src_time() {}
   
