@@ -40,7 +40,7 @@
 (define-class dielectric material-type
   (define-property epsilon no-default 'number)
   (define-property polarizations '() (make-list-type 'polarizability))
-  (define-property chi2 0 'number)
+  (define-property chi3 0 'number)
 )
 
 (define-class perfect-metal material-type)

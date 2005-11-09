@@ -177,7 +177,7 @@ h5file::~h5file() {
     delete cur;
     cur = next;
   }
-  delete filename;
+  delete[] filename;
 }
 
 bool h5file::ok() {

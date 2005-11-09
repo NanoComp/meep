@@ -232,15 +232,15 @@ bool geom_epsilon::has_kerr()
 {
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
-      if (geometry.items[i].material.subclass.dielectric_data->chi2 != 0)
+      if (geometry.items[i].material.subclass.dielectric_data->chi3 != 0)
 	return true; 
     }
   }
     /* FIXME: what to do about material-functions?
        Currently, we require that at least *one* ordinary material
-       property have non-zero chi2 for Kerr to be enabled.   It might
+       property have non-zero chi3 for Kerr to be enabled.   It might
        be better to have set_kerr automatically delete kerr[] if the
-       chi2's are all zero. */
+       chi3's are all zero. */
   return false;
 }
 
@@ -262,19 +262,19 @@ double geom_epsilon::kerr(const meep::vec &r) {
     destroy_material = 1;
   }
   
-  double chi2;
+  double chi3;
   switch (material.which_subclass) {
   case MTS::DIELECTRIC:
-    chi2 = material.subclass.dielectric_data->chi2;
+    chi3 = material.subclass.dielectric_data->chi3;
     break;
   default:
-    chi2 = 0;
+    chi3 = 0;
   }
   
   if (destroy_material)
     material_type_destroy(material);
   
-  return chi2;
+  return chi3;
 }
 
 double geom_epsilon::sigma(const meep::vec &r) {
