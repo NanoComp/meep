@@ -237,6 +237,7 @@ polarizability_identifier structure::add_polarizability(material_function &sigma
                                                   double omega, double gamma,
                                                   double delta_epsilon,
                                                   double energy_saturation) {
+  changing_chunks();
   for (int i=0;i<num_chunks;i++)
     chunks[i]->add_polarizability(sigma, omega, gamma, delta_epsilon, energy_saturation);
   return chunks[0]->pb->get_identifier();

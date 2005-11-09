@@ -25,7 +25,7 @@
 
 namespace meep {
 
-fields::fields(const structure *s, double m) :
+fields::fields(structure *s, double m) :
   S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m)
 {
   verbosity = 0;
@@ -150,7 +150,7 @@ bool fields::have_component(component c) {
 }
 
 fields_chunk::~fields_chunk() {
-  delete s;
+  if (s->refcount-- <= 1) delete s; // delete if not shared
   is_real = 0; // So that we can make sure to delete everything...
   DOCMP2 FOR_COMPONENTS(c) {
     delete[] f[c][cmp];
@@ -174,9 +174,9 @@ fields_chunk::~fields_chunk() {
   FOR_FIELD_TYPES(ft) delete[] zeroes[ft];
 }
 
-fields_chunk::fields_chunk(const structure_chunk *the_s, const char *od,
+fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
 			   double m) : v(the_s->v), gv(the_s->gv), m(m) {
-  s = new structure_chunk(the_s);
+  s = the_s; s->refcount++;
   rshift = 0;
   verbosity = 0;
   outdir = od;
@@ -285,6 +285,15 @@ static inline direction cross(direction a, direction b) {
   return (direction) (2 + (3+2*(a-2)-(b-2))%3);
 }
 
+/* Call this whenever we modify the structure_chunk (fields_chunk::s) to
+   implement copy-on-write semantics.  See also structure::changing_chunks. */
+void fields_chunk::changing_structure() {
+  if (s->refcount > 1) { // this chunk is shared, so make a copy
+    s->refcount--;
+    s = new structure_chunk(s);
+  }
+}
+
 void fields_chunk::figure_out_step_plan() {
   FOR_COMPONENTS(cc)
     have_minus_deriv[cc] = have_plus_deriv[cc] = false;
@@ -383,6 +392,7 @@ void fields_chunk::remove_polarizabilities() {
   delete pol;
   delete olpol;
   pol = olpol = NULL;
+  changing_structure();
   s->remove_polarizabilities();
 }
 

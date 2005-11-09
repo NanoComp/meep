@@ -107,6 +107,7 @@ void fields::phase_material() {
 
 void fields_chunk::phase_material(int phasein_time) {
   if (new_s && phasein_time > 0) {
+    changing_structure();
     s->mix_with(new_s, 1.0/phasein_time);
     update_e_from_d(); // ensure E = 1/eps * D
   }

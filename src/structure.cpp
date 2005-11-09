@@ -238,7 +238,8 @@ structure::structure(const structure *s) : gv(s->gv) {
   S = s->S;
   user_volume = s->user_volume;
   chunks = new structure_chunk_ptr[num_chunks];
-  for (int i=0;i<num_chunks;i++) chunks[i] = new structure_chunk(s->chunks[i]);
+  for (int i=0;i<num_chunks;i++)
+    chunks[i] = new structure_chunk(s->chunks[i]);
   num_effort_volumes = s->num_effort_volumes;
   effort_volumes = new volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
@@ -258,7 +259,9 @@ structure::structure(const structure &s) : gv(s.gv) {
   S = s.S;
   user_volume = s.user_volume;
   chunks = new structure_chunk_ptr[num_chunks];
-  for (int i=0;i<num_chunks;i++) chunks[i] = new structure_chunk(s.chunks[i]);
+  for (int i=0;i<num_chunks;i++) {
+    chunks[i] = new structure_chunk(s.chunks[i]);
+  }
   num_effort_volumes = s.num_effort_volumes;
   effort_volumes = new volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
@@ -273,12 +276,24 @@ structure::structure(const structure &s) : gv(s.gv) {
 
 structure::~structure() {
   for (int i=0;i<num_chunks;i++) {
-    delete chunks[i];
+    if (chunks[i]->refcount-- <= 1) delete chunks[i];
     chunks[i] = NULL; // Just to be sure...
   }
   delete[] chunks;
   delete[] effort_volumes;
   delete[] effort;
+}
+
+/* To save memory, the structure chunks are shared with the
+   fields_chunk objects instead of making a copy.  However, to
+   preserve the illusion that the structure and fields are
+   independent objects, we implement copy-on-write semantics. */
+void structure::changing_chunks() { // call this whenever chunks are modified
+  for (int i=0; i<num_chunks; i++)
+    if (chunks[i]->refcount > 1) { // this chunk is shared, so make a copy
+      chunks[i]->refcount--;
+      chunks[i] = new structure_chunk(chunks[i]);
+    }
 }
 
 void structure::set_materials(material_function &mat, 
@@ -290,6 +305,7 @@ void structure::set_materials(material_function &mat,
 void structure::set_epsilon(material_function &eps, 
 			    bool use_anisotropic_averaging, double minvol) {
   double tstart = wall_time();
+  changing_chunks();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->set_epsilon(eps, use_anisotropic_averaging, minvol);
@@ -304,6 +320,7 @@ void structure::set_epsilon(double eps(const vec &),
 }
 
 void structure::set_kerr(material_function &eps) {
+  changing_chunks();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->set_kerr(eps);
@@ -332,6 +349,7 @@ void structure::use_pml(direction d, boundary_side b, double dx,
 void structure::mix_with(const structure *oth, double f) {
   if (num_chunks != oth->num_chunks)
     abort("You can't phase materials with different chunk topologies...\n");
+  changing_chunks();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->mix_with(oth->chunks[i], f);
@@ -445,6 +463,7 @@ void structure_chunk::update_Cdecay() {
 }
 
 structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
+  refcount = 1;
   if (o->pb) pb = new polarizability(o->pb);
   else pb = NULL;
   a = o->a;
@@ -587,6 +606,7 @@ structure_chunk::structure_chunk(const volume &thev,
 				 const geometric_volume &vol_limit, 
 				 double Courant, int pr)
   : Courant(Courant), gv(thev.surroundings() & vol_limit) {
+  refcount = 1;
   pml_fmin = 0.2;
   pb = NULL;
   v = thev;
@@ -644,6 +664,7 @@ void structure_chunk::remove_polarizabilities() {
 }
 
 void structure::remove_polarizabilities() {
+  changing_chunks();
   for (int i=0;i<num_chunks;i++) 
     chunks[i]->remove_polarizabilities();
 }

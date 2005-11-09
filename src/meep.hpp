@@ -192,6 +192,8 @@ class structure_chunk {
   geometric_volume gv;
   polarizability *pb;
 
+  int refcount; // reference count of objects using this structure_chunk
+
   ~structure_chunk();
   structure_chunk(const volume &v,
             const geometric_volume &vol_limit, double Courant, int proc_num);
@@ -345,6 +347,7 @@ class structure {
   void choose_chunkdivision(const volume &v, int num_chunks,
 			    const boundary_region &br, const symmetry &s);
   void check_chunks();
+  void changing_chunks();
 };
 
 class src_vol;
@@ -603,7 +606,7 @@ class fields_chunk {
   structure_chunk *s;
   const char *outdir;
 
-  fields_chunk(const structure_chunk *, const char *outdir, double m);
+  fields_chunk(structure_chunk *, const char *outdir, double m);
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
@@ -709,6 +712,8 @@ class fields_chunk {
   void alloc_extra_connections(field_type, connect_phase, in_or_out, int);
   // dft.cpp
   void update_dfts(double timeE, double timeH);
+
+  void changing_structure();
 };
 
 enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
@@ -759,7 +764,7 @@ class fields {
   bandsdata *bands;
   char *outdir;
   // fields.cpp methods:
-  fields(const structure *, double m=0);
+  fields(structure *, double m=0);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;
