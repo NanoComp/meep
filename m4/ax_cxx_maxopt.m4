@@ -104,7 +104,8 @@ if test "$ac_test_CXXFLAGS" != "set"; then
     
     gnu) 
      # default optimization flags for g++ on all systems
-     CXXFLAGS="-Os -fomit-frame-pointer" # Meep is faster with -Os!
+     # CXXFLAGS="-Os -fomit-frame-pointer" # Meep is faster with -Os!
+     CXXFLAGS="-O2" # -Os seems to produce buggy code with g++ 3.3.5, grr
 
      # -malign-double for x86 systems
      AX_CHECK_COMPILER_FLAGS(-malign-double, CXXFLAGS="$CXXFLAGS -malign-double")
