@@ -463,7 +463,7 @@ const char *fields::h5file_name(const char *name,
 				const char *prefix, bool timestamp)
 {
   const int buflen = 1024;
-  char filename[buflen];
+  static char filename[buflen];
   char time_step_string[32] = "";
 
   if (timestamp) snprintf(time_step_string, 32, "-%09.2f", time());

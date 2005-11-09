@@ -379,6 +379,18 @@ void fields::remove_sources() {
     chunks[i]->remove_sources();
 }
 
+void fields_chunk::remove_polarizabilities() {
+  delete pol;
+  delete olpol;
+  pol = olpol = NULL;
+  s->remove_polarizabilities();
+}
+
+void fields::remove_polarizabilities() {
+  for (int i=0;i<num_chunks;i++) 
+    chunks[i]->remove_polarizabilities();
+}
+
 void fields::remove_fluxes() {
   delete fluxes;
 }
@@ -391,6 +403,8 @@ void fields_chunk::zero_fields() {
     if (f_m_pml[c][cmp])
       for (int i=0;i<v.ntot();i++) f_m_pml[c][cmp][i] = 0.0;
   }
+  if (is_mine() && pol) pol->zero_fields();
+  if (is_mine() && olpol) olpol->zero_fields();
 }
 
 void fields::zero_fields() {

@@ -132,46 +132,51 @@ private:
    it is likely that complicated implementations will share state between
    properties. */
 class material_function {
-     material_function(const material_function &ef) {} // prevent copying
- public:
-     material_function() {}
-
-     virtual ~material_function() {}
-
-     /* Specify a restricted volume: all subsequent eps/sigma/etc
-	calls will be for points inside gv, until the next set_volume. */
-     virtual void set_volume(const geometric_volume &gv) {}
-     virtual void unset_volume(void) {} // unrestrict the volume
-
-     /* scalar dielectric function */
-     virtual double eps(const vec &r) { return 1.0; }
-
-     /* polarizability sigma function */
-     virtual double sigma(const vec &r) { return 0.0; }
-     /* specify polarizability used for subsequent calls to sigma(r) */
-     virtual void set_polarizability(double omega, double gamma,
-				     double delta_epsilon,
-				     double energy_saturation) {}
-
-     // Kerr coefficient
-     
-     virtual bool has_kerr() { return false; }
-     virtual double kerr(const vec &r) { return 0.0; }
-
-     // TODO: dielectric tensor, ...
+  material_function(const material_function &ef) {} // prevent copying
+public:
+  material_function() : omega(nan), gamma(nan), deps(nan), energy_sat(nan) {}
+  
+  virtual ~material_function() {}
+  
+  /* Specify a restricted volume: all subsequent eps/sigma/etc
+     calls will be for points inside gv, until the next set_volume. */
+  virtual void set_volume(const geometric_volume &gv) {}
+  virtual void unset_volume(void) {} // unrestrict the volume
+  
+  /* scalar dielectric function */
+  virtual double eps(const vec &r) { return 1.0; }
+  
+  /* polarizability sigma function */
+  virtual double sigma(const vec &r) { return 0.0; }
+  /* specify polarizability used for subsequent calls to sigma(r) */
+  virtual void set_polarizability(double omega_, double gamma_, 
+				  double deps_, double energy_sat_) {
+    omega = omega_; gamma = gamma_; deps = deps_; energy_sat = energy_sat_;
+  }
+  
+  // Kerr coefficient
+  
+  virtual bool has_kerr() { return false; }
+  virtual double kerr(const vec &r) { return 0.0; }
+  
+  // TODO: dielectric tensor, ...
+  
+protected:
+  // current polarizability for calls to sigma(r):
+  double omega, gamma, deps, energy_sat;
 };
 
 class simple_material_function : public material_function {
-     double (*f)(const vec &);
-     
- public:
-     simple_material_function(double (*func)(const vec &)) { f = func; }
-
-     virtual ~simple_material_function() {}
-
-     virtual double eps(const vec &r) { return f(r); }
-     virtual double sigma(const vec &r) { return f(r); }
-     virtual double kerr(const vec &r) { return f(r); }
+  double (*f)(const vec &);
+  
+public:
+  simple_material_function(double (*func)(const vec &)) { f = func; }
+  
+  virtual ~simple_material_function() {}
+  
+  virtual double eps(const vec &r) { return f(r); }
+  virtual double sigma(const vec &r) { return f(r); }
+  virtual double kerr(const vec &r) { return f(r); }
 };
 
 class structure;
@@ -207,6 +212,8 @@ class structure_chunk {
 
   int n_proc() const { return the_proc; } // Says which proc owns me!
   int is_mine() const { return the_is_mine; }
+
+  void remove_polarizabilities();
 
   // monitor.cpp
   double get_inveps(component, direction, const ivec &iloc) const;
@@ -288,11 +295,13 @@ class structure {
   structure(const volume &v, material_function &eps,
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
-	    int num_chunks = 0, double Courant = 0.5);
+	    int num_chunks = 0, double Courant = 0.5,
+	    bool use_anisotropic_averaging=false);
   structure(const volume &v, double eps(const vec &), 
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
-	    int num_chunks = 0, double Courant = 0.5);
+	    int num_chunks = 0, double Courant = 0.5,
+	    bool use_anisotropic_averaging=false);
   structure(const structure *);
   structure(const structure &);
 
@@ -310,6 +319,8 @@ class structure {
   polarizability_identifier
      add_polarizability(material_function &sigma, double omega, double gamma,
                   double delta_epsilon = 1.0, double energy_saturation = 0.0);
+
+  void remove_polarizabilities();
 
   void output_slices(const char *name="") const;
   void output_slices(const geometric_volume &what, const char *name="") const;
@@ -660,6 +671,7 @@ class fields_chunk {
   // fields.cpp
   void alloc_f(component c);
   void remove_sources();
+  void remove_polarizabilities();
   void zero_fields();
 
  private: 
@@ -754,6 +766,7 @@ class fields {
   void use_real_fields();
   void zero_fields();
   void remove_sources();
+  void remove_polarizabilities();
   void remove_fluxes();
   void reset();
   bool disable_sources; // set to true to turn off sources (w/o deleting)

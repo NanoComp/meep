@@ -41,24 +41,24 @@ typedef structure_chunk *structure_chunk_ptr;
 structure::structure(const volume &thev, material_function &eps,
 		     const boundary_region &br,
 		     const symmetry &s,
-		     int num, double Courant) :
+		     int num, double Courant, bool use_anisotropic_averaging) :
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   choose_chunkdivision(thev, num == 0 ? count_processors() : num, br, s);
-  set_materials(eps, false); // change to true (default) when averaging faster
+  set_materials(eps, use_anisotropic_averaging);
 }
 
 structure::structure(const volume &thev, double eps(const vec &), 
 		     const boundary_region &br,
 		     const symmetry &s,
-		     int num, double Courant) :
+		     int num, double Courant, bool use_anisotropic_averaging) :
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   choose_chunkdivision(thev, num == 0 ? count_processors() : num, br, s);
   simple_material_function epsilon(eps);
-  set_materials(epsilon, false); // change to true when averaging faster
+  set_materials(epsilon, use_anisotropic_averaging);
 }
 
 void structure::choose_chunkdivision(const volume &thev, 
@@ -636,6 +636,16 @@ bool structure::equal_layout(const structure &s) const {
 	chunks[i]->gv != s.chunks[i]->gv)
       return false;
   return true;
+}
+
+void structure_chunk::remove_polarizabilities() {
+  delete pb;
+  pb = NULL;
+}
+
+void structure::remove_polarizabilities() {
+  for (int i=0;i<num_chunks;i++) 
+    chunks[i]->remove_polarizabilities();
 }
 
 } // namespace meep
