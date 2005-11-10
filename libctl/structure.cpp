@@ -241,7 +241,8 @@ bool geom_epsilon::has_kerr()
        property have non-zero chi3 for Kerr to be enabled.   It might
        be better to have set_kerr automatically delete kerr[] if the
        chi3's are all zero. */
-  return false;
+  return (default_material.which_subclass == MTS::DIELECTRIC &&
+	  default_material.subclass.dielectric_data->chi3 != 0);
 }
 
 double geom_epsilon::kerr(const meep::vec &r) {
@@ -317,37 +318,54 @@ double geom_epsilon::sigma(const meep::vec &r) {
   return sigma;
 }
 
+struct pol {
+  double omega, gamma, deps, esat;
+  struct pol *next;
+};
+
+// add a polarization to the list if it is not already there
+static pol *add_pol(pol *pols,
+		    double omega, double gamma, double deps, double esat)
+{
+  struct pol *p = pols;
+  while (p 
+	 && p->omega != omega && p->gamma != gamma
+	 && p->deps != deps && p->esat != esat)
+	  p = p->next;
+  if (!p) {
+    p = new pol;
+    p->omega = omega;
+    p->gamma = gamma;
+    p->deps = deps;
+    p->esat = esat;
+    p->next = pols;
+    pols = p;
+  }
+  return pols;
+}
+
+static pol *add_pols(pol *pols, const polarizability_list plist) {
+  for (int j = 0; j < plist.num_items; ++j) {
+    pols = add_pol(pols,
+		   plist.items[j].omega, plist.items[j].gamma,
+		   plist.items[j].delta_epsilon,
+		   plist.items[j].energy_saturation);
+  }
+  return pols;
+}
+
 void geom_epsilon::add_polarizabilities(meep::structure *s) {
+  pol *pols = 0;
 
   // construct a list of the unique polarizabilities in the geometry:
-  struct pol {
-    double omega, gamma, deps, esat;
-    struct pol *next;
-  } *pols = 0;
   for (int i = 0; i < geometry.num_items; ++i) {
-    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
-      polarizability_list plist = 
-	geometry.items[i].material.subclass.dielectric_data->polarizations;
-      for (int j = 0; j < plist.num_items; ++j) {
-	struct pol *p = pols;
-	while (p 
-	       && p->omega != plist.items[j].omega
-	       && p->gamma != plist.items[j].gamma
-	       && p->deps != plist.items[j].delta_epsilon
-	       && p->esat != plist.items[j].energy_saturation)
-	  p = p->next;
-	if (!p) {
-	  p = new struct pol;
-	  p->omega = plist.items[j].omega;
-	  p->gamma = plist.items[j].gamma;
-	  p->deps = plist.items[j].delta_epsilon;
-	  p->esat = plist.items[j].energy_saturation;
-	  p->next = pols;
-	  pols = p;
-	}
-      }
-    }
+    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC)
+      pols = add_pols(pols, geometry.items[i].material
+		      .subclass.dielectric_data->polarizations);
   }
+  if (default_material.which_subclass == MTS::DIELECTRIC)
+    pols = add_pols(pols, default_material
+		    .subclass.dielectric_data->polarizations);
     
   for (struct pol *p = pols; p; p = p->next) {
     s->add_polarizability(*this, p->omega, p->gamma, p->deps, p->esat);
@@ -393,8 +411,8 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   meep::volume v;
   switch (dims) {
   case 0: case 1:
-    v = meep::vol1d(size.x, resolution);
-    v.shift_origin(meep::vec(size.x * -0.5));
+    v = meep::vol1d(size.z, resolution);
+    v.shift_origin(meep::vec(size.z * -0.5));
     break;
   case 2:
     v = meep::vol2d(size.x, size.y, resolution);

@@ -406,8 +406,10 @@
     (if (or (eq? to-do 'finish) (cond?))
 	(map (lambda (f) (eval-step-func f to-do)) step-funcs))))
 
-; evaluate step-funcs whenever (cond?) is true.
+; evaluate step-funcs whenever (cond?) is true/false.
 (define (when-true cond? . step-funcs) (when-true-funcs cond? step-funcs))
+(define (when-false cond? . step-funcs) 
+  (when-true-funcs (lambda () (not (cond?))) step-funcs))
 
 ; output at an interval of dT (in meep/simulation time).
 (define (at-every dT . step-funcs)
@@ -766,8 +768,9 @@
 	      (set! cur-max 0)
 	      (set! T0 (meep-time))
 	      (set! max-abs (max max-abs old-cur))
-	      (print "field decay(t = " (meep-time)"): "
-		     old-cur " / " max-abs " = " (/ old-cur max-abs) "\n")
+	      (if (not (zero? max-abs))
+		  (print "field decay(t = " (meep-time)"): "
+			 old-cur " / " max-abs " = " (/ old-cur max-abs) "\n"))
 	      (<= old-cur (* max-abs decay-by))))))))
 	    
 
