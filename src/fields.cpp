@@ -67,6 +67,12 @@ fields::fields(structure *s, double m) :
     if (v.has_boundary((boundary_side)b, d)) boundaries[b][d] = Metallic;
     else boundaries[b][d] = None;
   chunk_connections_valid = false;
+  
+  // unit directions are periodic by default:
+  FOR_DIRECTIONS(d)
+    if (v.has_boundary(High, d) && v.has_boundary(Low, d)
+	&& s->user_volume.num_direction(d) == 1)
+      use_bloch(d, 0.0);
 }
 
 fields::fields(const fields &thef) :

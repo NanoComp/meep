@@ -126,7 +126,8 @@ void structure::choose_chunkdivision(const volume &thev,
 }
 
 void boundary_region::apply(structure *s) const {
-  if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)) {
+  if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)
+      && s->user_volume.num_direction(d) > 1) {
     switch (kind) {
     case NOTHING_SPECIAL: break;
     case PML: s->use_pml(d, side, thickness, strength); break;
@@ -138,7 +139,8 @@ void boundary_region::apply(structure *s) const {
 }
 
 void boundary_region::apply(const structure *s, structure_chunk *sc) const {
-  if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)) {
+  if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)
+      && s->user_volume.num_direction(d) > 1) {
     switch (kind) {
     case NOTHING_SPECIAL: break;
     case PML: 
