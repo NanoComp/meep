@@ -384,6 +384,7 @@ AC_CONFIG_FILES([
 	hsrc/Makefile
 	doc/Makefile
 	tests/Makefile
+	examples/Makefile
 	libctl/Makefile
 	libctl/meep.scm
 ])
