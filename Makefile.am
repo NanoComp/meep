@@ -13,9 +13,15 @@ endif
 
 ACLOCAL_AMFLAGS=-I ./m4
 
-SUBDIRS = $(HSRC) src $(LIBCTL) doc tests
+if WITH_DOC
+DOC = doc
+else
+DOC = 
+endif
 
-EXTRA_DIST = COPYRIGHT m4 meep.pc.in examples
+SUBDIRS = $(HSRC) src $(LIBCTL) tests examples $(DOC)
+
+EXTRA_DIST = COPYRIGHT m4 meep.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
