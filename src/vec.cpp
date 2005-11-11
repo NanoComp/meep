@@ -1132,14 +1132,17 @@ symmetry mirror(direction axis, const volume &v) {
   return s;
 }
 
-symmetry r_to_minus_r_symmetry(int m) {
+symmetry r_to_minus_r_symmetry(double m) {
   symmetry s = identity();
   s.g = 2;
   s.S[R].flipped = true;
   s.S[P].flipped = true;
   s.symmetry_point = zero_vec(Dcyl);
   s.i_symmetry_point = zero_ivec(Dcyl);
-  s.ph = (m & 1) ? -1.0 : 1.0;
+  if (m == int(m)) // phase is purely real (+/- 1) when m an integer
+    s.ph = (int(m) & 1) ? -1.0 : 1.0;
+  else
+    s.ph = polar(1.0, m * pi); // general case
   return s;
 }
 

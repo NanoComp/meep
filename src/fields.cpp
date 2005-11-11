@@ -30,8 +30,8 @@ fields::fields(structure *s, double m) :
 {
   verbosity = 0;
   outdir = new char[strlen(s->outdir) + 1]; strcpy(outdir, s->outdir);
-  if (v.dim == Dcyl && m == int(m))
-    S = S + r_to_minus_r_symmetry(int(m));
+  if (v.dim == Dcyl)
+    S = S + r_to_minus_r_symmetry(m);
   phasein_time = 0;
   bands = NULL;
   for (int d=0;d<5;d++) k[d] = 0.0;

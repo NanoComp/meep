@@ -170,7 +170,7 @@
 	(s (object-property-value geometry-lattice 'size)))
     (set! structure (make-structure 
 		     (infer-dimensions k)
-		     s
+		     s geometry-center
 		     resolution
 		     eps-averaging?
 		     (and ensure-periodicity (not (not k)))
@@ -261,7 +261,7 @@
       (set! fields (new-meep-fields structure)))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
-	       (and (= dimensions CYLINDRICAL) (not (zero? m 0)))
+	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
 	       (not (for-all? symmetries
 			      (lambda (s)
 				(zero? (imag-part 

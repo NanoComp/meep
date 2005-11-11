@@ -380,8 +380,8 @@ void geom_epsilon::add_polarizabilities(meep::structure *s) {
 
 /***********************************************************************/
 
-meep::structure *make_structure(int dims, vector3 size, double resolution,
-				bool enable_averaging,
+meep::structure *make_structure(int dims, vector3 size, vector3 center,
+				double resolution, bool enable_averaging,
 				bool ensure_periodicity_p,
 				geometric_object_list geometry,
 				material_type default_mat,
@@ -391,8 +391,9 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
 {
   master_printf("-----------\nInitializing structure...\n");
   
-  // only cartesian lattices, centered at the origin, are currently allowed
+  // only cartesian lattices are currently allowed
   geom_initialize();
+  geometry_center = center;
   
   number no_size = 2.0 / ctl_get_number("infinity");
   if (size.x <= no_size)
@@ -412,19 +413,22 @@ meep::structure *make_structure(int dims, vector3 size, double resolution,
   switch (dims) {
   case 0: case 1:
     v = meep::vol1d(size.z, resolution);
-    v.shift_origin(meep::vec(size.z * -0.5));
+    v.shift_origin(meep::vec(size.z * -0.5 + center.z));
     break;
   case 2:
     v = meep::vol2d(size.x, size.y, resolution);
-    v.shift_origin(meep::vec(size.x * -0.5, size.y * -0.5));
+    v.shift_origin(meep::vec(size.x * -0.5 + center.x,
+			     size.y * -0.5 + center.y));
     break;
   case 3:
     v = meep::vol3d(size.x, size.y, size.z, resolution);
-    v.shift_origin(meep::vec(size.x * -0.5, size.y * -0.5, size.z * -0.5));
+    v.shift_origin(meep::vec(size.x * -0.5 + center.x,
+			     size.y * -0.5 + center.y, 
+			     size.z * -0.5 + center.z));
     break;
   case CYLINDRICAL:
-    v = meep::volcyl(size.x, size.y, resolution);
-    v.shift_origin(meep::veccyl(0, size.y * -0.5));
+    v = meep::volcyl(size.x, size.z, resolution);
+    v.shift_origin(meep::veccyl(center.x, size.z * -0.5 + center.z));
     break;
   default:
     CK(0, "unsupported dimensionality");

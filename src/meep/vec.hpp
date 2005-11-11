@@ -746,7 +746,7 @@ class symmetry {
   ivec i_symmetry_point;
   int g; // g is the multiplicity of the symmetry.
   symmetry *next;
-  friend symmetry r_to_minus_r_symmetry(int m);
+  friend symmetry r_to_minus_r_symmetry(double m);
 };
 
 symmetry identity();
