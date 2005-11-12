@@ -1,43 +1,49 @@
-PNG slices. -- maybe not, just call h5topng
+Support 3d (r,phi,z) cell, where m is "Bloch wavenumber"
+      -- gives 6-fold (and n-fold) symmetry as side effect
+      -- allows computation of bended photonic-crystal waveguides
 
-Cylindrical coordinates (for waveguide bend problems):
-        support non-integer m if cell doesn't include r=0
-        support 3d (r,phi,z) cell, where m is "Bloch waveinteger"
-                -- gives 6-fold (and n-fold) symmetry as side effect
-                -- allows computation of bended photonic-crystal waveguides
-
-HDF5 output:
-        should support energy density and Poynting vector.
-		-- add new component types to support these in
-		   get_field, etc. ... HDF5 then follows automatically
-        give simple way to output "whole" cell, centered on v.center
+Implement transparent boundary conditions to back PML layers, so that
+glancing-angle waves can be absorbed.
 
 Re-entrant functions: foo(vec&) arguments should be foo(vec&, void*)
 where the second argument can be used to pass state (instead of global
 vars).
 
-src_vol:
-	get rid of add_volume_source's amp argument (redundant).
-	make coordinates of A() function relative to center of src volume
+Fix bugs: divergence in saturated polarization (tests/symmetry.cpp),
+          and problems with nonlinearity + symmetry (idem)
 
-Fix bug: divergence in saturated polarization (tests/symmetry.cpp)
+User-specified anisotropic dielectric functions.
 
-User-specified anisotropic dielectric constant.
+Support mu? (i.e. magnetic permeability) (including anisotropic, ideally)
 
-Support mu?  (i.e. magnetic permeability) (including anisotropic, for Pendry)
+Support non-dispersive conductivities.
 
-Support coordinate origin at center, or arbitrary location?
+Use anisotropic PML rather than split-fields PML (former requires less
+memory).  User proper PML for dispersive media and cylindrical.
+
+Use more-stable algorithm for dispersive media.
 
 Field dump/load (i.e. restarting)?
 
 Make sure epsilon and other material properties respect symmetry,
 periodic boundaries, etc.?
 
-Clean up monitor point class (redundant with HDF5 output, DFT volumes?).
+Remove monitor point class (redundant with HDF5 output, DFT volumes?).
 
-Reference manual.  Fix crude-looking documentation graphs?
-	-- one possibility: make the manual an online wiki
+Integrated support for calling MPB mode solver for current distributions.
 
-libctl front-end:
-	Finish.
-	Integrate MPB mode solver.
+rename fields::initialize to fields::add_to_fields or something like that,
+and allow specifying a geometric_volume.
+
+-------------------
+LIBCTL FRONT-END:
+
+Epsilon from file support.
+
+Need test case for dispersive media.
+
+Non-integrated currents.
+
+Give easy way to call various field-integration functions.
+
+Need a way to reset epsilon when restarting, and also phasing support.
