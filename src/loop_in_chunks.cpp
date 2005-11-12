@@ -113,7 +113,7 @@ e0 = w1 = 1 - w0
 
 Ideally, we should have different weights for the R direction of
 cylindrical coordinates, i.e. for integrating f(r) r dr, because again
-we want to perfectly loop_in_chunks any linear f(r).  Thus, the integration
+we want to perfectly integrate any linear f(r).  Thus, the integration
 weights will depend upon r.  Note, however, that we also have an r in
 the dV, so we will have to divide the weights by this factor.
 
@@ -153,7 +153,7 @@ The above is also not correct for integrals that cross x=0, because
 it should really be the integral of f(x) |x|.  Even interior points
 probably need special handling in that case.  For sanity, we would
 just divide the integration region into positive and negative r and
-loop_in_chunks them separately somehow.  Grrr.
+integrate them separately somehow.  Grrr.
 
 2) one grid point between a and b.
 
@@ -213,7 +213,7 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    integral-like things, over a volume WHERE.  The job of this
    function is to call CHUNKLOOP() for each chunk that intersects
    WHERE, passing it the chunk, the range of integer coordinates to
-   loop_in_chunks, the integration weights for the boundary points, and the
+   loop over, the integration weights for the boundary points, and the
    bloch phase shift, translational shift, and symmetry operation to
    transform the chunk to the actual integration location.  (N.B.
    we apply the symmetry first to the chunk, *then* the shift.)
@@ -230,7 +230,7 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
 
    In particular, the loop's point coordinates are calculated on the
    Yee grid for component cgrid.  cgrid == Dielectric is a good choice
-   if you want to loop_in_chunks a combination of multiple field
+   if you want to work with a combination of multiple field
    components, because all of the field components can be interpolated
    onto this grid without communication between chunks.
 
@@ -238,7 +238,7 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    linear interpolation of the function values from these grid points.
 
    For a simple example of an chunkloop routine, see the
-   tests/loop_in_chunks.cpp file.
+   tests/integrate.cpp file.
 
    The parameters USE_SYMMETRY (default = true) and SNAP_UNIT_DIMS
    (default = false) are for use with not-quite-integration-like
