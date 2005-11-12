@@ -478,7 +478,7 @@ bool volume::owns(const ivec &p) const {
 
 int volume::has_boundary(boundary_side b,direction d) const {
   switch (dim) {
-  case Dcyl: return d == Z || (d == R && b == High);
+  case Dcyl: return d == Z || (d == R && (b == High || get_origin().r() > 0));
   case D1: return d == Z;
   case D2: return d == X || d == Y;
   case D3: return d == X || d == Y || d == Z;

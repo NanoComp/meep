@@ -70,7 +70,7 @@ fields::fields(structure *s, double m) :
   
   // unit directions are periodic by default:
   FOR_DIRECTIONS(d)
-    if (v.has_boundary(High, d) && v.has_boundary(Low, d)
+    if (v.has_boundary(High, d) && v.has_boundary(Low, d) && d != R
 	&& s->user_volume.num_direction(d) == 1)
       use_bloch(d, 0.0);
 }
@@ -495,6 +495,8 @@ geometric_volume fields::total_volume(void) const {
   geometric_volume gv = gv0;
   for (int n = 1; n < S.multiplicity(); ++n)
     gv = gv | S.transform(gv0, n);
+  if (gv.dim == Dcyl && gv.in_direction_min(R) < 0)
+    gv.set_direction_min(R, 0);
   return gv;
 }
 

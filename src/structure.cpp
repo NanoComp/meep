@@ -66,6 +66,8 @@ void structure::choose_chunkdivision(const volume &thev,
 				     const boundary_region &br,
 				     const symmetry &s) {
   user_volume = thev;
+  if (thev.dim == Dcyl && thev.get_origin().r() < 0)
+    abort("r < 0 origins are not supported");
   v = thev;
   gv = v.surroundings();
   S = s;
