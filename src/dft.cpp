@@ -29,7 +29,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   int Nomega;
   component c;
   complex<double> weight;
-  bool include_dV;
+  bool include_dV_and_interp_weights;
   dft_chunk *dft_chunks;
 };
 
@@ -51,13 +51,21 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   s1 = s1_;
   e0 = e0_;
   e1 = e1_;
-  if (data->include_dV) {
+  if (data->include_dV_and_interp_weights) {
     dV0 = dV0_;
     dV1 = dV1_;
   }
   else {
+    /* this is for e.g. computing E x H, where we don't want to 
+       multiply by the interpolation weights or the volume twice. */
     dV0 = 1;
     dV1 = 0;
+    LOOP_OVER_DIRECTIONS(fc->v.dim, d) {
+      s0.set_direction(d, 1.0);
+      s1.set_direction(d, 1.0);
+      e0.set_direction(d, 1.0);
+      e1.set_direction(d, 1.0);
+    }
   }
   scale = scale_ * data->weight;
   c = c_;
@@ -121,7 +129,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 
 dft_chunk *fields::add_dft(component c, const geometric_volume &where,
 			   double freq_min, double freq_max, int Nfreq,
-			   bool include_dV,
+			   bool include_dV_and_interp_weights,
 			   complex<double> weight, dft_chunk *chunk_next) {
   if (coordinate_mismatch(v.dim, c))
     return NULL;
@@ -132,7 +140,7 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
   data.domega = Nfreq <= 1 ? 0.0 : 
     (freq_max * 2*pi - data.omega_min) / (Nfreq - 1);
   data.Nomega = Nfreq;
-  data.include_dV = include_dV;
+  data.include_dV_and_interp_weights = include_dV_and_interp_weights;
   data.dft_chunks = chunk_next;
   data.weight = weight * (dt/sqrt(2*pi));
   loop_in_chunks(add_dft_chunkloop, (void *) &data, where);
@@ -142,12 +150,12 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
 
 dft_chunk *fields::add_dft(const geometric_volume_list *where,
 			   double freq_min, double freq_max, int Nfreq,
-			   bool include_dV) {
+			   bool include_dV_and_interp_weights) {
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) abort("derived_component invalid for dft");
     chunks = add_dft(component(where->c), where->gv,
-		     freq_min, freq_max, Nfreq, include_dV,
+		     freq_min, freq_max, Nfreq, include_dV_and_interp_weights,
 		     where->weight, chunks);
     where = where->next;
   }
@@ -367,7 +375,7 @@ dft_flux fields::add_dft_flux(const geometric_volume_list *where_,
       E = add_dft(cE[i], where->gv, freq_min, freq_max, Nfreq,
 		  true, where->weight * double(1 - 2*i), E);
       H = add_dft(cH[i], where->gv, freq_min, freq_max, Nfreq,
-		  true, 1.0, H);
+		  false, 1.0, H);
     }
     
     where = where->next;
