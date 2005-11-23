@@ -384,8 +384,26 @@ dft_flux fields::add_dft_flux(const geometric_volume_list *where_,
   return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq);
 }
 
+direction fields::normal_direction(const geometric_volume &where) const {
+  direction d = where.normal_direction();
+  if (d == NO_DIRECTION) {
+    /* hack so that we still infer the normal direction correctly for
+       volumes with empty dimensions */
+    geometric_volume where_pad(where);
+    LOOP_OVER_DIRECTIONS(where.dim, d)
+      if (nosize_direction(d) && where.in_direction(d) == 0.0)
+	where_pad.set_direction_max(d, where.in_direction_min(d) + 0.1);
+    d = where_pad.normal_direction();  
+    if (d == NO_DIRECTION)
+      abort("Could not determine normal direction for given volume.");
+  }
+  return d;
+}
+
 dft_flux fields::add_dft_flux(direction d, const geometric_volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
+  if (d == NO_DIRECTION)
+    d = normal_direction(where);
   geometric_volume_list gvl(where, direction_component(Sx, d));
   return add_dft_flux(&gvl, freq_min, freq_max, Nfreq);
 }
@@ -412,8 +430,7 @@ dft_flux fields::add_dft_flux_box(const geometric_volume &where,
 
 dft_flux fields::add_dft_flux_plane(const geometric_volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
-  return add_dft_flux(where.normal_direction(), where, 
-		      freq_min, freq_max, Nfreq);
+  return add_dft_flux(NO_DIRECTION, where, freq_min, freq_max, Nfreq);
 }
 
 } // namespace meep

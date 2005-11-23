@@ -329,7 +329,7 @@ void fields::add_volume_source(component c, const src_time &src,
   data.A = A;
   data.amp = amp;
   LOOP_OVER_DIRECTIONS(v.dim, d)
-    if (where.in_direction(d) == 0.0) // delta-function direction
+    if (where.in_direction(d) == 0.0 && !nosize_direction(d)) // delta-fun
       data.amp *= v.a; // correct units for J delta-function amplitude
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;

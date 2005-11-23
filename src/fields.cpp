@@ -500,4 +500,14 @@ geometric_volume fields::total_volume(void) const {
   return gv;
 }
 
+/* One-pixel periodic dimensions are used almost exclusively to
+   emulate lower-dimensional computations, so if the user passes an
+   empty size in that direction, they probably really intended to
+   specify that whole dimension.  This function detects that case. */
+bool fields::nosize_direction(direction d) const {
+  return (v.has_boundary(Low, d) && v.has_boundary(High, d) &&
+	  boundaries[Low][d] == Periodic && boundaries[High][d] == Periodic
+	  && v.num_direction(d) == 1);
+}
+
 } // namespace meep

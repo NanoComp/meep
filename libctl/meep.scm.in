@@ -323,7 +323,7 @@
 			    (size (object-property-value f 'size))))
 		(d0 (object-property-value f 'direction))
 		(d (if (negative? d0)
-		       (meep-geometric-volume-normal-direction gv)
+		       (meep-fields-normal-direction fields gv)
 		       d0))
 		(c (meep-direction-component Sx d)))
 	   (set! gvl

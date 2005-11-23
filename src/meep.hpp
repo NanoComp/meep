@@ -916,7 +916,7 @@ class fields {
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,
 		     double freq_min, double freq_max, int Nfreq,
-		     bool include_dV = true,
+		     bool include_dV_and_interp_weights = true,
 		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
@@ -985,6 +985,9 @@ class fields {
   double max_eps() const;
   // step.cpp
   void force_consistency(field_type ft);
+
+  bool nosize_direction(direction d) const;
+  direction normal_direction(const geometric_volume &where) const;
 
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...

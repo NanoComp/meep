@@ -240,19 +240,19 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    For a simple example of an chunkloop routine, see the
    tests/integrate.cpp file.
 
-   The parameters USE_SYMMETRY (default = true) and SNAP_UNIT_DIMS
+   The parameters USE_SYMMETRY (default = true) and SNAP_EMPTY_DIMS
    (default = false) are for use with not-quite-integration-like
    operations.  If use_symmetry is false, then we do *not* loop over
    all possible symmetry transformations of the chunks to see if they
    intersect WHERE; we only use chunks that, untransformed, already
-   intersect the volume.  If SNAP_UNIT_DIMS is true, then for empty
+   intersect the volume.  If SNAP_EMPTY_DIMS is true, then for empty
    (min = max) dimensions of WHERE, instead of interpolating, we
    "snap" them to the nearest grid point.  */
 
 void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 			    const geometric_volume &where, 
 			    component cgrid,
-			    bool use_symmetry, bool snap_unit_dims)
+			    bool use_symmetry, bool snap_empty_dims)
 {
   if (coordinate_mismatch(v.dim, cgrid))
     abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n",
@@ -274,7 +274,6 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
   vec yee_c(v.yee_shift(Dielectric) - v.yee_shift(cgrid));
   ivec iyee_c(v.iyee_shift(Dielectric) - v.iyee_shift(cgrid));
   geometric_volume wherec(where + yee_c);
-
 
   /* Find the corners (is and ie) of the smallest bounding box for
      wherec, on the grid of odd-coordinate ivecs (i.e. the
@@ -301,7 +300,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       e1.set_direction(d, s1.in_direction(d));
     }
     else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
-      if (snap_unit_dims) {
+      if (snap_empty_dims) {
 	if (w0 > w1) ie.set_direction(d, is.in_direction(d));
 	else is.set_direction(d, ie.in_direction(d));
 	wherec.set_direction_min(d, is.in_direction(d) * (0.5*v.inva));
