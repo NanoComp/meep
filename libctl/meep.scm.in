@@ -777,6 +777,7 @@
 ; ****************************************************************
 ; band diagrams
 
+(define all-freqs '())
 (define (run-k-points T k-points)
   (define k-index 0)
   (define cs (map (lambda (o) (object-property-value o 'component)) sources))
@@ -800,6 +801,7 @@
 		    sources)))
   (if (or (null? cs) (> fmin fmax))
       (error "run-k-points requires a gaussian-src source"))
+  (set! all-freqs '())
   ; TODO: apply harminv to multiple points and only accept freqs
   ; with correct relative amplitudes?
   (map (lambda (k)
@@ -819,8 +821,10 @@
 		", " (vector3-x k) ", " (vector3-y k) ", " (vector3-z k))
 	 (map (lambda (x) (print ", " x)) 
 	      (map harminv-freq-im harminv-results))
-	 (print "\n"))
-       k-points))
+	 (print "\n")
+	 (set! all-freqs (cons (map harminv-freq harminv-results) all-freqs)))
+       k-points)
+  (set! all-freqs (reverse all-freqs)))
 
 ; ****************************************************************
 
