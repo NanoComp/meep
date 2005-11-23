@@ -45,6 +45,9 @@ static inline complex<double> my_complex_func2(double t, void *f) {
   my_complex_func_scm = $input;
   $1 = my_complex_func;
 }
+%typecheck(SWIG_TYPECHECK_POINTER) complex<double>(*)(meep::vec const &) {
+  $1 = SCM_NFALSEP(scm_procedure_p($input));
+}
 
 %typemap(guile,in) complex<double>(*)(double, void*) {
   $1 = my_complex_func2; // the actual function had better be the next arg

@@ -247,6 +247,7 @@
 	(meep-fields-add-volume-source
 	 fields
 	 (object-property-value s 'component)
+	 (object-property-value (object-property-value s 'src) 'swigval)
 	 (volume (center cen) (size sz))
 	 A (object-property-value s 'amplitude)))))
 
