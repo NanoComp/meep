@@ -204,7 +204,7 @@ double geom_epsilon::eps(const meep::vec &r)
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
     material = default_material;
   }
-  else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
     material = eval_material_func(material.subclass.
 				  material_function_data->material_func,
 				  p);
@@ -256,7 +256,7 @@ double geom_epsilon::kerr(const meep::vec &r) {
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
     material = default_material;
   }
-  else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
     material = eval_material_func(material.subclass.
 				  material_function_data->material_func,
 				  p);
@@ -289,32 +289,30 @@ double geom_epsilon::sigma(const meep::vec &r) {
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
     material = default_material;
   }
-  else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
     material = eval_material_func(material.subclass.
 				  material_function_data->material_func,
 				  p);
     destroy_material = 1;
   }
   
-  double sigma;
-  switch (material.which_subclass) {
-  case MTS::DIELECTRIC:
+  double sigma = 0;
+  if (material.which_subclass == MTS::DIELECTRIC) {
     polarizability_list plist = 
       material.subclass.dielectric_data->polarizations;
     for (int j = 0; j < plist.num_items; ++j)
       if (plist.items[j].omega == omega &&
 	  plist.items[j].gamma == gamma &&
 	  plist.items[j].delta_epsilon == deps &&
-	  plist.items[j].energy_saturation == energy_sat)
+	  plist.items[j].energy_saturation == energy_sat) {
 	sigma = plist.items[j].sigma;
-    break;
-  default:
-    sigma = 0;
+	break;
+      }
   }
   
   if (destroy_material)
     material_type_destroy(material);
-  
+
   return sigma;
 }
 
@@ -328,10 +326,9 @@ static pol *add_pol(pol *pols,
 		    double omega, double gamma, double deps, double esat)
 {
   struct pol *p = pols;
-  while (p 
-	 && p->omega != omega && p->gamma != gamma
-	 && p->deps != deps && p->esat != esat)
-	  p = p->next;
+  while (p && !(p->omega == omega && p->gamma == gamma
+		&& p->deps == deps && p->esat == esat))
+    p = p->next;
   if (!p) {
     p = new pol;
     p->omega = omega;
@@ -368,6 +365,8 @@ void geom_epsilon::add_polarizabilities(meep::structure *s) {
 		    .subclass.dielectric_data->polarizations);
     
   for (struct pol *p = pols; p; p = p->next) {
+    master_printf("polarizability: omega=%g, gamma=%g, deps=%g, esat=%g\n",
+		  p->omega, p->gamma, p->deps, p->esat);
     s->add_polarizability(*this, p->omega, p->gamma, p->deps, p->esat);
   }
   
