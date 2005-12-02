@@ -13,6 +13,9 @@ meep@MEEP_SUFFIX@_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx
 
+# manual dependency hack to force the build order in certain cases
+meep.o: ctl-io.h meep-enums.scm
+
 if WITH_LIBCTL
 if MAINTAINER_MODE
 meep_wrap.cxx: meep.i meep_op_renames.i meep_enum_renames.i meep_renames.i ctl-io.i meep-ctl-swig.hpp meep_swig_bug_workaround.i $(LIBHDRS)

@@ -67,7 +67,8 @@ initialize::initialize(int &argc, char** &argv) {
   MPI_Init(&argc, &argv);
   int major, minor;
   MPI_Get_version(&major, &minor);
-  if (!quiet) master_printf("Using MPI... version %d.%d\n", major, minor);
+  if (!quiet) master_printf("Using MPI version %d.%d, %d processes\n", 
+			    major, minor, count_processors());
 #else
   UNUSED(argc);
   UNUSED(argv);

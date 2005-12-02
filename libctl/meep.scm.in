@@ -28,6 +28,16 @@
 
 ; ****************************************************************
 
+; Set print-ok? to whether or not we are the MPI master process.
+; Also, MPI doesn't support interactive mode.  However, don't try this
+; if we are running within gen-ctl-io, as it won't work.
+(if (not (defined? 'output-source)) ; (a function defined by gen-ctl-io)
+    (begin
+      (set-param! print-ok? (zero? (meep-my-rank)))
+      (set-param! interactive? (= 1 (meep-count-processors)))))
+
+; ****************************************************************
+
 (define-class material-type no-parent)
 
 (define-class polarizability no-parent
