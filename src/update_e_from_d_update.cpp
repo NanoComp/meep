@@ -29,8 +29,22 @@ namespace meep {
   const int ntot = s->v.ntot();
 #include "update_e_from_d_update.hpp"
 
-  // FIXME: do annoying special cases for r=0 in cylindrical coords
-  
+  /* Do annoying special cases for r=0 in cylindrical coords.  Note
+     that this only really matters for field output; the Ez and Ep
+     components at r=0 don't usually affect the fields elsewhere
+     because of the form of Maxwell's equations in cylindrical coords. */
+  // (FIXME: handle Kerr case).
+  if (v.dim == Dcyl && v.origin_r() == 0.0)
+    DOCMP FOR_E_AND_D(ec,dc) if (f[ec][cmp] && ec != Er) {
+      const int yee_idx = v.yee_index(ec);
+      const int d_ec = component_direction(ec);
+      const int sR = stride_any_direction[R];
+      const double *D = have_d_minus_p ? d_minus_p[ec][cmp] : f[dc][cmp];
+      for (int iZ=0; iZ<num_any_direction[Z]; iZ++) {
+	const int i = yee_idx + iZ - sR;
+	f[ec][cmp][i] = s->inveps[ec][d_ec][i] * D[i];
+      }
+    }
 }
 
 } // namespace meep
