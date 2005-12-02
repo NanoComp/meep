@@ -28,6 +28,9 @@ namespace meep {
   void fields_chunk::update_e_from_d_update(void) {
   const int ntot = s->v.ntot();
 #include "update_e_from_d_update.hpp"
+
+  // FIXME: do annoying special cases for r=0 in cylindrical coords
+  
 }
 
 } // namespace meep

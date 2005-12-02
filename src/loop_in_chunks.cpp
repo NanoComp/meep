@@ -446,9 +446,9 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	  // Determine integration "volumes" dV0 and dV1;
 	  double dV0 = 1.0, dV1 = 0.0;
 	  LOOP_OVER_DIRECTIONS(v.dim, d)
-	    if (wherec.in_direction_max(d) > wherec.in_direction_min(d))
+	    if (wherec.in_direction(d) > 0.0)
 	      dV0 *= v.inva;
-	  if (v.dim == Dcyl) {
+	  if (v.dim == Dcyl && wherec.in_direction(R) > 0.0) {
 	    dV1 = dV0 * 2*pi * v.inva;
 	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->v[isc], sn) + shift
 				- yee_c).in_direction(R));
