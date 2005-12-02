@@ -448,7 +448,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	  LOOP_OVER_DIRECTIONS(v.dim, d)
 	    if (wherec.in_direction(d) > 0.0)
 	      dV0 *= v.inva;
-	  if (v.dim == Dcyl && wherec.in_direction(R) > 0.0) {
+	  if (v.dim == Dcyl) {
 	    dV1 = dV0 * 2*pi * v.inva;
 	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->v[isc], sn) + shift
 				- yee_c).in_direction(R));
