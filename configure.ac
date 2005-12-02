@@ -173,7 +173,7 @@ fi
 # Add lots of compiler warnings in maintainer mode if we are using gcc:
 # (The variable $GXX is set to "yes" by AC_PROG_CXX if we are using g++.)
 if test "$GXX" = "yes" && test "$USE_MAINTAINER_MODE" = yes; then
-        CXXFLAGS="$CXXFLAGS -Wall -W -pedantic"
+        CXXFLAGS="$CXXFLAGS -Wall -W"
 fi
 
 ##############################################################################
