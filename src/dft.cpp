@@ -390,9 +390,9 @@ direction fields::normal_direction(const geometric_volume &where) const {
     /* hack so that we still infer the normal direction correctly for
        volumes with empty dimensions */
     geometric_volume where_pad(where);
-    LOOP_OVER_DIRECTIONS(where.dim, d)
-      if (nosize_direction(d) && where.in_direction(d) == 0.0)
-	where_pad.set_direction_max(d, where.in_direction_min(d) + 0.1);
+    LOOP_OVER_DIRECTIONS(where.dim, d1)
+      if (nosize_direction(d1) && where.in_direction(d1) == 0.0)
+	where_pad.set_direction_max(d1, where.in_direction_min(d1) + 0.1);
     d = where_pad.normal_direction();  
     if (d == NO_DIRECTION)
       abort("Could not determine normal direction for given volume.");
