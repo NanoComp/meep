@@ -59,6 +59,8 @@
 (define-class material-function material-type
   (define-property material-func no-default 'function
     (lambda (p) (= 1 (procedure-num-args p)))))
+(define (epsilon-func f) ; convenience wrapper
+  (material-func (lambda (p) (make dielectric (epsilon (f p))))))
 
 (define (index n) (epsilon (* n n))) ; convenient substitute for epsilon
 
