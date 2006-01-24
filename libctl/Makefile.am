@@ -8,10 +8,10 @@ HDRS = meep-ctl.hpp meep-ctl-const.hpp meep-ctl-swig.hpp
 LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
 
 meep@MEEP_SUFFIX@_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i
-nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i meep_enum_renames.i meep-enums.scm meep_swig_bug_workaround.i
+nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i
 meep@MEEP_SUFFIX@_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
-BUILT_SOURCES = $(nodist_meep_SOURCES) meep_wrap.cxx
+BUILT_SOURCES = $(nodist_meep_SOURCES) meep-enums.scm meep_wrap.cxx
 
 # manual dependency hack to force the build order in certain cases
 meep.o: ctl-io.h meep-enums.scm
@@ -55,6 +55,7 @@ MY_DEFS = -DHAVE_CTL_HOOKS=1 -DHAVE_CTL_EXPORT_HOOK=1
 
 PROGRAM_NAME = meep
 SPECIFICATION_FILE = $(PROGRAM_NAME).scm
+nodist_pkgdata_DATA = $(SPECIFICATION_FILE) meep-enums.scm
 
 ##############################################################################
 
@@ -70,7 +71,7 @@ GEN_CTL_IO = @GEN_CTL_IO@
 
 CTL_DEFS = -DCTL_SCM='"'$(LIBCTL_DIR)/base/ctl.scm'"' \
        -DINCLUDE_SCM='"'$(LIBCTL_DIR)/base/include.scm'"' \
-          -DSPEC_SCM='"'$(prefix)/share/libctl/specs/$(SPECIFICATION_FILE)'"' \
+          -DSPEC_SCM='"'$(pkgdatadir)/$(SPECIFICATION_FILE)'"' \
     -DVERSION_STRING='"'$(VERSION_STRING)'"'
 
 ##############################################################################
@@ -91,16 +92,7 @@ geom.cpp: $(LIBCTL_DIR)/utils/geom.c
 	cp -f $(LIBCTL_DIR)/utils/geom.c $@
 
 clean-local:
-	rm -f $(nodist_meep_SOURCES) ctl-io.* main.* geom.*
-
-install-data-local:
-	$(mkdir_p) $(prefix)/share/libctl/specs
-	$(INSTALL) -c -m 644 $(SPECIFICATION_FILE) $(prefix)/share/libctl/specs/$(SPECIFICATION_FILE)
-	$(INSTALL) -c -m 644 meep-enums.scm $(prefix)/share/libctl/specs/meep-enums.scm
-
-uninstall-local:
-	rm -f $(prefix)/share/libctl/specs/$(SPECIFICATION_FILE)
-	rm -f $(prefix)/share/libctl/specs/meep-enums.scm
+	rm -f $(nodist_meep_SOURCES) meep-enums.scm ctl-io.* main.* geom.*
 
 maintainer-clean-local:
 	rm -f $(BUILT_SOURCES)
