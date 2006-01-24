@@ -94,6 +94,7 @@ clean-local:
 	rm -f $(nodist_meep_SOURCES) ctl-io.* main.* geom.*
 
 install-data-local:
+	$(mkdir_p) $(prefix)/share/libctl/specs
 	$(INSTALL) -c -m 644 $(SPECIFICATION_FILE) $(prefix)/share/libctl/specs/$(SPECIFICATION_FILE)
 	$(INSTALL) -c -m 644 meep-enums.scm $(prefix)/share/libctl/specs/meep-enums.scm
 
