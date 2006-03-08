@@ -382,26 +382,6 @@ void fields::output_hdf5(component c,
 
 /***************************************************************************/
 
-static double poynting_fun(const complex<double> *fields,
-		       const vec &loc, void *data_)
-{
-     (void) loc; // unused
-     (void) data_; // unused
-     return (real(conj(fields[0]) * fields[1])
-	     - real(conj(fields[2])*fields[3]));
-}
-
-static double energy_fun(const complex<double> *fields,
-		       const vec &loc, void *data_)
-{
-     (void) loc; // unused
-     int nfields = *((int *) data_) / 2;
-     double sum = 0;
-     for (int k = 0; k < nfields; ++k)
-       sum += real(conj(fields[2*k]) * fields[2*k+1]);
-     return sum * 0.5;
-}
-
 void fields::output_hdf5(derived_component c,
 			 const geometric_volume &where,
 			 h5file *file,
@@ -416,42 +396,9 @@ void fields::output_hdf5(derived_component c,
 
   if (coordinate_mismatch(v.dim, c)) return;
 
-  field_rfunction fun;
   int nfields;
   component cs[6];
-
-  switch (c) {
-  case Sx: case Sy: case Sz: case Sr: case Sp:
-    switch (c) {
-    case Sx: cs[0] = Ey; cs[1] = Hz; break;
-    case Sy: cs[0] = Ez; cs[1] = Hx; break;
-    case Sz: cs[0] = Ex; cs[1] = Hy; break;
-    case Sr: cs[0] = Ep; cs[1] = Hz; break;
-    case Sp: cs[0] = Ez; cs[1] = Hr; break;
-    }
-    nfields = 4;
-    cs[2] = direction_component(Ex, component_direction(cs[1]));
-    cs[3] = direction_component(Hx, component_direction(cs[0]));
-    fun = poynting_fun;
-    break;
-  case EnergyDensity: case D_EnergyDensity: case H_EnergyDensity:
-    nfields = 0;
-    fun = energy_fun;
-    if (c != H_EnergyDensity)
-      FOR_ELECTRIC_COMPONENTS(c0) if (v.has_field(c0)) {
-	cs[nfields++] = c0;
-	cs[nfields++] = direction_component(Dx, component_direction(c0));
-      }
-    if (c != D_EnergyDensity)
-      FOR_MAGNETIC_COMPONENTS(c0) if (v.has_field(c0)) {
-	cs[nfields++] = c0;
-	cs[nfields++] = c0;
-      }
-    if (nfields > 6) abort("too many field components");
-    break;
-  default: 
-    abort("unknown derived_component in output_hdf5");
-  }
+  field_rfunction fun = derived_component_func(c, v, nfields, cs);
 
   output_hdf5(component_name(c), nfields, cs, fun, where, &nfields,
 	      file, append_data, single_precision, prefix);

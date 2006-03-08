@@ -734,6 +734,9 @@ typedef double (*field_rfunction)(const complex<double> *fields,
 				   const vec &loc,
 				   void *integrand_data_);
 
+field_rfunction derived_component_func(derived_component c, const volume &v,
+				       int &nfields, component cs[6]);
+
 class fields {
  public:
   int num_chunks;
@@ -907,11 +910,23 @@ class fields {
 			    const geometric_volume &where,
 			    void *integrand_data_ = 0,
 			    double *maxabs = 0);
+  double integrate(int num_fields, const component *components,
+		   field_rfunction integrand,
+		   const geometric_volume &where,
+		   void *integrand_data_ = 0,
+		   double *maxabs = 0);
   double max_abs(int num_fields, const component *components,
 		 field_function integrand,
 		 const geometric_volume &where,
 		 void *integrand_data = 0);
+  double max_abs(int num_fields, const component *components,
+		 field_rfunction integrand,
+		 const geometric_volume &where,
+		 void *integrand_data = 0);
+
+  double max_abs(int c, const geometric_volume &where);
   double max_abs(component c, const geometric_volume &where);
+  double max_abs(derived_component c, const geometric_volume &where);
   
   // dft.cpp
   dft_chunk *add_dft(component c, const geometric_volume &where,

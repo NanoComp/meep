@@ -169,6 +169,28 @@ complex<double> fields::integrate(int num_fields, const component *components,
   return complex<double>(real(data.sum), imag(data.sum));
 }
 
+typedef struct { 
+  field_rfunction integrand; void *integrand_data; 
+} rfun_wrap_data;
+static complex<double> rfun_wrap(const complex<double> *fields,
+				 const vec &loc, void *data_) {
+  rfun_wrap_data *data = (rfun_wrap_data *) data_;
+  return data->integrand(fields, loc, data->integrand_data);
+}
+
+double fields::integrate(int num_fields, const component *components,
+			 field_rfunction integrand,
+			 const geometric_volume &where,
+			 void *integrand_data_,
+			 double *maxabs)
+{
+  rfun_wrap_data data;
+  data.integrand = integrand;
+  data.integrand_data = integrand_data_;
+  return real(integrate(num_fields, components, rfun_wrap,
+			where, &data, maxabs));
+}
+
 double fields::max_abs(int num_fields, const component *components,
 		       field_function integrand,
 		       const geometric_volume &where,
@@ -180,6 +202,17 @@ double fields::max_abs(int num_fields, const component *components,
   return maxabs;
 }
 
+double fields::max_abs(int num_fields, const component *components,
+		       field_rfunction integrand,
+		       const geometric_volume &where,
+		       void *integrand_data_)
+{
+  rfun_wrap_data data;
+  data.integrand = integrand;
+  data.integrand_data = integrand_data_;
+  return max_abs(num_fields, components, rfun_wrap, where, &data);
+}
+
 static complex<double> return_the_field(const complex<double> *fields,
 					const vec &loc,
 					void *integrand_data_)
@@ -188,10 +221,29 @@ static complex<double> return_the_field(const complex<double> *fields,
   return fields[0];
 }
 
+double fields::max_abs(int c, const geometric_volume &where)
+{
+  if (is_derived(c))
+    return max_abs(derived_component(c), where);
+  else
+    return max_abs(component(c), where);
+}
+
 double fields::max_abs(component c, const geometric_volume &where)
 {
-  component cs[1]; cs[0] = c;
-  return max_abs(1, cs, return_the_field, where, 0);
+  if (is_derived(int(c)))
+    return max_abs(derived_component(c), where);
+  return max_abs(1, &c, return_the_field, where, 0);
+}
+
+double fields::max_abs(derived_component c, const geometric_volume &where)
+{
+  if (!is_derived(int(c)))
+    return max_abs(component(c), where);
+  int nfields;
+  component cs[6];
+  field_rfunction fun = derived_component_func(c, v, nfields, cs);
+  return max_abs(nfields, cs, fun, where, &nfields);
 }
 
 } // namespace meep
