@@ -202,7 +202,7 @@
   (define-derived-property swigval 'SCM
     (lambda (o) 
       (new-meep-continuous-src-time 
-       (object-property-value o 'frequency)
+       (* 1.0 (object-property-value o 'frequency))
        (object-property-value o 'width)
        (object-property-value o 'start-time)
        (object-property-value o 'end-time)
@@ -215,7 +215,7 @@
   (define-derived-property swigval 'SCM
     (lambda (o) 
       (new-meep-gaussian-src-time
-       (object-property-value o 'frequency)
+       (* 1.0 (object-property-value o 'frequency))
        (object-property-value o 'width)
        (object-property-value o 'start-time)
        (+ (object-property-value o 'start-time)
@@ -255,13 +255,13 @@
 	 (object-property-value s 'component)
 	 (object-property-value (object-property-value s 'src) 'swigval)
 	 (volume (center cen) (size sz))
-	 (object-property-value s 'amplitude))
+	 (* 1.0 (object-property-value s 'amplitude)))
 	(meep-fields-add-volume-source
 	 fields
 	 (object-property-value s 'component)
 	 (object-property-value (object-property-value s 'src) 'swigval)
 	 (volume (center cen) (size sz))
-	 A (object-property-value s 'amplitude)))))
+	 A (* 1.0 (object-property-value s 'amplitude))))))
 
 ; ****************************************************************
 ; Setting up the fields
