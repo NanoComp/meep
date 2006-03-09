@@ -191,15 +191,22 @@ geometric_volume::geometric_volume(const vec &pt) {
   max_corner = pt;
 }
 
-double geometric_volume::computational_volume() {
+double geometric_volume::computational_volume() const {
   double vol = 1.0; 
-  LOOP_OVER_DIRECTIONS(dim,d) vol *= (in_direction_max(d) - in_direction_min(d));
+  LOOP_OVER_DIRECTIONS(dim,d) vol *= in_direction(d);
+  return vol;
+}
+
+double geometric_volume::integral_volume() const {
+  double vol = 1.0; 
+  LOOP_OVER_DIRECTIONS(dim, d)
+    if (in_direction(d) != 0.0) vol *= in_direction(d);
+  if (dim == Dcyl) vol *= pi * (in_direction_max(R) + in_direction_min(R));
   return vol;
 }
 
 double geometric_volume::full_volume() const {
-  double vol = 1.0; 
-  LOOP_OVER_DIRECTIONS(dim, d) vol *= (in_direction_max(d) - in_direction_min(d));
+  double vol = computational_volume(); 
   if (dim == Dcyl) vol *= pi * (in_direction_max(R) + in_direction_min(R));
   return vol;
 }

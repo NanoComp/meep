@@ -520,7 +520,8 @@ class geometric_volume {
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };
   double in_direction_max(direction d) const { return max_corner.in_direction(d); };
   double in_direction(direction d) const { return in_direction_max(d) - in_direction_min(d); }
-  double computational_volume(); 
+  double computational_volume() const; 
+  double integral_volume() const;
   double full_volume() const;
   bool contains(const vec &h) const;
   geometric_volume intersect_with(const geometric_volume &a) const;
