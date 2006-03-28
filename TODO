@@ -40,8 +40,6 @@ LIBCTL FRONT-END:
 
 Epsilon from file support.
 
-Need test case for dispersive media.
-
 Non-integrated currents.
 
 Give easy way to call various field-integration functions.
