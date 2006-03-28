@@ -269,6 +269,10 @@ inline bool coordinate_mismatch(ndim dim, derived_component c) {
 
 class file;
 
+class vec;
+vec veccyl(double rr, double zz);
+vec zero_vec(ndim);
+
 class vec {
  public:
   vec() {};
@@ -381,6 +385,11 @@ inline vec clean_vec(const vec &v, double val_unused = 0.0) {
 inline vec veccyl(double rr, double zz) {
   vec v(Dcyl); v.t[R] = rr; v.t[Z] = zz; return v;
 }
+
+class ivec;
+ivec iveccyl(int xx, int yy);
+ivec zero_ivec(ndim);
+ivec one_ivec(ndim);
 
 class ivec {
  public:
@@ -564,6 +573,14 @@ class geometric_volume {
   vec min_corner, max_corner;
 };
 
+class volume;
+volume volcyl(double rsize, double zsize, double a);
+volume volone(double zsize, double a);
+volume vol1d(double zsize, double a);
+volume voltwo(double xsize, double ysize, double a);
+volume vol2d(double xsize, double ysize, double a);
+volume vol3d(double xsize, double ysize, double zsize, double a);
+
 class volume {
  public:
   volume() {};
@@ -706,6 +723,13 @@ class volume {
 };
 
 class geometric_volume_list;
+
+class symmetry;
+symmetry identity();
+symmetry rotate4(direction,const volume &);
+symmetry rotate2(direction,const volume &);
+symmetry mirror(direction,const volume &);
+symmetry r_to_minus_r_symmetry(double m);
 
 class symmetry {
  public:
