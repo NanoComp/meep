@@ -211,7 +211,7 @@ void check_integral(fields &f,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
 		  d.c, d.ax,d.ay,d.az, d.axy,d.ayz,d.axz, d.axyz);
 
-  double sum = real(f.integrate(0, 0, linear_integrand, gv, (void *) &d));
+  double sum = real(f.integrate(0, 0, linear_integrand, (void *) &d, gv));
   if (fabs(sum - correct_integral(gv, d)) > 1e-9 * fabs(sum))
     abort("FAILED: %0.16g instead of %0.16g\n", 
 	  (double) sum, correct_integral(gv, d));

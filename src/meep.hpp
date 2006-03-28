@@ -814,26 +814,23 @@ class fields {
   // low-level function:
   void output_hdf5(h5file *file, const char *dataname,
 		   int num_fields, const component *components,
-		   field_function fun, int reim,
+		   field_function fun, void *fun_data_, int reim,
 		   const geometric_volume &where,
-		   void *fun_data_ = 0,
 		   bool append_data = false,
 		   bool single_precision = false);
   // higher-level functions
   void output_hdf5(const char *dataname,  // OUTPUT COMPLEX-VALUED FUNCTION
 		   int num_fields, const component *components,
-		   field_function fun,
+		   field_function fun, void *fun_data_,
 		   const geometric_volume &where,
-		   void *fun_data_ = 0,
 		   h5file *file = 0,
 		   bool append_data = false,
 		   bool single_precision = false,
 		   const char *prefix = 0);
   void output_hdf5(const char *dataname,  // OUTPUT REAL-VALUED FUNCTION
 		   int num_fields, const component *components,
-		   field_rfunction fun,
+		   field_rfunction fun, void *fun_data_,
 		   const geometric_volume &where,
-		   void *fun_data_ = 0,
 		   h5file *file = 0,
 		   bool append_data = false,
 		   bool single_precision = false,
@@ -906,23 +903,19 @@ class fields {
   
   // integrate.cpp
   complex<double> integrate(int num_fields, const component *components,
-			    field_function integrand,
+			    field_function fun, void *fun_data_,
 			    const geometric_volume &where,
-			    void *integrand_data_ = 0,
 			    double *maxabs = 0);
   double integrate(int num_fields, const component *components,
-		   field_rfunction integrand,
+		   field_rfunction fun, void *fun_data_,
 		   const geometric_volume &where,
-		   void *integrand_data_ = 0,
 		   double *maxabs = 0);
   double max_abs(int num_fields, const component *components,
-		 field_function integrand,
-		 const geometric_volume &where,
-		 void *integrand_data = 0);
+		 field_function fun, void *fun_data_,
+		 const geometric_volume &where);
   double max_abs(int num_fields, const component *components,
-		 field_rfunction integrand,
-		 const geometric_volume &where,
-		 void *integrand_data = 0);
+		 field_rfunction fun, void *fun_data_,
+		 const geometric_volume &where);
 
   double max_abs(int c, const geometric_volume &where);
   double max_abs(component c, const geometric_volume &where);

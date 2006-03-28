@@ -189,9 +189,8 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
 
 void fields::output_hdf5(h5file *file, const char *dataname,
 			 int num_fields, const component *components,
-			 field_function fun, int reim,
+			 field_function fun, void *fun_data_, int reim,
 			 const geometric_volume &where,
-			 void *fun_data_,
 			 bool append_data,
                          bool single_precision) {
   am_now_working_on(FieldOutput);
@@ -273,9 +272,8 @@ void fields::output_hdf5(h5file *file, const char *dataname,
 
 void fields::output_hdf5(const char *dataname,
                          int num_fields, const component *components,
-                         field_function fun,
+                         field_function fun, void *fun_data_,
                          const geometric_volume &where,
-                         void *fun_data_,
 			 h5file *file,
                          bool append_data,
                          bool single_precision,
@@ -290,11 +288,11 @@ void fields::output_hdf5(const char *dataname,
 
   dataname2 = new char[len];
   snprintf(dataname2, len, "%s%s", dataname, ".r");
-  output_hdf5(file, dataname, num_fields, components, fun, 0, where,
-              fun_data_, append_data, single_precision);
+  output_hdf5(file, dataname, num_fields, components, fun, fun_data_, 
+	      0, where, append_data, single_precision);
   snprintf(dataname2, len, "%s%s", dataname, ".i");
-  output_hdf5(file, dataname, num_fields, components, fun, 1, where,
-              fun_data_, append_data, single_precision);
+  output_hdf5(file, dataname, num_fields, components, fun, fun_data_, 
+	      1, where, append_data, single_precision);
   delete[] dataname2;
 
   if (delete_file) delete file;
@@ -317,9 +315,8 @@ static complex<double> rintegrand_fun(const complex<double> *fields,
 
 void fields::output_hdf5(const char *dataname,
                          int num_fields, const component *components,
-                         field_rfunction fun,
+                         field_rfunction fun, void *fun_data_,
                          const geometric_volume &where,
-                         void *fun_data_,
 			 h5file *file,
                          bool append_data,
                          bool single_precision,
@@ -330,8 +327,8 @@ void fields::output_hdf5(const char *dataname,
     file = open_h5file(dataname, h5file::WRITE, prefix, true);
 
   rintegrand_data data; data.fun = fun; data.fun_data_ = fun_data_;
-  output_hdf5(file, dataname, num_fields, components, rintegrand_fun, 0, where,
-	      (void *) &data, append_data, single_precision);
+  output_hdf5(file, dataname, num_fields, components, rintegrand_fun,
+	      (void *) &data, 0, where, append_data, single_precision);
 
   if (delete_file) delete file;
 }
@@ -369,11 +366,11 @@ void fields::output_hdf5(component c,
     file = open_h5file(component_name(c), h5file::WRITE, prefix, true);
 
   snprintf(dataname, 256, "%s%s", component_name(c), has_imag ? ".r" : "");
-  output_hdf5(file, dataname, 1, &c, component_fun, 0, where, 0,
+  output_hdf5(file, dataname, 1, &c, component_fun, 0, 0, where,
 	      append_data, single_precision);
   if (has_imag) {
     snprintf(dataname, 256, "%s.i", component_name(c));
-    output_hdf5(file, dataname, 1, &c, component_fun, 1, where, 0,
+    output_hdf5(file, dataname, 1, &c, component_fun, 0, 1, where,
 		append_data, single_precision);
   }
 
@@ -400,7 +397,7 @@ void fields::output_hdf5(derived_component c,
   component cs[6];
   field_rfunction fun = derived_component_func(c, v, nfields, cs);
 
-  output_hdf5(component_name(c), nfields, cs, fun, where, &nfields,
+  output_hdf5(component_name(c), nfields, cs, fun, &nfields, where,
 	      file, append_data, single_precision, prefix);
 }
 

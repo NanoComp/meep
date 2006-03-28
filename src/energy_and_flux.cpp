@@ -93,7 +93,7 @@ double fields::field_energy_in_box(component c,
   else
     abort("invalid field component in field_energy_in_box");
 
-  return real(integrate(2, cs, dot_integrand, where)) * 0.5;
+  return real(integrate(2, cs, dot_integrand, 0, where)) * 0.5;
 }
 
 double fields::electric_energy_in_box(const geometric_volume &where) {
@@ -191,7 +191,7 @@ double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
   for (int i = 0; i < 2; ++i) {
     component cs[2];
     cs[0] = cE[i]; cs[1] = cH[i];
-    sum += real(integrate(2, cs, dot_integrand, where)) * (1 - 2*i);
+    sum += real(integrate(2, cs, dot_integrand, 0, where)) * (1 - 2*i);
   }
   return sum_to_all(sum);
 }
@@ -260,7 +260,7 @@ double fields::electric_energy_max_in_box(const geometric_volume &where) {
     cs[3+0] = Dx; cs[3+1] = Dy; cs[3+2] = Dz;
   }
   
-  return max_abs(6, cs, dot3_max_integrand, where) * 0.5;
+  return max_abs(6, cs, dot3_max_integrand, 0, where) * 0.5;
 }
 
 /* "modal" volume according to definition in:
@@ -292,7 +292,7 @@ double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
     if (!coordinate_mismatch(v.dim, component_direction(c))) {
       component cs[2];
       cs[0] = cs[1] = direction_component(Ex, component_direction(c));
-      sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) f));
+      sum += real(integrate(2, cs, dot_fx_integrand, (void *) f, where));
     }
   return sum * 0.5 / electric_energy_in_box(where);
 }
@@ -306,7 +306,7 @@ double fields::electric_energy_weighted_integral(double (*f)(const vec &),
       component cs[2];
       cs[0] = direction_component(Ex, component_direction(c));
       cs[1] = direction_component(Dx, component_direction(c));
-      sum += real(integrate(2, cs, dot_fx_integrand, where, (void *) f));
+      sum += real(integrate(2, cs, dot_fx_integrand, (void *) f, where));
     }
   return sum * 0.5 / electric_energy_in_box(where);
 }

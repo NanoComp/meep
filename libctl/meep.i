@@ -26,6 +26,22 @@ static inline complex<double> my_complex_func2(double t, void *f) {
   cnumber cret = ctl_convert_cnumber_to_c(ret);
   return std::complex<double>(cret.re, cret.im);
 }
+
+typedef struct { SCM func; int nf; } my_field_func_data;
+static inline complex<double> my_field_func(const complex<double> *fields,
+					    const meep::vec &loc,
+					    void *data_) {
+  my_field_func_data *data = (my_field_func_data *) data_;
+  int num_items = data->nf;
+  cnumber *items = new cnumber[num_items];
+  for (int i = 0; i < num_items; ++i)
+    items[i] = make_cnumber(real(fields[i]), imag(fields[i]));
+  SCM ret = gh_apply(data->func,
+		     scm_cons(ctl_convert_vector3_to_scm(vec_to_vector3(loc)),
+			      make_cnumber_list(num_items, items)));
+  delete[] items;
+}
+
 %}
 
 %typecheck(SWIG_TYPECHECK_COMPLEX) complex<double> {
@@ -66,6 +82,27 @@ static inline complex<double> my_complex_func2(double t, void *f) {
 %}
 %typecheck(SWIG_TYPECHECK_COMPLEX) meep::vec, meep::vec const & {
   $1 = SwigVector3_Check($input);
+}
+
+/* field_function arguments are passed as a cons pair of (components . func)
+   in order to set all four arguments at once. */
+%typemap(guile,in) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) (my_field_func_data data) {
+  $1 = list_length(gh_car($input));
+  $2 = new meep::component[$1];
+  for (int i = 0; i < $1; ++i)
+    $2[i] = meep::component(integer_list_ref(gh_car($input), i));
+  data.nf = $1;
+  data.func = gh_cdr($input);
+  $3 = my_field_func;
+  $4 = &data;
+}
+%typemap(freearg) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) {
+  if ($2) delete[] $2;
+}
+%typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) {
+  $1 = SCM_NFALSEP(scm_pair_p($input)) &&
+       SCM_NFALSEP(scm_list_p(gh_car($input))) &&
+       SCM_NFALSEP(scm_procedure_p(gh_cdr($input))); 
 }
 
 // Need to tell SWIG about any method that returns a new object
