@@ -873,6 +873,29 @@
        k-points)
   (reverse all-freqs))
 
+
+; ****************************************************************
+; field integration
+
+(define (get-where-and-fields where-and-fields)
+  (let ((f (if (= 2 (length where-and-fields))
+	       (cadr where-and-fields)
+	       fields)))
+    (if (null? f)
+	(error "init-fields is required before using field functions"))
+    (let ((where (if (null? where-and-fields)
+		     (meep-fields-total-volume f)
+		     (car where-and-fields))))
+      (cons where f))))
+
+(define (integrate-field-function cs func . where-and-fields)
+  (let ((waf (get-where-and-fields where-and-fields)))
+    (meep-fields-integrate (cdr waf) (cons cs func) (car waf))))
+
+(define (max-abs-field-function cs func . where-and-fields)
+  (let ((waf (get-where-and-fields where-and-fields)))
+    (meep-fields-max-abs (cdr waf) (cons cs func) (car waf))))
+
 ; ****************************************************************
 
 ; Load GNU Readline support, for easier command-line editing support.
