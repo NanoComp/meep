@@ -536,6 +536,8 @@
 ; this can be used to convert the file into other formats, etcetera.
 (define output-h5-hook (lambda (fname) false)) ; default is no-op
 
+(define output-single-precision? false) ; output single-prec to save space
+
 (define (output-component c . h5file)
   (if (null? fields) (error "init-fields is required before output-component"))
   (meep-fields-output-hdf5 
@@ -545,12 +547,36 @@
        output-volume)
    (if (null? h5file) output-append-h5 (car h5file)) 
    (and (null? h5file) (not (null? output-append-h5)))
-   false 
+   output-single-precision? 
    (get-filename-prefix))
   (if (null? h5file)
       (output-h5-hook (meep-fields-h5file-name fields
 		       (meep-component-name c) (get-filename-prefix) true))))
-					       
+
+; cs = list of components, and func is function of position & these components
+(define (output-field-function-helper name cs func real-only? h5file)
+  (if (null? fields) (error "init-fields is required before output-field-function"))
+  (meep-fields-output-hdf5
+   fields name
+   (cons cs func)
+   (if (null? output-volume)
+       (meep-fields-total-volume fields)
+       output-volume)
+   (if (null? h5file) output-append-h5 (car h5file))
+   (and (null? h5file) (not (null? output-append-h5)))
+   output-single-precision?
+   (get-filename-prefix)
+   real-only?)
+  (if (null? h5file)
+      (output-h5-hook (meep-fields-h5file-name fields
+                       name (get-filename-prefix) true))))
+
+(define (output-field-function name cs func . h5file)
+  (output-field-function-helper name cs func false h5file))
+
+(define (output-real-field-function name cs func . h5file)
+  (output-field-function-helper name cs func true h5file))
+
 (define (output-components fname . cs)
   (if (null? fields) (error "init-fields is required before output-component"))
   (let ((f 

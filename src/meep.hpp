@@ -826,7 +826,8 @@ class fields {
 		   h5file *file = 0,
 		   bool append_data = false,
 		   bool single_precision = false,
-		   const char *prefix = 0);
+		   const char *prefix = 0,
+		   bool real_part_only = false);
   void output_hdf5(const char *dataname,  // OUTPUT REAL-VALUED FUNCTION
 		   int num_fields, const component *components,
 		   field_rfunction fun, void *fun_data_,

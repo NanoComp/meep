@@ -40,6 +40,8 @@ static inline complex<double> my_field_func(const complex<double> *fields,
 		     scm_cons(ctl_convert_vector3_to_scm(vec_to_vector3(loc)),
 			      make_cnumber_list(num_items, items)));
   delete[] items;
+  cnumber cret = ctl_convert_cnumber_to_c(ret);
+  return std::complex<double>(cret.re, cret.im);
 }
 
 %}

@@ -277,24 +277,28 @@ void fields::output_hdf5(const char *dataname,
 			 h5file *file,
                          bool append_data,
                          bool single_precision,
-			 const char *prefix)
+			 const char *prefix,
+			 bool real_part_only)
 {
   bool delete_file;
   if ((delete_file = !file))
     file = open_h5file(dataname, h5file::WRITE, prefix, true);
 
-  int len = strlen(dataname) + 5;
-  char *dataname2;
-
-  dataname2 = new char[len];
-  snprintf(dataname2, len, "%s%s", dataname, ".r");
-  output_hdf5(file, dataname, num_fields, components, fun, fun_data_, 
-	      0, where, append_data, single_precision);
-  snprintf(dataname2, len, "%s%s", dataname, ".i");
-  output_hdf5(file, dataname, num_fields, components, fun, fun_data_, 
-	      1, where, append_data, single_precision);
-  delete[] dataname2;
-
+  if (real_part_only) {
+    output_hdf5(file, dataname, num_fields, components, fun, fun_data_, 
+		0, where, append_data, single_precision);
+  }
+  else {
+    int len = strlen(dataname) + 5;
+    char *dataname2 = new char[len];
+    snprintf(dataname2, len, "%s%s", dataname, ".r");
+    output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 
+		0, where, append_data, single_precision);
+    snprintf(dataname2, len, "%s%s", dataname, ".i");
+    output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 
+		1, where, append_data, single_precision);
+    delete[] dataname2;
+  }
   if (delete_file) delete file;
 }
 
