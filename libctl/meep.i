@@ -67,10 +67,13 @@ static inline complex<double> my_field_func(const complex<double> *fields,
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 
-%typemap(guile,in) complex<double>(*)(double, void*) {
-  $1 = my_complex_func2; // the actual function had better be the next arg
+%typemap(guile,in) (complex<double> (*func)(double t, void *), void *data) {
+  $1 = my_complex_func2;
+  $2 = (void *) $input; // input is SCM pointer to Scheme function
 }
-%typemap(guile,in) void* { $1 = (void*) ($input); }
+%typecheck(SWIG_TYPECHECK_POINTER) (complex<double> (*func)(double t, void *), void *data) {
+  $1 = SCM_NFALSEP(scm_procedure_p($input));
+}
 
 %typemap(guile,in) meep::vec { 
   $1 = vector3_to_vec(ctl_convert_vector3_to_c($input));

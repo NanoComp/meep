@@ -228,8 +228,7 @@
   (define-derived-property swigval 'SCM
     (lambda (o) 
       (new-meep-custom-src-time 
-       (object-property-value o 'src-function)
-       (object-property-value o 'src-function)
+       (object-property-value o 'src-func)
        (object-property-value o 'start-time)
        (object-property-value o 'end-time)))))
 
