@@ -250,8 +250,8 @@ void fields_chunk::step_h_source(src_vol *sv) {
     for (int j=0; j<sv->npts; j++) {
       const complex<double> A = sv->current(j) * dt;
       const int i = sv->index[j];
-      f[c][0][i] += real(A);
-      if (!is_real) f[c][1][i] += imag(A);
+      f[c][0][i] -= real(A);
+      if (!is_real) f[c][1][i] -= imag(A);
     }
   step_h_source(sv->next);
 }
