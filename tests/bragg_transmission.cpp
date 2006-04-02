@@ -247,7 +247,9 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   quiet = true;
 
+#ifdef HAVE_HDF5
   doit(true);
+#endif
   doit(false);
 
   return 0;
