@@ -339,13 +339,13 @@ void structure::use_pml(direction d, boundary_side b, double dx,
 			double strength) {
   if (strength == 0.0 || dx <= 0.0) return;
   volume pml_volume = v;
-  pml_volume.set_num_direction(d, (int) (dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
-  if ((boundary_side) b == High)
-    pml_volume.origin_set_direction(d, (user_volume.num_direction(d)
-                                        - pml_volume.num_direction(d))/user_volume.a);
-  const int v_to_user_shift = (int)
-    floor((user_volume.origin_in_direction(d) - v.origin_in_direction(d))*v.a + 0.5);
-  if ((boundary_side) b == Low && v_to_user_shift != 0)
+  pml_volume.set_num_direction(d, int(dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
+  if (b == High)
+    pml_volume.set_origin(d, user_volume.big_corner().in_direction(d)
+			  - pml_volume.num_direction(d) * 2);
+  const int v_to_user_shift = (user_volume.little_corner().in_direction(d) 
+    - v.little_corner().in_direction(d)) / 2;
+  if (b == Low && v_to_user_shift != 0)
     pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
 }

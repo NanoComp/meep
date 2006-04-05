@@ -24,24 +24,25 @@
 
 namespace meep {
 
-static inline double yee_to_lattice(int n, double a, double inva=0.0) {
-  if (inva == 0.0) inva = 1.0/a;
-  return n*(0.5*inva);
-}
-
-static inline int lattice_to_yee(double x, double a) {
-  return (int)floor(x*(2.0*a) + 0.5);
-}
-
 ivec volume::round_vec(const vec &p) const {
   ivec result(dim);
   LOOP_OVER_DIRECTIONS(dim, d)
-    result.set_direction(d, lattice_to_yee(p.in_direction(d),a));
+    result.set_direction(d, int(round(p.in_direction(d) * 2 * a)));
   return result;
 }
 
-void volume::update_io() {
-  io = round_vec(origin);
+void volume::set_origin(const ivec &o) {
+  io = o;
+  origin = operator[](io); // adjust origin to match io
+}
+
+void volume::set_origin(direction d, int o) {
+  io.set_direction(d, o);
+  origin = operator[](io); // adjust origin to match io
+}
+
+void volume::set_origin(const vec &o) {
+  set_origin(round_vec(o));
 }
 
 static inline double rtl(double x, double a, double inva=0.0) {
@@ -299,22 +300,13 @@ direction volume::yucky_direction(int n) const {
 }
 
 geometric_volume volume::surroundings() const {
-  geometric_volume res(dim);
-  LOOP_OVER_DIRECTIONS(dim, d) {
-    res.set_direction_min(d, operator[](little_corner()).in_direction(d));
-    res.set_direction_max(d, operator[](big_corner()).in_direction(d));
-  }
-  return res;
+  return geometric_volume(operator[](little_corner()), 
+			  operator[](big_corner()));
 }
 
 geometric_volume volume::interior() const {
-  geometric_volume res(dim);
-  LOOP_OVER_DIRECTIONS(dim, d) {
-    res.set_direction_min(d, operator[](little_corner()).in_direction(d));
-    res.set_direction_max(d, operator[](big_corner() - one_ivec(dim) * 2)
-			  .in_direction(d));
-  }
-  return res;
+  return geometric_volume(operator[](little_corner()), 
+			  operator[](big_corner() - one_ivec(dim) * 2));
 }
 
 void volume::update_ntot() {
@@ -766,43 +758,54 @@ void volume::print() const {
 
 bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *others, int *num_others) const {
   int temp_num[3] = {0,0,0};
-  vec origin_shift(dim);
+  ivec new_io(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
-    //printf("dim=%s vol_in.io.in_direction(%s) = %d\n", dimension_name(dim), direction_name(d), vol_in.io.in_direction(d));
-    int minval = max(io.in_direction(d), vol_in.io.in_direction(d));
+    int minval = max(little_corner().in_direction(d), vol_in.little_corner().in_direction(d));
     int maxval = min(big_corner().in_direction(d), vol_in.big_corner().in_direction(d));
     if (minval >= maxval)
       return false;
     temp_num[d%3] = (maxval - minval)/2;
-    origin_shift.set_direction(d, (minval - io.in_direction(d))/2/a);
+    new_io.set_direction(d, minval);
   }
   if (intersection != NULL) {
     *intersection = volume(dim, a, temp_num[0], temp_num[1], temp_num[2]); // fix me : ugly, need new constructor
-    intersection->set_origin(origin + origin_shift);
+    intersection->set_origin(new_io);
   }
   if (others != NULL) {
     int counter = 0;
     volume vol_containing = *this;
     LOOP_OVER_DIRECTIONS(dim, d) {
-      if (vol_containing.io.in_direction(d) < vol_in.io.in_direction(d)) {
+      if (vol_containing.little_corner().in_direction(d)
+	  < vol_in.little_corner().in_direction(d)) {
 	// shave off lower slice from vol_containing and add it to others
 	volume other = vol_containing;
-	const int thick = (vol_in.io.in_direction(d) - vol_containing.io.in_direction(d))/2;
+	const int thick = (vol_in.little_corner().in_direction(d)
+			   - vol_containing.little_corner().in_direction(d))/2;
 	other.set_num_direction(d, thick);
 	others[counter] = other;
 	counter++;
-	vol_containing.origin_set_direction(d, vol_containing.origin.in_direction(d) + thick/a);
-	vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
+	vol_containing.shift_origin(d, thick*2);
+	vol_containing.set_num_direction(d, vol_containing.num_direction(d)
+					 - thick);
+	if (vol_containing.little_corner().in_direction(d)
+	    < vol_in.little_corner().in_direction(d))
+	  abort("intersect_with: little corners differ by odd integer?");
       }
-      if (vol_containing.big_corner().in_direction(d) > vol_in.big_corner().in_direction(d)) {
+      if (vol_containing.big_corner().in_direction(d)
+	  > vol_in.big_corner().in_direction(d)) {
 	// shave off upper slice from vol_containing and add it to others
 	volume other = vol_containing;
-	const int thick = (vol_containing.big_corner().in_direction(d) - vol_in.big_corner().in_direction(d))/2;
+	const int thick = (vol_containing.big_corner().in_direction(d)
+			   - vol_in.big_corner().in_direction(d))/2;
 	other.set_num_direction(d, thick);
-	other.origin_set_direction(d, vol_containing.origin.in_direction(d) + (vol_containing.num_direction(d) - thick)/a); 
+	other.shift_origin(d, (vol_containing.num_direction(d) - thick)*2);
 	others[counter] = other;
 	counter++;
-	vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
+	vol_containing.set_num_direction(d, vol_containing.num_direction(d) 
+					 - thick);
+	if (vol_containing.big_corner().in_direction(d)
+	    < vol_in.big_corner().in_direction(d))
+	  abort("intersect_with: big corners differ by odd integer?");
       }
     }
     *num_others = counter;
@@ -971,10 +974,10 @@ volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, doub
     abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
   if (n == 1) return *this;
   int biglen = 0;
-  direction splitdir;
+  direction splitdir = NO_DIRECTION;
   LOOP_OVER_DIRECTIONS(dim, d) if (num_direction(d) > biglen) { biglen = num_direction(d); splitdir = d; } 
-  double best_split_measure = 1e20, left_effort_fraction;
-  int best_split_point;
+  double best_split_measure = 1e20, left_effort_fraction = 0;
+  int best_split_point = 0;
   vec corner = zero_vec(dim);
   LOOP_OVER_DIRECTIONS(dim, d) corner.set_direction(d, origin.in_direction(d) + num_direction(d)/a); 
 
@@ -983,7 +986,7 @@ volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, doub
     v_left.set_num_direction(splitdir, split_point);
     volume v_right = *this;
     v_right.set_num_direction(splitdir, num_direction(splitdir) - split_point);
-    v_right.origin_set_direction(splitdir, v_right.origin.in_direction(splitdir)+split_point/a);
+    v_right.shift_origin(splitdir, split_point*2);
 
     double total_left_effort = 0, total_right_effort = 0;
     volume vol;
@@ -1040,7 +1043,7 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
       bestlen = num[i];
     }
   if (bestd == -1) {
-    for (int i=0;i<3;i++) printf("num[%d] = %d\n", i, num[i]);
+    for (int i=0;i<3;i++) master_printf("num[%d] = %d\n", i, num[i]);
     abort("Crazy weird splitting error.\n");
   }
   volume retval(dim, a, 1,1,1);
@@ -1049,9 +1052,9 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
     abort("Aaack bad bug in split_at_fraction.\n");
   direction d = (direction) bestd;
   if (dim == Dcyl && d == X) d = R;
-  retval.set_origin(origin);
+  retval.set_origin(io);
   if (want_high)
-    retval.origin_set_direction(d,origin.in_direction(d)+numer/a);
+    retval.shift_origin(d,numer*2);
 
   if (want_high) retval.num[bestd] -= numer;
   else retval.num[bestd] = numer;
@@ -1063,9 +1066,7 @@ volume volume::split_specifically(int n, int which, direction d) const {
   volume retval(dim, a, 1,1,1);
   for (int i=0;i<3;i++) retval.num[i] = num[i];
 
-  vec shift = zero_vec(dim);
-  shift.set_direction(d, num_direction(d)/n*which/a);
-  retval.set_origin(origin + shift);
+  retval.shift_origin(d, num_direction(d)/n*which*2);
 
   retval.num[d % 3] /= n;
   retval.num_changed();
@@ -1080,10 +1081,8 @@ volume volume::pad(direction d) const {
 
 void volume::pad_self(direction d) {
   num[d%3]+=2; // Pad in both directions by one grid point.
-  ivec temp = io;
-  temp.set_direction(d, io.in_direction(d) - 2);
   num_changed();
-  set_origin(operator[](temp));
+  set_origin(d, -2);
 }
 
 ivec volume::icenter() const {
@@ -1479,6 +1478,7 @@ field_rfunction derived_component_func(derived_component c, const volume &v,
     case Sz: cs[0] = Ex; cs[1] = Hy; break;
     case Sr: cs[0] = Ep; cs[1] = Hz; break;
     case Sp: cs[0] = Ez; cs[1] = Hr; break;
+    default: break; // never reached
     }
     nfields = 4;
     cs[2] = direction_component(Ex, component_direction(cs[1]));
