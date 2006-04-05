@@ -673,12 +673,10 @@ class volume {
   friend volume vol2d(double xsize, double ysize, double a);
   friend volume vol3d(double xsize, double ysize, double zsize, double a);
 
-  int can_split_evenly(int num) const;
   volume split(int num, int which) const;
   volume split_by_effort(int num, int which, int Ngv = 0, const volume *gv = NULL, double *effort = NULL) const;
-  volume split_once(int num, int which) const;
   volume split_at_fraction(bool want_high, int numer) const;
-  volume split_specifically(int num, int which, direction d) const;
+  volume halve(direction d) const;
   void pad_self(direction d);
   volume pad(direction d) const;
   volume pad() const {

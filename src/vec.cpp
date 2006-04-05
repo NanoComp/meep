@@ -919,27 +919,6 @@ volume volcyl(double rsize, double zsize, double a) {
   else return volume(Dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
 }
 
-int volume::can_split_evenly(int n) const {
-  int bestd = -1, bestlen = 0;
-  for (int i=0;i<3;i++)
-    if (num[i] > bestlen && num[i] % n == 0 && num[i] > 1) {
-      bestd = i;
-      bestlen = num[i];
-    }
-  if (bestd == -1) return 0;
-  else return 1 + bestd;
-}
-
-// static int greatest_prime_factor(int n) {
-//   for (int i=2;i<=n;i++) {
-//     if (n % i == 0) {
-//       while (n % i == 0) n /= i;
-//       if (n == 1) return i;
-//     }
-//   }
-//   abort("Can't calculate gpf of %d!\n", n);
-// }
-
 volume volume::split(int n, int which) const {
   if (n > nowned_min())
     abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
@@ -1011,18 +990,6 @@ volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, doub
     return split_at_fraction(true, split_point).split_by_effort(n-num_low,which-num_low, Ngv,gv,effort);
 }
 
-volume volume::split_once(int n, int which) const {
-  if (n == 1) return *this;
-  int cse = can_split_evenly(n);
-  if (cse) {
-    const int bestd = cse-1;
-    return split_specifically(n, which, (direction) bestd);
-  } else {
-    abort("Can't split when dimensions don't work out right\n");
-    return volume(); // This is never reached.
-  }
-}
-
 volume volume::split_at_fraction(bool want_high, int numer) const {
   int bestd = -1, bestlen = 1;
   for (int i=0;i<3;i++)
@@ -1050,14 +1017,9 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
   return retval;
 }
 
-volume volume::split_specifically(int n, int which, direction d) const {
-  volume retval(dim, a, 1,1,1);
-  for (int i=0;i<3;i++) retval.num[i] = num[i];
-
-  retval.shift_origin(d, num_direction(d)/n*which*2);
-
-  retval.num[d % 3] /= n;
-  retval.num_changed();
+volume volume::halve(direction d) const {
+  volume retval(*this);
+  retval.set_num_direction(d, num_direction(d) / 2);
   return retval;
 }
 
@@ -1070,7 +1032,7 @@ volume volume::pad(direction d) const {
 void volume::pad_self(direction d) {
   num[d%3]+=2; // Pad in both directions by one grid point.
   num_changed();
-  set_origin(d, -2);
+  shift_origin(d, -2);
 }
 
 ivec volume::icenter() const {

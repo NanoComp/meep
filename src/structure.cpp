@@ -79,18 +79,18 @@ void structure::choose_chunkdivision(const volume &thev,
     bool break_this[3];
     for (int dd=0;dd<3;dd++) {
       const direction d = (direction) dd;
-      break_this[d] = false;
+      break_this[dd] = false;
       for (int n=0;n<S.multiplicity();n++)
-        if (has_direction(thev.dim,(direction)d) &&
+        if (has_direction(thev.dim,d) &&
             (S.transform(d,n).d != d || S.transform(d,n).flipped)) {
-          break_this[d] = true;
+          break_this[dd] = true;
           if (thev.num_direction(d) & 1)
             abort("Aaack, odd number of grid points in %s direction!\n",
 		  direction_name(d));
         }
     }
     for (int d=0;d<3;d++)
-      if (break_this[d]) v = v.split_specifically(2,0,(direction)d);
+      if (break_this[d]) v = v.halve((direction)d);
     // Before padding, find the corresponding geometric volume.
     gv = v.surroundings();
     // Pad the little cell in any direction that we've shrunk:
@@ -342,9 +342,9 @@ void structure::use_pml(direction d, boundary_side b, double dx,
   pml_volume.set_num_direction(d, int(dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if (b == High)
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d)
-			  - pml_volume.num_direction(d) * 2);
+  			  - pml_volume.num_direction(d) * 2);
   const int v_to_user_shift = (user_volume.little_corner().in_direction(d) 
-    - v.little_corner().in_direction(d)) / 2;
+			       - v.little_corner().in_direction(d)) / 2;
   if (b == Low && v_to_user_shift != 0)
     pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
