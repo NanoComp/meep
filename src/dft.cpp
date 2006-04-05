@@ -411,7 +411,6 @@ dft_flux fields::add_dft_flux(direction d, const geometric_volume &where,
 dft_flux fields::add_dft_flux_box(const geometric_volume &where,
 				  double freq_min, double freq_max, int Nfreq){
   geometric_volume_list *faces = 0;
-  int ifaces = 0;
   LOOP_OVER_DIRECTIONS(where.dim, d)
     if (where.in_direction(d) > 0) {
       geometric_volume face(where);
