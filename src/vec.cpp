@@ -27,7 +27,7 @@ namespace meep {
 ivec volume::round_vec(const vec &p) const {
   ivec result(dim);
   LOOP_OVER_DIRECTIONS(dim, d)
-    result.set_direction(d, int(round(p.in_direction(d) * 2 * a)));
+    result.set_direction(d, my_round(p.in_direction(d) * 2 * a));
   return result;
 }
 
@@ -43,18 +43,6 @@ void volume::set_origin(direction d, int o) {
 
 void volume::set_origin(const vec &o) {
   set_origin(round_vec(o));
-}
-
-static inline double rtl(double x, double a, double inva=0.0) {
-  // Rounds to a value somewhere on the yee lattice.
-  return ((int)floor(x*(2.0*a) + 0.5))*(0.5*inva);
-}
-
-static inline vec round_to_lattice(const vec &p, double a, double inva=0.0) {
-  // Rounds to a value somewhere on the yee lattice.
-  vec result(p.dim);
-  LOOP_OVER_DIRECTIONS(p.dim, d) result.set_direction(d, rtl(p.in_direction(d),a,inva));
-  return result;
 }
 
 const char *dimension_name(ndim dim) {
