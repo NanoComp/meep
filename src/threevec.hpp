@@ -119,8 +119,7 @@ inline tensor operator/(double s, const tensor &t) {
   tensor out;
   double s_o_vol = s/(t.row[0]*(t.row[1]^t.row[2]));
   if (fabs(s_o_vol) > 1e50) {
-    master_printf("Danger, singular tensor!!! %g\n", fabs(s_o_vol));
-    exit(1);
+    abort("Danger, singular tensor!!! %g\n", fabs(s_o_vol));
     FOR3(i) out.row[i] = t.row[(i+1)%3]^t.row[(i+2)%3];
     FOR3(i) FOR3(j)
       if (out.row[i].val[j] != 0.0) out.row[i].val[j] = 1e80;

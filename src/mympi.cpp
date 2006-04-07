@@ -17,6 +17,7 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "meep.hpp"
 #include "config.h"
