@@ -19,6 +19,7 @@
    very similarly to integrate.cpp (using fields::loop_in_chunks). */
 
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include "meep_internals.hpp"
