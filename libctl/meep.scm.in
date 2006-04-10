@@ -895,6 +895,23 @@
   (let ((waf (get-where-and-fields where-and-fields)))
     (meep-fields-max-abs (cdr waf) (cons cs func) (car waf))))
 
+(define (flux-in-box dir box)
+  (if (null? fields)
+      (error "init-fields is required before using flux-in-box"))
+  (meep-fields-flux-in-box fields dir box))
+(define (electric-energy-in-box box)
+  (if (null? fields)
+      (error "init-fields is required before using electric-energy-in-box"))
+  (meep-fields-electric-energy-in-box fields box))
+(define (magnetic-energy-in-box box)
+  (if (null? fields)
+      (error "init-fields is required before using magnetic-energy-in-box"))
+  (meep-fields-magnetic-energy-in-box fields box))
+(define (field-energy-in-box box)
+  (if (null? fields)
+      (error "init-fields is required before using field-energy-in-box"))
+  (meep-fields-field-energy-in-box fields box))
+
 ; ****************************************************************
 
 ; Load GNU Readline support, for easier command-line editing support.
