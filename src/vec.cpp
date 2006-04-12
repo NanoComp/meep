@@ -1169,7 +1169,9 @@ symmetry symmetry::operator+(const symmetry &b) const {
   if (multiplicity() == 1) return b;
   else if (b.multiplicity() == 1) return *this;
   symmetry s = *this;
-  s.next = new symmetry(b);
+  symmetry *sn = &s;
+  for (; sn->next; sn = sn->next) ;
+  sn->next = new symmetry(b);
   return s;
 }
 
