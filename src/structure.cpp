@@ -89,8 +89,16 @@ void structure::choose_chunkdivision(const volume &thev,
 		  direction_name(d));
         }
     }
-    for (int d=0;d<3;d++)
-      if (break_this[d]) v = v.halve((direction)d);
+    int break_mult = 1;
+    for (int d=0;d<3;d++) {
+      if (break_mult == S.multiplicity()) break_this[d] = false;
+      if (break_this[d]) {
+	break_mult *= 2;
+	master_printf("Halving computational cell along direction %s\n",
+		      direction_name(direction(d)));
+	v = v.halve((direction)d);
+      }
+    }
     // Before padding, find the corresponding geometric volume.
     gv = v.surroundings();
     // Pad the little cell in any direction that we've shrunk:
