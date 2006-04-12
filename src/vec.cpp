@@ -481,7 +481,7 @@ int volume::index(component c, const ivec &p) const {
 }
 
 void volume::set_strides() {
-  for (int d=0;d<5;d++) the_stride0[d] = 0; // Yuck yuck yuck.
+  FOR_DIRECTIONS(d) the_stride0[d] = 0; // Yuck yuck yuck.
   LOOP_OVER_DIRECTIONS(dim,d)
     switch(d) {
     case Z: the_stride0[d] = 1; break;
@@ -491,7 +491,7 @@ void volume::set_strides() {
     case P: break; // There is no phi stride...
     case NO_DIRECTION: break; // no stride here, either
     }
-  for (int d=0;d<5;d++) the_stride[d] = the_stride0[d] ? the_stride0[d] : 1;
+  FOR_DIRECTIONS(d) the_stride[d] = the_stride0[d] ? the_stride0[d] : 1;
 }
 
 static inline void stupidsort(int *ind, double *w, int l) {
@@ -1056,8 +1056,8 @@ symmetry rotate4(direction axis, const volume &v) {
   symmetry s = identity();
   if (axis > 2) abort("Can only rotate4 in 2D or 3D.\n");
   s.g = 4;
-  for (int d=0;d<5;d++) {
-    s.S[d].d = (direction)d;
+  FOR_DIRECTIONS(d) {
+    s.S[d].d = d;
     s.S[d].flipped = false;
   }
   s.S[(axis+1)%3].d = (direction)((axis+2)%3);
@@ -1131,7 +1131,7 @@ symmetry::symmetry(const symmetry &s) {
 
 void symmetry::operator=(const symmetry &s) {
   g = s.g;
-  for (int d=0;d<5;d++) {
+  FOR_DIRECTIONS(d) {
     S[d].d = s.S[d].d;
     S[d].flipped = s.S[d].flipped;
   }
