@@ -615,7 +615,8 @@
 (define-output-field "h" hfield H)
 (define-output-field "e" efield E)
 (define-output-field "d" dfield D)
-(define-output-field "s" poynting S)
+(define-output-field "s" poynting S) ; compat. with MPB.
+(define-output-field "s" sfield S)
 
 ; change output-volume for a few step-funcs to gv
 (define (in-volume gv . step-funcs)
