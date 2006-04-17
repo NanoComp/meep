@@ -62,6 +62,8 @@ meep::vec vector3_to_vec(const vector3 v3)
     return meep::vec(v3.x, v3.y, v3.z);
   case meep::Dcyl:
     return meep::veccyl(v3.x, v3.z);
+  default:
+    meep::abort("unknown dimensionality in vector3_to_vec");
   }
 }
 
@@ -412,26 +414,21 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   switch (dims) {
   case 0: case 1:
     v = meep::vol1d(size.z, resolution);
-    v.shift_origin(meep::vec(size.z * -0.5 + center.z));
     break;
   case 2:
     v = meep::vol2d(size.x, size.y, resolution);
-    v.shift_origin(meep::vec(size.x * -0.5 + center.x,
-			     size.y * -0.5 + center.y));
     break;
   case 3:
     v = meep::vol3d(size.x, size.y, size.z, resolution);
-    v.shift_origin(meep::vec(size.x * -0.5 + center.x,
-			     size.y * -0.5 + center.y, 
-			     size.z * -0.5 + center.z));
     break;
   case CYLINDRICAL:
     v = meep::volcyl(size.x, size.z, resolution);
-    v.shift_origin(meep::veccyl(center.x, size.z * -0.5 + center.z));
     break;
   default:
     CK(0, "unsupported dimensionality");
   }
+  v.shift_origin(-v.icenter());
+  v.shift_origin(vector3_to_vec(center));
   
   meep::symmetry S;
   for (int i = 0; i < symmetries.num_items; ++i) 

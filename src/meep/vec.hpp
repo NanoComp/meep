@@ -485,6 +485,13 @@ class ivec {
   int in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, int val) { t[d] = val; };
 
+  ivec round_up_to_even(void) const { 
+    ivec result(dim);
+    LOOP_OVER_DIRECTIONS(dim, d) 
+      result.t[d] = t[d] + (t[d] >= 0 ? t[d] : -t[d]) % 2; 
+    return result;
+  }
+
   void print(file *) const;
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);

@@ -1017,9 +1017,12 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
   return retval;
 }
 
+// Halve the volume for symmetry exploitation...must contain icenter!
 volume volume::halve(direction d) const {
   volume retval(*this);
-  retval.set_num_direction(d, num_direction(d) / 2);
+  // note that icenter-io is always even by construction of volume::icenter
+  retval.set_num_direction(d, (icenter().in_direction(d) 
+			       - io.in_direction(d)) / 2);
   return retval;
 }
 
@@ -1036,13 +1039,14 @@ void volume::pad_self(direction d) {
 }
 
 ivec volume::icenter() const {
-  // Find the center of the user's cell (which must be the symmetry
-  // point):
+  /* Find the center of the user's cell.  This will be used as the
+     symmetry point, and therefore icenter-io must be *even*
+     in all components in order that rotations preserve the Yee lattice. */
   switch (dim) {
-  case D1: return io + ivec(nz());
-  case D2: return io + ivec(nx(), ny());
-  case D3: return io + ivec(nx(), ny(), nz());
-  case Dcyl: return io + iveccyl(0, nz());
+  case D1: return io + ivec(nz()).round_up_to_even();
+  case D2: return io + ivec(nx(), ny()).round_up_to_even();
+  case D3: return io + ivec(nx(), ny(), nz()).round_up_to_even();
+  case Dcyl: return io + iveccyl(0, nz()).round_up_to_even();
   }
   abort("Can't do symmetry with these dimensions.\n");
   return ivec(0); // This is never reached.
