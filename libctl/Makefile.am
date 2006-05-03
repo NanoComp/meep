@@ -7,11 +7,11 @@ HDRS = meep-ctl.hpp meep-ctl-const.hpp meep-ctl-swig.hpp
 
 LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
 
-meep@MEEP_SUFFIX@_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i
-nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i
+meep@MEEP_SUFFIX@_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i
+nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h ctl-io.i
 meep@MEEP_SUFFIX@_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 
-BUILT_SOURCES = $(nodist_meep_SOURCES) meep-enums.scm meep_wrap.cxx
+BUILT_SOURCES = $(nodist_meep_SOURCES) meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i meep-enums.scm meep_wrap.cxx
 
 # manual dependency hack to force the build order in certain cases
 meep.o: ctl-io.h meep-enums.scm
@@ -22,12 +22,12 @@ meep_wrap.cxx: meep.i meep_op_renames.i meep_enum_renames.i meep_renames.i ctl-i
 	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
 else
 meep_wrap.cxx:
-	echo "/* need --with-maintainer-mode to generate this file */" 1>&2
+	echo "#error need --with-maintainer-mode to generate this file" 1>&2
 	exit 1
 endif
 else
 meep_wrap.cxx:
-	echo "/* need --with-libctl to generate this file */" > $@
+	echo "#error need --with-libctl to generate this file" > $@
 endif
 
 # workaround missing namespace prefix in swig
