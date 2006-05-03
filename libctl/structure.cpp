@@ -427,7 +427,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   default:
     CK(0, "unsupported dimensionality");
   }
-  v.shift_origin(-v.icenter());
+  v.center_origin();
   v.shift_origin(vector3_to_vec(center));
   
   meep::symmetry S;

@@ -709,6 +709,7 @@ class volume {
   void shift_origin(const ivec &s) { set_origin(io + s); }
   void shift_origin(direction d, int s) {shift_origin(unit_ivec(dim, d) * s);}
   void set_origin(direction d, int o);
+  void center_origin(void) { shift_origin(-icenter()); }
   double origin_in_direction(direction d) const{return origin.in_direction(d);}
   double origin_r() const { return origin.r(); }
   double origin_x() const { return origin.x(); }
@@ -717,9 +718,8 @@ class volume {
 
  private:
   volume(ndim d, double ta, int na, int nb, int nc);
-  vec origin; // never change this without calling update_io() !!
-  ivec io; // cache of round_vec(origin), for performance
-  void update_io();
+  ivec io; // integer origin ... always change via set_origin etc.!
+  vec origin; // cache of operator[](io), for performance
   void update_ntot();
   void set_strides();
   void num_changed() { update_ntot(); set_strides(); }
