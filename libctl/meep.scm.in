@@ -621,11 +621,18 @@
 
 ; change output-volume for a few step-funcs to gv
 (define (in-volume gv . step-funcs)
-  (lambda (to-do)
-    (let ((gv-save output-volume))
-      (set! output-volume gv)
-      (map (lambda (f) (eval-step-func f to-do)) step-funcs)
-      (set! output-volume gv-save))))
+  (let ((cur-eps "")) ; allow per-volume eps filenames
+    (lambda (to-do)
+      (let ((gv-save output-volume)
+	    (eps-save meep-last-eps-filename))
+	(set! output-volume gv)
+	(if (not (string-null? cur-eps))
+	    (set! meep-last-eps-filename cur-eps))
+	(map (lambda (f) (eval-step-func f to-do)) step-funcs)
+	(set! cur-eps meep-last-eps-filename)
+	(set! output-volume gv-save)
+	(if (not (string-null? eps-save))
+	    (set! meep-last-eps-filename eps-save))))))
 (define (in-point pt . step-funcs)
   (apply in-volume (cons (volume (center pt)) step-funcs)))
 
