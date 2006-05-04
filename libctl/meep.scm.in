@@ -619,6 +619,13 @@
 (define-output-field "s" poynting S) ; compat. with MPB.
 (define-output-field "s" sfield S)
 
+(define (with-prefix pre . step-funcs)
+  (lambda (to-do)
+    (let ((pre-save filename-prefix))
+      (set! filename-prefix (string-append pre (get-filename-prefix)))
+      (map (lambda (f) (eval-step-func f to-do)) step-funcs)
+      (set! filename-prefix pre-save))))
+
 ; change output-volume for a few step-funcs to gv
 (define (in-volume gv . step-funcs)
   (let ((cur-eps "")) ; allow per-volume eps filenames
