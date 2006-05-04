@@ -382,15 +382,11 @@
 
 (define (load-flux fname flux)
   (if (null? fields) (init-fields))
-  (meep-dft-flux-load-hdf5 flux fields 
-			   (meep-fields-h5file-name 
-			    fields fname (get-filename-prefix) false)))
+  (meep-dft-flux-load-hdf5 flux fields fname "" (get-filename-prefix)))
 
 (define (save-flux fname flux)
   (if (null? fields) (init-fields))
-  (meep-dft-flux-save-hdf5 flux fields 
-			   (meep-fields-h5file-name
-                            fields fname (get-filename-prefix) false)))
+  (meep-dft-flux-save-hdf5 flux fields fname "" (get-filename-prefix)))
 
 (define (load-minus-flux fname flux)
   (load-flux fname flux)

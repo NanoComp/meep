@@ -114,7 +114,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 			      void *chunkloop_data)
 {
   dft_chunk_data *data = (dft_chunk_data *) chunkloop_data;
-  (void) shift; // unused
+  (void) shift; (void) ichunk; // unused
 
   if (cgrid != Dielectric) abort("dft chunks should use the Dielectric grid");
   
@@ -254,7 +254,8 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
-	   dprefix ? dprefix : "", dprefix ? "_" : "", component_name(c));
+	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", 
+	   component_name(c));
   file->create_data(dataname, 1, &n);
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
@@ -272,7 +273,8 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
-	   dprefix ? dprefix : "", dprefix ? "_" : "", component_name(c));
+	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "",
+	   component_name(c));
   int file_rank, file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
@@ -329,14 +331,16 @@ void dft_flux::load_hdf5(h5file *file, const char *dprefix) {
   load_dft_hdf5(H, cH, file, dprefix);
 }
 
-void dft_flux::save_hdf5(fields &f, const char *fname, const char *dprefix) {
-  h5file *ff = f.open_h5file(fname);
+void dft_flux::save_hdf5(fields &f, const char *fname, const char *dprefix,
+			 const char *prefix) {
+  h5file *ff = f.open_h5file(fname, h5file::WRITE, prefix);
   save_hdf5(ff, dprefix);
   delete ff;
 }
 
-void dft_flux::load_hdf5(fields &f, const char *fname, const char *dprefix) {
-  h5file *ff = f.open_h5file(fname, h5file::READONLY);
+void dft_flux::load_hdf5(fields &f, const char *fname, const char *dprefix,
+			 const char *prefix) {
+  h5file *ff = f.open_h5file(fname, h5file::READONLY, prefix);
   load_hdf5(ff, dprefix);
   delete ff;
 }
