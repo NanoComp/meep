@@ -586,7 +586,12 @@
 		       fields fname (get-filename-prefix) true))))
 
 ; convenience functions, similar to MPB:
-(define (output-epsilon) (output-component Dielectric))
+(define meep-last-eps-filename "") ; most recent epsilon file outputted
+(define (output-epsilon) 
+  (output-component Dielectric)
+  (set! meep-last-eps-filename 
+	(meep-fields-h5file-name fields (meep-component-name Dielectric)
+				 (get-filename-prefix) true)))
 (define (output-hpwr) (output-component H-EnergyDensity))
 (define (output-dpwr) (output-component D-EnergyDensity))
 (define (output-tot-pwr) (output-component EnergyDensity))
@@ -641,9 +646,9 @@
 			       fields fname (get-filename-prefix)))))
 	(set! output-append-h5 h5save)))))
 
-(define (convert-h5 convert-cmd . step-funcs)
+(define (convert-h5 rm? convert-cmd . step-funcs)
   (define (convert fname)
-    (if (zero? (system (string-append convert-cmd " " fname)))
+    (if (and rm? (zero? (system (string-append convert-cmd " " fname))))
 	(system (string-append "rm " fname))))
   (lambda (to-do)
     (let ((hooksave output-h5-hook))
@@ -651,10 +656,13 @@
       (map (lambda (f) (eval-step-func f to-do)) step-funcs)
       (set! output-h5-hook hooksave))))
 
-(define (h5topng options . step-funcs)
-  (apply convert-h5 (cons (string-append "h5topng " options) step-funcs)))
+(define (h5topng rm? options . step-funcs)
+  (apply convert-h5 (cons rm? (cons (string-append 
+				     "EPS=\"" meep-last-eps-filename "\"; "
+				     "h5topng " options) 
+				    step-funcs))))
 
-(define (output-png c options)
+(define (output-png-rm? rm? c options)
   (let ((maxabs 0.0)) ; keep track of amplitude for image scaling
     (lambda (to-do)
       (if (eq? to-do 'step)
@@ -666,8 +674,12 @@
 			(if (null? output-volume)
 			    (meep-fields-total-volume fields)
 			    output-volume))))
-	    ((h5topng (string-append "-M " (number->string maxabs) " " options)
+	    ((h5topng rm? 
+		      (string-append "-M " (number->string maxabs) " " options)
 		      (lambda () (output-component c))) to-do))))))
+
+(define (output-png c options) (output-png-rm? true c options))
+(define (output-png+h5 c options) (output-png-rm? false c options))
 
 ; ****************************************************************
 ; harminv functions for extracting bands, etcetera
