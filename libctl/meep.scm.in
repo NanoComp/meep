@@ -533,6 +533,8 @@
 
 (define output-single-precision? false) ; output single-prec to save space
 
+(define meep-last-eps-filename "") ; most recent epsilon file outputted
+
 (define (output-component c . h5file)
   (if (null? fields) (error "init-fields is required before output-component"))
   (meep-fields-output-hdf5 
@@ -545,8 +547,10 @@
    output-single-precision? 
    (get-filename-prefix))
   (if (null? h5file)
-      (output-h5-hook (meep-fields-h5file-name fields
-		       (meep-component-name c) (get-filename-prefix) true))))
+      (let ((nm (meep-fields-h5file-name fields (meep-component-name c)
+					 (get-filename-prefix) true)))
+	(if (eq? c Dielectric) (set! meep-last-eps-filename nm))
+	(output-h5-hook nm))))
 
 ; cs = list of components, and func is function of position & these components
 (define (output-field-function-helper name cs func real-only? h5file)
@@ -586,12 +590,7 @@
 		       fields fname (get-filename-prefix) true))))
 
 ; convenience functions, similar to MPB:
-(define meep-last-eps-filename "") ; most recent epsilon file outputted
-(define (output-epsilon) 
-  (output-component Dielectric)
-  (set! meep-last-eps-filename 
-	(meep-fields-h5file-name fields (meep-component-name Dielectric)
-				 (get-filename-prefix) true)))
+(define (output-epsilon) (output-component Dielectric))
 (define (output-hpwr) (output-component H-EnergyDensity))
 (define (output-dpwr) (output-component D-EnergyDensity))
 (define (output-tot-pwr) (output-component EnergyDensity))
