@@ -702,7 +702,7 @@
 (export-type (make-list-type 'cvector3))
 
 ; generic data-collection function
-(defmacro-public collect-harminv (data data-dt)
+(defmacro-public collect-harminv! (data data-dt)
   `(lambda (c pt)
      (set! ,data '())
      (let ((t0 0))
@@ -742,21 +742,28 @@
 	 bands)
     bands))
 
+(defmacro-public harminv! (data dt results c pt fcen df maxbands)
+  `(let ((data' '()) (dt' 0)
+	 (c' ,c) (pt' ,pt) (fcen' ,fcen) (df' ,df) (maxbands' ,maxbands))
+     (combine-step-funcs
+      (at-end
+       (lambda ()
+	 (set! ,data (reverse data')) ; put in correct order
+	 (set! ,dt dt')
+	 (set! ,results 
+	       (analyze-harminv ,data fcen' df'
+				(if (list? maxbands')
+				    (if (null? maxbands') 100 (car maxbands'))
+				    (if (zero? maxbands') 100 maxbands'))
+				dt'))))
+      ((collect-harminv! data' dt') c' pt'))))
+
 ; collect in harminv-data + analyze and store in harminv-results
 (define harminv-data '())
 (define harminv-data-dt 0)
 (define harminv-results '())
-(define (harminv c pt fcen df . maxbands)
-  (set! harminv-data '())
-  (combine-step-funcs
-   (at-end
-    (lambda ()
-      (set! harminv-data (reverse harminv-data)) ; put in correct order
-      (set! harminv-results 
-	    (analyze-harminv harminv-data fcen df
-			     (if (null? maxbands) 100 (car maxbands))
-			     harminv-data-dt))))
-   ((collect-harminv harminv-data harminv-data-dt) c pt)))
+(define (harminv c pt fcen df . mxbands)
+  (harminv! harminv-data harminv-data-dt harminv-results c pt fcen df mxbands))
 
 ; ****************************************************************
 ; run functions
