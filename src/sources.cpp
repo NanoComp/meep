@@ -262,6 +262,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   
   (void) S; (void) sn; // these should be the identity
   (void) dV0; (void) dV1; // volume weighting is included in data->amp
+  (void) ichunk;
 
   int npts = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d)
@@ -315,15 +316,23 @@ void fields::require_component(component c) {
 }
 
 void fields::add_volume_source(component c, const src_time &src,
-                               const geometric_volume &where,
+                               const geometric_volume &where_,
                                complex<double> A(const vec &), 
 			       complex<double> amp) {
+  geometric_volume where(where_); // make a copy to adjust size if necessary
   if (v.dim != where.dim)
     abort("incorrect source volume dimensionality in add_volume_source");
-  LOOP_OVER_DIRECTIONS(v.dim, d) 
-    if (where.in_direction(d) > (user_volume.boundary_location(High, d) 
-				 - user_volume.boundary_location(Low, d)))
+  LOOP_OVER_DIRECTIONS(v.dim, d) {
+    double w = user_volume.boundary_location(High, d)
+      - user_volume.boundary_location(Low, d);
+    if (where.in_direction(d) > w + v.inva)
       abort("Source width > cell width in %s direction!\n", direction_name(d));
+    else if (where.in_direction(d) > w) { // difference is less than 1 pixel
+      double dw = where.in_direction(d) - w;
+      where.set_direction_min(d, where.in_direction_min(d) - dw * 0.5);
+      where.set_direction_max(d, where.in_direction_min(d) + w);
+    }
+  }
 
   src_vol_chunkloop_data data;
   data.A = A;
