@@ -346,15 +346,18 @@
 		       d0))
 		(c (meep-direction-component Sx d)))
 	   (set! gvl
-		 (new-meep-geometric-volume-list
+		 (make-geometric-volume-list
 		  (volume (center (object-property-value f 'center))
 			  (size (object-property-value f 'size)))
 		  c
 		  (object-property-value f 'weight)
 		  gvl))))
        fluxes)
-  (meep-fields-add-dft-flux fields gvl 
-			    (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq))
+  (let ((flux
+	 (meep-fields-add-dft-flux fields gvl 
+				   (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
+    (delete-meep-geometric-volume-list gvl)
+    flux))
 
 (define (add-flux fcen df nfreq . fluxes)
   (if (null? fields) (init-fields))

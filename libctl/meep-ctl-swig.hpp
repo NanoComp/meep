@@ -19,3 +19,9 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
 				double fmin, double fmax, int maxbands);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
+
+// wrapper around constructor to fool SWIG
+meep::geometric_volume_list
+  *make_geometric_volume_list(const meep::geometric_volume &gv,
+			      int c, complex<double> weight,
+			      meep::geometric_volume_list *next);
