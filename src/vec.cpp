@@ -110,36 +110,6 @@ const char *component_name(int c) {
 	  : component_name(component(c)));
 }
 
-void vec::print(file *f) const {
-  if (dim == Dcyl) {
-    i_fprintf(f, "%g %g 0", r(), z());
-  } else if (dim == D3  ) {
-    i_fprintf(f, "%g %g %g", x(), y(), z());
-  } else if (dim == D2  ) {
-    i_fprintf(f, "%g %g 0", x(), y());
-  } else if (dim == D1  ) {
-    i_fprintf(f, "0 0 %g", z());
-  } else  {
-    printf("I don't know how to print in this dimension!\n");
-    i_fprintf(f, "I don't know how to print in this dimension!\n");
-  }
-}
-
-void ivec::print(file *f) const {
-  if (dim == Dcyl) {
-    i_fprintf(f, "%d %d 0", r(), z());
-  } else if (dim == D3  ) {
-    i_fprintf(f, "%d %d %d", x(), y(), z());
-  } else if (dim == D2  ) {
-    i_fprintf(f, "%d %d 0", x(), y());
-  } else if (dim == D1  ) {
-    i_fprintf(f, "0 0 %d", z());
-  } else  {
-    printf("I don't know how to print in this dimension!\n");
-    i_fprintf(f, "I don't know how to print in this dimension!\n");
-  }
-}
-
 vec min(const vec &vec1, const vec &vec2) {
   vec m(vec1.dim);
   LOOP_OVER_DIRECTIONS(vec1.dim, d)

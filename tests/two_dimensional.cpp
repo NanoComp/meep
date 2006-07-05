@@ -56,10 +56,6 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
                abs(v1 - v2)/abs(v2));
         master_printf("Right now I'm looking at %g %g, time %g\n",
                       p.x(), p.y(), f1.time());
-        f1.output_real_imaginary_slices("multi");
-        f2.output_real_imaginary_slices("single");
-        f1.eps_slices("multi");
-        f2.eps_slices("single");
         return 0;
       }
     }

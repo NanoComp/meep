@@ -70,10 +70,6 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
         LOOP_OVER_DIRECTIONS(p.dim,d)
           master_printf("%s = %g, ", direction_name(d), p.in_direction(d));
         master_printf("time %g\n", f1.time());
-        f1.output_real_imaginary_slices("multi");
-        f2.output_real_imaginary_slices("single");
-        f1.eps_slices("multi");
-        f2.eps_slices("single");
         return 0;
       }
     }
@@ -240,10 +236,6 @@ int test_origin_shift(const char *mydirname) {
     f1.step();
     if (!compare(f.total_energy(), f1.total_energy(), "   total energy")) {
       master_printf("Time is %g\n", f.time());
-      f1.output_real_imaginary_slices("unshifted");
-      f.output_real_imaginary_slices("shifted");
-      f1.eps_slices("unshifted");
-      f.eps_slices("shifted");
       return 0;
     }
   }
@@ -608,8 +600,6 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) {
-        f.output_real_imaginary_slices("multi");
-        f1.output_real_imaginary_slices("single");
         return 0;
       }
       if (!compare(f.magnetic_energy_in_box(v.surroundings()),
@@ -746,8 +736,6 @@ int pml_twomirrors(double eps(const vec &)) {
       total_energy_check_time += 3.0;
     }
   }
-  fs[0].eps_slices("mirror_single");
-  fs[1].eps_slices("mirror_multi");
   return 1;
 }
 
@@ -880,11 +868,6 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
       total_energy_check_time += 1.0;
     }
   }
-  // Just to make sure slice output doesn't actually crash...
-  f.output_real_imaginary_slices("hello");
-  f1.output_real_imaginary_slices("world");
-  f.eps_slices("hello");
-  f1.eps_slices("world");
   return 1;
 }
 

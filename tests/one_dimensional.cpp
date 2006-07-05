@@ -48,8 +48,6 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
         master_printf("This comes out to a fractional error of %g\n",
                abs(v1 - v2)/abs(v2));
         master_printf("Right now I'm looking at %g, time %g\n", p.z(), f1.time());
-        f1.output_real_imaginary_slices("multi");
-        f2.output_real_imaginary_slices("single");
         return 0;
       }
     }

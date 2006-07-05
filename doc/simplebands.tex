@@ -25,7 +25,7 @@ metallic waveguide of radius one.
 \begin{verbatim}
 int main(int argc, char *argv[]) {
   initialize mpi(argc, argv);
-  file *ban = everyone_open_write("bands");
+  FILE *ban = master_fopen("bands", "w");
   structure s(volcyl(1.0, 0.0, rad), eps);
   for (int m=0;m<3;m++) {
     for (double k=0.0; k<= 1.01; k += 0.25) {
@@ -80,6 +80,6 @@ frequency mode).
       f.output_bands(ban, "band", 35);
     }
   }
-  everyone_close(ban);
+  master_fclose(ban);
 }
 \end{verbatim}

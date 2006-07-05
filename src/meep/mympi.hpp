@@ -76,17 +76,9 @@ bool and_to_all(bool in);
 // IO routines:
 void master_printf(const char *fmt, ...) PRINTF_ATTR(1,2);
 void debug_printf(const char *fmt, ...) PRINTF_ATTR(1,2);
-
-// File is an abstract type to keep you from accidentally using it in an
-// unsafe manner.
-class file;
-
-file *everyone_open_write(const char *);
-file *everyone_open_write(const char *filename, const char *directory);
-void everyone_close(file *);
-void i_flush(file *f);
-void i_fprintf(file *, const char *fmt, ...) PRINTF_ATTR(2,3);
-void master_fprintf(file *, const char *fmt, ...) PRINTF_ATTR(2,3);
+void master_fprintf(FILE *f, const char *fmt, ...) PRINTF_ATTR(2,3);
+FILE *master_fopen(const char *name, const char *mode);
+void master_fclose(FILE *f);
 
 void begin_critical_section(int tag);
 void end_critical_section(int tag);

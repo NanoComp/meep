@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
   //s.use_pml_radial(1.0);
   for (m=0;m<1 && !interrupt;m++) {
     char m_str[10];
-    snprintf(m_str, 10, "%d", m);
+    snprintf(m_str, 10, "%d-", m);
     master_printf("Working on m = %d with a=%g...\n", m, a);
     fields f(&s, m);
     f.use_bloch(0.0);
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     while (f.time() < ttot && !interrupt) {
       if (f.time() >= next_print) {
         master_printf("%d is Working on time %g...  ", my_rank(), f.time());
-        f.eps_slices(m_str);
+	f.output_hdf5(Ep, f.total_volume(), 0, false, true, m_str);
         master_printf("energy is %g\n", f.field_energy());
         next_print += 10.0;
       }

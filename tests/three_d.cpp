@@ -56,10 +56,6 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
                abs(v1 - v2)/abs(v2));
         master_printf("Right now I'm looking at %g %g %g, time %g\n",
                       p.x(), p.y(), p.z(), f1.time());
-        f1.output_real_imaginary_slices("multi");
-        f2.output_real_imaginary_slices("single");
-        f1.eps_slices("multi");
-        f2.eps_slices("single");
         return 0;
       }
     }
@@ -82,10 +78,6 @@ int approx_point(fields &f1, fields &f2, const vec &p) {
                abs(v1 - v2)/abs(v2));
         master_printf("Right now I'm looking at %g %g %g, time %g\n",
                       p.x(), p.y(), p.z(), f1.time());
-        f1.output_real_imaginary_slices("multi");
-        f2.output_real_imaginary_slices("single");
-        f1.eps_slices("multi");
-        f2.eps_slices("single");
         return 0;
       }
     }
@@ -223,8 +215,6 @@ int test_pml_splitting(double eps(const vec &), int splitting, const char *mydir
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    //f.output_real_imaginary_slices("multi");
-    //f1.output_real_imaginary_slices("single");
     if (!approx_point(f, f1, vec(0.5  , 0.01 , 1.0 ))) return 0;
     if (!approx_point(f, f1, vec(0.46 , 0.33 , 0.33))) return 0;
     if (!approx_point(f, f1, vec(1.0  , 1.0  , 0.33))) return 0;

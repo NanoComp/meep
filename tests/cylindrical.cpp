@@ -48,8 +48,6 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
         printf("This comes out to a fractional error of %g\n",
                abs(v1 - v2)/abs(v2));
         printf("Right now I'm looking at %g %g, time %g\n", p.r(), p.z(), f1.time());
-        f1.output_real_imaginary_slices("multi");
-        f2.output_real_imaginary_slices("single");
         all_wait();
         return 0;
       }
@@ -195,7 +193,6 @@ int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
       return 0;
     }
     if (p.get_component(Hp) != 0.0 && !(m & 1)) {
-      f.eps_slices();
       printf("Got non-zero Hp of %g %g with m == %d\n",
              real(p.get_component(Hp)), imag(p.get_component(Hp)), m);
       return 0;
@@ -224,8 +221,6 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
     fields f1(&s1, m);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
-    f.eps_slices("multi");
-    f1.eps_slices("single");
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume", 3e-14)) return 0;
     master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);

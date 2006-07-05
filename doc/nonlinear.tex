@@ -98,8 +98,7 @@ versus source amplitude.
         next_printtime += 100;
         //master_printf("Working on time %g...  ", f.time());
         //master_printf("energy is %g\n", f.field_energy());
-        f.eps_slices();
-        //f.eps_slices(geometric_volume(vec(xmax/2+1.0,0), vec(xmax,ymax)));
+	f.output_hdf5(Ez, f.total_volume());
       }
       f.step();
     }

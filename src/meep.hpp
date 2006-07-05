@@ -324,9 +324,6 @@ class structure {
 
   void remove_polarizabilities();
 
-  void output_slices(const char *name="") const;
-  void output_slices(const geometric_volume &what, const char *name="") const;
-
   void set_output_directory(const char *name);
   void mix_with(const structure *, double);
 
@@ -643,19 +640,6 @@ class fields_chunk {
   double get_eps(const ivec &iloc) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
-  // slices.cpp
-  double maxfieldmag(component) const;
-  double maxpolenergy() const;
-  double minpolenergy() const;
-  void output_eps_body(component, const symmetry &, int sn,
-                       const geometric_volume &what, file *,
-                       complex<double> phase_shift);
-  void output_eps_body(const polarizability_identifier &p,
-                       component c, const symmetry &S, int sn,
-                       const geometric_volume &what, file *out,
-                       complex<double> phshift);
-  complex<double> field_mean(component c, bool abs_real, bool abs_imag) const;
-
   void backup_h();
   void restore_h();
 
@@ -789,26 +773,6 @@ class fields {
   void use_bloch(direction, complex<double> kz);
   void use_bloch(const vec &k);
   vec lattice_vector(direction) const;
-  // slices.cpp methods:
-  void output_slices(const char *name = "");
-  void output_slices(const geometric_volume &what, const char *name = "");
-  void eps_envelope(const char *name = "");
-  void eps_envelope(const geometric_volume &what, const char *name = "");
-  void eps_slices(const char *name = "");
-  void eps_slices(const vec &origin, const vec &xside, const vec &yside,
-                  const double dx = 0.05, const char *name = "");
-  void eps_slices(const geometric_volume &what, const char *name = "");
-  void eps_polarization_slice(const polarizability_identifier &, const char *name = "");
-  void eps_polarization_slice(const polarizability_identifier &,
-                              const geometric_volume &, const char *name = "");
-  void eps_energy_slice(const polarizability_identifier &, const char *name = "");
-  void eps_energy_slice(const polarizability_identifier &,
-                        const geometric_volume &what, const char *name = "");
-  void eps_energy_slice(const char *name = "");
-  void eps_energy_slice(const geometric_volume &what, const char *name = "");
-  void output_real_imaginary_slices(const char *name = "");
-  void output_real_imaginary_slices(const geometric_volume &what,
-                                    const char *name = "");
 
   geometric_volume total_volume(void) const;
 
@@ -856,10 +820,6 @@ class fields {
   const char *h5file_name(const char *name,
 			  const char *prefix = NULL, bool timestamp = false);
 
-  double maxfieldmag_to_master(component) const;
-  double minpolenergy_to_master() const;
-  double maxpolenergy_to_master() const;
-  complex<double> optimal_phase_shift(component) const;
   // step.cpp methods:
   double last_step_output_wall_time;
   int last_step_output_t;
@@ -956,7 +916,7 @@ class fields {
   void record_bands();
   complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
-  void output_bands(file *, const char *, int maxbands=100);
+  void output_bands(FILE *, const char *, int maxbands=100);
   complex<double> get_field(int c, const vec &loc) const;
   complex<double> get_field(component c, const vec &loc) const;
   double get_field(derived_component c, const vec &loc) const;
@@ -1033,13 +993,8 @@ class fields {
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
                                   complex<double> *fad, double *approx_power);
-  void out_bands(file *, const char *, int maxbands);
+  void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
-  // slices.cpp
-  void outline_chunks(file *name);
-  bool has_eps_interface(vec *loc) const;
-  complex<double> field_mean(component c, bool abs_real = false,
-                             bool abs_imag = false) const;
   // monitor.cpp
   complex<double> get_field(component c, const ivec &iloc) const;
   double get_polarization_energy(const ivec &) const;
@@ -1092,7 +1047,7 @@ class grace {
                            double dy = -1.0, double extra= -1.0);
  private:
   void flush_pts();
-  file *f;
+  FILE *f;
   char *fn, *dn;
   grace_point *pts;
   int set_num,sn;
@@ -1104,7 +1059,7 @@ class grace {
 
 const char *make_output_directory(const char *exename, const char *jobname = NULL);
 void trash_output_directory(const char *dirname);
-file *create_output_file(const char *dirname, const char *fname);
+FILE *create_output_file(const char *dirname, const char *fname);
 
 // The following allows you to hit ctrl-C to tell your calculation to stop
 // and clean up.

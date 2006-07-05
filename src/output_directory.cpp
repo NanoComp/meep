@@ -78,11 +78,11 @@ static bool is_ok_dir(const char *dirname) {
   return !direxists;
 }
 
-file *create_output_file(const char *dirname, const char *fname) {
+FILE *create_output_file(const char *dirname, const char *fname) {
   const int buflen = 300;
   char n[buflen];
   snprintf(n, buflen, "%s/%s", dirname, fname);
-  file *o = everyone_open_write(n);
+  FILE *o = master_fopen(n, "w");
   if (!o) abort("Unable to create file %s!\n", n);
   return o;
 }

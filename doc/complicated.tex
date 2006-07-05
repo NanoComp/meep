@@ -64,7 +64,7 @@ We add an additional check below ``\verb!&& !interrupt!'' so that when the
 user hits cntl-C we exit the loop.
 \begin{verbatim}
   while (f.time() < f.last_source_time() && !interrupt) f.step();
-  f.eps_slices();
+  f.output_hdf5(Ez, f.total_volume());
   while (f.time() < 400.0 && !interrupt) f.step();
 \end{verbatim}
 This time we're going to run the simulation longer, so we would like to get
@@ -80,7 +80,7 @@ creates and opens a file for writing in the given output directory.  This
 utility function works properly whether we are running in parallel or not.
 \begin{verbatim}
   monitor_point *p = NULL;
-  file *myout = create_output_file(dirname, "hy");
+  FILE *myout = create_output_file(dirname, "hy");
   while (f.time() <= 2000.0 && !interrupt) {
     // Now we'll start taking data!
     f.step();
@@ -102,7 +102,7 @@ we're running in parallel.
                    imag(p->get_component(Hy)));
 \end{verbatim}
 Every time we reach the \verb!next_print_time! we print out a copy of the
-slices, along with a little message indicating the time and the total
+$E_z$ fields, along with a little message indicating the time and the total
 energy (which should be decaying at this point).  The function
 \verb!master_printf! is a utility function that works basically like
 \verb!printf!, except that when running in parallel only one of the
@@ -113,7 +113,7 @@ problems if the arguments to printf require synchronization between the
 processes.
 \begin{verbatim}
     if (f.time() >= next_print_time) {
-      f.eps_slices();
+      f.output_hdf5(Ez, f.total_volume());
       master_printf("Energy is %g at time %g\n",
                     f.total_energy(), f.time());
       next_print_time += 500.0;
@@ -121,10 +121,10 @@ processes.
   }
 \end{verbatim}
 Files which are opened with \verb!create_output_file! need to be closed
-with \verb!everyone_close!, which does the Right Thing when running in
+with \verb!master_fclose!, which does the Right Thing when running in
 parallel.
 \begin{verbatim}
-  everyone_close(myout);
+  master_fclose(myout);
 \end{verbatim}
 Having collected all the monitor point data, we now want to run
 harminv\footnote{If you don't know what harminv is, I'm not going to
@@ -156,7 +156,7 @@ Figure~\ref{complicated_figure}).
   complex<double> *amp, *freqs;
   int num;
   
-  file *myfreqs = create_output_file(dirname, "freqs");
+  FILE *myfreqs = create_output_file(dirname, "freqs");
   master_fprintf(myfreqs, "\\begin{verbatim}\n");
   master_printf("Harminving Hy...\n");
   interrupt = 0; // Harminv even if we were interrupted.
@@ -168,7 +168,7 @@ Figure~\ref{complicated_figure}).
                    real(amp[i]), imag(amp[i]));
   }
   master_fprintf(myfreqs, "%cend{verbatim}\n", '\\');
-  everyone_close(myfreqs);
+  master_fclose(myfreqs);
   delete[] dirname;
 }
 \end{verbatim}

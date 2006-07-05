@@ -267,8 +267,6 @@ inline bool coordinate_mismatch(ndim dim, derived_component c) {
   return coordinate_mismatch(dim, component_direction(c));
 }
 
-class file;
-
 class vec;
 vec veccyl(double rr, double zz);
 vec zero_vec(ndim);
@@ -357,7 +355,6 @@ class vec {
   void set_direction(direction d, double val) { t[d] = val; };
 
   double project_to_boundary(direction, double boundary_loc);
-  void print(file *) const;
   friend vec zero_vec(ndim);
  private:
   double t[5];
@@ -492,7 +489,6 @@ class ivec {
     return result;
   }
 
-  void print(file *) const;
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);
  private:

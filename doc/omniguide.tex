@@ -73,7 +73,6 @@ straight to the TE modes.
       f.verbose(1);
       f.phase_in_material(&s, 1000);
       f.initialize_with_n_tm(9);
-      double next_slice_time = 0.0;
       while (f.is_phasing() && !interrupt) f.step();
       f.prepare_for_bands(veccyl(4.801,0.0), ttot, .40, 300, 0.0);
       f.prepare_for_bands(veccyl(3.801,0.0), ttot, .40, 300, 0.0);

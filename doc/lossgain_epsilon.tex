@@ -59,9 +59,8 @@ middle of the system (which is surrounded by PML).
 \end{verbatim}
 
 \begin{comment}
-  s.output_slices();
-
   fields f(&s, m);
+  f.output_hdf5(Dielectric, f.total_volume());
 \end{comment}
 
 For sources, we use a series of broad point sources covering the frequency
@@ -80,7 +79,6 @@ range of interest.
       next_printtime += 10;
       master_printf("Working on time %g...  ", f.time());
       master_printf("energy is %g\n", f.field_energy());
-      //if (f.time() > -90) f.eps_slices();
     }
     f.step();
 \end{comment}

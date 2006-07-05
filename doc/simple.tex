@@ -101,16 +101,13 @@ running.
   while (f.time() < f.last_source_time()) f.step();
 \end{verbatim}
 Now we'll wait a bit (to let the low-Q modes die off) and then take a
-snapshot of the fields in encapsulated postscript format.
+snapshot of the fields in HDF5 format.
 \begin{verbatim}
   while (f.time() < 200.0) f.step();
-  f.eps_slices();
-\end{verbatim}
-And now we're done, although you might wonder if we've done anything
-worthwhile, since all we got out of this was a picture... All that is left
-is (as a matter of principle) to delete the string containing the directory
-name of our output directory.
-\begin{verbatim}
-  delete[] dirname;
+  f.output_hdf5(Hx, f.total_volume());
+  f.output_hdf5(Hy, f.total_volume());
+  f.output_hdf5(Ez, f.total_volume());
 }
 \end{verbatim}
+And now we're done, although you might wonder if we've done anything
+worthwhile, since all we got out of this was a picture... 

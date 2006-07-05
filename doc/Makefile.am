@@ -70,7 +70,8 @@ meep.dvi: $(TEX) $(EPS) $(FREQS)
 
 simple-out/ez-000200-00.eps: simple.dac
 	rm -rf simple-out && $(RUNCODE) ./simple.dac
-	mv simple-out/ez-000200.00.eps $@
+	h5topng -S2 -Zc bluered simple-out/ez-000200.00.h5 
+	convert simple-out/ez-000200.00.png $@
 
 complicated-out/freqs: complicated.dac
 	rm -rf complicated-out/ && $(RUNCODE) ./complicated.dac
@@ -113,7 +114,8 @@ check-local: simplebands.dac complicated.dac polaritonbands.dac \
 nonlinear-out/field.eps nonlinear-out/ez-000400-00.eps: nonlinear.dac
 	rm -rf nonlinear-out/
 	$(RUNCODE) ./nonlinear.dac
-	mv nonlinear-out/ez-000400.00.eps nonlinear-out/ez-000400-00.eps
+	h5topng -S2 -Zc bluered nonlinear-out/ez-000400.00.h5
+	convert nonlinear-out/ez-000400.00.png nonlinear-out/ez-000400-00.eps
 
 clean-local:
 	rm -rf *.o *.hi *.dac *-out *-out-* *.ps *.dvi *.doc *.log *.hi *.dac $(PDF) $(EPSGEN)

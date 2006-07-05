@@ -371,95 +371,25 @@ void debug_printf(const char *fmt, ...) {
   va_end(ap);
 }
 
-// Scary file writing...
-
-file *everyone_open_write(const char *name) {
-#ifdef HAVE_MPI
-  const int buflen = strlen(name)+1;
-  char *buf = new char[buflen];
-  strcpy(buf,name);
-  MPI_File myf;
-  MPI_File_open(MPI_COMM_WORLD, buf,
-                MPI_MODE_WRONLY | MPI_MODE_CREATE,
-                NULL, &myf);
-  return (file *)myf;
-#else
-  return (file *)fopen(name,"w");
-#endif
-}
-
-file *everyone_open_write(const char *filename, const char *directory) {
-  char name[500];
-  snprintf(name, 500, "%s/%s", directory, filename);
-#ifdef HAVE_MPI
-  const int buflen = strlen(name)+1;
-  char *buf = new char[buflen];
-  strcpy(buf,name);
-  MPI_File myf;
-  MPI_File_open(MPI_COMM_WORLD, buf,
-                MPI_MODE_WRONLY | MPI_MODE_CREATE,
-                NULL, &myf);
-  return (file *)myf;
-#else
-  return (file *)fopen(name,"w");
-#endif
-}
-
-void everyone_close(file *f) {
-#ifdef HAVE_MPI
-  MPI_File_close((MPI_File *)&f);
-#else
-  fclose((FILE *)f);
-#endif
-}
-
-void i_flush(file *f) {
-#ifdef HAVE_MPI
-  // I don't know how to flush over MPI...
-#else
-  fflush((FILE *)f);
-#endif
-}
-
-#ifdef HAVE_MPI
-static const int buflen = 1 << 20;
-static char *buf = NULL;
-#endif
-
-void i_fprintf(file *f, const char *fmt, ...) {
+void master_fprintf(FILE *f, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-#ifdef HAVE_MPI
-  if (!buf) buf = new char[buflen];
-  if (!buf) abort("Can't allocate buffer in i_fprintf!\n");
-  int written = vsnprintf(buf, buflen, fmt, ap);
-  if (written <= 0 || written > buflen)
-    abort("Aaack can't write that much in i_fprintf!\n");
-  MPI_Status stat;
-  MPI_File_write_shared((MPI_File)f, buf, written, MPI_CHAR, &stat);
-#else
-  vfprintf((FILE *)f, fmt, ap);
-#endif
+  if (am_master()) { vfprintf(f, fmt, ap); fflush(f); }
   va_end(ap);
 }
+FILE *master_fopen(const char *name, const char *mode) {
+  FILE *f = am_master() ? fopen(name, mode) : 0;
 
-void master_fprintf(file *f, const char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  if (my_rank() == 0) {
-#ifdef HAVE_MPI
-    if (!buf) buf = new char[buflen];
-    if (!buf) abort("Can't allocate buffer in master_fprintf!\n");
-    int written = vsnprintf(buf, buflen, fmt, ap);
-    if (written <= 0 || written > buflen)
-      abort("Aaack can't write that much in master_fprintf!\n");
-    MPI_Status stat;
-    MPI_File_write_shared((MPI_File)f, buf, written, MPI_CHAR, &stat);
-#else
-    vfprintf((FILE *)f, fmt, ap);
-#endif
-  }
-  va_end(ap);
+  /* other processes need to know if fopen returned zero, in order
+     to abort if fopen failed.  If fopen was successfully, just return
+     a random non-zero pointer (which is never used except to compare to zero)
+     on non-master processes */
+  if (broadcast(0, bool(f != 0)) && !am_master())
+    f = (FILE *) name;
+  return f;
+}
+void master_fclose(FILE *f) {
+  if (am_master()) fclose(f);
 }
 
 /* The following functions bracket a "critical section," a region
