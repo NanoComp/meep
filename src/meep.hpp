@@ -328,6 +328,7 @@ class structure {
   void mix_with(const structure *, double);
 
   bool equal_layout(const structure &) const;
+  void print_layout(void) const;
 
   // monitor.cpp
   double get_inveps(component, direction, const ivec &origloc) const;

@@ -681,4 +681,23 @@ void structure::remove_polarizabilities() {
     chunks[i]->remove_polarizabilities();
 }
 
+// for debugging, display the chunk layout
+void structure::print_layout(void) const {
+  direction d0 = v.yucky_direction(0);
+  direction d1 = v.yucky_direction(1);
+  direction d2 = v.yucky_direction(2);
+  for (int i = 0; i < num_chunks; ++i) {
+    master_printf("chunk[%d] on process %d, resolution %g (%s,%s,%s):"
+		  " (%d,%d,%d) - (%d,%d,%d)\n",
+		  i, chunks[i]->n_proc(), chunks[i]->a,
+		  direction_name(d0),direction_name(d1),direction_name(d2),
+		  chunks[i]->v.little_corner().yucky_val(0),
+		  chunks[i]->v.little_corner().yucky_val(1),
+		  chunks[i]->v.little_corner().yucky_val(2),
+		  chunks[i]->v.big_corner().yucky_val(0),
+		  chunks[i]->v.big_corner().yucky_val(1),
+		  chunks[i]->v.big_corner().yucky_val(2));
+  }
+}
+
 } // namespace meep
