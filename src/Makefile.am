@@ -28,7 +28,7 @@ sphere_quad_SOURCES = sphere-quad.cpp
 PRELUDE = "/* This file was automatically generated --- DO NOT EDIT */"
 
 SPHERE_QUAD = $(top_builddir)/src/sphere_quad
-sphere-quad.h: sphere_quad
+sphere-quad.h: sphere_quad$(EXEEXT)
 	(echo $(PRELUDE); echo; $(SPHERE_QUAD)) > $@
 
 # Generate built sources only in maintainer mode
