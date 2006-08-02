@@ -287,8 +287,6 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     if (is_D(c) && fc->s->inveps[c][cd]) 
       amps_array[idx_vol] /= fc->s->inveps[c][cd][idx];
 
-    master_printf("src %g%+gi at %d\n", real(amps_array[idx_vol]),
-		  imag(amps_array[idx_vol]), idx);
     index_array[idx_vol++] = idx;
   }
 
