@@ -85,8 +85,8 @@ void structure::choose_chunkdivision(const volume &thev,
             (S.transform(d,n).d != d || S.transform(d,n).flipped)) {
           break_this[dd] = true;
           if (thev.num_direction(d) & 1)
-            abort("Aaack, odd number of grid points in %s direction!\n",
-		  direction_name(d));
+            master_printf("Padding %s to even number of grid points.\n",
+			  direction_name(d));
         }
     }
     int break_mult = 1;
