@@ -413,10 +413,12 @@ static cnumber ceps_func(int n, number *x, void *geomeps_)
   geom_epsilon *geomeps = (geom_epsilon *) geomeps_;
   vector3 p = {0,0,0};
   p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
-  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; }
+  double s = 1;
+  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
   cnumber ret;
-  ret.re = geomeps->eps(vector3_to_vec(p));
-  ret.im = 1.0 / ret.re;
+  double ep = geomeps->eps(vector3_to_vec(p));
+  ret.re = ep * s;
+  ret.im = s / ep;
   return ret;
 }
 #else
@@ -424,17 +426,19 @@ static number eps_func(int n, number *x, void *geomeps_)
 {
   geom_epsilon *geomeps = (geom_epsilon *) geomeps_;
   vector3 p = {0,0,0};
+  double s = 1;
   p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
-  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; }
-  return geomeps->eps(vector3_to_vec(p));
+  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
+  return geomeps->eps(vector3_to_vec(p)) * s;
 }
 static number inveps_func(int n, number *x, void *geomeps_)
 {
   geom_epsilon *geomeps = (geom_epsilon *) geomeps_;
   vector3 p = {0,0,0};
+  double s = 1;
   p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
-  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; }
-  return 1.0 / geomeps->eps(vector3_to_vec(p));
+  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
+  return s / geomeps->eps(vector3_to_vec(p));
 }
 #endif
 
@@ -462,6 +466,7 @@ void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
     n = 3;
   double vol = 1;
   for (int i = 0; i < n; ++i) vol *= xmax[i] - xmin[i];
+  if (dim == meep::Dcyl) vol *= (xmin[0] + xmax[0]) * 0.5;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
   cnumber ret = cadaptive_integration(ceps_func, xmin, xmax, n, (void*) this,
 				      0, tol, maxeval, &esterr, &errflag);
