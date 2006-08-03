@@ -98,6 +98,10 @@ public:
 		       const meep::geometric_volume &gv, 
 		       double tol, int maxeval);
 
+  void fallback_meaneps(double &meps, double &minveps,
+			const meep::geometric_volume &gv,
+			double tol, int maxeval);
+
   virtual double sigma(const meep::vec &r);
   void add_polarizabilities(meep::structure *s);
 };
@@ -373,9 +377,11 @@ void geom_epsilon::meaneps(double &meps, double &minveps,
   vector3 p, shiftby, normal;
 
   if (!get_front_object(gv, geometry_tree,
-			p, &o, shiftby, mat, mat_behind))
-    material_function::meaneps(meps, minveps, n, gv, tol, maxeval); //fallback
-    // FIXME: use libctl adaptive cubature as fallback
+			p, &o, shiftby, mat, mat_behind)) {
+    fallback_meaneps(meps, minveps, gv, tol, maxeval);
+    n = material_function::normal_vector(gv);
+    return;
+  }
 
   material_eps(mat, meps, minveps);
 
@@ -399,6 +405,74 @@ void geom_epsilon::meaneps(double &meps, double &minveps,
   material_eps(mat_behind, epsb, epsinvb);
   meps += fill * (epsb - meps);
   minveps += fill * (epsinvb - minveps);
+}
+
+#ifdef CTL_HAS_COMPLEX_INTEGRATION
+static cnumber ceps_func(int n, number *x, void *geomeps_)
+{
+  geom_epsilon *geomeps = (geom_epsilon *) geomeps_;
+  vector3 p = {0,0,0};
+  p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
+  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; }
+  cnumber ret;
+  ret.re = geomeps->eps(vector3_to_vec(p));
+  ret.im = 1.0 / ret.re;
+  return ret;
+}
+#else
+static number eps_func(int n, number *x, void *geomeps_)
+{
+  geom_epsilon *geomeps = (geom_epsilon *) geomeps_;
+  vector3 p = {0,0,0};
+  p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
+  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; }
+  return geomeps->eps(vector3_to_vec(p));
+}
+static number inveps_func(int n, number *x, void *geomeps_)
+{
+  geom_epsilon *geomeps = (geom_epsilon *) geomeps_;
+  vector3 p = {0,0,0};
+  p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
+  if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; }
+  return 1.0 / geomeps->eps(vector3_to_vec(p));
+}
+#endif
+
+// fallback meaneps using libctl's adaptive cubature routine
+void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
+				    const meep::geometric_volume &gv,
+				    double tol, int maxeval)
+{
+  number esterr;
+  integer errflag, n;
+  number xmin[3], xmax[3];
+  vector3 gvmin, gvmax;
+  gvmin = vec_to_vector3(gv.get_min_corner());
+  gvmax = vec_to_vector3(gv.get_max_corner());
+  xmin[0] = gvmin.x; xmax[0] = gvmax.x; 
+  if (dim == meep::Dcyl) {
+    xmin[1] = gvmin.z; xmin[2] = gvmin.y; xmax[1] = gvmax.z; xmax[2] = gvmax.y;
+  }
+  else{
+    xmin[1] = gvmin.y; xmin[2] = gvmin.z; xmax[1] = gvmax.y; xmax[2] = gvmax.z;
+  }
+  if (xmin[2] == xmax[2])
+    n = xmin[1] == xmax[1] ? 1 : 2;
+  else
+    n = 3;
+  double vol = 1;
+  for (int i = 0; i < n; ++i) vol *= xmax[i] - xmin[i];
+#ifdef CTL_HAS_COMPLEX_INTEGRATION
+  cnumber ret = cadaptive_integration(ceps_func, xmin, xmax, n, (void*) this,
+				      0, tol, maxeval, &esterr, &errflag);
+  meps = ret.re / vol;
+  minveps = ret.im / vol;
+#else
+  meps = adaptive_integration(eps_func, xmin, xmax, n, (void*) this,
+			      0, tol, maxeval, &esterr, &errflag) / vol;
+  minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void*) this,
+				 0, tol, maxeval, &esterr, &errflag) / vol;
+#endif
 }
 
 bool geom_epsilon::has_kerr()
