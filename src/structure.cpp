@@ -309,26 +309,29 @@ void structure::changing_chunks() { // call this whenever chunks are modified
 }
 
 void structure::set_materials(material_function &mat, 
-			      bool use_anisotropic_averaging, double minvol) {
-  set_epsilon(mat, use_anisotropic_averaging, minvol);
+			      bool use_anisotropic_averaging,
+			      double tol, int maxeval) {
+  set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
   if (mat.has_kerr()) set_kerr(mat);
 }
 
 void structure::set_epsilon(material_function &eps, 
-			    bool use_anisotropic_averaging, double minvol) {
+			    bool use_anisotropic_averaging,
+			    double tol, int maxeval) {
   double tstart = wall_time();
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->set_epsilon(eps, use_anisotropic_averaging, minvol);
+      chunks[i]->set_epsilon(eps, use_anisotropic_averaging, tol, maxeval);
   if (!quiet)
     master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
 }
 
 void structure::set_epsilon(double eps(const vec &),
-                            bool use_anisotropic_averaging, double minvol) {
+                            bool use_anisotropic_averaging,
+			    double tol, int maxeval) {
   simple_material_function epsilon(eps);
-  set_epsilon(epsilon, use_anisotropic_averaging, minvol);
+  set_epsilon(epsilon, use_anisotropic_averaging, tol, maxeval);
 }
 
 void structure::set_kerr(material_function &eps) {
@@ -525,10 +528,6 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
       }
 }
 
-// The following is defined in anisotropic_averaging.cpp:
-double anisoaverage(component ec, direction d, material_function &eps,
-                    const geometric_volume &vol, double minvol);
-
 void structure_chunk::set_kerr(material_function &epsilon) {
   if (!is_mine()) return;
   
@@ -551,67 +550,6 @@ void structure_chunk::set_kerr(material_function &epsilon) {
           }
       }
     }
-}
-
-void structure_chunk::set_epsilon(material_function &epsilon,
-				  bool use_anisotropic_averaging,
-				  double minvol) {
-  if (!is_mine()) return;
-
-  epsilon.set_volume(v.pad().surroundings());
-
-  if (!eps) eps = new double[v.ntot()];
-  LOOP_OVER_VOL(v, v.eps_component(), i) {
-    IVEC_LOOP_LOC(v, here);
-    eps[i] = epsilon.eps(here);
-  }
-  
-  if (!use_anisotropic_averaging) {
-    FOR_ELECTRIC_COMPONENTS(c)
-      if (v.has_field(c)) {
-	bool have_other_direction = false;
-	vec dxa = zero_vec(v.dim);
-	vec dxb = zero_vec(v.dim);
-	direction c_d = component_direction(c);
-	LOOP_OVER_DIRECTIONS(v.dim,da)
-	  if (da != c_d) {
-	    dxa.set_direction(da,0.5/a);
-	    LOOP_OVER_DIRECTIONS(v.dim,db)
-	      if (db != c_d && db != da) {
-		dxb.set_direction(db,0.5/a);
-		have_other_direction = true;
-	      }
-	    break;
-	  }
-	if (!inveps[c][c_d]) inveps[c][c_d] = new double[v.ntot()];
-	LOOP_OVER_VOL(v, c, i) {
-	  IVEC_LOOP_LOC(v, here);
-	  if (!have_other_direction)
-	    inveps[c][c_d][i] =
-	      2.0/(epsilon.eps(here + dxa) + epsilon.eps(here - dxa));
-	  else
-	    inveps[c][c_d][i] = 4.0/(epsilon.eps(here + dxa + dxb) +
-				     epsilon.eps(here + dxa - dxb) +
-				     epsilon.eps(here - dxa + dxb) +
-				     epsilon.eps(here - dxa - dxb));
-	}
-      }
-  } else {
-    if (minvol == 0.0) minvol = v.dV(zero_ivec(v.dim)).full_volume()/100.0;
-    FOR_ELECTRIC_COMPONENTS(c)
-      if (v.has_field(c))
-	FOR_ELECTRIC_COMPONENTS(c2) if (v.has_field(c2)) {
-	  direction d = component_direction(c2);
-          if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
-          if (!inveps[c][d]) abort("Memory allocation error.\n");
-	  LOOP_OVER_VOL(v, c, i) {
-	    IVEC_LOOP_ILOC(v, here);
-	    inveps[c][d][i] = anisoaverage(c, d, epsilon, v.dV(here), minvol);
-	  }
-      }
-  }
-
-  update_pml_arrays(); // PML stuff depends on epsilon
 }
 
 structure_chunk::structure_chunk(const volume &thev, 

@@ -93,6 +93,11 @@ public:
   virtual bool has_kerr();
   virtual double kerr(const meep::vec &r);
 
+  virtual meep::vec normal_vector(const meep::geometric_volume &gv);
+  virtual void meaneps(double &meps, double &minveps, meep::vec &normal,
+		       const meep::geometric_volume &gv, 
+		       double tol=0.001, int maxeval=0);
+
   virtual double sigma(const meep::vec &r);
   void add_polarizabilities(meep::structure *s);
 };
@@ -183,9 +188,29 @@ static material_type eval_material_func(function material_func, vector3 p)
   return material;
 }
 
+static int variable_material(int which_subclass)
+{
+     return (which_subclass == MTS::MATERIAL_FUNCTION);
+}
+
+static void material_eps(material_type material, double &eps, double &eps_inv) {
+  switch (material.which_subclass) {
+  case MTS::DIELECTRIC:
+    eps = material.subclass.dielectric_data->epsilon;
+    eps_inv = 1.0 / eps;
+    break;
+  case MTS::PERFECT_METAL:
+    eps = -meep::infinity;
+    eps_inv = -0.0;
+    break;
+  default:
+    meep::abort("unknown material type");
+  }
+}
+
 double geom_epsilon::eps(const meep::vec &r)
 {
-  double eps = 1.0;
+  double eps = 1.0, eps_inv;
   vector3 p = vec_to_vector3(r);
 
 #ifdef DEBUG
@@ -206,28 +231,173 @@ double geom_epsilon::eps(const meep::vec &r)
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
     material = default_material;
   }
-  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+  if (variable_material(material.which_subclass)) {
     material = eval_material_func(material.subclass.
 				  material_function_data->material_func,
 				  p);
     destroy_material = 1;
   }
-  
-  switch (material.which_subclass) {
-  case MTS::DIELECTRIC:
-    eps = material.subclass.dielectric_data->epsilon;
-    break;
-  case MTS::PERFECT_METAL:
-    eps = -meep::infinity;
-    break;
-  default:
-    CK(0, "unknown material type");
-  }
+
+  material_eps(material, eps, eps_inv);  
   
   if (destroy_material)
     material_type_destroy(material);
   
   return eps;
+}
+
+/* Find frontmost object in gv, along with the constant material behind it.
+   Returns false if material behind the object is not constant.
+   
+   Requires moderately horrifying logic to figure things out properly,
+   stolen from MPB. */
+static bool get_front_object(const meep::geometric_volume &gv,
+			     geom_box_tree geometry_tree,
+			     vector3 &pcenter,
+			     const geometric_object **o_front,
+			     vector3 &shiftby_front,
+			     material_type &mat_front,
+			     material_type &mat_behind) {
+  vector3 p;
+  const geometric_object *o1 = 0, *o2 = 0;
+  vector3 shiftby1, shiftby2;
+  geom_box pixel;
+  material_type mat1, mat2;
+  int id1 = -1, id2 = -1;
+  const int num_neighbors[3] = { 3, 5, 9 };
+  const int neighbors[3][9][3] = {
+    { {0,0,0}, {-1,0,0}, {1,0,0},
+      {0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0} },
+    { {0,0,0},
+      {-1,-1,0}, {1,1,0}, {-1,1,0}, {1,-1,0},
+      {0,0,0},{0,0,0},{0,0,0},{0,0,0} },
+    { {0,0,0},
+      {1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},
+      {-1,1,1},{-1,1,-1},{-1,-1,1},{-1,-1,-1} }
+  }; 
+  pixel = gv2box(gv);
+  pcenter = p = vec_to_vector3(gv.center());
+  double d1, d2, d3;
+  d1 = (pixel.high.x - pixel.low.x) * 0.5;
+  d2 = (pixel.high.y - pixel.low.y) * 0.5;
+  d3 = (pixel.high.z - pixel.low.z) * 0.5;
+  for (int i = 0; i < num_neighbors[dimensions - 1]; ++i) {
+    const geometric_object *o;
+    material_type mat;
+    vector3 q, shiftby;
+    int id;
+    q.x = p.x + neighbors[dimensions - 1][i][0] * d1;
+    q.y = p.y + neighbors[dimensions - 1][i][1] * d2;
+    q.z = p.z + neighbors[dimensions - 1][i][2] * d3;
+    o = object_of_point_in_tree(q, geometry_tree, &shiftby, &id);
+    if ((id == id1 && vector3_equal(shiftby, shiftby1)) ||
+	(id == id2 && vector3_equal(shiftby, shiftby2)))
+      continue;
+    mat = (o && o->material.which_subclass != MTS::MATERIAL_TYPE_SELF)
+      ? o->material : default_material;
+    if (id1 == -1) {
+      o1 = o;
+      shiftby1 = shiftby;
+      id1 = id;
+      mat1 = mat;
+    }
+    else if (id2 == -1 || ((id >= id1 && id >= id2) &&
+			   (id1 == id2 
+			    || material_type_equal(&mat1,&mat2)))) {
+      o2 = o;
+      shiftby2 = shiftby;
+      id2 = id;
+      mat2 = mat;
+    }
+    else if (!(id1 < id2 && 
+	       (id1 == id || material_type_equal(&mat1,&mat))) &&
+	     !(id2 < id1 &&
+	       (id2 == id || material_type_equal(&mat2,&mat))))
+      return false;
+  }
+
+  // CHECK(id1 > -1, "bug in object_of_point_in_tree?");
+  if (id2 == -1) { /* only one nearby object/material */
+    id2 = id1;
+    o2 = o1;
+    mat2 = mat1;
+    shiftby2 = shiftby1;
+  }
+
+  if ((o1 && variable_material(o1->material.which_subclass)) ||
+      (o2 && variable_material(o2->material.which_subclass)) ||
+      (variable_material(default_material.which_subclass)
+       && (!o1 || !o2 ||
+	   o1->material.which_subclass == MTS::MATERIAL_TYPE_SELF ||
+	   o2->material.which_subclass == MTS::MATERIAL_TYPE_SELF)))
+    return false;
+
+  if (id1 >= id2) {
+    *o_front = o1;
+    shiftby_front = shiftby1;
+    mat_front = mat1;
+    if (id1 == id2) mat_behind = mat1; else mat_behind = mat2;
+  }
+  if (id2 > id1) {
+    *o_front = o2;
+    shiftby_front = shiftby2;
+    mat_front = mat2;
+    mat_behind = mat1;
+  }
+  return true;
+}
+
+meep::vec geom_epsilon::normal_vector(const meep::geometric_volume &gv) {
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  vector3 p, shiftby, normal;
+
+  if (!get_front_object(gv, geometry_tree,
+			p, &o, shiftby, mat, mat_behind))
+    return material_function::normal_vector(gv); // fallback to default
+
+  /* check for trivial case of only one object/material */
+  if (material_type_equal(&mat, &mat_behind))
+    return meep::zero_vec(gv.dim);
+
+  normal = normal_to_fixed_object(vector3_minus(p, shiftby), *o);
+  return vector3_to_vec(unit_vector3(normal));
+}
+
+void geom_epsilon::meaneps(double &meps, double &minveps, 
+			   meep::vec &n,
+			   const meep::geometric_volume &gv, double tol, int maxeval) {
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  vector3 p, shiftby, normal;
+
+  if (!get_front_object(gv, geometry_tree,
+			p, &o, shiftby, mat, mat_behind))
+    material_function::meaneps(meps, minveps, n, gv, tol, maxeval); //fallback
+    // FIXME: use libctl adaptive cubature as fallback
+
+  material_eps(mat, meps, minveps);
+
+  /* check for trivial case of only one object/material */
+  if (material_type_equal(&mat, &mat_behind)) { 
+    n = meep::zero_vec(gv.dim);
+    return;
+  }
+  
+  normal = normal_to_fixed_object(vector3_minus(p, shiftby), *o);
+  n = vector3_to_vec(unit_vector3(normal));
+
+  geom_box pixel = gv2box(gv);
+  pixel.low = vector3_minus(pixel.low, shiftby);
+  pixel.high = vector3_minus(pixel.high, shiftby);
+
+  // fixme: don't ignore maxeval?
+  double fill = 1.0 - box_overlap_with_object(pixel, *o, tol, int(100/tol));
+  
+  double epsb, epsinvb;
+  material_eps(mat_behind, epsb, epsinvb);
+  meps += fill * (epsb - meps);
+  minveps += fill * (epsinvb - minveps);
 }
 
 bool geom_epsilon::has_kerr()

@@ -7,8 +7,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 BUILT_SOURCES = step_d.hpp step_h.hpp update_from_e.hpp	\
 update_e_from_d_prepare.hpp update_e_from_d_update.hpp sphere-quad.h
 
-HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp ran.hpp threevec.hpp	\
-meep/vec.hpp bicgstab.hpp
+HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp ran.hpp meep/vec.hpp	\
+bicgstab.hpp
 
 libmeep@MEEP_SUFFIX@_la_SOURCES = anisotropic_averaging.cpp bands.cpp	\
 boundaries.cpp bicgstab.cpp control_c.cpp cw_fields.cpp dft.cpp		\

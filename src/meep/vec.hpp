@@ -535,6 +535,8 @@ class geometric_volume {
   double computational_volume() const; 
   double integral_volume() const;
   double full_volume() const;
+  vec center() const { return (min_corner + max_corner) * 0.5; }
+  double diameter() const;
   bool contains(const vec &h) const;
   geometric_volume intersect_with(const geometric_volume &a) const;
   geometric_volume operator&(const geometric_volume &a) const {
@@ -628,7 +630,7 @@ class volume {
   void interpolate(component, const vec &, ivec locs[8], double weights[8]) const;
 
   geometric_volume dV(component c, int index) const;
-  geometric_volume dV(const ivec &) const;
+  geometric_volume dV(const ivec &, double diameter = 1.0) const;
   bool intersect_with(const volume &vol_in, volume *intersection = NULL, volume *others = NULL, int *num_others = NULL) const;
   double rmin() const;
   double rmax() const;

@@ -170,6 +170,14 @@ double geometric_volume::full_volume() const {
   return vol;
 }
 
+double geometric_volume::diameter() const {
+  double diam = 0.0;
+  LOOP_OVER_DIRECTIONS(dim,d) {
+    diam = max(diam, in_direction(d));
+  }
+  return diam;
+}
+
 geometric_volume geometric_volume::intersect_with(const geometric_volume &a) const {
   if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
   geometric_volume result(dim);
@@ -591,8 +599,8 @@ geometric_volume empty_volume(ndim dim) {
   return out;
 }
 
-geometric_volume volume::dV(const ivec &here) const {
-  const double hinva = 0.5*inva;
+geometric_volume volume::dV(const ivec &here, double diameter) const {
+  const double hinva = 0.5*inva * diameter;
   const volume &v = *this;
   const vec h = v[here];
   geometric_volume out(dim);

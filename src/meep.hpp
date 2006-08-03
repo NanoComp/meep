@@ -146,6 +146,15 @@ public:
   /* scalar dielectric function */
   virtual double eps(const vec &r) { return 1.0; }
   
+  /* Return interface normal and/or average dielectric eps and 1/eps
+     in a given volume gv.   These are virtual so that e.g. libctl
+     can override them with more efficient geometry-based routines. */
+  virtual vec normal_vector(const geometric_volume &gv);
+  virtual void meaneps(double &meps, double &minveps, vec &normal,
+		       const geometric_volume &gv, 
+		       double tol=0.001, int maxeval=0);
+  
+
   /* polarizability sigma function */
   virtual double sigma(const vec &r) { return 0.0; }
   /* specify polarizability used for subsequent calls to sigma(r) */
@@ -160,7 +169,7 @@ public:
   virtual double kerr(const vec &r) { return 0.0; }
   
   // TODO: dielectric tensor, ...
-  
+
 protected:
   // current polarizability for calls to sigma(r):
   double omega, gamma, deps, energy_sat;
@@ -199,7 +208,8 @@ class structure_chunk {
             const geometric_volume &vol_limit, double Courant, int proc_num);
   structure_chunk(const structure_chunk *);
   void set_epsilon(material_function &eps,
-                   bool use_anisotropic_averaging, double minvol);
+                   bool use_anisotropic_averaging,
+		   double tol, int maxeval);
   void set_kerr(material_function &eps);
   void use_pml(direction, double dx, double boundary_loc, double strength);
   void update_pml_arrays();
@@ -308,11 +318,14 @@ class structure {
   structure(const structure &);
 
   void set_materials(material_function &mat,
-		     bool use_anisotropic_averaging=true, double minvol=0.0);
+		     bool use_anisotropic_averaging=true,
+		     double tol=0.00001, int maxeval=7);
   void set_epsilon(material_function &eps,
-                   bool use_anisotropic_averaging=true, double minvol=0.0);
+                   bool use_anisotropic_averaging=true,
+		   double tol=0.00001, int maxeval=7);
   void set_epsilon(double eps(const vec &),
-                   bool use_anisotropic_averaging=true, double minvol=0.0);
+                   bool use_anisotropic_averaging=true,
+		   double tol=0.00001, int maxeval=7);
   void set_kerr(material_function &eps);
   void set_kerr(double eps(const vec &));
   polarizability_identifier

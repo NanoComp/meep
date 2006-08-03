@@ -1,57 +1,24 @@
 #include <math.h>
 
 #include "meep.hpp"
-#include "threevec.hpp"
+
+/* This file contains routines to compute the "average" or "effective"
+   dielectric constant for a pixel, using an anisotropic averaging
+   procedure described in an upcoming paper (similar to the one in
+   MPB). */
 
 namespace meep {
 
-static int count_quadrants(const geometric_volume &v) {
-  return 1 << number_of_directions(v.dim);
-}
+////////////////////////////////////////////////////////////////////////////
 
-static vec geo_center(const geometric_volume &v) {
-  vec o = zero_vec(v.dim);
-  LOOP_OVER_DIRECTIONS(v.dim,d)
-    o.set_direction(d, 0.5*(v.in_direction_max(d) + v.in_direction_min(d)));
-  return o;
-}
-
-static geometric_volume nth_quadrant(const geometric_volume &v, int n) {
-  geometric_volume o = v;
-  vec cent = geo_center(v);
-  LOOP_OVER_DIRECTIONS(v.dim,d) {
-    if (n & 1) o.set_direction_min(d, cent.in_direction(d));
-    else o.set_direction_max(d, cent.in_direction(d));
-    n = n >> 1;
-  }
-  return o;
-}
-
-#define USE_SPHERE_QUAD 0
-
-#if USE_SPHERE_QUAD
 #include "sphere-quad.h"
 
 static int count_sphere_pts(const geometric_volume &v) {
      return num_sphere_quad[number_of_directions(v.dim) - 1];
 }
 
-static inline double dmax(double a, double b) { return (a > b ? a : b); }
-
-static double geo_diam(const geometric_volume &v) {
-  double diam = 0.0;
-  LOOP_OVER_DIRECTIONS(v.dim,d) {
-    diam = dmax(diam, v.in_direction_max(d) - v.in_direction_min(d));
-  }
-  return diam;
-}
-
-static vec sphere_pt(const geometric_volume &v, int n, double &weight) {
-     geometric_volume gv = v;
-     vec cent = geo_center(v);
-     vec pt;
-     double R = geo_diam(gv) * 0.5;
-     switch (v.dim) {
+static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
+     switch (cent.dim) {
 	 case D1:
 	 {
 	      weight = sphere_quad[0][n][3];
@@ -77,80 +44,211 @@ static vec sphere_pt(const geometric_volume &v, int n, double &weight) {
 	      return cent 
 		+ veccyl(sphere_quad[1][n][0], sphere_quad[1][n][1]) * R;
 	 }
+         default:
+	   abort("unknown dimensions in sphere_pt\n");
      }
 }
-#endif /* USE_SPHERE_QUAD */
 
-void prthv(threevec v) {
-  master_printf("%10g\t%10g\t%10g\n", v.val[0], v.val[1], v.val[2]);
-}
+////////////////////////////////////////////////////////////////////////////
 
-void prtens(tensor t) {
-  FOR3(i) prthv(t.row[i]);
-}
-
-void prgeo(geometric_volume v) {
-  LOOP_OVER_DIRECTIONS(v.dim,d)
-    master_printf("%g < %s < %g\n",
-                  v.in_direction_min(d), direction_name(d), v.in_direction_max(d));
-}
-
-static double is_constant_inveps(material_function &eps, const geometric_volume &vol,
-                                 double minvol) {
-  double inveps = 1.0/eps.eps(geo_center(vol));
-  if (vol.full_volume() <= minvol) return inveps;
-  for (int i=0;i<count_quadrants(vol);i++) {
-    geometric_volume here = nth_quadrant(vol, i);
-    const double here_inveps = is_constant_inveps(eps, here, minvol);
-    if (here_inveps != inveps) return -1.0;
-  }
-  return inveps;
-}
-
-static tensor doaverage_inveps(material_function &eps, const geometric_volume &vol,
-                               double minvol) {
-  if (vol.full_volume() <= minvol) return diagonal(1.0/eps.eps(geo_center(vol)));
-  vec gradient = zero_vec(vol.dim);
-  vec center = geo_center(vol);
-  tensor mean = diagonal(0.0), meaninv = diagonal(0.0);
-  for (int i=0;i<count_quadrants(vol);i++) {
-    geometric_volume here = nth_quadrant(vol, i);
-    tensor average_here = doaverage_inveps(eps, here, minvol);
-    mean += (1.0/average_here);
-    meaninv += average_here;
-#if !USE_SPHERE_QUAD
-    double invepshere = trace(average_here);
-    gradient += (geo_center(here) - center)*invepshere;
-#endif
-  }
-#if USE_SPHERE_QUAD
-  for (int i = 0; i < count_sphere_pts(vol); ++i) {
+vec material_function::normal_vector(const geometric_volume &gv) {
+  // detect 2D line averages
+  if (gv.get_min_corner().x()==gv.get_max_corner().x() || gv.get_min_corner().y()==gv.get_max_corner().y())
+    return zero_vec(gv.dim);
+  vec p(gv.center());
+  double R = gv.diameter();  
+  vec gradient = zero_vec(p.dim);
+  for (int i = 0; i < num_sphere_quad[number_of_directions(gv.dim) - 1]; ++i) {
     double weight;
-    vec pt = sphere_pt(vol, i, weight);
-    gradient += (pt - center) * (weight / eps.eps(pt));
+    vec pt = sphere_pt(p, R, i, weight);
+    gradient += (pt - p) * (weight * eps(pt));
   }
-#endif
-  mean = mean*(1.0/count_quadrants(vol));
-  meaninv = meaninv*(1.0/count_quadrants(vol));
-  threevec normdir(0.0,0.0,0.0);
-  LOOP_OVER_DIRECTIONS(vol.dim, d) normdir.val[d%3] = gradient.in_direction(d);
-  if (abs(normdir)) normdir /= abs(normdir);
-  else return meaninv;
-  tensor project_norm(normdir);
-  tensor project_parallel = diagonal(1.0) - project_norm;
-  tensor invmean = 1.0/mean;
-  return (project_parallel*invmean + invmean*project_parallel +
-          project_norm*meaninv + meaninv*project_norm)*0.5;
+  return gradient;
 }
 
-double anisoaverage(component ec, direction d, material_function &eps,
-                    const geometric_volume &vol, double minvol) {
-  double const_inveps = is_constant_inveps(eps, vol, minvol);
-  if (const_inveps >= 0.0) return (component_direction(ec) == d) ? const_inveps : 0.0;
-  tensor avg = doaverage_inveps(eps, vol, minvol);
+/* default: simple numerical integration of surfaces/cubes, relative
+   tolerance 'tol'.   This is superseded by the routines in the libctl
+   interface, which either use a semi-analytical average or can
+   use a proper adaptive cubature. */
+void material_function::meaneps(double &meps, double &minveps, vec &gradient, const geometric_volume &gv, double tol, int maxeval) {
+  gradient = normal_vector(gv);
+  if (sqrt(gradient & gradient) < 1e-8) {
+    meps = eps(gv.center());
+    minveps = 1/meps;
+    return;
+  }
+  vec d = gv.get_max_corner() - gv.get_min_corner();
+  double ms = 10; 
+  double old_meps=0, old_minveps=0;
+  int iter = 0;
+  meps=1; minveps=1;
+  switch(gv.dim) {
+  case D3:
+    while ((fabs(meps - old_meps) > tol*fabs(old_meps)) && (fabs(minveps - old_minveps) > tol*fabs(old_minveps))) {
+      old_meps=meps; old_minveps=minveps;
+      for (int k=0; k < ms; k++)
+	for (int j=0; j < ms; j++)
+	  for (int i=0; i < ms; i++) {
+	    meps += eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
+	    minveps += 1/eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms)); 
+	  }
+      meps /= ms*ms*ms;
+      minveps /= ms*ms*ms;
+      ms *= 2;
+      if (++iter == maxeval) return;
+    }
+    break;
+  case D2:
+    while ((fabs(meps-old_meps) > tol*old_meps) && (fabs(minveps-old_minveps) > tol*old_minveps)) {
+      old_meps=meps; old_minveps=minveps;
+      for (int j=0; j < ms; j++)
+	for (int i=0; i < ms; i++) {
+	  meps += eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
+	  minveps += 1/eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms)); 
+	}
+      meps /= ms*ms;
+      minveps /= ms*ms;
+      ms *= 2; 
+      if (++iter == maxeval) return; 
+    }
+    break;
+  case Dcyl:
+    while ((fabs(meps-old_meps) > tol*old_meps) && (fabs(minveps-old_minveps) > tol*old_minveps)) {
+      old_meps=meps; old_minveps=minveps;
+      for (int j=0; j < ms; j++)
+	for (int i=0; i < ms; i++) {
+	  meps += eps(gv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
+	  minveps += 1/eps(gv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms)); 
+	}
+      meps /= ms*ms;
+      minveps /= ms*ms;
+      ms *= 2; 
+      if (++iter == maxeval) return; 
+    }
+    break;
+  case D1:
+    while ((fabs(meps-old_meps) > tol*old_meps) && (fabs(minveps-old_minveps) > tol*old_minveps)) {
+      old_meps=meps; old_minveps=minveps;
+      for (int i=0; i < ms; i++) {
+	meps += eps(gv.get_min_corner() + vec(i*d.z()/ms));
+	minveps += 1/eps(gv.get_min_corner() + vec(i*d.z()/ms)); 
+      }
+      meps /= ms*ms;
+      minveps /= ms*ms;
+      ms *= 2; 
+      if (++iter == maxeval) return; 
+    }
+    break;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+static void anisoaverage(material_function &epsilon, const geometric_volume dV,
+			 component ec, double invepsrow[3],
+			 double tol, int maxeval) {    
+  double meps = 0, minveps = 0;
+  vec norm(dV.dim);
+
+  epsilon.meaneps(meps,minveps,norm,dV,tol,maxeval); 
+
+  double n[3] = {0,0,0};
+  LOOP_OVER_DIRECTIONS(norm.dim, k) n[k%3] = norm.in_direction(k);
+  if (abs(norm) < 1e-8) { /* couldn't find normal: just use meps */
+    minveps = 1/meps;
+    n[0] = 1; n[1] = 0; n[2] = 0;
+  }
+  else {
+    double nabsinv = 1/abs(norm);
+    for (int i=0; i<3; ++i) n[i] *= nabsinv;
+  }
+
+  /* get rownum'th row of effective tensor
+          P * minveps + (I-P) * 1/meps = P * (minveps-1/meps) + I * 1/meps
+     where I is the identity and P is the projection matrix
+     P_{ij} = n[i] * n[j]. */
   int rownum = component_direction(ec) % 3;
-  int colnum = d % 3;
-  return avg.row[rownum].val[colnum];
+  for (int i=0; i<3; ++i) 
+    invepsrow[i] = n[rownum] * n[i] * (minveps - 1/meps);
+  invepsrow[rownum] += 1/meps;
+}
+
+void structure_chunk::set_epsilon(material_function &epsilon,
+				  bool use_anisotropic_averaging,
+				  double tol, int maxeval) {
+  if (!is_mine()) return;
+
+  epsilon.set_volume(v.pad().surroundings());
+
+  if (!eps) eps = new double[v.ntot()];
+  LOOP_OVER_VOL(v, v.eps_component(), i) {
+    IVEC_LOOP_LOC(v, here);
+    eps[i] = epsilon.eps(here);
+  }
+  
+  if (!use_anisotropic_averaging) {
+    FOR_ELECTRIC_COMPONENTS(c)
+      if (v.has_field(c)) {
+#if 1 // legacy method: very simplistic averaging (TODO: delete this?)
+	bool have_other_direction = false;
+	vec dxa = zero_vec(v.dim);
+	vec dxb = zero_vec(v.dim);
+	direction c_d = component_direction(c);
+	LOOP_OVER_DIRECTIONS(v.dim,da)
+	  if (da != c_d) {
+	    dxa.set_direction(da,0.5/a);
+	    LOOP_OVER_DIRECTIONS(v.dim,db)
+	      if (db != c_d && db != da) {
+		dxb.set_direction(db,0.5/a);
+		have_other_direction = true;
+	      }
+	    break;
+	  }
+	if (!inveps[c][c_d]) inveps[c][c_d] = new double[v.ntot()];
+	LOOP_OVER_VOL(v, c, i) {
+	  IVEC_LOOP_LOC(v, here);
+	  if (!have_other_direction)
+	    inveps[c][c_d][i] =
+	      2.0/(epsilon.eps(here + dxa) + epsilon.eps(here - dxa));
+	  else
+	    inveps[c][c_d][i] = 4.0/(epsilon.eps(here + dxa + dxb) +
+				     epsilon.eps(here + dxa - dxb) +
+				     epsilon.eps(here - dxa + dxb) +
+				     epsilon.eps(here - dxa - dxb));
+	}
+#else // really no averaging at all
+	direction c_d = component_direction(c);
+        if (!inveps[c][c_d]) inveps[c][c_d] = new double[v.ntot()]; 
+        LOOP_OVER_VOL(v, c, i) {
+          IVEC_LOOP_LOC(v, here);
+          inveps[c][c_d][i] = 1/epsilon.eps(here);
+	}
+#endif
+      }
+  } else {
+    const double smoothing_diameter = 1.0; // FIXME: make this user-changable?
+    FOR_ELECTRIC_COMPONENTS(c)
+      if (v.has_field(c)) {
+	FOR_ELECTRIC_COMPONENTS(c2) if (v.has_field(c2)) {
+	  direction d = component_direction(c2);
+	  if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
+	  if (!inveps[c][d]) abort("Memory allocation error.\n");
+	}
+	direction d0 = X, d1 = Y, d2 = Z;
+	if (v.dim == Dcyl) { d0 = R; d1 = P; }
+	LOOP_OVER_VOL(v, c, i) {
+	  double invepsrow[3];
+	  IVEC_LOOP_ILOC(v, here);
+	  anisoaverage(epsilon, v.dV(here, smoothing_diameter), 
+		       c, invepsrow, tol, maxeval);
+	  if (inveps[c][d0]) inveps[c][d0][i] = invepsrow[0];
+	  if (inveps[c][d1]) inveps[c][d1][i] = invepsrow[1];
+	  if (inveps[c][d2]) inveps[c][d2][i] = invepsrow[2];
+	}
+      }
+  }
+
+  update_pml_arrays(); // PML stuff depends on epsilon
 }
 
 } // namespace meep
