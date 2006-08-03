@@ -66,6 +66,7 @@ void test_convergence_without_averaging() {
     double e = -(w-w0)/w0, ea = e*a, ea2=e*a*a; //  to check 1/a and 1/(a*a) convergence
     //master_printf("Using a = %d ...\n", a);
     //master_printf("a = %3d\tw = %g \t(w-w0)/w0*a = %4.2e \t(w-w0)/w0*a*a = %4.2e\n", a, w, ea, ea2);
+    master_printf("noavg:, %d, %g, %g\n", a, w, fabs(e));
 
     // Statistical analysis
     int index = (2*(a/2)==a) ? 0 : 1; // even / odd
@@ -124,6 +125,7 @@ void test_convergence_with_averaging() {
     double e = -(w-w0)/w0, ea = e*a, ea2=e*a*a; //  to check 1/a and 1/(a*a) convergence
     //master_printf("Using a = %d ...\n", a);
     //master_printf("a = %3d\tw = %g \t(w-w0)/w0*a = %4.2e \t(w-w0)/w0*a*a = %4.2e\n", a, w, ea, ea2);
+    master_printf("avg:, %d, %g, %g\n", a, w, fabs(e));
 
     // Statistical analysis
     int index = (2*(a/2)==a) ? 0 : 1; // even / odd

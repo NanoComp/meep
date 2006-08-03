@@ -48,9 +48,6 @@ static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
 ////////////////////////////////////////////////////////////////////////////
 
 vec material_function::normal_vector(const geometric_volume &gv) {
-  // detect 2D line averages
-  if (gv.get_min_corner().x()==gv.get_max_corner().x() || gv.get_min_corner().y()==gv.get_max_corner().y())
-    return zero_vec(gv.dim);
   vec p(gv.center());
   double R = gv.diameter();  
   vec gradient = zero_vec(p.dim);
@@ -68,7 +65,7 @@ vec material_function::normal_vector(const geometric_volume &gv) {
    use a proper adaptive cubature. */
 void material_function::meaneps(double &meps, double &minveps, vec &gradient, const geometric_volume &gv, double tol, int maxeval) {
   gradient = normal_vector(gv);
-  if (sqrt(gradient & gradient) < 1e-8) {
+  if (abs(gradient) < 1e-10) {
     meps = eps(gv.center());
     minveps = 1/meps;
     return;
@@ -114,13 +111,16 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
     while ((fabs(meps-old_meps) > tol*old_meps) && (fabs(minveps-old_minveps) > tol*old_minveps)) {
       old_meps=meps; old_minveps=minveps;
       meps = minveps = 0;
+      double sumvol = 0;
       for (int j=0; j < ms; j++)
 	for (int i=0; i < ms; i++) {
+	  double r = gv.get_min_corner().r() + i*d.r()/ms;
 	  double ep = eps(gv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
-	  meps += ep; minveps += 1/ep;
+	  sumvol += r;
+	  meps += ep * r; minveps += r/ep;
 	}
-      meps /= ms*ms;
-      minveps /= ms*ms;
+      meps /= sumvol;
+      minveps /= sumvol;
       ms *= 2; 
       if (maxeval && (iter += ms*ms) >= maxeval) return;
     }
