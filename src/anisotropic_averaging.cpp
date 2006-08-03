@@ -82,11 +82,12 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
   case D3:
     while ((fabs(meps - old_meps) > tol*fabs(old_meps)) && (fabs(minveps - old_minveps) > tol*fabs(old_minveps))) {
       old_meps=meps; old_minveps=minveps;
+      meps = minveps = 0;
       for (int k=0; k < ms; k++)
 	for (int j=0; j < ms; j++)
 	  for (int i=0; i < ms; i++) {
-	    meps += eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
-	    minveps += 1/eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms)); 
+	    double ep = eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
+	    meps += ep; minveps += 1/ep;
 	  }
       meps /= ms*ms*ms;
       minveps /= ms*ms*ms;
@@ -97,10 +98,11 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
   case D2:
     while ((fabs(meps-old_meps) > tol*old_meps) && (fabs(minveps-old_minveps) > tol*old_minveps)) {
       old_meps=meps; old_minveps=minveps;
+      meps = minveps = 0;
       for (int j=0; j < ms; j++)
 	for (int i=0; i < ms; i++) {
-	  meps += eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
-	  minveps += 1/eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms)); 
+	  double ep = eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
+	  meps += ep; minveps += 1/ep;
 	}
       meps /= ms*ms;
       minveps /= ms*ms;
@@ -111,10 +113,11 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
   case Dcyl:
     while ((fabs(meps-old_meps) > tol*old_meps) && (fabs(minveps-old_minveps) > tol*old_minveps)) {
       old_meps=meps; old_minveps=minveps;
+      meps = minveps = 0;
       for (int j=0; j < ms; j++)
 	for (int i=0; i < ms; i++) {
-	  meps += eps(gv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
-	  minveps += 1/eps(gv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms)); 
+	  double ep = eps(gv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
+	  meps += ep; minveps += 1/ep;
 	}
       meps /= ms*ms;
       minveps /= ms*ms;
@@ -125,9 +128,10 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
   case D1:
     while ((fabs(meps-old_meps) > tol*old_meps) && (fabs(minveps-old_minveps) > tol*old_minveps)) {
       old_meps=meps; old_minveps=minveps;
+      meps = minveps = 0;
       for (int i=0; i < ms; i++) {
-	meps += eps(gv.get_min_corner() + vec(i*d.z()/ms));
-	minveps += 1/eps(gv.get_min_corner() + vec(i*d.z()/ms)); 
+	double ep = eps(gv.get_min_corner() + vec(i*d.z()/ms));
+	meps += ep; minveps += 1/ep;
       }
       meps /= ms;
       minveps /= ms;
