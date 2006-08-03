@@ -15,15 +15,46 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#include "meep.hpp"
 #include "meep_internals.hpp"
-#include "ran.hpp"
 
 namespace meep {
 
 void fields_chunk::update_e_from_d_prepare(void) {
   const int ntot = s->v.ntot();
-#include "update_e_from_d_prepare.hpp"
+
+  if (have_d_minus_p) {
+    if (pol) {
+      FOR_E_AND_D(ec,dc) if (f[ec][0]) {
+	for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
+	  if (is_real) for (int i = 0; i < ntot; ++i) {
+	    np->energy[ec][i] = op->energy[ec][i] +
+	      (0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
+              * f[ec][0][i];
+	  }
+	  else for (int i = 0; i < ntot; ++i) {
+            np->energy[ec][i] = op->energy[ec][i] +
+              (0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
+              * f[ec][0][i] +
+              (0.5)*(np->P[ec][1][i] - op->P[ec][1][i])
+              * f[ec][1][i];
+          }
+	}
+	DOCMP {
+	  for (int i=0;i<ntot;i++) {
+	    double sum = f[dc][cmp][i];
+            for (polarization *p = pol; p; p = p->next) {
+              sum -= p->P[ec][cmp][i];
+            }	  
+            d_minus_p[ec][cmp][i] = sum;
+	  }
+	}
+      }
+    }
+    else {
+      FOR_E_AND_D(ec,dc) if (f[ec][0]) DOCMP
+	memcpy(d_minus_p[ec][cmp], f[dc][cmp], ntot * sizeof(double));
+    }
+  }
 }
 
 } // namespace meep
