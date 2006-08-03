@@ -123,6 +123,9 @@ private:
   void close_id();
 };
 
+#define DEFAULT_SUBPIXEL_TOL 1e-4
+#define DEFAULT_SUBPIXEL_MAXEVAL 100000
+
 /* This class is used to compute position-dependent material properties
    like the dielectric function, polarizability sigma, 
    nonlinearities, et cetera.  Simple cases of stateless functions are
@@ -152,7 +155,8 @@ public:
   virtual vec normal_vector(const geometric_volume &gv);
   virtual void meaneps(double &meps, double &minveps, vec &normal,
 		       const geometric_volume &gv, 
-		       double tol=0.001, int maxeval=0);
+		       double tol=DEFAULT_SUBPIXEL_TOL, 
+		       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   
 
   /* polarizability sigma function */
@@ -308,24 +312,31 @@ class structure {
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
 	    int num_chunks = 0, double Courant = 0.5,
-	    bool use_anisotropic_averaging=false);
+	    bool use_anisotropic_averaging=false,
+	    double tol=DEFAULT_SUBPIXEL_TOL,
+	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   structure(const volume &v, double eps(const vec &), 
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
 	    int num_chunks = 0, double Courant = 0.5,
-	    bool use_anisotropic_averaging=false);
+	    bool use_anisotropic_averaging=false,
+	    double tol=DEFAULT_SUBPIXEL_TOL,
+	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   structure(const structure *);
   structure(const structure &);
 
   void set_materials(material_function &mat,
 		     bool use_anisotropic_averaging=true,
-		     double tol=0.00001, int maxeval=7);
+		     double tol=DEFAULT_SUBPIXEL_TOL,
+		     int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_epsilon(material_function &eps,
                    bool use_anisotropic_averaging=true,
-		   double tol=0.00001, int maxeval=7);
+		   double tol=DEFAULT_SUBPIXEL_TOL,
+		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_epsilon(double eps(const vec &),
                    bool use_anisotropic_averaging=true,
-		   double tol=0.00001, int maxeval=7);
+		   double tol=DEFAULT_SUBPIXEL_TOL,
+		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_kerr(material_function &eps);
   void set_kerr(double eps(const vec &));
   polarizability_identifier

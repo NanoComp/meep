@@ -8,6 +8,7 @@ void set_dimensions(int dims);
 
 meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double resolution, bool enable_averaging,
+				double subpixel_tol, int subpixel_maxeval,
 				bool ensure_periodicity_p,
 				ctlio::geometric_object_list geometry,
 				ctlio::material_type default_mat,

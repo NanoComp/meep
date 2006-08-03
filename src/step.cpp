@@ -29,8 +29,6 @@
 
 #define RESTRICT
 
-#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
-
 namespace meep {
 
 void fields::step() {

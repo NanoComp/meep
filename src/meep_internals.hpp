@@ -134,4 +134,6 @@ class bandsdata {
 
 symmetry r_to_minus_r_symmetry(int m);
 
+#define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
+
 } // namespace meep

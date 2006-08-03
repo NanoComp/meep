@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "meep.hpp"
+#include "meep_internals.hpp"
 
 /* This file contains routines to compute the "average" or "effective"
    dielectric constant for a pixel, using an anisotropic averaging
@@ -12,10 +12,6 @@ namespace meep {
 ////////////////////////////////////////////////////////////////////////////
 
 #include "sphere-quad.h"
-
-static int count_sphere_pts(const geometric_volume &v) {
-     return num_sphere_quad[number_of_directions(v.dim) - 1];
-}
 
 static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
      switch (cent.dim) {
@@ -78,7 +74,7 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
     return;
   }
   vec d = gv.get_max_corner() - gv.get_min_corner();
-  double ms = 10; 
+  int ms = 10; 
   double old_meps=0, old_minveps=0;
   int iter = 0;
   meps=1; minveps=1;
@@ -95,7 +91,7 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
       meps /= ms*ms*ms;
       minveps /= ms*ms*ms;
       ms *= 2;
-      if (++iter == maxeval) return;
+      if (maxeval && (iter += ms*ms*ms) >= maxeval) return;
     }
     break;
   case D2:
@@ -109,7 +105,7 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
       meps /= ms*ms;
       minveps /= ms*ms;
       ms *= 2; 
-      if (++iter == maxeval) return; 
+      if (maxeval && (iter += ms*ms) >= maxeval) return;
     }
     break;
   case Dcyl:
@@ -123,7 +119,7 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
       meps /= ms*ms;
       minveps /= ms*ms;
       ms *= 2; 
-      if (++iter == maxeval) return; 
+      if (maxeval && (iter += ms*ms) >= maxeval) return;
     }
     break;
   case D1:
@@ -133,10 +129,10 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
 	meps += eps(gv.get_min_corner() + vec(i*d.z()/ms));
 	minveps += 1/eps(gv.get_min_corner() + vec(i*d.z()/ms)); 
       }
-      meps /= ms*ms;
-      minveps /= ms*ms;
+      meps /= ms;
+      minveps /= ms;
       ms *= 2; 
-      if (++iter == maxeval) return; 
+      if (maxeval && (iter += ms*ms) >= maxeval) return;
     }
     break;
   }
@@ -227,6 +223,19 @@ void structure_chunk::set_epsilon(material_function &epsilon,
       }
   } else {
     const double smoothing_diameter = 1.0; // FIXME: make this user-changable?
+
+    // may take a long time in 3d, so prepare to print status messages
+    int npixels = 0, ipixel = 0;
+    FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c)) {
+      int loop_npixels = 0;
+      LOOP_OVER_VOL(v, c, i) {
+	loop_npixels = loop_n1 * loop_n2 * loop_n3;
+	goto breakout;
+      }
+    breakout: npixels += loop_npixels;
+    }
+    double last_output_time = wall_time();
+
     FOR_ELECTRIC_COMPONENTS(c)
       if (v.has_field(c)) {
 	FOR_ELECTRIC_COMPONENTS(c2) if (v.has_field(c2)) {
@@ -244,6 +253,16 @@ void structure_chunk::set_epsilon(material_function &epsilon,
 	  if (inveps[c][d0]) inveps[c][d0][i] = invepsrow[0];
 	  if (inveps[c][d1]) inveps[c][d1][i] = invepsrow[1];
 	  if (inveps[c][d2]) inveps[c][d2][i] = invepsrow[2];
+
+	  if (!quiet && (ipixel+1) % 1000 == 0
+	      && wall_time() > last_output_time + MIN_OUTPUT_TIME) {
+	    master_printf("subpixel-averaging is %g%% done, %g s remaining\n", 
+			  ipixel * 100.0 / npixels,
+			  (npixels - ipixel) *
+			  (wall_time() - last_output_time) / ipixel);
+	    last_output_time = wall_time();
+	  }
+	  ++ipixel;
 	}
       }
   }

@@ -126,6 +126,9 @@
 
 (define fields '())
 
+(define-param subpixel-tol 1e-4)
+(define-param subpixel-maxeval 100000)
+
 ; ****************************************************************
 ; Setting up the structure
 
@@ -184,7 +187,7 @@
 		     (infer-dimensions k)
 		     s geometry-center
 		     resolution
-		     eps-averaging?
+		     eps-averaging? subpixel-tol subpixel-maxeval
 		     (and ensure-periodicity (not (not k)))
 		     geometry default-material
 		     pml-layers symmetries num-chunks Courant))))

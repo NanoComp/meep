@@ -96,7 +96,7 @@ public:
   virtual meep::vec normal_vector(const meep::geometric_volume &gv);
   virtual void meaneps(double &meps, double &minveps, meep::vec &normal,
 		       const meep::geometric_volume &gv, 
-		       double tol=0.001, int maxeval=0);
+		       double tol, int maxeval);
 
   virtual double sigma(const meep::vec &r);
   void add_polarizabilities(meep::structure *s);
@@ -366,7 +366,8 @@ meep::vec geom_epsilon::normal_vector(const meep::geometric_volume &gv) {
 
 void geom_epsilon::meaneps(double &meps, double &minveps, 
 			   meep::vec &n,
-			   const meep::geometric_volume &gv, double tol, int maxeval) {
+			   const meep::geometric_volume &gv,
+			   double tol, int maxeval) {
   const geometric_object *o;
   material_type mat, mat_behind;
   vector3 p, shiftby, normal;
@@ -392,7 +393,7 @@ void geom_epsilon::meaneps(double &meps, double &minveps,
   pixel.high = vector3_minus(pixel.high, shiftby);
 
   // fixme: don't ignore maxeval?
-  double fill = 1.0 - box_overlap_with_object(pixel, *o, tol, int(100/tol));
+  double fill = 1.0 - box_overlap_with_object(pixel, *o, tol, maxeval);
   
   double epsb, epsinvb;
   material_eps(mat_behind, epsb, epsinvb);
@@ -553,6 +554,7 @@ void geom_epsilon::add_polarizabilities(meep::structure *s) {
 
 meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double resolution, bool enable_averaging,
+				double subpixel_tol, int subpixel_maxeval,
 				bool ensure_periodicity_p,
 				geometric_object_list geometry,
 				material_type default_mat,
@@ -667,9 +669,13 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   default_material = default_mat;
   geom_epsilon geps(geometry, v.pad().surroundings());
 
+  if (subpixel_maxeval < 0) subpixel_maxeval = 0; // no limit
+
   meep::structure *s = new meep::structure(v, geps, br, S, 
 					   num_chunks, Courant,
-					   enable_averaging);
+					   enable_averaging,
+					   subpixel_tol,
+					   subpixel_maxeval);
 
   geps.add_polarizabilities(s);
 

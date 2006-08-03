@@ -41,24 +41,26 @@ typedef structure_chunk *structure_chunk_ptr;
 structure::structure(const volume &thev, material_function &eps,
 		     const boundary_region &br,
 		     const symmetry &s,
-		     int num, double Courant, bool use_anisotropic_averaging) :
+		     int num, double Courant, bool use_anisotropic_averaging,
+		     double tol, int maxeval) :
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   choose_chunkdivision(thev, num == 0 ? count_processors() : num, br, s);
-  set_materials(eps, use_anisotropic_averaging);
+  set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
 structure::structure(const volume &thev, double eps(const vec &), 
 		     const boundary_region &br,
 		     const symmetry &s,
-		     int num, double Courant, bool use_anisotropic_averaging) :
+		     int num, double Courant, bool use_anisotropic_averaging,
+		     double tol, int maxeval) :
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   choose_chunkdivision(thev, num == 0 ? count_processors() : num, br, s);
   simple_material_function epsilon(eps);
-  set_materials(epsilon, use_anisotropic_averaging);
+  set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
 }
 
 void structure::choose_chunkdivision(const volume &thev, 
