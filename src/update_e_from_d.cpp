@@ -37,8 +37,7 @@ void fields::update_e_from_d() {
 
 void fields_chunk::update_e_from_d() {
   DOCMP FOR_ELECTRIC_COMPONENTS(ec)
-    if (!d_minus_p[ec][cmp] &&
-	(((pol || e_sources) && f[ec][cmp]) || s->kerr[ec])) {
+    if (!d_minus_p[ec][cmp] && f[ec][cmp] && (pol || e_sources)) {
       d_minus_p[ec][cmp] = new double[v.ntot()];
       have_d_minus_p = true;
     }
