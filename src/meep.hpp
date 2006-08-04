@@ -168,9 +168,10 @@ public:
   }
   
   // Nonlinear susceptibilities
-  
   virtual bool has_chi3() { return false; }
   virtual double chi3(const vec &r) { return 0.0; }
+  virtual bool has_chi2() { return false; }
+  virtual double chi2(const vec &r) { return 0.0; }
   
   // TODO: dielectric tensor, ...
 
@@ -190,6 +191,7 @@ public:
   virtual double eps(const vec &r) { return f(r); }
   virtual double sigma(const vec &r) { return f(r); }
   virtual double chi3(const vec &r) { return f(r); }
+  virtual double chi2(const vec &r) { return f(r); }
 };
 
 class structure;
@@ -197,7 +199,7 @@ class structure;
 class structure_chunk {
  public:
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
-  double *eps, *chi3[NUM_FIELD_COMPONENTS];
+  double *eps, *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
   double *inveps[NUM_FIELD_COMPONENTS][5];
   double *C[5][NUM_FIELD_COMPONENTS];
   double *Cdecay[5][NUM_FIELD_COMPONENTS][5];
@@ -215,6 +217,7 @@ class structure_chunk {
                    bool use_anisotropic_averaging,
 		   double tol, int maxeval);
   void set_chi3(material_function &eps);
+  void set_chi2(material_function &eps);
   void use_pml(direction, double dx, double boundary_loc, double strength);
   void update_pml_arrays();
   void update_Cdecay();
@@ -339,6 +342,8 @@ class structure {
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_chi3(material_function &eps);
   void set_chi3(double eps(const vec &));
+  void set_chi2(material_function &eps);
+  void set_chi2(double eps(const vec &));
   polarizability_identifier
      add_polarizability(double sigma(const vec &), double omega, double gamma,
                   double delta_epsilon = 1.0, double energy_saturation = 0.0);

@@ -92,6 +92,8 @@ public:
   virtual double eps(const meep::vec &r);
   virtual bool has_chi3();
   virtual double chi3(const meep::vec &r);
+  virtual bool has_chi2();
+  virtual double chi2(const meep::vec &r);
 
   virtual meep::vec normal_vector(const meep::geometric_volume &gv);
   virtual void meaneps(double &meps, double &minveps, meep::vec &normal,
@@ -528,6 +530,56 @@ double geom_epsilon::chi3(const meep::vec &r) {
     material_type_destroy(material);
   
   return chi3_val;
+}
+
+bool geom_epsilon::has_chi2()
+{
+  for (int i = 0; i < geometry.num_items; ++i) {
+    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
+      if (geometry.items[i].material.subclass.dielectric_data->chi2 != 0)
+	return true; 
+    }
+  }
+    /* FIXME: what to do about material-functions?
+       Currently, we require that at least *one* ordinary material
+       property have non-zero chi2 for Kerr to be enabled.   It might
+       be better to have set_chi2 automatically delete chi2[] if the
+       chi2's are all zero. */
+  return (default_material.which_subclass == MTS::DIELECTRIC &&
+	  default_material.subclass.dielectric_data->chi2 != 0);
+}
+
+double geom_epsilon::chi2(const meep::vec &r) {
+  vector3 p = vec_to_vector3(r);
+
+  boolean inobject;
+  material_type material =
+    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
+  
+  int destroy_material = 0;
+  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
+    material = default_material;
+  }
+  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+    material = eval_material_func(material.subclass.
+				  material_function_data->material_func,
+				  p);
+    destroy_material = 1;
+  }
+  
+  double chi2_val;
+  switch (material.which_subclass) {
+  case MTS::DIELECTRIC:
+    chi2_val = material.subclass.dielectric_data->chi2;
+    break;
+  default:
+    chi2_val = 0;
+  }
+  
+  if (destroy_material)
+    material_type_destroy(material);
+  
+  return chi2_val;
 }
 
 double geom_epsilon::sigma(const meep::vec &r) {

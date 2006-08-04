@@ -20,9 +20,13 @@
 
 namespace meep {
 
-inline double calc_nonlinear_inveps(const double Dsqr, const double e,
-				    const double alpha) {
-  return 1.0 - (alpha*Dsqr)/(e + 3*(alpha*Dsqr));
+inline double calc_nonlinear_inveps(const double Dsqr, 
+				    const double Di,
+				    const double e,
+				    const double chi2, const double chi3) {
+  double c2 = Di*chi2*(e*e);
+  double c3 = Dsqr*chi3*(e*(e*e));
+  return (1 + c2 + 2*c3)/(1 + 2*c2 + 3*c3);
 }
 
 void fields::update_e_from_d() {
@@ -36,7 +40,7 @@ void fields::update_e_from_d() {
 }
 
 void fields_chunk::update_e_from_d() {
-  DOCMP FOR_ELECTRIC_COMPONENTS(ec)
+  FOR_ELECTRIC_COMPONENTS(ec) DOCMP 
     if (!d_minus_p[ec][cmp] && f[ec][cmp] && (pol || e_sources)) {
       d_minus_p[ec][cmp] = new double[v.ntot()];
       have_d_minus_p = true;
@@ -125,7 +129,8 @@ void fields_chunk::update_e_from_d() {
 
     if (ieps1 && ieps2) { // have 3x3 off-diagonal inveps
       if (s->chi3[ec]) { // nonlinear
-	double *chi3 = s->chi3[ec];
+	const double *chi2 = s->chi2[ec];
+	const double *chi3 = s->chi3[ec];
 	DOCMP {
 	  double *efield = f[ec][cmp];
 	  const double *dfield = dmp[ec][cmp];
@@ -136,9 +141,8 @@ void fields_chunk::update_e_from_d() {
 	    double df2s = df2[i]+df2[i+s_ec]+df2[i-s_2]+df2[i+(s_ec-s_2)];
 	    double df = dfield[i]; double iep = ieps[i];
 	    efield[i] = (df * iep + 0.25 * (ieps1[i]*df1s + ieps2[i]*df2s)) *
-	      calc_nonlinear_inveps(df * df +
-				    0.0625 * (df1s*df1s + df2s*df2s),
-				    iep, chi3[i]);
+	      calc_nonlinear_inveps(df * df + 0.0625 * (df1s*df1s + df2s*df2s),
+				    df, iep, chi2[i], chi3[i]);
 	  }
 	}
       }
@@ -161,6 +165,7 @@ void fields_chunk::update_e_from_d() {
       int s_o = ieps1 ? s_1 : s_2;
       const double *iepso = ieps1 ? ieps1 : ieps2;
       if (s->chi3[ec]) { // nonlinear
+	const double *chi2 = s->chi2[ec];
 	const double *chi3 = s->chi3[ec];
 	DOCMP {
 	  double *efield = f[ec][cmp];
@@ -170,7 +175,8 @@ void fields_chunk::update_e_from_d() {
 	    double dfos = dfo[i]+dfo[i+s_ec]+dfo[i-s_o]+dfo[i+(s_ec-s_o)];
 	    double df = dfield[i]; double iep = ieps[i];
 	    efield[i] = (df * iep + 0.25 * (iepso[i]*dfos)) *
-	      calc_nonlinear_inveps(df * df + 0.0625*dfos*dfos, iep, chi3[i]);
+	      calc_nonlinear_inveps(df * df + 0.0625*dfos*dfos, 
+				    df, iep, chi2[i], chi3[i]);
 	  }
 	}
       }
@@ -188,6 +194,7 @@ void fields_chunk::update_e_from_d() {
     }
     else { // inveps is diagonal
       if (s->chi3[ec]) { // nonlinear
+	const double *chi2 = s->chi2[ec];
 	const double *chi3 = s->chi3[ec];
 	if (dmp[ec_1][0] && dmp[ec_2][0]) {
 	  DOCMP {
@@ -202,7 +209,7 @@ void fields_chunk::update_e_from_d() {
 	      efield[i] = df * iep *
 		calc_nonlinear_inveps(df * df +
 				      0.0625 * (df1s*df1s + df2s*df2s),
-				      iep, chi3[i]);
+				      df, iep, chi2[i], chi3[i]);
 	    }
 	  }
 	}
@@ -217,7 +224,7 @@ void fields_chunk::update_e_from_d() {
 	      double df = dfield[i]; double iep = ieps[i];
 	      efield[i] = df * iep *
 		calc_nonlinear_inveps(df * df + 0.0625 * dfos*dfos,
-				      iep, chi3[i]);
+				      df, iep, chi2[i], chi3[i]);
 	    }
 	  }
 	}
@@ -228,7 +235,7 @@ void fields_chunk::update_e_from_d() {
 	    for (int i = 0; i < ntot; ++i) {
 	      double df = dfield[i]; double iep = ieps[i];
 	      efield[i] = df * iep * 
-		calc_nonlinear_inveps(df * df, iep, chi3[i]);
+		calc_nonlinear_inveps(df * df, df, iep, chi2[i], chi3[i]);
 	    }
 	  }
 	}

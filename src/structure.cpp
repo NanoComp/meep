@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -315,6 +316,7 @@ void structure::set_materials(material_function &mat,
 			      double tol, int maxeval) {
   set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
   if (mat.has_chi3()) set_chi3(mat);
+  if (mat.has_chi2()) set_chi2(mat);
 }
 
 void structure::set_epsilon(material_function &eps, 
@@ -348,6 +350,18 @@ void structure::set_chi3(double eps(const vec &)) {
   set_chi3(epsilon);
 }
 
+void structure::set_chi2(material_function &eps) {
+  changing_chunks();
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->set_chi2(eps);
+}
+
+void structure::set_chi2(double eps(const vec &)) {
+  simple_material_function epsilon(eps);
+  set_chi2(epsilon);
+}
+
 void structure::use_pml(direction d, boundary_side b, double dx,
 			double strength) {
   if (strength == 0.0 || dx <= 0.0) return;
@@ -377,6 +391,7 @@ structure_chunk::~structure_chunk() {
     FOR_DIRECTIONS(d)
       delete[] inveps[c][d];
     delete[] chi3[c];
+    delete[] chi2[c];
   }
   delete[] eps;
 
@@ -496,7 +511,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
   } else {
     eps = NULL;
   }
-  FOR_COMPONENTS(c)
+  FOR_COMPONENTS(c) {
     if (is_mine() && o->chi3[c]) {
       chi3[c] = new double[v.ntot()];
       if (chi3[c] == NULL) abort("Out of memory!\n");
@@ -504,6 +519,14 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
     } else {
       chi3[c] = NULL;
     }
+    if (is_mine() && o->chi2[c]) {
+      chi2[c] = new double[v.ntot()];
+      if (chi2[c] == NULL) abort("Out of memory!\n");
+      for (int i=0;i<v.ntot();i++) chi2[c][i] = o->chi2[c][i];
+    } else {
+      chi2[c] = NULL;
+    }
+  }
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
     if (is_mine() && o->inveps[c][d]) {
       inveps[c][d] = new double[v.ntot()];
@@ -541,15 +564,35 @@ void structure_chunk::set_chi3(material_function &epsilon) {
       LOOP_OVER_VOL(v, c, i) {
 	IVEC_LOOP_LOC(v, here);
         chi3[c][i] = epsilon.chi3(here);
-        LOOP_OVER_DIRECTIONS(v.dim,d)
-          if (d != component_direction(c)) {
-            vec dx = zero_vec(v.dim);
-            dx.set_direction(d,0.5/a);
-            // Following TD3D, we set chi3 coefficient to zero if any of
-            // the adjoining epsilon points is linear.
-            chi3[c][i] = min(chi3[c][i], epsilon.chi3(here + dx));
-            chi3[c][i] = min(chi3[c][i], epsilon.chi3(here - dx));
-          }
+      }
+      
+      /* currently, our update_e_from_d routine requires that
+	 chi2 be present if chi3 is, and vice versa */
+      if (!chi2[c]) {
+	chi2[c] = new double[v.ntot()]; 
+	memset(chi2[c], 0, v.ntot() * sizeof(double)); // chi2 = 0 by default
+      }
+    }
+}
+
+void structure_chunk::set_chi2(material_function &epsilon) {
+  if (!is_mine()) return;
+  
+  epsilon.set_volume(v.pad().surroundings());
+
+  FOR_ELECTRIC_COMPONENTS(c)
+    if (inveps[c][component_direction(c)]) {
+      if (!chi2[c]) chi2[c] = new double[v.ntot()];
+      LOOP_OVER_VOL(v, c, i) {
+	IVEC_LOOP_LOC(v, here);
+        chi2[c][i] = epsilon.chi2(here);
+      }
+
+      /* currently, our update_e_from_d routine requires that
+	 chi3 be present if chi2 is, and vice versa */
+      if (!chi3[c]) {
+	chi3[c] = new double[v.ntot()]; 
+	memset(chi3[c], 0, v.ntot() * sizeof(double)); // chi3 = 0 by default
       }
     }
 }
@@ -570,6 +613,7 @@ structure_chunk::structure_chunk(const volume &thev,
   // initialize materials arrays to NULL
   eps = NULL;
   FOR_COMPONENTS(c) chi3[c] = NULL;
+  FOR_COMPONENTS(c) chi2[c] = NULL;
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) inveps[c][d] = NULL;
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
   FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;
