@@ -707,9 +707,6 @@ class fields_chunk {
   void step_h_source(src_vol *);
   void step_d();
   void step_d_source(src_vol *);
-  void update_e_from_d_prepare(void);
-  void update_e_from_d_sources(void);
-  void update_e_from_d_update(void);
   void update_e_from_d();
   void update_from_e();
   void calc_sources(double time);

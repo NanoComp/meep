@@ -4,8 +4,7 @@ pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
-BUILT_SOURCES = step_d.hpp step_h.hpp update_from_e.hpp	\
-update_e_from_d_update.hpp sphere-quad.h
+BUILT_SOURCES = step_d.hpp step_h.hpp update_from_e.hpp	sphere-quad.h
 
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
 bicgstab.hpp
@@ -16,9 +15,7 @@ energy_and_flux.cpp fields.cpp loop_in_chunks.cpp grace.cpp		\
 h5fields.cpp h5file.cpp initialize.cpp integrate.cpp monitor.cpp	\
 mympi.cpp output_directory.cpp polarization.cpp sources.cpp step.cpp	\
 step_d.cpp step_h.cpp structure.cpp time.cpp update_e_from_d.cpp	\
-update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)			\
-update_e_from_d_prepare.cpp update_e_from_d_sources.cpp			\
-update_e_from_d_update.cpp
+update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)
 
 libmeep@MEEP_SUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
