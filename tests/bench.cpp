@@ -118,7 +118,7 @@ bench bench_2d_tm_nonlinear(const double xmax, const double ymax,
 
   volume v = voltwo(xmax,ymax,a);
   structure s(v, eps);
-  s.set_kerr(eps);
+  s.set_chi3(eps);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
 
@@ -186,7 +186,7 @@ bench bench_2d_te_nonlinear(const double xmax, const double ymax,
 
   volume v = voltwo(xmax,ymax,a);
   structure s(v, eps);
-  s.set_kerr(eps);
+  s.set_chi3(eps);
   fields f(&s);
   f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
   f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec(0.7, 0.5));

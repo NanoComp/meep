@@ -314,7 +314,7 @@ void structure::set_materials(material_function &mat,
 			      bool use_anisotropic_averaging,
 			      double tol, int maxeval) {
   set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
-  if (mat.has_kerr()) set_kerr(mat);
+  if (mat.has_chi3()) set_chi3(mat);
 }
 
 void structure::set_epsilon(material_function &eps, 
@@ -336,16 +336,16 @@ void structure::set_epsilon(double eps(const vec &),
   set_epsilon(epsilon, use_anisotropic_averaging, tol, maxeval);
 }
 
-void structure::set_kerr(material_function &eps) {
+void structure::set_chi3(material_function &eps) {
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->set_kerr(eps);
+      chunks[i]->set_chi3(eps);
 }
 
-void structure::set_kerr(double eps(const vec &)) {
+void structure::set_chi3(double eps(const vec &)) {
   simple_material_function epsilon(eps);
-  set_kerr(epsilon);
+  set_chi3(epsilon);
 }
 
 void structure::use_pml(direction d, boundary_side b, double dx,
@@ -376,7 +376,7 @@ structure_chunk::~structure_chunk() {
   FOR_ELECTRIC_COMPONENTS(c) {
     FOR_DIRECTIONS(d)
       delete[] inveps[c][d];
-    delete[] kerr[c];
+    delete[] chi3[c];
   }
   delete[] eps;
 
@@ -497,12 +497,12 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
     eps = NULL;
   }
   FOR_COMPONENTS(c)
-    if (is_mine() && o->kerr[c]) {
-      kerr[c] = new double[v.ntot()];
-      if (kerr[c] == NULL) abort("Out of memory!\n");
-      for (int i=0;i<v.ntot();i++) kerr[c][i] = o->kerr[c][i];
+    if (is_mine() && o->chi3[c]) {
+      chi3[c] = new double[v.ntot()];
+      if (chi3[c] == NULL) abort("Out of memory!\n");
+      for (int i=0;i<v.ntot();i++) chi3[c][i] = o->chi3[c][i];
     } else {
-      kerr[c] = NULL;
+      chi3[c] = NULL;
     }
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
     if (is_mine() && o->inveps[c][d]) {
@@ -530,25 +530,25 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
       }
 }
 
-void structure_chunk::set_kerr(material_function &epsilon) {
+void structure_chunk::set_chi3(material_function &epsilon) {
   if (!is_mine()) return;
   
   epsilon.set_volume(v.pad().surroundings());
 
   FOR_ELECTRIC_COMPONENTS(c)
     if (inveps[c][component_direction(c)]) {
-      if (!kerr[c]) kerr[c] = new double[v.ntot()];
+      if (!chi3[c]) chi3[c] = new double[v.ntot()];
       LOOP_OVER_VOL(v, c, i) {
 	IVEC_LOOP_LOC(v, here);
-        kerr[c][i] = epsilon.kerr(here);
+        chi3[c][i] = epsilon.chi3(here);
         LOOP_OVER_DIRECTIONS(v.dim,d)
           if (d != component_direction(c)) {
             vec dx = zero_vec(v.dim);
             dx.set_direction(d,0.5/a);
-            // Following TD3D, we set kerr coefficient to zero if any of
+            // Following TD3D, we set chi3 coefficient to zero if any of
             // the adjoining epsilon points is linear.
-            kerr[c][i] = min(kerr[c][i], epsilon.kerr(here + dx));
-            kerr[c][i] = min(kerr[c][i], epsilon.kerr(here - dx));
+            chi3[c][i] = min(chi3[c][i], epsilon.chi3(here + dx));
+            chi3[c][i] = min(chi3[c][i], epsilon.chi3(here - dx));
           }
       }
     }
@@ -569,7 +569,7 @@ structure_chunk::structure_chunk(const volume &thev,
 
   // initialize materials arrays to NULL
   eps = NULL;
-  FOR_COMPONENTS(c) kerr[c] = NULL;
+  FOR_COMPONENTS(c) chi3[c] = NULL;
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) inveps[c][d] = NULL;
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
   FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;

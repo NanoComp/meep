@@ -137,8 +137,8 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   const symmetry S = mirror(Z,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
-  s.set_kerr(one);
-  s1.set_kerr(one);
+  s.set_chi3(one);
+  s1.set_chi3(one);
 
   fields f1(&s1);
   f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
@@ -791,8 +791,8 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
 
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
-  s.set_kerr(one);
-  s1.set_kerr(one);
+  s.set_chi3(one);
+  s1.set_chi3(one);
   master_printf("Testing nonlinear Z fourfold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -910,8 +910,8 @@ double nonlinear_ex(const volume &v, double eps(const vec &)) {
   const symmetry S = mirror(Z,v);
   structure s(v, eps);
   structure sS(v, eps, no_pml(), S);
-  s.set_kerr(one);
-  sS.set_kerr(one);
+  s.set_chi3(one);
+  sS.set_chi3(one);
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());

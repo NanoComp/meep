@@ -90,8 +90,8 @@ public:
   virtual void set_volume(const meep::geometric_volume &gv);
   virtual void unset_volume(void);
   virtual double eps(const meep::vec &r);
-  virtual bool has_kerr();
-  virtual double kerr(const meep::vec &r);
+  virtual bool has_chi3();
+  virtual double chi3(const meep::vec &r);
 
   virtual meep::vec normal_vector(const meep::geometric_volume &gv);
   virtual void meaneps(double &meps, double &minveps, meep::vec &normal,
@@ -480,7 +480,7 @@ void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
 #endif
 }
 
-bool geom_epsilon::has_kerr()
+bool geom_epsilon::has_chi3()
 {
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
@@ -491,13 +491,13 @@ bool geom_epsilon::has_kerr()
     /* FIXME: what to do about material-functions?
        Currently, we require that at least *one* ordinary material
        property have non-zero chi3 for Kerr to be enabled.   It might
-       be better to have set_kerr automatically delete kerr[] if the
+       be better to have set_chi3 automatically delete chi3[] if the
        chi3's are all zero. */
   return (default_material.which_subclass == MTS::DIELECTRIC &&
 	  default_material.subclass.dielectric_data->chi3 != 0);
 }
 
-double geom_epsilon::kerr(const meep::vec &r) {
+double geom_epsilon::chi3(const meep::vec &r) {
   vector3 p = vec_to_vector3(r);
 
   boolean inobject;
@@ -515,19 +515,19 @@ double geom_epsilon::kerr(const meep::vec &r) {
     destroy_material = 1;
   }
   
-  double chi3;
+  double chi3_val;
   switch (material.which_subclass) {
   case MTS::DIELECTRIC:
-    chi3 = material.subclass.dielectric_data->chi3;
+    chi3_val = material.subclass.dielectric_data->chi3;
     break;
   default:
-    chi3 = 0;
+    chi3_val = 0;
   }
   
   if (destroy_material)
     material_type_destroy(material);
   
-  return chi3;
+  return chi3_val;
 }
 
 double geom_epsilon::sigma(const meep::vec &r) {
