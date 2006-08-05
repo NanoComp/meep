@@ -204,6 +204,8 @@ void structure_chunk::set_epsilon(material_function &epsilon,
 	      }
 	    break;
 	  }
+	LOOP_OVER_DIRECTIONS(v.dim,da) // make sure no off-diagonal terms
+	  if (da != c_d) { delete[] inveps[c][da]; inveps[c][da] = NULL; }
 	if (!inveps[c][c_d]) inveps[c][c_d] = new double[v.ntot()];
 	LOOP_OVER_VOL(v, c, i) {
 	  IVEC_LOOP_LOC(v, here);
