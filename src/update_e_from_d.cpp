@@ -160,11 +160,14 @@ void fields_chunk::update_e_from_d() {
 	  const double *df1 = dmp[ec_1][cmp];
 	  const double *df2 = dmp[ec_2][cmp];
 	  LOOP_OVER_VOL_OWNED(v, ec, i)
-	    efield[i] = dfield[i] * ieps[i] +
-	    0.25 * (ieps1[i] * (df1[i] + df1[i+s_ec]
-				+ df1[i-s_1] + df1[i+(s_ec-s_1)]) +
-		    ieps2[i] * (df2[i] + df2[i+s_ec]
-				+ df2[i-s_2] + df2[i+(s_ec-s_2)]));
+	    if (ieps1[i] * ieps2[i] != 0)
+	      efield[i] = dfield[i] * ieps[i] +
+		0.25 * (ieps1[i] * (df1[i] + df1[i+s_ec]
+				    + df1[i-s_1] + df1[i+(s_ec-s_1)]) +
+			ieps2[i] * (df2[i] + df2[i+s_ec]
+				    + df2[i-s_2] + df2[i+(s_ec-s_2)]));
+	    else
+	      efield[i] = dfield[i] * ieps[i];
 	}
       }
     }
@@ -193,9 +196,13 @@ void fields_chunk::update_e_from_d() {
 	  const double *dfield = dmp[ec][cmp];
 	  const double *dfo = dmp[ieps1 ? ec_1 : ec_2][cmp];
 	  LOOP_OVER_VOL_OWNED(v, ec, i)
-	    efield[i] = dfield[i] * ieps[i] +
-	    0.25 * (iepso[i] * (dfo[i] + dfo[i+s_ec]
-				+ dfo[i-s_o] + dfo[i+(s_ec-s_o)]));
+	    if (iepso[i] != 0)
+	      efield[i] = dfield[i] * ieps[i] +
+		0.25 * (iepso[i] * (dfo[i] + dfo[i+s_ec]
+				    + dfo[i-s_o] + dfo[i+(s_ec-s_o)]));
+	    else
+	      efield[i] = dfield[i] * ieps[i];
+
 	}
       }
     }
