@@ -179,7 +179,7 @@
        (vector3- cen (vector3-scale 0.5 sz))
        (vector3+ cen (vector3-scale 0.5 sz))))))
 
-(define-param eps-averaging? false) ; still slow and experimental
+(define-param eps-averaging? true) ; 10% slower, but huge accuracy gains
 
 (define (init-structure . k_)
   (let ((k (if (null? k_) '() (car k_)))
