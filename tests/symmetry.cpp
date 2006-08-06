@@ -879,16 +879,12 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  /* BUG: we should use fS(&sS) here, since otherwise the test is
-     trivial.  If we do, however, the test FAILS with some older
-     versions of gcc, so there may be a bug in the nonlinear code for
-     symmetry (or it may be that we are just too picky about fp). */
-  fields fS(&s);
+  fields fS(&sS);
   fS.use_real_fields();
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
-  // check_unequal_layout(f, fS);
+  check_unequal_layout(f, fS);
   while (f.time() < ttot) {
     f.step();
     fS.step();
@@ -988,12 +984,6 @@ int main(int argc, char **argv) {
   quiet = true;
   trash_output_directory(mydirname);
   master_printf("Testing with various kinds of symmetry...\n");
-
-  if (!polariton_ex(vol1d(1.0, 10.0), one))
-    abort("error in 1D polariton vacuum\n");
-
-  if (!polariton_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
-    abort("error in 3D polariton vacuum\n");
 
   if (0) // FIXME: disable until divergence bug is fixed
   if (!saturated_gain_ez(vol3d(0.5, 1.2, 0.8, 10.0), one))
@@ -1097,6 +1087,12 @@ int main(int argc, char **argv) {
     abort("error in exact_metal_rot4z nonlinear vacuum\n");
   if (!exact_metal_rot4z_nonlinear(rods_2d))
     abort("error in exact_metal_rot4z nonlinear rods_2d\n");
+
+  // I'm not sure why the polariton tests require increased tolerances...?
+  if (!polariton_ex(vol1d(1.0, 10.0), one))
+    abort("error in 1D polariton vacuum\n");
+  if (!polariton_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
+    abort("error in 3D polariton vacuum\n");
 
   return 0;
 }
