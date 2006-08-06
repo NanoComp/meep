@@ -37,8 +37,8 @@ double rods_2d(const vec &pp) {
   return 1.0;
 }
 
-static const double eps_compare = 7e-15;
-static const double thresh_compare = 1e-16;
+static double eps_compare = 7e-15;
+static double thresh_compare = 1e-16;
 
 static inline double max(double a, double b) { return a > b ? a : b; }
 
@@ -142,10 +142,10 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
 
   fields f1(&s1);
   f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
-  f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
+  // f1.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   fields f(&s);
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
-  f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
+  // f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
@@ -796,16 +796,12 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   master_printf("Testing nonlinear Z fourfold rotational symmetry...\n");
 
   fields f1(&s1);
-  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  //f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f1.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
-  /* BUG: we should use f(&s) here, since otherwise the test is
-     trivial.  If we do, however, the test FAILS in when we have both
-     sources turned on, so there may be a bug in the nonlinear code
-     for symmetry. */
-  fields f(&s1);
-  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
+  fields f(&s);
+  //f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
-  // check_unequal_layout(f, f1);
+  check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
   while (f.time() < ttot) {
     f.step();
@@ -915,15 +911,12 @@ double nonlinear_ex(const volume &v, double eps(const vec &)) {
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  /* BUG: we should use fS(&sS) here, since otherwise the test is trivial.
-     If we do, however, the test FAILS in 3d, so there may be a bug
-     in the nonlinear code for symmetry. */
-  fields fS(&s);
+  fields fS(&sS);
   fS.use_real_fields();
   fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
-  // check_unequal_layout(f, fS);
+  check_unequal_layout(f, fS);
   while (f.time() < ttot) {
     f.step();
     fS.step();
@@ -996,12 +989,6 @@ int main(int argc, char **argv) {
   trash_output_directory(mydirname);
   master_printf("Testing with various kinds of symmetry...\n");
 
-  if (!nonlinear_ex(vol1d(1.0, 10.0), one))
-    abort("error in 1D nonlinear vacuum\n");
-
-  if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
-    abort("error in 3D nonlinear vacuum\n");
-
   if (!polariton_ex(vol1d(1.0, 10.0), one))
     abort("error in 1D polariton vacuum\n");
 
@@ -1025,9 +1012,6 @@ int main(int argc, char **argv) {
 
   if (!test_cyl_metal_mirror(one))
     abort("error in test_cyl_metal_mirror vacuum\n");
-
-  if (!test_cyl_metal_mirror(one))
-    abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
 
   if (!test_yperiodic_ymirror(one))
     abort("error in test_yperiodic_ymirror vacuum\n");
@@ -1068,10 +1052,6 @@ int main(int argc, char **argv) {
   if (!exact_metal_rot4z(rods_2d))
     abort("error in exact_metal_rot4z rods_2d\n");
 
-  if (!exact_metal_rot4z_nonlinear(one))
-    abort("error in exact_metal_rot4z nonlinear vacuum\n");
-  if (!exact_metal_rot4z_nonlinear(rods_2d))
-    abort("error in exact_metal_rot4z nonlinear rods_2d\n");
 
   if (!test_3D_metal_xmirror(one))
     abort("error in test_3D_metal_xmirror vacuum\n");
@@ -1092,6 +1072,31 @@ int main(int argc, char **argv) {
 
   if (!test_3D_metal_3mirror(one))
     abort("error in test_3D_metal_3mirror\n");
+
+  /**************************************************************************/
+  /* For the following tests, we increase the check tolerance slightly.
+     Floating-point errors can cause these tests to have slightly different
+     results with and without symmetry. 
+
+     Note also that symmetry is tricky with nonlinearity, since in
+     general a nonlinear system does *not* conserve the irreducible
+     representation of the symmetry group (i.e. symmetry doesn't work).
+     The simulations here are chosen to preserve the symmetry, however. */
+  eps_compare = 1e-10;
+  thresh_compare = 1e-10;
+
+  if (!nonlinear_ex(vol1d(1.0, 10.0), one))
+    abort("error in 1D nonlinear vacuum\n");
+  if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
+    abort("error in 3D nonlinear vacuum\n");
+
+  if (!test_cyl_metal_mirror_nonlinear(one))
+    abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
+
+  if (!exact_metal_rot4z_nonlinear(one))
+    abort("error in exact_metal_rot4z nonlinear vacuum\n");
+  if (!exact_metal_rot4z_nonlinear(rods_2d))
+    abort("error in exact_metal_rot4z nonlinear rods_2d\n");
 
   return 0;
 }
