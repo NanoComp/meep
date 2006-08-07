@@ -1,3 +1,52 @@
+Meep 0.10 (upcoming)
+
+  * eps-averaging? is now turned on by default (in libctl interface),
+    using much-improved algorithm by Ardavan Farjadpour.  This greatly
+    improves accuracy, and also allows continuous tuning of geometric
+    parameters.  (See our upcoming paper in Optics Lett., with a preprint
+    on the web site.)  New input variables subpixel-tol and subpixel-maxeval
+    to control the accuracy of the subpixel averaging.
+
+  * Support for chi2 (Pockels) as well as chi3 (Kerr) nonlinearities.
+
+  * Symmetries no longer require the cell size to be an even number of
+    pixels.  Previously, Meep exited with an error in this case, whereas
+    now it simply adds an extra pixel to the cell size as needed.
+
+  * New with-prefix step function to allow you to use a different
+    filename-prefix for selected outputs.
+
+  * New feature for output-png: built-in shell variable $EPS that refers
+    to the last-output epsilon .h5 file, which you can use to easily
+    add dielectric contours/overlays to the field output image.
+
+  * Added output-png+h5 function that outputs both .png and .h5 files.
+
+  * New functions flux-in-box, electric-energy-in-box, magnetic-energy-in-box,
+    and field-energy-in-box (convenience wrappers around C++ functions).
+
+  * Bug fix in Kerr nonlinearity - chi3 was accidentally scaled by epsilon^4
+    factor.
+
+  * Bug fix: if you specified three or more symmetries, at most two
+    symmetries were used (ignoring the rest).
+
+  * Bug fix in rotate2 symmetry, which wasn't working correctly.
+
+  * Bug fix in add-flux for multiple flux regions, thanks to K. Choi.
+
+  * Bug fix in harminv where it wouldn't allow you to call harminv more
+    than once for the same run loop; thanks to Aristos Karalis.
+
+  * Bug fix in save-flux/load-flux that prevented it from working properly
+    without output directories, thanks to Karl Koch.
+
+  * Fixed abort that sometimes occurred due to rounding when the source
+    was the same width as the cell (thanks to G. J. Parker).
+
+  * Fixed minor build problems on Cygwin, SGI, and other systems,
+    thanks to Christopher Kang, Robyn Landers, Florencio Garcia, and others.
+
 Meep 0.9 (4/1/2006)
 
   * Initial public release.
