@@ -33,13 +33,13 @@ const double wlo = nhi / (nlo + nhi);
 const int Nperiods = 4;
 const double zsize = 10;
 
-double one(const vec &) { return 1.0; }
+double eps_nlo(const vec &) { return nlo*nlo; }
 
 double eps_bragg(const vec &v) {
   double z = v.z() - zsize * 0.5;
   
   if (fabs(z)*2 > Nperiods)
-    return 1.0;
+    return nlo*nlo;
   else {
     double zi;
     double zf = modf(z, &zi);
@@ -116,7 +116,7 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
   fields f(&s);
   f.use_real_fields();
 
-  structure s0(v, one, pml(0.5));
+  structure s0(v, eps_nlo, pml(0.5));
   fields f0(&s0);
   f0.use_real_fields();
 
