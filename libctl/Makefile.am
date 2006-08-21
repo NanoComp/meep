@@ -1,5 +1,5 @@
 bin_PROGRAMS = meep@MEEP_SUFFIX@
-EXTRA_DIST = meep.scm.in
+EXTRA_DIST = meep.scm.in meep-enums.scm
 
 LIBMEEP = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
 
