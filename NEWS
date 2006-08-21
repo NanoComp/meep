@@ -1,11 +1,11 @@
-Meep 0.10 (upcoming)
+Meep 0.10 (21 Aug. 2006)
 
   * eps-averaging? is now turned on by default (in libctl interface),
     using much-improved algorithm by Ardavan Farjadpour.  This greatly
     improves accuracy, and also allows continuous tuning of geometric
     parameters.  (See our upcoming paper in Optics Lett., with a preprint
-    on the web site.)  New input variables subpixel-tol and subpixel-maxeval
-    to control the accuracy of the subpixel averaging.
+    linked on the web site.)  New input variables subpixel-tol and
+    subpixel-maxeval to control the accuracy of the subpixel averaging.
 
   * Support for chi2 (Pockels) as well as chi3 (Kerr) nonlinearities.
 
@@ -47,6 +47,6 @@ Meep 0.10 (upcoming)
   * Fixed minor build problems on Cygwin, SGI, and other systems,
     thanks to Christopher Kang, Robyn Landers, Florencio Garcia, and others.
 
-Meep 0.9 (4/1/2006)
+Meep 0.9 (1 Apr. 2006)
 
   * Initial public release.
