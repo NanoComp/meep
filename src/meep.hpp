@@ -476,7 +476,8 @@ class custom_src_time : public src_time {
     : func(func), data(data), start_time(st), end_time(et) {}
   virtual ~custom_src_time() {}
   
-  virtual complex<double> dipole(double time) const { return func(time,data); }
+  virtual complex<double> dipole(double time) const { 
+    if (time >= start_time) return func(time,data); else return 0.0; }
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
