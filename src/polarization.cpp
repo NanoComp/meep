@@ -26,7 +26,7 @@
 namespace meep {
 
 polarization *polarization::set_up_polarizations(const structure_chunk *sc, int is_r) {
-  if (sc->pb == NULL) return NULL;
+  if (sc->pb == NULL || !sc->is_mine()) return NULL;
   return new polarization(sc->pb, is_r);
 }
 
