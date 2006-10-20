@@ -158,6 +158,12 @@ AC_SUBST(RUNCODE)
 ##############################################################################
 # Compiler flags
 
+# For some annoying reason, g++ requires you to compile
+# all code with -march if you compile any code with -march,
+# otherwise segfaults can occur (observed in g++ 3.3.5).
+# We also need to be careful about -malign-double.
+ARCHFLAG=""
+
 AC_ARG_ENABLE(debug, [AC_HELP_STRING([--enable-debug,compile for debugging])],
 	      enable_debug=$enableval, enable_debug=no)
 if test "$enable_debug" = "yes"; then
@@ -168,7 +174,13 @@ if test "$enable_debug" = "yes"; then
 else
   # Pick "good" compiler flags(?)
   AX_CXX_MAXOPT
+  for flg in $CXXFLAGS; do
+      case $flg in
+	   -march=*|-mcpu=*|-malign*) ARCHFLAG="$ARCHFLAG $flg" ;;
+      esac
+  done
 fi
+AC_SUBST(ARCHFLAG)
 
 # Add lots of compiler warnings in maintainer mode if we are using gcc:
 # (The variable $GXX is set to "yes" by AC_PROG_CXX if we are using g++.)

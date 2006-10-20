@@ -7,4 +7,4 @@ Name: MEEP
 Description: time-domain electromagnetic simulation
 Version: @VERSION@
 Libs: -L${libdir} -lmeep @MEEPLIBS@
-Cflags: -I${includedir}
+Cflags: -I${includedir} @ARCHFLAG@
