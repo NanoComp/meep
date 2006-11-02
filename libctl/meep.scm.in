@@ -439,7 +439,8 @@
   (let ((Tlast (meep-time)))
     (lambda (to-do)
       (let ((T (meep-time)))
-	(if (or (eq? to-do 'finish) (>= T (+ Tlast dT)))
+	(if (or (eq? to-do 'finish) 
+		(>= T (+ Tlast dT (* -0.5 (meep-fields-dt-get fields)))))
 	    (begin
 	      (map (lambda (f) (eval-step-func f to-do)) step-funcs)
 	      (set! Tlast T)))))))
