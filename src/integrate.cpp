@@ -241,7 +241,7 @@ double fields::max_abs(derived_component c, const geometric_volume &where)
   if (!is_derived(int(c)))
     return max_abs(component(c), where);
   int nfields;
-  component cs[6];
+  component cs[12];
   field_rfunction fun = derived_component_func(c, v, nfields, cs);
   return max_abs(nfields, cs, fun, &nfields, where);
 }

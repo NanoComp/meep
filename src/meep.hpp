@@ -749,7 +749,7 @@ typedef double (*field_rfunction)(const complex<double> *fields,
 				   void *integrand_data_);
 
 field_rfunction derived_component_func(derived_component c, const volume &v,
-				       int &nfields, component cs[6]);
+				       int &nfields, component cs[12]);
 
 class fields {
  public:

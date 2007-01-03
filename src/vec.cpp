@@ -1403,7 +1403,7 @@ static double energy_fun(const complex<double> *fields,
 }
 
 field_rfunction derived_component_func(derived_component c, const volume &v,
-				       int &nfields, component cs[6]) {
+				       int &nfields, component cs[12]) {
   switch (c) {
   case Sx: case Sy: case Sz: case Sr: case Sp:
     switch (c) {
@@ -1431,7 +1431,7 @@ field_rfunction derived_component_func(derived_component c, const volume &v,
 	cs[nfields++] = c0;
 	cs[nfields++] = c0;
       }
-    if (nfields > 6) abort("too many field components");
+    if (nfields > 12) abort("too many field components");
     return energy_fun;
 
   default: 

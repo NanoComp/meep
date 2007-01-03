@@ -399,7 +399,7 @@ void fields::output_hdf5(derived_component c,
   if (coordinate_mismatch(v.dim, c)) return;
 
   int nfields;
-  component cs[6];
+  component cs[12];
   field_rfunction fun = derived_component_func(c, v, nfields, cs);
 
   output_hdf5(component_name(c), nfields, cs, fun, &nfields, where,
