@@ -267,7 +267,10 @@ void sum_to_all(const double *in, double *out, int size) {
 long double sum_to_all(long double in) {
   long double out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  if (MPI_LONG_DOUBLE == MPI_DATATYPE_NULL)
+    out = sum_to_all(double(in));
+  else
+    MPI_Allreduce(&in,&out,1,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 #endif
   return out;
 }
@@ -299,7 +302,13 @@ complex<double> sum_to_all(complex<double> in) {
 complex<long double> sum_to_all(complex<long double> in) {
   complex<long double> out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,2,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  if (MPI_LONG_DOUBLE == MPI_DATATYPE_NULL) {
+    complex<double> dout;
+    dout = sum_to_all(complex<double>(double(in.real()), double(in.imag())));
+    out = complex<long double>(dout.real(), dout.imag());
+  }
+  else
+    MPI_Allreduce(&in,&out,2,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 #endif
   return out;
 }
