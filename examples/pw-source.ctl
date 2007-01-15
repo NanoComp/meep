@@ -24,8 +24,6 @@
 (define-param kdir (vector3 1 1)) ; direction of k (length is irrelevant)
 (define k (vector3-scale (* 2 pi fcen) 
 			 (unit-vector3 kdir))) ; k with correct length
-(define kxcos (vector3-x (unit-vector3 k))) ; direction cosine of k in x
-(define kycos (vector3-y (unit-vector3 k))) ; direction cosine of k in x
 
 (set! sources 
       (list
