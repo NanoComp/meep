@@ -272,7 +272,7 @@ static bool get_front_object(const meep::geometric_volume &gv,
   int id1 = -1, id2 = -1;
   const int num_neighbors[3] = { 3, 5, 9 };
   const int neighbors[3][9][3] = {
-    { {0,0,0}, {-1,0,0}, {1,0,0},
+    { {0,0,0}, {0,0,-1}, {0,0,1},
       {0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0} },
     { {0,0,0},
       {-1,-1,0}, {1,1,0}, {-1,1,0}, {1,-1,0},
