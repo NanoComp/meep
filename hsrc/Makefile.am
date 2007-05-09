@@ -6,7 +6,7 @@ SRC = $(LHS_SRC) $(HS_SRC)
 
 EXTRA_DIST = .depend $(SRC)
 
-HC_FLAGS = -fglasgow-exts -package data
+HC_FLAGS = -fglasgow-exts -package ghc-6.6 # or -package data for older ghc
 
 noinst_SCRIPTS = step_d_gen step_h_gen update_e_from_d_gen update_from_e_gen
 
