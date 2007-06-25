@@ -173,7 +173,7 @@ h5file::~h5file() {
   if (cur_dataname) free(cur_dataname); // allocated with realloc
   for (h5file::extending_s *cur = extending; cur; ) {
     h5file::extending_s *next = cur->next;
-    delete cur->dataname;
+    delete[] cur->dataname;
     delete cur;
     cur = next;
   }
@@ -189,7 +189,7 @@ void h5file::remove() {
   if (mode == READWRITE) mode = WRITE; // now need to re-create file
   for (h5file::extending_s *cur = extending; cur; ) {
     h5file::extending_s *next = cur->next;
-    delete cur->dataname;
+    delete[] cur->dataname;
     delete cur;
     cur = next;
   }
@@ -404,7 +404,7 @@ void h5file::remove_data(const char *dataname)
       prev->next = cur->next;
     else
       extending = cur->next;
-    delete cur->dataname;
+    delete[] cur->dataname;
     delete cur;
   }
 
