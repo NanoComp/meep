@@ -1,4 +1,6 @@
 dnl @synopsis ACX_BLAS([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+dnl @summary check for a fast BLAS linear-algebra library
+dnl @category InstalledPackages
 dnl
 dnl This macro looks for a library that implements the BLAS
 dnl linear-algebra interface (see http://www.netlib.org/blas/).
@@ -27,7 +29,8 @@ dnl the default action will define HAVE_BLAS.
 dnl
 dnl This macro requires autoconf 2.50 or later.
 dnl
-dnl @version $Id: acx_blas.m4,v 1.3 2001/12/12 19:54:10 stevenj Exp $
+dnl @version 2007-08-10
+dnl @license GPLWithACException
 dnl @author Steven G. Johnson <stevenj@alum.mit.edu>
 
 AC_DEFUN([ACX_BLAS], [
@@ -88,6 +91,18 @@ if test $acx_blas_ok = no; then
 			[acx_blas_ok=yes; BLAS_LIBS="-lsgemm -ldgemm -lblas"],
 			[], [-lblas])],
 			[], [-lblas])])
+fi
+
+# BLAS in Intel MKL library?
+if test $acx_blas_ok = no; then
+	AC_CHECK_LIB(mkl, $sgemm, [acx_blas_ok=yes;BLAS_LIBS="-lmkl"])
+fi
+
+# BLAS in Apple vecLib library?
+if test $acx_blas_ok = no; then
+	save_LIBS="$LIBS"; LIBS="-framework vecLib $LIBS"
+	AC_CHECK_FUNC($sgemm, [acx_blas_ok=yes;BLAS_LIBS="-framework vecLib"])
+	LIBS="$save_LIBS"
 fi
 
 # BLAS in Alpha CXML library?
