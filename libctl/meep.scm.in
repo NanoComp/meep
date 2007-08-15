@@ -673,8 +673,10 @@
 
 (define (convert-h5 rm? convert-cmd . step-funcs)
   (define (convert fname)
-    (if (and (zero? (system (string-append convert-cmd " \"" fname "\""))) rm?)
-	(system (string-append "rm \"" fname "\""))))
+    (if (zero? (meep-my-rank))
+	(if (and (zero? (system (string-append convert-cmd " \"" fname "\"")))
+		 rm?)
+	    (system (string-append "rm \"" fname "\"")))))
   (lambda (to-do)
     (let ((hooksave output-h5-hook))
       (set! output-h5-hook convert)
