@@ -312,7 +312,7 @@ int main(int argc, char **argv) {
 
   attempt("Split flux plane split by 7...", split_1d(cavity, 7));
 
-  attempt("Cavity 1D 6.01 73", cavity_1d(6.01, 137.0, cavity));
+  attempt("Cavity 1D 1.3 73", cavity_1d(1.3, 73.0, cavity));
   attempt("Cavity 1D 5.0   1", cavity_1d(5.0, 1.0, cavity));
   attempt("Cavity 1D 3.85 55", cavity_1d(3.85, 55.0, cavity));
 
