@@ -591,7 +591,11 @@
 	     (list (meep-fields-open-h5file fields fname (meep-h5file-WRITE)
 					    (get-filename-prefix) true))
 	     '())))
-    (map (lambda (c) (apply output-component (cons c f))) cs)
+    (map (lambda (c) 
+	   (apply output-component (cons c f))
+	   (if (null? output-append-h5) 
+	       (meep-h5file-prevent-deadlock (car f))))
+	 cs)
     (if (null? output-append-h5) (delete-meep-h5file (car f))))
   (if (null? output-append-h5)
       (output-h5-hook (meep-fields-h5file-name 

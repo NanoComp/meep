@@ -66,7 +66,7 @@ typedef int hid_t;
 #  endif
 #endif
 
-#ifdef HAVE_H5PSET_FAPL_MPIO
+#if defined(HAVE_H5PSET_FAPL_MPIO) || !defined(HAVE_MPI)
 #  define IF_EXCLUSIVE(yes,no) no
 #else
 #  define IF_EXCLUSIVE(yes,no) yes
@@ -113,12 +113,14 @@ void *h5file::get_id() {
 
 #ifdef HAVE_HDF5
     hid_t access_props = H5Pcreate (H5P_FILE_ACCESS);
-#  if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
+#  ifdef HAVE_MPI
+#    ifdef HAVE_H5PSET_FAPL_MPIO
     if (parallel)
       H5Pset_fapl_mpio(access_props, MPI_COMM_WORLD, MPI_INFO_NULL);
-#  else
+#    else
     if (parallel)
       begin_critical_section(h5io_critical_section_tag);
+#    endif
 #  endif
 
     if (mode != WRITE || IF_EXCLUSIVE(parallel && !am_master(), 0))
@@ -143,13 +145,14 @@ void h5file::prevent_deadlock() {
 void h5file::close_id() {
   unset_cur();
 #ifdef HAVE_HDF5
-  if (HID(id) >= 0)
+  if (HID(id) >= 0) {
     H5Fclose(HID(id));
-  HID(id) = -1;
+    IF_EXCLUSIVE(if (parallel)
+		 end_critical_section(h5io_critical_section_tag++),
+		 (void) 0);
+  }
 #endif
-  IF_EXCLUSIVE(if (parallel)
-	       end_critical_section(h5io_critical_section_tag++),
-	       (void) 0);
+  HID(id) = -1;
   if (mode == WRITE) mode = READWRITE; // don't re-create on re-open
 }
 
