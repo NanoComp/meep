@@ -84,6 +84,11 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
 	for (int j=0; j < ms; j++)
 	  for (int i=0; i < ms; i++) {
 	    double ep = eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
+	    if (ep < 0) {
+	      meps = eps(gv.center());
+	      minveps = 1/meps;
+	      return;
+	    }
 	    meps += ep; minveps += 1/ep;
 	  }
       meps /= ms*ms*ms;
@@ -99,6 +104,11 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
       for (int j=0; j < ms; j++)
 	for (int i=0; i < ms; i++) {
 	  double ep = eps(gv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
+	    if (ep < 0) {
+	      meps = eps(gv.center());
+	      minveps = 1/meps;
+	      return;
+	    }
 	  meps += ep; minveps += 1/ep;
 	}
       meps /= ms*ms;
@@ -116,6 +126,11 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
 	for (int i=0; i < ms; i++) {
 	  double r = gv.get_min_corner().r() + i*d.r()/ms;
 	  double ep = eps(gv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
+	  if (ep < 0) {
+	    meps = eps(gv.center());
+	    minveps = 1/meps;
+	    return;
+	  }
 	  sumvol += r;
 	  meps += ep * r; minveps += r/ep;
 	}
@@ -131,6 +146,11 @@ void material_function::meaneps(double &meps, double &minveps, vec &gradient, co
       meps = minveps = 0;
       for (int i=0; i < ms; i++) {
 	double ep = eps(gv.get_min_corner() + vec(i*d.z()/ms));
+	if (ep < 0) {
+	  meps = eps(gv.center());
+	  minveps = 1/meps;
+	  return;
+	}
 	meps += ep; minveps += 1/ep;
       }
       meps /= ms;
@@ -189,7 +209,7 @@ void structure_chunk::set_epsilon(material_function &epsilon,
   if (!use_anisotropic_averaging) {
     FOR_ELECTRIC_COMPONENTS(c)
       if (v.has_field(c)) {
-#if 1 // legacy method: very simplistic averaging (TODO: delete this?)
+#if 0 // legacy method: very simplistic averaging (TODO: delete this?)
 	bool have_other_direction = false;
 	vec dxa = zero_vec(v.dim);
 	vec dxb = zero_vec(v.dim);

@@ -405,10 +405,16 @@ void geom_epsilon::meaneps(double &meps, double &minveps,
   
   double epsb, epsinvb;
   material_eps(mat_behind, epsb, epsinvb);
-  meps += fill * (epsb - meps);
-  minveps += fill * (epsinvb - minveps);
+  if (meps < 0 || epsb < 0) { // averaging negative eps causes instability
+    minveps = 1.0 / (meps = eps(gv.center()));
+  }
+  else {
+    meps += fill * (epsb - meps);
+    minveps += fill * (epsinvb - minveps);
+  }
 }
 
+static int eps_ever_negative = 0;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber ceps_func(int n, number *x, void *geomeps_)
 {
@@ -419,6 +425,7 @@ static cnumber ceps_func(int n, number *x, void *geomeps_)
   if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
   cnumber ret;
   double ep = geomeps->eps(vector3_to_vec(p));
+  if (ep < 0) eps_ever_negative = 1;
   ret.re = ep * s;
   ret.im = s / ep;
   return ret;
@@ -431,7 +438,9 @@ static number eps_func(int n, number *x, void *geomeps_)
   double s = 1;
   p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
   if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
-  return geomeps->eps(vector3_to_vec(p)) * s;
+  double ep = geomeps->eps(vector3_to_vec(p));
+  if (ep < 0) eps_ever_negative = 1;
+  return ep * s;
 }
 static number inveps_func(int n, number *x, void *geomeps_)
 {
@@ -440,7 +449,9 @@ static number inveps_func(int n, number *x, void *geomeps_)
   double s = 1;
   p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
   if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
-  return s / geomeps->eps(vector3_to_vec(p));
+  double ep = geomeps->eps(vector3_to_vec(p));
+  if (ep < 0) eps_ever_negative = 1;
+  return s / ep;
 }
 #endif
 
@@ -469,6 +480,7 @@ void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
   double vol = 1;
   for (int i = 0; i < n; ++i) vol *= xmax[i] - xmin[i];
   if (dim == meep::Dcyl) vol *= (xmin[0] + xmax[0]) * 0.5;
+  eps_ever_negative = 0;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
   cnumber ret = cadaptive_integration(ceps_func, xmin, xmax, n, (void*) this,
 				      0, tol, maxeval, &esterr, &errflag);
@@ -480,6 +492,8 @@ void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
   minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void*) this,
 				 0, tol, maxeval, &esterr, &errflag) / vol;
 #endif
+  if (eps_ever_negative) // averaging negative eps causes instability
+    minveps = 1.0 / (meps = eps(gv.center()));
 }
 
 bool geom_epsilon::has_chi3()
