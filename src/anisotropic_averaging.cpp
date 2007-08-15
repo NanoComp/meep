@@ -209,7 +209,20 @@ void structure_chunk::set_epsilon(material_function &epsilon,
   if (!use_anisotropic_averaging) {
     FOR_ELECTRIC_COMPONENTS(c)
       if (v.has_field(c)) {
-#if 0 // legacy method: very simplistic averaging (TODO: delete this?)
+#if 1 // legacy method: very simplistic averaging
+	/* For some reason I don't understand, this averaging method
+	   yields quadratic convergence in tests/convergence_cyl_waveguide.cpp 
+	   for the case of an even number of pixels, apparently because
+	   of some nice "coincidence" based on where the material interfaces
+	   fall.  (In general, FDTD without anisotropic smoothing gives
+	   only linear convergence in the presence of field discontinuities.)
+	   On the theory that there is some logic behind the code below
+	   that I don't understand, which is responsible for this "coincidence"
+	   (even though it doesn't work for general structures), I'm leaving
+	   it in for now.  It seems harmless.  However, I'm modifying it
+	   never to average when one of the epsilons is negative, since
+	   that can lead to instabilities if the average epsilon is > 0 but
+	   < 1.   -- SGJ, Aug. 2007. */
 	bool have_other_direction = false;
 	vec dxa = zero_vec(v.dim);
 	vec dxb = zero_vec(v.dim);
@@ -227,16 +240,29 @@ void structure_chunk::set_epsilon(material_function &epsilon,
 	LOOP_OVER_DIRECTIONS(v.dim,da) // make sure no off-diagonal terms
 	  if (da != c_d) { delete[] inveps[c][da]; inveps[c][da] = NULL; }
 	if (!inveps[c][c_d]) inveps[c][c_d] = new double[v.ntot()];
-	LOOP_OVER_VOL(v, c, i) {
-	  IVEC_LOOP_LOC(v, here);
-	  if (!have_other_direction)
-	    inveps[c][c_d][i] =
-	      2.0/(epsilon.eps(here + dxa) + epsilon.eps(here - dxa));
-	  else
-	    inveps[c][c_d][i] = 4.0/(epsilon.eps(here + dxa + dxb) +
-				     epsilon.eps(here + dxa - dxb) +
-				     epsilon.eps(here - dxa + dxb) +
-				     epsilon.eps(here - dxa - dxb));
+	if (!have_other_direction) {
+	  LOOP_OVER_VOL(v, c, i) {
+	    IVEC_LOOP_LOC(v, here);
+	    double ep1 = epsilon.eps(here + dxa);
+	    double ep2 = epsilon.eps(here - dxa);
+	    if (ep1 < 0 || ep2 < 0)
+	      inveps[c][c_d][i] = 1/epsilon.eps(here);
+	    else
+	      inveps[c][c_d][i] = 2.0 / (ep1 + ep2);
+	  }
+	}
+	else {
+	  LOOP_OVER_VOL(v, c, i) {
+	    IVEC_LOOP_LOC(v, here);
+	    double ep1 = epsilon.eps(here + dxa + dxb);
+	    double ep2 = epsilon.eps(here + dxa - dxb);
+	    double ep3 = epsilon.eps(here - dxa + dxb);
+	    double ep4 = epsilon.eps(here - dxa - dxb);
+	    if (ep1 < 0 || ep2 < 0 || ep3 < 0 || ep4 < 0)
+              inveps[c][c_d][i] = 1/epsilon.eps(here);
+            else
+	      inveps[c][c_d][i] = 4.0 / (ep1 + ep2 + ep3 + ep4);
+	  }
 	}
 #else // really no averaging at all
 	direction c_d = component_direction(c);

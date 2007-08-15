@@ -82,9 +82,9 @@ void test_convergence_without_averaging() {
   for (int i=0;i<2;i++) a2_meansqr[i] /= n[i];
   
   if (find_exponent(a_mean[0], a_meansqr[0], a2_mean[0], a2_meansqr[0], "Even") != 2)
-    abort("Failed convergence test with no fancy averaging!\n");
+    abort("Failed even convergence test with no fancy averaging!\n");
   if (find_exponent(a_mean[1], a_meansqr[1], a2_mean[1], a2_meansqr[1], "Odd") != 1)
-    abort("Failed convergence test with no fancy averaging!\n");
+    abort("Failed odd convergence test with no fancy averaging!\n");
   master_printf("Passed convergence test with no fancy averaging!\n");
 }
 
