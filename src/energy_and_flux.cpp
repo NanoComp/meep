@@ -193,7 +193,7 @@ double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
     cs[0] = cE[i]; cs[1] = cH[i];
     sum += real(integrate(2, cs, dot_integrand, 0, where)) * (1 - 2*i);
   }
-  return sum_to_all(sum);
+  return sum;
 }
 
 double fields::flux_in_box(direction d, const geometric_volume &where) {
