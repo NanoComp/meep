@@ -341,7 +341,7 @@ void fields::connect_the_chunks() {
   } // loop over i chunks
 
   /* Note that the ordering of the connections arrays must be kept
-     consistent with the code in boundaries.cpp.  In particular, we
+     consistent with the fields::step_boundaries.  In particular, we
      must set up the connections array so that all of the connections
      for process i come before all of the connections for process i'
      for i < i' */
