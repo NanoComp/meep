@@ -173,7 +173,11 @@ fields_chunk::~fields_chunk() {
 	delete[] connections[ft][ip][io];
   FOR_FIELD_TYPES(ft) delete[] connection_phases[ft];
   FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 delete[] d_minus_p[ec][cmp];
-  delete dft_chunks;
+  while (dft_chunks) {
+    dft_chunk *nxt = dft_chunks->next_in_chunk;
+    delete dft_chunks;
+    dft_chunks = nxt;
+  }
   delete h_sources;
   delete e_sources;
   delete pol;

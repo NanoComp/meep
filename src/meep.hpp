@@ -593,7 +593,7 @@ public:
 
   void scale_dfts(complex<double> scale);
 
-  void remove() { delete E; delete H; E = H = 0; }
+  void remove();
 
   double freq_min, dfreq;
   int Nfreq;
