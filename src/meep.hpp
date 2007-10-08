@@ -135,7 +135,7 @@ private:
    it is likely that complicated implementations will share state between
    properties. */
 class material_function {
-  material_function(const material_function &ef) {} // prevent copying
+  material_function(const material_function &ef) {(void)ef;} // prevent copying
 public:
   material_function() : omega(nan), gamma(nan), deps(nan), energy_sat(nan) {}
   
@@ -143,11 +143,11 @@ public:
   
   /* Specify a restricted volume: all subsequent eps/sigma/etc
      calls will be for points inside gv, until the next set_volume. */
-  virtual void set_volume(const geometric_volume &gv) {}
+  virtual void set_volume(const geometric_volume &gv) {(void)gv;}
   virtual void unset_volume(void) {} // unrestrict the volume
   
   /* scalar dielectric function */
-  virtual double eps(const vec &r) { return 1.0; }
+  virtual double eps(const vec &r) { (void)r; return 1.0; }
   
   /* Return interface normal and/or average dielectric eps and 1/eps
      in a given volume gv.   These are virtual so that e.g. libctl
@@ -160,7 +160,7 @@ public:
   
 
   /* polarizability sigma function */
-  virtual double sigma(const vec &r) { return 0.0; }
+  virtual double sigma(const vec &r) { (void)r; return 0.0; }
   /* specify polarizability used for subsequent calls to sigma(r) */
   virtual void set_polarizability(double omega_, double gamma_, 
 				  double deps_, double energy_sat_) {
@@ -169,9 +169,9 @@ public:
   
   // Nonlinear susceptibilities
   virtual bool has_chi3() { return false; }
-  virtual double chi3(const vec &r) { return 0.0; }
+  virtual double chi3(const vec &r) { (void)r; return 0.0; }
   virtual bool has_chi2() { return false; }
-  virtual double chi2(const vec &r) { return 0.0; }
+  virtual double chi2(const vec &r) { (void)r; return 0.0; }
   
   // TODO: dielectric tensor, ...
 
