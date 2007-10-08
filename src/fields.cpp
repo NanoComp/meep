@@ -410,6 +410,7 @@ void fields::remove_polarizabilities() {
 
 void fields::remove_fluxes() {
   delete fluxes;
+  fluxes = NULL;
 }
 
 void fields_chunk::zero_fields() {
