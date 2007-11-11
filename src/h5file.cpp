@@ -160,8 +160,8 @@ void h5file::close_id() {
    and all processes will use I/O. */
 h5file::h5file(const char *filename_, access_mode m, bool parallel_) {
   cur_dataname = NULL;
-  id = (void*) (new hid_t);
-  cur_id = (void*) (new hid_t);
+  id = (void*) malloc(sizeof(hid_t));
+  cur_id = (void*) malloc(sizeof(hid_t));
   HID(id) = -1;
   HID(cur_id) = -1;
   extending = 0;
@@ -181,6 +181,8 @@ h5file::~h5file() {
     cur = next;
   }
   delete[] filename;
+  free(cur_id);
+  free(id);
 }
 
 bool h5file::ok() {
