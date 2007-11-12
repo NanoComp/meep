@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <meep.hpp>
 #include "meep_internals.hpp"
@@ -396,6 +397,7 @@ int main(int argc, char **argv)
 {
   const double a = 10.0;
   initialize mpi(argc, argv);
+  int chances;
   quiet = true;
 #ifdef HAVE_HDF5
   const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.1;
@@ -416,36 +418,53 @@ int main(int argc, char **argv)
   double Sf2_kx[5] = {0.3, 0, 0.3, 0, 0};
   double Sf2_ky[5] = {0.2, 0.2, 0, 0, 0};
 
+#if 0
+  master_printf("Running initial check...\n");
+  if (!check_2d(funky_eps_2d, a, 1,
+		Sf2[3], Sf2_kx[3], Sf2_ky[3],
+		Ez, tm_c[3], gv_2d[1],
+		1, gv_2d_rank[1], "initial check"))
+    return 1;
+#endif
+  
+  /* this test takes too long, so only do 1/chances of the cases,
+     "randomly" selected */
+  srand(314159); /* deterministic "rand" */
+  chances = argc > 1 ? atoi(argv[1]) : 5;
+
+  int cnt = 0;
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
       for (int igv = 0; igv < 4; ++igv)
 	for (int ic = 0; ic < 5; ++ic)
-	  for (int use_real = 1; use_real >= 0; --use_real) {
-	    char name[1024];
-	    snprintf(name, 1024, "check_2d_tm_%s_%d_%s_%s%s",
-		     Sf2_name[iS], splitting, gv_2d_name[igv],
-		     component_name(tm_c[ic]), use_real ? "_r" : "");
-	    master_printf("Checking %s...\n", name);
-	    if (!check_2d(funky_eps_2d, a, splitting,
-			  Sf2[iS], Sf2_kx[iS], Sf2_ky[iS],
-			  Ez, tm_c[ic], gv_2d[igv],
-			  use_real, gv_2d_rank[igv], name))
-	      return 1;
-	  }
+	  for (int use_real = 1; use_real >= 0; --use_real)
+	    if (broadcast(0, rand()) % chances == 0) {
+	      char name[1024];
+	      snprintf(name, 1024, "check_2d_tm_%s_%d_%s_%s%s",
+		       Sf2_name[iS], splitting, gv_2d_name[igv],
+		       component_name(tm_c[ic]), use_real ? "_r" : "");
+	      printf("Checking %s...\n", name);
+	      if (!check_2d(funky_eps_2d, a, splitting,
+			    Sf2[iS], Sf2_kx[iS], Sf2_ky[iS],
+			    Ez, tm_c[ic], gv_2d[igv],
+			    use_real, gv_2d_rank[igv], name))
+		return 1;
+	    }
 
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
       for (int ic = 0; ic < 4; ++ic)
-	for (int use_real = 1; use_real >= 0; --use_real) {
-	  char name[1024];
-	  snprintf(name, 1024, "check_2d_monitor_tm_%s_%d_%s%s",
-		   Sf2_name[iS], splitting,
-		   component_name(tm_c[ic]), use_real ? "_r" : "");
-	  master_printf("Checking %s...\n", name);
-	  if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, 
-				tm_c[ic], vec(pad1,pad2), use_real, name))
-	    return 1;
-	}
+	for (int use_real = 1; use_real >= 0; --use_real)
+	  if (broadcast(0, rand()) % chances == 0) {
+	    char name[1024];
+	    snprintf(name, 1024, "check_2d_monitor_tm_%s_%d_%s%s",
+		     Sf2_name[iS], splitting,
+		     component_name(tm_c[ic]), use_real ? "_r" : "");
+	    master_printf("Checking %s...\n", name);
+	    if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, 
+				  tm_c[ic], vec(pad1,pad2), use_real, name))
+	      return 1;
+	  }
   
   geometric_volume gv_3d[4] = {
        geometric_volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,zsize-pad3)),
@@ -462,17 +481,18 @@ int main(int argc, char **argv)
   for (int iS = 0; iS < 3; ++iS)
     for (int splitting = 0; splitting < 5; splitting += 3)
       for (int igv = 0; igv < 4; ++igv) {
-	for (int ic = 0; ic < 1; ++ic) {
-	  bool use_real = true;
-	  char name[1024];
-	  snprintf(name, 1024, "check_3d_ezsrc_%s_%d_%s_%s%s", Sf3_name[iS],
-		   splitting, gv_3d_name[igv], component_name(c3d[ic]),
-		   use_real ? "_r" : "");
-	  master_printf("Checking %s...\n", name);
-	  if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic],
-			gv_3d[igv], use_real, gv_3d_rank[igv], name))
-	    return 1;
-	}
+	for (int ic = 0; ic < 1; ++ic)
+	  if (broadcast(0, rand()) % chances == 0) {
+	    bool use_real = true;
+	    char name[1024];
+	    snprintf(name, 1024, "check_3d_ezsrc_%s_%d_%s_%s%s", Sf3_name[iS],
+		     splitting, gv_3d_name[igv], component_name(c3d[ic]),
+		     use_real ? "_r" : "");
+	    master_printf("Checking %s...\n", name);
+	    if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic],
+			  gv_3d[igv], use_real, gv_3d_rank[igv], name))
+	      return 1;
+	  }
       }
 #endif /* HAVE_HDF5 */
   return 0;
