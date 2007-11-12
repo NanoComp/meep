@@ -207,6 +207,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   loop_in_chunks(h5_findsize_chunkloop, (void *) &data, 
 	    where, Dielectric, true, true);
 
+  file->prevent_deadlock(); // can't hold a lock since *_to_all is collective
   data.max_corner = max_to_all(data.max_corner);
   data.min_corner = -max_to_all(-data.min_corner); // i.e., min_to_all
   data.num_chunks = sum_to_all(data.num_chunks);

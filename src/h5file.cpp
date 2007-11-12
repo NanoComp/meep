@@ -144,6 +144,8 @@ void h5file::prevent_deadlock() {
 
 void h5file::close_id() {
   unset_cur();
+  if (HID(id) >= 0)
+    if (mode == WRITE) mode = READWRITE; // don't re-create on re-open
 #ifdef HAVE_HDF5
   if (HID(id) >= 0) {
     H5Fclose(HID(id));
@@ -153,7 +155,6 @@ void h5file::close_id() {
   }
 #endif
   HID(id) = -1;
-  if (mode == WRITE) mode = READWRITE; // don't re-create on re-open
 }
 
 /* note: if parallel is true, then *all* processes must call this,
@@ -477,6 +478,7 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
     hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE;
     
     data_id = H5Dcreate(file_id, dataname, type_id, space_id, prop_id);
+    if (data_id < 0) abort("Error creating dataset");
     
     H5Pclose(prop_id);
   }
@@ -701,7 +703,7 @@ void h5file::write(const char *dataname, int rank, const int *dims,
 void h5file::write(const char *dataname, const char *data)
 {
 #ifdef HAVE_HDF5
-  if (parallel || am_master()) {
+  if (am_master()) { // only master process writes string data
     hid_t file_id = HID(get_id()), type_id, data_id, space_id;
     
     CHECK(file_id >= 0, "error opening HDF5 output file");     

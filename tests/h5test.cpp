@@ -132,6 +132,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
     double *h5data = file->read(dataname, &rank, dims, 2);
+    file->prevent_deadlock(); // hackery
     if (!h5data)
 	 abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
@@ -248,6 +249,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
     double *h5data = file->read(dataname, &rank, dims, 3);
+    file->prevent_deadlock(); // hackery
     if (!h5data)
 	 abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
@@ -361,6 +363,7 @@ bool check_2d_monitor(double eps(const vec &),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
     double *h5data = file->read(dataname, &rank, dims, 2);
+    file->prevent_deadlock(); // hackery
     if (!h5data)
 	 abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
     if (rank != 1)
