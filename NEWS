@@ -1,3 +1,36 @@
+Meep 0.10.1
+
+  * Bug fix in flux_in_box, which accidentally returned the flux
+    multiplied by the number of processors, instead of the flux.
+
+  * Bug fix in epsilon averaging for structures including metals
+    (epsilon < 0), fixing an instability.
+
+  * Bug fix in output-png when running in parallel (removing race condition).
+
+  * Fixed bug that disabled subpixel averaging for dimensions=1 (thanks
+    to Mischa Megens for the bug report).
+
+  * Fixed bug that caused output-tot-pwr to stop Meep with an error message;
+    thanks to Vyacheslav Sokolov for the bug report.
+
+  * Make "at-every" step functions less susceptible to rounding errors;
+    thanks to L. Le Guyader for the bug report.
+
+  * Fixed bug in dispersive media that wasted memory on parallel machines
+    (the polarization memory was not parallelized); thanks to J. L. Silva
+    for the bug report.
+
+  * Bug fix in output-png+h5, thanks to a report by Chad Husko.
+
+  * Fixed several deadlocks that could occur when the parallel Meep
+    is used with a serial HDF5 library (we continue to recommend
+    using the parallel HDF5 library with parallel Meep, however).
+    Thanks in part to Lingling Tang for his bug report.
+
+  * For maintainer-mode, improved detection of Haskell package names;
+    thanks to Liang Huo for the bug report.
+
 Meep 0.10 (21 Aug. 2006)
 
   * eps-averaging? is now turned on by default (in libctl interface),
