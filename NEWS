@@ -1,4 +1,4 @@
-Meep 0.10.1
+Meep 0.10.1 (13 Nov. 2007)
 
   * Bug fix in flux_in_box, which accidentally returned the flux
     multiplied by the number of processors, instead of the flux.
