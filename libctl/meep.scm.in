@@ -196,7 +196,8 @@
 ; ****************************************************************
 ; Adding sources
 
-(define-class src-time no-parent)
+(define-class src-time no-parent
+  (define-property is-integrated true 'boolean))
 (define-class continuous-src src-time
   (define-property frequency no-default 'number)
   (define-property start-time 0 'number)
@@ -205,12 +206,14 @@
   (define-property cutoff 3.0 'number)
   (define-derived-property swigval 'SCM
     (lambda (o) 
-      (new-meep-continuous-src-time 
-       (* 1.0 (object-property-value o 'frequency))
-       (object-property-value o 'width)
-       (object-property-value o 'start-time)
-       (object-property-value o 'end-time)
-       (object-property-value o 'cutoff)))))
+      (let ((s (new-meep-continuous-src-time 
+		(* 1.0 (object-property-value o 'frequency))
+		(object-property-value o 'width)
+		(object-property-value o 'start-time)
+		(object-property-value o 'end-time)
+		(object-property-value o 'cutoff))))
+	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated))
+	s))))
 (define-class gaussian-src src-time
   (define-property frequency no-default 'number)
   (define-property width no-default 'number)
@@ -218,23 +221,27 @@
   (define-property cutoff 5.0 'number)
   (define-derived-property swigval 'SCM
     (lambda (o) 
-      (new-meep-gaussian-src-time
-       (* 1.0 (object-property-value o 'frequency))
-       (object-property-value o 'width)
-       (object-property-value o 'start-time)
-       (+ (object-property-value o 'start-time)
-	  (* 2 (object-property-value o 'width) 
-	     (object-property-value o 'cutoff)))))))
+      (let ((s (new-meep-gaussian-src-time
+		(* 1.0 (object-property-value o 'frequency))
+		(object-property-value o 'width)
+		(object-property-value o 'start-time)
+		(+ (object-property-value o 'start-time)
+		   (* 2 (object-property-value o 'width) 
+		      (object-property-value o 'cutoff))))))
+	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated))
+	s))))
 (define-class custom-src src-time
   (define-property src-func no-default 'function)
   (define-property start-time (- infinity) 'number)
   (define-property end-time infinity 'number)
   (define-derived-property swigval 'SCM
     (lambda (o) 
-      (new-meep-custom-src-time 
-       (object-property-value o 'src-func)
-       (object-property-value o 'start-time)
-       (object-property-value o 'end-time)))))
+      (let ((s (new-meep-custom-src-time 
+		(object-property-value o 'src-func)
+		(object-property-value o 'start-time)
+		(object-property-value o 'end-time))))
+	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated))
+	s))))
 
 (define (fwidth df) (width (/ df))) ; to specify frequency width instead
 (define (wavelength lam) (frequency (/ lam)))

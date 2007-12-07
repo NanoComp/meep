@@ -47,8 +47,15 @@ void fields::update_e_from_d() {
 }
 
 void fields_chunk::update_e_from_d() {
+  bool have_int_sources = false;
+  for (src_vol *sv = e_sources; sv; sv = sv->next)
+    if (sv->t->is_integrated) {
+      have_int_sources = true;
+      break;
+    }
+
   FOR_ELECTRIC_COMPONENTS(ec) DOCMP 
-    if (!d_minus_p[ec][cmp] && f[ec][cmp] && (pol || e_sources)) {
+    if (!d_minus_p[ec][cmp] && f[ec][cmp] && (pol || have_int_sources)) {
       d_minus_p[ec][cmp] = new double[v.ntot()];
       have_d_minus_p = true;
     }
@@ -97,7 +104,7 @@ void fields_chunk::update_e_from_d() {
 
   if (have_d_minus_p) {
     for (src_vol *sv = e_sources; sv; sv = sv->next) {  
-      if (f[sv->c][0]) {
+      if (sv->t->is_integrated && f[sv->c][0]) {
 	for (int j = 0; j < sv->npts; ++j) { 
 	  const complex<double> A = sv->dipole(j);
 	  DOCMP {

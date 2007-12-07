@@ -388,9 +388,17 @@ class flux_vol;
 // current = d(dipole)/dt (or rather, the finite-difference equivalent).
 class src_time {
  public:
-  src_time() { current_time = nan; current_current = 0.0; next = NULL; }
+  // the following variable specifies whether the current
+  // source is specified as a current or as an integrated
+  // current (a dipole moment), if possible.  In the original Meep,
+  // by default electric sources are integrated and magnetic
+  // sources are not, but this may change.
+  bool is_integrated;
+
+  src_time() { is_integrated = true; current_time = nan; current_current = 0.0; next = NULL; }
   virtual ~src_time() { delete next; }
   src_time(const src_time &t) { 
+       is_integrated = t.is_integrated;
        current_time = t.current_time;
        current_current = t.current_current;
        current_dipole = t.current_dipole;
@@ -407,7 +415,10 @@ class src_time {
     }
   }
 
-  complex<double> current(double time, double dt) const { 
+  // subclasses *can* override this method in order to specify the
+  // current directly rather than as the derivative of dipole.
+  // in that case you would probably ignore the dt argument.
+  virtual complex<double> current(double time, double dt) const { 
     return ((dipole(time + dt) - dipole(time)) / dt);
   }
 
@@ -476,6 +487,10 @@ class custom_src_time : public src_time {
     : func(func), data(data), start_time(st), end_time(et) {}
   virtual ~custom_src_time() {}
   
+  virtual complex<double> current(double time, double dt) const { 
+    if (is_integrated) return src_time::current(time,dt);
+    else return dipole(time);
+  }
   virtual complex<double> dipole(double time) const { 
     if (time >= start_time) return func(time,data); else return 0.0; }
   virtual double last_time() const { return end_time; };

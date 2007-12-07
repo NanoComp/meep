@@ -61,6 +61,7 @@ void fields::step() {
   calc_sources(time()); // for E sources
 
   step_d();
+  if (!disable_sources) step_d_source();
   step_boundaries(D_stuff);
 
   update_e_from_d();
@@ -254,9 +255,6 @@ void fields_chunk::step_h_source(src_vol *sv) {
   step_h_source(sv->next);
 }
 
-/* NOTE: the time-stepping doesn't (normally) actually use
-         step_d_source(), since it uses update_e_from_d_sources()
-	 instead and adds the integral of J to the polarization P. */
 void fields::step_d_source() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -265,7 +263,7 @@ void fields::step_d_source() {
 void fields_chunk::step_d_source(src_vol *sv) {
   if (sv == NULL) return;
   component c = direction_component(Dx, component_direction(sv->c));
-  if (f[c][0] && is_electric(sv->c)) {
+  if (!sv->t->is_integrated && f[c][0] && is_electric(sv->c)) {
     for (int j=0; j<sv->npts; j++) {
       const complex<double> A = sv->current(j) * dt;
       const int i = sv->index[j];
