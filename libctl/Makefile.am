@@ -59,7 +59,7 @@ nodist_pkgdata_DATA = $(SPECIFICATION_FILE) meep-enums.scm
 
 ##############################################################################
 
-AM_CPPFLAGS = -I$(top_srcdir)/src $(MY_DEFS) $(CTL_DEFS)
+AM_CPPFLAGS = -I$(top_srcdir)/src $(MY_DEFS) $(CTL_DEFS) $(CTL_H_CPPFLAG)
 
 # libctl install. dir., e.g. /usr/local/share/libctl
 LIBCTL_DIR = @LIBCTL_DIR@

@@ -336,7 +336,21 @@ fi
 # check for -lctl:
 AC_CHECK_LIB(ctl, ctl_get_vector3, [], [AC_MSG_ERROR([Couldn't find the required libctl library.])])
 
-AC_CHECK_HEADER(ctl.h, [], [AC_MSG_ERROR([Couldn't find the libctl header.])])
+# check for ctl.h (Fedora puts it in /usr/include/ctl, grrr)
+CTL_H_CPPFLAG=""
+AC_CHECK_HEADER(ctl.h, [CTL_H_CPPFLAG=" "], [
+  save_CPPFLAGS=$CPPFLAGS
+  AC_MSG_CHECKING([for alternate ctl.h location])
+  for ctl_h_path in /usr/include/ctl /usr/local/include/ctl; do
+     CPPFLAGS="$save_CPPFLAGS -I$ctl_h_path"
+     AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <ctl.h>]],[]), [CTL_H_CPPFLAG=-I$ctl_h_path; break])
+  done
+  AC_MSG_RESULT([$CTL_H_CPPFLAG])
+  CPPFLAGS=$save_CPPFLAGS])
+if test "x$CTL_H_CPPFLAG" = "x"; then
+  AC_MSG_ERROR([Couldn't find the ctl.h header file for libctl.])
+fi
+AC_SUBST(CTL_H_CPPFLAG)
 
 # Check libctl version >= LIBCTL_MAJOR.LIBCTL_MINOR.LIBCTL_BUGFIX
 LIBCTL_MAJOR=3; LIBCTL_MINOR=0; LIBCTL_BUGFIX=0
