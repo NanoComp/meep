@@ -416,7 +416,12 @@ const char *fields::h5file_name(const char *name,
   static char filename[buflen];
   char time_step_string[32] = "";
 
-  if (timestamp) snprintf(time_step_string, 32, "-%09.2f", time());
+  if (timestamp) {
+    if (dt >= 0.01 && dt < 10)
+      snprintf(time_step_string, 32, "-%09.2f", time());
+    else
+      snprintf(time_step_string, 32, "-%09d", t);
+  } 
 
   snprintf(filename, buflen, "%s/" "%s%s" "%s" "%s" ".h5",
 	   outdir,
