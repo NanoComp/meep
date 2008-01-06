@@ -35,6 +35,10 @@ Integrated support for calling MPB mode solver for current distributions.
 rename fields::initialize to fields::add_to_fields or something like that,
 and allow specifying a geometric_volume.
 
+Dump field Fourier transforms in a readable, documented format.
+
+Support Pade approximates (libpadespectrum) for Fourier and modal analysis.
+
 -------------------
 LIBCTL FRONT-END:
 
@@ -45,3 +49,5 @@ Non-integrated currents.
 Give easy way to call various field-integration functions.
 
 Need a way to reset epsilon when restarting, and also phasing support.
+
+Support arbitrary-shaped sources.
