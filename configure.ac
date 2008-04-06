@@ -251,7 +251,8 @@ if test "$HAVE_GUILE_CONFIG" = "yes"; then
 else
         AC_CHECK_LIB(readline, readline)
         AC_CHECK_LIB(dl, dlopen)
-        AC_CHECK_LIB(guile, gh_eval_str)
+        AC_CHECK_LIB(guile-ltdl, scm_lt_dlinit, [], [AC_CHECK_LIB(ltdl, dlopen)])
+        AC_CHECK_LIB(guile, gh_eval_str, [], [AC_MSG_ERROR([linking to guile failed])])
 fi
 
 # Check how smob types work in this Guile version:
