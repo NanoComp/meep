@@ -288,6 +288,7 @@ fi
 # Check how to activate Guile readline support:
 
 ACTIVATE_READLINE=""
+if test "x$cross_compiling" = xno; then
 AC_MSG_CHECKING(how to activate readline in Guile)
 ractivate="(use-modules (readline-activator)) (activate-readline)"
 if guile -c "$ractivate" > /dev/null 2>&1; then
@@ -302,6 +303,7 @@ else
 		AC_MSG_RESULT(cannot)
 		ACTIVATE_READLINE=""
 	fi
+fi
 fi
 AC_SUBST(ACTIVATE_READLINE)
 
