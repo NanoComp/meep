@@ -31,6 +31,10 @@
 #include "config.h"
 
 #ifdef HAVE_HDF5
+
+/* don't use new HDF5 1.8 API (which isn't even fully documented yet, grrr) */
+#  define H5_USE_16_API 1
+
 #  include <hdf5.h>
 
 /* HDF5 changed this datatype in their interfaces starting in version 1.6.4 */
