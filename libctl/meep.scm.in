@@ -130,6 +130,8 @@
 (define-param subpixel-tol 1e-4)
 (define-param subpixel-maxeval 100000)
 
+(define-param store-polarization-energy? false)
+
 ; ****************************************************************
 ; Setting up the structure
 
@@ -279,9 +281,9 @@
 (define init-fields-hooks '()) ; list of thunks to execute after init-fields
 (define (init-fields)
   (if (null? structure) (init-structure k-point))
-  (if (= dimensions CYLINDRICAL)
-      (set! fields (new-meep-fields structure m))
-      (set! fields (new-meep-fields structure)))
+  (set! fields (new-meep-fields structure 
+				(if (= dimensions CYLINDRICAL) m 0)
+				store-polarization-energy?))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
