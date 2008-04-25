@@ -152,10 +152,11 @@ static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 			     void *sum_) {
   long double *sum = (long double *) sum_;
   (void) shift; (void) shift_phase; (void) S; (void) sn; // unused
-  if (fc->pol && fc->pol->energy[cgrid])
-    LOOP_OVER_IVECS(fc->v, is, ie, idx)
-      *sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
-	* fc->pol->energy[cgrid][idx];
+  for (polarization *pol = fc->pol; pol; pol = pol->next)
+    if (pol->energy[cgrid])
+      LOOP_OVER_IVECS(fc->v, is, ie, idx)
+	*sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
+	* pol->energy[cgrid][idx];
 }
 
 double fields::thermo_energy_in_box(const geometric_volume &where) {
