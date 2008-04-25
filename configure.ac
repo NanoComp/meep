@@ -164,7 +164,7 @@ AC_SUBST(RUNCODE)
 # We also need to be careful about -malign-double.
 ARCHFLAG=""
 
-AC_ARG_ENABLE(debug, [AC_HELP_STRING([--enable-debug,compile for debugging])],
+AC_ARG_ENABLE(debug, [AC_HELP_STRING([--enable-debug],[compile for debugging])],
 	      enable_debug=$enableval, enable_debug=no)
 if test "$enable_debug" = "yes"; then
 	CFLAGS="-g"
