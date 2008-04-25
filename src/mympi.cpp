@@ -74,7 +74,7 @@ initialize::initialize(int &argc, char** &argv) {
   UNUSED(argc);
   UNUSED(argv);
 #endif
-#if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
+#if defined(DEBUG_FP) && defined(HAVE_FEENABLEEXCEPT)
   feenableexcept(FE_INVALID | FE_OVERFLOW); //crash if NaN created, or overflow
 #endif
 #ifdef IGNORE_SIGFPE
