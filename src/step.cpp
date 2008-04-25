@@ -255,15 +255,16 @@ void fields_chunk::step_h_source(src_vol *sv) {
   step_h_source(sv->next);
 }
 
-void fields::step_d_source() {
+void fields::step_d_source(int including_integrated) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_d_source(chunks[i]->e_sources);
+      chunks[i]->step_d_source(chunks[i]->e_sources, including_integrated);
 }
-void fields_chunk::step_d_source(src_vol *sv) {
+void fields_chunk::step_d_source(src_vol *sv, int including_integrated) {
   if (sv == NULL) return;
   component c = direction_component(Dx, component_direction(sv->c));
-  if (!sv->t->is_integrated && f[c][0] && is_electric(sv->c)) {
+  if ((including_integrated || !sv->t->is_integrated)
+      && f[c][0] && is_electric(sv->c)) {
     for (int j=0; j<sv->npts; j++) {
       const complex<double> A = sv->current(j) * dt;
       const int i = sv->index[j];
@@ -271,7 +272,7 @@ void fields_chunk::step_d_source(src_vol *sv) {
       if (!is_real) f[c][1][i] -= imag(A);
     }
   }
-  step_d_source(sv->next);
+  step_d_source(sv->next, including_integrated);
 }
 
 void fields::calc_sources(double tim) {

@@ -125,7 +125,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   calc_sources(time());
   step_h_source();
   step_boundaries(H_stuff);
-  step_d_source();
+  step_d_source(1);
   step_boundaries(D_stuff);
   fields_to_array(*this, b);
   double mdt_inv = -1.0 / dt;

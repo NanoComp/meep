@@ -727,7 +727,7 @@ class fields_chunk {
   void step_h();
   void step_h_source(src_vol *);
   void step_d();
-  void step_d_source(src_vol *);
+  void step_d_source(src_vol *, int including_integrated);
   void update_e_from_d();
   void update_from_e();
   void calc_sources(double time);
@@ -1028,7 +1028,7 @@ class fields {
   void step_h();
   void step_h_source();
   void step_d();
-  void step_d_source();
+  void step_d_source(int including_integrated = 0);
   void update_e_from_d();
   void update_from_e();
   void step_boundaries(field_type);
