@@ -199,7 +199,7 @@
 ; Adding sources
 
 (define-class src-time no-parent
-  (define-property is-integrated true 'boolean))
+  (define-property is-integrated? true 'boolean))
 (define-class continuous-src src-time
   (define-property frequency no-default 'number)
   (define-property start-time 0 'number)
@@ -214,7 +214,7 @@
 		(object-property-value o 'start-time)
 		(object-property-value o 'end-time)
 		(object-property-value o 'cutoff))))
-	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated))
+	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated?))
 	s))))
 (define-class gaussian-src src-time
   (define-property frequency no-default 'number)
@@ -230,7 +230,7 @@
 		(+ (object-property-value o 'start-time)
 		   (* 2 (object-property-value o 'width) 
 		      (object-property-value o 'cutoff))))))
-	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated))
+	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated?))
 	s))))
 (define-class custom-src src-time
   (define-property src-func no-default 'function)
@@ -242,7 +242,7 @@
 		(object-property-value o 'src-func)
 		(object-property-value o 'start-time)
 		(object-property-value o 'end-time))))
-	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated))
+	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated?))
 	s))))
 
 (define (fwidth df) (width (/ df))) ; to specify frequency width instead
