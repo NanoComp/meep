@@ -23,6 +23,13 @@ AC_ARG_WITH(doc,
 
 AM_CONDITIONAL(WITH_DOC, test "x$with_doc" = xyes)
 
+AC_ARG_WITH(saturable-absorbers, [AC_HELP_STRING([--with-saturable-absorbers],[enable undocumented support for saturable absorbers])],
+                  with_sat_abs=$withval, with_sat_abs=no)
+
+if test "x$with_sat_abs" = "xyes"; then
+   AC_DEFINE([WITH_SATURABLE_ABSORBERS],[1],[Define to enable old, undocumented support for saturable absorbers])
+fi
+
 ##############################################################################
 
 # Check for mpiCC immediately after getting C++ compiler...

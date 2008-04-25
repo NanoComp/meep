@@ -21,6 +21,8 @@
 #include <meep.hpp>
 using namespace meep;
 
+#include "config.h"
+
 double one(const vec &) { return 1.0; }
 
 double rods(const vec &r) {
@@ -130,7 +132,7 @@ double polariton_energy(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
   s.add_polarizability(one, 0.3, 0.1, 7.63);
-  fields f(&s);
+  fields f(&s, 0, 1);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(),
 		     complex<double>(0,-2*pi*0.2));
   while (f.time() < ttot) f.step();
@@ -161,6 +163,7 @@ int main(int argc, char **argv) {
 
   compare(-0.0894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
+#ifdef WITH_SATURABLE_ABSORBERS
   compare(-0.0384049, saturated_polariton_ex(volone(1.0, a), one),
           "1D saturated polariton");
   if (count_processors() <= 2) // FIXME: broken for NCPUS > 2 ???
@@ -168,6 +171,7 @@ int main(int argc, char **argv) {
 	    "2D saturated polariton");
   compare(-23.8506, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
           "3D saturated polariton");
+#endif
   compare(0.0263969 * 4*pi, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(5.20605, metallic_ez(voltwo(1.0, 1.0, a), one),

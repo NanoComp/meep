@@ -26,7 +26,7 @@
 
 namespace meep {
 
-fields::fields(structure *s, double m) :
+fields::fields(structure *s, double m, bool store_pol_energy) :
   S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m)
 {
   verbosity = 0;
@@ -53,7 +53,7 @@ fields::fields(structure *s, double m) :
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, store_pol_energy);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
       comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
@@ -186,7 +186,7 @@ fields_chunk::~fields_chunk() {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
-			   double m) : v(the_s->v), gv(the_s->gv), m(m) {
+			   double m, bool store_pol_energy) : v(the_s->v), gv(the_s->gv), m(m), store_pol_energy(store_pol_energy) {
   s = the_s; s->refcount++;
   rshift = 0;
   verbosity = 0;
@@ -198,8 +198,8 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
-  pol = polarization::set_up_polarizations(s, is_real);
-  olpol = polarization::set_up_polarizations(s, is_real);
+  pol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
+  olpol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
   h_sources = e_sources = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
@@ -231,6 +231,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
+  store_pol_energy = thef.store_pol_energy;
   new_s = NULL;
   bands = NULL;
   is_real = thef.is_real;
@@ -238,8 +239,8 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   Courant = thef.Courant;
   dt = thef.dt;
   dft_chunks = NULL;
-  pol = polarization::set_up_polarizations(s, is_real);
-  olpol = polarization::set_up_polarizations(s, is_real);
+  pol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
+  olpol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
   h_sources = e_sources = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;

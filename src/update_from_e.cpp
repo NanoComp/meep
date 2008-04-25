@@ -21,6 +21,7 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
+#include "config.h"
 
 namespace meep {
 
@@ -32,7 +33,39 @@ void fields::update_from_e() {
 
 void fields_chunk::update_from_e() {
   const int ntot = s->v.ntot();
-#include "update_from_e.hpp"
+
+#ifdef WITH_SATURABLE_ABSORBERS
+
+  /* old messy code to implement saturable absorbers, which
+     were never adequately documented or debugged */
+#  include "update_from_e.hpp"
+
+#else
+  
+  DOCMP FOR_E_AND_D(ec,dc) if (f[ec][cmp])
+    for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
+      const double cn = 2 - op->pb->omeganot*op->pb->omeganot;
+      const double co = 0.5 * op->pb->gamma - 1;
+      const double funinv = 1.0 / (1 + 0.5*op->pb->gamma);
+      const double *fE = f[ec][cmp];
+      const double *npP = np->P[ec][cmp], *nps = np->s[ec];
+      double *opP = op->P[ec][cmp], *npenergy = np->energy[ec];
+      if (npenergy)
+	for (int i = 0; i < ntot; ++i) {
+	  npenergy[i] += 0.5 * (npP[i] - opP[i]) * fE[i];
+	  opP[i] = funinv * (cn * npP[i] + co * opP[i] + nps[i] * fE[i]);
+	}
+      else
+	for (int i = 0; i < ntot; ++i)
+	  opP[i] = funinv * (cn * npP[i] + co * opP[i] + nps[i] * fE[i]);
+    }
+
+  /* the old polarization is now the new polarization */
+  polarization *temp = olpol;
+  olpol = pol;
+  pol = temp;
+
+#endif
 }
 
 } // namespace meep

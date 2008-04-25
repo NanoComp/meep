@@ -69,18 +69,20 @@ void fields_chunk::update_e_from_d() {
     if (pol) {
       FOR_E_AND_D(ec,dc) if (f[ec][0]) {
 	for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
-	  if (is_real) for (int i = 0; i < ntot; ++i) {
-	    np->energy[ec][i] = op->energy[ec][i] +
-	      (0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
-              * f[ec][0][i];
+	  if (np->energy[ec] && op->energy[ec]) {
+	    if (is_real) for (int i = 0; i < ntot; ++i) {
+	      np->energy[ec][i] = op->energy[ec][i] +
+		(0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
+		* f[ec][0][i];
+	    }
+	    else for (int i = 0; i < ntot; ++i) {
+	      np->energy[ec][i] = op->energy[ec][i] +
+		(0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
+		* f[ec][0][i] +
+		(0.5)*(np->P[ec][1][i] - op->P[ec][1][i])
+		* f[ec][1][i];
+	    }
 	  }
-	  else for (int i = 0; i < ntot; ++i) {
-            np->energy[ec][i] = op->energy[ec][i] +
-              (0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
-              * f[ec][0][i] +
-              (0.5)*(np->P[ec][1][i] - op->P[ec][1][i])
-              * f[ec][1][i];
-          }
 	}
 	DOCMP {
 	  for (int i=0;i<ntot;i++) {

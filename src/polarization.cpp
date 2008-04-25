@@ -22,12 +22,13 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
+#include "config.h"
 
 namespace meep {
 
-polarization *polarization::set_up_polarizations(const structure_chunk *sc, int is_r) {
+polarization *polarization::set_up_polarizations(const structure_chunk *sc, int is_r, bool store_enrgy) {
   if (sc->pb == NULL || !sc->is_mine()) return NULL;
-  return new polarization(sc->pb, is_r);
+  return new polarization(sc->pb, is_r, store_enrgy);
 }
 
 void polarization::use_real_fields() {
@@ -58,9 +59,11 @@ void polarization::zero_fields() {
   if (next) next->zero_fields();
 }
 
-polarization::polarization(const polarizability *the_pb, int is_r) {
+polarization::polarization(const polarizability *the_pb, 
+			   int is_r, bool store_enrgy) {
   const volume &v = the_pb->v;
   is_real = is_r;
+  store_energy = store_enrgy;
   DOCMP {
     FOR_COMPONENTS(c)
       if (v.has_field(c) && is_electric(c))
@@ -69,11 +72,15 @@ polarization::polarization(const polarizability *the_pb, int is_r) {
         P[c][cmp] = NULL;
   }
   FOR_COMPONENTS(c)
-    if (v.has_field(c) && is_electric(c))
+    if (v.has_field(c) && is_electric(c) && store_energy)
       energy[c] = new double[v.ntot()];
     else
       energy[c] = NULL;
   pb = the_pb;
+#ifndef WITH_SATURABLE_ABSORBERS
+  if (pb->energy_saturation != 0.0)
+    abort("saturable absorber, but not configured --with-saturable-absorbers");
+#endif
   // Initialize the s[] arrays that point to sigma.
   FOR_COMPONENTS(c) {
     if (pb->energy_saturation != 0.0) {
