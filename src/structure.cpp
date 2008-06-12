@@ -483,24 +483,6 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
       }
     }
   }
-  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) 
-    if (C[d][c] != NULL)
-      FOR_DIRECTIONS(d2) 
-	if ((inveps[c][d2] || d2 == component_direction(c)) && d2 != d) {
-	  Cdecay[d][c][d2] = new double[v.ntot()];
-	  for (int i=0;i<v.ntot();i++) {
-	    if (is_magnetic(c)) Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]);
-	    else if (is_electric(c))
-          Cdecay[d][c][d2][i] = inveps[c][d2][i]/(1.0+0.5*C[d][c][i]*inveps[c][d2][i]);
-        else Cdecay[d][c][d2][i] = 1.0/(1.0+0.5*C[d][c][i]); // FIXME: Is this right?
-	    /*
-	      TODO: THIS IS NOT CORRECT FOR NON-DIAGONAL INVEPS...maybe
-              above code is not correct either????
-	    if (Cdecay[d][c][d2][i] == 0.0)
-	      abort("In update_Cdecay: Cdecay == 0\n");
-	    */
-	  }
-	}
 }
 
 structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
