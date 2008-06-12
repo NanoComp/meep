@@ -162,6 +162,7 @@ fields_chunk::~fields_chunk() {
   DOCMP2 FOR_COMPONENTS(c) {
     delete[] f[c][cmp];
     delete[] f_backup[c][cmp];
+    delete[] f_prev[c][cmp];
   }
   FOR_FIELD_TYPES(ft)
     for (int ip=0;ip<3;ip++)
@@ -200,6 +201,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
+    f_prev[c][cmp] = NULL;
   }
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
@@ -237,6 +239,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
+    f_prev[c][cmp] = NULL;
   }
   FOR_COMPONENTS(c) DOCMP {
     if (thef.f[c][cmp])
@@ -386,6 +389,7 @@ void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
     if (f[c][cmp]) for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
     if (f_backup[c][cmp]) for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = 0.0;
+    if (f_prev[c][cmp]) for (int i=0;i<v.ntot();i++) f_prev[c][cmp][i] = 0.0;
   }
   if (is_mine() && pol) pol->zero_fields();
   if (is_mine() && olpol) olpol->zero_fields();

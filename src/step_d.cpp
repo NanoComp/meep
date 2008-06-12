@@ -48,7 +48,12 @@ void fields_chunk::step_d() {
   bool have_pml = false;
   FOR_D_COMPONENTS(cc)
     if (s->sigsize[(component_direction(cc)+1)%3] > 1) have_pml = true;
-  if (have_pml) backup_d();
+  if (have_pml) FOR_D_COMPONENTS(c) DOCMP
+    if (f[c][cmp]) {
+      if (!f_prev[c][cmp])
+        f_prev[c][cmp] = new double[v.ntot()];
+      memcpy(f_prev[c][cmp], f[c][cmp], v.ntot()*sizeof(double));
+    }
 
   if (v.dim != Dcyl) {
     DOCMP FOR_D_COMPONENTS(cc)

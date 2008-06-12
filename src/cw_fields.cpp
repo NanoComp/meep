@@ -40,8 +40,8 @@ static void array_to_fields(const complex<double> *x, fields &f)
 {
   int ix = 0;
   for (int i=0;i<f.num_chunks;i++) {
-    f.chunks[i]->backup_b();
-    f.chunks[i]->backup_d();
+    //    f.chunks[i]->backup_b();
+    //    f.chunks[i]->backup_d();
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
         if (f.chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {

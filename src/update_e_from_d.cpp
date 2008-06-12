@@ -134,7 +134,7 @@ void fields_chunk::update_e_from_d() {
 
     step_update_EDHB(f[ec][cmp], ec, v, 
 	dmp[ec][cmp], dmp[ec_1][cmp], dmp[ec_2][cmp],
-	f_backup[dc][cmp], f_backup[dc_1][cmp], f_backup[dc_2][cmp],
+	f_prev[dc][cmp], f_prev[dc_1][cmp], f_prev[dc_2][cmp],
 	s->inveps[ec][d_ec], NULL, NULL,
 	s_ec, s_1, s_2, s->chi2[ec], s->chi3[ec],
         dsig, s->sig[dsig], s->siginv[dsig],

@@ -55,24 +55,10 @@ double fields::energy_in_box(const geometric_volume &where) {
 }
 
 double fields::field_energy_in_box(const geometric_volume &where) {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine()) {
-      chunks[i]->backup_b();
-      chunks[i]->backup_h();
-    }
-  step_b();
-  step_b_source();
-  step_boundaries(B_stuff);
-  update_h_from_b();
-  step_boundaries(H_stuff);
-  double next_step_magnetic_energy = magnetic_energy_in_box(where);
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine()) {
-      chunks[i]->restore_b();
-      chunks[i]->restore_h();
-    }
-  return electric_energy_in_box(where) +
-    0.5*next_step_magnetic_energy + 0.5*magnetic_energy_in_box(where);
+  synchronize_magnetic_fields();
+  double cur_step_magnetic_energy = magnetic_energy_in_box(where);
+  restore_magnetic_fields();
+  return electric_energy_in_box(where) + cur_step_magnetic_energy;
 }
 
 static complex<double> dot_integrand(const complex<double> *fields,
@@ -120,36 +106,56 @@ void fields_chunk::backup_component(component c) {
     if (f[c][cmp]) {
       if (!f_backup[c][cmp])
 	f_backup[c][cmp] = new double[v.ntot()];  
-      memcpy(f_backup[c][cmp], f[c][cmp], v.ntot()*sizeof(double));    
+      memcpy(f_backup[c][cmp], 
+	     f_prev[c][cmp] ? f_prev[c][cmp] : f[c][cmp],
+	     v.ntot()*sizeof(double));    
     }
   }
 }
   
-void fields_chunk::backup_b() {
-  FOR_B_COMPONENTS(c) backup_component(c);
-}
-
-void fields_chunk::backup_h() {
-  FOR_MAGNETIC_COMPONENTS(c) backup_component(c);
-}
-  
-void fields_chunk::backup_d() {
-  FOR_D_COMPONENTS(c) backup_component(c);
-}
-  
 void fields_chunk::restore_component(component c) {
-  DOCMP {
+  DOCMP if (f_backup[c][cmp]) {
     if (f[c][cmp])
-      memcpy(f[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(double));
+      memcpy(f[c][cmp], f_prev[c][cmp] ? f_prev[c][cmp] : f_backup[c][cmp], 
+	     v.ntot()*sizeof(double));
+    if (f_prev[c][cmp])
+      memcpy(f_prev[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(double));
   }
 }
 
-void fields_chunk::restore_b() {
-  FOR_B_COMPONENTS(c) restore_component(c);
+void fields_chunk::average_with_backup(component c) {
+  DOCMP {
+    double *fc = f[c][cmp];
+    double *backup = f_prev[c][cmp] ? f_prev[c][cmp] : f_backup[c][cmp];
+    if (fc && backup)
+      for (int i = 0; i < v.ntot(); i++)
+	fc[i] = 0.5 * (fc[i] + backup[i]);
+  }
 }
 
-void fields_chunk::restore_h() {
-  FOR_MAGNETIC_COMPONENTS(c) restore_component(c);
+void fields::synchronize_magnetic_fields() {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine()) {
+      FOR_B_COMPONENTS(c) chunks[i]->backup_component(c);
+      FOR_MAGNETIC_COMPONENTS(c) chunks[i]->backup_component(c);
+    }
+  step_b();
+  step_b_source();
+  step_boundaries(B_stuff);
+  update_h_from_b();
+  step_boundaries(H_stuff);
+  for (int i=0;i<num_chunks;i++) {
+    FOR_B_COMPONENTS(c) chunks[i]->average_with_backup(c);
+    FOR_MAGNETIC_COMPONENTS(c) chunks[i]->average_with_backup(c);
+  }
+}
+
+void fields::restore_magnetic_fields() {
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine()) {
+      FOR_B_COMPONENTS(c) chunks[i]->restore_component(c);
+      FOR_MAGNETIC_COMPONENTS(c) chunks[i]->restore_component(c);
+    }
 }
 
 static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
@@ -207,23 +213,10 @@ double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
 }
 
 double fields::flux_in_box(direction d, const geometric_volume &where) {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine()) {
-      chunks[i]->backup_b();
-      chunks[i]->backup_h();
-    }
-  step_b();
-  step_b_source();
-  step_boundaries(B_stuff);
-  update_h_from_b();
-  step_boundaries(H_stuff);
-  double next_step_flux = flux_in_box_wrongH(d, where);
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine()) {
-      chunks[i]->restore_b();
-      chunks[i]->restore_h();
-    }
-  return 0.5 * (next_step_flux + flux_in_box_wrongH(d, where));
+  synchronize_magnetic_fields();
+  double cur_step_flux = flux_in_box_wrongH(d, where);
+  restore_magnetic_fields();
+  return cur_step_flux;
 }
 
 flux_vol *fields::add_flux_vol(direction d, const geometric_volume &where) {

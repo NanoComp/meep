@@ -646,7 +646,12 @@ void step_update_EDHB(double *f, component fc, const volume &v,
 
 class fields_chunk {
  public:
-  double *f[NUM_FIELD_COMPONENTS][2];
+  double *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
+  double *f_prev[NUM_FIELD_COMPONENTS][2]; // field at prev step (used in PML)
+
+  /* sometimes, to synchronize the E and H fields, e.g. for computing
+     flux at a given time, we need to timestep H by 1/2; in this case
+     we save backup copies of (some of) the fields to resume timestepping */
   double *f_backup[NUM_FIELD_COMPONENTS][2];
 
   bool have_d_minus_p;
@@ -708,12 +713,8 @@ class fields_chunk {
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   void backup_component(component c);
+  void average_with_backup(component c);
   void restore_component(component c);
-  void backup_b();
-  void restore_b();
-  void backup_h();
-  void restore_h();
-  void backup_d();
   
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
@@ -992,6 +993,8 @@ class fields {
   double get_field(derived_component c, const vec &loc) const;
 
   // energy_and_flux.cpp
+  void synchronize_magnetic_fields();
+  void restore_magnetic_fields();
   double energy_in_box(const geometric_volume &);
   double electric_energy_in_box(const geometric_volume &);
   double magnetic_energy_in_box(const geometric_volume &);
