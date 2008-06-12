@@ -132,66 +132,18 @@ void fields_chunk::update_e_from_d() {
     direction dsig2 = (direction)((d_ec+2)%3);
     direction dsig2inv = (direction)((d_ec+1)%3);
 
-	}
-      }
-    }
-    else { // inveps is diagonal
-      if (s->chi3[ec]) { // nonlinear
-	const double *chi2 = s->chi2[ec];
-	const double *chi3 = s->chi3[ec];
-	if (dmp[ec_1][0] && dmp[ec_2][0]) {
-	  DOCMP {
-	    double *efield = f[ec][cmp];
-	    const double *dfield = dmp[ec][cmp];
-	    const double *df1 = dmp[ec_1][cmp];
-	    const double *df2 = dmp[ec_2][cmp];
-	    LOOP_OVER_VOL_OWNED(v, ec, i) {
-	      double df1s = df1[i]+df1[i+s_ec]+df1[i-s_1]+df1[i+(s_ec-s_1)];
-	      double df2s = df2[i]+df2[i+s_ec]+df2[i-s_2]+df2[i+(s_ec-s_2)];
-	      double df = dfield[i]; double iep = ieps[i];
-	      efield[i] = df * iep *
-		calc_nonlinear_inveps(df * df +
-				      0.0625 * (df1s*df1s + df2s*df2s),
-				      df, iep, chi2[i], chi3[i]);
-	    }
-	  }
-	}
-	else if (dmp[ec_1][0] || dmp[ec_2][0]) {
-	  int s_o = dmp[ec_1][0] ? s_1 : s_2;
-	  DOCMP {
-	    double *efield = f[ec][cmp];
-	    const double *dfield = dmp[ec][cmp];
-	    const double *dfo = dmp[dmp[ec_1][0] ? ec_1 : ec_2][cmp];
-	    LOOP_OVER_VOL_OWNED(v, ec, i) {
-	      double dfos = dfo[i]+dfo[i+s_ec]+dfo[i-s_o]+dfo[i+(s_ec-s_o)];
-	      double df = dfield[i]; double iep = ieps[i];
-	      efield[i] = df * iep *
-		calc_nonlinear_inveps(df * df + 0.0625 * dfos*dfos,
-				      df, iep, chi2[i], chi3[i]);
-	    }
-	  }
-	}
-	else {
-	  DOCMP {
-	    double *efield = f[ec][cmp];
-	    const double *dfield = dmp[ec][cmp];
-	    for (int i = 0; i < ntot; ++i) {
-	      double df = dfield[i]; double iep = ieps[i];
-	      efield[i] = df * iep * 
-		calc_nonlinear_inveps(df * df, df, iep, chi2[i], chi3[i]);
-	    }
-	  }
-	}
-      }
-      else { // linear, diagonal inveps
-	DOCMP {
-	  double *efield = f[ec][cmp];
-	  const double *dfield = dmp[ec][cmp];
-	  for (int i = 0; i < ntot; ++i)
-	    efield[i] = dfield[i] * ieps[i];
-	}
-      }
-    }
+    step_update_EDHB(f[ec][cmp], ec, v, 
+	dmp[ec][cmp], dmp[ec_1][cmp], dmp[ec_2][cmp],
+	f_prev[dc][cmp], f_prev[dc_1][cmp], f_prev[dc_2][cmp],
+	s->inveps[ec][d_ec], NULL, NULL,
+	s_ec, s_1, s_2, s->chi2[ec], s->chi3[ec],
+        dsig, s->sig[dsig], s->siginv[dsig],
+	dsigg, s->sig[dsigg],
+	dsig1, s->sig[dsig1],
+	dsig1inv, s->sig[dsig1inv],
+	dsig2, s->sig[dsig2],
+        dsig2inv, s->sig[dsig2inv],
+        s->sigsize[dsig],s->sigsize[dsigg],s->sigsize[dsig1]);
   }
 
   /* Do annoying special cases for r=0 in cylindrical coords.  Note
