@@ -682,9 +682,7 @@ class fields_chunk {
   void use_real_fields();
   bool have_component(component c, bool is_complex = false) {
     switch (c) {
-    case Dielectric:
-      return !is_complex;
-    case Permeability:
+    case Dielectric: case Permeability:
       return !is_complex;
     default:
       return (f[c][0] && f[c][is_complex]);
