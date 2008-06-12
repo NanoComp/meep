@@ -50,8 +50,11 @@ void fields::step() {
 
   calc_sources(time() - 0.5 * dt); // for H sources
 
-  step_h();
-  if (!disable_sources) step_h_source();
+  // TODO: make B==H for mu=1, non-PML (just make pointers equal, skip update_h_from_b, don't delete twice)
+  step_b();
+  if (!disable_sources) step_b_source();
+  step_boundaries(B_stuff);
+  update_h_from_b();
   step_boundaries(H_stuff);
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
@@ -119,6 +122,11 @@ void fields_chunk::phase_material(int phasein_time) {
 void fields::force_consistency(field_type ft)
 {
   switch (ft) {
+  case B_stuff:
+    step_boundaries(ft);
+    update_h_from_b();
+    step_boundaries(H_stuff);
+    break;
   case H_stuff:
     step_boundaries(ft);
     break;
@@ -237,22 +245,22 @@ void fields::step_boundaries(field_type ft) {
   finished_working();
 }
 
-void fields::step_h_source() {
+void fields::step_b_source(int including_integrated) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_h_source(chunks[i]->h_sources);
+      chunks[i]->step_b_source(chunks[i]->h_sources, including_integrated);
 }
-void fields_chunk::step_h_source(src_vol *sv) {
+void fields_chunk::step_b_source(src_vol *sv, int including_integrated) {
   if (sv == NULL) return;
-  component c = sv->c;
-  if (f[c][0] && is_magnetic(c))
+  component c = direction_component(Bx, component_direction(sv->c));
+  if (f[c][0] && is_magnetic(sv->c))
     for (int j=0; j<sv->npts; j++) {
       const complex<double> A = sv->current(j) * dt;
       const int i = sv->index[j];
       f[c][0][i] -= real(A);
       if (!is_real) f[c][1][i] -= imag(A);
     }
-  step_h_source(sv->next);
+  step_b_source(sv->next, including_integrated);
 }
 
 void fields::step_d_source(int including_integrated) {

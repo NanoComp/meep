@@ -122,6 +122,7 @@ void fields::initialize_field(component c, complex<double> func(const vec &)) {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->initialize_field(c, func);
   step_boundaries(H_stuff);
+  step_boundaries(B_stuff);
   step_boundaries(E_stuff);
   step_boundaries(D_stuff);
 }

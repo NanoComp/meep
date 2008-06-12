@@ -25,15 +25,15 @@ using namespace std;
 
 namespace meep {
 
-const int NUM_FIELD_COMPONENTS = 15;
-const int NUM_FIELD_TYPES = 4;
+const int NUM_FIELD_COMPONENTS = 20;
+const int NUM_FIELD_TYPES = 5;
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
-                 Dx, Dy, Dr, Dp, Dz, Dielectric };
+                 Dx, Dy, Dr, Dp, Dz, Bx, By, Br, Bp, Bz, Dielectric, Permeability };
 enum derived_component { Sx=100, Sy, Sr, Sp, Sz, EnergyDensity,
 			 D_EnergyDensity, H_EnergyDensity };
 enum ndim { D1=0, D2, D3, Dcyl };
-enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, P_stuff=3 };
+enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, B_stuff=3, P_stuff=4 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P, NO_DIRECTION };
 struct signed_direction {
@@ -71,6 +71,10 @@ inline direction stop_at_direction(ndim dim) {
                                         c < Hx; c = (component) (c+1))
 #define FOR_MAGNETIC_COMPONENTS(c) for (component c = Hz; \
                                         c > Ez; c = (component) (c-1))
+#define FOR_B_COMPONENTS(c) for (component c = Bz; \
+				 c > Dz; c = (component) (c-1))
+#define FOR_H_AND_B(h,b) for (component h=Hx, b=Bx; \
+			      h <= Hz; h = (component) (h+1), b = (component) (b+1))
 #define FOR_D_COMPONENTS(c) for (component c = Dz; \
                                  c > Hz; c = (component) (c-1))
 #define FOR_E_AND_D(e,d) for (component e = Ex, d = Dx; \
@@ -173,7 +177,8 @@ extern void abort(const char *, ...); // mympi.cpp
 
 inline bool is_electric(component c) { return c < Hx; }
 inline bool is_magnetic(component c) { return c >= Hx && c < Dx; }
-inline bool is_D(component c) { return c >= Dx && c < Dielectric; }
+inline bool is_D(component c) { return c >= Dx && c < Bx; }
+inline bool is_B(component c) { return c >= Bx && c < Dielectric; }
 inline bool is_derived(int c) { return c >= Sx; }
 inline bool is_poynting(derived_component c) { return c < EnergyDensity; }
 inline bool is_energydensity(derived_component c) { return c>=EnergyDensity; }
@@ -181,6 +186,7 @@ inline field_type type(component c) {
   if (is_electric(c)) return E_stuff;
   else if (is_magnetic(c)) return H_stuff;
   else if (is_D(c)) return D_stuff;
+  else if (is_B(c)) return B_stuff;
   abort("Invalid field in type.\n");
   return E_stuff; // This is never reached.
 }
@@ -193,13 +199,14 @@ const char *dimension_name(ndim);
 direction component_direction(int c);
 int direction_component(int c, direction d);
 inline direction component_direction(component c) {
-  switch (c) {
-  case Ex: case Hx: case Dx: return X;
-  case Ey: case Hy: case Dy: return Y;
-  case Ez: case Hz: case Dz: return Z;
-  case Er: case Hr: case Dr: return R;
-  case Ep: case Hp: case Dp: return P;
+  switch (c) {    
+  case Ex: case Hx: case Dx: case Bx: return X;
+  case Ey: case Hy: case Dy: case By: return Y;
+  case Ez: case Hz: case Dz: case Bz: return Z;
+  case Er: case Hr: case Dr: case Br: return R;
+  case Ep: case Hp: case Dp: case Bp: return P;
   case Dielectric: return NO_DIRECTION;
+  case Permeability: return NO_DIRECTION;
   }
   return X; // This code is never reached...
 }
@@ -226,7 +233,9 @@ inline component direction_component(component c, direction d) {
   if (is_electric(c)) start_point = Ex;
   else if (is_magnetic(c)) start_point = Hx;
   else if (is_D(c)) start_point = Dx;
+  else if (is_B(c)) start_point = Bx;
   else if (c == Dielectric && d == NO_DIRECTION) return Dielectric;
+  else if (c == Permeability && d == NO_DIRECTION) return Permeability;
   else abort("unknown field component %d", c);
   switch (d) {
   case X: return start_point;
@@ -610,7 +619,7 @@ class volume {
   int nz() const { return num_direction(Z); }
 
   bool has_field(component c) const {
-    if (dim == D1) return c == Ex || c == Hy || c == Dx;
+    if (dim == D1) return c == Ex || c == Hy || c == Dx || c == By;
     return (dim == Dcyl)?component_direction(c)>Y:component_direction(c)<R;
   }
   int has_boundary(boundary_side,direction) const;
@@ -693,9 +702,9 @@ class volume {
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim,d)
-      if (c == Dielectric ||
+      if (c == Dielectric || c == Permeability || 
           ((is_electric(c) || is_D(c)) && d == component_direction(c)) ||
-          (is_magnetic(c) && d != component_direction(c)))
+          ((is_magnetic(c) || is_B(c)) && d != component_direction(c)))
         out.set_direction(d,1);
     return out;
   }
@@ -709,6 +718,7 @@ class volume {
   void set_origin(direction d, int o);
   void center_origin(void) { shift_origin(-icenter()); }
   double origin_in_direction(direction d) const{return origin.in_direction(d);}
+  int iorigin_in_direction(direction d) const{return io.in_direction(d);}
   double origin_r() const { return origin.r(); }
   double origin_x() const { return origin.x(); }
   double origin_y() const { return origin.y(); }
@@ -777,11 +787,6 @@ class symmetry {
   symmetry *next;
   friend symmetry r_to_minus_r_symmetry(double m);
 };
-
-symmetry identity();
-symmetry rotate4(direction,const volume &);
-symmetry rotate2(direction,const volume &);
-symmetry mirror(direction,const volume &);
 
 class geometric_volume_list {
 public:

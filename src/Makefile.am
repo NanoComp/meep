@@ -4,7 +4,7 @@ pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
-BUILT_SOURCES = step_d.hpp step_h.hpp update_from_e.hpp	sphere-quad.h
+BUILT_SOURCES = update_from_e.hpp sphere-quad.h
 
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
 bicgstab.hpp
@@ -14,8 +14,8 @@ boundaries.cpp bicgstab.cpp control_c.cpp cw_fields.cpp dft.cpp		\
 energy_and_flux.cpp fields.cpp loop_in_chunks.cpp grace.cpp		\
 h5fields.cpp h5file.cpp initialize.cpp integrate.cpp monitor.cpp	\
 mympi.cpp output_directory.cpp polarization.cpp sources.cpp step.cpp	\
-step_d.cpp step_h.cpp structure.cpp time.cpp update_e_from_d.cpp	\
-update_from_e.cpp vec.cpp $(HDRS) $(BUILT_SOURCES)
+step_d.cpp step_b.cpp structure.cpp time.cpp update_e_from_d.cpp	\
+update_from_e.cpp vec.cpp step_generic.cpp update_h_from_b.cpp $(HDRS) $(BUILT_SOURCES)
 
 libmeep@MEEP_SUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
@@ -32,15 +32,6 @@ sphere-quad.h: sphere_quad$(EXEEXT)
 if MAINTAINER_MODE
 
 HSRC=$(top_builddir)/hsrc
-
-step_d.hpp: $(HSRC)/step_d_gen
-	(echo $(PRELUDE); echo; $(HSRC)/step_d_gen) > $@
-
-step_h.hpp: $(HSRC)/step_h_gen
-	(echo $(PRELUDE); echo; $(HSRC)/step_h_gen) > $@
-
-update_e_from_d_update.hpp: $(HSRC)/update_e_from_d_gen
-	(echo $(PRELUDE); echo; $(HSRC)/update_e_from_d_gen update) > $@
 
 update_from_e.hpp: $(HSRC)/update_from_e_gen
 	(echo $(PRELUDE); echo; $(HSRC)/update_from_e_gen) > $@

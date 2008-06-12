@@ -19,23 +19,7 @@
 #include "meep_internals.hpp"
 
 namespace meep {
-
-/* Given Dsqr = |D|^2 and Di = component of D, compute the factor f so
-   that Ei = inveps * f * Di.   In principle, this would involve solving
-   a cubic equation, but instead we use a Pade approximant that is 
-   accurate to several orders.  This is inaccurate if the nonlinear
-   index change is large, of course, but in that case the chi2/chi3
-   power-series expansion isn't accurate anyway, so the cubic isn't
-   physical there either. */
-inline double calc_nonlinear_inveps(const double Dsqr, 
-				    const double Di,
-				    const double inveps,
-				    const double chi2, const double chi3) {
-  double c2 = Di*chi2*(inveps*inveps);
-  double c3 = Dsqr*chi3*(inveps*(inveps*inveps));
-  return (1 + c2 + 2*c3)/(1 + 2*c2 + 3*c3);
-}
-
+  
 void fields::update_e_from_d() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
@@ -128,150 +112,38 @@ void fields_chunk::update_e_from_d() {
     FOR_E_AND_D(ec,dc) DOCMP2 dmp[ec][cmp] = f[dc][cmp];
   }
 
-  FOR_E_AND_D(ec,dc) if (f[ec][0]) {
+  DOCMP FOR_E_AND_D(ec,dc) if (f[ec][cmp]) {
     const int d_ec = component_direction(ec);
     const int s_ec = stride_any_direction[d_ec];
-    const direction d_1 = direction(v.dim != Dcyl 
-				    ? (d_ec+1)%3 : ((d_ec-2)+1)%3+2);
+    const direction d_1 = direction((d_ec+1)%3);
     const component ec_1 = direction_component(ec,d_1);
     const int s_1 = stride_any_direction[d_1];
-    const direction d_2 = direction(v.dim != Dcyl ? (d_ec+2)%3 : d_ec%3+2);
+    const direction d_2 = direction((d_ec+2)%3);
     const component ec_2 = direction_component(ec,d_2);
     const int s_2 = stride_any_direction[d_2];
 
-    const double *ieps = s->inveps[ec][d_ec];
-    const double *ieps1 = dmp[ec_1][0] ? s->inveps[ec][d_1] : 0;
-    const double *ieps2 = dmp[ec_2][0] ? s->inveps[ec][d_2] : 0;
+    component dc_1 = direction_component(dc,d_1);
+    component dc_2 = direction_component(dc,d_2);
 
-    if (ieps1 && ieps2) { // have 3x3 off-diagonal inveps
-      if (s->chi3[ec]) { // nonlinear
-	const double *chi2 = s->chi2[ec];
-	const double *chi3 = s->chi3[ec];
-	DOCMP {
-	  double *efield = f[ec][cmp];
-	  const double *dfield = dmp[ec][cmp];
-	  const double *df1 = dmp[ec_1][cmp];
-	  const double *df2 = dmp[ec_2][cmp];
-	  LOOP_OVER_VOL_OWNED(v, ec, i) {
-	    double df1s = df1[i]+df1[i+s_ec]+df1[i-s_1]+df1[i+(s_ec-s_1)];
-	    double df2s = df2[i]+df2[i+s_ec]+df2[i-s_2]+df2[i+(s_ec-s_2)];
-	    double df = dfield[i]; double iep = ieps[i];
-	    efield[i] = (df * iep + 0.25 * (ieps1[i]*df1s + ieps2[i]*df2s)) *
-	      calc_nonlinear_inveps(df * df + 0.0625 * (df1s*df1s + df2s*df2s),
-				    df, iep, chi2[i], chi3[i]);
-	  }
-	}
-      }
-      else { // linear, 3x3 off-diagonal inveps
-	DOCMP {
-	  double *efield = f[ec][cmp];
-	  const double *dfield = dmp[ec][cmp];
-	  const double *df1 = dmp[ec_1][cmp];
-	  const double *df2 = dmp[ec_2][cmp];
-	  LOOP_OVER_VOL_OWNED(v, ec, i)
-	    if (ieps1[i] * ieps2[i] != 0)
-	      efield[i] = dfield[i] * ieps[i] +
-		0.25 * (ieps1[i] * (df1[i] + df1[i+s_ec]
-				    + df1[i-s_1] + df1[i+(s_ec-s_1)]) +
-			ieps2[i] * (df2[i] + df2[i+s_ec]
-				    + df2[i-s_2] + df2[i+(s_ec-s_2)]));
-	    else
-	      efield[i] = dfield[i] * ieps[i];
-	}
-      }
-    }
-    else if (ieps1 || ieps2) { // 2x2 off-diagonal inveps
-      int s_o = ieps1 ? s_1 : s_2;
-      const double *iepso = ieps1 ? ieps1 : ieps2;
-      if (s->chi3[ec]) { // nonlinear
-	const double *chi2 = s->chi2[ec];
-	const double *chi3 = s->chi3[ec];
-	DOCMP {
-	  double *efield = f[ec][cmp];
-	  const double *dfield = dmp[ec][cmp];
-	  const double *dfo = dmp[ieps1 ? ec_1 : ec_2][cmp];
-	  LOOP_OVER_VOL_OWNED(v, ec, i) {
-	    double dfos = dfo[i]+dfo[i+s_ec]+dfo[i-s_o]+dfo[i+(s_ec-s_o)];
-	    double df = dfield[i]; double iep = ieps[i];
-	    efield[i] = (df * iep + 0.25 * (iepso[i]*dfos)) *
-	      calc_nonlinear_inveps(df * df + 0.0625*dfos*dfos, 
-				    df, iep, chi2[i], chi3[i]);
-	  }
-	}
-      }
-      else { // linear, 2x2 off-diagonal inveps
-	DOCMP {
-	  double *efield = f[ec][cmp];
-	  const double *dfield = dmp[ec][cmp];
-	  const double *dfo = dmp[ieps1 ? ec_1 : ec_2][cmp];
-	  LOOP_OVER_VOL_OWNED(v, ec, i)
-	    if (iepso[i] != 0)
-	      efield[i] = dfield[i] * ieps[i] +
-		0.25 * (iepso[i] * (dfo[i] + dfo[i+s_ec]
-				    + dfo[i-s_o] + dfo[i+(s_ec-s_o)]));
-	    else
-	      efield[i] = dfield[i] * ieps[i];
+    direction dsig = (direction)((d_ec+2)%3);
+    direction dsigg = (direction)(d_ec);
+    direction dsig1 = (direction)((d_ec+1)%3);
+    direction dsig1inv = (direction)(d_ec);
+    direction dsig2 = (direction)((d_ec+2)%3);
+    direction dsig2inv = (direction)((d_ec+1)%3);
 
-	}
-      }
-    }
-    else { // inveps is diagonal
-      if (s->chi3[ec]) { // nonlinear
-	const double *chi2 = s->chi2[ec];
-	const double *chi3 = s->chi3[ec];
-	if (dmp[ec_1][0] && dmp[ec_2][0]) {
-	  DOCMP {
-	    double *efield = f[ec][cmp];
-	    const double *dfield = dmp[ec][cmp];
-	    const double *df1 = dmp[ec_1][cmp];
-	    const double *df2 = dmp[ec_2][cmp];
-	    LOOP_OVER_VOL_OWNED(v, ec, i) {
-	      double df1s = df1[i]+df1[i+s_ec]+df1[i-s_1]+df1[i+(s_ec-s_1)];
-	      double df2s = df2[i]+df2[i+s_ec]+df2[i-s_2]+df2[i+(s_ec-s_2)];
-	      double df = dfield[i]; double iep = ieps[i];
-	      efield[i] = df * iep *
-		calc_nonlinear_inveps(df * df +
-				      0.0625 * (df1s*df1s + df2s*df2s),
-				      df, iep, chi2[i], chi3[i]);
-	    }
-	  }
-	}
-	else if (dmp[ec_1][0] || dmp[ec_2][0]) {
-	  int s_o = dmp[ec_1][0] ? s_1 : s_2;
-	  DOCMP {
-	    double *efield = f[ec][cmp];
-	    const double *dfield = dmp[ec][cmp];
-	    const double *dfo = dmp[dmp[ec_1][0] ? ec_1 : ec_2][cmp];
-	    LOOP_OVER_VOL_OWNED(v, ec, i) {
-	      double dfos = dfo[i]+dfo[i+s_ec]+dfo[i-s_o]+dfo[i+(s_ec-s_o)];
-	      double df = dfield[i]; double iep = ieps[i];
-	      efield[i] = df * iep *
-		calc_nonlinear_inveps(df * df + 0.0625 * dfos*dfos,
-				      df, iep, chi2[i], chi3[i]);
-	    }
-	  }
-	}
-	else {
-	  DOCMP {
-	    double *efield = f[ec][cmp];
-	    const double *dfield = dmp[ec][cmp];
-	    for (int i = 0; i < ntot; ++i) {
-	      double df = dfield[i]; double iep = ieps[i];
-	      efield[i] = df * iep * 
-		calc_nonlinear_inveps(df * df, df, iep, chi2[i], chi3[i]);
-	    }
-	  }
-	}
-      }
-      else { // linear, diagonal inveps
-	DOCMP {
-	  double *efield = f[ec][cmp];
-	  const double *dfield = dmp[ec][cmp];
-	  for (int i = 0; i < ntot; ++i)
-	    efield[i] = dfield[i] * ieps[i];
-	}
-      }
-    }
+    step_update_EDHB(f[ec][cmp], ec, v, 
+	dmp[ec][cmp], dmp[ec_1][cmp], dmp[ec_2][cmp],
+	f_backup[dc][cmp], f_backup[dc_1][cmp], f_backup[dc_2][cmp],
+	s->inveps[ec][d_ec], NULL, NULL,
+	s_ec, s_1, s_2, s->chi2[ec], s->chi3[ec],
+        dsig, s->sig[dsig], s->siginv[dsig],
+	dsigg, s->sig[dsigg],
+	dsig1, s->sig[dsig1],
+	dsig1inv, s->sig[dsig1inv],
+	dsig2, s->sig[dsig2],
+        dsig2inv, s->sig[dsig2inv],
+        s->sigsize[dsig],s->sigsize[dsigg],s->sigsize[dsig1]);
   }
 
   /* Do annoying special cases for r=0 in cylindrical coords.  Note

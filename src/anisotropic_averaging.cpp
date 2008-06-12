@@ -193,6 +193,22 @@ static void anisoaverage(material_function &epsilon, const geometric_volume dV,
   invepsrow[rownum] += 1/meps;
 }
 
+// just a diagonal mu for now
+// FIXME: consant mu or position-dependent mu?
+void structure_chunk::set_mu(material_function &epsilon) {
+  FOR_MAGNETIC_COMPONENTS(c) if (v.has_field(c)) {
+    direction c_d = component_direction(c);
+    LOOP_OVER_DIRECTIONS(v.dim,da) // make sure no off-diagonal terms
+      if (da != c_d) { delete[] invmu[c][da]; invmu[c][da] = NULL; }
+    if (!invmu[c][c_d]) invmu[c][c_d] = new double[v.ntot()]; 
+    if (!invmu[c][c_d]) abort("Memory allocation error.\n");
+    LOOP_OVER_VOL(v, c, i) {
+      IVEC_LOOP_LOC(v, here);
+      invmu[c][c_d][i] = 1.0;
+    }
+  }
+}
+
 void structure_chunk::set_epsilon(material_function &epsilon,
 				  bool use_anisotropic_averaging,
 				  double tol, int maxeval) {
@@ -321,7 +337,6 @@ void structure_chunk::set_epsilon(material_function &epsilon,
       }
   }
 
-  update_pml_arrays(); // PML stuff depends on epsilon
 }
 
 } // namespace meep

@@ -85,7 +85,13 @@ const char *component_name(component c) {
   case Dz: return "dz";
   case Dr: return "dr";
   case Dp: return "dp";
+  case Bx: return "bx";
+  case By: return "by";
+  case Bz: return "bz";
+  case Br: return "br";
+  case Bp: return "bp";
   case Dielectric: return "eps";
+  case Permeability: return "mu";
   }
   return "Error in component_name";
 }
@@ -1254,7 +1260,7 @@ int symmetry::transform(int c, int n) const {
 }
 
 complex<double> symmetry::phase_shift(component c, int n) const {
-  if (c == Dielectric) return 1.0;
+  if (c == Dielectric || c == Permeability) return 1.0;
   complex<double> phase = transform(component_direction(c),n).phase;
   // flip tells us if we need to flip the sign.  For vectors (E), it is
   // just this simple:

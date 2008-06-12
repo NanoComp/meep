@@ -127,7 +127,7 @@ private:
 #define DEFAULT_SUBPIXEL_MAXEVAL 100000
 
 /* This class is used to compute position-dependent material properties
-   like the dielectric function, polarizability sigma, 
+   like the dielectric function, permeability (mu), polarizability sigma, 
    nonlinearities, et cetera.  Simple cases of stateless functions are
    handled by canned subclasses below, but more complicated cases
    can be handled by creating a user-defined subclass of material_function.
@@ -148,6 +148,9 @@ public:
   
   /* scalar dielectric function */
   virtual double eps(const vec &r) { (void)r; return 1.0; }
+
+  /* scalar permeability function */
+  virtual double mu(const vec &r) { (void)r; return 1.0; }
   
   /* Return interface normal and/or average dielectric eps and 1/eps
      in a given volume gv.   These are virtual so that e.g. libctl
@@ -158,7 +161,6 @@ public:
 		       double tol=DEFAULT_SUBPIXEL_TOL, 
 		       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   
-
   /* polarizability sigma function */
   virtual double sigma(const vec &r) { (void)r; return 0.0; }
   /* specify polarizability used for subsequent calls to sigma(r) */
@@ -189,6 +191,7 @@ public:
   virtual ~simple_material_function() {}
   
   virtual double eps(const vec &r) { return f(r); }
+  virtual double mu(const vec &r) { return f(r); }
   virtual double sigma(const vec &r) { return f(r); }
   virtual double chi3(const vec &r) { return f(r); }
   virtual double chi2(const vec &r) { return f(r); }
@@ -201,8 +204,9 @@ class structure_chunk {
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   double *eps, *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
   double *inveps[NUM_FIELD_COMPONENTS][5];
-  double *C[5][NUM_FIELD_COMPONENTS];
-  double *Cdecay[5][NUM_FIELD_COMPONENTS][5];
+  double *invmu[NUM_FIELD_COMPONENTS][5];
+  double *sig[5], *siginv[5]; // conductivity array for uPML
+  int sigsize[5]; // conductivity array size
   volume v;  // integer volume that could be bigger than non-overlapping gv below
   geometric_volume gv;
   polarizability *pb;
@@ -216,11 +220,10 @@ class structure_chunk {
   void set_epsilon(material_function &eps,
                    bool use_anisotropic_averaging,
 		   double tol, int maxeval);
+  void set_mu(material_function &eps);
   void set_chi3(material_function &eps);
   void set_chi2(material_function &eps);
   void use_pml(direction, double dx, double boundary_loc, double strength);
-  void update_pml_arrays();
-  void update_Cdecay();
 
   void add_polarizability(double sigma(const vec &), double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
@@ -340,6 +343,8 @@ class structure {
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+  void set_mu(material_function &eps);
+  void set_mu(double eps(const vec &));
   void set_chi3(material_function &eps);
   void set_chi3(double eps(const vec &));
   void set_chi2(material_function &eps);
@@ -619,14 +624,30 @@ public:
 enum in_or_out { Incoming=0, Outgoing };
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 
+void step_curl(double *f, component c, const double *g1, const double *g2,
+	       int s1, int s2, // strides for g1/g2 shift
+	       const volume &v, double dtdx,
+	       direction dsig, const double *sig, const double *siginv);
+
+void step_update_EDHB(double *f, component fc, const volume &v,
+		      const double *g, const double *g1, const double *g2,
+		      const double *gb, const double *g1b, const double *g2b,
+		      const double *u, const double *u1, const double *u2,
+		      int s, int s1, int s2,
+		      const double *chi2, const double *chi3,
+		      direction dsig,const double *sig,const double *siginv,
+		      direction dsigg, const double *sigg,
+		      direction dsig1, const double *sig1,
+		      direction dsig1inv, const double *sig1inv,
+		      direction dsig2, const double *sig2,
+		      direction dsig2inv, const double *sig2inv,
+		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1);
+
+
 class fields_chunk {
  public:
   double *f[NUM_FIELD_COMPONENTS][2];
   double *f_backup[NUM_FIELD_COMPONENTS][2];
-  double *f_p_pml[NUM_FIELD_COMPONENTS][2];
-  double *f_m_pml[NUM_FIELD_COMPONENTS][2];
-  double *f_backup_p_pml[NUM_FIELD_COMPONENTS][2];
-  double *f_backup_m_pml[NUM_FIELD_COMPONENTS][2];
 
   bool have_d_minus_p;
   double *d_minus_p[NUM_FIELD_COMPONENTS][2];
@@ -663,6 +684,8 @@ class fields_chunk {
     switch (c) {
     case Dielectric:
       return !is_complex;
+    case Permeability:
+      return !is_complex;
     default:
       return (f[c][0] && f[c][is_complex]);
     }
@@ -686,9 +709,14 @@ class fields_chunk {
   double get_eps(const ivec &iloc) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
+  void backup_component(component c);
+  void restore_component(component c);
+  void backup_b();
+  void restore_b();
   void backup_h();
   void restore_h();
-
+  void backup_d();
+  
   void set_output_directory(const char *name);
   void verbose(int v=1) { verbosity = v; }
 
@@ -724,8 +752,9 @@ class fields_chunk {
   // step.cpp
   void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
-  void step_h();
-  void step_h_source(src_vol *);
+  void step_b();
+  void step_b_source(src_vol *, int including_integrated);
+  void update_h_from_b();
   void step_d();
   void step_d_source(src_vol *, int including_integrated);
   void update_e_from_d();
@@ -1025,8 +1054,9 @@ class fields {
                                            complex<double> kphase[8], int &ncopies) const;
   // step.cpp
   void phase_material();
-  void step_h();
-  void step_h_source();
+  void step_b();
+  void step_b_source(int including_integrated = 0);
+  void update_h_from_b();
   void step_d();
   void step_d_source(int including_integrated = 0);
   void update_e_from_d();

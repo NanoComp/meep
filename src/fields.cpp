@@ -162,10 +162,6 @@ fields_chunk::~fields_chunk() {
   DOCMP2 FOR_COMPONENTS(c) {
     delete[] f[c][cmp];
     delete[] f_backup[c][cmp];
-    delete[] f_p_pml[c][cmp];
-    delete[] f_m_pml[c][cmp];
-    delete[] f_backup_p_pml[c][cmp];
-    delete[] f_backup_m_pml[c][cmp];
   }
   FOR_FIELD_TYPES(ft)
     for (int ip=0;ip<3;ip++)
@@ -204,10 +200,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
-    f_p_pml[c][cmp] = NULL;
-    f_m_pml[c][cmp] = NULL;
-    f_backup_p_pml[c][cmp] = NULL;
-    f_backup_m_pml[c][cmp] = NULL;
   }
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
@@ -245,28 +237,13 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
-    f_p_pml[c][cmp] = NULL;
-    f_m_pml[c][cmp] = NULL;
-    f_backup_p_pml[c][cmp] = NULL;
-    f_backup_m_pml[c][cmp] = NULL;
   }
   FOR_COMPONENTS(c) DOCMP {
     if (thef.f[c][cmp])
       f[c][cmp] = new double[v.ntot()];
-    if (thef.f_p_pml[c][cmp]) {
-      f_p_pml[c][cmp] = new double[v.ntot()];
-      f_m_pml[c][cmp] = new double[v.ntot()];
-    }
     if (f[c][cmp])
       for (int i=0;i<v.ntot();i++)
 	f[c][cmp][i] = thef.f[c][cmp][i];
-    // Now for pml extra fields_chunk...
-    if (f_p_pml[c][cmp])
-      for (int i=0;i<v.ntot();i++)
-	f_p_pml[c][cmp][i] = thef.f_p_pml[c][cmp][i];
-    if (f_m_pml[c][cmp])
-      for (int i=0;i<v.ntot();i++)
-	f_m_pml[c][cmp][i] = thef.f_m_pml[c][cmp][i];
   }
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
@@ -316,7 +293,8 @@ void fields_chunk::figure_out_step_plan() {
       FOR_COMPONENTS(c2)
         if ((is_electric(c1) && is_magnetic(c2)) ||
             (is_D(c1) && is_magnetic(c2)) ||
-            (is_magnetic(c1) && is_electric(c2))) {
+            (is_magnetic(c1) && is_electric(c2)) ||
+	    (is_B(c1) && is_electric(c2))) {
           const direction dc2 = component_direction(c2);
           if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
               has_direction(v.dim,cross(dc1,dc2))) {
@@ -350,7 +328,7 @@ void fields_chunk::figure_out_step_plan() {
 
 static bool is_tm(component c) {
   switch (c) {
-  case Hx: case Hy: case Ez: case Dz: return true;
+  case Hx: case Hy: case Bx: case By: case Ez: case Dz: return true;
   default: return false;
   }
   return false;
@@ -368,20 +346,6 @@ void fields_chunk::alloc_f(component the_c) {
         if (!f[c][cmp]) {
           f[c][cmp] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
-          if (!f_p_pml[c][cmp] && !is_electric(c)) {
-	    bool need_pml = false;
-	    LOOP_OVER_DIRECTIONS(v.dim, d)
-	      if (s->C[d][c]) { need_pml = true; break; }
-	    if (need_pml) {
-	      // FIXME: we don't necessarily need both f_p_pml and f_m_pml
-	      f_p_pml[c][cmp] = new double[v.ntot()];
-	      f_m_pml[c][cmp] = new double[v.ntot()];
-	      for (int i=0;i<v.ntot();i++) {
-		f_p_pml[c][cmp][i] = 0.0;
-		f_m_pml[c][cmp][i] = 0.0;
-	      }
-	    }
-          }
 	}
     }
   figure_out_step_plan();
@@ -421,10 +385,7 @@ void fields::remove_fluxes() {
 void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
     if (f[c][cmp]) for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
-    if (f_p_pml[c][cmp])
-      for (int i=0;i<v.ntot();i++) f_p_pml[c][cmp][i] = 0.0;
-    if (f_m_pml[c][cmp])
-      for (int i=0;i<v.ntot();i++) f_m_pml[c][cmp][i] = 0.0;
+    if (f_backup[c][cmp]) for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = 0.0;
   }
   if (is_mine() && pol) pol->zero_fields();
   if (is_mine() && olpol) olpol->zero_fields();

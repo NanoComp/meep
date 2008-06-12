@@ -26,17 +26,17 @@ double value(const vec &) { return the_value; }
 void harmonics(double freq, double chi2, double chi3, double J,
 	       double &A2, double &A3)
 {
+  const double dpml = 5.0;
   const double res = 20;
-  const double sz = 100;
+  const double sz = 100+2*dpml;
   volume v = vol1d(sz, res);
   v.center_origin();
 
   the_value = 1.0;
-  const double dpml = 1.0;
   structure s(v, value, pml(dpml));
-  the_value = chi2;
+  the_value = chi2 / 1000;
   s.set_chi2(value);
-  the_value = chi3;
+  the_value = chi3 / 1000;
   s.set_chi3(value);
 
   fields f(&s);
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
   double a2, a3, a2_2, a3_2;
 
   harmonics(freq, 0.27e-4, 1e-4, 1.0, a2, a3);
-  if (different(a2, 9.42013e-07, 1e-5, "3rd harmonic mismatches known value"))
+  if (different(a2, 9.42013e-07, 1e-5, "2nd harmonic mismatches known value"))
     return 1;
   if (different(a3, 9.67884e-07, 1e-5, "3rd harmonic mismatches known value"))
     return 1;
@@ -131,10 +131,10 @@ int main(int argc, char **argv) {
   }
 
   harmonics(freq, 0.0, 1e-4, 1.0, a2_2, a3_2);
-  if (different(a3, a3_2, 1e-3, "chi2 has too big effect on 3nd harmonic"))
+  if (different(a3, a3_2, 1e-3, "chi2 has too big effect on 3rd harmonic"))
     return 1;
   if (a2_2 / a2 > 1e-5) {
-    master_printf("error: too much 2rd harmonic without chi3\n");
+    master_printf("error: too much 2nd harmonic without chi3\n");
     return 1;
   }
 

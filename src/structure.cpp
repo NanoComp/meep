@@ -51,7 +51,7 @@ structure::structure(const volume &thev, material_function &eps,
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
-structure::structure(const volume &thev, double eps(const vec &), 
+structure::structure(const volume &thev, double eps(const vec &),
 		     const boundary_region &br,
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
@@ -153,7 +153,7 @@ void boundary_region::apply(structure *s) const {
 
 void boundary_region::apply(const structure *s, structure_chunk *sc) const {
   if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)
-      && s->user_volume.num_direction(d) > 1) {
+      && s->user_volume.num_direction(d) > 1) {    
     switch (kind) {
     case NOTHING_SPECIAL: break;
     case PML: 
@@ -315,6 +315,7 @@ void structure::set_materials(material_function &mat,
 			      bool use_anisotropic_averaging,
 			      double tol, int maxeval) {
   set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
+  set_mu(mat);
   if (mat.has_chi3()) set_chi3(mat);
   if (mat.has_chi2()) set_chi2(mat);
 }
@@ -336,6 +337,21 @@ void structure::set_epsilon(double eps(const vec &),
 			    double tol, int maxeval) {
   simple_material_function epsilon(eps);
   set_epsilon(epsilon, use_anisotropic_averaging, tol, maxeval);
+}
+
+void structure::set_mu(material_function &eps) {
+  double tstart = wall_time();
+  changing_chunks();
+  for (int i=0;i<num_chunks;i++)
+    if (chunks[i]->is_mine())
+      chunks[i]->set_mu(eps);
+  if (!quiet)
+    master_printf("time for set_mu = %g s\n", wall_time() - tstart);
+}
+
+void structure::set_mu(double eps(const vec &)) {
+  simple_material_function epsilon(eps);
+  set_mu(epsilon);
 }
 
 void structure::set_chi3(material_function &eps) {
@@ -390,15 +406,16 @@ structure_chunk::~structure_chunk() {
   FOR_ELECTRIC_COMPONENTS(c) {
     FOR_DIRECTIONS(d)
       delete[] inveps[c][d];
-    delete[] chi3[c];
     delete[] chi2[c];
+    delete[] chi3[c];
   }
+  FOR_MAGNETIC_COMPONENTS(c) FOR_DIRECTIONS(d)
+    delete[] invmu[c][d];
   delete[] eps;
-
-  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] C[d][c];
-  FOR_COMPONENTS(c)
-    FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2)
-        delete[] Cdecay[d][c][d2];
+  FOR_DIRECTIONS(d) { 
+    delete[] sig[d];
+    delete[] siginv[d];
+  }
   if (pb) delete pb;
 }
 
@@ -409,6 +426,10 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
     if (inveps[c][d])
       for (int i=0;i<v.ntot();i++)
         inveps[c][d][i] += f*(n->inveps[c][d][i] - inveps[c][d][i]);
+  FOR_MAGNETIC_COMPONENTS(c) FOR_DIRECTIONS(d)
+    if (invmu[c][d])
+      for (int i=0;i<v.ntot();i++)
+	invmu[c][d][i] += f*(n->invmu[c][d][i] - invmu[c][d][i]);
   // Mix in the polarizability...
   polarizability *po = pb, *pn = n->pb;
   while (po && pn) {
@@ -421,58 +442,46 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
   }
 }
 
-const double Cmax = 0.5;
+// reflections from non-absorbed wave in continuum
+const double Rabs = 1e-30;
 
 void structure_chunk::use_pml(direction d, double dx, double bloc,
 			      double strength) {
   if (strength == 0.0 || dx <= 0.0) return;
-  const double prefac = strength * Cmax/(dx*dx);
+  const double prefac = strength * (-log(Rabs))/(4*dx*0.3333);
   // Don't bother with PML if we don't even overlap with the PML region...
-  if (bloc > v.boundary_location(High,d) + dx + 1.0/a ||
-      bloc < v.boundary_location(Low,d) - dx - 1.0/a) return;
+  if (bloc > v.boundary_location(High,d) + dx + 1.0/a - 1e-10 ||
+      bloc < v.boundary_location(Low,d) - dx - 1.0/a + 1e-10) return;
   if (is_mine()) {
-    FOR_COMPONENTS(c)
-      if (v.has_field(c) && component_direction(c) != d) {
-        if (!C[d][c]) {
-          C[d][c] = new double[v.ntot()];
-          for (int i=0;i<v.ntot();i++) C[d][c][i] = 0.0;
-        }
-	LOOP_OVER_VOL(v, (component) c, i) {
-	  IVEC_LOOP_LOC(v, here);
-          const double x =
-            0.5/a*((int)(dx*(2*a)+0.5) -
-                   (int)(2*a*fabs(bloc-here.in_direction(d))+0.5));
-          if (x > 0) C[d][c][i] = prefac*x*x;
-        }
-      }
-  }
-}
-
-void structure_chunk::update_pml_arrays() {
-  if (!is_mine()) return;
-  FOR_DIRECTIONS(d)
-    FOR_COMPONENTS(c) 
-      if (C[d][c] != NULL) {
-	bool all_zeros = true;
-	LOOP_OVER_VOL_OWNED(v, c, i) {
-	  if (C[d][c][i] != 0.0) {
-	    all_zeros = false;
-	    goto done; // can't use 'break' since LOOP has nested loops
-	  }
-	}
-      done:
-	if (all_zeros) {
-	  delete[] C[d][c];
-	  C[d][c] = NULL;
+    if (sig[d]) {
+      delete[] sig[d]; 
+      delete[] siginv[d];
+      sig[d] = NULL;
+      siginv[d] = NULL;
+    }
+    LOOP_OVER_DIRECTIONS(D3,dd) {
+      if (!sig[dd]) {
+	int spml = (dd==d)?(2*v.num_direction(d)+1):1;
+	sigsize[dd] = spml;
+	sig[dd] = new double[spml];
+	siginv[dd] = new double[spml];
+	for (int i=0;i<spml;++i) {
+	  sig[dd][i] = 0.0;
+	  siginv[dd][i] = 1.0;
 	}
       }
-  update_Cdecay();
-}
-
-void structure_chunk::update_Cdecay() {
-  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) FOR_DIRECTIONS(d2) {
-    delete[] Cdecay[d][c][d2];
-    Cdecay[d][c][d2] = NULL;
+    }
+    for (int i=v.little_corner().in_direction(d);
+	 i<=v.big_corner().in_direction(d);++i) {
+      int idx = i - v.little_corner().in_direction(d);
+      double here = v.corner(Low).in_direction(d) + idx*0.5/a;
+      const double x =
+	0.5/a*((int)(dx*(2*a)+0.5) - (int)(fabs(bloc-here)*(2*a)+0.5));
+      if (x > 0) {
+	sig[d][idx]=0.5*dt*prefac*(x/dx)*(x/dx);
+	siginv[d][idx] = 1/(1+sig[d][idx]);	
+      }
+    }
   }
   FOR_DIRECTIONS(d) FOR_COMPONENTS(c) 
     if (C[d][c] != NULL)
@@ -527,29 +536,38 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
       chi2[c] = NULL;
     }
   }
-  FOR_COMPONENTS(c) FOR_DIRECTIONS(d)
+  FOR_ELECTRIC_COMPONENTS(c) FOR_DIRECTIONS(d)
     if (is_mine() && o->inveps[c][d]) {
       inveps[c][d] = new double[v.ntot()];
       for (int i=0;i<v.ntot();i++) inveps[c][d][i] = o->inveps[c][d][i];
     } else {
       inveps[c][d] = NULL;
     }
+  FOR_MAGNETIC_COMPONENTS(c) FOR_DIRECTIONS(d)
+    if (is_mine() && o->invmu[c][d]) {
+      invmu[c][d] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) invmu[c][d][i] = o->invmu[c][d][i];
+    } else {
+      invmu[c][d] = NULL;
+    }
   // Allocate the conductivity arrays:
-  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
-  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) FOR_DIRECTIONS(d2)
-    Cdecay[d][c][d2] = NULL;
+  FOR_DIRECTIONS(d) { 
+    sig[d] = NULL; 
+    siginv[d] = NULL;
+    sigsize[d] = 0;
+  }
+  for (int i=0;i<5;++i) sigsize[i] = 0;
   // Copy over the conductivity arrays:
   if (is_mine())
-    FOR_DIRECTIONS(d) FOR_COMPONENTS(c)
-      if (o->C[d][c]) {
-        C[d][c] = new double[v.ntot()];
-        for (int i=0;i<v.ntot();i++) C[d][c][i] = o->C[d][c][i];
-        FOR_DIRECTIONS(d2)
-          if (o->Cdecay[d][c][d2]) {
-            Cdecay[d][c][d2] = new double[v.ntot()];
-            for (int i=0;i<v.ntot();i++)
-              Cdecay[d][c][d2][i] = o->Cdecay[d][c][d2][i];
-          }
+    FOR_DIRECTIONS(d) 
+      if (o->sig[d]) {
+	sig[d] = new double[2*v.num_direction(d)+1];
+	siginv[d] = new double[2*v.num_direction(d)+1];
+	sigsize[d] = o->sigsize[d];
+	for (int i=0;i<2*v.num_direction(d)+1;i++) {
+	  sig[d][i] = o->sig[d][i];
+	  siginv[d][i] = o->sig[d][i];
+	}
       }
 }
 
@@ -614,9 +632,15 @@ structure_chunk::structure_chunk(const volume &thev,
   eps = NULL;
   FOR_COMPONENTS(c) chi3[c] = NULL;
   FOR_COMPONENTS(c) chi2[c] = NULL;
-  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) inveps[c][d] = NULL;
-  FOR_DIRECTIONS(d) FOR_COMPONENTS(c) C[d][c] = NULL;
-  FOR_DIRECTIONS(d) FOR_DIRECTIONS(d2) FOR_COMPONENTS(c) Cdecay[d][c][d2] = NULL;
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
+    inveps[c][d] = NULL;
+    invmu[c][d] = NULL;
+  }
+  FOR_DIRECTIONS(d) { 
+    sig[d] = NULL; 
+    siginv[d] = NULL;
+    sigsize[d] = 0;
+  }
 }
 
 double structure::max_eps() const {

@@ -221,8 +221,6 @@ int test_origin_shift(const char *mydirname) {
   vcentered.shift_origin(-v.center());
   structure s(vcentered, one);
   structure s1(v, one);
-  s.set_output_directory(mydirname);
-  s1.set_output_directory(mydirname);
 
   fields f1(&s1);
   fields f(&s);

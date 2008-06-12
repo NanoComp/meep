@@ -27,41 +27,36 @@ static void fields_to_array(const fields &f, complex<double> *x)
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
         if (f.chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {
-	  double *fs[3][2];
-	  // TODO: this is somewhat wasteful, because at least
-	  // one of f/f_p_pml/f_m_pml is redundant.
-	  DOCMP2 { fs[0][cmp] = f.chunks[i]->f[c][cmp];
- 	           fs[1][cmp] = f.chunks[i]->f_p_pml[c][cmp];
- 	           fs[2][cmp] = f.chunks[i]->f_m_pml[c][cmp]; }
-	  for (int k = 0; k < 3; ++k)
-	    if (fs[k][0]) {
-	      LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
-		x[ix++] = complex<double>(fs[k][0][idx], fs[k][1][idx]);
-	    }
+	  double *fs[2];
+	  DOCMP2 fs[cmp] = f.chunks[i]->f[c][cmp];
+	  if (fs[0]) {
+	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
+	      x[ix++] = complex<double>(fs[0][idx], fs[1][idx]);
+	  }
         }
 }
-
+  
 static void array_to_fields(const complex<double> *x, fields &f)
 {
   int ix = 0;
-  for (int i=0;i<f.num_chunks;i++)
+  for (int i=0;i<f.num_chunks;i++) {
+    f.chunks[i]->backup_b();
+    f.chunks[i]->backup_d();
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
         if (f.chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {
-	  double *fs[3][2];
-	  DOCMP2 { fs[0][cmp] = f.chunks[i]->f[c][cmp];
- 	           fs[1][cmp] = f.chunks[i]->f_p_pml[c][cmp];
- 	           fs[2][cmp] = f.chunks[i]->f_m_pml[c][cmp]; }
-	  for (int k = 0; k < 3; ++k)
-	    if (fs[k][0]) {
-	      LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
-	        fs[k][0][idx] = real(x[ix]);
-		fs[k][1][idx] = imag(x[ix]);
-		++ix;
-	      }
+	  double *fs[2];
+	  DOCMP2 fs[cmp] = f.chunks[i]->f[c][cmp];
+	  if (fs[0]) {
+	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
+	      fs[0][idx] = real(x[ix]);
+	      fs[1][idx] = imag(x[ix]);
+	      ++ix;
 	    }
+	  }
 	}
-  f.force_consistency(H_stuff);
+  }
+  f.force_consistency(H_stuff);  
   f.force_consistency(D_stuff);
 }
 
@@ -107,8 +102,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
     if (chunks[i]->is_mine())
       FOR_COMPONENTS(c)
 	if (chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {
-	  N += 2 * chunks[i]->v.nowned(c)
-	    * (1 + !!chunks[i]->f_p_pml[c][0] + !!chunks[i]->f_m_pml[c][0]);
+	  N += 2 * chunks[i]->v.nowned(c);
 	}
 
   int nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
@@ -123,10 +117,11 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   // get J amplitudes from current time step
   zero_fields(); // note that we've saved the fields in x above
   calc_sources(time());
-  step_h_source();
-  step_boundaries(H_stuff);
+  step_b_source();
+  step_boundaries(B_stuff);
   step_d_source(1);
   step_boundaries(D_stuff);
+
   fields_to_array(*this, b);
   double mdt_inv = -1.0 / dt;
   for (int i = 0; i < N/2; ++i) b[i] *= mdt_inv;
