@@ -48,7 +48,7 @@ void fields::step() {
 
   phase_material();
 
-  calc_sources(time() - 0.5 * dt); // for H sources
+  calc_sources(time()); // for H sources
 
   // TODO: make B==H for mu=1, non-PML (just make pointers equal, skip update_h_from_b, don't delete twice)
   step_b();
@@ -61,11 +61,13 @@ void fields::step() {
 
   if (fluxes) fluxes->update_half();
 
-  calc_sources(time()); // for E sources
+  calc_sources(time() + 0.5*dt); // for E sources
 
   step_d();
   if (!disable_sources) step_d_source();
   step_boundaries(D_stuff);
+
+  calc_sources(time() + dt); // for integrated E sources
 
   update_e_from_d();
   step_boundaries(E_stuff);

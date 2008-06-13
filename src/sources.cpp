@@ -216,6 +216,9 @@ void fields::add_point_source(component c, double freq,
     cutoff = v.inva + cutoff * width;
     if (peaktime <= 0.0)
       peaktime = time() + cutoff;
+    
+    // backward compatibility (slight phase shift in old Meep version)
+    peaktime += is_magnetic(c) ? -dt*0.5 : dt;
   
     gaussian_src_time src(freq, width,
 			     peaktime - cutoff, peaktime + cutoff);

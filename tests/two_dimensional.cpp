@@ -261,7 +261,7 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
       const double new_energy = f.total_energy();
       if (!compare(new_energy, f1.total_energy(),
                    "   total energy")) return 0;
-      if (new_energy > last_energy*3e-7) {
+      if (new_energy > last_energy*4e-6) {
         master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
