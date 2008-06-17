@@ -474,7 +474,7 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
     for (int i=v.little_corner().in_direction(d);
 	 i<=v.big_corner().in_direction(d);++i) {
       int idx = i - v.little_corner().in_direction(d);
-      double here = v.corner(Low).in_direction(d) + idx*0.5/a;
+      double here = i * 0.5/a;
       const double x =
 	0.5/a*((int)(dx*(2*a)+0.5) - (int)(fabs(bloc-here)*(2*a)+0.5));
       if (x > 0) {
