@@ -172,6 +172,14 @@ inline double calc_nonlinear_u(const double Dsqr,
 						gs, us, chi2[i], chi3[i]);
 	  }
 	}
+	else if (g2) {
+	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
+	    double gs = g[i]; double us = u[i];
+	    f[i] = (gs*us)*calc_nonlinear_u(gs*gs + 0.0625*(g2s*g2s),
+						gs, us, chi2[i], chi3[i]);
+	  }
+	}
 	else {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    double gs = g[i]; double us = u[i];
