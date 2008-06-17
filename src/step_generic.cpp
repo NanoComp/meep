@@ -347,14 +347,10 @@ inline double calc_nonlinear_u(const double Dsqr,
 	    int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
 	    double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
 	      (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	    double g1bs = ((1-sig1[k1]) * sig1inv[k1]) *
-	      (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)]);
 	    int k2 = iloc.in_direction(dsig2) - k20;
 	    int k2inv = iloc.in_direction(dsig2inv) - k2inv0;
 	    double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
 	      (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	    double g2bs = ((1-sig2[k2]) * sig2inv[k2]) *
-	      (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)]);
 	    int kg = iloc.in_direction(dsigg) - kg0;
 	    double gs = ((1+sigg[kg])*siginv[k]) * g[i];
 	    double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
@@ -371,8 +367,6 @@ inline double calc_nonlinear_u(const double Dsqr,
 	    int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
 	    double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
 	      (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	    double g1bs = ((1-sig1[k1]) * sig1inv[k1]) *
-	      (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)]);
 	    int kg = iloc.in_direction(dsigg) - kg0;
 	    double gs = ((1+sigg[kg])*siginv[k]) * g[i];
 	    double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
@@ -389,8 +383,6 @@ inline double calc_nonlinear_u(const double Dsqr,
 	    int k2inv = iloc.in_direction(dsig2inv) - k2inv0;
 	    double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
 	      (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	    double g2bs = ((1-sig2[k2]) * sig2inv[k2]) *
-	      (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)]);
 	    int kg = iloc.in_direction(dsigg) - kg0;
 	    double gs = ((1+sigg[kg])*siginv[k]) * g[i];
 	    double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
