@@ -54,7 +54,7 @@ double freq_at_resolution(double e(const vec &), double a, component c) {
   monitor_point *p = NULL;
   while (f.time() <= ttot) {
     f.step();
-    p = f.get_new_point(vec(0.5,0.5), p);
+    p = f.get_new_point(vec(0.52,0.97), p);
   }
   const double freq = get_the_freq(p, c);
   delete p;
