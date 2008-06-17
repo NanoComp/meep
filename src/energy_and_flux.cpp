@@ -144,10 +144,11 @@ void fields::synchronize_magnetic_fields() {
   step_boundaries(B_stuff);
   update_h_from_b();
   step_boundaries(H_stuff);
-  for (int i=0;i<num_chunks;i++) {
-    FOR_B_COMPONENTS(c) chunks[i]->average_with_backup(c);
-    FOR_MAGNETIC_COMPONENTS(c) chunks[i]->average_with_backup(c);
-  }
+  for (int i=0;i<num_chunks;i++) 
+    if (chunks[i]->is_mine()) {
+      FOR_B_COMPONENTS(c) chunks[i]->average_with_backup(c);
+      FOR_MAGNETIC_COMPONENTS(c) chunks[i]->average_with_backup(c);
+    }
 }
 
 void fields::restore_magnetic_fields() {
