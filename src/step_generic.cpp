@@ -95,7 +95,24 @@ inline double calc_nonlinear_u(const double Dsqr,
 		     int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1)
 {
   if (!f) return;
-
+  int sigsize_dsig1inv = sigsize_dsigg;
+  int sigsize_dsig2 = sigsize_dsig;
+  int sigsize_dsig2inv = sigsize_dsig1;
+  
+# define SWAP(t,a,b) { t xxxx = a; a = b; b = xxxx; }
+  if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
+    SWAP(const double*, g1, g2);
+    SWAP(const double*, g1b, g2b);
+    SWAP(const double*, u1, u2);
+    SWAP(int, s1, s2);
+    SWAP(const double*, sig1, sig2);
+    SWAP(const double*, sig1inv, sig2inv);
+    SWAP(direction, dsig1, dsig2);
+    SWAP(direction, dsig1inv, dsig2inv);
+    SWAP(int, sigsize_dsig1, sigsize_dsig2);
+    SWAP(int, sigsize_dsig1inv, sigsize_dsig2inv);
+  }
+  
   if (sigsize_dsig <= 1 && sigsize_dsigg <= 1 && sigsize_dsig1 <= 1) { // no PML
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
@@ -117,7 +134,7 @@ inline double calc_nonlinear_u(const double Dsqr,
 	}
       }
     }
-    else if (u1 && !u2) { // 2x2 off-diagonal u
+    else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
@@ -135,23 +152,8 @@ inline double calc_nonlinear_u(const double Dsqr,
 	}
       }
     }
-    else if (!u1 && u2) { // 2x2 off-diagonal u
-      if (chi3) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
-	  double gs = g[i]; double us = u[i];
-	  f[i] = (gs * us + 0.25 * (u2[i]*g2s)) *
-	    calc_nonlinear_u(gs * gs + 0.0625 * (g2s*g2s),
-			     gs, us, chi2[i], chi3[i]);
-	}
-      }
-      else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
-	  double gs = g[i]; double us = u[i];
-	  f[i] = (gs * us + 0.25 * (u2[i]*g2s));
-	}
-      }
+    else if (u2) { // 2x2 off-diagonal u
+      abort("bug - didn't swap off-diagonal terms!?");
     }
     else { // diagonal u
       if (chi3) {
@@ -173,12 +175,7 @@ inline double calc_nonlinear_u(const double Dsqr,
 	  }
 	}
 	else if (g2) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
-	    double gs = g[i]; double us = u[i];
-	    f[i] = (gs*us)*calc_nonlinear_u(gs*gs + 0.0625*(g2s*g2s),
-						gs, us, chi2[i], chi3[i]);
-	  }
+	  abort("bug - didn't swap off-diagonal terms!?");
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
@@ -204,34 +201,47 @@ inline double calc_nonlinear_u(const double Dsqr,
      v.little_corner().in_direction(dsigg):0;
    int k10 = (sigsize_dsig1 > 1)?
      v.little_corner().in_direction(dsig1):0;
-   int k1inv0 = (sigsize_dsigg > 1)?
+   int k1inv0 = (sigsize_dsig1inv > 1)?
      v.little_corner().in_direction(dsig1inv):0;
-   int k20 = (sigsize_dsig > 1)?
+   int k20 = (sigsize_dsig2 > 1)?
      v.little_corner().in_direction(dsig2):0;
-   int k2inv0 = (sigsize_dsig1 > 1)?
+   int k2inv0 = (sigsize_dsig2inv > 1)?
      v.little_corner().in_direction(dsig2inv):0;    
+
+   // utility macro to concatenate symbols (nested to ensure substitutions)
+#define PASTEx(a,b) a ## b
+#define PASTE(a,b) PASTEx(a,b)
+
+   // the following definitions are used over and over
+
+   // indices into sigma arrays:
+#  define KDEF(k,dsig,k0) int k = (PASTE(sigsize_,dsig) > 1) * \
+                                  (iloc.in_direction(dsig) - k0)
+#  define DEF_k KDEF(k,dsig,k0)
+#  define DEF_kx(x) KDEF(PASTE(k,x), PASTE(dsig,x), PASTE(PASTE(k,x),0))
+
+   // fields
+#  define DEF_gs  double gs = ((1+sigg[kg])*siginv[k]) * g[i]
+#  define DEF_gbs double gbs = ((1-sigg[kg])*siginv[k]) * gb[i]
+#  define DEF_us  double us = u[i]
+#  define DEF_g1s double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) * \
+                               (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)])
+#  define DEF_g2s double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) * \
+                               (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)])
+#  define DEF_g1bs double g1bs = ((1-sig1[k1]) * sig1inv[k1inv]) * \
+                                 (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)])
+#  define DEF_g2bs double g2bs = ((1-sig2[k2]) * sig2inv[k2inv]) * \
+                                 (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)])
+
 
    if (u1 && u2) { // 3x3 off-diagonal u
      if (chi3) {
        LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
-	  int k1 = iloc.in_direction(dsig1) - k10;
-	  int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
-	  double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
-	    (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	  double g1bs = ((1-sig1[k1]) * sig1inv[k1]) *
-	    (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)]);
-	  int k2 = iloc.in_direction(dsig2);
-	  int k2inv = iloc.in_direction(dsig2inv);
-	  double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
-	    (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	  double g2bs = ((1-sig2[k2]) * sig2inv[k2]) *
-	    (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)]);
-	  int kg = iloc.in_direction(dsigg);
-	  double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	  double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	  double us = u[i];
+	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
+	  DEF_kx(2); DEF_kx(2inv); DEF_g2s; DEF_g2bs;
+	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+	  DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
 	    ((gs-gbs) * us + 0.25 * (u1[i]*(g1s-g1bs) + u2[i]*(g2s-g2bs))) *
 	    calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
@@ -240,42 +250,21 @@ inline double calc_nonlinear_u(const double Dsqr,
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
-	  int k1 = iloc.in_direction(dsig1) - k10;
-	  int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
-	  double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
-	    (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	  double g1bs = ((1-sig1[k1]) * sig1inv[k1]) *
-	    (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)]);
-	  int k2 = iloc.in_direction(dsig2) - k20;
-	  int k2inv = iloc.in_direction(dsig2inv) - k2inv0;
-	  double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
-	    (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	  double g2bs = ((1-sig2[k2]) * sig2inv[k2]) *
-	    (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)]);
-	  int kg = iloc.in_direction(dsigg) - kg0;
-	  double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	  double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	  double us = u[i];
+	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
+          DEF_kx(2); DEF_kx(2inv); DEF_g2s; DEF_g2bs;
+          DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+          DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
 	    ((gs-gbs) * us + 0.25 * (u1[i]*(g1s-g1bs) + u2[i]*(g2s-g2bs)));
 	}
       }
-    } else if (u1 && !u2) { // 2x2 off-diagonal u
+    } else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
-	  int k1 = iloc.in_direction(dsig1) - k10;
-	  int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
-	  double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
-	    (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	  double g1bs = ((1-sig1[k1]) * sig1inv[k1]) *
-	    (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)]);
-	  int kg = iloc.in_direction(dsigg) - kg0;
-	  double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	  double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	  double us = u[i];
+	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
+	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+          DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
 	    ((gs - gbs) * us + 0.25 * (u1[i]*(g1s-g1bs))) *
 	    calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
@@ -284,121 +273,45 @@ inline double calc_nonlinear_u(const double Dsqr,
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
-	  int k1 = iloc.in_direction(dsig1) - k10;
-	  int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
-	  double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
-	    (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	  double g1bs = ((1-sig1[k1]) * sig1inv[k1]) *
-	    (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)]);
-	  int kg = iloc.in_direction(dsigg) - kg0;
-	  double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	  double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	  double us = u[i];
+	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
+          DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+          DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
 	    ((gs - gbs) * us + 0.25 * (u1[i]*(g1s-g1bs)));
 	}	
       }
-    } else if (!u1 && u2) { // 2x2 off-diagonal u
-      if (chi3) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
-	  int k2 = iloc.in_direction(dsig2) - k20;
-	  int k2inv = iloc.in_direction(dsig2inv) - k2inv0;
-	  double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
-	    (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	  double g2bs = ((1-sig2[k2]) * sig2inv[k2]) *
-	    (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)]);
-	  int kg = iloc.in_direction(dsigg) - kg0;
-	  double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	  double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	  double us = u[i];
-	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs - gbs) * us + 0.25 * (u2[i]*(g2s-g2bs))) *
-	    calc_nonlinear_u(gs * gs + 0.0625 * (g2s*g2s),
-			     gs, us, chi2[i], chi3[i]);
-	}
-      } else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
-	  int k2 = iloc.in_direction(dsig1) - k20;
-	  int k2inv = iloc.in_direction(dsig2inv) - k2inv0;
-	  double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
-	    (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	  double g2bs = ((1-sig2[k2]) * sig2inv[k2]) *
-	    (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)]);
-	  int kg = iloc.in_direction(dsigg) - kg0;
-	  double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	  double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	  double us = u[i];
-	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs - gbs) * us + 0.25 * (u2[i]*(g2s-g2bs)));
-	}	
-      }
+    } else if (u2) { // 2x2 off-diagonal u
+      abort("bug - didn't swap off-diagonal terms!?");
     } else { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    IVEC_LOOP_ILOC(v, iloc);
-	    int k = iloc.in_direction(dsig) - k0;
-	    int k1 = iloc.in_direction(dsig1) - k10;
-	    int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
-	    double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
-	      (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	    int k2 = iloc.in_direction(dsig2) - k20;
-	    int k2inv = iloc.in_direction(dsig2inv) - k2inv0;
-	    double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
-	      (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	    int kg = iloc.in_direction(dsigg) - kg0;
-	    double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	    double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	    double us = u[i];
+	    DEF_kx(1); DEF_kx(1inv); DEF_g1s;
+	    DEF_kx(2); DEF_kx(2inv); DEF_g2s;
+	    DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+	    DEF_us;
 	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
 	      calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
 			       gs, us, chi2[i], chi3[i]);
 	  }
-	} else if (g1 && !g2) {
+	} else if (g1) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    IVEC_LOOP_ILOC(v, iloc);
-	    int k = iloc.in_direction(dsig) - k0;
-	    int k1 = iloc.in_direction(dsig1) - k10;
-	    int k1inv = iloc.in_direction(dsig1inv) - k1inv0;
-	    double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) *
-	      (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)]);
-	    int kg = iloc.in_direction(dsigg) - kg0;
-	    double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	    double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	    double us = u[i];
+	    DEF_kx(1); DEF_kx(1inv); DEF_g1s;
+            DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+            DEF_us;
 	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
      	      calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
      			       gs, us, chi2[i], chi3[i]);
 	  }
-	} else if (!g1 && g2) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    IVEC_LOOP_ILOC(v, iloc);
-	    int k = iloc.in_direction(dsig) - k0;
-	    int k2 = iloc.in_direction(dsig2) - k20;
-	    int k2inv = iloc.in_direction(dsig2inv) - k2inv0;
-	    double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) *
-	      (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)]);
-	    int kg = iloc.in_direction(dsigg) - kg0;
-	    double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	    double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	    double us = u[i];
-	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
-     	      calc_nonlinear_u(gs * gs + 0.0625 * (g2s*g2s),
-     			       gs, us, chi2[i], chi3[i]);
-	  }
+	} else if (g2) {
+	  abort("bug - didn't swap off-diagonal terms!?");
 	} else {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    IVEC_LOOP_ILOC(v, iloc);
-	    int k = (sigsize_dsig>1)*(iloc.in_direction(dsig) - k0);
-	    int kg = (sigsize_dsigg>1)*(iloc.in_direction(dsigg) - kg0);
-	    double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	    double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	    double us = u[i];
+	    DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+            DEF_us;
 	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
      	      calc_nonlinear_u(gs * gs, gs, us, chi2[i], chi3[i]);
 	  }
@@ -406,11 +319,8 @@ inline double calc_nonlinear_u(const double Dsqr,
       } else { //linear, diagonal u
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = (sigsize_dsig>1)*(iloc.in_direction(dsig) - k0);
-	  int kg = (sigsize_dsigg>1)*(iloc.in_direction(dsigg) - kg0); 
-	  double gs = ((1+sigg[kg])*siginv[k]) * g[i];
-	  double gbs = ((1-sigg[kg])*siginv[k]) * gb[i];
-	  double us = u[i];
+	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+	  DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs) * us;
 	}
       }
