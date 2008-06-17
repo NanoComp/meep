@@ -195,18 +195,12 @@ inline double calc_nonlinear_u(const double Dsqr,
   else { // PML
     
     // offset so that we can index by iloc
-   int k0 = (sigsize_dsig > 1)?
-     v.little_corner().in_direction(dsig):0;
-   int kg0 = (sigsize_dsigg > 1)?
-     v.little_corner().in_direction(dsigg):0;
-   int k10 = (sigsize_dsig1 > 1)?
-     v.little_corner().in_direction(dsig1):0;
-   int k1inv0 = (sigsize_dsig1inv > 1)?
-     v.little_corner().in_direction(dsig1inv):0;
-   int k20 = (sigsize_dsig2 > 1)?
-     v.little_corner().in_direction(dsig2):0;
-   int k2inv0 = (sigsize_dsig2inv > 1)?
-     v.little_corner().in_direction(dsig2inv):0;    
+   int k0 = v.little_corner().in_direction(dsig);
+   int kg0 = v.little_corner().in_direction(dsigg);
+   int k10 = v.little_corner().in_direction(dsig1);
+   int k1inv0 = v.little_corner().in_direction(dsig1inv);
+   int k20 = v.little_corner().in_direction(dsig2);
+   int k2inv0 = v.little_corner().in_direction(dsig2inv);
 
    // utility macro to concatenate symbols (nested to ensure substitutions)
 #define PASTEx(a,b) a ## b
