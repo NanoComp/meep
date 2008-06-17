@@ -443,7 +443,7 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
 }
 
 // reflections from non-absorbed wave in continuum
-const double Rabs = 1e-30;
+const double Rabs = 1e-15;
 
 void structure_chunk::use_pml(direction d, double dx, double bloc,
 			      double strength) {
