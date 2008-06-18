@@ -150,11 +150,14 @@ public:
   virtual double eps(const vec &r) { (void)r; return 1.0; }
 
   /* scalar permeability function */
+  virtual bool has_mu() { return false; } /* true if mu != 1 */
   virtual double mu(const vec &r) { (void)r; return 1.0; }
   
   /* scalar conductivity function */
-  virtual double conductivity(const vec &r) { (void)r; return 1.0; }
-  
+  virtual bool has_conductivity(component c) { (void)c; return false; }
+  virtual double conductivity(component c, const vec &r) { 
+    (void) c; (void)r; return 0.0; }  
+
   /* Return interface normal and/or average dielectric eps and 1/eps
      in a given volume gv.   These are virtual so that e.g. libctl
      can override them with more efficient geometry-based routines. */
@@ -195,7 +198,8 @@ public:
   
   virtual double eps(const vec &r) { return f(r); }
   virtual double mu(const vec &r) { return f(r); }
-  virtual double conductivity(const vec &r) { return f(r); }
+  virtual double conductivity(component c, const vec &r) { 
+    (void)c; return f(r); }
   virtual double sigma(const vec &r) { return f(r); }
   virtual double chi3(const vec &r) { return f(r); }
   virtual double chi2(const vec &r) { return f(r); }

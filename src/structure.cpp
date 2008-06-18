@@ -316,6 +316,8 @@ void structure::set_materials(material_function &mat,
 			      double tol, int maxeval) {
   set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
   set_mu(mat);
+  FOR_D_COMPONENTS(c) if (mat.has_conductivity(c)) set_conductivity(c, mat);
+  FOR_B_COMPONENTS(c) if (mat.has_conductivity(c)) set_conductivity(c, mat);
   if (mat.has_chi3()) set_chi3(mat);
   if (mat.has_chi2()) set_chi2(mat);
 }
@@ -355,6 +357,7 @@ void structure::set_mu(double mufunc(const vec &)) {
 }
 
 void structure::set_conductivity(component c, material_function &C) {
+  if (!v.has_field(c)) return;
   double tstart = wall_time();
   changing_chunks();
   for (int i=0;i<num_chunks;i++)

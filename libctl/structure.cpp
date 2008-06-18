@@ -95,6 +95,12 @@ public:
   virtual bool has_chi2();
   virtual double chi2(const meep::vec &r);
 
+  virtual bool has_mu();
+  virtual double mu(const meep::vec &r);
+
+  virtual bool has_conductivity(meep::component c);
+  virtual double conductivity(meep::component c, const meep::vec &r);
+
   virtual meep::vec normal_vector(const meep::geometric_volume &gv);
   virtual void meaneps(double &meps, double &minveps, meep::vec &normal,
 		       const meep::geometric_volume &gv, 
@@ -106,6 +112,9 @@ public:
 
   virtual double sigma(const meep::vec &r);
   void add_polarizabilities(meep::structure *s);
+
+private:
+  bool get_material_pt(material_type &material, const meep::vec &r);
 };
 
 geom_epsilon::geom_epsilon(geometric_object_list g,
@@ -118,11 +127,11 @@ geom_epsilon::geom_epsilon(geometric_object_list g,
       display_geometric_object_info(5, geometry.items[i]);
       
       if (geometry.items[i].material.which_subclass 
-	  == MTS::DIELECTRIC)
+	  == MTS::MEDIUM)
 	printf("%*sdielectric constant epsilon = %g\n",
 	       5 + 5, "",
 	       geometry.items[i].material.
-	       subclass.dielectric_data->epsilon);
+	       subclass.medium_data->epsilon);
     }
   }
   
@@ -201,8 +210,8 @@ static int variable_material(int which_subclass)
 
 static void material_eps(material_type material, double &eps, double &eps_inv) {
   switch (material.which_subclass) {
-  case MTS::DIELECTRIC:
-    eps = material.subclass.dielectric_data->epsilon;
+  case MTS::MEDIUM:
+    eps = material.subclass.medium_data->epsilon;
     eps_inv = 1.0 / eps;
     break;
   case MTS::PERFECT_METAL:
@@ -214,12 +223,32 @@ static void material_eps(material_type material, double &eps, double &eps_inv) {
   }
 }
 
+bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
+{
+  vector3 p = vec_to_vector3(r);
+  boolean inobject;
+  material =
+    material_of_unshifted_point_in_tree_inobject(p, restricted_tree,&inobject);
+
+  bool destroy_material = false;
+  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
+    material = default_material;
+  }
+  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+    material = eval_material_func(material.subclass.
+                                  material_function_data->material_func,
+                                  p);
+    destroy_material = true;
+  }
+  return destroy_material;
+}
+
 double geom_epsilon::eps(const meep::vec &r)
 {
   double eps = 1.0, eps_inv;
-  vector3 p = vec_to_vector3(r);
 
 #ifdef DEBUG
+  vector3 p = vec_to_vector3(r);
   if (p.x < restricted_tree->b.low.x ||
       p.y < restricted_tree->b.low.y ||
       p.z < restricted_tree->b.low.z ||
@@ -229,20 +258,8 @@ double geom_epsilon::eps(const meep::vec &r)
     meep::abort("invalid point (%g,%g,%g)\n", p.x,p.y,p.z);
 #endif
 
-  boolean inobject;
-  material_type material =
-    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
-  
-  int destroy_material = 0;
-  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
-    material = default_material;
-  }
-  if (variable_material(material.which_subclass)) {
-    material = eval_material_func(material.subclass.
-				  material_function_data->material_func,
-				  p);
-    destroy_material = 1;
-  }
+  material_type material;
+  bool destroy_material = get_material_pt(material, r);
 
   material_eps(material, eps, eps_inv);  
   
@@ -499,8 +516,8 @@ void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
 bool geom_epsilon::has_chi3()
 {
   for (int i = 0; i < geometry.num_items; ++i) {
-    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
-      if (geometry.items[i].material.subclass.dielectric_data->chi3 != 0)
+    if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
+      if (geometry.items[i].material.subclass.medium_data->chi3 != 0)
 	return true; 
     }
   }
@@ -509,32 +526,18 @@ bool geom_epsilon::has_chi3()
        property have non-zero chi3 for Kerr to be enabled.   It might
        be better to have set_chi3 automatically delete chi3[] if the
        chi3's are all zero. */
-  return (default_material.which_subclass == MTS::DIELECTRIC &&
-	  default_material.subclass.dielectric_data->chi3 != 0);
+  return (default_material.which_subclass == MTS::MEDIUM &&
+	  default_material.subclass.medium_data->chi3 != 0);
 }
 
 double geom_epsilon::chi3(const meep::vec &r) {
-  vector3 p = vec_to_vector3(r);
-
-  boolean inobject;
-  material_type material =
-    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
-  
-  int destroy_material = 0;
-  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
-    material = default_material;
-  }
-  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
-    material = eval_material_func(material.subclass.
-				  material_function_data->material_func,
-				  p);
-    destroy_material = 1;
-  }
+  material_type material;
+  bool destroy_material = get_material_pt(material, r);
   
   double chi3_val;
   switch (material.which_subclass) {
-  case MTS::DIELECTRIC:
-    chi3_val = material.subclass.dielectric_data->chi3;
+  case MTS::MEDIUM:
+    chi3_val = material.subclass.medium_data->chi3;
     break;
   default:
     chi3_val = 0;
@@ -549,8 +552,8 @@ double geom_epsilon::chi3(const meep::vec &r) {
 bool geom_epsilon::has_chi2()
 {
   for (int i = 0; i < geometry.num_items; ++i) {
-    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC) {
-      if (geometry.items[i].material.subclass.dielectric_data->chi2 != 0)
+    if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
+      if (geometry.items[i].material.subclass.medium_data->chi2 != 0)
 	return true; 
     }
   }
@@ -559,32 +562,18 @@ bool geom_epsilon::has_chi2()
        property have non-zero chi2 for Kerr to be enabled.   It might
        be better to have set_chi2 automatically delete chi2[] if the
        chi2's are all zero. */
-  return (default_material.which_subclass == MTS::DIELECTRIC &&
-	  default_material.subclass.dielectric_data->chi2 != 0);
+  return (default_material.which_subclass == MTS::MEDIUM &&
+	  default_material.subclass.medium_data->chi2 != 0);
 }
 
 double geom_epsilon::chi2(const meep::vec &r) {
-  vector3 p = vec_to_vector3(r);
-
-  boolean inobject;
-  material_type material =
-    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
-  
-  int destroy_material = 0;
-  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
-    material = default_material;
-  }
-  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
-    material = eval_material_func(material.subclass.
-				  material_function_data->material_func,
-				  p);
-    destroy_material = 1;
-  }
+  material_type material;
+  bool destroy_material = get_material_pt(material, r);
   
   double chi2_val;
   switch (material.which_subclass) {
-  case MTS::DIELECTRIC:
-    chi2_val = material.subclass.dielectric_data->chi2;
+  case MTS::MEDIUM:
+    chi2_val = material.subclass.medium_data->chi2;
     break;
   default:
     chi2_val = 0;
@@ -594,6 +583,90 @@ double geom_epsilon::chi2(const meep::vec &r) {
     material_type_destroy(material);
   
   return chi2_val;
+}
+
+bool geom_epsilon::has_mu()
+{
+  for (int i = 0; i < geometry.num_items; ++i) {
+    if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
+      if (geometry.items[i].material.subclass.medium_data->mu != 1)
+	return true; 
+    }
+  }
+    /* FIXME: what to do about material-functions?
+       Currently, we require that at least *one* ordinary material
+       property have non-zero chi2 for Kerr to be enabled.   It might
+       be better to have set_chi2 automatically delete chi2[] if the
+       chi2's are all zero. */
+  return (default_material.which_subclass == MTS::MEDIUM &&
+	  default_material.subclass.medium_data->mu != 1);
+}
+
+double geom_epsilon::mu(const meep::vec &r) {
+  material_type material;
+  bool destroy_material = get_material_pt(material, r);
+
+  double mu_val;
+  switch (material.which_subclass) {
+  case MTS::MEDIUM:
+    mu_val = material.subclass.medium_data->mu;
+    break;
+  default:
+    mu_val = 1;
+  }
+  
+  if (destroy_material)
+    material_type_destroy(material);
+  
+  return mu_val;
+}
+
+static double get_cnd(meep::component c, const medium *m) {
+  switch (c) {
+  case meep::Dr: case meep::Dx: return m->D_conductivity_diag.x;
+  case meep::Dp: case meep::Dy: return m->D_conductivity_diag.y;
+  case meep::Dz: return m->D_conductivity_diag.z;
+  case meep::Br: case meep::Bx: return m->B_conductivity_diag.x;
+  case meep::Bp: case meep::By: return m->B_conductivity_diag.y;
+  case meep::Bz: return m->B_conductivity_diag.z;
+  default: return 0;
+  }
+}
+
+bool geom_epsilon::has_conductivity(meep::component c)
+{
+  for (int i = 0; i < geometry.num_items; ++i) {
+    if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
+      if (get_cnd(c, geometry.items[i].material.subclass.medium_data) != 0)
+	return true; 
+    }
+  }
+    /* FIXME: what to do about material-functions?
+       Currently, we require that at least *one* ordinary material
+       property have non-zero chi2 for Kerr to be enabled.   It might
+       be better to have set_chi2 automatically delete chi2[] if the
+       chi2's are all zero. */
+  return (default_material.which_subclass == MTS::MEDIUM &&
+	  get_cnd(c, default_material.subclass.medium_data) != 0);
+}
+
+double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
+  material_type material;
+  bool destroy_material = get_material_pt(material, r);
+
+  double cond_val;
+  switch (material.which_subclass) {
+  case MTS::MEDIUM:
+    cond_val = get_cnd(c, material.subclass.medium_data);
+    break;
+  default:
+    cond_val = 0;
+  }
+  
+  if (destroy_material)
+    material_type_destroy(material);
+  
+  return cond_val;
 }
 
 double geom_epsilon::sigma(const meep::vec &r) {
@@ -615,9 +688,9 @@ double geom_epsilon::sigma(const meep::vec &r) {
   }
   
   double sigma = 0;
-  if (material.which_subclass == MTS::DIELECTRIC) {
+  if (material.which_subclass == MTS::MEDIUM) {
     polarizability_list plist = 
-      material.subclass.dielectric_data->polarizations;
+      material.subclass.medium_data->polarizations;
     for (int j = 0; j < plist.num_items; ++j)
       if (plist.items[j].omega == omega &&
 	  plist.items[j].gamma == gamma &&
@@ -674,13 +747,13 @@ void geom_epsilon::add_polarizabilities(meep::structure *s) {
 
   // construct a list of the unique polarizabilities in the geometry:
   for (int i = 0; i < geometry.num_items; ++i) {
-    if (geometry.items[i].material.which_subclass == MTS::DIELECTRIC)
+    if (geometry.items[i].material.which_subclass == MTS::MEDIUM)
       pols = add_pols(pols, geometry.items[i].material
-		      .subclass.dielectric_data->polarizations);
+		      .subclass.medium_data->polarizations);
   }
-  if (default_material.which_subclass == MTS::DIELECTRIC)
+  if (default_material.which_subclass == MTS::MEDIUM)
     pols = add_pols(pols, default_material
-		    .subclass.dielectric_data->polarizations);
+		    .subclass.medium_data->polarizations);
     
   for (struct pol *p = pols; p; p = p->next) {
     master_printf("polarizability: omega=%g, gamma=%g, deps=%g, esat=%g\n",
