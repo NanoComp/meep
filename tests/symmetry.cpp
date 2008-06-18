@@ -37,8 +37,8 @@ double rods_2d(const vec &pp) {
   return 1.0;
 }
 
-static double eps_compare = 7e-15;
-static double thresh_compare = 1e-16;
+static double eps_compare = 1e-9;
+static double thresh_compare = 1e-15;
 
 static inline double max(double a, double b) { return a > b ? a : b; }
 
@@ -707,29 +707,34 @@ int pml_twomirrors(double eps(const vec &)) {
 
   structure s_mm(v, eps, pml(0.5), S);
   structure s1(v, eps, pml(0.5), identity());
-  structure ss[2] = { s1, s_mm };
-
   master_printf("Testing two mirrors with PML...\n");
+  fields f_mm(&s_mm);
+  fields f1(&s1);
 
-  fields fs[2] = { fields(&ss[0]), fields(&ss[1]) };
-  for (int i=0;i<2;i++) {
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.0,1.0),-1.5);
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,0.75));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,1.25));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,0.75));
-    fs[i].add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,1.25));
-  }
-  check_unequal_layout(fs[0], fs[1]);
+  f_mm.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.0,1.0),-1.5);
+  f_mm.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,0.75));
+  f_mm.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,1.25));
+  f_mm.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,0.75));
+  f_mm.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,1.25));
+
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.0,1.0),-1.5);
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,0.75));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75,1.25));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,0.75));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,1.25));
+
+  check_unequal_layout(f_mm, f1);
   double total_energy_check_time = 3.0;
-  while (fs[0].time() < ttot) {
-    for (int i=0;i<2;i++) fs[i].step();
-    if (!compare_point(fs[1], fs[0], vec(0.01 ,  0.5))) return 0;
-    if (!compare_point(fs[1], fs[0], vec(0.21 ,  0.5))) return 0;
-    if (!compare_point(fs[1], fs[0], vec(0.46 , 0.33))) return 0;
-    if (!compare_point(fs[1], fs[0], vec(0.2  , 0.2 ))) return 0;
-    if (fs[0].time() >= total_energy_check_time) {
-      if (!compare(fs[0].electric_energy_in_box(v.surroundings()),
-                   fs[1].electric_energy_in_box(v.surroundings()),
+  while (f_mm.time() < ttot) {
+    f_mm.step();
+    f1.step();
+    if (!compare_point(f1, f_mm, vec(0.01 ,  0.5))) return 0;
+    if (!compare_point(f1, f_mm, vec(0.21 ,  0.5))) return 0;
+    if (!compare_point(f1, f_mm, vec(0.46 , 0.33))) return 0;
+    if (!compare_point(f1, f_mm, vec(0.2  , 0.2 ))) return 0;
+    if (f_mm.time() >= total_energy_check_time) {
+      if (!compare(f_mm.electric_energy_in_box(v.surroundings()),
+                   f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
       total_energy_check_time += 3.0;
     }
@@ -1070,7 +1075,6 @@ int main(int argc, char **argv) {
      general a nonlinear system does *not* conserve the irreducible
      representation of the symmetry group (i.e. symmetry doesn't work).
      The simulations here are chosen to preserve the symmetry, however. */
-  eps_compare = 1e-10;
   thresh_compare = 1e-10;
 
   if (!nonlinear_ex(vol1d(1.0, 10.0), one))
