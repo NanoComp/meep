@@ -195,24 +195,34 @@ inline double calc_nonlinear_u(const double Dsqr,
   else { // PML
     
     // offset so that we can index by iloc
-   int k0 = v.little_corner().in_direction(dsig);
-   int kg0 = v.little_corner().in_direction(dsigg);
-   int k10 = v.little_corner().in_direction(dsig1);
-   int k1inv0 = v.little_corner().in_direction(dsig1inv);
-   int k20 = v.little_corner().in_direction(dsig2);
-   int k2inv0 = v.little_corner().in_direction(dsig2inv);
-
-   // utility macro to concatenate symbols (nested to ensure substitutions)
-#define PASTEx(a,b) a ## b
-#define PASTE(a,b) PASTEx(a,b)
+    /* The sigsize_dsig>1 check seems to be redudant, since there
+       is an identical check when k0 (etc.) is used.  However,
+       for some reason we don't understand, removing that check
+       here causes valgrind to complain about some uninitialized
+       pointer value when running bragg_transmission.dac ... since
+       it is harmless, we keep it here to shut valgrind up
+       (and on the chance that valgrind is identifying a real bug
+       that we can't figure out). */
+   int k0 = (sigsize_dsig > 1)?
+     v.little_corner().in_direction(dsig):0;
+   int kg0 = (sigsize_dsigg > 1)?
+     v.little_corner().in_direction(dsigg):0;
+   int k10 = (sigsize_dsig1 > 1)?
+     v.little_corner().in_direction(dsig1):0;
+   int k1inv0 = (sigsize_dsigg > 1)?
+     v.little_corner().in_direction(dsig1inv):0;
+   int k20 = (sigsize_dsig > 1)?
+     v.little_corner().in_direction(dsig2):0;
+   int k2inv0 = (sigsize_dsig1 > 1)?
+     v.little_corner().in_direction(dsig2inv):0;
 
    // the following definitions are used over and over
 
    // indices into sigma arrays:
-#  define KDEF(k,dsig,k0) int k = (PASTE(sigsize_,dsig) > 1) * \
+#  define KDEF(k,dsig,k0) int k = (sigsize_ ## dsig > 1) * \
                                   (iloc.in_direction(dsig) - k0)
 #  define DEF_k KDEF(k,dsig,k0)
-#  define DEF_kx(x) KDEF(PASTE(k,x), PASTE(dsig,x), PASTE(PASTE(k,x),0))
+#  define DEF_kx(x) KDEF(k ## x, dsig ## x, k ## x ## 0)
 
    // fields
 #  define DEF_gs  double gs = ((1+sigg[kg])*siginv[k]) * g[i]
