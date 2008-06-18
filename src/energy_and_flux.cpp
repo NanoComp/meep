@@ -102,6 +102,9 @@ double fields::magnetic_energy_in_box(const geometric_volume &where) {
 }
 
 void fields_chunk::backup_component(component c) {
+  // if we have D-P, then f_prev stores D-P, not D, complicating matters
+  if (is_D(c) && have_d_minus_p) abort("backup-D with D-P not implemented");
+
   DOCMP {
     if (f[c][cmp]) {
       if (!f_backup[c][cmp])

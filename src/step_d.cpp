@@ -48,11 +48,13 @@ void fields_chunk::step_d() {
   bool have_pml = false;
   FOR_D_COMPONENTS(cc)
     if (s->sigsize[(component_direction(cc)+1)%3] > 1) have_pml = true;
-  if (have_pml) FOR_D_COMPONENTS(c) DOCMP
-    if (f[c][cmp]) {
-      if (!f_prev[c][cmp])
-        f_prev[c][cmp] = new double[v.ntot()];
-      memcpy(f_prev[c][cmp], f[c][cmp], v.ntot()*sizeof(double));
+  if (have_pml) FOR_E_AND_D(ec,dc) DOCMP
+    if (f[dc][cmp]) {
+      if (!f_prev[dc][cmp])
+        f_prev[dc][cmp] = new double[v.ntot()];
+      // update_e_from_d requires previous D-P, not D, if D-P is present
+      memcpy(f_prev[dc][cmp], have_d_minus_p ? d_minus_p[ec][cmp] : f[dc][cmp],
+	     v.ntot()*sizeof(double));
     }
 
   if (v.dim != Dcyl) {
