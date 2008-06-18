@@ -47,6 +47,9 @@ void fields::step() {
   }
 
   phase_material();
+  
+  // update cached conductivity-inverse array, if needed
+  for (int i=0;i<num_chunks;i++) chunks[i]->s->update_condinv();
 
   calc_sources(time()); // for H sources
 

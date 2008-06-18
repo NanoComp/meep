@@ -12,39 +12,83 @@ namespace meep {
    PML: sig[k] = sigma[k]*dt/2, siginv[k] = 1 / (1 + sigma[k]*dt/2).
    Here, k is the dsig direction.  if dsig == NO_DIRECTION, then PML
    is not used.  (dsig is the sigma direction.)
+
+   if non-NULL, then cnd is an array of conductivity values, changing
+   the underlying PDE to:
+       df/dt = curl g - cnd f
+   which is updated as:
+       f = [ dt * curl g + (1 - dt cnd/2) f ] / (1 + dt cnd/2)
+   cndinv should be an array of 1 / (1 + dt cnd/2).  In the case
+   of PML, cndinv should contain 1 / (1 + dt (cnd + sigma)/2).
 */
 
 void step_curl(double *f, component c, const double *g1, const double *g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
-	       direction dsig, const double *sig, const double *siginv)
+	       direction dsig, const double *sig, const double *siginv,
+	       double dt, const double *cnd, const double *cndinv)
 {
   if (dsig == NO_DIRECTION) { // no PML
-    if (g2) {
-      LOOP_OVER_VOL_OWNED(v, c, i)
-	f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+    if (cnd) {
+      double dt2 = dt * 0.5;
+      if (g2) {
+	LOOP_OVER_VOL_OWNED(v, c, i)
+	  f[i] = ((1 - dt2 * cnd[i]) * f[i] - 
+		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+      }
+      else {
+	LOOP_OVER_VOL_OWNED(v, c, i)
+	  f[i] = ((1 - dt2 * cnd[i]) * f[i] 
+		  - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+      }
     }
-    else {
-      LOOP_OVER_VOL_OWNED(v, c, i)
-	f[i] -= dtdx * (g1[i+s1] - g1[i]);
+    else { // no conductivity
+      if (g2) {
+	LOOP_OVER_VOL_OWNED(v, c, i)
+	  f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+      }
+      else {
+	LOOP_OVER_VOL_OWNED(v, c, i)
+	  f[i] -= dtdx * (g1[i+s1] - g1[i]);
+      }
     }
   }
   else { /* PML */
     int k0 = v.little_corner().in_direction(dsig);
-    if (g2) {
-      LOOP_OVER_VOL_OWNED(v, c, i) {
-	IVEC_LOOP_ILOC(v, iloc);
-	int k = iloc.in_direction(dsig) - k0;
-	f[i] = ((1 - sig[k]) * siginv[k]) * f[i] -
-	  (siginv[k] * dtdx) * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+    if (cnd) {
+      double dt2 = dt * 0.5;
+      if (g2) {
+	LOOP_OVER_VOL_OWNED(v, c, i) {
+	  IVEC_LOOP_ILOC(v, iloc);
+	  int k = iloc.in_direction(dsig) - k0;
+	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] - 
+		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+	}
+      }
+      else {
+	LOOP_OVER_VOL_OWNED(v, c, i) {
+	  IVEC_LOOP_ILOC(v, iloc);
+	  int k = iloc.in_direction(dsig) - k0;
+	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] 
+		  - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+	}
       }
     }
-    else {
-      LOOP_OVER_VOL_OWNED(v, c, i) {
-	IVEC_LOOP_ILOC(v, iloc);
-	int k = iloc.in_direction(dsig) - k0;
-	f[i] = ((1 - sig[k]) * siginv[k]) * f[i] -
-	  (siginv[k] * dtdx) * (g1[i+s1] - g1[i]);
+    else { // no conductivity (other than PML conductivity)
+      if (g2) {
+	LOOP_OVER_VOL_OWNED(v, c, i) {
+	  IVEC_LOOP_ILOC(v, iloc);
+	  int k = iloc.in_direction(dsig) - k0;
+	  f[i] = ((1 - sig[k]) * f[i] -
+		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
+	}
+      }
+      else {
+	LOOP_OVER_VOL_OWNED(v, c, i) {
+	  IVEC_LOOP_ILOC(v, iloc);
+	  int k = iloc.in_direction(dsig) - k0;
+	  f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1] - g1[i])) * siginv[k];
+	}
       }
     }
   }

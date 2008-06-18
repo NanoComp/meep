@@ -73,25 +73,30 @@ void fields_chunk::step_d() {
 	RESTRICT double *the_f = f[cc][cmp];
 	if (v.dim == D3) {
 	  step_curl(the_f, cc, f_p, f_m, -stride_p, -stride_m, v, Courant, 
-	dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL);
+	dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL,
+		    dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
 	} else if (v.dim == D2) {
 	  if (f[Ez][cmp]) { // TM
 	    if (have_p && have_m)
 	     step_curl(the_f, cc, f_p, f_m, -stride_p, -stride_m, v, Courant,
-	dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL);
+	dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL,
+		       dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
 	  } 
 	  if (f[Hz][cmp]) { // TE
 	    if (!have_p && have_m)
 	      step_curl(the_f, cc, f_m, NULL, -stride_m, 0, v, -Courant, 
-			dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL);
+			dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL,
+			dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
 	    else if (have_p && !have_m)
 	      step_curl(the_f, cc, f_p, NULL, -stride_p, 0, v, Courant, 
-			dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL);
+			dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL,
+			dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
 	  }
 	} else if (v.dim == D1) {
 	  if (!have_p && have_m)
 	    step_curl(the_f, cc, f_m, NULL, -stride_m, 0, v, -Courant, 
-        dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL);
+        dsig, have_pml?s->sig[dsig]:NULL, have_pml?s->siginv[dsig]:NULL,
+		      dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
 	}
       }
   } else if (v.dim == Dcyl) {

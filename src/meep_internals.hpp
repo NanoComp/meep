@@ -137,4 +137,28 @@ symmetry r_to_minus_r_symmetry(int m);
 
 #define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
+
+// functions in step_generic.cpp:
+
+void step_curl(double *f, component c, const double *g1, const double *g2,
+	       int s1, int s2, // strides for g1/g2 shift
+	       const volume &v, double dtdx,
+	       direction dsig, const double *sig, const double *siginv,
+	       double dt, const double *cnd, const double *cndinv);
+
+void step_update_EDHB(double *f, component fc, const volume &v,
+		      const double *g, const double *g1, const double *g2,
+		      const double *gb, const double *g1b, const double *g2b,
+		      const double *u, const double *u1, const double *u2,
+		      int s, int s1, int s2,
+		      const double *chi2, const double *chi3,
+		      direction dsig,const double *sig,const double *siginv,
+		      direction dsigg, const double *sigg,
+		      direction dsig1, const double *sig1,
+		      direction dsig1inv, const double *sig1inv,
+		      direction dsig2, const double *sig2,
+		      direction dsig2inv, const double *sig2inv,
+		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1);
+
+
 } // namespace meep

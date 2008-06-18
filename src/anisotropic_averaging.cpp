@@ -212,11 +212,41 @@ void structure_chunk::set_mu(material_function &mu) {
   }
 }
 
+void structure_chunk::set_conductivity(component c, material_function &C) {
+  if (!is_mine()) return;
+  C.set_volume(v.pad().surroundings());
+
+  if (!is_electric(c) && !is_magnetic(c) && !is_D(c) && !is_B(c))
+    abort("invalid component for conductivity");
+  if (v.has_field(c)) {
+    direction c_d = component_direction(c);
+    component c_C = is_electric(c) ? direction_component(Dx, c_d) :
+      (is_magnetic(c) ? direction_component(Bx, c_d) : c);
+    double *multby = is_electric(c) ? inveps[c][c_d] :
+      (is_magnetic(c) ? invmu[c][c_d] : NULL);
+    if (!conductivity[c_C][c_d]) 
+      conductivity[c_C][c_d] = new double[v.ntot()]; 
+    if (!conductivity[c_C][c_d]) abort("Memory allocation error.\n");
+    if (multby) {
+      LOOP_OVER_VOL(v, c_C, i) {
+	IVEC_LOOP_LOC(v, here);
+	conductivity[c_C][c_d][i] = C.conductivity(here) * multby[i];
+      }
+    }
+    else {
+      LOOP_OVER_VOL(v, c_C, i) {
+	IVEC_LOOP_LOC(v, here);
+	conductivity[c_C][c_d][i] = C.conductivity(here);
+      }
+    }
+  }
+  condinv_stale = true;
+}
+
 void structure_chunk::set_epsilon(material_function &epsilon,
 				  bool use_anisotropic_averaging,
 				  double tol, int maxeval) {
   if (!is_mine()) return;
-
   epsilon.set_volume(v.pad().surroundings());
 
   if (!eps) eps = new double[v.ntot()];

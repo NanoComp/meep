@@ -152,6 +152,9 @@ public:
   /* scalar permeability function */
   virtual double mu(const vec &r) { (void)r; return 1.0; }
   
+  /* scalar conductivity function */
+  virtual double conductivity(const vec &r) { (void)r; return 1.0; }
+  
   /* Return interface normal and/or average dielectric eps and 1/eps
      in a given volume gv.   These are virtual so that e.g. libctl
      can override them with more efficient geometry-based routines. */
@@ -192,6 +195,7 @@ public:
   
   virtual double eps(const vec &r) { return f(r); }
   virtual double mu(const vec &r) { return f(r); }
+  virtual double conductivity(const vec &r) { return f(r); }
   virtual double sigma(const vec &r) { return f(r); }
   virtual double chi3(const vec &r) { return f(r); }
   virtual double chi2(const vec &r) { return f(r); }
@@ -205,6 +209,9 @@ class structure_chunk {
   double *eps, *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
   double *inveps[NUM_FIELD_COMPONENTS][5];
   double *invmu[NUM_FIELD_COMPONENTS][5];
+  double *conductivity[NUM_FIELD_COMPONENTS][5];
+  double *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
+  bool condinv_stale; // true if condinv needs to be recomputed
   double *sig[5], *siginv[5]; // conductivity array for uPML
   int sigsize[5]; // conductivity array size
   volume v;  // integer volume that could be bigger than non-overlapping gv below
@@ -221,6 +228,8 @@ class structure_chunk {
                    bool use_anisotropic_averaging,
 		   double tol, int maxeval);
   void set_mu(material_function &eps);
+  void set_conductivity(component c, material_function &eps);
+  void update_condinv();
   void set_chi3(material_function &eps);
   void set_chi2(material_function &eps);
   void use_pml(direction, double dx, double boundary_loc, double strength);
@@ -344,7 +353,9 @@ class structure {
 		   double tol=DEFAULT_SUBPIXEL_TOL,
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_mu(material_function &eps);
-  void set_mu(double eps(const vec &));
+  void set_mu(double mu(const vec &));
+  void set_conductivity(component c, material_function &conductivity);
+  void set_conductivity(component C, double conductivity(const vec &));
   void set_chi3(material_function &eps);
   void set_chi3(double eps(const vec &));
   void set_chi2(material_function &eps);
@@ -623,26 +634,6 @@ public:
 
 enum in_or_out { Incoming=0, Outgoing };
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
-
-void step_curl(double *f, component c, const double *g1, const double *g2,
-	       int s1, int s2, // strides for g1/g2 shift
-	       const volume &v, double dtdx,
-	       direction dsig, const double *sig, const double *siginv);
-
-void step_update_EDHB(double *f, component fc, const volume &v,
-		      const double *g, const double *g1, const double *g2,
-		      const double *gb, const double *g1b, const double *g2b,
-		      const double *u, const double *u1, const double *u2,
-		      int s, int s1, int s2,
-		      const double *chi2, const double *chi3,
-		      direction dsig,const double *sig,const double *siginv,
-		      direction dsigg, const double *sigg,
-		      direction dsig1, const double *sig1,
-		      direction dsig1inv, const double *sig1inv,
-		      direction dsig2, const double *sig2,
-		      direction dsig2inv, const double *sig2inv,
-		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1);
-
 
 class fields_chunk {
  public:
