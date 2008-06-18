@@ -78,8 +78,9 @@ double fields::field_energy_in_box(component c,
     cs[0] = direction_component(Ex, component_direction(c));
     cs[1] = direction_component(Dx, component_direction(c));
   }
-  else if (is_magnetic(c)) {
-    cs[0] = cs[1] = direction_component(Hx, component_direction(c));
+  else if (is_magnetic(c) || is_B(c)) {
+    cs[0] = direction_component(Hx, component_direction(c));
+    cs[1] = direction_component(Bx, component_direction(c));
   }
   else
     abort("invalid field component in field_energy_in_box");
