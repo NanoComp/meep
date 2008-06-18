@@ -195,7 +195,10 @@ static void anisoaverage(material_function &epsilon, const geometric_volume dV,
 
 // just a diagonal mu for now
 // FIXME: consant mu or position-dependent mu?
-void structure_chunk::set_mu(material_function &epsilon) {
+void structure_chunk::set_mu(material_function &mu) {
+  if (!is_mine()) return;
+  mu.set_volume(v.pad().surroundings());
+
   FOR_MAGNETIC_COMPONENTS(c) if (v.has_field(c)) {
     direction c_d = component_direction(c);
     LOOP_OVER_DIRECTIONS(v.dim,da) // make sure no off-diagonal terms
