@@ -52,10 +52,11 @@ typedef struct {
   direction inveps_ds[3];
   int inveps_offsets[6];
   complex<long double> sum;
-  double maxabs;
   field_function fun;
   void *fun_data_;
 } h5_output_data;
+
+#define UNUSED(x) (void) x // silence compiler warnings
 
 static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
 				  ivec is, ivec ie,
@@ -65,6 +66,8 @@ static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
 				  const symmetry &S, int sn,
 				  void *data_)
 {
+  UNUSED(ichnk);UNUSED(cgrid);UNUSED(s0);UNUSED(s1);UNUSED(e0);UNUSED(e1);
+  UNUSED(dV0);UNUSED(dV1);UNUSED(shift_phase);
   h5_output_data *data = (h5_output_data *) data_;
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
@@ -85,6 +88,8 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
 				const symmetry &S, int sn,
 				void *data_)
 {
+  UNUSED(ichnk);UNUSED(cgrid);UNUSED(s0);UNUSED(s1);UNUSED(e0);UNUSED(e1);
+  UNUSED(dV0);UNUSED(dV1);
   h5_output_data *data = (h5_output_data *) data_;
 
   //-----------------------------------------------------------------------//
@@ -111,7 +116,6 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
     start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
-    int j = permute.in_direction(d);
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }
   for (int i = 0; i < data->rank; ++i) {
@@ -130,7 +134,6 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
   complex<long double> sum = 0.0;
-  double maxabs = 0;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
   int *ieos = data->inveps_offsets;
@@ -237,7 +240,6 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   data.ph = new complex<double>[num_fields];
   data.fields = new complex<double>[num_fields];
   data.sum = 0;
-  data.maxabs = 0;
   data.fun = fun;
   data.fun_data_ = fun_data_;
 
