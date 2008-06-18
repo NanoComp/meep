@@ -533,6 +533,10 @@ void structure_chunk::update_condinv() {
 	}
       }
     }
+    else if (condinv[c][d]) { // condinv not needed
+      delete[] condinv[c][d];
+      condinv[c][d] = NULL;
+    }
   }
   condinv_stale = false;
 }
@@ -617,16 +621,24 @@ void structure_chunk::set_chi3(material_function &epsilon) {
   FOR_ELECTRIC_COMPONENTS(c)
     if (inveps[c][component_direction(c)]) {
       if (!chi3[c]) chi3[c] = new double[v.ntot()];
+      bool trivial = true;
       LOOP_OVER_VOL(v, c, i) {
 	IVEC_LOOP_LOC(v, here);
         chi3[c][i] = epsilon.chi3(here);
+	trivial = trivial && (chi3[c][i] == 0.0);
       }
       
       /* currently, our update_e_from_d routine requires that
 	 chi2 be present if chi3 is, and vice versa */
       if (!chi2[c]) {
-	chi2[c] = new double[v.ntot()]; 
-	memset(chi2[c], 0, v.ntot() * sizeof(double)); // chi2 = 0 by default
+	if (!trivial) {
+	  chi2[c] = new double[v.ntot()]; 
+	  memset(chi2[c], 0, v.ntot() * sizeof(double)); // chi2 = 0
+	}
+	else { // no chi3, and chi2 is trivial (== 0), so delete
+	  delete[] chi3[c];
+	  chi3[c] = NULL;
+	}
       }
     }
 }
@@ -639,18 +651,65 @@ void structure_chunk::set_chi2(material_function &epsilon) {
   FOR_ELECTRIC_COMPONENTS(c)
     if (inveps[c][component_direction(c)]) {
       if (!chi2[c]) chi2[c] = new double[v.ntot()];
+      bool trivial = true;
       LOOP_OVER_VOL(v, c, i) {
 	IVEC_LOOP_LOC(v, here);
         chi2[c][i] = epsilon.chi2(here);
+	trivial = trivial && (chi2[c][i] == 0.0);
       }
 
       /* currently, our update_e_from_d routine requires that
 	 chi3 be present if chi2 is, and vice versa */
       if (!chi3[c]) {
-	chi3[c] = new double[v.ntot()]; 
-	memset(chi3[c], 0, v.ntot() * sizeof(double)); // chi3 = 0 by default
+	if (!trivial) {
+	  chi3[c] = new double[v.ntot()]; 
+	  memset(chi3[c], 0, v.ntot() * sizeof(double)); // chi3 = 0
+	}
+	else { // no chi2, and chi3 is trivial (== 0), so delete 
+	  delete[] chi2[c];
+          chi2[c] = NULL;
+	}
       }
     }
+}
+
+void structure_chunk::set_conductivity(component c, material_function &C) {
+  if (!is_mine() || !v.has_field(c)) return;
+
+  C.set_volume(v.pad().surroundings());
+
+  if (!is_electric(c) && !is_magnetic(c) && !is_D(c) && !is_B(c))
+    abort("invalid component for conductivity");
+
+  direction c_d = component_direction(c);
+  component c_C = is_electric(c) ? direction_component(Dx, c_d) :
+    (is_magnetic(c) ? direction_component(Bx, c_d) : c);
+  double *multby = is_electric(c) ? inveps[c][c_d] :
+    (is_magnetic(c) ? invmu[c][c_d] : NULL);
+  if (!conductivity[c_C][c_d]) 
+    conductivity[c_C][c_d] = new double[v.ntot()]; 
+  if (!conductivity[c_C][c_d]) abort("Memory allocation error.\n");
+  bool trivial = true;
+  double *cnd = conductivity[c_C][c_d];
+  if (multby) {
+    LOOP_OVER_VOL(v, c_C, i) {
+      IVEC_LOOP_LOC(v, here);
+      cnd[i] = C.conductivity(c, here) * multby[i];
+      trivial = trivial && (cnd[i] == 0.0);
+    }
+  }
+  else {
+    LOOP_OVER_VOL(v, c_C, i) {
+      IVEC_LOOP_LOC(v, here);
+      cnd[i] = C.conductivity(c, here);
+      trivial = trivial && (cnd[i] == 0.0);
+    }
+  }
+  if (trivial) { // skip conductivity computations if conductivity == 0
+    delete[] conductivity[c_C][c_d];
+    conductivity[c_C][c_d] = NULL;
+  }
+  condinv_stale = true;
 }
 
 structure_chunk::structure_chunk(const volume &thev, 
