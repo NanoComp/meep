@@ -370,6 +370,7 @@ dft_flux fields::add_dft_flux(const geometric_volume_list *where_,
   component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
 
   geometric_volume_list *where = S.reduce(where_);
+  geometric_volume_list *where_save = where;
   while (where) {
     derived_component c = derived_component(where->c);
     if (coordinate_mismatch(v.dim, component_direction(c)))
@@ -398,6 +399,7 @@ dft_flux fields::add_dft_flux(const geometric_volume_list *where_,
     
     where = where->next;
   }
+  delete where_save;
 
   return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq);
 }

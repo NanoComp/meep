@@ -457,6 +457,7 @@ void fields::connect_the_chunks() {
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++)
 	delete[] wh[f][ip][io];
+  delete[] H_redundant;
 }
 
 void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip,
