@@ -26,7 +26,7 @@ static void fields_to_array(const fields &f, complex<double> *x)
   for (int i=0;i<f.num_chunks;i++)
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
-        if (f.chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {
+        if (f.chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
 	  double *fs[2];
 	  DOCMP2 fs[cmp] = f.chunks[i]->f[c][cmp];
 	  if (fs[0]) {
@@ -44,7 +44,7 @@ static void array_to_fields(const complex<double> *x, fields &f)
     //    f.chunks[i]->backup_d();
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
-        if (f.chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {
+        if (f.chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
 	  double *fs[2];
 	  DOCMP2 fs[cmp] = f.chunks[i]->f[c][cmp];
 	  if (fs[0]) {
@@ -56,7 +56,7 @@ static void array_to_fields(const complex<double> *x, fields &f)
 	  }
 	}
   }
-  f.force_consistency(H_stuff);  
+  f.force_consistency(B_stuff);
   f.force_consistency(D_stuff);
 }
 
@@ -101,7 +101,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       FOR_COMPONENTS(c)
-	if (chunks[i]->f[c][0] && (is_D(c) || is_magnetic(c))) {
+	if (chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
 	  N += 2 * chunks[i]->v.nowned(c);
 	}
 

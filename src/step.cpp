@@ -133,8 +133,7 @@ void fields::force_consistency(field_type ft)
     step_boundaries(H_stuff);
     break;
   case H_stuff:
-    step_boundaries(ft);
-    break;
+    abort("we do not know how to update B from H");
   case D_stuff: case P_stuff:
     step_boundaries(ft);
     update_e_from_d();
