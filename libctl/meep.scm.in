@@ -621,6 +621,7 @@
 
 ; convenience functions, similar to MPB:
 (define (output-epsilon) (output-component Dielectric))
+(define (output-mu) (output-component Permeability))
 (define (output-hpwr) (output-component H-EnergyDensity))
 (define (output-dpwr) (output-component D-EnergyDensity))
 (define (output-tot-pwr) (output-component EnergyDensity))

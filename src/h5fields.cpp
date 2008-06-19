@@ -50,7 +50,9 @@ typedef struct {
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
-  int inveps_offsets[6];
+  int ninvmu;
+  component invmu_cs[3];
+  direction invmu_ds[3];
   complex<long double> sum;
   field_function fun;
   void *fun_data_;
@@ -136,11 +138,14 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   complex<long double> sum = 0.0;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
-  int *ieos = data->inveps_offsets;
+  int ieos[6];
+  const component *imcs = data->invmu_cs;
+  const direction *imds = data->invmu_ds;
+  int imos[6];
 
   for (int i = 0; i < data->num_fields; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
-    if (cS[i] == Dielectric)
+    if (cS[i] == Dielectric || cS[i] == Permeability)
       ph[i] = 1.0;
     else {
       fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
@@ -149,6 +154,8 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   }
   for (int k = 0; k < data->ninveps; ++k)
     fc->v.yee2diel_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
+  for (int k = 0; k < data->ninvmu; ++k)
+    fc->v.yee2diel_offsets(imcs[k], imos[2*k], imos[2*k+1]);
 
   vec rshift(shift * (0.5*fc->v.inva));
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
@@ -164,6 +171,16 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
 		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[1+2*k]]
 		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[2*k]+ieos[1+2*k]]);
 	fields[i] = (4 * data->ninveps) / tr;
+      }
+      else if (cS[i] == Permeability) {
+	double tr = 0.0;
+	for (int k = 0; k < data->ninvmu; ++k) {
+	  const double *im = fc->s->invmu[imcs[k]][imds[k]];
+	  if (im) tr += (im[idx] + im[idx+imos[2*k]] + im[idx+imos[1+2*k]]
+			 + im[idx+imos[2*k]+imos[1+2*k]]);
+	  else tr += 4; // default invmu == 1
+	}
+	fields[i] = (4 * data->ninvmu) / tr;
       }
       else {
 	double f[2];
@@ -254,6 +271,19 @@ void fields::output_hdf5(h5file *file, const char *dataname,
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
+    }
+  
+  /* compute inverse-mu directions for computing Permeability fields */
+  data.ninvmu = 0;
+  bool needs_permeability = false;
+  for (int i = 0; i < num_fields; ++i)
+    if (components[i] == Permeability) { needs_permeability = true; break; }
+  if (needs_permeability) 
+    FOR_MAGNETIC_COMPONENTS(c) if (v.has_field(c)) {
+      if (data.ninvmu == 3) abort("more than 3 field components??");
+      data.invmu_cs[data.ninvmu] = c;
+      data.invmu_ds[data.ninvmu] = component_direction(c);
+      ++data.ninvmu;
     }
   
   data.offsets = new int[2 * num_fields];
@@ -367,7 +397,7 @@ void fields::output_hdf5(component c,
   if (coordinate_mismatch(v.dim, c)) return;
 
   char dataname[256];
-  bool has_imag = !is_real && c != Dielectric;
+  bool has_imag = !is_real && c != Dielectric && c != Permeability;
 
   bool delete_file;
   if ((delete_file = !file))

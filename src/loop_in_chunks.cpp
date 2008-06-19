@@ -259,6 +259,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	  component_name(cgrid), dimension_name(v.dim));
   if (where.dim != v.dim)
     abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
+
+  if (cgrid == Permeability) cgrid = Dielectric;
   
   /*
     We handle looping on an arbitrary component grid by shifting
