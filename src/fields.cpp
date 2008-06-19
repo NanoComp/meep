@@ -151,8 +151,8 @@ void fields::use_real_fields() {
 
 bool fields::have_component(component c) {
   for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      return chunks[i]->f[c][0] != NULL;
+    if (chunks[i]->f[c][0])
+      return true;
   return false;
 }
 
