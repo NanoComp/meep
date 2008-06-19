@@ -208,8 +208,8 @@ void structure_chunk::set_mu(material_function &mu) {
     bool trivial = true;
     LOOP_OVER_VOL(v, c, i) {
       IVEC_LOOP_LOC(v, here);
-      inveps[c][c_d][i] = 1/mu.mu(here); // TODO - support aniso. averaging
-      trivial = trivial && (inveps[c][c_d][i] == 1.0);
+      invmu[c][c_d][i] = 1/mu.mu(here); // TODO - support aniso. averaging
+      trivial = trivial && (invmu[c][c_d][i] == 1.0);
     }
     if (trivial) LOOP_OVER_DIRECTIONS(v.dim,da) { // don't store invmu == 1
       delete[] invmu[c][da];
