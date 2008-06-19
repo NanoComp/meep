@@ -177,8 +177,8 @@ fields_chunk::~fields_chunk() {
     delete dft_chunks;
     dft_chunks = nxt;
   }
-  delete h_sources;
-  delete e_sources;
+  delete b_sources;
+  delete d_sources;
   delete pol;
   delete olpol;
   FOR_FIELD_TYPES(ft) delete[] zeroes[ft];
@@ -199,7 +199,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   dft_chunks = NULL;
   pol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
   olpol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
-  h_sources = e_sources = NULL;
+  b_sources = d_sources = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
@@ -237,7 +237,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   dft_chunks = NULL;
   pol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
   olpol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
-  h_sources = e_sources = NULL;
+  b_sources = d_sources = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
@@ -362,9 +362,9 @@ void fields_chunk::alloc_f(component the_c) {
 }
 
 void fields_chunk::remove_sources() {
-  delete h_sources;
-  delete e_sources;
-  e_sources = h_sources = NULL;
+  delete b_sources;
+  delete d_sources;
+  d_sources = b_sources = NULL;
 }
 
 void fields::remove_sources() {

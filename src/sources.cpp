@@ -154,6 +154,7 @@ bool custom_src_time::is_equal(const src_time &t) const
 src_vol::src_vol(component cc, src_time *st, int n, int *ind, complex<double> *amps) {
   c = cc;
   if (is_D(c)) c = direction_component(Ex, component_direction(c));
+  if (is_B(c)) c = direction_component(Hx, component_direction(c));
   t = st; next = NULL;
   npts = n;
   index = ind;
@@ -286,9 +287,12 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
-       right because it doesn't handle non-diagonal inveps! */
-    if (is_D(c) && fc->s->inveps[c][cd]) 
-      amps_array[idx_vol] /= fc->s->inveps[c][cd][idx];
+       right because it doesn't handle non-diagonal inveps! 
+       similarly, for "B" sources, multiply by mu. */
+    if (is_D(c) && fc->s->inveps[c-Dx+Ex][cd]) 
+      amps_array[idx_vol] /= fc->s->inveps[c-Dx+Ex][cd][idx];
+    if (is_B(c) && fc->s->invmu[c-Bx+Hx][cd]) 
+      amps_array[idx_vol] /= fc->s->invmu[c-Bx+Hx][cd][idx];
 
     index_array[idx_vol++] = idx;
   }
@@ -298,9 +302,9 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 
   src_vol *tmp = new src_vol(c, data->src, npts, index_array, amps_array);
   if (is_magnetic(c))
-    fc->h_sources = tmp->add_to(fc->h_sources);
+    fc->b_sources = tmp->add_to(fc->b_sources);
   else
-    fc->e_sources = tmp->add_to(fc->e_sources);
+    fc->d_sources = tmp->add_to(fc->d_sources);
 }
 
 void fields::require_component(component c) {

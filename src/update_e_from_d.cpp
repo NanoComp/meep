@@ -23,16 +23,16 @@ namespace meep {
 void fields::update_e_from_d() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      src_vol *save_e_sources = chunks[i]->e_sources;
-      if (disable_sources) chunks[i]->e_sources = NULL; // temporary
+      src_vol *save_e_sources = chunks[i]->d_sources;
+      if (disable_sources) chunks[i]->d_sources = NULL; // temporary
       chunks[i]->update_e_from_d();
-      chunks[i]->e_sources = save_e_sources;
+      chunks[i]->d_sources = save_e_sources;
     }
 }
 
 void fields_chunk::update_e_from_d() {
   bool have_int_sources = false;
-  for (src_vol *sv = e_sources; sv; sv = sv->next)
+  for (src_vol *sv = d_sources; sv; sv = sv->next)
     if (sv->t->is_integrated) {
       have_int_sources = true;
       break;
@@ -89,7 +89,7 @@ void fields_chunk::update_e_from_d() {
   // Next, subtract time-integrated sources (i.e. polarizations, not currents)
 
   if (have_d_minus_p) {
-    for (src_vol *sv = e_sources; sv; sv = sv->next) {  
+    for (src_vol *sv = d_sources; sv; sv = sv->next) {  
       if (sv->t->is_integrated && f[sv->c][0]) {
 	for (int j = 0; j < sv->npts; ++j) { 
 	  const complex<double> A = sv->dipole(j);

@@ -51,7 +51,7 @@ void fields::step() {
   // update cached conductivity-inverse array, if needed
   for (int i=0;i<num_chunks;i++) chunks[i]->s->update_condinv();
 
-  calc_sources(time()); // for H sources
+  calc_sources(time()); // for B sources
 
   // TODO: make B==H for mu=1, non-PML (just make pointers equal, skip update_h_from_b, don't delete twice)
   step_b();
@@ -64,7 +64,7 @@ void fields::step() {
 
   if (fluxes) fluxes->update_half();
 
-  calc_sources(time() + 0.5*dt); // for E sources
+  calc_sources(time() + 0.5*dt); // for D sources
 
   step_d();
   if (!disable_sources) step_d_source();
@@ -252,7 +252,7 @@ void fields::step_boundaries(field_type ft) {
 void fields::step_b_source(int including_integrated) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_b_source(chunks[i]->h_sources, including_integrated);
+      chunks[i]->step_b_source(chunks[i]->b_sources, including_integrated);
 }
 void fields_chunk::step_b_source(src_vol *sv, int including_integrated) {
   if (sv == NULL) return;
@@ -270,7 +270,7 @@ void fields_chunk::step_b_source(src_vol *sv, int including_integrated) {
 void fields::step_d_source(int including_integrated) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_d_source(chunks[i]->e_sources, including_integrated);
+      chunks[i]->step_d_source(chunks[i]->d_sources, including_integrated);
 }
 void fields_chunk::step_d_source(src_vol *sv, int including_integrated) {
   if (sv == NULL) return;

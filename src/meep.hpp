@@ -663,7 +663,7 @@ class fields_chunk {
   double m, rshift;
   int is_real, store_pol_energy;
   bandsdata *bands;
-  src_vol *e_sources, *h_sources;
+  src_vol *d_sources, *b_sources;
   const structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
