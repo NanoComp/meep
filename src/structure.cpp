@@ -315,7 +315,7 @@ void structure::set_materials(material_function &mat,
 			      bool use_anisotropic_averaging,
 			      double tol, int maxeval) {
   set_epsilon(mat, use_anisotropic_averaging, tol, maxeval);
-  set_mu(mat);
+  if (mat.has_mu()) set_mu(mat);
   FOR_D_COMPONENTS(c) if (mat.has_conductivity(c)) set_conductivity(c, mat);
   FOR_B_COMPONENTS(c) if (mat.has_conductivity(c)) set_conductivity(c, mat);
   if (mat.has_chi3()) set_chi3(mat);

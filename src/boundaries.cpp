@@ -284,6 +284,21 @@ void fields::connect_the_chunks() {
 	nc[f][ip][io] = new int[num_chunks];
 	for (int i=0;i<num_chunks;i++) nc[f][ip][io][i] = 0;
       }
+
+  // For some of the chunks, H==B, and we definitely don't need to
+  // send H between two such chunks.   (We'll still send H when either
+  // the sender or the recipient has H != B.  If the recipient has H != B,
+  // it needs to get it from somewhere (although it could get it locally
+  // in principle), whereas if the sender has H != B, we really want to
+  // send H to make sure the H field is used for curl H in the E update.
+  // (and we don't need the non-owned B for anything, so it's ok to overwrite).
+  int *H_redundant = new int[num_chunks*2 * 5];
+  for (int i = 0; i < num_chunks; ++i)
+    FOR_H_AND_B(hc,bc)
+      H_redundant[5*(num_chunks+i) + hc-Hx] 
+      = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
+  and_to_all(H_redundant + 5*num_chunks, H_redundant, 5*num_chunks);
+
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
     const volume vi = chunks[i]->v;
@@ -302,7 +317,9 @@ void fields::connect_the_chunks() {
 	      && !on_metal_boundary(here))
 	    for (int j=0;j<num_chunks;j++) {
 	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
-		  && chunks[j]->v.owns(here)) {
+		  && chunks[j]->v.owns(here)
+		  && !(is_magnetic(corig) && is_magnetic(c) &&
+		       H_redundant[5*i+corig-Hx] && H_redundant[5*j+c-Hx])) {
 		const int pair = j+i*num_chunks;
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
@@ -392,7 +409,9 @@ void fields::connect_the_chunks() {
 	      && !on_metal_boundary(here))
 	    for (int j=0;j<num_chunks;j++) {
 	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
-		  && chunks[j]->v.owns(here)) {
+		  && chunks[j]->v.owns(here)
+		  && !(is_magnetic(corig) && is_magnetic(c) &&
+		       H_redundant[5*i+corig-Hx] && H_redundant[5*j+c-Hx])) {
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
 		const int m = chunks[j]->v.index(c, here);

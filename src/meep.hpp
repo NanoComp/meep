@@ -748,7 +748,7 @@ class fields_chunk {
   void phase_material(int phasein_time);
   void step_b();
   void step_b_source(src_vol *, int including_integrated);
-  void update_h_from_b();
+  bool update_h_from_b();
   void step_d();
   void step_d_source(src_vol *, int including_integrated);
   void update_e_from_d();

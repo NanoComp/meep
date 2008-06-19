@@ -71,7 +71,9 @@ complex<long double> sum_to_all(complex<long double> in);
 int sum_to_all(int);
 int partial_sum_to_all(int in);
 bool or_to_all(bool in);
+void or_to_all(const int *in, int *out, int size);
 bool and_to_all(bool in);
+void and_to_all(const int *in, int *out, int size);
 
 // IO routines:
 void master_printf(const char *fmt, ...) PRINTF_ATTR(1,2);

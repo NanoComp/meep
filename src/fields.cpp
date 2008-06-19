@@ -159,6 +159,8 @@ bool fields::have_component(component c) {
 fields_chunk::~fields_chunk() {
   if (s->refcount-- <= 1) delete s; // delete if not shared
   is_real = 0; // So that we can make sure to delete everything...
+  // for mu=1 non-PML regions, H==B to save space/time - don't delete twice!
+  DOCMP2 FOR_H_AND_B(hc,bc) if (f[hc][cmp] == f[bc][cmp]) f[bc][cmp] = NULL;
   DOCMP2 FOR_COMPONENTS(c) {
     delete[] f[c][cmp];
     delete[] f_backup[c][cmp];
@@ -344,13 +346,18 @@ static bool is_like(ndim d, component c1, component c2) {
 
 void fields_chunk::alloc_f(component the_c) {
   FOR_COMPONENTS(c)
-    if (is_mine() && v.has_field(c) && is_like(v.dim, the_c, c))
+    if (is_mine() && v.has_field(c) && is_like(v.dim, the_c, c)
+	&& !is_magnetic(c))
       DOCMP {
         if (!f[c][cmp]) {
           f[c][cmp] = new double[v.ntot()];
           for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
 	}
     }
+  /* initially, we just set H == B ... later on, we lazily allocate
+     H fields if needed (if mu != 1 or in PML) in update_h_from_b */
+  FOR_H_AND_B(hc,bc) DOCMP 
+    if (!f[hc][cmp] && f[bc][cmp]) f[hc][cmp] = f[bc][cmp];
   figure_out_step_plan();
 }
 
@@ -409,6 +416,8 @@ void fields::reset() {
 
 void fields_chunk::use_real_fields() {
   is_real = 1;
+  // for mu=1 non-PML regions, H==B to save space/time - don't delete twice!
+  FOR_H_AND_B(hc,bc) if (f[hc][1] == f[bc][1]) f[bc][1] = NULL;
   FOR_COMPONENTS(c) if (f[c][1]) {
     delete[] f[c][1];
     f[c][1] = 0;

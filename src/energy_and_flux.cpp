@@ -107,7 +107,9 @@ void fields_chunk::backup_component(component c) {
   if (is_D(c) && have_d_minus_p) abort("backup-D with D-P not implemented");
 
   DOCMP {
-    if (f[c][cmp]) {
+    if (f[c][cmp] && 
+	// in mu=1 regions where H==B, don't bother to backup H
+	!(is_magnetic(c) && f[c][cmp] == f[Bx + (c - Hx)][cmp])) {
       if (!f_backup[c][cmp])
 	f_backup[c][cmp] = new double[v.ntot()];  
       memcpy(f_backup[c][cmp], 

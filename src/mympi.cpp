@@ -321,12 +321,26 @@ bool or_to_all(bool in) {
   return (bool) out;
 }
 
+void or_to_all(const int *in, int *out, int size) {
+  memcpy(out, in, sizeof(int) * size);
+#ifdef HAVE_MPI
+  MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+#endif
+}
+
 bool and_to_all(bool in) {
   int out = in;
 #ifdef HAVE_MPI
   MPI_Allreduce(&in,&out,1,MPI_INT,MPI_LAND,MPI_COMM_WORLD);
 #endif
   return (bool) out;
+}
+
+void and_to_all(const int *in, int *out, int size) {
+  memcpy(out, in, sizeof(int) * size);
+#ifdef HAVE_MPI
+  MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LAND,MPI_COMM_WORLD);
+#endif
 }
 
 void all_wait() {

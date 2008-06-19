@@ -157,7 +157,8 @@ inline double calc_nonlinear_u(const double Dsqr,
     SWAP(int, sigsize_dsig1inv, sigsize_dsig2inv);
   }
   
-  if (sigsize_dsig <= 1 && sigsize_dsigg <= 1 && sigsize_dsig1 <= 1) { // no PML
+  if (sigsize_dsig <= 1 && sigsize_dsigg <= 1 && 
+      (!u1 || (sigsize_dsig1 <= 1 && sigsize_dsig1inv <= 1))) { // no PML
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
@@ -269,13 +270,15 @@ inline double calc_nonlinear_u(const double Dsqr,
 #  define DEF_kx(x) KDEF(k ## x, dsig ## x, k ## x ## 0)
 
    // fields
-#  define DEF_gs  double gs = ((1+sigg[kg])*siginv[k]) * g[i]
+#  define DEF_gs  double gs0 = g[i]; double gs = ((1+sigg[kg])*siginv[k])*gs0
 #  define DEF_gbs double gbs = ((1-sigg[kg])*siginv[k]) * gb[i]
 #  define DEF_us  double us = u[i]
-#  define DEF_g1s double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) * \
-                               (g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)])
-#  define DEF_g2s double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) * \
-                               (g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)])
+#  define DEF_g1s0 double g1s0 = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
+#  define DEF_g1s DEF_g1s0; \
+                  double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) * g1s0;
+#  define DEF_g2s0 double g2s0 = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
+#  define DEF_g2s DEF_g2s0; \
+                  double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) * g2s0;
 #  define DEF_g1bs double g1bs = ((1-sig1[k1]) * sig1inv[k1inv]) * \
                                  (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)])
 #  define DEF_g2bs double g2bs = ((1-sig2[k2]) * sig2inv[k2inv]) * \
@@ -292,8 +295,8 @@ inline double calc_nonlinear_u(const double Dsqr,
 	  DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
 	    ((gs-gbs) * us + 0.25 * (u1[i]*(g1s-g1bs) + u2[i]*(g2s-g2bs))) *
-	    calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
-			     gs, us, chi2[i], chi3[i]);
+	    calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0 + g2s0*g2s0),
+			     gs0, us, chi2[i], chi3[i]);
 	}
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
@@ -315,8 +318,8 @@ inline double calc_nonlinear_u(const double Dsqr,
           DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
 	    ((gs - gbs) * us + 0.25 * (u1[i]*(g1s-g1bs))) *
-	    calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
-			     gs, us, chi2[i], chi3[i]);
+	    calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0),
+			     gs0, us, chi2[i], chi3[i]);
 	}
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
@@ -330,28 +333,27 @@ inline double calc_nonlinear_u(const double Dsqr,
       }
     } else if (u2) { // 2x2 off-diagonal u
       abort("bug - didn't swap off-diagonal terms!?");
-    } else { // diagonal u
+    } else if (u) { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    IVEC_LOOP_ILOC(v, iloc);
-	    DEF_kx(1); DEF_kx(1inv); DEF_g1s;
-	    DEF_kx(2); DEF_kx(2inv); DEF_g2s;
+	    DEF_g1s0; DEF_g2s0;
 	    DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
 	    DEF_us;
 	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
-	      calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
-			       gs, us, chi2[i], chi3[i]);
+	      calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0 + g2s0*g2s0),
+			       gs0, us, chi2[i], chi3[i]);
 	  }
 	} else if (g1) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    IVEC_LOOP_ILOC(v, iloc);
-	    DEF_kx(1); DEF_kx(1inv); DEF_g1s;
+	    DEF_g1s0;
             DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
             DEF_us;
 	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
-     	      calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
-     			       gs, us, chi2[i], chi3[i]);
+     	      calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0),
+     			       gs0, us, chi2[i], chi3[i]);
 	  }
 	} else if (g2) {
 	  abort("bug - didn't swap off-diagonal terms!?");
@@ -361,7 +363,7 @@ inline double calc_nonlinear_u(const double Dsqr,
 	    DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
             DEF_us;
 	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
-     	      calc_nonlinear_u(gs * gs, gs, us, chi2[i], chi3[i]);
+     	      calc_nonlinear_u(gs0 * gs0, gs0, us, chi2[i], chi3[i]);
 	  }
 	}
       } else { //linear, diagonal u
@@ -371,6 +373,14 @@ inline double calc_nonlinear_u(const double Dsqr,
 	  DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs) * us;
 	}
+      }
+    }
+    else { // NULL u array, corresponding to u = 1 everywhere
+      if (chi3) abort("bug - should not have chi3 without chi1");
+      LOOP_OVER_VOL_OWNED(v, fc, i) {
+	IVEC_LOOP_ILOC(v, iloc);
+	DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+	f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs);
       }
     }
   }
