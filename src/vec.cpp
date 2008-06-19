@@ -1265,7 +1265,7 @@ complex<double> symmetry::phase_shift(component c, int n) const {
   // flip tells us if we need to flip the sign.  For vectors (E), it is
   // just this simple:
   bool flip = transform(component_direction(c),n).flipped;
-  if (is_magnetic(c)) {
+  if (is_magnetic(c) || is_B(c)) {
     // Because H is a pseudovector, here we have to figure out if the
     // transformation changes the handedness of the basis.
     bool have_one = false, have_two = false;
@@ -1435,7 +1435,7 @@ field_rfunction derived_component_func(derived_component c, const volume &v,
     if (c != D_EnergyDensity)
       FOR_MAGNETIC_COMPONENTS(c0) if (v.has_field(c0)) {
 	cs[nfields++] = c0;
-	cs[nfields++] = c0;
+	cs[nfields++] = direction_component(Bx, component_direction(c0));
       }
     if (nfields > 12) abort("too many field components");
     return energy_fun;
