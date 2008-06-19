@@ -229,12 +229,14 @@ inline double calc_nonlinear_u(const double Dsqr,
 	  }
 	}
       }
-      else {
+      else if (u) {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us);
 	}
       }
+      else
+	LOOP_OVER_VOL_OWNED(v, fc, i) f[i] = g[i];
     }
   }
   else { // PML
