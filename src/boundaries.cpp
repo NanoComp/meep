@@ -285,19 +285,21 @@ void fields::connect_the_chunks() {
 	for (int i=0;i<num_chunks;i++) nc[f][ip][io][i] = 0;
       }
 
-  // For some of the chunks, H==B, and we definitely don't need to
-  // send H between two such chunks.   (We'll still send H when either
-  // the sender or the recipient has H != B.  If the recipient has H != B,
-  // it needs to get it from somewhere (although it could get it locally
-  // in principle), whereas if the sender has H != B, we really want to
-  // send H to make sure the H field is used for curl H in the E update.
-  // (and we don't need the non-owned B for anything, so it's ok to overwrite).
-  int *H_redundant = new int[num_chunks*2 * 5];
+  /* For some of the chunks, H==B, and we definitely don't need to
+     send B between two such chunks.   We'll still send B when either
+     the recipient has H != B, since the recipient needs to get B
+     from somewhere (although it could get it locally, in principle).
+     When the sender has H != B, we'll skip sending B (we'll only send H)
+     since we need to get the correct curl H in the E update.  This is
+     a bit subtle since the non-owned B may be different from H even
+     on an H==B chunk (true?), but since we don't use the non-owned B
+     for anything(?) it shouldn't matter. */
+  int *B_redundant = new int[num_chunks*2 * 5];
   for (int i = 0; i < num_chunks; ++i)
     FOR_H_AND_B(hc,bc)
-      H_redundant[5*(num_chunks+i) + hc-Hx] 
+      B_redundant[5*(num_chunks+i) + bc-Bx] 
       = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
-  and_to_all(H_redundant + 5*num_chunks, H_redundant, 5*num_chunks);
+  and_to_all(B_redundant + 5*num_chunks, B_redundant, 5*num_chunks);
 
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
@@ -318,8 +320,8 @@ void fields::connect_the_chunks() {
 	    for (int j=0;j<num_chunks;j++) {
 	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
 		  && chunks[j]->v.owns(here)
-		  && !(is_magnetic(corig) && is_magnetic(c) &&
-		       H_redundant[5*i+corig-Hx] && H_redundant[5*j+c-Hx])) {
+		  && !(is_B(corig) && is_B(c) &&
+		       B_redundant[5*i+corig-Bx] && B_redundant[5*j+c-Bx])) {
 		const int pair = j+i*num_chunks;
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
@@ -410,8 +412,8 @@ void fields::connect_the_chunks() {
 	    for (int j=0;j<num_chunks;j++) {
 	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
 		  && chunks[j]->v.owns(here)
-		  && !(is_magnetic(corig) && is_magnetic(c) &&
-		       H_redundant[5*i+corig-Hx] && H_redundant[5*j+c-Hx])) {
+		  && !(is_B(corig) && is_B(c) &&
+		       B_redundant[5*i+corig-Bx] && B_redundant[5*j+c-Bx])) {
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
 		const int m = chunks[j]->v.index(c, here);
@@ -457,7 +459,7 @@ void fields::connect_the_chunks() {
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++)
 	delete[] wh[f][ip][io];
-  delete[] H_redundant;
+  delete[] B_redundant;
 }
 
 void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip,
