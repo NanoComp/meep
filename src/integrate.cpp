@@ -47,6 +47,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 				const symmetry &S, int sn,
 				void *data_)
 {
+  (void) ichunk; // unused
   integrate_data *data = (integrate_data *) data_;
   int *off = data->offsets;
   component *cS = data->cS;

@@ -171,7 +171,7 @@ static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 			     const symmetry &S, int sn,
 			     void *sum_) {
   long double *sum = (long double *) sum_;
-  (void) shift; (void) shift_phase; (void) S; (void) sn; // unused
+  (void)shift; (void)shift_phase; (void)S; (void)sn; (void)ichunk; // unused
   for (polarization *pol = fc->pol; pol; pol = pol->next)
     if (pol->energy[cgrid])
       LOOP_OVER_IVECS(fc->v, is, ie, idx)
