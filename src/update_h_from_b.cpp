@@ -20,20 +20,20 @@ bool fields_chunk::update_h_from_b() {
   DOCMP FOR_H_AND_B(hc,bc) if (f[hc][cmp]) {
       const direction d_hc = component_direction(hc);
       const int s_hc = stride_any_direction[d_hc];
-      const direction d_1 = direction((d_hc+1)%3);
+      const direction d_1 = cycle_direction(v.dim, d_hc, 1);
       const int s_1 = stride_any_direction[d_1];
-      const direction d_2 = direction((d_hc+2)%3);
+      const direction d_2 = cycle_direction(v.dim, d_hc, 2);
       const int s_2 = stride_any_direction[d_2];
       
       component bc_1 = direction_component(bc,d_1);
       component bc_2 = direction_component(bc,d_2);
       
-      direction dsig = (direction)((d_hc+2)%3);
-      direction dsigg = (direction)(d_hc);
-      direction dsig1 = (direction)((d_hc+1)%3);
-      direction dsig1inv = (direction)(d_hc);
-      direction dsig2 = (direction)((d_hc+2)%3);
-      direction dsig2inv = (direction)((d_hc+1)%3);
+      direction dsig = d_2;
+      direction dsigg = d_hc;
+      direction dsig1 = d_1;
+      direction dsig1inv = d_hc;
+      direction dsig2 = d_2;
+      direction dsig2inv = d_1;
       
       // lazily allocate any H fields that are needed (H==B initially)
       if (f[hc][cmp] == f[bc][cmp]

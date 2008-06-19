@@ -433,12 +433,8 @@ complex<double> monitor_point::get_component(component w) {
 }
   
 double monitor_point::poynting_in_direction(direction d) {
-  int direction_shift = 0;
-  if (loc.dim == Dcyl)
-    direction_shift = 2;
-
-  direction d1 = (direction) (((d+1) - direction_shift)%3 + direction_shift);
-  direction d2 = (direction) (((d+2) - direction_shift)%3 + direction_shift);
+  direction d1 = cycle_direction(loc.dim, d, 1);
+  direction d2 = cycle_direction(loc.dim, d, 2);
 
   // below Ex and Hx are used just to say that we want electric or magnetic component
   complex<double> E1 = get_component(direction_component(Ex, d1));

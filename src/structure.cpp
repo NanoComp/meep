@@ -554,7 +554,7 @@ void structure_chunk::update_condinv() {
     direction d = component_direction(c);
     if (conductivity[c][d]) {
       if (!condinv[c][d]) condinv[c][d] = new double[v.ntot()];
-      const direction dsig = direction((d+1)%3); // FIXME for Dcyl!
+      const direction dsig = cycle_direction(v.dim,d,1);
       const bool have_pml = sigsize[dsig] > 1;
       if (!have_pml) {
 	LOOP_OVER_VOL(v, c, i)

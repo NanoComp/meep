@@ -115,22 +115,22 @@ void fields_chunk::update_e_from_d() {
   DOCMP FOR_E_AND_D(ec,dc) if (f[ec][cmp]) {
     const direction d_ec = component_direction(ec);
     const int s_ec = stride_any_direction[d_ec];
-    const direction d_1 = direction((d_ec+1)%3);
+    const direction d_1 = cycle_direction(v.dim, d_ec, 1);
     const component ec_1 = direction_component(ec,d_1);
     const int s_1 = stride_any_direction[d_1];
-    const direction d_2 = direction((d_ec+2)%3);
+    const direction d_2 = cycle_direction(v.dim, d_ec, 2);
     const component ec_2 = direction_component(ec,d_2);
     const int s_2 = stride_any_direction[d_2];
 
     component dc_1 = direction_component(dc,d_1);
     component dc_2 = direction_component(dc,d_2);
 
-    direction dsig = (direction)((d_ec+2)%3);
-    direction dsigg = (direction)(d_ec);
-    direction dsig1 = (direction)((d_ec+1)%3);
-    direction dsig1inv = (direction)(d_ec);
-    direction dsig2 = (direction)((d_ec+2)%3);
-    direction dsig2inv = (direction)((d_ec+1)%3);
+    direction dsig = d_2;
+    direction dsigg = d_ec;
+    direction dsig1 = d_1;
+    direction dsig1inv = d_ec;
+    direction dsig2 = d_2;
+    direction dsig2inv = d_1;
 
     step_update_EDHB(f[ec][cmp], ec, v, 
 	dmp[ec][cmp], dmp[ec_1][cmp], dmp[ec_2][cmp],

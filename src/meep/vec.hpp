@@ -276,6 +276,17 @@ inline bool coordinate_mismatch(ndim dim, derived_component c) {
   return coordinate_mismatch(dim, component_direction(c));
 }
 
+// cyclically shift a direction d or a component c by shift
+// assumes: shift >= -99, {d, component_direction(c)} != NO_DIRECTION,
+//          and has_direction(dim, {d, component_direction(c)})
+inline direction cycle_direction(ndim dim, direction d, int shift) {
+  int start = dim == Dcyl ? 2 : 0;
+  return direction((d - start + shift + 99) % 3 + start);
+}
+inline component cycle_component(ndim dim, component c, int shift) {
+  return direction_component(c, cycle_direction(dim, component_direction(c), shift));
+}
+
 class vec;
 vec veccyl(double rr, double zz);
 vec zero_vec(ndim);

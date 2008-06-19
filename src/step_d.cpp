@@ -44,10 +44,10 @@ void fields::step_d() {
 }
 
 void fields_chunk::step_d() {
-  const volume v = this->v;
   bool have_pml = false;
   FOR_D_COMPONENTS(cc)
-    if (s->sigsize[(component_direction(cc)+1)%3] > 1) have_pml = true;
+    if (s->sigsize[cycle_direction(v.dim,component_direction(cc),1)] > 1)
+	have_pml = true;
   if (have_pml) FOR_E_AND_D(ec,dc) DOCMP
     if (f[dc][cmp]) {
       if (!f_prev[dc][cmp])
@@ -66,8 +66,9 @@ void fields_chunk::step_d() {
 	const direction d_c = component_direction(cc);
 	const bool have_p = have_plus_deriv[cc];
 	const bool have_m = have_minus_deriv[cc];
-	const bool have_pml = s->sigsize[(d_c+1)%3] > 1;
-	const direction dsig = have_pml?(direction)((d_c+1)%3):NO_DIRECTION;
+	const direction dsig0 = cycle_direction(v.dim,d_c,1);
+	const bool have_pml = s->sigsize[dsig0] > 1;
+	const direction dsig = have_pml ? dsig0 : NO_DIRECTION;
 	const int stride_p = have_p?v.stride(d_deriv_p):0;
 	const int stride_m = have_m?v.stride(d_deriv_m):0;
 	RESTRICT const double *f_p = have_p?f[c_p][cmp]:NULL;
