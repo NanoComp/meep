@@ -74,9 +74,8 @@ typedef int hid_t;
 #  define IF_EXCLUSIVE(yes,no) no
 #else
 #  define IF_EXCLUSIVE(yes,no) yes
-#endif
-
 static int h5io_critical_section_tag = 0;
+#endif
 
 /*****************************************************************************/
 /* Normally, HDF5 prints out all sorts of error messages, e.g. if a dataset
@@ -143,7 +142,7 @@ void *h5file::get_id() {
 // hackery: in some circumstances, for the exclusive-access mode
 // we must close the id (i.e. the file) in order to prevent deadlock.
 void h5file::prevent_deadlock() {
-  IF_EXCLUSIVE(if (parallel) close_id(), 0);
+  IF_EXCLUSIVE(if (parallel) close_id(), (void) 0);
 }
 
 void h5file::close_id() {
@@ -205,7 +204,7 @@ void h5file::remove() {
   }
   extending = 0;
   
-  IF_EXCLUSIVE(if (parallel) all_wait(), 0);
+  IF_EXCLUSIVE(if (parallel) all_wait(), (void) 0);
   if (am_master() && std::remove(filename))
     abort("error removing file %s", filename);
 }
