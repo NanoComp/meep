@@ -98,8 +98,6 @@
 ; ****************************************************************
 ; some utilities
 
-(define infinity 1.0e20) ; big number for infinite dimensions of objects
-
 ; round x to dig digits after the decimal place
 (define (round-dig dig x) (/ (round (* x (expt 10 dig))) (expt 10 dig)))
 

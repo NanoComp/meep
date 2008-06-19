@@ -29,11 +29,7 @@ extern bool quiet; // if true, suppress all non-error messages from Meep
 
 const double pi = 3.141592653589793238462643383276;
 
-#ifdef INFINITY
-const double infinity = INFINITY;
-#else
-const double infinity = 1e20; // this should be big enough for us
-#endif
+const double infinity = HUGE_VAL;
 
 #ifdef NAN
 const double nan = NAN;
