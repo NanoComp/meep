@@ -443,16 +443,53 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
   for (int i=0;i<v.ntot();i++)
     eps[i] = 1.0/(1.0/eps[i] + f*(1.0/n->eps[i]-1.0/eps[i]));
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
-    if (inveps[c][d])
-      for (int i=0;i<v.ntot();i++)
-        inveps[c][d][i] += f*(n->inveps[c][d][i] - inveps[c][d][i]);
-    if (invmu[c][d])
-      for (int i=0;i<v.ntot();i++)
-	invmu[c][d][i] += f*(n->invmu[c][d][i] - invmu[c][d][i]);
-    if (conductivity[c][d])
-      for (int i=0;i<v.ntot();i++)
-	conductivity[c][d][i] += 
-	  f*(n->conductivity[c][d][i] - conductivity[c][d][i]);
+    if (!inveps[c][d] && n->inveps[c][d]) {
+      inveps[c][d] = new double[v.ntot()];
+      if (component_direction(c) == d) // diagonal components = 1 by default
+	for (int i=0;i<v.ntot();i++) inveps[c][d][i] = 1.0;
+      else
+	for (int i=0;i<v.ntot();i++) inveps[c][d][i] = 0.0;
+    }
+    if (!invmu[c][d] && n->invmu[c][d]) {
+      invmu[c][d] = new double[v.ntot()];
+      if (component_direction(c) == d) // diagonal components = 1 by default
+	for (int i=0;i<v.ntot();i++) invmu[c][d][i] = 1.0;
+      else
+	for (int i=0;i<v.ntot();i++) invmu[c][d][i] = 0.0;
+    }
+    if (!conductivity[c][d] && n->conductivity[c][d]) {
+      conductivity[c][d] = new double[v.ntot()];
+      for (int i=0;i<v.ntot();i++) conductivity[c][d][i] = 0.0;
+    }
+    if (inveps[c][d]) {
+      if (n->inveps[c][d])
+	for (int i=0;i<v.ntot();i++)
+	  inveps[c][d][i] += f*(n->inveps[c][d][i] - inveps[c][d][i]);
+      else {
+	double nval = component_direction(c) == d ? 1.0 : 0.0; // default
+	for (int i=0;i<v.ntot();i++)
+	  inveps[c][d][i] += f*(nval - inveps[c][d][i]);
+      }
+    }
+    if (invmu[c][d]) {
+      if (n->invmu[c][d])
+	for (int i=0;i<v.ntot();i++)
+	  invmu[c][d][i] += f*(n->invmu[c][d][i] - invmu[c][d][i]);
+      else {
+	double nval = component_direction(c) == d ? 1.0 : 0.0; // default
+	for (int i=0;i<v.ntot();i++)
+	  invmu[c][d][i] += f*(nval - invmu[c][d][i]);
+      }
+    }
+    if (conductivity[c][d]) {
+      if (n->conductivity[c][d])
+	for (int i=0;i<v.ntot();i++)
+	  conductivity[c][d][i] += f*(n->conductivity[c][d][i]
+				      - conductivity[c][d][i]);
+      else
+	for (int i=0;i<v.ntot();i++)
+	  conductivity[c][d][i] += f*(0.0 - conductivity[c][d][i]);
+    }
     condinv_stale = true;
   }
   // Mix in the polarizability...
