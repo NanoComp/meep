@@ -26,17 +26,6 @@
 
 namespace meep {
 
-static inline double it(int cmp, double *(f[2]), int ind) {
-  return (f[1-cmp]) ? (1-2*cmp)*f[1-cmp][ind] : 0;
-}
-
-inline int rstart_0(const volume &v, double m) {
-  return (int) max(0.0, m - (int)(v.origin_r()*v.a+0.5) - 1.0);
-}
-inline int rstart_1(const volume &v, double m) {
-  return (int) max(1.0, m - (int)(v.origin_r()*v.a+0.5));
-}
-
 void fields::step_db(field_type ft) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -128,16 +117,15 @@ void fields_chunk::step_db(field_type ft) {
 
   // in cylindrical coordinates, we now have to add the i*m/r terms... */
   if (v.dim == Dcyl && m != 0) DOCMP FOR_FT_COMPONENTS(ft, cc) {
-    if (f[cc][cmp]) {
-      const direction d_c = component_direction(cc);
-      if (d_c != R && d_c != Z) break;
+    const direction d_c = component_direction(cc);
+    if (f[cc][cmp] && (d_c == R || d_c == Z)) {
       const component c_p=plus_component[cc], c_m=minus_component[cc];
       const double *g = d_c == R ? f[c_p][1-cmp] : f[c_m][1-cmp];
       double *the_f = f[cc][cmp];
       const double *cndinv = s->condinv[cc][d_c];
       const direction dsig = cycle_direction(v.dim,d_c,1);
       const double the_m = 
-	m * (1-2*cmp) * (1-2*(ft==H_stuff)) * (1-2*(d_c==R)) * Courant;
+	m * (1-2*cmp) * (1-2*(ft==B_stuff)) * (1-2*(d_c==R)) * Courant;
       const double ir0 = (v.origin_r() + rshift) * v.a 
 	+ 0.5 * v.iyee_shift(cc).in_direction(R);
       int sr = v.nz() + 1;
@@ -174,7 +162,7 @@ void fields_chunk::step_db(field_type ft) {
   }
 
   // deal with annoying r=0 boundary conditions for m=0 and m=1
-  if (v.dim == Dcyl && v.origin_r() == 0.0 && (m == 0 || fabs(m) == 1)) DOCMP {
+  if (v.dim == Dcyl && v.origin_r() == 0.0) DOCMP {
     if (m == 0 && ft == D_stuff && f[Dz][cmp]) {
       // d(Dz)/dt = (1/r) * d(r*Hp)/dr
       double *the_f = f[Dz][cmp];
@@ -192,13 +180,17 @@ void fields_chunk::step_db(field_type ft) {
       }
       else // no PML, no conductivity
 	for (int iz = 0; iz < v.nz(); ++iz) 
-	  the_f[iz] += g[iz] * (Courant * 4);
+	  the_f[iz] += g[iz] * (Courant * 1); // FIXME: should be * 4 ??
       // Note: old code was missing factor of 4??
+
+      for (int iz = 0; iz <= v.nz(); ++iz) f[Dp][cmp][iz] = 0.0;
     }
-    else if (m == 1) {
+    else if (m == 0 && ft == B_stuff && f[Br][cmp])
+      for (int iz = 0; iz <= v.nz(); ++iz) f[Br][cmp][iz] = 0.0;
+    else if (fabs(m) == 1) {
       // D_stuff: d(Dp)/dt = d(Hr)/dz - d(Hz)/dr
-      // H_stuff: d(Hr)/dt = d(Ep)/dz - i*m*Ez/r
-      component cc = ft == D_stuff ? Dp : Hr;
+      // B_stuff: d(Br)/dt = d(Ep)/dz - i*m*Ez/r
+      component cc = ft == D_stuff ? Dp : Br;
       direction d_c = component_direction(cc);
       double *the_f = f[cc][cmp];
       if (!the_f) continue;
@@ -223,6 +215,26 @@ void fields_chunk::step_db(field_type ft) {
       else // no PML, no conductivity
 	for (int iz = (ft == D_stuff); iz < v.nz() + (ft == D_stuff); ++iz)
 	  the_f[iz] += (sd*Courant) * (f_p[iz]-f_p[iz-sd] - f_m_mult*f_m[iz]);
+
+      if (ft == D_stuff)
+	for (int iz = 0; iz <= v.nz(); ++iz) f[Dz][cmp][iz] = 0.0;
+    }
+    else if (m != 0) { // m != {0,+1,-1}
+      /* I seem to recall David telling me that this was for numerical
+	 stability of some sort - the larger m is, the farther from
+	 the origin we need to be before we can use nonzero fields
+	 ... note that this is a fixed number of pixels for a given m,
+	 so it should still converge.  Still, this is weird... */
+      if (ft == D_stuff)
+	for (int r=0;r<=v.nr() && (int)(v.origin_r()*v.a+0.5) + r < m;r++) {
+          const int ir = r*(v.nz()+1);
+          for (int z=0;z<=v.nz();z++) f[Dp][cmp][ir+z] = f[Dz][cmp][ir+z] = 0;
+        }
+      else
+        for (int r=0;r<=v.nr() && (int)(v.origin_r()*v.a+0.5) + r < m;r++) {
+          const int ir = r*(v.nz()+1);
+          for (int z=0;z<=v.nz();z++) f[Br][cmp][ir+z] = 0;
+        }
     }
   }
 }
