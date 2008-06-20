@@ -211,7 +211,7 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   return 1;
 }
 
-int test_origin_shift(const char *mydirname) {
+int test_origin_shift(void) {
   master_printf("Testing origin shift in 2D...\n");
   double a = 8.0;
   double ttot = 3.0;
@@ -1014,7 +1014,7 @@ int main(int argc, char **argv) {
   if (!pml_twomirrors(one))
     abort("error in pml_twomirrors vacuum\n");
 
-  if (!test_origin_shift(mydirname))
+  if (!test_origin_shift())
     abort("error in test_origin_shift\n");
 
   if (!exact_pml_rot2x_tm(one))
