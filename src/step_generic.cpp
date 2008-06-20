@@ -38,23 +38,23 @@ void step_curl(double *f, component c, const double *g1, const double *g2,
     if (cnd) {
       double dt2 = dt * 0.5;
       if (g2) {
-	LOOP_OVER_VOL_OWNED(v, c, i)
+	LOOP_OVER_VOL_OWNED0(v, c, i)
 	  f[i] = ((1 - dt2 * cnd[i]) * f[i] - 
 		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, c, i)
+	LOOP_OVER_VOL_OWNED0(v, c, i)
 	  f[i] = ((1 - dt2 * cnd[i]) * f[i] 
 		  - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
       }
     }
     else { // no conductivity
       if (g2) {
-	LOOP_OVER_VOL_OWNED(v, c, i)
+	LOOP_OVER_VOL_OWNED0(v, c, i)
 	  f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, c, i)
+	LOOP_OVER_VOL_OWNED0(v, c, i)
 	  f[i] -= dtdx * (g1[i+s1] - g1[i]);
       }
     }
@@ -64,7 +64,7 @@ void step_curl(double *f, component c, const double *g1, const double *g2,
     if (cnd) {
       double dt2 = dt * 0.5;
       if (g2) {
-	LOOP_OVER_VOL_OWNED(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
 	  int k = iloc.in_direction(dsig) - k0;
 	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] - 
@@ -72,7 +72,7 @@ void step_curl(double *f, component c, const double *g1, const double *g2,
 	}
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
 	  int k = iloc.in_direction(dsig) - k0;
 	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] 
@@ -82,7 +82,7 @@ void step_curl(double *f, component c, const double *g1, const double *g2,
     }
     else { // no conductivity (other than PML conductivity)
       if (g2) {
-	LOOP_OVER_VOL_OWNED(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
 	  int k = iloc.in_direction(dsig) - k0;
 	  f[i] = ((1 - sig[k]) * f[i] -
@@ -90,7 +90,7 @@ void step_curl(double *f, component c, const double *g1, const double *g2,
 	}
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
 	  int k = iloc.in_direction(dsig) - k0;
 	  f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1] - g1[i])) * siginv[k];

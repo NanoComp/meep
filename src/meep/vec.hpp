@@ -131,6 +131,9 @@ component first_field_component(field_type ft);
 #define LOOP_OVER_VOL_OWNED(v, c, idx) \
   LOOP_OVER_IVECS(v, (v).little_owned_corner(c), (v).big_corner(), idx)
 
+#define LOOP_OVER_VOL_OWNED0(v, c, idx) \
+  LOOP_OVER_IVECS(v, (v).little_owned_corner0(c), (v).big_corner(), idx)
+
 #define LOOP_OVER_VOL_NOTOWNED(v, c, idx) \
  for (ivec loop_notowned_is((v).dim,0), loop_notowned_ie((v).dim,0); \
       loop_notowned_is == zero_ivec((v).dim);) \
@@ -696,6 +699,13 @@ class volume {
 
   bool contains(const vec &) const;
   bool contains(const ivec &) const;
+
+  /* differs from little_owned_corner in that it doesn't count
+     "ownership" of the r=0 origin for Dcyl, which is updated separately */
+  ivec little_owned_corner0(component c) const {
+    return ivec(little_corner() + one_ivec(dim)*2 - iyee_shift(c));
+  }
+
   ivec little_owned_corner(component c) const;
   bool owns(const ivec &) const;
   geometric_volume surroundings() const;

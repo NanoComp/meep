@@ -418,7 +418,7 @@ bool volume::get_boundary_icorners(component c, int ib,
 
 // first "owned" point for c in volume (see also volume::owns)
 ivec volume::little_owned_corner(component c) const {
-  ivec iloc(little_corner() + one_ivec(dim)*2 - iyee_shift(c));
+  ivec iloc(little_owned_corner0(c));
   if (dim == Dcyl && origin.r() == 0.0 && iloc.r() == 2)
     iloc.set_direction(R, 0);
   return iloc;
