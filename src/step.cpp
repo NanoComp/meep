@@ -54,7 +54,7 @@ void fields::step() {
   calc_sources(time()); // for B sources
 
   // TODO: make B==H for mu=1, non-PML (just make pointers equal, skip update_h_from_b, don't delete twice)
-  step_b();
+  step_db(B_stuff);
   if (!disable_sources) step_b_source();
   step_boundaries(B_stuff);
   update_h_from_b();
@@ -66,7 +66,7 @@ void fields::step() {
 
   calc_sources(time() + 0.5*dt); // for D sources
 
-  step_d();
+  step_db(D_stuff);
   if (!disable_sources) step_d_source();
   step_boundaries(D_stuff);
 

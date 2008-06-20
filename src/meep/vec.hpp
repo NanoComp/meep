@@ -81,7 +81,7 @@ component first_field_component(field_type ft);
                                  c > Hz; c = (component) (c-1))
 #define FOR_E_AND_D(e,d) for (component e = Ex, d = Dx; \
                               e <= Ez; e = (component) (e+1), d = (component) (d+1))
-#define FOR_FT_COMPONENTS(ft,c) for (component c = first_field_component(ft), loop_cstop = first_field_component(ft) + NUM_FIELD_TYPES; c < loop_cstop; c = component(c+1))
+#define FOR_FT_COMPONENTS(ft,c) for (component c = first_field_component(ft), loop_cstop = component(first_field_component(ft) + NUM_FIELD_TYPES); c < loop_cstop; c = component(c+1))
 #define FOR_COMPONENTS(c) for (component c = Ex,loop_stop_co=Ey; \
                                c != loop_stop_co; \
                                c = (component)((c+1)%NUM_FIELD_COMPONENTS), \

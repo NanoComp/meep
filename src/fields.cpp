@@ -165,13 +165,13 @@ fields_chunk::~fields_chunk() {
     delete[] f[c][cmp];
     delete[] f_backup[c][cmp];
     delete[] f_prev[c][cmp];
+    delete[] f_minus_p[c][cmp];
   }
   FOR_FIELD_TYPES(ft)
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++)
 	delete[] connections[ft][ip][io];
   FOR_FIELD_TYPES(ft) delete[] connection_phases[ft];
-  FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 delete[] d_minus_p[ec][cmp];
   while (dft_chunks) {
     dft_chunk *nxt = dft_chunks->next_in_chunk;
     delete dft_chunks;
@@ -204,6 +204,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
     f_prev[c][cmp] = NULL;
+    f_minus_p[c][cmp] = NULL;
   }
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
@@ -215,8 +216,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
-  have_d_minus_p = false;
-  FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 d_minus_p[ec][cmp] = NULL;
   figure_out_step_plan();
 }
 
@@ -266,12 +265,11 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
-  have_d_minus_p = thef.have_d_minus_p;
-  FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 
-    if (thef.d_minus_p[ec][cmp]) {
-      d_minus_p[ec][cmp] = new double[v.ntot()];
-      for (int i=0;i<v.ntot();i++)
-	d_minus_p[ec][cmp][i] = thef.d_minus_p[ec][cmp][i];
+  FOR_COMPONENTS(c) DOCMP2 
+    if (thef.f_minus_p[c][cmp]) {
+      f_minus_p[c][cmp] = new double[v.ntot()];
+      memcpy(f_minus_p[c][cmp], thef.f_minus_p[c][cmp], 
+	     sizeof(double) * v.ntot());
     }
   figure_out_step_plan();
 }

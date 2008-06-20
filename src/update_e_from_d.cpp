@@ -38,16 +38,19 @@ void fields_chunk::update_e_from_d() {
       break;
     }
 
-  FOR_ELECTRIC_COMPONENTS(ec) DOCMP 
-    if (!d_minus_p[ec][cmp] && f[ec][cmp] && (pol || have_int_sources)) {
-      d_minus_p[ec][cmp] = new double[v.ntot()];
-      have_d_minus_p = true;
-    }
+  FOR_D_COMPONENTS(dc) DOCMP 
+    if (!f_minus_p[dc][cmp] && f[dc][cmp] && (pol || have_int_sources))
+      f_minus_p[dc][cmp] = new double[v.ntot()];
+  bool have_d_minus_p = false;
+  FOR_D_COMPONENTS(dc) if (f_minus_p[dc][0]) {
+    have_d_minus_p = true;
+    break;
+  }
 
   const int ntot = s->v.ntot();
 
   //////////////////////////////////////////////////////////////////////////
-  // First, initialize d_minus_p to D - P, if necessary
+  // First, initialize f_minus_p to D - P, if necessary
 
   if (have_d_minus_p) {
     if (pol) {
@@ -74,14 +77,14 @@ void fields_chunk::update_e_from_d() {
             for (polarization *p = pol; p; p = p->next) {
               sum -= p->P[ec][cmp][i];
             }	  
-            d_minus_p[ec][cmp][i] = sum;
+            f_minus_p[dc][cmp][i] = sum;
 	  }
 	}
       }
     }
     else {
-      FOR_E_AND_D(ec,dc) if (f[ec][0]) DOCMP
-	memcpy(d_minus_p[ec][cmp], f[dc][cmp], ntot * sizeof(double));
+      FOR_D_COMPONENTS(dc) if (f[dc][0]) DOCMP
+	memcpy(f_minus_p[dc][cmp], f[dc][cmp], ntot * sizeof(double));
     }
   }
 
@@ -90,11 +93,12 @@ void fields_chunk::update_e_from_d() {
 
   if (have_d_minus_p) {
     for (src_vol *sv = d_sources; sv; sv = sv->next) {  
-      if (sv->t->is_integrated && f[sv->c][0]) {
+      if (sv->t->is_integrated && f[sv->c][0] && is_electric(sv->c)) {
+	component c = direction_component(Dx, component_direction(sv->c));
 	for (int j = 0; j < sv->npts; ++j) { 
 	  const complex<double> A = sv->dipole(j);
 	  DOCMP {
-	    d_minus_p[sv->c][cmp][sv->index[j]] -= 
+	    f_minus_p[c][cmp][sv->index[j]] -= 
 	      (cmp) ? imag(A) :  real(A);
 	  }
 	}
@@ -107,7 +111,7 @@ void fields_chunk::update_e_from_d() {
   
   double *dmp[NUM_FIELD_COMPONENTS][2];
   if (have_d_minus_p) {
-    FOR_ELECTRIC_COMPONENTS(ec) DOCMP2 dmp[ec][cmp] = d_minus_p[ec][cmp];
+    FOR_E_AND_D(ec,dc) DOCMP2 dmp[ec][cmp] = f_minus_p[dc][cmp];
   } else {
     FOR_E_AND_D(ec,dc) DOCMP2 dmp[ec][cmp] = f[dc][cmp];
   }
@@ -156,7 +160,7 @@ void fields_chunk::update_e_from_d() {
       const int yee_idx = v.yee_index(ec);
       const int d_ec = component_direction(ec);
       const int sR = stride_any_direction[R];
-      const double *D = have_d_minus_p ? d_minus_p[ec][cmp] : f[dc][cmp];
+      const double *D = have_d_minus_p ? f_minus_p[dc][cmp] : f[dc][cmp];
       for (int iZ=0; iZ<num_any_direction[Z]; iZ++) {
 	const int i = yee_idx + iZ - sR;
 	f[ec][cmp][i] = s->inveps[ec][d_ec][i] * D[i];

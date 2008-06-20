@@ -103,13 +103,15 @@ double fields::magnetic_energy_in_box(const geometric_volume &where) {
 }
 
 void fields_chunk::backup_component(component c) {
-  // if we have D-P, then f_prev stores D-P, not D, complicating matters
-  if (is_D(c) && have_d_minus_p) abort("backup-D with D-P not implemented");
-
   DOCMP {
     if (f[c][cmp] && 
 	// in mu=1 regions where H==B, don't bother to backup H
 	!(is_magnetic(c) && f[c][cmp] == f[Bx + (c - Hx)][cmp])) {
+
+      // if we have f_minus_p then f_prev stores this, and we need
+      // to implement an extra backup field ... punt for now
+      if (f_minus_p[c][cmp]) abort("backup with fields-P not implemented");
+
       if (!f_backup[c][cmp])
 	f_backup[c][cmp] = new double[v.ntot()];  
       memcpy(f_backup[c][cmp], 
@@ -145,7 +147,7 @@ void fields::synchronize_magnetic_fields() {
       FOR_B_COMPONENTS(c) chunks[i]->backup_component(c);
       FOR_MAGNETIC_COMPONENTS(c) chunks[i]->backup_component(c);
     }
-  step_b();
+  step_db(B_stuff);
   step_b_source();
   step_boundaries(B_stuff);
   update_h_from_b();

@@ -645,8 +645,7 @@ class fields_chunk {
      we save backup copies of (some of) the fields to resume timestepping */
   double *f_backup[NUM_FIELD_COMPONENTS][2];
 
-  bool have_d_minus_p;
-  double *d_minus_p[NUM_FIELD_COMPONENTS][2];
+  double *f_minus_p[NUM_FIELD_COMPONENTS][2];
 
   dft_chunk *dft_chunks;
 
@@ -742,10 +741,9 @@ class fields_chunk {
   // step.cpp
   void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
-  void step_b();
   void step_b_source(src_vol *, int including_integrated);
   bool update_h_from_b();
-  void step_d();
+  void step_db(field_type ft);
   void step_d_source(src_vol *, int including_integrated);
   void update_e_from_d();
   void update_from_e();
@@ -1046,10 +1044,9 @@ class fields {
                                            complex<double> kphase[8], int &ncopies) const;
   // step.cpp
   void phase_material();
-  void step_b();
   void step_b_source(int including_integrated = 0);
   void update_h_from_b();
-  void step_d();
+  void step_db(field_type ft);
   void step_d_source(int including_integrated = 0);
   void update_e_from_d();
   void update_from_e();
