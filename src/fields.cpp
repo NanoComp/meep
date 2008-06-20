@@ -243,12 +243,18 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
     f_backup[c][cmp] = NULL;
     f_prev[c][cmp] = NULL;
   }
-  FOR_COMPONENTS(c) DOCMP {
-    if (thef.f[c][cmp])
+  FOR_COMPONENTS(c) DOCMP
+    if (!is_magnetic(c) && thef.f[c][cmp]) {
       f[c][cmp] = new double[v.ntot()];
-    if (f[c][cmp])
-      for (int i=0;i<v.ntot();i++)
-	f[c][cmp][i] = thef.f[c][cmp][i];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(double) * v.ntot());
+    }
+  FOR_MAGNETIC_COMPONENTS(c) DOCMP {
+    if (thef.f[c][cmp] == thef.f[c-Hx+Bx][cmp])
+      f[c][cmp] = f[c-Hx+Bx][cmp];
+    else if (thef.f[c][cmp]) {
+      f[c][cmp] = new double[v.ntot()];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(double) * v.ntot());
+    }
   }
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
