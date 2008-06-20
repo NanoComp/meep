@@ -65,6 +65,8 @@ inline direction stop_at_direction(ndim dim) {
   return (direction) (dim + 1 + 2 * (dim == D1));
 }
 
+component first_field_component(field_type ft);
+
 #define FOR_FIELD_TYPES(ft) for (field_type ft = E_stuff; \
                                  ft <= P_stuff; ft = (field_type) (ft+1))
 #define FOR_ELECTRIC_COMPONENTS(c) for (component c = Ex; \
@@ -79,6 +81,7 @@ inline direction stop_at_direction(ndim dim) {
                                  c > Hz; c = (component) (c-1))
 #define FOR_E_AND_D(e,d) for (component e = Ex, d = Dx; \
                               e <= Ez; e = (component) (e+1), d = (component) (d+1))
+#define FOR_FT_COMPONENTS(ft,c) for (component c = first_field_component(ft), loop_cstop = first_field_component(ft) + NUM_FIELD_TYPES; c < loop_cstop; c = component(c+1))
 #define FOR_COMPONENTS(c) for (component c = Ex,loop_stop_co=Ey; \
                                c != loop_stop_co; \
                                c = (component)((c+1)%NUM_FIELD_COMPONENTS), \

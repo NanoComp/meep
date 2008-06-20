@@ -116,6 +116,16 @@ const char *component_name(int c) {
 	  : component_name(component(c)));
 }
 
+component first_field_component(field_type ft) {
+  switch (ft) {
+  case E_stuff: return Ex;
+  case H_stuff: return Hx;
+  case D_stuff: return Dx;
+  case B_stuff: return Bx;
+  default: abort("bug - only E/H/D/B stuff have components"); 
+  }
+}
+
 vec min(const vec &vec1, const vec &vec2) {
   vec m(vec1.dim);
   LOOP_OVER_DIRECTIONS(vec1.dim, d)
