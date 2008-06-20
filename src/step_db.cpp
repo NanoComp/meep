@@ -119,8 +119,8 @@ void fields_chunk::step_db(field_type ft) {
   if (v.dim == Dcyl && m != 0) DOCMP FOR_FT_COMPONENTS(ft, cc) {
     const direction d_c = component_direction(cc);
     if (f[cc][cmp] && (d_c == R || d_c == Z)) {
-      const component c_p=plus_component[cc], c_m=minus_component[cc];
-      const double *g = d_c == R ? f[c_p][1-cmp] : f[c_m][1-cmp];
+      const component c_g = d_c==R ? plus_component[cc] : minus_component[cc];
+      const double *g = f[c_g][1-cmp];
       double *the_f = f[cc][cmp];
       const double *cndinv = s->condinv[cc][d_c];
       const direction dsig = cycle_direction(v.dim,d_c,1);
@@ -131,7 +131,7 @@ void fields_chunk::step_db(field_type ft) {
       int sr = v.nz() + 1;
       if (cndinv) { // conductivity, possibly including PML
 	for (int ir = ir0 <= 0.5; ir <= v.nr(); ++ir) {
-	  double rinv = the_m / ((ir+ir0)-0.5);
+	  double rinv = the_m / (ir+ir0);
 	  for (int iz = 0; iz <= v.nz(); ++iz) {
 	    int idx = ir*sr + iz;
 	    the_f[idx] += rinv * g[idx] * cndinv[idx];
@@ -142,7 +142,7 @@ void fields_chunk::step_db(field_type ft) {
 	const double *siginv = s->siginv[dsig];
 	int dk = v.iyee_shift(cc).in_direction(dsig);
 	for (int ir = ir0 <= 0.5; ir <= v.nr(); ++ir) {
-	  double rinv = the_m / ((ir+ir0)-0.5);
+	  double rinv = the_m / (ir+ir0);
 	  for (int iz = 0; iz <= v.nz(); ++iz) {
 	    int idx = ir*sr + iz;
 	    the_f[idx] += rinv * g[idx] * siginv[dk + 2*(dsig==Z ? iz : ir)];
@@ -151,7 +151,7 @@ void fields_chunk::step_db(field_type ft) {
       }
       else { // no PML, no conductivity
 	for (int ir = ir0 <= 0.5; ir <= v.nr(); ++ir) {
-	  double rinv = the_m / ((ir+ir0)-0.5);
+	  double rinv = the_m / (ir+ir0);
 	  for (int iz = 0; iz <= v.nz(); ++iz) {
 	    int idx = ir*sr + iz;
 	    the_f[idx] += rinv * g[idx];
@@ -225,13 +225,14 @@ void fields_chunk::step_db(field_type ft) {
 	 the origin we need to be before we can use nonzero fields
 	 ... note that this is a fixed number of pixels for a given m,
 	 so it should still converge.  Still, this is weird... */
+      double rmax = fabs(m) - int(v.origin_r()*v.a+0.5);
       if (ft == D_stuff)
-	for (int r=0;r<=v.nr() && (int)(v.origin_r()*v.a+0.5) + r < m;r++) {
+	for (int r = 0; r <= v.nr() && r < rmax; r++) {
           const int ir = r*(v.nz()+1);
           for (int z=0;z<=v.nz();z++) f[Dp][cmp][ir+z] = f[Dz][cmp][ir+z] = 0;
         }
       else
-        for (int r=0;r<=v.nr() && (int)(v.origin_r()*v.a+0.5) + r < m;r++) {
+	for (int r = 0; r <= v.nr() && r < rmax; r++) {
           const int ir = r*(v.nz()+1);
           for (int z=0;z<=v.nz();z++) f[Br][cmp][ir+z] = 0;
         }
