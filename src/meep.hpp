@@ -645,7 +645,10 @@ class fields_chunk {
      we save backup copies of (some of) the fields to resume timestepping */
   double *f_backup[NUM_FIELD_COMPONENTS][2];
 
+  // used to store D-P and B-P, e.g. when P implements dispersive media
   double *f_minus_p[NUM_FIELD_COMPONENTS][2];
+
+  double *f_rderiv_int; // cache of helper field for 1/r d(rf)/dr derivative
 
   dft_chunk *dft_chunks;
 

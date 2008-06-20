@@ -6,7 +6,7 @@ namespace meep {
 
 /* update step for df/dt = curl g,
    i.e. f += dt curl g = dt/dx (dg1 - dg2)
-   where dgk = g[i+sk] - g[i].
+   where dgk = gk[i] - gk[i+sk].
 
    g = (g1,g2), where g1 or g2 may be NULL.  Note that dt/dx and/or s1
    and s2 may be negative to flip signs of derivatives.

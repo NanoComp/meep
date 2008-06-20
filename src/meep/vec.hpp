@@ -95,9 +95,13 @@ component first_field_component(field_type ft);
 			  s = (boundary_side) ((s+1) % 2), \
 			  loop_stop_bi = High)
 
+// only loop over directions where we have coordinates
 #define LOOP_OVER_DIRECTIONS(dim, d) for (direction d = start_at_direction(dim), \
                                      loop_stop_directi = stop_at_direction(dim); \
                                      d < loop_stop_directi; d = (direction) (d+1))
+
+// loop over all directions in which we might have fields
+#define LOOP_OVER_FIELD_DIRECTIONS(dim, d) for (direction d = dim == Dcyl ? Z : X; d < (dim == Dcyl ? NO_DIRECTION : R); d = direction(d+1))
 
 // loop over indices idx from is to ie (inclusive) in v
 #define LOOP_OVER_IVECS(v, is, ie, idx) \
@@ -166,6 +170,11 @@ inline signed_direction flip(signed_direction d) {
 
 inline bool has_direction(ndim dim, direction d) {
   LOOP_OVER_DIRECTIONS(dim, dd) if (dd == d) return true;
+  return false;
+}
+
+inline bool has_field_direction(ndim dim, direction d) {
+  LOOP_OVER_FIELD_DIRECTIONS(dim, dd) if (dd == d) return true;
   return false;
 }
 

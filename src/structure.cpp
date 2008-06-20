@@ -521,7 +521,7 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
       sig[d] = NULL;
       siginv[d] = NULL;
     }
-    LOOP_OVER_DIRECTIONS(D3,dd) {
+    LOOP_OVER_FIELD_DIRECTIONS(v.dim, dd) {
       if (!sig[dd]) {
 	int spml = (dd==d)?(2*v.num_direction(d)+2):1;
 	sigsize[dd] = spml;

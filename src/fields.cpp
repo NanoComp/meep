@@ -167,6 +167,7 @@ fields_chunk::~fields_chunk() {
     delete[] f_prev[c][cmp];
     delete[] f_minus_p[c][cmp];
   }
+  delete[] f_rderiv_int;
   FOR_FIELD_TYPES(ft)
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++)
@@ -206,6 +207,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
     f_prev[c][cmp] = NULL;
     f_minus_p[c][cmp] = NULL;
   }
+  f_rderiv_int = NULL;
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++)
       num_connections[ft][ip][Incoming] 
@@ -271,16 +273,24 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
       memcpy(f_minus_p[c][cmp], thef.f_minus_p[c][cmp], 
 	     sizeof(double) * v.ntot());
     }
+  f_rderiv_int = NULL;
   figure_out_step_plan();
 }
 
 static inline bool cross_negative(direction a, direction b) {
+  if (a >= R) a = direction(a - 3);
+  if (b >= R) b = direction(b - 3);
   return ((3+b-a)%3) == 2;
 }
 
 static inline direction cross(direction a, direction b) {
-  if (a < R && b < R) return (direction)((3+2*a-b)%3);
-  return (direction) (2 + (3+2*(a-2)-(b-2))%3);
+  if (a == b) abort("bug - cross expects different directions");
+  bool dcyl = a >= R || b >= R;
+  if (a >= R) a = direction(a - 3);
+  if (b >= R) b = direction(b - 3);
+  direction c = direction((3+2*a-b)%3);
+  if (dcyl && c < Z) return direction(c + 3);
+  return c;
 }
 
 /* Call this whenever we modify the structure_chunk (fields_chunk::s) to
@@ -306,7 +316,7 @@ void fields_chunk::figure_out_step_plan() {
 	    (is_B(c1) && is_electric(c2))) {
           const direction dc2 = component_direction(c2);
           if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
-              has_direction(v.dim,cross(dc1,dc2))) {
+              has_field_direction(v.dim,cross(dc1,dc2))) {
             direction d_deriv = cross(dc1,dc2);
             if (cross_negative(dc2, dc1)) {
               minus_component[c1] = c2;
