@@ -2,12 +2,14 @@
 
 namespace meep {
 
+#define SWAP(t,a,b) { t xxxx = a; a = b; b = xxxx; }
+
 /* update step for df/dt = curl g,
    i.e. f += dt curl g = dt/dx (dg1 - dg2)
    where dgk = g[i+sk] - g[i].
 
-   g = (g1,g2), where g2 may be NULL.  Note that dt/dx and/or s1 and s2 may
-   be negative to flip signs of derivatives. 
+   g = (g1,g2), where g1 or g2 may be NULL.  Note that dt/dx and/or s1
+   and s2 may be negative to flip signs of derivatives.
 
    PML: sig[k] = sigma[k]*dt/2, siginv[k] = 1 / (1 + sigma[k]*dt/2).
    Here, k is the dsig direction.  if dsig == NO_DIRECTION, then PML
@@ -21,13 +23,17 @@ namespace meep {
    cndinv should be an array of 1 / (1 + dt cnd/2).  In the case
    of PML, cndinv should contain 1 / (1 + dt (cnd + sigma)/2).
 */
-
 void step_curl(double *f, component c, const double *g1, const double *g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
 	       direction dsig, const double *sig, const double *siginv,
 	       double dt, const double *cnd, const double *cndinv)
 {
+  if (!g1) { // swap g1 and g2
+    SWAP(const double*, g1, g2);
+    SWAP(int, s1, s2);
+    dtdx = -dtdx; // need to flip derivative sign
+  }
   if (dsig == NO_DIRECTION) { // no PML
     if (cnd) {
       double dt2 = dt * 0.5;
@@ -143,7 +149,6 @@ inline double calc_nonlinear_u(const double Dsqr,
   int sigsize_dsig2 = sigsize_dsig;
   int sigsize_dsig2inv = sigsize_dsig1;
   
-# define SWAP(t,a,b) { t xxxx = a; a = b; b = xxxx; }
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
     SWAP(const double*, g1, g2);
     SWAP(const double*, g1b, g2b);
