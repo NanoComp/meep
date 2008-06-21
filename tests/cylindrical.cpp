@@ -34,7 +34,7 @@ int compare(double a, double b, const char *n, double eps=4e-15) {
   }
 }
 
-int compare_point(fields &f1, fields &f2, const vec &p) {
+int compare_point(fields &f1, fields &f2, const vec &p, double eps=4e-9) {
   monitor_point m1, m_test;
   f1.get_point(&m_test, p);
   f2.get_point(&m1, p);
@@ -42,7 +42,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
     component c = (component) i;
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
-      if (abs(v1 - v2) > 0.0*2e-15*abs(v2)) {
+      if (abs(v1 - v2) > eps*abs(v2)) {
         printf("%s differs:  %g %g out of %g %g\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         printf("This comes out to a fractional error of %g\n",
