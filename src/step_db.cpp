@@ -180,7 +180,7 @@ void fields_chunk::step_db(field_type ft) {
       }
       else // no PML, no conductivity
 	for (int iz = 0; iz < v.nz(); ++iz) 
-	  the_f[iz] += g[iz] * (Courant * 1); // FIXME: should be * 4 ??
+	  the_f[iz] += g[iz] * (Courant * 4);
       // Note: old code was missing factor of 4??
 
       for (int iz = 0; iz <= v.nz(); ++iz) f[Dp][cmp][iz] = 0.0;
