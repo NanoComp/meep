@@ -37,17 +37,18 @@ double rods(const vec &r) {
 
 void compare(double b, double a, const char *n) {
   if (fabs(a-b) > fabs(b)*1e-5 || b != b) {
-    master_printf("Differs by %g (%g instead of %g)\n", fabs(a-b), a, b);
-    master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
-    abort("Error in %s\n", n);
+    abort("Failed %s (%g instead of %g, relerr %0.2g)\n", n,
+	  a, b, fabs(a-b)/fabs(b));
   } else {
     master_printf("Passed %s\n", n);
   }
 }
 
+static double dpml = 1.0;
+
 double using_pml_ez(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  structure s(v, eps, pml(1.0));
+  structure s(v, eps, pml(dpml));
   fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
 		     complex<double>(0,-2*pi*0.2));
@@ -59,7 +60,7 @@ double using_pml_ez(const volume &v, double eps(const vec &)) {
 
 double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
-  structure s(v, eps, pml(1.0, Y));
+  structure s(v, eps, pml(dpml, Y));
   fields f(&s);
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
 		     complex<double>(0,-2*pi*0.2));
@@ -176,7 +177,7 @@ int main(int argc, char **argv) {
           "1D polariton energy");
   compare(5.20605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
-  compare(0.895966, using_pml_ez(voltwo(3.0, 3.0, a), one),
+  compare(0.883776, using_pml_ez(voltwo(1.0+2*dpml, 1.0+2*dpml, a), one),
           "1x1 PML 2D TM");
   compare(0.110425, x_periodic(voltwo(1.0, 1.0, a), one),
           "1x1 X periodic 2D TM");
@@ -184,13 +185,13 @@ int main(int argc, char **argv) {
           "1x1 fully periodic 2D TM rods");
   compare(1.12502, periodic_ez(voltwo(1.0, 3.0, a), one),
           "1x1 fully periodic 2D TM");
-  compare(0.191973, x_periodic_y_pml(voltwo(1.0, 2.0, a), one),
+  compare(0.608815, x_periodic_y_pml(voltwo(1.0, 1.0+2*dpml, a), one),
           "1x1 X periodic Y PML 2D TM");
   compare(-41.8057, metallic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 metallic 3D");
   compare(-100.758, x_periodic(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 X periodic 3D");
-  compare(-101.191, x_periodic_y_pml(vol3d(1.0, 2.0, 1.0, a), one),
+  compare(-101.398, x_periodic_y_pml(vol3d(1.0, 1.0+2*dpml, 1.0, a), one),
           "1x1x1 X periodic Y PML 3D");
   compare(-97.7989, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
           "1x1x1 fully periodic 3D rods");
