@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
   compare(-23.8506, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
           "3D saturated polariton");
 #endif
-  compare(0.0263969 * 4*pi, polariton_energy(volone(1.0, a), one),
+  compare(0.32617294, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(5.20605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
