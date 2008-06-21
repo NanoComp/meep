@@ -316,7 +316,8 @@ void fields_chunk::figure_out_step_plan() {
 	    (is_B(c1) && is_electric(c2))) {
           const direction dc2 = component_direction(c2);
           if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
-              has_field_direction(v.dim,cross(dc1,dc2))) {
+              (has_direction(v.dim,cross(dc1,dc2)) ||
+	       (v.dim == Dcyl && has_field_direction(v.dim,cross(dc1,dc2))))) {
             direction d_deriv = cross(dc1,dc2);
             if (cross_negative(dc2, dc1)) {
               minus_component[c1] = c2;

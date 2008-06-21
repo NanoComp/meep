@@ -44,8 +44,13 @@ int radiating_2D(const double xmax) {
   vec p1(xmax/2 + 0*dx, ymax/2);
   vec p2(xmax/2 + 1*dx, ymax/2);
 
+#if 0
   // let the source reach steady state
   f.solve_cw(1e-3);
+#else
+  while (f.time() < 400)
+    f.step();
+#endif
 
   complex<double> amp1 = f.get_field(Ez, p1);
   complex<double> amp2 = f.get_field(Ez, p2);
@@ -78,8 +83,13 @@ int radiating_3D() {
   vec p1(xmax/2 + dx, ymax/2, zmax/2);
   vec p2(xmax/2 + 2*dx, ymax/2, zmax/2);
 
+#if 0
   // let the source reach steady state
   f.solve_cw(1e-3, 10000, 4);
+#else
+  while (f.time() < 400)
+    f.step();
+#endif
 
   complex<double> amp1 = f.get_field(Ez, p1);
   complex<double> amp2 = f.get_field(Ez, p2);
