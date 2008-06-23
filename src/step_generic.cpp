@@ -284,6 +284,8 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
    // fields
 #  define DEF_gs  double gs0 = g[i]; double gs = ((1+sigg[kg])*siginv[k])*gs0
 #  define DEF_gbs double gbs = ((1-sigg[kg])*siginv[k]) * gb[i]
+#  define DEF_gss  double gs0 = g[i]; double gss = (1+sigg[kg]) * gs0
+#  define DEF_gbss double gbss = (1-sigg[kg]) * gb[i]
 #  define DEF_us  double us = u[i]
 #  define DEF_g1s0 double g1s0 = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 #  define DEF_g1s DEF_g1s0; \
@@ -361,39 +363,56 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    IVEC_LOOP_ILOC(v, iloc);
 	    DEF_g1s0;
-            DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+            DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
             DEF_us;
-	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
+	    f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss)*us *
      	      calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0),
-     			       gs0, us, chi2[i], chi3[i]);
+     			       gs0, us, chi2[i], chi3[i]));
 	  }
 	} else if (g2) {
 	  abort("bug - didn't swap off-diagonal terms!?");
 	} else {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    IVEC_LOOP_ILOC(v, iloc);
-	    DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+	    DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
             DEF_us;
-	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
-     	      calc_nonlinear_u(gs0 * gs0, gs0, us, chi2[i], chi3[i]);
+	    f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss)*us *
+     	      calc_nonlinear_u(gs0 * gs0, gs0, us, chi2[i], chi3[i]));
 	  }
 	}
       } else { //linear, diagonal u
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
-	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+	  DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
 	  DEF_us;
-	  f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs) * us;
+	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss) * us);
 	}
       }
     }
     else { // NULL u array, corresponding to u = 1 everywhere
       if (chi3) abort("bug - should not have chi3 without chi1");
-      LOOP_OVER_VOL_OWNED(v, fc, i) {
-	IVEC_LOOP_ILOC(v, iloc);
-	DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
-	f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs);
-      }
+      // since this case is so common, do a few special cases:
+      if (sigsize_dsig > 1 && sigsize_dsigg > 1)
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  IVEC_LOOP_ILOC(v, iloc);
+	  int k = iloc.in_direction(dsig) - k0;
+	  int kg = iloc.in_direction(dsigg) - kg0;
+	  DEF_gss; DEF_gbss;
+	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss));
+	}
+      else if (sigsize_dsig > 1 && sigsize_dsigg <= 1)
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  IVEC_LOOP_ILOC(v, iloc);
+	  int k = iloc.in_direction(dsig) - k0;
+	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (g[i]-gb[i]));
+	}
+      else if (sigsize_dsig <= 1 && sigsize_dsigg > 1)
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  IVEC_LOOP_ILOC(v, iloc);
+	  int kg = iloc.in_direction(dsigg) - kg0;
+	  f[i] = f[i] + ((1+sigg[kg])*g[i]-(1-sigg[kg])*gb[i]);
+	}
+      else abort("bug - non-PML case in PML-only code");
     }
   }
 }
