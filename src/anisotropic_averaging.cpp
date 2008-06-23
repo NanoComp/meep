@@ -316,11 +316,13 @@ void structure_chunk::set_epsilon(material_function &epsilon,
 
     FOR_ELECTRIC_COMPONENTS(c)
       if (v.has_field(c)) {
+	bool diagonal = true;
 	FOR_ELECTRIC_COMPONENTS(c2) if (v.has_field(c2)) {
 	  direction d = component_direction(c2);
 	  if (!inveps[c][d]) inveps[c][d] = new double[v.ntot()];
 	  if (!inveps[c][d]) abort("Memory allocation error.\n");
 	}
+	direction dc = component_direction(c);
 	direction d0 = X, d1 = Y, d2 = Z;
 	if (v.dim == Dcyl) { d0 = R; d1 = P; }
 	LOOP_OVER_VOL(v, c, i) {
@@ -328,9 +330,18 @@ void structure_chunk::set_epsilon(material_function &epsilon,
 	  IVEC_LOOP_ILOC(v, here);
 	  anisoaverage(epsilon, v.dV(here, smoothing_diameter), 
 		       c, invepsrow, tol, maxeval);
-	  if (inveps[c][d0]) inveps[c][d0][i] = invepsrow[0];
-	  if (inveps[c][d1]) inveps[c][d1][i] = invepsrow[1];
-	  if (inveps[c][d2]) inveps[c][d2][i] = invepsrow[2];
+	  if (inveps[c][d0]) { 
+	    inveps[c][d0][i] = invepsrow[0];
+	    if (dc != d0 && invepsrow[0] != 0.0) diagonal = false;
+	  }
+	  if (inveps[c][d1]) {
+	    inveps[c][d1][i] = invepsrow[1];
+	    if (dc != d1 && invepsrow[1] != 0.0) diagonal = false;
+	  }
+	  if (inveps[c][d2]) {
+	    inveps[c][d2][i] = invepsrow[2];
+	    if (dc != d2 && invepsrow[2] != 0.0) diagonal = false;
+	  }
 
 	  if (!quiet && (ipixel+1) % 1000 == 0
 	      && wall_time() > last_output_time + MIN_OUTPUT_TIME) {
@@ -341,6 +352,10 @@ void structure_chunk::set_epsilon(material_function &epsilon,
 	    last_output_time = wall_time();
 	  }
 	  ++ipixel;
+	}
+	if (diagonal) FOR_ELECTRIC_COMPONENTS(c2) if (v.has_field(c2)) {
+	  direction d = component_direction(c2);
+	  if (d != dc) { delete[] inveps[c][d]; inveps[c][d] = 0; }
 	}
       }
   }
