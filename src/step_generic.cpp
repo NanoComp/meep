@@ -344,11 +344,11 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 	if (g1 && g2) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
 	    DEF_g1s0; DEF_g2s0;
-	    DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
+	    DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
 	    DEF_us;
-	    f[i] = ((1-sig[k])*siginv[k])*f[i] + (gs-gbs)*us *
+	    f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss)*us *
 	      calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0 + g2s0*g2s0),
-			       gs0, us, chi2[i], chi3[i]);
+			       gs0, us, chi2[i], chi3[i]));
 	  }
 	} else if (g1) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
