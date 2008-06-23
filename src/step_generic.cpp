@@ -1,4 +1,9 @@
 #include "meep.hpp"
+#include "config.h"
+
+// with the current version of gcc, using "restrict" yields slower code!!
+// #define DPR double * restrict
+#define DPR double * // faster, at least for now
 
 namespace meep {
 
@@ -23,14 +28,14 @@ namespace meep {
    cndinv should be an array of 1 / (1 + dt cnd/2).  In the case
    of PML, cndinv should contain 1 / (1 + dt (cnd + sigma)/2).
 */
-void step_curl(double *f, component c, const double *g1, const double *g2,
+void step_curl(DPR f, component c, const DPR g1, const DPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
-	       direction dsig, const double *sig, const double *siginv,
-	       double dt, const double *cnd, const double *cndinv)
+	       direction dsig, const DPR sig, const DPR siginv,
+	       double dt, const DPR cnd, const DPR cndinv)
 {
   if (!g1) { // swap g1 and g2
-    SWAP(const double*, g1, g2);
+    SWAP(const DPR, g1, g2);
     SWAP(int, s1, s2);
     dtdx = -dtdx; // need to flip derivative sign
   }
@@ -130,19 +135,19 @@ inline double calc_nonlinear_u(const double Dsqr,
    Here, sig = sigma[k]*dt/2, and siginv[k] = 1 / (1 + sig[k]), and
    sig2 is the other sigma array.  gb etc. are the backups of g from
    the previous time step. */
-  void step_update_EDHB(double *f, component fc, const volume &v, 
-		     const double *g, const double *g1, const double *g2,
-		     const double *gb, const double *g1b, const double *g2b,
-		     const double *u, const double *u1, const double *u2,
-		     int s, int s1, int s2,
-		     const double *chi2, const double *chi3,
-		     direction dsig, const double *sig, const double *siginv,
-		     direction dsigg, const double *sigg,
-		     direction dsig1, const double *sig1,
-		     direction dsig1inv, const double *sig1inv,
-		     direction dsig2, const double *sig2,
-		     direction dsig2inv, const double *sig2inv,
-		     int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1)
+void step_update_EDHB(DPR f, component fc, const volume &v, 
+		      const DPR g, const DPR g1, const DPR g2,
+		      const DPR gb, const DPR g1b, const DPR g2b,
+		      const DPR u, const DPR u1, const DPR u2,
+		      int s, int s1, int s2,
+		      const DPR chi2, const DPR chi3,
+		      direction dsig, const DPR sig, const DPR siginv,
+		      direction dsigg, const DPR sigg,
+		      direction dsig1, const DPR sig1,
+		      direction dsig1inv, const DPR sig1inv,
+		      direction dsig2, const DPR sig2,
+		      direction dsig2inv, const DPR sig2inv,
+		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1)
 {
   if (!f) return;
   int sigsize_dsig1inv = sigsize_dsigg;
@@ -150,12 +155,12 @@ inline double calc_nonlinear_u(const double Dsqr,
   int sigsize_dsig2inv = sigsize_dsig1;
   
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
-    SWAP(const double*, g1, g2);
-    SWAP(const double*, g1b, g2b);
-    SWAP(const double*, u1, u2);
+    SWAP(const DPR, g1, g2);
+    SWAP(const DPR, g1b, g2b);
+    SWAP(const DPR, u1, u2);
     SWAP(int, s1, s2);
-    SWAP(const double*, sig1, sig2);
-    SWAP(const double*, sig1inv, sig2inv);
+    SWAP(const DPR, sig1, sig2);
+    SWAP(const DPR, sig1inv, sig2inv);
     SWAP(direction, dsig1, dsig2);
     SWAP(direction, dsig1inv, dsig2inv);
     SWAP(int, sigsize_dsig1, sigsize_dsig2);

@@ -426,6 +426,13 @@ AC_CHECK_HEADERS([sys/time.h])
 AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
 
 ##############################################################################
+# check for restrict keyword in C++
+AC_PREREQ(2.58) dnl for ac_c_restrict
+AC_LANG_PUSH([C++])
+AC_C_RESTRICT
+AC_LANG_POP([C++])
+
+##############################################################################
 
 AC_SUBST(MEEP_SUFFIX)
 program_transform_name="s,_,-,g;$program_transform_name"
