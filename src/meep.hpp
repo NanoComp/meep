@@ -729,6 +729,9 @@ class fields_chunk {
   void remove_polarizabilities();
   void zero_fields();
 
+  bool update_h_from_b();
+  void update_e_from_d();
+
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
@@ -745,10 +748,8 @@ class fields_chunk {
   void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
   void step_b_source(src_vol *, int including_integrated);
-  bool update_h_from_b();
   void step_db(field_type ft);
   void step_d_source(src_vol *, int including_integrated);
-  void update_e_from_d();
   void update_from_e();
   void calc_sources(double time);
 
@@ -1020,7 +1021,7 @@ class fields {
   // material.cpp
   double max_eps() const;
   // step.cpp
-  void force_consistency(field_type ft);
+  void step_boundaries(field_type);
 
   bool nosize_direction(direction d) const;
   direction normal_direction(const geometric_volume &where) const;
@@ -1053,7 +1054,6 @@ class fields {
   void step_d_source(int including_integrated = 0);
   void update_e_from_d();
   void update_from_e();
-  void step_boundaries(field_type);
   void calc_sources(double tim);
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,

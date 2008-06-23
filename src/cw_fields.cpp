@@ -26,38 +26,85 @@ static void fields_to_array(const fields &f, complex<double> *x)
   for (int i=0;i<f.num_chunks;i++)
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
-        if (f.chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
-	  double *fs[2];
-	  DOCMP2 fs[cmp] = f.chunks[i]->f[c][cmp];
-	  if (fs[0]) {
+        if (is_D(c) || is_B(c)) {
+	  double *fr, *fi;
+	  if ((fr = f.chunks[i]->f[c][0]) &&
+	      (fi = f.chunks[i]->f[c][1]))
 	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
-	      x[ix++] = complex<double>(fs[0][idx], fs[1][idx]);
-	  }
-        }
+	      x[ix++] = complex<double>(fr[idx], fi[idx]);
+	}
+
+  for (int i=0;i<f.num_chunks;i++)
+    if (f.chunks[i]->is_mine()) {
+      bool have_pml = false;
+      LOOP_OVER_FIELD_DIRECTIONS(f.chunks[i]->v.dim, d)
+	if (f.chunks[i]->s->sigsize[d] > 1)
+	  have_pml = true;
+      if (have_pml) FOR_COMPONENTS(c)
+        if (is_electric(c) || is_magnetic(c)) {
+	  double *fr, *fi;
+	  if ((fr = f.chunks[i]->f[c][0]) &&
+	      (fi = f.chunks[i]->f[c][1]))
+	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
+	      x[ix++] = complex<double>(fr[idx], fi[idx]);
+	}
+    }
 }
   
 static void array_to_fields(const complex<double> *x, fields &f)
 {
   int ix = 0;
-  for (int i=0;i<f.num_chunks;i++) {
-    //    f.chunks[i]->backup_b();
-    //    f.chunks[i]->backup_d();
+  for (int i=0;i<f.num_chunks;i++)
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
-        if (f.chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
-	  double *fs[2];
-	  DOCMP2 fs[cmp] = f.chunks[i]->f[c][cmp];
-	  if (fs[0]) {
+        if (is_D(c) || is_B(c)) {
+	  double *fr, *fi;
+	  if ((fr = f.chunks[i]->f[c][0]) &&
+	      (fi = f.chunks[i]->f[c][1]))
 	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
-	      fs[0][idx] = real(x[ix]);
-	      fs[1][idx] = imag(x[ix]);
-	      ++ix;
+	      fr[idx] = real(x[ix]);
+	      fi[idx] = imag(x[ix++]);
 	    }
+	}
+
+  f.step_boundaries(D_stuff);
+  f.step_boundaries(B_stuff);
+
+  for (int i=0;i<f.num_chunks;i++)
+    if (f.chunks[i]->is_mine()) {
+      bool have_pml = false;
+      LOOP_OVER_FIELD_DIRECTIONS(f.chunks[i]->v.dim, d)
+	if (f.chunks[i]->s->sigsize[d] > 1)
+	  have_pml = true;
+      FOR_COMPONENTS(c) {
+        if (is_electric(c) || is_magnetic(c)) {
+	  if (have_pml) { // in PML regions, E/H fields are unknowns
+	    double *fr, *fi;
+	    if ((fr = f.chunks[i]->f[c][0]) &&
+		(fi = f.chunks[i]->f[c][1]))
+	      LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
+	        fr[idx] = real(x[ix]);
+	        fi[idx] = imag(x[ix++]);
+	      }
+	  }
+	  else if (is_electric(c)) {
+	    src_vol *save_src = f.chunks[i]->d_sources;
+	    f.chunks[i]->d_sources = 0; // disable sources
+	    f.chunks[i]->update_e_from_d();
+	    f.chunks[i]->d_sources = save_src;
+	  }
+	  else if (is_magnetic(c)) {
+	    src_vol *save_src = f.chunks[i]->b_sources;
+	    f.chunks[i]->b_sources = 0; // disable sources
+	    f.chunks[i]->update_h_from_b();
+	    f.chunks[i]->b_sources = save_src;
 	  }
 	}
-  }
-  f.force_consistency(B_stuff);
-  f.force_consistency(D_stuff);
+      }
+    }
+
+  f.step_boundaries(E_stuff);
+  f.step_boundaries(H_stuff);
 }
 
 typedef struct {
@@ -97,13 +144,19 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   if (is_real) abort("solve_cw is incompatible with use_real_fields()");
   if (L < 1) abort("solve_cw called with L = %d < 1", L);
 
+  step(); // step once to make sure everything is allocated
+
   int N = 0; // size of linear system (on this processor, at least)
   for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
+    if (chunks[i]->is_mine()) {
+      bool have_pml = false;
+      LOOP_OVER_FIELD_DIRECTIONS(chunks[i]->v.dim, d)
+	if (chunks[i]->s->sigsize[d] > 1)
+	  have_pml = true;
       FOR_COMPONENTS(c)
-	if (chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
-	  N += 2 * chunks[i]->v.nowned(c);
-	}
+	if (chunks[i]->f[c][0] && (is_D(c) || is_B(c)))
+	  N += 2 * chunks[i]->v.nowned(c) * (1 + have_pml);
+    }
 
   int nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
   double *work = new double[nwork + 2*N];
@@ -119,9 +172,11 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   calc_sources(time());
   step_b_source();
   step_boundaries(B_stuff);
+  update_h_from_b();
+  calc_sources(time() + 0.5*dt);
   step_d_source(1);
   step_boundaries(D_stuff);
-
+  update_e_from_d();
   fields_to_array(*this, b);
   double mdt_inv = -1.0 / dt;
   for (int i = 0; i < N/2; ++i) b[i] *= mdt_inv;

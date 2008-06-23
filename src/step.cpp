@@ -120,30 +120,6 @@ void fields_chunk::phase_material(int phasein_time) {
   }
 }
 
-// Some fields, e.g. the boundaries and E, are not independent
-// of the other fields...this routine forces everything to
-// be in a consistent state, and should be called if fields
-// of the given type ft were updated "manually" (not by timestepping).
-void fields::force_consistency(field_type ft)
-{
-  switch (ft) {
-  case B_stuff:
-    step_boundaries(ft);
-    update_h_from_b();
-    step_boundaries(H_stuff);
-    break;
-  case H_stuff:
-    abort("we do not know how to update B from H");
-  case D_stuff: case P_stuff:
-    step_boundaries(ft);
-    update_e_from_d();
-    step_boundaries(E_stuff);
-    break;
-  case E_stuff:
-    abort("we do not know how to update D from E");
-  }
-}
-
 void fields::step_boundaries(field_type ft) {
   connect_chunks(); // re-connect if !chunk_connections_valid
   am_now_working_on(MpiTime);

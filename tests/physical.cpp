@@ -29,7 +29,6 @@ double slab(const vec &v) {
 
 int radiating_2D(const double xmax) {
   const double a = 10.0;
-  const double gridpts = a*xmax;
   const double ymax = 3.0;
 
   volume v = voltwo(xmax,ymax,a);
@@ -44,9 +43,9 @@ int radiating_2D(const double xmax) {
   vec p1(xmax/2 + 0*dx, ymax/2);
   vec p2(xmax/2 + 1*dx, ymax/2);
 
-#if 0
   // let the source reach steady state
-  f.solve_cw(1e-3);
+#if 1
+  f.solve_cw(1e-6);
 #else
   while (f.time() < 400)
     f.step();
@@ -63,29 +62,26 @@ int radiating_2D(const double xmax) {
   return 1;
 }
 
-int radiating_3D() {
+int radiating_3D(const double xmax) {
   const double a = 10.0;
-  const double pml_thickness = 1.0;
-  const double ymax = 0.4 + 2*pml_thickness;
-  const double zmax = ymax;
-  const double w = 0.30;
-  const double xmax = 8.0;
-  const double dx = (xmax/2 - pml_thickness)/2 - 2/a;
+  const double ymax = 3.0;
 
-  volume v = vol3d(xmax,ymax,zmax,a);
-  symmetry S = mirror(X,v) + mirror(Y,v) + mirror(Z,v)*(-1.0);
-  structure s(v, one, pml(pml_thickness), S);
+  volume v = vol3d(xmax,ymax,ymax,a);
+  symmetry S = mirror(Y,v) - mirror(Z,v);
+  structure s(v, one, pml(ymax/3));
 
   fields f(&s);
+  double w = 0.30;
+  double dx = 2.0;
   continuous_src_time src(w);
-  f.add_point_source(Ez, src, vec(xmax/2, ymax/2, zmax/2));
+  f.add_point_source(Ez, src, vec(xmax/2 - dx, ymax/2, ymax/2));
 
-  vec p1(xmax/2 + dx, ymax/2, zmax/2);
-  vec p2(xmax/2 + 2*dx, ymax/2, zmax/2);
+  vec p1(xmax/2 + 0*dx, ymax/2, ymax/2);
+  vec p2(xmax/2 + 1*dx, ymax/2, ymax/2);
 
-#if 0
   // let the source reach steady state
-  f.solve_cw(1e-3, 10000, 4);
+#if 1
+  f.solve_cw(1e-3);
 #else
   while (f.time() < 400)
     f.step();
@@ -93,11 +89,11 @@ int radiating_3D() {
 
   complex<double> amp1 = f.get_field(Ez, p1);
   complex<double> amp2 = f.get_field(Ez, p2);
-  const double ratio = abs(amp1)/abs(amp2);
+  double ratio = abs(amp1)/abs(amp2) ;
   printf("Ratio is %g from (%g %g) and (%g %g)\n",
          ratio, real(amp1), imag(amp1), real(amp2), imag(amp2));
-  if (ratio > 2.05 || ratio < 1.87)
-    abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2)^2 = %g, too far from 2.0\n",
+  if (ratio > 2.12 || ratio < 1.88)
+    abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2) = %g, too far from 2.0\n",
 	  real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;
 }
@@ -113,6 +109,6 @@ int main(int argc, char **argv) {
   master_printf("Trying out some physical tests...\n");
 
   attempt("radiating source should decay spatially as 1/sqrt(r) in 2D.", radiating_2D(8.0));
-  attempt("radiating source should decay spatially as 1/r in 3D.", radiating_3D());
+  attempt("radiating source should decay spatially as 1/r in 3D.", radiating_3D(7.0));
   return 0;
 }

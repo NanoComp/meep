@@ -38,9 +38,15 @@ void fields_chunk::update_e_from_d() {
       break;
     }
 
-  FOR_D_COMPONENTS(dc) DOCMP 
-    if (!f_minus_p[dc][cmp] && f[dc][cmp] && (pol || have_int_sources))
-      f_minus_p[dc][cmp] = new double[v.ntot()];
+  FOR_D_COMPONENTS(dc) DOCMP {
+    if (f[dc][cmp] && (pol || have_int_sources)) {
+      if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new double[v.ntot()];
+    }
+    else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
+      delete[] f_minus_p[dc][cmp];
+      f_minus_p[dc][cmp] = 0;
+    }
+  }
   bool have_d_minus_p = false;
   FOR_D_COMPONENTS(dc) if (f_minus_p[dc][0]) {
     have_d_minus_p = true;
