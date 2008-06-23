@@ -261,11 +261,11 @@ inline double calc_nonlinear_u(const double Dsqr,
      v.little_corner().in_direction(dsigg):0;
    int k10 = (sigsize_dsig1 > 1)?
      v.little_corner().in_direction(dsig1):0;
-   int k1inv0 = (sigsize_dsigg > 1)?
+   int k1inv0 = (sigsize_dsig1inv > 1)?
      v.little_corner().in_direction(dsig1inv):0;
-   int k20 = (sigsize_dsig > 1)?
+   int k20 = (sigsize_dsig2 > 1)?
      v.little_corner().in_direction(dsig2):0;
-   int k2inv0 = (sigsize_dsig1 > 1)?
+   int k2inv0 = (sigsize_dsig2inv > 1)?
      v.little_corner().in_direction(dsig2inv):0;
 
    // the following definitions are used over and over
