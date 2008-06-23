@@ -5,6 +5,24 @@
 // #define DPR double * restrict
 #define DPR double * // faster, at least for now
 
+/* These macros get into the guts of the LOOP_OVER_VOL loops to efficiently
+   construct the index k into a PML sigma array.  Basically, k needs to
+   increment by 2 for each increment of one of LOOP's for-loops, starting
+   at the appropriate corner of the volume, and these macros define the
+   relevant strides etc. for each loop.  If sigsize_dsig <= 1, however,
+   our index k should always be zero (sigma array is trivial length-1). 
+   KSTRIDE_DEF defines the relevant strides etc. and goes outside the 
+   LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
+#define SZ0(dsig, expr) (sigsize_ ## dsig > 1 ? (expr) : 0)
+#define KSTRIDE_DEF(dsig, k, corner)					  \
+     const int k##0 = SZ0(dsig, corner.in_direction(dsig)		  \
+                              - v.little_corner().in_direction(dsig));	  \
+     const int s##k##1 = SZ0(dsig, v.yucky_direction(0) == dsig ? 2 : 0); \
+     const int s##k##2 = SZ0(dsig, v.yucky_direction(1) == dsig ? 2 : 0); \
+     const int s##k##3 = SZ0(dsig, v.yucky_direction(2) == dsig ? 2 : 0)
+#define KDEF(k,dsig) const int k = ((k##0 + s##k##1*loop_i1) + s##k##2*loop_i2) + s##k##3*loop_i3
+#define DEF_k KDEF(k,dsig)
+
 namespace meep {
 
 #define SWAP(t,a,b) { t xxxx = a; a = b; b = xxxx; }
@@ -65,21 +83,19 @@ void step_curl(DPR f, component c, const DPR g1, const DPR g2,
     }
   }
   else { /* PML */
-    int k0 = v.little_corner().in_direction(dsig);
+    const int sigsize_dsig=2; KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
     if (cnd) {
       double dt2 = dt * 0.5;
       if (g2) {
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
+	  DEF_k;
 	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] - 
 		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
 	}
       }
       else {
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
+	  DEF_k;
 	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] 
 		  - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
 	}
@@ -88,16 +104,14 @@ void step_curl(DPR f, component c, const DPR g1, const DPR g2,
     else { // no conductivity (other than PML conductivity)
       if (g2) {
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
+	  DEF_k;
 	  f[i] = ((1 - sig[k]) * f[i] -
 		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	}
       }
       else {
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
+	  DEF_k;
 	  f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1] - g1[i])) * siginv[k];
 	}
       }
@@ -251,35 +265,18 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
   }
   else { // PML
     
-    // offset so that we can index by iloc
-    /* The sigsize_dsig>1 check seems to be redudant, since there
-       is an identical check when k0 (etc.) is used.  However,
-       for some reason we don't understand, removing that check
-       here causes valgrind to complain about some uninitialized
-       pointer value when running bragg_transmission.dac ... since
-       it is harmless, we keep it here to shut valgrind up
-       (and on the chance that valgrind is identifying a real bug
-       that we can't figure out). */
-   int k0 = (sigsize_dsig > 1)?
-     v.little_corner().in_direction(dsig):0;
-   int kg0 = (sigsize_dsigg > 1)?
-     v.little_corner().in_direction(dsigg):0;
-   int k10 = (sigsize_dsig1 > 1)?
-     v.little_corner().in_direction(dsig1):0;
-   int k1inv0 = (sigsize_dsig1inv > 1)?
-     v.little_corner().in_direction(dsig1inv):0;
-   int k20 = (sigsize_dsig2 > 1)?
-     v.little_corner().in_direction(dsig2):0;
-   int k2inv0 = (sigsize_dsig2inv > 1)?
-     v.little_corner().in_direction(dsig2inv):0;
+    // strides etc. for updating each sig[] index inside the LOOP:
+    KSTRIDE_DEF(dsig, k, v.little_owned_corner(fc));
+    KSTRIDE_DEF(dsigg, kg, v.little_owned_corner(fc));
+    KSTRIDE_DEF(dsig1, k1, v.little_owned_corner(fc));
+    KSTRIDE_DEF(dsig2, k2, v.little_owned_corner(fc));
+    KSTRIDE_DEF(dsig1inv, k1inv, v.little_owned_corner(fc));
+    KSTRIDE_DEF(dsig2inv, k2inv, v.little_owned_corner(fc));
 
    // the following definitions are used over and over
 
    // indices into sigma arrays:
-#  define KDEF(k,dsig,k0) int k = (sigsize_ ## dsig > 1) * \
-                                  (iloc.in_direction(dsig) - k0)
-#  define DEF_k KDEF(k,dsig,k0)
-#  define DEF_kx(x) KDEF(k ## x, dsig ## x, k ## x ## 0)
+#  define DEF_kx(x) KDEF(k ## x, dsig ## x)
 
    // fields
 #  define DEF_gs  double gs0 = g[i]; double gs = ((1+sigg[kg])*siginv[k])*gs0
@@ -298,11 +295,9 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 #  define DEF_g2bs double g2bs = ((1-sig2[k2]) * sig2inv[k2inv]) * \
                                  (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)])
 
-
    if (u1 && u2) { // 3x3 off-diagonal u
      if (chi3) {
        LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
 	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
 	  DEF_kx(2); DEF_kx(2inv); DEF_g2s; DEF_g2bs;
 	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
@@ -314,7 +309,6 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 	}
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
 	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
           DEF_kx(2); DEF_kx(2inv); DEF_g2s; DEF_g2bs;
           DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
@@ -326,7 +320,6 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
     } else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
 	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
 	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
           DEF_us;
@@ -337,7 +330,6 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 	}
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
 	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
           DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
           DEF_us;
@@ -351,7 +343,6 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
       if (chi3) {
 	if (g1 && g2) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    IVEC_LOOP_ILOC(v, iloc);
 	    DEF_g1s0; DEF_g2s0;
 	    DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
 	    DEF_us;
@@ -361,7 +352,6 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 	  }
 	} else if (g1) {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    IVEC_LOOP_ILOC(v, iloc);
 	    DEF_g1s0;
             DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
             DEF_us;
@@ -373,7 +363,6 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 	  abort("bug - didn't swap off-diagonal terms!?");
 	} else {
 	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    IVEC_LOOP_ILOC(v, iloc);
 	    DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
             DEF_us;
 	    f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss)*us *
@@ -382,7 +371,6 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
 	}
       } else { //linear, diagonal u
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
 	  DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
 	  DEF_us;
 	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss) * us);
@@ -394,22 +382,18 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
       // since this case is so common, do a few special cases:
       if (sigsize_dsig > 1 && sigsize_dsigg > 1)
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
-	  int kg = iloc.in_direction(dsigg) - kg0;
+	  DEF_k; DEF_kx(g);
 	  DEF_gss; DEF_gbss;
 	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss));
 	}
       else if (sigsize_dsig > 1 && sigsize_dsigg <= 1)
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int k = iloc.in_direction(dsig) - k0;
+	  DEF_k;
 	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (g[i]-gb[i]));
 	}
       else if (sigsize_dsig <= 1 && sigsize_dsigg > 1)
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-	  int kg = iloc.in_direction(dsigg) - kg0;
+	  DEF_kx(g);
 	  f[i] = f[i] + ((1+sigg[kg])*g[i]-(1-sigg[kg])*gb[i]);
 	}
       else abort("bug - non-PML case in PML-only code");
