@@ -642,6 +642,7 @@
      (define (,(symbol-append 'output- cp '-p))
        (output-component ,(symbol-append CP 'p)))))
 (define-output-field "h" hfield H)
+(define-output-field "b" bfield B)
 (define-output-field "e" efield E)
 (define-output-field "d" dfield D)
 (define-output-field "s" poynting S) ; compat. with MPB.
