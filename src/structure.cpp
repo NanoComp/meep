@@ -143,7 +143,7 @@ void boundary_region::apply(structure *s) const {
       && s->user_volume.num_direction(d) > 1) {
     switch (kind) {
     case NOTHING_SPECIAL: break;
-    case PML: s->use_pml(d, side, thickness, strength); break;
+    case PML: s->use_pml(d, side, thickness); break;
     default: abort("unknown boundary region kind");
     }
   }
@@ -158,7 +158,8 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     case NOTHING_SPECIAL: break;
     case PML: 
       sc->use_pml(d, thickness, s->user_volume.boundary_location(side, d),
-		  strength); 
+		  Rasymptotic,
+		  pml_profile, pml_profile_data, pml_profile_integral); 
       break;
     default: abort("unknown boundary region kind");
     }
@@ -167,8 +168,12 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     next->apply(s, sc);
 }
 
+double pml_quadratic_profile(double u, void *d) { (void)d; return u * u; }
+
 boundary_region pml(double thickness, direction d, boundary_side side) {
-  return boundary_region(boundary_region::PML, thickness, 1.0, d, side, NULL);
+  return boundary_region(boundary_region::PML, thickness, 
+			 1e-15, pml_quadratic_profile, NULL, 1./3., 
+			 d, side, NULL);
 }
 boundary_region pml(double thickness, direction d) {
   return (pml(thickness, d, Low) + pml(thickness, d, High));
@@ -396,9 +401,8 @@ void structure::set_chi2(double eps(const vec &)) {
   set_chi2(epsilon);
 }
 
-void structure::use_pml(direction d, boundary_side b, double dx,
-			double strength) {
-  if (strength == 0.0 || dx <= 0.0) return;
+void structure::use_pml(direction d, boundary_side b, double dx) {
+  if (dx <= 0.0) return;
   volume pml_volume = v;
   pml_volume.set_num_direction(d, int(dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if (b == High)
@@ -504,13 +508,13 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
   }
 }
 
-// reflections from non-absorbed wave in continuum
-const double Rabs = 1e-15;
-
 void structure_chunk::use_pml(direction d, double dx, double bloc,
-			      double strength) {
-  if (strength == 0.0 || dx <= 0.0) return;
-  const double prefac = strength * (-log(Rabs))/(4*dx*0.3333);
+			      double Rasymptotic,
+			      pml_profile_func pml_profile,
+			      void *pml_profile_data,
+			      double pml_profile_integral) {
+  if (dx <= 0.0) return;
+  const double prefac = (-log(Rasymptotic))/(4*dx*pml_profile_integral);
   // Don't bother with PML if we don't even overlap with the PML region...
   if (bloc > v.boundary_location(High,d) + dx + 1.0/a - 1e-10 ||
       bloc < v.boundary_location(Low,d) - dx - 1.0/a + 1e-10) return;
@@ -540,7 +544,7 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
       const double x =
 	0.5/a*((int)(dx*(2*a)+0.5) - (int)(fabs(bloc-here)*(2*a)+0.5));
       if (x > 0) {
-	sig[d][idx]=0.5*dt*prefac*(x/dx)*(x/dx);
+	sig[d][idx]=0.5*dt*prefac*pml_profile(x/dx, pml_profile_data);
 	siginv[d][idx] = 1/(1+sig[d][idx]);	
       }
     }

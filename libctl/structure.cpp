@@ -770,6 +770,20 @@ void geom_epsilon::add_polarizabilities(meep::structure *s) {
 
 /***********************************************************************/
 
+// wrapper around Scheme function for PML profile
+static double scm_pml_profile(double u, void *f_)
+{
+  SCM f = (SCM) f_;
+  return ctl_convert_number_to_c(gh_call1(f, ctl_convert_number_to_scm(u)));
+}
+
+// for passing to multidimensional integration routine
+static double scm_pml_profile2(int dim, double *u, void *f_)
+{
+  SCM f = (SCM) f_; (void) dim;
+  return ctl_convert_number_to_c(gh_call1(f, ctl_convert_number_to_scm(*u)));
+}
+
 meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double resolution, bool enable_averaging,
 				double subpixel_tol, int subpixel_maxeval,
@@ -843,43 +857,65 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 
   meep::boundary_region br;
   for (int i = 0; i < pml_layers.num_items; ++i) {
+    double umin = 0, umax = 1, esterr;
+    int errflag;
     using namespace meep;
     if (pml_layers.items[i].direction == -1) {
       LOOP_OVER_DIRECTIONS(v.dim, d) {
 	if (pml_layers.items[i].side == -1) {
 	  FOR_SIDES(b)
-	    br = br + meep::boundary_region(meep::boundary_region::PML,
-					    pml_layers.items[i].thickness,
-					    pml_layers.items[i].strength,
-					    d, b);
+	    br = br + meep::boundary_region
+	    (meep::boundary_region::PML,
+	     pml_layers.items[i].thickness,
+	     pow(pml_layers.items[i].R_asymptotic,
+		 pml_layers.items[i].strength),
+	     scm_pml_profile, pml_layers.items[i].pml_profile,
+	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     d, b);
 	}
 	else
-	  br = br + meep::boundary_region(meep::boundary_region::PML,
-					  pml_layers.items[i].thickness,
-					  pml_layers.items[i].strength,
-					  d,
-					  (meep::boundary_side) 
-					  pml_layers.items[i].side);
+	  br = br + meep::boundary_region
+	    (meep::boundary_region::PML,
+	     pml_layers.items[i].thickness,
+	     pow(pml_layers.items[i].R_asymptotic,
+		 pml_layers.items[i].strength),
+	     scm_pml_profile, pml_layers.items[i].pml_profile,
+	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     d,
+	     (meep::boundary_side) pml_layers.items[i].side);
       }
     }
     else {
 	if (pml_layers.items[i].side == -1) {
 	  FOR_SIDES(b)
-	    br = br + meep::boundary_region(meep::boundary_region::PML,
-					    pml_layers.items[i].thickness,
-					    pml_layers.items[i].strength,
-					    (meep::direction)
-					    pml_layers.items[i].direction,
-					    b);
+	    br = br + meep::boundary_region
+	    (meep::boundary_region::PML,
+	     pml_layers.items[i].thickness,
+	     pow(pml_layers.items[i].R_asymptotic,
+		 pml_layers.items[i].strength),
+	     scm_pml_profile, pml_layers.items[i].pml_profile,
+	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     (meep::direction) pml_layers.items[i].direction,
+	     b);
 	}
 	else
-	  br = br + meep::boundary_region(meep::boundary_region::PML,
-					  pml_layers.items[i].thickness,
-					  pml_layers.items[i].strength,
-					  (meep::direction)
-					  pml_layers.items[i].direction,
-					  (meep::boundary_side) 
-					  pml_layers.items[i].side);
+	  br = br + meep::boundary_region
+	    (meep::boundary_region::PML,
+	     pml_layers.items[i].thickness,
+	     pow(pml_layers.items[i].R_asymptotic,
+		 pml_layers.items[i].strength),
+	     scm_pml_profile, pml_layers.items[i].pml_profile,
+	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     (meep::direction) pml_layers.items[i].direction,
+	     (meep::boundary_side) pml_layers.items[i].side);
     }
   }
   
