@@ -1,7 +1,7 @@
 SRC = bench.cpp bragg_transmission.cpp convergence_cyl_waveguide.cpp	\
 cylindrical.cpp flux.cpp harmonics.cpp integrate.cpp known_results.cpp	\
 one_dimensional.cpp physical.cpp symmetry.cpp three_d.cpp		\
-two_dimensional.cpp 2D_convergence.cpp h5test.cpp
+two_dimensional.cpp 2D_convergence.cpp h5test.cpp pml.cpp
 
 EXTRA_DIST = $(SRC)
 
