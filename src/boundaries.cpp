@@ -286,7 +286,7 @@ void fields::connect_the_chunks() {
       }
 
   /* For some of the chunks, H==B, and we definitely don't need to
-     send B between two such chunks.   We'll still send B when either
+     send B between two such chunks.   We'll still send B when
      the recipient has H != B, since the recipient needs to get B
      from somewhere (although it could get it locally, in principle).
      When the sender has H != B, we'll skip sending B (we'll only send H)
