@@ -517,6 +517,14 @@
 	  (map (lambda (f) (eval-step-func f 'step)) step-funcs)
 	  (map (lambda (f) (eval-step-func f 'finish)) step-funcs)))))
 
+; run the step-funcs with the magnetic fields synchronized in time
+; with the electric fields
+(define (synchronized-magnetic . step-funcs)
+  (lambda (to-do)
+    (meep-fields-synchronize-magnetic-fields fields)
+    (map (lambda (f) (eval-step-func f to-do)) step-funcs)
+    (meep-fields-restore-magnetic-fields fields)))
+
 ; ****************************************************************
 ; File output functions (can only be called after init-fields).
 

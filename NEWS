@@ -7,6 +7,10 @@ Meep 0.20
 
   * Support for user-specified electric and/or magnetic conductivities.
 
+  * Added synchronized-magnetic step function to allow step functions
+    to run with the electric and magnetic fields synchronized in time
+    to second-order accuracy.
+
   * New PML implementation (UPML instead of split-field), should
     have lower reflection in many cases.
 
