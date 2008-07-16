@@ -10,6 +10,10 @@ void fields::update_h_from_b() {
     if (chunks[i]->is_mine())
       if (chunks[i]->update_h_from_b())
 	chunk_connections_valid = false; // H allocated - reconnect chunks
+
+  /* synchronize to avoid deadlocks if one process decides it needs
+     to allocate H ... */
+  chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
 // set H = B/mu ... return true if any H field was allocated
