@@ -26,8 +26,8 @@ double one(const vec &) { return 1.0; }
 
 int compare(double a, double b, const char *n, double eps=4e-15) {
   if (fabs(a-b) > fabs(b)*eps && fabs(b) > 1e-14) {
-    printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
-    printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
+    master_printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
+    master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
     return 1;
@@ -43,11 +43,11 @@ int compare_point(fields &f1, fields &f2, const vec &p, double eps=4e-9) {
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > eps*abs(v2) && abs(v2) > 1e-14) {
-        printf("%s differs:  %g %g out of %g %g\n",
+        master_printf("%s differs:  %g %g out of %g %g\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
-        printf("This comes out to a fractional error of %g\n",
+        master_printf("This comes out to a fractional error of %g\n",
                abs(v1 - v2)/abs(v2));
-        printf("Right now I'm looking at %g %g, time %g\n", p.r(), p.z(), f1.time());
+        master_printf("Right now I'm looking at %g %g, time %g\n", p.r(), p.z(), f1.time());
         all_wait();
         return 0;
       }
@@ -173,27 +173,27 @@ int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
     monitor_point p;
     f.get_point(&p, veccyl(0.0, 0.5));
     if (p.get_component(Ez) != 0.0 && (m & 1)) {
-      printf("Got non-zero Ez with m == %d\n", m);
+      master_printf("Got non-zero Ez with m == %d\n", m);
       return 0;
     }
     if (p.get_component(Hz) != 0.0 && (m & 1)) {
-      printf("Got non-zero Hz with m == %d\n", m);
+      master_printf("Got non-zero Hz with m == %d\n", m);
       return 0;
     }
     if (p.get_component(Er) != 0.0 && !(m & 1)) {
-      printf("Got non-zero Er with m == %d\n", m);
+      master_printf("Got non-zero Er with m == %d\n", m);
       return 0;
     }
     if (p.get_component(Ep) != 0.0 && !(m & 1)) {
-      printf("Got non-zero Ep with m == %d\n", m);
+      master_printf("Got non-zero Ep with m == %d\n", m);
       return 0;
     }
     if (p.get_component(Hr) != 0.0 && !(m & 1)) {
-      printf("Got non-zero Hr with m == %d\n", m);
+      master_printf("Got non-zero Hr with m == %d\n", m);
       return 0;
     }
     if (p.get_component(Hp) != 0.0 && !(m & 1)) {
-      printf("Got non-zero Hp of %g %g with m == %d\n",
+      master_printf("Got non-zero Hp of %g %g with m == %d\n",
              real(p.get_component(Hp)), imag(p.get_component(Hp)), m);
       return 0;
     }

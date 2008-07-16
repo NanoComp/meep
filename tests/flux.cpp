@@ -39,8 +39,8 @@ double cavity(const vec &v) {
 
 int compare(double a, double b, double eps, const char *n) {
   if (fabs(a-b) > fabs(b)*eps) {
-    printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
-    printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
+    master_printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
+    master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
     return 1;
@@ -222,7 +222,7 @@ int flux_2d(const double xmax, const double ymax,
   double *fl1 = flux1.flux();
   double *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {
-    printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
+    master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
 	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
     if (!compare(fl1[i], fl2[i], 0.08, "Flux spectrum")) return 0;
   }
@@ -291,7 +291,7 @@ int flux_cyl(const double rmax, const double zmax,
   double *fl1 = flux1.flux();
   double *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {
-    printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
+    master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
 	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
     if (!compare(fl1[i], fl2[i], 0.08, "Flux spectrum")) return 0;
   }

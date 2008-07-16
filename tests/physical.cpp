@@ -54,7 +54,7 @@ int radiating_2D(const double xmax) {
   complex<double> amp1 = f.get_field(Ez, p1);
   complex<double> amp2 = f.get_field(Ez, p2);
   double ratio = pow(abs(amp1)/abs(amp2), 2.0) ;
-  printf("Ratio is %g from (%g %g) and (%g %g)\n",
+  master_printf("Ratio is %g from (%g %g) and (%g %g)\n",
          ratio, real(amp1), imag(amp1), real(amp2), imag(amp2));
   if (ratio > 2.12 || ratio < 1.88)
     abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2)^2 = %g, too far from 2.0\n",
@@ -90,7 +90,7 @@ int radiating_3D(const double xmax) {
   complex<double> amp1 = f.get_field(Ez, p1);
   complex<double> amp2 = f.get_field(Ez, p2);
   double ratio = abs(amp1)/abs(amp2) ;
-  printf("Ratio is %g from (%g %g) and (%g %g)\n",
+  master_printf("Ratio is %g from (%g %g) and (%g %g)\n",
          ratio, real(amp1), imag(amp1), real(amp2), imag(amp2));
   if (ratio > 2.12 || ratio < 1.88)
     abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2) = %g, too far from 2.0\n",

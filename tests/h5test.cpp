@@ -443,7 +443,7 @@ int main(int argc, char **argv)
 	      snprintf(name, 1024, "check_2d_tm_%s_%d_%s_%s%s",
 		       Sf2_name[iS], splitting, gv_2d_name[igv],
 		       component_name(tm_c[ic]), use_real ? "_r" : "");
-	      printf("Checking %s...\n", name);
+	      master_printf("Checking %s...\n", name);
 	      if (!check_2d(funky_eps_2d, a, splitting,
 			    Sf2[iS], Sf2_kx[iS], Sf2_ky[iS],
 			    Ez, tm_c[ic], gv_2d[igv],
