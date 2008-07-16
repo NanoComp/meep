@@ -47,7 +47,7 @@ structure::structure(const volume &thev, material_function &eps,
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
-  choose_chunkdivision(thev, num == 0 ? count_processors() : num, br, s);
+  choose_chunkdivision(thev, num, br, s);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
@@ -59,7 +59,7 @@ structure::structure(const volume &thev, double eps(const vec &),
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
-  choose_chunkdivision(thev, num == 0 ? count_processors() : num, br, s);
+  choose_chunkdivision(thev, num, br, s);
   simple_material_function epsilon(eps);
   set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
 }
@@ -69,6 +69,8 @@ void structure::choose_chunkdivision(const volume &thev,
 				     const boundary_region &br,
 				     const symmetry &s) {
   user_volume = thev;
+  if (desired_num_chunks == 0)
+    desired_num_chunks = count_processors();
   if (thev.dim == Dcyl && thev.get_origin().r() < 0)
     abort("r < 0 origins are not supported");
   v = thev;
