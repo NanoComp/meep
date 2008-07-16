@@ -1,3 +1,35 @@
+Meep 0.20
+
+  * Support for user-specified permeability (mu).  Renamed "dielectric"
+    to "medium" in libctl interface, new "mu" property and new
+    output-b and output-mu functions, and new "Permeability" and "Bx" etc.
+    field types.
+
+  * Support for user-specified electric and/or magnetic conductivities.
+
+  * New PML implementation (UPML instead of split-field), should
+    have lower reflection in many cases.
+
+  * User-specified PML profile and asymptotic reflection.
+
+  * Internally, all timestepping code is now handwritten (and much shorter)
+    rather than old verbose Haskell-generated code; this should make
+    it easier to add new features.
+
+  * Add support for non-integrated current sources, if the is-integrated?
+    property of the current is set to false.
+
+  * Work with HDF5 1.8 (which previously would not compile unless you
+    manually set a preprocessor flag, due to API changes).
+
+  * Bug fix: fixed relative phase of E and H sources (which were off
+    from one another by half a timestep); thanks to M. Megens for bug report.
+
+  * Bug fix: make sure h5 filenames have unique timestep for cases where
+    dt is very small or very large.
+
+  * Bug fix: check for ctl.h in /usr/include/ctl, the default in Fedora.
+
 Meep 0.10.1 (13 Nov. 2007)
 
   * Bug fix in flux_in_box, which accidentally returned the flux
