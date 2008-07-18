@@ -21,7 +21,8 @@ Meep 0.20
     it easier to add new features.
 
   * Add support for non-integrated current sources, if the is-integrated?
-    property of the current is set to false.
+    property of the current is set to false; this is now the default,
+    to make handling of E and H sources more similar and intuitive.
 
   * Work with HDF5 1.8 (which previously would not compile unless you
     manually set a preprocessor flag, due to API changes).

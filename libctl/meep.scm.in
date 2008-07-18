@@ -208,7 +208,7 @@
 ; Adding sources
 
 (define-class src-time no-parent
-  (define-property is-integrated? true 'boolean))
+  (define-property is-integrated? false 'boolean))
 (define-class continuous-src src-time
   (define-property frequency no-default 'number)
   (define-property start-time 0 'number)
