@@ -1077,7 +1077,7 @@ int main(int argc, char **argv) {
      The simulations here are chosen to preserve the symmetry, however. */
   thresh_compare = 1e-10;
 
-  if (!nonlinear_ex(vol1d(1.0, 10.0), one))
+  if (!nonlinear_ex(vol1d(1.0, 30.0), one))
     abort("error in 1D nonlinear vacuum\n");
   if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
     abort("error in 3D nonlinear vacuum\n");
@@ -1091,7 +1091,7 @@ int main(int argc, char **argv) {
     abort("error in exact_metal_rot4z nonlinear rods_2d\n");
 
   // I'm not sure why the polariton tests require increased tolerances...?
-  if (!polariton_ex(vol1d(1.0, 10.0), one))
+  if (!polariton_ex(vol1d(1.0, 30.0), one))
     abort("error in 1D polariton vacuum\n");
   if (!polariton_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
     abort("error in 3D polariton vacuum\n");
