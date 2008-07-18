@@ -258,9 +258,10 @@ double sum_to_all(double in) {
 }
 
 void sum_to_all(const double *in, double *out, int size) {
-  memcpy(out, in, sizeof(double) * size);
 #ifdef HAVE_MPI
   MPI_Allreduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+#else
+  memcpy(out, in, sizeof(double) * size);
 #endif
 }
 
@@ -314,32 +315,38 @@ complex<long double> sum_to_all(complex<long double> in) {
 }
 
 bool or_to_all(bool in) {
-  int out = in;
+  int in2 = in, out;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+  MPI_Allreduce(&in2,&out,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+#else
+  out = in2;
 #endif
   return (bool) out;
 }
 
 void or_to_all(const int *in, int *out, int size) {
-  memcpy(out, in, sizeof(int) * size);
 #ifdef HAVE_MPI
   MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+#else
+  memcpy(out, in, sizeof(int) * size);
 #endif
 }
 
 bool and_to_all(bool in) {
-  int out = in;
+  int in2 = in, out;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_LAND,MPI_COMM_WORLD);
+  MPI_Allreduce(&in2,&out,1,MPI_INT,MPI_LAND,MPI_COMM_WORLD);
+#else
+  out = in2;
 #endif
   return (bool) out;
 }
 
 void and_to_all(const int *in, int *out, int size) {
-  memcpy(out, in, sizeof(int) * size);
 #ifdef HAVE_MPI
   MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LAND,MPI_COMM_WORLD);
+#else
+  memcpy(out, in, sizeof(int) * size);
 #endif
 }
 
