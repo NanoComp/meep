@@ -1,4 +1,4 @@
-Meep 0.20 (18 July 2008)
+Meep 0.20 (19 July 2008)
 
   * Support for user-specified permeability (mu).  Renamed "dielectric"
     to "medium" in libctl interface, new "mu" property and new
