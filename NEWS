@@ -27,13 +27,14 @@ Meep 0.20 (19 July 2008)
   * Work with HDF5 1.8 (which previously would not compile unless you
     manually set a preprocessor flag, due to API changes).
 
+  * Check for ctl.h in /usr/include/ctl/ctl.h (default in Fedora),
+    and check for libctl in /usr/share/libctl3 (default in Debian & Ubuntu).
+
   * Bug fix: fixed relative phase of E and H sources (which were off
     from one another by half a timestep); thanks to M. Megens for bug report.
 
   * Bug fix: make sure h5 filenames have unique timestep for cases where
     dt is very small or very large.
-
-  * Bug fix: check for ctl.h in /usr/include/ctl, the default in Fedora.
 
 Meep 0.10.1 (13 Nov. 2007)
 
