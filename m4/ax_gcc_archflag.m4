@@ -27,11 +27,12 @@ dnl
 dnl (The main emphasis here is on recent CPUs, on the principle that
 dnl  doing high-performance computing on old hardware is uncommon.)
 dnl
-dnl @version 2005-05-30
+dnl @version 2007-03-20
 dnl @license GPLWithACException
 dnl @author Steven G. Johnson <stevenj@alum.mit.edu> and Matteo Frigo.
 AC_DEFUN([AX_GCC_ARCHFLAG],
-[AC_REQUIRE([AC_CANONICAL_HOST])
+[AC_REQUIRE([AC_PROG_CC])
+AC_REQUIRE([AC_CANONICAL_HOST])
 
 AC_ARG_WITH(gcc-arch, [AC_HELP_STRING([--with-gcc-arch=<arch>], [use architecture <arch> for gcc -march/-mtune, instead of guessing])], 
 	ax_gcc_arch=$withval, ax_gcc_arch=yes)
@@ -42,14 +43,13 @@ AC_CACHE_VAL(ax_cv_gcc_archflag,
 [
 ax_cv_gcc_archflag="unknown"
 
-if test AC_LANG_CASE([C],"$GCC",[C++],"$GXX",no) = yes -a "$cross_compiling" = no; then
+if test "$GCC" = yes; then
 
 if test "x$ax_gcc_arch" = xyes; then
 ax_gcc_arch=""
+if test "$cross_compiling" = no; then
 case $host_cpu in
-  i386*) ax_gcc_arch=i386 ;;
-  i486*) ax_gcc_arch=i486 ;;
-  i[[56]]86*|x86_64*) # use cpuid codes, in part from x86info-1.7 by Dave Jones
+  i[[3456]]86*|x86_64*|amd64*) # use cpuid codes, in part from x86info-1.7 by D. Jones
      AX_GCC_X86_CPUID(0)
      AX_GCC_X86_CPUID(1)
      case $ax_cv_gcc_x86_cpuid_0 in
@@ -60,22 +60,27 @@ case $host_cpu in
 	    *6[[3456]]?:*:*:*) ax_gcc_arch="pentium2 pentiumpro" ;;
 	    *6a?:*[[01]]:*:*) ax_gcc_arch="pentium2 pentiumpro" ;;
 	    *6a?:*[[234]]:*:*) ax_gcc_arch="pentium3 pentiumpro" ;;
-	    *6[[789b]]?:*:*:*) ax_gcc_arch="pentium3 pentiumpro" ;;
+	    *6[[78b]]?:*:*:*) ax_gcc_arch="pentium3 pentiumpro" ;;
+	    *6[[9d]]?:*:*:*) ax_gcc_arch="pentium-m pentium3 pentiumpro" ;;
+	    *6[[e]]?:*:*:*) ax_gcc_arch="pentium-m pentium3 pentiumpro" ;; # Core Duo
 	    *6??:*:*:*) ax_gcc_arch=pentiumpro ;;
-            *f3[[37]]:*:*:*) ax_gcc_arch="prescott pentium4 pentiumpro";;
-            *f34:*:*:*) ax_gcc_arch="nocona prescott pentium4 pentiumpro";;
-            *f??:*:*:*) ax_gcc_arch="pentium4 pentiumpro";;
+            *f3[[347]]:*:*:*|*f4[[1347]]:*:*:*)
+		case $host_cpu in
+                  x86_64*|amd64*) ax_gcc_arch="nocona pentium4 pentiumpro" ;;
+                  *) ax_gcc_arch="prescott pentium4 pentiumpro" ;;
+                esac ;;
+            *f??:*:*:*) ax_gcc_arch="native pentium4 pentiumpro";;
           esac ;;
        *:68747541:*:*) # AMD
           case $ax_cv_gcc_x86_cpuid_1 in
 	    *5[[67]]?:*:*:*) ax_gcc_arch=k6 ;;
-	    *5[[8c]]?:*:*:*) ax_gcc_arch="k6-2 k6" ;;
-	    *5[[9d]]?:*:*:*) ax_gcc_arch="k6-3 k6" ;;
+	    *5[[8d]]?:*:*:*) ax_gcc_arch="k6-2 k6" ;;
+	    *5[[9]]?:*:*:*) ax_gcc_arch="k6-3 k6" ;;
 	    *60?:*:*:*) ax_gcc_arch=k7 ;;
 	    *6[[12]]?:*:*:*) ax_gcc_arch="athlon k7" ;;
 	    *6[[34]]?:*:*:*) ax_gcc_arch="athlon-tbird k7" ;;
 	    *67?:*:*:*) ax_gcc_arch="athlon-4 athlon k7" ;;
-	    *6[[68]]?:*:*:*) 
+	    *6[[68a]]?:*:*:*) 
 	       AX_GCC_X86_CPUID(0x80000006) # L2 cache size
 	       case $ax_cv_gcc_x86_cpuid_0x80000006 in
                  *:*:*[[1-9a-f]]??????:*) # (L2 = ecx >> 16) >= 256
@@ -84,7 +89,8 @@ case $host_cpu in
 	       esac ;;
 	    *f[[4cef8b]]?:*:*:*) ax_gcc_arch="athlon64 k8" ;;
 	    *f5?:*:*:*) ax_gcc_arch="opteron k8" ;;
-	    *f??:*:*:*) ax_gcc_arch="k8" ;;
+	    *f7?:*:*:*) ax_gcc_arch="athlon-fx opteron k8" ;;
+	    *f??:*:*:*) ax_gcc_arch="native k8" ;;
           esac ;;
 	*:746e6543:*:*) # IDT
 	   case $ax_cv_gcc_x86_cpuid_1 in
@@ -96,8 +102,8 @@ case $host_cpu in
      esac
      if test x"$ax_gcc_arch" = x; then # fallback
 	case $host_cpu in
-	  i586*) ax_gcc_arch=pentium ;;
-	  i686*) ax_gcc_arch=pentiumpro ;;
+	  i586*) ax_gcc_arch="native pentium" ;;
+	  i686*) ax_gcc_arch="native pentiumpro" ;;
         esac
      fi 
      ;;
@@ -134,25 +140,26 @@ case $host_cpu in
        *740[[0-9]]*) ax_gcc_arch="$cputype 7400 G4" ;;
        *74[[4-5]][[0-9]]*) ax_gcc_arch="$cputype 7450 G4" ;;
        *74[[0-9]][[0-9]]*) ax_gcc_arch="$cputype G4" ;;
-       *970*) ax_gcc_arch="970 G5";;
-       *POWER4*|*power4*|*gq*) ax_gcc_arch="power4";;
-       *POWER5*|*power5*|*gr*|*gs*) ax_gcc_arch="power5 power4";;
+       *970*) ax_gcc_arch="970 G5 power4";;
+       *POWER4*|*power4*|*gq*) ax_gcc_arch="power4 970";;
+       *POWER5*|*power5*|*gr*|*gs*) ax_gcc_arch="power5 power4 970";;
        603ev|8240) ax_gcc_arch="$cputype 603e 603";;
-       *) ax_gcc_arch=$cputype ;;
+       *Cell*) ax_gcc_arch="cellppu cell";;
+       *) ax_gcc_arch="$cputype native" ;;
      esac
      ax_gcc_arch="$ax_gcc_arch powerpc"
      ;;
 esac
+fi # not cross-compiling
 fi # guess arch
 
 if test "x$ax_gcc_arch" != x -a "x$ax_gcc_arch" != xno; then
-
 for arch in $ax_gcc_arch; do
   if test "x[]m4_default([$1],yes)" = xyes; then # if we require portable code
     flags="-mtune=$arch"
     # -mcpu=$arch and m$arch generate nonportable code on every arch except
     # x86.  And some other arches (e.g. Alpha) don't accept -mtune.  Grrr.
-    case $host_cpu in i*86|x86_64*) flags="$flags -mcpu=$arch -m$arch";; esac
+    case $host_cpu in i*86|x86_64*|amd64*) flags="$flags -mcpu=$arch -m$arch";; esac
   else
     flags="-march=$arch -mcpu=$arch -m$arch"
   fi
@@ -163,13 +170,13 @@ for arch in $ax_gcc_arch; do
 done
 fi
 
-fi
+fi # $GCC=yes
 ])
 AC_MSG_CHECKING([for gcc architecture flag])
 AC_MSG_RESULT($ax_cv_gcc_archflag)
 if test "x$ax_cv_gcc_archflag" = xunknown; then
   m4_default([$3],:)
 else
-  m4_default([$2], [_AC_LANG_PREFIX[]FLAGS="$_AC_LANG_PREFIX[]FLAGS $ax_cv_gcc_archflag"])
+  m4_default([$2], [CFLAGS="$CFLAGS $ax_cv_gcc_archflag"])
 fi
 ])
