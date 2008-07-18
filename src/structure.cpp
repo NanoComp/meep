@@ -88,7 +88,7 @@ void structure::choose_chunkdivision(const volume &thev,
       for (int n=0;n<S.multiplicity();n++)
         if (has_direction(thev.dim,d) &&
             (S.transform(d,n).d != d || S.transform(d,n).flipped)) {
-          if (thev.num_direction(d) & 1 && !break_this[d])
+          if (thev.num_direction(d) & 1 && !break_this[d] && !quiet)
             master_printf("Padding %s to even number of grid points.\n",
 			  direction_name(d));
           break_this[dd] = true;
@@ -99,8 +99,9 @@ void structure::choose_chunkdivision(const volume &thev,
       if (break_mult == S.multiplicity()) break_this[d] = false;
       if (break_this[d]) {
 	break_mult *= 2;
-	master_printf("Halving computational cell along direction %s\n",
-		      direction_name(direction(d)));
+	if (!quiet)
+	  master_printf("Halving computational cell along direction %s\n",
+			direction_name(direction(d)));
 	v = v.halve((direction)d);
       }
     }
