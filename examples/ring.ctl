@@ -31,7 +31,7 @@
 (set! sources (list
                (make source
                  (src (make gaussian-src (frequency fcen) (fwidth df)))
-                 (component Ez) (center (+ r 0.1) 0))))
+                 (component Hx) (center (+ r 0.1) 0))))
 
 ; exploit the mirror symmetry in structure+source:
 (set! symmetries (list (make mirror-sym (direction Y))))
