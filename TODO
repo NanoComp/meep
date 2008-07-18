@@ -12,11 +12,9 @@ vars).
 Fix bugs: divergence in saturated polarization (tests/symmetry.cpp),
           and problems with nonlinearity + symmetry (idem)
 
-User-specified anisotropic dielectric functions.
+User-specified anisotropic dielectric and mu functions.
 
-Support mu? (i.e. magnetic permeability) (including anisotropic, ideally)
-
-Support non-dispersive conductivities.
+Unify mu and epsilon support in the code, to support dispersive mu etc.
 
 Use anisotropic PML rather than split-fields PML (former requires less
 memory).  User proper PML for dispersive media and cylindrical.
@@ -43,10 +41,6 @@ Support Pade approximates (libpadespectrum) for Fourier and modal analysis.
 LIBCTL FRONT-END:
 
 Epsilon from file support.
-
-Non-integrated currents.
-
-Give easy way to call various field-integration functions.
 
 Need a way to reset epsilon when restarting, and also phasing support.
 
