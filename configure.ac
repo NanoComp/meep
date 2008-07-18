@@ -329,6 +329,9 @@ fi
 if test x = x"$LIBCTL_DIR" -a -r /usr/local/share/libctl/base/ctl.scm; then
 	LIBCTL_DIR="/usr/local/share/libctl"
 fi
+if test x = x"$LIBCTL_DIR" -a -r /usr/share/libctl3/base/ctl.scm; then
+        LIBCTL_DIR="/usr/share/libctl3"
+fi
 if test x = x"$LIBCTL_DIR" -a -r /usr/share/libctl/base/ctl.scm; then
         LIBCTL_DIR="/usr/share/libctl"
 fi
