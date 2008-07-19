@@ -30,6 +30,7 @@ fields::fields(structure *s, double m, bool store_pol_energy) :
   S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m)
 {
   verbosity = 0;
+  synchronized_magnetic_fields = false;
   outdir = new char[strlen(s->outdir) + 1]; strcpy(outdir, s->outdir);
   if (v.dim == Dcyl)
     S = S + r_to_minus_r_symmetry(m);
@@ -80,6 +81,7 @@ fields::fields(const fields &thef) :
   S(thef.S), v(thef.v), user_volume(thef.user_volume), gv(thef.gv)
 {
   verbosity = 0;
+  synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
   outdir = new char[strlen(thef.outdir) + 1]; strcpy(outdir, thef.outdir);
   m = thef.m;
   phasein_time = thef.phasein_time;
@@ -420,6 +422,7 @@ void fields_chunk::zero_fields() {
 void fields::zero_fields() {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->zero_fields();
+  synchronized_magnetic_fields = false;
 }
 
 void fields::reset() {

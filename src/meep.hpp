@@ -1039,6 +1039,7 @@ class fields {
 
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
+  bool synchronized_magnetic_fields; // need to be restored before timestepping
   double last_wall_time;
   time_sink working_on, was_working_on;
   double times_spent[Other+1];

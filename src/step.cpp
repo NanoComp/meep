@@ -32,6 +32,8 @@
 namespace meep {
 
 void fields::step() {
+  if (synchronized_magnetic_fields) restore_magnetic_fields();
+
   am_now_working_on(Stepping);
 
   if (!t) {
