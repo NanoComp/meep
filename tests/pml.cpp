@@ -172,39 +172,23 @@ int pml1d_scaling(double eps(const vec &)) {
   complex<double> prev_ft = 0.0, ft = 0.0;
   double refl_const = 0.0;
   master_printf("Checking thickness convergence of 1d PML...\n");
-  for (int i=0; i<10; i++) {
+  for (int i=0; i<7; i++) {
     dpml = pow(2.0,(double)i);
-    master_printf("    checking 1d thickness %g...\n", dpml);
     double sz = 2*dpml + 10.0 + dpml;
-    volume v = vol1d(sz,res);
-    structure s(v, eps, (pml(2*dpml,Z,Low)*2.0 + pml(dpml,Z,High))*2);
-    fields f(&s);
-    gaussian_src_time src(freq, freq / 20);
-    f.add_point_source(Ex, src, vec(2*dpml+0.1));
-    vec fpt(sz - dpml - 0.1);
     prev_ft = ft;
-    ft = 0.0;
-    double emax = 0;
-    while (f.time() < f.last_source_time()) {
-      ft += f.get_field(Ex, fpt) * polar(1.0, 2*pi*freq * f.time());
-      emax = max(emax, abs(f.get_field(Ex, fpt)));
-      f.step();
+    {
+      volume v = vol1d(sz,res);
+      structure s(v, eps, (pml(2*dpml,Z,Low) + pml(dpml,Z,High)) * 1.5);
+      fields f(&s);
+      gaussian_src_time src(freq, freq / 20);
+      f.add_point_source(Ex, src, vec(2*dpml+0.1));
+      ft = do_ft(f, Ex, vec(sz - dpml - 0.1), freq);
     }
-    do {
-      double emaxcur = 0;
-      double T = f.time() + 50;
-      while (f.time() < T) {
-	ft += f.get_field(Ex, fpt) * polar(1.0, 2*pi*freq * f.time());
-	double e = abs(f.get_field(Ex, fpt));
-	emax = max(emax, e);
-	emaxcur = max(emaxcur, e);
-	f.step();
-      }
-      if (emaxcur < 1e-6 * emax) break;
-    } while(1);
     if (i > 0) {
       refl_const = pow(abs(ft - prev_ft),2.0) / pow(abs(prev_ft),2.0);
-      if (refl_const > (1e-6)*pow(1/dpml,6.0)) return 1;
+      master_printf("refl1d:, %g, %g\n", dpml / 2.0, refl_const);
+      if (refl_const > (1e-9)*pow(2/dpml,6.0)
+	  || refl_const < (1e-10)*pow(2/dpml, 6.0)) return 1;
     }      
   }
   master_printf("pml scales correctly with length.\n");
