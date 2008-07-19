@@ -48,7 +48,7 @@
   (define-property energy-saturation 0.0 'number))
 
 (define-class medium material-type
-  (define-property epsilon no-default 'number)
+  (define-property epsilon 1 'number)
   (define-property polarizations '() (make-list-type 'polarizability))
   (define-property chi2 0 'number)
   (define-property chi3 0 'number)
@@ -88,6 +88,8 @@
 (define vacuum (make dielectric (epsilon 1.0)))
 (define air vacuum)
 (define metal (make perfect-metal))
+(define perfect-electric-conductor metal)
+(define perfect-magnetic-conductor (make medium (mu (- (inf)))))
 
 (define infinity 1.0e20) ; big number for infinite dimensions of objects
 

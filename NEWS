@@ -6,6 +6,12 @@ Meep 0.20 (19 July 2008)
     field types.
 
   * Support for user-specified electric and/or magnetic conductivities.
+    These are especially useful to add a desired dissipation loss
+    (an imaginary part of epsilon/mu) in a narrow bandwidth, without
+    messing around with Lorentzian dispersive materials.
+
+  * Add predefined perfect-magnetic-conductor (mu = -infinity) material,
+    along with perfect-electric-conductor (eps = -infinity).
 
   * Added synchronized-magnetic step function to allow step functions
     to run with the electric and magnetic fields synchronized in time
