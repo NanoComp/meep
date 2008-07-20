@@ -1,11 +1,11 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 0.20, meep@ab-initio.mit.edu)
+AC_INIT(meep, 0.20.1, meep@ab-initio.mit.edu)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.)
-SHARED_VERSION_INFO="2:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="2:1:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE(1.6)
 AM_CONFIG_HEADER(config.h)
@@ -444,7 +444,7 @@ program_transform_name="s,_,-,g;$program_transform_name"
 
 AC_CONFIG_FILES([
 	Makefile
-	meep.pc
+	meep-pkgconfig
 	src/Makefile
 	hsrc/Makefile
 	doc/Makefile

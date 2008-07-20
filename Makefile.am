@@ -21,10 +21,13 @@ endif
 
 SUBDIRS = $(HSRC) src $(LIBCTL) tests examples $(DOC)
 
-EXTRA_DIST = COPYRIGHT m4 meep.pc.in
+EXTRA_DIST = COPYRIGHT m4 meep-pkgconfig.in
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = meep.pc
+pkgconfig_DATA = meep@MEEP_SUFFIX@.pc
+
+meep@MEEP_SUFFIX@.pc: meep-pkgconfig
+	cp -f $(top_builddir)/meep-pkgconfig $@
 
 if MAINTAINER_MODE
 generator:

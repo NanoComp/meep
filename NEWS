@@ -1,3 +1,10 @@
+Meep 0.20.1 (20 July 2008)
+
+  * Improved handling of nested synchronized-magnetic calls.
+
+  * Bug fix: pkg-config file was incorrectly installed for MPI version;
+    thanks to Majid Sodagar for the bug report.
+
 Meep 0.20 (19 July 2008)
 
   * Support for user-specified permeability (mu).  Renamed "dielectric"
