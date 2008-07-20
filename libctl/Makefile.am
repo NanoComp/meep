@@ -6,6 +6,7 @@ LIBMEEP = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
 HDRS = meep-ctl.hpp meep-ctl-const.hpp meep-ctl-swig.hpp
 
 LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
+CTLHDRS = $(LIBHDRS) $(srcdir)/meep-ctl.hpp $(top_builddir)/config.h $(srcdir)/meep-ctl-const.hpp ctl-io.h
 
 meep@MEEP_SUFFIX@_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i
 nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h ctl-io.i
@@ -14,7 +15,10 @@ meep@MEEP_SUFFIX@_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i meep-enums.scm meep_wrap.cxx
 
 # manual dependency hack to force the build order in certain cases
-meep.o: ctl-io.h meep-enums.scm
+# ... for some reason automake's automatic dependencies are not working here
+meep.o: meep.cpp meep-enums.scm $(CTLHDRS)
+structure.o: structure.cpp $(CTLHDRS)
+meep_wrap.o: meep_wrap.cxx $(srcdir)/meep-ctl-swig.hpp $(CTLHDRS)
 
 if WITH_LIBCTL
 if MAINTAINER_MODE
@@ -76,19 +80,19 @@ CTL_DEFS = -DCTL_SCM='"'$(LIBCTL_DIR)/base/ctl.scm'"' \
 
 ##############################################################################
 
-ctl-io.cpp: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm
+ctl-io.cpp: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm ctl-io.h
 	$(GEN_CTL_IO) --cxx --code -o $@ $(SPECIFICATION_FILE) $(LIBCTL_DIR)
 
-ctl-io.h: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm
+ctl-io.h: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm ctl-io.h
 	$(GEN_CTL_IO) --cxx --header -o $@ $(SPECIFICATION_FILE) $(LIBCTL_DIR)
 
 ctl-io.i: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm
 	$(GEN_CTL_IO) --cxx --swig -o $@ $(SPECIFICATION_FILE) $(LIBCTL_DIR)
 
-main.cpp: $(LIBCTL_DIR)/base/main.c
+main.cpp: $(LIBCTL_DIR)/base/main.c ctl-io.h
 	cp -f $(LIBCTL_DIR)/base/main.c $@
 
-geom.cpp: $(LIBCTL_DIR)/utils/geom.c
+geom.cpp: $(LIBCTL_DIR)/utils/geom.c ctl-io.h
 	cp -f $(LIBCTL_DIR)/utils/geom.c $@
 
 clean-local:

@@ -2,6 +2,8 @@ Meep 0.20.1 (20 July 2008)
 
   * Improved handling of nested synchronized-magnetic calls.
 
+  * Bug fix: parallel builds (make -j) should now work.
+
   * Bug fix: pkg-config file was incorrectly installed for MPI version;
     thanks to Majid Sodagar for the bug report.
 
