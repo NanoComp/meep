@@ -142,33 +142,35 @@ void fields_chunk::average_with_backup(component c) {
 }
 
 void fields::synchronize_magnetic_fields() {
-  if (synchronized_magnetic_fields) return; // already synched
+  if (synchronized_magnetic_fields++) return; // already synched
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
       FOR_B_COMPONENTS(c) chunks[i]->backup_component(c);
       FOR_MAGNETIC_COMPONENTS(c) chunks[i]->backup_component(c);
     }
+  am_now_working_on(Stepping);
   step_db(B_stuff);
   step_b_source();
   step_boundaries(B_stuff);
   update_h_from_b();
   step_boundaries(H_stuff);
+  finished_working();
   for (int i=0;i<num_chunks;i++) 
     if (chunks[i]->is_mine()) {
       FOR_B_COMPONENTS(c) chunks[i]->average_with_backup(c);
       FOR_MAGNETIC_COMPONENTS(c) chunks[i]->average_with_backup(c);
     }
-  synchronized_magnetic_fields = true;
 }
 
 void fields::restore_magnetic_fields() {
-  if (!synchronized_magnetic_fields) return; // already restored
+  if (!synchronized_magnetic_fields // already restored
+      || --synchronized_magnetic_fields) // not ready to restore yet
+    return; 
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
       FOR_B_COMPONENTS(c) chunks[i]->restore_component(c);
       FOR_MAGNETIC_COMPONENTS(c) chunks[i]->restore_component(c);
     }
-  synchronized_magnetic_fields = false;
 }
 
 static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,

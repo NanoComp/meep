@@ -32,7 +32,12 @@
 namespace meep {
 
 void fields::step() {
-  if (synchronized_magnetic_fields) restore_magnetic_fields();
+  // however many times the fields have been synched, we want to restore now
+  int save_synchronized_magnetic_fields = synchronized_magnetic_fields;
+  if (synchronized_magnetic_fields) {
+    synchronized_magnetic_fields = 1; // reset synchronization count
+    restore_magnetic_fields();
+  } 
 
   am_now_working_on(Stepping);
 
@@ -44,6 +49,8 @@ void fields::step() {
     master_printf("on time step %d (time=%g), %g s/step\n", t, time(), 
 		  (wall_time() - last_step_output_wall_time) / 
 		  (t - last_step_output_t));
+    if (save_synchronized_magnetic_fields)
+      master_printf("  (doing expensive timestepping of synched fields)\n");
     last_step_output_wall_time = wall_time();
     last_step_output_t = t;
   }
@@ -86,6 +93,12 @@ void fields::step() {
   t += 1;
   update_dfts();
   finished_working();
+
+  // re-synch magnetic fields if they were previously synchronized
+  if (save_synchronized_magnetic_fields) {
+    synchronize_magnetic_fields();
+    synchronized_magnetic_fields = save_synchronized_magnetic_fields;
+  }
 }
 
 double fields_chunk::peek_field(component c, const vec &where) {

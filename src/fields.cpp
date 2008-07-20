@@ -30,7 +30,7 @@ fields::fields(structure *s, double m, bool store_pol_energy) :
   S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m)
 {
   verbosity = 0;
-  synchronized_magnetic_fields = false;
+  synchronized_magnetic_fields = 0;
   outdir = new char[strlen(s->outdir) + 1]; strcpy(outdir, s->outdir);
   if (v.dim == Dcyl)
     S = S + r_to_minus_r_symmetry(m);
@@ -422,7 +422,6 @@ void fields_chunk::zero_fields() {
 void fields::zero_fields() {
   for (int i=0;i<num_chunks;i++)
     chunks[i]->zero_fields();
-  synchronized_magnetic_fields = false;
 }
 
 void fields::reset() {
