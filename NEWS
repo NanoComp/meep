@@ -2,8 +2,8 @@ Meep 0.20 (19 July 2008)
 
   * Support for user-specified permeability (mu).  Renamed "dielectric"
     to "medium" in libctl interface, new "mu" property and new
-    output-b and output-mu functions, and new "Permeability" and "Bx" etc.
-    field types.
+    output-bfield and output-mu functions, and new "Permeability" and "Bx"
+    etc. field types.
 
   * Support for user-specified electric and/or magnetic conductivities.
     These are especially useful to add a desired dissipation loss
