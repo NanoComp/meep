@@ -1,3 +1,8 @@
+Meep 0.20.2 (21 July 2008)
+
+  * Fixed incompatibility with Guile 1.6.x or earlier; thanks to the bug
+    report by Andreas Unger.
+
 Meep 0.20.1 (20 July 2008)
 
   * Improved handling of nested synchronized-magnetic calls.

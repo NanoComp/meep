@@ -89,7 +89,7 @@
 (define air vacuum)
 (define metal (make perfect-metal))
 (define perfect-electric-conductor metal)
-(define perfect-magnetic-conductor (make medium (mu (- (inf)))))
+(define perfect-magnetic-conductor (make medium (mu (/ -0.0)))) ; -infinity
 
 (define infinity 1.0e20) ; big number for infinite dimensions of objects
 
