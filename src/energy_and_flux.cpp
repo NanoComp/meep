@@ -149,10 +149,12 @@ void fields::synchronize_magnetic_fields() {
       FOR_MAGNETIC_COMPONENTS(c) chunks[i]->backup_component(c);
     }
   am_now_working_on(Stepping);
+  calc_sources(time()); // for B sources
   step_db(B_stuff);
-  step_b_source();
+  step_source(B_stuff);
   step_boundaries(B_stuff);
-  update_h_from_b();
+  calc_sources(time() + 0.5*dt); // for integrated H sources
+  update_eh(H_stuff);
   step_boundaries(H_stuff);
   finished_working();
   for (int i=0;i<num_chunks;i++) 
@@ -182,7 +184,7 @@ static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 			     void *sum_) {
   long double *sum = (long double *) sum_;
   (void)shift; (void)shift_phase; (void)S; (void)sn; (void)ichunk; // unused
-  for (polarization *pol = fc->pol; pol; pol = pol->next)
+  for (polarization *pol = fc->pols[type(cgrid)]; pol; pol = pol->next)
     if (pol->energy[cgrid])
       LOOP_OVER_IVECS(fc->v, is, ie, idx)
 	*sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
@@ -191,7 +193,7 @@ static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 
 double fields::thermo_energy_in_box(const geometric_volume &where) {
   long double sum = 0.0;
-  FOR_ELECTRIC_COMPONENTS(c)
+  FOR_COMPONENTS(c)
     if (!coordinate_mismatch(v.dim, c))
       loop_in_chunks(thermo_chunkloop, (void *) &sum, where, c);
   return sum_to_all(sum);

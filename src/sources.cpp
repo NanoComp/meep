@@ -211,6 +211,7 @@ void fields::add_point_source(component c, double freq,
 
   if (is_c) { // TODO: don't ignore peaktime?
     continuous_src_time src(freq, width, time(), infinity, cutoff);
+    if (is_magnetic(c)) src.is_integrated = false;
     add_point_source(c, src, p, amp);
   }
   else {
@@ -223,6 +224,7 @@ void fields::add_point_source(component c, double freq,
   
     gaussian_src_time src(freq, width,
 			     peaktime - cutoff, peaktime + cutoff);
+    if (is_magnetic(c)) src.is_integrated = false;
     add_point_source(c, src, p, amp);
   }
 }
@@ -287,12 +289,12 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
-       right because it doesn't handle non-diagonal inveps! 
+       right because it doesn't handle non-diagonal chi1inv! 
        similarly, for "B" sources, multiply by mu. */
-    if (is_D(c) && fc->s->inveps[c-Dx+Ex][cd]) 
-      amps_array[idx_vol] /= fc->s->inveps[c-Dx+Ex][cd][idx];
-    if (is_B(c) && fc->s->invmu[c-Bx+Hx][cd]) 
-      amps_array[idx_vol] /= fc->s->invmu[c-Bx+Hx][cd][idx];
+    if (is_D(c) && fc->s->chi1inv[c-Dx+Ex][cd]) 
+      amps_array[idx_vol] /= fc->s->chi1inv[c-Dx+Ex][cd][idx];
+    if (is_B(c) && fc->s->chi1inv[c-Bx+Hx][cd]) 
+      amps_array[idx_vol] /= fc->s->chi1inv[c-Bx+Hx][cd][idx];
 
     index_array[idx_vol++] = idx;
   }
@@ -301,10 +303,8 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
     abort("add_volume_source: computed wrong npts (%d vs. %d)", npts, idx_vol);
 
   src_vol *tmp = new src_vol(c, data->src, npts, index_array, amps_array);
-  if (is_magnetic(c))
-    fc->b_sources = tmp->add_to(fc->b_sources);
-  else
-    fc->d_sources = tmp->add_to(fc->d_sources);
+  field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
+  fc->sources[ft] = tmp->add_to(fc->sources[ft]);
 }
 
 void fields::require_component(component c) {

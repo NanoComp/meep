@@ -120,7 +120,7 @@ void step_curl(DPR f, component c, const DPR g1, const DPR g2,
 }
 
 /* Given Dsqr = |D|^2 and Di = component of D, compute the factor f so
-   that Ei = inveps * f * Di.   In principle, this would involve solving
+   that Ei = chi1inv * f * Di.   In principle, this would involve solving
    a cubic equation, but instead we use a Pade approximant that is 
    accurate to several orders.  This is inaccurate if the nonlinear
    index change is large, of course, but in that case the chi2/chi3
@@ -128,10 +128,10 @@ void step_curl(DPR f, component c, const DPR g1, const DPR g2,
    physical there either. */
 inline double calc_nonlinear_u(const double Dsqr, 
 			       const double Di,
-			       const double inveps,
+			       const double chi1inv,
 			       const double chi2, const double chi3) {
-  double c2 = Di*chi2*(inveps*inveps);
-  double c3 = Dsqr*chi3*(inveps*inveps*inveps);
+  double c2 = Di*chi2*(chi1inv*chi1inv);
+  double c3 = Dsqr*chi3*(chi1inv*chi1inv*chi1inv);
   return (1 + c2 + 2*c3)/(1 + 2*c2 + 3*c3);
 }
 

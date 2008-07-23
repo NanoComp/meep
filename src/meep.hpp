@@ -39,6 +39,7 @@ const double nan = -1.23454321e123; // ideally, a value never encountered in pra
 
 class polarizability_identifier {
  public:
+  field_type ft;
   double gamma, omeganot;
   double energy_saturation, saturated_sigma;
   bool operator==(const polarizability_identifier &);
@@ -144,26 +145,27 @@ public:
   virtual void set_volume(const geometric_volume &gv) {(void)gv;}
   virtual void unset_volume(void) {} // unrestrict the volume
   
+  virtual double chi1p1(field_type ft, const vec &r) { (void)ft; (void)r; return 1.0; }
+
   /* scalar dielectric function */
-  virtual double eps(const vec &r) { (void)r; return 1.0; }
+  virtual double eps(const vec &r) { return chi1p1(E_stuff, r);  }
 
   /* scalar permeability function */
   virtual bool has_mu() { return false; } /* true if mu != 1 */
-  virtual double mu(const vec &r) { (void)r; return 1.0; }
+  virtual double mu(const vec &r) { return chi1p1(H_stuff, r);  }
   
   /* scalar conductivity function */
   virtual bool has_conductivity(component c) { (void)c; return false; }
   virtual double conductivity(component c, const vec &r) { 
     (void) c; (void)r; return 0.0; }  
 
-  /* Return interface normal and/or average dielectric eps and 1/eps
-     in a given volume gv.   These are virtual so that e.g. libctl
-     can override them with more efficient geometry-based routines. */
-  virtual vec normal_vector(const geometric_volume &gv);
-  virtual void meaneps(double &meps, double &minveps, vec &normal,
-		       const geometric_volume &gv, 
-		       double tol=DEFAULT_SUBPIXEL_TOL, 
-		       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+  /* Return c'th row of effective 1/(1+chi1) tensor in the given volume gv
+     ... virtual so that e.g. libctl can override with more-efficient
+     libctlgeom-based routines.  maxeval == 0 if no averaging desired. */
+  virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
+			       const geometric_volume &gv, 
+			       double tol=DEFAULT_SUBPIXEL_TOL, 
+			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   
   /* polarizability sigma function */
   virtual double sigma(const vec &r) { (void)r; return 0.0; }
@@ -174,10 +176,10 @@ public:
   }
   
   // Nonlinear susceptibilities
-  virtual bool has_chi3() { return false; }
-  virtual double chi3(const vec &r) { (void)r; return 0.0; }
-  virtual bool has_chi2() { return false; }
-  virtual double chi2(const vec &r) { (void)r; return 0.0; }
+  virtual bool has_chi3(component c) { (void)c; return false; }
+  virtual double chi3(component c, const vec &r) { (void)c; (void)r; return 0.0; }
+  virtual bool has_chi2(component c) { (void)c; return false; }
+  virtual double chi2(component c, const vec &r) { (void)c; (void)r; return 0.0; }
   
   // TODO: dielectric tensor, ...
 
@@ -194,13 +196,14 @@ public:
   
   virtual ~simple_material_function() {}
   
+  virtual double chi1p1(field_type ft, const vec &r) { (void)ft; return f(r); }
   virtual double eps(const vec &r) { return f(r); }
   virtual double mu(const vec &r) { return f(r); }
   virtual double conductivity(component c, const vec &r) { 
     (void)c; return f(r); }
   virtual double sigma(const vec &r) { return f(r); }
-  virtual double chi3(const vec &r) { return f(r); }
-  virtual double chi2(const vec &r) { return f(r); }
+  virtual double chi3(component c, const vec &r) { (void)c; return f(r); }
+  virtual double chi2(component c, const vec &r) { (void)c; return f(r); }
 };
 
 class structure;
@@ -208,9 +211,8 @@ class structure;
 class structure_chunk {
  public:
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
-  double *eps, *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
-  double *inveps[NUM_FIELD_COMPONENTS][5];
-  double *invmu[NUM_FIELD_COMPONENTS][5];
+  double *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
+  double *chi1inv[NUM_FIELD_COMPONENTS][5];
   double *conductivity[NUM_FIELD_COMPONENTS][5];
   double *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale; // true if condinv needs to be recomputed
@@ -226,21 +228,20 @@ class structure_chunk {
   structure_chunk(const volume &v,
             const geometric_volume &vol_limit, double Courant, int proc_num);
   structure_chunk(const structure_chunk *);
-  void set_epsilon(material_function &eps,
+  void set_chi1inv(component c, material_function &eps,
                    bool use_anisotropic_averaging,
 		   double tol, int maxeval);
-  void set_mu(material_function &eps);
   void set_conductivity(component c, material_function &eps);
   void update_condinv();
-  void set_chi3(material_function &eps);
-  void set_chi2(material_function &eps);
+  void set_chi3(component c, material_function &eps);
+  void set_chi2(component c, material_function &eps);
   void use_pml(direction, double dx, double boundary_loc, double Rasymptotic, 
 	       pml_profile_func pml_profile, void *pml_profile_data,
 	       double pml_profile_integral);
 
-  void add_polarizability(double sigma(const vec &), double omega, double gamma,
+  void add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
-  void add_polarizability(material_function &sigma, double omega, double gamma,
+  void add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
                           double delta_epsilon = 1.0, double energy_saturation = 0.0);
 
   void mix_with(const structure_chunk *, double);
@@ -251,7 +252,9 @@ class structure_chunk {
   void remove_polarizabilities();
 
   // monitor.cpp
-  double get_inveps(component, direction, const ivec &iloc) const;
+  double get_chi1inv(component, direction, const ivec &iloc) const;
+  double get_inveps(component c, direction d, const ivec &iloc) const {
+    return get_chi1inv(c, d, iloc); }
   double max_eps() const;
  private:
   double pml_fmin;
@@ -355,6 +358,10 @@ class structure {
 		     bool use_anisotropic_averaging=true,
 		     double tol=DEFAULT_SUBPIXEL_TOL,
 		     int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+  void set_chi1inv(component c, material_function &eps,
+                   bool use_anisotropic_averaging=true,
+		   double tol=DEFAULT_SUBPIXEL_TOL,
+		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_epsilon(material_function &eps,
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
@@ -363,20 +370,36 @@ class structure {
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  void set_mu(material_function &eps);
-  void set_mu(double mu(const vec &));
+  void set_mu(material_function &eps,
+	      bool use_anisotropic_averaging=true,
+	      double tol=DEFAULT_SUBPIXEL_TOL,
+	      int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+  void set_mu(double mu(const vec &),
+	      bool use_anisotropic_averaging=true,
+	      double tol=DEFAULT_SUBPIXEL_TOL,
+	      int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_conductivity(component c, material_function &conductivity);
   void set_conductivity(component C, double conductivity(const vec &));
+  void set_chi3(component c, material_function &eps);
   void set_chi3(material_function &eps);
   void set_chi3(double eps(const vec &));
+  void set_chi2(component c, material_function &eps);
   void set_chi2(material_function &eps);
   void set_chi2(double eps(const vec &));
   polarizability_identifier
-     add_polarizability(double sigma(const vec &), double omega, double gamma,
+     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
                   double delta_epsilon = 1.0, double energy_saturation = 0.0);
   polarizability_identifier
-     add_polarizability(material_function &sigma, double omega, double gamma,
+     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
                   double delta_epsilon = 1.0, double energy_saturation = 0.0);
+  polarizability_identifier
+     add_polarizability(double sigma(const vec &), double omega, double gamma,
+                double delta_epsilon = 1.0, double energy_saturation = 0.0) {
+    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon, energy_saturation); }
+  polarizability_identifier
+     add_polarizability(material_function &sigma, double omega, double gamma,
+		double delta_epsilon = 1.0, double energy_saturation = 0.0) {
+    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon, energy_saturation); }
 
   void remove_polarizabilities();
 
@@ -387,9 +410,14 @@ class structure {
   void print_layout(void) const;
 
   // monitor.cpp
-  double get_inveps(component, direction, const ivec &origloc) const;
-  double get_inveps(component, direction, const vec &loc) const;
+  double get_chi1inv(component, direction, const ivec &origloc) const;
+  double get_chi1inv(component, direction, const vec &loc) const;
+  double get_inveps(component c, direction d, const ivec &origloc) const {
+    return get_chi1inv(c, d, origloc); }
+  double get_inveps(component c, direction d, const vec &loc) const {
+    return get_chi1inv(c, d, loc); }
   double get_eps(const vec &loc) const;
+  double get_mu(const vec &loc) const;
   double max_eps() const;
 
   friend class boundary_region;
@@ -669,14 +697,14 @@ class fields_chunk {
   int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   complex<double> *connection_phases[NUM_FIELD_TYPES];
 
-  polarization *pol, *olpol;
+  polarization *pols[NUM_FIELD_TYPES], *olpols[NUM_FIELD_TYPES];
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   volume v;
   geometric_volume gv;
   double m, rshift;
   int is_real, store_pol_energy;
   bandsdata *bands;
-  src_vol *d_sources, *b_sources;
+  src_vol *sources[NUM_FIELD_TYPES];
   const structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
@@ -706,14 +734,11 @@ class fields_chunk {
   geometric_volume get_field_gv(component) const;
   complex<double> get_field(component, const vec &) const;
 
-  complex<double> get_polarization_field(const polarizability_identifier &p,
-                                         component c, const ivec &iloc) const;
   double get_polarization_energy(const ivec &) const;
   double my_polarization_energy(const ivec &) const;
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double my_polarization_energy(const polarizability_identifier &, const ivec &) const;
-  double get_inveps(component, direction, const ivec &iloc) const;
-  double get_eps(const ivec &iloc) const;
+  double get_chi1inv(component, direction, const ivec &iloc) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
   
   void backup_component(component c);
@@ -730,18 +755,13 @@ class fields_chunk {
   int is_mine() const { return s->is_mine(); };
   // boundaries.cpp
   void zero_metal(field_type);
-  // polarization.cpp
-  void initialize_polarization_energy(const polarizability_identifier &,
-                                      double energy(const vec &));
-
   // fields.cpp
   void alloc_f(component c);
   void remove_sources();
   void remove_polarizabilities();
   void zero_fields();
 
-  bool update_h_from_b();
-  void update_e_from_d();
+  bool update_eh(field_type ft);
 
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
@@ -758,15 +778,13 @@ class fields_chunk {
   // step.cpp
   void phase_in_material(const structure_chunk *s);
   void phase_material(int phasein_time);
-  void step_b_source(src_vol *, int including_integrated);
   void step_db(field_type ft);
-  void step_d_source(src_vol *, int including_integrated);
-  void update_from_e();
+  void step_source(field_type ft, bool including_integrated);
+  void update_pols(field_type ft);
   void calc_sources(double time);
 
   // initialize.cpp
   void initialize_field(component, complex<double> f(const vec &));
-  void initialize_polarizations(polarization *op=NULL, polarization *np=NULL);
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
@@ -923,12 +941,10 @@ class fields {
 
   // initialize.cpp:
   void initialize_field(component, complex<double> f(const vec &));
-  void initialize_A(complex<double> A(component, const vec &), double freq);
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
   void initialize_with_n_tm(int n);
-  void initialize_polarizations();
   int phase_in_material(const structure *s, double time);
   int is_phasing();
 
@@ -980,8 +996,12 @@ class fields {
 			double freq_min, double freq_max, int Nfreq);
   
   // monitor.cpp
-  double get_inveps(component, direction, const vec &loc) const;
+  double get_chi1inv(component, direction, const vec &loc) const;
+  double get_inveps(component c, direction d, const vec &loc) const {
+    return get_chi1inv(c, d, loc);
+  }
   double get_eps(const vec &loc) const;
+  double get_mu(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
   complex<double> analytic_epsilon(double freq, const vec &) const;
@@ -1022,10 +1042,6 @@ class fields {
   void set_output_directory(const char *name);
   void verbose(int v=1);
   double count_volume(component);
-  // polarization.cpp
-  void initialize_polarization_energy(const polarizability_identifier &,
-                                      double energy(const vec &));
-
   // fields.cpp
   bool have_component(component);
   void set_rshift(double rshift);
@@ -1060,12 +1076,10 @@ class fields {
                                            complex<double> kphase[8], int &ncopies) const;
   // step.cpp
   void phase_material();
-  void step_b_source(int including_integrated = 0);
-  void update_h_from_b();
   void step_db(field_type ft);
-  void step_d_source(int including_integrated = 0);
-  void update_e_from_d();
-  void update_from_e();
+  void step_source(field_type ft, bool including_integrated = false);
+  void update_eh(field_type ft);
+  void update_pols(field_type ft);
   void calc_sources(double tim);
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
@@ -1078,8 +1092,7 @@ class fields {
   double get_polarization_energy(const vec &) const;
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double get_polarization_energy(const polarizability_identifier &, const vec &) const;
-  double get_inveps(component, direction, const ivec &iloc) const;
-  double get_eps(const ivec &iloc) const;
+  double get_chi1inv(component, direction, const ivec &iloc) const;
 };
 
 class flux_vol {

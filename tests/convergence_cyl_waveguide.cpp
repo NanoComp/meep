@@ -81,7 +81,11 @@ void test_convergence_without_averaging() {
   for (int i=0;i<2;i++) a2_mean[i] /= n[i];
   for (int i=0;i<2;i++) a2_meansqr[i] /= n[i];
   
-  if (find_exponent(a_mean[0], a_meansqr[0], a2_mean[0], a2_meansqr[0], "Even") != 2)
+  /* Note: in older versions of Meep, even with "no averaging" there
+     was some funny averaging that happened to give quadratic convergence
+     for the even-resolution cylindrical case here.  We no longer do this
+     -- "no averaging" really means no averaging now. */
+  if (find_exponent(a_mean[0], a_meansqr[0], a2_mean[0], a2_meansqr[0], "Even") != 1)
     abort("Failed even convergence test with no fancy averaging!\n");
   if (find_exponent(a_mean[1], a_meansqr[1], a2_mean[1], a2_meansqr[1], "Odd") != 1)
     abort("Failed odd convergence test with no fancy averaging!\n");

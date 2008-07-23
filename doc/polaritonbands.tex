@@ -59,12 +59,10 @@ material after we have created it.
     f.use_bloch(k);
 \end{verbatim}
 
-Now we excite the first TE mode (we are only looking at m = 0 here), and
-remember to excite along with it the phonon with which it couples.
+Now we excite the first TE mode (we are only looking at m = 0 here):
 
 \begin{verbatim}
     f.initialize_with_nth_te(1);
-    f.initialize_polarizations();
 \end{verbatim}
 
 Finally, we compute the band structure as usual.

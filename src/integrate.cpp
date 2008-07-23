@@ -86,17 +86,18 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
     for (int i = 0; i < data->num_fields; ++i) {
       if (cS[i] == Dielectric) {
 	double tr = 0.0;
-	for (int k = 0; k < data->ninveps; ++k)
-	  tr += (fc->s->inveps[iecs[k]][ieds[k]][idx]
-		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[2*k]]
-		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[1+2*k]]
-		 + fc->s->inveps[iecs[k]][ieds[k]][idx+ieos[2*k]+ieos[1+2*k]]);
+	for (int k = 0; k < data->ninveps; ++k) {
+	  const double *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
+	  if (ie) tr += (ie[idx] + ie[idx+ieos[2*k]] + ie[idx+ieos[1+2*k]]
+			 + ie[idx+ieos[2*k]+ieos[1+2*k]]);
+	  else tr += 4; // default inveps == 1
+	}
 	fields[i] = (4 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
 	double tr = 0.0;
 	for (int k = 0; k < data->ninvmu; ++k) {
-	  const double *im = fc->s->invmu[imcs[k]][imds[k]];
+	  const double *im = fc->s->chi1inv[imcs[k]][imds[k]];
 	  if (im) tr += (im[idx] + im[idx+imos[2*k]] + im[idx+imos[1+2*k]]
 			 + im[idx+imos[2*k]+imos[1+2*k]]);
 	  else tr += 4; // default invmu == 1
@@ -163,10 +164,10 @@ complex<double> fields::integrate(int num_fields, const component *components,
     if (components[i] == Dielectric) { needs_dielectric = true; break; }
   if (needs_dielectric) 
     FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c)) {
-      if (data.ninvmu == 3) abort("more than 3 field components??");
-      data.invmu_cs[data.ninvmu] = c;
-      data.invmu_ds[data.ninvmu] = component_direction(c);
-      ++data.ninvmu;
+      if (data.ninveps == 3) abort("more than 3 field components??");
+      data.inveps_cs[data.ninveps] = c;
+      data.inveps_ds[data.ninveps] = component_direction(c);
+      ++data.ninveps;
     }
   
   /* compute inverse-mu directions for computing Permeability fields */

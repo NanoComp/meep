@@ -14,8 +14,8 @@ boundaries.cpp bicgstab.cpp control_c.cpp cw_fields.cpp dft.cpp		\
 energy_and_flux.cpp fields.cpp loop_in_chunks.cpp grace.cpp		\
 h5fields.cpp h5file.cpp initialize.cpp integrate.cpp monitor.cpp	\
 mympi.cpp output_directory.cpp polarization.cpp sources.cpp step.cpp	\
-step_db.cpp structure.cpp time.cpp update_e_from_d.cpp	\
-update_from_e.cpp vec.cpp step_generic.cpp update_h_from_b.cpp $(HDRS) $(BUILT_SOURCES)
+step_db.cpp structure.cpp time.cpp update_eh.cpp	\
+update_pols.cpp vec.cpp step_generic.cpp $(HDRS) $(BUILT_SOURCES)
 
 libmeep@MEEP_SUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 

@@ -61,33 +61,39 @@ void fields::step() {
   for (int i=0;i<num_chunks;i++) chunks[i]->s->update_condinv();
 
   calc_sources(time()); // for B sources
-
   step_db(B_stuff);
-  if (!disable_sources) step_b_source();
+  step_source(B_stuff);
   step_boundaries(B_stuff);
-  update_h_from_b();
+  calc_sources(time() + 0.5*dt); // for integrated H sources
+  update_eh(H_stuff);
   step_boundaries(H_stuff);
+  // because step_boundaries overruns the timing stack...
+  am_now_working_on(Stepping);
+
+  update_pols(H_stuff);
+  step_boundaries(PH_stuff);
+
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
 
   if (fluxes) fluxes->update_half();
 
   calc_sources(time() + 0.5*dt); // for D sources
-
   step_db(D_stuff);
-  if (!disable_sources) step_d_source();
+  step_source(D_stuff);
   step_boundaries(D_stuff);
-
   calc_sources(time() + dt); // for integrated E sources
-
-  update_e_from_d();
+  update_eh(E_stuff);
   step_boundaries(E_stuff);
 
   // because step_boundaries overruns the timing stack...
   am_now_working_on(Stepping);
 
-  update_from_e();
-  step_boundaries(P_stuff);
+  update_pols(E_stuff);
+  step_boundaries(PE_stuff);
+
+  // because step_boundaries overruns the timing stack...
+  am_now_working_on(Stepping);
 
   if (fluxes) fluxes->update();
   t += 1;
@@ -117,12 +123,22 @@ double fields_chunk::peek_field(component c, const vec &where) {
 }
 
 void fields::phase_material() {
+  bool changed = false;
   if (phasein_time > 0) {
     for (int i=0;i<num_chunks;i++)
-      if (chunks[i]->is_mine())
+      if (chunks[i]->is_mine()) {
 	chunks[i]->phase_material(phasein_time);
-    step_boundaries(E_stuff);
+	changed = changed || chunks[i]->new_s;
+      }
     phasein_time--;
+  }
+  if (or_to_all(changed)) {
+    calc_sources(time() + 0.5*dt); // for integrated H sources
+    update_eh(H_stuff); // ensure H = 1/mu * B
+    step_boundaries(H_stuff);
+    calc_sources(time() + dt); // for integrated E sources
+    update_eh(E_stuff); // ensure E = 1/eps * D
+    step_boundaries(E_stuff);
   }
 }
 
@@ -130,7 +146,6 @@ void fields_chunk::phase_material(int phasein_time) {
   if (new_s && phasein_time > 0) {
     changing_structure();
     s->mix_with(new_s, 1.0/phasein_time);
-    update_e_from_d(); // ensure E = 1/eps * D
   }
 }
 
@@ -239,42 +254,28 @@ void fields::step_boundaries(field_type ft) {
   finished_working();
 }
 
-void fields::step_b_source(int including_integrated) {
+void fields::step_source(field_type ft, bool including_integrated) {
+  if (disable_sources) return;
+  if (ft != D_stuff && ft != B_stuff) abort("only step_source(D/B) is okay");
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_b_source(chunks[i]->b_sources, including_integrated);
+      chunks[i]->step_source(ft, including_integrated);
 }
-void fields_chunk::step_b_source(src_vol *sv, int including_integrated) {
-  if (sv == NULL) return;
-  component c = direction_component(Bx, component_direction(sv->c));
-  if (f[c][0] && is_magnetic(sv->c))
-    for (int j=0; j<sv->npts; j++) {
-      const complex<double> A = sv->current(j) * dt;
-      const int i = sv->index[j];
-      f[c][0][i] -= real(A);
-      if (!is_real) f[c][1][i] -= imag(A);
-    }
-  step_b_source(sv->next, including_integrated);
-}
-
-void fields::step_d_source(int including_integrated) {
-  for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine())
-      chunks[i]->step_d_source(chunks[i]->d_sources, including_integrated);
-}
-void fields_chunk::step_d_source(src_vol *sv, int including_integrated) {
-  if (sv == NULL) return;
-  component c = direction_component(Dx, component_direction(sv->c));
-  if ((including_integrated || !sv->t->is_integrated)
-      && f[c][0] && is_electric(sv->c)) {
-    for (int j=0; j<sv->npts; j++) {
-      const complex<double> A = sv->current(j) * dt;
-      const int i = sv->index[j];
-      f[c][0][i] -= real(A);
-      if (!is_real) f[c][1][i] -= imag(A);
+void fields_chunk::step_source(field_type ft, bool including_integrated) {
+  for (src_vol *sv = sources[ft]; sv; sv = sv->next) {
+    component c = direction_component(first_field_component(ft), 
+				      component_direction(sv->c));
+    if ((including_integrated || !sv->t->is_integrated)	&& f[c][0]
+	&& ((ft == D_stuff && is_electric(sv->c))
+	    || (ft == B_stuff && is_magnetic(sv->c)))) {
+      for (int j=0; j<sv->npts; j++) {
+	const complex<double> A = sv->current(j) * dt;
+	const int i = sv->index[j];
+	f[c][0][i] -= real(A);
+	if (!is_real) f[c][1][i] -= imag(A);
+      }
     }
   }
-  step_d_source(sv->next, including_integrated);
 }
 
 void fields::calc_sources(double tim) {

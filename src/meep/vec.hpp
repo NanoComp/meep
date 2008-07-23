@@ -26,14 +26,14 @@ using namespace std;
 namespace meep {
 
 const int NUM_FIELD_COMPONENTS = 20;
-const int NUM_FIELD_TYPES = 5;
+const int NUM_FIELD_TYPES = 6;
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
                  Dx, Dy, Dr, Dp, Dz, Bx, By, Br, Bp, Bz, Dielectric, Permeability };
 enum derived_component { Sx=100, Sy, Sr, Sp, Sz, EnergyDensity,
 			 D_EnergyDensity, H_EnergyDensity };
 enum ndim { D1=0, D2, D3, Dcyl };
-enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, B_stuff=3, P_stuff=4 };
+enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, B_stuff=3, PE_stuff=4, PH_stuff=5 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P, NO_DIRECTION };
 struct signed_direction {
@@ -68,7 +68,7 @@ inline direction stop_at_direction(ndim dim) {
 component first_field_component(field_type ft);
 
 #define FOR_FIELD_TYPES(ft) for (field_type ft = E_stuff; \
-                                 ft <= P_stuff; ft = (field_type) (ft+1))
+                                 ft <= PH_stuff; ft = (field_type) (ft+1))
 #define FOR_ELECTRIC_COMPONENTS(c) for (component c = Ex; \
                                         c < Hx; c = (component) (c+1))
 #define FOR_MAGNETIC_COMPONENTS(c) for (component c = Hz; \
@@ -81,7 +81,9 @@ component first_field_component(field_type ft);
                                  c > Hz; c = (component) (c-1))
 #define FOR_E_AND_D(e,d) for (component e = Ex, d = Dx; \
                               e <= Ez; e = (component) (e+1), d = (component) (d+1))
-#define FOR_FT_COMPONENTS(ft,c) for (component c = first_field_component(ft), loop_cstop = component(first_field_component(ft) + NUM_FIELD_TYPES); c < loop_cstop; c = component(c+1))
+#define FOR_E_AND_H(c) for (component c = Ex; c < Dx; c = (component) (c+1))
+#define FOR_D_AND_B(c) for (component c = Dx; c < Dielectric; c = (component) (c+1))
+#define FOR_FT_COMPONENTS(ft,c) for (component c = first_field_component(ft), loop_cstop = component(first_field_component(ft) + 5); c < loop_cstop; c = component(c+1))
 #define FOR_COMPONENTS(c) for (component c = Ex,loop_stop_co=Ey; \
                                c != loop_stop_co; \
                                c = (component)((c+1)%NUM_FIELD_COMPONENTS), \
@@ -282,6 +284,11 @@ inline int direction_component(int c, direction d) {
     return int(direction_component(derived_component(c), d));
   else
     return int(direction_component(component(c), d));
+}
+
+inline component field_type_component(field_type ft, component c) {
+  return direction_component(first_field_component(ft),
+			     component_direction(c));
 }
 
 inline bool coordinate_mismatch(ndim dim, component c) {

@@ -331,16 +331,18 @@ void fields::connect_the_chunks() {
 		  nc[type(c)][ip][Outgoing][j] += nn;
 		  comm_sizes[type(c)][ip][pair] += nn;
 		}
-		if (is_electric(corig)) {
+		if (is_electric(corig) || is_magnetic(corig)) {
+		  field_type ft = type(corig);
+		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
 		  int common_pols = 0;
-		  for (polarization *pi = chunks[i]->pol; pi; pi = pi->next)
-		    for (polarization *pj = chunks[j]->pol; pj; pj = pj->next)
+		  for (polarization *pi=chunks[i]->pols[ft]; pi; pi=pi->next)
+		    for (polarization *pj=chunks[j]->pols[ft]; pj; pj=pj->next)
 		      if (pi->pb->get_identifier() == pj->pb->get_identifier())
 			common_pols += 1;
 		  const int nn = (is_real?1:2) * common_pols * 2;
-		  nc[P_stuff][ip][Incoming][i] += nn;
-		  nc[P_stuff][ip][Outgoing][j] += nn;
-		  comm_sizes[P_stuff][ip][pair] += nn;
+		  nc[f][ip][Incoming][i] += nn;
+		  nc[f][ip][Outgoing][j] += nn;
+		  comm_sizes[f][ip][pair] += nn;
 		  // Note above that the factor of two in 2*nn comes from
 		  // the fact that we have two polarization arrays, pol and
 		  // olpol.
@@ -429,14 +431,15 @@ void fields::connect_the_chunks() {
 		    [wh[f][ip][Outgoing][j]++] = chunks[j]->f[c][cmp] + m;
 		}
 		
-		if (is_electric(corig)) {
-		  const int f = P_stuff;
+		if (is_electric(corig) || is_magnetic(corig)) {
+		  field_type ft = type(corig);
+		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
 		  for (int ipol = 0; ipol < 2; ++ipol) // pol then olpol
 		    for (polarization *pi = 
-			   ipol ? chunks[i]->olpol : chunks[i]->pol;
+			   ipol ? chunks[i]->olpols[ft] : chunks[i]->pols[ft];
 			 pi; pi = pi->next)
 		      for (polarization *pj = 
-			     ipol ? chunks[j]->olpol : chunks[j]->pol;
+			     ipol ? chunks[j]->olpols[ft] :chunks[j]->pols[ft];
 			   pj; pj = pj->next)
 			if (pi->pb->get_identifier()
 			    == pj->pb->get_identifier()) {

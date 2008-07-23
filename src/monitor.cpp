@@ -120,7 +120,7 @@ complex<double> fields::get_field(component c, const vec &loc) const {
   case Dielectric:
     return get_eps(loc);
   case Permeability:
-    abort("get_field(Permeability) unimplemented");
+    return get_mu(loc);
   default:
     ivec ilocs[8];
     double w[8];
@@ -174,17 +174,7 @@ complex<double> fields_chunk::get_field(component c, const vec &loc) const {
   double w[8];
   switch (c) {
   case Permeability: abort("non-collective get_field(mu) unimplemented");
-  case Dielectric: {
-    c = v.eps_component();
-    v.interpolate(c, loc, ilocs, w);
-    double res = 0.0;
-    for (int i = 0; i < 8 && w[i] != 0.0; ++i) {
-      if (!v.contains(ilocs[i]))
-	abort("invalid loc in chunk get_field, weight = %g", w[i]);
-      res += s->eps[v.index(c,ilocs[i])] * w[i];
-    }
-    return res;
-  }
+  case Dielectric: abort("non-collective get_field(eps) unimplemented");
   default: {
     v.interpolate(c, loc, ilocs, w);
     complex<double> res = 0.0;
@@ -197,17 +187,6 @@ complex<double> fields_chunk::get_field(component c, const vec &loc) const {
     return res;
   }
   }
-}
-
-complex<double> fields_chunk::get_polarization_field(const polarizability_identifier &p,
-                                                     component c, const ivec &iloc) const {
-  complex<double> res = 0.0;
-  for (polarization *P = olpol; P; P = P->next)
-    if (P->pb->get_identifier() == p) {
-      if (P->P[c][0] && P->P[c][1]) res = getcm(P->P[c], v.index(c, iloc));
-      else if (P->P[c][0]) res = P->P[c][0][v.index(c,iloc)];
-    }
-  return broadcast(n_proc(), res);
 }
 
 double fields::get_polarization_energy(const vec &loc) const {
@@ -236,10 +215,12 @@ double fields::get_polarization_energy(const ivec &origloc) const {
 
 double fields_chunk::get_polarization_energy(const ivec &iloc) const {
   double res = 0.0;
-  polarization *p = pol;
-  while (is_mine() && p) {
-    res += p->local_energy(iloc);
-    p = p->next;
+  FOR_FIELD_TYPES(ft) {
+    polarization *p = pols[ft];
+    while (is_mine() && p) {
+      res += p->local_energy(iloc);
+      p = p->next;
+    }
   }
   return broadcast(n_proc(), res);
 }
@@ -248,10 +229,12 @@ double fields_chunk::my_polarization_energy(const ivec &iloc) const {
   if (!is_mine())
     abort("Can't call my_polarization_energy on someone else's chunk!\n");
   double res = 0.0;
-  polarization *p = pol;
-  while (p) {
-    res += p->local_energy(iloc);
-    p = p->next;
+  FOR_FIELD_TYPES(ft) {
+    polarization *p = pols[ft];
+    while (p) {
+      res += p->local_energy(iloc);
+      p = p->next;
+    }
   }
   return res;
 }
@@ -285,10 +268,12 @@ double fields::get_polarization_energy(const polarizability_identifier &p,
 double fields_chunk::get_polarization_energy(const polarizability_identifier &pi,
                                              const ivec &iloc) const {
   double res = 0.0;
-  polarization *p = pol;
-  while (is_mine() && p) {
-    if (p->pb->get_identifier() == pi) res += p->local_energy(iloc);
-    p = p->next;
+  FOR_FIELD_TYPES(ft) {
+    polarization *p = pols[ft];
+    while (is_mine() && p) {
+      if (p->pb->get_identifier() == pi) res += p->local_energy(iloc);
+      p = p->next;
+    }
   }
   return broadcast(n_proc(), res);
 }
@@ -298,32 +283,17 @@ double fields_chunk::my_polarization_energy(const polarizability_identifier &pi,
   if (!is_mine())
     abort("Can't call my_polarization_energy on someone else's chunk!\n");
   double res = 0.0;
-  polarization *p = pol;
-  while (p) {
-    if (p->pb->get_identifier() == pi) res += p->local_energy(iloc);
-    p = p->next;
+  FOR_FIELD_TYPES(ft) {
+    polarization *p = pols[ft];
+    while (p) {
+      if (p->pb->get_identifier() == pi) res += p->local_energy(iloc);
+      p = p->next;
+    }
   }
   return res;
 }
 
-double fields::get_eps(const ivec &origloc) const {
-  ivec iloc = origloc;
-  complex<double> aaack = 1.0;
-  locate_point_in_user_volume(&iloc, &aaack);
-  for (int sn=0;sn<S.multiplicity();sn++)
-    for (int i=0;i<num_chunks;i++)
-      if (chunks[i]->v.contains(S.transform(iloc,sn)))
-        return chunks[i]->get_eps(S.transform(iloc,sn));
-  return 0.0;
-}
-
-double fields_chunk::get_eps(const ivec &iloc) const {
-  double res = 0.0;
-  if (is_mine()) res = s->eps[v.index(v.eps_component(), iloc)];
-  return broadcast(n_proc(), res);
-}
-
-double fields::get_inveps(component c, direction d,
+double fields::get_chi1inv(component c, direction d,
 			  const ivec &origloc) const {
   ivec iloc = origloc;
   complex<double> aaack = 1.0;
@@ -332,7 +302,7 @@ double fields::get_inveps(component c, direction d,
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->v.contains(S.transform(iloc,sn))) {
 	signed_direction ds = S.transform(d,sn);
-        return chunks[i]->get_inveps(S.transform(c,sn), ds.d,
+        return chunks[i]->get_chi1inv(S.transform(c,sn), ds.d,
 				     S.transform(iloc,sn))
 	     * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
 		? -1 : 1);
@@ -340,14 +310,15 @@ double fields::get_inveps(component c, direction d,
   return 0.0;
 }
 
-double fields_chunk::get_inveps(component c, direction d,
+double fields_chunk::get_chi1inv(component c, direction d,
 			     const ivec &iloc) const {
   double res = 0.0;
-  if (is_mine()) res = s->inveps[c][d] ? s->inveps[c][d][v.index(c, iloc)] : 0;
+  if (is_mine()) res = s->chi1inv[c][d] ? s->chi1inv[c][d][v.index(c, iloc)]
+		   : (d == component_direction(c) ? 1.0 : 0);
   return broadcast(n_proc(), res);
 }
 
-double fields::get_inveps(component c, direction d,
+double fields::get_chi1inv(component c, direction d,
 			  const vec &loc) const {
   ivec ilocs[8];
   double w[8];
@@ -355,7 +326,7 @@ double fields::get_inveps(component c, direction d,
   for (int i=0;i<8;i++) val[i] = 0.0;
   v.interpolate(c, loc, ilocs, w);
   for (int argh=0;argh<8&&w[argh];argh++)
-    val[argh] = w[argh]*get_inveps(c,d,ilocs[argh]);
+    val[argh] = w[argh]*get_chi1inv(c,d,ilocs[argh]);
   dumbsort(val);
   double res = 0.0;
   for (int i=0;i<8;i++) res += val[i];
@@ -367,43 +338,55 @@ double fields::get_eps(const vec &loc) const {
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c)
     if (v.has_field(c)) {
-      tr += get_inveps(c, component_direction(c), loc);
+      tr += get_chi1inv(c, component_direction(c), loc);
       ++nc;
     }
   return nc / tr;
 }
 
-double structure::get_inveps(component c, direction d,
+double fields::get_mu(const vec &loc) const {
+  double tr = 0;
+  int nc = 0;
+  FOR_MAGNETIC_COMPONENTS(c)
+    if (v.has_field(c)) {
+      tr += get_chi1inv(c, component_direction(c), loc);
+      ++nc;
+    }
+  return nc / tr;
+}
+
+double structure::get_chi1inv(component c, direction d,
 			     const ivec &origloc) const {
   ivec iloc = origloc;
   for (int sn=0;sn<S.multiplicity();sn++)
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->v.contains(S.transform(iloc,sn))) {
 	signed_direction ds = S.transform(d,sn);
-        return chunks[i]->get_inveps(S.transform(c,sn), ds.d,
-				     S.transform(iloc,sn))
-	     * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
+        return chunks[i]->get_chi1inv(S.transform(c,sn), ds.d,
+				      S.transform(iloc,sn))
+	  * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
 		? -1 : 1);
       }
   return 0.0;
 }
 
-double structure_chunk::get_inveps(component c, direction d,
-				   const ivec &iloc) const {
+double structure_chunk::get_chi1inv(component c, direction d,
+				    const ivec &iloc) const {
   double res = 0.0;
-  if (is_mine()) res = inveps[c][d] ? inveps[c][d][v.index(c, iloc)] : 0;
+  if (is_mine()) res = chi1inv[c][d] ? chi1inv[c][d][v.index(c, iloc)] 
+		   : (d == component_direction(c) ? 1.0 : 0);
   return broadcast(n_proc(), res);
 }
 
-double structure::get_inveps(component c, direction d,
-			     const vec &loc) const {
+double structure::get_chi1inv(component c, direction d,
+			      const vec &loc) const {
   ivec ilocs[8];
   double w[8];
   double val[8];
   for (int i=0;i<8;i++) val[i] = 0.0;
   v.interpolate(c, loc, ilocs, w);
   for (int argh=0;argh<8&&w[argh];argh++)
-    val[argh] = w[argh]*get_inveps(c,d,ilocs[argh]);
+    val[argh] = w[argh]*get_chi1inv(c,d,ilocs[argh]);
   dumbsort(val);
   double res = 0.0;
   for (int i=0;i<8;i++) res += val[i];
@@ -415,7 +398,18 @@ double structure::get_eps(const vec &loc) const {
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c)
     if (v.has_field(c)) {
-      tr += get_inveps(c, component_direction(c), loc);
+      tr += get_chi1inv(c, component_direction(c), loc);
+      ++nc;
+    }
+  return nc / tr;
+}
+
+double structure::get_mu(const vec &loc) const {
+  double tr = 0;
+  int nc = 0;
+  FOR_MAGNETIC_COMPONENTS(c)
+    if (v.has_field(c)) {
+      tr += get_chi1inv(c, component_direction(c), loc);
       ++nc;
     }
   return nc / tr;

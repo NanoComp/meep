@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
           "1x1 PML 2D TM");
   compare(0.110425, x_periodic(voltwo(1.0, 1.0, a), one),
           "1x1 X periodic 2D TM");
-  compare(-4.66027, periodic_ez(voltwo(1.0, 3.0, a), rods),
+  compare(-4.78767, periodic_ez(voltwo(1.0, 3.0, a), rods),
           "1x1 fully periodic 2D TM rods");
   compare(1.12502, periodic_ez(voltwo(1.0, 3.0, a), one),
           "1x1 fully periodic 2D TM");
@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
           "1x1x1 X periodic 3D");
   compare(-101.398, x_periodic_y_pml(vol3d(1.0, 1.0+2*dpml, 1.0, a), one),
           "1x1x1 X periodic Y PML 3D");
-  compare(-97.7989, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
+  compare(-103.844, periodic_ez(vol3d(1.0, 1.0, 1.0, a), rods),
           "1x1x1 fully periodic 3D rods");
   compare(-99.1618, periodic_ez(vol3d(1.0, 1.0, 1.0, a), one),
           "1x1x1 fully periodic 3D");

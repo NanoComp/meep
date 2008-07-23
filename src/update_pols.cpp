@@ -25,16 +25,19 @@
 
 namespace meep {
 
-void fields::update_from_e() {
+void fields::update_pols(field_type ft) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->update_from_e();
+      chunks[i]->update_pols(ft);
 }
 
-void fields_chunk::update_from_e() {
+void fields_chunk::update_pols(field_type ft) {
   const int ntot = s->v.ntot();
+  polarization *pol = pols[ft];
+  polarization *olpol = olpols[ft];
 
 #ifdef WITH_SATURABLE_ABSORBERS
+  if (pol && ft != E_stuff) abort("unimplemented in update_pols");
 
   /* old messy code to implement saturable absorbers, which
      were never adequately documented or debugged */
@@ -42,14 +45,15 @@ void fields_chunk::update_from_e() {
 
 #else
   
-  DOCMP FOR_E_AND_D(ec,dc) if (f[ec][cmp])
+  DOCMP FOR_FT_COMPONENTS(ft, c) if (f[c][cmp])
     for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
+      if (np->pb->ft != ft) abort("bug in update_pols");
       const double cn = 2 - op->pb->omeganot*op->pb->omeganot;
       const double co = 0.5 * op->pb->gamma - 1;
       const double funinv = 1.0 / (1 + 0.5*op->pb->gamma);
-      const double *fE = f[ec][cmp];
-      const double *npP = np->P[ec][cmp], *nps = np->s[ec];
-      double *opP = op->P[ec][cmp], *npenergy = np->energy[ec];
+      const double *fE = f[c][cmp];
+      const double *npP = np->P[c][cmp], *nps = np->s[c];
+      double *opP = op->P[c][cmp], *npenergy = np->energy[c];
       if (npenergy)
 	for (int i = 0; i < ntot; ++i) {
 	  npenergy[i] += 0.5 * (npP[i] - opP[i]) * fE[i];
@@ -61,9 +65,8 @@ void fields_chunk::update_from_e() {
     }
 
   /* the old polarization is now the new polarization */
-  polarization *temp = olpol;
-  olpol = pol;
-  pol = temp;
+  olpols[ft] = pol;
+  pols[ft] = olpol;
 
 #endif
 }

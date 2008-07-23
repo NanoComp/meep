@@ -87,17 +87,12 @@ static void array_to_fields(const complex<double> *x, fields &f)
 	        fi[idx] = imag(x[ix++]);
 	      }
 	  }
-	  else if (is_electric(c)) {
-	    src_vol *save_src = f.chunks[i]->d_sources;
-	    f.chunks[i]->d_sources = 0; // disable sources
-	    f.chunks[i]->update_e_from_d();
-	    f.chunks[i]->d_sources = save_src;
-	  }
-	  else if (is_magnetic(c)) {
-	    src_vol *save_src = f.chunks[i]->b_sources;
-	    f.chunks[i]->b_sources = 0; // disable sources
-	    f.chunks[i]->update_h_from_b();
-	    f.chunks[i]->b_sources = save_src;
+	  else if (is_electric(c) || is_magnetic(c)) {
+	    field_type ft = is_electric(c) ? D_stuff : H_stuff;
+	    src_vol *save_src = f.chunks[i]->sources[ft];
+	    f.chunks[i]->sources[ft] = 0; // disable sources
+	    f.chunks[i]->update_eh(type(c));
+	    f.chunks[i]->sources[ft] = save_src;
 	  }
 	}
       }
@@ -170,13 +165,13 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   // get J amplitudes from current time step
   zero_fields(); // note that we've saved the fields in x above
   calc_sources(time());
-  step_b_source();
+  step_source(B_stuff, true);
   step_boundaries(B_stuff);
-  update_h_from_b();
+  update_eh(H_stuff);
   calc_sources(time() + 0.5*dt);
-  step_d_source(1);
+  step_source(D_stuff, true);
   step_boundaries(D_stuff);
-  update_e_from_d();
+  update_eh(E_stuff);
   fields_to_array(*this, b);
   double mdt_inv = -1.0 / dt;
   for (int i = 0; i < N/2; ++i) b[i] *= mdt_inv;

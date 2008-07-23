@@ -180,11 +180,12 @@ fields_chunk::~fields_chunk() {
     delete dft_chunks;
     dft_chunks = nxt;
   }
-  delete b_sources;
-  delete d_sources;
-  delete pol;
-  delete olpol;
-  FOR_FIELD_TYPES(ft) delete[] zeroes[ft];
+  FOR_FIELD_TYPES(ft) delete sources[ft];
+  FOR_FIELD_TYPES(ft) {
+    delete pols[ft];
+    delete olpols[ft];
+    delete[] zeroes[ft];
+  }
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
@@ -200,9 +201,10 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
-  pol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
-  olpol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
-  b_sources = d_sources = NULL;
+  FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
+  polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
+  polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
+  FOR_FIELD_TYPES(ft) sources[ft] = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
@@ -238,9 +240,10 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   Courant = thef.Courant;
   dt = thef.dt;
   dft_chunks = NULL;
-  pol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
-  olpol = polarization::set_up_polarizations(s, is_real, store_pol_energy);
-  b_sources = d_sources = NULL;
+  FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
+  polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
+  polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
+  FOR_FIELD_TYPES(ft) sources[ft] = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
@@ -379,9 +382,7 @@ void fields_chunk::alloc_f(component the_c) {
 }
 
 void fields_chunk::remove_sources() {
-  delete b_sources;
-  delete d_sources;
-  d_sources = b_sources = NULL;
+  FOR_FIELD_TYPES(ft) { delete sources[ft]; sources[ft] = NULL; }
 }
 
 void fields::remove_sources() {
@@ -392,9 +393,10 @@ void fields::remove_sources() {
 }
 
 void fields_chunk::remove_polarizabilities() {
-  delete pol;
-  delete olpol;
-  pol = olpol = NULL;
+  FOR_FIELD_TYPES(ft) {
+    delete pols[ft]; pols[ft] = NULL;
+    delete olpols[ft]; olpols[ft] = NULL;
+  }
   changing_structure();
   s->remove_polarizabilities();
 }
@@ -415,8 +417,10 @@ void fields_chunk::zero_fields() {
     if (f_backup[c][cmp]) for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = 0.0;
     if (f_prev[c][cmp]) for (int i=0;i<v.ntot();i++) f_prev[c][cmp][i] = 0.0;
   }
-  if (is_mine() && pol) pol->zero_fields();
-  if (is_mine() && olpol) olpol->zero_fields();
+  if (is_mine()) FOR_FIELD_TYPES(ft) {
+    if (pols[ft]) pols[ft]->zero_fields();
+    if (olpols[ft]) olpols[ft]->zero_fields();
+  }
 }
 
 void fields::zero_fields() {
@@ -439,8 +443,10 @@ void fields_chunk::use_real_fields() {
     delete[] f[c][1];
     f[c][1] = 0;
   }
-  if (is_mine() && pol) pol->use_real_fields();
-  if (is_mine() && olpol) olpol->use_real_fields();
+  if (is_mine()) FOR_FIELD_TYPES(ft) {
+    if (pols[ft]) pols[ft]->use_real_fields();
+    if (olpols[ft]) olpols[ft]->use_real_fields();
+  }
 }
 
 int fields::phase_in_material(const structure *snew, double time) {
