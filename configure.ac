@@ -1,11 +1,11 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 0.20.2, meep@ab-initio.mit.edu)
+AC_INIT(meep, 0.20.3, meep@ab-initio.mit.edu)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.)
-SHARED_VERSION_INFO="2:2:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="2:3:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE(1.6)
 AM_CONFIG_HEADER(config.h)

@@ -1,3 +1,8 @@
+Meep 0.20.3 (24 July 2008)
+
+  * Fixed circular dependency in Makefile, which caused problems with some
+    versions of make; thanks to Kaoru Narita for the bug report.
+
 Meep 0.20.2 (21 July 2008)
 
   * Fixed incompatibility with Guile 1.6.x or earlier; thanks to the bug
