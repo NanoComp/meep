@@ -83,7 +83,7 @@ CTL_DEFS = -DCTL_SCM='"'$(LIBCTL_DIR)/base/ctl.scm'"' \
 ctl-io.cpp: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm ctl-io.h
 	$(GEN_CTL_IO) --cxx --code -o $@ $(SPECIFICATION_FILE) $(LIBCTL_DIR)
 
-ctl-io.h: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm ctl-io.h
+ctl-io.h: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm
 	$(GEN_CTL_IO) --cxx --header -o $@ $(SPECIFICATION_FILE) $(LIBCTL_DIR)
 
 ctl-io.i: $(SPECIFICATION_FILE) $(LIBCTL_DIR)/utils/geom.scm

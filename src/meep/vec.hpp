@@ -98,9 +98,9 @@ component first_field_component(field_type ft);
 			  loop_stop_bi = High)
 
 // only loop over directions where we have coordinates
-#define LOOP_OVER_DIRECTIONS(dim, d) for (direction d = start_at_direction(dim), \
-                                     loop_stop_directi = stop_at_direction(dim); \
-                                     d < loop_stop_directi; d = (direction) (d+1))
+#define LOOP_OVER_DIRECTIONS(dim, d) for (meep::direction d = meep::start_at_direction(dim), \
+                                     loop_stop_directi = meep::stop_at_direction(dim); \
+                                     d < loop_stop_directi; d = (meep::direction) (d+1))
 
 // loop over all directions in which we might have fields
 #define LOOP_OVER_FIELD_DIRECTIONS(dim, d) for (direction d = dim == Dcyl ? Z : X; d < (dim == Dcyl ? NO_DIRECTION : R); d = direction(d+1))

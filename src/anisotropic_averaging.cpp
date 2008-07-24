@@ -47,6 +47,19 @@ static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
 
 ////////////////////////////////////////////////////////////////////////////
 
+vec material_function::normal_vector(field_type ft, const geometric_volume &gv)
+{
+  vec gradient(zero_vec(gv.dim));
+  vec p(gv.center());
+  double R = gv.diameter();  
+  for (int i = 0; i < num_sphere_quad[number_of_directions(gv.dim)-1]; ++i) {
+    double weight;
+    vec pt = sphere_pt(p, R, i, weight);
+    gradient += (pt - p) * (weight * chi1p1(ft,pt));
+  }
+  return gradient;
+}
+
 /* default: simple numerical integration of surfaces/cubes, relative
    tolerance 'tol'.   This is superseded by the routines in the libctl
    interface, which either use a semi-analytical average or can
@@ -62,16 +75,7 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
     return;
   }
 
-  vec gradient = zero_vec(gv.dim);
-  {
-    vec p(gv.center());
-    double R = gv.diameter();  
-    for (int i = 0; i < num_sphere_quad[number_of_directions(gv.dim)-1]; ++i) {
-      double weight;
-      vec pt = sphere_pt(p, R, i, weight);
-      gradient += (pt - p) * (weight * chi1p1(ft,pt));
-    }
-  }
+  vec gradient(normal_vector(ft, gv));
   if (abs(gradient) < 1e-8) goto trivial;
 
   double meps=1, minveps=1;

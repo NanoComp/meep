@@ -49,10 +49,12 @@
 
 (define-class medium material-type
   (define-property epsilon 1 'number)
-  (define-property polarizations '() (make-list-type 'polarizability))
-  (define-property chi2 0 'number)
-  (define-property chi3 0 'number)
   (define-property mu 1 'number)
+  (define-property polarizations '() (make-list-type 'polarizability))
+  (define-property E-chi2-diag (vector3 0 0 0) 'vector3)
+  (define-property E-chi3-diag (vector3 0 0 0) 'vector3)
+  (define-property H-chi2-diag (vector3 0 0 0) 'vector3)
+  (define-property H-chi3-diag (vector3 0 0 0) 'vector3)
   (define-property D-conductivity-diag (vector3 0 0 0) 'vector3)
   (define-property B-conductivity-diag (vector3 0 0 0) 'vector3)
 )
@@ -62,6 +64,13 @@
 ; useful shortcuts for isotropic conductivity
 (define (D-conductivity c) (D-conductivity-diag c c c))
 (define (B-conductivity c) (B-conductivity-diag c c c))
+
+; shortcuts for isotropic nonlinearities
+(define (E-chi2 d) (E-chi2-diag d d d))
+(define (E-chi3 d) (E-chi3-diag d d d))
+(define (H-chi2 d) (H-chi2-diag d d d))
+(define (H-chi3 d) (H-chi3-diag d d d))
+(define chi2 E-chi2) (define chi3 E-chi3) ; backwards compatibility
 
 (define-class perfect-metal material-type)
 

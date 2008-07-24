@@ -159,6 +159,9 @@ public:
   virtual double conductivity(component c, const vec &r) { 
     (void) c; (void)r; return 0.0; }  
 
+  // fallback routine based on spherical quadrature
+  vec normal_vector(field_type ft, const geometric_volume &gv);
+
   /* Return c'th row of effective 1/(1+chi1) tensor in the given volume gv
      ... virtual so that e.g. libctl can override with more-efficient
      libctlgeom-based routines.  maxeval == 0 if no averaging desired. */

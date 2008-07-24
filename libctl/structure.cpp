@@ -89,26 +89,25 @@ public:
   
   virtual void set_volume(const meep::geometric_volume &gv);
   virtual void unset_volume(void);
-  virtual double eps(const meep::vec &r);
-  virtual bool has_chi3();
-  virtual double chi3(const meep::vec &r);
-  virtual bool has_chi2();
-  virtual double chi2(const meep::vec &r);
+
+  virtual bool has_chi3(meep::component c);
+  virtual double chi3(meep::component c, const meep::vec &r);
+  virtual bool has_chi2(meep::component c);
+  virtual double chi2(meep::component c, const meep::vec &r);
 
   virtual bool has_mu();
-  virtual double mu(const meep::vec &r);
 
   virtual bool has_conductivity(meep::component c);
   virtual double conductivity(meep::component c, const meep::vec &r);
 
-  virtual meep::vec normal_vector(const meep::geometric_volume &gv);
-  virtual void meaneps(double &meps, double &minveps, meep::vec &normal,
-		       const meep::geometric_volume &gv, 
-		       double tol, int maxeval);
+  virtual double chi1p1(meep::field_type ft, const meep::vec &r);
+  virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3],
+			       const meep::geometric_volume &gv, 
+			       double tol, int maxeval);
 
-  void fallback_meaneps(double &meps, double &minveps,
-			const meep::geometric_volume &gv,
-			double tol, int maxeval);
+  void fallback_chi1inv_row(meep::component c, double chi1inv_row[3],
+			      const meep::geometric_volume &gv,
+			      double tol, int maxeval);
 
   virtual double sigma(const meep::vec &r);
   void add_polarizabilities(meep::structure *s);
@@ -243,9 +242,9 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
   return destroy_material;
 }
 
-double geom_epsilon::eps(const meep::vec &r)
+double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
 {
-  double eps = 1.0, eps_inv;
+  double chi1p1 = 1.0, eps, eps_inv;
 
 #ifdef DEBUG
   vector3 p = vec_to_vector3(r);
@@ -261,12 +260,23 @@ double geom_epsilon::eps(const meep::vec &r)
   material_type material;
   bool destroy_material = get_material_pt(material, r);
 
-  material_eps(material, eps, eps_inv);  
+  if (ft == meep::E_stuff)
+    material_eps(material, eps, eps_inv);  
+  else if (ft == meep::H_stuff)
+    switch (material.which_subclass) {
+    case MTS::MEDIUM:
+      chi1p1 = material.subclass.medium_data->mu;
+      break;
+    default:
+      chi1p1 = 1;
+    }
+  else
+    meep::abort("unexpected field_type in geom_epsilon::chi1p1");
   
   if (destroy_material)
     material_type_destroy(material);
   
-  return eps;
+  return chi1p1;
 }
 
 /* Find frontmost object in gv, along with the constant material behind it.
@@ -370,48 +380,47 @@ static bool get_front_object(const meep::geometric_volume &gv,
   return true;
 }
 
-meep::vec geom_epsilon::normal_vector(const meep::geometric_volume &gv) {
-  const geometric_object *o;
-  material_type mat, mat_behind;
-  vector3 p, shiftby, normal;
+void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
+				   const meep::geometric_volume &gv,
+				   double tol, int maxeval) {
+  if (!maxeval) {
+  trivial:
+    chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0.0;
+    chi1inv_row[meep::component_direction(c) % 3] = 1/chi1p1(meep::type(c),
+							     gv.center());;
+    return;
+  }
 
-  if (!get_front_object(gv, geometry_tree,
-			p, &o, shiftby, mat, mat_behind))
-    return material_function::normal_vector(gv); // fallback to default
-
-  /* check for trivial case of only one object/material */
-  if (material_type_equal(&mat, &mat_behind))
-    return meep::zero_vec(gv.dim);
-
-  normal = normal_to_fixed_object(vector3_minus(p, shiftby), *o);
-  return vector3_to_vec(unit_vector3(normal));
-}
-
-void geom_epsilon::meaneps(double &meps, double &minveps, 
-			   meep::vec &n,
-			   const meep::geometric_volume &gv,
-			   double tol, int maxeval) {
   const geometric_object *o;
   material_type mat, mat_behind;
   vector3 p, shiftby, normal;
 
   if (!get_front_object(gv, geometry_tree,
 			p, &o, shiftby, mat, mat_behind)) {
-    fallback_meaneps(meps, minveps, gv, tol, maxeval);
-    n = material_function::normal_vector(gv);
+    fallback_chi1inv_row(c, chi1inv_row, gv, tol, maxeval);
     return;
   }
 
-  material_eps(mat, meps, minveps);
+  double meps, minveps;
+  if (meep::type(c) == meep::E_stuff)
+    material_eps(mat, meps, minveps);
+  else
+    switch (mat.which_subclass) {
+    case MTS::MEDIUM:
+      minveps = 1 / (meps = mat.subclass.medium_data->mu);
+      break;
+    default:
+      minveps = meps = 1;
+    }
 
   /* check for trivial case of only one object/material */
   if (material_type_equal(&mat, &mat_behind)) { 
-    n = meep::zero_vec(gv.dim);
+    chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0.0;
+    chi1inv_row[meep::component_direction(c) % 3] = minveps;
     return;
   }
   
-  normal = normal_to_fixed_object(vector3_minus(p, shiftby), *o);
-  n = vector3_to_vec(unit_vector3(normal));
+  normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
 
   geom_box pixel = gv2box(gv);
   pixel.low = vector3_minus(pixel.low, shiftby);
@@ -421,17 +430,32 @@ void geom_epsilon::meaneps(double &meps, double &minveps,
   double fill = 1.0 - box_overlap_with_object(pixel, *o, tol, maxeval);
   
   double epsb, epsinvb;
-  material_eps(mat_behind, epsb, epsinvb);
-  if (meps < 0 || epsb < 0) { // averaging negative eps causes instability
-    minveps = 1.0 / (meps = eps(gv.center()));
-  }
-  else {
-    meps += fill * (epsb - meps);
-    minveps += fill * (epsinvb - minveps);
-  }
+  if (meep::type(c) == meep::E_stuff)
+    material_eps(mat_behind, epsb, epsinvb);
+  else
+    switch (mat_behind.which_subclass) {
+    case MTS::MEDIUM:
+      epsinvb = 1 / (epsb = mat_behind.subclass.medium_data->mu);
+      break;
+    default:
+      epsinvb = epsb = 1;
+    }
+  
+  if (meps < 0 || epsb < 0) goto trivial; // can't average negative eps
+  
+  meps += fill * (epsb - meps);
+  minveps += fill * (epsinvb - minveps);
+
+  double n[3]; n[0] = normal.x; n[1] = normal.y; n[2] = normal.z;
+  int rownum = meep::component_direction(c) % 3;
+  for (int i=0; i<3; ++i)
+    chi1inv_row[i] = n[rownum] * n[i] * (minveps - 1/meps);
+  chi1inv_row[rownum] += 1/meps;
 }
 
 static int eps_ever_negative = 0;
+static meep::field_type func_ft = meep::E_stuff;
+
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber ceps_func(int n, number *x, void *geomeps_)
 {
@@ -441,7 +465,7 @@ static cnumber ceps_func(int n, number *x, void *geomeps_)
   double s = 1;
   if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
   cnumber ret;
-  double ep = geomeps->eps(vector3_to_vec(p));
+  double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
   if (ep < 0) eps_ever_negative = 1;
   ret.re = ep * s;
   ret.im = s / ep;
@@ -455,7 +479,7 @@ static number eps_func(int n, number *x, void *geomeps_)
   double s = 1;
   p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
   if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
-  double ep = geomeps->eps(vector3_to_vec(p));
+  double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
   if (ep < 0) eps_ever_negative = 1;
   return ep * s;
 }
@@ -466,16 +490,17 @@ static number inveps_func(int n, number *x, void *geomeps_)
   double s = 1;
   p.x = x[0]; p.y = n > 1 ? x[1] : 0; p.z = n > 2 ? x[2] : 0;
   if (dim == meep::Dcyl) { double py = p.y; p.y = p.z; p.z = py; s = p.x; }
-  double ep = geomeps->eps(vector3_to_vec(p));
+  double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
   if (ep < 0) eps_ever_negative = 1;
   return s / ep;
 }
 #endif
 
 // fallback meaneps using libctl's adaptive cubature routine
-void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
-				    const meep::geometric_volume &gv,
-				    double tol, int maxeval)
+void geom_epsilon::fallback_chi1inv_row(meep::component c,
+					double chi1inv_row[3],
+					const meep::geometric_volume &gv,
+					double tol, int maxeval)
 {
   number esterr;
   integer errflag, n;
@@ -498,6 +523,8 @@ void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
   for (int i = 0; i < n; ++i) vol *= xmax[i] - xmin[i];
   if (dim == meep::Dcyl) vol *= (xmin[0] + xmax[0]) * 0.5;
   eps_ever_negative = 0;
+  func_ft = meep::type(c);
+  double meps, minveps;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
   cnumber ret = cadaptive_integration(ceps_func, xmin, xmax, n, (void*) this,
 				      0, tol, maxeval, &esterr, &errflag);
@@ -511,13 +538,37 @@ void geom_epsilon::fallback_meaneps(double &meps, double &minveps,
 #endif
   if (eps_ever_negative) // averaging negative eps causes instability
     minveps = 1.0 / (meps = eps(gv.center()));
+
+  {
+    meep::vec gradient(normal_vector(meep::type(c), gv));
+    double n[3] = {0,0,0};
+    double nabsinv = 1.0/meep::abs(gradient);
+    LOOP_OVER_DIRECTIONS(gradient.dim, k)
+      n[k%3] = gradient.in_direction(k) * nabsinv;
+    int rownum = meep::component_direction(c) % 3;
+    for (int i=0; i<3; ++i)
+      chi1inv_row[i] = n[rownum] * n[i] * (minveps - 1/meps);
+    chi1inv_row[rownum] += 1/meps;
+  }
 }
 
-bool geom_epsilon::has_chi3()
+static double get_chi3(meep::component c, const medium *m) {
+  switch (c) {
+  case meep::Er: case meep::Ex: return m->E_chi3_diag.x;
+  case meep::Ep: case meep::Ey: return m->E_chi3_diag.y;
+  case meep::Ez: return m->E_chi3_diag.z;
+  case meep::Hr: case meep::Hx: return m->H_chi3_diag.x;
+  case meep::Hp: case meep::Hy: return m->H_chi3_diag.y;
+  case meep::Hz: return m->H_chi3_diag.z;
+  default: return 0;
+  }
+}
+
+bool geom_epsilon::has_chi3(meep::component c)
 {
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
-      if (geometry.items[i].material.subclass.medium_data->chi3 != 0)
+      if (get_chi3(c, geometry.items[i].material.subclass.medium_data) != 0)
 	return true; 
     }
   }
@@ -527,17 +578,17 @@ bool geom_epsilon::has_chi3()
        be better to have set_chi3 automatically delete chi3[] if the
        chi3's are all zero. */
   return (default_material.which_subclass == MTS::MEDIUM &&
-	  default_material.subclass.medium_data->chi3 != 0);
+	  get_chi3(c, default_material.subclass.medium_data) != 0);
 }
 
-double geom_epsilon::chi3(const meep::vec &r) {
+double geom_epsilon::chi3(meep::component c, const meep::vec &r) {
   material_type material;
   bool destroy_material = get_material_pt(material, r);
   
   double chi3_val;
   switch (material.which_subclass) {
   case MTS::MEDIUM:
-    chi3_val = material.subclass.medium_data->chi3;
+    chi3_val = get_chi3(c, material.subclass.medium_data);
     break;
   default:
     chi3_val = 0;
@@ -549,11 +600,23 @@ double geom_epsilon::chi3(const meep::vec &r) {
   return chi3_val;
 }
 
-bool geom_epsilon::has_chi2()
+static double get_chi2(meep::component c, const medium *m) {
+  switch (c) {
+  case meep::Er: case meep::Ex: return m->E_chi2_diag.x;
+  case meep::Ep: case meep::Ey: return m->E_chi2_diag.y;
+  case meep::Ez: return m->E_chi2_diag.z;
+  case meep::Hr: case meep::Hx: return m->H_chi2_diag.x;
+  case meep::Hp: case meep::Hy: return m->H_chi2_diag.y;
+  case meep::Hz: return m->H_chi2_diag.z;
+  default: return 0;
+  }
+}
+
+bool geom_epsilon::has_chi2(meep::component c)
 {
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
-      if (geometry.items[i].material.subclass.medium_data->chi2 != 0)
+      if (get_chi2(c, geometry.items[i].material.subclass.medium_data) != 0)
 	return true; 
     }
   }
@@ -563,17 +626,17 @@ bool geom_epsilon::has_chi2()
        be better to have set_chi2 automatically delete chi2[] if the
        chi2's are all zero. */
   return (default_material.which_subclass == MTS::MEDIUM &&
-	  default_material.subclass.medium_data->chi2 != 0);
+	  get_chi2(c, default_material.subclass.medium_data) != 0);
 }
 
-double geom_epsilon::chi2(const meep::vec &r) {
+double geom_epsilon::chi2(meep::component c, const meep::vec &r) {
   material_type material;
   bool destroy_material = get_material_pt(material, r);
   
   double chi2_val;
   switch (material.which_subclass) {
   case MTS::MEDIUM:
-    chi2_val = material.subclass.medium_data->chi2;
+    chi2_val = get_chi2(c, material.subclass.medium_data);
     break;
   default:
     chi2_val = 0;
@@ -600,25 +663,6 @@ bool geom_epsilon::has_mu()
        chi2's are all zero. */
   return (default_material.which_subclass == MTS::MEDIUM &&
 	  default_material.subclass.medium_data->mu != 1);
-}
-
-double geom_epsilon::mu(const meep::vec &r) {
-  material_type material;
-  bool destroy_material = get_material_pt(material, r);
-
-  double mu_val;
-  switch (material.which_subclass) {
-  case MTS::MEDIUM:
-    mu_val = material.subclass.medium_data->mu;
-    break;
-  default:
-    mu_val = 1;
-  }
-  
-  if (destroy_material)
-    material_type_destroy(material);
-  
-  return mu_val;
 }
 
 static double get_cnd(meep::component c, const medium *m) {
