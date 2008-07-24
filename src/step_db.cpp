@@ -44,11 +44,11 @@ void fields_chunk::step_db(field_type ft) {
   if (have_pml) FOR_FT_COMPONENTS(ft, cc) DOCMP
     if (f[cc][cmp]) {
       if (!f_prev[cc][cmp])
-        f_prev[cc][cmp] = new double[v.ntot()];
+        f_prev[cc][cmp] = new realnum[v.ntot()];
       // update_e_from_d requires previous D-P, not D, if D-P is present
       memcpy(f_prev[cc][cmp],
 	     f_minus_p[cc][cmp] ? f_minus_p[cc][cmp] : f[cc][cmp],
-	     v.ntot()*sizeof(double));
+	     v.ntot()*sizeof(realnum));
     }
 
   DOCMP FOR_FT_COMPONENTS(ft, cc)
@@ -64,9 +64,9 @@ void fields_chunk::step_db(field_type ft) {
       const direction dsig = have_pml ? dsig0 : NO_DIRECTION;
       int stride_p = have_p?v.stride(d_deriv_p):0;
       int stride_m = have_m?v.stride(d_deriv_m):0;
-      double *f_p = have_p?f[c_p][cmp]:NULL;
-      double *f_m = have_m?f[c_m][cmp]:NULL;
-      double *the_f = f[cc][cmp];
+      realnum *f_p = have_p?f[c_p][cmp]:NULL;
+      realnum *f_m = have_m?f[c_m][cmp]:NULL;
+      realnum *the_f = f[cc][cmp];
       
       if (ft == D_stuff) { // strides are opposite sign for H curl
 	stride_p = -stride_p;
@@ -92,7 +92,7 @@ void fields_chunk::step_db(field_type ft) {
 	   and get the correct derivative.  (More precisely,
 	   the derivative and integral are replaced by differences
 	   and sums, but you get the idea). */
-	if (!f_rderiv_int) f_rderiv_int = new double[v.ntot()];
+	if (!f_rderiv_int) f_rderiv_int = new realnum[v.ntot()];
 	double ir0 = (v.origin_r() + rshift) * v.a 
 	  + 0.5 * v.iyee_shift(c_p).in_direction(R);
 	for (int iz = 0; iz <= v.nz(); ++iz) f_rderiv_int[iz] = 0;
@@ -121,9 +121,9 @@ void fields_chunk::step_db(field_type ft) {
     const direction d_c = component_direction(cc);
     if (f[cc][cmp] && (d_c == R || d_c == Z)) {
       const component c_g = d_c==R ? plus_component[cc] : minus_component[cc];
-      const double *g = f[c_g][1-cmp];
-      double *the_f = f[cc][cmp];
-      const double *cndinv = s->condinv[cc][d_c];
+      const realnum *g = f[c_g][1-cmp];
+      realnum *the_f = f[cc][cmp];
+      const realnum *cndinv = s->condinv[cc][d_c];
       const direction dsig = cycle_direction(v.dim,d_c,1);
       const double the_m = 
 	m * (1-2*cmp) * (1-2*(ft==B_stuff)) * (1-2*(d_c==R)) * Courant;
@@ -166,9 +166,9 @@ void fields_chunk::step_db(field_type ft) {
   if (v.dim == Dcyl && v.origin_r() == 0.0) DOCMP {
     if (m == 0 && ft == D_stuff && f[Dz][cmp]) {
       // d(Dz)/dt = (1/r) * d(r*Hp)/dr
-      double *the_f = f[Dz][cmp];
-      const double *g = f[Hp][cmp];
-      const double *cndinv = s->condinv[Dz][Z];
+      realnum *the_f = f[Dz][cmp];
+      const realnum *g = f[Hp][cmp];
+      const realnum *cndinv = s->condinv[Dz][Z];
       const direction dsig = cycle_direction(v.dim,Z,1);
       if (cndinv) // conductivity, possibly including PML
 	for (int iz = 0; iz < v.nz(); ++iz) 
@@ -193,12 +193,12 @@ void fields_chunk::step_db(field_type ft) {
       // B_stuff: d(Br)/dt = d(Ep)/dz - i*m*Ez/r
       component cc = ft == D_stuff ? Dp : Br;
       direction d_c = component_direction(cc);
-      double *the_f = f[cc][cmp];
+      realnum *the_f = f[cc][cmp];
       if (!the_f) continue;
-      const double *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
-      const double *f_m = ft == D_stuff ? f[Hz][cmp]
+      const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
+      const realnum *f_m = ft == D_stuff ? f[Hz][cmp]
 	: (f[Ez][1-cmp] + (v.nz()+1));
-      const double *cndinv = s->condinv[cc][d_c];
+      const realnum *cndinv = s->condinv[cc][d_c];
       const direction dsig = cycle_direction(v.dim,d_c,1);
       int sd = ft == D_stuff ? +1 : -1;
       double f_m_mult = ft == D_stuff ? 2 : (1-2*cmp);

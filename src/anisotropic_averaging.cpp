@@ -200,7 +200,7 @@ void structure_chunk::set_chi1inv(component c,
 
   FOR_FT_COMPONENTS(ft,c2) if (v.has_field(c2)) {
     direction d = component_direction(c2);
-    if (!chi1inv[c][d]) chi1inv[c][d] = new double[v.ntot()];
+    if (!chi1inv[c][d]) chi1inv[c][d] = new realnum[v.ntot()];
     if (!chi1inv[c][d]) abort("Memory allocation error.\n");
   }
   direction dc = component_direction(c);

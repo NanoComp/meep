@@ -283,11 +283,13 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
 #endif
 }
 
-double *h5file::read(const char *dataname,
+#define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
+
+realnum *h5file::read(const char *dataname,
 		     int *rank, int *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
-  double *data = 0;
+  realnum *data = 0;
   if (parallel || am_master()) {
     int i, N;
     hid_t file_id = HID(get_id()), space_id, data_id;
@@ -315,8 +317,8 @@ double *h5file::read(const char *dataname,
     delete[] dims_copy;
     H5Sclose(space_id);
     
-    data = new double[N];
-    H5Dread(data_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+    data = new realnum[N];
+    H5Dread(data_id, REALNUM_H5T, H5S_ALL, H5S_ALL, H5P_DEFAULT,
 	    (void *) data);
     
     if (!is_cur(dataname))
@@ -330,7 +332,7 @@ double *h5file::read(const char *dataname,
     for (int i = 0; i < *rank; ++i)
       N *= dims[i];
     if (!am_master())
-      data = new double[N];
+      data = new realnum[N];
     broadcast(0, data, N);
   }
 
@@ -478,7 +480,7 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
     
     delete[] dims_copy;
     
-    hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE;
+    hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : REALNUM_H5T;
     
     data_id = H5Dcreate(file_id, dataname, type_id, space_id, prop_id);
     if (data_id < 0) abort("Error creating dataset");
@@ -600,7 +602,7 @@ void h5file::create_or_extend_data(const char *dataname, int rank,
 */
 void h5file::write_chunk(int rank,
 			 const int *chunk_start, const int *chunk_dims,
-			 double *data)
+			 realnum *data)
 {
 #ifdef HAVE_HDF5
   int i;
@@ -666,7 +668,7 @@ void h5file::write_chunk(int rank,
   
   if (do_write)
     H5Dwrite(data_id,
-	     H5T_NATIVE_DOUBLE, mem_space_id, space_id, H5P_DEFAULT, 
+	     REALNUM_H5T, mem_space_id, space_id, H5P_DEFAULT, 
 	     (void *) data);
   
   H5Sclose(mem_space_id);
@@ -689,7 +691,7 @@ void h5file::done_writing_chunks() {
 }
 
 void h5file::write(const char *dataname, int rank, const int *dims,
-		   double *data, bool single_precision)
+		   realnum *data, bool single_precision)
 {
   if (parallel || am_master()) {
     int *start = new int[rank + 1];
@@ -737,7 +739,7 @@ void h5file::write(const char *dataname, const char *data)
    (which also opens the dataset for reading). */
 void h5file::read_chunk(int rank,
 			const int *chunk_start, const int *chunk_dims,
-			double *data)
+			realnum *data)
 
 {
 #ifdef HAVE_HDF5
@@ -795,7 +797,7 @@ void h5file::read_chunk(int rank,
   /* Read the data, then free all the stuff we've allocated. */
   
   if (do_read)
-    H5Dread(data_id, H5T_NATIVE_DOUBLE, mem_space_id, space_id, H5P_DEFAULT,
+    H5Dread(data_id, REALNUM_H5T, mem_space_id, space_id, H5P_DEFAULT,
 	    (void *) data);
   
   H5Sclose(mem_space_id);

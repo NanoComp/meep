@@ -113,10 +113,10 @@ void fields_chunk::backup_component(component c) {
       if (f_minus_p[c][cmp]) abort("backup with fields-P not implemented");
 
       if (!f_backup[c][cmp])
-	f_backup[c][cmp] = new double[v.ntot()];  
+	f_backup[c][cmp] = new realnum[v.ntot()];  
       memcpy(f_backup[c][cmp], 
 	     f_prev[c][cmp] ? f_prev[c][cmp] : f[c][cmp],
-	     v.ntot()*sizeof(double));    
+	     v.ntot()*sizeof(realnum));    
     }
   }
 }
@@ -125,16 +125,16 @@ void fields_chunk::restore_component(component c) {
   DOCMP if (f_backup[c][cmp]) {
     if (f[c][cmp])
       memcpy(f[c][cmp], f_prev[c][cmp] ? f_prev[c][cmp] : f_backup[c][cmp], 
-	     v.ntot()*sizeof(double));
+	     v.ntot()*sizeof(realnum));
     if (f_prev[c][cmp])
-      memcpy(f_prev[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(double));
+      memcpy(f_prev[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(realnum));
   }
 }
 
 void fields_chunk::average_with_backup(component c) {
   DOCMP {
-    double *fc = f[c][cmp];
-    double *backup = f_prev[c][cmp] ? f_prev[c][cmp] : f_backup[c][cmp];
+    realnum *fc = f[c][cmp];
+    realnum *backup = f_prev[c][cmp] ? f_prev[c][cmp] : f_backup[c][cmp];
     if (fc && backup)
       for (int i = 0; i < v.ntot(); i++)
 	fc[i] = 0.5 * (fc[i] + backup[i]);

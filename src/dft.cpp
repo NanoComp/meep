@@ -75,12 +75,12 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   omega_min = data->omega_min;
   domega = data->domega;
   Nomega = data->Nomega;
-  dft_phase = new complex<double>[Nomega];
+  dft_phase = new complex<realnum>[Nomega];
   
   N = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d)
     N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
-  dft = new complex<double>[N * Nomega];
+  dft = new complex<realnum>[N * Nomega];
   for (int i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
   
@@ -220,12 +220,12 @@ void dft_chunk::update_dft(double time) {
 	f[cmp] = w * fc->f[c][cmp][idx];
     
     if (numcmp == 2) {
-      complex<double> fc(f[0], f[1]);
+      complex<realnum> fc(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
 	dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
     }
     else {
-      double fr = f[0];
+      realnum fr = f[0];
       for (int i = 0; i < Nomega; ++i)
 	dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
     }
@@ -274,7 +274,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     int Nchunk = cur->N * cur->Nomega * 2;
-    file->write_chunk(1, &istart, &Nchunk, (double *) cur->dft);
+    file->write_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -296,7 +296,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     int Nchunk = cur->N * cur->Nomega * 2;
-    file->read_chunk(1, &istart, &Nchunk, (double *) cur->dft);
+    file->read_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
     istart += Nchunk;
   }
 }

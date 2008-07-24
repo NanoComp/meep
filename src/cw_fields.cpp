@@ -20,14 +20,14 @@
 
 namespace meep {
 
-static void fields_to_array(const fields &f, complex<double> *x)
+static void fields_to_array(const fields &f, complex<realnum> *x)
 {
   int ix = 0;
   for (int i=0;i<f.num_chunks;i++)
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
         if (is_D(c) || is_B(c)) {
-	  double *fr, *fi;
+	  realnum *fr, *fi;
 	  if ((fr = f.chunks[i]->f[c][0]) &&
 	      (fi = f.chunks[i]->f[c][1]))
 	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
@@ -42,7 +42,7 @@ static void fields_to_array(const fields &f, complex<double> *x)
 	  have_pml = true;
       if (have_pml) FOR_COMPONENTS(c)
         if (is_electric(c) || is_magnetic(c)) {
-	  double *fr, *fi;
+	  realnum *fr, *fi;
 	  if ((fr = f.chunks[i]->f[c][0]) &&
 	      (fi = f.chunks[i]->f[c][1]))
 	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
@@ -51,14 +51,14 @@ static void fields_to_array(const fields &f, complex<double> *x)
     }
 }
   
-static void array_to_fields(const complex<double> *x, fields &f)
+static void array_to_fields(const complex<realnum> *x, fields &f)
 {
   int ix = 0;
   for (int i=0;i<f.num_chunks;i++)
     if (f.chunks[i]->is_mine())
       FOR_COMPONENTS(c)
         if (is_D(c) || is_B(c)) {
-	  double *fr, *fi;
+	  realnum *fr, *fi;
 	  if ((fr = f.chunks[i]->f[c][0]) &&
 	      (fi = f.chunks[i]->f[c][1]))
 	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
@@ -79,7 +79,7 @@ static void array_to_fields(const complex<double> *x, fields &f)
       FOR_COMPONENTS(c) {
         if (is_electric(c) || is_magnetic(c)) {
 	  if (have_pml) { // in PML regions, E/H fields are unknowns
-	    double *fr, *fi;
+	    realnum *fr, *fi;
 	    if ((fr = f.chunks[i]->f[c][0]) &&
 		(fi = f.chunks[i]->f[c][1]))
 	      LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
@@ -109,17 +109,18 @@ typedef struct {
   int iters;
 } fieldop_data;
 
-static void fieldop(const double *xr, double *yr, void *data_)
+static void fieldop(const realnum *xr, realnum *yr, void *data_)
 {
-  const complex<double> *x = reinterpret_cast<const complex<double>*>(xr);
-  complex<double> *y = reinterpret_cast<complex<double>*>(yr);
+  const complex<realnum> *x = reinterpret_cast<const complex<realnum>*>(xr);
+  complex<realnum> *y = reinterpret_cast<complex<realnum>*>(yr);
   fieldop_data *data = (fieldop_data *) data_;
   array_to_fields(x, *data->f);
   data->f->step();
   fields_to_array(*data->f, y);
   int n = data->n;
-  double dt_inv = 1.0 / data->f->dt;
-  complex<double> iomega = data->iomega;
+  realnum dt_inv = 1.0 / data->f->dt;
+  complex<realnum> iomega = complex<realnum>(real(data->iomega),
+					     imag(data->iomega));
   for (int i = 0; i < n; ++i) y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
   data->iters++;
 }
@@ -154,9 +155,9 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
     }
 
   int nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
-  double *work = new double[nwork + 2*N];
-  complex<double> *x = reinterpret_cast<complex<double>*>(work + nwork);
-  complex<double> *b = reinterpret_cast<complex<double>*>(work + nwork + N);
+  realnum *work = new realnum[nwork + 2*N];
+  complex<realnum> *x = reinterpret_cast<complex<realnum>*>(work + nwork);
+  complex<realnum> *b = reinterpret_cast<complex<realnum>*>(work + nwork + N);
 
   int tsave = t; // save time (gets incremented by iterations)
 
@@ -194,8 +195,8 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   bool save_disable_sources = disable_sources;
   disable_sources = true;
 
-  int ierr = bicgstabL(L, N, reinterpret_cast<double*>(x),
-		       fieldop, &data, reinterpret_cast<double*>(b),
+  int ierr = bicgstabL(L, N, reinterpret_cast<realnum*>(x),
+		       fieldop, &data, reinterpret_cast<realnum*>(b),
 		       tol, &maxiters, work, quiet);
 
   if (!quiet) {

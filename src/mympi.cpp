@@ -131,6 +131,19 @@ void send(int from, int to, double *data, int size) {
 #endif
 }
 
+#if MEEP_SINGLE
+void broadcast(int from, realnum *data, int size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, size, sizeof(realnum) == sizeof(double) ? MPI_DOUBLE : MPI_FLOAT, from, MPI_COMM_WORLD);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
+#endif
+}
+#endif
+
 void broadcast(int from, double *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;

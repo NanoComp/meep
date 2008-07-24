@@ -60,8 +60,8 @@ fields::fields(structure *s, double m, bool store_pol_energy) :
       comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
       for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
     }
-    typedef double *double_ptr;
-    comm_blocks[ft] = new double_ptr[num_chunks*num_chunks];
+    typedef realnum *realnum_ptr;
+    comm_blocks[ft] = new realnum_ptr[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
   }
@@ -110,8 +110,8 @@ fields::fields(const fields &thef) :
       comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
       for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
     }
-    typedef double *double_ptr;
-    comm_blocks[ft] = new double_ptr[num_chunks*num_chunks];
+    typedef realnum *realnum_ptr;
+    comm_blocks[ft] = new realnum_ptr[num_chunks*num_chunks];
     for (int i=0;i<num_chunks*num_chunks;i++)
       comm_blocks[ft][i] = 0;
   }
@@ -251,15 +251,15 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   }
   FOR_COMPONENTS(c) DOCMP
     if (!is_magnetic(c) && thef.f[c][cmp]) {
-      f[c][cmp] = new double[v.ntot()];
-      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(double) * v.ntot());
+      f[c][cmp] = new realnum[v.ntot()];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * v.ntot());
     }
   FOR_MAGNETIC_COMPONENTS(c) DOCMP {
     if (thef.f[c][cmp] == thef.f[c-Hx+Bx][cmp])
       f[c][cmp] = f[c-Hx+Bx][cmp];
     else if (thef.f[c][cmp]) {
-      f[c][cmp] = new double[v.ntot()];
-      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(double) * v.ntot());
+      f[c][cmp] = new realnum[v.ntot()];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * v.ntot());
     }
   }
   FOR_FIELD_TYPES(ft) {
@@ -274,9 +274,9 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   }
   FOR_COMPONENTS(c) DOCMP2 
     if (thef.f_minus_p[c][cmp]) {
-      f_minus_p[c][cmp] = new double[v.ntot()];
+      f_minus_p[c][cmp] = new realnum[v.ntot()];
       memcpy(f_minus_p[c][cmp], thef.f_minus_p[c][cmp], 
-	     sizeof(double) * v.ntot());
+	     sizeof(realnum) * v.ntot());
     }
   f_rderiv_int = NULL;
   figure_out_step_plan();
@@ -370,7 +370,7 @@ void fields_chunk::alloc_f(component the_c) {
 	&& !is_magnetic(c))
       DOCMP {
         if (!f[c][cmp]) {
-          f[c][cmp] = new double[v.ntot()];
+          f[c][cmp] = new realnum[v.ntot()];
           for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
 	}
     }

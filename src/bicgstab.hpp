@@ -18,16 +18,18 @@
 #ifndef BICGSTAB_H
 #define BICGSTAB_H
 
+#include "meep.hpp"
+
 namespace meep {
 
-typedef void (*bicgstab_op)(const double *x, double *y, void *data);
+typedef void (*bicgstab_op)(const realnum *x, realnum *y, void *data);
 
 int bicgstabL(const int L, 
-	      const int n, double *x,
-	      bicgstab_op A, void *Adata, const double *b,
+	      const int n, realnum *x,
+	      bicgstab_op A, void *Adata, const realnum *b,
 	      const double tol, 
 	      int *iters, // input *iters = max iters, output = actual iters
-	      double *work, // if you pass work=NULL, bicgstab returns nwork
+	      realnum *work, // if you pass work=NULL, bicgstab returns nwork
 	      const bool quiet);
 
 } // namespace meep

@@ -36,7 +36,8 @@ double rods(const vec &r) {
 }
 
 void compare(double b, double a, const char *n) {
-  if (fabs(a-b) > fabs(b)*1e-5 || b != b) {
+  double thresh = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-5;
+  if (fabs(a-b) > fabs(b)*thresh || b != b) {
     abort("Failed %s (%g instead of %g, relerr %0.2g)\n", n,
 	  a, b, fabs(a-b)/fabs(b));
   } else {

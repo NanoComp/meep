@@ -172,7 +172,7 @@ int pml1d_scaling(double eps(const vec &)) {
   complex<double> prev_ft = 0.0, ft = 0.0;
   double refl_const = 0.0;
   master_printf("Checking thickness convergence of 1d PML...\n");
-  for (int i=0; i<7; i++) {
+  for (int i=0; i < (sizeof(realnum)==sizeof(float) ? 5 : 7); i++) {
     dpml = pow(2.0,(double)i);
     double sz = 2*dpml + 10.0 + dpml;
     prev_ft = ft;

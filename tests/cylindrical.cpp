@@ -25,6 +25,7 @@ using namespace meep;
 double one(const vec &) { return 1.0; }
 
 int compare(double a, double b, const char *n, double eps=4e-15) {
+  if (sizeof(realnum) == sizeof(float)) eps = sqrt(eps)*10;
   if (fabs(a-b) > fabs(b)*eps && fabs(b) > 1e-14) {
     master_printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
@@ -35,6 +36,7 @@ int compare(double a, double b, const char *n, double eps=4e-15) {
 }
 
 int compare_point(fields &f1, fields &f2, const vec &p, double eps=4e-8) {
+  if (sizeof(realnum) == sizeof(float)) eps = sqrt(eps);
   monitor_point m1, m_test;
   f1.get_point(&m_test, p);
   f2.get_point(&m1, p);
@@ -42,7 +44,7 @@ int compare_point(fields &f1, fields &f2, const vec &p, double eps=4e-8) {
     component c = (component) i;
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
-      if (abs(v1 - v2) > eps*abs(v2) && abs(v2) > eps) {
+      if (abs(v1 - v2) > eps*abs(v2) && abs(v2) > eps*100) {
         master_printf("%s differs:  %g %g out of %g %g\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %g\n",

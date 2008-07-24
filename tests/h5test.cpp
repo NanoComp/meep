@@ -58,9 +58,9 @@ symmetry make_rotate4z(const volume &v)
 
 typedef symmetry (*symfunc)(const volume &);
 
-const double tol = 1e-8;
+const double tol = sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-8;
 double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
-  if (fabs(a-b) > 1e-15 + fabs(b) * tol || b != b) {
+  if (fabs(a-b) > tol*tol + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a-b));
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     abort("Error in %s at (%d,%d,%d)\n", nam, i0,i1,i2);
@@ -132,7 +132,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     snprintf(dataname, 256, "%s%s", component_name(file_c),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
-    double *h5data = file->read(dataname, &rank, dims, 2);
+    realnum *h5data = file->read(dataname, &rank, dims, 2);
     file->prevent_deadlock(); // hackery
     if (!h5data)
 	 abort("failed to read dataset %s:%s\n", name, dataname);
@@ -249,7 +249,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     snprintf(dataname, 256, "%s%s", component_name(file_c),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
-    double *h5data = file->read(dataname, &rank, dims, 3);
+    realnum *h5data = file->read(dataname, &rank, dims, 3);
     file->prevent_deadlock(); // hackery
     if (!h5data)
 	 abort("failed to read dataset %s:%s\n", name, dataname);
@@ -363,7 +363,7 @@ bool check_2d_monitor(double eps(const vec &),
     snprintf(dataname, 256, "%s%s", component_name(file_c),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
-    double *h5data = file->read(dataname, &rank, dims, 2);
+    realnum *h5data = file->read(dataname, &rank, dims, 2);
     file->prevent_deadlock(); // hackery
     if (!h5data)
 	 abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
@@ -432,7 +432,6 @@ int main(int argc, char **argv)
   srand(314159); /* deterministic "rand" */
   chances = argc > 1 ? atoi(argv[1]) : 5;
 
-  int cnt = 0;
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
       for (int igv = 0; igv < 4; ++igv)

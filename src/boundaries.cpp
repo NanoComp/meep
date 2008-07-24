@@ -261,8 +261,8 @@ void fields::find_metals() {
 		if (on_metal_boundary(here))
 		  chunks[i]->num_zeroes[ft]++;
 	      }
-        typedef double *double_ptr;
-        chunks[i]->zeroes[ft] = new double_ptr[chunks[i]->num_zeroes[ft]];
+        typedef realnum *realnum_ptr;
+        chunks[i]->zeroes[ft] = new realnum_ptr[chunks[i]->num_zeroes[ft]];
         int num = 0;
         DOCMP FOR_COMPONENTS(c)
           if (type(c) == ft && chunks[i]->f[c][cmp])
@@ -357,7 +357,7 @@ void fields::connect_the_chunks() {
       for (int j=0;j<num_chunks;j++) {
         delete[] comm_blocks[ft][j+i*num_chunks];
         comm_blocks[ft][j+i*num_chunks] =
-          new double[comm_size_tot(ft, j+i*num_chunks)];
+          new realnum[comm_size_tot(ft, j+i*num_chunks)];
       }
   } // loop over i chunks
 
@@ -471,10 +471,10 @@ void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip,
   const int tot = num_connections[f][ip][io] + num;
   if (io == Incoming && ip == CONNECT_PHASE) {
     delete[] connection_phases[f];
-    connection_phases[f] = new complex<double>[tot];
+    connection_phases[f] = new complex<realnum>[tot];
   }
-  typedef double *double_ptr;
-  double **conn = new double_ptr[tot];
+  typedef realnum *realnum_ptr;
+  realnum **conn = new realnum_ptr[tot];
   if (!conn) abort("Out of memory!\n");
   delete[] connections[f][ip][io];
   connections[f][ip][io] = conn;

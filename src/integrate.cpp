@@ -87,7 +87,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       if (cS[i] == Dielectric) {
 	double tr = 0.0;
 	for (int k = 0; k < data->ninveps; ++k) {
-	  const double *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
+	  const realnum *ie = fc->s->chi1inv[iecs[k]][ieds[k]];
 	  if (ie) tr += (ie[idx] + ie[idx+ieos[2*k]] + ie[idx+ieos[1+2*k]]
 			 + ie[idx+ieos[2*k]+ieos[1+2*k]]);
 	  else tr += 4; // default inveps == 1
@@ -97,7 +97,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       else if (cS[i] == Permeability) {
 	double tr = 0.0;
 	for (int k = 0; k < data->ninvmu; ++k) {
-	  const double *im = fc->s->chi1inv[imcs[k]][imds[k]];
+	  const realnum *im = fc->s->chi1inv[imcs[k]][imds[k]];
 	  if (im) tr += (im[idx] + im[idx+imos[2*k]] + im[idx+imos[1+2*k]]
 			 + im[idx+imos[2*k]+imos[1+2*k]]);
 	  else tr += 4; // default invmu == 1

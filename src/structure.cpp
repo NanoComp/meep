@@ -464,14 +464,14 @@ structure_chunk::~structure_chunk() {
 void structure_chunk::mix_with(const structure_chunk *n, double f) {
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
     if (!chi1inv[c][d] && n->chi1inv[c][d]) {
-      chi1inv[c][d] = new double[v.ntot()];
+      chi1inv[c][d] = new realnum[v.ntot()];
       if (component_direction(c) == d) // diagonal components = 1 by default
 	for (int i=0;i<v.ntot();i++) chi1inv[c][d][i] = 1.0;
       else
 	for (int i=0;i<v.ntot();i++) chi1inv[c][d][i] = 0.0;
     }
     if (!conductivity[c][d] && n->conductivity[c][d]) {
-      conductivity[c][d] = new double[v.ntot()];
+      conductivity[c][d] = new realnum[v.ntot()];
       for (int i=0;i<v.ntot();i++) conductivity[c][d][i] = 0.0;
     }
     if (chi1inv[c][d]) {
@@ -556,7 +556,7 @@ void structure_chunk::update_condinv() {
   FOR_COMPONENTS(c) {
     direction d = component_direction(c);
     if (conductivity[c][d]) {
-      if (!condinv[c][d]) condinv[c][d] = new double[v.ntot()];
+      if (!condinv[c][d]) condinv[c][d] = new realnum[v.ntot()];
       const direction dsig = cycle_direction(v.dim,d,1);
       const bool have_pml = sigsize[dsig] > 1;
       if (!have_pml) {
@@ -593,14 +593,14 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
   the_is_mine = my_rank() == n_proc();
   FOR_COMPONENTS(c) {
     if (is_mine() && o->chi3[c]) {
-      chi3[c] = new double[v.ntot()];
+      chi3[c] = new realnum[v.ntot()];
       if (chi3[c] == NULL) abort("Out of memory!\n");
       for (int i=0;i<v.ntot();i++) chi3[c][i] = o->chi3[c][i];
     } else {
       chi3[c] = NULL;
     }
     if (is_mine() && o->chi2[c]) {
-      chi2[c] = new double[v.ntot()];
+      chi2[c] = new realnum[v.ntot()];
       if (chi2[c] == NULL) abort("Out of memory!\n");
       for (int i=0;i<v.ntot();i++) chi2[c][i] = o->chi2[c][i];
     } else {
@@ -609,15 +609,15 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
   }
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) if (is_mine()) {
     if (o->chi1inv[c][d]) {
-      chi1inv[c][d] = new double[v.ntot()];
-      memcpy(chi1inv[c][d], o->chi1inv[c][d], v.ntot()*sizeof(double));
+      chi1inv[c][d] = new realnum[v.ntot()];
+      memcpy(chi1inv[c][d], o->chi1inv[c][d], v.ntot()*sizeof(realnum));
     } else chi1inv[c][d] = NULL;
     if (o->conductivity[c][d]) {
-      conductivity[c][d] = new double[v.ntot()];
+      conductivity[c][d] = new realnum[v.ntot()];
       memcpy(conductivity[c][d], o->conductivity[c][d],
-	     v.ntot()*sizeof(double));
-      condinv[c][d] = new double[v.ntot()];
-      memcpy(condinv[c][d], o->condinv[c][d], v.ntot()*sizeof(double));
+	     v.ntot()*sizeof(realnum));
+      condinv[c][d] = new realnum[v.ntot()];
+      memcpy(condinv[c][d], o->condinv[c][d], v.ntot()*sizeof(realnum));
     } else conductivity[c][d] = condinv[c][d] = NULL;
   }
   condinv_stale = o->condinv_stale;
@@ -649,12 +649,12 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
   epsilon.set_volume(v.pad().surroundings());
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi3
-    chi1inv[c][component_direction(c)] = new double[v.ntot()];
+    chi1inv[c][component_direction(c)] = new realnum[v.ntot()];
     for (int i = 0; i < v.ntot(); ++i)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
-  if (!chi3[c]) chi3[c] = new double[v.ntot()];
+  if (!chi3[c]) chi3[c] = new realnum[v.ntot()];
   bool trivial = true;
   LOOP_OVER_VOL(v, c, i) {
     IVEC_LOOP_LOC(v, here);
@@ -666,8 +666,8 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
      chi2 be present if chi3 is, and vice versa */
   if (!chi2[c]) {
     if (!trivial) {
-      chi2[c] = new double[v.ntot()]; 
-      memset(chi2[c], 0, v.ntot() * sizeof(double)); // chi2 = 0
+      chi2[c] = new realnum[v.ntot()]; 
+      memset(chi2[c], 0, v.ntot() * sizeof(realnum)); // chi2 = 0
     }
     else { // no chi3, and chi2 is trivial (== 0), so delete
       delete[] chi3[c];
@@ -683,12 +683,12 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
   epsilon.set_volume(v.pad().surroundings());
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi2
-    chi1inv[c][component_direction(c)] = new double[v.ntot()];
+    chi1inv[c][component_direction(c)] = new realnum[v.ntot()];
     for (int i = 0; i < v.ntot(); ++i)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
-  if (!chi2[c]) chi2[c] = new double[v.ntot()];
+  if (!chi2[c]) chi2[c] = new realnum[v.ntot()];
   bool trivial = true;
   LOOP_OVER_VOL(v, c, i) {
     IVEC_LOOP_LOC(v, here);
@@ -700,8 +700,8 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
      chi3 be present if chi2 is, and vice versa */
   if (!chi3[c]) {
     if (!trivial) {
-      chi3[c] = new double[v.ntot()]; 
-      memset(chi3[c], 0, v.ntot() * sizeof(double)); // chi3 = 0
+      chi3[c] = new realnum[v.ntot()]; 
+      memset(chi3[c], 0, v.ntot() * sizeof(realnum)); // chi3 = 0
     }
     else { // no chi2, and chi3 is trivial (== 0), so delete 
       delete[] chi2[c];
@@ -721,12 +721,12 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
   direction c_d = component_direction(c);
   component c_C = is_electric(c) ? direction_component(Dx, c_d) :
     (is_magnetic(c) ? direction_component(Bx, c_d) : c);
-  double *multby = is_electric(c) || is_magnetic(c) ? chi1inv[c][c_d] : 0;
+  realnum *multby = is_electric(c) || is_magnetic(c) ? chi1inv[c][c_d] : 0;
   if (!conductivity[c_C][c_d]) 
-    conductivity[c_C][c_d] = new double[v.ntot()]; 
+    conductivity[c_C][c_d] = new realnum[v.ntot()]; 
   if (!conductivity[c_C][c_d]) abort("Memory allocation error.\n");
   bool trivial = true;
-  double *cnd = conductivity[c_C][c_d];
+  realnum *cnd = conductivity[c_C][c_d];
   if (multby) {
     LOOP_OVER_VOL(v, c_C, i) {
       IVEC_LOOP_LOC(v, here);

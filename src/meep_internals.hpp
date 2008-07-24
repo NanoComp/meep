@@ -53,7 +53,8 @@ class polarizability {
   polarizability(const polarizability *);
   ~polarizability();
   field_type ft;
-  double gamma, omeganot, *sigma, *s[NUM_FIELD_COMPONENTS];
+  double gamma, omeganot;
+  realnum *sigma, *s[NUM_FIELD_COMPONENTS];
   double energy_saturation, saturated_sigma;
   bool is_mine() { return is_it_mine; };
   bool is_it_mine;
@@ -67,7 +68,7 @@ class polarization {
   polarization(const polarizability *the_pb, int is_real, bool store_enrgy=0);
   ~polarization();
   double saturation_factor;
-  double *(P[NUM_FIELD_COMPONENTS][2]), *(energy[NUM_FIELD_COMPONENTS]),
+  realnum *(P[NUM_FIELD_COMPONENTS][2]), *(energy[NUM_FIELD_COMPONENTS]),
     *(s[NUM_FIELD_COMPONENTS]);
   int is_real;
   bool store_energy;
@@ -140,18 +141,18 @@ symmetry r_to_minus_r_symmetry(int m);
 
 // functions in step_generic.cpp:
 
-void step_curl(double *f, component c, const double *g1, const double *g2,
+void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
 	       direction dsig, const double *sig, const double *siginv,
-	       double dt, const double *cnd, const double *cndinv);
+	       double dt, const realnum *cnd, const realnum *cndinv);
 
-void step_update_EDHB(double *f, component fc, const volume &v,
-		      const double *g, const double *g1, const double *g2,
-		      const double *gb, const double *g1b, const double *g2b,
-		      const double *u, const double *u1, const double *u2,
+void step_update_EDHB(realnum *f, component fc, const volume &v,
+		      const realnum *g, const realnum *g1, const realnum *g2,
+		      const realnum *gb, const realnum *g1b, const realnum *g2b,
+		      const realnum *u, const realnum *u1, const realnum *u2,
 		      int s, int s1, int s2,
-		      const double *chi2, const double *chi3,
+		      const realnum *chi2, const realnum *chi3,
 		      direction dsig,const double *sig,const double *siginv,
 		      direction dsigg, const double *sigg,
 		      direction dsig1, const double *sig1,

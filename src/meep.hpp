@@ -25,6 +25,20 @@
 
 namespace meep {
 
+/* We use the type realnum for large arrays, e.g. the fields.
+   For local variables and small arrays, we use double precision,
+   but for things like the fields we can often get away with
+   single precision (since the errors are not dominated by roundoff). 
+   However, we will default to using double-precision for large 
+   arrays, as the factor of two in memory and the moderate increase
+   in speed currently don't seem worth the loss of precision. */
+#define MEEP_SINGLE 0 // 1 for single precision, 0 for double
+#if MEEP_SINGLE
+typedef float realnum;
+#else
+typedef double realnum;
+#endif
+
 extern bool quiet; // if true, suppress all non-error messages from Meep
 
 const double pi = 3.141592653589793238462643383276;
@@ -62,8 +76,8 @@ public:
   
   bool ok();
   
-  double *read(const char *dataname, int *rank, int *dims, int maxrank);
-  void write(const char *dataname, int rank, const int *dims, double *data,
+  realnum *read(const char *dataname, int *rank, int *dims, int maxrank);
+  void write(const char *dataname, int rank, const int *dims, realnum *data,
 	     bool single_precision = true);
   
   char *read(const char *dataname);
@@ -77,12 +91,12 @@ public:
 			     const int *dims,
 			     bool append_data, bool single_precision);
   void write_chunk(int rank, const int *chunk_start, const int *chunk_dims,
-		   double *data);
+		   realnum *data);
   void done_writing_chunks();
   
   void read_size(const char *dataname, int *rank, int *dims, int maxrank);
   void read_chunk(int rank, const int *chunk_start, const int *chunk_dims,
-		  double *data);
+		  realnum *data);
   
   void remove();
   void remove_data(const char *dataname);
@@ -215,10 +229,10 @@ class structure;
 class structure_chunk {
  public:
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
-  double *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
-  double *chi1inv[NUM_FIELD_COMPONENTS][5];
-  double *conductivity[NUM_FIELD_COMPONENTS][5];
-  double *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
+  realnum *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
+  realnum *chi1inv[NUM_FIELD_COMPONENTS][5];
+  realnum *conductivity[NUM_FIELD_COMPONENTS][5];
+  realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale; // true if condinv needs to be recomputed
   double *sig[5], *siginv[5]; // conductivity array for uPML
   int sigsize[5]; // conductivity array size
@@ -621,7 +635,7 @@ public:
   component c; // component to DFT (possibly transformed by symmetry)
 
   int N; // number of spatial points (on epsilon grid)
-  complex<double> *dft; // N x Nomega array of DFT values.
+  complex<realnum> *dft; // N x Nomega array of DFT values.
 
   struct dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
   struct dft_chunk *next_in_dft; // next for this particular DFT vol./component
@@ -635,7 +649,7 @@ private:
   complex<double> scale; // scale factor * phase from shift and symmetry
 
   // cache of exp(iwt) * scale, of length Nomega
-  complex<double> *dft_phase;
+  complex<realnum> *dft_phase;
 
   int avg1, avg2; // index offsets for average to get epsilon grid
 };
@@ -680,26 +694,26 @@ enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 
 class fields_chunk {
  public:
-  double *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
-  double *f_prev[NUM_FIELD_COMPONENTS][2]; // field at prev step (used in PML)
+  realnum *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
+  realnum *f_prev[NUM_FIELD_COMPONENTS][2]; // field at prev step (used in PML)
 
   /* sometimes, to synchronize the E and H fields, e.g. for computing
      flux at a given time, we need to timestep H by 1/2; in this case
      we save backup copies of (some of) the fields to resume timestepping */
-  double *f_backup[NUM_FIELD_COMPONENTS][2];
+  realnum *f_backup[NUM_FIELD_COMPONENTS][2];
 
   // used to store D-P and B-P, e.g. when P implements dispersive media
-  double *f_minus_p[NUM_FIELD_COMPONENTS][2];
+  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2];
 
-  double *f_rderiv_int; // cache of helper field for 1/r d(rf)/dr derivative
+  realnum *f_rderiv_int; // cache of helper field for 1/r d(rf)/dr derivative
 
   dft_chunk *dft_chunks;
 
-  double **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
+  realnum **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   int num_zeroes[NUM_FIELD_TYPES];
-  double **connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
+  realnum **connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
-  complex<double> *connection_phases[NUM_FIELD_TYPES];
+  complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
   polarization *pols[NUM_FIELD_TYPES], *olpols[NUM_FIELD_TYPES];
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
@@ -830,7 +844,7 @@ class fields {
 
   // The following is an array that is num_chunks by num_chunks.  Actually
   // it is two arrays, one for the imaginary and one for the real part.
-  double **comm_blocks[NUM_FIELD_TYPES];
+  realnum **comm_blocks[NUM_FIELD_TYPES];
   // This is the same size as each comm_blocks array, and store the sizes
   // of the comm blocks themselves for each connection-phase type
   int *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
@@ -1169,6 +1183,11 @@ int do_harminv(complex<double> *data, int n, double dt,
 	       double spectral_density = 1.1, double Q_thresh = 50,
 	       double rel_err_thresh = 1e20, double err_thresh = 0.01, 
 	       double rel_amp_thresh = -1, double amp_thresh = -1);
+
+#if MEEP_SINGLE
+// in mympi.cpp ... must be here in order to use realnum type
+void broadcast(int from, realnum *data, int size);
+#endif
 
 } /* namespace meep */
 

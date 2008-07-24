@@ -74,10 +74,10 @@ polarization::polarization(const polarizability *the_pb,
   store_energy = store_enrgy;
   DOCMP2 FOR_COMPONENTS(c) P[c][cmp] = NULL;
   DOCMP FOR_FT_COMPONENTS(the_pb->ft, c) if (v.has_field(c))
-    P[c][cmp] = new double[v.ntot()];
+    P[c][cmp] = new realnum[v.ntot()];
   FOR_COMPONENTS(c) energy[c] = NULL;
   FOR_FT_COMPONENTS(the_pb->ft, c) if (v.has_field(c) && store_energy)
-    energy[c] = new double[v.ntot()];
+    energy[c] = new realnum[v.ntot()];
   pb = the_pb;
 #ifndef WITH_SATURABLE_ABSORBERS
   if (pb->energy_saturation != 0.0)
@@ -87,7 +87,7 @@ polarization::polarization(const polarizability *the_pb,
   FOR_COMPONENTS(c) {
     if (pb->energy_saturation != 0.0) {
       if (pb->s[c])
-        s[c] = new double[v.ntot()];
+        s[c] = new realnum[v.ntot()];
       else 
 	s[c] = NULL;
     } 
@@ -130,10 +130,10 @@ polarizability::polarizability(const polarizability *pb) {
   is_it_mine = pb->is_it_mine;
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
-    sigma = new double[v.ntot()];
+    sigma = new realnum[v.ntot()];
     for (int i=0;i<v.ntot();i++) sigma[i] = pb->sigma[i];
     FOR_COMPONENTS(c) if (v.has_field(c) && pb->s[c]) {
-      s[c] = new double[v.ntot()];
+      s[c] = new realnum[v.ntot()];
       for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
     }
   }
@@ -157,9 +157,9 @@ polarizability::polarizability(const structure_chunk *sc, material_function &sig
   sig.set_volume(sc->v.pad().surroundings());
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
-    sigma = new double[v.ntot()];
+    sigma = new realnum[v.ntot()];
     FOR_FT_COMPONENTS(ft,c) if (v.has_field(c))
-      s[c] = new double[v.ntot()];
+      s[c] = new realnum[v.ntot()];
     if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
     LOOP_OVER_VOL(v, v.eps_component(), i) { // FIXME: sigma[] never used??

@@ -4,6 +4,7 @@
 // with the current version of gcc, using "restrict" yields slower code!!
 // #define DPR double * restrict
 #define DPR double * // faster, at least for now
+#define RPR realnum * // faster, at least for now
 
 /* These macros get into the guts of the LOOP_OVER_VOL loops to efficiently
    construct the index k into a PML sigma array.  Basically, k needs to
@@ -46,14 +47,14 @@ namespace meep {
    cndinv should be an array of 1 / (1 + dt cnd/2).  In the case
    of PML, cndinv should contain 1 / (1 + dt (cnd + sigma)/2).
 */
-void step_curl(DPR f, component c, const DPR g1, const DPR g2,
+void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
 	       direction dsig, const DPR sig, const DPR siginv,
-	       double dt, const DPR cnd, const DPR cndinv)
+	       double dt, const RPR cnd, const RPR cndinv)
 {
   if (!g1) { // swap g1 and g2
-    SWAP(const DPR, g1, g2);
+    SWAP(const RPR, g1, g2);
     SWAP(int, s1, s2);
     dtdx = -dtdx; // need to flip derivative sign
   }
@@ -149,12 +150,12 @@ inline double calc_nonlinear_u(const double Dsqr,
    Here, sig = sigma[k]*dt/2, and siginv[k] = 1 / (1 + sig[k]), and
    sig2 is the other sigma array.  gb etc. are the backups of g from
    the previous time step. */
-void step_update_EDHB(DPR f, component fc, const volume &v, 
-		      const DPR g, const DPR g1, const DPR g2,
-		      const DPR gb, const DPR g1b, const DPR g2b,
-		      const DPR u, const DPR u1, const DPR u2,
+void step_update_EDHB(RPR f, component fc, const volume &v, 
+		      const RPR g, const RPR g1, const RPR g2,
+		      const RPR gb, const RPR g1b, const RPR g2b,
+		      const RPR u, const RPR u1, const RPR u2,
 		      int s, int s1, int s2,
-		      const DPR chi2, const DPR chi3,
+		      const RPR chi2, const RPR chi3,
 		      direction dsig, const DPR sig, const DPR siginv,
 		      direction dsigg, const DPR sigg,
 		      direction dsig1, const DPR sig1,
@@ -169,9 +170,9 @@ void step_update_EDHB(DPR f, component fc, const volume &v,
   int sigsize_dsig2inv = sigsize_dsig1;
   
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
-    SWAP(const DPR, g1, g2);
-    SWAP(const DPR, g1b, g2b);
-    SWAP(const DPR, u1, u2);
+    SWAP(const RPR, g1, g2);
+    SWAP(const RPR, g1b, g2b);
+    SWAP(const RPR, u1, u2);
     SWAP(int, s1, s2);
     SWAP(const DPR, sig1, sig2);
     SWAP(const DPR, sig1inv, sig2inv);

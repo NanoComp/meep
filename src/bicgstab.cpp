@@ -71,45 +71,35 @@
 
 namespace meep {
 
-#ifdef HAVE_CBLAS_DDOT
-   extern "C" double cblas_ddot(int, const double*, int, const double*, int);
-#  define dot(n, x, y) sum_to_all(cblas_ddot(n, x, 1, y, 1))
-#else
-static double dot(int n, const double *x, const double *y)
+static double dot(int n, const realnum *x, const realnum *y)
 {
   double sum = 0;
   for (int i = 0; i < n; ++i) sum += x[i] * y[i];
   return sum_to_all(sum);
 }
-#endif
 
-static double norm2(int n, const double *x) { return sqrt(dot(n, x, x)); }
+static double norm2(int n, const realnum *x) { return sqrt(dot(n, x, x)); }
 
-#if defined(HAVE_CBLAS_DAXPY)
-   extern "C" void cblas_daxpy(const int N, const double alpha, const double *X, const int incX, double *Y, const int incY);
-#  define xpay(n,x,a,y) cblas_daxpy(n, a,y,1, x,1)
-#else
-static void xpay(int n, double *x, double a, const double *y) {
+static void xpay(int n, realnum *x, double a, const realnum *y) {
   for (int m = 0; m < n; ++m) x[m] += a * y[m];
 }
-#endif
 
 #define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
-typedef double *pdouble; // grr, ISO C++ forbids new (double*)[...]
+typedef realnum *prealnum; // grr, ISO C++ forbids new (double*)[...]
 
 /* BiCGSTAB(L) algorithm for the n-by-n problem Ax = b */
-int bicgstabL(const int L, const int n, double *x,
-	      bicgstab_op A, void *Adata, const double *b,
+int bicgstabL(const int L, const int n, realnum *x,
+	      bicgstab_op A, void *Adata, const realnum *b,
 	      const double tol,
 	      int *iters,
-	      double *work,
+	      realnum *work,
 	      const bool quiet)
 {
   if (!work) return (2*L+3)*n; // required workspace
 
-  pdouble *r = new pdouble[L+1];
-  pdouble *u = new pdouble[L+1];
+  prealnum *r = new prealnum[L+1];
+  prealnum *u = new prealnum[L+1];
   for (int i = 0; i <= L; ++i) {
     r[i] = work + i * n;
     u[i] = work + (L+1 + i) * n;
@@ -134,7 +124,7 @@ int bicgstabL(const int L, const int n, double *x,
   /**** FIXME: check for breakdown conditions(?) during iteration  ****/
 
   // rtilde = r[0] = b - Ax
-  double *rtilde = work + (2*L+2) * n;
+  realnum *rtilde = work + (2*L+2) * n;
   A(x, r[0], Adata);
   for (int m = 0; m < n; ++m) rtilde[m] = r[0][m] = b[m] - r[0][m];
 
@@ -143,7 +133,7 @@ int bicgstabL(const int L, const int n, double *x,
     for (int m = 0; m < n; ++m) rtilde[m] *= s;
   }
 
-  memset(u[0], 0, sizeof(double) * n); // u[0] = 0
+  memset(u[0], 0, sizeof(realnum) * n); // u[0] = 0
 
   double rho = 1.0, alpha = 0, omega = 1;
 

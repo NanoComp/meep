@@ -52,7 +52,7 @@ bool fields_chunk::update_eh(field_type ft) {
 
   FOR_FT_COMPONENTS(ft2, dc) DOCMP {
     if (f[dc][cmp] && (pols[ft] || have_int_sources)) {
-      if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new double[v.ntot()];
+      if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[v.ntot()];
     }
     else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
       delete[] f_minus_p[dc][cmp];
@@ -104,7 +104,7 @@ bool fields_chunk::update_eh(field_type ft) {
     }
     else {
       FOR_FT_COMPONENTS(ft2, dc) if (f[dc][0]) DOCMP
-	memcpy(f_minus_p[dc][cmp], f[dc][cmp], ntot * sizeof(double));
+	memcpy(f_minus_p[dc][cmp], f[dc][cmp], ntot * sizeof(realnum));
     }
   }
 
@@ -129,7 +129,7 @@ bool fields_chunk::update_eh(field_type ft) {
   //////////////////////////////////////////////////////////////////////////
   // Finally, compute E = chi1inv * D
   
-  double *dmp[NUM_FIELD_COMPONENTS][2];
+  realnum *dmp[NUM_FIELD_COMPONENTS][2];
   if (have_f_minus_p) {
     FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f_minus_p[dc][cmp];
   } else {
@@ -162,8 +162,8 @@ bool fields_chunk::update_eh(field_type ft) {
 	    || s->sigsize[dsigg] > 1
 	    || (s->sigsize[dsig1] > 1
 		&& (s->chi1inv[ec][d_1] || s->chi1inv[ec][d_2])))) {
-      f[ec][cmp] = new double[v.ntot()];
-      memcpy(f[ec][cmp], f[dc][cmp], v.ntot() * sizeof(double));
+      f[ec][cmp] = new realnum[v.ntot()];
+      memcpy(f[ec][cmp], f[dc][cmp], v.ntot() * sizeof(realnum));
       allocated_eh = true;
     }
 
@@ -195,9 +195,9 @@ bool fields_chunk::update_eh(field_type ft) {
       const int yee_idx = v.yee_index(ec);
       const int d_ec = component_direction(ec);
       const int sR = stride_any_direction[R];
-      double *E = f[ec][cmp];
-      const double *D = have_f_minus_p ? f_minus_p[dc][cmp] : f[dc][cmp];
-      const double *chi1inv = s->chi1inv[ec][d_ec];
+      realnum *E = f[ec][cmp];
+      const realnum *D = have_f_minus_p ? f_minus_p[dc][cmp] : f[dc][cmp];
+      const realnum *chi1inv = s->chi1inv[ec][d_ec];
       if (chi1inv)
 	for (int iZ=0; iZ<num_any_direction[Z]; iZ++) {
 	  const int i = yee_idx + iZ - sR;
