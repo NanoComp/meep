@@ -111,6 +111,7 @@ public:
 
   virtual double sigma(const meep::vec &r);
   void add_polarizabilities(meep::structure *s);
+  void add_polarizabilities(meep::field_type ft, meep::structure *s);
 
 private:
   bool get_material_pt(material_type &material, const meep::vec &r);
@@ -734,7 +735,8 @@ double geom_epsilon::sigma(const meep::vec &r) {
   double sigma = 0;
   if (material.which_subclass == MTS::MEDIUM) {
     polarizability_list plist = 
-      material.subclass.medium_data->polarizations;
+      pol_ft == meep::E_stuff ? material.subclass.medium_data->E_polarizations
+      : material.subclass.medium_data->H_polarizations;
     for (int j = 0; j < plist.num_items; ++j)
       if (plist.items[j].omega == omega &&
 	  plist.items[j].gamma == gamma &&
@@ -787,22 +789,32 @@ static pol *add_pols(pol *pols, const polarizability_list plist) {
 }
 
 void geom_epsilon::add_polarizabilities(meep::structure *s) {
+  add_polarizabilities(meep::E_stuff, s);
+  add_polarizabilities(meep::H_stuff, s);
+}
+
+void geom_epsilon::add_polarizabilities(meep::field_type ft, 
+					meep::structure *s) {
   pol *pols = 0;
 
   // construct a list of the unique polarizabilities in the geometry:
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::MEDIUM)
-      pols = add_pols(pols, geometry.items[i].material
-		      .subclass.medium_data->polarizations);
+      pols = add_pols(pols, ft == meep::E_stuff
+		      ? geometry.items[i].material
+		      .subclass.medium_data->E_polarizations
+		      : geometry.items[i].material
+		      .subclass.medium_data->H_polarizations);
   }
   if (default_material.which_subclass == MTS::MEDIUM)
-    pols = add_pols(pols, default_material
-		    .subclass.medium_data->polarizations);
+    pols = add_pols(pols, ft == meep::E_stuff
+		    ? default_material.subclass.medium_data->E_polarizations
+		    : default_material.subclass.medium_data->H_polarizations);
     
   for (struct pol *p = pols; p; p = p->next) {
     master_printf("polarizability: omega=%g, gamma=%g, deps=%g, esat=%g\n",
 		  p->omega, p->gamma, p->deps, p->esat);
-    s->add_polarizability(*this, p->omega, p->gamma, p->deps, p->esat);
+    s->add_polarizability(*this, ft, p->omega, p->gamma, p->deps, p->esat);
   }
   
   while (pols) {

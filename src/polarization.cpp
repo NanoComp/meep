@@ -263,7 +263,7 @@ bool polarizability_identifier::operator==(const polarizability_identifier &a) {
 void structure_chunk::add_polarizability(material_function &sigma,
                              field_type ft, double omega, double gamma, double delta_epsilon,
                              double energy_sat) {
-  sigma.set_polarizability(omega, gamma, delta_epsilon, energy_sat);
+  sigma.set_polarizability(ft, omega, gamma, delta_epsilon, energy_sat);
   const double freq_conversion = 2*pi*dt;
   double sigma_scale  = freq_conversion*freq_conversion*omega*omega*delta_epsilon;
   polarizability *npb = new polarizability(this, sigma,

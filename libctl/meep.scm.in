@@ -50,7 +50,8 @@
 (define-class medium material-type
   (define-property epsilon 1 'number)
   (define-property mu 1 'number)
-  (define-property polarizations '() (make-list-type 'polarizability))
+  (define-property E-polarizations '() (make-list-type 'polarizability))
+  (define-property H-polarizations '() (make-list-type 'polarizability))
   (define-property E-chi2-diag (vector3 0 0 0) 'vector3)
   (define-property E-chi3-diag (vector3 0 0 0) 'vector3)
   (define-property H-chi2-diag (vector3 0 0 0) 'vector3)
@@ -60,6 +61,7 @@
 )
 
 (define dielectric medium) ; old name for backwards compatibility
+(define polarizations E-polarizations) ; backwards compatibility
 
 ; useful shortcuts for isotropic conductivity
 (define (D-conductivity c) (D-conductivity-diag c c c))

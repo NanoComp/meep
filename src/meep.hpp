@@ -173,9 +173,9 @@ public:
   /* polarizability sigma function */
   virtual double sigma(const vec &r) { (void)r; return 0.0; }
   /* specify polarizability used for subsequent calls to sigma(r) */
-  virtual void set_polarizability(double omega_, double gamma_, 
+  virtual void set_polarizability(field_type ft, double omega_, double gamma_, 
 				  double deps_, double energy_sat_) {
-    omega = omega_; gamma = gamma_; deps = deps_; energy_sat = energy_sat_;
+    pol_ft=ft; omega=omega_; gamma=gamma_; deps=deps_; energy_sat=energy_sat_;
   }
   
   // Nonlinear susceptibilities
@@ -188,6 +188,7 @@ public:
 
 protected:
   // current polarizability for calls to sigma(r):
+  field_type pol_ft;
   double omega, gamma, deps, energy_sat;
 };
 
