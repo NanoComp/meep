@@ -14,10 +14,7 @@ Fix bugs: divergence in saturated polarization (tests/symmetry.cpp),
 
 User-specified anisotropic dielectric and mu functions.
 
-Unify mu and epsilon support in the code, to support dispersive mu etc.
-
-Use anisotropic PML rather than split-fields PML (former requires less
-memory).  User proper PML for dispersive media and cylindrical.
+User proper PML for dispersive media and cylindrical.
 
 Use more-stable algorithm for dispersive media.
 

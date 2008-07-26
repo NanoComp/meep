@@ -83,7 +83,7 @@ class geom_epsilon : public meep::material_function {
   geom_box_tree restricted_tree;
   
 public:
-  geom_epsilon(geometric_object_list g,
+  geom_epsilon(geometric_object_list g, material_type_list mlist,
 	       const meep::geometric_volume &gv);
   virtual ~geom_epsilon();
   
@@ -115,13 +115,16 @@ public:
 
 private:
   bool get_material_pt(material_type &material, const meep::vec &r);
+
+  material_type_list extra_materials;
 };
 
-geom_epsilon::geom_epsilon(geometric_object_list g,
+geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
 			   const meep::geometric_volume &gv)
 {
   geometry = g; // don't bother making a copy, only used in one place
-  
+  extra_materials = mlist;
+
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
       display_geometric_object_info(5, geometry.items[i]);
@@ -573,11 +576,10 @@ bool geom_epsilon::has_chi3(meep::component c)
 	return true; 
     }
   }
-    /* FIXME: what to do about material-functions?
-       Currently, we require that at least *one* ordinary material
-       property have non-zero chi3 for Kerr to be enabled.   It might
-       be better to have set_chi3 automatically delete chi3[] if the
-       chi3's are all zero. */
+  for (int i = 0; i < extra_materials.num_items; ++i)
+    if (extra_materials.items[i].which_subclass == MTS::MEDIUM)
+      if (get_chi3(c, extra_materials.items[i].subclass.medium_data) != 0)
+        return true;
   return (default_material.which_subclass == MTS::MEDIUM &&
 	  get_chi3(c, default_material.subclass.medium_data) != 0);
 }
@@ -621,11 +623,10 @@ bool geom_epsilon::has_chi2(meep::component c)
 	return true; 
     }
   }
-    /* FIXME: what to do about material-functions?
-       Currently, we require that at least *one* ordinary material
-       property have non-zero chi2 for Kerr to be enabled.   It might
-       be better to have set_chi2 automatically delete chi2[] if the
-       chi2's are all zero. */
+  for (int i = 0; i < extra_materials.num_items; ++i)
+    if (extra_materials.items[i].which_subclass == MTS::MEDIUM)
+      if (get_chi2(c, extra_materials.items[i].subclass.medium_data) != 0)
+        return true;
   return (default_material.which_subclass == MTS::MEDIUM &&
 	  get_chi2(c, default_material.subclass.medium_data) != 0);
 }
@@ -657,11 +658,10 @@ bool geom_epsilon::has_mu()
 	return true; 
     }
   }
-    /* FIXME: what to do about material-functions?
-       Currently, we require that at least *one* ordinary material
-       property have non-zero chi2 for Kerr to be enabled.   It might
-       be better to have set_chi2 automatically delete chi2[] if the
-       chi2's are all zero. */
+  for (int i = 0; i < extra_materials.num_items; ++i)
+    if (extra_materials.items[i].which_subclass == MTS::MEDIUM)
+      if (extra_materials.items[i].subclass.medium_data->mu != 1)
+        return true;
   return (default_material.which_subclass == MTS::MEDIUM &&
 	  default_material.subclass.medium_data->mu != 1);
 }
@@ -686,11 +686,10 @@ bool geom_epsilon::has_conductivity(meep::component c)
 	return true; 
     }
   }
-    /* FIXME: what to do about material-functions?
-       Currently, we require that at least *one* ordinary material
-       property have non-zero chi2 for Kerr to be enabled.   It might
-       be better to have set_chi2 automatically delete chi2[] if the
-       chi2's are all zero. */
+  for (int i = 0; i < extra_materials.num_items; ++i)
+    if (extra_materials.items[i].which_subclass == MTS::MEDIUM)
+      if (get_cnd(c, extra_materials.items[i].subclass.medium_data) != 0)
+        return true;
   return (default_material.which_subclass == MTS::MEDIUM &&
 	  get_cnd(c, default_material.subclass.medium_data) != 0);
 }
@@ -806,6 +805,13 @@ void geom_epsilon::add_polarizabilities(meep::field_type ft,
 		      : geometry.items[i].material
 		      .subclass.medium_data->H_polarizations);
   }
+  for (int i = 0; i < extra_materials.num_items; ++i)
+    if (extra_materials.items[i].which_subclass == MTS::MEDIUM)
+      pols = add_pols(pols, ft == meep::E_stuff
+		      ? extra_materials.items[i]
+		      .subclass.medium_data->E_polarizations
+		      : extra_materials.items[i]
+		      .subclass.medium_data->H_polarizations);
   if (default_material.which_subclass == MTS::MEDIUM)
     pols = add_pols(pols, ft == meep::E_stuff
 		    ? default_material.subclass.medium_data->E_polarizations
@@ -845,6 +851,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double subpixel_tol, int subpixel_maxeval,
 				bool ensure_periodicity_p,
 				geometric_object_list geometry,
+				material_type_list extra_materials,
 				material_type default_mat,
 				pml_list pml_layers,
 				symmetry_list symmetries,
@@ -977,7 +984,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   
   ensure_periodicity = ensure_periodicity_p;
   default_material = default_mat;
-  geom_epsilon geps(geometry, v.pad().surroundings());
+  geom_epsilon geps(geometry, extra_materials, v.pad().surroundings());
 
   if (subpixel_maxeval < 0) subpixel_maxeval = 0; // no limit
 
