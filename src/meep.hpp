@@ -507,6 +507,7 @@ class src_time {
   virtual src_time *clone() const { return new src_time(*this); }
   virtual bool is_equal(const src_time &t) const { (void)t; return 1; }
   virtual complex<double> frequency() const { return 0.0; }
+  virtual void set_frequency(complex<double> f) { (void) f; }
 
  private:
   double current_time;
@@ -527,6 +528,7 @@ class gaussian_src_time : public src_time {
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual complex<double> frequency() const { return freq; }
+  virtual void set_frequency(complex<double> f) { freq = real(f); }
 
  private:
   double freq, width, peak_time, cutoff;
@@ -546,6 +548,7 @@ class continuous_src_time : public src_time {
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual complex<double> frequency() const { return freq; }
+  virtual void set_frequency(complex<double> f) { freq = f; }
   
  private:
   complex<double> freq;
