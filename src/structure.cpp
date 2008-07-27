@@ -47,6 +47,7 @@ structure::structure(const volume &thev, material_function &eps,
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
+  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this volume");
   choose_chunkdivision(thev, num, br, s);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
@@ -59,6 +60,7 @@ structure::structure(const volume &thev, double eps(const vec &),
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
+  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this volume");
   choose_chunkdivision(thev, num, br, s);
   simple_material_function epsilon(eps);
   set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
@@ -169,6 +171,24 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
   }
   if (next)
     next->apply(s, sc);
+}
+
+bool boundary_region::check_ok(const volume &v) const {
+  double thick[5][2];
+  FOR_DIRECTIONS(d) FOR_SIDES(s) thick[d][s] = 0;
+  for (const boundary_region *r = this; r; r = r->next) {
+    if (r->kind != NOTHING_SPECIAL
+	&& v.num_direction(r->d) > 1
+	&& has_direction(v.dim, r->d)
+	&& v.has_boundary(r->side, r->d)) {
+      if (r->thickness < 0 || thick[r->d][r->side] > 0) return false;
+      thick[r->d][r->side] = r->thickness;
+    }
+  }
+  LOOP_OVER_DIRECTIONS(v.dim,d)
+    if (thick[d][High] + thick[d][Low] > v.interior().in_direction(d))
+      return false;
+  return true;
 }
 
 double pml_quadratic_profile(double u, void *d) { (void)d; return u * u; }

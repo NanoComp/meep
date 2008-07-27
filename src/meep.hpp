@@ -323,6 +323,7 @@ public:
 
   void apply(structure *s) const;
   void apply(const structure *s, structure_chunk *sc) const;
+  bool check_ok(const volume &v) const;
 
 private:
   boundary_region_kind kind;
