@@ -19,11 +19,10 @@
 #include "config.h"
 
 #ifdef HAVE_MPB
-#define real mpb_real // avoid C++ conflict
-#define SCALAR_COMPLEX 1 // complex version of MPB (not mpbi)
-#include <mpb/maxwell.h>
-#include <mpb/eigensolver.h>
-#undef real
+#  include <mpb.h>
+#  ifndef SCALAR_COMPLEX
+#    error Meep requires complex version of MPB
+#  endif
 #endif
 
 namespace meep {
@@ -38,7 +37,7 @@ typedef struct {
 
 static void meep_mpb_eps(symmetric_matrix *eps,
 			 symmetric_matrix *eps_inv,
-			 const double r[3],
+			 const mpb_real r[3],
 			 void *eps_data_) {
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *) eps_data_;
   const double *s = eps_data->s;
@@ -52,19 +51,19 @@ static void meep_mpb_eps(symmetric_matrix *eps,
   eps_inv->m00 = f->get_chi1inv(Ex, X, p);
   eps_inv->m11 = f->get_chi1inv(Ey, Y, p);
   eps_inv->m22 = f->get_chi1inv(Ez, Z, p);
-  eps_inv->m01 = f->get_chi1inv(Ex, Y, p);
-  eps_inv->m02 = f->get_chi1inv(Ex, Z, p);
-  eps_inv->m12 = f->get_chi1inv(Ey, Z, p);
+  ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p), 0);
+  ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p), 0);
+  ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p), 0);
   maxwell_sym_matrix_invert(eps, eps_inv);
 }
 
-static const complex<double> *meep_mpb_A_data = 0;
+static const complex<mpb_real> *meep_mpb_A_data = 0;
 static const int *meep_mpb_A_n = 0;
 static const double *meep_mpb_A_s = 0;
 static int meep_mpb_A_component = 0;
 static vec meep_mpb_A_center;
 static complex<double> meep_mpb_A(const vec &p) {
-  const complex<double> *data = meep_mpb_A_data + meep_mpb_A_component;
+  const complex<mpb_real> *data = meep_mpb_A_data + meep_mpb_A_component;
   int nx = meep_mpb_A_n[0];
   int ny = meep_mpb_A_n[1];
   int nz = meep_mpb_A_n[2];
@@ -102,13 +101,14 @@ static complex<double> meep_mpb_A(const vec &p) {
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by MPB): */
 #define D(x,y,z) (data[(((x)*ny + (y))*nz + (z)) * 3])
-
-  return(((D(x,y,z)*(1.0-dx) + D(x2,y,z)*dx) * (1.0-dy) +
+  complex<mpb_real> ret;
+  ret = (((D(x,y,z)*(1.0-dx) + D(x2,y,z)*dx) * (1.0-dy) +
 	  (D(x,y2,z)*(1.0-dx) + D(x2,y2,z)*dx) * dy) * (1.0-dz) +
 	 ((D(x,y,z2)*(1.0-dx) + D(x2,y,z2)*dx) * (1.0-dy) +
 	  (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
-  
 #undef D
+
+  return complex<double>(double(real(ret)), double(imag(ret)));
 }
 
 #endif /* HAVE_MPB */
@@ -123,9 +123,10 @@ void fields::add_eigenmode_source(const src_time &src,
 #ifdef HAVE_MPB
   if (resolution <= 0) resolution = v.a;
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
-  double k[3] = {0,0,0}, s[3] = {0,0,0}, o[3] = {0,0,0};
-  double R[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
-  double G[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
+  mpb_real k[3] = {0,0,0};
+  double s[3] = {0,0,0}, o[3] = {0,0,0};
+  mpb_real R[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
+  mpb_real G[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 
   if (!eig_vol.contains(where))
     abort("invalid volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
@@ -189,7 +190,7 @@ void fields::add_eigenmode_source(const src_time &src,
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num,
 				     local_N, N_start, alloc_N);
   
-  double *eigvals = new double[band_num];
+  mpb_real *eigvals = new mpb_real[band_num];
   int num_iters;
   evectmatrix W[3];
   for (int i = 0; i < 3; ++i)
@@ -219,7 +220,7 @@ void fields::add_eigenmode_source(const src_time &src,
   src_time *src_mpb = src.clone();
   src_mpb->set_frequency(sqrt(eigvals[band_num - 1]));
   
-  complex<double> *cdata = (complex<double> *) mdata->fft_data;
+  complex<mpb_real> *cdata = (complex<mpb_real> *) mdata->fft_data;
   meep_mpb_A_s = s;
   meep_mpb_A_n = n;
   meep_mpb_A_data = cdata;
