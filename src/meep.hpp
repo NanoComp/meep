@@ -960,6 +960,15 @@ class fields {
 			 complex<double> amp = 1.0);
   void require_component(component c);
 
+  // mpb.cpp
+  void add_eigenmode_source(const src_time &src,
+			    const geometric_volume &where,
+			    const geometric_volume &eig_vol,
+			    int band_num, const vec &kpoint, int parity,
+			    complex<double> amp,
+			    double resolution,
+			    double eigensolver_tol);
+
   // initialize.cpp:
   void initialize_field(component, complex<double> f(const vec &));
   void initialize_with_nth_te(int n);

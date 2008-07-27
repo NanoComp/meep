@@ -580,6 +580,7 @@ class geometric_volume {
   vec center() const { return (min_corner + max_corner) * 0.5; }
   double diameter() const;
   bool contains(const vec &h) const;
+  bool contains(const geometric_volume &a) const;
   geometric_volume intersect_with(const geometric_volume &a) const;
   geometric_volume operator&(const geometric_volume &a) const {
     return intersect_with(a);

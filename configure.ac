@@ -66,7 +66,7 @@ AC_CHECK_LIB(m, sin)
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
   [AC_CHECK_LIB(dfftw, fftw_create_plan, [],
     [AC_CHECK_LIB(fftw, fftw_create_plan, [],
-       [AC_MSG_WARN([Missing FFTW library...slow DFT will be used for monitor-point Fourier transform])])])])
+       [AC_MSG_WARN([FFTW needed for MPB])])])])
 
 ###########################################################################
 # Harminv library
@@ -97,6 +97,25 @@ fi
 
 if test $have_harminv = yes; then
 	AC_DEFINE([HAVE_HARMINV],[1],[Define if you have libharminv])
+fi
+
+###########################################################################
+# MPB library
+
+AC_CHECK_HEADER(mpb/maxwell.h, [have_mpb=maybe], [have_mpb=no])
+
+if test $have_mpb = maybe; then
+  if test "x$acx_lapack_ok" = x; then
+	AC_F77_WRAPPERS
+	ACX_BLAS
+	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for MPB])])
+  fi
+  AC_CHECK_LIB(mpb, maxwell_target_operator1, [have_mpb=yes; LIBS="-lmpb $LIBS"],
+               [AC_CHECK_LIB(mpb, maxwell_target_operator1, 
+                   [have_mpb=yes; LIBS="-lmpb $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([MPB support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])])
+  if test $have_mpb = yes; then
+     AC_DEFINE([HAVE_MPB], [1], [Define if you have libmpb])
+  fi
 fi
 
 ##############################################################################

@@ -350,6 +350,10 @@ bool geometric_volume::contains(const vec &p) const {
   return true;
 }
 
+bool geometric_volume::contains(const geometric_volume &a) const {
+  return contains(a.get_min_corner()) && contains(a.get_max_corner());
+}
+
 bool volume::contains(const ivec &p) const {
   // containts returns true if the volume has information about this grid
   // point.
