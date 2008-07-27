@@ -234,7 +234,7 @@ void fields::add_point_source(component c, const src_time &src,
   add_volume_source(c, src, geometric_volume(p, p), amp);
 }
 
-complex<double> one(const vec &v) {(void) v; return 1.0;}
+static complex<double> one(const vec &v) {(void) v; return 1.0;}
 void fields::add_volume_source(component c, const src_time &src,
                                const geometric_volume &where,
 			       complex<double> amp) {
@@ -342,7 +342,7 @@ void fields::add_volume_source(component c, const src_time &src,
   }
 
   src_vol_chunkloop_data data;
-  data.A = A;
+  data.A = A ? A : one;
   data.amp = amp;
   LOOP_OVER_DIRECTIONS(v.dim, d)
     if (where.in_direction(d) == 0.0 && !nosize_direction(d)) // delta-fun
