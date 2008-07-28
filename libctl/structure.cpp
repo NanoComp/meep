@@ -248,7 +248,7 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
 
 double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
 {
-  double chi1p1 = 1.0, eps, eps_inv;
+  double chi1p1 = 1.0, eps_inv;
 
 #ifdef DEBUG
   vector3 p = vec_to_vector3(r);
@@ -265,7 +265,7 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
   bool destroy_material = get_material_pt(material, r);
 
   if (ft == meep::E_stuff)
-    material_eps(material, eps, eps_inv);  
+    material_eps(material, chi1p1, eps_inv);  
   else if (ft == meep::H_stuff)
     switch (material.which_subclass) {
     case MTS::MEDIUM:
