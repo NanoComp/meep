@@ -102,7 +102,7 @@ fi
 ###########################################################################
 # MPB library
 
-AC_CHECK_HEADER(mpb/maxwell.h, [have_mpb=maybe], [have_mpb=no])
+AC_CHECK_HEADER(mpb.h, [have_mpb=maybe], [have_mpb=no])
 
 if test $have_mpb = maybe; then
   if test "x$acx_lapack_ok" = x; then
