@@ -15,6 +15,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <stdlib.h>
 #include "meep.hpp"
 #include "config.h"
 
@@ -51,6 +52,7 @@ static void meep_mpb_eps(symmetric_matrix *eps,
   eps_inv->m00 = f->get_chi1inv(Ex, X, p);
   eps_inv->m11 = f->get_chi1inv(Ey, Y, p);
   eps_inv->m22 = f->get_chi1inv(Ez, Z, p);
+  //  master_printf("eps_zz(%g,%g) = %g\n", p.x(), p.y(), 1/eps_inv->m00);
   ASSIGN_ESCALAR(eps_inv->m01, f->get_chi1inv(Ex, Y, p), 0);
   ASSIGN_ESCALAR(eps_inv->m02, f->get_chi1inv(Ex, Z, p), 0);
   ASSIGN_ESCALAR(eps_inv->m12, f->get_chi1inv(Ey, Z, p), 0);
@@ -60,8 +62,11 @@ static void meep_mpb_eps(symmetric_matrix *eps,
 static const complex<mpb_real> *meep_mpb_A_data = 0;
 static const int *meep_mpb_A_n = 0;
 static const double *meep_mpb_A_s = 0;
+static component foo_component = Ez;
 static int meep_mpb_A_component = 0;
 static vec meep_mpb_A_center;
+static complex<double> one(const vec &v) {(void) v; return 1.0;}
+static complex<double> (*meep_mpb_A_A)(const vec &) = 0;
 static complex<double> meep_mpb_A(const vec &p) {
   const complex<mpb_real> *data = meep_mpb_A_data + meep_mpb_A_component;
   int nx = meep_mpb_A_n[0];
@@ -108,20 +113,23 @@ static complex<double> meep_mpb_A(const vec &p) {
 	  (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
 #undef D
 
-  return complex<double>(double(real(ret)), double(imag(ret)));
+  //  master_printf("A_%s(%g,%g) = %g%+gi\n", component_name(foo_component), p.x(), p.y(), real(ret), imag(ret));
+
+  return (complex<double>(double(real(ret)), double(imag(ret)))
+	  * meep_mpb_A_A(p));
 }
 
 #endif /* HAVE_MPB */
 
-void fields::add_eigenmode_source(const src_time &src,
+void fields::add_eigenmode_source(component c0, const src_time &src,
 				  const geometric_volume &where,
 				  const geometric_volume &eig_vol,
 				  int band_num, const vec &kpoint, int parity,
+				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
-				  double resolution,
-				  double eigensolver_tol) {
+				  complex<double> A(const vec &)) {
 #ifdef HAVE_MPB
-  if (resolution <= 0) resolution = v.a;
+  if (resolution <= 0) resolution = 2 * v.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
   mpb_real k[3] = {0,0,0};
   double s[3] = {0,0,0}, o[3] = {0,0,0};
@@ -137,8 +145,8 @@ void fields::add_eigenmode_source(const src_time &src,
     o[1] = eig_vol.in_direction_min(Y);
     o[2] = eig_vol.in_direction_min(Z);
     s[0] = eig_vol.in_direction(X);
-    s[1] = eig_vol.in_direction(X);
-    s[2] = eig_vol.in_direction(X);
+    s[1] = eig_vol.in_direction(Y);
+    s[2] = eig_vol.in_direction(Z);
     k[0] = kpoint.in_direction(X);
     k[1] = kpoint.in_direction(Y);
     k[2] = kpoint.in_direction(Z);
@@ -147,20 +155,20 @@ void fields::add_eigenmode_source(const src_time &src,
     o[0] = eig_vol.in_direction_min(X);
     o[1] = eig_vol.in_direction_min(Y);
     s[0] = eig_vol.in_direction(X);
-    s[1] = eig_vol.in_direction(X);
+    s[1] = eig_vol.in_direction(Y);
     k[0] = kpoint.in_direction(X);
     k[1] = kpoint.in_direction(Y);
     break;
   case D1:
     o[2] = eig_vol.in_direction_min(Z);
-    s[2] = eig_vol.in_direction(X);
+    s[2] = eig_vol.in_direction(Z);
     k[2] = kpoint.in_direction(Z);
     break;
   default:
     abort("unsupported dimensionality in add_mpb_source");
   }
   for (int i = 0; i < 3; ++i) {
-    n[i] = int(resolution * s[i] + 0.5);
+    n[i] = int(resolution * s[i] + 0.5); if (n[i] == 0) n[i] = 1;
     R[i][i] = s[i] = s[i] == 0 ? 1 : s[i];
     G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
   }
@@ -189,7 +197,10 @@ void fields::add_eigenmode_source(const src_time &src,
   
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num,
 				     local_N, N_start, alloc_N);
-  
+  for (int i = 0; i < H.n * H.p; ++i) {
+    ASSIGN_SCALAR(H.data[i], rand() * 1.0/RAND_MAX, rand() * 1.0/RAND_MAX);
+  }
+
   mpb_real *eigvals = new mpb_real[band_num];
   int num_iters;
   evectmatrix W[3];
@@ -211,7 +222,11 @@ void fields::add_eigenmode_source(const src_time &src,
 	      evectconstraint_chain_func,
 	      (void *) constraints,
 	      W, 3, 
-	      eigensolver_tol, &num_iters, EIGS_DEFAULT_FLAGS);
+	      eigensolver_tol, &num_iters, 
+	      EIGS_DEFAULT_FLAGS | (am_master() && !quiet ? EIGS_VERBOSE : 0));
+  if (!quiet)
+    master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n",
+		  band_num, k[0],k[1],k[2], eigvals[band_num-1], num_iters);
   
   evect_destroy_constraints(constraints);
   for (int i = 0; i < 3; ++i)
@@ -225,10 +240,42 @@ void fields::add_eigenmode_source(const src_time &src,
   meep_mpb_A_n = n;
   meep_mpb_A_data = cdata;
   meep_mpb_A_center = eig_vol.center() - where.center();
-  
+  meep_mpb_A_A = A ? A : one;
+
   maxwell_compute_h_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
+  /* choose deterministic phase, maximizing power in real part;
+     see fix_field_phase routine in MPB.*/
+  {
+    int i, N = mdata->fft_output_size * 3;
+    double sq_sum0 = 0, sq_sum1 = 0, maxabs = 0.0;
+    double theta;
+    for (i = 0; i < N; ++i) {
+      double a = real(cdata[i]), b = imag(cdata[i]);
+      sq_sum0 += a*a - b*b;
+      sq_sum1 += 2*a*b;
+    }
+    theta = 0.5 * atan2(-sq_sum1, sq_sum0);
+    complex<mpb_real> phase(cos(theta), sin(theta));
+    for (i = 0; i < N; ++i) {
+      double r = fabs(real(cdata[i] * phase));
+      if (r > maxabs) maxabs = r;
+    }
+    for (i = N-1; i >= 0 && fabs(real(cdata[i] * phase)) < 0.5 * maxabs; --i);
+    if (real(cdata[i] * phase) < 0) phase = -phase;
+    for (i = 0; i < N; ++i) cdata[i] *= phase;
+    complex<mpb_real> *hdata = (complex<mpb_real> *) H.data;
+    for (i = 0; i < H.n; ++i) hdata[i*H.p + (band_num-1)] *= phase;
+  }
+
+  if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
+  if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
+
   FOR_MAGNETIC_COMPONENTS(c) 
-    if (v.has_field(c) && where.in_direction(component_direction(c))>0) {
+    if (v.has_field(c) && (c0 == Dielectric || c0 == c)
+	&& (v.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
+	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
+	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
+      foo_component = c;
       meep_mpb_A_component = component_direction(c) % 3;
       add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
     }
@@ -236,7 +283,11 @@ void fields::add_eigenmode_source(const src_time &src,
   maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
   FOR_ELECTRIC_COMPONENTS(c) 
-    if (v.has_field(c) && where.in_direction(component_direction(c))>0) {
+    if (v.has_field(c) && (c0 == Dielectric || c0 == c)
+	&& (v.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
+	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
+	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
+      foo_component = c;
       meep_mpb_A_component = component_direction(c) % 3;
       add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
     }

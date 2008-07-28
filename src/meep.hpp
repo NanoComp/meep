@@ -962,13 +962,13 @@ class fields {
   void require_component(component c);
 
   // mpb.cpp
-  void add_eigenmode_source(const src_time &src,
+  void add_eigenmode_source(component c, const src_time &src,
 			    const geometric_volume &where,
 			    const geometric_volume &eig_vol,
 			    int band_num, const vec &kpoint, int parity,
+			    double eig_resolution, double eigensolver_tol,
 			    complex<double> amp,
-			    double resolution,
-			    double eigensolver_tol);
+			    complex<double> A(const vec &) = 0);
 
   // initialize.cpp:
   void initialize_field(component, complex<double> f(const vec &));

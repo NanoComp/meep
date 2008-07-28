@@ -351,7 +351,7 @@ void fields_chunk::figure_out_step_plan() {
   }
 }
 
-static bool is_tm(component c) {
+bool is_tm(component c) {
   switch (c) {
   case Hx: case Hy: case Bx: case By: case Ez: case Dz: return true;
   default: return false;

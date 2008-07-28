@@ -284,23 +284,76 @@
   (define-property amplitude 1.0 'cnumber)
   (define-property amp-func '() 'SCM))
 
+; the following definitions are taken from MPB
+(define NO-PARITY 0)
+(define EVEN-Z 1)
+(define ODD-Z 2)
+(define EVEN-Y 4)
+(define ODD-Y 8)
+(define TE EVEN-Z)
+(define TM ODD-Z)
+
+; special component for eigenmode-source (not defined during gen-ctl-io)
+(define all-components (if (defined? 'Dielectric) Dielectric 99))
+
+(define-class eigenmode-source source
+  ; the following two properties have special default values -- if we
+  ; detect these values, we will replace the values by those of the
+  ; size and center of the parent class (a bit hackish, but...)
+  (define-property eig-lattice-size (vector3 -1 -1 -1) 'vector3)
+  (define-property eig-lattice-center (vector3 infinity infinity infinity) 'vector3)
+
+  (define-property component all-components 'integer) ; new default val
+  (define-property eig-band 1 'integer positive?)
+  (define-property eig-kpoint no-default 'vector3)
+  (define-property eig-parity NO-PARITY 'integer)
+  (define-property eig-resolution 0 'integer non-negative?)
+  (define-property eig-tolerance 1e-7 'number positive?))
+
 (define (add-source s f) ; add source s to fields f
+  (define (dflt v v0 vd) (if (vector3= v v0) vd v))
   (let ((A (object-property-value s 'amp-func))
 	(cen (object-property-value s 'center))
 	(sz (object-property-value s 'size)))
-    (if (null? A)
-	(meep-fields-add-volume-source
-	 fields
-	 (object-property-value s 'component)
-	 (object-property-value (object-property-value s 'src) 'swigval)
-	 (volume (center cen) (size sz))
-	 (* 1.0 (object-property-value s 'amplitude)))
-	(meep-fields-add-volume-source
-	 fields
-	 (object-property-value s 'component)
-	 (object-property-value (object-property-value s 'src) 'swigval)
-	 (volume (center cen) (size sz))
-	 A (* 1.0 (object-property-value s 'amplitude))))))
+    (if (object-member? 'eigenmode-source s)
+	(let ((ecen (dflt (object-property-value s 'eig-lattice-center)
+			  (vector3 infinity infinity infinity) cen))
+	      (esz (dflt (object-property-value s 'eig-lattice-size)
+			  (vector3 -1 -1 -1) sz)))
+	  (if (null? A)
+	      (meep-fields-add-eigenmode-source f
+	       (object-property-value s 'component)
+	       (object-property-value (object-property-value s 'src) 'swigval)
+	       (volume (center cen) (size sz))
+	       (volume (center ecen) (size esz))
+	       (object-property-value s 'eig-band)
+	       (object-property-value s 'eig-kpoint)
+	       (object-property-value s 'eig-parity)
+	       (object-property-value s 'eig-resolution)
+	       (object-property-value s 'eig-tolerance)
+	       (object-property-value s 'amplitude))
+	      (meep-fields-add-eigenmode-source f
+	       (object-property-value s 'component)
+	       (object-property-value (object-property-value s 'src) 'swigval)
+	       (volume (center cen) (size sz))
+	       (volume (center ecen) (size esz))
+	       (object-property-value s 'eig-band)
+	       (object-property-value s 'eig-kpoint)
+	       (object-property-value s 'eig-parity)
+	       (object-property-value s 'eig-resolution)
+	       (object-property-value s 'eig-tolerance) 
+	       (object-property-value s 'amplitude) A)))
+	(if (null? A)
+	    (meep-fields-add-volume-source f
+	     (object-property-value s 'component)
+	     (object-property-value (object-property-value s 'src) 'swigval)
+	     (volume (center cen) (size sz))
+	     (* 1.0 (object-property-value s 'amplitude)))
+	    (meep-fields-add-volume-source f
+	     (object-property-value s 'component)
+	     (object-property-value (object-property-value s 'src) 'swigval)
+	     (volume (center cen) (size sz))
+	     A (* 1.0 (object-property-value s 'amplitude)))))))
 
 ; ****************************************************************
 ; Setting up the fields

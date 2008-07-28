@@ -190,6 +190,8 @@ inline bool coordinate_mismatch(ndim dim, direction d) {
 	   (dim == Dcyl && d != R && d != P && d != Z)));
 }
 
+bool is_tm(component c);
+
 extern void abort(const char *, ...); // mympi.cpp
 
 inline bool is_electric(component c) { return c < Hx; }
