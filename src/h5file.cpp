@@ -708,7 +708,7 @@ void h5file::write(const char *dataname, int rank, const int *dims,
 void h5file::write(const char *dataname, const char *data)
 {
 #ifdef HAVE_HDF5
-  if (IF_EXCLUSIVE(am_master(), parallel || am_master())) {
+  if (am_master()) { // only master process writes string data
     hid_t file_id = HID(get_id()), type_id, data_id, space_id;
     
     CHECK(file_id >= 0, "error opening HDF5 output file");     
