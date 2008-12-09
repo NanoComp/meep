@@ -265,15 +265,24 @@ void fields_chunk::step_source(field_type ft, bool including_integrated) {
   for (src_vol *sv = sources[ft]; sv; sv = sv->next) {
     component c = direction_component(first_field_component(ft), 
 				      component_direction(sv->c));
+    const realnum *cndinv = s->condinv[c][component_direction(sv->c)];
     if ((including_integrated || !sv->t->is_integrated)	&& f[c][0]
 	&& ((ft == D_stuff && is_electric(sv->c))
 	    || (ft == B_stuff && is_magnetic(sv->c)))) {
-      for (int j=0; j<sv->npts; j++) {
-	const complex<double> A = sv->current(j) * dt;
-	const int i = sv->index[j];
-	f[c][0][i] -= real(A);
-	if (!is_real) f[c][1][i] -= imag(A);
-      }
+      if (cndinv)
+	for (int j=0; j<sv->npts; j++) {
+	  const int i = sv->index[j];
+	  const complex<double> A = sv->current(j) * dt * cndinv[i];
+	  f[c][0][i] -= real(A);
+	  if (!is_real) f[c][1][i] -= imag(A);
+	}
+      else
+	for (int j=0; j<sv->npts; j++) {
+	  const complex<double> A = sv->current(j) * dt;
+	  const int i = sv->index[j];
+	  f[c][0][i] -= real(A);
+	  if (!is_real) f[c][1][i] -= imag(A);
+	}
     }
   }
 }
