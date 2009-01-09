@@ -48,6 +48,7 @@ void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1,2);
 void all_wait();
 int count_processors();
 int my_rank();
+bool am_really_master();
 inline int am_master() { return my_rank() == 0; }
 
 void send(int from, int to, double *data, int size=1);
@@ -84,6 +85,10 @@ void master_fclose(FILE *f);
 
 void begin_critical_section(int tag);
 void end_critical_section(int tag);
+
+int divide_parallel_processes(int numgroups);
+void begin_global_communications(void);
+void end_global_communications(void);
 
 } /* namespace meep */
 

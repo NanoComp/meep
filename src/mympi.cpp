@@ -61,6 +61,10 @@ extern "C" int feenableexcept (int EXCEPTS);
 
 namespace meep {
 
+#ifdef HAVE_MPI
+  static mpi_comm mycomm = MPI_COMM_WORLD;
+#endif
+
 bool quiet = false; // defined in meep.h
 
 initialize::initialize(int &argc, char** &argv) {
@@ -86,6 +90,7 @@ initialize::initialize(int &argc, char** &argv) {
 initialize::~initialize() {
   if (!quiet) master_printf("\nElapsed run time = %g s\n", elapsed_time());
 #ifdef HAVE_MPI
+  if (mycomm != MPI_COMM_WORLD) MPI_Comm_free(&mycomm);
   MPI_Finalize();
 #endif
 }
@@ -120,9 +125,9 @@ void send(int from, int to, double *data, int size) {
   if (from == to) return;
   if (size == 0) return;
   const int me = my_rank();
-  if (from == me) MPI_Send(data, size, MPI_DOUBLE, to, 1, MPI_COMM_WORLD);
+  if (from == me) MPI_Send(data, size, MPI_DOUBLE, to, 1, mycomm);
   MPI_Status stat;
-  if (to == me) MPI_Recv(data, size, MPI_DOUBLE, from, 1, MPI_COMM_WORLD, &stat);
+  if (to == me) MPI_Recv(data, size, MPI_DOUBLE, from, 1, mycomm, &stat);
 #else
   UNUSED(from);
   UNUSED(to);
@@ -135,7 +140,7 @@ void send(int from, int to, double *data, int size) {
 void broadcast(int from, realnum *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, sizeof(realnum) == sizeof(double) ? MPI_DOUBLE : MPI_FLOAT, from, MPI_COMM_WORLD);
+  MPI_Bcast(data, size, sizeof(realnum) == sizeof(double) ? MPI_DOUBLE : MPI_FLOAT, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -147,7 +152,7 @@ void broadcast(int from, realnum *data, int size) {
 void broadcast(int from, double *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_DOUBLE, from, MPI_COMM_WORLD);
+  MPI_Bcast(data, size, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -158,7 +163,7 @@ void broadcast(int from, double *data, int size) {
 void broadcast(int from, char *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_CHAR, from, MPI_COMM_WORLD);
+  MPI_Bcast(data, size, MPI_CHAR, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -169,7 +174,7 @@ void broadcast(int from, char *data, int size) {
 void broadcast(int from, complex<double> *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, 2*size, MPI_DOUBLE, from, MPI_COMM_WORLD);
+  MPI_Bcast(data, 2*size, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -180,7 +185,7 @@ void broadcast(int from, complex<double> *data, int size) {
 void broadcast(int from, int *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_INT, from, MPI_COMM_WORLD);
+  MPI_Bcast(data, size, MPI_INT, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -190,7 +195,7 @@ void broadcast(int from, int *data, int size) {
 
 complex<double> broadcast(int from, complex<double> data) {
 #ifdef HAVE_MPI
-  MPI_Bcast(&data, 2, MPI_DOUBLE, from, MPI_COMM_WORLD);
+  MPI_Bcast(&data, 2, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
 #endif
@@ -199,7 +204,7 @@ complex<double> broadcast(int from, complex<double> data) {
 
 double broadcast(int from, double data) {
 #ifdef HAVE_MPI
-  MPI_Bcast(&data, 1, MPI_DOUBLE, from, MPI_COMM_WORLD);
+  MPI_Bcast(&data, 1, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
 #endif
@@ -208,7 +213,7 @@ double broadcast(int from, double data) {
 
 int broadcast(int from, int data) {
 #ifdef HAVE_MPI
-  MPI_Bcast(&data, 1, MPI_INT, from, MPI_COMM_WORLD);
+  MPI_Bcast(&data, 1, MPI_INT, from, mycomm);
 #else
   UNUSED(from);
 #endif
@@ -222,7 +227,7 @@ bool broadcast(int from, bool b) {
 double max_to_master(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD);
+  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,0,mycomm);
 #endif
   return out;
 }
@@ -230,7 +235,7 @@ double max_to_master(double in) {
 double max_to_all(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,mycomm);
 #endif
   return out;
 }
@@ -238,7 +243,7 @@ double max_to_all(double in) {
 int max_to_all(int in) {
   int out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_MAX,mycomm);
 #endif
   return out;
 }
@@ -247,7 +252,7 @@ ivec max_to_all(const ivec &v) {
   int in[5], out[5];
   for (int i=0; i<5; ++i) in[i] = out[i] = v.in_direction(direction(i));
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,5,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+  MPI_Allreduce(&in,&out,5,MPI_INT,MPI_MAX,mycomm);
 #endif
   ivec vout(v.dim);
   for (int i=0; i<5; ++i) vout.set_direction(direction(i), out[i]);
@@ -257,7 +262,7 @@ ivec max_to_all(const ivec &v) {
 double sum_to_master(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,0,mycomm);
 #endif
   return out;
 }
@@ -265,14 +270,14 @@ double sum_to_master(double in) {
 double sum_to_all(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,mycomm);
 #endif
   return out;
 }
 
 void sum_to_all(const double *in, double *out, int size) {
 #ifdef HAVE_MPI
-  MPI_Allreduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,mycomm);
 #else
   memcpy(out, in, sizeof(double) * size);
 #endif
@@ -284,7 +289,7 @@ long double sum_to_all(long double in) {
   if (MPI_LONG_DOUBLE == MPI_DATATYPE_NULL)
     out = sum_to_all(double(in));
   else
-    MPI_Allreduce(&in,&out,1,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&in,&out,1,MPI_LONG_DOUBLE,MPI_SUM,mycomm);
 #endif
   return out;
 }
@@ -292,7 +297,7 @@ long double sum_to_all(long double in) {
 int sum_to_all(int in) {
   int out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(&in,&out,1,MPI_INT,MPI_SUM,mycomm);
 #endif
   return out;
 }
@@ -300,7 +305,7 @@ int sum_to_all(int in) {
 int partial_sum_to_all(int in) {
   int out = in;
 #ifdef HAVE_MPI
-  MPI_Scan(&in,&out,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Scan(&in,&out,1,MPI_INT,MPI_SUM,mycomm);
 #endif
   return out;
 }
@@ -308,7 +313,7 @@ int partial_sum_to_all(int in) {
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,2,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(&in,&out,2,MPI_DOUBLE,MPI_SUM,mycomm);
 #endif
   return out;
 }
@@ -322,7 +327,7 @@ complex<long double> sum_to_all(complex<long double> in) {
     out = complex<long double>(dout.real(), dout.imag());
   }
   else
-    MPI_Allreduce(&in,&out,2,MPI_LONG_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&in,&out,2,MPI_LONG_DOUBLE,MPI_SUM,mycomm);
 #endif
   return out;
 }
@@ -330,7 +335,7 @@ complex<long double> sum_to_all(complex<long double> in) {
 bool or_to_all(bool in) {
   int in2 = in, out;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in2,&out,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+  MPI_Allreduce(&in2,&out,1,MPI_INT,MPI_LOR,mycomm);
 #else
   out = in2;
 #endif
@@ -339,7 +344,7 @@ bool or_to_all(bool in) {
 
 void or_to_all(const int *in, int *out, int size) {
 #ifdef HAVE_MPI
-  MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+  MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LOR,mycomm);
 #else
   memcpy(out, in, sizeof(int) * size);
 #endif
@@ -348,7 +353,7 @@ void or_to_all(const int *in, int *out, int size) {
 bool and_to_all(bool in) {
   int in2 = in, out;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in2,&out,1,MPI_INT,MPI_LAND,MPI_COMM_WORLD);
+  MPI_Allreduce(&in2,&out,1,MPI_INT,MPI_LAND,mycomm);
 #else
   out = in2;
 #endif
@@ -357,7 +362,7 @@ bool and_to_all(bool in) {
 
 void and_to_all(const int *in, int *out, int size) {
 #ifdef HAVE_MPI
-  MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LAND,MPI_COMM_WORLD);
+  MPI_Allreduce((void*) in, out, size, MPI_INT,MPI_LAND,mycomm);
 #else
   memcpy(out, in, sizeof(int) * size);
 #endif
@@ -365,14 +370,14 @@ void and_to_all(const int *in, int *out, int size) {
 
 void all_wait() {
 #ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(mycomm);
 #endif
 }
 
 int my_rank() {
 #ifdef HAVE_MPI
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(mycomm, &rank);
   return rank;
 #else
   return 0;
@@ -382,7 +387,7 @@ int my_rank() {
 int count_processors() {
 #ifdef HAVE_MPI
   int n;
-  MPI_Comm_size(MPI_COMM_WORLD, &n);
+  MPI_Comm_size(mycomm, &n);
   return n;
 #else
   return 1;
@@ -391,10 +396,20 @@ int count_processors() {
 
 // IO Routines...
 
+bool am_really_master() {
+#ifdef HAVE_MPI
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  return (rank == 0);
+#else
+  return true;
+#endif
+}
+
 void master_printf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  if (am_master()) { vprintf(fmt, ap); fflush(stdout); }
+  if (am_really_master()) { vprintf(fmt, ap); fflush(stdout); }
   va_end(ap);
 }
 
@@ -450,12 +465,12 @@ void begin_critical_section(int tag)
 {
 #ifdef HAVE_MPI
      int process_rank;
-     MPI_Comm_rank(MPI_COMM_WORLD, &process_rank);
+     MPI_Comm_rank(mycomm, &process_rank);
      if (process_rank > 0) { /* wait for a message before continuing */
 	  MPI_Status status;
 	  int recv_tag = tag - 1; /* initialize to wrong value */
 	  MPI_Recv(&recv_tag, 1, MPI_INT, process_rank - 1, tag, 
-		   MPI_COMM_WORLD, &status);
+		   mycomm, &status);
 	  if (recv_tag != tag) abort("invalid tag received in begin_critical_section");
      }
 #else
@@ -467,15 +482,74 @@ void end_critical_section(int tag)
 {
 #ifdef HAVE_MPI
      int process_rank, num_procs;
-     MPI_Comm_rank(MPI_COMM_WORLD, &process_rank);
-     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+     MPI_Comm_rank(mycomm, &process_rank);
+     MPI_Comm_size(mycomm, &num_procs);
      if (process_rank != num_procs - 1) { /* send a message to next process */
 	  MPI_Send(&tag, 1, MPI_INT, process_rank + 1, tag, 
-		   MPI_COMM_WORLD);
+		   mycomm);
      }
 #else
      UNUSED(tag);
 #endif
 }
+
+
+/* Simple, somewhat hackish API to allow user to run multiple simulations
+   in parallel in the same MPI job.  The user calls
+
+   mygroup = divide_parallel_processes(numgroups);
+
+   to divide all of the MPI processes into numgroups equal groups,
+   and to return the index (from 0 to numgroups-1) of the current group.
+   From this point on, all fields etc. that you create and all
+   calls from mympi.cpp will only communicate within your group of
+   processes.
+
+   However, there are two calls that you can use to switch back to
+   globally communication among all processes:
+
+   begin_global_communications();
+   ....do stuff....
+   end_global_communications();
+
+   It is important not to mix the two types; e.g. you cannot timestep
+   a field created in the local group in global mode, or vice versa.
+*/
+
+int divide_parallel_processes(int numgroups)
+{
+#ifdef HAVE_MPI
+  if (mycomm != MPI_COMM_WORLD) {
+    MPI_Comm_free(&mycomm);
+    mycomm = MPI_COMM_WORLD;
+  }
+  int mygroup = my_rank() / numgroups;
+  MPI_Comm_split(MPI_COMM_WORLD, mygroup, my_rank(), &mycomm);
+  return mygroup;
+#else
+  if (numgroups != 1) abort("cannot divide processes in non-MPI mode");
+  return 0;
+#endif
+}
+
+#ifdef HAVE_MPI
+  static mpi_comm mycomm_save = MPI_COMM_WORLD;
+#endif
+
+void begin_global_communications(void)
+{
+#ifdef HAVE_MPI
+  mycomm_save = mycomm;
+  mycomm = MPI_COMM_WORLD;
+#endif
+}
+
+void end_global_communications(void)
+{
+#ifdef HAVE_MPI
+  mycomm = mycomm_save;
+#endif
+}
+
 
 } // namespace meep
