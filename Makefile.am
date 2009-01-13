@@ -11,7 +11,7 @@ else
 LIBCTL =
 endif
 
-ACLOCAL_AMFLAGS=-I ./m4
+ACLOCAL_AMFLAGS=-I m4
 
 if WITH_DOC
 DOC = doc
