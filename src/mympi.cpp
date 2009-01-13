@@ -519,11 +519,9 @@ void end_critical_section(int tag)
 int divide_parallel_processes(int numgroups)
 {
 #ifdef HAVE_MPI
-  if (mycomm != MPI_COMM_WORLD) {
-    MPI_Comm_free(&mycomm);
-    mycomm = MPI_COMM_WORLD;
-  }
-  int mygroup = my_rank() / numgroups;
+  end_divide_parallel();
+  if (numgroups > count_processors()) abort("numgroups > count_processors");
+  int mygroup = (my_rank() * numgroups) / count_processors();
   MPI_Comm_split(MPI_COMM_WORLD, mygroup, my_rank(), &mycomm);
   return mygroup;
 #else
