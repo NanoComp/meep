@@ -62,7 +62,7 @@ extern "C" int feenableexcept (int EXCEPTS);
 namespace meep {
 
 #ifdef HAVE_MPI
-  static mpi_comm mycomm = MPI_COMM_WORLD;
+  static MPI_Comm mycomm = MPI_COMM_WORLD;
 #endif
 
 bool quiet = false; // defined in meep.h
@@ -90,7 +90,7 @@ initialize::initialize(int &argc, char** &argv) {
 initialize::~initialize() {
   if (!quiet) master_printf("\nElapsed run time = %g s\n", elapsed_time());
 #ifdef HAVE_MPI
-  if (mycomm != MPI_COMM_WORLD) MPI_Comm_free(&mycomm);
+  end_divide_parallel();
   MPI_Finalize();
 #endif
 }
@@ -533,7 +533,7 @@ int divide_parallel_processes(int numgroups)
 }
 
 #ifdef HAVE_MPI
-  static mpi_comm mycomm_save = MPI_COMM_WORLD;
+  static MPI_Comm mycomm_save = MPI_COMM_WORLD;
 #endif
 
 void begin_global_communications(void)
@@ -551,5 +551,13 @@ void end_global_communications(void)
 #endif
 }
 
+void end_divide_parallel(void)
+{
+#ifdef HAVE_MPI
+  if (mycomm != MPI_COMM_WORLD) MPI_Comm_free(&mycomm);
+  if (mycomm_save != MPI_COMM_WORLD) MPI_Comm_free(&mycomm_save);
+  mycomm = mycomm_save = MPI_COMM_WORLD;
+#endif
+}
 
 } // namespace meep

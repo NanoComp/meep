@@ -89,6 +89,7 @@ void end_critical_section(int tag);
 int divide_parallel_processes(int numgroups);
 void begin_global_communications(void);
 void end_global_communications(void);
+void end_divide_parallel(void);
 
 } /* namespace meep */
 
