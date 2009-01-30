@@ -131,7 +131,7 @@ void fields_chunk::step_db(field_type ft) {
 	+ 0.5 * v.iyee_shift(cc).in_direction(R);
       int sr = v.nz() + 1;
       if (cndinv) { // conductivity, possibly including PML
-	for (int ir = ir0 <= 0.5; ir <= v.nr(); ++ir) {
+	for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
 	  double rinv = the_m / (ir+ir0);
 	  for (int iz = 0; iz <= v.nz(); ++iz) {
 	    int idx = ir*sr + iz;
@@ -142,7 +142,7 @@ void fields_chunk::step_db(field_type ft) {
       else if (s->sigsize[dsig] > 1) { // PML
 	const double *siginv = s->siginv[dsig];
 	int dk = v.iyee_shift(cc).in_direction(dsig);
-	for (int ir = ir0 <= 0.5; ir <= v.nr(); ++ir) {
+	for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
 	  double rinv = the_m / (ir+ir0);
 	  for (int iz = 0; iz <= v.nz(); ++iz) {
 	    int idx = ir*sr + iz;
@@ -151,7 +151,7 @@ void fields_chunk::step_db(field_type ft) {
 	}
       }
       else { // no PML, no conductivity
-	for (int ir = ir0 <= 0.5; ir <= v.nr(); ++ir) {
+	for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
 	  double rinv = the_m / (ir+ir0);
 	  for (int iz = 0; iz <= v.nz(); ++iz) {
 	    int idx = ir*sr + iz;
