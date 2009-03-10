@@ -1,3 +1,21 @@
+Meep 0.20.4
+
+  * Bug fix in cylindrical code, which caused it to blow up
+    in some circumstances for nonzero m.
+
+  * Bug fix: non-integrated sources with conductivity are now
+    second-order accurate, thanks to Alejandro Rodriguez.
+
+  * Bug fix in writing strings with parallel HDF5, thanks to Zheng Li
+    for the bug report.
+
+  * Check that PML parameters are sensible (e.g. that total PML thickness
+    is no greater than cell thickness) to avoid common mistakes.
+
+  * New extra-materials input variable, so that you no longer
+    have to use "dummy objects" to specify the existence of
+    some materials when using material-function types.
+
 Meep 0.20.3 (24 July 2008)
 
   * Fixed circular dependency in Makefile, which caused problems with some
