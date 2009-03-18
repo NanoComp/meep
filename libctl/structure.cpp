@@ -21,7 +21,7 @@ typedef struct {
 /* rotate A by a unitary (real) rotation matrix R:
       RAR = transpose(R) * A * R
 */
-void maxwell_sym_matrix_rotate(symmetric_matrix *RAR,
+void sym_matrix_rotate(symmetric_matrix *RAR,
 			       const symmetric_matrix *A_,
 			       const double R[3][3])
 {
@@ -46,7 +46,7 @@ void maxwell_sym_matrix_rotate(symmetric_matrix *RAR,
 }
 
 /* Set Vinv = inverse of V, where both V and Vinv are real-symmetric matrices.*/
-void maxwell_sym_matrix_invert(symmetric_matrix *Vinv, 
+void sym_matrix_invert(symmetric_matrix *Vinv, 
 			       const symmetric_matrix *V)
 {
      double m00 = V->m00, m11 = V->m11, m22 = V->m22;
@@ -81,7 +81,7 @@ void maxwell_sym_matrix_invert(symmetric_matrix *Vinv,
 }
 
 /* Returns whether or not V is positive-definite. */
-int maxwell_sym_matrix_positive_definite(symmetric_matrix *V)
+int sym_matrix_positive_definite(symmetric_matrix *V)
 {
      double det2, det3;
      double m00 = V->m00, m11 = V->m11, m22 = V->m22;
@@ -320,7 +320,7 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = material.subclass.medium_data->epsilon_offdiag.x;
       epsmu->m02 = material.subclass.medium_data->epsilon_offdiag.y;
       epsmu->m12 = material.subclass.medium_data->epsilon_offdiag.z;
-      maxwell_sym_matrix_invert(epsmu_inv,epsmu);
+      sym_matrix_invert(epsmu_inv,epsmu);
       break;
       }
     case MTS::PERFECT_METAL:
@@ -346,7 +346,7 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = material.subclass.medium_data->mu_offdiag.x;
       epsmu->m02 = material.subclass.medium_data->mu_offdiag.y;
       epsmu->m12 = material.subclass.medium_data->mu_offdiag.z;
-      maxwell_sym_matrix_invert(epsmu_inv,epsmu);
+      sym_matrix_invert(epsmu_inv,epsmu);
       break;
       }
     case MTS::PERFECT_METAL:
@@ -578,8 +578,8 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
   Rot[2][1] = Rot[0][2] * Rot[1][0] - Rot[1][2] * Rot[0][0];
 
   /* rotate epsilon tensors to surface parallel/perpendicular axes */
-  maxwell_sym_matrix_rotate(&eps1, &eps1, Rot);
-  maxwell_sym_matrix_rotate(&eps2, &eps2, Rot);
+  sym_matrix_rotate(&eps1, &eps1, Rot);
+  sym_matrix_rotate(&eps2, &eps2, Rot);
 
 #define AVG (fill * (EXPR(eps1)) + (1-fill) * (EXPR(eps2)))
 
@@ -621,15 +621,15 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 	  SWAP(Rot[0][1], Rot[1][0]);
 	  SWAP(Rot[0][2], Rot[2][0]);
 	  SWAP(Rot[2][1], Rot[1][2]);
-	  maxwell_sym_matrix_rotate(&meps, &meps, Rot); /* rotate back */
+	  sym_matrix_rotate(&meps, &meps, Rot); /* rotate back */
 #undef SWAP
 
 #  ifdef DEBUG
-	  if(!maxwell_sym_matrix_positive_definite(&meps))
+	  if(!sym_matrix_positive_definite(&meps))
 	    meep::abort("negative mean epsilon from Kottke algorithm");
 #  endif
 
-  maxwell_sym_matrix_invert(&meps_inv, &meps);
+  sym_matrix_invert(&meps_inv, &meps);
   int rownum = meep::component_direction(c) % 3;
   if (rownum == 0) {
     chi1inv_row[0] = meps_inv.m00;
@@ -697,6 +697,35 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c,
 					const meep::geometric_volume &gv,
 					double tol, int maxeval)
 {
+
+  symmetric_matrix chi1p1, chi1p1_inv;
+  material_type material;
+  bool destroy_material = get_material_pt(material, gv.center());
+  material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
+  if (destroy_material)
+    material_type_destroy(material);
+  if (chi1p1.m01 != 0 || chi1p1.m02 != 0 || chi1p1.m12 != 0
+      || chi1p1.m00 != chi1p1.m11 || chi1p1.m11 != chi1p1.m22 || 
+      chi1p1.m00 != chi1p1.m22) {
+    int rownum = meep::component_direction(c) % 3;
+    if (rownum == 0) {
+      chi1inv_row[0] = chi1p1.m00;
+      chi1inv_row[1] = chi1p1.m01;
+      chi1inv_row[2] = chi1p1.m02;
+    } 
+    else if (rownum == 1) {
+      chi1inv_row[0] = chi1p1.m01;
+      chi1inv_row[1] = chi1p1.m11;
+      chi1inv_row[2] = chi1p1.m12;
+    }
+    else {
+      chi1inv_row[0] = chi1p1.m02;
+      chi1inv_row[1] = chi1p1.m12;
+      chi1inv_row[2] = chi1p1.m22;
+    }
+    return;
+      }
+
   number esterr;
   integer errflag, n;
   number xmin[3], xmax[3];
