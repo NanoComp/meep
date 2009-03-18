@@ -48,8 +48,10 @@
   (define-property energy-saturation 0.0 'number))
 
 (define-class medium material-type
-  (define-property epsilon 1 'number)
-  (define-property mu 1 'number)
+  (define-property epsilon-diag (vector3 1 1 1) 'vector3)
+  (define-property epsilon-offdiag (vector3 0 0 0) 'vector3)
+  (define-property mu-diag (vector3 1 1 1) 'vector3)
+  (define-property mu-offdiag (vector3 0 0 0) 'vector3)
   (define-property E-polarizations '() (make-list-type 'polarizability))
   (define-property H-polarizations '() (make-list-type 'polarizability))
   (define-property E-chi2-diag (vector3 0 0 0) 'vector3)
@@ -59,6 +61,9 @@
   (define-property D-conductivity-diag (vector3 0 0 0) 'vector3)
   (define-property B-conductivity-diag (vector3 0 0 0) 'vector3)
 )
+
+(define (epsilon eps) (epsilon-diag eps eps eps))
+(define (mu m) (mu-diag m m m)) 
 
 (define dielectric medium) ; old name for backwards compatibility
 (define polarizations E-polarizations) ; backwards compatibility
