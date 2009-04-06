@@ -995,6 +995,24 @@ class fields {
 		   field_rfunction fun, void *fun_data_,
 		   const geometric_volume &where,
 		   double *maxabs = 0);
+  complex<double> integrate2(const fields &fields2,
+			     int num_fields1,
+			     const component *components1,
+			     int num_fields2, 
+			     const component *components2,
+			     field_function integrand,
+			     void *integrand_data_,
+			     const geometric_volume &where,
+			     double *maxabs);
+  double integrate2(const fields &fields2,
+		    int num_fields1, const component *components1,
+		    int num_fields2, const component *components2,
+		    field_rfunction integrand,
+		    void *integrand_data_,
+		    const geometric_volume &where,
+		    double *maxabs);
+
+
   double max_abs(int num_fields, const component *components,
 		 field_function fun, void *fun_data_,
 		 const geometric_volume &where);

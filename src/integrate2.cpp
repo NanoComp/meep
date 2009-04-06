@@ -18,13 +18,19 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
-/* generic integration and related routines, based fields::loop_in_chunk */
+/* integration routine similar to those in integrate.cpp, but
+   integrating a combination of two fields from two different
+   simulations (assumed to have identical grids etcetera), based on
+   fields::loop_in_chunk */
 
 namespace meep {
 
 struct integrate_data {
   int num_fvals;
   const component *components;
+  const fields *fields2;
+  int num_fvals2;
+  const component *components2;
   component *cS;
   complex<double> *ph;
   complex<double> *fvals;
@@ -61,9 +67,12 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   int ieos[6];
   const component *imcs = data->invmu_cs;
   const direction *imds = data->invmu_ds;
+  int num_fvals1 = data->num_fvals;
+  int num_fvals2 = data->num_fvals2;
   int imos[6];
+  const fields_chunk *fc2 = data->fields2->chunks[ichunk];
 
-  for (int i = 0; i < data->num_fvals; ++i) {
+  for (int i = 0; i < num_fvals1; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
     if (cS[i] == Dielectric || cS[i] == Permeability)
       ph[i] = 1.0;
@@ -71,6 +80,17 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       if (cgrid == Dielectric)
 	fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
       ph[i] = shift_phase * S.phase_shift(cS[i], sn);
+    }
+  }
+  for (int i = 0; i < num_fvals2; ++i) {
+    int j = i + num_fvals1;
+    cS[j] = S.transform(data->components2[i], -sn);
+    if (cS[j] == Dielectric || cS[j] == Permeability)
+      ph[j] = 1.0;
+    else {
+      if (cgrid == Dielectric)
+	fc->v.yee2diel_offsets(cS[j], off[2*j], off[2*j+1]);
+      ph[j] = shift_phase * S.phase_shift(cS[j], sn);
     }
   }
   for (int k = 0; k < data->ninveps; ++k)
@@ -118,6 +138,42 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       }
     }
 
+    for (int j = 0; j < num_fvals2; ++j) {
+      int i = j + num_fvals1;
+      if (cS[i] == Dielectric) {
+	double tr = 0.0;
+	for (int k = 0; k < data->ninveps; ++k) {
+	  const realnum *ie = fc2->s->chi1inv[iecs[k]][ieds[k]];
+	  if (ie) tr += (ie[idx] + ie[idx+ieos[2*k]] + ie[idx+ieos[1+2*k]]
+			 + ie[idx+ieos[2*k]+ieos[1+2*k]]);
+	  else tr += 4; // default inveps == 1
+	}
+	fvals[i] = (4 * data->ninveps) / tr;
+      }
+      else if (cS[i] == Permeability) {
+	double tr = 0.0;
+	for (int k = 0; k < data->ninvmu; ++k) {
+	  const realnum *im = fc2->s->chi1inv[imcs[k]][imds[k]];
+	  if (im) tr += (im[idx] + im[idx+imos[2*k]] + im[idx+imos[1+2*k]]
+			 + im[idx+imos[2*k]+imos[1+2*k]]);
+	  else tr += 4; // default invmu == 1
+	}
+	fvals[i] = (4 * data->ninvmu) / tr;
+      }
+      else {
+	double f[2];
+	for (int k = 0; k < 2; ++k)
+	  if (fc2->f[cS[i]][k])
+	    f[k] = 0.25 * (fc2->f[cS[i]][k][idx]
+			   + fc2->f[cS[i]][k][idx+off[2*i]]
+			   + fc2->f[cS[i]][k][idx+off[2*i+1]]
+			   + fc2->f[cS[i]][k][idx+off[2*i]+off[2*i+1]]);
+	  else
+	    f[k] = 0;
+	fvals[i] = complex<double>(f[0], f[1]) * ph[i];
+      }
+    }
+
     complex<double> integrand = 
       data->integrand(fvals, loc, data->integrand_data_);
     maxabs = max(maxabs, abs(integrand));
@@ -128,30 +184,53 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   data->sum += sum;
 }
 
-complex<double> fields::integrate(int num_fvals, const component *components,
-				  field_function integrand,
-				  void *integrand_data_,
-				  const geometric_volume &where,
-				  double *maxabs)
+complex<double> fields::integrate2(const fields &fields2,
+				   int num_fvals1,
+				   const component *components1,
+				   int num_fvals2, 
+				   const component *components2,
+				   field_function integrand,
+				   void *integrand_data_,
+				   const geometric_volume &where,
+				   double *maxabs)
 {
+  if (!equal_layout(fields2))
+    abort("invalid call to integrate2: fields must have equal grid layout");
+
+  if (num_fvals2 == 0)
+    return integrate(num_fvals1, components1, integrand, integrand_data_,
+		     where, maxabs);
+  if (num_fvals1 == 0)
+    return const_cast<fields&>(fields2).integrate(num_fvals2, components2, 
+			     integrand, integrand_data_, where, maxabs);
+  
   // check if components are all on the same grid:
   bool same_grid = true;
-  for (int i = 1; i < num_fvals; ++i)
-    if (v.iyee_shift(components[i]) != v.iyee_shift(components[0])) {
+  for (int i = 1; i < num_fvals1; ++i)
+    if (v.iyee_shift(components1[i]) != v.iyee_shift(components1[0])) {
       same_grid = false;
       break;
     }
+  if (same_grid)
+    for (int i = 0; i < num_fvals2; ++i)
+      if (v.iyee_shift(components2[i]) != v.iyee_shift(components1[0])) {
+	same_grid = false;
+	break;
+      }
 
   component cgrid = Dielectric;
-  if (same_grid && num_fvals > 0)
-    cgrid = components[0];
+  if (same_grid)
+    cgrid = components1[0];
 
   integrate_data data;
-  data.num_fvals = num_fvals;
-  data.components = components;
-  data.cS = new component[num_fvals];
-  data.ph = new complex<double>[num_fvals];
-  data.fvals = new complex<double>[num_fvals];
+  data.num_fvals = num_fvals1;
+  data.components = components1;
+  data.fields2 = &fields2;
+  data.num_fvals2 = num_fvals2;
+  data.components2 = components2;
+  data.cS = new component[num_fvals1 + num_fvals2];
+  data.ph = new complex<double>[num_fvals1 + num_fvals2];
+  data.fvals = new complex<double>[num_fvals1 + num_fvals2];
   data.sum = 0;
   data.maxabs = 0;
   data.integrand = integrand;
@@ -160,8 +239,10 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   /* compute inverse-epsilon directions for computing Dielectric fields */
   data.ninveps = 0;
   bool needs_dielectric = false;
-  for (int i = 0; i < num_fvals; ++i)
-    if (components[i] == Dielectric) { needs_dielectric = true; break; }
+  for (int i = 0; i < num_fvals1; ++i)
+    if (components1[i] == Dielectric) { needs_dielectric = true; break; }
+  if (!needs_dielectric) for (int i = 0; i < num_fvals2; ++i)
+    if (components2[i] == Dielectric) { needs_dielectric = true; break; }
   if (needs_dielectric) 
     FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c)) {
       if (data.ninveps == 3) abort("more than 3 field components??");
@@ -173,8 +254,10 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   /* compute inverse-mu directions for computing Permeability fields */
   data.ninvmu = 0;
   bool needs_permeability = false;
-  for (int i = 0; i < num_fvals; ++i)
-    if (components[i] == Permeability) { needs_permeability = true; break; }
+  for (int i = 0; i < num_fvals1; ++i)
+    if (components1[i] == Permeability) { needs_permeability = true; break; }
+  if (!needs_permeability) for (int i = 0; i < num_fvals2; ++i)
+    if (components2[i] == Permeability) { needs_permeability = true; break; }
   if (needs_permeability) 
     FOR_MAGNETIC_COMPONENTS(c) if (v.has_field(c)) {
       if (data.ninvmu == 3) abort("more than 3 field components??");
@@ -183,8 +266,8 @@ complex<double> fields::integrate(int num_fvals, const component *components,
       ++data.ninvmu;
     }
   
-  data.offsets = new int[2 * num_fvals];
-  for (int i = 0; i < 2 * num_fvals; ++i)
+  data.offsets = new int[2 * (num_fvals1 + num_fvals2)];
+  for (int i = 0; i < 2 * (num_fvals1 + num_fvals2); ++i)
     data.offsets[i] = 0;
 
   loop_in_chunks(integrate_chunkloop, (void *) &data, where, cgrid);
@@ -204,78 +287,27 @@ complex<double> fields::integrate(int num_fvals, const component *components,
 typedef struct { 
   field_rfunction integrand; void *integrand_data; 
 } rfun_wrap_data;
-static complex<double> rfun_wrap(const complex<double> *fvals,
+static complex<double> rfun_wrap(const complex<double> *fields,
 				 const vec &loc, void *data_) {
   rfun_wrap_data *data = (rfun_wrap_data *) data_;
-  return data->integrand(fvals, loc, data->integrand_data);
+  return data->integrand(fields, loc, data->integrand_data);
 }
 
-double fields::integrate(int num_fvals, const component *components,
-			 field_rfunction integrand,
-			 void *integrand_data_,
-			 const geometric_volume &where,
-			 double *maxabs)
+double fields::integrate2(const fields &fields2,
+			  int num_fvals1, const component *components1,
+			  int num_fvals2, const component *components2,
+			  field_rfunction integrand,
+			  void *integrand_data_,
+			  const geometric_volume &where,
+			  double *maxabs)
 {
   rfun_wrap_data data;
   data.integrand = integrand;
   data.integrand_data = integrand_data_;
-  return real(integrate(num_fvals, components, rfun_wrap,
-			&data, where, maxabs));
-}
-
-double fields::max_abs(int num_fvals, const component *components,
-		       field_function integrand,
-		       void *integrand_data_,
-		       const geometric_volume &where)
-{
-  double maxabs;
-  integrate(num_fvals, components, integrand, integrand_data_, where,
-	    &maxabs);
-  return maxabs;
-}
-
-double fields::max_abs(int num_fvals, const component *components,
-		       field_rfunction integrand,
-		       void *integrand_data_,
-		       const geometric_volume &where)
-{
-  rfun_wrap_data data;
-  data.integrand = integrand;
-  data.integrand_data = integrand_data_;
-  return max_abs(num_fvals, components, rfun_wrap, &data, where);
-}
-
-static complex<double> return_the_field(const complex<double> *fields,
-					const vec &loc,
-					void *integrand_data_)
-{
-  (void) integrand_data_; (void) loc; // unused
-  return fields[0];
-}
-
-double fields::max_abs(int c, const geometric_volume &where)
-{
-  if (is_derived(c))
-    return max_abs(derived_component(c), where);
-  else
-    return max_abs(component(c), where);
-}
-
-double fields::max_abs(component c, const geometric_volume &where)
-{
-  if (is_derived(int(c)))
-    return max_abs(derived_component(c), where);
-  return max_abs(1, &c, return_the_field, 0, where);
-}
-
-double fields::max_abs(derived_component c, const geometric_volume &where)
-{
-  if (!is_derived(int(c)))
-    return max_abs(component(c), where);
-  int nfields;
-  component cs[12];
-  field_rfunction fun = derived_component_func(c, v, nfields, cs);
-  return max_abs(nfields, cs, fun, &nfields, where);
+  return real(integrate2(fields2, num_fvals1, components1, 
+			 num_fvals2, components2,
+			 rfun_wrap,
+			 &data, where, maxabs));
 }
 
 } // namespace meep

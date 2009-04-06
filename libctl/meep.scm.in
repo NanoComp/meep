@@ -1038,6 +1038,11 @@
   (let ((waf (get-where-and-fields where-and-fields)))
     (meep-fields-integrate (cdr waf) (cons cs func) (car waf))))
 
+(define (integrate2-field-function fields2 cs1 cs2 func . where-and-fields)
+  (let ((waf (get-where-and-fields where-and-fields)))
+    (meep-fields-integrate2 (cdr waf) fields2
+			    (cons (cons cs1 cs2) func) (car waf))))
+
 (define (max-abs-field-function cs func . where-and-fields)
   (let ((waf (get-where-and-fields where-and-fields)))
     (meep-fields-max-abs (cdr waf) (cons cs func) (car waf))))

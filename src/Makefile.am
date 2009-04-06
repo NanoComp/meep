@@ -12,10 +12,11 @@ bicgstab.hpp
 libmeep@MEEP_SUFFIX@_la_SOURCES = anisotropic_averaging.cpp bands.cpp	\
 boundaries.cpp bicgstab.cpp control_c.cpp cw_fields.cpp dft.cpp		\
 energy_and_flux.cpp fields.cpp loop_in_chunks.cpp grace.cpp		\
-h5fields.cpp h5file.cpp initialize.cpp integrate.cpp monitor.cpp	\
-mympi.cpp output_directory.cpp polarization.cpp sources.cpp step.cpp	\
-step_db.cpp structure.cpp time.cpp update_eh.cpp mpb.cpp \
-update_pols.cpp vec.cpp step_generic.cpp $(HDRS) $(BUILT_SOURCES)
+h5fields.cpp h5file.cpp initialize.cpp integrate.cpp integrate2.cpp	\
+monitor.cpp mympi.cpp output_directory.cpp polarization.cpp		\
+sources.cpp step.cpp step_db.cpp structure.cpp time.cpp update_eh.cpp	\
+mpb.cpp update_pols.cpp vec.cpp step_generic.cpp $(HDRS)		\
+$(BUILT_SOURCES)
 
 libmeep@MEEP_SUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
