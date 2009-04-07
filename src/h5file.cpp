@@ -409,7 +409,7 @@ void h5file::remove_data(const char *dataname)
 
   if (get_extending(dataname)) { // delete dataname from extending list
     extending_s *prev = 0, *cur = extending;
-    for (; cur && strcmp(cur->dataname, dataname); cur = (prev = cur)->next);
+    for (; cur && strcmp(cur->dataname, dataname); cur = (prev = cur)->next) ;
     if (!cur) abort("bug in remove_data: inconsistent get_extending");
     if (prev)
       prev->next = cur->next;

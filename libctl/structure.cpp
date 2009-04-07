@@ -10,12 +10,6 @@ typedef struct {
   double m00, m01, m02,
               m11, m12,
                    m22;
-#    define ESCALAR_RE(z) (z)
-#    define ESCALAR_IM(z) (0.0)
-#    define ESCALAR_NORMSQR(z) ((z) * (z))
-#    define ASSIGN_ESCALAR(z, re, im) (z) = (re);
-#    define ESCALAR_MULT_CONJ_RE(a, b) ((a) * (b))
-#    define ESCALAR_MULT_CONJ_IM(a, b) (0.0)
 } symmetric_matrix;
 
 /* rotate A by a unitary (real) rotation matrix R:
@@ -30,9 +24,9 @@ void sym_matrix_rotate(symmetric_matrix *RAR,
      A[0][0] = A_->m00;
      A[1][1] = A_->m11;
      A[2][2] = A_->m22;
-     A[0][1] = A[1][0] = ESCALAR_RE(A_->m01);
-     A[0][2] = A[2][0] = ESCALAR_RE(A_->m02);
-     A[1][2] = A[2][1] = ESCALAR_RE(A_->m12);
+     A[0][1] = A[1][0] = A_->m01;
+     A[0][2] = A[2][0] = A_->m02;
+     A[1][2] = A[2][1] = A_->m12;
      for (i = 0; i < 3; ++i) for (j = 0; j < 3; ++j) 
 	  AR[i][j] = A[i][0]*R[0][j] + A[i][1]*R[1][j] + A[i][2]*R[2][j];
      for (i = 0; i < 3; ++i) for (j = i; j < 3; ++j) 
@@ -40,9 +34,9 @@ void sym_matrix_rotate(symmetric_matrix *RAR,
      RAR->m00 = A[0][0];
      RAR->m11 = A[1][1];
      RAR->m22 = A[2][2];
-     ESCALAR_RE(RAR->m01) = A[0][1];
-     ESCALAR_RE(RAR->m02) = A[0][2];
-     ESCALAR_RE(RAR->m12) = A[1][2];
+     RAR->m01 = A[0][1];
+     RAR->m02 = A[0][2];
+     RAR->m12 = A[1][2];
 }
 
 /* Set Vinv = inverse of V, where both V and Vinv are real-symmetric matrices.*/
@@ -228,10 +222,14 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
       
       if (geometry.items[i].material.which_subclass 
 	  == MTS::MEDIUM)
-	printf("%*sdielectric constant epsilon = %g\n",
+	printf("%*sdielectric constant epsilon diagonal = (%g,%g,%g)\n",
 	       5 + 5, "",
 	       geometry.items[i].material.
-	       subclass.medium_data->epsilon_diag.x);
+	       subclass.medium_data->epsilon_diag.x,
+	       geometry.items[i].material.
+	       subclass.medium_data->epsilon_diag.y,
+	       geometry.items[i].material.
+	       subclass.medium_data->epsilon_diag.z);
     }
   }
   
@@ -351,12 +349,12 @@ static void material_epsmu(meep::field_type ft, material_type material,
       }
     case MTS::PERFECT_METAL:
       {
-      epsmu->m00 = -meep::infinity;
-      epsmu->m11 = -meep::infinity;
-      epsmu->m22 = -meep::infinity;
-      epsmu_inv->m00 = -0.0;
-      epsmu_inv->m11 = -0.0;
-      epsmu_inv->m22 = -0.0;
+      epsmu->m00 = 1.0;
+      epsmu->m11 = 1.0;
+      epsmu->m22 = 1.0;
+      epsmu_inv->m00 = 1.0;
+      epsmu_inv->m11 = 1.0;
+      epsmu_inv->m22 = 1.0;
       break;
       }
     default:
@@ -425,7 +423,7 @@ static bool get_front_object(const meep::geometric_volume &gv,
 			     material_type &mat_behind) {
   vector3 p;
   const geometric_object *o1 = 0, *o2 = 0;
-  vector3 shiftby1, shiftby2;
+  vector3 shiftby1 = {0,0,0}, shiftby2 = {0,0,0};
   geom_box pixel;
   material_type mat1, mat2;
   int id1 = -1, id2 = -1;
@@ -515,23 +513,46 @@ static bool get_front_object(const meep::geometric_volume &gv,
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 				   const meep::geometric_volume &gv,
 				   double tol, int maxeval) {
-  if (!maxeval) {
-  trivial:
-    chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0.0;
-    chi1inv_row[meep::component_direction(c) % 3] = 1/chi1p1(meep::type(c),
-							     gv.center());;
-    return;
-  }
-
   const geometric_object *o;
   material_type mat, mat_behind;
+  symmetric_matrix meps, meps_inv;
   vector3 p, shiftby, normal;
+  bool destroy_material = false;
 
-  if (!get_front_object(gv, geometry_tree,
-			p, &o, shiftby, mat, mat_behind)) {
-    fallback_chi1inv_row(c, chi1inv_row, gv, tol, maxeval);
+  if (maxeval == 0 || !get_front_object(gv, geometry_tree,
+					p, &o, shiftby, mat, mat_behind)) {
+    destroy_material = get_material_pt(mat, gv.center());
+  trivial:    
+    material_epsmu(meep::type(c), mat, &meps, &meps_inv);
+    switch (component_direction(c)) {
+    case meep::X: case meep::R:
+      chi1inv_row[0] = meps_inv.m00;
+      chi1inv_row[1] = meps_inv.m01;
+      chi1inv_row[2] = meps_inv.m02;
+      break;
+    case meep::Y: case meep::P:
+      chi1inv_row[0] = meps_inv.m01;
+      chi1inv_row[1] = meps_inv.m11;
+      chi1inv_row[2] = meps_inv.m12;
+      break;
+    case meep::Z:
+      chi1inv_row[0] = meps_inv.m02;
+      chi1inv_row[1] = meps_inv.m12;
+      chi1inv_row[2] = meps_inv.m22;
+      break;
+    case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
+    }
+    if (destroy_material) material_type_destroy(mat);
     return;
   }
+
+  // FIXME: reimplement support for fallback integration, without
+  //        messing up anisotropic support
+  //  if (!get_front_object(gv, geometry_tree,
+  //			p, &o, shiftby, mat, mat_behind)) {
+  //     fallback_chi1inv_row(c, chi1inv_row, gv, tol, maxeval);
+  //     return;
+  //  }
 
   /* check for trivial case of only one object/material */
   if (material_type_equal(&mat, &mat_behind)) goto trivial;
@@ -541,10 +562,8 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
   pixel.low = vector3_minus(pixel.low, shiftby);
   pixel.high = vector3_minus(pixel.high, shiftby);
 
-  // fixme: don't ignore maxeval?
   double fill = box_overlap_with_object(pixel, *o, tol, maxeval); 
 
-  symmetric_matrix meps, meps_inv;
   material_epsmu(meep::type(c), mat, &meps, &meps_inv);
   symmetric_matrix eps2, epsinv2;
   symmetric_matrix eps1, delta;
@@ -582,39 +601,36 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
   sym_matrix_rotate(&eps2, &eps2, Rot);
 
 #define AVG (fill * (EXPR(eps1)) + (1-fill) * (EXPR(eps2)))
+#define SQR(x) ((x) * (x))
 
 #define EXPR(eps) (-1 / eps.m00)
 	  delta.m00 = AVG;
 #undef EXPR
-#define EXPR(eps) (eps.m11 - ESCALAR_NORMSQR(eps.m01) / eps.m00)
+#define EXPR(eps) (eps.m11 - SQR(eps.m01) / eps.m00)
 	  delta.m11 = AVG;
 #undef EXPR
-#define EXPR(eps) (eps.m22 - ESCALAR_NORMSQR(eps.m02) / eps.m00)
+#define EXPR(eps) (eps.m22 - SQR(eps.m02) / eps.m00)
 	  delta.m22 = AVG;
 #undef EXPR
 
-#define EXPR(eps) (ESCALAR_RE(eps.m01) / eps.m00)
-	  ESCALAR_RE(delta.m01) = AVG;
+#define EXPR(eps) (eps.m01 / eps.m00)
+	  delta.m01 = AVG;
 #undef EXPR
-#define EXPR(eps) (ESCALAR_RE(eps.m02) / eps.m00)
-	  ESCALAR_RE(delta.m02) = AVG;
+#define EXPR(eps) (eps.m02 / eps.m00)
+	  delta.m02 = AVG;
 #undef EXPR
-#define EXPR(eps) (ESCALAR_RE(eps.m12) - ESCALAR_MULT_CONJ_RE(eps.m02, eps.m01) / eps.m00)
-	  ESCALAR_RE(delta.m12) = AVG;
+#define EXPR(eps) (eps.m12 - eps.m02 * eps.m01 / eps.m00)
+	  delta.m12 = AVG;
 #undef EXPR
 
 	  meps.m00 = -1/delta.m00;
-	  meps.m11 = delta.m11 - ESCALAR_NORMSQR(delta.m01) / delta.m00;
-	  meps.m22 = delta.m22 - ESCALAR_NORMSQR(delta.m02) / delta.m00;
-	  ASSIGN_ESCALAR(meps.m01, -ESCALAR_RE(delta.m01)/delta.m00,
-			-ESCALAR_IM(delta.m01)/delta.m00);
-	  ASSIGN_ESCALAR(meps.m02, -ESCALAR_RE(delta.m02)/delta.m00,
-			-ESCALAR_IM(delta.m02)/delta.m00);
-	  ASSIGN_ESCALAR(meps.m12, 
-			ESCALAR_RE(delta.m12) 
-			- ESCALAR_MULT_CONJ_RE(delta.m02, delta.m01)/delta.m00,
-			ESCALAR_IM(delta.m12) 
-			- ESCALAR_MULT_CONJ_IM(delta.m02, delta.m01)/delta.m00);
+	  meps.m11 = delta.m11 - SQR(delta.m01) / delta.m00;
+	  meps.m22 = delta.m22 - SQR(delta.m02) / delta.m00;
+	  meps.m01 = -delta.m01/delta.m00;
+	  meps.m02 = -delta.m02/delta.m00;
+	  meps.m12 = delta.m12 - (delta.m02 * delta.m01) / delta.m00;
+
+#undef SQR
 
 #define SWAP(a,b) { double xxx = a; a = b; b = xxx; }	  
 	  /* invert rotation matrix = transpose */
@@ -630,21 +646,23 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 #  endif
 
   sym_matrix_invert(&meps_inv, &meps);
-  int rownum = meep::component_direction(c) % 3;
-  if (rownum == 0) {
+  switch (component_direction(c)) {
+  case meep::X: case meep::R:
     chi1inv_row[0] = meps_inv.m00;
     chi1inv_row[1] = meps_inv.m01;
     chi1inv_row[2] = meps_inv.m02;
-  } 
-  else if (rownum == 1) {
+    break;
+  case meep::Y: case meep::P:
     chi1inv_row[0] = meps_inv.m01;
     chi1inv_row[1] = meps_inv.m11;
     chi1inv_row[2] = meps_inv.m12;
-  }
-  else {
+    break;
+  case meep::Z:
     chi1inv_row[0] = meps_inv.m02;
     chi1inv_row[1] = meps_inv.m12;
     chi1inv_row[2] = meps_inv.m22;
+    break;
+  case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
   }
 }
 
@@ -870,26 +888,27 @@ double geom_epsilon::chi2(meep::component c, const meep::vec &r) {
   return chi2_val;
 }
 
+static bool mu_not_1(material_type &m)
+{
+  return (m.which_subclass == MTS::MEDIUM &&
+	  (m.subclass.medium_data->mu_diag.x != 1 ||
+	   m.subclass.medium_data->mu_diag.y != 1 ||
+	   m.subclass.medium_data->mu_diag.z != 1 ||
+	   m.subclass.medium_data->mu_offdiag.x != 0 ||
+	   m.subclass.medium_data->mu_offdiag.y != 0 ||
+	   m.subclass.medium_data->mu_offdiag.z != 0));
+}
+
 bool geom_epsilon::has_mu()
 {
   for (int i = 0; i < geometry.num_items; ++i) {
-    if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
-      if ((geometry.items[i].material.subclass.medium_data->mu_diag.x != 1) ||
-	  (geometry.items[i].material.subclass.medium_data->mu_diag.y != 1) ||
-	  (geometry.items[i].material.subclass.medium_data->mu_diag.z != 1))
-	return true; 
-    }
+    if (mu_not_1(geometry.items[i].material))
+      return true; 
   }
   for (int i = 0; i < extra_materials.num_items; ++i)
-    if (extra_materials.items[i].which_subclass == MTS::MEDIUM)
-      if ((extra_materials.items[i].subclass.medium_data->mu_diag.x != 1) ||
-	  (extra_materials.items[i].subclass.medium_data->mu_diag.y != 1) ||
-	  (extra_materials.items[i].subclass.medium_data->mu_diag.z != 1))
-        return true;
-  return (default_material.which_subclass == MTS::MEDIUM &&
-	  (default_material.subclass.medium_data->mu_diag.x != 1) ||
-	  (default_material.subclass.medium_data->mu_diag.y != 1) ||
-	  (default_material.subclass.medium_data->mu_diag.z != 1));
+    if (mu_not_1(extra_materials.items[i]))
+      return true;
+  return (mu_not_1(default_material));
 }
 
 static double get_cnd(meep::component c, const medium *m) {

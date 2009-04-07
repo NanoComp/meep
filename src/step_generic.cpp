@@ -181,6 +181,10 @@ void step_update_EDHB(RPR f, component fc, const volume &v,
     SWAP(int, sigsize_dsig1, sigsize_dsig2);
     SWAP(int, sigsize_dsig1inv, sigsize_dsig2inv);
   }
+
+  // stable averaging of offdiagonal components
+#define OFFDIAG(u,g,sx) (0.25 * ((g[i]+g[i-sx])*u[i] \
+		   	       + (g[i+s]+g[(i+s)-sx])*u[i+s]))
   
   if (sigsize_dsig <= 1 && sigsize_dsigg <= 1 && 
       (!u1 || (sigsize_dsig1 <= 1 && sigsize_dsig1inv <= 1))) { // no PML
@@ -190,17 +194,15 @@ void step_update_EDHB(RPR f, component fc, const volume &v,
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	  double gs = g[i]; double us = u[i];
-	  f[i] = (gs * us + 0.25 * (u1[i]*g1s + u2[i]*g2s)) *
-	    calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
-			     gs, us, chi2[i], chi3[i]);
+	  f[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2))
+	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
+			       gs, us, chi2[i], chi3[i]);	  
 	}
       }
       else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
-	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	  double gs = g[i]; double us = u[i];
-	  f[i] = (gs * us + 0.25 * (u1[i]*g1s + u2[i]*g2s));
+	  f[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
 	}
       }
     }
@@ -209,16 +211,15 @@ void step_update_EDHB(RPR f, component fc, const volume &v,
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
-	  f[i] = (gs * us + 0.25 * (u1[i]*g1s)) *
-	    calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
-			     gs, us, chi2[i], chi3[i]);
+	  f[i] = (gs * us + OFFDIAG(u1,g1,s1))
+	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
+			       gs, us, chi2[i], chi3[i]);
 	}
       }
       else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
-	  f[i] = (gs * us + 0.25 * (u1[i]*g1s));
+	  f[i] = (gs * us + OFFDIAG(u1,g1,s1));
 	}
       }
     }
@@ -286,56 +287,58 @@ void step_update_EDHB(RPR f, component fc, const volume &v,
 #  define DEF_gbss double gbss = (1-sigg[kg]) * gb[i]
 #  define DEF_us  double us = u[i]
 #  define DEF_g1s0 double g1s0 = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
-#  define DEF_g1s DEF_g1s0; \
-                  double g1s = ((1+sig1[k1]) * sig1inv[k1inv]) * g1s0;
 #  define DEF_g2s0 double g2s0 = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
-#  define DEF_g2s DEF_g2s0; \
-                  double g2s = ((1+sig2[k2]) * sig2inv[k2inv]) * g2s0;
-#  define DEF_g1bs double g1bs = ((1-sig1[k1]) * sig1inv[k1inv]) * \
-                                 (g1b[i]+g1b[i+s]+g1b[i-s1]+g1b[i+(s-s1)])
-#  define DEF_g2bs double g2bs = ((1-sig2[k2]) * sig2inv[k2inv]) * \
-                                 (g2b[i]+g2b[i+s]+g2b[i-s2]+g2b[i+(s-s2)])
+#  define SIG1 ((1+sig1[k1]) * sig1inv[k1inv])
+#  define SIG2 ((1+sig2[k2]) * sig2inv[k2inv])
+#  define SIG1b ((1-sig1[k1]) * sig1inv[k1inv])
+#  define SIG2b ((1-sig2[k2]) * sig2inv[k2inv])
 
    if (u1 && u2) { // 3x3 off-diagonal u
      if (chi3) {
        LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
-	  DEF_kx(2); DEF_kx(2inv); DEF_g2s; DEF_g2bs;
+	  DEF_kx(1); DEF_kx(1inv); DEF_g1s0;
+	  DEF_kx(2); DEF_kx(2inv); DEF_g2s0;
 	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
 	  DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs-gbs) * us + 0.25 * (u1[i]*(g1s-g1bs) + u2[i]*(g2s-g2bs))) *
-	    calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0 + g2s0*g2s0),
-			     gs0, us, chi2[i], chi3[i]);
+	    ((gs-gbs) * us
+	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1)
+	     + SIG2*OFFDIAG(u2,g2,s2) - SIG1b*OFFDIAG(u2,g2b,s2))
+	    * calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0 + g2s0*g2s0),
+			       gs0, us, chi2[i], chi3[i]);
 	}
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
-          DEF_kx(2); DEF_kx(2inv); DEF_g2s; DEF_g2bs;
+	  DEF_kx(1); DEF_kx(1inv);
+          DEF_kx(2); DEF_kx(2inv);
           DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
           DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs-gbs) * us + 0.25 * (u1[i]*(g1s-g1bs) + u2[i]*(g2s-g2bs)));
+	    ((gs-gbs) * us
+	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1)
+	     + SIG2*OFFDIAG(u2,g2,s2) - SIG1b*OFFDIAG(u2,g2b,s2));
 	}
       }
     } else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
+	  DEF_kx(1); DEF_kx(1inv); DEF_g1s0;
 	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
           DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs - gbs) * us + 0.25 * (u1[i]*(g1s-g1bs))) *
-	    calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0),
-			     gs0, us, chi2[i], chi3[i]);
+	    ((gs-gbs) * us
+	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1))
+	    * calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0),
+			       gs0, us, chi2[i], chi3[i]);
 	}
       } else {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv); DEF_g1s; DEF_g1bs;
+	  DEF_kx(1); DEF_kx(1inv);
           DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
           DEF_us;
 	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs - gbs) * us + 0.25 * (u1[i]*(g1s-g1bs)));
+	    ((gs-gbs) * us
+	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1));
 	}	
       }
     } else if (u2) { // 2x2 off-diagonal u

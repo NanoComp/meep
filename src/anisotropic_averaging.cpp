@@ -210,14 +210,20 @@ void structure_chunk::set_chi1inv(component c,
   bool trivial[3] = {true,true,true};
   double trivial_val[3] = {0,0,0};
   trivial_val[idiag] = 1.0;
+  ivec shift1(unit_ivec(v.dim,component_direction(c)));
   LOOP_OVER_VOL(v, c, i) {
-    double chi1invrow[3];
+    double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(v, here);
     medium.eff_chi1inv_row(c, chi1invrow,
-			   v.dV(here, smoothing_diameter), tol, maxeval);
-    if (chi1inv[c][d0]) chi1inv[c][d0][i] = chi1invrow[0];
-    if (chi1inv[c][d1]) chi1inv[c][d1][i] = chi1invrow[1];
-    if (chi1inv[c][d2]) chi1inv[c][d2][i] = chi1invrow[2];
+			   v.dV(here, smoothing_diameter), tol,maxeval);
+    medium.eff_chi1inv_row(c, chi1invrow_offdiag,
+			   v.dV(here-shift1, smoothing_diameter), tol,maxeval);
+    if (chi1inv[c][d0]) chi1inv[c][d0][i] = 
+		     (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
+    if (chi1inv[c][d1]) chi1inv[c][d1][i] = 
+		     (d1 == dc) ? chi1invrow[1] : chi1invrow_offdiag[1];
+    if (chi1inv[c][d2]) chi1inv[c][d2][i] = 
+		     (d2 == dc) ? chi1invrow[2] : chi1invrow_offdiag[2];
     for (int j = 0; j < 3; ++j)
       trivial[j] = trivial[j] && (chi1invrow[j] == trivial_val[j]);
     

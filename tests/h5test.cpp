@@ -461,7 +461,7 @@ int main(int argc, char **argv)
 		     component_name(tm_c[ic]), use_real ? "_r" : "");
 	    master_printf("Checking %s...\n", name);
 	    if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, 
-				  tm_c[ic], vec(pad1,pad2), use_real, name))
+	    			  tm_c[ic], vec(pad1,pad2), use_real, name))
 	      return 1;
 	  }
   
@@ -489,7 +489,7 @@ int main(int argc, char **argv)
 		     use_real ? "_r" : "");
 	    master_printf("Checking %s...\n", name);
 	    if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic],
-			  gv_3d[igv], use_real, gv_3d_rank[igv], name))
+	    		  gv_3d[igv], use_real, gv_3d_rank[igv], name))
 	      return 1;
 	  }
       }
