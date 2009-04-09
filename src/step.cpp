@@ -123,7 +123,8 @@ double fields_chunk::peek_field(component c, const vec &where) {
 }
 
 void fields::phase_material() {
-  if (phasein_time > 0) {
+  bool changed = false;
+  if (is_phasing()) {
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->is_mine()) {
 	chunks[i]->phase_material(phasein_time);
