@@ -160,6 +160,7 @@ bool fields::have_component(component c) {
 
 fields_chunk::~fields_chunk() {
   if (s->refcount-- <= 1) delete s; // delete if not shared
+  if (new_s && new_s->refcount-- <= 1) delete new_s; // delete if not shared
   is_real = 0; // So that we can make sure to delete everything...
   // for mu=1 non-PML regions, H==B to save space/time - don't delete twice!
   DOCMP2 FOR_H_AND_B(hc,bc) if (f[hc][cmp] == f[bc][cmp]) f[bc][cmp] = NULL;
@@ -227,13 +228,13 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
 
 fields_chunk::fields_chunk(const fields_chunk &thef)
   : v(thef.v), gv(thef.gv) {
-  s = new structure_chunk(thef.s);
+  s = thef.s; s->refcount++;
   rshift = thef.rshift;
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
   store_pol_energy = thef.store_pol_energy;
-  new_s = NULL;
+  new_s = thef.new_s; new_s->refcount++;
   bands = NULL;
   is_real = thef.is_real;
   a = thef.a;
@@ -460,8 +461,8 @@ int fields::phase_in_material(const structure *snew, double time) {
   return phasein_time;
 }
 
-void fields_chunk::phase_in_material(const structure_chunk *snew) {
-  new_s = snew;
+void fields_chunk::phase_in_material(structure_chunk *snew) {
+  new_s = snew; new_s->refcount++;
 }
 
 int fields::is_phasing() {

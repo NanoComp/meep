@@ -727,7 +727,7 @@ class fields_chunk {
   int is_real, store_pol_energy;
   bandsdata *bands;
   src_vol *sources[NUM_FIELD_TYPES];
-  const structure_chunk *new_s;
+  structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
 
@@ -798,7 +798,7 @@ class fields_chunk {
   // bands.cpp
   void record_bands(int tcount);
   // step.cpp
-  void phase_in_material(const structure_chunk *s);
+  void phase_in_material(structure_chunk *s);
   void phase_material(int phasein_time);
   void step_db(field_type ft);
   void step_source(field_type ft, bool including_integrated);
