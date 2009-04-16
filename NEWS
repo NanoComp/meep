@@ -1,4 +1,4 @@
-Meep 0.20.4
+Meep 0.20.4 (17 March 2009)
 
   * Bug fix in cylindrical code, which caused it to blow up
     in some circumstances for nonzero m.
