@@ -116,9 +116,9 @@ component first_field_component(field_type ft);
            loop_d1 = (v).yucky_direction(0), \
            loop_d2 = (v).yucky_direction(1), \
            loop_d3 = (v).yucky_direction(2), \
-           loop_s1 = (v).stride0((direction) loop_d1), \
-           loop_s2 = (v).stride0((direction) loop_d2), \
-           loop_s3 = (v).stride0((direction) loop_d3), \
+           loop_s1 = (v).stride((direction) loop_d1), \
+           loop_s2 = (v).stride((direction) loop_d2), \
+           loop_s3 = (v).stride((direction) loop_d3), \
            idx0 = (is - (v).little_corner()).yucky_val(0) / 2 * loop_s1 \
                 + (is - (v).little_corner()).yucky_val(1) / 2 * loop_s2 \
                 + (is - (v).little_corner()).yucky_val(2) / 2 * loop_s3,\
@@ -640,7 +640,6 @@ class volume {
 
   void print() const;
   int stride(direction d) const { return the_stride[d]; };
-  int stride0(direction d) const { return the_stride0[d]; };
   int num_direction(direction d) const {
     return num[((int) d) % 3];
   };
@@ -775,7 +774,7 @@ class volume {
   void set_strides();
   void num_changed() { update_ntot(); set_strides(); }
   int num[3];
-  int the_stride0[5], the_stride[5];
+  int the_stride[5];
   int the_ntot;
 };
 
