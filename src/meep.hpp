@@ -793,8 +793,6 @@ class fields_chunk {
   component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
   direction plus_deriv_direction[NUM_FIELD_COMPONENTS],
             minus_deriv_direction[NUM_FIELD_COMPONENTS];
-  int num_each_direction[3], stride_each_direction[3];
-  int num_any_direction[5], stride_any_direction[5];
   // bands.cpp
   void record_bands(int tcount);
   // step.cpp
