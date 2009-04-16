@@ -216,32 +216,6 @@ if test "$GXX" = "yes" && test "$USE_MAINTAINER_MODE" = yes; then
 fi
 
 ##############################################################################
-
-AC_CHECK_PROG(HC, ghc, ghc)
-if test "$USE_MAINTAINER_MODE" = yes; then
-if test x"$HC" = x; then
-	AC_MSG_ERROR([the ghc Haskell compiler is required in maintainer mode])
-else
-   ghc_vers=`$HC -V | sed 's/.*version *\([[0-9]][[0-9.]]*\).*$/\1/'`
-   (echo "import FiniteMap"; echo 'main = putStr "Hello world"') > conftest.hs
-   GHC_PACKAGEFLAG=unknown
-   AC_MSG_CHECKING([for ghc -package for FiniteMap])
-   for flag in data ghc-6.6 ghc-$ghc_vers; do
-       if $HC -package $flag -c conftest.hs >&AS_MESSAGE_LOG_FD 2>&1; then
-          GHC_PACKAGEFLAG=$flag
-	  break;
-       fi
-   done
-   rm -f conftest*
-   AC_MSG_RESULT([$GHC_PACKAGEFLAG])
-   if test x"$GHC_PACKAGEFLAG" = xunknown; then
-      AC_MSG_ERROR([unable to find working -package for FiniteMap])
-   fi
-fi
-fi
-AC_SUBST(GHC_PACKAGEFLAG)
-
-##############################################################################
 # Libraries and flags (other than -lmeep) required to link Meep:
 
 MEEPLIBS="$LDFLAGS $LIBS"
@@ -466,7 +440,6 @@ AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
 	src/Makefile
-	hsrc/Makefile
 	doc/Makefile
 	tests/Makefile
 	examples/Makefile

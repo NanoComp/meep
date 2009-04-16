@@ -30,5 +30,3 @@ if test x$verbose = xyes; then
 fi
 
 test $config = bad && exit 1
-
-(cd hsrc; make depend)
