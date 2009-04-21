@@ -203,7 +203,7 @@ void sort_by_distance(int n, double x[], double y[], double z[], double w[])
 	d2sum += d2;
       }
       if (d2min > d2max ||
-	  d2min == d2max && d2sum > d2maxsum) {
+	  (d2min == d2max && d2sum > d2maxsum)) {
 	d2max = d2min;
 	d2maxsum = d2sum;
 	jmax = j;
