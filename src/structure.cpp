@@ -455,6 +455,17 @@ void structure::use_pml(direction d, boundary_side b, double dx) {
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
 }
 
+bool structure::has_chi1inv(component c, direction d) const {
+  int i;
+  for (i = 0; i < num_chunks && !chunks[i]->has_chi1inv(c, d); i++)
+    ;
+  return or_to_all(i < num_chunks);
+}
+
+bool structure_chunk::has_chi1inv(component c, direction d) const {
+  return is_mine() && chi1inv[c][d] && !trivial_chi1inv[c][d];
+}
+
 void structure::mix_with(const structure *oth, double f) {
   if (num_chunks != oth->num_chunks)
     abort("You can't phase materials with different chunk topologies...\n");
@@ -485,6 +496,7 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
     if (!chi1inv[c][d] && n->chi1inv[c][d]) {
       chi1inv[c][d] = new realnum[v.ntot()];
+      trivial_chi1inv[c][d] = n->trivial_chi1inv[c][d];
       if (component_direction(c) == d) // diagonal components = 1 by default
 	for (int i=0;i<v.ntot();i++) chi1inv[c][d][i] = 1.0;
       else
@@ -495,6 +507,8 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
       for (int i=0;i<v.ntot();i++) conductivity[c][d][i] = 0.0;
     }
     if (chi1inv[c][d]) {
+      trivial_chi1inv[c][d] = 
+	trivial_chi1inv[c][d] && n->trivial_chi1inv[c][d];
       if (n->chi1inv[c][d])
 	for (int i=0;i<v.ntot();i++)
 	  chi1inv[c][d][i] += f*(n->chi1inv[c][d][i] - chi1inv[c][d][i]);
@@ -633,7 +647,9 @@ structure_chunk::structure_chunk(const structure_chunk *o) : gv(o->gv) {
       chi2[c] = NULL;
     }
   }
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) trivial_chi1inv[c][d] = true;
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) if (is_mine()) {
+    trivial_chi1inv[c][d] = o->trivial_chi1inv[c][d];
     if (o->chi1inv[c][d]) {
       chi1inv[c][d] = new realnum[v.ntot()];
       memcpy(chi1inv[c][d], o->chi1inv[c][d], v.ntot()*sizeof(realnum));
@@ -791,6 +807,7 @@ structure_chunk::structure_chunk(const volume &thev,
   FOR_COMPONENTS(c) chi3[c] = NULL;
   FOR_COMPONENTS(c) chi2[c] = NULL;
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
+    trivial_chi1inv[c][d] = true;
     chi1inv[c][d] = NULL;
     conductivity[c][d] = NULL;
     condinv[c][d] = NULL;

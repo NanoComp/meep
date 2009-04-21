@@ -231,6 +231,7 @@ class structure_chunk {
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   realnum *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
   realnum *chi1inv[NUM_FIELD_COMPONENTS][5];
+  bool trivial_chi1inv[NUM_FIELD_COMPONENTS][5];
   realnum *conductivity[NUM_FIELD_COMPONENTS][5];
   realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale; // true if condinv needs to be recomputed
@@ -249,6 +250,7 @@ class structure_chunk {
   void set_chi1inv(component c, material_function &eps,
                    bool use_anisotropic_averaging,
 		   double tol, int maxeval);
+  bool has_chi1inv(component c, direction d) const;
   void set_conductivity(component c, material_function &eps);
   void update_condinv();
   void set_chi3(component c, material_function &eps);
@@ -381,6 +383,7 @@ class structure {
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+  bool has_chi1inv(component c, direction d) const;
   void set_epsilon(material_function &eps,
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
@@ -778,7 +781,6 @@ class fields_chunk {
   // boundaries.cpp
   void zero_metal(field_type);
   // fields.cpp
-  void alloc_f(component c);
   void remove_sources();
   void remove_polarizabilities();
   void zero_fields();
@@ -788,6 +790,7 @@ class fields_chunk {
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
+  bool alloc_f(component c);
   void figure_out_step_plan();
   bool have_plus_deriv[NUM_FIELD_COMPONENTS], have_minus_deriv[NUM_FIELD_COMPONENTS];
   component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
@@ -1106,6 +1109,8 @@ class fields {
   double last_wall_time;
   time_sink working_on, was_working_on;
   double times_spent[Other+1];
+  // fields.cpp
+  void figure_out_step_plan();
   // time.cpp
   void am_now_working_on(time_sink);
   void finished_working();

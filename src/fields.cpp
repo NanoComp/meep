@@ -308,6 +308,11 @@ void fields_chunk::changing_structure() {
   }
 }
 
+void fields::figure_out_step_plan() {
+  for (int i = 0; i < num_chunks; ++i)
+    if (chunks[i]->is_mine()) chunks[i]->figure_out_step_plan();
+}
+
 void fields_chunk::figure_out_step_plan() {
   FOR_COMPONENTS(cc)
     have_minus_deriv[cc] = have_plus_deriv[cc] = false;
@@ -352,21 +357,67 @@ static bool is_like(ndim d, component c1, component c2) {
   return !(is_tm(c1) ^ is_tm(c2));
 }
 
-void fields_chunk::alloc_f(component the_c) {
-  FOR_COMPONENTS(c)
-    if (is_mine() && v.has_field(c) && is_like(v.dim, the_c, c)
-	&& !is_magnetic(c))
-      DOCMP {
-        if (!f[c][cmp]) {
-          f[c][cmp] = new realnum[v.ntot()];
-          for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
+// this function should ordinarily not be called directly;
+// instead it should be called via require_component,
+// since only require_component knows what other field components
+// need to be allocated in addition to c
+bool fields_chunk::alloc_f(component c) {
+  bool changed = false;
+  if (is_mine())
+    DOCMP {
+      if (!f[c][cmp]) {
+	changed = true;
+	if (is_magnetic(c)) {
+	  /* initially, we just set H == B ... later on, we lazily allocate
+	     H fields if needed (if mu != 1 or in PML) in update_h_from_b */
+	  component bc = direction_component(Bx, component_direction(c));
+	  if (!f[bc][cmp]) {
+	    f[bc][cmp] = new realnum[v.ntot()];
+	    for (int i=0;i<v.ntot();i++) f[bc][cmp][i] = 0.0;
+	  }
+	  f[c][cmp] = f[bc][cmp];
 	}
+	else {
+	  f[c][cmp] = new realnum[v.ntot()];
+	  for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
+	}
+      }
     }
-  /* initially, we just set H == B ... later on, we lazily allocate
-     H fields if needed (if mu != 1 or in PML) in update_h_from_b */
-  FOR_H_AND_B(hc,bc) DOCMP 
-    if (!f[hc][cmp] && f[bc][cmp]) f[hc][cmp] = f[bc][cmp];
-  figure_out_step_plan();
+  return changed;
+}
+
+void fields::require_component(component c) {
+  if (!v.has_field(c))
+    abort("cannot require a %s component in a %s grid",
+	  component_name(c), dimension_name(v.dim));
+
+  // check if we are in 2d but anisotropy couples xy with z
+  bool aniso2d = false;
+  if (v.dim == D2) {
+    int i;
+    for (i = 0; i < num_chunks; ++i)
+      if (chunks[i]->s->has_chi1inv(Ex, Z) ||
+	  chunks[i]->s->has_chi1inv(Ey, Z) ||
+	  chunks[i]->s->has_chi1inv(Ez, X) ||
+	  chunks[i]->s->has_chi1inv(Ez, Y) ||
+	  chunks[i]->s->has_chi1inv(Hx, Z) ||
+	  chunks[i]->s->has_chi1inv(Hy, Z) ||
+	  chunks[i]->s->has_chi1inv(Hz, X) ||
+	  chunks[i]->s->has_chi1inv(Hz, Y))
+	break;
+    aniso2d = or_to_all(i < num_chunks);
+  }
+
+  // allocate fields if they haven't been allocated yet for this component
+  int need_to_reconnect = 0;
+  FOR_COMPONENTS(c_alloc)
+    if (v.has_field(c_alloc) && (is_like(v.dim, c, c_alloc) || aniso2d))
+      for (int i = 0; i < num_chunks; ++i)
+	if (chunks[i]->alloc_f(c_alloc))
+	  need_to_reconnect++;
+
+  if (need_to_reconnect) figure_out_step_plan();
+  if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
 }
 
 void fields_chunk::remove_sources() {

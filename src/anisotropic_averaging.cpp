@@ -241,6 +241,9 @@ void structure_chunk::set_chi1inv(component c,
     }
     ++ipixel;
   }
+  trivial_chi1inv[c][d0] = trivial[0];
+  trivial_chi1inv[c][d1] = trivial[1];
+  trivial_chi1inv[c][d2] = trivial[2];
   if (trivial[(idiag+1)%3] && trivial[(idiag+2)%3]) {
     FOR_FT_COMPONENTS(ft,c2) if (v.has_field(c2)) {
       direction d = component_direction(c2);
