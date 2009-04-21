@@ -787,11 +787,12 @@ class fields_chunk {
 
   bool update_eh(field_type ft);
 
+  bool alloc_f(component c);
+  void figure_out_step_plan();
+
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
-  bool alloc_f(component c);
-  void figure_out_step_plan();
   bool have_plus_deriv[NUM_FIELD_COMPONENTS], have_minus_deriv[NUM_FIELD_COMPONENTS];
   component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
   direction plus_deriv_direction[NUM_FIELD_COMPONENTS],
