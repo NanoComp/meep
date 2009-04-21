@@ -1,7 +1,5 @@
 #!/bin/sh
 
-touch hsrc/.depend
-
 configure_args=""
 
 while test $# -ge 1; do
