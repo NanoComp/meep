@@ -1,3 +1,27 @@
+Meep 1.0 (21 April 2009)
+
+  * New timestepping scheme for off-diagonal anisotropic epsilon and
+    mu, based on technique by Werner and Cary [ J. Comp. Phys. 226,
+    1085 (2007) ], that improves FDTD stability when anisotropy is
+    present (such as when subpixel averaging is used on isotropic media).
+
+  * Scheme user interface now supports user-specified anisotropic
+    (real-symmetric) epsilon and mu (via epsilon-diag, epsilon-offdiag,
+    mu-diag, and mu-offdiag parameters, similar to MPB).  Accurate
+    subpixel averaging of anisotropic media based on the method by
+    Kottke, Farjadpour, & Johnson [ Phys. Rev. E. 77, 036611 (2008) ].
+
+  * New fields::integrate2 function (and corresponding Scheme function
+    integrate2-field-function) to perform integrations involving two
+    simulations with the same computational cell (e.g. field-overlap
+    calculations for coupled-mode theory).
+
+  * In the Scheme interface, subpixel averaging is not used for
+    user-specified material-function types; you only get subpixel
+    averaging for the standard shapes (blocks, cylinders, etcetera).
+
+  * Haskell code-generation is no longer used, and hsrc directory is removed.
+
 Meep 0.20.4 (17 March 2009)
 
   * Bug fix in cylindrical code, which caused it to blow up
