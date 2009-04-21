@@ -218,14 +218,18 @@ void structure_chunk::set_chi1inv(component c,
 			   v.dV(here, smoothing_diameter), tol,maxeval);
     medium.eff_chi1inv_row(c, chi1invrow_offdiag,
 			   v.dV(here-shift1, smoothing_diameter), tol,maxeval);
-    if (chi1inv[c][d0]) chi1inv[c][d0][i] = 
-		     (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
-    if (chi1inv[c][d1]) chi1inv[c][d1][i] = 
-		     (d1 == dc) ? chi1invrow[1] : chi1invrow_offdiag[1];
-    if (chi1inv[c][d2]) chi1inv[c][d2][i] = 
-		     (d2 == dc) ? chi1invrow[2] : chi1invrow_offdiag[2];
-    for (int j = 0; j < 3; ++j)
-      trivial[j] = trivial[j] && (chi1invrow[j] == trivial_val[j]);
+    if (chi1inv[c][d0]) {
+      chi1inv[c][d0][i] = (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
+      trivial[0] = trivial[0] && (chi1inv[c][d0][i] == trivial_val[0]);
+    }
+    if (chi1inv[c][d1]) {
+      chi1inv[c][d1][i] = (d1 == dc) ? chi1invrow[1] : chi1invrow_offdiag[1];
+      trivial[1] = trivial[1] && (chi1inv[c][d1][i] == trivial_val[1]);
+    }
+    if (chi1inv[c][d2]) {
+      chi1inv[c][d2][i] = (d2 == dc) ? chi1invrow[2] : chi1invrow_offdiag[2];
+      trivial[2] = trivial[2] && (chi1inv[c][d2][i] == trivial_val[2]);
+    }
     
     if (!quiet && (ipixel+1) % 1000 == 0
 	&& wall_time() > last_output_time + MIN_OUTPUT_TIME) {
