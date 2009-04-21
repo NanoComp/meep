@@ -306,6 +306,31 @@ static int variable_material(int which_subclass)
      return (which_subclass == MTS::MATERIAL_FUNCTION);
 }
 
+static bool is_metal(meep::field_type ft, const material_type *material) {
+  if (ft == meep::E_stuff)
+    switch (material->which_subclass) {
+    case MTS::MEDIUM:
+      return (material->subclass.medium_data->epsilon_diag.x < 0 ||
+	      material->subclass.medium_data->epsilon_diag.y < 0 ||
+	      material->subclass.medium_data->epsilon_diag.z < 0);
+    case MTS::PERFECT_METAL:
+      return true;
+    default:
+      meep::abort("unknown material type");
+  }
+  else
+    switch (material->which_subclass) {
+    case MTS::MEDIUM:
+      return (material->subclass.medium_data->mu_diag.x < 0 ||
+	      material->subclass.medium_data->mu_diag.y < 0 ||
+	      material->subclass.medium_data->mu_diag.z < 0);
+    case MTS::PERFECT_METAL:
+      return false; // is an electric conductor, but not a magnetic conductor
+    default:
+      meep::abort("unknown material type");
+  }
+}
+
 static void material_epsmu(meep::field_type ft, material_type material, 
 		    symmetric_matrix *epsmu, symmetric_matrix *epsmu_inv) {
   if (ft == meep::E_stuff)
@@ -521,6 +546,7 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 
   if (maxeval == 0 || !get_front_object(gv, geometry_tree,
 					p, &o, shiftby, mat, mat_behind)) {
+  noavg:
     destroy_material = get_material_pt(mat, gv.center());
   trivial:    
     material_epsmu(meep::type(c), mat, &meps, &meps_inv);
@@ -556,6 +582,10 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 
   /* check for trivial case of only one object/material */
   if (material_type_equal(&mat, &mat_behind)) goto trivial;
+
+  // it doesn't make sense to average metals (electric or magnetic)
+  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind))
+    goto noavg;
 
   normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
   geom_box pixel = gv2box(gv);
