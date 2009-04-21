@@ -1004,14 +1004,14 @@ class fields {
 			     field_function integrand,
 			     void *integrand_data_,
 			     const geometric_volume &where,
-			     double *maxabs);
+			     double *maxabs = 0);
   double integrate2(const fields &fields2,
 		    int num_fields1, const component *components1,
 		    int num_fields2, const component *components2,
 		    field_rfunction integrand,
 		    void *integrand_data_,
 		    const geometric_volume &where,
-		    double *maxabs);
+		    double *maxabs = 0);
 
 
   double max_abs(int num_fields, const component *components,
