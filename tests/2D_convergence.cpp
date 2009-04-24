@@ -12,7 +12,7 @@ double holey_2d(const vec &xx) {
   while (p.x() > 0.5) p -= vec(1.0,0);
   while (p.y() <-0.5) p += vec(0,1.0);
   while (p.y() > 0.5) p -= vec(0,1.0);
-  if (fabs(p & p) < r*r) return 1.0;
+  if (fabs(p & p) < r*r - 1e-12) return 1.0;
   return 12.0;
 }
 
