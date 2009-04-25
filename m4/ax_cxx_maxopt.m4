@@ -75,6 +75,7 @@ if test "$ac_test_CXXFLAGS" != "set"; then
 	if test "x$acx_maxopt_portable" = xno; then
 	  icc_archflag=unknown
 	  icc_flags=""
+	  # -xN etcetera are for older versions of icc:
 	  case $host_cpu in
 	    i686*|x86_64*)
               # icc accepts gcc assembly syntax, so these should work:
@@ -84,11 +85,13 @@ if test "$ac_test_CXXFLAGS" != "set"; then
                 *:756e6547:*:*) # Intel
                   case $ax_cv_gcc_x86_cpuid_1 in
                     *6a?:*[[234]]:*:*|*6[[789b]]?:*:*:*) icc_flags="-xK";;
-                    *f3[[37]]:*:*:*|*f34:*:*:*) icc_flags="-xP -xN -xW -xK";;
+                    *f3[[347]]:*:*:*|*f4[1347]:*:*:*) icc_flags="-xP -xN -xW -xK";;
                     *f??:*:*:*) icc_flags="-xN -xW -xK";;
                   esac ;;
               esac ;;
           esac
+          # newer icc versions should support -xHost
+	  icc_flags="-xHost $icc_flags"
           if test "x$icc_flags" != x; then
             for flag in $icc_flags; do
               AX_CHECK_COMPILER_FLAGS($flag, [icc_archflag=$flag; break])
