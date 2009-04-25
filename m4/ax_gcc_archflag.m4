@@ -59,9 +59,9 @@ case $host_cpu in
 	    *5??:*:*:*) ax_gcc_arch=pentium ;;
 	    *6[[3456]]?:*:*:*) ax_gcc_arch="pentium2 pentiumpro" ;;
 	    *6a?:*[[01]]:*:*) ax_gcc_arch="pentium2 pentiumpro" ;;
-	    *6a?:*[[234]]:*:*) ax_gcc_arch="pentium3 pentiumpro" ;;
-	    *6[[78b]]?:*:*:*) ax_gcc_arch="pentium3 pentiumpro" ;;
-	    *6[[9d]]?:*:*:*) ax_gcc_arch="pentium-m pentium3 pentiumpro" ;;
+	    *6a?:*[[234]]:*:*) ax_gcc_arch="native pentium3 pentiumpro" ;;
+	    *6[[78b]]?:*:*:*) ax_gcc_arch="native pentium3 pentiumpro" ;;
+	    *6[[9d]]?:*:*:*) ax_gcc_arch="native pentium-m pentium3 pentiumpro" ;;
 	    *6[[e]]?:*:*:*) ax_gcc_arch="native pentium-m pentium3 pentiumpro" ;; # Core Duo
 	    *6f?:*:*:*) ax_gcc_arch="core2 native pentium-m pentium3 pentiumpro" ;;
 	    *6??:*:*:*) ax_gcc_arch="native pentiumpro" ;;
@@ -179,6 +179,6 @@ AC_MSG_RESULT($ax_cv_gcc_archflag)
 if test "x$ax_cv_gcc_archflag" = xunknown; then
   m4_default([$3],:)
 else
-  m4_default([$2], [CFLAGS="$CFLAGS $ax_cv_gcc_archflag"])
+  m4_default([$2], [_AC_LANG_PREFIX[]FLAGS="$_AC_LANG_PREFIX[]FLAGS $ax_cv_gcc_archflag"])
 fi
 ])
