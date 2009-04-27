@@ -29,6 +29,7 @@ AM_CONDITIONAL(WITH_DOC, test "x$with_doc" = xyes)
 
 # Check for mpiCC immediately after getting C++ compiler...
 AC_PROG_CXX
+AC_LANG([C++])
 
 # Check for MPI library
 
@@ -36,10 +37,8 @@ AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
                   with_mpi=$withval, with_mpi=no)
 
 if test "x$with_mpi" = "xyes"; then
-	AC_LANG_PUSH([C++])
 	ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
 	CXX=$MPICXX
-	AC_LANG_POP([C++])
 	MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
 fi
 
@@ -385,7 +384,6 @@ LIBS=$meep_save_LIBS
 # to be optimized out.
 
 AC_CHECK_FUNCS(feenableexcept) dnl GNU libc fp exception control function
-AC_LANG_PUSH([C++])
 AC_MSG_CHECKING([whether feenableexcept declaration is usable])
 feenableexcept_decl_ok=yes
 AC_TRY_COMPILE([#include <stdio.h>
@@ -394,7 +392,6 @@ AC_TRY_COMPILE([#include <stdio.h>
 [AC_DEFINE([HAVE_DECL_FEENABLEEXCEPT],[1],[Define if fenv.h declares this.])],
 [feenableexcept_decl_ok=no])
 AC_MSG_RESULT($feenableexcept_decl_ok)
-AC_LANG_POP([C++])
 
 ##############################################################################
 # See if we need to catch SIGFPE to avoid crashing on underflow exceptions
@@ -420,9 +417,7 @@ AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
 ##############################################################################
 # check for restrict keyword in C++
 AC_PREREQ(2.58) dnl for ac_c_restrict
-AC_LANG_PUSH([C++])
 AC_C_RESTRICT
-AC_LANG_POP([C++])
 
 ##############################################################################
 
