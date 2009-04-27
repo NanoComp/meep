@@ -107,21 +107,15 @@ if test "$ac_test_CXXFLAGS" != "set"; then
     
     gnu) 
      # default optimization flags for g++ on all systems
-     # CXXFLAGS="-Os -fomit-frame-pointer" # Meep is faster with -Os!
-     CXXFLAGS="-O2" # -Os seems to produce buggy code with g++ 3.3.5, grr
+     CXXFLAGS="-O3"
 
      # -malign-double for x86 systems
      AX_CHECK_COMPILER_FLAGS(-malign-double, CXXFLAGS="$CXXFLAGS -malign-double")
 
-     # -fstrict-aliasing causes error for g++ 3.3.5 (WTF?)
-     #  -fstrict-aliasing for gcc-2.95+
-     # AX_CHECK_COMPILER_FLAGS(-fstrict-aliasing,
-     #	CXXFLAGS="$CXXFLAGS -fstrict-aliasing")
+     AX_CHECK_COMPILER_FLAGS(-fstrict-aliasing, CXXFLAGS="$CXXFLAGS -fstrict-aliasing")
 
-     # -ffast-math gives us NaN results in bragg_transmission.cpp
-     # for g++ 3.3.5.  Grrr.
      # note that we enable "unsafe" fp optimization with other compilers, too
-     # AX_CHECK_COMPILER_FLAGS(-ffast-math, CXXFLAGS="$CXXFLAGS -ffast-math")
+     AX_CHECK_COMPILER_FLAGS(-ffast-math, CFLAGS="$CFLAGS -ffast-math")
 
      AX_GCC_ARCHFLAG($acx_maxopt_portable)
      ;;
