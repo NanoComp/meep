@@ -43,6 +43,9 @@ int compare(double a, double b, double eps, const char *n) {
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
+    if (fabs(a-b) > fabs(b)*eps*1.1)
+      master_printf("%s fractional error is %g, close to %g threshold.\n",
+		    n, fabs(a-b)/fabs(b), eps);
     return 1;
   }
 }
@@ -210,7 +213,7 @@ int flux_2d(const double xmax, const double ymax,
   master_printf("Final energy is %g\n", f.energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
 		del_energy, flux, del_energy/flux);
-  if (!compare(del_energy, flux, 0.08, "Flux")) return 0;
+  if (!compare(del_energy, flux, 0.09, "Flux")) return 0;
 
   /* second check: flux spectrum is same for two concentric
      boxes containing the source. */
@@ -224,7 +227,7 @@ int flux_2d(const double xmax, const double ymax,
   for (int i = 0; i < Nfreq; ++i) {
     master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
 	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
-    if (!compare(fl1[i], fl2[i], 0.08, "Flux spectrum")) return 0;
+    if (!compare(fl1[i], fl2[i], 0.09, "Flux spectrum")) return 0;
   }
   delete fl2; delete fl1;
 
