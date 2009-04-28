@@ -400,7 +400,7 @@ int main(int argc, char **argv)
   int chances;
   quiet = true;
 #ifdef HAVE_HDF5
-  const double pad1 = 0.3, pad2 = 0.2, pad3 = 0.1;
+  const double pad1 = 0.314159, pad2 = 0.27183, pad3 = 0.14142;
 
   geometric_volume gv_2d[4] = {
        geometric_volume(vec(pad1,pad2), vec(xsize-pad2,ysize-pad1)),
