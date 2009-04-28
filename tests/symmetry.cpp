@@ -104,7 +104,7 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
   f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, veccyl(0.01,  0.5  ))) return 0;
@@ -112,7 +112,7 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, veccyl(0.501, 0.5  ))) return 0;
     if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
     if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -148,7 +148,7 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   // f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, veccyl(0.01,  0.5  ))) return 0;
@@ -156,7 +156,7 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
     if (!compare_point(f, f1, veccyl(0.501, 0.5  ))) return 0;
     if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
     if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -190,13 +190,13 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01))) return 0;
     if (!compare_point(f, f1, vec(0.33))) return 0;
     if (!compare_point(f, f1, vec(0.50))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -229,7 +229,7 @@ int test_origin_shift(void) {
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.0,0.0));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.0,0.0));
   check_unequal_layout(f, f1);
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare(f.total_energy(), f1.total_energy(), "   total energy")) {
@@ -259,7 +259,7 @@ int test_metal_xmirror(double eps(const vec &)) {
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
@@ -267,7 +267,7 @@ int test_metal_xmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -300,7 +300,7 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
   f.add_point_source(Hx, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401,0.43));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.5))) return 0;
@@ -308,7 +308,7 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.5))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -341,7 +341,7 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
   f.add_point_source(Ey, 0.8, 0.6, 0.0, 4.0, vec(0.43,0.401,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
@@ -349,7 +349,7 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -380,7 +380,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
@@ -388,7 +388,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -421,7 +421,7 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5,0.43));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
@@ -429,7 +429,7 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -460,7 +460,7 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
@@ -468,7 +468,7 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -499,7 +499,7 @@ int test_3D_metal_3mirror(double eps(const vec &)) {
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01 , 0.75))) return 0;
@@ -507,7 +507,7 @@ int test_3D_metal_3mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -541,14 +541,14 @@ int test_metal_ymirror(double eps(const vec &)) {
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -586,7 +586,7 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.951 ,  0.5))) return 0;
@@ -594,7 +594,7 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) {
@@ -634,14 +634,14 @@ int test_metal_rot2y(double eps(const vec &)) {
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.75,0.375),-1.0);
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -675,14 +675,14 @@ int exact_metal_rot2y(double eps(const vec &)) {
   f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.375));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -725,14 +725,14 @@ int pml_twomirrors(double eps(const vec &)) {
 
   check_unequal_layout(f_mm, f1);
   double total_energy_check_time = 3.0;
-  while (f_mm.time() < ttot) {
+  while (f_mm.round_time() < ttot) {
     f_mm.step();
     f1.step();
     if (!compare_point(f1, f_mm, vec(0.01 ,  0.5))) return 0;
     if (!compare_point(f1, f_mm, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f1, f_mm, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f1, f_mm, vec(0.2  , 0.2 ))) return 0;
-    if (f_mm.time() >= total_energy_check_time) {
+    if (f_mm.round_time() >= total_energy_check_time) {
       if (!compare(f_mm.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -762,14 +762,14 @@ int exact_metal_rot4z(double eps(const vec &)) {
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -806,14 +806,14 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -848,14 +848,14 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec(1.3,1.5));
   check_unequal_layout(f, f1);
   double total_energy_check_time = 1.0;
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01 ,  1.5))) return 0;
     if (!compare_point(f, f1, vec(1.21 ,  1.5))) return 0;
     if (!compare_point(f, f1, vec(1.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(1.2  , 1.2 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
+    if (f.round_time() >= total_energy_check_time) {
       if (!compare(f.electric_energy_in_box(v.surroundings()),
                    f1.electric_energy_in_box(v.surroundings()),
                    "electric energy")) return 0;
@@ -888,7 +888,7 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   check_unequal_layout(f, fS);
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     fS.step();
     if (!compare_point(fS, f, v.center())) return 0;
@@ -916,7 +916,7 @@ double nonlinear_ex(const volume &v, double eps(const vec &)) {
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   check_unequal_layout(f, fS);
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     fS.step();
     if (!compare_point(fS, f, v.center())) return 0;
@@ -944,7 +944,7 @@ double saturated_gain_ez(const volume &v, double eps(const vec &)) {
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   check_unequal_layout(f, fS);
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     fS.step();
     if (!compare_point(fS, f, v.center())) return 0;
@@ -972,7 +972,7 @@ double saturated_gain_te(const volume &v, double eps(const vec &)) {
   f.use_bloch(zero_vec(v.dim));
   fS.use_bloch(zero_vec(v.dim));
   check_unequal_layout(f, fS);
-  while (f.time() < ttot) {
+  while (f.round_time() < ttot) {
     f.step();
     fS.step();
     if (!compare_point(fS, f, v.center())) return 0;

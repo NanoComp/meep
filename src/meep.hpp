@@ -535,7 +535,7 @@ class gaussian_src_time : public src_time {
   virtual ~gaussian_src_time() {}
 
   virtual complex<double> dipole(double time) const;
-  virtual double last_time() const { return peak_time + cutoff; };
+  virtual double last_time() const { return float(peak_time + cutoff); };
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual complex<double> frequency() const { return freq; }
@@ -550,8 +550,8 @@ class continuous_src_time : public src_time {
  public:
   continuous_src_time(complex<double> f, double w = 0.0, 
 		      double st = 0.0, double et = infinity,
-		      double s = 3.0) : freq(f), width(w), start_time(st),
-					end_time(et), slowness(s) {}
+		      double s = 3.0) : freq(f), width(w), start_time(float(st)),
+					end_time(float(et)), slowness(s) {}
   virtual ~continuous_src_time() {}
   
   virtual complex<double> dipole(double time) const;
@@ -571,15 +571,15 @@ class custom_src_time : public src_time {
  public:
   custom_src_time(complex<double> (*func)(double t, void *), void *data,
 		  double st = -infinity, double et = infinity)
-    : func(func), data(data), start_time(st), end_time(et) {}
+    : func(func), data(data), start_time(float(st)), end_time(float(et)) {}
   virtual ~custom_src_time() {}
   
   virtual complex<double> current(double time, double dt) const { 
     if (is_integrated) return src_time::current(time,dt);
     else return dipole(time);
   }
-  virtual complex<double> dipole(double time) const { 
-    if (time >= start_time) return func(time,data); else return 0.0; }
+  virtual complex<double> dipole(double time) const { float rtime = float(time);
+    if (rtime >= start_time && rtime <= end_time) return func(time,data); else return 0.0; }
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
@@ -948,6 +948,11 @@ class fields {
   double last_step_output_wall_time;
   int last_step_output_t;
   void step();
+
+  // when comparing times, e.g. for source cutoffs, it
+  // is useful to round to float to avoid gratuitous sensitivity
+  // to floating-point roundoff error
+  inline double round_time() const { return float(t*dt); };
   inline double time() const { return t*dt; };
 
   // cw_fields.cpp:

@@ -69,6 +69,7 @@ gaussian_src_time::gaussian_src_time(double f, double fwidth, double s)
   // this is to make last_source_time as small as possible
   while (exp(-cutoff*cutoff / (2*width*width)) < 1e-100)
     cutoff *= 0.9;
+  cutoff = float(cutoff); // don't make cutoff sensitive to roundoff error
 }
 
 gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
@@ -81,12 +82,13 @@ gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
   // this is to make last_source_time as small as possible
   while (exp(-cutoff*cutoff / (2*width*width)) < 1e-100)
     cutoff *= 0.9;
+  cutoff = float(cutoff); // don't make cutoff sensitive to roundoff error
 }
 
 complex<double> gaussian_src_time::dipole(double time) const
 {
   double tt = time - peak_time;
-  if (fabs(tt) > cutoff)
+  if (float(fabs(tt)) > cutoff)
     return 0.0;
 
   // correction factor so that current amplitude (= d(dipole)/dt) is
@@ -108,7 +110,8 @@ bool gaussian_src_time::is_equal(const src_time &t) const
 
 complex<double> continuous_src_time::dipole(double time) const
 {
-  if (time < start_time || time > end_time)
+  float rtime = float(time);
+  if (rtime < start_time || rtime > end_time)
     return 0.0;
 
   // correction factor so that current amplitude (= d(dipole)/dt) is 1.

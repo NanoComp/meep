@@ -387,6 +387,10 @@
   (if (null? fields) (init-fields)) 
   (meep-fields-time fields))
 
+(define (meep-round-time) 
+  (if (null? fields) (init-fields)) 
+  (meep-fields-round-time fields))
+
 (define (get-field-point c pt)
   (meep-fields-get-field fields c pt))
 
@@ -531,9 +535,9 @@
 ; output at an interval of dT (in meep/simulation time).
 (define (at-every dT . step-funcs)
   (if (null? fields) (init-fields))
-  (let ((Tlast (meep-time)))
+  (let ((Tlast (meep-round-time)))
     (lambda (to-do)
-      (let ((T (meep-time)))
+      (let ((T (meep-round-time)))
 	(if (or (eq? to-do 'finish) 
 		(>= T (+ Tlast dT (* -0.5 (meep-fields-dt-get fields)))))
 	    (begin
@@ -542,13 +546,13 @@
 
 (define (after-time T . step-funcs)
   (if (null? fields) (init-fields))
-  (let ((T0 (meep-time)))
-    (when-true-funcs (lambda () (>= (meep-time) (+ T0 T))) step-funcs)))
+  (let ((T0 (meep-round-time)))
+    (when-true-funcs (lambda () (>= (meep-round-time) (+ T0 T))) step-funcs)))
 
 (define (before-time T . step-funcs)
   (if (null? fields) (init-fields))
-  (let ((T0 (meep-time)))
-    (when-true-funcs (lambda () (< (meep-time) (+ T0 T))) step-funcs)))
+  (let ((T0 (meep-round-time)))
+    (when-true-funcs (lambda () (< (meep-round-time) (+ T0 T))) step-funcs)))
 
 (define (at-time T . step-funcs)
   (let ((done? false))
@@ -560,20 +564,20 @@
 (define (after-sources . step-funcs)
   (if (null? fields) (init-fields))
   (apply after-time
-	 (cons (- (meep-fields-last-source-time fields) (meep-time))
+	 (cons (- (meep-fields-last-source-time fields) (meep-round-time))
 	       step-funcs)))
 
 ; after sources plus a time T.
 (define (after-sources+ T . step-funcs)
   (if (null? fields) (init-fields))
   (apply after-time
-	 (cons (- (+ (meep-fields-last-source-time fields) T) (meep-time))
+	 (cons (- (+ (meep-fields-last-source-time fields) T) (meep-round-time))
 	       step-funcs)))
 
 (define (during-sources . step-funcs)
   (if (null? fields) (init-fields))
   (apply before-time
-	 (cons (- (meep-fields-last-source-time fields) (meep-time))
+	 (cons (- (meep-fields-last-source-time fields) (meep-round-time))
 	       step-funcs)))
 
 ; the user could just call functions, but this functions saves the user
@@ -911,8 +915,8 @@
   (set! interactive? false)
   (if (null? fields) (init-fields))
   (if (number? cond?) ; cond? is a time to run for
-      (let ((T0 (meep-time))) ; current Meep time
-	(apply run-until (cons (lambda () (>= (meep-time) 
+      (let ((T0 (meep-round-time))) ; current Meep time
+	(apply run-until (cons (lambda () (>= (meep-round-time) 
 					      (+ T0 cond?)))
 			       (cons (display-progress T0 (+ T0 cond?) 
 						       progress-interval)
@@ -936,8 +940,8 @@
   (let ((Ts (meep-fields-last-source-time fields)))
   (apply run-until 
 	 (cons (if (number? cond?)
-		   (+ (- Ts (meep-time)) cond?)
-		   (lambda () (and (cond?) (>= (meep-time) Ts))))
+		   (+ (- Ts (meep-round-time)) cond?)
+		   (lambda () (and (cond?) (>= (meep-round-time) Ts))))
 	       step-funcs))))
 
 ; run until all sources are finished
@@ -949,17 +953,17 @@
 ; a certain amount, always running for at least steps of dT.
 (define (stop-when-fields-decayed dT c pt decay-by)
   (if (null? fields) (init-fields))
-  (let ((T0 (meep-time))
+  (let ((T0 (meep-round-time))
 	(max-abs (sqr (magnitude (meep-fields-get-field fields c pt))))
 	(cur-max 0))
     (lambda ()
       (let ((fabs (sqr (magnitude (meep-fields-get-field fields c pt)))))
 	(set! cur-max (max cur-max fabs))
-	(if (<= (meep-time) (+ T0 dT))
+	(if (<= (meep-round-time) (+ T0 dT))
 	    false ; don't stop yet
 	    (let ((old-cur cur-max))
 	      (set! cur-max 0)
-	      (set! T0 (meep-time))
+	      (set! T0 (meep-round-time))
 	      (set! max-abs (max max-abs old-cur))
 	      (if (not (zero? max-abs))
 		  (print "field decay(t = " (meep-time)"): "
