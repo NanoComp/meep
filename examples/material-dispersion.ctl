@@ -16,9 +16,9 @@
       (make dielectric (epsilon 2.25)
 	    (polarizations 
 	     (make polarizability
-	       (omega 1.1) (gamma 1e-5) (delta-epsilon 0.5))
+	       (omega 1.1) (gamma 1e-5) (sigma 0.5))
 	     (make polarizability
-	       (omega 0.5) (gamma 0.1) (delta-epsilon 2e-5))
+	       (omega 0.5) (gamma 0.1) (sigma 2e-5))
 	     )))
 
 (define-param fcen 1.0)

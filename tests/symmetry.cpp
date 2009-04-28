@@ -870,6 +870,8 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   return 1;
 }
 
+double sigma(const vec &) { return 7.63; }
+
 double polariton_ex(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   master_printf("Testing polariton in %s...\n", dimension_name(v.dim));
@@ -877,8 +879,8 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   const symmetry S = mirror(Z,v);
   structure s(v, eps);
   structure sS(v, eps, no_pml(), S);
-  s.add_polarizability(one, 0.3, 0.1, 7.63);
-  sS.add_polarizability(one, 0.3, 0.1, 7.63);
+  s.add_polarizability(sigma, 0.3, 0.1);
+  sS.add_polarizability(sigma, 0.3, 0.1);
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());

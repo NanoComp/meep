@@ -117,10 +117,12 @@ double metallic_ez(const volume &v, double eps(const vec &)) {
   return real(p.get_component(Ez));
 }
 
+double sigma(const vec &) { return 7.63; }
+
 double polariton_ex(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
-  s.add_polarizability(one, 0.3, 0.1, 7.63);
+  s.add_polarizability(sigma, 0.3, 0.1);
   fields f(&s);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(),
 		     complex<double>(0,-2*pi*0.2));
@@ -133,7 +135,7 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
 double polariton_energy(const volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
-  s.add_polarizability(one, 0.3, 0.1, 7.63);
+  s.add_polarizability(sigma, 0.3, 0.1);
   fields f(&s, 0, 1);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(),
 		     complex<double>(0,-2*pi*0.2));

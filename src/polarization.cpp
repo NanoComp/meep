@@ -107,8 +107,7 @@ polarizability::polarizability(const polarizability *pb) {
 
 polarizability::polarizability(const structure_chunk *sc, material_function &sig,
                                field_type ft_, double om, double ga, 
-			       vec sigscale,
-                               bool mine) {
+			       double sigscale, bool mine) {
   v = sc->v;
   is_it_mine = mine;
   ft = ft_;
@@ -126,10 +125,14 @@ polarizability::polarizability(const structure_chunk *sc, material_function &sig
 
     // TODO:  should we be doing some kind of subpixel averaging here?
     FOR_FT_COMPONENTS(ft,c) if (s[c]) {
-      double sigscale_c = sigscale.in_direction(component_direction(c));
+      double sigrow[3];
+      int ic = component_index(c);
       LOOP_OVER_VOL(v, c, i) {
 	IVEC_LOOP_LOC(v, here);
-	s[c][i] = sigscale_c*sig.sigma(here);
+	sig.sigma_row(c, sigrow, here);
+	s[c][i] = sigscale*sigrow[ic];
+	if (sigrow[(ic+1)%3] != 0.0 || sigrow[(ic+2)%3] != 0.0)
+	  abort("non-diagonal polarizabilities are not yet supported");
       }
     }
   } else { // Not mine, don't store arrays...
@@ -171,36 +174,18 @@ complex<double> fields::analytic_chi1(component c, double f, const vec &p) const
 
 polarizability_identifier structure::add_polarizability(material_function &sigma,
 						  field_type ft,
-						  double omega, double gamma,
-                                                  double delta_epsilon) {
-  return add_polarizability(sigma, ft, omega, gamma,
-			    one_vec(v.dim) * delta_epsilon);
-}
-
-polarizability_identifier structure::add_polarizability(material_function &sigma,
-						  field_type ft,
-						  double omega, double gamma,
-                                                  vec delta_epsilon) {
+						  double omega, double gamma) {
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->add_polarizability(sigma, ft,omega, gamma, delta_epsilon);
+    chunks[i]->add_polarizability(sigma, ft,omega, gamma);
   return chunks[0]->pb->get_identifier();
 }
 
-polarizability_identifier structure::add_polarizability(double sigma(const vec &),
-							field_type ft,
-                                                  double omega, double gamma,
-                                                  double delta_epsilon) {
-  return add_polarizability(sigma, ft, omega, gamma,
-			    one_vec(v.dim) * delta_epsilon);
-}
-
-polarizability_identifier structure::add_polarizability(double sigma(const vec &),
-							field_type ft,
-                                                  double omega, double gamma,
-                                                  vec delta_epsilon) {
+polarizability_identifier structure::add_polarizability(
+				  double sigma(const vec &),
+				  field_type ft, double omega, double gamma) {
   simple_material_function sig(sigma);
-  return add_polarizability(sig, ft, omega, gamma, delta_epsilon);
+  return add_polarizability(sig, ft, omega, gamma);
 }
 
 polarizability_identifier polarizability::get_identifier() const {
@@ -217,22 +202,16 @@ bool polarizability_identifier::operator==(const polarizability_identifier &a) {
 
 void structure_chunk::add_polarizability(material_function &sigma,
 					 field_type ft, double omega,
-					 double gamma, vec delta_epsilon) {
-  sigma.set_polarizability(ft, omega, gamma, delta_epsilon);
+					 double gamma) {
+  sigma.set_polarizability(ft, omega, gamma);
   const double freq_conversion = 2*pi*dt;
-  vec sigma_scale  = delta_epsilon * (freq_conversion*freq_conversion*omega*omega); 
+  double sigma_scale  = freq_conversion*freq_conversion*omega*omega; 
   polarizability *npb = new polarizability(this, sigma,
                                            ft, freq_conversion*omega,
                                            freq_conversion*gamma,
                                            sigma_scale, is_mine());
   npb->next = pb;
   pb = npb;
-}
-
-void structure_chunk::add_polarizability(double sigma(const vec &),
-	      field_type ft, double omega, double gamma, vec delta_epsilon) {
-  simple_material_function sig(sigma);
-  add_polarizability(sig, ft, omega,gamma,delta_epsilon);
 }
 
 } // namespace meep

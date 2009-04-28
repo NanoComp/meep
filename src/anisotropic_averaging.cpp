@@ -206,7 +206,7 @@ void structure_chunk::set_chi1inv(component c,
   direction dc = component_direction(c);
   direction d0 = X, d1 = Y, d2 = Z;
   if (v.dim == Dcyl) { d0 = R; d1 = P; }
-  int idiag = d0 == dc ? 0 : (d1 == dc ? 1 : 2);
+  int idiag = component_index(c);
   bool trivial[3] = {true,true,true};
   double trivial_val[3] = {0,0,0};
   trivial_val[idiag] = 1.0;

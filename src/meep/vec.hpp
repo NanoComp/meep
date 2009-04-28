@@ -267,6 +267,19 @@ const char *component_name(int c);
 const char *direction_name(direction);
 const char *dimension_name(ndim);
 
+inline int component_index(component c) {
+  switch (c) {    
+  case Ex: case Hx: case Dx: case Bx: return 0;
+  case Ey: case Hy: case Dy: case By: return 1;
+  case Ez: case Hz: case Dz: case Bz: return 2;
+  case Er: case Hr: case Dr: case Br: return 0;
+  case Ep: case Hp: case Dp: case Bp: return 1;
+  case Dielectric: return -1;
+  case Permeability: return -1;
+  }
+  return -2; // This code is never reached...
+}
+
 direction component_direction(int c);
 int direction_component(int c, direction d);
 inline direction component_direction(component c) {
@@ -366,7 +379,6 @@ inline component cycle_component(ndim dim, component c, int shift) {
 class vec;
 vec veccyl(double rr, double zz);
 vec zero_vec(ndim);
-vec nan_vec();
 
 class vec {
  public:
@@ -454,7 +466,6 @@ class vec {
   double project_to_boundary(direction, double boundary_loc);
   friend vec zero_vec(ndim);
   friend vec one_vec(ndim);
-  friend vec nan_vec();
  private:
   double t[5];
 };

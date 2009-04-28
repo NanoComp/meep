@@ -149,7 +149,7 @@ typedef double (*pml_profile_func)(double u, void *func_data);
 class material_function {
   material_function(const material_function &ef) {(void)ef;} // prevent copying
 public:
-  material_function() : omega(nan), gamma(nan), deps(nan_vec()) {}
+  material_function() : omega(nan), gamma(nan) {}
   
   virtual ~material_function() {}
   
@@ -183,12 +183,14 @@ public:
 			       double tol=DEFAULT_SUBPIXEL_TOL, 
 			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   
-  /* polarizability sigma function */
-  virtual double sigma(const vec &r) { (void)r; return 0.0; }
+  /* polarizability sigma function: return c'th row of tensor */
+  virtual void sigma_row(component c, double sigrow[3], const vec &r) {
+    (void) c; (void) r; sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
+  }
+
   /* specify polarizability used for subsequent calls to sigma(r) */
-  virtual void set_polarizability(field_type ft, double omega_, double gamma_, 
-				  vec deps_) {
-    pol_ft=ft; omega=omega_; gamma=gamma_; deps=deps_;
+  virtual void set_polarizability(field_type ft, double omega_, double gamma_){
+    pol_ft=ft; omega=omega_; gamma=gamma_;
   }
   
   // Nonlinear susceptibilities
@@ -203,7 +205,6 @@ protected:
   // current polarizability for calls to sigma(r):
   field_type pol_ft;
   double omega, gamma;
-  vec deps;
 };
 
 class simple_material_function : public material_function {
@@ -219,7 +220,10 @@ public:
   virtual double mu(const vec &r) { return f(r); }
   virtual double conductivity(component c, const vec &r) { 
     (void)c; return f(r); }
-  virtual double sigma(const vec &r) { return f(r); }
+  virtual void sigma_row(component c, double sigrow[3], const vec &r) {
+    sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
+    sigrow[component_index(c)] = f(r);
+  }
   virtual double chi3(component c, const vec &r) { (void)c; return f(r); }
   virtual double chi2(component c, const vec &r) { (void)c; return f(r); }
 };
@@ -259,10 +263,7 @@ class structure_chunk {
 	       pml_profile_func pml_profile, void *pml_profile_data,
 	       double pml_profile_integral);
 
-  void add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
-                          vec delta_epsilon);
-  void add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
-                          vec delta_epsilon);
+  void add_polarizability(material_function &sigma, field_type ft, double omega, double gamma);
 
   void mix_with(const structure_chunk *, double);
 
@@ -409,21 +410,15 @@ class structure {
   void set_chi2(material_function &eps);
   void set_chi2(double eps(const vec &));
   polarizability_identifier
-     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma, vec delta_epsilon);
+     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma);
   polarizability_identifier
-     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma, vec delta_epsilon);
+     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma);
   polarizability_identifier
-     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma, double delta_epsilon = 1.0);
+     add_polarizability(double sigma(const vec &), double omega, double gamma) {
+    return add_polarizability(sigma, E_stuff, omega, gamma); }
   polarizability_identifier
-     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma, double delta_epsilon = 1.0);
-  polarizability_identifier
-     add_polarizability(double sigma(const vec &), double omega, double gamma,
-			double delta_epsilon = 1.0) {
-    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon); }
-  polarizability_identifier
-     add_polarizability(material_function &sigma, double omega, double gamma,
-		double delta_epsilon = 1.0) {
-    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon); }
+     add_polarizability(material_function &sigma, double omega, double gamma) {
+    return add_polarizability(sigma, E_stuff, omega, gamma); }
 
   void remove_polarizabilities();
 

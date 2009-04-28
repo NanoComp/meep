@@ -48,7 +48,7 @@ class polarizability {
  public:
   volume v;
   polarizability(const structure_chunk *, material_function &sig,
-                 field_type ft, double om, double ga, vec sigscale,
+                 field_type ft, double om, double ga, double sigscale,
                  bool mine = true);
   polarizability(const polarizability *);
   ~polarizability();

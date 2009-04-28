@@ -43,9 +43,8 @@
 (define-class polarizability no-parent
   (define-property omega no-default 'number)
   (define-property gamma no-default 'number)
-  (define-property delta-epsilon-diag no-default 'vector3)
-  (define-property sigma 1.0 'number))
-(define (delta-epsilon x) (delta-epsilon-diag x x x))
+  (define-property sigma-diag no-default 'vector3))
+(define (sigma x) (sigma-diag x x x))
 
 (define-class medium material-type
   (define-property epsilon-diag (vector3 1 1 1) 'vector3)

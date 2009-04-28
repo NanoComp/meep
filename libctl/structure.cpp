@@ -200,22 +200,15 @@ public:
 			      const meep::geometric_volume &gv,
 			      double tol, int maxeval);
 
-  virtual double sigma(const meep::vec &r);
+  virtual void sigma_row(meep::component c, double sigrow[3],
+			 const meep::vec &r);
   void add_polarizabilities(meep::structure *s);
   void add_polarizabilities(meep::field_type ft, meep::structure *s);
-
-  virtual void set_polarizability(meep::field_type ft, double omega_, double gamma_,
-                                  meep::vec deps_) {
-    pol_ft=ft; omega=omega_; gamma=gamma_; deps=deps_;
-    deps3 = vec_to_vector3(deps_); // cache vector3 version for quick comparisons
-  }
-
 
 private:
   bool get_material_pt(material_type &material, const meep::vec &r);
 
   material_type_list extra_materials;
-  vector3 deps3;
 };
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
@@ -223,7 +216,6 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
 {
   geometry = g; // don't bother making a copy, only used in one place
   extra_materials = mlist;
-  deps3.x = deps3.y = deps3.z = meep::nan;
 
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
@@ -997,7 +989,8 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   return cond_val;
 }
 
-double geom_epsilon::sigma(const meep::vec &r) {
+void geom_epsilon::sigma_row(meep::component c, double sigrow[3], 
+			     const meep::vec &r) {
   vector3 p = vec_to_vector3(r);
 
   boolean inobject;
@@ -1015,45 +1008,42 @@ double geom_epsilon::sigma(const meep::vec &r) {
     destroy_material = 1;
   }
   
-  double sigma = 0;
+  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
   if (material.which_subclass == MTS::MEDIUM) {
     polarizability_list plist = 
       pol_ft == meep::E_stuff ? material.subclass.medium_data->E_polarizations
       : material.subclass.medium_data->H_polarizations;
     for (int j = 0; j < plist.num_items; ++j)
       if (plist.items[j].omega == omega &&
-	  plist.items[j].gamma == gamma &&
-	  vector3_equal(plist.items[j].delta_epsilon_diag, deps3)) {
-	sigma = plist.items[j].sigma;
+	  plist.items[j].gamma == gamma) {
+	int ic = meep::component_index(c);
+	sigrow[ic] = (ic == 0 ? plist.items[j].sigma_diag.x
+		      : (ic == 1 ? plist.items[j].sigma_diag.y
+			 : plist.items[j].sigma_diag.z));
 	break;
       }
   }
   
   if (destroy_material)
     material_type_destroy(material);
-
-  return sigma;
 }
 
 struct pol {
   double omega, gamma;
-  vector3 deps;
   struct pol *next;
 };
 
 // add a polarization to the list if it is not already there
 static pol *add_pol(pol *pols,
-		    double omega, double gamma, vector3 deps)
+		    double omega, double gamma)
 {
   struct pol *p = pols;
-  while (p && !(p->omega == omega && p->gamma == gamma
-		&& vector3_equal(p->deps, deps)))
+  while (p && !(p->omega == omega && p->gamma == gamma))
     p = p->next;
   if (!p) {
     p = new pol;
     p->omega = omega;
     p->gamma = gamma;
-    p->deps = deps;
     p->next = pols;
     pols = p;
   }
@@ -1063,8 +1053,7 @@ static pol *add_pol(pol *pols,
 static pol *add_pols(pol *pols, const polarizability_list plist) {
   for (int j = 0; j < plist.num_items; ++j) {
     pols = add_pol(pols,
-		   plist.items[j].omega, plist.items[j].gamma,
-		   plist.items[j].delta_epsilon_diag);
+		   plist.items[j].omega, plist.items[j].gamma);
   }
   return pols;
 }
@@ -1100,9 +1089,9 @@ void geom_epsilon::add_polarizabilities(meep::field_type ft,
 		    : default_material.subclass.medium_data->H_polarizations);
     
   for (struct pol *p = pols; p; p = p->next) {
-    master_printf("polarizability: omega=%g, gamma=%g, deps=(%g,%g,%g)\n",
-		  p->omega, p->gamma, p->deps.x, p->deps.y, p->deps.z);
-    s->add_polarizability(*this, ft, p->omega, p->gamma, vector3_to_vec(p->deps));
+    master_printf("polarizability: omega=%g, gamma=%g\n",
+		  p->omega, p->gamma);
+    s->add_polarizability(*this, ft, p->omega, p->gamma);
   }
   
   while (pols) {
