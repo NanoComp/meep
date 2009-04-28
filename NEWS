@@ -1,4 +1,4 @@
-Meep 1.0 (21 April 2009)
+Meep 1.0 (28 April 2009)
 
   * New timestepping scheme for off-diagonal anisotropic epsilon and
     mu, based on technique by Werner and Cary [ J. Comp. Phys. 226,
