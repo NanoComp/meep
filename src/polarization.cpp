@@ -52,18 +52,8 @@ void polarization::zero_fields() {
   const volume &v = pb->v;
   DOCMP FOR_COMPONENTS(c) if (P[c][cmp])
     for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0;
-  if (pb->energy_saturation != 0.0) {
-    FOR_COMPONENTS(c) if (s[c] && pb->s[c])
-      for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
-    double num_components = 0.0;
-    FOR_FT_COMPONENTS(pb->ft,c) if (s[c]) num_components += 1.0;
-    const double isf = 1.0/saturation_factor/num_components;
-    FOR_COMPONENTS(c) if (energy[c] && s[c])
-      for (int i=0;i<v.ntot();i++) energy[c][i] = isf*s[c][i];
-  }
-  else
-    FOR_COMPONENTS(c) if (energy[c])
-      for (int i=0;i<v.ntot();i++) energy[c][i] = 0;
+  FOR_COMPONENTS(c) if (energy[c])
+    for (int i=0;i<v.ntot();i++) energy[c][i] = 0;
   if (next) next->zero_fields();
 }
 
@@ -79,27 +69,7 @@ polarization::polarization(const polarizability *the_pb,
   FOR_FT_COMPONENTS(the_pb->ft, c) if (v.has_field(c) && store_energy)
     energy[c] = new realnum[v.ntot()];
   pb = the_pb;
-#ifndef WITH_SATURABLE_ABSORBERS
-  if (pb->energy_saturation != 0.0)
-    abort("saturable absorber, but not configured --with-saturable-absorbers");
-#endif
-  // Initialize the s[] arrays that point to sigma.
-  FOR_COMPONENTS(c) {
-    if (pb->energy_saturation != 0.0) {
-      if (pb->s[c])
-        s[c] = new realnum[v.ntot()];
-      else 
-	s[c] = NULL;
-    } 
-    else 
-      s[c] = pb->s[c];
-  }
-  // Deal with saturation stuff.
-  if (pb->energy_saturation != 0.0)
-    saturation_factor = pb->saturated_sigma/pb->energy_saturation;
-  else
-    saturation_factor = 0.0;
-
+  FOR_COMPONENTS(c) s[c] = pb->s[c];
   next = NULL;
   zero_fields();
 }
@@ -107,8 +77,6 @@ polarization::polarization(const polarizability *the_pb,
 polarization::~polarization() {
   DOCMP FOR_COMPONENTS(c) delete[] P[c][cmp];
   FOR_COMPONENTS(c) delete[] energy[c];
-  if (pb->energy_saturation != 0.0)
-    FOR_COMPONENTS(c) delete[] s[c];
   if (next) delete next;
 }
 
@@ -125,8 +93,6 @@ polarizability::polarizability(const polarizability *pb) {
   gamma = pb->gamma;
   v = pb->v;
   ft = pb->ft;
-  energy_saturation = pb->energy_saturation;
-  saturated_sigma = pb->saturated_sigma;
   is_it_mine = pb->is_it_mine;
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
@@ -142,23 +108,13 @@ polarizability::polarizability(const polarizability *pb) {
 polarizability::polarizability(const structure_chunk *sc, material_function &sig,
                                field_type ft_, double om, double ga, 
 			       vec sigscale,
-                               double energy_sat, bool mine) {
+                               bool mine) {
   v = sc->v;
   is_it_mine = mine;
   ft = ft_;
   omeganot = om;
   gamma = ga;
   next = NULL;
-  energy_saturation = energy_sat;
-  {
-    saturated_sigma = 0.0;
-    int numdims = 0;
-    LOOP_OVER_DIRECTIONS(v.dim, d) {
-      saturated_sigma += sigscale.in_direction(d);
-      ++numdims;
-    }
-    saturated_sigma /= numdims;
-  }
 
   sig.set_volume(sc->v.pad().surroundings());
   FOR_COMPONENTS(c) s[c] = NULL;
@@ -216,39 +172,35 @@ complex<double> fields::analytic_chi1(component c, double f, const vec &p) const
 polarizability_identifier structure::add_polarizability(material_function &sigma,
 						  field_type ft,
 						  double omega, double gamma,
-                                                  double delta_epsilon,
-                                                  double energy_saturation) {
+                                                  double delta_epsilon) {
   return add_polarizability(sigma, ft, omega, gamma,
-			    one_vec(v.dim) * delta_epsilon, energy_saturation);
+			    one_vec(v.dim) * delta_epsilon);
 }
 
 polarizability_identifier structure::add_polarizability(material_function &sigma,
 						  field_type ft,
 						  double omega, double gamma,
-                                                  vec delta_epsilon,
-                                                  double energy_saturation) {
+                                                  vec delta_epsilon) {
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
-    chunks[i]->add_polarizability(sigma, ft,omega, gamma, delta_epsilon, energy_saturation);
+    chunks[i]->add_polarizability(sigma, ft,omega, gamma, delta_epsilon);
   return chunks[0]->pb->get_identifier();
 }
 
 polarizability_identifier structure::add_polarizability(double sigma(const vec &),
 							field_type ft,
                                                   double omega, double gamma,
-                                                  double delta_epsilon,
-                                                  double energy_saturation) {
+                                                  double delta_epsilon) {
   return add_polarizability(sigma, ft, omega, gamma,
-			    one_vec(v.dim) * delta_epsilon, energy_saturation);
+			    one_vec(v.dim) * delta_epsilon);
 }
 
 polarizability_identifier structure::add_polarizability(double sigma(const vec &),
 							field_type ft,
                                                   double omega, double gamma,
-                                                  vec delta_epsilon,
-                                                  double energy_saturation) {
+                                                  vec delta_epsilon) {
   simple_material_function sig(sigma);
-  return add_polarizability(sig,ft,omega,gamma,delta_epsilon,energy_saturation);
+  return add_polarizability(sig, ft, omega, gamma, delta_epsilon);
 }
 
 polarizability_identifier polarizability::get_identifier() const {
@@ -256,37 +208,31 @@ polarizability_identifier polarizability::get_identifier() const {
   pi.ft = ft;
   pi.gamma = gamma;
   pi.omeganot = omeganot;
-  pi.energy_saturation = energy_saturation;
-  pi.saturated_sigma = saturated_sigma;
   return pi;
 }
 
 bool polarizability_identifier::operator==(const polarizability_identifier &a) {
-  return ft == a.ft && gamma == a.gamma && omeganot == a.omeganot &&
-    energy_saturation == a.energy_saturation && saturated_sigma == a.saturated_sigma;
+  return ft == a.ft && gamma == a.gamma && omeganot == a.omeganot;
 }
 
 void structure_chunk::add_polarizability(material_function &sigma,
 					 field_type ft, double omega,
-					 double gamma, vec delta_epsilon,
-					 double energy_sat) {
-  sigma.set_polarizability(ft, omega, gamma, delta_epsilon, energy_sat);
+					 double gamma, vec delta_epsilon) {
+  sigma.set_polarizability(ft, omega, gamma, delta_epsilon);
   const double freq_conversion = 2*pi*dt;
   vec sigma_scale  = delta_epsilon * (freq_conversion*freq_conversion*omega*omega); 
   polarizability *npb = new polarizability(this, sigma,
                                            ft, freq_conversion*omega,
                                            freq_conversion*gamma,
-                                           sigma_scale, energy_sat,
-                                           is_mine());
+                                           sigma_scale, is_mine());
   npb->next = pb;
   pb = npb;
 }
 
 void structure_chunk::add_polarizability(double sigma(const vec &),
-	      field_type ft, double omega, double gamma, vec delta_epsilon,
-              double energy_sat) {
+	      field_type ft, double omega, double gamma, vec delta_epsilon) {
   simple_material_function sig(sigma);
-  add_polarizability(sig, ft, omega,gamma,delta_epsilon,energy_sat);
+  add_polarizability(sig, ft, omega,gamma,delta_epsilon);
 }
 
 } // namespace meep

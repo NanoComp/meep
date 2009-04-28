@@ -36,15 +36,6 @@ void fields_chunk::update_pols(field_type ft) {
   polarization *pol = pols[ft];
   polarization *olpol = olpols[ft];
 
-#ifdef WITH_SATURABLE_ABSORBERS
-  if (pol && ft != E_stuff) abort("unimplemented in update_pols");
-
-  /* old messy code to implement saturable absorbers, which
-     were never adequately documented or debugged */
-#  include "update_from_e.hpp"
-
-#else
-  
   DOCMP FOR_FT_COMPONENTS(ft, c) if (f[c][cmp])
     for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
       if (np->pb->ft != ft) abort("bug in update_pols");
@@ -67,8 +58,6 @@ void fields_chunk::update_pols(field_type ft) {
   /* the old polarization is now the new polarization */
   olpols[ft] = pol;
   pols[ft] = olpol;
-
-#endif
 }
 
 } // namespace meep

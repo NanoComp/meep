@@ -141,20 +141,6 @@ double polariton_energy(const volume &v, double eps(const vec &)) {
   return f.total_energy();
 }
 
-double saturated_polariton_ex(const volume &v, double eps(const vec &)) {
-  const double ttot = 10.0;
-  structure s(v, eps);
-  polarizability_identifier thep = s.add_polarizability(one, 0.3, 0.1, -0.063, 0.1);
-  fields f(&s);
-  f.use_real_fields();
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(), 
-		     1/sqrt(4*pi) * complex<double>(0,-2*pi*0.2));
-  while (f.round_time() < ttot) f.step();
-  monitor_point p;
-  f.get_point(&p, v.center());
-  return real(p.get_component(Ex)) * sqrt(4*pi);
-}
-
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   quiet = true;
@@ -165,15 +151,6 @@ int main(int argc, char **argv) {
 
   compare(-0.0894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
-#ifdef WITH_SATURABLE_ABSORBERS
-  compare(-0.0384049, saturated_polariton_ex(volone(1.0, a), one),
-          "1D saturated polariton");
-  if (count_processors() <= 2) // FIXME: broken for NCPUS > 2 ???
-    compare(-7.57915, saturated_polariton_ex(vol2d(1.0,1.0, a), one),
-	    "2D saturated polariton");
-  compare(-23.8506, saturated_polariton_ex(vol3d(1.0,1.0,0.5, a), one),
-          "3D saturated polariton");
-#endif
   compare(0.32617294, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(5.20605, metallic_ez(voltwo(1.0, 1.0, a), one),

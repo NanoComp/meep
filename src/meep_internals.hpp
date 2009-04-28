@@ -49,13 +49,12 @@ class polarizability {
   volume v;
   polarizability(const structure_chunk *, material_function &sig,
                  field_type ft, double om, double ga, vec sigscale,
-                 double energy_saturation = 0.0, bool mine = true);
+                 bool mine = true);
   polarizability(const polarizability *);
   ~polarizability();
   field_type ft;
   double gamma, omeganot;
   realnum *s[NUM_FIELD_COMPONENTS];
-  double energy_saturation, saturated_sigma;
   bool is_mine() { return is_it_mine; };
   bool is_it_mine;
   polarizability *next;
@@ -67,7 +66,6 @@ class polarization {
  public:
   polarization(const polarizability *the_pb, int is_real, bool store_enrgy=0);
   ~polarization();
-  double saturation_factor;
   realnum *(P[NUM_FIELD_COMPONENTS][2]), *(energy[NUM_FIELD_COMPONENTS]),
     *(s[NUM_FIELD_COMPONENTS]);
   int is_real;

@@ -55,7 +55,6 @@ class polarizability_identifier {
  public:
   field_type ft;
   double gamma, omeganot;
-  double energy_saturation, saturated_sigma;
   bool operator==(const polarizability_identifier &);
 };
 class polarizability;
@@ -150,7 +149,7 @@ typedef double (*pml_profile_func)(double u, void *func_data);
 class material_function {
   material_function(const material_function &ef) {(void)ef;} // prevent copying
 public:
-  material_function() : omega(nan), gamma(nan), energy_sat(nan), deps(nan_vec()) {}
+  material_function() : omega(nan), gamma(nan), deps(nan_vec()) {}
   
   virtual ~material_function() {}
   
@@ -188,8 +187,8 @@ public:
   virtual double sigma(const vec &r) { (void)r; return 0.0; }
   /* specify polarizability used for subsequent calls to sigma(r) */
   virtual void set_polarizability(field_type ft, double omega_, double gamma_, 
-				  vec deps_, double energy_sat_) {
-    pol_ft=ft; omega=omega_; gamma=gamma_; deps=deps_; energy_sat=energy_sat_;
+				  vec deps_) {
+    pol_ft=ft; omega=omega_; gamma=gamma_; deps=deps_;
   }
   
   // Nonlinear susceptibilities
@@ -203,7 +202,7 @@ public:
 protected:
   // current polarizability for calls to sigma(r):
   field_type pol_ft;
-  double omega, gamma, energy_sat;
+  double omega, gamma;
   vec deps;
 };
 
@@ -261,9 +260,9 @@ class structure_chunk {
 	       double pml_profile_integral);
 
   void add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
-                          vec delta_epsilon, double energy_saturation = 0.0);
+                          vec delta_epsilon);
   void add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
-                          vec delta_epsilon, double energy_saturation = 0.0);
+                          vec delta_epsilon);
 
   void mix_with(const structure_chunk *, double);
 
@@ -410,25 +409,21 @@ class structure {
   void set_chi2(material_function &eps);
   void set_chi2(double eps(const vec &));
   polarizability_identifier
-     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
-                  vec delta_epsilon, double energy_saturation = 0.0);
+     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma, vec delta_epsilon);
   polarizability_identifier
-     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
-                  vec delta_epsilon, double energy_saturation = 0.0);
+     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma, vec delta_epsilon);
   polarizability_identifier
-     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
-                  double delta_epsilon = 1.0, double energy_saturation = 0.0);
+     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma, double delta_epsilon = 1.0);
   polarizability_identifier
-     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
-                  double delta_epsilon = 1.0, double energy_saturation = 0.0);
+     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma, double delta_epsilon = 1.0);
   polarizability_identifier
      add_polarizability(double sigma(const vec &), double omega, double gamma,
-                double delta_epsilon = 1.0, double energy_saturation = 0.0) {
-    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon, energy_saturation); }
+			double delta_epsilon = 1.0) {
+    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon); }
   polarizability_identifier
      add_polarizability(material_function &sigma, double omega, double gamma,
-		double delta_epsilon = 1.0, double energy_saturation = 0.0) {
-    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon, energy_saturation); }
+		double delta_epsilon = 1.0) {
+    return add_polarizability(sigma, E_stuff, omega, gamma, delta_epsilon); }
 
   void remove_polarizabilities();
 
