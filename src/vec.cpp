@@ -24,6 +24,11 @@
 
 namespace meep {
 
+vec nan_vec() { 
+  vec v(D1); v.t[0] = v.t[1] = v.t[2] = v.t[3] = v.t[4] = nan; 
+  return v;
+}
+
 ivec volume::round_vec(const vec &p) const {
   ivec result(dim);
   LOOP_OVER_DIRECTIONS(dim, d)

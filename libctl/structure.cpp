@@ -204,10 +204,18 @@ public:
   void add_polarizabilities(meep::structure *s);
   void add_polarizabilities(meep::field_type ft, meep::structure *s);
 
+  virtual void set_polarizability(meep::field_type ft, double omega_, double gamma_,
+                                  meep::vec deps_, double energy_sat_) {
+    pol_ft=ft; omega=omega_; gamma=gamma_; deps=deps_; energy_sat=energy_sat_;
+    deps3 = vec_to_vector3(deps_); // cache vector3 version for quick comparisons
+  }
+
+
 private:
   bool get_material_pt(material_type &material, const meep::vec &r);
 
   material_type_list extra_materials;
+  vector3 deps3;
 };
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
@@ -215,6 +223,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
 {
   geometry = g; // don't bother making a copy, only used in one place
   extra_materials = mlist;
+  deps3.x = deps3.y = deps3.z = meep::nan;
 
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
@@ -1014,7 +1023,7 @@ double geom_epsilon::sigma(const meep::vec &r) {
     for (int j = 0; j < plist.num_items; ++j)
       if (plist.items[j].omega == omega &&
 	  plist.items[j].gamma == gamma &&
-	  plist.items[j].delta_epsilon == deps &&
+	  vector3_equal(plist.items[j].delta_epsilon_diag, deps3) &&
 	  plist.items[j].energy_saturation == energy_sat) {
 	sigma = plist.items[j].sigma;
 	break;
@@ -1028,17 +1037,18 @@ double geom_epsilon::sigma(const meep::vec &r) {
 }
 
 struct pol {
-  double omega, gamma, deps, esat;
+  double omega, gamma, esat;
+  vector3 deps;
   struct pol *next;
 };
 
 // add a polarization to the list if it is not already there
 static pol *add_pol(pol *pols,
-		    double omega, double gamma, double deps, double esat)
+		    double omega, double gamma, vector3 deps, double esat)
 {
   struct pol *p = pols;
   while (p && !(p->omega == omega && p->gamma == gamma
-		&& p->deps == deps && p->esat == esat))
+		&& vector3_equal(p->deps, deps) && p->esat == esat))
     p = p->next;
   if (!p) {
     p = new pol;
@@ -1056,7 +1066,7 @@ static pol *add_pols(pol *pols, const polarizability_list plist) {
   for (int j = 0; j < plist.num_items; ++j) {
     pols = add_pol(pols,
 		   plist.items[j].omega, plist.items[j].gamma,
-		   plist.items[j].delta_epsilon,
+		   plist.items[j].delta_epsilon_diag,
 		   plist.items[j].energy_saturation);
   }
   return pols;
@@ -1093,9 +1103,9 @@ void geom_epsilon::add_polarizabilities(meep::field_type ft,
 		    : default_material.subclass.medium_data->H_polarizations);
     
   for (struct pol *p = pols; p; p = p->next) {
-    master_printf("polarizability: omega=%g, gamma=%g, deps=%g, esat=%g\n",
-		  p->omega, p->gamma, p->deps, p->esat);
-    s->add_polarizability(*this, ft, p->omega, p->gamma, p->deps, p->esat);
+    master_printf("polarizability: omega=%g, gamma=%g, deps=(%g,%g,%g), esat=%g\n",
+		  p->omega, p->gamma, p->deps.x, p->deps.y, p->deps.z, p->esat);
+    s->add_polarizability(*this, ft, p->omega, p->gamma, vector3_to_vec(p->deps), p->esat);
   }
   
   while (pols) {

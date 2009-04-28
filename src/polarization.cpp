@@ -130,20 +130,18 @@ polarizability::polarizability(const polarizability *pb) {
   is_it_mine = pb->is_it_mine;
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
-    sigma = new realnum[v.ntot()];
-    for (int i=0;i<v.ntot();i++) sigma[i] = pb->sigma[i];
     FOR_COMPONENTS(c) if (v.has_field(c) && pb->s[c]) {
       s[c] = new realnum[v.ntot()];
       for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
     }
   }
-  else sigma = NULL;
   if (pb->next) next = new polarizability(pb->next);
   else next = NULL;
 }
 
 polarizability::polarizability(const structure_chunk *sc, material_function &sig,
-                               field_type ft_, double om, double ga, double sigscale,
+                               field_type ft_, double om, double ga, 
+			       vec sigscale,
                                double energy_sat, bool mine) {
   v = sc->v;
   is_it_mine = mine;
@@ -152,76 +150,85 @@ polarizability::polarizability(const structure_chunk *sc, material_function &sig
   gamma = ga;
   next = NULL;
   energy_saturation = energy_sat;
-  saturated_sigma = sigscale;
+  {
+    saturated_sigma = 0.0;
+    int numdims = 0;
+    LOOP_OVER_DIRECTIONS(v.dim, d) {
+      saturated_sigma += sigscale.in_direction(d);
+      ++numdims;
+    }
+    saturated_sigma /= numdims;
+  }
 
   sig.set_volume(sc->v.pad().surroundings());
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
-    sigma = new realnum[v.ntot()];
     FOR_FT_COMPONENTS(ft,c) if (v.has_field(c))
       s[c] = new realnum[v.ntot()];
-    if (sigma == NULL) abort("Out of memory in polarizability!\n");
 
-    LOOP_OVER_VOL(v, v.eps_component(), i) { // FIXME: sigma[] never used??
-      IVEC_LOOP_LOC(v, here);
-      sigma[i] = sigscale*sig.sigma(here);
-    }
     FOR_COMPONENTS(c) if (s[c]) for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
     // Average out sigma over the grid...
     if (v.dim == Dcyl && ft == E_stuff) {
       const vec dr = v.dr()*0.5; // The distance between Yee field components
       const vec dz = v.dz()*0.5; // The distance between Yee field components
       // FIXME: what is the point of this half-assed averaging?
-      LOOP_OVER_VOL(v, Ep, i) {
+      component cr = field_type_component(ft, Er);
+      component cp = field_type_component(ft, Ep);
+      component cz = field_type_component(ft, Ez);
+      double sigscale_r = sigscale.in_direction(R);
+      double sigscale_p = sigscale.in_direction(P);
+      double sigscale_z = sigscale.in_direction(Z);
+      LOOP_OVER_VOL(v, cp, i) {
 	IVEC_LOOP_LOC(v, here);
-        s[Er][i] = 0.5*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here+dr-dz));
-        s[Ep][i] = 0.25*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz) +
+        s[cr][i] = 0.5*sigscale_r*(sig.sigma(here+dr+dz) + sig.sigma(here+dr-dz));
+        s[cp][i] = 0.25*sigscale_p*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz) +
                                   sig.sigma(here+dr-dz) + sig.sigma(here-dr-dz));
-        s[Ez][i] = 0.5*sigscale*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz));
+        s[cz][i] = 0.5*sigscale_z*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz));
       }
     } else {
       // FIXME:  should we be doing clever averaging here?
-      FOR_FT_COMPONENTS(ft,c) if (s[c])
+      FOR_FT_COMPONENTS(ft,c) if (s[c]) {
+	double sigscale_c = sigscale.in_direction(component_direction(c));
 	LOOP_OVER_VOL(v, c, i) {
 	  IVEC_LOOP_LOC(v, here);
-          s[c][i] = sigscale*sig.sigma(here);
+          s[c][i] = sigscale_c*sig.sigma(here);
         }
+      }
     }
   } else { // Not mine, don't store arrays...
-    sigma = 0;
     FOR_COMPONENTS(c) s[c] = 0;
   }
 }
 
 polarizability::~polarizability() {
   FOR_COMPONENTS(c) delete[] s[c];
-  delete[] sigma;
 }
 
-complex<double> polarization::analytic_epsilon(double freq, const vec &p) const {
+complex<double> polarization::analytic_chi1(component c, double freq, const vec &p) const {
   const complex<double> I = complex<double>(0,1);
   double w[8];
   int in[8];
-  pb->v.interpolate(pb->v.eps_component(), p, in, w);
+  pb->v.interpolate(c, p, in, w);
   complex<double> epsi = 0.0;
-  for (int i=0;i<8 && w[i];i++)
-    epsi += w[i]*pb->sigma[in[i]]/
-      (pb->omeganot*pb->omeganot - freq*freq - freq*pb->gamma*I);
-  if (next) epsi += next->analytic_epsilon(freq, p);
+  if (pb->s[c])
+    for (int i=0;i<8 && w[i];i++)
+      epsi += w[i]*pb->s[c][in[i]]/
+	(pb->omeganot*pb->omeganot - freq*freq - freq*pb->gamma*I);
+  if (next) epsi += next->analytic_chi1(c, freq, p);
   return epsi;
 }
 
-complex<double> fields::analytic_epsilon(double f, const vec &p) const {
+complex<double> fields::analytic_chi1(component c, double f, const vec &p) const {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->v.contains(p))
-      return chunks[i]->analytic_epsilon(f,p) + get_eps(p);
+      return chunks[i]->analytic_chi1(c,f,p) + get_eps(p);
   return 0.0;
 }
 
-complex<double> fields_chunk::analytic_epsilon(double f, const vec &p) const {
+  complex<double> fields_chunk::analytic_chi1(component c, double f, const vec &p) const {
   complex<double> epsi = 0.0;
-  if (is_mine() && pols[E_stuff])
-    epsi += pols[E_stuff]->analytic_epsilon(f * (2*pi*dt), p);
+  if (is_mine() && pols[type(c)])
+    epsi += pols[type(c)]->analytic_chi1(c, f * (2*pi*dt), p);
   return broadcast(n_proc(), epsi);
 }
 
@@ -229,6 +236,15 @@ polarizability_identifier structure::add_polarizability(material_function &sigma
 						  field_type ft,
 						  double omega, double gamma,
                                                   double delta_epsilon,
+                                                  double energy_saturation) {
+  return add_polarizability(sigma, ft, omega, gamma,
+			    one_vec(v.dim) * delta_epsilon, energy_saturation);
+}
+
+polarizability_identifier structure::add_polarizability(material_function &sigma,
+						  field_type ft,
+						  double omega, double gamma,
+                                                  vec delta_epsilon,
                                                   double energy_saturation) {
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
@@ -240,6 +256,15 @@ polarizability_identifier structure::add_polarizability(double sigma(const vec &
 							field_type ft,
                                                   double omega, double gamma,
                                                   double delta_epsilon,
+                                                  double energy_saturation) {
+  return add_polarizability(sigma, ft, omega, gamma,
+			    one_vec(v.dim) * delta_epsilon, energy_saturation);
+}
+
+polarizability_identifier structure::add_polarizability(double sigma(const vec &),
+							field_type ft,
+                                                  double omega, double gamma,
+                                                  vec delta_epsilon,
                                                   double energy_saturation) {
   simple_material_function sig(sigma);
   return add_polarizability(sig,ft,omega,gamma,delta_epsilon,energy_saturation);
@@ -261,11 +286,12 @@ bool polarizability_identifier::operator==(const polarizability_identifier &a) {
 }
 
 void structure_chunk::add_polarizability(material_function &sigma,
-                             field_type ft, double omega, double gamma, double delta_epsilon,
-                             double energy_sat) {
+					 field_type ft, double omega,
+					 double gamma, vec delta_epsilon,
+					 double energy_sat) {
   sigma.set_polarizability(ft, omega, gamma, delta_epsilon, energy_sat);
   const double freq_conversion = 2*pi*dt;
-  double sigma_scale  = freq_conversion*freq_conversion*omega*omega*delta_epsilon;
+  vec sigma_scale  = delta_epsilon * (freq_conversion*freq_conversion*omega*omega); 
   polarizability *npb = new polarizability(this, sigma,
                                            ft, freq_conversion*omega,
                                            freq_conversion*gamma,
@@ -276,7 +302,7 @@ void structure_chunk::add_polarizability(material_function &sigma,
 }
 
 void structure_chunk::add_polarizability(double sigma(const vec &),
-	      field_type ft, double omega, double gamma, double delta_epsilon,
+	      field_type ft, double omega, double gamma, vec delta_epsilon,
               double energy_sat) {
   simple_material_function sig(sigma);
   add_polarizability(sig, ft, omega,gamma,delta_epsilon,energy_sat);

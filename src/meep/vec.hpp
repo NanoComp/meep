@@ -168,7 +168,6 @@ component first_field_component(field_type ft);
            loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
            loop_d1 = (v).yucky_direction(0), \
            loop_d2 = (v).yucky_direction(1), \
-           loop_d3 = (v).yucky_direction(2), \
            loop_s1 = (v).stride((direction) loop_d1), \
            loop_s2 = (v).stride((direction) loop_d2), \
            loop_s3 = 1, \
@@ -367,6 +366,7 @@ inline component cycle_component(ndim dim, component c, int shift) {
 class vec;
 vec veccyl(double rr, double zz);
 vec zero_vec(ndim);
+vec nan_vec();
 
 class vec {
  public:
@@ -453,6 +453,8 @@ class vec {
 
   double project_to_boundary(direction, double boundary_loc);
   friend vec zero_vec(ndim);
+  friend vec one_vec(ndim);
+  friend vec nan_vec();
  private:
   double t[5];
 };
@@ -461,6 +463,11 @@ inline double abs(const vec &v) { return sqrt(v & v); }
 
 inline vec zero_vec(ndim di) {
   vec v(di); LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0.0);
+  return v;
+}
+
+inline vec one_vec(ndim di) {
+  vec v(di); LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 1.0);
   return v;
 }
 

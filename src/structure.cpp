@@ -537,9 +537,6 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
       if (po->s[c] && pn->s[c])
         for (int i=0;i<v.ntot();i++)
           po->s[c][i] += f*(pn->s[c][i] - po->s[c][i]);
-    if (po->sigma && pn->sigma)
-        for (int i=0;i<v.ntot();i++)
-          po->sigma[i] += f*(pn->sigma[i] - po->sigma[i]);
     po->gamma += f*(pn->gamma - po->gamma);
     po->omeganot += f*(pn->omeganot - po->omeganot);
     po = po->next;

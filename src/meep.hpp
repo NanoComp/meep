@@ -48,7 +48,7 @@ const double infinity = HUGE_VAL;
 #ifdef NAN
 const double nan = NAN;
 #else
-const double nan = -1.23454321e123; // ideally, a value never encountered in practice
+const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
 class polarizability_identifier {
@@ -150,7 +150,7 @@ typedef double (*pml_profile_func)(double u, void *func_data);
 class material_function {
   material_function(const material_function &ef) {(void)ef;} // prevent copying
 public:
-  material_function() : omega(nan), gamma(nan), deps(nan), energy_sat(nan) {}
+  material_function() : omega(nan), gamma(nan), energy_sat(nan), deps(nan_vec()) {}
   
   virtual ~material_function() {}
   
@@ -188,7 +188,7 @@ public:
   virtual double sigma(const vec &r) { (void)r; return 0.0; }
   /* specify polarizability used for subsequent calls to sigma(r) */
   virtual void set_polarizability(field_type ft, double omega_, double gamma_, 
-				  double deps_, double energy_sat_) {
+				  vec deps_, double energy_sat_) {
     pol_ft=ft; omega=omega_; gamma=gamma_; deps=deps_; energy_sat=energy_sat_;
   }
   
@@ -203,7 +203,8 @@ public:
 protected:
   // current polarizability for calls to sigma(r):
   field_type pol_ft;
-  double omega, gamma, deps, energy_sat;
+  double omega, gamma, energy_sat;
+  vec deps;
 };
 
 class simple_material_function : public material_function {
@@ -260,9 +261,9 @@ class structure_chunk {
 	       double pml_profile_integral);
 
   void add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
-                          double delta_epsilon = 1.0, double energy_saturation = 0.0);
+                          vec delta_epsilon, double energy_saturation = 0.0);
   void add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
-                          double delta_epsilon = 1.0, double energy_saturation = 0.0);
+                          vec delta_epsilon, double energy_saturation = 0.0);
 
   void mix_with(const structure_chunk *, double);
 
@@ -408,6 +409,12 @@ class structure {
   void set_chi2(component c, material_function &eps);
   void set_chi2(material_function &eps);
   void set_chi2(double eps(const vec &));
+  polarizability_identifier
+     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
+                  vec delta_epsilon, double energy_saturation = 0.0);
+  polarizability_identifier
+     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma,
+                  vec delta_epsilon, double energy_saturation = 0.0);
   polarizability_identifier
      add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma,
                   double delta_epsilon = 1.0, double energy_saturation = 0.0);
@@ -764,7 +771,7 @@ class fields_chunk {
   double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double my_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double get_chi1inv(component, direction, const ivec &iloc) const;
-  complex<double> analytic_epsilon(double freq, const vec &) const;
+  complex<double> analytic_chi1(component c, double freq, const vec &) const;
   
   void backup_component(component c);
   void average_with_backup(component c);
@@ -1055,7 +1062,7 @@ class fields {
   double get_mu(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
-  complex<double> analytic_epsilon(double freq, const vec &) const;
+  complex<double> analytic_chi1(component,double freq, const vec &) const;
   
   void prepare_for_bands(const vec &, double end_time, double fmax=0,
                          double qmin=1e300, double frac_pow_min=0.0);

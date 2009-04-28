@@ -48,13 +48,13 @@ class polarizability {
  public:
   volume v;
   polarizability(const structure_chunk *, material_function &sig,
-                 field_type ft, double om, double ga, double sigscale,
+                 field_type ft, double om, double ga, vec sigscale,
                  double energy_saturation = 0.0, bool mine = true);
   polarizability(const polarizability *);
   ~polarizability();
   field_type ft;
   double gamma, omeganot;
-  realnum *sigma, *s[NUM_FIELD_COMPONENTS];
+  realnum *s[NUM_FIELD_COMPONENTS];
   double energy_saturation, saturated_sigma;
   bool is_mine() { return is_it_mine; };
   bool is_it_mine;
@@ -75,7 +75,7 @@ class polarization {
   const polarizability *pb;
   polarization *next;
 
-  complex<double> analytic_epsilon(double freq, const vec &) const;
+  complex<double> analytic_chi1(component,double freq, const vec &) const;
   double local_energy(const ivec &);
   // for total energy, use fields::thermo_energy_in_box
   static void set_up_polarizations(polarization *pols[NUM_FIELD_TYPES], const structure_chunk *s, int is_real, bool store_enrgy = 0);
