@@ -167,32 +167,13 @@ polarizability::polarizability(const structure_chunk *sc, material_function &sig
       s[c] = new realnum[v.ntot()];
 
     FOR_COMPONENTS(c) if (s[c]) for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
-    // Average out sigma over the grid...
-    if (v.dim == Dcyl && ft == E_stuff) {
-      const vec dr = v.dr()*0.5; // The distance between Yee field components
-      const vec dz = v.dz()*0.5; // The distance between Yee field components
-      // FIXME: what is the point of this half-assed averaging?
-      component cr = field_type_component(ft, Er);
-      component cp = field_type_component(ft, Ep);
-      component cz = field_type_component(ft, Ez);
-      double sigscale_r = sigscale.in_direction(R);
-      double sigscale_p = sigscale.in_direction(P);
-      double sigscale_z = sigscale.in_direction(Z);
-      LOOP_OVER_VOL(v, cp, i) {
+
+    // TODO:  should we be doing some kind of subpixel averaging here?
+    FOR_FT_COMPONENTS(ft,c) if (s[c]) {
+      double sigscale_c = sigscale.in_direction(component_direction(c));
+      LOOP_OVER_VOL(v, c, i) {
 	IVEC_LOOP_LOC(v, here);
-        s[cr][i] = 0.5*sigscale_r*(sig.sigma(here+dr+dz) + sig.sigma(here+dr-dz));
-        s[cp][i] = 0.25*sigscale_p*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz) +
-                                  sig.sigma(here+dr-dz) + sig.sigma(here-dr-dz));
-        s[cz][i] = 0.5*sigscale_z*(sig.sigma(here+dr+dz) + sig.sigma(here-dr+dz));
-      }
-    } else {
-      // FIXME:  should we be doing clever averaging here?
-      FOR_FT_COMPONENTS(ft,c) if (s[c]) {
-	double sigscale_c = sigscale.in_direction(component_direction(c));
-	LOOP_OVER_VOL(v, c, i) {
-	  IVEC_LOOP_LOC(v, here);
-          s[c][i] = sigscale_c*sig.sigma(here);
-        }
+	s[c][i] = sigscale_c*sig.sigma(here);
       }
     }
   } else { // Not mine, don't store arrays...
