@@ -67,7 +67,7 @@ gaussian_src_time::gaussian_src_time(double f, double fwidth, double s)
   cutoff = width * s * 2;
 
   // this is to make last_source_time as small as possible
-  while (exp(-cutoff*cutoff / (2*width*width)) == 0.0)
+  while (exp(-cutoff*cutoff / (2*width*width)) < 1e-100)
     cutoff *= 0.9;
 }
 
@@ -79,7 +79,7 @@ gaussian_src_time::gaussian_src_time(double f, double w, double st, double et)
   cutoff = (et - st) * 0.5;
 
   // this is to make last_source_time as small as possible
-  while (exp(-cutoff*cutoff / (2*width*width)) == 0.0)
+  while (exp(-cutoff*cutoff / (2*width*width)) < 1e-100)
     cutoff *= 0.9;
 }
 
