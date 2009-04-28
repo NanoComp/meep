@@ -168,7 +168,7 @@ bool fields_chunk::update_eh(field_type ft) {
     }
 
     if (f[ec][cmp] != f[dc][cmp])
-      step_update_EDHB(f[ec][cmp], ec, v, 
+      STEP_UPDATE_EDHB(f[ec][cmp], ec, v, 
 		       dmp[dc][cmp], dmp[dc_1][cmp], dmp[dc_2][cmp],
 		       f_prev[dc][cmp], f_prev[dc_1][cmp], f_prev[dc_2][cmp],
 		       s->chi1inv[ec][d_ec], dmp[dc_1][cmp]?s->chi1inv[ec][d_1]:NULL, dmp[dc_2][cmp]?s->chi1inv[ec][d_2]:NULL,

@@ -111,7 +111,7 @@ void fields_chunk::step_db(field_type ft) {
       default: abort("bug - non-cylindrical field component in Dcyl");
       }
       
-      step_curl(the_f, cc, f_p, f_m, stride_p, stride_m, v, Courant, 
+      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, v, Courant, 
 		dsig, s->sig[dsig], s->siginv[dsig],
 		dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
     }

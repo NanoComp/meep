@@ -1,10 +1,8 @@
 #include "meep.hpp"
 #include "config.h"
 
-// with the current version of gcc, using "restrict" yields slower code!!
-// #define DPR double * restrict
-#define DPR double * // faster, at least for now
-#define RPR realnum * // faster, at least for now
+#define DPR double * restrict
+#define RPR realnum * restrict
 
 /* These macros get into the guts of the LOOP_OVER_VOL loops to efficiently
    construct the index k into a PML sigma array.  Basically, k needs to

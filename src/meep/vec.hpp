@@ -145,6 +145,59 @@ component first_field_component(field_type ft);
 	loop_ibound++) \
      LOOP_OVER_IVECS(v, loop_notowned_is, loop_notowned_ie, idx)
 
+#define LOOPS_ARE_STRIDE1(v) ((v).stride((v).yucky_direction(2)) == 1)
+
+// The following work identically to the LOOP_* macros above,
+// but assume that the inner loop is stride-1: LOOPS_ARE_STRIDE1(v) *must*
+// be true.  These are useful in allowing gcc to auto-vectorize the inner
+// loop, since gcc's vectorizer requires the array stride to be known at
+// compile time.  Note that stride-1 loops are the most common case in Meep.
+// Note that we also specify _Pragma("ivdep"), which is a hint to
+// compilers like icc (and hopefully gcc at some point) that the loop
+// iterations don't have data dependencies.  This means that you
+// should only use these macros where that is true!  (Basically,
+// all of this is here to support performance hacks of step_generic.)
+
+// loop over indices idx from is to ie (inclusive) in v
+#define S1LOOP_OVER_IVECS(v, is, ie, idx) \
+  for (int loop_is1 = (is).yucky_val(0), \
+           loop_is2 = (is).yucky_val(1), \
+           loop_is3 = (is).yucky_val(2), \
+           loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
+           loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1, \
+           loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
+           loop_d1 = (v).yucky_direction(0), \
+           loop_d2 = (v).yucky_direction(1), \
+           loop_d3 = (v).yucky_direction(2), \
+           loop_s1 = (v).stride((direction) loop_d1), \
+           loop_s2 = (v).stride((direction) loop_d2), \
+           loop_s3 = 1, \
+           idx0 = (is - (v).little_corner()).yucky_val(0) / 2 * loop_s1 \
+                + (is - (v).little_corner()).yucky_val(1) / 2 * loop_s2 \
+                + (is - (v).little_corner()).yucky_val(2) / 2 * loop_s3,\
+           loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
+    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma("ivdep") \
+      for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
+           loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx++)
+
+#define S1LOOP_OVER_VOL(v, c, idx) \
+  S1LOOP_OVER_IVECS(v, (v).little_corner() + (v).iyee_shift(c), (v).big_corner() + (v).iyee_shift(c), idx)
+
+#define S1LOOP_OVER_VOL_OWNED(v, c, idx) \
+  S1LOOP_OVER_IVECS(v, (v).little_owned_corner(c), (v).big_corner(), idx)
+
+#define S1LOOP_OVER_VOL_OWNED0(v, c, idx) \
+  S1LOOP_OVER_IVECS(v, (v).little_owned_corner0(c), (v).big_corner(), idx)
+
+#define S1LOOP_OVER_VOL_NOTOWNED(v, c, idx) \
+ for (ivec loop_notowned_is((v).dim,0), loop_notowned_ie((v).dim,0); \
+      loop_notowned_is == zero_ivec((v).dim);) \
+   for (int loop_ibound = 0; (v).get_boundary_icorners(c, loop_ibound,     \
+		  				       &loop_notowned_is,  \
+						       &loop_notowned_ie); \
+	loop_ibound++) \
+     S1LOOP_OVER_IVECS(v, loop_notowned_is, loop_notowned_ie, idx)
+
 #define IVEC_LOOP_AT_BOUNDARY 					\
  ((loop_s1 != 0 && (loop_i1 == 0 || loop_i1 == loop_n1-1)) ||	\
   (loop_s2 != 0 && (loop_i2 == 0 || loop_i2 == loop_n2-1)) ||	\

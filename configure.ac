@@ -419,6 +419,9 @@ AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
 AC_PREREQ(2.58) dnl for ac_c_restrict
 AC_C_RESTRICT
 
+# check for C99 _Pragma support, so that we can emit pragmas in macros
+AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to nothing if C99 _Pragma is not supported])])
+
 ##############################################################################
 
 AC_SUBST(MEEP_SUFFIX)
