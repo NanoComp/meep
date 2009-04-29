@@ -11,6 +11,14 @@ Meep 1.0 (28 April 2009)
     subpixel averaging of anisotropic media based on the method by
     Kottke, Farjadpour, & Johnson [ Phys. Rev. E. 77, 036611 (2008) ].
 
+  * Anisotropic dispersive materials are now supported, although
+    currently the dispersive part of the epsilon/mu tensor must be
+    diagonal, via the new sigma-diag parameter of polarizability.
+    (The corresponding C++ interface has also removed delta_epsilon.)
+
+  * The delta-epsilon parameter of polarizability has been removed;
+    you should use sigma instead.
+
   * New fields::integrate2 function (and corresponding Scheme function
     integrate2-field-function) to perform integrations involving two
     simulations with the same computational cell (e.g. field-overlap
@@ -20,7 +28,15 @@ Meep 1.0 (28 April 2009)
     user-specified material-function types; you only get subpixel
     averaging for the standard shapes (blocks, cylinders, etcetera).
 
-  * Haskell code-generation is no longer used, and hsrc directory is removed.
+  * Haskell code-generation is no longer used, and hsrc directory is
+    removed.  Bitrotted and undocumented (hence unused)
+    saturable-absorber feature has been removed, along with
+    energy-saturation parameter of polarizability.
+
+  * Some bug-fixes to test programs that made them overly sensitive
+    to roundoff errors and possibly fail depending on the compiler.
+    (New fields::round_time and meep-round-time functions to round
+     times to single-precision, useful for robust time comparisons.)
 
 Meep 0.20.4 (17 March 2009)
 
