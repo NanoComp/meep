@@ -9,11 +9,6 @@ Re-entrant functions: foo(vec&) arguments should be foo(vec&, void*)
 where the second argument can be used to pass state (instead of global
 vars).
 
-Fix bugs: divergence in saturated polarization (tests/symmetry.cpp),
-          and problems with nonlinearity + symmetry (idem)
-
-User-specified anisotropic dielectric and mu functions.
-
 User proper PML for dispersive media and cylindrical.
 
 Use more-stable algorithm for dispersive media.
@@ -33,6 +28,11 @@ and allow specifying a geometric_volume.
 Dump field Fourier transforms in a readable, documented format.
 
 Support Pade approximates (libpadespectrum) for Fourier and modal analysis.
+
+Check sensitivity to rounding error and if there is a better way to handle:
+      structure.cpp:555 (PML region boundaries)
+      vec.cpp:560 (interpolation weights)
+      anisotropic_averaging: 79 (magnitude of normal vector)
 
 -------------------
 LIBCTL FRONT-END:
