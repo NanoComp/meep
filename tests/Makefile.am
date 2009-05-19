@@ -64,7 +64,7 @@ h5test_LDADD = $(LIBMEEP)
 pml_SOURCES = pml.cpp
 pml_LDADD = $(LIBMEEP)
 
-TESTS = $(DAC)
+TESTS = bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results one_dimensional physical symmetry three_d two_dimensional 2D_convergence h5test pml
 
 # Note: this requires GNU make
 
