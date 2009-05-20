@@ -84,7 +84,7 @@ complex<double> fields::get_field(int c, const vec &loc) const {
 }
 
 double fields::get_field(derived_component c, const vec &loc) const {
-  component c1, c2;
+  component c1 = Ex, c2 = Ex;
   double sum = 0;
   switch (c) {
   case Sx: case Sy: case Sz: case Sr: case Sp:

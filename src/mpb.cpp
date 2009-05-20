@@ -260,7 +260,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
       double r = fabs(real(cdata[i] * phase));
       if (r > maxabs) maxabs = r;
     }
-    for (i = N-1; i >= 0 && fabs(real(cdata[i] * phase)) < 0.5 * maxabs; --i);
+    for (i = N-1; i >= 0 && fabs(real(cdata[i] * phase)) < 0.5 * maxabs; --i)
+      ;
     if (real(cdata[i] * phase) < 0) phase = -phase;
     for (i = 0; i < N; ++i) cdata[i] *= phase;
     complex<mpb_real> *hdata = (complex<mpb_real> *) H.data;

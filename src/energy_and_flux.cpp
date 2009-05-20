@@ -104,9 +104,10 @@ double fields::magnetic_energy_in_box(const geometric_volume &where) {
 
 void fields_chunk::backup_component(component c) {
   DOCMP {
-    if (f[c][cmp] && 
+    if (c < NUM_FIELD_COMPONENTS && f[c][cmp] && 
 	// in mu=1 regions where H==B, don't bother to backup H
-	!(is_magnetic(c) && f[c][cmp] == f[Bx + (c - Hx)][cmp])) {
+	!(is_magnetic(c) && f[c][cmp] 
+	  == f[direction_component(Bx, component_direction(c))][cmp])) {
 
       // if we have f_minus_p then f_prev stores this, and we need
       // to implement an extra backup field ... punt for now
