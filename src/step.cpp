@@ -272,7 +272,7 @@ void fields_chunk::step_source(field_type ft, bool including_integrated) {
       if (cndinv)
 	for (int j=0; j<sv->npts; j++) {
 	  const int i = sv->index[j];
-	  const complex<double> A = sv->current(j) * dt * cndinv[i];
+	  const complex<double> A = sv->current(j) * dt * double(cndinv[i]);
 	  f[c][0][i] -= real(A);
 	  if (!is_real) f[c][1][i] -= imag(A);
 	}
