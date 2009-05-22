@@ -1129,6 +1129,8 @@ class fields {
   bool locate_point_in_user_volume(ivec *, complex<double> *phase) const;
   void locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
                                            complex<double> kphase[8], int &ncopies) const;
+  // mympi.cpp
+  void boundary_communications(field_type);
   // step.cpp
   void phase_material();
   void step_db(field_type ft);

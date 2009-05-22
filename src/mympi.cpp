@@ -59,6 +59,8 @@ extern "C" int feenableexcept (int EXCEPTS);
 
 #define UNUSED(x) (void) x // silence compiler warnings
 
+#define MPI_REALNUM (sizeof(realnum) == sizeof(double) ? MPI_DOUBLE:MPI_FLOAT)
+
 namespace meep {
 
 #ifdef HAVE_MPI
@@ -391,6 +393,52 @@ int count_processors() {
   return n;
 #else
   return 1;
+#endif
+}
+
+void fields::boundary_communications(field_type ft) {
+  // Communicate the data around!
+#if 0 // This is the blocking version, which should always be safe!
+  for (int noti=0;noti<num_chunks;noti++)
+    for (int j=0;j<num_chunks;j++) {
+      const int i = (noti+j)%num_chunks;
+      const int pair = j+i*num_chunks;
+      DOCMP {
+        send(chunks[j]->n_proc(), chunks[i]->n_proc(),
+             comm_blocks[ft][pair], comm_size_tot(ft,pair));
+      }
+    }
+#endif
+#ifdef HAVE_MPI
+  const int maxreq = num_chunks*num_chunks;
+  MPI_Request *reqs = new MPI_Request[maxreq];
+  MPI_Status *stats = new MPI_Status[maxreq];
+  int reqnum = 0;
+  int *tagto = new int[count_processors()];
+  for (int i=0;i<count_processors();i++) tagto[i] = 0;
+  for (int noti=0;noti<num_chunks;noti++)
+    for (int j=0;j<num_chunks;j++) {
+      const int i = (noti+j)%num_chunks;
+      const int pair = j+i*num_chunks;
+      const int comm_size = comm_size_tot(ft,pair);
+      if (comm_size > 0) {
+	if (chunks[j]->is_mine() && !chunks[i]->is_mine())
+	  MPI_Isend(comm_blocks[ft][pair], comm_size,
+		    MPI_REALNUM, chunks[i]->n_proc(),
+		    tagto[chunks[i]->n_proc()]++,
+		    mycomm, &reqs[reqnum++]);
+	if (chunks[i]->is_mine() && !chunks[j]->is_mine())
+	  MPI_Irecv(comm_blocks[ft][pair], comm_size,
+		    MPI_REALNUM, chunks[j]->n_proc(),
+		    tagto[chunks[j]->n_proc()]++,
+		    mycomm, &reqs[reqnum++]);
+      }
+    }
+  delete[] tagto;
+  if (reqnum > maxreq) abort("Too many requests!!!\n");
+  if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
+  delete[] reqs;
+  delete[] stats;
 #endif
 }
 
