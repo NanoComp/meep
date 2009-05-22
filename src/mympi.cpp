@@ -59,8 +59,6 @@ extern "C" int feenableexcept (int EXCEPTS);
 
 #define UNUSED(x) (void) x // silence compiler warnings
 
-#define MPI_REALNUM (sizeof(realnum) == sizeof(double) ? MPI_DOUBLE:MPI_FLOAT)
-
 namespace meep {
 
 #ifdef HAVE_MPI
@@ -127,9 +125,9 @@ void send(int from, int to, double *data, int size) {
   if (from == to) return;
   if (size == 0) return;
   const int me = my_rank();
-  if (from == me) MPI_Send(data, size, MPI_REALNUM, to, 1, mycomm);
+  if (from == me) MPI_Send(data, size, MPI_DOUBLE, to, 1, mycomm);
   MPI_Status stat;
-  if (to == me) MPI_Recv(data, size, MPI_REALNUM, from, 1, mycomm, &stat);
+  if (to == me) MPI_Recv(data, size, MPI_DOUBLE, from, 1, mycomm, &stat);
 #else
   UNUSED(from);
   UNUSED(to);
@@ -142,7 +140,7 @@ void send(int from, int to, double *data, int size) {
 void broadcast(int from, realnum *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, sizeof(realnum) == sizeof(double) ? MPI_REALNUM : MPI_REALNUM, from, mycomm);
+  MPI_Bcast(data, size, MPI_FLOAT, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -154,7 +152,7 @@ void broadcast(int from, realnum *data, int size) {
 void broadcast(int from, double *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_REALNUM, from, mycomm);
+  MPI_Bcast(data, size, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -176,7 +174,7 @@ void broadcast(int from, char *data, int size) {
 void broadcast(int from, complex<double> *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, 2*size, MPI_REALNUM, from, mycomm);
+  MPI_Bcast(data, 2*size, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -197,7 +195,7 @@ void broadcast(int from, int *data, int size) {
 
 complex<double> broadcast(int from, complex<double> data) {
 #ifdef HAVE_MPI
-  MPI_Bcast(&data, 2, MPI_REALNUM, from, mycomm);
+  MPI_Bcast(&data, 2, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
 #endif
@@ -206,7 +204,7 @@ complex<double> broadcast(int from, complex<double> data) {
 
 double broadcast(int from, double data) {
 #ifdef HAVE_MPI
-  MPI_Bcast(&data, 1, MPI_REALNUM, from, mycomm);
+  MPI_Bcast(&data, 1, MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
 #endif
@@ -229,7 +227,7 @@ bool broadcast(int from, bool b) {
 double max_to_master(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Reduce(&in,&out,1,MPI_REALNUM,MPI_MAX,0,mycomm);
+  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,0,mycomm);
 #endif
   return out;
 }
@@ -237,7 +235,7 @@ double max_to_master(double in) {
 double max_to_all(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_REALNUM,MPI_MAX,mycomm);
+  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_MAX,mycomm);
 #endif
   return out;
 }
@@ -264,7 +262,7 @@ ivec max_to_all(const ivec &v) {
 double sum_to_master(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Reduce(&in,&out,1,MPI_REALNUM,MPI_SUM,0,mycomm);
+  MPI_Reduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,0,mycomm);
 #endif
   return out;
 }
@@ -272,14 +270,14 @@ double sum_to_master(double in) {
 double sum_to_all(double in) {
   double out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,1,MPI_REALNUM,MPI_SUM,mycomm);
+  MPI_Allreduce(&in,&out,1,MPI_DOUBLE,MPI_SUM,mycomm);
 #endif
   return out;
 }
 
 void sum_to_all(const double *in, double *out, int size) {
 #ifdef HAVE_MPI
-  MPI_Allreduce((void*) in, out, size, MPI_REALNUM,MPI_SUM,mycomm);
+  MPI_Allreduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,mycomm);
 #else
   memcpy(out, in, sizeof(double) * size);
 #endif
@@ -315,7 +313,7 @@ int partial_sum_to_all(int in) {
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,2,MPI_REALNUM,MPI_SUM,mycomm);
+  MPI_Allreduce(&in,&out,2,MPI_DOUBLE,MPI_SUM,mycomm);
 #endif
   return out;
 }
