@@ -53,7 +53,6 @@ typedef struct {
   int ninvmu;
   component invmu_cs[3];
   direction invmu_ds[3];
-  complex<long double> sum;
   field_function fun;
   void *fun_data_;
 } h5_output_data;
@@ -135,7 +134,6 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   int *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
-  complex<long double> sum = 0.0;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
   int ieos[6];
@@ -257,7 +255,6 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   data.cS = new component[num_fields];
   data.ph = new complex<double>[num_fields];
   data.fields = new complex<double>[num_fields];
-  data.sum = 0;
   data.fun = fun;
   data.fun_data_ = fun_data_;
 
