@@ -29,6 +29,8 @@
 
 #define RESTRICT
 
+#define MPI_REALNUM (sizeof(realnum) == sizeof(double) ? MPI_DOUBLE:MPI_FLOAT)
+
 namespace meep {
 
 void fields::step() {
@@ -206,12 +208,12 @@ void fields::step_boundaries(field_type ft) {
       if (comm_size > 0) {
 	if (chunks[j]->is_mine() && !chunks[i]->is_mine())
 	  MPI_Isend(comm_blocks[ft][pair], comm_size,
-		    MPI_DOUBLE, chunks[i]->n_proc(),
+		    MPI_REALNUM, chunks[i]->n_proc(),
 		    tagto[chunks[i]->n_proc()]++,
 		    MPI_COMM_WORLD, &reqs[reqnum++]);
 	if (chunks[i]->is_mine() && !chunks[j]->is_mine())
 	  MPI_Irecv(comm_blocks[ft][pair], comm_size,
-		    MPI_DOUBLE, chunks[j]->n_proc(),
+		    MPI_REALNUM, chunks[j]->n_proc(),
 		    tagto[chunks[j]->n_proc()]++,
 		    MPI_COMM_WORLD, &reqs[reqnum++]);
       }
