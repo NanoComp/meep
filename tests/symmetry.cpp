@@ -37,15 +37,20 @@ double rods_2d(const vec &pp) {
   return 1.0;
 }
 
+#if MEEP_SINGLE
+static double eps_compare = 1e-3;
+static double thresh_compare = 1e-3;
+#else
 static double eps_compare = 1e-9;
 static double thresh_compare = 1e-15;
+#endif
 
 static inline double max(double a, double b) { return a > b ? a : b; }
 
 int compare(double a, double b, const char *n) {
   if (fabs(a-b) > fabs(b)*eps_compare
       && max(fabs(a),fabs(b)) > thresh_compare) {
-    master_printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
+    master_printf("%s = %g differs by %g from %g\n", n, a, a-b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
@@ -61,8 +66,9 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
     component c = (component) i;
     if (f1.v.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
-      if (abs(v1 - v2) > eps_compare*abs(v2) && abs(v2) > thresh_compare) {
-        master_printf("%s differs:  %g %g out of %g %g\n",
+      if (!compare(real(v1),real(v2),"real part")
+	  || !compare(imag(v1),imag(v2),"imaginary part")) {
+        master_printf("%s differs by %g%+gi from %g%+gi\n",
                component_name(c), real(v2-v1), imag(v2-v1), real(v2), imag(v2));
         master_printf("This comes out to a fractional error of %g\n",
                abs(v1 - v2)/abs(v2));
@@ -1009,7 +1015,9 @@ int main(int argc, char **argv) {
      general a nonlinear system does *not* conserve the irreducible
      representation of the symmetry group (i.e. symmetry doesn't work).
      The simulations here are chosen to preserve the symmetry, however. */
+#if !MEEP_SINGLE
   thresh_compare = 1e-10;
+#endif
 
   if (!nonlinear_ex(vol1d(1.0, 30.0), one))
     abort("error in 1D nonlinear vacuum\n");
