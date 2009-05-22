@@ -66,6 +66,8 @@ pml_LDADD = $(LIBMEEP)
 
 TESTS = bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results one_dimensional physical symmetry three_d two_dimensional 2D_convergence h5test pml
 
+LOG_COMPILER = $(RUNCODE)
+
 # Note: this requires GNU make
 
 .o.dac:
