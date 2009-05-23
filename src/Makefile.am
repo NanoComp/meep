@@ -32,5 +32,4 @@ sphere-quad.h: sphere_quad$(EXEEXT)
 step_generic_stride1.cpp: step_generic.cpp
 	(echo $(PRELUDE); echo; sed 's/LOOP_OVER/S1LOOP_OVER/g' $(top_srcdir)/src/step_generic.cpp | sed 's/step_curl/step_curl_stride1/' | sed 's/step_update_EDHB/step_update_EDHB_stride1/') > $@
 
-maintainer-clean-local:
-	rm -f $(BUILT_SOURCES)
+MAINTAINERCLEANFILES = $(BUILT_SOURCES)

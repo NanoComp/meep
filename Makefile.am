@@ -33,3 +33,4 @@ darcs-dist: distdir
 	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
 	$(am__remove_distdir)
 
+DISTCLEANFILES = meep@MEEP_SUFFIX@.pc
