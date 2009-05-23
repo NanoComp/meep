@@ -1,3 +1,14 @@
+Meep 1.0.1 (22 May 2009)
+
+  * Enable correct operation and passed test suite when MEEP_SINGLE
+    (single-precision) mode is enabled in meep.hpp; thanks to
+    Seyoon Kim for the bug reports.
+
+  * Use new automake features to have less-verbose build output by
+    default (you can build in verbose mode by 'make V=1').
+
+  * Fix compilation problem with gcc 4.4, correcting Debian bug #505002.
+
 Meep 1.0 (28 April 2009)
 
   * New timestepping scheme for off-diagonal anisotropic epsilon and
