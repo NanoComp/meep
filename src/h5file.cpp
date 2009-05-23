@@ -16,6 +16,7 @@
  */
 
 #include <cstdlib>
+#include <string.h>
 
 #include "meep.hpp"
 
