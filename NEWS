@@ -5,7 +5,12 @@ Meep 1.0.1 (22 May 2009)
     Seyoon Kim for the bug reports.
 
   * Use new automake features to have less-verbose build output by
-    default (you can build in verbose mode by 'make V=1').
+    default (you can build in verbose mode by 'make V=1'), and
+    running all test programs then reporting which ones failed
+    instead of stopping at the first failure.
+
+  * Fix superficial failure in 2D_convergence test under gcc 3.4.6;
+    thanks to Alex Prengel for the bug report.
 
   * Fix compilation problem with gcc 4.4, correcting Debian bug #505002.
 
