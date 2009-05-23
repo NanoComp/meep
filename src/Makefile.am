@@ -20,13 +20,13 @@ $(BUILT_SOURCES)
 
 libmeep@MEEP_SUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
-noinst_PROGRAMS = sphere_quad
-sphere_quad_SOURCES = sphere-quad.cpp
-
 PRELUDE = "/* This file was automatically generated --- DO NOT EDIT */"
 
+noinst_PROGRAMS = sphere_quad
+sphere_quad_SOURCES = sphere-quad.cpp
 SPHERE_QUAD = $(top_builddir)/src/sphere_quad
-sphere-quad.h: sphere_quad$(EXEEXT)
+sphere-quad.h:
+	make sphere_quad
 	(echo $(PRELUDE); echo; $(SPHERE_QUAD)) > $@
 
 step_generic_stride1.cpp: step_generic.cpp
