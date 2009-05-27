@@ -544,6 +544,11 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
   }
 }
 
+static inline double pml_x(int i, double dx, double bloc, double a) {
+  double here = i * 0.5/a;
+  return (0.5/a*((int)(dx*(2*a)+0.5) - (int)(fabs(bloc-here)*(2*a)+0.5)));
+}
+
 void structure_chunk::use_pml(direction d, double dx, double bloc,
 			      double Rasymptotic,
 			      pml_profile_func pml_profile,
@@ -551,9 +556,17 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
 			      double pml_profile_integral) {
   if (dx <= 0.0) return;
   const double prefac = (-log(Rasymptotic))/(4*dx*pml_profile_integral);
-  // Don't bother with PML if we don't even overlap with the PML region...
-  if (bloc > v.boundary_location(High,d) + dx + 1.0/a - 1e-10 ||
-      bloc < v.boundary_location(Low,d) - dx - 1.0/a + 1e-10) return;
+  // Don't bother with PML if we don't even overlap with the PML region
+  // ...note that we should calculate overlap in exactly the same
+  // way that "x > 0" is computed below.
+  bool found_pml = false;
+  for (int i=v.little_corner().in_direction(d);
+       i<=v.big_corner().in_direction(d)+1;++i)
+    if (pml_x(i, dx, bloc, a) > 0) {
+      found_pml = true;
+      break;
+    }
+  if (!found_pml) return;
   if (is_mine()) {
     if (sig[d]) {
       delete[] sig[d]; 
@@ -576,9 +589,7 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
     for (int i=v.little_corner().in_direction(d);
 	 i<=v.big_corner().in_direction(d)+1;++i) {
       int idx = i - v.little_corner().in_direction(d);
-      double here = i * 0.5/a;
-      const double x =
-	0.5/a*((int)(dx*(2*a)+0.5) - (int)(fabs(bloc-here)*(2*a)+0.5));
+      double x = pml_x(i, dx, bloc, a);
       if (x > 0) {
 	sig[d][idx]=0.5*dt*prefac*pml_profile(x/dx, pml_profile_data);
 	siginv[d][idx] = 1/(1+sig[d][idx]);	
