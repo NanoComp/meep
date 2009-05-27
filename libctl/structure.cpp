@@ -1147,7 +1147,9 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   geometry_lattice.size = size;
 
   master_printf("Working in %s dimensions.\n", meep::dimension_name(dim));
-  
+  master_printf("Computational cell is %g x %g x %g with resolution %g\n",
+                size.x, size.y, size.z, resolution);  
+
   meep::volume v;
   switch (dims) {
   case 0: case 1:
