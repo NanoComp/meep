@@ -42,7 +42,7 @@ static double eps_compare = 1e-3;
 static double thresh_compare = 1e-3;
 #else
 static double eps_compare = 1e-9;
-static double thresh_compare = 1e-15;
+static double thresh_compare = 1e-8;
 #endif
 
 static inline double max(double a, double b) { return a > b ? a : b; }
