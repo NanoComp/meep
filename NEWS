@@ -1,4 +1,4 @@
-Meep 1.0.1 (22 May 2009)
+Meep 1.0.1 (28 May 2009)
 
   * Enable correct operation and passed test suite when MEEP_SINGLE
     (single-precision) mode is enabled in meep.hpp; thanks to
@@ -11,6 +11,9 @@ Meep 1.0.1 (22 May 2009)
 
   * Fix superficial failure in 2D_convergence test under gcc 3.4.6;
     thanks to Alex Prengel for the bug report.
+
+  * Fix failure in flux test under gcc 4.3.1 in some cases; thanks
+    to Alex Prengel for the bug report.
 
   * Fix compilation problem with gcc 4.4, correcting Debian bug #505002.
 
