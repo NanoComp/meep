@@ -1,4 +1,5 @@
 #include "meep.hpp"
+#include "meep_internals.hpp"
 #include "config.h"
 
 #define DPR double * restrict
