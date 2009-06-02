@@ -1,3 +1,12 @@
+Meep 1.0.2 (2 June 2009)
+
+  * Correct superficial 'make check' failure on 32-bit x86 machines
+    with gcc 4.3.x, due to slight impact on floating-point rounding
+    by automatic SSE/SSE2 vectorization; thanks to Silviu Popescu for
+    the bug report.
+
+  * Correct superficial 'make check' failure when compiling under icc.
+
 Meep 1.0.1 (28 May 2009)
 
   * Enable correct operation and passed test suite when MEEP_SINGLE
