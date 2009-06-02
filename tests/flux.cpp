@@ -37,13 +37,13 @@ double cavity(const vec &v) {
   return 12.0;
 }
 
-int compare(double a, double b, double eps, const char *n) {
-  if (fabs(a-b) > fabs(b)*eps) {
+int compare(double a, double b, double eps, double thresh, const char *n) {
+  if (fabs(a-b) > fabs(b)*eps && fabs(b) > thresh) {
     master_printf("%s differs by\t%g out of\t%g\n", n, a-b, b);
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
     return 0;
   } else {
-    if (fabs(a-b) > fabs(b)*eps*1.1)
+    if (fabs(a-b) > fabs(b)*eps*1.1 && fabs(b) > thresh)
       master_printf("%s fractional error is %g, close to %g threshold.\n",
 		    n, fabs(a-b)/fabs(b), eps);
     return 1;
@@ -88,7 +88,7 @@ int flux_1d(const double zmax,
   const double der = flux_right - delta_energy;
   master_printf("  Delta E:\t%g\n  Flux left:\t%g\n  Flux right:\t%g\n  Ratio:\t%g\n",
                 delta_energy, del, der, del/der);
-  return compare(del, der, 0.06, "Flux");
+  return compare(del, der, 0.06, 0, "Flux");
 }
 
 int split_1d(double eps(const vec &), int splitting) {
@@ -113,10 +113,11 @@ int split_1d(double eps(const vec &), int splitting) {
   mid.set_origin(vec(zmax*.5-boxwidth-0.25/a));
 
   const double ttot = f.last_source_time() + timewait;
+  const double tol = sizeof(realnum) == sizeof(float) ? 1e-3 : 1e-9;
   while (f.time() < ttot) {
     f1.step();
     f.step();
-    if (!compare(f.dt*left1->flux(), f.dt*left->flux(), 0.0, "Flux"))
+    if (!compare(f.dt*left1->flux(), f.dt*left->flux(), tol, tol, "Flux"))
       return 0;
   }
   return 1;
@@ -159,7 +160,7 @@ int cavity_1d(const double boxwidth, const double timewait,
                 (delta_energy - defl)/start_energy);
   return compare(start_energy - delta_energy,
                  start_energy - defl,
-                 (timewait>50)?0.032:0.004, "Flux"); // Yuck, problem with flux.
+                 (timewait>50)?0.032:0.004, 0, "Flux");
 }
 
 int flux_2d(const double xmax, const double ymax,
@@ -213,7 +214,7 @@ int flux_2d(const double xmax, const double ymax,
   master_printf("Final energy is %g\n", f.energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
 		del_energy, flux, del_energy/flux);
-  if (!compare(del_energy, flux, 0.09, "Flux")) return 0;
+  if (!compare(del_energy, flux, 0.09, 0, "Flux")) return 0;
 
   /* second check: flux spectrum is same for two concentric
      boxes containing the source. */
@@ -227,7 +228,7 @@ int flux_2d(const double xmax, const double ymax,
   for (int i = 0; i < Nfreq; ++i) {
     master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
 	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
-    if (!compare(fl1[i], fl2[i], 0.09, "Flux spectrum")) return 0;
+    if (!compare(fl1[i], fl2[i], 0.09, 0, "Flux spectrum")) return 0;
   }
   delete fl2; delete fl1;
 
@@ -284,7 +285,7 @@ int flux_cyl(const double rmax, const double zmax,
   master_printf("Final energy is %g\n", f.energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
 		del_energy, flux, del_energy/flux);
-  if (!compare(del_energy, flux, 0.08, "Flux")) return 0;
+  if (!compare(del_energy, flux, 0.08, 0, "Flux")) return 0;
 
   while (f.time() < ttot*2) {
     f.step();
@@ -296,7 +297,7 @@ int flux_cyl(const double rmax, const double zmax,
   for (int i = 0; i < Nfreq; ++i) {
     master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
 	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
-    if (!compare(fl1[i], fl2[i], 0.08, "Flux spectrum")) return 0;
+    if (!compare(fl1[i], fl2[i], 0.08, 0, "Flux spectrum")) return 0;
   }
   delete fl2; delete fl1;
 
