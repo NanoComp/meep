@@ -1,3 +1,8 @@
+Meep 1.0.3
+
+  * Allow GUILE_CONFIG environment variable to override location of
+    guile-config program in configure script.
+
 Meep 1.0.2 (2 June 2009)
 
   * Correct superficial 'make check' failure on 32-bit x86 machines
