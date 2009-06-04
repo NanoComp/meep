@@ -242,8 +242,8 @@ if test "x$GUILE_CONFIG" = "xunknown"; then
         AC_CHECK_LIB(guile-ltdl, scm_lt_dlinit, [], [AC_CHECK_LIB(ltdl, dlopen)])
         AC_CHECK_LIB(guile, gh_eval_str, [], [AC_MSG_ERROR([linking to guile failed])])
 else
-        CPPFLAGS="$CPPFLAGS `guile-config compile`"
-        LIBS="`guile-config link` $LIBS"
+        CPPFLAGS="$CPPFLAGS `$GUILE_CONFIG compile`"
+        LIBS="`$GUILE_CONFIG link` $LIBS"
 	AC_MSG_CHECKING([if linking to guile works])
 	AC_TRY_LINK_FUNC(gh_enter, AC_MSG_RESULT(yes), [
 	AC_MSG_RESULT(no)
