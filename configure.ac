@@ -235,8 +235,13 @@ AM_CONDITIONAL(WITH_LIBCTL, test "x$with_libctl" != xno)
 
 if test "x$with_libctl" != xno; then
 
-AC_CHECK_PROG(HAVE_GUILE_CONFIG, guile-config, yes, no)
-if test "$HAVE_GUILE_CONFIG" = "yes"; then
+AC_CHECK_PROG(GUILE_CONFIG, guile-config, guile-config, unknown)
+if test "x$GUILE_CONFIG" = "xunknown"; then
+        AC_CHECK_LIB(readline, readline)
+        AC_CHECK_LIB(dl, dlopen)
+        AC_CHECK_LIB(guile-ltdl, scm_lt_dlinit, [], [AC_CHECK_LIB(ltdl, dlopen)])
+        AC_CHECK_LIB(guile, gh_eval_str, [], [AC_MSG_ERROR([linking to guile failed])])
+else
         CPPFLAGS="$CPPFLAGS `guile-config compile`"
         LIBS="`guile-config link` $LIBS"
 	AC_MSG_CHECKING([if linking to guile works])
@@ -244,11 +249,6 @@ if test "$HAVE_GUILE_CONFIG" = "yes"; then
 	AC_MSG_RESULT(no)
 	AC_MSG_ERROR(guile-config is broken)
 	])
-else
-        AC_CHECK_LIB(readline, readline)
-        AC_CHECK_LIB(dl, dlopen)
-        AC_CHECK_LIB(guile-ltdl, scm_lt_dlinit, [], [AC_CHECK_LIB(ltdl, dlopen)])
-        AC_CHECK_LIB(guile, gh_eval_str, [], [AC_MSG_ERROR([linking to guile failed])])
 fi
 
 # Check how smob types work in this Guile version:
