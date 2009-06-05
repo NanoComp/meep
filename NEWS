@@ -1,7 +1,8 @@
-Meep 1.0.3
+Meep 1.0.3 (5 June 2009)
 
   * Allow GUILE_CONFIG environment variable to override location of
-    guile-config program in configure script.
+    guile-config program in configure script; this is useful when
+    cross-compiling.
 
 Meep 1.0.2 (2 June 2009)
 
