@@ -400,9 +400,8 @@ AC_MSG_RESULT($feenableexcept_decl_ok)
 # SIGFPE by default.
 
 AC_MSG_CHECKING([whether to catch and ignore SIGFPE signals])
-ignore_sigfpe=yes
 AC_RUN_IFELSE([AC_LANG_PROGRAM([], [volatile double x=1,y=0; return x/y;])], 
-              [ignore_sigfpe=no])
+              [ignore_sigfpe=no], [ignore_sigfpe=yes], [ignore_sigfpe=no])
 AC_MSG_RESULT($ignore_sigfpe)
 if test $ignore_sigfpe = yes; then
     AC_DEFINE(IGNORE_SIGFPE, [1], [Define to catch and ignore SIGFPE signals])
