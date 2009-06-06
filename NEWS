@@ -1,3 +1,7 @@
+Meep 1.0.4
+
+  * Fix configure script to finish properly when cross-compiling.
+
 Meep 1.0.3 (5 June 2009)
 
   * Allow GUILE_CONFIG environment variable to override location of
