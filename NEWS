@@ -1,6 +1,8 @@
 Meep 1.0.4
 
-  * Fix configure script to finish properly when cross-compiling.
+  * Fix configure script failure when cross-compiling.
+
+  * Fix compilation failure with MPICH.
 
 Meep 1.0.3 (5 June 2009)
 

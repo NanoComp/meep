@@ -38,9 +38,29 @@ AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
                   with_mpi=$withval, with_mpi=no)
 
 if test "x$with_mpi" = "xyes"; then
-	ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
-	CXX=$MPICXX
-	MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
+  ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
+  CXX=$MPICXX
+  MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
+
+  # Detect stupid MPICH problem with SEEK_SET conflicting between
+  # the mpi.h header file and the stdio.h header file in C++
+
+  AC_MSG_CHECKING([for extra flag needed to combine stdio.h and mpi.h])
+  for flag in none -DMPICH_IGNORE_CXX_SEEK unknown; do
+    if test "x$flag" = xunknown; then break; fi
+    save_CPPFLAGS=$CPPFLAGS
+    if test "x$flag" != xnone; then CPPFLAGS="$CPPFLAGS $flag"; fi
+    AC_TRY_COMPILE([#include <stdio.h>
+#undef SEEK_SET
+#undef SEEK_END
+#undef SEEK_CUR
+#include <mpi.h>], [], [break], [])
+    CPPFLAGS=$save_CPPFLAGS
+  done
+  AC_MSG_RESULT($flag)
+  if test "x$flag" = xunknown; then
+    AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])
+  fi
 fi
 
 ##############################################################################
