@@ -183,7 +183,7 @@ inline double sqr(double x) { return x*x; }
    the difference of the abscissae.  That's what this function does. */
 double distance_from_curve(int n, double dx, double ys[], double x, double y)
 {
-  double d = infinity;
+  double d = meep::infinity;
   for (int i = 1; i < n; ++i) {
     double theta = atan2(ys[i] - ys[i-1], dx);
     double L = sqrt(sqr(dx) + sqr(ys[i]-ys[i-1]));

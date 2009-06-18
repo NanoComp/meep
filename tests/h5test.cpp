@@ -123,7 +123,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   }
   loc0 = v[iloc0];
 
-  double data_min = infinity, data_max = -infinity;
+  double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
     int rank, dims[2] = {1, 1};
@@ -240,7 +240,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   }
   loc0 = v[iloc0];
 
-  double data_min = infinity, data_max = -infinity;
+  double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
     int rank, dims[3] = {1, 1, 1};
@@ -353,7 +353,7 @@ bool check_2d_monitor(double eps(const vec &),
   sync();
   file = f.open_h5file(name, h5file::READONLY);
 
-  double data_min = infinity, data_max = -infinity;
+  double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
 
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
