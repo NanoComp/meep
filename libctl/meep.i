@@ -44,6 +44,17 @@ static inline complex<double> my_field_func(const complex<double> *fields,
   return std::complex<double>(cret.re, cret.im);
 }
 
+/* Unfortunately, this is not re-entrant.  Damn dynamic scoping. 
+   Hopefully, it should be good enough for our purposes. */
+static SCM my_complex_func3_scm;
+static inline complex<double> my_complex_func3(complex<double> x) {
+  cnumber cx;
+  cx.re = real(x); cx.im = imag(x);
+  SCM ret = gh_call1(my_complex_func3_scm, ctl_convert_cnumber_to_scm(cx));
+  cnumber cret = ctl_convert_cnumber_to_c(ret);
+  return std::complex<double>(cret.re, cret.im);
+}
+
 %}
 
 %typecheck(SWIG_TYPECHECK_COMPLEX) complex<double> {
@@ -64,6 +75,14 @@ static inline complex<double> my_field_func(const complex<double> *fields,
   $1 = my_complex_func;
 }
 %typecheck(SWIG_TYPECHECK_POINTER) complex<double>(*)(meep::vec const &) {
+  $1 = SCM_NFALSEP(scm_procedure_p($input));
+}
+
+%typemap(guile,in) complex<double>(*)(complex<double>) {
+  my_complex_func3_scm = $input;
+  $1 = my_complex_func3;
+}
+%typecheck(SWIG_TYPECHECK_POINTER) complex<double>(*)(complex<double>) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 

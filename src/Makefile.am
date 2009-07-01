@@ -10,8 +10,8 @@ HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
 bicgstab.hpp
 
 libmeep@MEEP_SUFFIX@_la_SOURCES = anisotropic_averaging.cpp bands.cpp	\
-boundaries.cpp bicgstab.cpp control_c.cpp cw_fields.cpp dft.cpp		\
-energy_and_flux.cpp fields.cpp loop_in_chunks.cpp grace.cpp		\
+boundaries.cpp bicgstab.cpp casimir.cpp control_c.cpp cw_fields.cpp	\
+dft.cpp energy_and_flux.cpp fields.cpp loop_in_chunks.cpp grace.cpp	\
 h5fields.cpp h5file.cpp initialize.cpp integrate.cpp integrate2.cpp	\
 monitor.cpp mympi.cpp output_directory.cpp polarization.cpp		\
 sources.cpp step.cpp step_db.cpp structure.cpp time.cpp update_eh.cpp	\

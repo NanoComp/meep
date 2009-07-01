@@ -2,6 +2,9 @@
 /* These are functions for the libctl front-end which are exported
    via SWIG. */
 
+#ifndef MEEP_CTL_SWIG_HPP
+#define MEEP_CTL_SWIG_HPP 1
+
 vector3 vec_to_vector3(const meep::vec &v);
 meep::vec vector3_to_vec(const vector3 v3);
 void set_dimensions(int dims);
@@ -22,8 +25,14 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
 
+ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, 
+				   complex<double> (*eps_func)(complex<double> omega) = 0,
+				   double Tfft = 0);
+
 // wrapper around constructor to fool SWIG
 meep::geometric_volume_list
   *make_geometric_volume_list(const meep::geometric_volume &gv,
 			      int c, complex<double> weight,
 			      meep::geometric_volume_list *next);
+
+#endif // MEEP_CTL_SWIG_HPP

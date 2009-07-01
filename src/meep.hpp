@@ -1106,6 +1106,13 @@ class fields {
   bool nosize_direction(direction d) const;
   direction normal_direction(const geometric_volume &where) const;
 
+  // casimir.cpp
+  complex<double> casimir_stress_dct_integral(direction dforce,
+					      direction dsource,
+					      int mx, int my, int mz,
+					      field_type ft,
+					      geometric_volume where);
+
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   int synchronized_magnetic_fields; // count number of nested synchs
@@ -1222,6 +1229,10 @@ int do_harminv(complex<double> *data, int n, double dt,
 	       double spectral_density = 1.1, double Q_thresh = 50,
 	       double rel_err_thresh = 1e20, double err_thresh = 0.01, 
 	       double rel_amp_thresh = -1, double amp_thresh = -1);
+
+complex<double> *make_casimir_g(double T, double dt, double sigma, 
+				complex<double> (*eps_func)(complex<double> omega) = 0,
+				double Tfft = 0);
 
 #if MEEP_SINGLE
 // in mympi.cpp ... must be here in order to use realnum type
