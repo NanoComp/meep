@@ -86,7 +86,7 @@ complex<double> *make_casimir_g(double T, double dt, double sigma,
   int N = ceil(T / dt);
   C *g = new C[N];
   g[0] = 0;
-  double dxi = 2*pi / (Nfft * dt);
+  double dxi = 1.0 / (Nfft * dt);
   for (int i = 1; i < N; ++i) {
     double t = i * dt;
     g[i] = dg[i] * dxi + C(0.0,1.0) * ((1/(t*t) + sigma/t) / (2*pi)
