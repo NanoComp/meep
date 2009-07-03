@@ -1230,7 +1230,7 @@ int do_harminv(complex<double> *data, int n, double dt,
 	       double rel_err_thresh = 1e20, double err_thresh = 0.01, 
 	       double rel_amp_thresh = -1, double amp_thresh = -1);
 
-complex<double> *make_casimir_g(double T, double dt, double sigma, 
+complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
 				complex<double> (*eps_func)(complex<double> omega) = 0,
 				double Tfft = 0);
 

@@ -25,7 +25,7 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
 
-ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, 
+ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
 				   complex<double> (*eps_func)(complex<double> omega) = 0,
 				   double Tfft = 0);
 

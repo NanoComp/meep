@@ -45,11 +45,20 @@ typedef complex<double> C;
    any additional frequency dependence of the dielectric function,
    eps_func(omega) should equal eps(omega)/eps(infinity); note that
    the omega argument will be complex.  If Tfft is passed, it is a
-   time (should be > T) giving extra resolution for the Fourier transform. */
-complex<double> *make_casimir_g(double T, double dt, double sigma, 
-				complex<double> (*eps_func)(complex<double> omega),
-				double Tfft) {
-  if (Tfft <= T) Tfft = T * 10;
+   time (should be > T) giving extra resolution for the Fourier transform. 
+   If ft is E_stuff or D_stuff, g(t) is evaultated at n*dt timesteps corresponding
+   to the electric field; if ft is H_stuff or B_stuff we evaluate at (n-0.5)*dt
+   timesteps corresponding to the magnetic field. */
+complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
+				    complex<double> (*eps_func)(complex<double> omega),
+				    double Tfft) {
+  double tshift = (ft == E_stuff || ft == D_stuff) ? 0.0 : -0.5*dt;
+  T += 5 * dt; // allocate a few extra timesteps just in case
+
+  // set some reasonable defaults
+  if (Tfft <= T) Tfft = T * 100; // * 10 is not enough
+  if (Tfft <= 1000) Tfft = 1000;
+  if (Tfft > 1e7*dt && T * 10 < Tfft) Tfft = T * 10;
 
   int Nfft = ceil(Tfft / dt);
   C *dg = new C[Nfft];
@@ -65,6 +74,11 @@ complex<double> *make_casimir_g(double T, double dt, double sigma,
     for (int i = 1; i < Nfft/2 ; ++i) {
       double xi = 2*pi*i / (Nfft * dt);
       dg[i] = dg[i] * eps_func(xi * sqrt(C(1.0, sigma/xi)));
+    }
+  if (tshift != 0.0) // time shift:
+    for (int i = 1; i < Nfft/2 ; ++i) {
+      double xi = 2*pi*i / (Nfft * dt);
+      dg[i] = dg[i] * polar(1.0, xi * tshift);
     }
 
 #if defined(HAVE_LIBFFTW)
@@ -88,7 +102,7 @@ complex<double> *make_casimir_g(double T, double dt, double sigma,
   g[0] = 0;
   double dxi = 1.0 / (Nfft * dt);
   for (int i = 1; i < N; ++i) {
-    double t = i * dt;
+    double t = i * dt + tshift;
     g[i] = dg[i] * dxi + C(0.0,1.0) * ((1/(t*t) + sigma/t) / (2*pi)
 				      + 0.25 * sqrt(sigma*sigma*sigma/(t*pi)));
   }

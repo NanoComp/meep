@@ -84,14 +84,14 @@ ctlio::number_list dft_flux_flux(dft_flux *f)
 
 /***************************************************************************/
 
-ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, 
+ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
 				   complex<double> (*eps_func)(complex<double> omega),
 				   double Tfft)
 {
   ctlio::cnumber_list res;
   res.num_items = ceil(T / dt);
   res.items = new cnumber[res.num_items];
-  complex<double> *g = meep::make_casimir_g(T, dt, sigma, eps_func, Tfft);
+  complex<double> *g = meep::make_casimir_gfunc(T, dt, sigma, ft, eps_func, Tfft);
   for (int i = 0; i < res.num_items; ++i) {
     res.items[i].re = real(g[i]);
     res.items[i].im = imag(g[i]);
