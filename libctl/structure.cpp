@@ -942,14 +942,20 @@ bool geom_epsilon::has_mu()
   return (mu_not_1(default_material));
 }
 
+/* a global scalar conductivity to add to all materials; this
+   is mostly for the convenience of Casimir calculations where
+   the global conductivity corresponds to a rotation to
+   complex frequencies */
+static double global_D_conductivity = 0, global_B_conductivity = 0;
+
 static double get_cnd(meep::component c, const medium *m) {
   switch (c) {
-  case meep::Dr: case meep::Dx: return m->D_conductivity_diag.x;
-  case meep::Dp: case meep::Dy: return m->D_conductivity_diag.y;
-  case meep::Dz: return m->D_conductivity_diag.z;
-  case meep::Br: case meep::Bx: return m->B_conductivity_diag.x;
-  case meep::Bp: case meep::By: return m->B_conductivity_diag.y;
-  case meep::Bz: return m->B_conductivity_diag.z;
+  case meep::Dr: case meep::Dx: return m->D_conductivity_diag.x + global_D_conductivity;
+  case meep::Dp: case meep::Dy: return m->D_conductivity_diag.y + global_D_conductivity;
+  case meep::Dz: return m->D_conductivity_diag.z + global_D_conductivity;
+  case meep::Br: case meep::Bx: return m->B_conductivity_diag.x + global_B_conductivity;
+  case meep::Bp: case meep::By: return m->B_conductivity_diag.y + global_B_conductivity;
+  case meep::Bz: return m->B_conductivity_diag.z + global_B_conductivity;
   default: return 0;
   }
 }
@@ -1126,13 +1132,18 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				material_type default_mat,
 				pml_list pml_layers,
 				symmetry_list symmetries,
-				int num_chunks, double Courant)
+				int num_chunks, double Courant,
+				double global_D_conductivity_,
+				double global_B_conductivity_)
 {
   master_printf("-----------\nInitializing structure...\n");
   
   // only cartesian lattices are currently allowed
   geom_initialize();
   geometry_center = center;
+
+  global_D_conductivity = global_D_conductivity_;
+  global_B_conductivity = global_B_conductivity_;
   
   number no_size = 2.0 / ctl_get_number("infinity");
   if (size.x <= no_size)

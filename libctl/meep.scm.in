@@ -160,6 +160,11 @@
 
 (define-param store-polarization-energy? false)
 
+; a "global" conductivity to add to all materials, mostly
+; for the convenience of Casimir calculations
+(define-param global-D-conductivity 0)
+(define-param global-B-conductivity 0)
+
 ; ****************************************************************
 ; Setting up the structure
 
@@ -224,7 +229,8 @@
 		     eps-averaging? subpixel-tol subpixel-maxeval
 		     (and ensure-periodicity (not (not k)))
 		     geometry extra-materials default-material
-		     pml-layers symmetries num-chunks Courant))))
+		     pml-layers symmetries num-chunks Courant
+		     global-D-conductivity global-B-conductivity))))
 
 ; ****************************************************************
 ; Adding sources
