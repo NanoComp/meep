@@ -101,16 +101,53 @@ typedef struct {
   double kx, ky, kz;
   double x0, y0, z0;
   direction xd, yd, zd;
+  complex<long double> sum;
+  double dV;
 } stress_data;
 
-static complex<double> stress(const complex<double> *fields,
-			      const vec &loc,
-			      void *data_) {
+/* chunkloop for the low-level loop_in_chunks routine, to do the
+   Casimir stress-tensor integration.  We use this rather than
+   fields::integrate because we need to *omit* the 2*pi*r Jacobian
+   factor in cylindrical coordinates (which is cancelled by the
+   delta-function normalization in the overall Casimir expression). */
+static void stress_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
+			     ivec is, ivec ie,
+			     vec s0, vec s1, vec e0, vec e1,
+			     double dV0, double dV1,
+			     ivec shift, complex<double> shift_phase,
+			     const symmetry &S, int sn,
+			     void *data_)
+{
+  (void) ichunk; (void) dV0; (void) dV1; // unused
   stress_data *d = (stress_data *) data_;
-  return (fields[0] 
-	  * cos(d->kx * (loc.in_direction(d->xd) - d->x0))
-	  * cos(d->ky * (loc.in_direction(d->yd) - d->y0))
-	  * cos(d->kz * (loc.in_direction(d->zd) - d->z0)));
+  complex<long double> sum = 0.0;
+  complex<double> ph;
+  double dV = d->dV;
+
+  ph = shift_phase * S.phase_shift(cgrid, sn);
+
+  if (!fc->f[cgrid][0]) return;
+
+  vec rshift(shift * (0.5*fc->v.inva));
+  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+    IVEC_LOOP_LOC(fc->v, loc);
+    loc = S.transform(loc, sn) + rshift;
+
+    double fre, fim;
+    fre = fc->f[cgrid][0][idx];
+    fim = fc->f[cgrid][1] ? fc->f[cgrid][1][idx] : 0.0;
+    complex<double> fval = complex<double>(fre, fim) * ph;
+
+    complex<double> integrand = 
+      (fval
+       * cos(d->kx * (loc.in_direction(d->xd) - d->x0))
+       * cos(d->ky * (loc.in_direction(d->yd) - d->y0))
+       * cos(d->kz * (loc.in_direction(d->zd) - d->z0)));
+
+    sum += integrand * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV);
+  }
+
+  d->sum += sum;
 }
 
 complex<double> fields::casimir_stress_dct_integral(direction dforce,
@@ -186,8 +223,16 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
   
   coefficient *= (ft==E_stuff 
 		  ? get_eps(where.center()) : get_mu(where.center()));
-  
-  return coefficient * integrate(1, &c, stress, &data, where);
+
+  data.sum = 0.0;
+  data.dV = 1.0;
+  LOOP_OVER_DIRECTIONS(v.dim, d)
+    if (where.in_direction(d) > 0.0)
+      data.dV *= v.inva;
+
+  loop_in_chunks(stress_chunkloop, &data, where, c);
+  data.sum = sum_to_all(data.sum);
+  return coefficient * complex<double>(real(data.sum), imag(data.sum));
 }
 
 } // namespace meep
