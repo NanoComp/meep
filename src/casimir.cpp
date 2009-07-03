@@ -138,13 +138,10 @@ static void stress_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
     fim = fc->f[cgrid][1] ? fc->f[cgrid][1][idx] : 0.0;
     complex<double> fval = complex<double>(fre, fim) * ph;
 
-    complex<double> integrand = 
-      (fval
-       * cos(d->kx * (loc.in_direction(d->xd) - d->x0))
-       * cos(d->ky * (loc.in_direction(d->yd) - d->y0))
-       * cos(d->kz * (loc.in_direction(d->zd) - d->z0)));
-
-    sum += integrand * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV);
+    sum += fval * (cos(d->kx * (loc.in_direction(d->xd) - d->x0))
+		   * cos(d->ky * (loc.in_direction(d->yd) - d->y0))
+		   * cos(d->kz * (loc.in_direction(d->zd) - d->z0))
+		   * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV));
   }
 
   d->sum += sum;
