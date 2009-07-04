@@ -40,15 +40,16 @@ namespace meep {
 
 typedef complex<double> C;
 
-/* Return an array of values of the g(t) function, for times [0,T] with
-   steps dt, for a given Casimir conductivity sigma.  If there is
+/* Return an array of values of the g(t) function, for times [0,T]
+   with steps dt, for a given Casimir conductivity sigma.  If there is
    any additional frequency dependence of the dielectric function,
    eps_func(omega) should equal eps(omega)/eps(infinity); note that
    the omega argument will be complex.  If Tfft is passed, it is a
-   time (should be > T) giving extra resolution for the Fourier transform. 
-   If ft is E_stuff or D_stuff, g(t) is evaultated at n*dt timesteps corresponding
-   to the electric field; if ft is H_stuff or B_stuff we evaluate at (n-0.5)*dt
-   timesteps corresponding to the magnetic field. */
+   time (should be > T) giving extra resolution for the Fourier
+   transform.  If ft is E_stuff or D_stuff, g(t) is evaluated at n*dt
+   timesteps corresponding to the electric field; if ft is H_stuff or
+   B_stuff we evaluate at (n-0.5)*dt timesteps corresponding to the
+   magnetic field. */
 complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
 				    complex<double> (*eps_func)(complex<double> omega),
 				    double Tfft) {
