@@ -82,6 +82,14 @@ ctlio::number_list dft_flux_flux(dft_flux *f)
   return res;
 }
 
+ctlio::number_list dft_force_force(dft_force *f)
+{
+  ctlio::number_list res;
+  res.num_items = f->Nfreq;
+  res.items = f->force();
+  return res;
+}
+
 /***************************************************************************/
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,

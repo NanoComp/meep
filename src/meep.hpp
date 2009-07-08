@@ -662,6 +662,10 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 		   const char *dprefix = 0);
 void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 		   const char *dprefix = 0);
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
+		   const char *dprefix = 0);
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
+		   const char *dprefix = 0);
 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
@@ -691,6 +695,34 @@ public:
   int Nfreq;
   dft_chunk *E, *H;
   component cE, cH;
+};
+
+// stress.cpp (normally created with fields::add_dft_force)
+class dft_force {
+public:
+  dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
+	    double fmin, double fmax, int Nf);
+  dft_force(const dft_force &f);
+
+  double *force();
+
+  void save_hdf5(h5file *file, const char *dprefix = 0);
+  void load_hdf5(h5file *file, const char *dprefix = 0);
+
+  void operator-=(const dft_force &fl);
+
+  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0,
+		 const char *prefix = 0);
+  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0,
+		 const char *prefix = 0);
+
+  void scale_dfts(complex<double> scale);
+
+  void remove();
+
+  double freq_min, dfreq;
+  int Nfreq;
+  dft_chunk *offdiag1, *offdiag2, *diag;
 };
 
 enum in_or_out { Incoming=0, Outgoing };
@@ -1047,7 +1079,11 @@ class fields {
 			      double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux(const geometric_volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
-  
+
+  // stress.cpp
+  dft_force add_dft_force(const geometric_volume_list *where,
+			  double freq_min, double freq_max, int Nfreq);
+
   // monitor.cpp
   double get_chi1inv(component, direction, const vec &loc) const;
   double get_inveps(component c, direction d, const vec &loc) const {

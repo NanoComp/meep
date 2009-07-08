@@ -442,7 +442,7 @@
   (define-property direction AUTOMATIC 'integer)
   (define-property weight 1.0 'cnumber))
 
-(define (fields-add-flux fields fcen df nfreq . fluxes)
+(define (fields-add-fluxish-stuff add-dft-stuff fields fcen df nfreq stufflist)
   (define gvl '()) ; geometric_volume_list of flux regions
   (map (lambda (f)
 	 (let* ((gv (volume (center (object-property-value f 'center))
@@ -459,12 +459,16 @@
 		  c
 		  (object-property-value f 'weight)
 		  gvl))))
-       fluxes)
-  (let ((flux
-	 (meep-fields-add-dft-flux fields gvl 
-				   (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
+       stufflist)
+  (let ((stuff
+	 (add-dft-stuff fields gvl 
+			(- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
     (delete-meep-geometric-volume-list gvl)
-    flux))
+    stuff))
+
+(define (fields-add-flux fields fcen df nfreq . fluxes)
+  (fields-add-fluxish-stuff meep-fields-add-dft-flux 
+			    fields fcen df nfreq fluxes))
 
 (define (add-flux fcen df nfreq . fluxes)
   (if (null? fields) (init-fields))
@@ -501,6 +505,54 @@
 (define (load-minus-flux fname flux)
   (load-flux fname flux)
   (meep-dft-flux-scale-dfts flux -1.0))
+
+; ****************************************************************
+; Force spectra (from stress tensor) - very similar interface to flux spectra
+
+(define-class force-region no-parent
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3)
+  (define-property direction no-default 'integer)
+  (define-property weight 1.0 'cnumber))
+
+(define (fields-add-force fields fcen df nfreq . forcees)
+  (fields-add-fluxish-stuff meep-fields-add-dft-force 
+			    fields fcen df nfreq forcees))
+
+(define (add-force fcen df nfreq . forcees)
+  (if (null? fields) (init-fields))
+  (apply fields-add-force (append (list fields fcen df nfreq) forcees)))
+
+(define (scale-force-fields s f)
+  (meep-dft-force-scale-dfts f s))
+
+(define (get-force-freqs f)
+  (arith-sequence
+   (meep-dft-force-freq-min-get f)
+   (meep-dft-force-dfreq-get f)
+   (meep-dft-force-Nfreq-get f)))
+
+(define (get-forces f)
+  (dft-force-force f))
+
+(define (display-forces . forcees)
+  (if (not (null? forcees))
+      (apply display-csv
+	     (append (list "force"
+			   (get-force-freqs (car forcees)))
+		     (map get-forces forcees)))))
+
+(define (load-force fname force)
+  (if (null? fields) (init-fields))
+  (meep-dft-force-load-hdf5 force fields fname "" (get-filename-prefix)))
+
+(define (save-force fname force)
+  (if (null? fields) (init-fields))
+  (meep-dft-force-save-hdf5 force fields fname "" (get-filename-prefix)))
+
+(define (load-minus-force fname force)
+  (load-force fname force)
+  (meep-dft-force-scale-dfts force -1.0))
 
 ; ****************************************************************
 ; Generic step functions: these are functions which are called

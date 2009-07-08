@@ -261,15 +261,14 @@ static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
 }
 
 // Note: the file must have been created in parallel mode, typically via fields::open_h5file.
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
 		   const char *dprefix) {
   int istart;
   int n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
-	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", 
-	   component_name(c));
+	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", name);
   file->create_data(dataname, 1, &n);
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
@@ -280,15 +279,19 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
   file->done_writing_chunks();
 }
 
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+		   const char *dprefix) {
+  save_dft_hdf5(dft_chunks, component_name(c), file, dprefix);
+}
+
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
 		   const char *dprefix) {
   int istart;
   int n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
-	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "",
-	   component_name(c));
+	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", name);
   int file_rank, file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
@@ -299,6 +302,11 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
     file->read_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
     istart += Nchunk;
   }
+}
+
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
+		   const char *dprefix) {
+  load_dft_hdf5(dft_chunks, component_name(c), file, dprefix);
 }
 
 dft_flux::dft_flux(const component cE_, const component cH_,
