@@ -622,6 +622,7 @@ public:
 	    vec s0_, vec s1_, vec e0_, vec e1_,
 	    double dV0_, double dV1_,
 	    complex<double> scale_,
+	    complex<double> extra_weight_,
 	    component c_,
 	    const void *data_);
   ~dft_chunk();
@@ -644,12 +645,22 @@ public:
   struct dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
   struct dft_chunk *next_in_dft; // next for this particular DFT vol./component
 
+  /* When computing things like -0.5*|E|^2 for the stress tensor,
+     we cannot incorporate the minus sign into the scale factor
+     because we only ever compute |scale|^2.  Thus, it is necessary
+     to store an additional weight factor with the dft_chunk to record
+     any additional negative or complex weight factor to be used
+     in computations involving the fourier-transformed fields.  Because
+     it is used in computations involving dft[...], it needs to be public. */
+     complex<double> extra_weight;
+
 private:
   // parameters passed from field_integrate:
   fields_chunk *fc;
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
+  bool sqrt_dV_and_interp_weights;
   complex<double> scale; // scale factor * phase from shift and symmetry
 
   // cache of exp(iwt) * scale, of length Nomega
@@ -1064,7 +1075,9 @@ class fields {
   dft_chunk *add_dft(component c, const geometric_volume &where,
 		     double freq_min, double freq_max, int Nfreq,
 		     bool include_dV_and_interp_weights = true,
-		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0);
+		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0,
+		     bool sqrt_dV_and_interp_weights = false,
+		     complex<double> extra_weight = 1.0);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
   dft_chunk *add_dft(const geometric_volume_list *where,

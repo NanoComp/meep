@@ -28,8 +28,9 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   double omega_min, domega;
   int Nomega;
   component c;
-  complex<double> weight;
+  complex<double> weight, extra_weight;
   bool include_dV_and_interp_weights;
+  bool sqrt_dV_and_interp_weights;
   dft_chunk *dft_chunks;
 };
 
@@ -37,6 +38,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
 		     ivec is_, ivec ie_,
 		     vec s0_, vec s1_, vec e0_, vec e1_,
 		     double dV0_, double dV1_,
+		     complex<double> extra_weight_,
 		     complex<double> scale_,
 		     component c_,
 		     const void *data_) {
@@ -67,7 +69,11 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
       e1.set_direction(d, 1.0);
     }
   }
+  /* an alternative way to avoid multipling by interpolation weights twice:
+     multiply by square root of the weights */
+  sqrt_dV_and_interp_weights = data->sqrt_dV_and_interp_weights;
   scale = scale_ * data->weight;
+  extra_weight = extra_weight_;
   c = c_;
 
   fc->v.yee2diel_offsets(c, avg1, avg2);
@@ -137,6 +143,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
        return; // this chunk doesn't have component c
 
   data->dft_chunks = new dft_chunk(fc,is,ie,s0,s1,e0,e1,dV0,dV1,
+				   data->extra_weight,
 				   shift_phase * S.phase_shift(c, sn),
 				   c, chunkloop_data);
 }
@@ -144,7 +151,9 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 dft_chunk *fields::add_dft(component c, const geometric_volume &where,
 			   double freq_min, double freq_max, int Nfreq,
 			   bool include_dV_and_interp_weights,
-			   complex<double> weight, dft_chunk *chunk_next) {
+			   complex<double> weight, dft_chunk *chunk_next,
+			   bool sqrt_dV_and_interp_weights,
+			   complex<double> extra_weight) {
   if (coordinate_mismatch(v.dim, c))
     return NULL;
 
@@ -155,8 +164,10 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
     (freq_max * 2*pi - data.omega_min) / (Nfreq - 1);
   data.Nomega = Nfreq;
   data.include_dV_and_interp_weights = include_dV_and_interp_weights;
+  data.sqrt_dV_and_interp_weights = sqrt_dV_and_interp_weights;
   data.dft_chunks = chunk_next;
   data.weight = weight * (dt/sqrt(2*pi));
+  data.extra_weight = extra_weight;
   loop_in_chunks(add_dft_chunkloop, (void *) &data, where);
 
   return data.dft_chunks;
@@ -206,6 +217,7 @@ void dft_chunk::update_dft(double time) {
   int idx_dft = 0;
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {
     double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+    if (sqrt_dV_and_interp_weights) w = sqrt(w);
     double f[2]; // real/imag field value at epsilon point
     if (avg2)
       for (int cmp=0; cmp < numcmp; ++cmp)
