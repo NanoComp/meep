@@ -355,6 +355,8 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu_inv->m00 = -0.0;
       epsmu_inv->m11 = -0.0;
       epsmu_inv->m22 = -0.0;
+      epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+      epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
       }
     default:
@@ -381,6 +383,8 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu_inv->m00 = 1.0;
       epsmu_inv->m11 = 1.0;
       epsmu_inv->m22 = 1.0;
+      epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+      epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
       }
     default:
