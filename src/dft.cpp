@@ -159,6 +159,7 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
 
   dft_chunk_data data;  
   data.c = c;
+  if (Nfreq <= 1) freq_min = freq_max = (freq_min + freq_max) * 0.5;
   data.omega_min = freq_min * 2*pi;
   data.domega = Nfreq <= 1 ? 0.0 : 
     (freq_max * 2*pi - data.omega_min) / (Nfreq - 1);
@@ -325,6 +326,7 @@ dft_flux::dft_flux(const component cE_, const component cH_,
 		   dft_chunk *E_, dft_chunk *H_, 
 		   double fmin, double fmax, int Nf)
 {
+  if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
   Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);

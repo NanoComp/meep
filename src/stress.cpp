@@ -26,6 +26,7 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_,
 		     dft_chunk *diag_,
 		     double fmin, double fmax, int Nf)
 {
+  if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
   Nfreq = Nf;
   dfreq = Nf <= 1 ? 0.0 : (fmax - fmin) / (Nf - 1);
