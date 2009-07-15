@@ -78,7 +78,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       ph[i] = 1.0;
     else {
       if (cgrid == Centered)
-	fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
+	fc->v.yee2cent_offsets(cS[i], off[2*i], off[2*i+1]);
       ph[i] = shift_phase * S.phase_shift(cS[i], sn);
     }
   }
@@ -89,14 +89,14 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       ph[j] = 1.0;
     else {
       if (cgrid == Centered)
-	fc->v.yee2diel_offsets(cS[j], off[2*j], off[2*j+1]);
+	fc->v.yee2cent_offsets(cS[j], off[2*j], off[2*j+1]);
       ph[j] = shift_phase * S.phase_shift(cS[j], sn);
     }
   }
   for (int k = 0; k < data->ninveps; ++k)
-    fc->v.yee2diel_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
+    fc->v.yee2cent_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
   for (int k = 0; k < data->ninvmu; ++k)
-    fc->v.yee2diel_offsets(imcs[k], imos[2*k], imos[2*k+1]);
+    fc->v.yee2cent_offsets(imcs[k], imos[2*k], imos[2*k+1]);
 
   vec rshift(shift * (0.5*fc->v.inva));
   LOOP_OVER_IVECS(fc->v, is, ie, idx) {

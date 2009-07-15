@@ -76,7 +76,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   extra_weight = extra_weight_;
   c = c_;
 
-  fc->v.yee2diel_offsets(c, avg1, avg2);
+  fc->v.yee2cent_offsets(c, avg1, avg2);
 
   omega_min = data->omega_min;
   domega = data->domega;

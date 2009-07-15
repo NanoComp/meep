@@ -330,7 +330,7 @@ vec volume::yee_shift(component c) const {
    locations: i, i+offset1, i+offset2, i+offset1+offset2. 
    (offset2, and possibly offset1, may be zero if only 2 or 1
    locations need to be averaged). */
-void volume::yee2diel_offsets(component c, int &offset1, int &offset2) {
+void volume::yee2cent_offsets(component c, int &offset1, int &offset2) {
   offset1 = offset2 = 0;
   LOOP_OVER_DIRECTIONS(dim,d) {
     if (!iyee_shift(c).in_direction(d)) {
