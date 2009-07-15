@@ -624,6 +624,7 @@ public:
 	    complex<double> scale_,
 	    complex<double> extra_weight_,
 	    component c_,
+	    bool use_centered_grid,
 	    const void *data_);
   ~dft_chunk();
   
@@ -1077,7 +1078,8 @@ class fields {
 		     bool include_dV_and_interp_weights = true,
 		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0,
 		     bool sqrt_dV_and_interp_weights = false,
-		     complex<double> extra_weight = 1.0);
+		     complex<double> extra_weight = 1.0,
+		     bool use_centered_grid = true);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
   dft_chunk *add_dft(const geometric_volume_list *where,

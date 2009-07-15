@@ -164,10 +164,10 @@ dft_force fields::add_dft_force(const geometric_volume_list *where_,
 	complex<double> weight1 = where->weight * (d == fd ? +0.5 : -0.5);
 	diag = add_dft(direction_component(Ex, d), 
 		       where->gv, freq_min, freq_max, Nfreq,
-		       true, 1.0, diag, true, weight1);
+		       true, 1.0, diag, true, weight1, false);
 	diag = add_dft(direction_component(Hx, d), 
 		       where->gv, freq_min, freq_max, Nfreq,
-		       true, 1.0, diag, true, weight1);
+		       true, 1.0, diag, true, weight1, false);
       }
   }
 

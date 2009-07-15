@@ -41,6 +41,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
 		     complex<double> extra_weight_,
 		     complex<double> scale_,
 		     component c_,
+		     bool use_centered_grid,
 		     const void *data_) {
   dft_chunk_data *data = (dft_chunk_data *) data_;
   if (!fc_->f[c_][0])
@@ -76,7 +77,10 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   extra_weight = extra_weight_;
   c = c_;
 
-  fc->v.yee2cent_offsets(c, avg1, avg2);
+  if (use_centered_grid)
+    fc->v.yee2cent_offsets(c, avg1, avg2);
+  else
+    avg1 = avg2 = 0;
 
   omega_min = data->omega_min;
   domega = data->domega;
@@ -136,8 +140,6 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   dft_chunk_data *data = (dft_chunk_data *) chunkloop_data;
   (void) shift; (void) ichunk; // unused
 
-  if (cgrid != Centered) abort("dft chunks should use the Centered grid");
-  
   component c = S.transform(data->c, -sn);
   if (c >= NUM_FIELD_COMPONENTS || !fc->f[c][0])
        return; // this chunk doesn't have component c
@@ -145,7 +147,8 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   data->dft_chunks = new dft_chunk(fc,is,ie,s0,s1,e0,e1,dV0,dV1,
 				   data->extra_weight,
 				   shift_phase * S.phase_shift(c, sn),
-				   c, chunkloop_data);
+				   c, cgrid == Centered,
+				   chunkloop_data);
 }
 
 dft_chunk *fields::add_dft(component c, const geometric_volume &where,
@@ -153,7 +156,8 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
 			   bool include_dV_and_interp_weights,
 			   complex<double> weight, dft_chunk *chunk_next,
 			   bool sqrt_dV_and_interp_weights,
-			   complex<double> extra_weight) {
+			   complex<double> extra_weight,
+			   bool use_centered_grid) {
   if (coordinate_mismatch(v.dim, c))
     return NULL;
 
@@ -169,7 +173,8 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
   data.dft_chunks = chunk_next;
   data.weight = weight * (dt/sqrt(2*pi));
   data.extra_weight = extra_weight;
-  loop_in_chunks(add_dft_chunkloop, (void *) &data, where);
+  loop_in_chunks(add_dft_chunkloop, (void *) &data, where,
+		 use_centered_grid ? Centered : c);
 
   return data.dft_chunks;
 }
