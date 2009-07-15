@@ -224,7 +224,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   data.reim = reim;
 
   loop_in_chunks(h5_findsize_chunkloop, (void *) &data, 
-	    where, Dielectric, true, true);
+	    where, Centered, true, true);
 
   file->prevent_deadlock(); // can't hold a lock since *_to_all is collective
   data.max_corner = max_to_all(data.max_corner);
@@ -289,7 +289,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
     data.offsets[i] = 0;
   
   loop_in_chunks(h5_output_chunkloop, (void *) &data, 
-		 where, Dielectric, true, true);
+		 where, Centered, true, true);
 
   delete[] data.offsets;
   delete[] data.fields;

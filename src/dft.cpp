@@ -136,7 +136,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   dft_chunk_data *data = (dft_chunk_data *) chunkloop_data;
   (void) shift; (void) ichunk; // unused
 
-  if (cgrid != Dielectric) abort("dft chunks should use the Dielectric grid");
+  if (cgrid != Centered) abort("dft chunks should use the Centered grid");
   
   component c = S.transform(data->c, -sn);
   if (c >= NUM_FIELD_COMPONENTS || !fc->f[c][0])

@@ -325,8 +325,8 @@ vec volume::yee_shift(component c) const {
 }
 
 /* Return array offsets to average with a given array location of c in
-   order to get c on the "dielectric" grid.  Then, to get the
-   dielectric grid point i, you should average c over the four
+   order to get c on the "centered" grid.  Then, to get the
+   centered grid point i, you should average c over the four
    locations: i, i+offset1, i+offset2, i+offset1+offset2. 
    (offset2, and possibly offset1, may be zero if only 2 or 1
    locations need to be averaged). */

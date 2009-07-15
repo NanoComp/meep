@@ -272,7 +272,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
 
   FOR_MAGNETIC_COMPONENTS(c) 
-    if (v.has_field(c) && (c0 == Dielectric || c0 == c)
+    if (v.has_field(c) && (c0 == Centered || c0 == c)
 	&& (v.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
 	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
 	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
@@ -284,7 +284,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
   FOR_ELECTRIC_COMPONENTS(c) 
-    if (v.has_field(c) && (c0 == Dielectric || c0 == c)
+    if (v.has_field(c) && (c0 == Centered || c0 == c)
 	&& (v.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
 	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
 	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {

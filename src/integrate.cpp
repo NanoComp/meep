@@ -68,7 +68,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
     if (cS[i] == Dielectric || cS[i] == Permeability)
       ph[i] = 1.0;
     else {
-      if (cgrid == Dielectric)
+      if (cgrid == Centered)
 	fc->v.yee2diel_offsets(cS[i], off[2*i], off[2*i+1]);
       ph[i] = shift_phase * S.phase_shift(cS[i], sn);
     }
@@ -142,7 +142,7 @@ complex<double> fields::integrate(int num_fvals, const component *components,
       break;
     }
 
-  component cgrid = Dielectric;
+  component cgrid = Centered;
   if (same_grid && num_fvals > 0)
     cgrid = components[0];
 

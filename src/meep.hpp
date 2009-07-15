@@ -1029,7 +1029,7 @@ class fields {
   // loop_in_chunks.cpp
   void loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 		      const geometric_volume &where,
-		      component cgrid = Dielectric,
+		      component cgrid = Centered,
 		      bool use_symmetry = true,
 		      bool snap_unit_dims = false);
   

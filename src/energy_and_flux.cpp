@@ -263,7 +263,7 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
    dielectric boundary as it commonly does. 
 
    A better method would be to average only continuous quantities in
-   order to compute the fields on the Dielectric grid, but this
+   order to compute the fields on the Centered grid, but this
    is more expensive and requires us to know the boundary orientation, and
    does not seem worth the trouble at this point. */
 

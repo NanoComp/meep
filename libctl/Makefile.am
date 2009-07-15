@@ -46,7 +46,7 @@ meep_enum_renames.i: $(LIBHDRS)
 	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; for f in $(LIBHDRS); do egrep "^enum" $$f | sed 's/enum \+\([A-Za-z_0-9:]\+\).*$$/\1/g' | while read enum; do cat $$f | tr -d '\n' | sed 's/.*enum \+'$${enum}' *{\([^}]*\)}.*/\1/g' | sed 's/= *[0-9]\+//g' |tr -d ' \t' | tr ',' '\n' | sed 's/^.*$$/'"%rename(meep_$${enum}_\0) meep::\0;/g"; echo; done; done;) > $@
 
 meep-enums.scm: meep_enum_renames.i
-	sed 's/%rename(\([A-Za-z0-9_]*\)) *\([A-Za-z0-9:_]*\);$$/(define \2 (\1))/' meep_enum_renames.i | sed 's/[A-Za-z0-9:_]*:://g' | sed 's/_/-/g' | sed 's,//,;,' > $@
+	(sed 's/%rename(\([A-Za-z0-9_]*\)) *\([A-Za-z0-9:_]*\);$$/(define \2 (\1))/' meep_enum_renames.i | sed 's/[A-Za-z0-9:_]*:://g' | sed 's/_/-/g' | sed 's,//,;,'; echo "(define Centered Dielectric)") > $@
 
 ##############################################################################
 #      stuff below is based on example Makefile.in included with libctl

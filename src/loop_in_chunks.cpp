@@ -229,7 +229,7 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    WHERE is 2d, etc.)
 
    In particular, the loop's point coordinates are calculated on the
-   Yee grid for component cgrid.  cgrid == Dielectric is a good choice
+   Yee grid for component cgrid.  cgrid == Centered is a good choice
    if you want to work with a combination of multiple field
    components, because all of the field components can be interpolated
    onto this grid without communication between chunks.
@@ -260,21 +260,21 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
   if (where.dim != v.dim)
     abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
 
-  if (cgrid == Permeability) cgrid = Dielectric;
+  if (cgrid == Permeability) cgrid = Centered;
   
   /*
     We handle looping on an arbitrary component grid by shifting
-    to the dielectric grid and then shifting back.  The looping
+    to the centered grid and then shifting back.  The looping
     coordinates are internally calculated on the odd-indexed
-    "dielectric grid", which has the virtue that it is disjoint for
+    "centered grid", which has the virtue that it is disjoint for
     each chunk and each chunk has enough information to interpolate all
     of its field components onto this grid without communication.
     Another virtue of this grid is that it is invariant under all of
     our symmetry transformations, so we can uniquely decide which
     transformed chunk gets to loop_in_chunks which grid point. 
   */
-  vec yee_c(v.yee_shift(Dielectric) - v.yee_shift(cgrid));
-  ivec iyee_c(v.iyee_shift(Dielectric) - v.iyee_shift(cgrid));
+  vec yee_c(v.yee_shift(Centered) - v.yee_shift(cgrid));
+  ivec iyee_c(v.iyee_shift(Centered) - v.iyee_shift(cgrid));
   geometric_volume wherec(where + yee_c);
 
   /* Find the corners (is and ie) of the smallest bounding box for
@@ -383,8 +383,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	     of the chunk points that intersect where.  Hence, add a little
 	     padding to make sure we don't miss any points due to rounding. */
 	  vec pad(one_ivec(v.dim) * v.inva * 1e-3);
-	  gvS = geometric_volume(chunks[i]->v.loc(Dielectric,0) - pad,
-				 chunks[i]->v.loc(Dielectric,
+	  gvS = geometric_volume(chunks[i]->v.loc(Centered,0) - pad,
+				 chunks[i]->v.loc(Centered,
 						  chunks[i]->v.ntot()-1) +pad);
 	}
 

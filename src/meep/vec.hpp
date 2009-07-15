@@ -30,6 +30,7 @@ const int NUM_FIELD_TYPES = 6;
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
                  Dx, Dy, Dr, Dp, Dz, Bx, By, Br, Bp, Bz, Dielectric, Permeability };
+#define Centered Dielectric // better name for centered "dielectric" grid
 enum derived_component { Sx=100, Sy, Sr, Sp, Sz, EnergyDensity,
 			 D_EnergyDensity, H_EnergyDensity };
 enum ndim { D1=0, D2, D3, Dcyl };
