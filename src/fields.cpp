@@ -413,8 +413,8 @@ void fields::require_component(component c) {
 	break;
     aniso2d = or_to_all(i < num_chunks);
   }
-  if (aniso2d && beta != 0)
-    abort("Nonzero beta unsupported when mu/epsilon couple TE and TM");
+  if (aniso2d && beta != 0 && is_real)
+    abort("Nonzero beta need complex fields when mu/epsilon couple TE and TM");
   aniso2d = aniso2d || (beta != 0); // beta couples TE/TM
 
   // allocate fields if they haven't been allocated yet for this component

@@ -148,11 +148,15 @@
 ; list of sources added by init-fields (below)
 (define-param sources '())
 
-(define-param beta-z 0)
 (define-param m 0)
 (define-param force-complex-fields? false)
 
 (define-param k-point false)
+
+; whether to use the "beta" trick to handle kz in 2d
+; -- this is not true by default because its use changes
+;    the interpretation of the fields somewhat
+(define-param special-kz? false)
 
 (define fields '())
 
@@ -198,7 +202,7 @@
   (if (and (not (null? k)) (= dimensions 3)) ; infer dimensions            
       (if (and (= (vector3-z (object-property-value geometry-lattice 'size)) 
 		  no-size)
-	       (or (not k) (zero? (vector3-z k))))
+	       (or (not k) special-kz? (zero? (vector3-z k))))
 	  2
 	  3)
       dimensions))
@@ -374,7 +378,9 @@
   (if (null? structure) (init-structure k-point))
   (set! fields (new-meep-fields structure 
 				(if (= dimensions CYLINDRICAL) m 0)
-				store-polarization-energy? beta-z))
+				store-polarization-energy?
+				(if (and special-kz? k-point)
+				    (vector3-z k) 0.0)))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
@@ -384,7 +390,11 @@
 					(object-property-value s 'phase))))))
 	       (not (or (not k-point) (vector3= k-point (vector3 0))))))
       (meep-fields-use-real-fields fields))
-  (if k-point (meep-fields-use-bloch fields k-point))
+  (if k-point (meep-fields-use-bloch fields 
+				     (if special-kz?
+					 (vector3 (vector3-x k-point) 
+						  (vector3-y k-point))
+					 k-point)))
   (map (lambda (s) (add-source s fields)) sources)
   (map (lambda (thunk) (thunk)) init-fields-hooks))
 
