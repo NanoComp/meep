@@ -159,6 +159,10 @@ void step_update_EDHB(realnum *f, component fc, const volume &v,
 		      direction dsig2inv, const double *sig2inv,
 		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1);
 
+void step_beta(realnum *f, component c, const realnum *g,
+	       const volume &v, double betadt,
+	       direction dsig, const double *siginv,
+	       const realnum *cndinv);
 
 // functions in step_generic_stride1.cpp, generated from step_generic.cpp:
 
@@ -182,6 +186,11 @@ void step_update_EDHB_stride1(realnum *f, component fc, const volume &v,
 		      direction dsig2inv, const double *sig2inv,
 		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1);
 
+void step_beta_stride1(realnum *f, component c, const realnum *g,
+		       const volume &v, double betadt,
+		       direction dsig, const double *siginv,
+		       const realnum *cndinv);
+
 /* macro wrappers around time-stepping functions: for performance reasons,
    if the inner loop is stride-1 then we use the stride-1 versions,
    which allow gcc (and possibly other compilers) to do additional
@@ -199,6 +208,13 @@ void step_update_EDHB_stride1(realnum *f, component fc, const volume &v,
     step_update_EDHB_stride1(f, fc, v, g, g1, g2, gb, g1b, g2b, u, u1, u2, s, s1, s2, chi2, chi3, dsig, sig, siginv, dsigg, sigg, dsig1, sig1, dsig1inv, sig1inv, dsig2, sig2, dsig2inv, sig2inv, sigsize_dsig, sigsize_dsigg, sigsize_dsig1); \
   else									\
     step_update_EDHB(f, fc, v, g, g1, g2, gb, g1b, g2b, u, u1, u2, s, s1, s2, chi2, chi3, dsig, sig, siginv, dsigg, sigg, dsig1, sig1, dsig1inv, sig1inv, dsig2, sig2, dsig2inv, sig2inv, sigsize_dsig, sigsize_dsigg, sigsize_dsig1); \
+} while (0)
+
+#define STEP_BETA(f, c, g, v, betadt, dsig, siginv, cndinv) do {	\
+  if (LOOPS_ARE_STRIDE1(v))						\
+    step_beta_stride1(f, c,g, v, betadt, dsig, siginv, cndinv);		\
+  else									\
+    step_beta(f, c,g, v, betadt, dsig, siginv, cndinv);			\
 } while (0)
 
 } // namespace meep

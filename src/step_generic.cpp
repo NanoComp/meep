@@ -119,6 +119,33 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
   }
 }
 
+/* field-update equation f += betadt * g (plus variants for conductivity 
+   and/or PML).  This is used in 2d calculations to add an exp(i beta z)
+   time dependence, which gives an additional i \beta \hat{z} \times
+   cross-product in the curl equations. */
+void step_beta(RPR f, component c, const RPR g,
+	       const volume &v, double betadt,
+	       direction dsig, const DPR siginv,
+	       const RPR cndinv)
+{
+  if (!g) return;
+  if (cndinv) { // conductivity (possibly including PML)
+    LOOP_OVER_VOL_OWNED0(v, c, i)
+      f[i] += betadt * g[i] * cndinv[i];
+  }
+  else if (dsig != NO_DIRECTION) { // PML only
+    const int sigsize_dsig=2; KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
+    LOOP_OVER_VOL_OWNED0(v, c, i) {
+      DEF_k;
+      f[i] += betadt * g[i] * siginv[k];
+    }
+  }
+  else { // no conductivity or PML
+    LOOP_OVER_VOL_OWNED0(v, c, i)
+      f[i] += betadt * g[i];
+  }
+}
+
 /* Given Dsqr = |D|^2 and Di = component of D, compute the factor f so
    that Ei = chi1inv * f * Di.   In principle, this would involve solving
    a cubic equation, but instead we use a Pade approximant that is 

@@ -30,6 +30,6 @@ sphere-quad.h:
 	(echo $(PRELUDE); echo; $(SPHERE_QUAD)) > $@
 
 step_generic_stride1.cpp: step_generic.cpp
-	(echo $(PRELUDE); echo; sed 's/LOOP_OVER/S1LOOP_OVER/g' $(top_srcdir)/src/step_generic.cpp | sed 's/step_curl/step_curl_stride1/' | sed 's/step_update_EDHB/step_update_EDHB_stride1/') > $@
+	(echo $(PRELUDE); echo; sed 's/LOOP_OVER/S1LOOP_OVER/g' $(top_srcdir)/src/step_generic.cpp | sed 's/step_curl/step_curl_stride1/' | sed 's/step_update_EDHB/step_update_EDHB_stride1/' | sed 's/step_beta/step_beta_stride1/') > $@
 
 MAINTAINERCLEANFILES = $(BUILT_SOURCES)

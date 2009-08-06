@@ -768,6 +768,7 @@ class fields_chunk {
   volume v;
   geometric_volume gv;
   double m, rshift;
+  double beta;
   int is_real, store_pol_energy;
   bandsdata *bands;
   src_vol *sources[NUM_FIELD_TYPES];
@@ -775,7 +776,7 @@ class fields_chunk {
   structure_chunk *s;
   const char *outdir;
 
-  fields_chunk(structure_chunk *, const char *outdir, double m, bool store_pol_energy);
+  fields_chunk(structure_chunk *, const char *outdir, double m, bool store_pol_energy, double beta);
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
@@ -904,6 +905,7 @@ class fields {
   volume v, user_volume;
   geometric_volume gv;
   double m;
+  double beta;
   int t, phasein_time, is_real;
   complex<double> k[5], eikna[5];
   double coskna[5], sinkna[5];
@@ -911,7 +913,7 @@ class fields {
   bandsdata *bands;
   char *outdir;
   // fields.cpp methods:
-  fields(structure *, double m=0, bool store_pol_energy=0);
+  fields(structure *, double m=0, bool store_pol_energy=0, double beta=0);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;

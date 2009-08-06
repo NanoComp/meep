@@ -26,8 +26,8 @@
 
 namespace meep {
 
-fields::fields(structure *s, double m, bool store_pol_energy) :
-  S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m)
+fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
+  S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m), beta(beta)
 {
   verbosity = 0;
   synchronized_magnetic_fields = 0;
@@ -54,7 +54,8 @@ fields::fields(structure *s, double m, bool store_pol_energy) :
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, store_pol_energy);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, store_pol_energy,
+				 beta);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
       comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
@@ -84,6 +85,7 @@ fields::fields(const fields &thef) :
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
   outdir = new char[strlen(thef.outdir) + 1]; strcpy(outdir, thef.outdir);
   m = thef.m;
+  beta = thef.beta;
   phasein_time = thef.phasein_time;
   bands = NULL;
   for (int d=0;d<5;d++) k[d] = thef.k[d];
@@ -190,7 +192,7 @@ fields_chunk::~fields_chunk() {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
-			   double m, bool store_pol_energy) : v(the_s->v), gv(the_s->gv), m(m), store_pol_energy(store_pol_energy) {
+			   double m, bool store_pol_energy, double beta) : v(the_s->v), gv(the_s->gv), m(m), beta(beta), store_pol_energy(store_pol_energy) {
   s = the_s; s->refcount++;
   rshift = 0;
   verbosity = 0;
@@ -233,6 +235,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
+  beta = thef.beta;
   store_pol_energy = thef.store_pol_energy;
   new_s = thef.new_s; new_s->refcount++;
   bands = NULL;
@@ -391,6 +394,9 @@ void fields::require_component(component c) {
     abort("cannot require a %s component in a %s grid",
 	  component_name(c), dimension_name(v.dim));
 
+  if (beta != 0 && v.dim != D2)
+    abort("Nonzero beta unsupported in dimensions other than 2.");
+
   // check if we are in 2d but anisotropy couples xy with z
   bool aniso2d = false;
   if (v.dim == D2) {
@@ -407,6 +413,9 @@ void fields::require_component(component c) {
 	break;
     aniso2d = or_to_all(i < num_chunks);
   }
+  if (aniso2d && beta != 0)
+    abort("Nonzero beta unsupported when mu/epsilon couple TE and TM");
+  aniso2d = aniso2d || (beta != 0); // beta couples TE/TM
 
   // allocate fields if they haven't been allocated yet for this component
   int need_to_reconnect = 0;

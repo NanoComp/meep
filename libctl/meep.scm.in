@@ -148,6 +148,7 @@
 ; list of sources added by init-fields (below)
 (define-param sources '())
 
+(define-param beta-z 0)
 (define-param m 0)
 (define-param force-complex-fields? false)
 
@@ -373,7 +374,7 @@
   (if (null? structure) (init-structure k-point))
   (set! fields (new-meep-fields structure 
 				(if (= dimensions CYLINDRICAL) m 0)
-				store-polarization-energy?))
+				store-polarization-energy? beta-z))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))

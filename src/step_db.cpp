@@ -116,6 +116,35 @@ void fields_chunk::step_db(field_type ft) {
 		dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
     }
 
+  /* In 2d with beta != 0, add beta terms.  This is a trick to model
+     an exp(i beta z) z-dependence but without requiring a "3d"
+     calculation and without requiring complex fields.  Looking at the
+     z=0 2d cross-section, the exp(i beta z) term adds an i \beta
+     \hat{z} \times cross-product to the curls, which couples the TE
+     and TM polarizations.  However, to avoid complex fields, in the
+     case of real fields we implicitly store i*(TM fields) rather than
+     the TM fields, in which case the i's cancel in the update
+     equations.  (Mathematically, this is equivalent to looking at the
+     superposition of the fields at beta and the timereversed fields
+     at -beta.)  The nice thing about this is that most calculations
+     of flux, energy, etcetera, are insensitive to this implicit "i"
+     factor.   For complex fields, we implement i*beta directly. */
+  if (v.dim == D2 && beta != 0) DOCMP for (direction d_c=X; d_c <= Y; 
+					   d_c = direction(d_c + 1)) {
+    component cc = direction_component(first_field_component(ft), d_c);
+    component c_g = direction_component(ft == D_stuff ? Hx : Ex,
+					d_c == X ? Y : X);
+    realnum *the_f = f[cc][cmp];
+    const realnum *g = f[c_g][1-cmp] ? f[c_g][1-cmp] : f[c_g][cmp];
+    const direction dsig0 = cycle_direction(v.dim,d_c,1);
+    const bool have_pml = s->sigsize[dsig0] > 1;
+    const direction dsig = have_pml ? dsig0 : NO_DIRECTION;
+    const double betadt = beta * dt * (d_c == X ? +1 : -1)
+      * (f[c_g][1-cmp] ? (ft == D_stuff ? -1 : +1) * (2*cmp-1) : 1);
+    STEP_BETA(the_f, cc, g, v, betadt, 
+	      dsig, s->siginv[dsig], s->condinv[cc][d_c]);  
+  }
+
   // in cylindrical coordinates, we now have to add the i*m/r terms... */
   if (v.dim == Dcyl && m != 0) DOCMP FOR_FT_COMPONENTS(ft, cc) {
     const direction d_c = component_direction(cc);
