@@ -155,7 +155,8 @@
 
 ; whether to use the "beta" trick to handle kz in 2d
 ; -- this is not true by default because its use changes
-;    the interpretation of the fields somewhat
+;    the interpretation of the fields somewhat (for real fields),
+;    and it only works in 2d right now.
 (define-param special-kz? false)
 
 (define fields '())
@@ -380,7 +381,7 @@
 				(if (= dimensions CYLINDRICAL) m 0)
 				store-polarization-energy?
 				(if (and special-kz? k-point)
-				    (vector3-z k) 0.0)))
+				    (vector3-z k-point) 0.0)))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
