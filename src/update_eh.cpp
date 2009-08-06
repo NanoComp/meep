@@ -93,11 +93,12 @@ bool fields_chunk::update_eh(field_type ft) {
 	component dc = direction_component(first_field_component(ft2),
 					   component_direction(ec));
 	DOCMP {
-	  for (int i=0;i<ntot;i++) {
-	    double sum = f[dc][cmp][i];
-            for (polarization *p = pols[ft]; p; p = p->next)
-              sum -= p->P[ec][cmp][i];
-            f_minus_p[dc][cmp][i] = sum;
+	  const realnum * f_cur = f[dc][cmp];
+	  realnum * fmp_cur = f_minus_p[dc][cmp];
+	  memcpy(fmp_cur, f_cur, sizeof(realnum) * ntot);
+	  for (polarization *p = pols[ft]; p; p = p->next) {
+	    const realnum * P = p->P[ec][cmp];
+	    for (int i=0;i<ntot;i++) fmp_cur[i] -= P[i];
 	  }
 	}
       }
