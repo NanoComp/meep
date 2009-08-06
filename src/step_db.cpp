@@ -139,7 +139,7 @@ void fields_chunk::step_db(field_type ft) {
     const direction dsig0 = cycle_direction(v.dim,d_c,1);
     const bool have_pml = s->sigsize[dsig0] > 1;
     const direction dsig = have_pml ? dsig0 : NO_DIRECTION;
-    const double betadt = beta * dt * (d_c == X ? +1 : -1)
+    const double betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1)
       * (f[c_g][1-cmp] ? (ft == D_stuff ? -1 : +1) * (2*cmp-1) : 1);
     STEP_BETA(the_f, cc, g, v, betadt, 
 	      dsig, s->siginv[dsig], s->condinv[cc][d_c]);  
