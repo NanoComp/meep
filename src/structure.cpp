@@ -612,6 +612,9 @@ void structure_chunk::update_condinv() {
 	  condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5);
       }
       else { // include PML conductivity in condinv
+	/* TODO: this is not a true PML for conductive media
+	   (we are neglecting conductivity * sig cross-terms);
+	   it relies on the fallback of adiabatic absorption */
 	int k0 = v.little_corner().in_direction(dsig);
 	LOOP_OVER_VOL(v, c, i) {
 	  IVEC_LOOP_ILOC(v, iloc);
