@@ -605,24 +605,8 @@ void structure_chunk::update_condinv() {
     direction d = component_direction(c);
     if (conductivity[c][d]) {
       if (!condinv[c][d]) condinv[c][d] = new realnum[v.ntot()];
-      const direction dsig = cycle_direction(v.dim,d,1);
-      const bool have_pml = sigsize[dsig] > 1;
-      if (!have_pml) {
-	LOOP_OVER_VOL(v, c, i)
-	  condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5);
-      }
-      else { // include PML conductivity in condinv
-	/* TODO: this is not a true PML for conductive media
-	   (we are neglecting conductivity * sig cross-terms);
-	   it relies on the fallback of adiabatic absorption */
-	int k0 = v.little_corner().in_direction(dsig);
-	LOOP_OVER_VOL(v, c, i) {
-	  IVEC_LOOP_ILOC(v, iloc);
-          int k = iloc.in_direction(dsig) - k0;
-	  condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5
-				  + sig[dsig][k]);
-	}
-      }
+      LOOP_OVER_VOL(v, c, i)
+	condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5);
     }
     else if (condinv[c][d]) { // condinv not needed
       delete[] condinv[c][d];

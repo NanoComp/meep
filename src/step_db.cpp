@@ -67,6 +67,11 @@ void fields_chunk::step_db(field_type ft) {
       realnum *f_p = have_p?f[c_p][cmp]:NULL;
       realnum *f_m = have_m?f[c_m][cmp]:NULL;
       realnum *the_f = f[cc][cmp];
+
+      if (have_pml && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
+	f_cond[cc][cmp] = new realnum[v.ntot()];
+	memset(f_cond[cc][cmp], 0, sizeof(realnum) * v.ntot());
+      }
       
       if (ft == D_stuff) { // strides are opposite sign for H curl
 	stride_p = -stride_p;
@@ -112,8 +117,8 @@ void fields_chunk::step_db(field_type ft) {
       }
       
       STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, v, Courant, 
-		dsig, s->sig[dsig], s->siginv[dsig],
-		dt, s->conductivity[cc][d_c], s->condinv[cc][d_c]);
+		dsig, s->sig[dsig], s->siginv[dsig], dt, 
+		s->conductivity[cc][d_c], s->condinv[cc][d_c],f_cond[cc][cmp]);
     }
 
   /* In 2d with beta != 0, add beta terms.  This is a trick to model
@@ -142,7 +147,7 @@ void fields_chunk::step_db(field_type ft) {
     const double betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1)
       * (f[c_g][1-cmp] ? (ft == D_stuff ? -1 : +1) * (2*cmp-1) : 1);
     STEP_BETA(the_f, cc, g, v, betadt, 
-	      dsig, s->siginv[dsig], s->condinv[cc][d_c]);  
+	      dsig, s->siginv[dsig], s->condinv[cc][d_c], f_cond[cc][cmp]);  
   }
 
   // in cylindrical coordinates, we now have to add the i*m/r terms... */

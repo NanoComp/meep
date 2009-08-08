@@ -35,8 +35,8 @@ namespace meep {
    and s2 may be negative to flip signs of derivatives.
 
    PML: sig[k] = sigma[k]*dt/2, siginv[k] = 1 / (1 + sigma[k]*dt/2).
-   Here, k is the dsig direction.  if dsig == NO_DIRECTION, then PML
-   is not used.  (dsig is the sigma direction.)
+   Here, k is the index in the dsig direction.  if dsig ==
+   NO_DIRECTION, then PML is not used.  (dsig is the sigma direction.)
 
    if non-NULL, then cnd is an array of conductivity values, changing
    the underlying PDE to:
@@ -45,12 +45,19 @@ namespace meep {
        f = [ dt * curl g + (1 - dt cnd/2) f ] / (1 + dt cnd/2)
    cndinv should be an array of 1 / (1 + dt cnd/2).  In the case
    of PML, cndinv should contain 1 / (1 + dt (cnd + sigma)/2).
+
+   fcnd is an auxiliary field used ONLY when we simultaneously have
+   PML and conductivity, in which case fcnd solves 
+       dfcnd/dt = curl g - cnd*fcnd
+   and f satisfies 
+       df/dt = dfcnd/dt - sigma*f.
 */
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
 	       direction dsig, const DPR sig, const DPR siginv,
-	       double dt, const RPR cnd, const RPR cndinv)
+	       double dt, 
+	       const RPR cnd, const RPR cndinv, RPR fcnd)
 {
   if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
@@ -89,15 +96,19 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (g2) {
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  DEF_k;
-	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] - 
-		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+	  realnum fcnd_prev = fcnd[i];
+	  fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+		     dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+	  f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	}
       }
       else {
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  DEF_k;
-	  f[i] = ((1 - dt2 * cnd[i] - sig[k]) * f[i] 
-		  - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+	  realnum fcnd_prev = fcnd[i];
+	  fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+		     dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+	  f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	}
       }
     }
@@ -126,23 +137,36 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 void step_beta(RPR f, component c, const RPR g,
 	       const volume &v, double betadt,
 	       direction dsig, const DPR siginv,
-	       const RPR cndinv)
+	       const RPR cndinv, RPR fcnd)
 {
   if (!g) return;
-  if (cndinv) { // conductivity (possibly including PML)
-    LOOP_OVER_VOL_OWNED0(v, c, i)
-      f[i] += betadt * g[i] * cndinv[i];
-  }
-  else if (dsig != NO_DIRECTION) { // PML only
-    const int sigsize_dsig=2; KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
-    LOOP_OVER_VOL_OWNED0(v, c, i) {
-      DEF_k;
-      f[i] += betadt * g[i] * siginv[k];
+  if (dsig != NO_DIRECTION) { // PML
+    const int sigsize_dsig=2;
+    KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
+    if (cndinv) { // conductivity + PML
+      LOOP_OVER_VOL_OWNED0(v, c, i) {
+	DEF_k;
+	double dfcnd = betadt * g[i] * cndinv[i];
+	fcnd[i] += dfcnd;
+	f[i] += dfcnd * siginv[k];
+      }
+    }
+    else { // PML only
+      LOOP_OVER_VOL_OWNED0(v, c, i) {
+	DEF_k;
+	f[i] += betadt * g[i] * siginv[k];
+      }
     }
   }
-  else { // no conductivity or PML
-    LOOP_OVER_VOL_OWNED0(v, c, i)
-      f[i] += betadt * g[i];
+  else { // no PML
+    if (cndinv) { // conductivity, no PML
+      LOOP_OVER_VOL_OWNED0(v, c, i)
+	f[i] += betadt * g[i] * cndinv[i];
+    }
+    else { // no conductivity or PML
+      LOOP_OVER_VOL_OWNED0(v, c, i)
+	f[i] += betadt * g[i];
+    }
   }
 }
 

@@ -170,6 +170,7 @@ fields_chunk::~fields_chunk() {
     delete[] f[c][cmp];
     delete[] f_backup[c][cmp];
     delete[] f_prev[c][cmp];
+    delete[] f_cond[c][cmp];
     delete[] f_minus_p[c][cmp];
   }
   delete[] f_rderiv_int;
@@ -212,6 +213,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
     f_prev[c][cmp] = NULL;
+    f_cond[c][cmp] = NULL;
     f_minus_p[c][cmp] = NULL;
   }
   f_rderiv_int = NULL;
@@ -252,6 +254,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
     f_prev[c][cmp] = NULL;
+    f_cond[c][cmp] = NULL;
   }
   FOR_COMPONENTS(c) DOCMP
     if (!is_magnetic(c) && thef.f[c][cmp]) {
@@ -464,6 +467,7 @@ void fields_chunk::zero_fields() {
     if (f[c][cmp]) for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
     if (f_backup[c][cmp]) for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = 0.0;
     if (f_prev[c][cmp]) for (int i=0;i<v.ntot();i++) f_prev[c][cmp][i] = 0.0;
+    if (f_cond[c][cmp]) for (int i=0;i<v.ntot();i++) f_cond[c][cmp][i] = 0.0;
   }
   if (is_mine()) FOR_FIELD_TYPES(ft) {
     if (pols[ft]) pols[ft]->zero_fields();

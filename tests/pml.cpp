@@ -4,7 +4,9 @@
 #include <meep.hpp>
 using namespace meep;
 
-double one(const vec &) { return 1.0; }
+static double one(const vec &) { return 1.0; }
+static double notone_val = 1.0;
+static double notone(const vec &) { return notone_val; }
 
 static complex<double> do_ft(fields &f, component c, const vec &pt, double freq)
 {
@@ -32,20 +34,24 @@ static complex<double> do_ft(fields &f, component c, const vec &pt, double freq)
   return ft;
 }
 
-int check_pml1d(double eps(const vec &)) {
+int check_pml1d(double eps(const vec &), double conductivity) {
   double freq = 1.0, dpml = 1.0;
-  double sz = 10.0 + 2*dpml;
-  double sz2 = 10.0 + 2*dpml*2;
+  double sz = 1.0 + 2*dpml;
+  double sz2 = 1.0 + 2*dpml*2;
   complex<double> ft = 0.0, ft2 = 0.0;
   double prev_refl_const = 0.0, refl_const = 0.0;
   vec fpt(0.5*sz - dpml - 0.1);
   master_printf("Checking resolution convergence of 1d PML...\n");
+  if (conductivity != 0) master_printf("...with conductivity %g...\n",
+				       conductivity);
+  notone_val = conductivity;
   for (int i=0; i<8; i++) {
     double res = 10.0 + 10.0*i;
     {
       volume v = vol1d(sz,res);
       v.center_origin();
       structure s(v, eps, pml(dpml));
+      s.set_conductivity(By, notone);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ex, src, vec(-0.5*sz+dpml+0.1));
@@ -55,6 +61,7 @@ int check_pml1d(double eps(const vec &)) {
       volume v = vol1d(sz2,res);
       v.center_origin();
       structure s(v, eps, pml(dpml*2));
+      s.set_conductivity(By, notone);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ex, src, vec(-0.5*sz+dpml+0.1));
@@ -62,16 +69,17 @@ int check_pml1d(double eps(const vec &)) {
     }
     refl_const = pow(abs(ft - ft2),2.0) / pow(abs(ft2),2.0);
     master_printf("refl1d:, %g, %g\n", res, refl_const);
-    //    if (i > 1 && 
-    //	refl_const > prev_refl_const * pow((res - 10)/res,8.0) * 1.1)
-    //   return 1;
+    if (i > 1 && 
+	refl_const > prev_refl_const * pow((res - 10)/res,8.0) * 1.1)
+      return 1;
     prev_refl_const = refl_const;
   }
   master_printf("passed 1d PML check.\n");
   return 0;
 }
 
-int check_pml2d(double eps(const vec &), component c) {
+int check_pml2d(double eps(const vec &), component c,
+		double conductivity) {
   double freq = 1.0, dpml = 1.0;
   complex<double> ft = 0.0, ft2 = 0.0;
   double prev_refl_const = 0.0, refl_const = 0.0;
@@ -83,6 +91,9 @@ int check_pml2d(double eps(const vec &), component c) {
   double symsign = c == Ez ? 1.0 : -1.0;
   master_printf("Checking resolution convergence of 2d %s PML...\n",
 		c == Ez ? "TM" : "TE");
+  if (conductivity != 0) master_printf("...with conductivity %g...\n",
+				       conductivity);
+  notone_val = conductivity;
   for (int i=0; i<4; i++) {
     double res = 10.0 + res_step*i;
     {
@@ -90,6 +101,14 @@ int check_pml2d(double eps(const vec &), component c) {
       v.center_origin();
       const symmetry S = mirror(X,v)*symsign + mirror(Y,v)*symsign;
       structure s(v, eps, pml(dpml), S);
+      if (conductivity != 0) {
+	s.set_conductivity(Bx, notone);
+	s.set_conductivity(By, notone);
+	s.set_conductivity(Bz, notone);
+	s.set_conductivity(Dx, notone);
+	s.set_conductivity(Dy, notone);
+	s.set_conductivity(Dz, notone);
+      }
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(c, src, v.center());
@@ -100,6 +119,14 @@ int check_pml2d(double eps(const vec &), component c) {
       v.center_origin();
       const symmetry S = mirror(X,v)*symsign + mirror(Y,v)*symsign;
       structure s(v, eps, pml(dpml*2), S);
+      if (conductivity != 0) {
+	s.set_conductivity(Bx, notone);
+	s.set_conductivity(By, notone);
+	s.set_conductivity(Bz, notone);
+	s.set_conductivity(Dx, notone);
+	s.set_conductivity(Dy, notone);
+	s.set_conductivity(Dz, notone);
+      }
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(c, src, v.center());
@@ -199,9 +226,12 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   quiet = true;
   master_printf("Running PML tests...\n");
-  if (check_pml1d(one)) abort("not a pml in 1d.");
-  if (check_pml2d(one,Ez)) abort("not a pml in 2d TM.");
-  if (check_pml2d(one,Hz)) abort("not a pml in 2d TE."); 
+  if (check_pml1d(one, 0)) abort("not a pml in 1d.");
+  if (check_pml1d(one, 10.0)) abort("not a pml in 1d + conductivity.");
+  if (check_pml2d(one,Ez,0)) abort("not a pml in 2d TM.");
+  if (check_pml2d(one,Ez,1)) abort("not a pml in 2d TM + conductivity.");
+  if (check_pml2d(one,Hz,0)) abort("not a pml in 2d TE."); 
+  if (check_pml2d(one,Hz,1)) abort("not a pml in 2d TE + conductivity."); 
   // if (check_pmlcyl(one)) abort("not a pml in cylincrical co-ordinates.");
   if (pml1d_scaling(one)) abort("pml doesn't scale properly with length.");
   return 0;

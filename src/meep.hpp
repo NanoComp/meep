@@ -744,6 +744,7 @@ class fields_chunk {
  public:
   realnum *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
   realnum *f_prev[NUM_FIELD_COMPONENTS][2]; // field at prev step (used in PML)
+  realnum *f_cond[NUM_FIELD_COMPONENTS][2]; // aux field for PML+conductivity
 
   /* sometimes, to synchronize the E and H fields, e.g. for computing
      flux at a given time, we need to timestep H by 1/2; in this case
