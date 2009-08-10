@@ -81,8 +81,9 @@ int check_pml1d(double eps(const vec &), double conductivity) {
 }
 
 int check_pml2d(double eps(const vec &), component c,
-		double conductivity) {
-  double freq = 1.0, dpml = 1.0;
+		double conductivity,
+		bool dispersion) {
+  double freq = 1.0, dpml = 1.0, sigma0 = 1.0, omega0 = 1.0, gamma0 = 0.3;
   complex<double> ft = 0.0, ft2 = 0.0;
   double prev_refl_const = 0.0, refl_const = 0.0;
   double sxy = 5.0 + 2*dpml;
@@ -95,7 +96,7 @@ int check_pml2d(double eps(const vec &), component c,
 		c == Ez ? "TM" : "TE");
   if (conductivity != 0) master_printf("...with conductivity %g...\n",
 				       conductivity);
-  notone_val = conductivity;
+  if (dispersion) master_printf("...with dispersion\n");
   for (int i=0; i<4; i++) {
     double res = 10.0 + res_step*i;
     {
@@ -104,12 +105,17 @@ int check_pml2d(double eps(const vec &), component c,
       const symmetry S = mirror(X,v)*symsign + mirror(Y,v)*symsign;
       structure s(v, eps, pml(dpml), S);
       if (conductivity != 0) {
+	notone_val = conductivity;
 	s.set_conductivity(Bx, notone);
 	s.set_conductivity(By, notone);
 	s.set_conductivity(Bz, notone);
 	s.set_conductivity(Dx, notone);
 	s.set_conductivity(Dy, notone);
 	s.set_conductivity(Dz, notone);
+      }
+      if (dispersion) {
+	notone_val = sigma0;
+	s.add_polarizability(notone, E_stuff, omega0, gamma0);
       }
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
@@ -122,12 +128,17 @@ int check_pml2d(double eps(const vec &), component c,
       const symmetry S = mirror(X,v)*symsign + mirror(Y,v)*symsign;
       structure s(v, eps, pml(dpml*2), S);
       if (conductivity != 0) {
+	notone_val = conductivity;
 	s.set_conductivity(Bx, notone);
 	s.set_conductivity(By, notone);
 	s.set_conductivity(Bz, notone);
 	s.set_conductivity(Dx, notone);
 	s.set_conductivity(Dy, notone);
 	s.set_conductivity(Dz, notone);
+      }
+      if (dispersion) {
+	notone_val = sigma0;
+	s.add_polarizability(notone, E_stuff, omega0, gamma0);
       }
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
@@ -230,10 +241,12 @@ int main(int argc, char **argv) {
   master_printf("Running PML tests...\n");
   if (check_pml1d(one, 0)) abort("not a pml in 1d.");
   if (check_pml1d(one, 10.0)) abort("not a pml in 1d + conductivity.");
-  if (check_pml2d(one,Ez,0)) abort("not a pml in 2d TM.");
-  if (check_pml2d(one,Ez,1)) abort("not a pml in 2d TM + conductivity.");
-  if (check_pml2d(one,Hz,0)) abort("not a pml in 2d TE."); 
-  if (check_pml2d(one,Hz,1)) abort("not a pml in 2d TE + conductivity."); 
+  if (check_pml2d(one,Ez,0,false)) abort("not a pml in 2d TM.");
+  if (check_pml2d(one,Ez,1,false)) abort("not a pml in 2d TM + conductivity.");
+  if (check_pml2d(one,Hz,0,false)) abort("not a pml in 2d TE."); 
+  if (check_pml2d(one,Hz,1,false)) abort("not a pml in 2d TE + conductivity.");
+  if (check_pml2d(one,Ez,0,true)) abort("not a pml in 2d TM + dispersion.");
+  if (check_pml2d(one,Hz,0,true)) abort("not a pml in 2d TE + dispersion.");
   // if (check_pmlcyl(one)) abort("not a pml in cylincrical co-ordinates.");
   if (pml1d_scaling(one)) abort("pml doesn't scale properly with length.");
   return 0;
