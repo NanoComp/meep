@@ -94,7 +94,9 @@ bool fields_chunk::update_eh(field_type ft) {
 					   component_direction(ec));
 	DOCMP {
 	  realnum * fmp = f_minus_p[dc][cmp];
-	  memcpy(fmp, f[dc][cmp], sizeof(realnum) * ntot);
+	  memcpy(fmp, 
+		 f_u[dc][cmp] ? f_u[dc][cmp] : f[dc][cmp], 
+		 sizeof(realnum) * ntot);
 	  for (polarization *p = pols[ft]; p; p = p->next) {
 	    const realnum * P = p->P[ec][cmp];
 	    for (int i=0;i<ntot;i++) fmp[i] -= P[i];
@@ -104,7 +106,9 @@ bool fields_chunk::update_eh(field_type ft) {
     }
     else {
       FOR_FT_COMPONENTS(ft2, dc) if (f[dc][0]) DOCMP
-	memcpy(f_minus_p[dc][cmp], f[dc][cmp], ntot * sizeof(realnum));
+	memcpy(f_minus_p[dc][cmp], 
+	       f_u[dc][cmp] ? f_u[dc][cmp] : f[dc][cmp], 
+	       ntot * sizeof(realnum));
     }
   }
 
@@ -133,7 +137,7 @@ bool fields_chunk::update_eh(field_type ft) {
   if (have_f_minus_p) {
     FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f_minus_p[dc][cmp];
   } else {
-    FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f[dc][cmp];
+    FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f_u[dc][cmp] ? f_u[dc][cmp] : f[dc][cmp];
   }
 
   DOCMP FOR_FT_COMPONENTS(ft,ec) if (f[ec][cmp]) {
@@ -148,45 +152,37 @@ bool fields_chunk::update_eh(field_type ft) {
     const component dc_2 = direction_component(dc,d_2);
     const int s_2 = v.stride(d_2);
 
-    direction dsig = d_2;
-    direction dsigg = d_ec;
-    direction dsig1 = d_1;
-    direction dsig1inv = d_ec;
-    direction dsig2 = d_2;
-    direction dsig2inv = d_1;
+    direction dsigw0 = d_ec;
+    direction dsigw = s->sigsize[dsigw0] > 1 ? dsigw0 : NO_DIRECTION;
 
     // lazily allocate any E/H fields that are needed (H==B initially)
     if (f[ec][cmp] == f[dc][cmp]
 	&& (s->chi1inv[ec][d_ec] || have_f_minus_p
-	    || s->sigsize[dsig] > 1
-	    || s->sigsize[dsigg] > 1
-	    || (s->sigsize[dsig1] > 1
-		&& (s->chi1inv[ec][d_1] || s->chi1inv[ec][d_2])))) {
+	    || f_u[dc][cmp] || dsigw != NO_DIRECTION)) {
       f[ec][cmp] = new realnum[v.ntot()];
       memcpy(f[ec][cmp], f[dc][cmp], v.ntot() * sizeof(realnum));
       allocated_eh = true;
+    }
+    
+    // lazily allocate W auxiliary field
+    if (!f_w[ec][cmp] && dsigw != NO_DIRECTION) {
+      f_w[ec][cmp] = new realnum[v.ntot()];
+      memcpy(f_w[ec][cmp], f[ec][cmp], v.ntot() * sizeof(realnum));
     }
 
     if (f[ec][cmp] != f[dc][cmp])
       STEP_UPDATE_EDHB(f[ec][cmp], ec, v, 
 		       dmp[dc][cmp], dmp[dc_1][cmp], dmp[dc_2][cmp],
-		       f_prev[dc][cmp], f_prev[dc_1][cmp], f_prev[dc_2][cmp],
 		       s->chi1inv[ec][d_ec], dmp[dc_1][cmp]?s->chi1inv[ec][d_1]:NULL, dmp[dc_2][cmp]?s->chi1inv[ec][d_2]:NULL,
 		       s_ec, s_1, s_2, s->chi2[ec], s->chi3[ec],
-		       dsig, s->sig[dsig], s->siginv[dsig],
-		       dsigg, s->sig[dsigg],
-		       dsig1, s->sig[dsig1],
-		       dsig1inv, s->sig[dsig1inv],
-		       dsig2, s->sig[dsig2],
-		       dsig2inv, s->sig[dsig2inv],
-		       s->sigsize[dsig],s->sigsize[dsigg],s->sigsize[dsig1]);
+		       f_w[ec][cmp], dsigw, s->sig[dsigw]);
   }
 
   /* Do annoying special cases for r=0 in cylindrical coords.  Note
      that this only really matters for field output; the Ez and Ep
      components at r=0 don't usually affect the fields elsewhere
      because of the form of Maxwell's equations in cylindrical coords. */
-  // (FIXME: handle Kerr case?).
+  // (FIXME: handle Kerr case?  Do we care about auxiliary PML fields here?)
   if (v.dim == Dcyl && v.origin_r() == 0.0)
     DOCMP FOR_FT_COMPONENTS(ft,ec) if (f[ec][cmp] && (ec == Ep || ec == Ez
 						      || ec == Hr)) {

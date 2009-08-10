@@ -169,7 +169,8 @@ fields_chunk::~fields_chunk() {
   DOCMP2 FOR_COMPONENTS(c) {
     delete[] f[c][cmp];
     delete[] f_backup[c][cmp];
-    delete[] f_prev[c][cmp];
+    delete[] f_u[c][cmp];
+    delete[] f_w[c][cmp];
     delete[] f_cond[c][cmp];
     delete[] f_minus_p[c][cmp];
   }
@@ -212,7 +213,8 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
-    f_prev[c][cmp] = NULL;
+    f_u[c][cmp] = NULL;
+    f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
     f_minus_p[c][cmp] = NULL;
   }
@@ -253,14 +255,28 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
-    f_prev[c][cmp] = NULL;
+    f_u[c][cmp] = NULL;
+    f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
   }
-  FOR_COMPONENTS(c) DOCMP
+  FOR_COMPONENTS(c) DOCMP {
     if (!is_magnetic(c) && thef.f[c][cmp]) {
       f[c][cmp] = new realnum[v.ntot()];
       memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * v.ntot());
     }
+    if (thef.f_u[c][cmp]) {
+      f_u[c][cmp] = new realnum[v.ntot()];
+      memcpy(f_u[c][cmp], thef.f_u[c][cmp], sizeof(realnum) * v.ntot());
+    }
+    if (thef.f_w[c][cmp]) {
+      f_w[c][cmp] = new realnum[v.ntot()];
+      memcpy(f_w[c][cmp], thef.f_w[c][cmp], sizeof(realnum) * v.ntot());
+    }
+    if (thef.f_cond[c][cmp]) {
+      f_cond[c][cmp] = new realnum[v.ntot()];
+      memcpy(f_cond[c][cmp], thef.f_cond[c][cmp], sizeof(realnum) * v.ntot());
+    }
+  }
   FOR_MAGNETIC_COMPONENTS(c) DOCMP {
     if (thef.f[c][cmp] == thef.f[c-Hx+Bx][cmp])
       f[c][cmp] = f[c-Hx+Bx][cmp];
@@ -375,7 +391,7 @@ bool fields_chunk::alloc_f(component c) {
 	changed = true;
 	if (is_magnetic(c)) {
 	  /* initially, we just set H == B ... later on, we lazily allocate
-	     H fields if needed (if mu != 1 or in PML) in update_h_from_b */
+	     H fields if needed (if mu != 1 or in PML) in update_eh */
 	  component bc = direction_component(Bx, component_direction(c));
 	  if (!f[bc][cmp]) {
 	    f[bc][cmp] = new realnum[v.ntot()];
@@ -466,7 +482,8 @@ void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
     if (f[c][cmp]) for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
     if (f_backup[c][cmp]) for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = 0.0;
-    if (f_prev[c][cmp]) for (int i=0;i<v.ntot();i++) f_prev[c][cmp][i] = 0.0;
+    if (f_u[c][cmp]) for (int i=0;i<v.ntot();i++) f_u[c][cmp][i] = 0.0;
+    if (f_w[c][cmp]) for (int i=0;i<v.ntot();i++) f_w[c][cmp][i] = 0.0;
     if (f_cond[c][cmp]) for (int i=0;i<v.ntot();i++) f_cond[c][cmp][i] = 0.0;
   }
   if (is_mine()) FOR_FIELD_TYPES(ft) {

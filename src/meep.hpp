@@ -743,7 +743,10 @@ enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 class fields_chunk {
  public:
   realnum *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
-  realnum *f_prev[NUM_FIELD_COMPONENTS][2]; // field at prev step (used in PML)
+
+  // auxiliary fields needed for PML (at least in some components)
+  realnum *f_u[NUM_FIELD_COMPONENTS][2]; // integrated from D/B
+  realnum *f_w[NUM_FIELD_COMPONENTS][2]; // E/H integrated from these
   realnum *f_cond[NUM_FIELD_COMPONENTS][2]; // aux field for PML+conductivity
 
   /* sometimes, to synchronize the E and H fields, e.g. for computing

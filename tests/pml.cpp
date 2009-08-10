@@ -30,6 +30,8 @@ static complex<double> do_ft(fields &f, component c, const vec &pt, double freq)
       f.step();
     }
     if (emaxcur < 1e-6 * emax) break;
+    if (T > 500 && emaxcur > 1e-2 * emax) 
+      abort("fields do not seem to be decaying");
   } while(1);
   return ft;
 }

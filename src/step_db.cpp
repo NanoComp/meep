@@ -37,20 +37,6 @@ void fields_chunk::step_db(field_type ft) {
   if (ft != B_stuff && ft != D_stuff)
     abort("bug - step_db should only be called for B or D");
 
-  bool have_pml = false;
-  FOR_FT_COMPONENTS(ft, cc)
-    if (s->sigsize[cycle_direction(v.dim,component_direction(cc),1)] > 1)
-	have_pml = true;
-  if (have_pml) FOR_FT_COMPONENTS(ft, cc) DOCMP
-    if (f[cc][cmp]) {
-      if (!f_prev[cc][cmp])
-        f_prev[cc][cmp] = new realnum[v.ntot()];
-      // update_e_from_d requires previous D-P, not D, if D-P is present
-      memcpy(f_prev[cc][cmp],
-	     f_minus_p[cc][cmp] ? f_minus_p[cc][cmp] : f[cc][cmp],
-	     v.ntot()*sizeof(realnum));
-    }
-
   DOCMP FOR_FT_COMPONENTS(ft, cc)
     if (f[cc][cmp]) {
       const component c_p=plus_component[cc], c_m=minus_component[cc];
@@ -60,17 +46,23 @@ void fields_chunk::step_db(field_type ft) {
       const bool have_p = have_plus_deriv[cc];
       const bool have_m = have_minus_deriv[cc];
       const direction dsig0 = cycle_direction(v.dim,d_c,1);
-      const bool have_pml = s->sigsize[dsig0] > 1;
-      const direction dsig = have_pml ? dsig0 : NO_DIRECTION;
+      const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
+      const direction dsigu0 = cycle_direction(v.dim,d_c,2);
+      const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
       int stride_p = have_p?v.stride(d_deriv_p):0;
       int stride_m = have_m?v.stride(d_deriv_m):0;
       realnum *f_p = have_p?f[c_p][cmp]:NULL;
       realnum *f_m = have_m?f[c_m][cmp]:NULL;
       realnum *the_f = f[cc][cmp];
 
-      if (have_pml && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
+      if (dsig != NO_DIRECTION
+	  && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
 	f_cond[cc][cmp] = new realnum[v.ntot()];
 	memset(f_cond[cc][cmp], 0, sizeof(realnum) * v.ntot());
+      }
+      if (dsigu != NO_DIRECTION && !f_u[cc][cmp]) {
+	f_u[cc][cmp] = new realnum[v.ntot()];
+	memcpy(f_u[cc][cmp], the_f, v.ntot() * sizeof(realnum));
       }
       
       if (ft == D_stuff) { // strides are opposite sign for H curl
@@ -117,7 +109,9 @@ void fields_chunk::step_db(field_type ft) {
       }
       
       STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, v, Courant, 
-		dsig, s->sig[dsig], s->siginv[dsig], dt, 
+		dsig, s->sig[dsig], s->siginv[dsig], 
+		f_u[cc][cmp], dsigu, s->sig[dsigu], s->siginv[dsigu], 
+		dt, 
 		s->conductivity[cc][d_c], s->condinv[cc][d_c],f_cond[cc][cmp]);
     }
 
@@ -142,13 +136,18 @@ void fields_chunk::step_db(field_type ft) {
     realnum *the_f = f[cc][cmp];
     const realnum *g = f[c_g][1-cmp] ? f[c_g][1-cmp] : f[c_g][cmp];
     const direction dsig0 = cycle_direction(v.dim,d_c,1);
-    const bool have_pml = s->sigsize[dsig0] > 1;
-    const direction dsig = have_pml ? dsig0 : NO_DIRECTION;
+    const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
+    const direction dsigu0 = cycle_direction(v.dim,d_c,2);
+    const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
     const double betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1)
       * (f[c_g][1-cmp] ? (ft == D_stuff ? -1 : +1) * (2*cmp-1) : 1);
     STEP_BETA(the_f, cc, g, v, betadt, 
-	      dsig, s->siginv[dsig], s->condinv[cc][d_c], f_cond[cc][cmp]);  
+	      dsig, s->siginv[dsig], 
+	      f_u[cc][cmp], dsigu, s->siginv[dsigu], 
+	      s->condinv[cc][d_c], f_cond[cc][cmp]);  
   }
+
+  // FIXME: cylindrical stuff is missing new f_u and f_cond stuff!!!
 
   // in cylindrical coordinates, we now have to add the i*m/r terms... */
   if (v.dim == Dcyl && m != 0) DOCMP FOR_FT_COMPONENTS(ft, cc) {

@@ -42,7 +42,7 @@ void fields_chunk::update_pols(field_type ft) {
       const double cn = 2 - op->pb->omeganot*op->pb->omeganot;
       const double co = 0.5 * op->pb->gamma - 1;
       const double funinv = 1.0 / (1 + 0.5*op->pb->gamma);
-      const realnum * restrict fE = f[c][cmp];
+      const realnum * restrict fE = f_w[c][cmp] ? f_w[c][cmp] : f[c][cmp];
       const realnum * restrict npP = np->P[c][cmp], * restrict nps = np->s[c];
       realnum * restrict opP = op->P[c][cmp], * restrict npenergy = np->energy[c];
       if (npenergy)

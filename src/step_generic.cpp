@@ -22,6 +22,8 @@
      const int s##k##3 = SZ0(dsig, v.yucky_direction(2) == dsig ? 2 : 0)
 #define KDEF(k,dsig) const int k = ((k##0 + s##k##1*loop_i1) + s##k##2*loop_i2) + s##k##3*loop_i3
 #define DEF_k KDEF(k,dsig)
+#define DEF_ku KDEF(ku,dsigu)
+#define DEF_kw KDEF(kw,dsigw)
 
 namespace meep {
 
@@ -47,15 +49,20 @@ namespace meep {
    of PML, cndinv should contain 1 / (1 + dt (cnd + sigma)/2).
 
    fcnd is an auxiliary field used ONLY when we simultaneously have
-   PML and conductivity, in which case fcnd solves 
+   PML (dsig != NO_DIR) and conductivity, in which case fcnd solves 
        dfcnd/dt = curl g - cnd*fcnd
    and f satisfies 
        df/dt = dfcnd/dt - sigma*f.
+
+   fu is another auxiliary field used only in PML (dsigu != NO_DIR),
+   in which case fu solves:
+       dfu/dt = df/dt - sigma_u * fu
 */
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
 	       direction dsig, const DPR sig, const DPR siginv,
+	       RPR fu, direction dsigu, const DPR sigu, const DPR siginvu,
 	       double dt, 
 	       const RPR cnd, const RPR cndinv, RPR fcnd)
 {
@@ -64,66 +71,163 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     SWAP(int, s1, s2);
     dtdx = -dtdx; // need to flip derivative sign
   }
-  if (dsig == NO_DIRECTION) { // no PML
-    if (cnd) {
-      double dt2 = dt * 0.5;
-      if (g2) {
-	LOOP_OVER_VOL_OWNED0(v, c, i)
-	  f[i] = ((1 - dt2 * cnd[i]) * f[i] - 
-		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+
+  /* The following are a bunch of special cases of the "MOST GENERAL CASE"
+     loop below.  We make copies of the loop for each special case in
+     order to keep the innermost loop efficient.  This is especially
+     important because the non-PML cases are actually more common. 
+     (The "right" way to do this is by partial evaluation of the 
+      most general case, but that would require a code generator.) */
+
+  if (dsig == NO_DIRECTION) { // no PML in f update
+    if (dsigu == NO_DIRECTION) { // no fu update
+      if (cnd) {
+	double dt2 = dt * 0.5;
+	if (g2) {
+	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	    f[i] = ((1 - dt2 * cnd[i]) * f[i] - 
+		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	    f[i] = ((1 - dt2 * cnd[i]) * f[i] 
+		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+	}
       }
-      else {
-	LOOP_OVER_VOL_OWNED0(v, c, i)
-	  f[i] = ((1 - dt2 * cnd[i]) * f[i] 
-		  - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+      else { // no conductivity
+	if (g2) {
+	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
+	}
       }
     }
-    else { // no conductivity
-      if (g2) {
-	LOOP_OVER_VOL_OWNED0(v, c, i)
-	  f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+    else { // fu update, no PML in f update
+      const int sigsize_dsigu=2; 
+      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      if (cnd) {
+	double dt2 = dt * 0.5;
+	if (g2) {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_ku; double fprev = f[i];
+	    f[i] = ((1 - dt2 * cnd[i]) * fprev - 
+		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_ku; double fprev = f[i];
+	    f[i] = ((1 - dt2 * cnd[i]) * fprev
+		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
+	}
       }
-      else {
-	LOOP_OVER_VOL_OWNED0(v, c, i)
-	  f[i] -= dtdx * (g1[i+s1] - g1[i]);
+      else { // no conductivity
+	if (g2) {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_ku; double fprev = f[i];
+	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_ku; double fprev = f[i];
+	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
+	}
       }
     }
   }
-  else { /* PML */
+  else { /* PML in f update */
     const int sigsize_dsig=2; KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
-    if (cnd) {
-      double dt2 = dt * 0.5;
-      if (g2) {
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  DEF_k;
-	  realnum fcnd_prev = fcnd[i];
-	  fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
-		     dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
-	  f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+    if (dsigu == NO_DIRECTION) { // no fu update
+      if (cnd) {
+	double dt2 = dt * 0.5;
+	if (g2) {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k;
+	    realnum fcnd_prev = fcnd[i];
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
+	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	  }
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k;
+	    realnum fcnd_prev = fcnd[i];
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	  }
 	}
       }
-      else {
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  DEF_k;
-	  realnum fcnd_prev = fcnd[i];
-	  fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
-		     dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	  f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+      else { // no conductivity (other than PML conductivity)
+	if (g2) {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k;
+	    f[i] = ((1 - sig[k]) * f[i] -
+		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
+	  }
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k;
+	    f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
+	  }
 	}
       }
     }
-    else { // no conductivity (other than PML conductivity)
-      if (g2) {
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  DEF_k;
-	  f[i] = ((1 - sig[k]) * f[i] -
-		  dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
+    else { // fu update + PML in f update
+      const int sigsize_dsigu=2; 
+      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      if (cnd) {
+	double dt2 = dt * 0.5;
+	if (g2) {
+	  //////////////////// MOST GENERAL CASE //////////////////////
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k; DEF_ku; double fprev = f[i];
+	    realnum fcnd_prev = fcnd[i];
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
+	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
+	  /////////////////////////////////////////////////////////////
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k; DEF_ku; double fprev = f[i];
+	    realnum fcnd_prev = fcnd[i];
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
 	}
       }
-      else {
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
-	  DEF_k;
-	  f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1] - g1[i])) * siginv[k];
+      else { // no conductivity (other than PML conductivity)
+	if (g2) {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k; DEF_ku; double fprev = f[i];
+	    f[i] = ((1 - sig[k]) * f[i] -
+		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	    DEF_k; DEF_ku; double fprev = f[i];
+	    f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
+	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	  }
 	}
       }
     }
@@ -137,35 +241,80 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 void step_beta(RPR f, component c, const RPR g,
 	       const volume &v, double betadt,
 	       direction dsig, const DPR siginv,
+	       RPR fu, direction dsigu, const DPR siginvu,
 	       const RPR cndinv, RPR fcnd)
 {
   if (!g) return;
-  if (dsig != NO_DIRECTION) { // PML
+  if (dsig != NO_DIRECTION) { // PML in f update
     const int sigsize_dsig=2;
     KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
-    if (cndinv) { // conductivity + PML
-      LOOP_OVER_VOL_OWNED0(v, c, i) {
-	DEF_k;
-	double dfcnd = betadt * g[i] * cndinv[i];
-	fcnd[i] += dfcnd;
-	f[i] += dfcnd * siginv[k];
+    if (dsigu != NO_DIRECTION) { // PML in f + fu
+      const int sigsize_dsigu=2; 
+      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      if (cndinv) { // conductivity + PML
+	//////////////////// MOST GENERAL CASE //////////////////////
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  DEF_k; DEF_ku; double df;
+	  double dfcnd = betadt * g[i] * cndinv[i];
+	  fcnd[i] += dfcnd;
+	  f[i] += (df = dfcnd * siginv[k]);
+	  fu[i] += siginvu[ku] * df;
+	}
+	/////////////////////////////////////////////////////////////
+      }
+      else { // PML only
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  DEF_k; DEF_ku; double df;
+	  f[i] += (df = betadt * g[i] * siginv[k]);
+	  fu[i] += siginvu[ku] * df;
+	}
       }
     }
-    else { // PML only
-      LOOP_OVER_VOL_OWNED0(v, c, i) {
-	DEF_k;
-	f[i] += betadt * g[i] * siginv[k];
+    else { // PML in f, no fu
+      if (cndinv) { // conductivity + PML
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  DEF_k;
+	  double dfcnd = betadt * g[i] * cndinv[i];
+	  fcnd[i] += dfcnd;
+	  f[i] += dfcnd * siginv[k];
+	}
+      }
+      else { // PML only
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  DEF_k;
+	  f[i] += betadt * g[i] * siginv[k];
+	}
       }
     }
   }
-  else { // no PML
-    if (cndinv) { // conductivity, no PML
-      LOOP_OVER_VOL_OWNED0(v, c, i)
-	f[i] += betadt * g[i] * cndinv[i];
+  else { // no PML in f update
+    if (dsigu != NO_DIRECTION) { // fu, no PML in f
+      const int sigsize_dsigu=2; 
+      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      if (cndinv) { // conductivity, no PML
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  DEF_ku; double df;
+	  f[i] += (df = betadt * g[i] * cndinv[i]);
+	  fu[i] += siginvu[ku] * df;
+	}
+      }
+      else { // no conductivity or PML
+	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  DEF_ku; double df;
+	  f[i] += (df = betadt * g[i]);
+	  fu[i] += siginvu[ku] * df;
+	}
+      }
     }
-    else { // no conductivity or PML
-      LOOP_OVER_VOL_OWNED0(v, c, i)
-	f[i] += betadt * g[i];
+    else { // no PML, no fu
+      if (cndinv) { // conductivity, no PML
+	LOOP_OVER_VOL_OWNED0(v, c, i)
+	  f[i] += betadt * g[i] * cndinv[i];
+      }
+      else { // no conductivity or PML
+	LOOP_OVER_VOL_OWNED0(v, c, i)
+	  f[i] += betadt * g[i];
+      }
     }
   }
 }
@@ -189,55 +338,146 @@ inline double calc_nonlinear_u(const double Dsqr,
 /* Update E from D using epsilon and PML, *or* update H from B using
    mu and PML.
 
-   To be generic, here we set f = u * g (for the non-PML), where u may
+   To be generic, here we set f = u * g, where u may
    be a tensor, and we also have a nonlinear susceptibility chi.
    Here, g = (g,g1,g2) where g1 and g2 are the off-diagonal
    components, if any (g2 may be NULL).
 
-   Note that for the common case of mu = 1 and no PML, we don't even
-   call this routine. 
+   In PML (dsigw != NO_DIR), we have an additional auxiliary field fw,
+   which is updated by the equations:
+          fw = u * g
+          df/dt = dfw/dt - sigmaw * fw
+   That is, fw is updated like the non-PML f, and f is updated from
+   fw by a little ODE.  Here, sigw[k] = sigmaw[k]*dt/2.
 
-   Here, sig = sigma[k]*dt/2, and siginv[k] = 1 / (1 + sig[k]), and
-   sig2 is the other sigma array.  gb etc. are the backups of g from
-   the previous time step. */
+*/
+
 void step_update_EDHB(RPR f, component fc, const volume &v, 
 		      const RPR g, const RPR g1, const RPR g2,
-		      const RPR gb, const RPR g1b, const RPR g2b,
 		      const RPR u, const RPR u1, const RPR u2,
 		      int s, int s1, int s2,
 		      const RPR chi2, const RPR chi3,
-		      direction dsig, const DPR sig, const DPR siginv,
-		      direction dsigg, const DPR sigg,
-		      direction dsig1, const DPR sig1,
-		      direction dsig1inv, const DPR sig1inv,
-		      direction dsig2, const DPR sig2,
-		      direction dsig2inv, const DPR sig2inv,
-		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1)
+		      RPR fw, direction dsigw, const DPR sigw)
 {
   if (!f) return;
-  int sigsize_dsig1inv = sigsize_dsigg;
-  int sigsize_dsig2 = sigsize_dsig;
-  int sigsize_dsig2inv = sigsize_dsig1;
   
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
     SWAP(const RPR, g1, g2);
-    SWAP(const RPR, g1b, g2b);
     SWAP(const RPR, u1, u2);
     SWAP(int, s1, s2);
-    SWAP(const DPR, sig1, sig2);
-    SWAP(const DPR, sig1inv, sig2inv);
-    SWAP(direction, dsig1, dsig2);
-    SWAP(direction, dsig1inv, dsig2inv);
-    SWAP(int, sigsize_dsig1, sigsize_dsig2);
-    SWAP(int, sigsize_dsig1inv, sigsize_dsig2inv);
   }
 
   // stable averaging of offdiagonal components
 #define OFFDIAG(u,g,sx) (0.25 * ((g[i]+g[i-sx])*u[i] \
 		   	       + (g[i+s]+g[(i+s)-sx])*u[i+s]))
+
+  /* As with step_curl, these loops are all essentially copies
+     of the "MOST GENERAL CASE" loop with various terms thrown out. */
   
-  if (sigsize_dsig <= 1 && sigsize_dsigg <= 1 && 
-      (!u1 || (sigsize_dsig1 <= 1 && sigsize_dsig1inv <= 1))) { // no PML
+  if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
+    const int sigsize_dsigw=2; 
+    KSTRIDE_DEF(dsigw, kw, v.little_owned_corner0(fc));
+    if (u1 && u2) { // 3x3 off-diagonal u
+      if (chi3) {
+	//////////////////// MOST GENERAL CASE //////////////////////
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
+	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
+	  double gs = g[i]; double us = u[i];
+	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2))
+	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
+			       gs, us, chi2[i], chi3[i]);	  
+	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	}
+	/////////////////////////////////////////////////////////////
+      }
+      else {
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  double gs = g[i]; double us = u[i];
+	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
+	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	}
+      }
+    }
+    else if (u1) { // 2x2 off-diagonal u
+      if (chi3) {
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
+	  double gs = g[i]; double us = u[i];
+	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1))
+	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
+			       gs, us, chi2[i], chi3[i]);
+	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	}
+      }
+      else {
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  double gs = g[i]; double us = u[i];
+	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1));
+	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	}
+      }
+    }
+    else if (u2) { // 2x2 off-diagonal u
+      abort("bug - didn't swap off-diagonal terms!?");
+    }
+    else { // diagonal u
+      if (chi3) {
+	if (g1 && g2) {
+	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
+	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
+	    double gs = g[i]; double us = u[i];
+	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs+0.0625*(g1s*g1s+g2s*g2s),
+					     gs, us, chi2[i], chi3[i]);
+	    f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  }
+	}
+	else if (g1) {
+	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
+	    double gs = g[i]; double us = u[i];
+	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs + 0.0625*(g1s*g1s),
+					     gs, us, chi2[i], chi3[i]);
+	    f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  }
+	}
+	else if (g2) {
+	  abort("bug - didn't swap off-diagonal terms!?");
+	}
+	else {
+	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	    double gs = g[i]; double us = u[i];
+	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs, gs,us, chi2[i],chi3[i]);
+	    f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  }
+	}
+      }
+      else if (u) {
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  double gs = g[i]; double us = u[i];
+	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  fw[i] = (gs * us);
+	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	}
+      }
+      else {
+	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  fw[i] = g[i];
+	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	}
+      }
+    }
+  }
+  else { /////////////// no PML (no fw) ///////////////////
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
 	LOOP_OVER_VOL_OWNED(v, fc, i) {
@@ -313,144 +553,6 @@ void step_update_EDHB(RPR f, component fc, const volume &v,
       }
       else
 	LOOP_OVER_VOL_OWNED(v, fc, i) f[i] = g[i];
-    }
-  }
-  else { // PML
-    
-    // strides etc. for updating each sig[] index inside the LOOP:
-    KSTRIDE_DEF(dsig, k, v.little_owned_corner(fc));
-    KSTRIDE_DEF(dsigg, kg, v.little_owned_corner(fc));
-    KSTRIDE_DEF(dsig1, k1, v.little_owned_corner(fc));
-    KSTRIDE_DEF(dsig2, k2, v.little_owned_corner(fc));
-    KSTRIDE_DEF(dsig1inv, k1inv, v.little_owned_corner(fc));
-    KSTRIDE_DEF(dsig2inv, k2inv, v.little_owned_corner(fc));
-
-   // the following definitions are used over and over
-
-   // indices into sigma arrays:
-#  define DEF_kx(x) KDEF(k ## x, dsig ## x)
-
-   // fields
-#  define DEF_gs  double gs0 = g[i]; double gs = ((1+sigg[kg])*siginv[k])*gs0
-#  define DEF_gbs double gbs = ((1-sigg[kg])*siginv[k]) * gb[i]
-#  define DEF_gss  double gs0 = g[i]; double gss = (1+sigg[kg]) * gs0
-#  define DEF_gbss double gbss = (1-sigg[kg]) * gb[i]
-#  define DEF_us  double us = u[i]
-#  define DEF_g1s0 double g1s0 = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
-#  define DEF_g2s0 double g2s0 = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
-#  define SIG1 ((1+sig1[k1]) * sig1inv[k1inv])
-#  define SIG2 ((1+sig2[k2]) * sig2inv[k2inv])
-#  define SIG1b ((1-sig1[k1]) * sig1inv[k1inv])
-#  define SIG2b ((1-sig2[k2]) * sig2inv[k2inv])
-
-   if (u1 && u2) { // 3x3 off-diagonal u
-     if (chi3) {
-       LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv); DEF_g1s0;
-	  DEF_kx(2); DEF_kx(2inv); DEF_g2s0;
-	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
-	  DEF_us;
-	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs-gbs) * us
-	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1)
-	     + SIG2*OFFDIAG(u2,g2,s2) - SIG1b*OFFDIAG(u2,g2b,s2))
-	    * calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0 + g2s0*g2s0),
-			       gs0, us, chi2[i], chi3[i]);
-	}
-      } else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv);
-          DEF_kx(2); DEF_kx(2inv);
-          DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
-          DEF_us;
-	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs-gbs) * us
-	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1)
-	     + SIG2*OFFDIAG(u2,g2,s2) - SIG1b*OFFDIAG(u2,g2b,s2));
-	}
-      }
-    } else if (u1) { // 2x2 off-diagonal u
-      if (chi3) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv); DEF_g1s0;
-	  DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
-          DEF_us;
-	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs-gbs) * us
-	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1))
-	    * calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0),
-			       gs0, us, chi2[i], chi3[i]);
-	}
-      } else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(1); DEF_kx(1inv);
-          DEF_k; DEF_kx(g); DEF_gs; DEF_gbs;
-          DEF_us;
-	  f[i] = ((1-sig[k])*siginv[k]) * f[i] + 
-	    ((gs-gbs) * us
-	     + SIG1*OFFDIAG(u1,g1,s1) - SIG1b*OFFDIAG(u1,g1b,s1));
-	}	
-      }
-    } else if (u2) { // 2x2 off-diagonal u
-      abort("bug - didn't swap off-diagonal terms!?");
-    } else if (u) { // diagonal u
-      if (chi3) {
-	if (g1 && g2) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    DEF_g1s0; DEF_g2s0;
-	    DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
-	    DEF_us;
-	    f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss)*us *
-	      calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0 + g2s0*g2s0),
-			       gs0, us, chi2[i], chi3[i]));
-	  }
-	} else if (g1) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    DEF_g1s0;
-            DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
-            DEF_us;
-	    f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss)*us *
-     	      calc_nonlinear_u(gs0 * gs0 + 0.0625 * (g1s0*g1s0),
-     			       gs0, us, chi2[i], chi3[i]));
-	  }
-	} else if (g2) {
-	  abort("bug - didn't swap off-diagonal terms!?");
-	} else {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
-	    DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
-            DEF_us;
-	    f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss)*us *
-     	      calc_nonlinear_u(gs0 * gs0, gs0, us, chi2[i], chi3[i]));
-	  }
-	}
-      } else { //linear, diagonal u
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_k; DEF_kx(g); DEF_gss; DEF_gbss;
-	  DEF_us;
-	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss) * us);
-	}
-      }
-    }
-    else { // NULL u array, corresponding to u = 1 everywhere
-      if (chi3) abort("bug - should not have chi3 without chi1");
-      // since this case is so common, do a few special cases:
-      if (sigsize_dsig > 1 && sigsize_dsigg > 1)
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_k; DEF_kx(g);
-	  DEF_gss; DEF_gbss;
-	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (gss-gbss));
-	}
-      else if (sigsize_dsig > 1 && sigsize_dsigg <= 1)
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_k;
-	  f[i] = siginv[k] * ((1-sig[k])*f[i] + (g[i]-gb[i]));
-	}
-      else if (sigsize_dsig <= 1 && sigsize_dsigg > 1)
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
-	  DEF_kx(g);
-	  f[i] = f[i] + ((1+sigg[kg])*g[i]-(1-sigg[kg])*gb[i]);
-	}
-      else abort("bug - non-PML case in PML-only code");
     }
   }
 }

@@ -143,26 +143,21 @@ void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
 	       direction dsig, const double *sig, const double *siginv,
+	       realnum *fu, direction dsigu, const double *sigu, const double *siginvu,
 	       double dt, const realnum *cnd, const realnum *cndinv,
 	       realnum *fcnd);
 
 void step_update_EDHB(realnum *f, component fc, const volume &v,
 		      const realnum *g, const realnum *g1, const realnum *g2,
-		      const realnum *gb, const realnum *g1b, const realnum *g2b,
 		      const realnum *u, const realnum *u1, const realnum *u2,
 		      int s, int s1, int s2,
 		      const realnum *chi2, const realnum *chi3,
-		      direction dsig,const double *sig,const double *siginv,
-		      direction dsigg, const double *sigg,
-		      direction dsig1, const double *sig1,
-		      direction dsig1inv, const double *sig1inv,
-		      direction dsig2, const double *sig2,
-		      direction dsig2inv, const double *sig2inv,
-		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1);
+		      realnum *fw, direction dsigw, const double *sigw);
 
 void step_beta(realnum *f, component c, const realnum *g,
 	       const volume &v, double betadt,
 	       direction dsig, const double *siginv,
+	       realnum *fu, direction dsigu, const double *siginvu,
 	       const realnum *cndinv, realnum *fcnd);
 
 // functions in step_generic_stride1.cpp, generated from step_generic.cpp:
@@ -171,26 +166,21 @@ void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum
 	       int s1, int s2, // strides for g1/g2 shift
 	       const volume &v, double dtdx,
 	       direction dsig, const double *sig, const double *siginv,
+	       realnum *fu, direction dsigu, const double *sigu, const double *siginvu,
 	       double dt, const realnum *cnd, const realnum *cndinv,
                realnum *fcnd);
 
 void step_update_EDHB_stride1(realnum *f, component fc, const volume &v,
 		      const realnum *g, const realnum *g1, const realnum *g2,
-		      const realnum *gb, const realnum *g1b, const realnum *g2b,
 		      const realnum *u, const realnum *u1, const realnum *u2,
 		      int s, int s1, int s2,
 		      const realnum *chi2, const realnum *chi3,
-		      direction dsig,const double *sig,const double *siginv,
-		      direction dsigg, const double *sigg,
-		      direction dsig1, const double *sig1,
-		      direction dsig1inv, const double *sig1inv,
-		      direction dsig2, const double *sig2,
-		      direction dsig2inv, const double *sig2inv,
-		      int sigsize_dsig,int sigsize_dsigg,int sigsize_dsig1);
+		      realnum *fw, direction dsigw, const double *sigw);
 
 void step_beta_stride1(realnum *f, component c, const realnum *g,
 		       const volume &v, double betadt,
 		       direction dsig, const double *siginv,
+		       realnum *fu, direction dsigu, const double *siginvu,
 		       const realnum *cndinv, realnum *fcnd);
 
 /* macro wrappers around time-stepping functions: for performance reasons,
@@ -198,25 +188,25 @@ void step_beta_stride1(realnum *f, component c, const realnum *g,
    which allow gcc (and possibly other compilers) to do additional
    optimizations, especially loop vectorization */
 
-#define STEP_CURL(f, c, g1, g2, s1, s2, v, dtdx, dsig, sig, siginv, dt, cnd, cndinv, fcnd) do { \
+#define STEP_CURL(f, c, g1, g2, s1, s2, v, dtdx, dsig, sig, siginv, fu, dsigu, sigu, siginvu, dt, cnd, cndinv, fcnd) do { \
   if (LOOPS_ARE_STRIDE1(v))						\
-    step_curl_stride1(f, c, g1, g2, s1, s2, v, dtdx, dsig, sig, siginv, dt, cnd, cndinv, fcnd); \
+    step_curl_stride1(f, c, g1, g2, s1, s2, v, dtdx, dsig, sig, siginv, fu, dsigu, sigu, siginvu, dt, cnd, cndinv, fcnd); \
   else									\
-    step_curl(f, c, g1, g2, s1, s2, v, dtdx, dsig, sig, siginv, dt, cnd, cndinv, fcnd); \
+    step_curl(f, c, g1, g2, s1, s2, v, dtdx, dsig, sig, siginv, fu, dsigu, sigu, siginvu, dt, cnd, cndinv, fcnd); \
 } while (0)
 
-#define STEP_UPDATE_EDHB(f, fc, v, g, g1, g2, gb, g1b, g2b, u, u1, u2, s, s1, s2, chi2, chi3, dsig, sig, siginv, dsigg, sigg, dsig1, sig1, dsig1inv, sig1inv, dsig2, sig2, dsig2inv, sig2inv, sigsize_dsig, sigsize_dsigg, sigsize_dsig1) do { \
+#define STEP_UPDATE_EDHB(f, fc, v, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw) do { \
   if (LOOPS_ARE_STRIDE1(v))						\
-    step_update_EDHB_stride1(f, fc, v, g, g1, g2, gb, g1b, g2b, u, u1, u2, s, s1, s2, chi2, chi3, dsig, sig, siginv, dsigg, sigg, dsig1, sig1, dsig1inv, sig1inv, dsig2, sig2, dsig2inv, sig2inv, sigsize_dsig, sigsize_dsigg, sigsize_dsig1); \
+    step_update_EDHB_stride1(f, fc, v, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw); \
   else									\
-    step_update_EDHB(f, fc, v, g, g1, g2, gb, g1b, g2b, u, u1, u2, s, s1, s2, chi2, chi3, dsig, sig, siginv, dsigg, sigg, dsig1, sig1, dsig1inv, sig1inv, dsig2, sig2, dsig2inv, sig2inv, sigsize_dsig, sigsize_dsigg, sigsize_dsig1); \
+    step_update_EDHB(f, fc, v, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw); \
 } while (0)
 
-#define STEP_BETA(f, c, g, v, betadt, dsig, siginv, cndinv, fcnd) do {	\
+#define STEP_BETA(f, c, g, v, betadt, dsig, siginv, fu, dsigu, siginvu, cndinv, fcnd) do {	\
   if (LOOPS_ARE_STRIDE1(v))						\
-    step_beta_stride1(f, c,g, v, betadt, dsig, siginv, cndinv, fcnd);	\
+    step_beta_stride1(f, c,g, v, betadt, dsig, siginv, fu, dsigu, siginvu, cndinv, fcnd);	\
   else									\
-    step_beta(f, c,g, v, betadt, dsig, siginv, cndinv, fcnd);		\
+    step_beta(f, c,g, v, betadt, dsig, siginv, fu, dsigu, siginvu, cndinv, fcnd);		\
 } while (0)
 
 } // namespace meep

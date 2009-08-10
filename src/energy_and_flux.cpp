@@ -109,15 +109,9 @@ void fields_chunk::backup_component(component c) {
 	!(is_magnetic(c) && f[c][cmp] 
 	  == f[direction_component(Bx, component_direction(c))][cmp])) {
 
-      // if we have f_minus_p then f_prev stores this, and we need
-      // to implement an extra backup field ... punt for now
-      if (f_minus_p[c][cmp]) abort("backup with fields-P not implemented");
-
       if (!f_backup[c][cmp])
 	f_backup[c][cmp] = new realnum[v.ntot()];  
-      memcpy(f_backup[c][cmp], 
-	     f_prev[c][cmp] ? f_prev[c][cmp] : f[c][cmp],
-	     v.ntot()*sizeof(realnum));    
+      memcpy(f_backup[c][cmp], f[c][cmp], v.ntot()*sizeof(realnum));    
     }
   }
 }
@@ -125,17 +119,14 @@ void fields_chunk::backup_component(component c) {
 void fields_chunk::restore_component(component c) {
   DOCMP if (f_backup[c][cmp]) {
     if (f[c][cmp])
-      memcpy(f[c][cmp], f_prev[c][cmp] ? f_prev[c][cmp] : f_backup[c][cmp], 
-	     v.ntot()*sizeof(realnum));
-    if (f_prev[c][cmp])
-      memcpy(f_prev[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(realnum));
+      memcpy(f[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(realnum));
   }
 }
 
 void fields_chunk::average_with_backup(component c) {
   DOCMP {
     realnum *fc = f[c][cmp];
-    realnum *backup = f_prev[c][cmp] ? f_prev[c][cmp] : f_backup[c][cmp];
+    realnum *backup = f_backup[c][cmp];
     if (fc && backup)
       for (int i = 0; i < v.ntot(); i++)
 	fc[i] = 0.5 * (fc[i] + backup[i]);
