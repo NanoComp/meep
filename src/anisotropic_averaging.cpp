@@ -210,7 +210,8 @@ void structure_chunk::set_chi1inv(component c,
   bool trivial[3] = {true,true,true};
   double trivial_val[3] = {0,0,0};
   trivial_val[idiag] = 1.0;
-  ivec shift1(unit_ivec(v.dim,component_direction(c)));
+  ivec shift1(unit_ivec(v.dim,component_direction(c))
+	      * (ft == E_stuff ? 1 : -1));
   LOOP_OVER_VOL(v, c, i) {
     double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(v, here);

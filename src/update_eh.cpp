@@ -144,13 +144,13 @@ bool fields_chunk::update_eh(field_type ft) {
     if (type(ec) != ft) abort("bug in FOR_FT_COMPONENTS");
     component dc = field_type_component(ft2, ec);
     const direction d_ec = component_direction(ec);
-    const int s_ec = v.stride(d_ec);
+    const int s_ec = v.stride(d_ec) * (ft == H_stuff ? -1 : +1);
     const direction d_1 = cycle_direction(v.dim, d_ec, 1);
     const component dc_1 = direction_component(dc,d_1);
-    const int s_1 = v.stride(d_1);
+    const int s_1 = v.stride(d_1) * (ft == H_stuff ? -1 : +1);
     const direction d_2 = cycle_direction(v.dim, d_ec, 2);
     const component dc_2 = direction_component(dc,d_2);
-    const int s_2 = v.stride(d_2);
+    const int s_2 = v.stride(d_2) * (ft == H_stuff ? -1 : +1);
 
     direction dsigw0 = d_ec;
     direction dsigw = s->sigsize[dsigw0] > 1 ? dsigw0 : NO_DIRECTION;
