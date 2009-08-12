@@ -848,7 +848,7 @@ class fields_chunk {
   // step.cpp
   void phase_in_material(structure_chunk *s);
   void phase_material(int phasein_time);
-  void step_db(field_type ft);
+  bool step_db(field_type ft);
   void step_source(field_type ft, bool including_integrated);
   void update_pols(field_type ft);
   void calc_sources(double time);

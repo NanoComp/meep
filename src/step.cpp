@@ -206,6 +206,21 @@ void fields::step_boundaries(field_type ft) {
       }
     }
 
+  /* If f_u field exists, communications sent to f_u rather than f, so
+     copy notowned from f_u to f.  Technically, these two fields are
+     not the same (they differ by a frequency-dependent PML stretch
+     factor s, but this only matters for field output within the PML
+     where we don't really care anyway because the fields there aren't
+     physical, nor are the notowned D/B fields used for timestepping. */
+  if (ft == D_stuff || ft == B_stuff)
+    for (int i=0;i<num_chunks;i++) if (chunks[i]->is_mine())
+      FOR_FT_COMPONENTS(ft, c) DOCMP2 if (chunks[i]->f_u[c][cmp]) {
+	const realnum *u = chunks[i]->f_u[c][cmp];
+	realnum *the_f = chunks[i]->f[c][cmp]; 
+	LOOP_OVER_VOL_NOTOWNED(chunks[i]->v, c, idx)
+	  the_f[idx] = u[idx];
+      }
+  
   finished_working();
 }
 

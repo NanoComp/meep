@@ -30,10 +30,16 @@ namespace meep {
 void fields::step_db(field_type ft) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->step_db(ft);
+      if (chunks[i]->step_db(ft))
+	chunk_connections_valid = false;
+
+  /* synchronize to avoid deadlocks in connect_the_chunks */
+  chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
-void fields_chunk::step_db(field_type ft) {
+bool fields_chunk::step_db(field_type ft) {
+  bool allocated_u = false;
+
   if (ft != B_stuff && ft != D_stuff)
     abort("bug - step_db should only be called for B or D");
 
@@ -63,6 +69,7 @@ void fields_chunk::step_db(field_type ft) {
       if (dsigu != NO_DIRECTION && !f_u[cc][cmp]) {
 	f_u[cc][cmp] = new realnum[v.ntot()];
 	memcpy(f_u[cc][cmp], the_f, v.ntot() * sizeof(realnum));
+	allocated_u = true;
       }
       
       if (ft == D_stuff) { // strides are opposite sign for H curl
@@ -272,6 +279,8 @@ void fields_chunk::step_db(field_type ft) {
         }
     }
   }
+
+  return allocated_u;
 }
 
 } // namespace meep

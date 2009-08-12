@@ -270,7 +270,9 @@ void fields::find_metals() {
 	      if (IVEC_LOOP_AT_BOUNDARY) { // todo: just loop over boundaries
 		IVEC_LOOP_ILOC(vi, here);
 		if (on_metal_boundary(here))
-		  chunks[i]->zeroes[ft][num++] = &(chunks[i]->f[c][cmp][n]);
+		  chunks[i]->zeroes[ft][num++] = 
+		    (chunks[i]->f_u[c][cmp] ? chunks[i]->f_u[c][cmp]
+		     : chunks[i]->f[c][cmp]) + n;
 	      }
       }
     }
@@ -345,7 +347,7 @@ void fields::connect_the_chunks() {
 		  comm_sizes[f][ip][pair] += nn;
 		  // Note above that the factor of two in 2*nn comes from
 		  // the fact that we have two polarization arrays, pol and
-		  // olpol.
+		  // olpol.  TODO: do we really need to copy olpol?
 		}
 	      } // if is_mine and owns...
 	    } // loop over j chunks
@@ -426,9 +428,13 @@ void fields::connect_the_chunks() {
 		    thephase;
 		DOCMP {
 		  chunks[i]->connections[f][ip][Incoming]
-		    [wh[f][ip][Incoming][j]++] = chunks[i]->f[corig][cmp] + n;
+		    [wh[f][ip][Incoming][j]++] = 
+		    (chunks[i]->f_u[corig][cmp] ? chunks[i]->f_u[corig][cmp]
+		     : chunks[i]->f[corig][cmp]) + n;
 		  chunks[j]->connections[f][ip][Outgoing]
-		    [wh[f][ip][Outgoing][j]++] = chunks[j]->f[c][cmp] + m;
+		    [wh[f][ip][Outgoing][j]++] = 
+		    (chunks[j]->f_u[c][cmp] ? chunks[j]->f_u[c][cmp]
+		     : chunks[j]->f[c][cmp]) + m;
 		}
 		
 		if (is_electric(corig) || is_magnetic(corig)) {
