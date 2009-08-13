@@ -154,8 +154,6 @@ bool fields_chunk::step_db(field_type ft) {
 	      s->condinv[cc][d_c], f_cond[cc][cmp]);  
   }
 
-  // FIXME: cylindrical stuff is missing new f_u and f_cond stuff!!!
-
   // in cylindrical coordinates, we now have to add the i*m/r terms... */
   if (v.dim == Dcyl && m != 0) DOCMP FOR_FT_COMPONENTS(ft, cc) {
     const direction d_c = component_direction(cc);
@@ -164,70 +162,156 @@ bool fields_chunk::step_db(field_type ft) {
       const realnum *g = f[c_g][1-cmp];
       realnum *the_f = f[cc][cmp];
       const realnum *cndinv = s->condinv[cc][d_c];
+      realnum *fcnd = f_cond[cc][cmp];
+      realnum *fu = f_u[cc][cmp];
       const direction dsig = cycle_direction(v.dim,d_c,1);
+      const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+      const int dk = v.iyee_shift(cc).in_direction(dsig);
+      const direction dsigu = cycle_direction(v.dim,d_c,2);
+      const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+      const int dku = v.iyee_shift(cc).in_direction(dsigu);
       const double the_m = 
 	m * (1-2*cmp) * (1-2*(ft==B_stuff)) * (1-2*(d_c==R)) * Courant;
       const double ir0 = (v.origin_r() + rshift) * v.a 
 	+ 0.5 * v.iyee_shift(cc).in_direction(R);
       int sr = v.nz() + 1;
-      if (cndinv) { // conductivity, possibly including PML
-	for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
-	  double rinv = the_m / (ir+ir0);
-	  for (int iz = 0; iz <= v.nz(); ++iz) {
-	    int idx = ir*sr + iz;
-	    the_f[idx] += rinv * g[idx] * cndinv[idx];
-	  }
+
+      // 8 special cases of the same loop (sigh):
+      if (siginv) { // PML in f update
+	if (siginvu) { // PML + fu
+	  if (cndinv) // PML + fu + conductivity
+	    //////////////////// MOST GENERAL CASE //////////////////////
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		int k = dk + 2*(dsig==Z ? iz : ir);
+		int ku = dku + 2*(dsigu==Z ? iz : ir);
+		double df, dfcnd = rinv * g[idx] * cndinv[idx];
+		fcnd[idx] += dfcnd;
+		the_f[idx] += (df = dfcnd * siginv[k]);
+		fu[idx] += siginvu[ku] * df;
+	      }
+	    }
+	    /////////////////////////////////////////////////////////////
+	  else // PML + fu - conductivity
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		int k = dk + 2*(dsig==Z ? iz : ir);
+		int ku = dku + 2*(dsigu==Z ? iz : ir);
+		double df, dfcnd = rinv * g[idx];
+		the_f[idx] += (df = dfcnd * siginv[k]);
+		fu[idx] += siginvu[ku] * df;
+	      }
+	    }
+	}
+	else { // PML - fu
+	  if (cndinv) // PML - fu + conductivity
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		int k = dk + 2*(dsig==Z ? iz : ir);
+		double dfcnd = rinv * g[idx] * cndinv[idx];
+		fcnd[idx] += dfcnd;
+		the_f[idx] += dfcnd * siginv[k];
+	      }
+	    }
+	  else // PML - fu - conductivity
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		int k = dk + 2*(dsig==Z ? iz : ir);
+		double dfcnd = rinv * g[idx];
+		the_f[idx] += dfcnd * siginv[k];
+	      }
+	    }
 	}
       }
-      else if (s->sigsize[dsig] > 1) { // PML
-	const double *siginv = s->siginv[dsig];
-	int dk = v.iyee_shift(cc).in_direction(dsig);
-	for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
-	  double rinv = the_m / (ir+ir0);
-	  for (int iz = 0; iz <= v.nz(); ++iz) {
-	    int idx = ir*sr + iz;
-	    the_f[idx] += rinv * g[idx] * siginv[dk + 2*(dsig==Z ? iz : ir)];
-	  }
+      else { // no PML in f update
+	if (siginvu) { // no PML + fu
+	  if (cndinv) // no PML + fu + conductivity
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		int ku = dku + 2*(dsigu==Z ? iz : ir);
+		double df = rinv * g[idx] * cndinv[idx];
+		the_f[idx] += df;
+		fu[idx] += siginvu[ku] * df;
+	      }
+	    }
+	  else // no PML + fu - conductivity
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		int ku = dku + 2*(dsigu==Z ? iz : ir);
+		double df = rinv * g[idx];
+		the_f[idx] += df;
+		fu[idx] += siginvu[ku] * df;
+	      }
+	    }
 	}
-      }
-      else { // no PML, no conductivity
-	for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
-	  double rinv = the_m / (ir+ir0);
-	  for (int iz = 0; iz <= v.nz(); ++iz) {
-	    int idx = ir*sr + iz;
-	    the_f[idx] += rinv * g[idx];
-	  }
+	else { // no PML - fu
+	  if (cndinv) // no PML - fu + conductivity
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		the_f[idx] += rinv * g[idx] * cndinv[idx];
+	      }
+	    }
+	  else // no PML - fu - conductivity
+	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	      double rinv = the_m / (ir+ir0);
+	      for (int iz = 0; iz <= v.nz(); ++iz) {
+		int idx = ir*sr + iz;
+		the_f[idx] += rinv * g[idx];
+	      }
+	    }
 	}
       }
     }
   }
 
+#define ZERO_Z(array) memset(array, 0, sizeof(realnum)*(nz+1));
+
   // deal with annoying r=0 boundary conditions for m=0 and m=1
   if (v.dim == Dcyl && v.origin_r() == 0.0) DOCMP {
+    const int nz = v.nz();
     if (m == 0 && ft == D_stuff && f[Dz][cmp]) {
       // d(Dz)/dt = (1/r) * d(r*Hp)/dr
       realnum *the_f = f[Dz][cmp];
       const realnum *g = f[Hp][cmp];
       const realnum *cndinv = s->condinv[Dz][Z];
+      realnum *fcnd = f_cond[Dz][cmp];
+      realnum *fu = f_u[Dz][cmp];
       const direction dsig = cycle_direction(v.dim,Z,1);
-      if (cndinv) // conductivity, possibly including PML
-	for (int iz = 0; iz < v.nz(); ++iz) 
-	  the_f[iz] += g[iz] * (Courant * 4) * cndinv[iz];
-      else if (s->sigsize[dsig] > 1) { // PML
-	const double *siginv = s->siginv[dsig];
-	int dk = v.iyee_shift(Dz).in_direction(dsig);
-	for (int iz = 0; iz < v.nz(); ++iz) 
-	  the_f[iz] += g[iz] * (Courant * 4) * siginv[dk + 2*(dsig==Z)*iz];
+      const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+      const int dk = v.iyee_shift(Dz).in_direction(dsig);
+      const direction dsigu = cycle_direction(v.dim,Z,2);
+      const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+      const int dku = v.iyee_shift(Dz).in_direction(dsigu);
+      for (int iz = 0; iz < nz; ++iz) {
+	// Note: old code (prior to Meep 0.2) was missing factor of 4??
+	double df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
+	if (fcnd) fcnd[iz] += dfcnd;
+	the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2*(dsig==Z)*iz] : 1));
+	if (fu) fu[iz] += siginvu[dku + 2*(dsigu==Z)*iz] * df;
       }
-      else // no PML, no conductivity
-	for (int iz = 0; iz < v.nz(); ++iz) 
-	  the_f[iz] += g[iz] * (Courant * 4);
-      // Note: old code was missing factor of 4??
-
-      for (int iz = 0; iz <= v.nz(); ++iz) f[Dp][cmp][iz] = 0.0;
+      ZERO_Z(f[Dp][cmp]);
+      if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
+      if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]);
     }
-    else if (m == 0 && ft == B_stuff && f[Br][cmp])
-      for (int iz = 0; iz <= v.nz(); ++iz) f[Br][cmp][iz] = 0.0;
+    else if (m == 0 && ft == B_stuff && f[Br][cmp]) {
+      ZERO_Z(f[Br][cmp]);
+      if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
+      if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);
+    }
     else if (fabs(m) == 1) {
       // D_stuff: d(Dp)/dt = d(Hr)/dz - d(Hz)/dr
       // B_stuff: d(Br)/dt = d(Ep)/dz - i*m*Ez/r
@@ -237,28 +321,32 @@ bool fields_chunk::step_db(field_type ft) {
       if (!the_f) continue;
       const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
       const realnum *f_m = ft == D_stuff ? f[Hz][cmp]
-	: (f[Ez][1-cmp] + (v.nz()+1));
+	: (f[Ez][1-cmp] + (nz+1));
       const realnum *cndinv = s->condinv[cc][d_c];
+      realnum *fcnd = f_cond[cc][cmp];
+      realnum *fu = f_u[cc][cmp];
       const direction dsig = cycle_direction(v.dim,d_c,1);
+      const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+      const int dk = v.iyee_shift(cc).in_direction(dsig);
+      const direction dsigu = cycle_direction(v.dim,d_c,2);
+      const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+      const int dku = v.iyee_shift(cc).in_direction(dsigu);
       int sd = ft == D_stuff ? +1 : -1;
       double f_m_mult = ft == D_stuff ? 2 : (1-2*cmp);
-      if (cndinv) // conductivity, possibly including PML
-	for (int iz = (ft == D_stuff); iz < v.nz() + (ft == D_stuff); ++iz)
-	  the_f[iz] += (sd*Courant) * (f_p[iz]-f_p[iz-sd] - f_m_mult*f_m[iz])
-	    * cndinv[iz];
-      else if (s->sigsize[dsig] > 1) { // PML
-	const double *siginv = s->siginv[dsig];
-	int dk = v.iyee_shift(cc).in_direction(dsig);
-	for (int iz = (ft == D_stuff); iz < v.nz() + (ft == D_stuff); ++iz)
-	  the_f[iz] += (sd*Courant) * (f_p[iz]-f_p[iz-sd] - f_m_mult*f_m[iz])
-	    * siginv[dk + 2*(dsig==Z)*iz];
-      }
-      else // no PML, no conductivity
-	for (int iz = (ft == D_stuff); iz < v.nz() + (ft == D_stuff); ++iz)
-	  the_f[iz] += (sd*Courant) * (f_p[iz]-f_p[iz-sd] - f_m_mult*f_m[iz]);
 
-      if (ft == D_stuff)
-	for (int iz = 0; iz <= v.nz(); ++iz) f[Dz][cmp][iz] = 0.0;
+      for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
+	double df;
+	double dfcnd = (sd*Courant) * (f_p[iz]-f_p[iz-sd] - f_m_mult*f_m[iz])
+	  * (cndinv ? cndinv[iz] : 1);
+	if (fcnd) fcnd[iz] += dfcnd;
+	the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2*(dsig==Z)*iz] : 1));
+	if (fu) fu[iz] += siginvu[dku + 2*(dsigu==Z)*iz] * df;
+      }
+      if (ft == D_stuff) {
+	ZERO_Z(f[Dz][cmp]);
+	if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
+	if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
+      }
     }
     else if (m != 0) { // m != {0,+1,-1}
       /* I seem to recall David telling me that this was for numerical
@@ -269,13 +357,20 @@ bool fields_chunk::step_db(field_type ft) {
       double rmax = fabs(m) - int(v.origin_r()*v.a+0.5);
       if (ft == D_stuff)
 	for (int r = 0; r <= v.nr() && r < rmax; r++) {
-          const int ir = r*(v.nz()+1);
-          for (int z=0;z<=v.nz();z++) f[Dp][cmp][ir+z] = f[Dz][cmp][ir+z] = 0;
+          const int ir = r*(nz+1);
+	  ZERO_Z(f[Dp][cmp]+ir);
+	  ZERO_Z(f[Dz][cmp]+ir);
+	  if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]+ir);
+	  if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]+ir);
+	  if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]+ir);
+	  if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]+ir);
         }
       else
 	for (int r = 0; r <= v.nr() && r < rmax; r++) {
-          const int ir = r*(v.nz()+1);
-          for (int z=0;z<=v.nz();z++) f[Br][cmp][ir+z] = 0;
+          const int ir = r*(nz+1);
+	  ZERO_Z(f[Br][cmp]+ir);
+	  if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]+ir);
+	  if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]+ir);
         }
     }
   }
