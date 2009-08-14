@@ -94,9 +94,7 @@ bool fields_chunk::update_eh(field_type ft) {
 					   component_direction(ec));
 	DOCMP {
 	  realnum * fmp = f_minus_p[dc][cmp];
-	  memcpy(fmp, 
-		 f_u[dc][cmp] ? f_u[dc][cmp] : f[dc][cmp], 
-		 sizeof(realnum) * ntot);
+	  memcpy(fmp, f[dc][cmp], sizeof(realnum) * ntot);
 	  for (polarization *p = pols[ft]; p; p = p->next) {
 	    const realnum * P = p->P[ec][cmp];
 	    for (int i=0;i<ntot;i++) fmp[i] -= P[i];
@@ -106,9 +104,7 @@ bool fields_chunk::update_eh(field_type ft) {
     }
     else {
       FOR_FT_COMPONENTS(ft2, dc) if (f[dc][0]) DOCMP
-	memcpy(f_minus_p[dc][cmp], 
-	       f_u[dc][cmp] ? f_u[dc][cmp] : f[dc][cmp], 
-	       ntot * sizeof(realnum));
+	memcpy(f_minus_p[dc][cmp], f[dc][cmp], ntot * sizeof(realnum));
     }
   }
 
@@ -137,7 +133,7 @@ bool fields_chunk::update_eh(field_type ft) {
   if (have_f_minus_p) {
     FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f_minus_p[dc][cmp];
   } else {
-    FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f_u[dc][cmp] ? f_u[dc][cmp] : f[dc][cmp];
+    FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f[dc][cmp];
   }
 
   DOCMP FOR_FT_COMPONENTS(ft,ec) if (f[ec][cmp]) {
@@ -157,8 +153,7 @@ bool fields_chunk::update_eh(field_type ft) {
 
     // lazily allocate any E/H fields that are needed (H==B initially)
     if (f[ec][cmp] == f[dc][cmp]
-	&& (s->chi1inv[ec][d_ec] || have_f_minus_p
-	    || f_u[dc][cmp] || dsigw != NO_DIRECTION)) {
+	&& (s->chi1inv[ec][d_ec] || have_f_minus_p || dsigw != NO_DIRECTION)) {
       f[ec][cmp] = new realnum[v.ntot()];
       memcpy(f[ec][cmp], f[dc][cmp], v.ntot() * sizeof(realnum));
       allocated_eh = true;

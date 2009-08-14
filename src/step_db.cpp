@@ -189,8 +189,8 @@ bool fields_chunk::step_db(field_type ft) {
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
 		double df, dfcnd = rinv * g[idx] * cndinv[idx];
 		fcnd[idx] += dfcnd;
-		the_f[idx] += (df = dfcnd * siginv[k]);
-		fu[idx] += siginvu[ku] * df;
+		fu[idx] += (df = dfcnd * siginv[k]);
+		the_f[idx] += siginvu[ku] * df;
 	      }
 	    }
 	    /////////////////////////////////////////////////////////////
@@ -202,8 +202,8 @@ bool fields_chunk::step_db(field_type ft) {
 		int k = dk + 2*(dsig==Z ? iz : ir);
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
 		double df, dfcnd = rinv * g[idx];
-		the_f[idx] += (df = dfcnd * siginv[k]);
-		fu[idx] += siginvu[ku] * df;
+		fu[idx] += (df = dfcnd * siginv[k]);
+		the_f[idx] += siginvu[ku] * df;
 	      }
 	    }
 	}
@@ -240,8 +240,8 @@ bool fields_chunk::step_db(field_type ft) {
 		int idx = ir*sr + iz;
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
 		double df = rinv * g[idx] * cndinv[idx];
-		the_f[idx] += df;
-		fu[idx] += siginvu[ku] * df;
+		fu[idx] += df;
+		the_f[idx] += siginvu[ku] * df;
 	      }
 	    }
 	  else // no PML + fu - conductivity
@@ -251,8 +251,8 @@ bool fields_chunk::step_db(field_type ft) {
 		int idx = ir*sr + iz;
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
 		double df = rinv * g[idx];
-		the_f[idx] += df;
-		fu[idx] += siginvu[ku] * df;
+		fu[idx] += df;
+		the_f[idx] += siginvu[ku] * df;
 	      }
 	    }
 	}
@@ -285,17 +285,17 @@ bool fields_chunk::step_db(field_type ft) {
     const int nz = v.nz();
     if (m == 0 && ft == D_stuff && f[Dz][cmp]) {
       // d(Dz)/dt = (1/r) * d(r*Hp)/dr
-      realnum *the_f = f[Dz][cmp];
       const realnum *g = f[Hp][cmp];
       const realnum *cndinv = s->condinv[Dz][Z];
       realnum *fcnd = f_cond[Dz][cmp];
-      realnum *fu = f_u[Dz][cmp];
       const direction dsig = cycle_direction(v.dim,Z,1);
       const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
       const int dk = v.iyee_shift(Dz).in_direction(dsig);
       const direction dsigu = cycle_direction(v.dim,Z,2);
       const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
       const int dku = v.iyee_shift(Dz).in_direction(dsigu);
+      realnum *fu = siginvu && f_u[Dz][cmp] ? f[Dz][cmp] : 0;
+      realnum *the_f = fu ? f_u[Dz][cmp] : f[Dz][cmp];
       for (int iz = 0; iz < nz; ++iz) {
 	// Note: old code (prior to Meep 0.2) was missing factor of 4??
 	double df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
@@ -317,20 +317,20 @@ bool fields_chunk::step_db(field_type ft) {
       // B_stuff: d(Br)/dt = d(Ep)/dz - i*m*Ez/r
       component cc = ft == D_stuff ? Dp : Br;
       direction d_c = component_direction(cc);
-      realnum *the_f = f[cc][cmp];
-      if (!the_f) continue;
+      if (!f[cc][cmp]) continue;
       const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
       const realnum *f_m = ft == D_stuff ? f[Hz][cmp]
 	: (f[Ez][1-cmp] + (nz+1));
       const realnum *cndinv = s->condinv[cc][d_c];
       realnum *fcnd = f_cond[cc][cmp];
-      realnum *fu = f_u[cc][cmp];
       const direction dsig = cycle_direction(v.dim,d_c,1);
       const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
       const int dk = v.iyee_shift(cc).in_direction(dsig);
       const direction dsigu = cycle_direction(v.dim,d_c,2);
       const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
       const int dku = v.iyee_shift(cc).in_direction(dsigu);
+      realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
+      realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
       int sd = ft == D_stuff ? +1 : -1;
       double f_m_mult = ft == D_stuff ? 2 : (1-2*cmp);
 

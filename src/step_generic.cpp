@@ -55,8 +55,9 @@ namespace meep {
        df/dt = dfcnd/dt - sigma*f.
 
    fu is another auxiliary field used only in PML (dsigu != NO_DIR),
-   in which case fu solves:
-       dfu/dt = df/dt - sigma_u * fu
+   in which case f solves:
+       df/dt = dfu/dt - sigma_u * f
+   and fu replaces f in the equations above (fu += dt curl g etcetera).
 */
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
@@ -112,34 +113,34 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	double dt2 = dt * 0.5;
 	if (g2) {
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_ku; double fprev = f[i];
-	    f[i] = ((1 - dt2 * cnd[i]) * fprev - 
+	    DEF_ku; double fprev = fu[i];
+	    fu[i] = ((1 - dt2 * cnd[i]) * fprev - 
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_ku; double fprev = f[i];
-	    f[i] = ((1 - dt2 * cnd[i]) * fprev
+	    DEF_ku; double fprev = fu[i];
+	    fu[i] = ((1 - dt2 * cnd[i]) * fprev
 		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
       else { // no conductivity
 	if (g2) {
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_ku; double fprev = f[i];
-	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    DEF_ku; double fprev = fu[i];
+	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_ku; double fprev = f[i];
-	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    DEF_ku; double fprev = fu[i];
+	    fu[i] -= dtdx * (g1[i+s1] - g1[i]);
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
@@ -193,40 +194,40 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	if (g2) {
 	  //////////////////// MOST GENERAL CASE //////////////////////
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_k; DEF_ku; double fprev = f[i];
+	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
 		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
-	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    fu[i] = ((1 - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	  /////////////////////////////////////////////////////////////
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_k; DEF_ku; double fprev = f[i];
+	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
 		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    fu[i] = ((1 - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_k; DEF_ku; double fprev = f[i];
-	    f[i] = ((1 - sig[k]) * f[i] -
+	    DEF_k; DEF_ku; double fprev = fu[i];
+	    fu[i] = ((1 - sig[k]) * fu[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED0(v, c, i) {
-	    DEF_k; DEF_ku; double fprev = f[i];
-	    f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
-	    fu[i] = siginvu[ku] * ((1 - sigu[ku]) * fu[i] + f[i] - fprev);
+	    DEF_k; DEF_ku; double fprev = fu[i];
+	    fu[i] = ((1 - sig[k]) * fu[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
+	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
@@ -257,16 +258,16 @@ void step_beta(RPR f, component c, const RPR g,
 	  DEF_k; DEF_ku; double df;
 	  double dfcnd = betadt * g[i] * cndinv[i];
 	  fcnd[i] += dfcnd;
-	  f[i] += (df = dfcnd * siginv[k]);
-	  fu[i] += siginvu[ku] * df;
+	  fu[i] += (df = dfcnd * siginv[k]);
+	  f[i] += siginvu[ku] * df;
 	}
 	/////////////////////////////////////////////////////////////
       }
       else { // PML only
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  DEF_k; DEF_ku; double df;
-	  f[i] += (df = betadt * g[i] * siginv[k]);
-	  fu[i] += siginvu[ku] * df;
+	  fu[i] += (df = betadt * g[i] * siginv[k]);
+	  f[i] += siginvu[ku] * df;
 	}
       }
     }
@@ -294,15 +295,15 @@ void step_beta(RPR f, component c, const RPR g,
       if (cndinv) { // conductivity, no PML
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  DEF_ku; double df;
-	  f[i] += (df = betadt * g[i] * cndinv[i]);
-	  fu[i] += siginvu[ku] * df;
+	  fu[i] += (df = betadt * g[i] * cndinv[i]);
+	  f[i] += siginvu[ku] * df;
 	}
       }
       else { // no conductivity or PML
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
 	  DEF_ku; double df;
-	  f[i] += (df = betadt * g[i]);
-	  fu[i] += siginvu[ku] * df;
+	  fu[i] += (df = betadt * g[i]);
+	  f[i] += siginvu[ku] * df;
 	}
       }
     }
