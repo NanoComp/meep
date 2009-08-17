@@ -188,12 +188,11 @@ int test_pml(double eps(const vec &), const char *mydirname) {
     f.step();
     if (f.time() >= total_energy_check_time) {
       const double new_energy = f.total_energy();
-      if (new_energy > last_energy*4e-3) { // FIXME: problem here? this is pretty slow...
+      master_printf("Got newE/oldE of %g\n", new_energy/last_energy);
+      if (new_energy > last_energy*4e-3) {
         master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
-      } else {
-        master_printf("Got newE/oldE of %g\n", new_energy/last_energy);
       }
       total_energy_check_time += deltaT;
     }

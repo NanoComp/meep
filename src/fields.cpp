@@ -168,11 +168,14 @@ fields_chunk::~fields_chunk() {
   DOCMP2 FOR_H_AND_B(hc,bc) if (f[hc][cmp] == f[bc][cmp]) f[bc][cmp] = NULL;
   DOCMP2 FOR_COMPONENTS(c) {
     delete[] f[c][cmp];
-    delete[] f_backup[c][cmp];
     delete[] f_u[c][cmp];
     delete[] f_w[c][cmp];
     delete[] f_cond[c][cmp];
     delete[] f_minus_p[c][cmp];
+    delete[] f_backup[c][cmp];
+    delete[] f_u_backup[c][cmp];
+    delete[] f_w_backup[c][cmp];
+    delete[] f_cond_backup[c][cmp];
   }
   delete[] f_rderiv_int;
   FOR_FIELD_TYPES(ft)
@@ -212,11 +215,14 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   FOR_FIELD_TYPES(ft) sources[ft] = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
-    f_backup[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
     f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
     f_minus_p[c][cmp] = NULL;
+    f_backup[c][cmp] = NULL;
+    f_u_backup[c][cmp] = NULL;
+    f_w_backup[c][cmp] = NULL;
+    f_cond_backup[c][cmp] = NULL;
   }
   f_rderiv_int = NULL;
   FOR_FIELD_TYPES(ft) {
@@ -254,10 +260,13 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   FOR_FIELD_TYPES(ft) sources[ft] = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
-    f_backup[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
     f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
+    f_backup[c][cmp] = NULL;
+    f_u_backup[c][cmp] = NULL;
+    f_w_backup[c][cmp] = NULL;
+    f_cond_backup[c][cmp] = NULL;
   }
   FOR_COMPONENTS(c) DOCMP {
     if (!is_magnetic(c) && thef.f[c][cmp]) {
@@ -480,11 +489,16 @@ void fields::remove_fluxes() {
 
 void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
-    if (f[c][cmp]) for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
-    if (f_backup[c][cmp]) for (int i=0;i<v.ntot();i++) f_backup[c][cmp][i] = 0.0;
-    if (f_u[c][cmp]) for (int i=0;i<v.ntot();i++) f_u[c][cmp][i] = 0.0;
-    if (f_w[c][cmp]) for (int i=0;i<v.ntot();i++) f_w[c][cmp][i] = 0.0;
-    if (f_cond[c][cmp]) for (int i=0;i<v.ntot();i++) f_cond[c][cmp][i] = 0.0;
+#define ZERO(array) if (array) memset(array, 0, sizeof(realnum) * v.ntot())
+    ZERO(f[c][cmp]);
+    ZERO(f_u[c][cmp]);
+    ZERO(f_w[c][cmp]);
+    ZERO(f_cond[c][cmp]);
+    ZERO(f_backup[c][cmp]);
+    ZERO(f_u_backup[c][cmp]);
+    ZERO(f_w_backup[c][cmp]);
+    ZERO(f_cond_backup[c][cmp]);
+#undef ZERO
   }
   if (is_mine()) FOR_FIELD_TYPES(ft) {
     if (pols[ft]) pols[ft]->zero_fields();

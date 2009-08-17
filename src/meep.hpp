@@ -753,6 +753,9 @@ class fields_chunk {
      flux at a given time, we need to timestep H by 1/2; in this case
      we save backup copies of (some of) the fields to resume timestepping */
   realnum *f_backup[NUM_FIELD_COMPONENTS][2];
+  realnum *f_u_backup[NUM_FIELD_COMPONENTS][2];
+  realnum *f_w_backup[NUM_FIELD_COMPONENTS][2];
+  realnum *f_cond_backup[NUM_FIELD_COMPONENTS][2];
 
   // used to store D-P and B-P, e.g. when P implements dispersive media
   realnum *f_minus_p[NUM_FIELD_COMPONENTS][2];

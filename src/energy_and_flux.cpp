@@ -109,17 +109,33 @@ void fields_chunk::backup_component(component c) {
 	!(is_magnetic(c) && f[c][cmp] 
 	  == f[direction_component(Bx, component_direction(c))][cmp])) {
 
-      if (!f_backup[c][cmp])
-	f_backup[c][cmp] = new realnum[v.ntot()];  
-      memcpy(f_backup[c][cmp], f[c][cmp], v.ntot()*sizeof(realnum));    
+#define BACKUP(f) if (f[c][cmp]) {					\
+      if (!f##_backup[c][cmp])						\
+	f##_backup[c][cmp] = new realnum[v.ntot()];			\
+      memcpy(f##_backup[c][cmp], f[c][cmp], v.ntot()*sizeof(realnum)); }
+
+      BACKUP(f);
+      BACKUP(f_u);
+      BACKUP(f_w);
+      BACKUP(f_cond);
+
+#undef BACKUP
     }
   }
 }
   
 void fields_chunk::restore_component(component c) {
   DOCMP if (f_backup[c][cmp]) {
-    if (f[c][cmp])
-      memcpy(f[c][cmp], f_backup[c][cmp], v.ntot()*sizeof(realnum));
+#define RESTORE(f)							\
+    if (f[c][cmp])							\
+      memcpy(f[c][cmp], f##_backup[c][cmp], v.ntot()*sizeof(realnum));
+    
+    RESTORE(f);
+    RESTORE(f_u);
+    RESTORE(f_w);
+    RESTORE(f_cond);
+    
+#undef RESTORE
   }
 }
 
