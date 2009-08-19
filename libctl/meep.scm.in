@@ -1138,6 +1138,10 @@
   (meep-fields-field-energy-in-box fields box))
 
 ; ****************************************************************
+; Load helper functions for Casimir-force calculations
+(include "casimir.scm")
+
+; ****************************************************************
 
 ; Load GNU Readline support, for easier command-line editing support.
 ; This is not loaded in by default in Guile 1.3.2+ because readline is

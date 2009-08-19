@@ -60,6 +60,7 @@ MY_DEFS = -DHAVE_CTL_HOOKS=1 -DHAVE_CTL_EXPORT_HOOK=1
 PROGRAM_NAME = meep
 SPECIFICATION_FILE = $(PROGRAM_NAME).scm
 nodist_pkgdata_DATA = $(SPECIFICATION_FILE) meep-enums.scm
+pkgdata_DATA = casimir.scm
 
 ##############################################################################
 
