@@ -5,21 +5,19 @@
 #define DPR double * restrict
 #define RPR realnum * restrict
 
-/* These macros get into the guts of the LOOP_OVER_VOL loops to efficiently
-   construct the index k into a PML sigma array.  Basically, k needs to
-   increment by 2 for each increment of one of LOOP's for-loops, starting
-   at the appropriate corner of the volume, and these macros define the
-   relevant strides etc. for each loop.  If sigsize_dsig <= 1, however,
-   our index k should always be zero (sigma array is trivial length-1). 
-   KSTRIDE_DEF defines the relevant strides etc. and goes outside the 
+/* These macros get into the guts of the LOOP_OVER_VOL loops to
+   efficiently construct the index k into a PML sigma array.
+   Basically, k needs to increment by 2 for each increment of one of
+   LOOP's for-loops, starting at the appropriate corner of the volume,
+   and these macros define the relevant strides etc. for each loop.
+   KSTRIDE_DEF defines the relevant strides etc. and goes outside the
    LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
-#define SZ0(dsig, expr) (sigsize_ ## dsig > 1 ? (expr) : 0)
 #define KSTRIDE_DEF(dsig, k, corner)					  \
-     const int k##0 = SZ0(dsig, corner.in_direction(dsig)		  \
+     const int k##0 = (dsig, corner.in_direction(dsig)		  \
                               - v.little_corner().in_direction(dsig));	  \
-     const int s##k##1 = SZ0(dsig, v.yucky_direction(0) == dsig ? 2 : 0); \
-     const int s##k##2 = SZ0(dsig, v.yucky_direction(1) == dsig ? 2 : 0); \
-     const int s##k##3 = SZ0(dsig, v.yucky_direction(2) == dsig ? 2 : 0)
+     const int s##k##1 = (dsig, v.yucky_direction(0) == dsig ? 2 : 0); \
+     const int s##k##2 = (dsig, v.yucky_direction(1) == dsig ? 2 : 0); \
+     const int s##k##3 = (dsig, v.yucky_direction(2) == dsig ? 2 : 0)
 #define KDEF(k,dsig) const int k = ((k##0 + s##k##1*loop_i1) + s##k##2*loop_i2) + s##k##3*loop_i3
 #define DEF_k KDEF(k,dsig)
 #define DEF_ku KDEF(ku,dsigu)
@@ -107,7 +105,6 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
     else { // fu update, no PML in f update
-      const int sigsize_dsigu=2; 
       KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
       if (cnd) {
 	double dt2 = dt * 0.5;
@@ -147,7 +144,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     }
   }
   else { /* PML in f update */
-    const int sigsize_dsig=2; KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
+    KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
     if (dsigu == NO_DIRECTION) { // no fu update
       if (cnd) {
 	double dt2 = dt * 0.5;
@@ -187,7 +184,6 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
     else { // fu update + PML in f update
-      const int sigsize_dsigu=2; 
       KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
       if (cnd) {
 	double dt2 = dt * 0.5;
@@ -247,10 +243,8 @@ void step_beta(RPR f, component c, const RPR g,
 {
   if (!g) return;
   if (dsig != NO_DIRECTION) { // PML in f update
-    const int sigsize_dsig=2;
     KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
     if (dsigu != NO_DIRECTION) { // PML in f + fu
-      const int sigsize_dsigu=2; 
       KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
       if (cndinv) { // conductivity + PML
 	//////////////////// MOST GENERAL CASE //////////////////////
@@ -290,7 +284,6 @@ void step_beta(RPR f, component c, const RPR g,
   }
   else { // no PML in f update
     if (dsigu != NO_DIRECTION) { // fu, no PML in f
-      const int sigsize_dsigu=2; 
       KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
       if (cndinv) { // conductivity, no PML
 	LOOP_OVER_VOL_OWNED0(v, c, i) {
@@ -376,7 +369,6 @@ void step_update_EDHB(RPR f, component fc, const volume &v,
      of the "MOST GENERAL CASE" loop with various terms thrown out. */
   
   if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
-    const int sigsize_dsigw=2; 
     KSTRIDE_DEF(dsigw, kw, v.little_owned_corner0(fc));
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
