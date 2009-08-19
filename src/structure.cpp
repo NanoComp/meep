@@ -26,7 +26,7 @@
 namespace meep {
 
 structure::structure()
-  : Courant(0.5), xv(D1) // Aaack, this is very hokey.
+  : Courant(0.5), v(D1) // Aaack, this is very hokey.
 {
   num_chunks = 0;
   num_effort_volumes = 0;
@@ -44,7 +44,7 @@ structure::structure(const grid_volume &thegv, material_function &eps,
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
 		     double tol, int maxeval) :
-  Courant(Courant), xv(D1) // Aaack, this is very hokey.
+  Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
@@ -57,7 +57,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &),
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
 		     double tol, int maxeval) :
-  Courant(Courant), xv(D1) // Aaack, this is very hokey.
+  Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
@@ -76,7 +76,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv,
   if (thegv.dim == Dcyl && thegv.get_origin().r() < 0)
     abort("r < 0 origins are not supported");
   gv = thegv;
-  xv = gv.surroundings();
+  v = gv.surroundings();
   S = s;
   a = gv.a;
   dt = Courant/a;
@@ -108,7 +108,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv,
       }
     }
     // Before padding, find the corresponding geometric grid_volume.
-    xv = gv.surroundings();
+    v = gv.surroundings();
     // Pad the little cell in any direction that we've shrunk:
     for (int d=0;d<3;d++)
       if (break_this[d]) gv = gv.pad((direction)d);
@@ -134,7 +134,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv,
     for (int j = 0; j < num_effort_volumes; j++) {
       grid_volume vc;
       if (vi.intersect_with(effort_volumes[j], &vc)) {
-	chunks[num_chunks] = new structure_chunk(vc, xv, Courant, proc);
+	chunks[num_chunks] = new structure_chunk(vc, v, Courant, proc);
 	br.apply(this, chunks[num_chunks++]);
       }
     }
@@ -274,7 +274,7 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume,
   num_effort_volumes = counter;
 }
 
-structure::structure(const structure *s) : xv(s->xv) {
+structure::structure(const structure *s) : v(s->v) {
   num_chunks = s->num_chunks;
   outdir = s->outdir;
   gv = s->gv;
@@ -295,7 +295,7 @@ structure::structure(const structure *s) : xv(s->xv) {
   dt = s->dt;
 }
 
-structure::structure(const structure &s) : xv(s.xv) {
+structure::structure(const structure &s) : v(s.v) {
   num_chunks = s.num_chunks;
   outdir = s.outdir;
   gv = s.gv;
@@ -616,7 +616,7 @@ void structure_chunk::update_condinv() {
   condinv_stale = false;
 }
 
-structure_chunk::structure_chunk(const structure_chunk *o) : xv(o->xv) {
+structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   refcount = 1;
   if (o->pb) pb = new polarizability(o->pb);
   else pb = NULL;
@@ -788,7 +788,7 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
 structure_chunk::structure_chunk(const grid_volume &thegv, 
 				 const volume &vol_limit, 
 				 double Courant, int pr)
-  : Courant(Courant), xv(thegv.surroundings() & vol_limit) {
+  : Courant(Courant), v(thegv.surroundings() & vol_limit) {
   refcount = 1;
   pml_fmin = 0.2;
   pb = NULL;
@@ -844,12 +844,12 @@ double structure_chunk::max_eps() const {
 bool structure::equal_layout(const structure &s) const {
   if (a != s.a || 
       num_chunks != s.num_chunks ||
-      xv != s.xv ||
+      v != s.v ||
       S != s.S)
     return false;
   for (int i = 0; i < num_chunks; ++i)
     if (chunks[i]->a != s.chunks[i]->a ||
-	chunks[i]->xv != s.chunks[i]->xv)
+	chunks[i]->v != s.chunks[i]->v)
       return false;
   return true;
 }

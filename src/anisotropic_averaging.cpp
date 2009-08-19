@@ -47,12 +47,12 @@ static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
 
 ////////////////////////////////////////////////////////////////////////////
 
-vec material_function::normal_vector(field_type ft, const volume &xv)
+vec material_function::normal_vector(field_type ft, const volume &v)
 {
-  vec gradient(zero_vec(xv.dim));
-  vec p(xv.center());
-  double R = xv.diameter();  
-  for (int i = 0; i < num_sphere_quad[number_of_directions(xv.dim)-1]; ++i) {
+  vec gradient(zero_vec(v.dim));
+  vec p(v.center());
+  double R = v.diameter();  
+  for (int i = 0; i < num_sphere_quad[number_of_directions(v.dim)-1]; ++i) {
     double weight;
     vec pt = sphere_pt(p, R, i, weight);
     gradient += (pt - p) * (weight * chi1p1(ft,pt));
@@ -65,25 +65,25 @@ vec material_function::normal_vector(field_type ft, const volume &xv)
    interface, which either use a semi-analytical average or can
    use a proper adaptive cubature. */
 void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
-					const volume &xv,
+					const volume &v,
 					double tol, int maxeval) {
   field_type ft = type(c);
   if (!maxeval) {
   trivial:
     chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0.0;
-    chi1inv_row[component_direction(c) % 3] = 1/chi1p1(ft,xv.center());
+    chi1inv_row[component_direction(c) % 3] = 1/chi1p1(ft,v.center());
     return;
   }
 
-  vec gradient(normal_vector(ft, xv));
+  vec gradient(normal_vector(ft, v));
   if (abs(gradient) < 1e-8) goto trivial;
 
   double meps=1, minveps=1;
-  vec d = xv.get_max_corner() - xv.get_min_corner();
+  vec d = v.get_max_corner() - v.get_min_corner();
   int ms = 10; 
   double old_meps=0, old_minveps=0;
   int iter = 0;
-  switch(xv.dim) {
+  switch(v.dim) {
   case D3:
     while ((fabs(meps - old_meps) > tol*fabs(old_meps)) && (fabs(minveps - old_minveps) > tol*fabs(old_minveps))) {
       old_meps=meps; old_minveps=minveps;
@@ -91,7 +91,7 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       for (int k=0; k < ms; k++)
 	for (int j=0; j < ms; j++)
 	  for (int i=0; i < ms; i++) {
-	    double ep = chi1p1(ft,xv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
+	    double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
 	    if (ep < 0) goto trivial;
 	    meps += ep; minveps += 1/ep;
 	  }
@@ -107,7 +107,7 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       meps = minveps = 0;
       for (int j=0; j < ms; j++)
 	for (int i=0; i < ms; i++) {
-	  double ep = chi1p1(ft,xv.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
+	  double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
 	  if (ep < 0) goto trivial;
 	  meps += ep; minveps += 1/ep;
 	}
@@ -124,8 +124,8 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       double sumvol = 0;
       for (int j=0; j < ms; j++)
 	for (int i=0; i < ms; i++) {
-	  double r = xv.get_min_corner().r() + i*d.r()/ms;
-	  double ep = chi1p1(ft,xv.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
+	  double r = v.get_min_corner().r() + i*d.r()/ms;
+	  double ep = chi1p1(ft,v.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
 	  if (ep < 0) goto trivial;
 	  sumvol += r;
 	  meps += ep * r; minveps += r/ep;
@@ -141,9 +141,9 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       old_meps=meps; old_minveps=minveps;
       meps = minveps = 0;
       for (int i=0; i < ms; i++) {
-	double ep = chi1p1(ft,xv.get_min_corner() + vec(i*d.z()/ms));
+	double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.z()/ms));
 	if (ep < 0) {
-	  meps = chi1p1(ft,xv.center());
+	  meps = chi1p1(ft,v.center());
 	  minveps = 1/meps;
 	  goto done;
 	}

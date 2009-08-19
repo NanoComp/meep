@@ -154,8 +154,8 @@ public:
   virtual ~material_function() {}
   
   /* Specify a restricted grid_volume: all subsequent eps/sigma/etc
-     calls will be for points inside xv, until the next set_volume. */
-  virtual void set_volume(const volume &xv) {(void)xv;}
+     calls will be for points inside v, until the next set_volume. */
+  virtual void set_volume(const volume &v) {(void)v;}
   virtual void unset_volume(void) {} // unrestrict the grid_volume
   
   virtual double chi1p1(field_type ft, const vec &r) { (void)ft; (void)r; return 1.0; }
@@ -173,13 +173,13 @@ public:
     (void) c; (void)r; return 0.0; }  
 
   // fallback routine based on spherical quadrature
-  vec normal_vector(field_type ft, const volume &xv);
+  vec normal_vector(field_type ft, const volume &v);
 
-  /* Return c'th row of effective 1/(1+chi1) tensor in the given grid_volume xv
+  /* Return c'th row of effective 1/(1+chi1) tensor in the given grid_volume v
      ... virtual so that e.g. libctl can override with more-efficient
      libctlgeom-based routines.  maxeval == 0 if no averaging desired. */
   virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
-			       const volume &xv, 
+			       const volume &v, 
 			       double tol=DEFAULT_SUBPIXEL_TOL, 
 			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   
@@ -241,8 +241,8 @@ class structure_chunk {
   bool condinv_stale; // true if condinv needs to be recomputed
   double *sig[5], *siginv[5]; // conductivity array for uPML
   int sigsize[5]; // conductivity array size
-  grid_volume gv;  // integer grid_volume that could be bigger than non-overlapping xv below
-  volume xv;
+  grid_volume gv;  // integer grid_volume that could be bigger than non-overlapping v below
+  volume v;
   polarizability *pb;
 
   int refcount; // reference count of objects using this structure_chunk
@@ -350,7 +350,7 @@ class structure {
   int num_chunks;
   grid_volume gv, user_volume;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
-  volume xv;
+  volume v;
   symmetry S;
   const char *outdir;
   grid_volume *effort_volumes;
@@ -773,7 +773,7 @@ class fields_chunk {
   polarization *pols[NUM_FIELD_TYPES], *olpols[NUM_FIELD_TYPES];
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   grid_volume gv;
-  volume xv;
+  volume v;
   double m, rshift;
   double beta;
   int is_real, store_pol_energy;
@@ -924,7 +924,7 @@ class fields {
 
   double a, dt; // The resolution a and timestep dt=Courant/a
   grid_volume gv, user_volume;
-  volume xv;
+  volume v;
   double m;
   double beta;
   int t, phasein_time, is_real;

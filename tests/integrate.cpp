@@ -87,16 +87,16 @@ static double integralx(double a, double b, direction d) {
     return a==b ? a : (b*b-a*a)*.5;
 }
 
-static double correct_integral(const volume &xv,
+static double correct_integral(const volume &v,
 			       const linear_integrand_data &data)
 {
   direction x = data.dx, y = data.dy, z = data.dz;
-  double x1 = xv.in_direction_min(x);
-  double x2 = xv.in_direction_max(x);
-  double y1 = xv.in_direction_min(y);
-  double y2 = xv.in_direction_max(y);
-  double z1 = xv.in_direction_min(z);
-  double z2 = xv.in_direction_max(z);
+  double x1 = v.in_direction_min(x);
+  double x2 = v.in_direction_max(x);
+  double y1 = v.in_direction_min(y);
+  double y2 = v.in_direction_max(y);
+  double z1 = v.in_direction_min(z);
+  double z2 = v.in_direction_max(z);
 
   return (data.c * integral1(x1,x2,x) * integral1(y1,y2,y) * integral1(z1,z2,z)
        + data.ax * integralx(x1,x2,x) * integral1(y1,y2,y) * integral1(z1,z2,z)
@@ -117,7 +117,7 @@ static double urand(double min, double max)
 
 static volume random_gv(ndim dim)
 {
-  volume xv(dim);
+  volume v(dim);
 
   double s[3] = {0,0,0};
   int idim = dim == Dcyl ? 1 : int(dim);
@@ -144,64 +144,64 @@ static volume random_gv(ndim dim)
   
   switch (dim) {
   case D1:
-    xv.set_direction_min(X, 0);
-    xv.set_direction_max(X, 0);
-    xv.set_direction_min(Y, 0);
-    xv.set_direction_max(Y, 0);
-    xv.set_direction_min(Z, urand(-100, 100));
-    xv.set_direction_max(Z, s[0] + xv.in_direction_min(Z));
+    v.set_direction_min(X, 0);
+    v.set_direction_max(X, 0);
+    v.set_direction_min(Y, 0);
+    v.set_direction_max(Y, 0);
+    v.set_direction_min(Z, urand(-100, 100));
+    v.set_direction_max(Z, s[0] + v.in_direction_min(Z));
     break;
   case D2:
-    xv.set_direction_min(X, urand(-100, 100));
-    xv.set_direction_min(Y, urand(-100, 100));
-    xv.set_direction_max(X, s[0] + xv.in_direction_min(X));
-    xv.set_direction_max(Y, s[1] + xv.in_direction_min(Y));
-    xv.set_direction_min(Z, 0);
-    xv.set_direction_max(Z, 0);
+    v.set_direction_min(X, urand(-100, 100));
+    v.set_direction_min(Y, urand(-100, 100));
+    v.set_direction_max(X, s[0] + v.in_direction_min(X));
+    v.set_direction_max(Y, s[1] + v.in_direction_min(Y));
+    v.set_direction_min(Z, 0);
+    v.set_direction_max(Z, 0);
     break;
   case Dcyl:
-    xv.set_direction_min(X, 0);
-    xv.set_direction_max(X, 0);
-    xv.set_direction_min(Y, 0);
-    xv.set_direction_max(Y, 0);
-    xv.set_direction_min(R, 0.1 + urand(0, size[0] - s[0]));
-    xv.set_direction_min(Z, urand(-100, 100));
-    xv.set_direction_max(R, s[0] + xv.in_direction_min(R));
-    xv.set_direction_max(Z, s[1] + xv.in_direction_min(Z));
-    xv.set_direction_min(P, 0);
-    xv.set_direction_max(P, 0);
+    v.set_direction_min(X, 0);
+    v.set_direction_max(X, 0);
+    v.set_direction_min(Y, 0);
+    v.set_direction_max(Y, 0);
+    v.set_direction_min(R, 0.1 + urand(0, size[0] - s[0]));
+    v.set_direction_min(Z, urand(-100, 100));
+    v.set_direction_max(R, s[0] + v.in_direction_min(R));
+    v.set_direction_max(Z, s[1] + v.in_direction_min(Z));
+    v.set_direction_min(P, 0);
+    v.set_direction_max(P, 0);
     break;
   case D3:
-    xv.set_direction_min(X, urand(-100, 100));
-    xv.set_direction_min(Y, urand(-100, 100));
-    xv.set_direction_max(X, s[0] + xv.in_direction_min(X));
-    xv.set_direction_max(Y, s[1] + xv.in_direction_min(Y));
-    xv.set_direction_min(Z, urand(-100, 100));
-    xv.set_direction_max(Z, s[2] + xv.in_direction_min(Z));
+    v.set_direction_min(X, urand(-100, 100));
+    v.set_direction_min(Y, urand(-100, 100));
+    v.set_direction_max(X, s[0] + v.in_direction_min(X));
+    v.set_direction_max(Y, s[1] + v.in_direction_min(Y));
+    v.set_direction_min(Z, urand(-100, 100));
+    v.set_direction_max(Z, s[2] + v.in_direction_min(Z));
     break;
   default:
     abort("unsupported dimensionality in integrate.cpp");
   }
 
-  return xv;
+  return v;
 }
 
 void check_integral(fields &f,
-		    linear_integrand_data &d, const volume &xv,
+		    linear_integrand_data &d, const volume &v,
 		    component cgrid)
 {
-  double x1 = xv.in_direction_min(d.dx);
-  double x2 = xv.in_direction_max(d.dx);
-  double y1 = xv.in_direction_min(d.dy);
-  double y2 = xv.in_direction_max(d.dy);
-  double z1 = xv.in_direction_min(d.dz);
-  double z2 = xv.in_direction_max(d.dz);
+  double x1 = v.in_direction_min(d.dx);
+  double x2 = v.in_direction_max(d.dx);
+  double y1 = v.in_direction_min(d.dy);
+  double y2 = v.in_direction_max(d.dy);
+  double z1 = v.in_direction_min(d.dz);
+  double z2 = v.in_direction_max(d.dz);
   
   master_printf("Check %d-dim. %s integral in %s cell with %s integrand...",
 		(x2 - x1 > 0) + (y2 - y1 > 0) + (z2 - z1 > 0), 
 		component_name(cgrid),
-		xv.dim == D3 ? "3d" : (xv.dim == D2 ? "2d" : 
-				       (xv.dim == Dcyl ? "cylindrical" 
+		v.dim == D3 ? "3d" : (v.dim == D2 ? "2d" : 
+				       (v.dim == Dcyl ? "cylindrical" 
 					: "1d")),
 		(d.c == 1.0 && !d.axy && !d.ax && !d.ay && !d.az
 		 && !d.axy && !d.ayz && !d.axz) ? "unit" : "linear");
@@ -211,10 +211,10 @@ void check_integral(fields &f,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
 		  d.c, d.ax,d.ay,d.az, d.axy,d.ayz,d.axz, d.axyz);
 
-  double sum = real(f.integrate(0, 0, linear_integrand, (void *) &d, xv));
-  if (fabs(sum - correct_integral(xv, d)) > 1e-9 * fabs(sum))
+  double sum = real(f.integrate(0, 0, linear_integrand, (void *) &d, v));
+  if (fabs(sum - correct_integral(v, d)) > 1e-9 * fabs(sum))
     abort("FAILED: %0.16g instead of %0.16g\n", 
-	  (double) sum, correct_integral(xv, d));
+	  (double) sum, correct_integral(v, d));
   master_printf("...PASSED.\n");
 }
 
@@ -239,7 +239,7 @@ void check_splitsym(const grid_volume &gv, int splitting,
   master_printf("\nCHECKS for splitting=%d, symmetry=%s\n...",
 		splitting, Sname);
   for (int i = 0; i < num_random_trials; ++i) {
-    volume xv(random_gv(gv.dim));
+    volume v(random_gv(gv.dim));
     component cgrid;
 
     do {
@@ -249,7 +249,7 @@ void check_splitsym(const grid_volume &gv, int splitting,
     // try integral of 1 first (easier to debug, I hope)
     d.c = 1.0;
     d.ax = d.ay = d.az = d.axy = d.ayz = d.axz = d.axyz = 0.0;
-    check_integral(f, d, xv, cgrid);
+    check_integral(f, d, v, cgrid);
 
     d.c = urand(-1,1);
     d.ax = urand(-1,1); d.ay = urand(-1,1); d.az = urand(-1,1);
@@ -257,7 +257,7 @@ void check_splitsym(const grid_volume &gv, int splitting,
     d.axyz = urand(-1,1);
     if (gv.dim == Dcyl) // cyl. doesn't integrate linear functions of r exactly
       d.ax = d.axy = d.axz = d.axyz = 0;
-    check_integral(f, d, xv, cgrid);
+    check_integral(f, d, v, cgrid);
   }
 }
 

@@ -158,11 +158,11 @@ meep::vec vector3_to_vec(const vector3 v3)
   }
 }
 
-static geom_box gv2box(const meep::volume &xv)
+static geom_box gv2box(const meep::volume &v)
 {
   geom_box box;
-  box.low = vec_to_vector3(xv.get_min_corner());
-  box.high = vec_to_vector3(xv.get_max_corner());
+  box.low = vec_to_vector3(v.get_min_corner());
+  box.high = vec_to_vector3(v.get_max_corner());
   return box;
 }
 
@@ -175,10 +175,10 @@ class geom_epsilon : public meep::material_function {
   
 public:
   geom_epsilon(geometric_object_list g, material_type_list mlist,
-	       const meep::volume &xv);
+	       const meep::volume &v);
   virtual ~geom_epsilon();
   
-  virtual void set_volume(const meep::volume &xv);
+  virtual void set_volume(const meep::volume &v);
   virtual void unset_volume(void);
 
   virtual bool has_chi3(meep::component c);
@@ -193,11 +193,11 @@ public:
 
   virtual double chi1p1(meep::field_type ft, const meep::vec &r);
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3],
-			       const meep::volume &xv, 
+			       const meep::volume &v, 
 			       double tol, int maxeval);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3],
-			      const meep::volume &xv,
+			      const meep::volume &v,
 			      double tol, int maxeval);
 
   virtual void sigma_row(meep::component c, double sigrow[3],
@@ -212,7 +212,7 @@ private:
 };
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
-			   const meep::volume &xv)
+			   const meep::volume &v)
 {
   geometry = g; // don't bother making a copy, only used in one place
   extra_materials = mlist;
@@ -235,7 +235,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   }
   
   geom_fix_objects0(geometry);
-  geom_box box = gv2box(xv);
+  geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
   if (verbose && meep::am_master()) {
     printf("Geometric-object bounding-box tree:\n");
@@ -265,11 +265,11 @@ void geom_epsilon::unset_volume(void)
   }
 }
 
-void geom_epsilon::set_volume(const meep::volume &xv)
+void geom_epsilon::set_volume(const meep::volume &v)
 {
   unset_volume();
   
-  geom_box box = gv2box(xv);
+  geom_box box = gv2box(v);
   restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
@@ -439,12 +439,12 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
   return (chi1p1.m00 + chi1p1.m11 + chi1p1.m22)/3;
 }
 
-/* Find frontmost object in xv, along with the constant material behind it.
+/* Find frontmost object in v, along with the constant material behind it.
    Returns false if material behind the object is not constant.
    
    Requires moderately horrifying logic to figure things out properly,
    stolen from MPB. */
-static bool get_front_object(const meep::volume &xv,
+static bool get_front_object(const meep::volume &v,
 			     geom_box_tree geometry_tree,
 			     vector3 &pcenter,
 			     const geometric_object **o_front,
@@ -468,8 +468,8 @@ static bool get_front_object(const meep::volume &xv,
       {1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},
       {-1,1,1},{-1,1,-1},{-1,-1,1},{-1,-1,-1} }
   }; 
-  pixel = gv2box(xv);
-  pcenter = p = vec_to_vector3(xv.center());
+  pixel = gv2box(v);
+  pcenter = p = vec_to_vector3(v.center());
   double d1, d2, d3;
   d1 = (pixel.high.x - pixel.low.x) * 0.5;
   d2 = (pixel.high.y - pixel.low.y) * 0.5;
@@ -541,7 +541,7 @@ static bool get_front_object(const meep::volume &xv,
 }
 
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
-				   const meep::volume &xv,
+				   const meep::volume &v,
 				   double tol, int maxeval) {
   const geometric_object *o;
   material_type mat, mat_behind;
@@ -549,10 +549,10 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
   vector3 p, shiftby, normal;
   bool destroy_material = false;
 
-  if (maxeval == 0 || !get_front_object(xv, geometry_tree,
+  if (maxeval == 0 || !get_front_object(v, geometry_tree,
 					p, &o, shiftby, mat, mat_behind)) {
   noavg:
-    destroy_material = get_material_pt(mat, xv.center());
+    destroy_material = get_material_pt(mat, v.center());
   trivial:    
     material_epsmu(meep::type(c), mat, &meps, &meps_inv);
     switch (component_direction(c)) {
@@ -579,9 +579,9 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 
   // FIXME: reimplement support for fallback integration, without
   //        messing up anisotropic support
-  //  if (!get_front_object(xv, geometry_tree,
+  //  if (!get_front_object(v, geometry_tree,
   //			p, &o, shiftby, mat, mat_behind)) {
-  //     fallback_chi1inv_row(c, chi1inv_row, xv, tol, maxeval);
+  //     fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval);
   //     return;
   //  }
 
@@ -593,7 +593,7 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
     goto noavg;
 
   normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
-  geom_box pixel = gv2box(xv);
+  geom_box pixel = gv2box(v);
   pixel.low = vector3_minus(pixel.low, shiftby);
   pixel.high = vector3_minus(pixel.high, shiftby);
 
@@ -747,13 +747,13 @@ static number inveps_func(int n, number *x, void *geomeps_)
 // fallback meaneps using libctl's adaptive cubature routine
 void geom_epsilon::fallback_chi1inv_row(meep::component c,
 					double chi1inv_row[3],
-					const meep::volume &xv,
+					const meep::volume &v,
 					double tol, int maxeval)
 {
 
   symmetric_matrix chi1p1, chi1p1_inv;
   material_type material;
-  bool destroy_material = get_material_pt(material, xv.center());
+  bool destroy_material = get_material_pt(material, v.center());
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
   if (destroy_material)
     material_type_destroy(material);
@@ -783,8 +783,8 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c,
   integer errflag, n;
   number xmin[3], xmax[3];
   vector3 gvmin, gvmax;
-  gvmin = vec_to_vector3(xv.get_min_corner());
-  gvmax = vec_to_vector3(xv.get_max_corner());
+  gvmin = vec_to_vector3(v.get_min_corner());
+  gvmax = vec_to_vector3(v.get_max_corner());
   xmin[0] = gvmin.x; xmax[0] = gvmax.x; 
   if (dim == meep::Dcyl) {
     xmin[1] = gvmin.z; xmin[2] = gvmin.y; xmax[1] = gvmax.z; xmax[2] = gvmax.y;
@@ -814,10 +814,10 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c,
 				 0, tol, maxeval, &esterr, &errflag) / vol;
 #endif
   if (eps_ever_negative) // averaging negative eps causes instability
-    minveps = 1.0 / (meps = eps(xv.center()));
+    minveps = 1.0 / (meps = eps(v.center()));
 
   {
-    meep::vec gradient(normal_vector(meep::type(c), xv));
+    meep::vec gradient(normal_vector(meep::type(c), v));
     double n[3] = {0,0,0};
     double nabsinv = 1.0/meep::abs(gradient);
     LOOP_OVER_DIRECTIONS(gradient.dim, k)

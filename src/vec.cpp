@@ -932,7 +932,7 @@ grid_volume grid_volume::split(int n, int which) const {
     return split_at_fraction(true, split_point).split(n-num_low,which-num_low);
 }
 
-grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_volume *xv, double *effort) const {
+grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_volume *v, double *effort) const {
   const int grid_points_owned = nowned_min();
   if (n > grid_points_owned)
     abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
@@ -960,9 +960,9 @@ grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_v
     }
     else {
       for (int j = 0; j<Ngv; j++) {
-	if (v_left.intersect_with(xv[j], &vol))
+	if (v_left.intersect_with(v[j], &vol))
 	  total_left_effort += effort[j] * vol.ntot();
-	if (v_right.intersect_with(xv[j], &vol))
+	if (v_right.intersect_with(v[j], &vol))
 	  total_right_effort += effort[j] * vol.ntot();
       }
     }
@@ -982,9 +982,9 @@ grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_v
     return split(n, which);
 
   if (which < num_low)
-    return split_at_fraction(false, split_point).split_by_effort(num_low,which, Ngv,xv,effort);
+    return split_at_fraction(false, split_point).split_by_effort(num_low,which, Ngv,v,effort);
   else
-    return split_at_fraction(true, split_point).split_by_effort(n-num_low,which-num_low, Ngv,xv,effort);
+    return split_at_fraction(true, split_point).split_by_effort(n-num_low,which-num_low, Ngv,v,effort);
 }
 
 grid_volume grid_volume::split_at_fraction(bool want_high, int numer) const {
@@ -1254,9 +1254,9 @@ vec symmetry::transform(const vec &ov, int n) const {
   return symmetry_point + delta;
 }
 
-volume symmetry::transform(const volume &xv, int n) const {
-  return volume(transform(xv.get_min_corner(),n),
-                          transform(xv.get_max_corner(),n));
+volume symmetry::transform(const volume &v, int n) const {
+  return volume(transform(v.get_min_corner(),n),
+                          transform(v.get_max_corner(),n));
 }
 
 component symmetry::transform(component c, int n) const {
@@ -1343,11 +1343,11 @@ volume_list *symmetry::reduce(const volume_list *gl) const {
   for (const volume_list *g = gl; g; g = g->next) {
     int sn;
     for (sn = 0; sn < multiplicity(); ++sn) {
-      volume gS(transform(g->xv, sn));
+      volume gS(transform(g->v, sn));
       int cS = transform(g->c, sn);
       volume_list *gn;
       for (gn = glnew; gn; gn = gn->next)
-	if (gn->c == cS && gn->xv.round_float() == gS.round_float())
+	if (gn->c == cS && gn->v.round_float() == gS.round_float())
 	  break;
       if (gn) { // found a match
 	gn->weight += g->weight * phase_shift(g->c, sn);
@@ -1356,31 +1356,31 @@ volume_list *symmetry::reduce(const volume_list *gl) const {
     }
     if (sn == multiplicity() && g->weight != 0.0) { // no match, add to glnew
       volume_list *gn = 
-	new volume_list(g->xv, g->c, g->weight, glnew);
+	new volume_list(g->v, g->c, g->weight, glnew);
       glnew = gn;
     }
   }
 
-  // reduce xv's redundant with themselves & delete elements with zero weight:
+  // reduce v's redundant with themselves & delete elements with zero weight:
   volume_list *gprev = 0, *g = glnew;
   while (g) {
-    // first, see if g->xv is redundant with itself
+    // first, see if g->v is redundant with itself
     bool halve[5] = {false,false,false,false,false};
     complex<double> weight = g->weight;
     for (int sn = 1; sn < multiplicity(); ++sn)
       if (g->c == transform(g->c, sn) && 
-	  g->xv.round_float() == transform(g->xv, sn).round_float()) {
-	LOOP_OVER_DIRECTIONS(g->xv.dim, d)
+	  g->v.round_float() == transform(g->v, sn).round_float()) {
+	LOOP_OVER_DIRECTIONS(g->v.dim, d)
 	  if (transform(d,sn).flipped) {
 	    halve[d] = true;
 	    break;
 	  }
 	g->weight += weight * phase_shift(g->c, sn);
       }
-    LOOP_OVER_DIRECTIONS(g->xv.dim, d)
+    LOOP_OVER_DIRECTIONS(g->v.dim, d)
       if (halve[d])
-	g->xv.set_direction_max(d, g->xv.in_direction_min(d) +
-				0.5 * g->xv.in_direction(d));
+	g->v.set_direction_max(d, g->v.in_direction_min(d) +
+				0.5 * g->v.in_direction(d));
     
       // now, delete it if it has zero weight
     if (g->weight == 0.0) {

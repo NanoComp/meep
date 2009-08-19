@@ -329,7 +329,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     component cS = S.transform(cgrid, -sn);
     ivec iyee_cS(S.transform_unshifted(iyee_c, -sn));
 
-    volume vS = S.transform(gv.surroundings(), sn);
+    volume gvS = S.transform(gv.surroundings(), sn);
     vec L(gv.dim);
     ivec iL(gv.dim);
 
@@ -340,15 +340,15 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       iL.set_direction(d, iabs(ilattice_vector(dS).in_direction(dS)));
     }
 
-    // figure out range of lattice shifts for which vS intersects wherec:
+    // figure out range of lattice shifts for which gvS intersects wherec:
     ivec min_ishift(gv.dim), max_ishift(gv.dim);
     LOOP_OVER_DIRECTIONS(gv.dim, d) {
       if (boundaries[High][S.transform(d, -sn).d] == Periodic) {
 	min_ishift.set_direction(d, 
-	 int(floor((wherec.in_direction_min(d) - vS.in_direction_max(d))
+	 int(floor((wherec.in_direction_min(d) - gvS.in_direction_max(d))
 		   / L.in_direction(d))));
 	max_ishift.set_direction(d,
-	 int(ceil((wherec.in_direction_max(d) - vS.in_direction_min(d))
+	 int(ceil((wherec.in_direction_max(d) - gvS.in_direction_min(d))
 		  / L.in_direction(d))));
       }
       else {
@@ -372,10 +372,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       for (int i = 0; i < num_chunks; ++i) {
 	if (!chunks[i]->is_mine()) continue;
 	// Chunk looping boundaries:
-	volume xvS(gv.dim);
+	volume vS(gv.dim);
 
 	if (use_symmetry)
-	  xvS = S.transform(chunks[i]->xv, sn);
+	  vS = S.transform(chunks[i]->v, sn);
 	else {
 	  /* If we're not using symmetry, it's because (as in src_vol)
 	     we don't care about correctly counting the points in the
@@ -383,14 +383,14 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	     of the chunk points that intersect where.  Hence, add a little
 	     padding to make sure we don't miss any points due to rounding. */
 	  vec pad(one_ivec(gv.dim) * gv.inva * 1e-3);
-	  xvS = volume(chunks[i]->gv.loc(Centered,0) - pad,
+	  vS = volume(chunks[i]->gv.loc(Centered,0) - pad,
 				 chunks[i]->gv.loc(Centered,
 						  chunks[i]->gv.ntot()-1) +pad);
 	}
 
-	ivec iscS(max(is-shifti, vec2diel_ceil(xvS.get_min_corner(),
+	ivec iscS(max(is-shifti, vec2diel_ceil(vS.get_min_corner(),
 					       gv.a, one_ivec(gv.dim) * 2)));
-	ivec iecS(min(ie-shifti, vec2diel_floor(xvS.get_max_corner(),
+	ivec iecS(min(ie-shifti, vec2diel_floor(vS.get_max_corner(),
 						gv.a, zero_ivec(gv.dim))));
 	if (iscS <= iecS) {
 	  // Determine weights at chunk looping boundaries:
