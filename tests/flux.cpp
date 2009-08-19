@@ -56,7 +56,7 @@ int flux_1d(const double zmax,
             double eps(const vec &)) {
   const double a = 10.0;
 
-  volume v = volone(zmax,a);
+  grid_volume v = volone(zmax,a);
   structure s(v, eps, pml(zmax/6));
 
   fields f(&s);
@@ -68,7 +68,7 @@ int flux_1d(const double zmax,
   const double ttot = min(10.0 + 1e5/zmax,f.last_source_time());
 
   f.step();
-  volume mid = volone(zmax/3,a);
+  grid_volume mid = volone(zmax/3,a);
   mid.set_origin(vec(zmax/3));
   double flux_left=0.0, flux_right=0.0;
   double delta_energy = f.energy_in_box(mid.surroundings());
@@ -95,7 +95,7 @@ int split_1d(double eps(const vec &), int splitting) {
   const double boxwidth = 5.0, timewait = 1.0;
   const double zmax = 15.0, a = 10.0;
 
-  volume v = volone(zmax,a);
+  grid_volume v = volone(zmax,a);
   structure s1(v, eps, pml(2.0));
   structure s(v, eps, pml(2.0), identity(), splitting);
 
@@ -109,7 +109,7 @@ int split_1d(double eps(const vec &), int splitting) {
                                          vec(zmax*.5-boxwidth));
   flux_vol *left  = f.add_flux_plane(vec(zmax*.5-boxwidth),
                                        vec(zmax*.5-boxwidth));
-  volume mid = volone(2*boxwidth,a);
+  grid_volume mid = volone(2*boxwidth,a);
   mid.set_origin(vec(zmax*.5-boxwidth-0.25/a));
 
   const double ttot = f.last_source_time() + timewait;
@@ -128,7 +128,7 @@ int cavity_1d(const double boxwidth, const double timewait,
   const double zmax = 15.0;
   const double a = 10.0;
 
-  volume v = volone(zmax,a);
+  grid_volume v = volone(zmax,a);
   structure s(v, eps, pml(2.0));
 
   fields f(&s);
@@ -138,7 +138,7 @@ int cavity_1d(const double boxwidth, const double timewait,
                                        vec(zmax*.5-boxwidth));
   flux_vol *right = f.add_flux_plane(vec(zmax*.5+boxwidth),
                                        vec(zmax*.5+boxwidth));
-  volume mid = volone(2*boxwidth,a);
+  grid_volume mid = volone(2*boxwidth,a);
   mid.set_origin(vec(zmax*.5-boxwidth-0.25/a));
 
   while (f.time() < f.last_source_time()) f.step();
@@ -169,7 +169,7 @@ int flux_2d(const double xmax, const double ymax,
 
   master_printf("\nFlux_2d(%g,%g) test...\n", xmax, ymax);
 
-  volume v = voltwo(xmax,ymax,a);
+  grid_volume v = voltwo(xmax,ymax,a);
   structure s(v, eps, pml(0.5));
 
   fields f(&s);
@@ -241,7 +241,7 @@ int flux_cyl(const double rmax, const double zmax,
 
   master_printf("\nFlux_cyl(%g,%g) test...\n", rmax, zmax);
 
-  volume v = volcyl(rmax,zmax,a);
+  grid_volume v = volcyl(rmax,zmax,a);
   structure s(v, eps, pml(0.5));
 
   fields f(&s, m);

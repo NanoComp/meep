@@ -184,7 +184,7 @@ src_vol *src_vol::add_to(src_vol *others) {
   if (others) {
     if (*this == *others) {
       if (npts != others->npts)
-        abort("Cannot add volume sources with different number of points\n");
+        abort("Cannot add grid_volume sources with different number of points\n");
       /* Compare all of the indices...if this ever becomes too slow,
 	 we can just compare the first and last indices. */
       for (int j=0; j<npts; j++) {
@@ -253,10 +253,10 @@ struct src_vol_chunkloop_data {
 
 /* Adding source volumes can be treated as a kind of "integration"
    problem, since we need to loop over all the chunks that intersect
-   the source volume, with appropriate interpolation weights at the
+   the source grid_volume, with appropriate interpolation weights at the
    boundaries so that the integral of the current is fixed regardless
    of resolution.  Unlike most uses of fields::loop_in_chunks, however, we
-   set use_symmetry=false: we only find the intersection of the volume
+   set use_symmetry=false: we only find the intersection of the grid_volume
    with the untransformed chunks (since the transformed versions are
    implicit). */
 static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
@@ -270,7 +270,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   src_vol_chunkloop_data *data = (src_vol_chunkloop_data *) data_;
   
   (void) S; (void) sn; // these should be the identity
-  (void) dV0; (void) dV1; // volume weighting is included in data->amp
+  (void) dV0; (void) dV1; // grid_volume weighting is included in data->amp
   (void) ichunk;
 
   int npts = 1;
@@ -316,7 +316,7 @@ void fields::add_volume_source(component c, const src_time &src,
 			       complex<double> amp) {
   geometric_volume where(where_); // make a copy to adjust size if necessary
   if (v.dim != where.dim)
-    abort("incorrect source volume dimensionality in add_volume_source");
+    abort("incorrect source grid_volume dimensionality in add_volume_source");
   LOOP_OVER_DIRECTIONS(v.dim, d) {
     double w = user_volume.boundary_location(High, d)
       - user_volume.boundary_location(Low, d);

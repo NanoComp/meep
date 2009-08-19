@@ -110,7 +110,7 @@ void bragg_transmission_analytic(double freq_min, double freq_max, int nfreq,
 
 void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
 			double *T, double *R, bool use_hdf5) {
-  const volume v = volone(zsize, a);
+  const grid_volume v = volone(zsize, a);
 
   structure s(v, eps_bragg, pml(0.5));
   fields f(&s);

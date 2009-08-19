@@ -62,7 +62,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   double a = 10.0;
   double ttot = 30.0;
   
-  volume v = volcyl(1.5,0.8,a);
+  grid_volume v = volcyl(1.5,0.8,a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -80,7 +80,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
     f1.use_bloch(0.0);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
-    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 29.0;
@@ -113,7 +113,7 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
   double a = 10.0;
   double ttot = 30.0;
   
-  volume v = volcyl(1.5,0.8,a);
+  grid_volume v = volcyl(1.5,0.8,a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -129,7 +129,7 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
     fields f1(&s1, m);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
-    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 29.0;
@@ -161,7 +161,7 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
 int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
   double a = 10.0;
   double ttot = 3.0;  
-  volume v = volcyl(1.5,0.8,a);
+  grid_volume v = volcyl(1.5,0.8,a);
   structure s(v, eps);
   s.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
@@ -207,7 +207,7 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 8;
   double ttot = 25.0;
   
-  volume v = volcyl(3.5,10.0,a);
+  grid_volume v = volcyl(3.5,10.0,a);
   structure s1(v, eps, pml(2.0));
   structure s(v, eps, pml(2.0), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -223,7 +223,7 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
     fields f1(&s1, m);
     f1.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
-    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume", 3e-14)) return 0;
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume", 3e-14)) return 0;
     master_printf("Chunks are %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     double total_energy_check_time = 10.0;
@@ -269,7 +269,7 @@ complex<double> checkers(const vec &v) {
 int test_pattern(double eps(const vec &), int splitting,
                  const char *mydirname) {
   double a = 10.0;
-  volume v = volcyl(1.5,0.8,a);
+  grid_volume v = volcyl(1.5,0.8,a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -283,7 +283,7 @@ int test_pattern(double eps(const vec &), int splitting,
     f.use_bloch(0.0);
     fields f1(&s1, m);
     f1.use_bloch(0.0);
-    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "volume")) return 0;
+    if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("First chunk is %g by %g\n",
                   f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
     f1.initialize_field(Hp, checkers);

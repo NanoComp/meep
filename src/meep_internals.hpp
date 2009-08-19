@@ -46,7 +46,7 @@ inline int rmin_bulk(int m) {
 
 class polarizability {
  public:
-  volume v;
+  grid_volume v;
   polarizability(const structure_chunk *, material_function &sig,
                  field_type ft, double om, double ga, double sigscale,
                  bool mine = true);
@@ -141,13 +141,13 @@ symmetry r_to_minus_r_symmetry(int m);
 
 void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
 	       int s1, int s2, // strides for g1/g2 shift
-	       const volume &v, double dtdx,
+	       const grid_volume &v, double dtdx,
 	       direction dsig, const double *sig, const double *siginv,
 	       realnum *fu, direction dsigu, const double *sigu, const double *siginvu,
 	       double dt, const realnum *cnd, const realnum *cndinv,
 	       realnum *fcnd);
 
-void step_update_EDHB(realnum *f, component fc, const volume &v,
+void step_update_EDHB(realnum *f, component fc, const grid_volume &v,
 		      const realnum *g, const realnum *g1, const realnum *g2,
 		      const realnum *u, const realnum *u1, const realnum *u2,
 		      int s, int s1, int s2,
@@ -155,7 +155,7 @@ void step_update_EDHB(realnum *f, component fc, const volume &v,
 		      realnum *fw, direction dsigw, const double *sigw);
 
 void step_beta(realnum *f, component c, const realnum *g,
-	       const volume &v, double betadt,
+	       const grid_volume &v, double betadt,
 	       direction dsig, const double *siginv,
 	       realnum *fu, direction dsigu, const double *siginvu,
 	       const realnum *cndinv, realnum *fcnd);
@@ -164,13 +164,13 @@ void step_beta(realnum *f, component c, const realnum *g,
 
 void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum *g2,
 	       int s1, int s2, // strides for g1/g2 shift
-	       const volume &v, double dtdx,
+	       const grid_volume &v, double dtdx,
 	       direction dsig, const double *sig, const double *siginv,
 	       realnum *fu, direction dsigu, const double *sigu, const double *siginvu,
 	       double dt, const realnum *cnd, const realnum *cndinv,
                realnum *fcnd);
 
-void step_update_EDHB_stride1(realnum *f, component fc, const volume &v,
+void step_update_EDHB_stride1(realnum *f, component fc, const grid_volume &v,
 		      const realnum *g, const realnum *g1, const realnum *g2,
 		      const realnum *u, const realnum *u1, const realnum *u2,
 		      int s, int s1, int s2,
@@ -178,7 +178,7 @@ void step_update_EDHB_stride1(realnum *f, component fc, const volume &v,
 		      realnum *fw, direction dsigw, const double *sigw);
 
 void step_beta_stride1(realnum *f, component c, const realnum *g,
-		       const volume &v, double betadt,
+		       const grid_volume &v, double betadt,
 		       direction dsig, const double *siginv,
 		       realnum *fu, direction dsigu, const double *siginvu,
 		       const realnum *cndinv, realnum *fcnd);

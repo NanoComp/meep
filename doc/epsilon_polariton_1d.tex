@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const double ttot =2000.0;
-  const volume v = volone(zsize, a);
+  const grid_volume v = volone(zsize, a);
   const symmetry S = mirror(Z, v);
   structure s(v, eps, pml(pml_thickness), S);
   const char *dirname = make_output_directory(__FILE__);

@@ -65,7 +65,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   double a = 10.0;
   double ttot = 170.0;
   
-  volume v = volone(6.0,a);
+  grid_volume v = volone(6.0,a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -80,7 +80,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   f1.use_bloch(0.0);
   f1.add_point_source(Hy, 0.7, 2.5, 0.0, 4.0, vec(0.5), 1.0);
   f1.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401), 1.0);
-  if (!compare(f1.count_volume(Ex), f.count_volume(Ex), "volume")) return 0;
+  if (!compare(f1.count_volume(Ex), f.count_volume(Ex), "grid_volume")) return 0;
   double total_energy_check_time = 29.0;
   while (f.time() < ttot) {
     f.step();
@@ -118,7 +118,7 @@ complex<double> checkers(const vec &v) {
 int test_pattern(double eps(const vec &), int splitting,
                  const char *mydirname) {
   double a = 10.0;
-  volume v = volone(6.0,a);
+  grid_volume v = volone(6.0,a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -129,7 +129,7 @@ int test_pattern(double eps(const vec &), int splitting,
   f.use_bloch(0.0);
   fields f1(&s1);
   f1.use_bloch(0.0);
-  if (!compare(f1.count_volume(Ex), f.count_volume(Ex), "volume")) return 0;
+  if (!compare(f1.count_volume(Ex), f.count_volume(Ex), "grid_volume")) return 0;
   f1.initialize_field(Hy, checkers);
   f.initialize_field(Hy, checkers);
 

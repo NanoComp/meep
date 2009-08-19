@@ -47,7 +47,7 @@ void compare(double b, double a, const char *n) {
 
 static double dpml = 1.0;
 
-double using_pml_ez(const volume &v, double eps(const vec &)) {
+double using_pml_ez(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps, pml(dpml));
   fields f(&s);
@@ -59,7 +59,7 @@ double using_pml_ez(const volume &v, double eps(const vec &)) {
   return real(p.get_component(Ez));
 }
 
-double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
+double x_periodic_y_pml(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps, pml(dpml, Y));
   fields f(&s);
@@ -72,7 +72,7 @@ double x_periodic_y_pml(const volume &v, double eps(const vec &)) {
   return real(p.get_component(Ez));
 }
 
-double x_periodic(const volume &v, double eps(const vec &)) {
+double x_periodic(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps);
   fields f(&s);
@@ -85,7 +85,7 @@ double x_periodic(const volume &v, double eps(const vec &)) {
   return real(p.get_component(Ez));
 }
 
-double periodic_ez(const volume &v, double eps(const vec &)) {
+double periodic_ez(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 30.0;
   structure s(v, eps);
   fields f(&s);
@@ -105,7 +105,7 @@ double periodic_ez(const volume &v, double eps(const vec &)) {
   return real(p.get_component(Ez));
 }
 
-double metallic_ez(const volume &v, double eps(const vec &)) {
+double metallic_ez(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
   fields f(&s);
@@ -119,7 +119,7 @@ double metallic_ez(const volume &v, double eps(const vec &)) {
 
 double sigma(const vec &) { return 7.63; }
 
-double polariton_ex(const volume &v, double eps(const vec &)) {
+double polariton_ex(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
   s.add_polarizability(sigma, 0.3, 0.1);
@@ -132,7 +132,7 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   return real(p.get_component(Ex));
 }
 
-double polariton_energy(const volume &v, double eps(const vec &)) {
+double polariton_energy(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(v, eps);
   s.add_polarizability(sigma, 0.3, 0.1);

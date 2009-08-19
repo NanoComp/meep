@@ -153,10 +153,10 @@ public:
   
   virtual ~material_function() {}
   
-  /* Specify a restricted volume: all subsequent eps/sigma/etc
+  /* Specify a restricted grid_volume: all subsequent eps/sigma/etc
      calls will be for points inside gv, until the next set_volume. */
   virtual void set_volume(const geometric_volume &gv) {(void)gv;}
-  virtual void unset_volume(void) {} // unrestrict the volume
+  virtual void unset_volume(void) {} // unrestrict the grid_volume
   
   virtual double chi1p1(field_type ft, const vec &r) { (void)ft; (void)r; return 1.0; }
 
@@ -175,7 +175,7 @@ public:
   // fallback routine based on spherical quadrature
   vec normal_vector(field_type ft, const geometric_volume &gv);
 
-  /* Return c'th row of effective 1/(1+chi1) tensor in the given volume gv
+  /* Return c'th row of effective 1/(1+chi1) tensor in the given grid_volume gv
      ... virtual so that e.g. libctl can override with more-efficient
      libctlgeom-based routines.  maxeval == 0 if no averaging desired. */
   virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
@@ -241,14 +241,14 @@ class structure_chunk {
   bool condinv_stale; // true if condinv needs to be recomputed
   double *sig[5], *siginv[5]; // conductivity array for uPML
   int sigsize[5]; // conductivity array size
-  volume v;  // integer volume that could be bigger than non-overlapping gv below
+  grid_volume v;  // integer grid_volume that could be bigger than non-overlapping gv below
   geometric_volume gv;
   polarizability *pb;
 
   int refcount; // reference count of objects using this structure_chunk
 
   ~structure_chunk();
-  structure_chunk(const volume &v,
+  structure_chunk(const grid_volume &v,
             const geometric_volume &vol_limit, double Courant, int proc_num);
   structure_chunk(const structure_chunk *);
   void set_chi1inv(component c, material_function &eps,
@@ -326,7 +326,7 @@ public:
 
   void apply(structure *s) const;
   void apply(const structure *s, structure_chunk *sc) const;
-  bool check_ok(const volume &v) const;
+  bool check_ok(const grid_volume &v) const;
 
 private:
   boundary_region_kind kind;
@@ -348,25 +348,25 @@ class structure {
  public:
   structure_chunk **chunks;
   int num_chunks;
-  volume v, user_volume;
+  grid_volume v, user_volume;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   geometric_volume gv;
   symmetry S;
   const char *outdir;
-  volume *effort_volumes;
+  grid_volume *effort_volumes;
   double *effort;
   int num_effort_volumes;
 
   ~structure();
   structure();
-  structure(const volume &v, material_function &eps,
+  structure(const grid_volume &v, material_function &eps,
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
 	    int num_chunks = 0, double Courant = 0.5,
 	    bool use_anisotropic_averaging=false,
 	    double tol=DEFAULT_SUBPIXEL_TOL,
 	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  structure(const volume &v, double eps(const vec &), 
+  structure(const grid_volume &v, double eps(const vec &), 
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
 	    int num_chunks = 0, double Courant = 0.5,
@@ -443,9 +443,9 @@ class structure {
 
  private:
   void use_pml(direction d, boundary_side b, double dx);
-  void add_to_effort_volumes(const volume &new_effort_volume, 
+  void add_to_effort_volumes(const grid_volume &new_effort_volume, 
 			     double extra_effort);
-  void choose_chunkdivision(const volume &v, int num_chunks,
+  void choose_chunkdivision(const grid_volume &v, int num_chunks,
 			    const boundary_region &br, const symmetry &s);
   void check_chunks();
   void changing_chunks();
@@ -772,7 +772,7 @@ class fields_chunk {
 
   polarization *pols[NUM_FIELD_TYPES], *olpols[NUM_FIELD_TYPES];
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
-  volume v;
+  grid_volume v;
   geometric_volume gv;
   double m, rshift;
   double beta;
@@ -900,7 +900,7 @@ typedef double (*field_rfunction)(const complex<double> *fields,
 				   const vec &loc,
 				   void *integrand_data_);
 
-field_rfunction derived_component_func(derived_component c, const volume &v,
+field_rfunction derived_component_func(derived_component c, const grid_volume &v,
 				       int &nfields, component cs[12]);
 
 class fields {
@@ -923,7 +923,7 @@ class fields {
   }
 
   double a, dt; // The resolution a and timestep dt=Courant/a
-  volume v, user_volume;
+  grid_volume v, user_volume;
   geometric_volume gv;
   double m;
   double beta;

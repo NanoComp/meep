@@ -96,7 +96,7 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = volcyl(1.0, 1.0, a);
+  const grid_volume v = volcyl(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
   structure s(v, eps, no_pml(), S);
@@ -138,7 +138,7 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 3.0;
 
-  const volume v = volcyl(1.0, 1.0, a);
+  const grid_volume v = volcyl(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
   structure s(v, eps, no_pml(), S);
@@ -182,7 +182,7 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 3.0;
 
-  const volume v = volone(1.0, a);
+  const grid_volume v = volone(1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Z,v);
   structure s(v, eps, no_pml(), S);
@@ -222,8 +222,8 @@ int test_origin_shift(void) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
-  volume vcentered = v;
+  const grid_volume v = voltwo(1.0, 1.0, a);
+  grid_volume vcentered = v;
   vcentered.shift_origin(-v.center());
   structure s(vcentered, one);
   structure s1(v, one);
@@ -251,7 +251,7 @@ int test_metal_xmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
+  const grid_volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(X,v);
   structure s(v, eps, no_pml(), S);
@@ -292,7 +292,7 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = vol3d(1.0, 1.0, 1.0, a);
+  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = mirror(X,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
@@ -333,7 +333,7 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = vol3d(1.1, 0.6, 1.0, a);
+  const grid_volume v = vol3d(1.1, 0.6, 1.0, a);
   const symmetry S = mirror(Z,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
@@ -374,7 +374,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = vol3d(1.1, 0.6, 1.0, a);
+  const grid_volume v = vol3d(1.1, 0.6, 1.0, a);
   const symmetry S = -mirror(Z,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
@@ -413,7 +413,7 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = vol3d(1.0, 1.0, 1.0, a);
+  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = rotate4(Z,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
@@ -454,7 +454,7 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = vol3d(1.0, 1.0, 1.0, a);
+  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = rotate4(Z,v) + mirror(Z,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
@@ -493,7 +493,7 @@ int test_3D_metal_3mirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const volume v = vol3d(1.0, 1.0, 1.0, a);
+  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
   const symmetry S = mirror(Z,v) - mirror(Y,v) - mirror(X,v);
   structure s(v, eps, no_pml(), S);
   structure s1(v, eps);
@@ -532,7 +532,7 @@ int test_metal_ymirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
+  const grid_volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Y,v);
   structure s(v, eps, no_pml(), S);
@@ -573,7 +573,7 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
+  const grid_volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = mirror(Y,v);
   structure s(v, eps, no_pml(), S);
@@ -621,7 +621,7 @@ int test_metal_rot2y(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 5.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
+  const grid_volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = rotate2(Y,v);
   structure s(v, eps, no_pml(), S);
@@ -666,7 +666,7 @@ int exact_metal_rot2y(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 5.0;
 
-  const volume v = voltwo(1.0, 1.5, a);
+  const grid_volume v = voltwo(1.0, 1.5, a);
   the_center = v.center();
   const symmetry S = rotate2(Y,v);
   structure s(v, eps, no_pml(), S);
@@ -707,7 +707,7 @@ int pml_twomirrors(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 10.0;
 
-  const volume v = voltwo(2.0, 2.0, a);
+  const grid_volume v = voltwo(2.0, 2.0, a);
   the_center = v.center();
   const symmetry S = mirror(X,v) + mirror(Y,v);
 
@@ -752,7 +752,7 @@ int exact_metal_rot4z(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
+  const grid_volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = rotate4(Z,v);
 
@@ -794,7 +794,7 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const volume v = voltwo(1.0, 1.0, a);
+  const grid_volume v = voltwo(1.0, 1.0, a);
   the_center = v.center();
   const symmetry S = rotate4(Z,v);
 
@@ -838,7 +838,7 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 30.0;
 
-  const volume v = voltwo(3.0, 3.0, a);
+  const grid_volume v = voltwo(3.0, 3.0, a);
   the_center = v.center();
   const symmetry S = rotate2(X,v);
 
@@ -878,7 +878,7 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
 
 double sigma(const vec &) { return 7.63; }
 
-double polariton_ex(const volume &v, double eps(const vec &)) {
+double polariton_ex(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   master_printf("Testing polariton in %s...\n", dimension_name(v.dim));
   the_center = v.center();
@@ -906,7 +906,7 @@ double polariton_ex(const volume &v, double eps(const vec &)) {
   return 1;
 }
 
-double nonlinear_ex(const volume &v, double eps(const vec &)) {
+double nonlinear_ex(const grid_volume &v, double eps(const vec &)) {
   const double ttot = 10.0;
   master_printf("Testing nonlinear in %s...\n", dimension_name(v.dim));
   the_center = v.center();

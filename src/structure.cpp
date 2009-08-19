@@ -39,7 +39,7 @@ structure::structure()
 
 typedef structure_chunk *structure_chunk_ptr;
 
-structure::structure(const volume &thev, material_function &eps,
+structure::structure(const grid_volume &thev, material_function &eps,
 		     const boundary_region &br,
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
@@ -47,12 +47,12 @@ structure::structure(const volume &thev, material_function &eps,
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
-  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this volume");
+  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this grid_volume");
   choose_chunkdivision(thev, num, br, s);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
-structure::structure(const volume &thev, double eps(const vec &),
+structure::structure(const grid_volume &thev, double eps(const vec &),
 		     const boundary_region &br,
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
@@ -60,13 +60,13 @@ structure::structure(const volume &thev, double eps(const vec &),
   Courant(Courant), gv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
-  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this volume");
+  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this grid_volume");
   choose_chunkdivision(thev, num, br, s);
   simple_material_function epsilon(eps);
   set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
 }
 
-void structure::choose_chunkdivision(const volume &thev, 
+void structure::choose_chunkdivision(const grid_volume &thev, 
 				     int desired_num_chunks, 
 				     const boundary_region &br,
 				     const symmetry &s) {
@@ -81,7 +81,7 @@ void structure::choose_chunkdivision(const volume &thev,
   a = v.a;
   dt = Courant/a;
 
-  // First, reduce overall volume v by symmetries:
+  // First, reduce overall grid_volume v by symmetries:
   if (S.multiplicity() > 1) {
     bool break_this[3];
     for (int dd=0;dd<3;dd++) {
@@ -107,7 +107,7 @@ void structure::choose_chunkdivision(const volume &thev,
 	v = v.halve((direction)d);
       }
     }
-    // Before padding, find the corresponding geometric volume.
+    // Before padding, find the corresponding geometric grid_volume.
     gv = v.surroundings();
     // Pad the little cell in any direction that we've shrunk:
     for (int d=0;d<3;d++)
@@ -116,7 +116,7 @@ void structure::choose_chunkdivision(const volume &thev,
 
   // initialize effort volumes
   num_effort_volumes = 1;
-  effort_volumes = new volume[num_effort_volumes];
+  effort_volumes = new grid_volume[num_effort_volumes];
   effort_volumes[0] = v;
   effort = new double[num_effort_volumes];
   effort[0] = 1.0;
@@ -129,10 +129,10 @@ void structure::choose_chunkdivision(const volume &thev,
   chunks = new structure_chunk_ptr[desired_num_chunks * num_effort_volumes];
   for (int i = 0; i < desired_num_chunks; i++) {
     const int proc = i * count_processors() / desired_num_chunks;
-    volume vi = v.split_by_effort(desired_num_chunks, i,
+    grid_volume vi = v.split_by_effort(desired_num_chunks, i,
                                   num_effort_volumes, effort_volumes, effort);
     for (int j = 0; j < num_effort_volumes; j++) {
-      volume vc;
+      grid_volume vc;
       if (vi.intersect_with(effort_volumes[j], &vc)) {
 	chunks[num_chunks] = new structure_chunk(vc, gv, Courant, proc);
 	br.apply(this, chunks[num_chunks++]);
@@ -173,7 +173,7 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     next->apply(s, sc);
 }
 
-bool boundary_region::check_ok(const volume &v) const {
+bool boundary_region::check_ok(const grid_volume &v) const {
   double thick[5][2];
   FOR_DIRECTIONS(d) FOR_SIDES(s) thick[d][s] = 0;
   for (const boundary_region *r = this; r; r = r->next) {
@@ -209,9 +209,9 @@ boundary_region pml(double thickness) {
 }
 
 // First check that the chunk volumes do not intersect and that they add
-// up to the total volume
+// up to the total grid_volume
 void structure::check_chunks() {
-  volume vol_intersection;
+  grid_volume vol_intersection;
   for (int i=0; i<num_chunks; i++)
     for (int j=i+1; j<num_chunks; j++)
       if (chunks[i]->v.intersect_with(chunks[j]->v, &vol_intersection))
@@ -230,16 +230,16 @@ void structure::check_chunks() {
     abort("v_grid_points = %d, sum(chunks) = %d\n", v_grid_points, sum);
 }
 
-void structure::add_to_effort_volumes(const volume &new_effort_volume,
+void structure::add_to_effort_volumes(const grid_volume &new_effort_volume,
                                 double extra_effort) {
-  volume *temp_volumes =
-    new volume[(2*number_of_directions(v.dim)+1)*num_effort_volumes]; 
+  grid_volume *temp_volumes =
+    new grid_volume[(2*number_of_directions(v.dim)+1)*num_effort_volumes]; 
   double *temp_effort =
     new double[(2*number_of_directions(v.dim)+1)*num_effort_volumes];
   // Intersect previous mat_volumes with this new_effort_volume
   int counter = 0;
   for (int j=0; j<num_effort_volumes; j++) {
-    volume intersection, others[6];
+    grid_volume intersection, others[6];
     int num_others;
     if (effort_volumes[j].intersect_with(new_effort_volume, &intersection,
                                          others, &num_others)) {
@@ -284,7 +284,7 @@ structure::structure(const structure *s) : gv(s->gv) {
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new structure_chunk(s->chunks[i]);
   num_effort_volumes = s->num_effort_volumes;
-  effort_volumes = new volume[num_effort_volumes];
+  effort_volumes = new grid_volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
   for (int i=0;i<num_effort_volumes;i++) {
     effort_volumes[i] = s->effort_volumes[i];
@@ -306,7 +306,7 @@ structure::structure(const structure &s) : gv(s.gv) {
     chunks[i] = new structure_chunk(s.chunks[i]);
   }
   num_effort_volumes = s.num_effort_volumes;
-  effort_volumes = new volume[num_effort_volumes];
+  effort_volumes = new grid_volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
   for (int i=0;i<num_effort_volumes;i++) {
     effort_volumes[i] = s.effort_volumes[i];
@@ -443,7 +443,7 @@ void structure::set_chi2(double eps(const vec &)) {
 
 void structure::use_pml(direction d, boundary_side b, double dx) {
   if (dx <= 0.0) return;
-  volume pml_volume = v;
+  grid_volume pml_volume = v;
   pml_volume.set_num_direction(d, int(dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if (b == High)
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d)
@@ -785,7 +785,7 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
   condinv_stale = true;
 }
 
-structure_chunk::structure_chunk(const volume &thev, 
+structure_chunk::structure_chunk(const grid_volume &thev, 
 				 const geometric_volume &vol_limit, 
 				 double Courant, int pr)
   : Courant(Courant), gv(thev.surroundings() & vol_limit) {

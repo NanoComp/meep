@@ -23,7 +23,7 @@
 #include "meep_internals.hpp"
 
 /* This file contains a generic function for looping over all of the
-   points in all of the chunks that intersect some given volume.  This
+   points in all of the chunks that intersect some given grid_volume.  This
    is used for everything from HDF5 output to applying source volumes to
    integrating energy and flux.  It's fairly tricky because of the
    parallelization, arbitrary chunk divisions, symmetries, and periodic
@@ -35,7 +35,7 @@
    computation, and so we also perform the additional task of calculating
    the integration weights for each point -- mainly, this involves weighting
    the boundary points appropriately so that the sum approximates (via
-   linear interpolation) a continuous integral over the supplied volume. */
+   linear interpolation) a continuous integral over the supplied grid_volume. */
 
 /****************************************************************************
 
@@ -210,7 +210,7 @@ static ivec vec2diel_ceil(const vec &v, double a, const ivec &equal_shift) {
 static inline int iabs(int i) { return (i < 0 ? -i : i); }
 
 /* Generic function for computing loops within the chunks, often
-   integral-like things, over a volume WHERE.  The job of this
+   integral-like things, over a grid_volume WHERE.  The job of this
    function is to call CHUNKLOOP() for each chunk that intersects
    WHERE, passing it the chunk, the range of integer coordinates to
    loop over, the integration weights for the boundary points, and the
@@ -219,12 +219,12 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    we apply the symmetry first to the chunk, *then* the shift.)
 
    We also pass CHUNKLOOP() dV0 and dV1, such that the integration
-   "volume" dV is dV0 + dV1 * iloopR, where iloopR is the loop
+   "grid_volume" dV is dV0 + dV1 * iloopR, where iloopR is the loop
    variable (starting from 0 at the starting integer coord and
    incrementing by 1) corresponding to the direction R.  Note that, in
    the LOOP_OVER_IVECS macro, iloopR corresponds to the loop variable
    loop_i2 in Dcyl (cylindrical coordinates).  In other coordinates,
-   dV1 is 0.  Note also that by "volume" dV we mean the integration
+   dV1 is 0.  Note also that by "grid_volume" dV we mean the integration
    unit corresponding to the dimensionality of WHERE (e.g. an area if
    WHERE is 2d, etc.)
 
@@ -245,7 +245,7 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    operations.  If use_symmetry is false, then we do *not* loop over
    all possible symmetry transformations of the chunks to see if they
    intersect WHERE; we only use chunks that, untransformed, already
-   intersect the volume.  If SNAP_EMPTY_DIMS is true, then for empty
+   intersect the grid_volume.  If SNAP_EMPTY_DIMS is true, then for empty
    (min = max) dimensions of WHERE, instead of interpolating, we
    "snap" them to the nearest grid point.  */
 
@@ -379,7 +379,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	else {
 	  /* If we're not using symmetry, it's because (as in src_vol)
 	     we don't care about correctly counting the points in the
-	     volume.  Rather, we just want to make sure to get *all*
+	     grid_volume.  Rather, we just want to make sure to get *all*
 	     of the chunk points that intersect where.  Hence, add a little
 	     padding to make sure we don't miss any points due to rounding. */
 	  vec pad(one_ivec(v.dim) * v.inva * 1e-3);

@@ -262,7 +262,7 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
 
 /************************************************************************/
 
-/* Note that computation of modal volume by this definition is
+/* Note that computation of modal grid_volume by this definition is
    somewhat problematic computationally, because we need to compute
    max|D*E|, which requires averaging discontinuous functions.  Hence,
    except for the special case of 2d TM polarization, the computed
@@ -297,7 +297,7 @@ double fields::electric_energy_max_in_box(const geometric_volume &where) {
   return max_abs(6, cs, dot3_max_integrand, 0, where) * 0.5;
 }
 
-/* "modal" volume according to definition in:
+/* "modal" grid_volume according to definition in:
       E. M. Purcell, Phys. Rev. B 69, 681 (1946).
     (based on spontaneous emission enhancement). */
 double fields::modal_volume_in_box(const geometric_volume &where) {

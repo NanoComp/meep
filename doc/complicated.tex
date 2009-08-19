@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const double amicron = 10; // a micron is this many grid points.
-  const volume vol = voltwo(2*x_center, 2*y_center, amicron);
+  const grid_volume vol = voltwo(2*x_center, 2*y_center, amicron);
   const symmetry S = mirror(Y, vol) + rotate2(Y, vol);
   structure s(vol, eps, pml(pml_thickness), S);
   const char *dirname = make_output_directory(__FILE__);

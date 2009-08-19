@@ -73,7 +73,7 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 17.0;
 
-  volume v = voltwo(3.0, 2.0, a);
+  grid_volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -112,7 +112,7 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   double a = 10.0;
   double ttot = 17.0;
 
-  volume v = voltwo(3.0, 2.0, a);
+  grid_volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -153,7 +153,7 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
   double a = 10.0;
   double ttot = 17.0;
 
-  volume v = voltwo(3.0, 2.0, a);
+  grid_volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -191,7 +191,7 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
 int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  volume v = voltwo(3.0, 2.0, a);
+  grid_volume v = voltwo(3.0, 2.0, a);
   structure s1(v, eps, pml(1.0, X) + pml(1.0, Y, High));
   structure s(v, eps, pml(1.0, X) + pml(1.0, Y, High), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -238,7 +238,7 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
 int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  volume v = voltwo(3.0, 3.0, a);
+  grid_volume v = voltwo(3.0, 3.0, a);
   structure s1(v, eps, pml(1.0));
   structure s(v, eps, pml(1.0), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -283,7 +283,7 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
 int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  volume v = voltwo(3.0, 3.0, a);
+  grid_volume v = voltwo(3.0, 3.0, a);
   structure s1(v, eps, pml(1.0));
   structure s(v, eps, pml(1.0), identity(), splitting);
   s.set_output_directory(mydirname);

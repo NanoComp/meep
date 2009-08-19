@@ -95,7 +95,7 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 17.0;
 
-  volume v = vol3d(1.5, 0.5, 1.0, a);
+  grid_volume v = vol3d(1.5, 0.5, 1.0, a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -132,7 +132,7 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   double a = 10.0;
   double ttot = 17.0;
 
-  volume v = vol3d(1.5, 0.5, 1.0, a);
+  grid_volume v = vol3d(1.5, 0.5, 1.0, a);
   structure s1(v, eps);
   structure s(v, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
@@ -170,7 +170,7 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
 int test_pml(double eps(const vec &), const char *mydirname) {
   double a = 10.0;
 
-  volume v = vol3d(1.5, 1.0, 1.2, a);
+  grid_volume v = vol3d(1.5, 1.0, 1.2, a);
   structure s(v, eps, pml(0.401));
   s.set_output_directory(mydirname);
 
@@ -203,7 +203,7 @@ int test_pml(double eps(const vec &), const char *mydirname) {
 int test_pml_splitting(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  volume v = vol3d(1.5, 1.0, 1.2, a);
+  grid_volume v = vol3d(1.5, 1.0, 1.2, a);
   structure s1(v, eps, pml(0.3));
   structure s(v, eps, pml(0.3), identity(), splitting);
   s.set_output_directory(mydirname);

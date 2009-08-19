@@ -6,7 +6,7 @@ const double diameter = 0.8;
 const double r = diameter*0.5;
 
 double holey_2d(const vec &xx) {
-  const volume v = vol2d(2.0,1.0,100.0);
+  const grid_volume v = vol2d(2.0,1.0,100.0);
   vec p = xx - v.center();
   while (p.x() <-0.5) p += vec(1.0,0);
   while (p.x() > 0.5) p -= vec(1.0,0);
@@ -38,7 +38,7 @@ double get_the_freq(monitor_point *p, component c) {
 }
 
 double freq_at_resolution(double e(const vec &), double a, component c) {
-  const volume v = vol2d(2.0,1.0,a);
+  const grid_volume v = vol2d(2.0,1.0,a);
   structure s(v, e);
   s.set_epsilon(e);
 

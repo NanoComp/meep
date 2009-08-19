@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   deal_with_ctrl_c();
   const char *dirname = make_output_directory(__FILE__);
-  volume v = vol2d(xmax, ymax, a);
+  grid_volume v = vol2d(xmax, ymax, a);
   const symmetry S = mirror(X,v) + mirror(Y,v);
   structure s(v, eps, pml(pml_thickness, X), S);
   s.set_output_directory(dirname);

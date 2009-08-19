@@ -8,7 +8,7 @@
 /* These macros get into the guts of the LOOP_OVER_VOL loops to
    efficiently construct the index k into a PML sigma array.
    Basically, k needs to increment by 2 for each increment of one of
-   LOOP's for-loops, starting at the appropriate corner of the volume,
+   LOOP's for-loops, starting at the appropriate corner of the grid_volume,
    and these macros define the relevant strides etc. for each loop.
    KSTRIDE_DEF defines the relevant strides etc. and goes outside the
    LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
@@ -59,7 +59,7 @@ namespace meep {
 */
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
-	       const volume &v, double dtdx,
+	       const grid_volume &v, double dtdx,
 	       direction dsig, const DPR sig, const DPR siginv,
 	       RPR fu, direction dsigu, const DPR sigu, const DPR siginvu,
 	       double dt, 
@@ -236,7 +236,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
    time dependence, which gives an additional i \beta \hat{z} \times
    cross-product in the curl equations. */
 void step_beta(RPR f, component c, const RPR g,
-	       const volume &v, double betadt,
+	       const grid_volume &v, double betadt,
 	       direction dsig, const DPR siginv,
 	       RPR fu, direction dsigu, const DPR siginvu,
 	       const RPR cndinv, RPR fcnd)
@@ -346,7 +346,7 @@ inline double calc_nonlinear_u(const double Dsqr,
 
 */
 
-void step_update_EDHB(RPR f, component fc, const volume &v, 
+void step_update_EDHB(RPR f, component fc, const grid_volume &v, 
 		      const RPR g, const RPR g1, const RPR g2,
 		      const RPR u, const RPR u1, const RPR u2,
 		      int s, int s1, int s2,

@@ -49,7 +49,7 @@ void polarization::use_real_fields() {
 }
 
 void polarization::zero_fields() {
-  const volume &v = pb->v;
+  const grid_volume &v = pb->v;
   DOCMP FOR_COMPONENTS(c) if (P[c][cmp])
     for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0;
   FOR_COMPONENTS(c) if (energy[c])
@@ -59,7 +59,7 @@ void polarization::zero_fields() {
 
 polarization::polarization(const polarizability *the_pb, 
 			   int is_r, bool store_enrgy) {
-  const volume &v = the_pb->v;
+  const grid_volume &v = the_pb->v;
   is_real = is_r;
   store_energy = store_enrgy;
   DOCMP2 FOR_COMPONENTS(c) P[c][cmp] = NULL;

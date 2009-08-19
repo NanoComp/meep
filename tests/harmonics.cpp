@@ -29,7 +29,7 @@ void harmonics(double freq, double chi2, double chi3, double J,
   const double dpml = 5.0;
   const double res = 20;
   const double sz = 100+2*dpml;
-  volume v = vol1d(sz, res);
+  grid_volume v = vol1d(sz, res);
   v.center_origin();
 
   the_value = 1.0;

@@ -60,7 +60,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   }
   else {
     /* this is for e.g. computing E x H, where we don't want to 
-       multiply by the interpolation weights or the volume twice. */
+       multiply by the interpolation weights or the grid_volume twice. */
     dV0 = 1;
     dV1 = 0;
     LOOP_OVER_DIRECTIONS(fc->v.dim, d) {
@@ -442,7 +442,7 @@ direction fields::normal_direction(const geometric_volume &where) const {
 	where_pad.set_direction_max(d1, where.in_direction_min(d1) + 0.1);
     d = where_pad.normal_direction();  
     if (d == NO_DIRECTION)
-      abort("Could not determine normal direction for given volume.");
+      abort("Could not determine normal direction for given grid_volume.");
   }
   return d;
 }

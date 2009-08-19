@@ -557,7 +557,7 @@ int fields::is_phasing() {
 void fields::set_rshift(double rshift) {
   if (v.dim != Dcyl) abort("set_rshift is only for cylindrical coords");
   if (gv.in_direction_min(R) <= 0 && gv.in_direction_max(R) >= 0)
-    abort("set_rshift is invalid if volume contains r=0");
+    abort("set_rshift is invalid if grid_volume contains r=0");
   for (int i = 0; i < num_chunks; ++i)
     chunks[i]->rshift = rshift;
 }
@@ -578,7 +578,7 @@ bool fields::equal_layout(const fields &f) const {
   return true;
 }
 
-// total computational volume, including regions redundant by symmetry
+// total computational grid_volume, including regions redundant by symmetry
 geometric_volume fields::total_volume(void) const {
   geometric_volume gv0 = v.interior();
   geometric_volume gv = gv0;

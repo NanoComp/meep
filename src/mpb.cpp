@@ -137,7 +137,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   mpb_real G[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 
   if (!eig_vol.contains(where))
-    abort("invalid volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
+    abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
 
   switch (v.dim) {
   case D3:

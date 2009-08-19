@@ -206,7 +206,7 @@ void check_integral(fields &f,
 		(d.c == 1.0 && !d.axy && !d.ax && !d.ay && !d.az
 		 && !d.axy && !d.ayz && !d.axz) ? "unit" : "linear");
   if (0)
-    master_printf("\n... volume (%g,%g,%g) at (%g,%g,%g) with integral (%g, %g,%g,%g, %g,%g,%g, %g)...\n",
+    master_printf("\n... grid_volume (%g,%g,%g) at (%g,%g,%g) with integral (%g, %g,%g,%g, %g,%g,%g, %g)...\n",
 		  x2 - x1, y2 - y1, z2 - z1,
 		  (x1+x2)/2, (y1+y2)/2, (z1+z2)/2,
 		  d.c, d.ax,d.ay,d.az, d.axy,d.ayz,d.axz, d.axyz);
@@ -218,7 +218,7 @@ void check_integral(fields &f,
   master_printf("...PASSED.\n");
 }
 
-void check_splitsym(const volume &v, int splitting, 
+void check_splitsym(const grid_volume &v, int splitting, 
 		    const symmetry &S, const char *Sname)
 {
   const int num_random_trials = 100;
@@ -262,11 +262,11 @@ void check_splitsym(const volume &v, int splitting,
 }
 
 // check LOOP_OVER_VOL and LOOP_OVER_VOL_OWNED macros
-void check_loop_vol(const volume &v, component c)
+void check_loop_vol(const grid_volume &v, component c)
 {
   int count = 0, min_i = v.ntot(), max_i = 0, count_owned = 0;
 
-  master_printf("Checking %s loops for %s volume...\n",
+  master_printf("Checking %s loops for %s grid_volume...\n",
 		component_name(c), dimension_name(v.dim));
 
   ivec vmin(v.little_corner() + v.iyee_shift(c));
@@ -349,12 +349,12 @@ int main(int argc, char **argv)
   const double a = 10.0;
   initialize mpi(argc, argv);
   quiet = true;
-  const volume v3d = vol3d(size[0], size[1], size[2], a);
-  const volume v3d0 = vol3d(size[0], size[1], 0, a);
-  const volume v3d00 = vol3d(size[0], 0, 0, a);
-  const volume v2d = vol2d(size[0], size[1], a);
-  const volume v1d = vol1d(size[0], a);
-  const volume vcyl = volcyl(size[0], size[1], a);
+  const grid_volume v3d = vol3d(size[0], size[1], size[2], a);
+  const grid_volume v3d0 = vol3d(size[0], size[1], 0, a);
+  const grid_volume v3d00 = vol3d(size[0], 0, 0, a);
+  const grid_volume v2d = vol2d(size[0], size[1], a);
+  const grid_volume v1d = vol1d(size[0], a);
+  const grid_volume vcyl = volcyl(size[0], size[1], a);
 
   for (int ic = Ex; ic <= Dielectric; ++ic) {
     component c = component(ic);
@@ -384,7 +384,7 @@ int main(int argc, char **argv)
     check_splitsym(v2d, splitting, rotate4(Z,v2d), "rotate4");
   }
 
-  const volume vcyl_pad = volcyl(size[0] + 0.2, size[1], a);
+  const grid_volume vcyl_pad = volcyl(size[0] + 0.2, size[1], a);
   for (int splitting = 0; splitting < 5; ++splitting) {
     check_splitsym(vcyl_pad, splitting, identity(), "identity");
     check_splitsym(vcyl_pad, splitting, mirror(Z,vcyl), "mirrorz");

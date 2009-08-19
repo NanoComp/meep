@@ -695,17 +695,17 @@ class geometric_volume {
   vec min_corner, max_corner;
 };
 
-class volume;
-volume volcyl(double rsize, double zsize, double a);
-volume volone(double zsize, double a);
-volume vol1d(double zsize, double a);
-volume voltwo(double xsize, double ysize, double a);
-volume vol2d(double xsize, double ysize, double a);
-volume vol3d(double xsize, double ysize, double zsize, double a);
+class grid_volume;
+grid_volume volcyl(double rsize, double zsize, double a);
+grid_volume volone(double zsize, double a);
+grid_volume vol1d(double zsize, double a);
+grid_volume voltwo(double xsize, double ysize, double a);
+grid_volume vol2d(double xsize, double ysize, double a);
+grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
-class volume {
+class grid_volume {
  public:
-  volume() {};
+  grid_volume() {};
 
   ndim dim;
   double a, inva /* = 1/a */;
@@ -747,7 +747,7 @@ class volume {
 
   geometric_volume dV(component c, int index) const;
   geometric_volume dV(const ivec &, double diameter = 1.0) const;
-  bool intersect_with(const volume &vol_in, volume *intersection = NULL, volume *others = NULL, int *num_others = NULL) const;
+  bool intersect_with(const grid_volume &vol_in, grid_volume *intersection = NULL, grid_volume *others = NULL, int *num_others = NULL) const;
   double rmin() const;
   double rmax() const;
   double xmin() const;
@@ -794,21 +794,21 @@ class volume {
 
   bool get_boundary_icorners(component c, int ib, ivec *cs, ivec *ce) const;
 
-  friend volume volcyl(double rsize, double zsize, double a);
-  friend volume volone(double zsize, double a);
-  friend volume vol1d(double zsize, double a);
-  friend volume voltwo(double xsize, double ysize, double a);
-  friend volume vol2d(double xsize, double ysize, double a);
-  friend volume vol3d(double xsize, double ysize, double zsize, double a);
+  friend grid_volume volcyl(double rsize, double zsize, double a);
+  friend grid_volume volone(double zsize, double a);
+  friend grid_volume vol1d(double zsize, double a);
+  friend grid_volume voltwo(double xsize, double ysize, double a);
+  friend grid_volume vol2d(double xsize, double ysize, double a);
+  friend grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
-  volume split(int num, int which) const;
-  volume split_by_effort(int num, int which, int Ngv = 0, const volume *gv = NULL, double *effort = NULL) const;
-  volume split_at_fraction(bool want_high, int numer) const;
-  volume halve(direction d) const;
+  grid_volume split(int num, int which) const;
+  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *gv = NULL, double *effort = NULL) const;
+  grid_volume split_at_fraction(bool want_high, int numer) const;
+  grid_volume halve(direction d) const;
   void pad_self(direction d);
-  volume pad(direction d) const;
-  volume pad() const {
-       volume v(*this);
+  grid_volume pad(direction d) const;
+  grid_volume pad() const {
+       grid_volume v(*this);
        LOOP_OVER_DIRECTIONS(dim,d)
 	    v.pad_self(d);
        return v;
@@ -839,7 +839,7 @@ class volume {
   double origin_z() const { return origin.z(); }
 
  private:
-  volume(ndim d, double ta, int na, int nb, int nc);
+  grid_volume(ndim d, double ta, int na, int nb, int nc);
   ivec io; // integer origin ... always change via set_origin etc.!
   vec origin; // cache of operator[](io), for performance
   void update_ntot();
@@ -854,9 +854,9 @@ class geometric_volume_list;
 
 class symmetry;
 symmetry identity();
-symmetry rotate4(direction,const volume &);
-symmetry rotate2(direction,const volume &);
-symmetry mirror(direction,const volume &);
+symmetry rotate4(direction,const grid_volume &);
+symmetry rotate2(direction,const grid_volume &);
+symmetry mirror(direction,const grid_volume &);
 symmetry r_to_minus_r_symmetry(double m);
 
 class symmetry {
@@ -865,9 +865,9 @@ class symmetry {
   symmetry(const symmetry &);
   ~symmetry();
   friend symmetry identity();
-  friend symmetry rotate4(direction,const volume &);
-  friend symmetry rotate2(direction,const volume &);
-  friend symmetry mirror(direction,const volume &);
+  friend symmetry rotate4(direction,const grid_volume &);
+  friend symmetry rotate2(direction,const grid_volume &);
+  friend symmetry mirror(direction,const grid_volume &);
 
   signed_direction transform(direction d, int n) const;
   ivec transform(const ivec &, int n) const;

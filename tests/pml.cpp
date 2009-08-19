@@ -81,7 +81,7 @@ int check_pml1d(double eps(const vec &), double conductivity) {
   for (int i=0; i<8; i++) {
     double res = 10.0 + 10.0*i;
     {
-      volume v = vol1d(sz,res);
+      grid_volume v = vol1d(sz,res);
       v.center_origin();
       structure s(v, eps, pml(dpml));
       s.set_conductivity(By, notone);
@@ -91,7 +91,7 @@ int check_pml1d(double eps(const vec &), double conductivity) {
       ft = do_ft(f, Ex, fpt, freq);
     }
     {
-      volume v = vol1d(sz2,res);
+      grid_volume v = vol1d(sz2,res);
       v.center_origin();
       structure s(v, eps, pml(dpml*2));
       s.set_conductivity(By, notone);
@@ -134,7 +134,7 @@ int check_pml2d(double eps(const vec &), component c,
   for (int i=0; i<4; i++) {
     double res = 10.0 + res_step*i;
     {
-      volume v = vol2d(sxy,sxy,res);
+      grid_volume v = vol2d(sxy,sxy,res);
       v.center_origin();
       const symmetry S = offdiag != 0 ? rotate2(Z,v) : mirror(X,v)*symsign + mirror(Y,v)*symsign;
       structure s(v, eps, pml(dpml), S);
@@ -159,7 +159,7 @@ int check_pml2d(double eps(const vec &), component c,
       ft = do_ft(f, c, fpt, freq);
     }
     {
-      volume v = vol2d(sxy2,sxy2,res);
+      grid_volume v = vol2d(sxy2,sxy2,res);
       v.center_origin();
       const symmetry S = offdiag != 0 ? rotate2(Z,v) : mirror(X,v)*symsign + mirror(Y,v)*symsign;
       structure s(v, eps, pml(dpml*2), S);
@@ -221,7 +221,7 @@ int check_pmlcyl(double eps(const vec &)) {
     double res = 10.0 + res_step*i;
     master_printf("    checking cylindrical resolution %g...\n", res);
     {
-      volume v = volcyl(sr,sz,res);
+      grid_volume v = volcyl(sr,sz,res);
       v.center_origin();
       structure s(v, eps, pml(dpml));
       fields f(&s, 0);
@@ -230,7 +230,7 @@ int check_pmlcyl(double eps(const vec &)) {
       ft = do_ft(f, Ez, fpt, freq);
     }
     {
-      volume v = volcyl(sr2,sz2,res);
+      grid_volume v = volcyl(sr2,sz2,res);
       v.center_origin();
       structure s(v, eps, pml(dpml*2));
       fields f(&s, 0);
@@ -256,7 +256,7 @@ int pml1d_scaling(double eps(const vec &)) {
     double sz = 2*dpml + 10.0 + dpml;
     prev_ft = ft;
     {
-      volume v = vol1d(sz,res);
+      grid_volume v = vol1d(sz,res);
       structure s(v, eps, (pml(2*dpml,Z,Low) + pml(dpml,Z,High)) * 1.5);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);

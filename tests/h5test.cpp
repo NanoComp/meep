@@ -30,33 +30,33 @@ double funky_eps_3d(const vec &p_) {
   return 2.0 + cos(p.x() * eps_k) * cos(p.y() * eps_k) * cos(p.z() * eps_k);
 }
 
-symmetry make_identity(const volume &v)
+symmetry make_identity(const grid_volume &v)
 {
   (void) v; // unused
   return identity();
 }
 
-symmetry make_mirrorx(const volume &v)
+symmetry make_mirrorx(const grid_volume &v)
 {
   return mirror(X, v);
 }
 
-symmetry make_mirrory(const volume &v)
+symmetry make_mirrory(const grid_volume &v)
 {
   return mirror(Y, v);
 }
 
-symmetry make_mirrorxy(const volume &v)
+symmetry make_mirrorxy(const grid_volume &v)
 {
   return mirror(X, v) + mirror(Y, v);
 }
 
-symmetry make_rotate4z(const volume &v)
+symmetry make_rotate4z(const grid_volume &v)
 {
   return rotate4(Z, v);
 }
 
-typedef symmetry (*symfunc)(const volume &);
+typedef symmetry (*symfunc)(const grid_volume &);
 
 const double tol = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-8;
 double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
@@ -79,7 +79,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      geometric_volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
-  const volume v = vol2d(xsize, ysize, a);
+  const grid_volume v = vol2d(xsize, ysize, a);
   structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
@@ -199,7 +199,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      geometric_volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
-  const volume v = vol3d(xsize, ysize, zsize, a);
+  const grid_volume v = vol3d(xsize, ysize, zsize, a);
   structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
@@ -315,7 +315,7 @@ bool check_2d_monitor(double eps(const vec &),
 		      const vec &pt,
 		      bool real_fields,
 		      const char *name) {
-  const volume v = vol2d(xsize, ysize, a);
+  const grid_volume v = vol2d(xsize, ysize, a);
   structure s(v, eps, no_pml(), Sf(v), splitting);
   fields f(&s);
 
@@ -471,7 +471,7 @@ int main(int argc, char **argv)
        geometric_volume(vec(pad1,pad2,pad3), vec(xsize-pad2,pad2,pad3)),
        geometric_volume(vec(pad1,pad2,pad3), vec(pad1,pad2,pad3)),
   };
-  char gv_3d_name[4][10] = {"volume", "plane", "line", "point"};
+  char gv_3d_name[4][10] = {"grid_volume", "plane", "line", "point"};
   int gv_3d_rank[4] = {3,2,1,0};
   int c3d[7] = {Ex,Dielectric,Dy,Ez, Sz,H_EnergyDensity,EnergyDensity};
   symfunc Sf3[3] = {make_identity, make_mirrorxy, make_rotate4z};

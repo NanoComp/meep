@@ -36,7 +36,7 @@ void test_convergence_without_averaging() {
   double a_mean[2] = {0,0}, a_meansqr[2] = {0,0}, a2_mean[2] = {0,0}, a2_meansqr[2] = {0,0}; 
 
   for (int a = MINRES; a <= MAXRES; a += RESSTEP) {
-    volume vol = volcyl(1.0,0.0,a);  
+    grid_volume vol = volcyl(1.0,0.0,a);  
     structure s(vol, eps);
     fields f(&s, 1);
     f.use_bloch(0.1);
@@ -99,7 +99,7 @@ void test_convergence_with_averaging() {
   double a_mean[2] = {0,0}, a_meansqr[2] = {0,0}, a2_mean[2] = {0,0}, a2_meansqr[2] = {0,0}; 
 
   for (int a = MINRES; a <= MAXRES; a += RESSTEP) {
-    volume vol = volcyl(1.0,0.0,a);  
+    grid_volume vol = volcyl(1.0,0.0,a);  
     structure s(vol, eps);
     s.set_epsilon(eps);
 

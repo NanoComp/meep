@@ -168,8 +168,8 @@ bool fields::locate_point_in_user_volume(ivec *there, complex<double> *phase) co
 void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
                                                   complex<double> kphase[8], int &ncopies) const {
   // For periodic boundary conditions, 
-  // this function locates up to 8 translated copies of the initial volume specified by (p1,p2)
-  // First bring center of volume inside
+  // this function locates up to 8 translated copies of the initial grid_volume specified by (p1,p2)
+  // First bring center of grid_volume inside
   ncopies = 1;
   newp1[0] = p1;
   newp2[0] = p2;
@@ -191,7 +191,7 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
       }
     }
   
-  // if volume extends outside user_volume in any direction, we need to duplicate already existing copies
+  // if grid_volume extends outside user_volume in any direction, we need to duplicate already existing copies
   LOOP_OVER_DIRECTIONS(v.dim, d) 
     if (boundaries[High][d] == Periodic) {
       if (newp1[0].in_direction(d) < v.boundary_location(Low, d) ||
@@ -248,7 +248,7 @@ void fields_chunk::zero_metal(field_type ft) {
 void fields::find_metals() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      const volume vi = chunks[i]->v;
+      const grid_volume vi = chunks[i]->v;
       FOR_FIELD_TYPES(ft) {
         delete[] chunks[i]->zeroes[ft];
         // First electric components...
@@ -303,7 +303,7 @@ void fields::connect_the_chunks() {
 
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
-    const volume vi = chunks[i]->v;
+    const grid_volume vi = chunks[i]->v;
     FOR_FIELD_TYPES(ft)
       for (int ip=0;ip<3;ip++)
 	for (int j=0;j<num_chunks;j++)
@@ -391,7 +391,7 @@ void fields::connect_the_chunks() {
   // Next start setting up the connections...
   
   for (int i=0;i<num_chunks;i++) {
-    const volume vi = chunks[i]->v;
+    const grid_volume vi = chunks[i]->v;
     
     // initialize wh[f][ip][Incoming][j] to sum of comm_sizes for jj < j
     FOR_FIELD_TYPES(f)

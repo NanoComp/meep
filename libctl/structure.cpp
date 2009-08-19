@@ -1165,7 +1165,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   master_printf("Computational cell is %g x %g x %g with resolution %g\n",
                 size.x, size.y, size.z, resolution);  
 
-  meep::volume v;
+  meep::grid_volume v;
   switch (dims) {
   case 0: case 1:
     v = meep::vol1d(size.z, resolution);

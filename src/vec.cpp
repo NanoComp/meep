@@ -24,24 +24,24 @@
 
 namespace meep {
 
-ivec volume::round_vec(const vec &p) const {
+ivec grid_volume::round_vec(const vec &p) const {
   ivec result(dim);
   LOOP_OVER_DIRECTIONS(dim, d)
     result.set_direction(d, my_round(p.in_direction(d) * 2 * a));
   return result;
 }
 
-void volume::set_origin(const ivec &o) {
+void grid_volume::set_origin(const ivec &o) {
   io = o;
   origin = operator[](io); // adjust origin to match io
 }
 
-void volume::set_origin(direction d, int o) {
+void grid_volume::set_origin(direction d, int o) {
   io.set_direction(d, o);
   origin = operator[](io); // adjust origin to match io
 }
 
-void volume::set_origin(const vec &o) {
+void grid_volume::set_origin(const vec &o) {
   set_origin(round_vec(o));
 }
 
@@ -219,7 +219,7 @@ bool geometric_volume::intersects(const geometric_volume &a) const {
   return true;
 }
 
-// Return normal direction to volume, if the volume is dim-1 dimensional;
+// Return normal direction to grid_volume, if the grid_volume is dim-1 dimensional;
 // otherwise, return NO_DIRECTION.
 direction geometric_volume::normal_direction() const {
   direction d = NO_DIRECTION;
@@ -271,36 +271,36 @@ int ivec::yucky_val(int n) const {
   return 0;
 }
 
-int volume::yucky_num(int n) const {
+int grid_volume::yucky_num(int n) const {
   if (has_direction(dim, yucky_dir(dim, n)))
     return num_direction(yucky_dir(dim, n));
   return 1;
 }
 
-direction volume::yucky_direction(int n) const {
+direction grid_volume::yucky_direction(int n) const {
   return yucky_dir(dim, n);
 }
 
-geometric_volume volume::surroundings() const {
+geometric_volume grid_volume::surroundings() const {
   return geometric_volume(operator[](little_corner()), 
 			  operator[](big_corner()));
 }
 
-geometric_volume volume::interior() const {
+geometric_volume grid_volume::interior() const {
   return geometric_volume(operator[](little_corner()), 
 			  operator[](big_corner() - one_ivec(dim) * 2));
 }
 
-void volume::update_ntot() {
+void grid_volume::update_ntot() {
   the_ntot = 1;
   LOOP_OVER_DIRECTIONS(dim, d) the_ntot *= num[d%3] + 1;
 }
 
-void volume::set_num_direction(direction d, int value) {
+void grid_volume::set_num_direction(direction d, int value) {
   num[d%3] = value; num_changed();
 }
 
-volume::volume(ndim td, double ta, int na, int nb, int nc) {
+grid_volume::grid_volume(ndim td, double ta, int na, int nb, int nc) {
   dim = td; a = ta; inva = 1.0 / ta;
   num[0] = na;
   num[1] = nb;
@@ -309,7 +309,7 @@ volume::volume(ndim td, double ta, int na, int nb, int nc) {
   set_origin(zero_vec(dim));
 }
 
-component volume::eps_component() const {
+component grid_volume::eps_component() const {
   switch (dim) {
   case D1: return Hy;
   case D2: return Hz;
@@ -320,7 +320,7 @@ component volume::eps_component() const {
   return Ex;
 }
 
-vec volume::yee_shift(component c) const {
+vec grid_volume::yee_shift(component c) const {
   return operator[](iyee_shift(c));
 }
 
@@ -330,7 +330,7 @@ vec volume::yee_shift(component c) const {
    locations: i, i+offset1, i+offset2, i+offset1+offset2. 
    (offset2, and possibly offset1, may be zero if only 2 or 1
    locations need to be averaged). */
-void volume::yee2cent_offsets(component c, int &offset1, int &offset2) {
+void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) {
   offset1 = offset2 = 0;
   LOOP_OVER_DIRECTIONS(dim,d) {
     if (!iyee_shift(c).in_direction(d)) {
@@ -354,8 +354,8 @@ bool geometric_volume::contains(const geometric_volume &a) const {
   return contains(a.get_min_corner()) && contains(a.get_max_corner());
 }
 
-bool volume::contains(const ivec &p) const {
-  // containts returns true if the volume has information about this grid
+bool grid_volume::contains(const ivec &p) const {
+  // containts returns true if the grid_volume has information about this grid
   // point.
   const ivec o = p - io;
   LOOP_OVER_DIRECTIONS(dim, d)
@@ -364,8 +364,8 @@ bool volume::contains(const ivec &p) const {
   return true;
 }
 
-bool volume::contains(const vec &p) const {
-  // containts returns true if the volume has any information in it
+bool grid_volume::contains(const vec &p) const {
+  // containts returns true if the grid_volume has any information in it
   // relevant to the point p.  Basically has is like owns (see below)
   // except it is more lenient, in that more than one lattice may contain a
   // given point.
@@ -379,11 +379,11 @@ bool volume::contains(const vec &p) const {
 /* Compute the corners (cs,ce) of the ib-th boundary for component c,
    returning true if ib is a valid index (ib = 0..#boundaries-1).  The
    boundaries are all the points that are in but not owned by the
-   volume, and are a set of *disjoint* regions.  The main purpose of
+   grid_volume, and are a set of *disjoint* regions.  The main purpose of
    this function is currently to support the LOOP_OVER_NOT_OWNED
    macro.  (In the future, it may be used for other
    boundary-element-type computations, too.) */
-bool volume::get_boundary_icorners(component c, int ib,
+bool grid_volume::get_boundary_icorners(component c, int ib,
 				   ivec *cs, ivec *ce) const {
   ivec cl(little_corner() + iyee_shift(c));
   ivec cb(big_corner() + iyee_shift(c));
@@ -420,24 +420,24 @@ bool volume::get_boundary_icorners(component c, int ib,
   return ib_found;
 }
 
-// first "owned" point for c in volume (see also volume::owns)
-ivec volume::little_owned_corner(component c) const {
+// first "owned" point for c in grid_volume (see also grid_volume::owns)
+ivec grid_volume::little_owned_corner(component c) const {
   ivec iloc(little_owned_corner0(c));
   if (dim == Dcyl && origin.r() == 0.0 && iloc.r() == 2)
     iloc.set_direction(R, 0);
   return iloc;
 }
 
-int volume::nowned(component c) const {
+int grid_volume::nowned(component c) const {
   int n = 1;
   ivec v = big_corner() - little_owned_corner(c);
   LOOP_OVER_DIRECTIONS(dim, d) n *= v.in_direction(d) / 2 + 1;
   return n;
 }
 
-bool volume::owns(const ivec &p) const {
-  // owns returns true if the point "owned" by this volume, meaning that it
-  // is the volume that would timestep the point.
+bool grid_volume::owns(const ivec &p) const {
+  // owns returns true if the point "owned" by this grid_volume, meaning that it
+  // is the grid_volume that would timestep the point.
   const ivec o = p - io;
   if (dim == Dcyl) {
     if (origin.r() == 0.0 && o.z() > 0 && o.z() <= nz()*2 &&
@@ -461,7 +461,7 @@ bool volume::owns(const ivec &p) const {
   }
 }
 
-int volume::has_boundary(boundary_side b,direction d) const {
+int grid_volume::has_boundary(boundary_side b,direction d) const {
   switch (dim) {
   case Dcyl: return d == Z || (d == R && (b == High || get_origin().r() > 0));
   case D1: return d == Z;
@@ -471,14 +471,14 @@ int volume::has_boundary(boundary_side b,direction d) const {
   return 0; // This should never be reached.
 }
 
-int volume::index(component c, const ivec &p) const {
+int grid_volume::index(component c, const ivec &p) const {
   const ivec offset = p - io - iyee_shift(c);
   int idx = 0;
   LOOP_OVER_DIRECTIONS(dim,d) idx += offset.in_direction(d)/2*stride(d);
   return idx;
 }
 
-void volume::set_strides() {
+void grid_volume::set_strides() {
   FOR_DIRECTIONS(d) the_stride[d] = 0; // Yuck yuck yuck.
   LOOP_OVER_DIRECTIONS(dim,d)
     switch(d) {
@@ -521,7 +521,7 @@ static inline void stupidsort(ivec *locs, double *w, int l) {
   }
 }
 
-void volume::interpolate(component c, const vec &p,
+void grid_volume::interpolate(component c, const vec &p,
                          int indices[8], double weights[8]) const {
   ivec locs[8];
   interpolate(c, p, locs, weights);
@@ -555,7 +555,7 @@ void volume::interpolate(component c, const vec &p,
   }
 }
 
-void volume::interpolate(component c, const vec &pc,
+void grid_volume::interpolate(component c, const vec &pc,
                          ivec locs[8], double weights[8]) const {
   const double SMALL = 1e-13;
   const vec p = (pc - yee_shift(c))*a;
@@ -618,9 +618,9 @@ geometric_volume empty_volume(ndim dim) {
   return out;
 }
 
-geometric_volume volume::dV(const ivec &here, double diameter) const {
+geometric_volume grid_volume::dV(const ivec &here, double diameter) const {
   const double hinva = 0.5*inva * diameter;
-  const volume &v = *this;
+  const grid_volume &v = *this;
   const vec h = v[here];
   geometric_volume out(dim);
   LOOP_OVER_DIRECTIONS(dim,d) {
@@ -633,49 +633,49 @@ geometric_volume volume::dV(const ivec &here, double diameter) const {
   return out;
 }
 
-geometric_volume volume::dV(component c, int ind) const {
+geometric_volume grid_volume::dV(component c, int ind) const {
   if (!owns(iloc(c, ind))) return empty_volume(dim);
   return dV(iloc(c,ind));
 }
 
-double volume::xmax() const {
+double grid_volume::xmax() const {
   const double qinva = 0.25*inva;
   return origin.x() + nx()*inva + qinva;
 }
 
-double volume::xmin() const {
+double grid_volume::xmin() const {
   const double qinva = 0.25*inva;
   return origin.x() + qinva;
 }
 
-double volume::ymax() const {
+double grid_volume::ymax() const {
   const double qinva = 0.25*inva;
   return origin.y() + ny()*inva + qinva;
 }
 
-double volume::ymin() const {
+double grid_volume::ymin() const {
   const double qinva = 0.25*inva;
   return origin.y() + qinva;
 }
 
-double volume::zmax() const {
+double grid_volume::zmax() const {
   const double qinva = 0.25*inva;
   return origin.z() + nz()*inva + qinva;
 }
 
-double volume::zmin() const {
+double grid_volume::zmin() const {
   const double qinva = 0.25*inva;
   return origin.z() + qinva;
 }
 
-double volume::rmax() const {
+double grid_volume::rmax() const {
   const double qinva = 0.25*inva;
   if (dim == Dcyl) return origin.r() + nr()*inva + qinva;
   abort("No rmax in these dimensions.\n");
   return 0.0; // This is never reached.
 }
 
-double volume::rmin() const {
+double grid_volume::rmin() const {
   const double qinva = 0.25*inva;
   if (dim == Dcyl) {
     if (origin.r() == 0.0) {
@@ -692,7 +692,7 @@ double vec::project_to_boundary(direction d, double boundary_loc) {
   return fabs(boundary_loc - in_direction(d));
 }
 
-double volume::boundary_location(boundary_side b, direction d) const {
+double grid_volume::boundary_location(boundary_side b, direction d) const {
   // Returns the location of metallic walls...
   if (b == High) switch (d) {
   case X: return loc(Ez,ntot()-1).x();
@@ -715,7 +715,7 @@ double volume::boundary_location(boundary_side b, direction d) const {
   return 0.0;
 }
 
-ivec volume::big_corner() const {
+ivec grid_volume::big_corner() const {
   switch (dim) {
   case D1: return io + ivec(nz())*2;
   case D2: return io + ivec(nx(),ny())*2;
@@ -725,7 +725,7 @@ ivec volume::big_corner() const {
   return ivec(0); // This is never reached.
 }
 
-vec volume::corner(boundary_side b) const { 
+vec grid_volume::corner(boundary_side b) const { 
   if (b == Low) return origin; // Low corner
   vec tmp = origin;
   LOOP_OVER_DIRECTIONS(dim, d)
@@ -733,7 +733,7 @@ vec volume::corner(boundary_side b) const {
   return tmp; // High corner
 }
 
-void volume::print() const {
+void grid_volume::print() const {
   LOOP_OVER_DIRECTIONS(dim, d)
     printf("%s =%5g - %5g (%5g) \t", 
       direction_name(d), origin.in_direction(d), 
@@ -741,7 +741,7 @@ void volume::print() const {
   printf("\n");
 }
 
-bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *others, int *num_others) const {
+bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *intersection, grid_volume *others, int *num_others) const {
   int temp_num[3] = {0,0,0};
   ivec new_io(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
@@ -753,17 +753,17 @@ bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *
     new_io.set_direction(d, minval);
   }
   if (intersection != NULL) {
-    *intersection = volume(dim, a, temp_num[0], temp_num[1], temp_num[2]); // fix me : ugly, need new constructor
+    *intersection = grid_volume(dim, a, temp_num[0], temp_num[1], temp_num[2]); // fix me : ugly, need new constructor
     intersection->set_origin(new_io);
   }
   if (others != NULL) {
     int counter = 0;
-    volume vol_containing = *this;
+    grid_volume vol_containing = *this;
     LOOP_OVER_DIRECTIONS(dim, d) {
       if (vol_containing.little_corner().in_direction(d)
 	  < vol_in.little_corner().in_direction(d)) {
 	// shave off lower slice from vol_containing and add it to others
-	volume other = vol_containing;
+	grid_volume other = vol_containing;
 	const int thick = (vol_in.little_corner().in_direction(d)
 			   - vol_containing.little_corner().in_direction(d))/2;
 	other.set_num_direction(d, thick);
@@ -779,7 +779,7 @@ bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *
       if (vol_containing.big_corner().in_direction(d)
 	  > vol_in.big_corner().in_direction(d)) {
 	// shave off upper slice from vol_containing and add it to others
-	volume other = vol_containing;
+	grid_volume other = vol_containing;
 	const int thick = (vol_containing.big_corner().in_direction(d)
 			   - vol_in.big_corner().in_direction(d))/2;
 	other.set_num_direction(d, thick);
@@ -812,7 +812,7 @@ bool volume::intersect_with(const volume &vol_in, volume *intersection, volume *
   return true;
 }
 
-vec volume::loc_at_resolution(int index, double res) const {
+vec grid_volume::loc_at_resolution(int index, double res) const {
   vec where = origin;
   for (int dd=X;dd<=R;dd++) {
     const direction d = (direction) dd;
@@ -827,7 +827,7 @@ vec volume::loc_at_resolution(int index, double res) const {
   return where;
 }
 
-int volume::ntot_at_resolution(double res) const {
+int grid_volume::ntot_at_resolution(double res) const {
   int mytot = 1;
   for (int d=X;d<=R;d++)
     if (has_boundary(High,(direction)d)) {
@@ -838,11 +838,11 @@ int volume::ntot_at_resolution(double res) const {
   return mytot;
 }
 
-vec volume::loc(component c, int ind) const {
+vec grid_volume::loc(component c, int ind) const {
   return operator[](iloc(c,ind));
 }
 
-ivec volume::iloc(component c, int ind) const {
+ivec grid_volume::iloc(component c, int ind) const {
   ivec out(dim);
   LOOP_OVER_DIRECTIONS(dim,d) {
     int ind_over_stride = ind/stride(d);
@@ -852,7 +852,7 @@ ivec volume::iloc(component c, int ind) const {
   return out + iyee_shift(c) + io;
 }
 
-vec volume::dr() const {
+vec grid_volume::dr() const {
   switch (dim) {
   case Dcyl: return veccyl(inva, 0.0);
   case D1: case D2: case D3: abort("Error in dr\n");
@@ -860,7 +860,7 @@ vec volume::dr() const {
   return vec(0); // This is never reached.
 }
 
-vec volume::dx() const {
+vec grid_volume::dx() const {
   switch (dim) {
   case D3: return vec(inva,0,0);
   case D2: return vec(inva,0);
@@ -869,7 +869,7 @@ vec volume::dx() const {
   return vec(0); // This is never reached.
 }
 
-vec volume::dy() const {
+vec grid_volume::dy() const {
   switch (dim) {
   case D3: return vec(0,inva,0);
   case D2: return vec(0,inva);
@@ -878,7 +878,7 @@ vec volume::dy() const {
   return vec(0); // This is never reached.
 }
 
-vec volume::dz() const {
+vec grid_volume::dz() const {
   switch (dim) {
   case Dcyl: return veccyl(0.0,inva);
   case D3: return vec(0,0,inva);
@@ -888,35 +888,35 @@ vec volume::dz() const {
   return vec(0); // This is never reached.
 }
 
-volume volone(double zsize, double a) {
-  return volume(D1, a, 0, 0, (int) (zsize*a + 0.5));
+grid_volume volone(double zsize, double a) {
+  return grid_volume(D1, a, 0, 0, (int) (zsize*a + 0.5));
 }
 
-volume voltwo(double xsize, double ysize, double a) {
-  return volume(D2, a, (xsize==0)?1:(int) (xsize*a + 0.5),
+grid_volume voltwo(double xsize, double ysize, double a) {
+  return grid_volume(D2, a, (xsize==0)?1:(int) (xsize*a + 0.5),
                        (ysize==0)?1:(int) (ysize*a + 0.5),0);
 }
 
-volume vol1d(double zsize, double a) {
+grid_volume vol1d(double zsize, double a) {
   return volone(zsize, a);
 }
 
-volume vol2d(double xsize, double ysize, double a) {
+grid_volume vol2d(double xsize, double ysize, double a) {
   return voltwo(xsize, ysize, a);
 }
 
-volume vol3d(double xsize, double ysize, double zsize, double a) {
-  return volume(D3, a,(xsize==0)?1:(int) (xsize*a + 0.5),
+grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
+  return grid_volume(D3, a,(xsize==0)?1:(int) (xsize*a + 0.5),
                       (ysize==0)?1:(int) (ysize*a + 0.5),
                       (zsize==0)?1:(int) (zsize*a + 0.5));
 }
 
-volume volcyl(double rsize, double zsize, double a) {
-  if (zsize == 0.0) return volume(Dcyl, a, (int) (rsize*a + 0.5), 0, 1);
-  else return volume(Dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
+grid_volume volcyl(double rsize, double zsize, double a) {
+  if (zsize == 0.0) return grid_volume(Dcyl, a, (int) (rsize*a + 0.5), 0, 1);
+  else return grid_volume(Dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
 }
 
-volume volume::split(int n, int which) const {
+grid_volume grid_volume::split(int n, int which) const {
   if (n > nowned_min())
     abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
   if (n == 1) return *this;
@@ -932,7 +932,7 @@ volume volume::split(int n, int which) const {
     return split_at_fraction(true, split_point).split(n-num_low,which-num_low);
 }
 
-volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, double *effort) const {
+grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_volume *gv, double *effort) const {
   const int grid_points_owned = nowned_min();
   if (n > grid_points_owned)
     abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
@@ -946,14 +946,14 @@ volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, doub
   LOOP_OVER_DIRECTIONS(dim, d) corner.set_direction(d, origin.in_direction(d) + num_direction(d)/a); 
 
   for (int split_point = 1; split_point < biglen; split_point+=1) {
-    volume v_left = *this;
+    grid_volume v_left = *this;
     v_left.set_num_direction(splitdir, split_point);
-    volume v_right = *this;
+    grid_volume v_right = *this;
     v_right.set_num_direction(splitdir, num_direction(splitdir) - split_point);
     v_right.shift_origin(splitdir, split_point*2);
 
     double total_left_effort = 0, total_right_effort = 0;
-    volume vol;
+    grid_volume vol;
     if (Ngv == 0) {
       total_left_effort = v_left.ntot();
       total_right_effort = v_right.ntot();
@@ -987,7 +987,7 @@ volume volume::split_by_effort(int n, int which, int Ngv, const volume *gv, doub
     return split_at_fraction(true, split_point).split_by_effort(n-num_low,which-num_low, Ngv,gv,effort);
 }
 
-volume volume::split_at_fraction(bool want_high, int numer) const {
+grid_volume grid_volume::split_at_fraction(bool want_high, int numer) const {
   int bestd = -1, bestlen = 1;
   for (int i=0;i<3;i++)
     if (num[i] > bestlen) {
@@ -998,7 +998,7 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
     for (int i=0;i<3;i++) master_printf("num[%d] = %d\n", i, num[i]);
     abort("Crazy weird splitting error.\n");
   }
-  volume retval(dim, a, 1,1,1);
+  grid_volume retval(dim, a, 1,1,1);
   for (int i=0;i<3;i++) retval.num[i] = num[i];
   if (numer >= num[bestd])
     abort("Aaack bad bug in split_at_fraction.\n");
@@ -1014,28 +1014,28 @@ volume volume::split_at_fraction(bool want_high, int numer) const {
   return retval;
 }
 
-// Halve the volume for symmetry exploitation...must contain icenter!
-volume volume::halve(direction d) const {
-  volume retval(*this);
-  // note that icenter-io is always even by construction of volume::icenter
+// Halve the grid_volume for symmetry exploitation...must contain icenter!
+grid_volume grid_volume::halve(direction d) const {
+  grid_volume retval(*this);
+  // note that icenter-io is always even by construction of grid_volume::icenter
   retval.set_num_direction(d, (icenter().in_direction(d) 
 			       - io.in_direction(d)) / 2);
   return retval;
 }
 
-volume volume::pad(direction d) const {
-  volume v(*this);
+grid_volume grid_volume::pad(direction d) const {
+  grid_volume v(*this);
   v.pad_self(d);
   return v;
 }
 
-void volume::pad_self(direction d) {
+void grid_volume::pad_self(direction d) {
   num[d%3]+=2; // Pad in both directions by one grid point.
   num_changed();
   shift_origin(d, -2);
 }
 
-ivec volume::icenter() const {
+ivec grid_volume::icenter() const {
   /* Find the center of the user's cell.  This will be used as the
      symmetry point, and therefore icenter-io must be *even*
      in all components in order that rotations preserve the Yee lattice. */
@@ -1049,11 +1049,11 @@ ivec volume::icenter() const {
   return ivec(0); // This is never reached.
 }
 
-vec volume::center() const {
+vec grid_volume::center() const {
   return operator[](icenter());
 }
 
-symmetry rotate4(direction axis, const volume &v) {
+symmetry rotate4(direction axis, const grid_volume &v) {
   symmetry s = identity();
   if (axis > 2) abort("Can only rotate4 in 2D or 3D.\n");
   s.g = 4;
@@ -1069,7 +1069,7 @@ symmetry rotate4(direction axis, const volume &v) {
   return s;
 }
 
-symmetry rotate2(direction axis, const volume &v) {
+symmetry rotate2(direction axis, const grid_volume &v) {
   symmetry s = identity();
   if (axis > 2) abort("Can only rotate2 in 2D or 3D.\n");
   s.g = 2;
@@ -1080,7 +1080,7 @@ symmetry rotate2(direction axis, const volume &v) {
   return s;
 }
 
-symmetry mirror(direction axis, const volume &v) {
+symmetry mirror(direction axis, const grid_volume &v) {
   symmetry s = identity();
   s.g = 2;
   s.S[axis].flipped = true;
@@ -1421,7 +1421,7 @@ static double energy_fun(const complex<double> *fields,
      return sum * 0.5;
 }
 
-field_rfunction derived_component_func(derived_component c, const volume &v,
+field_rfunction derived_component_func(derived_component c, const grid_volume &v,
 				       int &nfields, component cs[12]) {
   switch (c) {
   case Sx: case Sy: case Sz: case Sr: case Sp:
