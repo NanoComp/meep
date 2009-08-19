@@ -1139,7 +1139,7 @@
 
 ; ****************************************************************
 ; Load helper functions for Casimir-force calculations
-(include "casimir.scm")
+(if (defined? 'meep-component-Ex) (include "casimir.scm"))
 
 ; ****************************************************************
 
