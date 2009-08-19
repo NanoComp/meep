@@ -69,18 +69,18 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       ph[i] = 1.0;
     else {
       if (cgrid == Centered)
-	fc->v.yee2cent_offsets(cS[i], off[2*i], off[2*i+1]);
+	fc->gv.yee2cent_offsets(cS[i], off[2*i], off[2*i+1]);
       ph[i] = shift_phase * S.phase_shift(cS[i], sn);
     }
   }
   for (int k = 0; k < data->ninveps; ++k)
-    fc->v.yee2cent_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
+    fc->gv.yee2cent_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
   for (int k = 0; k < data->ninvmu; ++k)
-    fc->v.yee2cent_offsets(imcs[k], imos[2*k], imos[2*k+1]);
+    fc->gv.yee2cent_offsets(imcs[k], imos[2*k], imos[2*k+1]);
 
-  vec rshift(shift * (0.5*fc->v.inva));
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    IVEC_LOOP_LOC(fc->v, loc);
+  vec rshift(shift * (0.5*fc->gv.inva));
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    IVEC_LOOP_LOC(fc->gv, loc);
     loc = S.transform(loc, sn) + rshift;
 
     for (int i = 0; i < data->num_fvals; ++i) {
@@ -137,7 +137,7 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   // check if components are all on the same grid:
   bool same_grid = true;
   for (int i = 1; i < num_fvals; ++i)
-    if (v.iyee_shift(components[i]) != v.iyee_shift(components[0])) {
+    if (gv.iyee_shift(components[i]) != gv.iyee_shift(components[0])) {
       same_grid = false;
       break;
     }
@@ -163,7 +163,7 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   for (int i = 0; i < num_fvals; ++i)
     if (components[i] == Dielectric) { needs_dielectric = true; break; }
   if (needs_dielectric) 
-    FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c)) {
+    FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninveps == 3) abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
@@ -176,7 +176,7 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   for (int i = 0; i < num_fvals; ++i)
     if (components[i] == Permeability) { needs_permeability = true; break; }
   if (needs_permeability) 
-    FOR_MAGNETIC_COMPONENTS(c) if (v.has_field(c)) {
+    FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninvmu == 3) abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
@@ -274,7 +274,7 @@ double fields::max_abs(derived_component c, const volume &where)
     return max_abs(component(c), where);
   int nfields;
   component cs[12];
-  field_rfunction fun = derived_component_func(c, v, nfields, cs);
+  field_rfunction fun = derived_component_func(c, gv, nfields, cs);
   return max_abs(nfields, cs, fun, &nfields, where);
 }
 

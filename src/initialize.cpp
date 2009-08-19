@@ -85,7 +85,7 @@ void fields_chunk::initialize_with_nth_te(int np0, double kz) {
   const int im = int(m);
   const int n = (im==0) ? np0 - 0 : np0 - 1;
   const double rmax = Jmax(im,n);
-  ktrans = rmax*a/v.nr();
+  ktrans = rmax*a/gv.nr();
   kax = kz*2*pi/a;
   m_for_J = im;
   initialize_field(Hz, JJ);
@@ -102,7 +102,7 @@ void fields_chunk::initialize_with_nth_tm(int np1, double kz) {
   const int im = int(m);
   const int n = np1 - 1;
   const double rroot = Jroot(im,n);
-  ktrans = rroot*a/v.nr();
+  ktrans = rroot*a/gv.nr();
   kax = kz*2*pi/a;
   m_for_J = im;
   initialize_field(Ez, JJ);
@@ -134,8 +134,8 @@ void fields::initialize_field(component c, complex<double> func(const vec &)) {
 
 void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
   if (f[c][0]) {
-    LOOP_OVER_VOL(v, c, i) {
-      IVEC_LOOP_LOC(v, here);
+    LOOP_OVER_VOL(gv, c, i) {
+      IVEC_LOOP_LOC(gv, here);
       complex<double> val = func(here);
       f[c][0][i] += real(val);
       if (!is_real) f[c][1][i] += imag(val);

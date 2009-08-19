@@ -179,10 +179,10 @@ void structure_chunk::set_chi1inv(component c,
 				  material_function &medium,
 				  bool use_anisotropic_averaging,
 				  double tol, int maxeval) {
-  if (!is_mine() || !v.has_field(c)) return;
+  if (!is_mine() || !gv.has_field(c)) return;
   field_type ft = type(c);
   if (ft != E_stuff && ft != H_stuff) abort("only E or H can have chi");
-  medium.set_volume(v.pad().surroundings());
+  medium.set_volume(gv.pad().surroundings());
 
   if (!use_anisotropic_averaging) maxeval = 0;
 
@@ -191,34 +191,34 @@ void structure_chunk::set_chi1inv(component c,
   // may take a long time in 3d, so prepare to print status messages
   int npixels = 0, ipixel = 0;
   int loop_npixels = 0;
-  LOOP_OVER_VOL(v, c, i) {
+  LOOP_OVER_VOL(gv, c, i) {
     loop_npixels = loop_n1 * loop_n2 * loop_n3;
     goto breakout; // hack to use loop-size computation from LOOP_OVER_VOL
   }
  breakout: npixels += loop_npixels;
   double last_output_time = wall_time();
 
-  FOR_FT_COMPONENTS(ft,c2) if (v.has_field(c2)) {
+  FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
     direction d = component_direction(c2);
-    if (!chi1inv[c][d]) chi1inv[c][d] = new realnum[v.ntot()];
+    if (!chi1inv[c][d]) chi1inv[c][d] = new realnum[gv.ntot()];
     if (!chi1inv[c][d]) abort("Memory allocation error.\n");
   }
   direction dc = component_direction(c);
   direction d0 = X, d1 = Y, d2 = Z;
-  if (v.dim == Dcyl) { d0 = R; d1 = P; }
+  if (gv.dim == Dcyl) { d0 = R; d1 = P; }
   int idiag = component_index(c);
   bool trivial[3] = {true,true,true};
   double trivial_val[3] = {0,0,0};
   trivial_val[idiag] = 1.0;
-  ivec shift1(unit_ivec(v.dim,component_direction(c))
+  ivec shift1(unit_ivec(gv.dim,component_direction(c))
 	      * (ft == E_stuff ? 1 : -1));
-  LOOP_OVER_VOL(v, c, i) {
+  LOOP_OVER_VOL(gv, c, i) {
     double chi1invrow[3], chi1invrow_offdiag[3];
-    IVEC_LOOP_ILOC(v, here);
+    IVEC_LOOP_ILOC(gv, here);
     medium.eff_chi1inv_row(c, chi1invrow,
-			   v.dV(here, smoothing_diameter), tol,maxeval);
+			   gv.dV(here, smoothing_diameter), tol,maxeval);
     medium.eff_chi1inv_row(c, chi1invrow_offdiag,
-			   v.dV(here-shift1, smoothing_diameter), tol,maxeval);
+			   gv.dV(here-shift1, smoothing_diameter), tol,maxeval);
     if (chi1inv[c][d0]) {
       chi1inv[c][d0][i] = (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
       trivial[0] = trivial[0] && (chi1inv[c][d0][i] == trivial_val[0]);
@@ -246,7 +246,7 @@ void structure_chunk::set_chi1inv(component c,
   trivial_chi1inv[c][d1] = trivial[1];
   trivial_chi1inv[c][d2] = trivial[2];
   if (trivial[(idiag+1)%3] && trivial[(idiag+2)%3]) {
-    FOR_FT_COMPONENTS(ft,c2) if (v.has_field(c2)) {
+    FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
       direction d = component_direction(c2);
       if (d != dc) { delete[] chi1inv[c][d]; chi1inv[c][d] = 0; }
     }

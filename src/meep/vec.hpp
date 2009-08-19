@@ -106,50 +106,50 @@ component first_field_component(field_type ft);
 // loop over all directions in which we might have fields
 #define LOOP_OVER_FIELD_DIRECTIONS(dim, d) for (direction d = dim == Dcyl ? Z : X; d < (dim == Dcyl ? NO_DIRECTION : R); d = direction(d+1))
 
-// loop over indices idx from is to ie (inclusive) in v
-#define LOOP_OVER_IVECS(v, is, ie, idx) \
+// loop over indices idx from is to ie (inclusive) in gv
+#define LOOP_OVER_IVECS(gv, is, ie, idx) \
   for (int loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
            loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1, \
            loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
-           loop_d1 = (v).yucky_direction(0), \
-           loop_d2 = (v).yucky_direction(1), \
-           loop_d3 = (v).yucky_direction(2), \
-           loop_s1 = (v).stride((direction) loop_d1), \
-           loop_s2 = (v).stride((direction) loop_d2), \
-           loop_s3 = (v).stride((direction) loop_d3), \
-           idx0 = (is - (v).little_corner()).yucky_val(0) / 2 * loop_s1 \
-                + (is - (v).little_corner()).yucky_val(1) / 2 * loop_s2 \
-                + (is - (v).little_corner()).yucky_val(2) / 2 * loop_s3,\
+           loop_d1 = (gv).yucky_direction(0), \
+           loop_d2 = (gv).yucky_direction(1), \
+           loop_d3 = (gv).yucky_direction(2), \
+           loop_s1 = (gv).stride((direction) loop_d1), \
+           loop_s2 = (gv).stride((direction) loop_d2), \
+           loop_s3 = (gv).stride((direction) loop_d3), \
+           idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 \
+                + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
+                + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
     for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
       for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
-#define LOOP_OVER_VOL(v, c, idx) \
-  LOOP_OVER_IVECS(v, (v).little_corner() + (v).iyee_shift(c), (v).big_corner() + (v).iyee_shift(c), idx)
+#define LOOP_OVER_VOL(gv, c, idx) \
+  LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c), (gv).big_corner() + (gv).iyee_shift(c), idx)
 
-#define LOOP_OVER_VOL_OWNED(v, c, idx) \
-  LOOP_OVER_IVECS(v, (v).little_owned_corner(c), (v).big_corner(), idx)
+#define LOOP_OVER_VOL_OWNED(gv, c, idx) \
+  LOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
 
-#define LOOP_OVER_VOL_OWNED0(v, c, idx) \
-  LOOP_OVER_IVECS(v, (v).little_owned_corner0(c), (v).big_corner(), idx)
+#define LOOP_OVER_VOL_OWNED0(gv, c, idx) \
+  LOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
 
-#define LOOP_OVER_VOL_NOTOWNED(v, c, idx) \
- for (ivec loop_notowned_is((v).dim,0), loop_notowned_ie((v).dim,0); \
-      loop_notowned_is == zero_ivec((v).dim);) \
-   for (int loop_ibound = 0; (v).get_boundary_icorners(c, loop_ibound,     \
+#define LOOP_OVER_VOL_NOTOWNED(gv, c, idx) \
+ for (ivec loop_notowned_is((gv).dim,0), loop_notowned_ie((gv).dim,0); \
+      loop_notowned_is == zero_ivec((gv).dim);) \
+   for (int loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
 		  				       &loop_notowned_is,  \
 						       &loop_notowned_ie); \
 	loop_ibound++) \
-     LOOP_OVER_IVECS(v, loop_notowned_is, loop_notowned_ie, idx)
+     LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
-#define LOOPS_ARE_STRIDE1(v) ((v).stride((v).yucky_direction(2)) == 1)
+#define LOOPS_ARE_STRIDE1(gv) ((gv).stride((gv).yucky_direction(2)) == 1)
 
 // The following work identically to the LOOP_* macros above,
-// but assume that the inner loop is stride-1: LOOPS_ARE_STRIDE1(v) *must*
+// but assume that the inner loop is stride-1: LOOPS_ARE_STRIDE1(gv) *must*
 // be true.  These are useful in allowing gcc to auto-vectorize the inner
 // loop, since gcc's vectorizer requires the array stride to be known at
 // compile time.  Note that stride-1 loops are the most common case in Meep.
@@ -159,61 +159,61 @@ component first_field_component(field_type ft);
 // should only use these macros where that is true!  (Basically,
 // all of this is here to support performance hacks of step_generic.)
 
-// loop over indices idx from is to ie (inclusive) in v
-#define S1LOOP_OVER_IVECS(v, is, ie, idx) \
+// loop over indices idx from is to ie (inclusive) in gv
+#define S1LOOP_OVER_IVECS(gv, is, ie, idx) \
   for (int loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
            loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1, \
            loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
-           loop_d1 = (v).yucky_direction(0), \
-           loop_d2 = (v).yucky_direction(1), \
-           loop_s1 = (v).stride((direction) loop_d1), \
-           loop_s2 = (v).stride((direction) loop_d2), \
+           loop_d1 = (gv).yucky_direction(0), \
+           loop_d2 = (gv).yucky_direction(1), \
+           loop_s1 = (gv).stride((direction) loop_d1), \
+           loop_s2 = (gv).stride((direction) loop_d2), \
            loop_s3 = 1, \
-           idx0 = (is - (v).little_corner()).yucky_val(0) / 2 * loop_s1 \
-                + (is - (v).little_corner()).yucky_val(1) / 2 * loop_s2 \
-                + (is - (v).little_corner()).yucky_val(2) / 2 * loop_s3,\
+           idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 \
+                + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
+                + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
     for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma("ivdep") \
       for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx++)
 
-#define S1LOOP_OVER_VOL(v, c, idx) \
-  S1LOOP_OVER_IVECS(v, (v).little_corner() + (v).iyee_shift(c), (v).big_corner() + (v).iyee_shift(c), idx)
+#define S1LOOP_OVER_VOL(gv, c, idx) \
+  S1LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c), (gv).big_corner() + (gv).iyee_shift(c), idx)
 
-#define S1LOOP_OVER_VOL_OWNED(v, c, idx) \
-  S1LOOP_OVER_IVECS(v, (v).little_owned_corner(c), (v).big_corner(), idx)
+#define S1LOOP_OVER_VOL_OWNED(gv, c, idx) \
+  S1LOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
 
-#define S1LOOP_OVER_VOL_OWNED0(v, c, idx) \
-  S1LOOP_OVER_IVECS(v, (v).little_owned_corner0(c), (v).big_corner(), idx)
+#define S1LOOP_OVER_VOL_OWNED0(gv, c, idx) \
+  S1LOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
 
-#define S1LOOP_OVER_VOL_NOTOWNED(v, c, idx) \
- for (ivec loop_notowned_is((v).dim,0), loop_notowned_ie((v).dim,0); \
-      loop_notowned_is == zero_ivec((v).dim);) \
-   for (int loop_ibound = 0; (v).get_boundary_icorners(c, loop_ibound,     \
+#define S1LOOP_OVER_VOL_NOTOWNED(gv, c, idx) \
+ for (ivec loop_notowned_is((gv).dim,0), loop_notowned_ie((gv).dim,0); \
+      loop_notowned_is == zero_ivec((gv).dim);) \
+   for (int loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
 		  				       &loop_notowned_is,  \
 						       &loop_notowned_ie); \
 	loop_ibound++) \
-     S1LOOP_OVER_IVECS(v, loop_notowned_is, loop_notowned_ie, idx)
+     S1LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
 #define IVEC_LOOP_AT_BOUNDARY 					\
  ((loop_s1 != 0 && (loop_i1 == 0 || loop_i1 == loop_n1-1)) ||	\
   (loop_s2 != 0 && (loop_i2 == 0 || loop_i2 == loop_n2-1)) ||	\
   (loop_s3 != 0 && (loop_i3 == 0 || loop_i3 == loop_n3-1)))
 
-#define IVEC_LOOP_ILOC(v, iloc) \
-  ivec iloc((v).dim); \
+#define IVEC_LOOP_ILOC(gv, iloc) \
+  ivec iloc((gv).dim); \
   iloc.set_direction(direction(loop_d1), loop_is1 + 2*loop_i1); \
   iloc.set_direction(direction(loop_d2), loop_is2 + 2*loop_i2); \
   iloc.set_direction(direction(loop_d3), loop_is3 + 2*loop_i3)
 
-#define IVEC_LOOP_LOC(v, loc) \
-  vec loc((v).dim); \
-  loc.set_direction(direction(loop_d1), (0.5*loop_is1 + loop_i1) * (v).inva); \
-  loc.set_direction(direction(loop_d2), (0.5*loop_is2 + loop_i2) * (v).inva); \
-  loc.set_direction(direction(loop_d3), (0.5*loop_is3 + loop_i3) * (v).inva)
+#define IVEC_LOOP_LOC(gv, loc) \
+  vec loc((gv).dim); \
+  loc.set_direction(direction(loop_d1), (0.5*loop_is1 + loop_i1) * (gv).inva); \
+  loc.set_direction(direction(loop_d2), (0.5*loop_is2 + loop_i2) * (gv).inva); \
+  loc.set_direction(direction(loop_d3), (0.5*loop_is3 + loop_i3) * (gv).inva)
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
 #define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? (s0).in_direction(direction(dir)) : (i == 1 ? (s1).in_direction(direction(dir)) : i == n - 1 ? (e0).in_direction(direction(dir)) : (i == n - 2 ? (e1).in_direction(direction(dir)) : 1.0))))
@@ -808,10 +808,10 @@ class grid_volume {
   void pad_self(direction d);
   grid_volume pad(direction d) const;
   grid_volume pad() const {
-       grid_volume v(*this);
+       grid_volume gv(*this);
        LOOP_OVER_DIRECTIONS(dim,d)
-	    v.pad_self(d);
-       return v;
+	    gv.pad_self(d);
+       return gv;
   }
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);

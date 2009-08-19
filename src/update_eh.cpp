@@ -49,7 +49,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 
   FOR_FT_COMPONENTS(ft2, dc) DOCMP {
     if (f[dc][cmp] && (pols[ft] || have_int_sources)) {
-      if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[v.ntot()];
+      if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[gv.ntot()];
     }
     else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
       delete[] f_minus_p[dc][cmp];
@@ -62,7 +62,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     break;
   }
 
-  const int ntot = s->v.ntot();
+  const int ntot = s->gv.ntot();
 
   if (have_f_minus_p && doing_solve_cw)
     abort("dispersive materials are not yet implemented for solve_cw");
@@ -140,13 +140,13 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     if (type(ec) != ft) abort("bug in FOR_FT_COMPONENTS");
     component dc = field_type_component(ft2, ec);
     const direction d_ec = component_direction(ec);
-    const int s_ec = v.stride(d_ec) * (ft == H_stuff ? -1 : +1);
-    const direction d_1 = cycle_direction(v.dim, d_ec, 1);
+    const int s_ec = gv.stride(d_ec) * (ft == H_stuff ? -1 : +1);
+    const direction d_1 = cycle_direction(gv.dim, d_ec, 1);
     const component dc_1 = direction_component(dc,d_1);
-    const int s_1 = v.stride(d_1) * (ft == H_stuff ? -1 : +1);
-    const direction d_2 = cycle_direction(v.dim, d_ec, 2);
+    const int s_1 = gv.stride(d_1) * (ft == H_stuff ? -1 : +1);
+    const direction d_2 = cycle_direction(gv.dim, d_ec, 2);
     const component dc_2 = direction_component(dc,d_2);
-    const int s_2 = v.stride(d_2) * (ft == H_stuff ? -1 : +1);
+    const int s_2 = gv.stride(d_2) * (ft == H_stuff ? -1 : +1);
 
     direction dsigw0 = d_ec;
     direction dsigw = s->sigsize[dsigw0] > 1 ? dsigw0 : NO_DIRECTION;
@@ -154,22 +154,22 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     // lazily allocate any E/H fields that are needed (H==B initially)
     if (f[ec][cmp] == f[dc][cmp]
 	&& (s->chi1inv[ec][d_ec] || have_f_minus_p || dsigw != NO_DIRECTION)) {
-      f[ec][cmp] = new realnum[v.ntot()];
-      memcpy(f[ec][cmp], f[dc][cmp], v.ntot() * sizeof(realnum));
+      f[ec][cmp] = new realnum[gv.ntot()];
+      memcpy(f[ec][cmp], f[dc][cmp], gv.ntot() * sizeof(realnum));
       allocated_eh = true;
     }
     
     // lazily allocate W auxiliary field
     if (!f_w[ec][cmp] && dsigw != NO_DIRECTION) {
-      f_w[ec][cmp] = new realnum[v.ntot()];
-      memcpy(f_w[ec][cmp], f[ec][cmp], v.ntot() * sizeof(realnum));
+      f_w[ec][cmp] = new realnum[gv.ntot()];
+      memcpy(f_w[ec][cmp], f[ec][cmp], gv.ntot() * sizeof(realnum));
     }
 
     // for solve_cw, when W exists we get W and E from special variables
     if (f_w[ec][cmp] && skip_w_components) continue;
 
     if (f[ec][cmp] != f[dc][cmp])
-      STEP_UPDATE_EDHB(f[ec][cmp], ec, v, 
+      STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, 
 		       dmp[dc][cmp], dmp[dc_1][cmp], dmp[dc_2][cmp],
 		       s->chi1inv[ec][d_ec], dmp[dc_1][cmp]?s->chi1inv[ec][d_1]:NULL, dmp[dc_2][cmp]?s->chi1inv[ec][d_2]:NULL,
 		       s_ec, s_1, s_2, s->chi2[ec], s->chi3[ec],
@@ -181,14 +181,14 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
      components at r=0 don't usually affect the fields elsewhere
      because of the form of Maxwell's equations in cylindrical coords. */
   // (FIXME: handle Kerr case?  Do we care about auxiliary PML fields here?)
-  if (v.dim == Dcyl && v.origin_r() == 0.0)
+  if (gv.dim == Dcyl && gv.origin_r() == 0.0)
     DOCMP FOR_FT_COMPONENTS(ft,ec) if (f[ec][cmp] && (ec == Ep || ec == Ez
 						      || ec == Hr)) {
       component dc = field_type_component(ft2, ec);
       if (f[ec][cmp] == f[dc][cmp]) continue;
-      const int yee_idx = v.yee_index(ec);
+      const int yee_idx = gv.yee_index(ec);
       const int d_ec = component_direction(ec);
-      const int sR = v.stride(R), nZ = v.num_direction(Z);
+      const int sR = gv.stride(R), nZ = gv.num_direction(Z);
       realnum *E = f[ec][cmp];
       const realnum *D = have_f_minus_p ? f_minus_p[dc][cmp] : f[dc][cmp];
       const realnum *chi1inv = s->chi1inv[ec][d_ec];

@@ -30,30 +30,30 @@ double funky_eps_3d(const vec &p_) {
   return 2.0 + cos(p.x() * eps_k) * cos(p.y() * eps_k) * cos(p.z() * eps_k);
 }
 
-symmetry make_identity(const grid_volume &v)
+symmetry make_identity(const grid_volume &gv)
 {
-  (void) v; // unused
+  (void) gv; // unused
   return identity();
 }
 
-symmetry make_mirrorx(const grid_volume &v)
+symmetry make_mirrorx(const grid_volume &gv)
 {
-  return mirror(X, v);
+  return mirror(X, gv);
 }
 
-symmetry make_mirrory(const grid_volume &v)
+symmetry make_mirrory(const grid_volume &gv)
 {
-  return mirror(Y, v);
+  return mirror(Y, gv);
 }
 
-symmetry make_mirrorxy(const grid_volume &v)
+symmetry make_mirrorxy(const grid_volume &gv)
 {
-  return mirror(X, v) + mirror(Y, v);
+  return mirror(X, gv) + mirror(Y, gv);
 }
 
-symmetry make_rotate4z(const grid_volume &v)
+symmetry make_rotate4z(const grid_volume &gv)
 {
-  return rotate4(Z, v);
+  return rotate4(Z, gv);
 }
 
 typedef symmetry (*symfunc)(const grid_volume &);
@@ -79,15 +79,15 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
-  const grid_volume v = vol2d(xsize, ysize, a);
-  structure s(v, eps, no_pml(), Sf(v), splitting);
+  const grid_volume gv = vol2d(xsize, ysize, a);
+  structure s(gv, eps, no_pml(), Sf(gv), splitting);
   fields f(&s);
 
   f.use_bloch(X, real_fields ? 0.0 : kx);
   f.use_bloch(Y, real_fields ? 0.0 : ky);
 
   if (real_fields) f.use_real_fields();
-  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, gv.center(), 1.0, 1);
 
   if (file_c >= int(Dielectric)) real_fields = true;
 
@@ -113,15 +113,15 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
-  ivec iloc0(v.dim);
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
+  ivec iloc0(gv.dim);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     iloc0.set_direction(d, 1+2*int(floor(loc0.in_direction(d)*a-.5)));
     if (file_gv.in_direction(d) == 0.0 &&
 	1. - file_gv.in_direction_min(d)*a + 0.5*iloc0.in_direction(d)
 	<= 1. + file_gv.in_direction_max(d)*a - 0.5*(iloc0.in_direction(d)+2))
       iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
-  loc0 = v[iloc0];
+  loc0 = gv[iloc0];
 
   double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
@@ -147,8 +147,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     vec loc(loc0.dim);
     for (int i0 = 0; i0 < dims[0]; ++i0) {
       for (int i1 = 0; i1 < dims[1]; ++i1) {
-	loc.set_direction(X, loc0.in_direction(X) + i0 * v.inva);
-	loc.set_direction(Y, loc0.in_direction(Y) + i1 * v.inva);
+	loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
+	loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
 	int idx = i0 * dims[1] + i1;
 
 	/* Ugh, for rotational symmetries (which mix up components etc.),
@@ -199,12 +199,12 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
-  const grid_volume v = vol3d(xsize, ysize, zsize, a);
-  structure s(v, eps, no_pml(), Sf(v), splitting);
+  const grid_volume gv = vol3d(xsize, ysize, zsize, a);
+  structure s(gv, eps, no_pml(), Sf(gv), splitting);
   fields f(&s);
 
   if (real_fields) f.use_real_fields();
-  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, gv.center(), 1.0, 1);
 
   if (file_c >= Dielectric) real_fields = true;
 
@@ -230,15 +230,15 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
-  ivec iloc0(v.dim);
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
+  ivec iloc0(gv.dim);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     iloc0.set_direction(d, 1+2*int(floor(loc0.in_direction(d)*a-.5)));
     if (file_gv.in_direction(d) == 0.0 &&
 	1. - file_gv.in_direction_min(d)*a + 0.5*iloc0.in_direction(d)
 	<= 1. + file_gv.in_direction_max(d)*a - 0.5*(iloc0.in_direction(d)+2))
       iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
-  loc0 = v[iloc0];
+  loc0 = gv[iloc0];
 
   double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
@@ -260,9 +260,9 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     for (int i0 = 0; i0 < dims[0]; ++i0) {
       for (int i1 = 0; i1 < dims[1]; ++i1) {
 	for (int i2 = 0; i2 < dims[2]; ++i2) {
-	  loc.set_direction(X, loc0.in_direction(X) + i0 * v.inva);
-	  loc.set_direction(Y, loc0.in_direction(Y) + i1 * v.inva);
-	  loc.set_direction(Z, loc0.in_direction(Z) + i2 * v.inva);
+	  loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
+	  loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
+	  loc.set_direction(Z, loc0.in_direction(Z) + i2 * gv.inva);
 	  int idx = (i0 * dims[1] + i1) * dims[2] + i2;
 	  
 	  /* Ugh, for rotational symmetries (which mix up components etc.),
@@ -315,26 +315,26 @@ bool check_2d_monitor(double eps(const vec &),
 		      const vec &pt,
 		      bool real_fields,
 		      const char *name) {
-  const grid_volume v = vol2d(xsize, ysize, a);
-  structure s(v, eps, no_pml(), Sf(v), splitting);
+  const grid_volume gv = vol2d(xsize, ysize, a);
+  structure s(gv, eps, no_pml(), Sf(gv), splitting);
   fields f(&s);
 
   if (real_fields) f.use_real_fields();
-  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, v.center(), 1.0, 1);
+  f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, gv.center(), 1.0, 1);
 
   if (file_c >= Dielectric) real_fields = true;
 
   h5file *file = f.open_h5file(name);
 
   // compute pt snapped onto dielectric grid
-  ivec iloc0(v.dim);
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
+  ivec iloc0(gv.dim);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     iloc0.set_direction(d, 1+2*int(floor(pt.in_direction(d)*a-.5)));
     if (1. - pt.in_direction(d)*a + 0.5*iloc0.in_direction(d)
 	<= 1. + pt.in_direction(d)*a - 0.5*(iloc0.in_direction(d)+2))
       iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
-  vec pt0(v[iloc0]);
+  vec pt0(gv[iloc0]);
 
   const double T = 3.0;
   int NT = int(T / f.dt) + 2;

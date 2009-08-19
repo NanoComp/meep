@@ -148,9 +148,9 @@ static void stress_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 
   if (!fc->f[cgrid][0]) return;
 
-  vec rshift(shift * (0.5*fc->v.inva));
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    IVEC_LOOP_LOC(fc->v, loc);
+  vec rshift(shift * (0.5*fc->gv.inva));
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    IVEC_LOOP_LOC(fc->gv, loc);
     loc = S.transform(loc, sn) + rshift;
 
     double fre, fim;
@@ -187,9 +187,9 @@ static void stress_chunkloop_bloch(fields_chunk *fc, int ichunk, component cgrid
 
   if (!fc->f[cgrid][0]) return;
 
-  vec rshift(shift * (0.5*fc->v.inva));
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    IVEC_LOOP_LOC(fc->v, loc);
+  vec rshift(shift * (0.5*fc->gv.inva));
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    IVEC_LOOP_LOC(fc->gv, loc);
     loc = S.transform(loc, sn) + rshift;
 
     double fre, fim;
@@ -216,9 +216,9 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
   direction dcomponent = NO_DIRECTION;  // relevant component of field to integrate over
   double coefficient = 1.0;
 
-  if (where.dim != v.dim)
+  if (where.dim != gv.dim)
     abort("invalid dimesionality in casimir_stress_dct_integral");
-  if (coordinate_mismatch(v.dim,dforce) || coordinate_mismatch(v.dim,dsource))
+  if (coordinate_mismatch(gv.dim,dforce) || coordinate_mismatch(gv.dim,dsource))
     abort("invalid directions in casimir_stress_dct_integral");
   if (dnormal == NO_DIRECTION)
     abort("invalid integration surface in casimir_stress_dct_integral");
@@ -247,37 +247,37 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
   stress_data data;
 
   data.zd = Z;
-  if (v.dim == Dcyl) { data.xd = R; data.yd = P; }
+  if (gv.dim == Dcyl) { data.xd = R; data.yd = P; }
   else { data.xd = X; data.yd = Y; }
 
-  if (has_direction(v.dim, data.xd) && where.in_direction(data.xd) > 0) {
+  if (has_direction(gv.dim, data.xd) && where.in_direction(data.xd) > 0) {
     data.x0 = !is_bloch ? where.in_direction_min(data.xd) :
       (0.5 * (where.in_direction_min(data.xd) + where.in_direction_max(data.xd)));
     data.kx = mx * pi / (!is_bloch ? where.in_direction(data.xd) : 1.0);
     coefficient *= sqrt((mx == 0 || is_bloch ? 1.0 : 2.0) / where.in_direction(data.xd));
   }
   else {
-    data.xd = start_at_direction(v.dim); // a dir we are guaranteed to have
+    data.xd = start_at_direction(gv.dim); // a dir we are guaranteed to have
     data.x0 = data.kx = 0; // innocuous values: ignore this dir
   }
-  if (has_direction(v.dim, data.yd) && where.in_direction(data.yd) > 0) {
+  if (has_direction(gv.dim, data.yd) && where.in_direction(data.yd) > 0) {
     data.y0 = !is_bloch ? where.in_direction_min(data.yd) :
       (0.5 * (where.in_direction_min(data.yd) + where.in_direction_max(data.yd)));
     data.ky = my * pi / (!is_bloch ? where.in_direction(data.yd) : 1.0);
     coefficient *= sqrt((my == 0 || is_bloch ? 1.0 : 2.0) / where.in_direction(data.yd));
   }
   else {
-    data.yd = start_at_direction(v.dim); // a dir we are guaranteed to have
+    data.yd = start_at_direction(gv.dim); // a dir we are guaranteed to have
     data.y0 = data.ky = 0; // innocuous values: ignore this dir
   }
-  if (has_direction(v.dim, data.zd) && where.in_direction(data.zd) > 0) {
+  if (has_direction(gv.dim, data.zd) && where.in_direction(data.zd) > 0) {
     data.z0 = !is_bloch ? where.in_direction_min(data.zd) :
       (0.5 * (where.in_direction_min(data.zd) + where.in_direction_max(data.zd)));
     data.kz = mz * pi / (!is_bloch ? where.in_direction(data.zd) : 1.0);
     coefficient *= sqrt((mz == 0 || is_bloch ? 1.0 : 2.0) / where.in_direction(data.zd));
   }
   else {
-    data.zd = start_at_direction(v.dim); // a dir we are guaranteed to have
+    data.zd = start_at_direction(gv.dim); // a dir we are guaranteed to have
     data.z0 = data.kz = 0; // innocuous values: ignore this dir
   }
   
@@ -286,9 +286,9 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
 
   data.sum = 0.0;
   data.dV = 1.0;
-  LOOP_OVER_DIRECTIONS(v.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d)
     if (where.in_direction(d) > 0.0)
-      data.dV *= v.inva;
+      data.dV *= gv.inva;
 
   if (is_bloch) //complex exponentials exp(i m x)
     loop_in_chunks(stress_chunkloop_bloch, &data, where, c);

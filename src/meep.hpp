@@ -241,14 +241,14 @@ class structure_chunk {
   bool condinv_stale; // true if condinv needs to be recomputed
   double *sig[5], *siginv[5]; // conductivity array for uPML
   int sigsize[5]; // conductivity array size
-  grid_volume v;  // integer grid_volume that could be bigger than non-overlapping xv below
+  grid_volume gv;  // integer grid_volume that could be bigger than non-overlapping xv below
   volume xv;
   polarizability *pb;
 
   int refcount; // reference count of objects using this structure_chunk
 
   ~structure_chunk();
-  structure_chunk(const grid_volume &v,
+  structure_chunk(const grid_volume &gv,
             const volume &vol_limit, double Courant, int proc_num);
   structure_chunk(const structure_chunk *);
   void set_chi1inv(component c, material_function &eps,
@@ -326,7 +326,7 @@ public:
 
   void apply(structure *s) const;
   void apply(const structure *s, structure_chunk *sc) const;
-  bool check_ok(const grid_volume &v) const;
+  bool check_ok(const grid_volume &gv) const;
 
 private:
   boundary_region_kind kind;
@@ -348,7 +348,7 @@ class structure {
  public:
   structure_chunk **chunks;
   int num_chunks;
-  grid_volume v, user_volume;
+  grid_volume gv, user_volume;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   volume xv;
   symmetry S;
@@ -359,14 +359,14 @@ class structure {
 
   ~structure();
   structure();
-  structure(const grid_volume &v, material_function &eps,
+  structure(const grid_volume &gv, material_function &eps,
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
 	    int num_chunks = 0, double Courant = 0.5,
 	    bool use_anisotropic_averaging=false,
 	    double tol=DEFAULT_SUBPIXEL_TOL,
 	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  structure(const grid_volume &v, double eps(const vec &), 
+  structure(const grid_volume &gv, double eps(const vec &), 
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
 	    int num_chunks = 0, double Courant = 0.5,
@@ -445,7 +445,7 @@ class structure {
   void use_pml(direction d, boundary_side b, double dx);
   void add_to_effort_volumes(const grid_volume &new_effort_volume, 
 			     double extra_effort);
-  void choose_chunkdivision(const grid_volume &v, int num_chunks,
+  void choose_chunkdivision(const grid_volume &gv, int num_chunks,
 			    const boundary_region &br, const symmetry &s);
   void check_chunks();
   void changing_chunks();
@@ -772,7 +772,7 @@ class fields_chunk {
 
   polarization *pols[NUM_FIELD_TYPES], *olpols[NUM_FIELD_TYPES];
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
-  grid_volume v;
+  grid_volume gv;
   volume xv;
   double m, rshift;
   double beta;
@@ -820,7 +820,7 @@ class fields_chunk {
   void restore_component(component c);
   
   void set_output_directory(const char *name);
-  void verbose(int v=1) { verbosity = v; }
+  void verbose(int gv=1) { verbosity = gv; }
 
   double count_volume(component);
   friend class fields;
@@ -900,7 +900,7 @@ typedef double (*field_rfunction)(const complex<double> *fields,
 				   const vec &loc,
 				   void *integrand_data_);
 
-field_rfunction derived_component_func(derived_component c, const grid_volume &v,
+field_rfunction derived_component_func(derived_component c, const grid_volume &gv,
 				       int &nfields, component cs[12]);
 
 class fields {
@@ -923,7 +923,7 @@ class fields {
   }
 
   double a, dt; // The resolution a and timestep dt=Courant/a
-  grid_volume v, user_volume;
+  grid_volume gv, user_volume;
   volume xv;
   double m;
   double beta;
@@ -1170,7 +1170,7 @@ class fields {
 					   const volume &where);
 
   void set_output_directory(const char *name);
-  void verbose(int v=1);
+  void verbose(int gv=1);
   double count_volume(component);
   // fields.cpp
   bool have_component(component);

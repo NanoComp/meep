@@ -129,7 +129,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
 #ifdef HAVE_MPB
-  if (resolution <= 0) resolution = 2 * v.a; // default to twice resolution
+  if (resolution <= 0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
   mpb_real k[3] = {0,0,0};
   double s[3] = {0,0,0}, o[3] = {0,0,0};
@@ -139,7 +139,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   if (!eig_vol.contains(where))
     abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
 
-  switch (v.dim) {
+  switch (gv.dim) {
   case D3:
     o[0] = eig_vol.in_direction_min(X);
     o[1] = eig_vol.in_direction_min(Y);
@@ -190,7 +190,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   }
   
   meep_mpb_eps_data eps_data;
-  eps_data.s = s; eps_data.o = o; eps_data.dim = v.dim; eps_data.f = this;
+  eps_data.s = s; eps_data.o = o; eps_data.dim = gv.dim; eps_data.f = this;
   set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps,NULL, &eps_data);
   if (check_maxwell_dielectric(mdata, 0))
     abort("invalid dielectric function for MPB");
@@ -272,8 +272,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
 
   FOR_MAGNETIC_COMPONENTS(c) 
-    if (v.has_field(c) && (c0 == Centered || c0 == c)
-	&& (v.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
+    if (gv.has_field(c) && (c0 == Centered || c0 == c)
+	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
 	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
 	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
       foo_component = c;
@@ -284,8 +284,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
   FOR_ELECTRIC_COMPONENTS(c) 
-    if (v.has_field(c) && (c0 == Centered || c0 == c)
-	&& (v.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
+    if (gv.has_field(c) && (c0 == Centered || c0 == c)
+	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
 	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
 	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
       foo_component = c;

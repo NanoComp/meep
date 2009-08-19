@@ -48,7 +48,7 @@ static complex<double> linear_integrand(const complex<double> *fields,
 
   (void) fields; // unused
 
-  // clean_vec is only necessary because we reference X/Y/Z for any v.dim
+  // clean_vec is only necessary because we reference X/Y/Z for any gv.dim
   vec locS(clean_vec(loc));
 
   return (data->c
@@ -218,18 +218,18 @@ void check_integral(fields &f,
   master_printf("...PASSED.\n");
 }
 
-void check_splitsym(const grid_volume &v, int splitting, 
+void check_splitsym(const grid_volume &gv, int splitting, 
 		    const symmetry &S, const char *Sname)
 {
   const int num_random_trials = 100;
-  structure s(v, one, no_pml(), S, splitting);
+  structure s(gv, one, no_pml(), S, splitting);
   fields f(&s);
 
   // periodic boundaries:
-  f.use_bloch(zero_vec(v.dim));
+  f.use_bloch(zero_vec(gv.dim));
 
   linear_integrand_data d;
-  if (v.dim == Dcyl) {
+  if (gv.dim == Dcyl) {
     d.dx = R; d.dy = P; d.dz = Z;
   }
   else {
@@ -239,12 +239,12 @@ void check_splitsym(const grid_volume &v, int splitting,
   master_printf("\nCHECKS for splitting=%d, symmetry=%s\n...",
 		splitting, Sname);
   for (int i = 0; i < num_random_trials; ++i) {
-    volume xv(random_gv(v.dim));
+    volume xv(random_gv(gv.dim));
     component cgrid;
 
     do {
       cgrid = component(rand() % (Dielectric + 1));
-    } while (coordinate_mismatch(v.dim, component_direction(cgrid)));
+    } while (coordinate_mismatch(gv.dim, component_direction(cgrid)));
 
     // try integral of 1 first (easier to debug, I hope)
     d.c = 1.0;
@@ -255,28 +255,28 @@ void check_splitsym(const grid_volume &v, int splitting,
     d.ax = urand(-1,1); d.ay = urand(-1,1); d.az = urand(-1,1);
     d.axy = urand(-1,1); d.ayz = urand(-1,1); d.axz = urand(-1,1);
     d.axyz = urand(-1,1);
-    if (v.dim == Dcyl) // cyl. doesn't integrate linear functions of r exactly
+    if (gv.dim == Dcyl) // cyl. doesn't integrate linear functions of r exactly
       d.ax = d.axy = d.axz = d.axyz = 0;
     check_integral(f, d, xv, cgrid);
   }
 }
 
 // check LOOP_OVER_VOL and LOOP_OVER_VOL_OWNED macros
-void check_loop_vol(const grid_volume &v, component c)
+void check_loop_vol(const grid_volume &gv, component c)
 {
-  int count = 0, min_i = v.ntot(), max_i = 0, count_owned = 0;
+  int count = 0, min_i = gv.ntot(), max_i = 0, count_owned = 0;
 
   master_printf("Checking %s loops for %s grid_volume...\n",
-		component_name(c), dimension_name(v.dim));
+		component_name(c), dimension_name(gv.dim));
 
-  ivec vmin(v.little_corner() + v.iyee_shift(c));
-  ivec vmax(v.big_corner() + v.iyee_shift(c));
+  ivec vmin(gv.little_corner() + gv.iyee_shift(c));
+  ivec vmax(gv.big_corner() + gv.iyee_shift(c));
 
-  LOOP_OVER_VOL(v, c, i) {
-    IVEC_LOOP_ILOC(v, ihere);
-    IVEC_LOOP_LOC(v, here);
-    ivec ihere0(v.iloc(c, i));
-    vec here0(v[ihere0]);
+  LOOP_OVER_VOL(gv, c, i) {
+    IVEC_LOOP_ILOC(gv, ihere);
+    IVEC_LOOP_LOC(gv, here);
+    ivec ihere0(gv.iloc(c, i));
+    vec here0(gv[ihere0]);
     if (ihere0 != ihere)
       abort("FAILED: wrong LOOP_OVER_VOL iloc at i=%d\n", i);
     if (abs(here0 - here) > 1e-13)
@@ -285,34 +285,34 @@ void check_loop_vol(const grid_volume &v, component c)
     ++count;
     if (i < min_i) min_i = i;
     if (i > max_i) max_i = i;
-    if (v.owns(ihere))
+    if (gv.owns(ihere))
       ++count_owned;
     if (ihere < vmin || ihere > vmax)
       abort("FAILED: LOOP_OVER_VOL outside V at i=%d\n", i);
   }
-  if (count != v.ntot())
+  if (count != gv.ntot())
     abort("FAILED: LOOP_OVER_VOL has %d iterations instead of ntot=%d\n",
-	  count, v.ntot());
-  if (count_owned != v.nowned(c))
+	  count, gv.ntot());
+  if (count_owned != gv.nowned(c))
     abort("FAILED: LOOP_OVER_VOL has %d owned points instead of nowned=%d\n",
-	  count_owned, v.nowned(c));
+	  count_owned, gv.nowned(c));
   if (min_i != 0)
     abort("FAILED: LOOP_OVER_VOL has minimum index %d instead of 0\n", min_i);
-  if (max_i != v.ntot() - 1)
+  if (max_i != gv.ntot() - 1)
     abort("FAILED: LOOP_OVER_VOL has max index %d instead of ntot-1\n", max_i);
 
   count = 0;
-  LOOP_OVER_VOL_OWNED(v, c, i) {
-    IVEC_LOOP_ILOC(v, ihere);
-    IVEC_LOOP_LOC(v, here);
-    ivec ihere0(v.iloc(c, i));
-    vec here0(v[ihere0]);
+  LOOP_OVER_VOL_OWNED(gv, c, i) {
+    IVEC_LOOP_ILOC(gv, ihere);
+    IVEC_LOOP_LOC(gv, here);
+    ivec ihere0(gv.iloc(c, i));
+    vec here0(gv[ihere0]);
     if (ihere0 != ihere)
       abort("FAILED: wrong LOOP_OVER_VOL_OWNED iloc at i=%d\n", i);
     if (abs(here0 - here) > 1e-13)
       abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%d\n",
 	    abs(here0 - here), i);
-    if (!v.owns(ihere))
+    if (!gv.owns(ihere))
       abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%d\n", i);
     ++count;
   }
@@ -321,25 +321,25 @@ void check_loop_vol(const grid_volume &v, component c)
 	  count, count_owned);
 
   count = 0;
-  LOOP_OVER_VOL_NOTOWNED(v, c, i) {
-    IVEC_LOOP_ILOC(v, ihere);
-    IVEC_LOOP_LOC(v, here);
-    ivec ihere0(v.iloc(c, i));
-    vec here0(v[ihere0]);
+  LOOP_OVER_VOL_NOTOWNED(gv, c, i) {
+    IVEC_LOOP_ILOC(gv, ihere);
+    IVEC_LOOP_LOC(gv, here);
+    ivec ihere0(gv.iloc(c, i));
+    vec here0(gv[ihere0]);
     if (ihere0 != ihere)
       abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED iloc at i=%d\n", i);
     if (abs(here0 - here) > 1e-13)
       abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%d\n",
 	    abs(here0 - here), i);
-    if (v.owns(ihere))
+    if (gv.owns(ihere))
       abort("FAILED: LOOP_OVER_VOL_NOTOWNED includes owned at i=%d\n", i);
     if (ihere < vmin || ihere > vmax)
       abort("FAILED: LOOP_OVER_VOL_NOTOWNED outside V at i=%d\n", i);
     ++count;
   }
-  if (count != v.ntot() - count_owned)
+  if (count != gv.ntot() - count_owned)
     abort("FAILED: LOOP_OVER_VOL_NOTOWNED has %d iterations instead of %d\n",
-	  count, v.ntot() - count_owned);
+	  count, gv.ntot() - count_owned);
 
   master_printf("...PASSED.\n");
 }

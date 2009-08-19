@@ -42,7 +42,7 @@ int compare_point(fields &f1, fields &f2, const vec &p, double eps=4e-8) {
   f2.get_point(&m1, p);
   for (int i=0;i<10;i++) {
     component c = (component) i;
-    if (f1.v.has_field(c)) {
+    if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > eps*abs(v2) && abs(v2) > eps*100) {
         master_printf("%s differs:  %g %g out of %g %g\n",
@@ -62,9 +62,9 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   double a = 10.0;
   double ttot = 30.0;
   
-  grid_volume v = volcyl(1.5,0.8,a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = volcyl(1.5,0.8,a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
@@ -82,7 +82,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("Chunks are %g by %g\n",
-                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
     double total_energy_check_time = 29.0;
     while (f.time() < ttot) {
       f.step();
@@ -95,11 +95,11 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
       if (f.time() >= total_energy_check_time) {
         if (!compare(f.total_energy(), f1.total_energy(),
                      "   total energy")) return 0;
-        if (!compare(f.electric_energy_in_box(v.surroundings()),
-                     f1.electric_energy_in_box(v.surroundings()),
+        if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                     f1.electric_energy_in_box(gv.surroundings()),
                      "electric energy")) return 0;
-        if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                     f1.magnetic_energy_in_box(v.surroundings()),
+        if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                     f1.magnetic_energy_in_box(gv.surroundings()),
                      "magnetic energy")) return 0;
 
         total_energy_check_time += 5.0;
@@ -113,9 +113,9 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
   double a = 10.0;
   double ttot = 30.0;
   
-  grid_volume v = volcyl(1.5,0.8,a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = volcyl(1.5,0.8,a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
@@ -131,7 +131,7 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("Chunks are %g by %g\n",
-                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
     double total_energy_check_time = 29.0;
     while (f.time() < ttot) {
       f.step();
@@ -144,11 +144,11 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
       if (f.time() >= total_energy_check_time) {
         if (!compare(f.total_energy(), f1.total_energy(),
                      "   total energy")) return 0;
-        if (!compare(f.electric_energy_in_box(v.surroundings()),
-                     f1.electric_energy_in_box(v.surroundings()),
+        if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                     f1.electric_energy_in_box(gv.surroundings()),
                      "electric energy")) return 0;
-        if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                     f1.magnetic_energy_in_box(v.surroundings()),
+        if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                     f1.magnetic_energy_in_box(gv.surroundings()),
                      "magnetic energy")) return 0;
 
         total_energy_check_time += 5.0;
@@ -161,8 +161,8 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
 int test_r_equals_zero(double eps(const vec &), const char *mydirname) {
   double a = 10.0;
   double ttot = 3.0;  
-  grid_volume v = volcyl(1.5,0.8,a);
-  structure s(v, eps);
+  grid_volume gv = volcyl(1.5,0.8,a);
+  structure s(gv, eps);
   s.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
     char m_str[10];
@@ -207,9 +207,9 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 8;
   double ttot = 25.0;
   
-  grid_volume v = volcyl(3.5,10.0,a);
-  structure s1(v, eps, pml(2.0));
-  structure s(v, eps, pml(2.0), identity(), splitting);
+  grid_volume gv = volcyl(3.5,10.0,a);
+  structure s1(gv, eps, pml(2.0));
+  structure s(gv, eps, pml(2.0), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<3;m++) {
@@ -225,7 +225,7 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume", 3e-14)) return 0;
     master_printf("Chunks are %g by %g\n",
-                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
     double total_energy_check_time = 10.0;
     while (f.time() < ttot) {
       f.step();
@@ -240,11 +240,11 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
       if (f.time() >= total_energy_check_time) {
         if (!compare(f.total_energy(), f1.total_energy(),
                      "pml total energy", 1e-13)) return 0;
-        if (!compare(f.electric_energy_in_box(v.surroundings()),
-                     f1.electric_energy_in_box(v.surroundings()),
+        if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                     f1.electric_energy_in_box(gv.surroundings()),
                      "electric energy", 1e-13)) return 0;
-        if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                     f1.magnetic_energy_in_box(v.surroundings()),
+        if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                     f1.magnetic_energy_in_box(gv.surroundings()),
                      "magnetic energy", 1e-13)) return 0;
 
         total_energy_check_time += 10.0;
@@ -269,9 +269,9 @@ complex<double> checkers(const vec &pt) {
 int test_pattern(double eps(const vec &), int splitting,
                  const char *mydirname) {
   double a = 10.0;
-  grid_volume v = volcyl(1.5,0.8,a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = volcyl(1.5,0.8,a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   for (int m=0;m<1;m++) {
@@ -285,7 +285,7 @@ int test_pattern(double eps(const vec &), int splitting,
     f1.use_bloch(0.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("First chunk is %g by %g\n",
-                  f.chunks[0]->v.nr()/a, f.chunks[0]->v.nz()/a);
+                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
     f1.initialize_field(Hp, checkers);
     f.initialize_field(Hp, checkers);
 
@@ -296,11 +296,11 @@ int test_pattern(double eps(const vec &), int splitting,
     if (!compare_point(f, f1, veccyl(1.0, 0.7))) return 0;
     if (!compare(f.total_energy(), f1.total_energy(),
                  "   total energy")) return 0;
-    if (!compare(f.electric_energy_in_box(v.surroundings()),
-                 f1.electric_energy_in_box(v.surroundings()),
+    if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                 f1.electric_energy_in_box(gv.surroundings()),
                  "electric energy")) return 0;
-    if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                 f1.magnetic_energy_in_box(v.surroundings()),
+    if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                 f1.magnetic_energy_in_box(gv.surroundings()),
                  "magnetic energy")) return 0;
   }
   return 1;

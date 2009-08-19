@@ -47,52 +47,52 @@ void compare(double b, double a, const char *n) {
 
 static double dpml = 1.0;
 
-double using_pml_ez(const grid_volume &v, double eps(const vec &)) {
+double using_pml_ez(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 30.0;
-  structure s(v, eps, pml(dpml));
+  structure s(gv, eps, pml(dpml));
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));
   while (f.round_time() < ttot) f.step();
   monitor_point p;
-  f.get_point(&p, v.center());
+  f.get_point(&p, gv.center());
   return real(p.get_component(Ez));
 }
 
-double x_periodic_y_pml(const grid_volume &v, double eps(const vec &)) {
+double x_periodic_y_pml(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 30.0;
-  structure s(v, eps, pml(dpml, Y));
+  structure s(gv, eps, pml(dpml, Y));
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
-		     complex<double>(0,-2*pi*0.2));
-  f.use_bloch(X, 0.1);
-  while (f.round_time() < ttot) f.step();
-  monitor_point p;
-  f.get_point(&p, v.center());
-  return real(p.get_component(Ez));
-}
-
-double x_periodic(const grid_volume &v, double eps(const vec &)) {
-  const double ttot = 30.0;
-  structure s(v, eps);
-  fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));
   f.use_bloch(X, 0.1);
   while (f.round_time() < ttot) f.step();
   monitor_point p;
-  f.get_point(&p, v.center());
+  f.get_point(&p, gv.center());
   return real(p.get_component(Ez));
 }
 
-double periodic_ez(const grid_volume &v, double eps(const vec &)) {
+double x_periodic(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 30.0;
-  structure s(v, eps);
+  structure s(gv, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, gv.center(),
+		     complex<double>(0,-2*pi*0.2));
+  f.use_bloch(X, 0.1);
+  while (f.round_time() < ttot) f.step();
+  monitor_point p;
+  f.get_point(&p, gv.center());
+  return real(p.get_component(Ez));
+}
+
+double periodic_ez(const grid_volume &gv, double eps(const vec &)) {
+  const double ttot = 30.0;
+  structure s(gv, eps);
+  fields f(&s);
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));
   vec k;
-  switch (v.dim) {
+  switch (gv.dim) {
   case D1: k = vec(0.3); break;
   case D2: k = vec(0.3,0.4); break;
   case D3: k = vec(0.3,0.5,0.8); break;
@@ -101,43 +101,43 @@ double periodic_ez(const grid_volume &v, double eps(const vec &)) {
   f.use_bloch(k);
   while (f.round_time() < ttot) f.step();
   monitor_point p;
-  f.get_point(&p, v.center());
+  f.get_point(&p, gv.center());
   return real(p.get_component(Ez));
 }
 
-double metallic_ez(const grid_volume &v, double eps(const vec &)) {
+double metallic_ez(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 10.0;
-  structure s(v, eps);
+  structure s(gv, eps);
   fields f(&s);
-  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, v.center(),
+  f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));
   while (f.round_time() < ttot) f.step();
   monitor_point p;
-  f.get_point(&p, v.center());
+  f.get_point(&p, gv.center());
   return real(p.get_component(Ez));
 }
 
 double sigma(const vec &) { return 7.63; }
 
-double polariton_ex(const grid_volume &v, double eps(const vec &)) {
+double polariton_ex(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 10.0;
-  structure s(v, eps);
+  structure s(gv, eps);
   s.add_polarizability(sigma, 0.3, 0.1);
   fields f(&s);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(),
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));
   while (f.round_time() < ttot) f.step();
   monitor_point p;
-  f.get_point(&p, v.center());
+  f.get_point(&p, gv.center());
   return real(p.get_component(Ex));
 }
 
-double polariton_energy(const grid_volume &v, double eps(const vec &)) {
+double polariton_energy(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 10.0;
-  structure s(v, eps);
+  structure s(gv, eps);
   s.add_polarizability(sigma, 0.3, 0.1);
   fields f(&s, 0, 1);
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center(),
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));
   while (f.round_time() < ttot) f.step();
   return f.total_energy();

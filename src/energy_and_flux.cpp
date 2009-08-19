@@ -37,8 +37,8 @@ double fields::count_volume(component c) {
 
 double fields_chunk::count_volume(component c) {
   double vol = 0;
-  for (int i=0;i<v.ntot();i++)
-    vol += v.dV(c,i).full_volume();
+  for (int i=0;i<gv.ntot();i++)
+    vol += gv.dV(c,i).full_volume();
   return vol;
 }
 
@@ -70,7 +70,7 @@ static complex<double> dot_integrand(const complex<double> *fields,
 
 double fields::field_energy_in_box(component c,
 				   const volume &where) {
-  if (coordinate_mismatch(v.dim, c))
+  if (coordinate_mismatch(gv.dim, c))
     return 0.0;
 
   component cs[2];
@@ -111,8 +111,8 @@ void fields_chunk::backup_component(component c) {
 
 #define BACKUP(f) if (f[c][cmp]) {					\
       if (!f##_backup[c][cmp])						\
-	f##_backup[c][cmp] = new realnum[v.ntot()];			\
-      memcpy(f##_backup[c][cmp], f[c][cmp], v.ntot()*sizeof(realnum)); }
+	f##_backup[c][cmp] = new realnum[gv.ntot()];			\
+      memcpy(f##_backup[c][cmp], f[c][cmp], gv.ntot()*sizeof(realnum)); }
 
       BACKUP(f);
       BACKUP(f_u);
@@ -128,7 +128,7 @@ void fields_chunk::restore_component(component c) {
   DOCMP if (f_backup[c][cmp]) {
 #define RESTORE(f)							\
     if (f[c][cmp])							\
-      memcpy(f[c][cmp], f##_backup[c][cmp], v.ntot()*sizeof(realnum));
+      memcpy(f[c][cmp], f##_backup[c][cmp], gv.ntot()*sizeof(realnum));
     
     RESTORE(f);
     RESTORE(f_u);
@@ -144,7 +144,7 @@ void fields_chunk::average_with_backup(component c) {
     realnum *fc = f[c][cmp];
     realnum *backup = f_backup[c][cmp];
     if (fc && backup)
-      for (int i = 0; i < v.ntot(); i++)
+      for (int i = 0; i < gv.ntot(); i++)
 	fc[i] = 0.5 * (fc[i] + backup[i]);
   }
 }
@@ -194,7 +194,7 @@ static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   (void)shift; (void)shift_phase; (void)S; (void)sn; (void)ichunk; // unused
   for (polarization *pol = fc->pols[type(cgrid)]; pol; pol = pol->next)
     if (pol->energy[cgrid])
-      LOOP_OVER_IVECS(fc->v, is, ie, idx)
+      LOOP_OVER_IVECS(fc->gv, is, ie, idx)
 	*sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
 	* pol->energy[cgrid][idx];
 }
@@ -202,7 +202,7 @@ static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 double fields::thermo_energy_in_box(const volume &where) {
   long double sum = 0.0;
   FOR_COMPONENTS(c)
-    if (!coordinate_mismatch(v.dim, c))
+    if (!coordinate_mismatch(gv.dim, c))
       loop_in_chunks(thermo_chunkloop, (void *) &sum, where, c);
   return sum_to_all(sum);
 }
@@ -210,7 +210,7 @@ double fields::thermo_energy_in_box(const volume &where) {
 /* Compute ExH integral in box using current fields, ignoring fact
    that this E and H correspond to different times. */
 double fields::flux_in_box_wrongH(direction d, const volume &where) {
-  if (coordinate_mismatch(v.dim, d))
+  if (coordinate_mismatch(gv.dim, d))
     return 0.0;
 
   component cE[2], cH[2];
@@ -220,7 +220,7 @@ double fields::flux_in_box_wrongH(direction d, const volume &where) {
   case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
   case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
   case Z:
-    if (v.dim == Dcyl)
+    if (gv.dim == Dcyl)
       cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
     else
       cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
@@ -245,8 +245,8 @@ double fields::flux_in_box(direction d, const volume &where) {
 }
 
 flux_vol *fields::add_flux_vol(direction d, const volume &where) {
-  if (where.dim != v.dim) abort("invalid dimensionality in add_flux_vol");
-  if (d == NO_DIRECTION || coordinate_mismatch(v.dim, d))
+  if (where.dim != gv.dim) abort("invalid dimensionality in add_flux_vol");
+  if (d == NO_DIRECTION || coordinate_mismatch(gv.dim, d))
     abort("invalid direction in add_flux_vol");
  return new flux_vol(this, d, where);
 }
@@ -285,7 +285,7 @@ static complex<double> dot3_max_integrand(const complex<double> *fields,
 
 double fields::electric_energy_max_in_box(const volume &where) {
   component cs[6];
-  if (v.dim == Dcyl) {
+  if (gv.dim == Dcyl) {
     cs[0] = Er; cs[1] = Ep; cs[2] = Ez;
     cs[3+0] = Dr; cs[3+1] = Dp; cs[3+2] = Dz;
   }
@@ -323,7 +323,7 @@ double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
 					     const volume &where) {
   double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c) 
-    if (!coordinate_mismatch(v.dim, component_direction(c))) {
+    if (!coordinate_mismatch(gv.dim, component_direction(c))) {
       component cs[2];
       cs[0] = cs[1] = direction_component(Ex, component_direction(c));
       sum += real(integrate(2, cs, dot_fx_integrand, (void *) f, where));
@@ -336,7 +336,7 @@ double fields::electric_energy_weighted_integral(double (*f)(const vec &),
 					     const volume &where) {
   double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c) 
-    if (!coordinate_mismatch(v.dim, component_direction(c))) {
+    if (!coordinate_mismatch(gv.dim, component_direction(c))) {
       component cs[2];
       cs[0] = direction_component(Ex, component_direction(c));
       cs[1] = direction_component(Dx, component_direction(c));

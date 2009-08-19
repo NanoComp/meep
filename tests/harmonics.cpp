@@ -29,11 +29,11 @@ void harmonics(double freq, double chi2, double chi3, double J,
   const double dpml = 5.0;
   const double res = 20;
   const double sz = 100+2*dpml;
-  grid_volume v = vol1d(sz, res);
-  v.center_origin();
+  grid_volume gv = vol1d(sz, res);
+  gv.center_origin();
 
   the_value = 1.0;
-  structure s(v, value, pml(dpml));
+  structure s(gv, value, pml(dpml));
   the_value = chi2;
   s.set_chi2(value);
   the_value = chi3;

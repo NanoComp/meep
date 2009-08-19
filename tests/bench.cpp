@@ -37,8 +37,8 @@ bench bench_periodic(const double rmax, const double zmax,
   const double ttot = 5.0 + 1e5/gridpts;
   const int m = 0;
 
-  grid_volume v = volcyl(rmax,zmax,a);
-  structure s(v, eps);
+  grid_volume gv = volcyl(rmax,zmax,a);
+  structure s(gv, eps);
   fields f(&s, m);
   f.use_bloch(0.0);
   f.add_point_source(Ep, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.4), 1.0);
@@ -59,8 +59,8 @@ bench bench_flux_1d(const double zmax,
   const double gridpts = a*zmax;
   const double ttot = 10.0 + 1e5/zmax;
 
-  grid_volume v = volone(zmax,a);
-  structure s(v, eps, pml(zmax/6));
+  grid_volume gv = volone(zmax,a);
+  structure s(gv, eps, pml(zmax/6));
 
   fields f(&s);
   f.use_real_fields();
@@ -91,8 +91,8 @@ bench bench_2d(const double xmax, const double ymax,
   const double gridpts = a*a*xmax*ymax;
   const double ttot = 5.0 + 1e5/gridpts;
 
-  grid_volume v = voltwo(xmax,ymax,a);
-  structure s(v, eps);
+  grid_volume gv = voltwo(xmax,ymax,a);
+  structure s(gv, eps);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
   f.add_point_source(Hz, 0.8, 0.7, 0.0, 4.0, vec(0.431, 0.2));
@@ -116,8 +116,8 @@ bench bench_2d_tm_nonlinear(const double xmax, const double ymax,
   const double gridpts = a*a*xmax*ymax;
   const double ttot = 5.0 + te_tm_2d_time/gridpts;
 
-  grid_volume v = voltwo(xmax,ymax,a);
-  structure s(v, eps);
+  grid_volume gv = voltwo(xmax,ymax,a);
+  structure s(gv, eps);
   s.set_chi3(eps);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
@@ -139,8 +139,8 @@ bench bench_2d_tm(const double xmax, const double ymax,
   const double gridpts = a*a*xmax*ymax;
   const double ttot = 5.0 + te_tm_2d_time/gridpts;
 
-  grid_volume v = voltwo(xmax,ymax,a);
-  structure s(v, eps);
+  grid_volume gv = voltwo(xmax,ymax,a);
+  structure s(gv, eps);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
 
@@ -161,8 +161,8 @@ bench bench_2d_te(const double xmax, const double ymax,
   const double gridpts = a*a*xmax*ymax;
   const double ttot = 5.0 + te_tm_2d_time/gridpts;
 
-  grid_volume v = voltwo(xmax,ymax,a);
-  structure s(v, eps);
+  grid_volume gv = voltwo(xmax,ymax,a);
+  structure s(gv, eps);
   fields f(&s);
   f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
   f.add_point_source(Hz, 0.6, 0.6, 0.0, 4.0, vec(0.7, 0.5));
@@ -184,8 +184,8 @@ bench bench_2d_te_nonlinear(const double xmax, const double ymax,
   const double gridpts = a*a*xmax*ymax;
   const double ttot = 5.0 + te_tm_2d_time/gridpts;
 
-  grid_volume v = voltwo(xmax,ymax,a);
-  structure s(v, eps);
+  grid_volume gv = voltwo(xmax,ymax,a);
+  structure s(gv, eps);
   s.set_chi3(eps);
   fields f(&s);
   f.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.301));
@@ -218,8 +218,8 @@ bench bench_3d_periodic(const double xmax, const double ymax, const double zmax,
   const double gridpts = a*a*a*max(xmax,1/a)*max(ymax,1/a)*max(zmax,1/a);
   const double ttot = 5.0 + 1e5/gridpts;
 
-  grid_volume v = vol3d(xmax,ymax,zmax,a);
-  structure s(v, eps);
+  grid_volume gv = vol3d(xmax,ymax,zmax,a);
+  structure s(gv, eps);
   fields f(&s);
   if (xmax==0) f.use_bloch(X,0.0);
   if (ymax==0) f.use_bloch(Y,0.0);
@@ -243,8 +243,8 @@ bench bench_3d(const double xmax, const double ymax, const double zmax,
   const double gridpts = a*a*a*xmax*ymax*zmax;
   const double ttot = 5.0 + 1e5/gridpts;
 
-  grid_volume v = vol3d(xmax,ymax,zmax,a);
-  structure s(v, eps);
+  grid_volume gv = vol3d(xmax,ymax,zmax,a);
+  structure s(gv, eps);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(xmax*.5, ymax*.5, zmax*.5));
 

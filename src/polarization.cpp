@@ -49,25 +49,25 @@ void polarization::use_real_fields() {
 }
 
 void polarization::zero_fields() {
-  const grid_volume &v = pb->v;
+  const grid_volume &gv = pb->gv;
   DOCMP FOR_COMPONENTS(c) if (P[c][cmp])
-    for (int i=0;i<v.ntot();i++) P[c][cmp][i] = 0;
+    for (int i=0;i<gv.ntot();i++) P[c][cmp][i] = 0;
   FOR_COMPONENTS(c) if (energy[c])
-    for (int i=0;i<v.ntot();i++) energy[c][i] = 0;
+    for (int i=0;i<gv.ntot();i++) energy[c][i] = 0;
   if (next) next->zero_fields();
 }
 
 polarization::polarization(const polarizability *the_pb, 
 			   int is_r, bool store_enrgy) {
-  const grid_volume &v = the_pb->v;
+  const grid_volume &gv = the_pb->gv;
   is_real = is_r;
   store_energy = store_enrgy;
   DOCMP2 FOR_COMPONENTS(c) P[c][cmp] = NULL;
-  DOCMP FOR_FT_COMPONENTS(the_pb->ft, c) if (v.has_field(c))
-    P[c][cmp] = new realnum[v.ntot()];
+  DOCMP FOR_FT_COMPONENTS(the_pb->ft, c) if (gv.has_field(c))
+    P[c][cmp] = new realnum[gv.ntot()];
   FOR_COMPONENTS(c) energy[c] = NULL;
-  FOR_FT_COMPONENTS(the_pb->ft, c) if (v.has_field(c) && store_energy)
-    energy[c] = new realnum[v.ntot()];
+  FOR_FT_COMPONENTS(the_pb->ft, c) if (gv.has_field(c) && store_energy)
+    energy[c] = new realnum[gv.ntot()];
   pb = the_pb;
   FOR_COMPONENTS(c) s[c] = pb->s[c];
   next = NULL;
@@ -81,24 +81,24 @@ polarization::~polarization() {
 }
 
 double polarization::local_energy(const ivec &iloc) {
-  if (pb->v.dim != D1) abort("Can't do local_energy in these dims.\n");
+  if (pb->gv.dim != D1) abort("Can't do local_energy in these dims.\n");
   double res = 0.0;
   FOR_COMPONENTS(c) if (energy[c])
-    res += energy[c][pb->v.index(c,iloc)];
+    res += energy[c][pb->gv.index(c,iloc)];
   return res;
 }
 
 polarizability::polarizability(const polarizability *pb) {
   omeganot = pb->omeganot;
   gamma = pb->gamma;
-  v = pb->v;
+  gv = pb->gv;
   ft = pb->ft;
   is_it_mine = pb->is_it_mine;
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
-    FOR_COMPONENTS(c) if (v.has_field(c) && pb->s[c]) {
-      s[c] = new realnum[v.ntot()];
-      for (int i=0;i<v.ntot();i++) s[c][i] = pb->s[c][i];
+    FOR_COMPONENTS(c) if (gv.has_field(c) && pb->s[c]) {
+      s[c] = new realnum[gv.ntot()];
+      for (int i=0;i<gv.ntot();i++) s[c][i] = pb->s[c][i];
     }
   }
   if (pb->next) next = new polarizability(pb->next);
@@ -108,27 +108,27 @@ polarizability::polarizability(const polarizability *pb) {
 polarizability::polarizability(const structure_chunk *sc, material_function &sig,
                                field_type ft_, double om, double ga, 
 			       double sigscale, bool mine) {
-  v = sc->v;
+  gv = sc->gv;
   is_it_mine = mine;
   ft = ft_;
   omeganot = om;
   gamma = ga;
   next = NULL;
 
-  sig.set_volume(sc->v.pad().surroundings());
+  sig.set_volume(sc->gv.pad().surroundings());
   FOR_COMPONENTS(c) s[c] = NULL;
   if (is_mine()) {
-    FOR_FT_COMPONENTS(ft,c) if (v.has_field(c))
-      s[c] = new realnum[v.ntot()];
+    FOR_FT_COMPONENTS(ft,c) if (gv.has_field(c))
+      s[c] = new realnum[gv.ntot()];
 
-    FOR_COMPONENTS(c) if (s[c]) for (int i=0;i<v.ntot();i++) s[c][i] = 0.0;
+    FOR_COMPONENTS(c) if (s[c]) for (int i=0;i<gv.ntot();i++) s[c][i] = 0.0;
 
     // TODO:  should we be doing some kind of subpixel averaging here?
     FOR_FT_COMPONENTS(ft,c) if (s[c]) {
       double sigrow[3];
       int ic = component_index(c);
-      LOOP_OVER_VOL(v, c, i) {
-	IVEC_LOOP_LOC(v, here);
+      LOOP_OVER_VOL(gv, c, i) {
+	IVEC_LOOP_LOC(gv, here);
 	sig.sigma_row(c, sigrow, here);
 	s[c][i] = sigscale*sigrow[ic];
 	if (sigrow[(ic+1)%3] != 0.0 || sigrow[(ic+2)%3] != 0.0)
@@ -148,7 +148,7 @@ complex<double> polarization::analytic_chi1(component c, double freq, const vec 
   const complex<double> I = complex<double>(0,1);
   double w[8];
   int in[8];
-  pb->v.interpolate(c, p, in, w);
+  pb->gv.interpolate(c, p, in, w);
   complex<double> epsi = 0.0;
   if (pb->s[c])
     for (int i=0;i<8 && w[i];i++)
@@ -160,7 +160,7 @@ complex<double> polarization::analytic_chi1(component c, double freq, const vec 
 
 complex<double> fields::analytic_chi1(component c, double f, const vec &p) const {
   for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->v.contains(p))
+    if (chunks[i]->gv.contains(p))
       return chunks[i]->analytic_chi1(c,f,p) + get_eps(p);
   return 0.0;
 }

@@ -53,7 +53,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   f2.get_point(&m1, p);
   for (int i=0;i<10;i++) {
     component c = (component) i;
-    if (f1.v.has_field(c)) {
+    if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > tol*abs(v2) && abs(v2) > thresh) {
         master_printf("%s differs:  %g %g out of %g %g\n",
@@ -75,7 +75,7 @@ int approx_point(fields &f1, fields &f2, const vec &p) {
   f2.get_point(&m1, p);
   for (int i=0;i<10;i++) {
     component c = (component) i;
-    if (f1.v.has_field(c)) {
+    if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > tol*abs(v2) && abs(v2) > thresh) {
         master_printf("%s differs:  %g %g out of %g %g\n",
@@ -95,9 +95,9 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 17.0;
 
-  grid_volume v = vol3d(1.5, 0.5, 1.0, a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -116,11 +116,11 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }
@@ -132,9 +132,9 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   double a = 10.0;
   double ttot = 17.0;
 
-  grid_volume v = vol3d(1.5, 0.5, 1.0, a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -155,11 +155,11 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }
@@ -170,8 +170,8 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
 int test_pml(double eps(const vec &), const char *mydirname) {
   double a = 10.0;
 
-  grid_volume v = vol3d(1.5, 1.0, 1.2, a);
-  structure s(v, eps, pml(0.401));
+  grid_volume gv = vol3d(1.5, 1.0, 1.2, a);
+  structure s(gv, eps, pml(0.401));
   s.set_output_directory(mydirname);
 
   master_printf("Testing pml quality...\n");
@@ -203,9 +203,9 @@ int test_pml(double eps(const vec &), const char *mydirname) {
 int test_pml_splitting(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  grid_volume v = vol3d(1.5, 1.0, 1.2, a);
-  structure s1(v, eps, pml(0.3));
-  structure s(v, eps, pml(0.3), identity(), splitting);
+  grid_volume gv = vol3d(1.5, 1.0, 1.2, a);
+  structure s1(gv, eps, pml(0.3));
+  structure s(gv, eps, pml(0.3), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 

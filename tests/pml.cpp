@@ -81,9 +81,9 @@ int check_pml1d(double eps(const vec &), double conductivity) {
   for (int i=0; i<8; i++) {
     double res = 10.0 + 10.0*i;
     {
-      grid_volume v = vol1d(sz,res);
-      v.center_origin();
-      structure s(v, eps, pml(dpml));
+      grid_volume gv = vol1d(sz,res);
+      gv.center_origin();
+      structure s(gv, eps, pml(dpml));
       s.set_conductivity(By, notone);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
@@ -91,9 +91,9 @@ int check_pml1d(double eps(const vec &), double conductivity) {
       ft = do_ft(f, Ex, fpt, freq);
     }
     {
-      grid_volume v = vol1d(sz2,res);
-      v.center_origin();
-      structure s(v, eps, pml(dpml*2));
+      grid_volume gv = vol1d(sz2,res);
+      gv.center_origin();
+      structure s(gv, eps, pml(dpml*2));
       s.set_conductivity(By, notone);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
@@ -134,10 +134,10 @@ int check_pml2d(double eps(const vec &), component c,
   for (int i=0; i<4; i++) {
     double res = 10.0 + res_step*i;
     {
-      grid_volume v = vol2d(sxy,sxy,res);
-      v.center_origin();
-      const symmetry S = offdiag != 0 ? rotate2(Z,v) : mirror(X,v)*symsign + mirror(Y,v)*symsign;
-      structure s(v, eps, pml(dpml), S);
+      grid_volume gv = vol2d(sxy,sxy,res);
+      gv.center_origin();
+      const symmetry S = offdiag != 0 ? rotate2(Z,gv) : mirror(X,gv)*symsign + mirror(Y,gv)*symsign;
+      structure s(gv, eps, pml(dpml), S);
       if (conductivity != 0) {
 	notone_val = conductivity;
 	s.set_conductivity(Bx, notone);
@@ -155,14 +155,14 @@ int check_pml2d(double eps(const vec &), component c,
       fields f(&s);
       f.use_real_fields();
       gaussian_src_time src(freq, freq / 20);
-      f.add_point_source(c, src, v.center());
+      f.add_point_source(c, src, gv.center());
       ft = do_ft(f, c, fpt, freq);
     }
     {
-      grid_volume v = vol2d(sxy2,sxy2,res);
-      v.center_origin();
-      const symmetry S = offdiag != 0 ? rotate2(Z,v) : mirror(X,v)*symsign + mirror(Y,v)*symsign;
-      structure s(v, eps, pml(dpml*2), S);
+      grid_volume gv = vol2d(sxy2,sxy2,res);
+      gv.center_origin();
+      const symmetry S = offdiag != 0 ? rotate2(Z,gv) : mirror(X,gv)*symsign + mirror(Y,gv)*symsign;
+      structure s(gv, eps, pml(dpml*2), S);
       if (conductivity != 0) {
 	notone_val = conductivity;
 	s.set_conductivity(Bx, notone);
@@ -180,7 +180,7 @@ int check_pml2d(double eps(const vec &), component c,
       fields f(&s);
       f.use_real_fields();
       gaussian_src_time src(freq, freq / 20);
-      f.add_point_source(c, src, v.center());
+      f.add_point_source(c, src, gv.center());
       ft2 = do_ft(f, c, fpt, freq);
     }
     refl_const = pow(abs(ft - ft2),2.0) / pow(abs(ft2),2.0);
@@ -221,18 +221,18 @@ int check_pmlcyl(double eps(const vec &)) {
     double res = 10.0 + res_step*i;
     master_printf("    checking cylindrical resolution %g...\n", res);
     {
-      grid_volume v = volcyl(sr,sz,res);
-      v.center_origin();
-      structure s(v, eps, pml(dpml));
+      grid_volume gv = volcyl(sr,sz,res);
+      gv.center_origin();
+      structure s(gv, eps, pml(dpml));
       fields f(&s, 0);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ez, src, veccyl(0.1,0.1));
       ft = do_ft(f, Ez, fpt, freq);
     }
     {
-      grid_volume v = volcyl(sr2,sz2,res);
-      v.center_origin();
-      structure s(v, eps, pml(dpml*2));
+      grid_volume gv = volcyl(sr2,sz2,res);
+      gv.center_origin();
+      structure s(gv, eps, pml(dpml*2));
       fields f(&s, 0);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ez, src, veccyl(0.1,0.1));
@@ -256,8 +256,8 @@ int pml1d_scaling(double eps(const vec &)) {
     double sz = 2*dpml + 10.0 + dpml;
     prev_ft = ft;
     {
-      grid_volume v = vol1d(sz,res);
-      structure s(v, eps, (pml(2*dpml,Z,Low) + pml(dpml,Z,High)) * 1.5);
+      grid_volume gv = vol1d(sz,res);
+      structure s(gv, eps, (pml(2*dpml,Z,Low) + pml(dpml,Z,High)) * 1.5);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ex, src, vec(2*dpml+0.1));

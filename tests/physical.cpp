@@ -27,8 +27,8 @@ int radiating_2D(const double xmax) {
   const double a = 10.0;
   const double ymax = 3.0;
 
-  grid_volume v = voltwo(xmax,ymax,a);
-  structure s(v, one, pml(ymax/3));
+  grid_volume gv = voltwo(xmax,ymax,a);
+  structure s(gv, one, pml(ymax/3));
 
   fields f(&s);
   double w = 0.30;
@@ -62,9 +62,9 @@ int radiating_3D(const double xmax) {
   const double a = 10.0;
   const double ymax = 3.0;
 
-  grid_volume v = vol3d(xmax,ymax,ymax,a);
-  symmetry S = mirror(Y,v) - mirror(Z,v);
-  structure s(v, one, pml(ymax/3));
+  grid_volume gv = vol3d(xmax,ymax,ymax,a);
+  symmetry S = mirror(Y,gv) - mirror(Z,gv);
+  structure s(gv, one, pml(ymax/3));
 
   fields f(&s);
   double w = 0.30;

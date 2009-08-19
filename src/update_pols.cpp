@@ -32,7 +32,7 @@ void fields::update_pols(field_type ft) {
 }
 
 void fields_chunk::update_pols(field_type ft) {
-  const int ntot = s->v.ntot();
+  const int ntot = s->gv.ntot();
   polarization *pol = pols[ft];
   polarization *olpol = olpols[ft];
 

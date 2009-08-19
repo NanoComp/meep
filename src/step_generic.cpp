@@ -14,10 +14,10 @@
    LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
 #define KSTRIDE_DEF(dsig, k, corner)					  \
      const int k##0 = (dsig, corner.in_direction(dsig)		  \
-                              - v.little_corner().in_direction(dsig));	  \
-     const int s##k##1 = (dsig, v.yucky_direction(0) == dsig ? 2 : 0); \
-     const int s##k##2 = (dsig, v.yucky_direction(1) == dsig ? 2 : 0); \
-     const int s##k##3 = (dsig, v.yucky_direction(2) == dsig ? 2 : 0)
+                              - gv.little_corner().in_direction(dsig));	  \
+     const int s##k##1 = (dsig, gv.yucky_direction(0) == dsig ? 2 : 0); \
+     const int s##k##2 = (dsig, gv.yucky_direction(1) == dsig ? 2 : 0); \
+     const int s##k##3 = (dsig, gv.yucky_direction(2) == dsig ? 2 : 0)
 #define KDEF(k,dsig) const int k = ((k##0 + s##k##1*loop_i1) + s##k##2*loop_i2) + s##k##3*loop_i3
 #define DEF_k KDEF(k,dsig)
 #define DEF_ku KDEF(ku,dsigu)
@@ -59,7 +59,7 @@ namespace meep {
 */
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
-	       const grid_volume &v, double dtdx,
+	       const grid_volume &gv, double dtdx,
 	       direction dsig, const DPR sig, const DPR siginv,
 	       RPR fu, direction dsigu, const DPR sigu, const DPR siginvu,
 	       double dt, 
@@ -83,33 +83,33 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       if (cnd) {
 	double dt2 = dt * 0.5;
 	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	  LOOP_OVER_VOL_OWNED0(gv, c, i)
 	    f[i] = ((1 - dt2 * cnd[i]) * f[i] - 
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	  LOOP_OVER_VOL_OWNED0(gv, c, i)
 	    f[i] = ((1 - dt2 * cnd[i]) * f[i] 
 		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
 	}
       }
       else { // no conductivity
 	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	  LOOP_OVER_VOL_OWNED0(gv, c, i)
 	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i)
+	  LOOP_OVER_VOL_OWNED0(gv, c, i)
 	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
 	}
       }
     }
     else { // fu update, no PML in f update
-      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cnd) {
 	double dt2 = dt * 0.5;
 	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] = ((1 - dt2 * cnd[i]) * fprev - 
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
@@ -117,7 +117,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  }
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] = ((1 - dt2 * cnd[i]) * fprev
 		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
@@ -127,14 +127,14 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity
 	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
 	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] -= dtdx * (g1[i+s1] - g1[i]);
 	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
@@ -144,12 +144,12 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     }
   }
   else { /* PML in f update */
-    KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
+    KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
     if (dsigu == NO_DIRECTION) { // no fu update
       if (cnd) {
 	double dt2 = dt * 0.5;
 	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
@@ -158,7 +158,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  }
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
@@ -169,14 +169,14 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    f[i] = ((1 - sig[k]) * f[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	  }
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
 	  }
@@ -184,12 +184,12 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
     else { // fu update + PML in f update
-      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cnd) {
 	double dt2 = dt * 0.5;
 	if (g2) {
 	  //////////////////// MOST GENERAL CASE //////////////////////
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
@@ -200,7 +200,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  /////////////////////////////////////////////////////////////
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
@@ -212,7 +212,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
       else { // no conductivity (other than PML conductivity)
 	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    fu[i] = ((1 - sig[k]) * fu[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
@@ -220,7 +220,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  }
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED0(v, c, i) {
+	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    fu[i] = ((1 - sig[k]) * fu[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
 	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
@@ -236,19 +236,19 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
    time dependence, which gives an additional i \beta \hat{z} \times
    cross-product in the curl equations. */
 void step_beta(RPR f, component c, const RPR g,
-	       const grid_volume &v, double betadt,
+	       const grid_volume &gv, double betadt,
 	       direction dsig, const DPR siginv,
 	       RPR fu, direction dsigu, const DPR siginvu,
 	       const RPR cndinv, RPR fcnd)
 {
   if (!g) return;
   if (dsig != NO_DIRECTION) { // PML in f update
-    KSTRIDE_DEF(dsig, k, v.little_owned_corner0(c));
+    KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
     if (dsigu != NO_DIRECTION) { // PML in f + fu
-      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cndinv) { // conductivity + PML
 	//////////////////// MOST GENERAL CASE //////////////////////
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  DEF_k; DEF_ku; double df;
 	  double dfcnd = betadt * g[i] * cndinv[i];
 	  fcnd[i] += dfcnd;
@@ -258,7 +258,7 @@ void step_beta(RPR f, component c, const RPR g,
 	/////////////////////////////////////////////////////////////
       }
       else { // PML only
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  DEF_k; DEF_ku; double df;
 	  fu[i] += (df = betadt * g[i] * siginv[k]);
 	  f[i] += siginvu[ku] * df;
@@ -267,7 +267,7 @@ void step_beta(RPR f, component c, const RPR g,
     }
     else { // PML in f, no fu
       if (cndinv) { // conductivity + PML
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  DEF_k;
 	  double dfcnd = betadt * g[i] * cndinv[i];
 	  fcnd[i] += dfcnd;
@@ -275,7 +275,7 @@ void step_beta(RPR f, component c, const RPR g,
 	}
       }
       else { // PML only
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  DEF_k;
 	  f[i] += betadt * g[i] * siginv[k];
 	}
@@ -284,16 +284,16 @@ void step_beta(RPR f, component c, const RPR g,
   }
   else { // no PML in f update
     if (dsigu != NO_DIRECTION) { // fu, no PML in f
-      KSTRIDE_DEF(dsigu, ku, v.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cndinv) { // conductivity, no PML
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  DEF_ku; double df;
 	  fu[i] += (df = betadt * g[i] * cndinv[i]);
 	  f[i] += siginvu[ku] * df;
 	}
       }
       else { // no conductivity or PML
-	LOOP_OVER_VOL_OWNED0(v, c, i) {
+	LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	  DEF_ku; double df;
 	  fu[i] += (df = betadt * g[i]);
 	  f[i] += siginvu[ku] * df;
@@ -302,11 +302,11 @@ void step_beta(RPR f, component c, const RPR g,
     }
     else { // no PML, no fu
       if (cndinv) { // conductivity, no PML
-	LOOP_OVER_VOL_OWNED0(v, c, i)
+	LOOP_OVER_VOL_OWNED0(gv, c, i)
 	  f[i] += betadt * g[i] * cndinv[i];
       }
       else { // no conductivity or PML
-	LOOP_OVER_VOL_OWNED0(v, c, i)
+	LOOP_OVER_VOL_OWNED0(gv, c, i)
 	  f[i] += betadt * g[i];
       }
     }
@@ -346,7 +346,7 @@ inline double calc_nonlinear_u(const double Dsqr,
 
 */
 
-void step_update_EDHB(RPR f, component fc, const grid_volume &v, 
+void step_update_EDHB(RPR f, component fc, const grid_volume &gv, 
 		      const RPR g, const RPR g1, const RPR g2,
 		      const RPR u, const RPR u1, const RPR u2,
 		      int s, int s1, int s2,
@@ -369,11 +369,11 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
      of the "MOST GENERAL CASE" loop with various terms thrown out. */
   
   if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
-    KSTRIDE_DEF(dsigw, kw, v.little_owned_corner0(fc));
+    KSTRIDE_DEF(dsigw, kw, gv.little_owned_corner0(fc));
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
 	//////////////////// MOST GENERAL CASE //////////////////////
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	  double gs = g[i]; double us = u[i];
@@ -386,7 +386,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	/////////////////////////////////////////////////////////////
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
@@ -396,7 +396,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
 	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
@@ -407,7 +407,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	}
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1));
@@ -421,7 +421,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
     else { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	    double gs = g[i]; double us = u[i];
@@ -432,7 +432,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	  }
 	}
 	else if (g1) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double gs = g[i]; double us = u[i];
 	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
@@ -445,7 +445,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	  abort("bug - didn't swap off-diagonal terms!?");
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double gs = g[i]; double us = u[i];
 	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
 	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs, gs,us, chi2[i],chi3[i]);
@@ -454,7 +454,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	}
       }
       else if (u) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
 	  fw[i] = (gs * us);
@@ -462,7 +462,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	}
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
 	  fw[i] = g[i];
 	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
@@ -473,7 +473,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
   else { /////////////// no PML (no fw) ///////////////////
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	  double gs = g[i]; double us = u[i];
@@ -483,7 +483,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	}
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
 	}
@@ -491,7 +491,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
     }
     else if (u1) { // 2x2 off-diagonal u
       if (chi3) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1))
@@ -500,7 +500,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	}
       }
       else {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1));
 	}
@@ -512,7 +512,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
     else { // diagonal u
       if (chi3) {
 	if (g1 && g2) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	    double gs = g[i]; double us = u[i];
@@ -521,7 +521,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	  }
 	}
 	else if (g1) {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double gs = g[i]; double us = u[i];
 	    f[i] = (gs*us)*calc_nonlinear_u(gs*gs + 0.0625*(g1s*g1s),
@@ -532,20 +532,20 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &v,
 	  abort("bug - didn't swap off-diagonal terms!?");
 	}
 	else {
-	  LOOP_OVER_VOL_OWNED(v, fc, i) {
+	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double gs = g[i]; double us = u[i];
 	    f[i] = (gs*us)*calc_nonlinear_u(gs*gs, gs,us, chi2[i],chi3[i]);
 	  }
 	}
       }
       else if (u) {
-	LOOP_OVER_VOL_OWNED(v, fc, i) {
+	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us);
 	}
       }
       else
-	LOOP_OVER_VOL_OWNED(v, fc, i) f[i] = g[i];
+	LOOP_OVER_VOL_OWNED(gv, fc, i) f[i] = g[i];
     }
   }
 }

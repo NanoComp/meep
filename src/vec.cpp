@@ -620,8 +620,8 @@ volume empty_volume(ndim dim) {
 
 volume grid_volume::dV(const ivec &here, double diameter) const {
   const double hinva = 0.5*inva * diameter;
-  const grid_volume &v = *this;
-  const vec h = v[here];
+  const grid_volume &gv = *this;
+  const vec h = gv[here];
   volume out(dim);
   LOOP_OVER_DIRECTIONS(dim,d) {
     out.set_direction_max(d,h.in_direction(d)+hinva);
@@ -1024,9 +1024,9 @@ grid_volume grid_volume::halve(direction d) const {
 }
 
 grid_volume grid_volume::pad(direction d) const {
-  grid_volume v(*this);
-  v.pad_self(d);
-  return v;
+  grid_volume gv(*this);
+  gv.pad_self(d);
+  return gv;
 }
 
 void grid_volume::pad_self(direction d) {
@@ -1053,7 +1053,7 @@ vec grid_volume::center() const {
   return operator[](icenter());
 }
 
-symmetry rotate4(direction axis, const grid_volume &v) {
+symmetry rotate4(direction axis, const grid_volume &gv) {
   symmetry s = identity();
   if (axis > 2) abort("Can only rotate4 in 2D or 3D.\n");
   s.g = 4;
@@ -1064,28 +1064,28 @@ symmetry rotate4(direction axis, const grid_volume &v) {
   s.S[(axis+1)%3].d = (direction)((axis+2)%3);
   s.S[(axis+1)%3].flipped = true;
   s.S[(axis+2)%3].d = (direction)((axis+1)%3);
-  s.symmetry_point = v.center();
-  s.i_symmetry_point = v.icenter();
+  s.symmetry_point = gv.center();
+  s.i_symmetry_point = gv.icenter();
   return s;
 }
 
-symmetry rotate2(direction axis, const grid_volume &v) {
+symmetry rotate2(direction axis, const grid_volume &gv) {
   symmetry s = identity();
   if (axis > 2) abort("Can only rotate2 in 2D or 3D.\n");
   s.g = 2;
   s.S[(axis+1)%3].flipped = true;
   s.S[(axis+2)%3].flipped = true;
-  s.symmetry_point = v.center();
-  s.i_symmetry_point = v.icenter();
+  s.symmetry_point = gv.center();
+  s.i_symmetry_point = gv.icenter();
   return s;
 }
 
-symmetry mirror(direction axis, const grid_volume &v) {
+symmetry mirror(direction axis, const grid_volume &gv) {
   symmetry s = identity();
   s.g = 2;
   s.S[axis].flipped = true;
-  s.symmetry_point = v.center();
-  s.i_symmetry_point = v.icenter();
+  s.symmetry_point = gv.center();
+  s.i_symmetry_point = gv.icenter();
   return s;
 }
 
@@ -1421,7 +1421,7 @@ static double energy_fun(const complex<double> *fields,
      return sum * 0.5;
 }
 
-field_rfunction derived_component_func(derived_component c, const grid_volume &v,
+field_rfunction derived_component_func(derived_component c, const grid_volume &gv,
 				       int &nfields, component cs[12]) {
   switch (c) {
   case Sx: case Sy: case Sz: case Sr: case Sp:
@@ -1441,12 +1441,12 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &v
   case EnergyDensity: case D_EnergyDensity: case H_EnergyDensity:
     nfields = 0;
     if (c != H_EnergyDensity)
-      FOR_ELECTRIC_COMPONENTS(c0) if (v.has_field(c0)) {
+      FOR_ELECTRIC_COMPONENTS(c0) if (gv.has_field(c0)) {
 	cs[nfields++] = c0;
 	cs[nfields++] = direction_component(Dx, component_direction(c0));
       }
     if (c != D_EnergyDensity)
-      FOR_MAGNETIC_COMPONENTS(c0) if (v.has_field(c0)) {
+      FOR_MAGNETIC_COMPONENTS(c0) if (gv.has_field(c0)) {
 	cs[nfields++] = c0;
 	cs[nfields++] = direction_component(Bx, component_direction(c0));
       }

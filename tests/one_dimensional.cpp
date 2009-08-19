@@ -46,7 +46,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   f2.get_point(&m1, p);
   for (int i=0;i<10;i++) {
     component c = (component) i;
-    if (f1.v.has_field(c)) {
+    if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > tol*abs(v2) && abs(v2) > thresh) {
         master_printf("%s differs:  %g %g out of %g %g\n",
@@ -65,9 +65,9 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   double a = 10.0;
   double ttot = 170.0;
   
-  grid_volume v = volone(6.0,a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = volone(6.0,a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -93,11 +93,11 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       
       total_energy_check_time += 5.0;
@@ -118,9 +118,9 @@ complex<double> checkers(const vec &pt) {
 int test_pattern(double eps(const vec &), int splitting,
                  const char *mydirname) {
   double a = 10.0;
-  grid_volume v = volone(6.0,a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = volone(6.0,a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -142,11 +142,11 @@ int test_pattern(double eps(const vec &), int splitting,
   if (!compare_point(f, f1, vec(1.0  ))) return 0;
   if (!compare(f.total_energy(), f1.total_energy(),
                "   total energy")) return 0;
-  if (!compare(f.electric_energy_in_box(v.surroundings()),
-               f1.electric_energy_in_box(v.surroundings()),
+  if (!compare(f.electric_energy_in_box(gv.surroundings()),
+               f1.electric_energy_in_box(gv.surroundings()),
                "electric energy")) return 0;
-  if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-               f1.magnetic_energy_in_box(v.surroundings()),
+  if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+               f1.magnetic_energy_in_box(gv.surroundings()),
                "magnetic energy")) return 0;
   return 1;
 }

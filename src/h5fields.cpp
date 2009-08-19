@@ -76,7 +76,7 @@ static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
   int bufsz = 1;
-  LOOP_OVER_DIRECTIONS(fc->v.dim, d)
+  LOOP_OVER_DIRECTIONS(fc->gv.dim, d)
     bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   data->bufsz = max(data->bufsz, bufsz);
 }
@@ -104,9 +104,9 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   
   // figure out what yucky_directions (in LOOP_OVER_IVECS)
   // correspond to what directions in the transformed vectors (in output).
-  ivec permute(zero_ivec(fc->v.dim));
+  ivec permute(zero_ivec(fc->gv.dim));
   for (int i = 0; i < 3; ++i) 
-    permute.set_direction(fc->v.yucky_direction(i), i);
+    permute.set_direction(fc->gv.yucky_direction(i), i);
   permute = S.transform_unshifted(permute, sn);
   LOOP_OVER_DIRECTIONS(permute.dim, d)
     permute.set_direction(d, abs(permute.in_direction(d)));
@@ -146,18 +146,18 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
     if (cS[i] == Dielectric || cS[i] == Permeability)
       ph[i] = 1.0;
     else {
-      fc->v.yee2cent_offsets(cS[i], off[2*i], off[2*i+1]);
+      fc->gv.yee2cent_offsets(cS[i], off[2*i], off[2*i+1]);
       ph[i] = shift_phase * S.phase_shift(cS[i], sn);
     }
   }
   for (int k = 0; k < data->ninveps; ++k)
-    fc->v.yee2cent_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
+    fc->gv.yee2cent_offsets(iecs[k], ieos[2*k], ieos[2*k+1]);
   for (int k = 0; k < data->ninvmu; ++k)
-    fc->v.yee2cent_offsets(imcs[k], imos[2*k], imos[2*k+1]);
+    fc->gv.yee2cent_offsets(imcs[k], imos[2*k], imos[2*k+1]);
 
-  vec rshift(shift * (0.5*fc->v.inva));
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    IVEC_LOOP_LOC(fc->v, loc);
+  vec rshift(shift * (0.5*fc->gv.inva));
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    IVEC_LOOP_LOC(fc->gv, loc);
     loc = S.transform(loc, sn) + rshift;
 
     for (int i = 0; i < data->num_fields; ++i) {
@@ -217,8 +217,8 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   h5_output_data data;
 
   data.file = file;
-  data.min_corner = v.round_vec(where.get_max_corner()) + one_ivec(v.dim);
-  data.max_corner = v.round_vec(where.get_min_corner()) - one_ivec(v.dim);
+  data.min_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
+  data.max_corner = gv.round_vec(where.get_min_corner()) - one_ivec(gv.dim);
   data.num_chunks = 0;
   data.bufsz = 0;
   data.reim = reim;
@@ -234,7 +234,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
     return; // no data to write;
 
   int rank = 0, dims[3];
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in output_hdf5");
     int n = (data.max_corner.in_direction(d)
 	     - data.min_corner.in_direction(d)) / 2 + 1;
@@ -264,7 +264,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   for (int i = 0; i < num_fields; ++i)
     if (components[i] == Dielectric) { needs_dielectric = true; break; }
   if (needs_dielectric) 
-    FOR_ELECTRIC_COMPONENTS(c) if (v.has_field(c)) {
+    FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninveps == 3) abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
@@ -277,7 +277,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   for (int i = 0; i < num_fields; ++i)
     if (components[i] == Permeability) { needs_permeability = true; break; }
   if (needs_permeability) 
-    FOR_MAGNETIC_COMPONENTS(c) if (v.has_field(c)) {
+    FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninvmu == 3) abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
@@ -392,7 +392,7 @@ void fields::output_hdf5(component c,
     return;
   }
 
-  if (coordinate_mismatch(v.dim, c)) return;
+  if (coordinate_mismatch(gv.dim, c)) return;
 
   char dataname[256];
   bool has_imag = !is_real && c != Dielectric && c != Permeability;
@@ -427,11 +427,11 @@ void fields::output_hdf5(derived_component c,
     return;
   }
 
-  if (coordinate_mismatch(v.dim, c)) return;
+  if (coordinate_mismatch(gv.dim, c)) return;
 
   int nfields;
   component cs[12];
-  field_rfunction fun = derived_component_func(c, v, nfields, cs);
+  field_rfunction fun = derived_component_func(c, gv, nfields, cs);
 
   output_hdf5(component_name(c), nfields, cs, fun, &nfields, where,
 	      file, append_data, single_precision, prefix);

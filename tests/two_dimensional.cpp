@@ -53,7 +53,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   f2.get_point(&m1, p);
   for (int i=0;i<10;i++) {
     component c = (component) i;
-    if (f1.v.has_field(c)) {
+    if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > tol * abs(v2) && abs(v2) > thresh) {
         master_printf("%s differs:  %g %g out of %g %g\n",
@@ -73,9 +73,9 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
   double ttot = 17.0;
 
-  grid_volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = voltwo(3.0, 2.0, a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -96,11 +96,11 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }
@@ -112,9 +112,9 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   double a = 10.0;
   double ttot = 17.0;
 
-  grid_volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = voltwo(3.0, 2.0, a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -137,11 +137,11 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }
@@ -153,9 +153,9 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
   double a = 10.0;
   double ttot = 17.0;
 
-  grid_volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps);
-  structure s(v, eps, no_pml(), identity(), splitting);
+  grid_volume gv = voltwo(3.0, 2.0, a);
+  structure s1(gv, eps);
+  structure s(gv, eps, no_pml(), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -176,11 +176,11 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
     if (f.time() >= total_energy_check_time) {
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       total_energy_check_time += 5.0;
     }
@@ -191,9 +191,9 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
 int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  grid_volume v = voltwo(3.0, 2.0, a);
-  structure s1(v, eps, pml(1.0, X) + pml(1.0, Y, High));
-  structure s(v, eps, pml(1.0, X) + pml(1.0, Y, High), identity(), splitting);
+  grid_volume gv = voltwo(3.0, 2.0, a);
+  structure s1(gv, eps, pml(1.0, X) + pml(1.0, Y, High));
+  structure s(gv, eps, pml(1.0, X) + pml(1.0, Y, High), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -238,9 +238,9 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
 int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  grid_volume v = voltwo(3.0, 3.0, a);
-  structure s1(v, eps, pml(1.0));
-  structure s(v, eps, pml(1.0), identity(), splitting);
+  grid_volume gv = voltwo(3.0, 3.0, a);
+  structure s1(gv, eps, pml(1.0));
+  structure s(gv, eps, pml(1.0), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
@@ -283,9 +283,9 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
 int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
   double a = 10.0;
 
-  grid_volume v = voltwo(3.0, 3.0, a);
-  structure s1(v, eps, pml(1.0));
-  structure s(v, eps, pml(1.0), identity(), splitting);
+  grid_volume gv = voltwo(3.0, 3.0, a);
+  structure s1(gv, eps, pml(1.0));
+  structure s(gv, eps, pml(1.0), identity(), splitting);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 

@@ -1165,42 +1165,42 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   master_printf("Computational cell is %g x %g x %g with resolution %g\n",
                 size.x, size.y, size.z, resolution);  
 
-  meep::grid_volume v;
+  meep::grid_volume gv;
   switch (dims) {
   case 0: case 1:
-    v = meep::vol1d(size.z, resolution);
+    gv = meep::vol1d(size.z, resolution);
     break;
   case 2:
-    v = meep::vol2d(size.x, size.y, resolution);
+    gv = meep::vol2d(size.x, size.y, resolution);
     break;
   case 3:
-    v = meep::vol3d(size.x, size.y, size.z, resolution);
+    gv = meep::vol3d(size.x, size.y, size.z, resolution);
     break;
   case CYLINDRICAL:
-    v = meep::volcyl(size.x, size.z, resolution);
+    gv = meep::volcyl(size.x, size.z, resolution);
     break;
   default:
     CK(0, "unsupported dimensionality");
   }
-  v.center_origin();
-  v.shift_origin(vector3_to_vec(center));
+  gv.center_origin();
+  gv.shift_origin(vector3_to_vec(center));
   
   meep::symmetry S;
   for (int i = 0; i < symmetries.num_items; ++i) 
     switch (symmetries.items[i].which_subclass) {
     case symmetry::SYMMETRY_SELF: break; // identity
     case symmetry::MIRROR_SYM:
-      S = S + meep::mirror(meep::direction(symmetries.items[i].direction), v)
+      S = S + meep::mirror(meep::direction(symmetries.items[i].direction), gv)
 	* complex<double>(symmetries.items[i].phase.re,
 			  symmetries.items[i].phase.im);
       break;
     case symmetry::ROTATE2_SYM:
-      S = S + meep::rotate2(meep::direction(symmetries.items[i].direction), v)
+      S = S + meep::rotate2(meep::direction(symmetries.items[i].direction), gv)
 	* complex<double>(symmetries.items[i].phase.re,
 			  symmetries.items[i].phase.im);
       break;
     case symmetry::ROTATE4_SYM:
-      S = S + meep::rotate4(meep::direction(symmetries.items[i].direction), v)
+      S = S + meep::rotate4(meep::direction(symmetries.items[i].direction), gv)
 	* complex<double>(symmetries.items[i].phase.re,
 			  symmetries.items[i].phase.im);
       break;
@@ -1212,7 +1212,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
     int errflag;
     using namespace meep;
     if (pml_layers.items[i].direction == -1) {
-      LOOP_OVER_DIRECTIONS(v.dim, d) {
+      LOOP_OVER_DIRECTIONS(gv.dim, d) {
 	if (pml_layers.items[i].side == -1) {
 	  FOR_SIDES(b)
 	    br = br + meep::boundary_region
@@ -1272,11 +1272,11 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   
   ensure_periodicity = ensure_periodicity_p;
   default_material = default_mat;
-  geom_epsilon geps(geometry, extra_materials, v.pad().surroundings());
+  geom_epsilon geps(geometry, extra_materials, gv.pad().surroundings());
 
   if (subpixel_maxeval < 0) subpixel_maxeval = 0; // no limit
 
-  meep::structure *s = new meep::structure(v, geps, br, S, 
+  meep::structure *s = new meep::structure(gv, geps, br, S, 
 					   num_chunks, Courant,
 					   enable_averaging,
 					   subpixel_tol,

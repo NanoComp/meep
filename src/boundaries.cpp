@@ -35,11 +35,11 @@ void fields::set_boundary(boundary_side b,direction d,boundary_condition cond){
 void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
   for (int b=0;b<2;b++) set_boundary(boundary_side(b), d, Periodic);
-  if (real(kk) * v.num_direction(d) == 0.5 * a) // check b.z. edge exactly
-    eikna[d] = -exp(-imag(kk) * ((2*pi/a)*v.num_direction(d)));
+  if (real(kk) * gv.num_direction(d) == 0.5 * a) // check b.z. edge exactly
+    eikna[d] = -exp(-imag(kk) * ((2*pi/a)*gv.num_direction(d)));
   else {
     const complex<double> I = complex<double>(0.0,1.0);
-    eikna[d] = exp(I*kk*((2*pi/a)*v.num_direction(d)));
+    eikna[d] = exp(I*kk*((2*pi/a)*gv.num_direction(d)));
   }
   coskna[d] = real(eikna[d]);
   sinkna[d] = imag(eikna[d]);
@@ -51,10 +51,10 @@ void fields::use_bloch(direction d, complex<double> kk) {
 void fields::use_bloch(const vec &k) {
   // Note that I allow a 1D k input when in cylindrical, since in that case
   // it is unambiguous.
-  if (k.dim != v.dim && !(k.dim == D1 && v.dim == Dcyl))
+  if (k.dim != gv.dim && !(k.dim == D1 && gv.dim == Dcyl))
     abort("Aaaack, k has wrong dimensions!\n");
-  LOOP_OVER_DIRECTIONS(v.dim, d)
-    if (v.has_boundary(Low,d) && d != R)
+  LOOP_OVER_DIRECTIONS(gv.dim, d)
+    if (gv.has_boundary(Low,d) && d != R)
       use_bloch(d, k.in_direction(d));
 }
 
@@ -81,7 +81,7 @@ ivec fields::ilattice_vector(direction d) const {
 }
 
 vec fields::lattice_vector(direction d) const {
-  return v[ilattice_vector(d)];
+  return gv[ilattice_vector(d)];
 }
 
 void fields::disconnect_chunks() {
@@ -124,7 +124,7 @@ void fields::connect_chunks() {
 }
 
 inline bool fields::on_metal_boundary(const ivec &here) {
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (user_volume.has_boundary(High, d) &&
         here.in_direction(d) == user_volume.big_corner().in_direction(d)) {
       if (boundaries[High][d] == Metallic) return true;
@@ -175,15 +175,15 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
   newp2[0] = p2;
   kphase[0] = 1;
   vec cen = (newp1[0] + newp2[0]) * 0.5;
-  LOOP_OVER_DIRECTIONS(v.dim, d) 
+  LOOP_OVER_DIRECTIONS(gv.dim, d) 
     if (boundaries[High][d] == Periodic)  {
-      while (cen.in_direction(d) < v.boundary_location(Low, d)) {
+      while (cen.in_direction(d) < gv.boundary_location(Low, d)) {
         newp1[0] += lattice_vector(d);
         newp2[0] += lattice_vector(d);
         kphase[0] *= conj(eikna[d]);
         cen = (newp1[0] + newp2[0]) * 0.5;
       }
-      while (cen.in_direction(d) > v.boundary_location(High, d)) {
+      while (cen.in_direction(d) > gv.boundary_location(High, d)) {
         newp1[0] -= lattice_vector(d);
         newp2[0] -= lattice_vector(d);
         kphase[0] *= eikna[d];
@@ -192,10 +192,10 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
     }
   
   // if grid_volume extends outside user_volume in any direction, we need to duplicate already existing copies
-  LOOP_OVER_DIRECTIONS(v.dim, d) 
+  LOOP_OVER_DIRECTIONS(gv.dim, d) 
     if (boundaries[High][d] == Periodic) {
-      if (newp1[0].in_direction(d) < v.boundary_location(Low, d) ||
-          newp2[0].in_direction(d) < v.boundary_location(Low, d)) {
+      if (newp1[0].in_direction(d) < gv.boundary_location(Low, d) ||
+          newp2[0].in_direction(d) < gv.boundary_location(Low, d)) {
         for (int j=0; j<ncopies; j++) {
           newp1[ncopies+j] = newp1[j] + lattice_vector(d);
           newp2[ncopies+j] = newp2[j] + lattice_vector(d);
@@ -203,8 +203,8 @@ void fields::locate_volume_source_in_user_volume(const vec p1, const vec p2, vec
         }
         ncopies *= 2;
       }
-      else if (newp1[0].in_direction(d) > v.boundary_location(High, d) ||
-               newp2[0].in_direction(d) > v.boundary_location(High, d)) {
+      else if (newp1[0].in_direction(d) > gv.boundary_location(High, d) ||
+               newp2[0].in_direction(d) > gv.boundary_location(High, d)) {
         for (int j=0; j<ncopies; j++) {
           newp1[ncopies+j] = newp1[j] - lattice_vector(d);
           newp2[ncopies+j] = newp2[j] - lattice_vector(d);
@@ -230,7 +230,7 @@ bool fields::locate_component_point(component *c, ivec *there,
   if (user_volume.owns(*there))
     for (int sn=0;sn<S.multiplicity();sn++) {
       const ivec here=S.transform(*there,sn);
-      if (v.owns(here)) {
+      if (gv.owns(here)) {
         *there = here;
         *phase *= S.phase_shift(*c,sn);
         *c = direction_component(*c,
@@ -248,7 +248,7 @@ void fields_chunk::zero_metal(field_type ft) {
 void fields::find_metals() {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      const grid_volume vi = chunks[i]->v;
+      const grid_volume vi = chunks[i]->gv;
       FOR_FIELD_TYPES(ft) {
         delete[] chunks[i]->zeroes[ft];
         // First electric components...
@@ -303,7 +303,7 @@ void fields::connect_the_chunks() {
 
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
-    const grid_volume vi = chunks[i]->v;
+    const grid_volume vi = chunks[i]->gv;
     FOR_FIELD_TYPES(ft)
       for (int ip=0;ip<3;ip++)
 	for (int j=0;j<num_chunks;j++)
@@ -319,7 +319,7 @@ void fields::connect_the_chunks() {
 	      && !on_metal_boundary(here))
 	    for (int j=0;j<num_chunks;j++) {
 	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
-		  && chunks[j]->v.owns(here)
+		  && chunks[j]->gv.owns(here)
 		  && !(is_B(corig) && is_B(c) &&
 		       B_redundant[5*i+corig-Bx] && B_redundant[5*j+c-Bx])) {
 		const int pair = j+i*num_chunks;
@@ -391,7 +391,7 @@ void fields::connect_the_chunks() {
   // Next start setting up the connections...
   
   for (int i=0;i<num_chunks;i++) {
-    const grid_volume vi = chunks[i]->v;
+    const grid_volume vi = chunks[i]->gv;
     
     // initialize wh[f][ip][Incoming][j] to sum of comm_sizes for jj < j
     FOR_FIELD_TYPES(f)
@@ -413,12 +413,12 @@ void fields::connect_the_chunks() {
 	      && !on_metal_boundary(here))
 	    for (int j=0;j<num_chunks;j++) {
 	      if ((chunks[i]->is_mine() || chunks[j]->is_mine())
-		  && chunks[j]->v.owns(here)
+		  && chunks[j]->gv.owns(here)
 		  && !(is_B(corig) && is_B(c) &&
 		       B_redundant[5*i+corig-Bx] && B_redundant[5*j+c-Bx])) {
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
-		const int m = chunks[j]->v.index(c, here);
+		const int m = chunks[j]->gv.index(c, here);
 		const int f = type(c);
 
 		if (ip == CONNECT_PHASE)

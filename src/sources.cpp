@@ -218,7 +218,7 @@ void fields::add_point_source(component c, double freq,
     add_point_source(c, src, p, amp);
   }
   else {
-    cutoff = v.inva + cutoff * width;
+    cutoff = gv.inva + cutoff * width;
     if (peaktime <= 0.0)
       peaktime = time() + cutoff;
     
@@ -283,10 +283,10 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 
   direction cd = component_direction(c);
 
-  double inva = fc->v.inva;
+  double inva = fc->gv.inva;
   int idx_vol = 0;
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
-    IVEC_LOOP_LOC(fc->v, loc);
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    IVEC_LOOP_LOC(fc->gv, loc);
     loc += shift * (0.5*inva) - data->center;
 
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
@@ -315,12 +315,12 @@ void fields::add_volume_source(component c, const src_time &src,
                                complex<double> A(const vec &), 
 			       complex<double> amp) {
   volume where(where_); // make a copy to adjust size if necessary
-  if (v.dim != where.dim)
+  if (gv.dim != where.dim)
     abort("incorrect source grid_volume dimensionality in add_volume_source");
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     double w = user_volume.boundary_location(High, d)
       - user_volume.boundary_location(Low, d);
-    if (where.in_direction(d) > w + v.inva)
+    if (where.in_direction(d) > w + gv.inva)
       abort("Source width > cell width in %s direction!\n", direction_name(d));
     else if (where.in_direction(d) > w) { // difference is less than 1 pixel
       double dw = where.in_direction(d) - w;
@@ -332,9 +332,9 @@ void fields::add_volume_source(component c, const src_time &src,
   src_vol_chunkloop_data data;
   data.A = A ? A : one;
   data.amp = amp;
-  LOOP_OVER_DIRECTIONS(v.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d)
     if (where.in_direction(d) == 0.0 && !nosize_direction(d)) // delta-fun
-      data.amp *= v.a; // correct units for J delta-function amplitude
+      data.amp *= gv.a; // correct units for J delta-function amplitude
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
   loop_in_chunks(src_vol_chunkloop, (void *) &data, where, c, false);

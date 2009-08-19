@@ -132,7 +132,7 @@ dft_force fields::add_dft_force(const volume_list *where_,
   direction field_d[3];
 
   for (int p = 0; p < 3; ++p)
-    field_d[p] = v.yucky_direction(p);
+    field_d[p] = gv.yucky_direction(p);
 
   volume_list *where = S.reduce(where_);
   volume_list *where_save = where;
@@ -142,7 +142,7 @@ dft_force fields::add_dft_force(const volume_list *where_,
     if (nd == NO_DIRECTION) abort("cannot determine dft_force normal");
     direction fd = component_direction(where->c); // force direction
     if (fd == NO_DIRECTION) abort("NO_DIRECTION dft_force is invalid");
-    if (coordinate_mismatch(v.dim, fd))
+    if (coordinate_mismatch(gv.dim, fd))
       abort("coordinate-type mismatch in add_dft_force");
 
     if (fd != nd) { // off-diagaonal stress-tensor terms
@@ -160,7 +160,7 @@ dft_force fields::add_dft_force(const volume_list *where_,
 			 false, 1.0, offdiag2);
     }
     else  // diagonal stress-tensor terms
-      LOOP_OVER_FIELD_DIRECTIONS(v.dim, d) {
+      LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
 	complex<double> weight1 = where->weight * (d == fd ? +0.5 : -0.5);
 	diag = add_dft(direction_component(Ex, d), 
 		       where->xv, freq_min, freq_max, Nfreq,

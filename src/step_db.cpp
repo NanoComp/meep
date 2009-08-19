@@ -51,24 +51,24 @@ bool fields_chunk::step_db(field_type ft) {
       const direction d_c = component_direction(cc);
       const bool have_p = have_plus_deriv[cc];
       const bool have_m = have_minus_deriv[cc];
-      const direction dsig0 = cycle_direction(v.dim,d_c,1);
+      const direction dsig0 = cycle_direction(gv.dim,d_c,1);
       const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
-      const direction dsigu0 = cycle_direction(v.dim,d_c,2);
+      const direction dsigu0 = cycle_direction(gv.dim,d_c,2);
       const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
-      int stride_p = have_p?v.stride(d_deriv_p):0;
-      int stride_m = have_m?v.stride(d_deriv_m):0;
+      int stride_p = have_p?gv.stride(d_deriv_p):0;
+      int stride_m = have_m?gv.stride(d_deriv_m):0;
       realnum *f_p = have_p?f[c_p][cmp]:NULL;
       realnum *f_m = have_m?f[c_m][cmp]:NULL;
       realnum *the_f = f[cc][cmp];
 
       if (dsig != NO_DIRECTION
 	  && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
-	f_cond[cc][cmp] = new realnum[v.ntot()];
-	memset(f_cond[cc][cmp], 0, sizeof(realnum) * v.ntot());
+	f_cond[cc][cmp] = new realnum[gv.ntot()];
+	memset(f_cond[cc][cmp], 0, sizeof(realnum) * gv.ntot());
       }
       if (dsigu != NO_DIRECTION && !f_u[cc][cmp]) {
-	f_u[cc][cmp] = new realnum[v.ntot()];
-	memcpy(f_u[cc][cmp], the_f, v.ntot() * sizeof(realnum));
+	f_u[cc][cmp] = new realnum[gv.ntot()];
+	memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
 	allocated_u = true;
       }
       
@@ -77,7 +77,7 @@ bool fields_chunk::step_db(field_type ft) {
 	stride_m = -stride_m;
       }
 
-      if (v.dim == Dcyl) switch (d_c) {
+      if (gv.dim == Dcyl) switch (d_c) {
       case R:
 	f_p = NULL; // im/r Fz term will be handled separately
 	break;
@@ -96,14 +96,14 @@ bool fields_chunk::step_db(field_type ft) {
 	   and get the correct derivative.  (More precisely,
 	   the derivative and integral are replaced by differences
 	   and sums, but you get the idea). */
-	if (!f_rderiv_int) f_rderiv_int = new realnum[v.ntot()];
-	double ir0 = (v.origin_r() + rshift) * v.a 
-	  + 0.5 * v.iyee_shift(c_p).in_direction(R);
-	for (int iz = 0; iz <= v.nz(); ++iz) f_rderiv_int[iz] = 0;
-	int sr = v.nz() + 1;
-	for (int ir = 1; ir <= v.nr(); ++ir) {
+	if (!f_rderiv_int) f_rderiv_int = new realnum[gv.ntot()];
+	double ir0 = (gv.origin_r() + rshift) * gv.a 
+	  + 0.5 * gv.iyee_shift(c_p).in_direction(R);
+	for (int iz = 0; iz <= gv.nz(); ++iz) f_rderiv_int[iz] = 0;
+	int sr = gv.nz() + 1;
+	for (int ir = 1; ir <= gv.nr(); ++ir) {
 	  double rinv = 1.0 / ((ir+ir0)-0.5);
-	  for (int iz = 0; iz <= v.nz(); ++iz) {
+	  for (int iz = 0; iz <= gv.nz(); ++iz) {
 	    int idx = ir*sr + iz;
 	    f_rderiv_int[idx] = f_rderiv_int[idx - sr] +
 	      rinv * (f_p[idx] * (ir+ir0) - f_p[idx - sr] * ((ir-1)+ir0));
@@ -115,7 +115,7 @@ bool fields_chunk::step_db(field_type ft) {
       default: abort("bug - non-cylindrical field component in Dcyl");
       }
       
-      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, v, Courant, 
+      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, Courant, 
 		dsig, s->sig[dsig], s->siginv[dsig], 
 		f_u[cc][cmp], dsigu, s->sig[dsigu], s->siginv[dsigu], 
 		dt, 
@@ -135,27 +135,27 @@ bool fields_chunk::step_db(field_type ft) {
      at -beta.)  The nice thing about this is that most calculations
      of flux, energy, etcetera, are insensitive to this implicit "i"
      factor.   For complex fields, we implement i*beta directly. */
-  if (v.dim == D2 && beta != 0) DOCMP for (direction d_c=X; d_c <= Y; 
+  if (gv.dim == D2 && beta != 0) DOCMP for (direction d_c=X; d_c <= Y; 
 					   d_c = direction(d_c + 1)) {
     component cc = direction_component(first_field_component(ft), d_c);
     component c_g = direction_component(ft == D_stuff ? Hx : Ex,
 					d_c == X ? Y : X);
     realnum *the_f = f[cc][cmp];
     const realnum *g = f[c_g][1-cmp] ? f[c_g][1-cmp] : f[c_g][cmp];
-    const direction dsig0 = cycle_direction(v.dim,d_c,1);
+    const direction dsig0 = cycle_direction(gv.dim,d_c,1);
     const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
-    const direction dsigu0 = cycle_direction(v.dim,d_c,2);
+    const direction dsigu0 = cycle_direction(gv.dim,d_c,2);
     const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
     const double betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1)
       * (f[c_g][1-cmp] ? (ft == D_stuff ? -1 : +1) * (2*cmp-1) : 1);
-    STEP_BETA(the_f, cc, g, v, betadt, 
+    STEP_BETA(the_f, cc, g, gv, betadt, 
 	      dsig, s->siginv[dsig], 
 	      f_u[cc][cmp], dsigu, s->siginv[dsigu], 
 	      s->condinv[cc][d_c], f_cond[cc][cmp]);  
   }
 
   // in cylindrical coordinates, we now have to add the i*m/r terms... */
-  if (v.dim == Dcyl && m != 0) DOCMP FOR_FT_COMPONENTS(ft, cc) {
+  if (gv.dim == Dcyl && m != 0) DOCMP FOR_FT_COMPONENTS(ft, cc) {
     const direction d_c = component_direction(cc);
     if (f[cc][cmp] && (d_c == R || d_c == Z)) {
       const component c_g = d_c==R ? plus_component[cc] : minus_component[cc];
@@ -164,26 +164,26 @@ bool fields_chunk::step_db(field_type ft) {
       const realnum *cndinv = s->condinv[cc][d_c];
       realnum *fcnd = f_cond[cc][cmp];
       realnum *fu = f_u[cc][cmp];
-      const direction dsig = cycle_direction(v.dim,d_c,1);
+      const direction dsig = cycle_direction(gv.dim,d_c,1);
       const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
-      const int dk = v.iyee_shift(cc).in_direction(dsig);
-      const direction dsigu = cycle_direction(v.dim,d_c,2);
+      const int dk = gv.iyee_shift(cc).in_direction(dsig);
+      const direction dsigu = cycle_direction(gv.dim,d_c,2);
       const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
-      const int dku = v.iyee_shift(cc).in_direction(dsigu);
+      const int dku = gv.iyee_shift(cc).in_direction(dsigu);
       const double the_m = 
 	m * (1-2*cmp) * (1-2*(ft==B_stuff)) * (1-2*(d_c==R)) * Courant;
-      const double ir0 = (v.origin_r() + rshift) * v.a 
-	+ 0.5 * v.iyee_shift(cc).in_direction(R);
-      int sr = v.nz() + 1;
+      const double ir0 = (gv.origin_r() + rshift) * gv.a 
+	+ 0.5 * gv.iyee_shift(cc).in_direction(R);
+      int sr = gv.nz() + 1;
 
       // 8 special cases of the same loop (sigh):
       if (siginv) { // PML in f update
 	if (siginvu) { // PML + fu
 	  if (cndinv) // PML + fu + conductivity
 	    //////////////////// MOST GENERAL CASE //////////////////////
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		int k = dk + 2*(dsig==Z ? iz : ir);
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
@@ -195,9 +195,9 @@ bool fields_chunk::step_db(field_type ft) {
 	    }
 	    /////////////////////////////////////////////////////////////
 	  else // PML + fu - conductivity
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		int k = dk + 2*(dsig==Z ? iz : ir);
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
@@ -209,9 +209,9 @@ bool fields_chunk::step_db(field_type ft) {
 	}
 	else { // PML - fu
 	  if (cndinv) // PML - fu + conductivity
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		int k = dk + 2*(dsig==Z ? iz : ir);
 		double dfcnd = rinv * g[idx] * cndinv[idx];
@@ -220,9 +220,9 @@ bool fields_chunk::step_db(field_type ft) {
 	      }
 	    }
 	  else // PML - fu - conductivity
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		int k = dk + 2*(dsig==Z ? iz : ir);
 		double dfcnd = rinv * g[idx];
@@ -234,9 +234,9 @@ bool fields_chunk::step_db(field_type ft) {
       else { // no PML in f update
 	if (siginvu) { // no PML + fu
 	  if (cndinv) // no PML + fu + conductivity
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
 		double df = rinv * g[idx] * cndinv[idx];
@@ -245,9 +245,9 @@ bool fields_chunk::step_db(field_type ft) {
 	      }
 	    }
 	  else // no PML + fu - conductivity
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		int ku = dku + 2*(dsigu==Z ? iz : ir);
 		double df = rinv * g[idx];
@@ -258,17 +258,17 @@ bool fields_chunk::step_db(field_type ft) {
 	}
 	else { // no PML - fu
 	  if (cndinv) // no PML - fu + conductivity
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		the_f[idx] += rinv * g[idx] * cndinv[idx];
 	      }
 	    }
 	  else // no PML - fu - conductivity
-	    for (int ir = ir0 == 0; ir <= v.nr(); ++ir) {
+	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
 	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= v.nz(); ++iz) {
+	      for (int iz = 0; iz <= gv.nz(); ++iz) {
 		int idx = ir*sr + iz;
 		the_f[idx] += rinv * g[idx];
 	      }
@@ -281,19 +281,19 @@ bool fields_chunk::step_db(field_type ft) {
 #define ZERO_Z(array) memset(array, 0, sizeof(realnum)*(nz+1));
 
   // deal with annoying r=0 boundary conditions for m=0 and m=1
-  if (v.dim == Dcyl && v.origin_r() == 0.0) DOCMP {
-    const int nz = v.nz();
+  if (gv.dim == Dcyl && gv.origin_r() == 0.0) DOCMP {
+    const int nz = gv.nz();
     if (m == 0 && ft == D_stuff && f[Dz][cmp]) {
       // d(Dz)/dt = (1/r) * d(r*Hp)/dr
       const realnum *g = f[Hp][cmp];
       const realnum *cndinv = s->condinv[Dz][Z];
       realnum *fcnd = f_cond[Dz][cmp];
-      const direction dsig = cycle_direction(v.dim,Z,1);
+      const direction dsig = cycle_direction(gv.dim,Z,1);
       const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
-      const int dk = v.iyee_shift(Dz).in_direction(dsig);
-      const direction dsigu = cycle_direction(v.dim,Z,2);
+      const int dk = gv.iyee_shift(Dz).in_direction(dsig);
+      const direction dsigu = cycle_direction(gv.dim,Z,2);
       const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
-      const int dku = v.iyee_shift(Dz).in_direction(dsigu);
+      const int dku = gv.iyee_shift(Dz).in_direction(dsigu);
       realnum *fu = siginvu && f_u[Dz][cmp] ? f[Dz][cmp] : 0;
       realnum *the_f = fu ? f_u[Dz][cmp] : f[Dz][cmp];
       for (int iz = 0; iz < nz; ++iz) {
@@ -323,12 +323,12 @@ bool fields_chunk::step_db(field_type ft) {
 	: (f[Ez][1-cmp] + (nz+1));
       const realnum *cndinv = s->condinv[cc][d_c];
       realnum *fcnd = f_cond[cc][cmp];
-      const direction dsig = cycle_direction(v.dim,d_c,1);
+      const direction dsig = cycle_direction(gv.dim,d_c,1);
       const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
-      const int dk = v.iyee_shift(cc).in_direction(dsig);
-      const direction dsigu = cycle_direction(v.dim,d_c,2);
+      const int dk = gv.iyee_shift(cc).in_direction(dsig);
+      const direction dsigu = cycle_direction(gv.dim,d_c,2);
       const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
-      const int dku = v.iyee_shift(cc).in_direction(dsigu);
+      const int dku = gv.iyee_shift(cc).in_direction(dsigu);
       realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
       realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
       int sd = ft == D_stuff ? +1 : -1;
@@ -354,9 +354,9 @@ bool fields_chunk::step_db(field_type ft) {
 	 the origin we need to be before we can use nonzero fields
 	 ... note that this is a fixed number of pixels for a given m,
 	 so it should still converge.  Still, this is weird... */
-      double rmax = fabs(m) - int(v.origin_r()*v.a+0.5);
+      double rmax = fabs(m) - int(gv.origin_r()*gv.a+0.5);
       if (ft == D_stuff)
-	for (int r = 0; r <= v.nr() && r < rmax; r++) {
+	for (int r = 0; r <= gv.nr() && r < rmax; r++) {
           const int ir = r*(nz+1);
 	  ZERO_Z(f[Dp][cmp]+ir);
 	  ZERO_Z(f[Dz][cmp]+ir);
@@ -366,7 +366,7 @@ bool fields_chunk::step_db(field_type ft) {
 	  if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]+ir);
         }
       else
-	for (int r = 0; r <= v.nr() && r < rmax; r++) {
+	for (int r = 0; r <= gv.nr() && r < rmax; r++) {
           const int ir = r*(nz+1);
 	  ZERO_Z(f[Br][cmp]+ir);
 	  if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]+ir);

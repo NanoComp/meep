@@ -254,10 +254,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 			    component cgrid,
 			    bool use_symmetry, bool snap_empty_dims)
 {
-  if (coordinate_mismatch(v.dim, cgrid))
+  if (coordinate_mismatch(gv.dim, cgrid))
     abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n",
-	  component_name(cgrid), dimension_name(v.dim));
-  if (where.dim != v.dim)
+	  component_name(cgrid), dimension_name(gv.dim));
+  if (where.dim != gv.dim)
     abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
 
   if (cgrid == Permeability) cgrid = Centered;
@@ -273,22 +273,22 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     our symmetry transformations, so we can uniquely decide which
     transformed chunk gets to loop_in_chunks which grid point. 
   */
-  vec yee_c(v.yee_shift(Centered) - v.yee_shift(cgrid));
-  ivec iyee_c(v.iyee_shift(Centered) - v.iyee_shift(cgrid));
+  vec yee_c(gv.yee_shift(Centered) - gv.yee_shift(cgrid));
+  ivec iyee_c(gv.iyee_shift(Centered) - gv.iyee_shift(cgrid));
   volume wherec(where + yee_c);
 
   /* Find the corners (is and ie) of the smallest bounding box for
      wherec, on the grid of odd-coordinate ivecs (i.e. the
      "epsilon grid"). */
-  ivec is(vec2diel_floor(wherec.get_min_corner(), v.a, zero_ivec(v.dim)));
-  ivec ie(vec2diel_ceil(wherec.get_max_corner(), v.a, zero_ivec(v.dim)));
+  ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
+  ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
   
   /* Integration weights at boundaries (c.f. long comment at top). */
-  vec s0(v.dim), e0(v.dim), s1(v.dim), e1(v.dim);
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
+  vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     double w0, w1;
-    w0 = 1. - wherec.in_direction_min(d)*v.a + 0.5*is.in_direction(d);
-    w1 = 1. + wherec.in_direction_max(d)*v.a - 0.5*ie.in_direction(d);
+    w0 = 1. - wherec.in_direction_min(d)*gv.a + 0.5*is.in_direction(d);
+    w1 = 1. + wherec.in_direction_max(d)*gv.a - 0.5*ie.in_direction(d);
     if (ie.in_direction(d) >= is.in_direction(d) + 3*2) {
       s0.set_direction(d, w0*w0 / 2);
       s1.set_direction(d, 1 - (1-w0)*(1-w0) / 2);
@@ -305,8 +305,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       if (snap_empty_dims) {
 	if (w0 > w1) ie.set_direction(d, is.in_direction(d));
 	else is.set_direction(d, ie.in_direction(d));
-	wherec.set_direction_min(d, is.in_direction(d) * (0.5*v.inva));
-	wherec.set_direction_max(d, is.in_direction(d) * (0.5*v.inva));
+	wherec.set_direction_min(d, is.in_direction(d) * (0.5*gv.inva));
+	wherec.set_direction_max(d, is.in_direction(d) * (0.5*gv.inva));
 	w0 = w1 = 1.0;
       }
       s0.set_direction(d, w0);
@@ -329,20 +329,20 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     component cS = S.transform(cgrid, -sn);
     ivec iyee_cS(S.transform_unshifted(iyee_c, -sn));
 
-    volume vS = S.transform(v.surroundings(), sn);
-    vec L(v.dim);
-    ivec iL(v.dim);
+    volume vS = S.transform(gv.surroundings(), sn);
+    vec L(gv.dim);
+    ivec iL(gv.dim);
 
     // n.b. we can't just S.transform(lattice_vector,sn), 'cause of signs
-    LOOP_OVER_DIRECTIONS(v.dim, d) {
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
       direction dS = S.transform(d, -sn).d;
       L.set_direction(d, fabs(lattice_vector(dS).in_direction(dS)));
       iL.set_direction(d, iabs(ilattice_vector(dS).in_direction(dS)));
     }
 
     // figure out range of lattice shifts for which vS intersects wherec:
-    ivec min_ishift(v.dim), max_ishift(v.dim);
-    LOOP_OVER_DIRECTIONS(v.dim, d) {
+    ivec min_ishift(gv.dim), max_ishift(gv.dim);
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
       if (boundaries[High][S.transform(d, -sn).d] == Periodic) {
 	min_ishift.set_direction(d, 
 	 int(floor((wherec.in_direction_min(d) - vS.in_direction_max(d))
@@ -361,9 +361,9 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     ivec ishift(min_ishift);
     do {
       complex<double> ph = 1.0;
-      vec shift(v.dim, 0.0);
-      ivec shifti(v.dim, 0);
-      LOOP_OVER_DIRECTIONS(v.dim, d) {
+      vec shift(gv.dim, 0.0);
+      ivec shifti(gv.dim, 0);
+      LOOP_OVER_DIRECTIONS(gv.dim, d) {
 	shift.set_direction(d, L.in_direction(d) * ishift.in_direction(d));
 	shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
 	ph *= pow(eikna[d], ishift.in_direction(d));
@@ -372,7 +372,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       for (int i = 0; i < num_chunks; ++i) {
 	if (!chunks[i]->is_mine()) continue;
 	// Chunk looping boundaries:
-	volume xvS(v.dim);
+	volume xvS(gv.dim);
 
 	if (use_symmetry)
 	  xvS = S.transform(chunks[i]->xv, sn);
@@ -382,23 +382,23 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	     grid_volume.  Rather, we just want to make sure to get *all*
 	     of the chunk points that intersect where.  Hence, add a little
 	     padding to make sure we don't miss any points due to rounding. */
-	  vec pad(one_ivec(v.dim) * v.inva * 1e-3);
-	  xvS = volume(chunks[i]->v.loc(Centered,0) - pad,
-				 chunks[i]->v.loc(Centered,
-						  chunks[i]->v.ntot()-1) +pad);
+	  vec pad(one_ivec(gv.dim) * gv.inva * 1e-3);
+	  xvS = volume(chunks[i]->gv.loc(Centered,0) - pad,
+				 chunks[i]->gv.loc(Centered,
+						  chunks[i]->gv.ntot()-1) +pad);
 	}
 
 	ivec iscS(max(is-shifti, vec2diel_ceil(xvS.get_min_corner(),
-					       v.a, one_ivec(v.dim) * 2)));
+					       gv.a, one_ivec(gv.dim) * 2)));
 	ivec iecS(min(ie-shifti, vec2diel_floor(xvS.get_max_corner(),
-						v.a, zero_ivec(v.dim))));
+						gv.a, zero_ivec(gv.dim))));
 	if (iscS <= iecS) {
 	  // Determine weights at chunk looping boundaries:
 	  ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
-	  vec s0c(v.dim,1.0), s1c(v.dim,1.0), e0c(v.dim,1.0), e1c(v.dim,1.0);
+	  vec s0c(gv.dim,1.0), s1c(gv.dim,1.0), e0c(gv.dim,1.0), e1c(gv.dim,1.0);
 	  iscS += shifti;
 	  iecS += shifti;
-	  LOOP_OVER_DIRECTIONS(v.dim, d) {
+	  LOOP_OVER_DIRECTIONS(gv.dim, d) {
 	    direction dS = S.transform(d, sn).d;
 	    if (iscS.in_direction(dS) == is.in_direction(dS)) {
 	      s0c.set_direction(d, s0.in_direction(dS));
@@ -447,12 +447,12 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 
 	  // Determine integration "volumes" dV0 and dV1;
 	  double dV0 = 1.0, dV1 = 0.0;
-	  LOOP_OVER_DIRECTIONS(v.dim, d)
+	  LOOP_OVER_DIRECTIONS(gv.dim, d)
 	    if (wherec.in_direction(d) > 0.0)
-	      dV0 *= v.inva;
-	  if (v.dim == Dcyl) {
-	    dV1 = dV0 * 2*pi * v.inva;
-	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->v[isc], sn) + shift
+	      dV0 *= gv.inva;
+	  if (gv.dim == Dcyl) {
+	    dV1 = dV0 * 2*pi * gv.inva;
+	    dV0 *= 2*pi * fabs((S.transform(chunks[i]->gv[isc], sn) + shift
 				- yee_c).in_direction(R));
 	  }
 	 
@@ -467,7 +467,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       }
       
       
-      LOOP_OVER_DIRECTIONS(v.dim, d) {
+      LOOP_OVER_DIRECTIONS(gv.dim, d) {
 	if (ishift.in_direction(d) + 1 <= max_ishift.in_direction(d)) {
 	  ishift.set_direction(d, ishift.in_direction(d) + 1);
 	  break;

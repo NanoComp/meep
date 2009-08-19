@@ -27,18 +27,18 @@
 namespace meep {
 
 fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
-  S(s->S), v(s->v), user_volume(s->user_volume), xv(s->xv), m(m), beta(beta)
+  S(s->S), gv(s->gv), user_volume(s->user_volume), xv(s->xv), m(m), beta(beta)
 {
   verbosity = 0;
   synchronized_magnetic_fields = 0;
   outdir = new char[strlen(s->outdir) + 1]; strcpy(outdir, s->outdir);
-  if (v.dim == Dcyl)
+  if (gv.dim == Dcyl)
     S = S + r_to_minus_r_symmetry(m);
   phasein_time = 0;
   bands = NULL;
   for (int d=0;d<5;d++) k[d] = 0.0;
   is_real = 0;
-  a = v.a;
+  a = gv.a;
   dt = s->dt;
   t = 0;
   sources = NULL;
@@ -66,19 +66,19 @@ fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
       comm_blocks[ft][i] = 0;
   }
   for (int b=0;b<2;b++) FOR_DIRECTIONS(d)
-    if (v.has_boundary((boundary_side)b, d)) boundaries[b][d] = Metallic;
+    if (gv.has_boundary((boundary_side)b, d)) boundaries[b][d] = Metallic;
     else boundaries[b][d] = None;
   chunk_connections_valid = false;
   
   // unit directions are periodic by default:
   FOR_DIRECTIONS(d)
-    if (v.has_boundary(High, d) && v.has_boundary(Low, d) && d != R
+    if (gv.has_boundary(High, d) && gv.has_boundary(Low, d) && d != R
 	&& s->user_volume.num_direction(d) == 1)
       use_bloch(d, 0.0);
 }
 
 fields::fields(const fields &thef) :
-  S(thef.S), v(thef.v), user_volume(thef.user_volume), xv(thef.xv)
+  S(thef.S), gv(thef.gv), user_volume(thef.user_volume), xv(thef.xv)
 {
   verbosity = 0;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
@@ -137,13 +137,13 @@ fields::~fields() {
   if (!quiet) print_times();
 }
 
-void fields::verbose(int v) {
-  verbosity = v;
-  for (int i=0;i<num_chunks;i++) chunks[i]->verbose(v);
+void fields::verbose(int gv) {
+  verbosity = gv;
+  for (int i=0;i<num_chunks;i++) chunks[i]->verbose(gv);
 }
 
 void fields::use_real_fields() {
-  LOOP_OVER_DIRECTIONS(v.dim, d)
+  LOOP_OVER_DIRECTIONS(gv.dim, d)
     if (boundaries[High][d] == Periodic && k[d] != 0.0)
       abort("Can't use real fields with bloch boundary conditions!\n");
   is_real = 1;
@@ -195,7 +195,7 @@ fields_chunk::~fields_chunk() {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
-			   double m, bool store_pol_energy, double beta) : v(the_s->v), xv(the_s->xv), m(m), beta(beta), store_pol_energy(store_pol_energy) {
+			   double m, bool store_pol_energy, double beta) : gv(the_s->gv), xv(the_s->xv), m(m), beta(beta), store_pol_energy(store_pol_energy) {
   s = the_s; s->refcount++;
   rshift = 0;
   verbosity = 0;
@@ -239,7 +239,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
 }
 
 fields_chunk::fields_chunk(const fields_chunk &thef)
-  : v(thef.v), xv(thef.xv) {
+  : gv(thef.gv), xv(thef.xv) {
   s = thef.s; s->refcount++;
   rshift = thef.rshift;
   verbosity = thef.verbosity;
@@ -272,28 +272,28 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   }
   FOR_COMPONENTS(c) DOCMP {
     if (!is_magnetic(c) && thef.f[c][cmp]) {
-      f[c][cmp] = new realnum[v.ntot()];
-      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * v.ntot());
+      f[c][cmp] = new realnum[gv.ntot()];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * gv.ntot());
     }
     if (thef.f_u[c][cmp]) {
-      f_u[c][cmp] = new realnum[v.ntot()];
-      memcpy(f_u[c][cmp], thef.f_u[c][cmp], sizeof(realnum) * v.ntot());
+      f_u[c][cmp] = new realnum[gv.ntot()];
+      memcpy(f_u[c][cmp], thef.f_u[c][cmp], sizeof(realnum) * gv.ntot());
     }
     if (thef.f_w[c][cmp]) {
-      f_w[c][cmp] = new realnum[v.ntot()];
-      memcpy(f_w[c][cmp], thef.f_w[c][cmp], sizeof(realnum) * v.ntot());
+      f_w[c][cmp] = new realnum[gv.ntot()];
+      memcpy(f_w[c][cmp], thef.f_w[c][cmp], sizeof(realnum) * gv.ntot());
     }
     if (thef.f_cond[c][cmp]) {
-      f_cond[c][cmp] = new realnum[v.ntot()];
-      memcpy(f_cond[c][cmp], thef.f_cond[c][cmp], sizeof(realnum) * v.ntot());
+      f_cond[c][cmp] = new realnum[gv.ntot()];
+      memcpy(f_cond[c][cmp], thef.f_cond[c][cmp], sizeof(realnum) * gv.ntot());
     }
   }
   FOR_MAGNETIC_COMPONENTS(c) DOCMP {
     if (thef.f[c][cmp] == thef.f[c-Hx+Bx][cmp])
       f[c][cmp] = f[c-Hx+Bx][cmp];
     else if (thef.f[c][cmp]) {
-      f[c][cmp] = new realnum[v.ntot()];
-      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * v.ntot());
+      f[c][cmp] = new realnum[gv.ntot()];
+      memcpy(f[c][cmp], thef.f[c][cmp], sizeof(realnum) * gv.ntot());
     }
   }
   FOR_FIELD_TYPES(ft) {
@@ -308,9 +308,9 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   }
   FOR_COMPONENTS(c) DOCMP2 
     if (thef.f_minus_p[c][cmp]) {
-      f_minus_p[c][cmp] = new realnum[v.ntot()];
+      f_minus_p[c][cmp] = new realnum[gv.ntot()];
       memcpy(f_minus_p[c][cmp], thef.f_minus_p[c][cmp], 
-	     sizeof(realnum) * v.ntot());
+	     sizeof(realnum) * gv.ntot());
     }
   f_rderiv_int = NULL;
   figure_out_step_plan();
@@ -359,9 +359,9 @@ void fields_chunk::figure_out_step_plan() {
             (is_magnetic(c1) && is_electric(c2)) ||
 	    (is_B(c1) && is_electric(c2))) {
           const direction dc2 = component_direction(c2);
-          if (dc1 != dc2 && v.has_field(c2) && v.has_field(c1) &&
-              (has_direction(v.dim,cross(dc1,dc2)) ||
-	       (v.dim == Dcyl && has_field_direction(v.dim,cross(dc1,dc2))))) {
+          if (dc1 != dc2 && gv.has_field(c2) && gv.has_field(c1) &&
+              (has_direction(gv.dim,cross(dc1,dc2)) ||
+	       (gv.dim == Dcyl && has_field_direction(gv.dim,cross(dc1,dc2))))) {
             direction d_deriv = cross(dc1,dc2);
             if (cross_negative(dc2, dc1)) {
               minus_component[c1] = c2;
@@ -405,14 +405,14 @@ bool fields_chunk::alloc_f(component c) {
 	     H fields if needed (if mu != 1 or in PML) in update_eh */
 	  component bc = direction_component(Bx, component_direction(c));
 	  if (!f[bc][cmp]) {
-	    f[bc][cmp] = new realnum[v.ntot()];
-	    for (int i=0;i<v.ntot();i++) f[bc][cmp][i] = 0.0;
+	    f[bc][cmp] = new realnum[gv.ntot()];
+	    for (int i=0;i<gv.ntot();i++) f[bc][cmp][i] = 0.0;
 	  }
 	  f[c][cmp] = f[bc][cmp];
 	}
 	else {
-	  f[c][cmp] = new realnum[v.ntot()];
-	  for (int i=0;i<v.ntot();i++) f[c][cmp][i] = 0.0;
+	  f[c][cmp] = new realnum[gv.ntot()];
+	  for (int i=0;i<gv.ntot();i++) f[c][cmp][i] = 0.0;
 	}
       }
     }
@@ -420,16 +420,16 @@ bool fields_chunk::alloc_f(component c) {
 }
 
 void fields::require_component(component c) {
-  if (!v.has_field(c))
+  if (!gv.has_field(c))
     abort("cannot require a %s component in a %s grid",
-	  component_name(c), dimension_name(v.dim));
+	  component_name(c), dimension_name(gv.dim));
 
-  if (beta != 0 && v.dim != D2)
+  if (beta != 0 && gv.dim != D2)
     abort("Nonzero beta unsupported in dimensions other than 2.");
 
   // check if we are in 2d but anisotropy couples xy with z
   bool aniso2d = false;
-  if (v.dim == D2) {
+  if (gv.dim == D2) {
     int i;
     for (i = 0; i < num_chunks; ++i)
       if (chunks[i]->s->has_chi1inv(Ex, Z) ||
@@ -450,7 +450,7 @@ void fields::require_component(component c) {
   // allocate fields if they haven't been allocated yet for this component
   int need_to_reconnect = 0;
   FOR_COMPONENTS(c_alloc)
-    if (v.has_field(c_alloc) && (is_like(v.dim, c, c_alloc) || aniso2d))
+    if (gv.has_field(c_alloc) && (is_like(gv.dim, c, c_alloc) || aniso2d))
       for (int i = 0; i < num_chunks; ++i)
 	if (chunks[i]->alloc_f(c_alloc))
 	  need_to_reconnect++;
@@ -491,7 +491,7 @@ void fields::remove_fluxes() {
 
 void fields_chunk::zero_fields() {
   FOR_COMPONENTS(c) DOCMP {
-#define ZERO(array) if (array) memset(array, 0, sizeof(realnum) * v.ntot())
+#define ZERO(array) if (array) memset(array, 0, sizeof(realnum) * gv.ntot())
     ZERO(f[c][cmp]);
     ZERO(f_u[c][cmp]);
     ZERO(f_w[c][cmp]);
@@ -555,7 +555,7 @@ int fields::is_phasing() {
 
 // This is used for phasing the *radial origin* of a cylindrical structure
 void fields::set_rshift(double rshift) {
-  if (v.dim != Dcyl) abort("set_rshift is only for cylindrical coords");
+  if (gv.dim != Dcyl) abort("set_rshift is only for cylindrical coords");
   if (xv.in_direction_min(R) <= 0 && xv.in_direction_max(R) >= 0)
     abort("set_rshift is invalid if grid_volume contains r=0");
   for (int i = 0; i < num_chunks; ++i)
@@ -580,7 +580,7 @@ bool fields::equal_layout(const fields &f) const {
 
 // total computational grid_volume, including regions redundant by symmetry
 volume fields::total_volume(void) const {
-  volume gv0 = v.interior();
+  volume gv0 = gv.interior();
   volume xv = gv0;
   for (int n = 1; n < S.multiplicity(); ++n)
     xv = xv | S.transform(gv0, n);
@@ -594,9 +594,9 @@ volume fields::total_volume(void) const {
    empty size in that direction, they probably really intended to
    specify that whole dimension.  This function detects that case. */
 bool fields::nosize_direction(direction d) const {
-  return (v.has_boundary(Low, d) && v.has_boundary(High, d) &&
+  return (gv.has_boundary(Low, d) && gv.has_boundary(High, d) &&
 	  boundaries[Low][d] == Periodic && boundaries[High][d] == Periodic
-	  && v.num_direction(d) == 1);
+	  && gv.num_direction(d) == 1);
 }
 
 void fields::set_solve_cw_omega(complex<double> omega) {

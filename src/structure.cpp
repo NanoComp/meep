@@ -39,7 +39,7 @@ structure::structure()
 
 typedef structure_chunk *structure_chunk_ptr;
 
-structure::structure(const grid_volume &thev, material_function &eps,
+structure::structure(const grid_volume &thegv, material_function &eps,
 		     const boundary_region &br,
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
@@ -47,12 +47,12 @@ structure::structure(const grid_volume &thev, material_function &eps,
   Courant(Courant), xv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
-  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this grid_volume");
-  choose_chunkdivision(thev, num, br, s);
+  if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  choose_chunkdivision(thegv, num, br, s);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
-structure::structure(const grid_volume &thev, double eps(const vec &),
+structure::structure(const grid_volume &thegv, double eps(const vec &),
 		     const boundary_region &br,
 		     const symmetry &s,
 		     int num, double Courant, bool use_anisotropic_averaging,
@@ -60,37 +60,37 @@ structure::structure(const grid_volume &thev, double eps(const vec &),
   Courant(Courant), xv(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
-  if (!br.check_ok(thev)) abort("invalid boundary absorbers for this grid_volume");
-  choose_chunkdivision(thev, num, br, s);
+  if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  choose_chunkdivision(thegv, num, br, s);
   simple_material_function epsilon(eps);
   set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
 }
 
-void structure::choose_chunkdivision(const grid_volume &thev, 
+void structure::choose_chunkdivision(const grid_volume &thegv, 
 				     int desired_num_chunks, 
 				     const boundary_region &br,
 				     const symmetry &s) {
-  user_volume = thev;
+  user_volume = thegv;
   if (desired_num_chunks == 0)
     desired_num_chunks = count_processors();
-  if (thev.dim == Dcyl && thev.get_origin().r() < 0)
+  if (thegv.dim == Dcyl && thegv.get_origin().r() < 0)
     abort("r < 0 origins are not supported");
-  v = thev;
-  xv = v.surroundings();
+  gv = thegv;
+  xv = gv.surroundings();
   S = s;
-  a = v.a;
+  a = gv.a;
   dt = Courant/a;
 
-  // First, reduce overall grid_volume v by symmetries:
+  // First, reduce overall grid_volume gv by symmetries:
   if (S.multiplicity() > 1) {
     bool break_this[3];
     for (int dd=0;dd<3;dd++) {
       const direction d = (direction) dd;
       break_this[dd] = false;
       for (int n=0;n<S.multiplicity();n++)
-        if (has_direction(thev.dim,d) &&
+        if (has_direction(thegv.dim,d) &&
             (S.transform(d,n).d != d || S.transform(d,n).flipped)) {
-          if (thev.num_direction(d) & 1 && !break_this[d] && !quiet)
+          if (thegv.num_direction(d) & 1 && !break_this[d] && !quiet)
             master_printf("Padding %s to even number of grid points.\n",
 			  direction_name(d));
           break_this[dd] = true;
@@ -104,20 +104,20 @@ void structure::choose_chunkdivision(const grid_volume &thev,
 	if (!quiet)
 	  master_printf("Halving computational cell along direction %s\n",
 			direction_name(direction(d)));
-	v = v.halve((direction)d);
+	gv = gv.halve((direction)d);
       }
     }
     // Before padding, find the corresponding geometric grid_volume.
-    xv = v.surroundings();
+    xv = gv.surroundings();
     // Pad the little cell in any direction that we've shrunk:
     for (int d=0;d<3;d++)
-      if (break_this[d]) v = v.pad((direction)d);
+      if (break_this[d]) gv = gv.pad((direction)d);
   }
 
   // initialize effort volumes
   num_effort_volumes = 1;
   effort_volumes = new grid_volume[num_effort_volumes];
-  effort_volumes[0] = v;
+  effort_volumes[0] = gv;
   effort = new double[num_effort_volumes];
   effort[0] = 1.0;
 
@@ -129,7 +129,7 @@ void structure::choose_chunkdivision(const grid_volume &thev,
   chunks = new structure_chunk_ptr[desired_num_chunks * num_effort_volumes];
   for (int i = 0; i < desired_num_chunks; i++) {
     const int proc = i * count_processors() / desired_num_chunks;
-    grid_volume vi = v.split_by_effort(desired_num_chunks, i,
+    grid_volume vi = gv.split_by_effort(desired_num_chunks, i,
                                   num_effort_volumes, effort_volumes, effort);
     for (int j = 0; j < num_effort_volumes; j++) {
       grid_volume vc;
@@ -144,7 +144,7 @@ void structure::choose_chunkdivision(const grid_volume &thev,
 }
 
 void boundary_region::apply(structure *s) const {
-  if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)
+  if (has_direction(s->gv.dim, d) && s->user_volume.has_boundary(side, d)
       && s->user_volume.num_direction(d) > 1) {
     switch (kind) {
     case NOTHING_SPECIAL: break;
@@ -157,7 +157,7 @@ void boundary_region::apply(structure *s) const {
 }
 
 void boundary_region::apply(const structure *s, structure_chunk *sc) const {
-  if (has_direction(s->v.dim, d) && s->user_volume.has_boundary(side, d)
+  if (has_direction(s->gv.dim, d) && s->user_volume.has_boundary(side, d)
       && s->user_volume.num_direction(d) > 1) {    
     switch (kind) {
     case NOTHING_SPECIAL: break;
@@ -173,20 +173,20 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     next->apply(s, sc);
 }
 
-bool boundary_region::check_ok(const grid_volume &v) const {
+bool boundary_region::check_ok(const grid_volume &gv) const {
   double thick[5][2];
   FOR_DIRECTIONS(d) FOR_SIDES(s) thick[d][s] = 0;
   for (const boundary_region *r = this; r; r = r->next) {
     if (r->kind != NOTHING_SPECIAL
-	&& v.num_direction(r->d) > 1
-	&& has_direction(v.dim, r->d)
-	&& v.has_boundary(r->side, r->d)) {
+	&& gv.num_direction(r->d) > 1
+	&& has_direction(gv.dim, r->d)
+	&& gv.has_boundary(r->side, r->d)) {
       if (r->thickness < 0 || thick[r->d][r->side] > 0) return false;
       thick[r->d][r->side] = r->thickness;
     }
   }
-  LOOP_OVER_DIRECTIONS(v.dim,d)
-    if (thick[d][High] + thick[d][Low] > v.interior().in_direction(d))
+  LOOP_OVER_DIRECTIONS(gv.dim,d)
+    if (thick[d][High] + thick[d][Low] > gv.interior().in_direction(d))
       return false;
   return true;
 }
@@ -214,18 +214,18 @@ void structure::check_chunks() {
   grid_volume vol_intersection;
   for (int i=0; i<num_chunks; i++)
     for (int j=i+1; j<num_chunks; j++)
-      if (chunks[i]->v.intersect_with(chunks[j]->v, &vol_intersection))
+      if (chunks[i]->gv.intersect_with(chunks[j]->gv, &vol_intersection))
         abort("chunks[%d] intersects with chunks[%d]\n", i, j);
   // FIXME: should use 'long long' else will fail if grid > 2e9 points
   int sum = 0;
   for (int i=0; i<num_chunks; i++) {
     int grid_points = 1;
-    LOOP_OVER_DIRECTIONS(chunks[i]->v.dim, d)
-      grid_points *= chunks[i]->v.num_direction(d);
+    LOOP_OVER_DIRECTIONS(chunks[i]->gv.dim, d)
+      grid_points *= chunks[i]->gv.num_direction(d);
     sum += grid_points;
   }
   int v_grid_points = 1;
-  LOOP_OVER_DIRECTIONS(v.dim, d) v_grid_points *= v.num_direction(d);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) v_grid_points *= gv.num_direction(d);
   if (sum != v_grid_points)
     abort("v_grid_points = %d, sum(chunks) = %d\n", v_grid_points, sum);
 }
@@ -233,9 +233,9 @@ void structure::check_chunks() {
 void structure::add_to_effort_volumes(const grid_volume &new_effort_volume,
                                 double extra_effort) {
   grid_volume *temp_volumes =
-    new grid_volume[(2*number_of_directions(v.dim)+1)*num_effort_volumes]; 
+    new grid_volume[(2*number_of_directions(gv.dim)+1)*num_effort_volumes]; 
   double *temp_effort =
-    new double[(2*number_of_directions(v.dim)+1)*num_effort_volumes];
+    new double[(2*number_of_directions(gv.dim)+1)*num_effort_volumes];
   // Intersect previous mat_volumes with this new_effort_volume
   int counter = 0;
   for (int j=0; j<num_effort_volumes; j++) {
@@ -277,7 +277,7 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume,
 structure::structure(const structure *s) : xv(s->xv) {
   num_chunks = s->num_chunks;
   outdir = s->outdir;
-  v = s->v;
+  gv = s->gv;
   S = s->S;
   user_volume = s->user_volume;
   chunks = new structure_chunk_ptr[num_chunks];
@@ -298,7 +298,7 @@ structure::structure(const structure *s) : xv(s->xv) {
 structure::structure(const structure &s) : xv(s.xv) {
   num_chunks = s.num_chunks;
   outdir = s.outdir;
-  v = s.v;
+  gv = s.gv;
   S = s.S;
   user_volume = s.user_volume;
   chunks = new structure_chunk_ptr[num_chunks];
@@ -393,7 +393,7 @@ void structure::set_mu(double mufunc(const vec &),
 }
 
 void structure::set_conductivity(component c, material_function &C) {
-  if (!v.has_field(c)) return;
+  if (!gv.has_field(c)) return;
   double tstart = wall_time();
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
@@ -409,7 +409,7 @@ void structure::set_conductivity(component c, double Cfunc(const vec &)) {
 }
 
 void structure::set_chi3(component c, material_function &eps) {
-  if (!v.has_field(c)) return;
+  if (!gv.has_field(c)) return;
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
@@ -443,13 +443,13 @@ void structure::set_chi2(double eps(const vec &)) {
 
 void structure::use_pml(direction d, boundary_side b, double dx) {
   if (dx <= 0.0) return;
-  grid_volume pml_volume = v;
+  grid_volume pml_volume = gv;
   pml_volume.set_num_direction(d, int(dx*user_volume.a + 1 + 0.5)); //FIXME: exact value?
   if (b == High)
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d)
   			  - pml_volume.num_direction(d) * 2);
   const int v_to_user_shift = (user_volume.little_corner().in_direction(d) 
-			       - v.little_corner().in_direction(d)) / 2;
+			       - gv.little_corner().in_direction(d)) / 2;
   if (b == Low && v_to_user_shift != 0)
     pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
@@ -495,36 +495,36 @@ structure_chunk::~structure_chunk() {
 void structure_chunk::mix_with(const structure_chunk *n, double f) {
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
     if (!chi1inv[c][d] && n->chi1inv[c][d]) {
-      chi1inv[c][d] = new realnum[v.ntot()];
+      chi1inv[c][d] = new realnum[gv.ntot()];
       trivial_chi1inv[c][d] = n->trivial_chi1inv[c][d];
       if (component_direction(c) == d) // diagonal components = 1 by default
-	for (int i=0;i<v.ntot();i++) chi1inv[c][d][i] = 1.0;
+	for (int i=0;i<gv.ntot();i++) chi1inv[c][d][i] = 1.0;
       else
-	for (int i=0;i<v.ntot();i++) chi1inv[c][d][i] = 0.0;
+	for (int i=0;i<gv.ntot();i++) chi1inv[c][d][i] = 0.0;
     }
     if (!conductivity[c][d] && n->conductivity[c][d]) {
-      conductivity[c][d] = new realnum[v.ntot()];
-      for (int i=0;i<v.ntot();i++) conductivity[c][d][i] = 0.0;
+      conductivity[c][d] = new realnum[gv.ntot()];
+      for (int i=0;i<gv.ntot();i++) conductivity[c][d][i] = 0.0;
     }
     if (chi1inv[c][d]) {
       trivial_chi1inv[c][d] = 
 	trivial_chi1inv[c][d] && n->trivial_chi1inv[c][d];
       if (n->chi1inv[c][d])
-	for (int i=0;i<v.ntot();i++)
+	for (int i=0;i<gv.ntot();i++)
 	  chi1inv[c][d][i] += f*(n->chi1inv[c][d][i] - chi1inv[c][d][i]);
       else {
 	double nval = component_direction(c) == d ? 1.0 : 0.0; // default
-	for (int i=0;i<v.ntot();i++)
+	for (int i=0;i<gv.ntot();i++)
 	  chi1inv[c][d][i] += f*(nval - chi1inv[c][d][i]);
       }
     }
     if (conductivity[c][d]) {
       if (n->conductivity[c][d])
-	for (int i=0;i<v.ntot();i++)
+	for (int i=0;i<gv.ntot();i++)
 	  conductivity[c][d][i] += f*(n->conductivity[c][d][i]
 				      - conductivity[c][d][i]);
       else
-	for (int i=0;i<v.ntot();i++)
+	for (int i=0;i<gv.ntot();i++)
 	  conductivity[c][d][i] += f*(0.0 - conductivity[c][d][i]);
     }
     condinv_stale = true;
@@ -535,7 +535,7 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
   while (po && pn) {
     FOR_COMPONENTS(c)
       if (po->s[c] && pn->s[c])
-        for (int i=0;i<v.ntot();i++)
+        for (int i=0;i<gv.ntot();i++)
           po->s[c][i] += f*(pn->s[c][i] - po->s[c][i]);
     po->gamma += f*(pn->gamma - po->gamma);
     po->omeganot += f*(pn->omeganot - po->omeganot);
@@ -560,8 +560,8 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
   // ...note that we should calculate overlap in exactly the same
   // way that "x > 0" is computed below.
   bool found_pml = false;
-  for (int i=v.little_corner().in_direction(d);
-       i<=v.big_corner().in_direction(d)+1;++i)
+  for (int i=gv.little_corner().in_direction(d);
+       i<=gv.big_corner().in_direction(d)+1;++i)
     if (pml_x(i, dx, bloc, a) > 0) {
       found_pml = true;
       break;
@@ -574,9 +574,9 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
       sig[d] = NULL;
       siginv[d] = NULL;
     }
-    LOOP_OVER_FIELD_DIRECTIONS(v.dim, dd) {
+    LOOP_OVER_FIELD_DIRECTIONS(gv.dim, dd) {
       if (!sig[dd]) {
-	int spml = (dd==d)?(2*v.num_direction(d)+2):1;
+	int spml = (dd==d)?(2*gv.num_direction(d)+2):1;
 	sigsize[dd] = spml;
 	sig[dd] = new double[spml];
 	siginv[dd] = new double[spml];
@@ -586,9 +586,9 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
 	}
       }
     }
-    for (int i=v.little_corner().in_direction(d);
-	 i<=v.big_corner().in_direction(d)+1;++i) {
-      int idx = i - v.little_corner().in_direction(d);
+    for (int i=gv.little_corner().in_direction(d);
+	 i<=gv.big_corner().in_direction(d)+1;++i) {
+      int idx = i - gv.little_corner().in_direction(d);
       double x = pml_x(i, dx, bloc, a);
       if (x > 0) {
 	sig[d][idx]=0.5*dt*prefac*pml_profile(x/dx, pml_profile_data);
@@ -604,8 +604,8 @@ void structure_chunk::update_condinv() {
   FOR_COMPONENTS(c) {
     direction d = component_direction(c);
     if (conductivity[c][d]) {
-      if (!condinv[c][d]) condinv[c][d] = new realnum[v.ntot()];
-      LOOP_OVER_VOL(v, c, i)
+      if (!condinv[c][d]) condinv[c][d] = new realnum[gv.ntot()];
+      LOOP_OVER_VOL(gv, c, i)
 	condinv[c][d][i] = 1 / (1 + conductivity[c][d][i] * dt * 0.5);
     }
     else if (condinv[c][d]) { // condinv not needed
@@ -623,21 +623,21 @@ structure_chunk::structure_chunk(const structure_chunk *o) : xv(o->xv) {
   a = o->a;
   Courant = o->Courant;
   dt = o->dt;
-  v = o->v;
+  gv = o->gv;
   the_proc = o->the_proc;
   the_is_mine = my_rank() == n_proc();
   FOR_COMPONENTS(c) {
     if (is_mine() && o->chi3[c]) {
-      chi3[c] = new realnum[v.ntot()];
+      chi3[c] = new realnum[gv.ntot()];
       if (chi3[c] == NULL) abort("Out of memory!\n");
-      for (int i=0;i<v.ntot();i++) chi3[c][i] = o->chi3[c][i];
+      for (int i=0;i<gv.ntot();i++) chi3[c][i] = o->chi3[c][i];
     } else {
       chi3[c] = NULL;
     }
     if (is_mine() && o->chi2[c]) {
-      chi2[c] = new realnum[v.ntot()];
+      chi2[c] = new realnum[gv.ntot()];
       if (chi2[c] == NULL) abort("Out of memory!\n");
-      for (int i=0;i<v.ntot();i++) chi2[c][i] = o->chi2[c][i];
+      for (int i=0;i<gv.ntot();i++) chi2[c][i] = o->chi2[c][i];
     } else {
       chi2[c] = NULL;
     }
@@ -646,15 +646,15 @@ structure_chunk::structure_chunk(const structure_chunk *o) : xv(o->xv) {
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) if (is_mine()) {
     trivial_chi1inv[c][d] = o->trivial_chi1inv[c][d];
     if (o->chi1inv[c][d]) {
-      chi1inv[c][d] = new realnum[v.ntot()];
-      memcpy(chi1inv[c][d], o->chi1inv[c][d], v.ntot()*sizeof(realnum));
+      chi1inv[c][d] = new realnum[gv.ntot()];
+      memcpy(chi1inv[c][d], o->chi1inv[c][d], gv.ntot()*sizeof(realnum));
     } else chi1inv[c][d] = NULL;
     if (o->conductivity[c][d]) {
-      conductivity[c][d] = new realnum[v.ntot()];
+      conductivity[c][d] = new realnum[gv.ntot()];
       memcpy(conductivity[c][d], o->conductivity[c][d],
-	     v.ntot()*sizeof(realnum));
-      condinv[c][d] = new realnum[v.ntot()];
-      memcpy(condinv[c][d], o->condinv[c][d], v.ntot()*sizeof(realnum));
+	     gv.ntot()*sizeof(realnum));
+      condinv[c][d] = new realnum[gv.ntot()];
+      memcpy(condinv[c][d], o->condinv[c][d], gv.ntot()*sizeof(realnum));
     } else conductivity[c][d] = condinv[c][d] = NULL;
   }
   condinv_stale = o->condinv_stale;
@@ -669,10 +669,10 @@ structure_chunk::structure_chunk(const structure_chunk *o) : xv(o->xv) {
   if (is_mine())
     FOR_DIRECTIONS(d) 
       if (o->sig[d]) {
-	sig[d] = new double[2*v.num_direction(d)+1];
-	siginv[d] = new double[2*v.num_direction(d)+1];
+	sig[d] = new double[2*gv.num_direction(d)+1];
+	siginv[d] = new double[2*gv.num_direction(d)+1];
 	sigsize[d] = o->sigsize[d];
-	for (int i=0;i<2*v.num_direction(d)+1;i++) {
+	for (int i=0;i<2*gv.num_direction(d)+1;i++) {
 	  sig[d][i] = o->sig[d][i];
 	  siginv[d][i] = o->sig[d][i];
 	}
@@ -680,21 +680,21 @@ structure_chunk::structure_chunk(const structure_chunk *o) : xv(o->xv) {
 }
 
 void structure_chunk::set_chi3(component c, material_function &epsilon) {
-  if (!is_mine() || !v.has_field(c)) return;
+  if (!is_mine() || !gv.has_field(c)) return;
   if (!is_electric(c) && !is_magnetic(c)) abort("only E or H can have chi3");
   
-  epsilon.set_volume(v.pad().surroundings());
+  epsilon.set_volume(gv.pad().surroundings());
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi3
-    chi1inv[c][component_direction(c)] = new realnum[v.ntot()];
-    for (int i = 0; i < v.ntot(); ++i)
+    chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
+    for (int i = 0; i < gv.ntot(); ++i)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
-  if (!chi3[c]) chi3[c] = new realnum[v.ntot()];
+  if (!chi3[c]) chi3[c] = new realnum[gv.ntot()];
   bool trivial = true;
-  LOOP_OVER_VOL(v, c, i) {
-    IVEC_LOOP_LOC(v, here);
+  LOOP_OVER_VOL(gv, c, i) {
+    IVEC_LOOP_LOC(gv, here);
     chi3[c][i] = epsilon.chi3(c, here);
     trivial = trivial && (chi3[c][i] == 0.0);
   }
@@ -703,8 +703,8 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
      chi2 be present if chi3 is, and vice versa */
   if (!chi2[c]) {
     if (!trivial) {
-      chi2[c] = new realnum[v.ntot()]; 
-      memset(chi2[c], 0, v.ntot() * sizeof(realnum)); // chi2 = 0
+      chi2[c] = new realnum[gv.ntot()]; 
+      memset(chi2[c], 0, gv.ntot() * sizeof(realnum)); // chi2 = 0
     }
     else { // no chi3, and chi2 is trivial (== 0), so delete
       delete[] chi3[c];
@@ -714,21 +714,21 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
 }
 
 void structure_chunk::set_chi2(component c, material_function &epsilon) {
-  if (!is_mine() || !v.has_field(c)) return;
+  if (!is_mine() || !gv.has_field(c)) return;
   if (!is_electric(c) && !is_magnetic(c)) abort("only E or H can have chi2");
   
-  epsilon.set_volume(v.pad().surroundings());
+  epsilon.set_volume(gv.pad().surroundings());
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi2
-    chi1inv[c][component_direction(c)] = new realnum[v.ntot()];
-    for (int i = 0; i < v.ntot(); ++i)
+    chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
+    for (int i = 0; i < gv.ntot(); ++i)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
-  if (!chi2[c]) chi2[c] = new realnum[v.ntot()];
+  if (!chi2[c]) chi2[c] = new realnum[gv.ntot()];
   bool trivial = true;
-  LOOP_OVER_VOL(v, c, i) {
-    IVEC_LOOP_LOC(v, here);
+  LOOP_OVER_VOL(gv, c, i) {
+    IVEC_LOOP_LOC(gv, here);
     chi2[c][i] = epsilon.chi2(c, here);
     trivial = trivial && (chi2[c][i] == 0.0);
   }
@@ -737,8 +737,8 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
      chi3 be present if chi2 is, and vice versa */
   if (!chi3[c]) {
     if (!trivial) {
-      chi3[c] = new realnum[v.ntot()]; 
-      memset(chi3[c], 0, v.ntot() * sizeof(realnum)); // chi3 = 0
+      chi3[c] = new realnum[gv.ntot()]; 
+      memset(chi3[c], 0, gv.ntot() * sizeof(realnum)); // chi3 = 0
     }
     else { // no chi2, and chi3 is trivial (== 0), so delete 
       delete[] chi2[c];
@@ -748,9 +748,9 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
 }
 
 void structure_chunk::set_conductivity(component c, material_function &C) {
-  if (!is_mine() || !v.has_field(c)) return;
+  if (!is_mine() || !gv.has_field(c)) return;
 
-  C.set_volume(v.pad().surroundings());
+  C.set_volume(gv.pad().surroundings());
 
   if (!is_electric(c) && !is_magnetic(c) && !is_D(c) && !is_B(c))
     abort("invalid component for conductivity");
@@ -760,20 +760,20 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
     (is_magnetic(c) ? direction_component(Bx, c_d) : c);
   realnum *multby = is_electric(c) || is_magnetic(c) ? chi1inv[c][c_d] : 0;
   if (!conductivity[c_C][c_d]) 
-    conductivity[c_C][c_d] = new realnum[v.ntot()]; 
+    conductivity[c_C][c_d] = new realnum[gv.ntot()]; 
   if (!conductivity[c_C][c_d]) abort("Memory allocation error.\n");
   bool trivial = true;
   realnum *cnd = conductivity[c_C][c_d];
   if (multby) {
-    LOOP_OVER_VOL(v, c_C, i) {
-      IVEC_LOOP_LOC(v, here);
+    LOOP_OVER_VOL(gv, c_C, i) {
+      IVEC_LOOP_LOC(gv, here);
       cnd[i] = C.conductivity(c, here) * multby[i];
       trivial = trivial && (cnd[i] == 0.0);
     }
   }
   else {
-    LOOP_OVER_VOL(v, c_C, i) {
-      IVEC_LOOP_LOC(v, here);
+    LOOP_OVER_VOL(gv, c_C, i) {
+      IVEC_LOOP_LOC(gv, here);
       cnd[i] = C.conductivity(c, here);
       trivial = trivial && (cnd[i] == 0.0);
     }
@@ -785,15 +785,15 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
   condinv_stale = true;
 }
 
-structure_chunk::structure_chunk(const grid_volume &thev, 
+structure_chunk::structure_chunk(const grid_volume &thegv, 
 				 const volume &vol_limit, 
 				 double Courant, int pr)
-  : Courant(Courant), xv(thev.surroundings() & vol_limit) {
+  : Courant(Courant), xv(thegv.surroundings() & vol_limit) {
   refcount = 1;
   pml_fmin = 0.2;
   pb = NULL;
-  v = thev;
-  a = thev.a;
+  gv = thegv;
+  a = thegv.a;
   dt = Courant/a;
   the_proc = pr;
   the_is_mine = n_proc() == my_rank();
@@ -836,7 +836,7 @@ double structure_chunk::max_eps() const {
   FOR_COMPONENTS(c) { 
     direction d = component_direction(c); 
     if (chi1inv[c][d])
-      for (int i=0;i<v.ntot();i++) themax = max(themax,1/chi1inv[c][d][i]);
+      for (int i=0;i<gv.ntot();i++) themax = max(themax,1/chi1inv[c][d][i]);
   }
   return themax;
 }
@@ -867,20 +867,20 @@ void structure::remove_polarizabilities() {
 
 // for debugging, display the chunk layout
 void structure::print_layout(void) const {
-  direction d0 = v.yucky_direction(0);
-  direction d1 = v.yucky_direction(1);
-  direction d2 = v.yucky_direction(2);
+  direction d0 = gv.yucky_direction(0);
+  direction d1 = gv.yucky_direction(1);
+  direction d2 = gv.yucky_direction(2);
   for (int i = 0; i < num_chunks; ++i) {
     master_printf("chunk[%d] on process %d, resolution %g (%s,%s,%s):"
 		  " (%d,%d,%d) - (%d,%d,%d)\n",
 		  i, chunks[i]->n_proc(), chunks[i]->a,
 		  direction_name(d0),direction_name(d1),direction_name(d2),
-		  chunks[i]->v.little_corner().yucky_val(0),
-		  chunks[i]->v.little_corner().yucky_val(1),
-		  chunks[i]->v.little_corner().yucky_val(2),
-		  chunks[i]->v.big_corner().yucky_val(0),
-		  chunks[i]->v.big_corner().yucky_val(1),
-		  chunks[i]->v.big_corner().yucky_val(2));
+		  chunks[i]->gv.little_corner().yucky_val(0),
+		  chunks[i]->gv.little_corner().yucky_val(1),
+		  chunks[i]->gv.little_corner().yucky_val(2),
+		  chunks[i]->gv.big_corner().yucky_val(0),
+		  chunks[i]->gv.big_corner().yucky_val(1),
+		  chunks[i]->gv.big_corner().yucky_val(2));
   }
 }
 

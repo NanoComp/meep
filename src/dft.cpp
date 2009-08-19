@@ -63,7 +63,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
        multiply by the interpolation weights or the grid_volume twice. */
     dV0 = 1;
     dV1 = 0;
-    LOOP_OVER_DIRECTIONS(fc->v.dim, d) {
+    LOOP_OVER_DIRECTIONS(fc->gv.dim, d) {
       s0.set_direction(d, 1.0);
       s1.set_direction(d, 1.0);
       e0.set_direction(d, 1.0);
@@ -78,7 +78,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   c = c_;
 
   if (use_centered_grid)
-    fc->v.yee2cent_offsets(c, avg1, avg2);
+    fc->gv.yee2cent_offsets(c, avg1, avg2);
   else
     avg1 = avg2 = 0;
 
@@ -158,7 +158,7 @@ dft_chunk *fields::add_dft(component c, const volume &where,
 			   bool sqrt_dV_and_interp_weights,
 			   complex<double> extra_weight,
 			   bool use_centered_grid) {
-  if (coordinate_mismatch(v.dim, c))
+  if (coordinate_mismatch(gv.dim, c))
     return NULL;
 
   dft_chunk_data data;  
@@ -221,7 +221,7 @@ void dft_chunk::update_dft(double time) {
   int numcmp = fc->f[c][1] ? 2 : 1;
 
   int idx_dft = 0;
-  LOOP_OVER_IVECS(fc->v, is, ie, idx) {
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
     double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
     if (sqrt_dV_and_interp_weights) w = sqrt(w);
     double f[2]; // real/imag field value at epsilon point
@@ -400,7 +400,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
   volume_list *where_save = where;
   while (where) {
     derived_component c = derived_component(where->c);
-    if (coordinate_mismatch(v.dim, component_direction(c)))
+    if (coordinate_mismatch(gv.dim, component_direction(c)))
       abort("coordinate-type mismatch in add_dft_flux");
     
     switch (c) {
@@ -409,7 +409,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
     case Sr: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
     case Sp: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
     case Sz:
-      if (v.dim == Dcyl)
+      if (gv.dim == Dcyl)
 	cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
       else
 	cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 

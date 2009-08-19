@@ -64,7 +64,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
   f2.get_point(&m1, p);
   for (int i=0;i<10;i++) {
     component c = (component) i;
-    if (f1.v.has_field(c)) {
+    if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (!compare(real(v1),real(v2),"real part")
 	  || !compare(imag(v1),imag(v2),"imaginary part")) {
@@ -96,11 +96,11 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = volcyl(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = mirror(Z,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = volcyl(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(Z,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
 
   fields f1(&s1);
   f1.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
@@ -119,11 +119,11 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
     if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -138,11 +138,11 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 3.0;
 
-  const grid_volume v = volcyl(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = mirror(Z,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = volcyl(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(Z,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   s.set_chi3(one);
   s1.set_chi3(one);
 
@@ -163,11 +163,11 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
     if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
     if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -182,11 +182,11 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 3.0;
 
-  const grid_volume v = volone(1.0, a);
-  the_center = v.center();
-  const symmetry S = mirror(Z,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = volone(1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(Z,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
 
   fields f1(&s1);
   f1.use_bloch(0.0);
@@ -203,11 +203,11 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.33))) return 0;
     if (!compare_point(f, f1, vec(0.50))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -222,16 +222,16 @@ int test_origin_shift(void) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = voltwo(1.0, 1.0, a);
-  grid_volume vcentered = v;
-  vcentered.shift_origin(-v.center());
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  grid_volume vcentered = gv;
+  vcentered.shift_origin(-gv.center());
   structure s(vcentered, one);
-  structure s1(v, one);
+  structure s1(gv, one);
 
   fields f1(&s1);
   fields f(&s);
-  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, v.center());
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, v.center());
+  f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, gv.center());
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, gv.center());
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.0,0.0));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.0,0.0));
   check_unequal_layout(f, f1);
@@ -251,11 +251,11 @@ int test_metal_xmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = voltwo(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = mirror(X,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(X,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
 
   fields f1(&s1);
   f1.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
@@ -274,11 +274,11 @@ int test_metal_xmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -292,10 +292,10 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
-  const symmetry S = mirror(X,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = vol3d(1.0, 1.0, 1.0, a);
+  const symmetry S = mirror(X,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing X mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -315,11 +315,11 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.5))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -333,10 +333,10 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = vol3d(1.1, 0.6, 1.0, a);
-  const symmetry S = mirror(Z,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = vol3d(1.1, 0.6, 1.0, a);
+  const symmetry S = mirror(Z,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing Z mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -356,11 +356,11 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -374,10 +374,10 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = vol3d(1.1, 0.6, 1.0, a);
-  const symmetry S = -mirror(Z,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = vol3d(1.1, 0.6, 1.0, a);
+  const symmetry S = -mirror(Z,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing odd Z mirror symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -395,11 +395,11 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -413,10 +413,10 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
-  const symmetry S = rotate4(Z,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = vol3d(1.0, 1.0, 1.0, a);
+  const symmetry S = rotate4(Z,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing Z fourfold rotational symmetry in 3D...\n");
 
   fields f1(&s1);
@@ -436,11 +436,11 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -454,10 +454,10 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
-  const symmetry S = rotate4(Z,v) + mirror(Z,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = vol3d(1.0, 1.0, 1.0, a);
+  const symmetry S = rotate4(Z,gv) + mirror(Z,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing Z fourfold rotational symmetry in 3D with horizontal mirror...\n");
 
   fields f1(&s1);
@@ -475,11 +475,11 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -493,10 +493,10 @@ int test_3D_metal_3mirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 3.0;
 
-  const grid_volume v = vol3d(1.0, 1.0, 1.0, a);
-  const symmetry S = mirror(Z,v) - mirror(Y,v) - mirror(X,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = vol3d(1.0, 1.0, 1.0, a);
+  const symmetry S = mirror(Z,gv) - mirror(Y,gv) - mirror(X,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing three mirror planes in 3D...\n");
 
   fields f1(&s1);
@@ -514,11 +514,11 @@ int test_3D_metal_3mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -532,11 +532,11 @@ int test_metal_ymirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const grid_volume v = voltwo(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = mirror(Y,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(Y,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing Y mirror symmetry...\n");
 
   fields f1(&s1);
@@ -555,11 +555,11 @@ int test_metal_ymirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -573,11 +573,11 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const grid_volume v = voltwo(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = mirror(Y,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(Y,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   master_printf("Testing Y periodic with mirror symmetry...\n");
@@ -601,13 +601,13 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) {
         return 0;
       }
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -621,11 +621,11 @@ int test_metal_rot2y(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 5.0;
 
-  const grid_volume v = voltwo(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = rotate2(Y,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = rotate2(Y,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -648,11 +648,11 @@ int test_metal_rot2y(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -666,11 +666,11 @@ int exact_metal_rot2y(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 5.0;
 
-  const grid_volume v = voltwo(1.0, 1.5, a);
-  the_center = v.center();
-  const symmetry S = rotate2(Y,v);
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  const grid_volume gv = voltwo(1.0, 1.5, a);
+  the_center = gv.center();
+  const symmetry S = rotate2(Y,gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing exact Y twofold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -689,11 +689,11 @@ int exact_metal_rot2y(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -707,12 +707,12 @@ int pml_twomirrors(double eps(const vec &)) {
   double a = 16.0;
   double ttot = 10.0;
 
-  const grid_volume v = voltwo(2.0, 2.0, a);
-  the_center = v.center();
-  const symmetry S = mirror(X,v) + mirror(Y,v);
+  const grid_volume gv = voltwo(2.0, 2.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(X,gv) + mirror(Y,gv);
 
-  structure s_mm(v, eps, pml(0.5), S);
-  structure s1(v, eps, pml(0.5), identity());
+  structure s_mm(gv, eps, pml(0.5), S);
+  structure s1(gv, eps, pml(0.5), identity());
   master_printf("Testing two mirrors with PML...\n");
   fields f_mm(&s_mm);
   fields f1(&s1);
@@ -739,8 +739,8 @@ int pml_twomirrors(double eps(const vec &)) {
     if (!compare_point(f1, f_mm, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f1, f_mm, vec(0.2  , 0.2 ))) return 0;
     if (f_mm.round_time() >= total_energy_check_time) {
-      if (!compare(f_mm.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f_mm.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       total_energy_check_time += 3.0;
     }
@@ -752,12 +752,12 @@ int exact_metal_rot4z(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const grid_volume v = voltwo(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = rotate4(Z,v);
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = rotate4(Z,gv);
 
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   master_printf("Testing Z fourfold rotational symmetry...\n");
 
   fields f1(&s1);
@@ -776,11 +776,11 @@ int exact_metal_rot4z(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -794,12 +794,12 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 5.0;
 
-  const grid_volume v = voltwo(1.0, 1.0, a);
-  the_center = v.center();
-  const symmetry S = rotate4(Z,v);
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = rotate4(Z,gv);
 
-  structure s(v, eps, no_pml(), S);
-  structure s1(v, eps);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
   s.set_chi3(one);
   s1.set_chi3(one);
   master_printf("Testing nonlinear Z fourfold rotational symmetry...\n");
@@ -820,11 +820,11 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -838,12 +838,12 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   double a = 8.0;
   double ttot = 30.0;
 
-  const grid_volume v = voltwo(3.0, 3.0, a);
-  the_center = v.center();
-  const symmetry S = rotate2(X,v);
+  const grid_volume gv = voltwo(3.0, 3.0, a);
+  the_center = gv.center();
+  const symmetry S = rotate2(X,gv);
 
-  structure s(v, eps, pml(1.0), S);
-  structure s1(v, eps, pml(1.0), identity());
+  structure s(gv, eps, pml(1.0), S);
+  structure s1(gv, eps, pml(1.0), identity());
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
   master_printf("Testing X twofold rotational symmetry with PML...\n");
@@ -862,11 +862,11 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(1.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(1.2  , 1.2 ))) return 0;
     if (f.round_time() >= total_energy_check_time) {
-      if (!compare(f.electric_energy_in_box(v.surroundings()),
-                   f1.electric_energy_in_box(v.surroundings()),
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      if (!compare(f.magnetic_energy_in_box(v.surroundings()),
-                   f1.magnetic_energy_in_box(v.surroundings()),
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       if (!compare(f.total_energy(), f1.total_energy(),
                    "   total energy")) return 0;
@@ -878,58 +878,58 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
 
 double sigma(const vec &) { return 7.63; }
 
-double polariton_ex(const grid_volume &v, double eps(const vec &)) {
+double polariton_ex(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 10.0;
-  master_printf("Testing polariton in %s...\n", dimension_name(v.dim));
-  the_center = v.center();
-  const symmetry S = mirror(Z,v);
-  structure s(v, eps);
-  structure sS(v, eps, no_pml(), S);
+  master_printf("Testing polariton in %s...\n", dimension_name(gv.dim));
+  the_center = gv.center();
+  const symmetry S = mirror(Z,gv);
+  structure s(gv, eps);
+  structure sS(gv, eps, no_pml(), S);
   s.add_polarizability(sigma, 0.3, 0.1);
   sS.add_polarizability(sigma, 0.3, 0.1);
   fields f(&s);
   f.use_real_fields();
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center());
   fields fS(&sS);
   fS.use_real_fields();
-  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_bloch(zero_vec(v.dim));
-  fS.use_bloch(zero_vec(v.dim));
+  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center());
+  f.use_bloch(zero_vec(gv.dim));
+  fS.use_bloch(zero_vec(gv.dim));
   check_unequal_layout(f, fS);
   while (f.round_time() < ttot) {
     f.step();
     fS.step();
-    if (!compare_point(fS, f, v.center())) return 0;
-    if (!compare_point(fS, f, zero_vec(v.dim))) return 0;
-    if (!compare_point(fS, f, v.center()*0.3)) return 0;
+    if (!compare_point(fS, f, gv.center())) return 0;
+    if (!compare_point(fS, f, zero_vec(gv.dim))) return 0;
+    if (!compare_point(fS, f, gv.center()*0.3)) return 0;
   }
   return 1;
 }
 
-double nonlinear_ex(const grid_volume &v, double eps(const vec &)) {
+double nonlinear_ex(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 10.0;
-  master_printf("Testing nonlinear in %s...\n", dimension_name(v.dim));
-  the_center = v.center();
-  const symmetry S = mirror(Z,v);
-  structure s(v, eps);
-  structure sS(v, eps, no_pml(), S);
+  master_printf("Testing nonlinear in %s...\n", dimension_name(gv.dim));
+  the_center = gv.center();
+  const symmetry S = mirror(Z,gv);
+  structure s(gv, eps);
+  structure sS(gv, eps, no_pml(), S);
   s.set_chi3(one);
   sS.set_chi3(one);
   fields f(&s);
   f.use_real_fields();
-  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
+  f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center());
   fields fS(&sS);
   fS.use_real_fields();
-  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, v.center());
-  f.use_bloch(zero_vec(v.dim));
-  fS.use_bloch(zero_vec(v.dim));
+  fS.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center());
+  f.use_bloch(zero_vec(gv.dim));
+  fS.use_bloch(zero_vec(gv.dim));
   check_unequal_layout(f, fS);
   while (f.round_time() < ttot) {
     f.step();
     fS.step();
-    if (!compare_point(fS, f, v.center())) return 0;
-    if (!compare_point(fS, f, zero_vec(v.dim))) return 0;
-    if (!compare_point(fS, f, v.center()*0.3)) return 0;
+    if (!compare_point(fS, f, gv.center())) return 0;
+    if (!compare_point(fS, f, zero_vec(gv.dim))) return 0;
+    if (!compare_point(fS, f, gv.center()*0.3)) return 0;
   }
   return 1;
 }

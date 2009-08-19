@@ -31,7 +31,7 @@ static void fields_to_array(const fields &f, complex<realnum> *x)
 #define COPY_FROM_FIELD(fld)					\
 	  if ((fr = f.chunks[i]->fld[0]) &&			\
 	      (fi = f.chunks[i]->fld[1]))			\
-	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)		\
+	    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx)		\
 	      x[ix++] = complex<double>(fr[idx], fi[idx]);
 	  COPY_FROM_FIELD(f[c]);
 	  COPY_FROM_FIELD(f_u[c]);
@@ -54,7 +54,7 @@ static void array_to_fields(const complex<realnum> *x, fields &f)
 #define COPY_TO_FIELD(fld)					\
 	  if ((fr = f.chunks[i]->fld[0]) &&			\
 	      (fi = f.chunks[i]->fld[1]))			\
-	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {	\
+	    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx) {	\
 	      fr[idx] = real(x[ix]);				\
 	      fi[idx] = imag(x[ix++]);				\
 	    }
@@ -131,7 +131,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 	     in frequency domain via scalinb by the appropriate s
 	     factors, rather than storing them, but I had some
 	     problems getting that working) */
-	  N += 2 * chunks[i]->v.nowned(c) *
+	  N += 2 * chunks[i]->gv.nowned(c) *
 	    (1 + (chunks[i]->f_u[c][0] != NULL)
 	     + (chunks[i]->f_w[c2][0] != NULL) * 2
 	     + (chunks[i]->f_cond[c][0] != NULL));

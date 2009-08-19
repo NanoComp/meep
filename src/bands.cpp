@@ -75,8 +75,8 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
     int indind = 0;
     while (bands->index[indind] != -1 && indind < num_bandpts) indind++;
     for (int h=0;h<num_chunks;h++)
-      if (chunks[h]->v.contains(p)) {
-        chunks[h]->v.interpolate(chunks[h]->v.eps_component(), p, ind, w);
+      if (chunks[h]->gv.contains(p)) {
+        chunks[h]->gv.interpolate(chunks[h]->gv.eps_component(), p, ind, w);
         for (int i=0;i<8&&w[i]&&indind<num_bandpts;i++) {
           bands->chunk[indind] = chunks[h];
           bands->index[indind++] = ind[i];
@@ -90,8 +90,8 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   const double epsmax = max_eps();
 
   double cutoff_freq = 0.0;
-  if (v.dim == Dcyl) {
-    cutoff_freq = 1.84*a*dt/(2*pi)/v.nr()/sqrt(epsmax);
+  if (gv.dim == Dcyl) {
+    cutoff_freq = 1.84*a*dt/(2*pi)/gv.nr()/sqrt(epsmax);
     if (m == 0) cutoff_freq *= 0.5;
   }
   bands->fmin = sqrt(cutoff_freq*cutoff_freq + abs(k[Z])*abs(k[Z])*(a*dt)*(a*dt)/epsmax); // FIXME
@@ -118,7 +118,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   bands->dt = dt * bands->scale_factor;
   for (int c=0;c<10;c++)
     for (int i=0;i<num_bandpts;i++)
-      if (v.has_field((component)c)) {
+      if (gv.has_field((component)c)) {
         delete[] bands->f[i][c];
         bands->f[i][c] = new complex<double>[bands->ntime];
         if (bands->f[i][c] == NULL)
@@ -146,7 +146,7 @@ void fields_chunk::record_bands(int tcount) {
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
     if (this == bands->chunk[p])
       for (int c=0;c<10;c++)
-        if (v.has_field((component)c)) {
+        if (gv.has_field((component)c)) {
           complex<double> tmp;
           if (f[c][0] && f[c][1]) tmp = complex<double>(f[c][0][bands->index[p]],
                                                         f[c][1][bands->index[p]]);
@@ -349,7 +349,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
 
   for (int p=0; p<num_bandpts && bands->index[p]!=-1; p++)
     for (int whichf = 0; whichf < 10; whichf++)
-      if (v.has_field((component)whichf) && maxbands < max_freqs - freqs_so_far) {
+      if (gv.has_field((component)whichf) && maxbands < max_freqs - freqs_so_far) {
         if (verbosity>1) master_printf("Looking at field %d\n", whichf);
         int freqs_here = bands->get_freqs(bands->f[p][whichf], ntime,
                                           ta+freqs_so_far,
@@ -361,7 +361,7 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
         }
         if (freqs_so_far + maxbands > max_freqs) break;
       }
-  if (k == 0 && v.dim == Dcyl && m != 0) fields_considered /= 2;
+  if (k == 0 && gv.dim == Dcyl && m != 0) fields_considered /= 2;
   num_found = cluster_some_bands_cleverly(tf, td, ta, freqs_so_far, fields_considered,
                                           maxbands, fad, approx_power);
   delete[] ta;

@@ -56,8 +56,8 @@ int flux_1d(const double zmax,
             double eps(const vec &)) {
   const double a = 10.0;
 
-  grid_volume v = volone(zmax,a);
-  structure s(v, eps, pml(zmax/6));
+  grid_volume gv = volone(zmax,a);
+  structure s(gv, eps, pml(zmax/6));
 
   fields f(&s);
   f.use_real_fields();
@@ -95,9 +95,9 @@ int split_1d(double eps(const vec &), int splitting) {
   const double boxwidth = 5.0, timewait = 1.0;
   const double zmax = 15.0, a = 10.0;
 
-  grid_volume v = volone(zmax,a);
-  structure s1(v, eps, pml(2.0));
-  structure s(v, eps, pml(2.0), identity(), splitting);
+  grid_volume gv = volone(zmax,a);
+  structure s1(gv, eps, pml(2.0));
+  structure s(gv, eps, pml(2.0), identity(), splitting);
 
   fields f1(&s1);
   fields f(&s);
@@ -128,8 +128,8 @@ int cavity_1d(const double boxwidth, const double timewait,
   const double zmax = 15.0;
   const double a = 10.0;
 
-  grid_volume v = volone(zmax,a);
-  structure s(v, eps, pml(2.0));
+  grid_volume gv = volone(zmax,a);
+  structure s(gv, eps, pml(2.0));
 
   fields f(&s);
   f.use_real_fields();
@@ -169,8 +169,8 @@ int flux_2d(const double xmax, const double ymax,
 
   master_printf("\nFlux_2d(%g,%g) test...\n", xmax, ymax);
 
-  grid_volume v = voltwo(xmax,ymax,a);
-  structure s(v, eps, pml(0.5));
+  grid_volume gv = voltwo(xmax,ymax,a);
+  structure s(gv, eps, pml(0.5));
 
   fields f(&s);
   f.use_real_fields();
@@ -241,8 +241,8 @@ int flux_cyl(const double rmax, const double zmax,
 
   master_printf("\nFlux_cyl(%g,%g) test...\n", rmax, zmax);
 
-  grid_volume v = volcyl(rmax,zmax,a);
-  structure s(v, eps, pml(0.5));
+  grid_volume gv = volcyl(rmax,zmax,a);
+  structure s(gv, eps, pml(0.5));
 
   fields f(&s, m);
   // f.use_real_fields();
