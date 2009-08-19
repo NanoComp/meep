@@ -131,7 +131,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 complex<double> fields::integrate(int num_fvals, const component *components,
 				  field_function integrand,
 				  void *integrand_data_,
-				  const geometric_volume &where,
+				  const volume &where,
 				  double *maxabs)
 {
   // check if components are all on the same grid:
@@ -213,7 +213,7 @@ static complex<double> rfun_wrap(const complex<double> *fvals,
 double fields::integrate(int num_fvals, const component *components,
 			 field_rfunction integrand,
 			 void *integrand_data_,
-			 const geometric_volume &where,
+			 const volume &where,
 			 double *maxabs)
 {
   rfun_wrap_data data;
@@ -226,7 +226,7 @@ double fields::integrate(int num_fvals, const component *components,
 double fields::max_abs(int num_fvals, const component *components,
 		       field_function integrand,
 		       void *integrand_data_,
-		       const geometric_volume &where)
+		       const volume &where)
 {
   double maxabs;
   integrate(num_fvals, components, integrand, integrand_data_, where,
@@ -237,7 +237,7 @@ double fields::max_abs(int num_fvals, const component *components,
 double fields::max_abs(int num_fvals, const component *components,
 		       field_rfunction integrand,
 		       void *integrand_data_,
-		       const geometric_volume &where)
+		       const volume &where)
 {
   rfun_wrap_data data;
   data.integrand = integrand;
@@ -253,7 +253,7 @@ static complex<double> return_the_field(const complex<double> *fields,
   return fields[0];
 }
 
-double fields::max_abs(int c, const geometric_volume &where)
+double fields::max_abs(int c, const volume &where)
 {
   if (is_derived(c))
     return max_abs(derived_component(c), where);
@@ -261,14 +261,14 @@ double fields::max_abs(int c, const geometric_volume &where)
     return max_abs(component(c), where);
 }
 
-double fields::max_abs(component c, const geometric_volume &where)
+double fields::max_abs(component c, const volume &where)
 {
   if (is_derived(int(c)))
     return max_abs(derived_component(c), where);
   return max_abs(1, &c, return_the_field, 0, where);
 }
 
-double fields::max_abs(derived_component c, const geometric_volume &where)
+double fields::max_abs(derived_component c, const volume &where)
 {
   if (!is_derived(int(c)))
     return max_abs(component(c), where);

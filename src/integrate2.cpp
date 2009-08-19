@@ -191,7 +191,7 @@ complex<double> fields::integrate2(const fields &fields2,
 				   const component *components2,
 				   field_function integrand,
 				   void *integrand_data_,
-				   const geometric_volume &where,
+				   const volume &where,
 				   double *maxabs)
 {
   if (!equal_layout(fields2))
@@ -298,7 +298,7 @@ double fields::integrate2(const fields &fields2,
 			  int num_fvals2, const component *components2,
 			  field_rfunction integrand,
 			  void *integrand_data_,
-			  const geometric_volume &where,
+			  const volume &where,
 			  double *maxabs)
 {
   rfun_wrap_data data;

@@ -158,12 +158,12 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
 /* Bounding box for zero-communication get_field, below.  This is the
    largest box in which you can interpolate the fields without communication.
    It is *not* necessarily non-overlapping with other chunks. */
-geometric_volume fields_chunk::get_field_gv(component c) const {
+volume fields_chunk::get_field_gv(component c) const {
   switch (c) {
   case Dielectric: case Permeability:
     c = v.eps_component();
   default:
-    return geometric_volume(v.loc(c, 0), v.loc(c, v.ntot() - 1));
+    return volume(v.loc(c, 0), v.loc(c, v.ntot() - 1));
   }
 }
 

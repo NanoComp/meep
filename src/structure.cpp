@@ -786,7 +786,7 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
 }
 
 structure_chunk::structure_chunk(const grid_volume &thev, 
-				 const geometric_volume &vol_limit, 
+				 const volume &vol_limit, 
 				 double Courant, int pr)
   : Courant(Courant), gv(thev.surroundings() & vol_limit) {
   refcount = 1;

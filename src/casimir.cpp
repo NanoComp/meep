@@ -210,7 +210,7 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
 						    direction dsource,
 						    double mx, double my, double mz,
 						    field_type ft,
-						    geometric_volume where,
+						    volume where,
 						    bool is_bloch) {
   direction dnormal = normal_direction(where);
   direction dcomponent = NO_DIRECTION;  // relevant component of field to integrate over

@@ -50,11 +50,11 @@ double fields::field_energy() {
   return field_energy_in_box(user_volume.surroundings());
 }
 
-double fields::energy_in_box(const geometric_volume &where) {
+double fields::energy_in_box(const volume &where) {
   return thermo_energy_in_box(where) + field_energy_in_box(where);
 }
 
-double fields::field_energy_in_box(const geometric_volume &where) {
+double fields::field_energy_in_box(const volume &where) {
   synchronize_magnetic_fields();
   double cur_step_magnetic_energy = magnetic_energy_in_box(where);
   restore_magnetic_fields();
@@ -69,7 +69,7 @@ static complex<double> dot_integrand(const complex<double> *fields,
 }
 
 double fields::field_energy_in_box(component c,
-				   const geometric_volume &where) {
+				   const volume &where) {
   if (coordinate_mismatch(v.dim, c))
     return 0.0;
 
@@ -88,14 +88,14 @@ double fields::field_energy_in_box(component c,
   return real(integrate(2, cs, dot_integrand, 0, where)) * 0.5;
 }
 
-double fields::electric_energy_in_box(const geometric_volume &where) {
+double fields::electric_energy_in_box(const volume &where) {
   long double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c)
     sum += field_energy_in_box(c, where);
   return sum;
 }
 
-double fields::magnetic_energy_in_box(const geometric_volume &where) {
+double fields::magnetic_energy_in_box(const volume &where) {
   long double sum = 0.0;
   FOR_MAGNETIC_COMPONENTS(c)
     sum += field_energy_in_box(c, where);
@@ -199,7 +199,7 @@ static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 	* pol->energy[cgrid][idx];
 }
 
-double fields::thermo_energy_in_box(const geometric_volume &where) {
+double fields::thermo_energy_in_box(const volume &where) {
   long double sum = 0.0;
   FOR_COMPONENTS(c)
     if (!coordinate_mismatch(v.dim, c))
@@ -209,7 +209,7 @@ double fields::thermo_energy_in_box(const geometric_volume &where) {
 
 /* Compute ExH integral in box using current fields, ignoring fact
    that this E and H correspond to different times. */
-double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
+double fields::flux_in_box_wrongH(direction d, const volume &where) {
   if (coordinate_mismatch(v.dim, d))
     return 0.0;
 
@@ -237,14 +237,14 @@ double fields::flux_in_box_wrongH(direction d, const geometric_volume &where) {
   return sum;
 }
 
-double fields::flux_in_box(direction d, const geometric_volume &where) {
+double fields::flux_in_box(direction d, const volume &where) {
   synchronize_magnetic_fields();
   double cur_step_flux = flux_in_box_wrongH(d, where);
   restore_magnetic_fields();
   return cur_step_flux;
 }
 
-flux_vol *fields::add_flux_vol(direction d, const geometric_volume &where) {
+flux_vol *fields::add_flux_vol(direction d, const volume &where) {
   if (where.dim != v.dim) abort("invalid dimensionality in add_flux_vol");
   if (d == NO_DIRECTION || coordinate_mismatch(v.dim, d))
     abort("invalid direction in add_flux_vol");
@@ -252,12 +252,12 @@ flux_vol *fields::add_flux_vol(direction d, const geometric_volume &where) {
 }
 
 // As add_flux_vol, but infer direction from where (if possible)
-flux_vol *fields::add_flux_plane(const geometric_volume &where) {
+flux_vol *fields::add_flux_plane(const volume &where) {
   return add_flux_vol(where.normal_direction(), where);
 }
 
 flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
-  return add_flux_plane(geometric_volume(p1, p2));
+  return add_flux_plane(volume(p1, p2));
 }
 
 /************************************************************************/
@@ -283,7 +283,7 @@ static complex<double> dot3_max_integrand(const complex<double> *fields,
 	  real(conj(fields[2]) * fields[5]));
 }
 
-double fields::electric_energy_max_in_box(const geometric_volume &where) {
+double fields::electric_energy_max_in_box(const volume &where) {
   component cs[6];
   if (v.dim == Dcyl) {
     cs[0] = Er; cs[1] = Ep; cs[2] = Ez;
@@ -300,7 +300,7 @@ double fields::electric_energy_max_in_box(const geometric_volume &where) {
 /* "modal" grid_volume according to definition in:
       E. M. Purcell, Phys. Rev. B 69, 681 (1946).
     (based on spontaneous emission enhancement). */
-double fields::modal_volume_in_box(const geometric_volume &where) {
+double fields::modal_volume_in_box(const volume &where) {
   return electric_energy_in_box(where) / electric_energy_max_in_box(where);
 }
 
@@ -320,7 +320,7 @@ static complex<double> dot_fx_integrand(const complex<double> *fields,
 
 /* computes integral of f(x) * |E|^2 / integral epsilon*|E|^2 */
 double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
-					     const geometric_volume &where) {
+					     const volume &where) {
   double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c) 
     if (!coordinate_mismatch(v.dim, component_direction(c))) {
@@ -333,7 +333,7 @@ double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
 
 /* computes integral of f(x) * epsilon*|E|^2 / integral epsilon*|E|^2 */
 double fields::electric_energy_weighted_integral(double (*f)(const vec &),
-					     const geometric_volume &where) {
+					     const volume &where) {
   double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c) 
     if (!coordinate_mismatch(v.dim, component_direction(c))) {

@@ -76,7 +76,7 @@ double get_reim(complex<double> x, int reim)
 bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      double kx, double ky,
 	      component src_c, int file_c,
-	      geometric_volume file_gv,
+	      volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const grid_volume v = vol2d(xsize, ysize, a);
@@ -196,7 +196,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 
 bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      component src_c, int file_c,
-	      geometric_volume file_gv,
+	      volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
   const grid_volume v = vol3d(xsize, ysize, zsize, a);
@@ -341,9 +341,9 @@ bool check_2d_monitor(double eps(const vec &),
   complex<double> *mon = new complex<double>[NT];
   while (f.time() <= T && !interrupt) {
     if (is_derived(file_c))
-      f.output_hdf5(derived_component(file_c), geometric_volume(pt, pt), file, true);
+      f.output_hdf5(derived_component(file_c), volume(pt, pt), file, true);
     else
-      f.output_hdf5(component(file_c), geometric_volume(pt, pt), file, true);
+      f.output_hdf5(component(file_c), volume(pt, pt), file, true);
     mon[f.t] = f.get_field(file_c, pt0);
     f.step();
   }
@@ -402,11 +402,11 @@ int main(int argc, char **argv)
 #ifdef HAVE_HDF5
   const double pad1 = 0.314159, pad2 = 0.27183, pad3 = 0.14142;
 
-  geometric_volume gv_2d[4] = {
-       geometric_volume(vec(pad1,pad2), vec(xsize-pad2,ysize-pad1)),
-       geometric_volume(vec(-pad1,-pad2), vec(2*xsize-pad2,2*ysize-pad1)),
-       geometric_volume(vec(pad1,pad2), vec(xsize-pad2,pad2)),
-       geometric_volume(vec(pad1,pad2), vec(pad1,pad2)),
+  volume gv_2d[4] = {
+       volume(vec(pad1,pad2), vec(xsize-pad2,ysize-pad1)),
+       volume(vec(-pad1,-pad2), vec(2*xsize-pad2,2*ysize-pad1)),
+       volume(vec(pad1,pad2), vec(xsize-pad2,pad2)),
+       volume(vec(pad1,pad2), vec(pad1,pad2)),
   };
   char gv_2d_name[4][20] = {"plane", "plane-supercell", "line", "point"};
   int gv_2d_rank[4] = {2,2,1,0};
@@ -465,11 +465,11 @@ int main(int argc, char **argv)
 	      return 1;
 	  }
   
-  geometric_volume gv_3d[4] = {
-       geometric_volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,zsize-pad3)),
-       geometric_volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,pad3)),
-       geometric_volume(vec(pad1,pad2,pad3), vec(xsize-pad2,pad2,pad3)),
-       geometric_volume(vec(pad1,pad2,pad3), vec(pad1,pad2,pad3)),
+  volume gv_3d[4] = {
+       volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,zsize-pad3)),
+       volume(vec(pad1,pad2,pad3), vec(xsize-pad2,ysize-pad1,pad3)),
+       volume(vec(pad1,pad2,pad3), vec(xsize-pad2,pad2,pad3)),
+       volume(vec(pad1,pad2,pad3), vec(pad1,pad2,pad3)),
   };
   char gv_3d_name[4][10] = {"grid_volume", "plane", "line", "point"};
   int gv_3d_rank[4] = {3,2,1,0};

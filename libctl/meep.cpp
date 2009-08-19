@@ -60,16 +60,16 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
 
 /* This is a wrapper function to fool SWIG...since our list constructor
    takes ownership of the next pointer, we have to make sure that SWIG
-   does not garbage-collect geometric_volume_list objects.  We do
+   does not garbage-collect volume_list objects.  We do
    this by wrapping a "helper" function around the constructor which
    does not have the %newobject SWIG attribute.   Note that we then
    need to deallocate the list explicitly in Scheme. */
-geometric_volume_list
-  *make_geometric_volume_list(const geometric_volume &gv,
+volume_list
+  *make_geometric_volume_list(const volume &gv,
 			      int c, complex<double> weight,
-			      geometric_volume_list *next)
+			      volume_list *next)
 {
-  return new geometric_volume_list(gv, c, weight, next);
+  return new volume_list(gv, c, weight, next);
 }
 
 /***************************************************************************/

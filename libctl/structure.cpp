@@ -158,7 +158,7 @@ meep::vec vector3_to_vec(const vector3 v3)
   }
 }
 
-static geom_box gv2box(const meep::geometric_volume &gv)
+static geom_box gv2box(const meep::volume &gv)
 {
   geom_box box;
   box.low = vec_to_vector3(gv.get_min_corner());
@@ -175,10 +175,10 @@ class geom_epsilon : public meep::material_function {
   
 public:
   geom_epsilon(geometric_object_list g, material_type_list mlist,
-	       const meep::geometric_volume &gv);
+	       const meep::volume &gv);
   virtual ~geom_epsilon();
   
-  virtual void set_volume(const meep::geometric_volume &gv);
+  virtual void set_volume(const meep::volume &gv);
   virtual void unset_volume(void);
 
   virtual bool has_chi3(meep::component c);
@@ -193,11 +193,11 @@ public:
 
   virtual double chi1p1(meep::field_type ft, const meep::vec &r);
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3],
-			       const meep::geometric_volume &gv, 
+			       const meep::volume &gv, 
 			       double tol, int maxeval);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3],
-			      const meep::geometric_volume &gv,
+			      const meep::volume &gv,
 			      double tol, int maxeval);
 
   virtual void sigma_row(meep::component c, double sigrow[3],
@@ -212,7 +212,7 @@ private:
 };
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
-			   const meep::geometric_volume &gv)
+			   const meep::volume &gv)
 {
   geometry = g; // don't bother making a copy, only used in one place
   extra_materials = mlist;
@@ -265,7 +265,7 @@ void geom_epsilon::unset_volume(void)
   }
 }
 
-void geom_epsilon::set_volume(const meep::geometric_volume &gv)
+void geom_epsilon::set_volume(const meep::volume &gv)
 {
   unset_volume();
   
@@ -444,7 +444,7 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
    
    Requires moderately horrifying logic to figure things out properly,
    stolen from MPB. */
-static bool get_front_object(const meep::geometric_volume &gv,
+static bool get_front_object(const meep::volume &gv,
 			     geom_box_tree geometry_tree,
 			     vector3 &pcenter,
 			     const geometric_object **o_front,
@@ -541,7 +541,7 @@ static bool get_front_object(const meep::geometric_volume &gv,
 }
 
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
-				   const meep::geometric_volume &gv,
+				   const meep::volume &gv,
 				   double tol, int maxeval) {
   const geometric_object *o;
   material_type mat, mat_behind;
@@ -747,7 +747,7 @@ static number inveps_func(int n, number *x, void *geomeps_)
 // fallback meaneps using libctl's adaptive cubature routine
 void geom_epsilon::fallback_chi1inv_row(meep::component c,
 					double chi1inv_row[3],
-					const meep::geometric_volume &gv,
+					const meep::volume &gv,
 					double tol, int maxeval)
 {
 

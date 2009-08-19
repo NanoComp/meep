@@ -250,7 +250,7 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
    "snap" them to the nearest grid point.  */
 
 void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
-			    const geometric_volume &where, 
+			    const volume &where, 
 			    component cgrid,
 			    bool use_symmetry, bool snap_empty_dims)
 {
@@ -275,7 +275,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
   */
   vec yee_c(v.yee_shift(Centered) - v.yee_shift(cgrid));
   ivec iyee_c(v.iyee_shift(Centered) - v.iyee_shift(cgrid));
-  geometric_volume wherec(where + yee_c);
+  volume wherec(where + yee_c);
 
   /* Find the corners (is and ie) of the smallest bounding box for
      wherec, on the grid of odd-coordinate ivecs (i.e. the
@@ -329,7 +329,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
     component cS = S.transform(cgrid, -sn);
     ivec iyee_cS(S.transform_unshifted(iyee_c, -sn));
 
-    geometric_volume vS = S.transform(v.surroundings(), sn);
+    volume vS = S.transform(v.surroundings(), sn);
     vec L(v.dim);
     ivec iL(v.dim);
 
@@ -372,7 +372,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       for (int i = 0; i < num_chunks; ++i) {
 	if (!chunks[i]->is_mine()) continue;
 	// Chunk looping boundaries:
-	geometric_volume gvS(v.dim);
+	volume gvS(v.dim);
 
 	if (use_symmetry)
 	  gvS = S.transform(chunks[i]->gv, sn);
@@ -383,7 +383,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	     of the chunk points that intersect where.  Hence, add a little
 	     padding to make sure we don't miss any points due to rounding. */
 	  vec pad(one_ivec(v.dim) * v.inva * 1e-3);
-	  gvS = geometric_volume(chunks[i]->v.loc(Centered,0) - pad,
+	  gvS = volume(chunks[i]->v.loc(Centered,0) - pad,
 				 chunks[i]->v.loc(Centered,
 						  chunks[i]->v.ntot()-1) +pad);
 	}

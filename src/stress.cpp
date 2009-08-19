@@ -126,7 +126,7 @@ void dft_force::scale_dfts(complex<double> scale) {
 /* note that the components where->c indicate the direction of the
    force to be computed, so they should be vector components (such as
    Ex, Ey, ... or Sx, ...)  rather than pseudovectors (like Hx, ...). */
-dft_force fields::add_dft_force(const geometric_volume_list *where_,
+dft_force fields::add_dft_force(const volume_list *where_,
 				double freq_min, double freq_max, int Nfreq){
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
   direction field_d[3];
@@ -134,8 +134,8 @@ dft_force fields::add_dft_force(const geometric_volume_list *where_,
   for (int p = 0; p < 3; ++p)
     field_d[p] = v.yucky_direction(p);
 
-  geometric_volume_list *where = S.reduce(where_);
-  geometric_volume_list *where_save = where;
+  volume_list *where = S.reduce(where_);
+  volume_list *where_save = where;
 
   for (; where; where = where->next) {
     direction nd = normal_direction(where->gv);

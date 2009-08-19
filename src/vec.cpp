@@ -154,25 +154,25 @@ ivec max(const ivec &ivec1, const ivec &ivec2) {
   return m;
 }
 
-geometric_volume::geometric_volume(const vec &vec1, const vec &vec2) {
+volume::volume(const vec &vec1, const vec &vec2) {
   min_corner = min(vec1, vec2);
   max_corner = max(vec1, vec2);
   dim = vec1.dim; 
 }
 
-geometric_volume::geometric_volume(const vec &pt) {
+volume::volume(const vec &pt) {
   dim = pt.dim; 
   min_corner = pt;
   max_corner = pt;
 }
 
-double geometric_volume::computational_volume() const {
+double volume::computational_volume() const {
   double vol = 1.0; 
   LOOP_OVER_DIRECTIONS(dim,d) vol *= in_direction(d);
   return vol;
 }
 
-double geometric_volume::integral_volume() const {
+double volume::integral_volume() const {
   double vol = 1.0; 
   LOOP_OVER_DIRECTIONS(dim, d)
     if (in_direction(d) != 0.0) vol *= in_direction(d);
@@ -180,13 +180,13 @@ double geometric_volume::integral_volume() const {
   return vol;
 }
 
-double geometric_volume::full_volume() const {
+double volume::full_volume() const {
   double vol = computational_volume(); 
   if (dim == Dcyl) vol *= pi * (in_direction_max(R) + in_direction_min(R));
   return vol;
 }
 
-double geometric_volume::diameter() const {
+double volume::diameter() const {
   double diam = 0.0;
   LOOP_OVER_DIRECTIONS(dim,d) {
     diam = max(diam, in_direction(d));
@@ -194,21 +194,21 @@ double geometric_volume::diameter() const {
   return diam;
 }
 
-geometric_volume geometric_volume::intersect_with(const geometric_volume &a) const {
+volume volume::intersect_with(const volume &a) const {
   if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
-  geometric_volume result(dim);
+  volume result(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
     double minval = max(in_direction_min(d), a.in_direction_min(d));
     double maxval = min(in_direction_max(d), a.in_direction_max(d));
     if (minval > maxval)
-      return geometric_volume(zero_vec(dim), zero_vec(dim));
+      return volume(zero_vec(dim), zero_vec(dim));
     result.set_direction_min(d, minval);
     result.set_direction_max(d, maxval);
   }
   return result;
 }
 
-bool geometric_volume::intersects(const geometric_volume &a) const {
+bool volume::intersects(const volume &a) const {
   if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
   LOOP_OVER_DIRECTIONS(dim, d) {
     double minval = max(in_direction_min(d), a.in_direction_min(d));
@@ -221,7 +221,7 @@ bool geometric_volume::intersects(const geometric_volume &a) const {
 
 // Return normal direction to grid_volume, if the grid_volume is dim-1 dimensional;
 // otherwise, return NO_DIRECTION.
-direction geometric_volume::normal_direction() const {
+direction volume::normal_direction() const {
   direction d = NO_DIRECTION;
   switch (dim) {
   case D1: d = Z; break;
@@ -281,13 +281,13 @@ direction grid_volume::yucky_direction(int n) const {
   return yucky_dir(dim, n);
 }
 
-geometric_volume grid_volume::surroundings() const {
-  return geometric_volume(operator[](little_corner()), 
+volume grid_volume::surroundings() const {
+  return volume(operator[](little_corner()), 
 			  operator[](big_corner()));
 }
 
-geometric_volume grid_volume::interior() const {
-  return geometric_volume(operator[](little_corner()), 
+volume grid_volume::interior() const {
+  return volume(operator[](little_corner()), 
 			  operator[](big_corner() - one_ivec(dim) * 2));
 }
 
@@ -342,7 +342,7 @@ void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) {
   }
 }
 
-bool geometric_volume::contains(const vec &p) const {
+bool volume::contains(const vec &p) const {
   LOOP_OVER_DIRECTIONS(dim,d) {
     if (p.in_direction(d) > in_direction_max(d) ||
         p.in_direction(d) < in_direction_min(d)) return false;
@@ -350,7 +350,7 @@ bool geometric_volume::contains(const vec &p) const {
   return true;
 }
 
-bool geometric_volume::contains(const geometric_volume &a) const {
+bool volume::contains(const volume &a) const {
   return contains(a.get_min_corner()) && contains(a.get_max_corner());
 }
 
@@ -609,8 +609,8 @@ void grid_volume::interpolate(component c, const vec &pc,
   }
 }
 
-geometric_volume empty_volume(ndim dim) {
-  geometric_volume out(dim);
+volume empty_volume(ndim dim) {
+  volume out(dim);
   LOOP_OVER_DIRECTIONS(dim,d) {
     out.set_direction_max(d,0.0);
     out.set_direction_min(d,0.0);
@@ -618,11 +618,11 @@ geometric_volume empty_volume(ndim dim) {
   return out;
 }
 
-geometric_volume grid_volume::dV(const ivec &here, double diameter) const {
+volume grid_volume::dV(const ivec &here, double diameter) const {
   const double hinva = 0.5*inva * diameter;
   const grid_volume &v = *this;
   const vec h = v[here];
-  geometric_volume out(dim);
+  volume out(dim);
   LOOP_OVER_DIRECTIONS(dim,d) {
     out.set_direction_max(d,h.in_direction(d)+hinva);
     out.set_direction_min(d,h.in_direction(d)-hinva);
@@ -633,7 +633,7 @@ geometric_volume grid_volume::dV(const ivec &here, double diameter) const {
   return out;
 }
 
-geometric_volume grid_volume::dV(component c, int ind) const {
+volume grid_volume::dV(component c, int ind) const {
   if (!owns(iloc(c, ind))) return empty_volume(dim);
   return dV(iloc(c,ind));
 }
@@ -1254,8 +1254,8 @@ vec symmetry::transform(const vec &ov, int n) const {
   return symmetry_point + delta;
 }
 
-geometric_volume symmetry::transform(const geometric_volume &gv, int n) const {
-  return geometric_volume(transform(gv.get_min_corner(),n),
+volume symmetry::transform(const volume &gv, int n) const {
+  return volume(transform(gv.get_min_corner(),n),
                           transform(gv.get_max_corner(),n));
 }
 
@@ -1338,14 +1338,14 @@ bool symmetry::is_primitive(const ivec &p) const {
 
 /* given a list of geometric volumes, produce a new list with appropriate
    weights that is minimized according to the symmetry.  */
-geometric_volume_list *symmetry::reduce(const geometric_volume_list *gl) const {
-  geometric_volume_list *glnew = 0;
-  for (const geometric_volume_list *g = gl; g; g = g->next) {
+volume_list *symmetry::reduce(const volume_list *gl) const {
+  volume_list *glnew = 0;
+  for (const volume_list *g = gl; g; g = g->next) {
     int sn;
     for (sn = 0; sn < multiplicity(); ++sn) {
-      geometric_volume gS(transform(g->gv, sn));
+      volume gS(transform(g->gv, sn));
       int cS = transform(g->c, sn);
-      geometric_volume_list *gn;
+      volume_list *gn;
       for (gn = glnew; gn; gn = gn->next)
 	if (gn->c == cS && gn->gv.round_float() == gS.round_float())
 	  break;
@@ -1355,14 +1355,14 @@ geometric_volume_list *symmetry::reduce(const geometric_volume_list *gl) const {
       }
     }
     if (sn == multiplicity() && g->weight != 0.0) { // no match, add to glnew
-      geometric_volume_list *gn = 
-	new geometric_volume_list(g->gv, g->c, g->weight, glnew);
+      volume_list *gn = 
+	new volume_list(g->gv, g->c, g->weight, glnew);
       glnew = gn;
     }
   }
 
   // reduce gv's redundant with themselves & delete elements with zero weight:
-  geometric_volume_list *gprev = 0, *g = glnew;
+  volume_list *gprev = 0, *g = glnew;
   while (g) {
     // first, see if g->gv is redundant with itself
     bool halve[5] = {false,false,false,false,false};

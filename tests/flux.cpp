@@ -179,7 +179,7 @@ int flux_2d(const double xmax, const double ymax,
   // corners of flux planes and energy box:
   vec lb(vec(xmax/3, ymax/3)), rb(vec(2*xmax/3, ymax/3));
   vec lt(vec(xmax/3, 2*ymax/3)), rt(vec(2*xmax/3, 2*ymax/3));
-  geometric_volume box(lb, rt);
+  volume box(lb, rt);
 
   flux_vol *left = f.add_flux_plane(lb, lt);
   flux_vol *right = f.add_flux_plane(rb, rt);
@@ -188,9 +188,9 @@ int flux_2d(const double xmax, const double ymax,
 
   /* measure flux spectra through two concentric flux boxes
      around the source...should be positive and equal */
-  geometric_volume box1(vec(xmax/6-0.4, ymax/6-0.2),
+  volume box1(vec(xmax/6-0.4, ymax/6-0.2),
 			vec(xmax/6+0.6, ymax/6+0.8));
-  geometric_volume box2(vec(xmax/6-0.9, ymax/6-0.7),
+  volume box2(vec(xmax/6-0.9, ymax/6-0.7),
 			vec(xmax/6+1.1, ymax/6+1.3));
   double fmin = 0.23, fmax = 0.27;
   int Nfreq = 10;
@@ -251,13 +251,13 @@ int flux_cyl(const double rmax, const double zmax,
   // corners of flux planes and energy box:
   vec lb(veccyl(-rmax/3, zmax/3)), rb(veccyl(2*rmax/3, zmax/3));
   vec lt(veccyl(-rmax/3, 2*zmax/3)), rt(veccyl(2*rmax/3, 2*zmax/3));
-  geometric_volume box(lb, rt);
+  volume box(lb, rt);
 
   /* measure flux spectra through two concentric flux boxes
      around the source...should be positive and equal */
-  geometric_volume box1(veccyl(rmax*5/6-0.4, zmax/6-0.2),
+  volume box1(veccyl(rmax*5/6-0.4, zmax/6-0.2),
 			veccyl(rmax*5/6+0.6, zmax/6+0.8));
-  geometric_volume box2(veccyl(rmax*5/6-0.9, zmax/6-0.7),
+  volume box2(veccyl(rmax*5/6-0.9, zmax/6-0.7),
 			veccyl(rmax*5/6+1.1, zmax/6+1.3));
   double fmin = 0.23, fmax = 0.27;
   int Nfreq = 10;

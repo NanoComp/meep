@@ -151,7 +151,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 				   chunkloop_data);
 }
 
-dft_chunk *fields::add_dft(component c, const geometric_volume &where,
+dft_chunk *fields::add_dft(component c, const volume &where,
 			   double freq_min, double freq_max, int Nfreq,
 			   bool include_dV_and_interp_weights,
 			   complex<double> weight, dft_chunk *chunk_next,
@@ -179,7 +179,7 @@ dft_chunk *fields::add_dft(component c, const geometric_volume &where,
   return data.dft_chunks;
 }
 
-dft_chunk *fields::add_dft(const geometric_volume_list *where,
+dft_chunk *fields::add_dft(const volume_list *where,
 			   double freq_min, double freq_max, int Nfreq,
 			   bool include_dV_and_interp_weights) {
   dft_chunk *chunks = 0;
@@ -391,13 +391,13 @@ void dft_flux::scale_dfts(complex<double> scale) {
   if (H) H->scale_dft(scale);
 }
 
-dft_flux fields::add_dft_flux(const geometric_volume_list *where_,
+dft_flux fields::add_dft_flux(const volume_list *where_,
 			      double freq_min, double freq_max, int Nfreq) {
   dft_chunk *E = 0, *H = 0;
   component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
 
-  geometric_volume_list *where = S.reduce(where_);
-  geometric_volume_list *where_save = where;
+  volume_list *where = S.reduce(where_);
+  volume_list *where_save = where;
   while (where) {
     derived_component c = derived_component(where->c);
     if (coordinate_mismatch(v.dim, component_direction(c)))
@@ -431,12 +431,12 @@ dft_flux fields::add_dft_flux(const geometric_volume_list *where_,
   return dft_flux(cE[0], cH[0], E, H, freq_min, freq_max, Nfreq);
 }
 
-direction fields::normal_direction(const geometric_volume &where) const {
+direction fields::normal_direction(const volume &where) const {
   direction d = where.normal_direction();
   if (d == NO_DIRECTION) {
     /* hack so that we still infer the normal direction correctly for
        volumes with empty dimensions */
-    geometric_volume where_pad(where);
+    volume where_pad(where);
     LOOP_OVER_DIRECTIONS(where.dim, d1)
       if (nosize_direction(d1) && where.in_direction(d1) == 0.0)
 	where_pad.set_direction_max(d1, where.in_direction_min(d1) + 0.1);
@@ -447,26 +447,26 @@ direction fields::normal_direction(const geometric_volume &where) const {
   return d;
 }
 
-dft_flux fields::add_dft_flux(direction d, const geometric_volume &where,
+dft_flux fields::add_dft_flux(direction d, const volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
   if (d == NO_DIRECTION)
     d = normal_direction(where);
-  geometric_volume_list gvl(where, direction_component(Sx, d));
+  volume_list gvl(where, direction_component(Sx, d));
   return add_dft_flux(&gvl, freq_min, freq_max, Nfreq);
 }
 
-dft_flux fields::add_dft_flux_box(const geometric_volume &where,
+dft_flux fields::add_dft_flux_box(const volume &where,
 				  double freq_min, double freq_max, int Nfreq){
-  geometric_volume_list *faces = 0;
+  volume_list *faces = 0;
   LOOP_OVER_DIRECTIONS(where.dim, d)
     if (where.in_direction(d) > 0) {
-      geometric_volume face(where);
+      volume face(where);
       derived_component c = direction_component(Sx, d);
       face.set_direction_min(d, where.in_direction_max(d));
-      faces = new geometric_volume_list(face, c, +1, faces);
+      faces = new volume_list(face, c, +1, faces);
       face.set_direction_min(d, where.in_direction_min(d));
       face.set_direction_max(d, where.in_direction_min(d));
-      faces = new geometric_volume_list(face, c, -1, faces);
+      faces = new volume_list(face, c, -1, faces);
     }
 
   dft_flux flux = add_dft_flux(faces, freq_min, freq_max, Nfreq);
@@ -474,7 +474,7 @@ dft_flux fields::add_dft_flux_box(const geometric_volume &where,
   return flux;
 }
 
-dft_flux fields::add_dft_flux_plane(const geometric_volume &where,
+dft_flux fields::add_dft_flux_plane(const volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
   return add_dft_flux(NO_DIRECTION, where, freq_min, freq_max, Nfreq);
 }

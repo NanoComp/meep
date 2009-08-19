@@ -234,12 +234,12 @@ void fields::add_point_source(component c, double freq,
 
 void fields::add_point_source(component c, const src_time &src,
 			      const vec &p, complex<double> amp) {
-  add_volume_source(c, src, geometric_volume(p, p), amp);
+  add_volume_source(c, src, volume(p, p), amp);
 }
 
 static complex<double> one(const vec &v) {(void) v; return 1.0;}
 void fields::add_volume_source(component c, const src_time &src,
-                               const geometric_volume &where,
+                               const volume &where,
 			       complex<double> amp) {
   add_volume_source(c, src, where, one, amp);
 }
@@ -311,10 +311,10 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 }
 
 void fields::add_volume_source(component c, const src_time &src,
-                               const geometric_volume &where_,
+                               const volume &where_,
                                complex<double> A(const vec &), 
 			       complex<double> amp) {
-  geometric_volume where(where_); // make a copy to adjust size if necessary
+  volume where(where_); // make a copy to adjust size if necessary
   if (v.dim != where.dim)
     abort("incorrect source grid_volume dimensionality in add_volume_source");
   LOOP_OVER_DIRECTIONS(v.dim, d) {

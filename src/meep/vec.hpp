@@ -637,12 +637,12 @@ ivec max(const ivec &ivec1, const ivec &ivec2);
 ivec min(const ivec &ivec1, const ivec &ivec2);
 ivec max_to_all(const ivec &v); // in mympi.cpp
 
-class geometric_volume {
+class volume {
  public:
   ndim dim;
-  geometric_volume(ndim di) { dim = di; min_corner.dim = di; max_corner.dim = di; };
-  geometric_volume(const vec &vec1, const vec &vec2);
-  geometric_volume(const vec &pt);
+  volume(ndim di) { dim = di; min_corner.dim = di; max_corner.dim = di; };
+  volume(const vec &vec1, const vec &vec2);
+  volume(const vec &pt);
   void set_direction_min(direction d, double val) { min_corner.set_direction(d, val); };
   void set_direction_max(direction d, double val) { max_corner.set_direction(d, val); };
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };
@@ -654,38 +654,38 @@ class geometric_volume {
   vec center() const { return (min_corner + max_corner) * 0.5; }
   double diameter() const;
   bool contains(const vec &h) const;
-  bool contains(const geometric_volume &a) const;
-  geometric_volume intersect_with(const geometric_volume &a) const;
-  geometric_volume operator&(const geometric_volume &a) const {
+  bool contains(const volume &a) const;
+  volume intersect_with(const volume &a) const;
+  volume operator&(const volume &a) const {
     return intersect_with(a);
   };
-  geometric_volume operator|(const geometric_volume &a) const {
-    return geometric_volume(min(min_corner, a.min_corner),
+  volume operator|(const volume &a) const {
+    return volume(min(min_corner, a.min_corner),
 			    max(max_corner, a.max_corner));
   };
-  geometric_volume operator+(const vec &a) const {
-    return geometric_volume(min_corner + a, max_corner + a);
+  volume operator+(const vec &a) const {
+    return volume(min_corner + a, max_corner + a);
   }
-  geometric_volume operator+=(const vec &a) {
+  volume operator+=(const vec &a) {
     min_corner += a; max_corner += a;
     return *this;
   }
-  geometric_volume operator-(const vec &a) const {
-    return geometric_volume(min_corner - a, max_corner - a);
+  volume operator-(const vec &a) const {
+    return volume(min_corner - a, max_corner - a);
   }
-  geometric_volume operator-=(const vec &a) {
+  volume operator-=(const vec &a) {
     min_corner -= a; max_corner -= a;
     return *this;
   }
-  bool operator==(const geometric_volume &a) const {
+  bool operator==(const volume &a) const {
     return (min_corner == a.min_corner && max_corner == a.max_corner);
   }
-  bool operator!=(const geometric_volume &a) const { return !(*this == a); };
-  geometric_volume round_float(void) const {
-    return geometric_volume(min_corner.round_float(),max_corner.round_float());
+  bool operator!=(const volume &a) const { return !(*this == a); };
+  volume round_float(void) const {
+    return volume(min_corner.round_float(),max_corner.round_float());
   }
-  bool intersects(const geometric_volume &a) const;
-  bool operator&&(const geometric_volume &a) const {
+  bool intersects(const volume &a) const;
+  bool operator&&(const volume &a) const {
     return intersects(a);
   };
   vec get_min_corner() const { return min_corner; };
@@ -745,8 +745,8 @@ class grid_volume {
   void interpolate(component, const vec &, int indices[8], double weights[8]) const;
   void interpolate(component, const vec &, ivec locs[8], double weights[8]) const;
 
-  geometric_volume dV(component c, int index) const;
-  geometric_volume dV(const ivec &, double diameter = 1.0) const;
+  volume dV(component c, int index) const;
+  volume dV(const ivec &, double diameter = 1.0) const;
   bool intersect_with(const grid_volume &vol_in, grid_volume *intersection = NULL, grid_volume *others = NULL, int *num_others = NULL) const;
   double rmin() const;
   double rmax() const;
@@ -789,8 +789,8 @@ class grid_volume {
 
   ivec little_owned_corner(component c) const;
   bool owns(const ivec &) const;
-  geometric_volume surroundings() const;
-  geometric_volume interior() const;
+  volume surroundings() const;
+  volume interior() const;
 
   bool get_boundary_icorners(component c, int ib, ivec *cs, ivec *ce) const;
 
@@ -850,7 +850,7 @@ class grid_volume {
   int the_ntot;
 };
 
-class geometric_volume_list;
+class volume_list;
 
 class symmetry;
 symmetry identity();
@@ -873,7 +873,7 @@ class symmetry {
   ivec transform(const ivec &, int n) const;
   vec transform(const vec &, int n) const;
   ivec transform_unshifted(const ivec &, int n) const;
-  geometric_volume transform(const geometric_volume &, int n) const;
+  volume transform(const volume &, int n) const;
   component transform(component, int n) const;
   complex<double> phase_shift(component, int n) const;
   derived_component transform(derived_component, int n) const;
@@ -883,7 +883,7 @@ class symmetry {
   int multiplicity() const;
   bool is_primitive(const ivec &) const;
 
-  geometric_volume_list *reduce(const geometric_volume_list *gl) const;
+  volume_list *reduce(const volume_list *gl) const;
 
   symmetry operator+(const symmetry &) const;
   symmetry operator*(complex<double>) const;
@@ -902,15 +902,15 @@ class symmetry {
   friend symmetry r_to_minus_r_symmetry(double m);
 };
 
-class geometric_volume_list {
+class volume_list {
 public:
-  geometric_volume_list(const geometric_volume &gv, int c, complex<double> weight = 1.0, geometric_volume_list *next = 0) : gv(gv), c(c), weight(weight), next(next) {}
-  ~geometric_volume_list() { delete next; }
+  volume_list(const volume &gv, int c, complex<double> weight = 1.0, volume_list *next = 0) : gv(gv), c(c), weight(weight), next(next) {}
+  ~volume_list() { delete next; }
   
-  geometric_volume gv;
+  volume gv;
   int c; // component or derived component associated with gv (e.g. for flux)
   complex<double> weight;
-  geometric_volume_list *next;
+  volume_list *next;
 };
 
 } /* namespace meep */

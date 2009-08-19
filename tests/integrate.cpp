@@ -87,7 +87,7 @@ static double integralx(double a, double b, direction d) {
     return a==b ? a : (b*b-a*a)*.5;
 }
 
-static double correct_integral(const geometric_volume &gv,
+static double correct_integral(const volume &gv,
 			       const linear_integrand_data &data)
 {
   direction x = data.dx, y = data.dy, z = data.dz;
@@ -115,9 +115,9 @@ static double urand(double min, double max)
   return (rand() * ((max - min) / RAND_MAX) + min);
 }
 
-static geometric_volume random_gv(ndim dim)
+static volume random_gv(ndim dim)
 {
-  geometric_volume gv(dim);
+  volume gv(dim);
 
   double s[3] = {0,0,0};
   int idim = dim == Dcyl ? 1 : int(dim);
@@ -187,7 +187,7 @@ static geometric_volume random_gv(ndim dim)
 }
 
 void check_integral(fields &f,
-		    linear_integrand_data &d, const geometric_volume &gv,
+		    linear_integrand_data &d, const volume &gv,
 		    component cgrid)
 {
   double x1 = gv.in_direction_min(d.dx);
@@ -239,7 +239,7 @@ void check_splitsym(const grid_volume &v, int splitting,
   master_printf("\nCHECKS for splitting=%d, symmetry=%s\n...",
 		splitting, Sname);
   for (int i = 0; i < num_random_trials; ++i) {
-    geometric_volume gv(random_gv(v.dim));
+    volume gv(random_gv(v.dim));
     component cgrid;
 
     do {

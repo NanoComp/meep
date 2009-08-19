@@ -122,8 +122,8 @@ static complex<double> meep_mpb_A(const vec &p) {
 #endif /* HAVE_MPB */
 
 void fields::add_eigenmode_source(component c0, const src_time &src,
-				  const geometric_volume &where,
-				  const geometric_volume &eig_vol,
+				  const volume &where,
+				  const volume &eig_vol,
 				  int band_num, const vec &kpoint, int parity,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,

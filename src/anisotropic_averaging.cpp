@@ -47,7 +47,7 @@ static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
 
 ////////////////////////////////////////////////////////////////////////////
 
-vec material_function::normal_vector(field_type ft, const geometric_volume &gv)
+vec material_function::normal_vector(field_type ft, const volume &gv)
 {
   vec gradient(zero_vec(gv.dim));
   vec p(gv.center());
@@ -65,7 +65,7 @@ vec material_function::normal_vector(field_type ft, const geometric_volume &gv)
    interface, which either use a semi-analytical average or can
    use a proper adaptive cubature. */
 void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
-					const geometric_volume &gv,
+					const volume &gv,
 					double tol, int maxeval) {
   field_type ft = type(c);
   if (!maxeval) {

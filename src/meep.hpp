@@ -155,7 +155,7 @@ public:
   
   /* Specify a restricted grid_volume: all subsequent eps/sigma/etc
      calls will be for points inside gv, until the next set_volume. */
-  virtual void set_volume(const geometric_volume &gv) {(void)gv;}
+  virtual void set_volume(const volume &gv) {(void)gv;}
   virtual void unset_volume(void) {} // unrestrict the grid_volume
   
   virtual double chi1p1(field_type ft, const vec &r) { (void)ft; (void)r; return 1.0; }
@@ -173,13 +173,13 @@ public:
     (void) c; (void)r; return 0.0; }  
 
   // fallback routine based on spherical quadrature
-  vec normal_vector(field_type ft, const geometric_volume &gv);
+  vec normal_vector(field_type ft, const volume &gv);
 
   /* Return c'th row of effective 1/(1+chi1) tensor in the given grid_volume gv
      ... virtual so that e.g. libctl can override with more-efficient
      libctlgeom-based routines.  maxeval == 0 if no averaging desired. */
   virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
-			       const geometric_volume &gv, 
+			       const volume &gv, 
 			       double tol=DEFAULT_SUBPIXEL_TOL, 
 			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   
@@ -242,14 +242,14 @@ class structure_chunk {
   double *sig[5], *siginv[5]; // conductivity array for uPML
   int sigsize[5]; // conductivity array size
   grid_volume v;  // integer grid_volume that could be bigger than non-overlapping gv below
-  geometric_volume gv;
+  volume gv;
   polarizability *pb;
 
   int refcount; // reference count of objects using this structure_chunk
 
   ~structure_chunk();
   structure_chunk(const grid_volume &v,
-            const geometric_volume &vol_limit, double Courant, int proc_num);
+            const volume &vol_limit, double Courant, int proc_num);
   structure_chunk(const structure_chunk *);
   void set_chi1inv(component c, material_function &eps,
                    bool use_anisotropic_averaging,
@@ -350,7 +350,7 @@ class structure {
   int num_chunks;
   grid_volume v, user_volume;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
-  geometric_volume gv;
+  volume gv;
   symmetry S;
   const char *outdir;
   grid_volume *effort_volumes;
@@ -773,7 +773,7 @@ class fields_chunk {
   polarization *pols[NUM_FIELD_TYPES], *olpols[NUM_FIELD_TYPES];
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   grid_volume v;
-  geometric_volume gv;
+  volume gv;
   double m, rshift;
   double beta;
   int is_real, store_pol_energy;
@@ -805,7 +805,7 @@ class fields_chunk {
   complex<double> get_field(component, const ivec &) const;
 
   // for non-collective interpolation:
-  geometric_volume get_field_gv(component) const;
+  volume get_field_gv(component) const;
   complex<double> get_field(component, const vec &) const;
 
   double get_polarization_energy(const ivec &) const;
@@ -924,7 +924,7 @@ class fields {
 
   double a, dt; // The resolution a and timestep dt=Courant/a
   grid_volume v, user_volume;
-  geometric_volume gv;
+  volume gv;
   double m;
   double beta;
   int t, phasein_time, is_real;
@@ -958,21 +958,21 @@ class fields {
   // update_eh.cpp
   void update_eh(field_type ft, bool skip_w_components = false);
 
-  geometric_volume total_volume(void) const;
+  volume total_volume(void) const;
 
   // h5fields.cpp:
   // low-level function:
   void output_hdf5(h5file *file, const char *dataname,
 		   int num_fields, const component *components,
 		   field_function fun, void *fun_data_, int reim,
-		   const geometric_volume &where,
+		   const volume &where,
 		   bool append_data = false,
 		   bool single_precision = false);
   // higher-level functions
   void output_hdf5(const char *dataname,  // OUTPUT COMPLEX-VALUED FUNCTION
 		   int num_fields, const component *components,
 		   field_function fun, void *fun_data_,
-		   const geometric_volume &where,
+		   const volume &where,
 		   h5file *file = 0,
 		   bool append_data = false,
 		   bool single_precision = false,
@@ -981,19 +981,19 @@ class fields {
   void output_hdf5(const char *dataname,  // OUTPUT REAL-VALUED FUNCTION
 		   int num_fields, const component *components,
 		   field_rfunction fun, void *fun_data_,
-		   const geometric_volume &where,
+		   const volume &where,
 		   h5file *file = 0,
 		   bool append_data = false,
 		   bool single_precision = false,
 		   const char *prefix = 0);
   void output_hdf5(component c,   // OUTPUT FIELD COMPONENT (or Dielectric)
-		   const geometric_volume &where,
+		   const volume &where,
 		   h5file *file = 0,
 		   bool append_data = false,
 		   bool single_precision = false,
 		   const char *prefix = 0);
   void output_hdf5(derived_component c,   // OUTPUT DERIVED FIELD COMPONENT
-		   const geometric_volume &where,
+		   const volume &where,
 		   h5file *file = 0,
 		   bool append_data = false,
 		   bool single_precision = false,
@@ -1027,18 +1027,18 @@ class fields {
   void add_point_source(component c, const src_time &src,
                         const vec &, complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
-			 const geometric_volume &, 
+			 const volume &, 
 			 complex<double> A(const vec &),
 			 complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
-			 const geometric_volume &, 
+			 const volume &, 
 			 complex<double> amp = 1.0);
   void require_component(component c);
 
   // mpb.cpp
   void add_eigenmode_source(component c, const src_time &src,
-			    const geometric_volume &where,
-			    const geometric_volume &eig_vol,
+			    const volume &where,
+			    const volume &eig_vol,
 			    int band_num, const vec &kpoint, int parity,
 			    double eig_resolution, double eigensolver_tol,
 			    complex<double> amp,
@@ -1055,7 +1055,7 @@ class fields {
 
   // loop_in_chunks.cpp
   void loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
-		      const geometric_volume &where,
+		      const volume &where,
 		      component cgrid = Centered,
 		      bool use_symmetry = true,
 		      bool snap_unit_dims = false);
@@ -1063,11 +1063,11 @@ class fields {
   // integrate.cpp
   complex<double> integrate(int num_fields, const component *components,
 			    field_function fun, void *fun_data_,
-			    const geometric_volume &where,
+			    const volume &where,
 			    double *maxabs = 0);
   double integrate(int num_fields, const component *components,
 		   field_rfunction fun, void *fun_data_,
-		   const geometric_volume &where,
+		   const volume &where,
 		   double *maxabs = 0);
   complex<double> integrate2(const fields &fields2,
 			     int num_fields1,
@@ -1076,30 +1076,30 @@ class fields {
 			     const component *components2,
 			     field_function integrand,
 			     void *integrand_data_,
-			     const geometric_volume &where,
+			     const volume &where,
 			     double *maxabs = 0);
   double integrate2(const fields &fields2,
 		    int num_fields1, const component *components1,
 		    int num_fields2, const component *components2,
 		    field_rfunction integrand,
 		    void *integrand_data_,
-		    const geometric_volume &where,
+		    const volume &where,
 		    double *maxabs = 0);
 
 
   double max_abs(int num_fields, const component *components,
 		 field_function fun, void *fun_data_,
-		 const geometric_volume &where);
+		 const volume &where);
   double max_abs(int num_fields, const component *components,
 		 field_rfunction fun, void *fun_data_,
-		 const geometric_volume &where);
+		 const volume &where);
 
-  double max_abs(int c, const geometric_volume &where);
-  double max_abs(component c, const geometric_volume &where);
-  double max_abs(derived_component c, const geometric_volume &where);
+  double max_abs(int c, const volume &where);
+  double max_abs(component c, const volume &where);
+  double max_abs(derived_component c, const volume &where);
   
   // dft.cpp
-  dft_chunk *add_dft(component c, const geometric_volume &where,
+  dft_chunk *add_dft(component c, const volume &where,
 		     double freq_min, double freq_max, int Nfreq,
 		     bool include_dV_and_interp_weights = true,
 		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0,
@@ -1108,21 +1108,21 @@ class fields {
 		     bool use_centered_grid = true);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
-  dft_chunk *add_dft(const geometric_volume_list *where,
+  dft_chunk *add_dft(const volume_list *where,
 		     double freq_min, double freq_max, int Nfreq,
 		     bool include_dV = true);
   void update_dfts();
-  dft_flux add_dft_flux(direction d, const geometric_volume &where,
+  dft_flux add_dft_flux(direction d, const volume &where,
 			double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux_box(const geometric_volume &where,
+  dft_flux add_dft_flux_box(const volume &where,
 			    double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux_plane(const geometric_volume &where,
+  dft_flux add_dft_flux_plane(const volume &where,
 			      double freq_min, double freq_max, int Nfreq);
-  dft_flux add_dft_flux(const geometric_volume_list *where,
+  dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
 
   // stress.cpp
-  dft_force add_dft_force(const geometric_volume_list *where,
+  dft_force add_dft_force(const volume_list *where,
 			  double freq_min, double freq_max, int Nfreq);
 
   // monitor.cpp
@@ -1149,25 +1149,25 @@ class fields {
   // energy_and_flux.cpp
   void synchronize_magnetic_fields();
   void restore_magnetic_fields();
-  double energy_in_box(const geometric_volume &);
-  double electric_energy_in_box(const geometric_volume &);
-  double magnetic_energy_in_box(const geometric_volume &);
-  double thermo_energy_in_box(const geometric_volume &);
+  double energy_in_box(const volume &);
+  double electric_energy_in_box(const volume &);
+  double magnetic_energy_in_box(const volume &);
+  double thermo_energy_in_box(const volume &);
   double total_energy();
-  double field_energy_in_box(const geometric_volume &);
-  double field_energy_in_box(component c, const geometric_volume &);
+  double field_energy_in_box(const volume &);
+  double field_energy_in_box(component c, const volume &);
   double field_energy();
-  double flux_in_box_wrongH(direction d, const geometric_volume &);
-  double flux_in_box(direction d, const geometric_volume &);
-  flux_vol *add_flux_vol(direction d, const geometric_volume &where);
-  flux_vol *add_flux_plane(const geometric_volume &where);
+  double flux_in_box_wrongH(direction d, const volume &);
+  double flux_in_box(direction d, const volume &);
+  flux_vol *add_flux_vol(direction d, const volume &where);
+  flux_vol *add_flux_plane(const volume &where);
   flux_vol *add_flux_plane(const vec &p1, const vec &p2);
-  double electric_energy_max_in_box(const geometric_volume &where);
-  double modal_volume_in_box(const geometric_volume &where);
+  double electric_energy_max_in_box(const volume &where);
+  double modal_volume_in_box(const volume &where);
   double electric_sqr_weighted_integral(double (*deps)(const vec &),
-				       const geometric_volume &where);
+				       const volume &where);
   double electric_energy_weighted_integral(double (*f)(const vec &),
-					   const geometric_volume &where);
+					   const volume &where);
 
   void set_output_directory(const char *name);
   void verbose(int v=1);
@@ -1181,14 +1181,14 @@ class fields {
   void step_boundaries(field_type);
 
   bool nosize_direction(direction d) const;
-  direction normal_direction(const geometric_volume &where) const;
+  direction normal_direction(const volume &where) const;
 
   // casimir.cpp
   complex<double> casimir_stress_dct_integral(direction dforce,
 					      direction dsource,
 					      double mx, double my, double mz,
 					      field_type ft,
-					      geometric_volume where,
+					      volume where,
 					      bool is_bloch = false);
 
   void set_solve_cw_omega(complex<double> omega);
@@ -1241,7 +1241,7 @@ class fields {
 
 class flux_vol {
  public:
-  flux_vol(fields *f_, direction d_, const geometric_volume &where_) : where(where_) {
+  flux_vol(fields *f_, direction d_, const volume &where_) : where(where_) {
     f = f_; d = d_; cur_flux = cur_flux_half = 0; 
     next = f->fluxes; f->fluxes = this;
   }
@@ -1259,7 +1259,7 @@ class flux_vol {
   double flux_wrongE() { return f->flux_in_box_wrongH(d, where); }
   fields *f;
   direction d;
-  geometric_volume where;
+  volume where;
   double cur_flux, cur_flux_half;
 };
 
