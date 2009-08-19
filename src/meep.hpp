@@ -834,12 +834,26 @@ class fields_chunk {
   void remove_polarizabilities();
   void zero_fields();
 
-  bool update_eh(field_type ft);
+  bool update_eh(field_type ft, bool skip_w_components = false);
 
   bool alloc_f(component c);
   void figure_out_step_plan();
 
+  void set_solve_cw_omega(complex<double> omega) {
+    doing_solve_cw = true;
+    solve_cw_omega = omega;
+  }
+  void unset_solve_cw_omega() {
+    doing_solve_cw = false;
+    solve_cw_omega = 0.0;
+  }
+
  private: 
+  // we set a flag during cw_solve to replace some
+  // time-dependent stuff with the analogous frequency-domain operation
+  bool doing_solve_cw; // true when inside solve_cw
+  complex<double> solve_cw_omega; // current omega for solve_cw
+
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
   bool have_plus_deriv[NUM_FIELD_COMPONENTS], have_minus_deriv[NUM_FIELD_COMPONENTS];
@@ -919,6 +933,7 @@ class fields {
   boundary_condition boundaries[2][5];
   bandsdata *bands;
   char *outdir;
+
   // fields.cpp methods:
   fields(structure *, double m=0, bool store_pol_energy=0, double beta=0);
   fields(const fields &);
@@ -930,7 +945,7 @@ class fields {
   void remove_polarizabilities();
   void remove_fluxes();
   void reset();
-  bool disable_sources; // set to true to turn off sources (w/o deleting)
+
   // time.cpp
   double time_spent_on(time_sink);
   void print_times();
@@ -940,6 +955,8 @@ class fields {
   void use_bloch(direction, complex<double> kz);
   void use_bloch(const vec &k);
   vec lattice_vector(direction) const;
+  // update_eh.cpp
+  void update_eh(field_type ft, bool skip_w_components = false);
 
   geometric_volume total_volume(void) const;
 
@@ -1173,6 +1190,9 @@ class fields {
 					      field_type ft,
 					      geometric_volume where);
 
+  void set_solve_cw_omega(complex<double> omega);
+  void unset_solve_cw_omega();
+
  private: 
   int verbosity; // Turn on verbosity for debugging purposes...
   int synchronized_magnetic_fields; // count number of nested synchs
@@ -1202,7 +1222,6 @@ class fields {
   void phase_material();
   void step_db(field_type ft);
   void step_source(field_type ft, bool including_integrated = false);
-  void update_eh(field_type ft);
   void update_pols(field_type ft);
   void calc_sources(double tim);
   int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,

@@ -22,33 +22,30 @@
 
 namespace meep {
   
-void fields::update_eh(field_type ft) {
+void fields::update_eh(field_type ft, bool skip_w_components) {
   if (ft != E_stuff && ft != H_stuff) abort("update_eh only works with E/H");
-  field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   for (int i=0;i<num_chunks;i++)
-    if (chunks[i]->is_mine()) {
-      src_vol *save_sources = chunks[i]->sources[ft2];
-      if (disable_sources) chunks[i]->sources[ft2] = NULL; // temporary
-      if (chunks[i]->update_eh(ft))
+    if (chunks[i]->is_mine())
+      if (chunks[i]->update_eh(ft, skip_w_components))
 	chunk_connections_valid = false; // E/H allocated - reconnect chunks 
-      chunks[i]->sources[ft2] = save_sources;
-    }
 
   /* synchronize to avoid deadlocks if one process decides it needs
      to allocate E or H ... */
   chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
-bool fields_chunk::update_eh(field_type ft) {
+bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   bool allocated_eh = false;
 
   bool have_int_sources = false;
-  for (src_vol *sv = sources[ft2]; sv; sv = sv->next)
-    if (sv->t->is_integrated) {
-      have_int_sources = true;
-      break;
-    }
+  if (!doing_solve_cw) {
+    for (src_vol *sv = sources[ft2]; sv; sv = sv->next)
+      if (sv->t->is_integrated) {
+	have_int_sources = true;
+	break;
+      }
+  }
 
   FOR_FT_COMPONENTS(ft2, dc) DOCMP {
     if (f[dc][cmp] && (pols[ft] || have_int_sources)) {
@@ -66,6 +63,9 @@ bool fields_chunk::update_eh(field_type ft) {
   }
 
   const int ntot = s->v.ntot();
+
+  if (have_f_minus_p && doing_solve_cw)
+    abort("dispersive materials are not yet implemented for solve_cw");
 
   //////////////////////////////////////////////////////////////////////////
   // First, initialize f_minus_p to D - P, if necessary
@@ -111,7 +111,7 @@ bool fields_chunk::update_eh(field_type ft) {
   //////////////////////////////////////////////////////////////////////////
   // Next, subtract time-integrated sources (i.e. polarizations, not currents)
 
-  if (have_f_minus_p) {
+  if (have_f_minus_p && !doing_solve_cw) {
     for (src_vol *sv = sources[ft2]; sv; sv = sv->next) {  
       if (sv->t->is_integrated && f[sv->c][0] && ft == type(sv->c)) {
 	component c = field_type_component(ft2, sv->c);
@@ -164,6 +164,9 @@ bool fields_chunk::update_eh(field_type ft) {
       f_w[ec][cmp] = new realnum[v.ntot()];
       memcpy(f_w[ec][cmp], f[ec][cmp], v.ntot() * sizeof(realnum));
     }
+
+    // for solve_cw, when W exists we get W and E from special variables
+    if (f_w[ec][cmp] && skip_w_components) continue;
 
     if (f[ec][cmp] != f[dc][cmp])
       STEP_UPDATE_EDHB(f[ec][cmp], ec, v, 

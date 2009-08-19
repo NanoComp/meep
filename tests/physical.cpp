@@ -23,10 +23,6 @@ using namespace meep;
 
 double one(const vec &) { return 1.0; }
 
-double slab(const vec &v) {
-  abort("not yet\n");
-}
-
 int radiating_2D(const double xmax) {
   const double a = 10.0;
   const double ymax = 3.0;

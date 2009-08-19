@@ -28,27 +28,19 @@ static void fields_to_array(const fields &f, complex<realnum> *x)
       FOR_COMPONENTS(c)
         if (is_D(c) || is_B(c)) {
 	  realnum *fr, *fi;
-	  if ((fr = f.chunks[i]->f[c][0]) &&
-	      (fi = f.chunks[i]->f[c][1]))
-	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
+#define COPY_FROM_FIELD(fld)					\
+	  if ((fr = f.chunks[i]->fld[0]) &&			\
+	      (fi = f.chunks[i]->fld[1]))			\
+	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)		\
 	      x[ix++] = complex<double>(fr[idx], fi[idx]);
+	  COPY_FROM_FIELD(f[c]);
+	  COPY_FROM_FIELD(f_u[c]);
+	  COPY_FROM_FIELD(f_cond[c]);
+	  component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
+	  COPY_FROM_FIELD(f_w[c2]);
+	  if (f.chunks[i]->f_w[c2][0]) COPY_FROM_FIELD(f[c2]);
+#undef COPY_FROM_FIELD
 	}
-
-  for (int i=0;i<f.num_chunks;i++)
-    if (f.chunks[i]->is_mine()) {
-      bool have_pml = false;
-      LOOP_OVER_FIELD_DIRECTIONS(f.chunks[i]->v.dim, d)
-	if (f.chunks[i]->s->sigsize[d] > 1)
-	  have_pml = true;
-      if (have_pml) FOR_COMPONENTS(c)
-        if (is_electric(c) || is_magnetic(c)) {
-	  realnum *fr, *fi;
-	  if ((fr = f.chunks[i]->f[c][0]) &&
-	      (fi = f.chunks[i]->f[c][1]))
-	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx)
-	      x[ix++] = complex<double>(fr[idx], fi[idx]);
-	}
-    }
 }
   
 static void array_to_fields(const complex<realnum> *x, fields &f)
@@ -59,47 +51,30 @@ static void array_to_fields(const complex<realnum> *x, fields &f)
       FOR_COMPONENTS(c)
         if (is_D(c) || is_B(c)) {
 	  realnum *fr, *fi;
-	  if ((fr = f.chunks[i]->f[c][0]) &&
-	      (fi = f.chunks[i]->f[c][1]))
-	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
-	      fr[idx] = real(x[ix]);
-	      fi[idx] = imag(x[ix++]);
+#define COPY_TO_FIELD(fld)					\
+	  if ((fr = f.chunks[i]->fld[0]) &&			\
+	      (fi = f.chunks[i]->fld[1]))			\
+	    LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {	\
+	      fr[idx] = real(x[ix]);				\
+	      fi[idx] = imag(x[ix++]);				\
 	    }
+	  COPY_TO_FIELD(f[c]);
+	  COPY_TO_FIELD(f_u[c]);
+	  COPY_TO_FIELD(f_cond[c]);
+	  component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
+	  COPY_TO_FIELD(f_w[c2]);
+	  if (f.chunks[i]->f_w[c2][0]) COPY_TO_FIELD(f[c2]);
+#undef COPY_TO_FIELD
 	}
 
   f.step_boundaries(D_stuff);
-  f.step_boundaries(B_stuff);
-
-  for (int i=0;i<f.num_chunks;i++)
-    if (f.chunks[i]->is_mine()) {
-      bool have_pml = false;
-      LOOP_OVER_FIELD_DIRECTIONS(f.chunks[i]->v.dim, d)
-	if (f.chunks[i]->s->sigsize[d] > 1)
-	  have_pml = true;
-      FOR_COMPONENTS(c) {
-        if (is_electric(c) || is_magnetic(c)) {
-	  if (have_pml) { // in PML regions, E/H fields are unknowns
-	    realnum *fr, *fi;
-	    if ((fr = f.chunks[i]->f[c][0]) &&
-		(fi = f.chunks[i]->f[c][1]))
-	      LOOP_OVER_VOL_OWNED(f.chunks[i]->v, c, idx) {
-	        fr[idx] = real(x[ix]);
-	        fi[idx] = imag(x[ix++]);
-	      }
-	  }
-	  else if (is_electric(c) || is_magnetic(c)) {
-	    field_type ft = is_electric(c) ? D_stuff : H_stuff;
-	    src_vol *save_src = f.chunks[i]->sources[ft];
-	    f.chunks[i]->sources[ft] = 0; // disable sources
-	    f.chunks[i]->update_eh(type(c));
-	    f.chunks[i]->sources[ft] = save_src;
-	  }
-	}
-      }
-    }
-
+  f.update_eh(E_stuff, true);
   f.step_boundaries(E_stuff);
-  f.step_boundaries(H_stuff);
+
+  /* done in f.step before updating D:
+  f.step_boundaries(B_stuff);
+  f.update_eh(H_stuff);
+  f.step_boundaries(H_stuff); */
 }
 
 typedef struct {
@@ -140,18 +115,27 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   if (is_real) abort("solve_cw is incompatible with use_real_fields()");
   if (L < 1) abort("solve_cw called with L = %d < 1", L);
 
+  set_solve_cw_omega(2*pi*frequency);
+
   step(); // step once to make sure everything is allocated
 
   int N = 0; // size of linear system (on this processor, at least)
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
-      bool have_pml = false;
-      LOOP_OVER_FIELD_DIRECTIONS(chunks[i]->v.dim, d)
-	if (chunks[i]->s->sigsize[d] > 1)
-	  have_pml = true;
       FOR_COMPONENTS(c)
-	if (chunks[i]->f[c][0] && (is_D(c) || is_B(c)))
-	  N += 2 * chunks[i]->v.nowned(c) * (1 + have_pml);
+	if (chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
+	  component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
+	  /* unknowns are just D and B in non-PML regions, but in PML
+	     regions the E, U, W, and C fields are also unknowns (in
+	     principle, we might be able to compute these extra fields
+	     in frequency domain via scalinb by the appropriate s
+	     factors, rather than storing them, but I had some
+	     problems getting that working) */
+	  N += 2 * chunks[i]->v.nowned(c) *
+	    (1 + (chunks[i]->f_u[c][0] != NULL)
+	     + (chunks[i]->f_w[c2][0] != NULL) * 2
+	     + (chunks[i]->f_cond[c][0] != NULL));
+	}
     }
 
   int nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
@@ -192,9 +176,6 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 		 * (1.0 / dt));
   data.iters = 0;
 
-  bool save_disable_sources = disable_sources;
-  disable_sources = true;
-
   int ierr = bicgstabL(L, N, reinterpret_cast<realnum*>(x),
 		       fieldop, &data, reinterpret_cast<realnum*>(b),
 		       tol, &maxiters, work, quiet);
@@ -207,10 +188,12 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   }
 
   array_to_fields(x, *this);
-  
+  step(); // ensure H/B are updated and synced with E/D
+
   delete[] work;
   t = tsave;
-  disable_sources = save_disable_sources;
+
+  unset_solve_cw_omega();
 
   return !ierr;
 }

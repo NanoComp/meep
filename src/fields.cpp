@@ -42,7 +42,6 @@ fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
   dt = s->dt;
   t = 0;
   sources = NULL;
-  disable_sources = false;
   fluxes = NULL;
   // Time stuff:
   was_working_on = working_on = Other;
@@ -94,7 +93,6 @@ fields::fields(const fields &thef) :
   dt = thef.dt;
   t = thef.t;
   sources = NULL;
-  disable_sources = thef.disable_sources;
   fluxes = NULL;
   // Time stuff:
   was_working_on = working_on = Other;
@@ -209,6 +207,8 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
+  doing_solve_cw = false;
+  solve_cw_omega = 0.0;
   FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
   polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
   polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
@@ -254,6 +254,8 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   Courant = thef.Courant;
   dt = thef.dt;
   dft_chunks = NULL;
+  doing_solve_cw = thef.doing_solve_cw;
+  solve_cw_omega = thef.solve_cw_omega;
   FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
   polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
   polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
@@ -595,6 +597,16 @@ bool fields::nosize_direction(direction d) const {
   return (v.has_boundary(Low, d) && v.has_boundary(High, d) &&
 	  boundaries[Low][d] == Periodic && boundaries[High][d] == Periodic
 	  && v.num_direction(d) == 1);
+}
+
+void fields::set_solve_cw_omega(complex<double> omega) {
+  for (int i = 0; i < num_chunks; ++i)
+    chunks[i]->set_solve_cw_omega(omega);
+}
+
+void fields::unset_solve_cw_omega() {
+  for (int i = 0; i < num_chunks; ++i)
+    chunks[i]->unset_solve_cw_omega();
 }
 
 } // namespace meep

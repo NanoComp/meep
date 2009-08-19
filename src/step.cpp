@@ -210,13 +210,13 @@ void fields::step_boundaries(field_type ft) {
 }
 
 void fields::step_source(field_type ft, bool including_integrated) {
-  if (disable_sources) return;
   if (ft != D_stuff && ft != B_stuff) abort("only step_source(D/B) is okay");
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       chunks[i]->step_source(ft, including_integrated);
 }
 void fields_chunk::step_source(field_type ft, bool including_integrated) {
+  if (doing_solve_cw && !including_integrated) return;
   for (src_vol *sv = sources[ft]; sv; sv = sv->next) {
     component c = direction_component(first_field_component(ft), 
 				      component_direction(sv->c));
