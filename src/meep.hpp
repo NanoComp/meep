@@ -1186,9 +1186,10 @@ class fields {
   // casimir.cpp
   complex<double> casimir_stress_dct_integral(direction dforce,
 					      direction dsource,
-					      int mx, int my, int mz,
+					      double mx, double my, double mz,
 					      field_type ft,
-					      geometric_volume where);
+					      geometric_volume where,
+					      bool is_bloch = false);
 
   void set_solve_cw_omega(complex<double> omega);
   void unset_solve_cw_omega();
@@ -1312,6 +1313,8 @@ int do_harminv(complex<double> *data, int n, double dt,
 complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
 				complex<double> (*eps_func)(complex<double> omega) = 0,
 				double Tfft = 0);
+
+complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_type ft);
 
 #if MEEP_SINGLE
 // in mympi.cpp ... must be here in order to use realnum type
