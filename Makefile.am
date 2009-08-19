@@ -6,13 +6,7 @@ endif
 
 ACLOCAL_AMFLAGS=-I m4
 
-if WITH_DOC
-DOC = doc
-else
-DOC = 
-endif
-
-SUBDIRS = src $(LIBCTL) tests examples $(DOC)
+SUBDIRS = src $(LIBCTL) tests examples
 
 EXTRA_DIST = COPYRIGHT m4 meep-pkgconfig.in
 

@@ -20,14 +20,6 @@ MEEP_SUFFIX=""
 
 ##############################################################################
 
-AC_ARG_WITH(doc,
-	[AC_HELP_STRING([--with-doc], [include old documentation in dist])],
-	with_doc=$withval,with_doc=no)
-
-AM_CONDITIONAL(WITH_DOC, test "x$with_doc" = xyes)
-
-##############################################################################
-
 # Check for mpiCC immediately after getting C++ compiler...
 AC_PROG_CXX
 AC_LANG([C++])
@@ -453,7 +445,6 @@ AC_CONFIG_FILES([
 	Makefile
 	meep-pkgconfig
 	src/Makefile
-	doc/Makefile
 	tests/Makefile
 	examples/Makefile
 	libctl/Makefile

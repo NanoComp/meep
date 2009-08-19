@@ -1,8 +1,0 @@
-This is the original documentation for the C++ interface in Meep.  It
-is somewhat out of date.  (All of the code in this manual still works,
-but some of it uses obsolete constructs, etcetera.)
-
-We now recommmend the libctl/Scheme interface for most users.  This is
-documented at the Meep home page:
-
-	http://ab-initio.mit.edu/meep/
