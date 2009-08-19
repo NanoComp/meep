@@ -471,7 +471,7 @@ int main(int argc, char **argv)
        volume(vec(pad1,pad2,pad3), vec(xsize-pad2,pad2,pad3)),
        volume(vec(pad1,pad2,pad3), vec(pad1,pad2,pad3)),
   };
-  char gv_3d_name[4][10] = {"grid_volume", "plane", "line", "point"};
+  char gv_3d_name[4][10] = {"volume", "plane", "line", "point"};
   int gv_3d_rank[4] = {3,2,1,0};
   int c3d[7] = {Ex,Dielectric,Dy,Ez, Sz,H_EnergyDensity,EnergyDensity};
   symfunc Sf3[3] = {make_identity, make_mirrorxy, make_rotate4z};
