@@ -36,7 +36,7 @@ ctlio::cnumber_list make_casimir_g_kz(double T, double dt, double sigma, meep::f
 
 // wrapper around constructor to fool SWIG
 meep::volume_list
-  *make_geometric_volume_list(const meep::volume &gv,
+  *make_geometric_volume_list(const meep::volume &xv,
 			      int c, complex<double> weight,
 			      meep::volume_list *next);
 

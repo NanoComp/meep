@@ -802,7 +802,7 @@ class grid_volume {
   friend grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
   grid_volume split(int num, int which) const;
-  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *gv = NULL, double *effort = NULL) const;
+  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *xv = NULL, double *effort = NULL) const;
   grid_volume split_at_fraction(bool want_high, int numer) const;
   grid_volume halve(direction d) const;
   void pad_self(direction d);
@@ -904,11 +904,11 @@ class symmetry {
 
 class volume_list {
 public:
-  volume_list(const volume &gv, int c, complex<double> weight = 1.0, volume_list *next = 0) : gv(gv), c(c), weight(weight), next(next) {}
+  volume_list(const volume &xv, int c, complex<double> weight = 1.0, volume_list *next = 0) : xv(xv), c(c), weight(weight), next(next) {}
   ~volume_list() { delete next; }
   
-  volume gv;
-  int c; // component or derived component associated with gv (e.g. for flux)
+  volume xv;
+  int c; // component or derived component associated with xv (e.g. for flux)
   complex<double> weight;
   volume_list *next;
 };

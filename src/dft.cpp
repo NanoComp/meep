@@ -185,7 +185,7 @@ dft_chunk *fields::add_dft(const volume_list *where,
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) abort("derived_component invalid for dft");
-    chunks = add_dft(component(where->c), where->gv,
+    chunks = add_dft(component(where->c), where->xv,
 		     freq_min, freq_max, Nfreq, include_dV_and_interp_weights,
 		     where->weight, chunks);
     where = where->next;
@@ -418,9 +418,9 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
     }
     
     for (int i = 0; i < 2; ++i) {
-      E = add_dft(cE[i], where->gv, freq_min, freq_max, Nfreq,
+      E = add_dft(cE[i], where->xv, freq_min, freq_max, Nfreq,
 		  true, where->weight * double(1 - 2*i), E);
-      H = add_dft(cH[i], where->gv, freq_min, freq_max, Nfreq,
+      H = add_dft(cH[i], where->xv, freq_min, freq_max, Nfreq,
 		  false, 1.0, H);
     }
     
@@ -451,8 +451,8 @@ dft_flux fields::add_dft_flux(direction d, const volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
   if (d == NO_DIRECTION)
     d = normal_direction(where);
-  volume_list gvl(where, direction_component(Sx, d));
-  return add_dft_flux(&gvl, freq_min, freq_max, Nfreq);
+  volume_list xvl(where, direction_component(Sx, d));
+  return add_dft_flux(&xvl, freq_min, freq_max, Nfreq);
 }
 
 dft_flux fields::add_dft_flux_box(const volume &where,

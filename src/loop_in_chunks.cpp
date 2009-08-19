@@ -372,10 +372,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       for (int i = 0; i < num_chunks; ++i) {
 	if (!chunks[i]->is_mine()) continue;
 	// Chunk looping boundaries:
-	volume gvS(v.dim);
+	volume xvS(v.dim);
 
 	if (use_symmetry)
-	  gvS = S.transform(chunks[i]->gv, sn);
+	  xvS = S.transform(chunks[i]->xv, sn);
 	else {
 	  /* If we're not using symmetry, it's because (as in src_vol)
 	     we don't care about correctly counting the points in the
@@ -383,14 +383,14 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	     of the chunk points that intersect where.  Hence, add a little
 	     padding to make sure we don't miss any points due to rounding. */
 	  vec pad(one_ivec(v.dim) * v.inva * 1e-3);
-	  gvS = volume(chunks[i]->v.loc(Centered,0) - pad,
+	  xvS = volume(chunks[i]->v.loc(Centered,0) - pad,
 				 chunks[i]->v.loc(Centered,
 						  chunks[i]->v.ntot()-1) +pad);
 	}
 
-	ivec iscS(max(is-shifti, vec2diel_ceil(gvS.get_min_corner(),
+	ivec iscS(max(is-shifti, vec2diel_ceil(xvS.get_min_corner(),
 					       v.a, one_ivec(v.dim) * 2)));
-	ivec iecS(min(ie-shifti, vec2diel_floor(gvS.get_max_corner(),
+	ivec iecS(min(ie-shifti, vec2diel_floor(xvS.get_max_corner(),
 						v.a, zero_ivec(v.dim))));
 	if (iscS <= iecS) {
 	  // Determine weights at chunk looping boundaries:

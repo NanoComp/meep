@@ -27,7 +27,7 @@
 namespace meep {
 
 fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
-  S(s->S), v(s->v), user_volume(s->user_volume), gv(s->gv), m(m), beta(beta)
+  S(s->S), v(s->v), user_volume(s->user_volume), xv(s->xv), m(m), beta(beta)
 {
   verbosity = 0;
   synchronized_magnetic_fields = 0;
@@ -78,7 +78,7 @@ fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
 }
 
 fields::fields(const fields &thef) :
-  S(thef.S), v(thef.v), user_volume(thef.user_volume), gv(thef.gv)
+  S(thef.S), v(thef.v), user_volume(thef.user_volume), xv(thef.xv)
 {
   verbosity = 0;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
@@ -195,7 +195,7 @@ fields_chunk::~fields_chunk() {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
-			   double m, bool store_pol_energy, double beta) : v(the_s->v), gv(the_s->gv), m(m), beta(beta), store_pol_energy(store_pol_energy) {
+			   double m, bool store_pol_energy, double beta) : v(the_s->v), xv(the_s->xv), m(m), beta(beta), store_pol_energy(store_pol_energy) {
   s = the_s; s->refcount++;
   rshift = 0;
   verbosity = 0;
@@ -239,7 +239,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
 }
 
 fields_chunk::fields_chunk(const fields_chunk &thef)
-  : v(thef.v), gv(thef.gv) {
+  : v(thef.v), xv(thef.xv) {
   s = thef.s; s->refcount++;
   rshift = thef.rshift;
   verbosity = thef.verbosity;
@@ -556,7 +556,7 @@ int fields::is_phasing() {
 // This is used for phasing the *radial origin* of a cylindrical structure
 void fields::set_rshift(double rshift) {
   if (v.dim != Dcyl) abort("set_rshift is only for cylindrical coords");
-  if (gv.in_direction_min(R) <= 0 && gv.in_direction_max(R) >= 0)
+  if (xv.in_direction_min(R) <= 0 && xv.in_direction_max(R) >= 0)
     abort("set_rshift is invalid if grid_volume contains r=0");
   for (int i = 0; i < num_chunks; ++i)
     chunks[i]->rshift = rshift;
@@ -565,7 +565,7 @@ void fields::set_rshift(double rshift) {
 bool fields::equal_layout(const fields &f) const {
   if (a != f.a || 
       num_chunks != f.num_chunks ||
-      gv != f.gv ||
+      xv != f.xv ||
       S != f.S)
     return false;
   for (int d=0;d<5;d++)
@@ -573,7 +573,7 @@ bool fields::equal_layout(const fields &f) const {
       return false;
   for (int i = 0; i < num_chunks; ++i)
     if (chunks[i]->a != f.chunks[i]->a ||
-	chunks[i]->gv != f.chunks[i]->gv)
+	chunks[i]->xv != f.chunks[i]->xv)
       return false;
   return true;
 }
@@ -581,12 +581,12 @@ bool fields::equal_layout(const fields &f) const {
 // total computational grid_volume, including regions redundant by symmetry
 volume fields::total_volume(void) const {
   volume gv0 = v.interior();
-  volume gv = gv0;
+  volume xv = gv0;
   for (int n = 1; n < S.multiplicity(); ++n)
-    gv = gv | S.transform(gv0, n);
-  if (gv.dim == Dcyl && gv.in_direction_min(R) < 0)
-    gv.set_direction_min(R, 0);
-  return gv;
+    xv = xv | S.transform(gv0, n);
+  if (xv.dim == Dcyl && xv.in_direction_min(R) < 0)
+    xv.set_direction_min(R, 0);
+  return xv;
 }
 
 /* One-pixel periodic dimensions are used almost exclusively to

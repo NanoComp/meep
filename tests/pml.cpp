@@ -10,7 +10,7 @@ public:
   offdiag_material(double offdiag) : offdiag(offdiag) {}
   virtual bool has_mu() { return true; }
   virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
-                               const volume &gv,
+                               const volume &xv,
                                double tol=DEFAULT_SUBPIXEL_TOL,
 			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL) {
     // we are returning inv(1+chi1), so we must compute the inverse
