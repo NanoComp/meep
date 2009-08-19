@@ -23,12 +23,12 @@ using namespace meep;
 
 double one(const vec &) { return 1.0; }
 static double width = 20.0;
-double bump(const vec &v) { return (fabs(v.z()-50.0) > width)?1.0:12.0; }
+double bump(const vec &pt) { return (fabs(pt.z()-50.0) > width)?1.0:12.0; }
 
-double bump2(const vec &v) { return (fabs(v.z()-5.0) > 3.0)?1.0:12.0; }
+double bump2(const vec &pt) { return (fabs(pt.z()-5.0) > 3.0)?1.0:12.0; }
 
-double cavity(const vec &v) {
-  const double zz = fabs(v.z() - 7.5) + 0.3001;
+double cavity(const vec &pt) {
+  const double zz = fabs(pt.z() - 7.5) + 0.3001;
   if (zz > 5.0) return 1.0;
   if (zz < 2.0) return 1.0;
   double norm = zz;

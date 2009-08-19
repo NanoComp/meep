@@ -68,11 +68,11 @@ static double Jmax(int m, int n) {
 
 static double ktrans, kax;
 static int m_for_J;
-static complex<double> JJ(const vec &v) {
-  return polar(J(m_for_J, ktrans*v.r()),kax*v.r());
+static complex<double> JJ(const vec &pt) {
+  return polar(J(m_for_J, ktrans*pt.r()),kax*pt.r());
 }
-static complex<double> JP(const vec &v) {
-  return polar(Jprime(m_for_J, ktrans*v.r()),kax*v.r());
+static complex<double> JP(const vec &pt) {
+  return polar(Jprime(m_for_J, ktrans*pt.r()),kax*pt.r());
 }
 
 void fields::initialize_with_nth_te(int np0) {

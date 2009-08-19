@@ -3,7 +3,7 @@
 using namespace meep;
 #include "config.h"
 
-double eps(const vec &v) { return ((v.r() < 0.5+1e-6) ? 9.0 : 1.0); }
+double eps(const vec &pt) { return ((pt.r() < 0.5+1e-6) ? 9.0 : 1.0); }
 
 #define MINRES 10
 #define MAXRES 25

@@ -113,30 +113,30 @@ void set_dimensions(int dims)
   }
 }
 
-vector3 vec_to_vector3(const meep::vec &v)
+vector3 vec_to_vector3(const meep::vec &pt)
 {
   vector3 v3;
   
-  switch (v.dim) {
+  switch (pt.dim) {
   case meep::D1:
     v3.x = 0;
     v3.y = 0;
-    v3.z = v.z();
+    v3.z = pt.z();
     break;
   case meep::D2:
-    v3.x = v.x();
-    v3.y = v.y();
+    v3.x = pt.x();
+    v3.y = pt.y();
     v3.z = 0;
     break;
   case meep::D3:
-    v3.x = v.x();
-    v3.y = v.y();
-    v3.z = v.z();
+    v3.x = pt.x();
+    v3.y = pt.y();
+    v3.z = pt.z();
     break;
   case meep::Dcyl:
-    v3.x = v.r();
+    v3.x = pt.r();
     v3.y = 0;
-    v3.z = v.z();
+    v3.z = pt.z();
     break;
   }
   return v3;

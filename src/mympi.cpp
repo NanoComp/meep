@@ -254,15 +254,15 @@ int max_to_all(int in) {
   return out;
 }
 
-ivec max_to_all(const ivec &v) {
+ivec max_to_all(const ivec &pt) {
   int in[5], out[5];
-  for (int i=0; i<5; ++i) in[i] = out[i] = v.in_direction(direction(i));
+  for (int i=0; i<5; ++i) in[i] = out[i] = pt.in_direction(direction(i));
 #ifdef HAVE_MPI
   MPI_Allreduce(&in,&out,5,MPI_INT,MPI_MAX,mycomm);
 #endif
-  ivec vout(v.dim);
-  for (int i=0; i<5; ++i) vout.set_direction(direction(i), out[i]);
-  return vout;
+  ivec ptout(pt.dim);
+  for (int i=0; i<5; ++i) ptout.set_direction(direction(i), out[i]);
+  return ptout;
 }
 
 double sum_to_master(double in) {

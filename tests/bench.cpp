@@ -23,7 +23,7 @@ using namespace meep;
 
 double one(const vec &) { return 1.0; }
 static double width = 20.0;
-double bump(const vec &v) { return (fabs(v.z()-50.0) > width)?1.0:12.0; }
+double bump(const vec &pt) { return (fabs(pt.z()-50.0) > width)?1.0:12.0; }
 
 struct bench {
   double time; // In seconds.

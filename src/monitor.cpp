@@ -439,13 +439,13 @@ double monitor_point::poynting_in_direction(direction d) {
   return (real(E1)*real(H2) - real(E2)*real(H1)) + (imag(E1)*imag(H2) - imag(E2)*imag(H1));
 }
 
-double monitor_point::poynting_in_direction(vec v) {
-  if (v.dim != loc.dim)
-    abort("poynting_in_direction: v.dim != loc.dim\n");
-  v = v / abs(v);
+double monitor_point::poynting_in_direction(vec dir) {
+  if (dir.dim != loc.dim)
+    abort("poynting_in_direction: dir.dim != loc.dim\n");
+  dir = dir / abs(dir);
   double result = 0.0;
-  LOOP_OVER_DIRECTIONS(v.dim, d)
-    result += v.in_direction(d) * poynting_in_direction(d);
+  LOOP_OVER_DIRECTIONS(dir.dim, d)
+    result += dir.in_direction(d) * poynting_in_direction(d);
   return result;
 }
 

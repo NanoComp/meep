@@ -237,7 +237,7 @@ void fields::add_point_source(component c, const src_time &src,
   add_volume_source(c, src, volume(p, p), amp);
 }
 
-static complex<double> one(const vec &v) {(void) v; return 1.0;}
+static complex<double> one(const vec &pt) {(void) pt; return 1.0;}
 void fields::add_volume_source(component c, const src_time &src,
                                const volume &where,
 			       complex<double> amp) {

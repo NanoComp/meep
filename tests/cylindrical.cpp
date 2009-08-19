@@ -254,9 +254,9 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   return 1;
 }
 
-complex<double> checkers(const vec &v) {
-  const double ther = v.r() + 0.0001; // Just to avoid roundoff issues.
-  const double thez = v.r() + 0.0001; // Just to avoid roundoff issues.
+complex<double> checkers(const vec &pt) {
+  const double ther = pt.r() + 0.0001; // Just to avoid roundoff issues.
+  const double thez = pt.r() + 0.0001; // Just to avoid roundoff issues.
   int z = (int) (thez*5.0);
   int r = (int) (ther*5.0);
   int zz = (int) (thez*10.0);

@@ -35,8 +35,8 @@ const double zsize = 10;
 
 double eps_nlo(const vec &) { return nlo*nlo; }
 
-double eps_bragg(const vec &v) {
-  double z = v.z() - zsize * 0.5;
+double eps_bragg(const vec &pt) {
+  double z = pt.z() - zsize * 0.5;
   
   if (fabs(z)*2 > Nperiods)
     return nlo*nlo;

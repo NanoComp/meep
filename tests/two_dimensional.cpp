@@ -23,8 +23,8 @@
 using namespace meep;
 
 double one(const vec &) { return 1.0; }
-double targets(const vec &v) {
-  const double r = sqrt(v.x()*v.x() + v.y()*v.y());
+double targets(const vec &pt) {
+  const double r = sqrt(pt.x()*pt.x() + pt.y()*pt.y());
   double dr = r;
   while (dr > 1) dr -= 1;
   if (dr > 0.7001) return 12.0;

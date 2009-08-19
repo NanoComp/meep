@@ -106,8 +106,8 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   return 1;
 }
 
-complex<double> checkers(const vec &v) {
-  const double thez = v.z()+0.00001;
+complex<double> checkers(const vec &pt) {
+  const double thez = pt.z()+0.00001;
   int z = (int) (thez*5.0);
   int zz = (int) (thez*10.0);
   if (z & 1) return cos(thez);

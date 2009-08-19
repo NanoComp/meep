@@ -430,8 +430,8 @@ ivec grid_volume::little_owned_corner(component c) const {
 
 int grid_volume::nowned(component c) const {
   int n = 1;
-  ivec v = big_corner() - little_owned_corner(c);
-  LOOP_OVER_DIRECTIONS(dim, d) n *= v.in_direction(d) / 2 + 1;
+  ivec pt = big_corner() - little_owned_corner(c);
+  LOOP_OVER_DIRECTIONS(dim, d) n *= pt.in_direction(d) / 2 + 1;
   return n;
 }
 

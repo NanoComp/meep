@@ -65,7 +65,7 @@ static const double *meep_mpb_A_s = 0;
 static component foo_component = Ez;
 static int meep_mpb_A_component = 0;
 static vec meep_mpb_A_center;
-static complex<double> one(const vec &v) {(void) v; return 1.0;}
+static complex<double> one(const vec &pt) {(void) pt; return 1.0;}
 static complex<double> (*meep_mpb_A_A)(const vec &) = 0;
 static complex<double> meep_mpb_A(const vec &p) {
   const complex<mpb_real> *data = meep_mpb_A_data + meep_mpb_A_component;

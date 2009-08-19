@@ -188,23 +188,23 @@ namespace meep {
    component of equal_shift (which should be either -2, 0, or +2).
    (equal_shift is there to prevent us from counting edge points twice.) */
    
-static ivec vec2diel_floor(const vec &v, double a, const ivec &equal_shift) {
-  ivec iv(v.dim);
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
-    iv.set_direction(d, 1+2*int(floor(v.in_direction(d)*a-.5)));
-    if (iv.in_direction(d) == v.in_direction(d))
-      iv.set_direction(d, iv.in_direction(d) + equal_shift.in_direction(d));
+static ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift) {
+  ivec ipt(pt.dim);
+  LOOP_OVER_DIRECTIONS(pt.dim, d) {
+    ipt.set_direction(d, 1+2*int(floor(pt.in_direction(d)*a-.5)));
+    if (ipt.in_direction(d) == pt.in_direction(d))
+      ipt.set_direction(d, ipt.in_direction(d) + equal_shift.in_direction(d));
   }
-  return iv;
+  return ipt;
 }
-static ivec vec2diel_ceil(const vec &v, double a, const ivec &equal_shift) {
-  ivec iv(v.dim);
-  LOOP_OVER_DIRECTIONS(v.dim, d) {
-    iv.set_direction(d, 1+2*int(ceil(v.in_direction(d)*a-.5)));
-    if (iv.in_direction(d) == v.in_direction(d))
-      iv.set_direction(d, iv.in_direction(d) + equal_shift.in_direction(d));
+static ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift) {
+  ivec ipt(pt.dim);
+  LOOP_OVER_DIRECTIONS(pt.dim, d) {
+    ipt.set_direction(d, 1+2*int(ceil(pt.in_direction(d)*a-.5)));
+    if (ipt.in_direction(d) == pt.in_direction(d))
+      ipt.set_direction(d, ipt.in_direction(d) + equal_shift.in_direction(d));
   }
-  return iv;
+  return ipt;
 }
 
 static inline int iabs(int i) { return (i < 0 ? -i : i); }

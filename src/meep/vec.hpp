@@ -471,32 +471,32 @@ class vec {
   double t[5];
 };
 
-inline double abs(const vec &v) { return sqrt(v & v); }
+inline double abs(const vec &pt) { return sqrt(pt & pt); }
 
 inline vec zero_vec(ndim di) {
-  vec v(di); LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0.0);
-  return v;
+  vec pt(di); LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 0.0);
+  return pt;
 }
 
 inline vec one_vec(ndim di) {
-  vec v(di); LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 1.0);
-  return v;
+  vec pt(di); LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 1.0);
+  return pt;
 }
 
 inline vec unit_vec(ndim di, direction d) {
-  vec v(zero_vec(di));
-  v.set_direction(d, 1.0);
-  return v;
+  vec pt(zero_vec(di));
+  pt.set_direction(d, 1.0);
+  return pt;
 }
 
-inline vec clean_vec(const vec &v, double val_unused = 0.0) {
-  vec vc(v.dim, val_unused);
-  LOOP_OVER_DIRECTIONS(v.dim, d) vc.set_direction(d, v.in_direction(d));
-  return vc;
+inline vec clean_vec(const vec &pt, double val_unused = 0.0) {
+  vec ptc(pt.dim, val_unused);
+  LOOP_OVER_DIRECTIONS(pt.dim, d) ptc.set_direction(d, pt.in_direction(d));
+  return ptc;
 }
 
 inline vec veccyl(double rr, double zz) {
-  vec v(Dcyl); v.t[R] = rr; v.t[Z] = zz; return v;
+  vec pt(Dcyl); pt.t[R] = rr; pt.t[Z] = zz; return pt;
 }
 
 class ivec;
@@ -612,30 +612,30 @@ class ivec {
 };
 
 inline ivec zero_ivec(ndim di) {
-  ivec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 0);
-  return v;
+  ivec pt; pt.dim = di; LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 0);
+  return pt;
 }
 
 inline ivec one_ivec(ndim di) {
-  ivec v; v.dim = di; LOOP_OVER_DIRECTIONS(di, d) v.set_direction(d, 1);
-  return v;
+  ivec pt; pt.dim = di; LOOP_OVER_DIRECTIONS(di, d) pt.set_direction(d, 1);
+  return pt;
 }
 
 inline ivec unit_ivec(ndim di, direction d) {
-  ivec v(zero_ivec(di));
-  v.set_direction(d, 1);
-  return v;
+  ivec pt(zero_ivec(di));
+  pt.set_direction(d, 1);
+  return pt;
 }
 
 inline ivec iveccyl(int rr, int zz) {
-  ivec v(Dcyl); v.t[R] = rr; v.t[Z] = zz; return v;
+  ivec pt(Dcyl); pt.t[R] = rr; pt.t[Z] = zz; return pt;
 }
 
 vec max(const vec &vec1, const vec &vec2);
 vec min(const vec &vec1, const vec &vec2);
 ivec max(const ivec &ivec1, const ivec &ivec2);
 ivec min(const ivec &ivec1, const ivec &ivec2);
-ivec max_to_all(const ivec &v); // in mympi.cpp
+ivec max_to_all(const ivec &); // in mympi.cpp
 
 class volume {
  public:

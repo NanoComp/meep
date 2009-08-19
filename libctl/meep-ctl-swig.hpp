@@ -5,7 +5,7 @@
 #ifndef MEEP_CTL_SWIG_HPP
 #define MEEP_CTL_SWIG_HPP 1
 
-vector3 vec_to_vector3(const meep::vec &v);
+vector3 vec_to_vector3(const meep::vec &);
 meep::vec vector3_to_vec(const vector3 v3);
 void set_dimensions(int dims);
 
