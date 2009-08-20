@@ -60,7 +60,7 @@ complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_typ
   if (Tfft <= T) Tfft = T * 100; // * 10 is not enough
   if (Tfft <= 1000) Tfft = 1000;
 
-  int Nfft = ceil(Tfft / dt);
+  int Nfft = int(ceil(Tfft / dt));
   C *dg = new C[Nfft];
   C eps0(1.0,0);
 
@@ -103,7 +103,7 @@ complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_typ
   abort("make_casimir_g requires some version of FFTW");
 #endif
 
-  int N = ceil(T / dt);
+  int N = int(ceil(T / dt));
   C *g = new C[N];
   g[0] = 0;
   double dxi = 1.0 / (Nfft * dt);
@@ -311,7 +311,7 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
     double tshift = (ft == E_stuff || ft == D_stuff) ? 0.0 : dt;
     T += 5 * dt; // allocate a few extra timesteps just in case
     
-    int N = ceil(T / dt);
+    int N = int(ceil(T / dt));
     C *g = new C[N];
     for (int i = 1; i < N; ++i) {
       double t = i * dt + tshift;

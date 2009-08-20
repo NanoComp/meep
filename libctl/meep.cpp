@@ -96,7 +96,7 @@ ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::fiel
 				   double Tfft)
 {
   ctlio::cnumber_list res;
-  res.num_items = ceil(T / dt);
+  res.num_items = int(ceil(T / dt));
   res.items = new cnumber[res.num_items];
   complex<double> *g = meep::make_casimir_gfunc(T, dt, sigma, ft, eps_func, Tfft);
   for (int i = 0; i < res.num_items; ++i) {
@@ -110,7 +110,7 @@ ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::fiel
 ctlio::cnumber_list make_casimir_g_kz(double T, double dt, double sigma, meep::field_type ft)
 {
   ctlio::cnumber_list res;
-  res.num_items = ceil(T / dt);
+  res.num_items = int(ceil(T / dt));
   res.items = new cnumber[res.num_items];
   complex<double> *g = meep::make_casimir_gfunc_kz(T, dt, sigma, ft);
   for (int i = 0; i < res.num_items; ++i) {
