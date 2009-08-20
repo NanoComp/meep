@@ -64,8 +64,7 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
    this by wrapping a "helper" function around the constructor which
    does not have the %newobject SWIG attribute.   Note that we then
    need to deallocate the list explicitly in Scheme. */
-volume_list
-  *make_geometric_volume_list(const volume &v,
+volume_list *make_volume_list(const volume &v,
 			      int c, complex<double> weight,
 			      volume_list *next)
 {

@@ -228,7 +228,7 @@
   (let ((v (apply make (cons volume-class args))))
     (let ((cen (object-property-value v 'center))
 	  (sz (object-property-value v 'size)))
-      (new-meep-geometric-volume 
+      (new-meep-volume 
        (vector3- cen (vector3-scale 0.5 sz))
        (vector3+ cen (vector3-scale 0.5 sz))))))
 
@@ -465,27 +465,27 @@
   (define-property weight 1.0 'cnumber))
 
 (define (fields-add-fluxish-stuff add-dft-stuff fields fcen df nfreq stufflist)
-  (define gvl '()) ; geometric_volume_list of flux regions
+  (define vl '()) ; volume_list of flux regions
   (map (lambda (f)
-	 (let* ((gv (volume (center (object-property-value f 'center))
+	 (let* ((v (volume (center (object-property-value f 'center))
 			    (size (object-property-value f 'size))))
 		(d0 (object-property-value f 'direction))
 		(d (if (negative? d0)
-		       (meep-fields-normal-direction fields gv)
+		       (meep-fields-normal-direction fields v)
 		       d0))
 		(c (meep-direction-component Sx d)))
-	   (set! gvl
-		 (make-geometric-volume-list
+	   (set! vl
+		 (make-volume-list
 		  (volume (center (object-property-value f 'center))
 			  (size (object-property-value f 'size)))
 		  c
 		  (object-property-value f 'weight)
-		  gvl))))
+		  vl))))
        stufflist)
   (let ((stuff
-	 (add-dft-stuff fields gvl 
+	 (add-dft-stuff fields vl 
 			(- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
-    (delete-meep-geometric-volume-list gvl)
+    (delete-meep-volume-list vl)
     stuff))
 
 (define (fields-add-flux fields fcen df nfreq . fluxes)
@@ -824,18 +824,18 @@
       (map (lambda (f) (eval-step-func f to-do)) step-funcs)
       (set! filename-prefix pre-save))))
 
-; change output-volume for a few step-funcs to gv
-(define (in-volume gv . step-funcs)
+; change output-volume for a few step-funcs to v
+(define (in-volume v . step-funcs)
   (let ((cur-eps "")) ; allow per-volume eps filenames
     (lambda (to-do)
-      (let ((gv-save output-volume)
+      (let ((v-save output-volume)
 	    (eps-save meep-last-eps-filename))
-	(set! output-volume gv)
+	(set! output-volume v)
 	(if (not (string-null? cur-eps))
 	    (set! meep-last-eps-filename cur-eps))
 	(map (lambda (f) (eval-step-func f to-do)) step-funcs)
 	(set! cur-eps meep-last-eps-filename)
-	(set! output-volume gv-save)
+	(set! output-volume v-save)
 	(if (not (string-null? eps-save))
 	    (set! meep-last-eps-filename eps-save))))))
 (define (in-point pt . step-funcs)
