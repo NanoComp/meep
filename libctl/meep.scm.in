@@ -391,7 +391,7 @@
 				store-polarization-energy?
 				(if (and special-kz? k-point)
 				    (vector3-z k-point) 0.0)
-				(not zero-fields-near-cylorigin?)))
+				(not accurate-fields-near-cylorigin?)))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
