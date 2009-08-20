@@ -249,7 +249,7 @@ int check_pmlcyl(double eps(const vec &)) {
 int pml1d_scaling(double eps(const vec &)) {
   double res = 20, freq = 1.0, dpml = 0;
   complex<double> prev_ft = 0.0, ft = 0.0;
-  double refl_const = 0.0;
+  double refl_const = 0.0, prev_refl_const = 0.0;
   master_printf("Checking thickness convergence of 1d PML...\n");
   for (int i=0; i < (sizeof(realnum)==sizeof(float) ? 5 : 7); i++) {
     dpml = pow(2.0,(double)i);
@@ -265,9 +265,50 @@ int pml1d_scaling(double eps(const vec &)) {
     }
     if (i > 0) {
       refl_const = pow(abs(ft - prev_ft),2.0) / pow(abs(prev_ft),2.0);
-      master_printf("refl1d:, %g, %g\n", dpml / 2.0, refl_const);
+      master_printf("refl1d:, %g, %g\n", dpml, refl_const);
       if (refl_const > (1e-9)*pow(2/dpml,6.0)
 	  || refl_const < (1e-10)*pow(2/dpml, 6.0)) return 1;
+      if (i > 1) {
+	master_printf("ratio R(%g)/R(%g) * 2^6 = %g\n",
+		      dpml, dpml/2, (refl_const/prev_refl_const) * 64.0);
+	if ((refl_const/prev_refl_const) * 64.0 > 1.1) return 1;
+      }
+      prev_refl_const = refl_const;
+    }      
+  }
+  master_printf("pml scales correctly with length.\n");
+  return 0;
+}
+
+int pmlcyl_scaling(double eps(const vec &), int m) {
+  double res = 10, freq = 1.0, dpml = 0;
+  complex<double> prev_ft = 0.0, ft = 0.0;
+  double refl_const = 0.0, prev_refl_const = 0.0;
+  master_printf("Checking thickness convergence of cylindrical PML for m=%d...\n", m);
+  for (int i=0; i < 3; i++) {
+    dpml = pow(2.0,(double)i);
+    double sr = 5.0 + dpml, sz = dpml + 5.0 + dpml;
+    prev_ft = ft;
+    {
+      grid_volume gv = volcyl(sr,sz,res);
+      gv.center_origin();
+      structure s(gv, eps, pml(dpml));
+      fields f(&s, m);
+      gaussian_src_time src(freq, freq / 20);
+      f.add_point_source(Ez, src, veccyl(0.5 * (sr - dpml), 0.1));
+      ft = do_ft(f, Ez, veccyl(sr - dpml - 0.1,0), freq);
+    }
+    if (i > 0) {
+      refl_const = pow(abs(ft - prev_ft),2.0) / pow(abs(prev_ft),2.0);
+      master_printf("reflcyl:, %g, %g\n", dpml, refl_const);
+      if (refl_const > (1e-5)*pow(2/dpml,6.0)
+	  || refl_const < (1e-8)*pow(2/dpml, 6.0)) return 1;
+      if (i > 1) {
+	master_printf("ratio R(%g)/R(%g) * 2^6 = %g\n",
+		      dpml, dpml/2, (refl_const/prev_refl_const) * 64.0);
+	if ((refl_const/prev_refl_const) * 64.0 > 1.1) return 1;
+      }
+      prev_refl_const = refl_const;
     }      
   }
   master_printf("pml scales correctly with length.\n");
@@ -290,5 +331,9 @@ int main(int argc, char **argv) {
   if (check_pml2d(one,Hz,0,false,0.5)) abort("not a pml in 2d TE + offdiag.");
   // if (check_pmlcyl(one)) abort("not a pml in cylincrical co-ordinates.");
   if (pml1d_scaling(one)) abort("pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 0)) abort("m=0 cylindrical pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 1)) abort("m=1 cylindrical pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 2)) abort("m=2 cylindrical pml doesn't scale properly with length.");
+
   return 0;
 }
