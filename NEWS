@@ -1,7 +1,7 @@
-Meep 1.1
+Meep 1.1 (20 August 2009)
 
-  * PML is now a true PML for arbitrary anisotropic, dispersive,
-    and conducting media.  (Uses a slightly unconventional
+  * Meep's PML is now a true PML for arbitrary anisotropic, dispersive,
+    and conducting media.  (Now uses a slightly unconventional
     reformulation of PML described at ab-initio.mit.edu/meep/pml-meep.pdf)
 
   * Fixed bug which caused anisotropic non-diagonal mu to be unstable.
