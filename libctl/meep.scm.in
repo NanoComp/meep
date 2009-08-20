@@ -150,13 +150,13 @@
 
 (define-param m 0) ; angular dependence exp(i m phi) in cylindrical
 
-; If true (default), Meep forces certain field components for |m|>1 to
+; If false (default), Meep forces certain field components for |m|>1 to
 ; be zero for |m| pixels from r=0.  This is something of a hack
 ; which seems to ensure stability for Courant = 0.5 regardless of m,
-; at the expense of some accuracy near r=0.  If false, in order to
+; at the expense of some accuracy near r=0.  If true, in order to
 ; remain stable, the Courant factor should be ~ min[0.5, 1 / (|m| + 0.5)]
 ;  or so assuming the computational cell includes the r=0 origin.
-(define-param zero-fields-near-cylorigin? true)
+(define-param accurate-fields-near-cylorigin? false)
 
 (define-param force-complex-fields? false)
 
@@ -391,7 +391,7 @@
 				store-polarization-energy?
 				(if (and special-kz? k-point)
 				    (vector3-z k-point) 0.0)
-				zero-fields-near-cylorigin?))
+				(not zero-fields-near-cylorigin?)))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
