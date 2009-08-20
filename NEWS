@@ -1,4 +1,35 @@
-Meep 1.0.4
+Meep 1.1
+
+  * PML is now a true PML for arbitrary anisotropic, dispersive,
+    and conducting media.  (Uses a slightly unconventional
+    reformulation of PML described at ab-initio.mit.edu/meep/pml-meep.pdf)
+
+  * Fixed bug which caused anisotropic non-diagonal mu to be unstable.
+
+  * Fix compilation failure with gcc 4.4 due to missing cstdio
+    header (thanks to Linran Fan and Bin Shao for the bug reports).
+
+  * C++ interface: volume was renamed to grid_volume and geometric_volume
+    was renamed to volume, to better reflect their respective roles.
+
+  * Added accurate-fields-near-cylorigin? option to have more
+    accurate fields near the r=0 origin for large m in cylindrical
+    coordinates, at the expense of requiring a smaller Courant factor.
+    (Default is false, corresponding to behavior in older Meep versions.)
+
+  * In 2d computational cells, added much more efficient support for
+    exp(ikz) z-dependence, enabled by new special-kz? input variable
+    (default is false since it only works in 2d and is a little subtle
+     for real fields).
+
+  * Includes preliminary new features to aid in computation of 
+    optical forces (both classical and quantum Casimir forces);
+    further documentation pending more testing.
+
+  * Removed obsolete doc directory (all documentation is on the website
+    these days).
+
+  * Small performance improvements in Lorentzian dispersion handling.
 
   * Fix configure script failure when cross-compiling.
 
