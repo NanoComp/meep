@@ -23,11 +23,13 @@
 #include "config.h"
 
 #ifdef HAVE_MPI
+#  ifdef NEED_UNDEF_SEEK_FOR_MPI
 // undef'ing SEEK_* is needed for MPICH, possibly other MPI versions
-#undef SEEK_SET
-#undef SEEK_END
-#undef SEEK_CUR
-#include <mpi.h>
+#    undef SEEK_SET
+#    undef SEEK_END
+#    undef SEEK_CUR
+#  endif
+#  include <mpi.h>
 #endif
 
 #ifdef IGNORE_SIGFPE

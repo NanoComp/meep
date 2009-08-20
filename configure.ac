@@ -43,15 +43,21 @@ if test "x$with_mpi" = "xyes"; then
     save_CPPFLAGS=$CPPFLAGS
     if test "x$flag" != xnone; then CPPFLAGS="$CPPFLAGS $flag"; fi
     AC_TRY_COMPILE([#include <stdio.h>
-#undef SEEK_SET
-#undef SEEK_END
-#undef SEEK_CUR
 #include <mpi.h>], [], [break], [])
     CPPFLAGS=$save_CPPFLAGS
   done
   AC_MSG_RESULT($flag)
   if test "x$flag" = xunknown; then
-    AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])
+    AC_MSG_CHECKING([if we can combine stdio.h and mpi.h by undef'ing SEEK_*])
+    AC_TRY_COMPILE([#include <stdio.h>
+#undef SEEK_SET
+#undef SEEK_END
+#undef SEEK_CUR
+#include <mpi.h>], [], 
+	 [AC_MSG_RESULT(yes)
+          AC_DEFINE([NEED_UNDEF_SEEK_FOR_MPI], 1, [Define if mpi.h needs SEEK macros to be undefined])], 
+	 [AC_MSG_RESULT(no)
+          AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])])
   fi
 fi
 
