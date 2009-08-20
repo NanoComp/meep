@@ -26,7 +26,8 @@
 
 namespace meep {
 
-fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
+fields::fields(structure *s, double m, bool store_pol_energy, double beta,
+	       bool zero_fields_near_cylorigin) :
   S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta)
 {
   verbosity = 0;
@@ -54,7 +55,7 @@ fields::fields(structure *s, double m, bool store_pol_energy, double beta) :
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++)
     chunks[i] = new fields_chunk(s->chunks[i], outdir, m, store_pol_energy,
-				 beta);
+				 beta, zero_fields_near_cylorigin);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
       comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
@@ -195,7 +196,8 @@ fields_chunk::~fields_chunk() {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
-			   double m, bool store_pol_energy, double beta) : gv(the_s->gv), v(the_s->v), m(m), beta(beta), store_pol_energy(store_pol_energy) {
+			   double m, bool store_pol_energy, double beta,
+			   bool zero_fields_near_cylorigin) : gv(the_s->gv), v(the_s->v), m(m), beta(beta), store_pol_energy(store_pol_energy), zero_fields_near_cylorigin(zero_fields_near_cylorigin) {
   s = the_s; s->refcount++;
   verbosity = 0;
   outdir = od;
@@ -243,6 +245,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
+  zero_fields_near_cylorigin = thef.zero_fields_near_cylorigin;
   beta = thef.beta;
   store_pol_energy = thef.store_pol_energy;
   new_s = thef.new_s; new_s->refcount++;

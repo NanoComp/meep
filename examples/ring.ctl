@@ -34,7 +34,7 @@
                  (component Hx) (center (+ r 0.1) 0))))
 
 ; exploit the mirror symmetry in structure+source:
-;(set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
+(set! symmetries (list (make mirror-sym (direction Y))))
 
 (run-sources+ 200 
 	      (at-beginning output-epsilon)

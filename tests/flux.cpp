@@ -242,7 +242,7 @@ int flux_cyl(const double rmax, const double zmax,
   master_printf("\nFlux_cyl(%g,%g) test...\n", rmax, zmax);
 
   grid_volume gv = volcyl(rmax,zmax,a);
-  structure s(gv, eps, pml(0.5));
+  structure s(gv, eps, pml(0.5), identity(), 0, min(0.5, 1 / (abs(m)+0.5)));
 
   fields f(&s, m);
   // f.use_real_fields();

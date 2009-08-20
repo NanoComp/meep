@@ -349,29 +349,64 @@ bool fields_chunk::step_db(field_type ft) {
       }
     }
     else if (m != 0) { // m != {0,+1,-1}
-      /* I seem to recall David telling me that this was for numerical
-	 stability of some sort - the larger m is, the farther from
-	 the origin we need to be before we can use nonzero fields
-	 ... note that this is a fixed number of pixels for a given m,
-	 so it should still converge.  Still, this is weird... */
-      double rmax = fabs(m) - int(gv.origin_r()*gv.a+0.5);
-      if (ft == D_stuff)
-	for (int r = 0; r <= gv.nr() && r < rmax; r++) {
-          const int ir = r*(nz+1);
-	  ZERO_Z(f[Dp][cmp]+ir);
-	  ZERO_Z(f[Dz][cmp]+ir);
-	  if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]+ir);
-	  if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]+ir);
-	  if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]+ir);
-	  if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]+ir);
-        }
-      else
-	for (int r = 0; r <= gv.nr() && r < rmax; r++) {
-          const int ir = r*(nz+1);
-	  ZERO_Z(f[Br][cmp]+ir);
-	  if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]+ir);
-	  if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]+ir);
-        }
+      if (zero_fields_near_cylorigin) { /* default behavior */
+	/* I seem to recall David telling me that this was for numerical
+	   stability of some sort - the larger m is, the farther from
+	   the origin we need to be before we can use nonzero fields
+	   ... note that this is a fixed number of pixels for a given m,
+	   so it should still converge.  Still, this is weird... 
+	   
+	   Update: experimentally, this seems to indeed be important
+	   for stability.  Setting these fields to zero, it seems to be
+	   stable with a Courant number < 0.62 or so for all m.  Without
+	   this, it becomes unstable unless we set the Courant number to
+	   about 1 / (|m| + 0.5) or less.  
+	   
+	   Cons: setting fields near the origin to identically zero is
+	   somewhat unexpected for users, and probably spoils 2nd-order
+	   accuracy, and may not fix all stability issues anyway (based
+	   on anecdotal evidence from Alex M. of having to reduce Courant
+	   for large m). */
+	double rmax = fabs(m) - int(gv.origin_r()*gv.a+0.5);
+	if (ft == D_stuff)
+	  for (int r = 0; r <= gv.nr() && r < rmax; r++) {
+	    const int ir = r*(nz+1);
+	    ZERO_Z(f[Dp][cmp]+ir);
+	    ZERO_Z(f[Dz][cmp]+ir);
+	    if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]+ir);
+	    if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]+ir);
+	    if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]+ir);
+	    if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]+ir);
+	  }
+	else
+	  for (int r = 0; r <= gv.nr() && r < rmax; r++) {
+	    const int ir = r*(nz+1);
+	    ZERO_Z(f[Br][cmp]+ir);
+	    if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]+ir);
+	    if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]+ir);
+	  }
+      }
+      else {
+	/* Without David's hack: just set boundary conditions at r=0.
+	   This seems to be unstable unless we make the Courant number
+	   around 1 / (|m| + 0.5) or smaller.  Pros: probably maintains
+	   2nd-order accuracy, is more sane for r near zero.  Cons:
+	   1/(|m|+0.5) is purely empirical (no theory yet), and I'm not
+	   sure how universal it is.  Makes higher m's more expensive. */
+	if (ft == D_stuff) {
+	  ZERO_Z(f[Dp][cmp]);
+	  ZERO_Z(f[Dz][cmp]);
+	  if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
+	  if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
+	  if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]);
+	  if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
+	}
+	else {
+	  ZERO_Z(f[Br][cmp]);
+	  if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
+	  if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);
+	}
+      }
     }
   }
 

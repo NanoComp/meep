@@ -775,6 +775,7 @@ class fields_chunk {
   grid_volume gv;
   volume v;
   double m; // angular dependence in cyl. coords
+  bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
   double beta;
   int is_real, store_pol_energy;
   bandsdata *bands;
@@ -783,7 +784,9 @@ class fields_chunk {
   structure_chunk *s;
   const char *outdir;
 
-  fields_chunk(structure_chunk *, const char *outdir, double m, bool store_pol_energy, double beta);
+  fields_chunk(structure_chunk *, const char *outdir, double m,
+	       bool store_pol_energy, double beta,
+	       bool zero_fields_near_cylorigin);
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
@@ -935,7 +938,8 @@ class fields {
   char *outdir;
 
   // fields.cpp methods:
-  fields(structure *, double m=0, bool store_pol_energy=0, double beta=0);
+  fields(structure *, double m=0, bool store_pol_energy=0, double beta=0,
+	 bool zero_fields_near_cylorigin=true);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;
