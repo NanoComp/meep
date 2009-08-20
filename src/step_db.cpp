@@ -97,7 +97,7 @@ bool fields_chunk::step_db(field_type ft) {
 	   the derivative and integral are replaced by differences
 	   and sums, but you get the idea). */
 	if (!f_rderiv_int) f_rderiv_int = new realnum[gv.ntot()];
-	double ir0 = (gv.origin_r() + rshift) * gv.a 
+	double ir0 = gv.origin_r() * gv.a 
 	  + 0.5 * gv.iyee_shift(c_p).in_direction(R);
 	for (int iz = 0; iz <= gv.nz(); ++iz) f_rderiv_int[iz] = 0;
 	int sr = gv.nz() + 1;
@@ -172,7 +172,7 @@ bool fields_chunk::step_db(field_type ft) {
       const int dku = gv.iyee_shift(cc).in_direction(dsigu);
       const double the_m = 
 	m * (1-2*cmp) * (1-2*(ft==B_stuff)) * (1-2*(d_c==R)) * Courant;
-      const double ir0 = (gv.origin_r() + rshift) * gv.a 
+      const double ir0 = gv.origin_r() * gv.a 
 	+ 0.5 * gv.iyee_shift(cc).in_direction(R);
       int sr = gv.nz() + 1;
 

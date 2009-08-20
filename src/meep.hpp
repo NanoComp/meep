@@ -774,7 +774,7 @@ class fields_chunk {
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   grid_volume gv;
   volume v;
-  double m, rshift;
+  double m; // angular dependence in cyl. coords
   double beta;
   int is_real, store_pol_energy;
   bandsdata *bands;
@@ -1174,7 +1174,6 @@ class fields {
   double count_volume(component);
   // fields.cpp
   bool have_component(component);
-  void set_rshift(double rshift);
   // material.cpp
   double max_eps() const;
   // step.cpp
