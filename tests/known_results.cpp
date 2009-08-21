@@ -122,7 +122,7 @@ double sigma(const vec &) { return 7.63; }
 double polariton_ex(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(gv, eps);
-  s.add_polarizability(sigma, 0.3, 0.1);
+  //  s.add_polarizability(sigma, 0.3, 0.1);
   fields f(&s);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));

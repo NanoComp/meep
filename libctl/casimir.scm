@@ -19,8 +19,8 @@
       (set! c (- n s))
       (list (- r c) c)))
 
-  (let* ((min-corner (meep-geometric-volume-get-min-corner integration-vol))
-	 (max-corner (meep-geometric-volume-get-max-corner integration-vol))
+  (let* ((min-corner (meep-volume-get-min-corner integration-vol))
+	 (max-corner (meep-volume-get-max-corner integration-vol))
 	 (size-vec (vector3- max-corner min-corner))
 	 (center-vec (vector3+ (vector3-scale 0.5 size-vec) min-corner))
 	 (sx (vector3-x size-vec))
@@ -113,8 +113,8 @@
 (define (casimir-force-contrib force-direction integration-vol n Sigma T source-component gt . step-funcs)
   (define (cos-func X mx my mz source-vol)
     (let* 
-	((min-corner (meep-geometric-volume-get-min-corner source-vol))
-	 (max-corner (meep-geometric-volume-get-max-corner source-vol))
+	((min-corner (meep-volume-get-min-corner source-vol))
+	 (max-corner (meep-volume-get-max-corner source-vol))
 	 (size-vec (vector3- max-corner min-corner))
 	 (X-start (vector3+ X (vector3-scale 0.5 size-vec)))
 	 (sx (vector3-x size-vec))
@@ -148,10 +148,10 @@
 	  (set! global-D-conductivity 0)))
     (if (eq? dimensions -2) 
 	(begin (print "Cylindricals: m = "my" and (nr nz) = ("mx", "mz")\n")
-	       (print "  surface center = "(meep-geometric-volume-center source-vol)"\n")
+	       (print "  surface center = "(meep-volume-center source-vol)"\n")
 	       (print "  source size = "(vector3- 
-					  (meep-geometric-volume-get-max-corner source-vol) 
-					  (meep-geometric-volume-get-min-corner source-vol)))
+					  (meep-volume-get-max-corner source-vol) 
+					  (meep-volume-get-min-corner source-vol)))
 	       (set! m my))) ;set exp(i m phi) field dependence
     (set! sources
 	  (list (make source
@@ -160,9 +160,9 @@
 			 (start-time (* -0.25 dt))
 			 (end-time (* 0.75 dt))
 			 (is-integrated? false)))
-		  (center (meep-geometric-volume-center source-vol))
-		  (size (vector3- (meep-geometric-volume-get-max-corner source-vol)
-				  (meep-geometric-volume-get-min-corner source-vol)))
+		  (center (meep-volume-center source-vol))
+		  (size (vector3- (meep-volume-get-max-corner source-vol)
+				  (meep-volume-get-min-corner source-vol)))
 		  (component source-component)
 		  (amp-func (lambda (p) (cos-func p mx my mz source-vol))))))
     (reset-meep)
@@ -204,8 +204,8 @@
   ;casimir.cpp integrates against exp(-i g x)
   (define (casimir-bloch-func X gx gy gz source-vol)
     (let*
-	((min-corner (meep-geometric-volume-get-min-corner source-vol))
-	 (max-corner (meep-geometric-volume-get-max-corner source-vol))
+	((min-corner (meep-volume-get-min-corner source-vol))
+	 (max-corner (meep-volume-get-max-corner source-vol))
 	 (size-vec (vector3- max-corner min-corner)) ;crossection of computational cell
 	 (sx (vector3-x size-vec))
 	 (sy (vector3-y size-vec))
@@ -243,9 +243,9 @@
 			 (start-time (* -0.25 dt))
 			 (end-time (* 0.75 dt))
 			 (is-integrated? false)))
-		  (center (meep-geometric-volume-center source-vol))
-		  (size (vector3- (meep-geometric-volume-get-max-corner source-vol)
-				  (meep-geometric-volume-get-min-corner source-vol)))
+		  (center (meep-volume-center source-vol))
+		  (size (vector3- (meep-volume-get-max-corner source-vol)
+				  (meep-volume-get-min-corner source-vol)))
 		  (component source-component)
 		  (amp-func (lambda (p) (casimir-bloch-func p gx gy gz source-vol))))))
     (reset-meep)

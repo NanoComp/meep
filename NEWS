@@ -1,3 +1,7 @@
+Meep 1.1.1
+
+  * Fixed release bug preventing Casimir calculation from running.
+
 Meep 1.1 (20 August 2009)
 
   * Meep's PML is now a true PML for arbitrary anisotropic, dispersive,
