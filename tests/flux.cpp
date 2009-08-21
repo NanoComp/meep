@@ -71,8 +71,9 @@ int flux_1d(const double zmax,
   grid_volume mid = volone(zmax/3,a);
   mid.set_origin(vec(zmax/3));
   double flux_left=0.0, flux_right=0.0;
-  double delta_energy = f.energy_in_box(mid.surroundings());
-  master_printf("Initial energy is %g\n", f.energy_in_box(mid.surroundings()));
+  double delta_energy = f.field_energy_in_box(mid.surroundings());
+  master_printf("Initial energy is %g\n", 
+		f.field_energy_in_box(mid.surroundings()));
   master_printf("Initial electric energy is %g\n",
                 f.electric_energy_in_box(mid.surroundings()));
   while (f.time() < ttot) {
@@ -80,8 +81,9 @@ int flux_1d(const double zmax,
     flux_left  +=  f.dt*left->flux();
     flux_right +=  f.dt*right->flux();
   }
-  delta_energy -= f.energy_in_box(mid.surroundings());
-  master_printf("Final energy is %g\n", f.energy_in_box(mid.surroundings()));
+  delta_energy -= f.field_energy_in_box(mid.surroundings());
+  master_printf("Final energy is %g\n",
+		f.field_energy_in_box(mid.surroundings()));
   master_printf("Final electric energy is %g\n",
                 f.electric_energy_in_box(mid.surroundings()));
   const double del = flux_left;
@@ -144,14 +146,15 @@ int cavity_1d(const double boxwidth, const double timewait,
   while (f.time() < f.last_source_time()) f.step();
   const double ttot = f.time() + timewait;
   double flux_left=0.0, flux_right=0.0;
-  const double start_energy = f.energy_in_box(mid.surroundings());
+  const double start_energy = f.field_energy_in_box(mid.surroundings());
   master_printf("  Energy starts at\t%g\n", start_energy);
   while (f.time() < ttot) {
     f.step();
     flux_left  +=  f.dt*left->flux();
     flux_right +=  f.dt*right->flux();
   }
-  const double delta_energy = start_energy - f.energy_in_box(mid.surroundings());
+  const double delta_energy = 
+    start_energy - f.field_energy_in_box(mid.surroundings());
   const double defl = flux_right - flux_left;
   master_printf("  Delta E:         \t%g\n  Integrated Flux:\t%g\n",
                 delta_energy, defl);
@@ -201,7 +204,7 @@ int flux_2d(const double xmax, const double ymax,
 
   /* first check: integral of flux = change in energy of box */
   f.step();
-  double init_energy = f.energy_in_box(box);
+  double init_energy = f.field_energy_in_box(box);
   master_printf("Initial energy is %g\n", init_energy);
   long double fluxL = 0;
   while (f.time() < ttot) {
@@ -210,8 +213,8 @@ int flux_2d(const double xmax, const double ymax,
 		     + bottom->flux() - top->flux());
   }
   double flux = fluxL;
-  double del_energy = f.energy_in_box(box) - init_energy;
-  master_printf("Final energy is %g\n", f.energy_in_box(box));
+  double del_energy = f.field_energy_in_box(box) - init_energy;
+  master_printf("Final energy is %g\n", f.field_energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
 		del_energy, flux, del_energy/flux);
   if (!compare(del_energy, flux, 0.09, 0, "Flux")) return 0;
@@ -221,8 +224,8 @@ int flux_2d(const double xmax, const double ymax,
   while (f.time() < ttot*2) {
     f.step();
   }
-  master_printf("  energy after more time is %g\n", f.energy_in_box(box));
-  master_printf("  and energy in box2 is %g\n", f.energy_in_box(box2));
+  master_printf("  energy after more time is %g\n",f.field_energy_in_box(box));
+  master_printf("  and energy in box2 is %g\n", f.field_energy_in_box(box2));
   double *fl1 = flux1.flux();
   double *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {
@@ -272,7 +275,7 @@ int flux_cyl(const double rmax, const double zmax,
   const double ttot = 130;
 
   f.step();
-  double init_energy = f.energy_in_box(box);
+  double init_energy = f.field_energy_in_box(box);
   master_printf("Initial energy is %g\n", init_energy);
   long double fluxL = 0;
   while (f.time() < ttot) {
@@ -281,8 +284,8 @@ int flux_cyl(const double rmax, const double zmax,
 		      + bottom->flux() - top->flux());
   }
   double flux = fluxL;
-  double del_energy = f.energy_in_box(box) - init_energy;
-  master_printf("Final energy is %g\n", f.energy_in_box(box));
+  double del_energy = f.field_energy_in_box(box) - init_energy;
+  master_printf("Final energy is %g\n", f.field_energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
 		del_energy, flux, del_energy/flux);
   if (!compare(del_energy, flux, 0.08, 0, "Flux")) return 0;
@@ -290,8 +293,8 @@ int flux_cyl(const double rmax, const double zmax,
   while (f.time() < ttot*2) {
     f.step();
   }
-  master_printf("  energy after more time is %g\n", f.energy_in_box(box));
-  master_printf("  and energy in box2 is %g\n", f.energy_in_box(box2));
+  master_printf("  energy after more time is %g\n",f.field_energy_in_box(box));
+  master_printf("  and energy in box2 is %g\n", f.field_energy_in_box(box2));
   double *fl1 = flux1.flux();
   double *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {

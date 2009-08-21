@@ -86,15 +86,15 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   fields f1(&s1);
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5), 1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
-  double total_energy_check_time = 8.0;
+  double field_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
-      if (!compare(f.total_energy(), f1.total_energy(),
+    if (f.time() >= field_energy_check_time) {
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
@@ -102,7 +102,7 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      total_energy_check_time += 5.0;
+      field_energy_check_time += 5.0;
     }
   }
   return 1;
@@ -127,15 +127,15 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   f1.use_bloch(vec(0.1,0.7));
   f1.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5), 1.0);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
-  double total_energy_check_time = 8.0;
+  double field_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
-      if (!compare(f.total_energy(), f1.total_energy(),
+    if (f.time() >= field_energy_check_time) {
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
@@ -143,7 +143,7 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      total_energy_check_time += 5.0;
+      field_energy_check_time += 5.0;
     }
   }
   return 1;
@@ -166,15 +166,15 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
   fields f1(&s1);
   f1.use_bloch(vec(0.1,0.7));
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
-  double total_energy_check_time = 8.0;
+  double field_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
-      if (!compare(f.total_energy(), f1.total_energy(),
+    if (f.time() >= field_energy_check_time) {
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
@@ -182,7 +182,7 @@ int test_periodic_tm(double eps(const vec &), int splitting, const char *mydirna
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      total_energy_check_time += 5.0;
+      field_energy_check_time += 5.0;
     }
   }
   return 1;
@@ -206,21 +206,21 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
   f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
   const double deltaT = 100.0;
   const double ttot = 3.1*deltaT;
-  double total_energy_check_time = deltaT;
+  double field_energy_check_time = deltaT;
 
   while (f.time() < f.last_source_time()) f.step();
   while (f1.time() < f1.last_source_time()) f1.step();
 
-  double last_energy = f.total_energy();
+  double last_energy = f.field_energy();
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (f.time() >= total_energy_check_time) {
+    if (f.time() >= field_energy_check_time) {
       if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
       if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
       if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
-      const double new_energy = f.total_energy();
-      if (!compare(new_energy, f1.total_energy(),
+      const double new_energy = f.field_energy();
+      if (!compare(new_energy, f1.field_energy(),
                    "   total energy")) return 0;
       if (new_energy > last_energy*1e-6) {
         master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
@@ -229,7 +229,7 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
       } else {
         master_printf("Got newE/oldE of %g\n", new_energy/last_energy);
       }
-      total_energy_check_time += deltaT;
+      field_energy_check_time += deltaT;
     }
   }
   return 1;
@@ -251,21 +251,21 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
   f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.299,1.401), 1.0);
   const double deltaT = 100.0;
   const double ttot = 3.1*deltaT;
-  double total_energy_check_time = deltaT;
+  double field_energy_check_time = deltaT;
 
   while (f.time() < f.last_source_time()) f.step();
   while (f1.time() < f1.last_source_time()) f1.step();
 
-  double last_energy = f.total_energy();
+  double last_energy = f.field_energy();
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (f.time() >= total_energy_check_time) {
+    if (f.time() >= field_energy_check_time) {
       if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
       if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
       if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
-      const double new_energy = f.total_energy();
-      if (!compare(new_energy, f1.total_energy(),
+      const double new_energy = f.field_energy();
+      if (!compare(new_energy, f1.field_energy(),
                    "   total energy")) return 0;
       if (new_energy > last_energy*4e-6) {
         master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
@@ -274,7 +274,7 @@ int test_pml_tm(double eps(const vec &), int splitting, const char *mydirname) {
       } else {
         master_printf("Got newE/oldE of %g\n", new_energy/last_energy);
       }
-      total_energy_check_time += deltaT;
+      field_energy_check_time += deltaT;
     }
   }
   return 1;
@@ -298,21 +298,21 @@ int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
   f1.add_point_source(Hz, 0.7, 1.5, 0.0, 4.0, vec(1.37,1.27), 1.0);
   const double deltaT = 100.0;
   const double ttot = 3.1*deltaT;
-  double total_energy_check_time = deltaT;
+  double field_energy_check_time = deltaT;
 
   while (f.time() < f.last_source_time()) f.step();
   while (f1.time() < f1.last_source_time()) f1.step();
 
-  double last_energy = f.total_energy();
+  double last_energy = f.field_energy();
   while (f.time() < ttot) {
     f.step();
     f1.step();
-    if (f.time() >= total_energy_check_time) {
+    if (f.time() >= field_energy_check_time) {
       if (!compare_point(f, f1, vec(0.5  , 0.01))) return 0;
       if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
       if (!compare_point(f, f1, vec(1.0  , 1.0 ))) return 0;
-      const double new_energy = f.total_energy();
-      if (!compare(new_energy, f1.total_energy(),
+      const double new_energy = f.field_energy();
+      if (!compare(new_energy, f1.field_energy(),
                    "   total energy")) return 0;
       if (new_energy > last_energy*1.1e-6) {
         master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
@@ -321,7 +321,7 @@ int test_pml_te(double eps(const vec &), int splitting, const char *mydirname) {
       } else {
         master_printf("Got newE/oldE of %g\n", new_energy/last_energy);
       }
-      total_energy_check_time += deltaT;
+      field_energy_check_time += deltaT;
     }
   }
   return 1;

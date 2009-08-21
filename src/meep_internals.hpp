@@ -44,43 +44,6 @@ inline int rmin_bulk(int m) {
   return r;
 }
 
-class polarizability {
- public:
-  grid_volume gv;
-  polarizability(const structure_chunk *, material_function &sig,
-                 field_type ft, double om, double ga, double sigscale,
-                 bool mine = true);
-  polarizability(const polarizability *);
-  ~polarizability();
-  field_type ft;
-  double gamma, omeganot;
-  realnum *s[NUM_FIELD_COMPONENTS];
-  bool is_mine() { return is_it_mine; };
-  bool is_it_mine;
-  polarizability *next;
-
-  polarizability_identifier get_identifier() const;
-};
-
-class polarization {
- public:
-  polarization(const polarizability *the_pb, int is_real, bool store_enrgy=0);
-  ~polarization();
-  realnum *(P[NUM_FIELD_COMPONENTS][2]), *(energy[NUM_FIELD_COMPONENTS]),
-    *(s[NUM_FIELD_COMPONENTS]);
-  int is_real;
-  bool store_energy;
-  const polarizability *pb;
-  polarization *next;
-
-  complex<double> analytic_chi1(component,double freq, const vec &) const;
-  double local_energy(const ivec &);
-  // for total energy, use fields::thermo_energy_in_box
-  static void set_up_polarizations(polarization *pols[NUM_FIELD_TYPES], const structure_chunk *s, int is_real, bool store_enrgy = 0);
-  void use_real_fields();
-  void zero_fields();
-};
-
 class src_vol {
  public:
   src_vol(component cc, src_time *st, int n, int *ind, complex<double> *amps);

@@ -254,4 +254,74 @@ void structure_chunk::set_chi1inv(component c,
   }
 }
 
+void structure_chunk::add_susceptibility(material_function &sigma, 
+					 field_type ft,
+					 const susceptibility &sus)
+{
+  if (ft != E_stuff && ft != H_stuff)
+    abort("susceptibilities must be for E or H fields");
+
+  susceptibility *newsus = sus.clone();
+  newsus->next = NULL;
+  newsus->ntot = gv.ntot();
+  // get rid of previously allocated sigma, normally not the case here:
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) if (newsus->sigma[c][d]) {
+    delete[] newsus->sigma[c][d];
+    newsus->sigma[c][d] = NULL;
+    newsus->trivial_sigma[c][d] = true;
+  }
+  
+  // if we own this chunk, set up the sigma array(s):
+  if (is_mine()) FOR_FT_COMPONENTS(ft,c) if (gv.has_field(c)) {
+    FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
+      direction d = component_direction(c2);
+      if (!newsus->sigma[c][d]) newsus->sigma[c][d] = new realnum[gv.ntot()];
+      if (!newsus->sigma[c][d]) abort("Memory allocation error.\n");
+    }
+    bool trivial[3] = {true, true, true};
+    double sigrow[3];
+    direction dc = component_direction(c);
+    direction d0 = X, d1 = Y, d2 = Z;
+    if (gv.dim == Dcyl) { d0 = R; d1 = P; }
+    int idiag = component_index(c);
+    realnum *s0 = newsus->sigma[c][d0];
+    realnum *s1 = newsus->sigma[c][d1];
+    realnum *s2 = newsus->sigma[c][d2];
+    LOOP_OVER_VOL(gv, c, i) {
+      IVEC_LOOP_LOC(gv, here);
+      sigma.sigma_row(c, sigrow, here);
+      if (s0 && (s0[i] = sigrow[0]) != 0.) trivial[0] = false;
+      if (s1 && (s1[i] = sigrow[1]) != 0.) trivial[1] = false;
+      if (s2 && (s2[i] = sigrow[2]) != 0.) trivial[2] = false;
+    }
+    newsus->trivial_sigma[c][d0] = trivial[0];
+    newsus->trivial_sigma[c][d1] = trivial[1];
+    newsus->trivial_sigma[c][d2] = trivial[2];
+    if (trivial[(idiag+1)%3] && trivial[(idiag+2)%3]) {
+      FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
+	direction d = component_direction(c2);
+	if (d != dc) { 
+	  delete[] newsus->sigma[c][d]; newsus->sigma[c][d] = 0;
+	}
+      }
+      if (trivial[idiag]) { 
+	delete[] newsus->sigma[c][dc]; newsus->sigma[c][dc] = 0;
+      }
+    }
+  }
+
+  // synchronize triviality among processes:
+  FOR_FT_COMPONENTS(ft,c) if (gv.has_field(c))
+    FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
+      direction d = component_direction(c2);
+      newsus->trivial_sigma[c][d] = and_to_all(newsus->trivial_sigma[c][d]);
+    }
+
+  // finally, add to the beginning of the chiP list:
+  newsus->next = chiP[ft];
+  chiP[ft] = newsus;  
+}
+
+
+
 } // namespace meep

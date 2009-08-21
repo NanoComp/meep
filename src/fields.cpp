@@ -26,9 +26,8 @@
 
 namespace meep {
 
-fields::fields(structure *s, double m, bool store_pol_energy, double beta,
-	       bool zero_fields_near_cylorigin) :
-  S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta)
+fields::fields(structure *s, double m, bool store_pol_energy) :
+  S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m)
 {
   verbosity = 0;
   synchronized_magnetic_fields = 0;
@@ -54,8 +53,7 @@ fields::fields(structure *s, double m, bool store_pol_energy, double beta,
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, store_pol_energy,
-				 beta, zero_fields_near_cylorigin);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, store_pol_energy);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
       comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
@@ -187,17 +185,21 @@ fields_chunk::~fields_chunk() {
     delete dft_chunks;
     dft_chunks = nxt;
   }
-  FOR_FIELD_TYPES(ft) delete sources[ft];
   FOR_FIELD_TYPES(ft) {
-    delete pols[ft];
-    delete olpols[ft];
+    delete sources[ft];
     delete[] zeroes[ft];
+  }
+  FOR_FIELD_TYPES(ft) for (poldata *cur = pol[ft]; cur; ) {
+    poldata *p = cur;
+    cur = cur->next;
+    FOR_COMPONENTS(c) DOCMP2 delete[] p->P[c][cmp];
+    delete[] p->data;
+    delete p;
   }
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
-			   double m, bool store_pol_energy, double beta,
-			   bool zero_fields_near_cylorigin) : gv(the_s->gv), v(the_s->v), m(m), beta(beta), store_pol_energy(store_pol_energy), zero_fields_near_cylorigin(zero_fields_near_cylorigin) {
+			   double m, bool store_pol_energy) : gv(the_s->gv), v(the_s->v), m(m), store_pol_energy(store_pol_energy) {
   s = the_s; s->refcount++;
   verbosity = 0;
   outdir = od;
@@ -208,8 +210,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
-  doing_solve_cw = false;
-  solve_cw_omega = 0.0;
   FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
   polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
   polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
@@ -245,8 +245,6 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
-  zero_fields_near_cylorigin = thef.zero_fields_near_cylorigin;
-  beta = thef.beta;
   store_pol_energy = thef.store_pol_energy;
   new_s = thef.new_s; new_s->refcount++;
   bands = NULL;
@@ -255,8 +253,6 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   Courant = thef.Courant;
   dt = thef.dt;
   dft_chunks = NULL;
-  doing_solve_cw = thef.doing_solve_cw;
-  solve_cw_omega = thef.solve_cw_omega;
   FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
   polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
   polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
@@ -471,18 +467,25 @@ void fields::remove_sources() {
     chunks[i]->remove_sources();
 }
 
-void fields_chunk::remove_polarizabilities() {
+void fields_chunk::remove_susceptibilities() {
   FOR_FIELD_TYPES(ft) {
-    delete pols[ft]; pols[ft] = NULL;
-    delete olpols[ft]; olpols[ft] = NULL;
+    for (poldata *cur = pol[ft]; cur; ) {
+      poldata *p = cur;
+      cur = cur->next;
+      FOR_COMPONENTS(c) DOCMP2 delete[] p->P[c][cmp];
+      delete[] p->data;
+      delete p;
+    }
+    pol[ft] = NULL;
   }
+  
   changing_structure();
-  s->remove_polarizabilities();
+  s->remove_susceptibilities();
 }
 
-void fields::remove_polarizabilities() {
+void fields::remove_susceptibilities() {
   for (int i=0;i<num_chunks;i++) 
-    chunks[i]->remove_polarizabilities();
+    chunks[i]->remove_susceptibilities();
 }
 
 void fields::remove_fluxes() {
@@ -503,10 +506,12 @@ void fields_chunk::zero_fields() {
     ZERO(f_cond_backup[c][cmp]);
 #undef ZERO
   }
-  if (is_mine()) FOR_FIELD_TYPES(ft) {
-    if (pols[ft]) pols[ft]->zero_fields();
-    if (olpols[ft]) olpols[ft]->zero_fields();
-  }
+  if (is_mine()) FOR_FIELD_TYPES(ft)
+      for (poldata *p = pol[ft]; p; p = p->next) {
+	FOR_COMPONENTS(c) DOCMP2 if (p->P[c][cmp])
+	  memset(p->P[c][cmp], 0, sizeof(realnum) * gv.ntot());
+	if (p->data) p->s->init_internal_data(p->P, gv, p->data);
+      }
 }
 
 void fields::zero_fields() {
@@ -529,10 +534,17 @@ void fields_chunk::use_real_fields() {
     delete[] f[c][1];
     f[c][1] = 0;
   }
-  if (is_mine()) FOR_FIELD_TYPES(ft) {
-    if (pols[ft]) pols[ft]->use_real_fields();
-    if (olpols[ft]) olpols[ft]->use_real_fields();
-  }
+  if (is_mine()) FOR_FIELD_TYPES(ft)
+    for (poldata *p = pol[ft]; p; p = p->next) {
+      FOR_COMPONENTS(c) if (p->P[c][1]) { 
+	delete[] p->P[c][1]; p->P[c][1] = NULL; }
+      if (p->data) { // TODO: print an error message in this case?
+	delete[] p->data;
+	p->ndata = p->s->num_internal_data(p->P, gv);
+	p->data = new realnum[p->ndata];
+	p->s->init_internal_data(p->P, gv, p->data);
+      }
+    }
 }
 
 int fields::phase_in_material(const structure *snew, double time) {
@@ -543,6 +555,7 @@ int fields::phase_in_material(const structure *snew, double time) {
     if (chunks[i]->is_mine())
       chunks[i]->phase_in_material(snew->chunks[i]);
   phasein_time = (int) (time/dt);
+  // FIXME: how to handle changes in susceptibilities?
   return phasein_time;
 }
 

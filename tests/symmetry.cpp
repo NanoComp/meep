@@ -109,7 +109,7 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
   f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -118,16 +118,16 @@ int test_cyl_metal_mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, veccyl(0.501, 0.5  ))) return 0;
     if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
     if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -153,7 +153,7 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5,0.5));
   // f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -162,16 +162,16 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
     if (!compare_point(f, f1, veccyl(0.501, 0.5  ))) return 0;
     if (!compare_point(f, f1, veccyl(0.33,  0.46 ))) return 0;
     if (!compare_point(f, f1, veccyl(0.2,   0.2  ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -195,23 +195,23 @@ int test_1d_periodic_mirror(double eps(const vec &)) {
   f.use_bloch(0.0);
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.01))) return 0;
     if (!compare_point(f, f1, vec(0.33))) return 0;
     if (!compare_point(f, f1, vec(0.50))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -238,7 +238,7 @@ int test_origin_shift(void) {
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
-    if (!compare(f.total_energy(), f1.total_energy(), "   total energy")) {
+    if (!compare(f.field_energy(), f1.field_energy(), "   total energy")) {
       master_printf("Time is %g\n", f.time());
       return 0;
     }
@@ -264,7 +264,7 @@ int test_metal_xmirror(double eps(const vec &)) {
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -273,16 +273,16 @@ int test_metal_xmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -305,7 +305,7 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.51,0.55));
   f.add_point_source(Hx, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.401,0.43));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -314,16 +314,16 @@ int test_3D_metal_xmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.5))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -346,7 +346,7 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   f.add_point_source(Ey, 0.8, 0.6, 0.0, 4.0, vec(0.43,0.401,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -355,16 +355,16 @@ int test_3D_metal_zmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -385,7 +385,7 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.55,0.51,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -394,16 +394,16 @@ int test_3D_metal_odd_zmirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -426,7 +426,7 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.52));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5,0.43));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -435,16 +435,16 @@ int test_3D_metal_rot4z(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -465,7 +465,7 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -474,16 +474,16 @@ int test_3D_metal_rot4z_mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -504,7 +504,7 @@ int test_3D_metal_3mirror(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -513,16 +513,16 @@ int test_3D_metal_3mirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.5  , 0.501, 0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.51))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2  , 0.05))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -546,7 +546,7 @@ int test_metal_ymirror(double eps(const vec &)) {
   f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -554,16 +554,16 @@ int test_metal_ymirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -591,7 +591,7 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
   //f.add_point_source(Ex, 0.7, 2.5, 0.0, 4.0, vec(0.85 ,0.5));
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -600,7 +600,7 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) {
@@ -609,9 +609,9 @@ int test_yperiodic_ymirror(double eps(const vec &)) {
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -639,7 +639,7 @@ int test_metal_rot2y(double eps(const vec &)) {
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.75,0.875 ),-1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.75,0.375),-1.0);
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -647,16 +647,16 @@ int test_metal_rot2y(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -680,7 +680,7 @@ int exact_metal_rot2y(double eps(const vec &)) {
   f.add_point_source(Ey, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.875));
   f.add_point_source(Hy, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.375));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -688,16 +688,16 @@ int exact_metal_rot2y(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -730,7 +730,7 @@ int pml_twomirrors(double eps(const vec &)) {
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(1.25,1.25));
 
   check_unequal_layout(f_mm, f1);
-  double total_energy_check_time = 3.0;
+  double field_energy_check_time = 3.0;
   while (f_mm.round_time() < ttot) {
     f_mm.step();
     f1.step();
@@ -738,11 +738,11 @@ int pml_twomirrors(double eps(const vec &)) {
     if (!compare_point(f1, f_mm, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f1, f_mm, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f1, f_mm, vec(0.2  , 0.2 ))) return 0;
-    if (f_mm.round_time() >= total_energy_check_time) {
+    if (f_mm.round_time() >= field_energy_check_time) {
       if (!compare(f_mm.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
-      total_energy_check_time += 3.0;
+      field_energy_check_time += 3.0;
     }
   }
   return 1;
@@ -767,7 +767,7 @@ int exact_metal_rot4z(double eps(const vec &)) {
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -775,16 +775,16 @@ int exact_metal_rot4z(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -811,7 +811,7 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
   //f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5,0.5));
   f.add_point_source(Hz, 0.8, 0.6, 0.0, 4.0, vec(0.5,0.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -819,16 +819,16 @@ int exact_metal_rot4z_nonlinear(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(0.21 ,  0.5))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(0.2  , 0.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -853,7 +853,7 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
   fields f(&s);
   f.add_point_source(Hx, 0.7, 2.5, 0.0, 4.0, vec(1.3,1.5));
   check_unequal_layout(f, f1);
-  double total_energy_check_time = 1.0;
+  double field_energy_check_time = 1.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
@@ -861,16 +861,16 @@ int exact_pml_rot2x_tm(double eps(const vec &)) {
     if (!compare_point(f, f1, vec(1.21 ,  1.5))) return 0;
     if (!compare_point(f, f1, vec(1.46 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(1.2  , 1.2 ))) return 0;
-    if (f.round_time() >= total_energy_check_time) {
+    if (f.round_time() >= field_energy_check_time) {
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
                    "electric energy")) return 0;
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
-      total_energy_check_time += 1.0;
+      field_energy_check_time += 1.0;
     }
   }
   return 1;
@@ -885,8 +885,8 @@ double polariton_ex(const grid_volume &gv, double eps(const vec &)) {
   const symmetry S = mirror(Z,gv);
   structure s(gv, eps);
   structure sS(gv, eps, no_pml(), S);
-  s.add_polarizability(sigma, 0.3, 0.1);
-  sS.add_polarizability(sigma, 0.3, 0.1);
+  s.add_susceptibility(sigma, E_stuff, lorentzian_susceptibility(0.3, 0.1));
+  sS.add_susceptibility(sigma, E_stuff, lorentzian_susceptibility(0.3, 0.1));
   fields f(&s);
   f.use_real_fields();
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center());

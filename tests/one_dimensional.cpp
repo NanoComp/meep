@@ -81,7 +81,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
   f1.add_point_source(Hy, 0.7, 2.5, 0.0, 4.0, vec(0.5), 1.0);
   f1.add_point_source(Ex, 0.8, 0.6, 0.0, 4.0, vec(0.401), 1.0);
   if (!compare(f1.count_volume(Ex), f.count_volume(Ex), "grid_volume")) return 0;
-  double total_energy_check_time = 29.0;
+  double field_energy_check_time = 29.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
@@ -90,8 +90,8 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
     if (!compare_point(f, f1, vec(1.0  ))) return 0;
     if (!compare_point(f, f1, vec(0.01 ))) return 0;
     if (!compare_point(f, f1, vec(0.601))) return 0;
-    if (f.time() >= total_energy_check_time) {
-      if (!compare(f.total_energy(), f1.total_energy(),
+    if (f.time() >= field_energy_check_time) {
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
@@ -100,7 +100,7 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
       
-      total_energy_check_time += 5.0;
+      field_energy_check_time += 5.0;
     }
   }
   return 1;
@@ -140,7 +140,7 @@ int test_pattern(double eps(const vec &), int splitting,
   if (!compare_point(f, f1, vec(0.751))) return 0;
   if (!compare_point(f, f1, vec(0.01 ))) return 0;
   if (!compare_point(f, f1, vec(1.0  ))) return 0;
-  if (!compare(f.total_energy(), f1.total_energy(),
+  if (!compare(f.field_energy(), f1.field_energy(),
                "   total energy")) return 0;
   if (!compare(f.electric_energy_in_box(gv.surroundings()),
                f1.electric_energy_in_box(gv.surroundings()),

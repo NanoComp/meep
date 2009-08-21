@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -28,13 +29,18 @@ namespace meep {
 void fields::update_pols(field_type ft) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
-      chunks[i]->update_pols(ft);
+      if (chunks[i]->update_pols(ft))
+	chunk_connections_valid = false;
+
+  /* synchronize to avoid deadlocks if one process decides it needs
+     to allocate E or H ... */
+  chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
-void fields_chunk::update_pols(field_type ft) {
-  const int ntot = s->gv.ntot();
-  polarization *pol = pols[ft];
-  polarization *olpol = olpols[ft];
+bool fields_chunk::update_pols(field_type ft) {
+  bool allocated_fields = false;
+
+  for (poldata *p = pol[ft]; p; p = p->next) {
 
   DOCMP FOR_FT_COMPONENTS(ft, c) if (f[c][cmp])
     for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
@@ -42,22 +48,38 @@ void fields_chunk::update_pols(field_type ft) {
       const double cn = 2 - op->pb->omeganot*op->pb->omeganot;
       const double co = 0.5 * op->pb->gamma - 1;
       const double funinv = 1.0 / (1 + 0.5*op->pb->gamma);
-      const realnum * restrict fE = f_w[c][cmp] ? f_w[c][cmp] : f[c][cmp];
-      const realnum * restrict npP = np->P[c][cmp], * restrict nps = np->s[c];
-      realnum * restrict opP = op->P[c][cmp], * restrict npenergy = np->energy[c];
+      const realnum *fE = f[c][cmp];
+      const realnum *npP = np->P[c][cmp], *nps = np->s[c];
+      realnum *opP = op->P[c][cmp], *npenergy = np->energy[c];
       if (npenergy)
 	for (int i = 0; i < ntot; ++i) {
 	  npenergy[i] += 0.5 * (npP[i] - opP[i]) * fE[i];
 	  opP[i] = funinv * (cn * npP[i] + co * opP[i] + nps[i] * fE[i]);
 	}
-      else
-	for (int i = 0; i < ntot; ++i)
-	  opP[i] = funinv * (cn * npP[i] + co * opP[i] + nps[i] * fE[i]);
+	allocated_pol = true;
+      }
+    if (allocated_pol) {
+      allocated_fields = true;
+      if (p->data) { // TODO: warning or error message in this weird case?
+	delete[] p->data; p->data = NULL;
+      }
     }
 
-  /* the old polarization is now the new polarization */
-  olpols[ft] = pol;
-  pols[ft] = olpol;
+    // Lazily allocate internal polarization data:
+    if (!p->data) {
+      p->ndata = p->s->num_internal_data(p->P, gv);
+      if (p->ndata) {
+	p->data = new realnum[p->ndata];
+	p->s->init_internal_data(p->P, gv, p->data);
+	allocated_fields = true;
+      }
+    }
+
+    // Finally, timestep the polarizations:
+    p->s->update_P(p->P, f, f_prev, dt, gv, p->data);
+  }
+
+  return allocated_fields;
 }
 
 } // namespace meep

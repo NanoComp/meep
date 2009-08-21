@@ -332,20 +332,21 @@ void fields::connect_the_chunks() {
 		  comm_sizes[type(c)][ip][pair] += nn;
 		}
 		if (is_electric(corig) || is_magnetic(corig)) {
-		  field_type ft = type(corig);
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
 		  int common_pols = 0;
-		  for (polarization *pi=chunks[i]->pols[ft]; pi; pi=pi->next)
-		    for (polarization *pj=chunks[j]->pols[ft]; pj; pj=pj->next)
-		      if (pi->pb->get_identifier() == pj->pb->get_identifier())
-			common_pols += 1;
-		  const int nn = (is_real?1:2) * common_pols * 2;
+		  for (poldata *pi=chunks[i]->pol[type(corig)]; pi; 
+		       pi = pi->next)
+		    for (poldata *pj=chunks[j]->pol[type(c)]; pj;
+			 pj = pj->next)
+		      if (*pi->s == *pj->s 
+			  && (pi->P[corig][0] || pj->P[c][0])) common_pols++;
+		  const int nn = (is_real?1:2) * common_pols;
 		  nc[f][ip][Incoming][i] += nn;
 		  nc[f][ip][Outgoing][j] += nn;
 		  comm_sizes[f][ip][pair] += nn;
 		  // Note above that the factor of two in 2*nn comes from
 		  // the fact that we have two polarization arrays, pol and
-		  // olpol.  TODO: do we really need to copy olpol?
+		  // olpol.
 		}
 	      } // if is_mine and owns...
 	    } // loop over j chunks
@@ -432,27 +433,23 @@ void fields::connect_the_chunks() {
 		}
 		
 		if (is_electric(corig) || is_magnetic(corig)) {
-		  field_type ft = type(corig);
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
-		  for (int ipol = 0; ipol < 2; ++ipol) // pol then olpol
-		    for (polarization *pi = 
-			   ipol ? chunks[i]->olpols[ft] : chunks[i]->pols[ft];
-			 pi; pi = pi->next)
-		      for (polarization *pj = 
-			     ipol ? chunks[j]->olpols[ft] :chunks[j]->pols[ft];
-			   pj; pj = pj->next)
-			if (pi->pb->get_identifier()
-			    == pj->pb->get_identifier()) {
-			  if (ip == CONNECT_PHASE)
-			    chunks[i]->connection_phases[f]
-			      [wh[f][ip][Incoming][j]/2] = thephase;
-			  DOCMP {
-			    chunks[i]->connections[f][ip][Incoming]
-			      [wh[f][ip][Incoming][j]++] = pi->P[corig][cmp]+n;
-			    chunks[j]->connections[f][ip][Outgoing]
-			      [wh[f][ip][Outgoing][j]++] = pj->P[c][cmp]+m;
-			  }
+		  for (poldata *pi=chunks[i]->pol[type(corig)]; pi; 
+		       pi = pi->next)
+		    for (poldata *pj=chunks[j]->pol[type(c)]; pj;
+			 pj = pj->next)
+		      if (*pi->s == *pj->s 
+			  && (pi->P[corig][0] || pj->P[c][0])) {
+			if (ip == CONNECT_PHASE)
+			  chunks[i]->connection_phases[f]
+			    [wh[f][ip][Incoming][j]/2] = thephase;
+			DOCMP {
+			  chunks[i]->connections[f][ip][Incoming]
+			    [wh[f][ip][Incoming][j]++] = pi->P[corig][cmp]+n;
+			  chunks[j]->connections[f][ip][Outgoing]
+			    [wh[f][ip][Outgoing][j]++] = pj->P[c][cmp]+m;
 			}
+		      }
 		} // is_electric(corig)
 	      } // if is_mine and owns...
 	    } // loop over j chunks

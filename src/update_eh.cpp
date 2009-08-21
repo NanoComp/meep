@@ -34,7 +34,7 @@ void fields::update_eh(field_type ft, bool skip_w_components) {
   chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
-bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
+bool fields_chunk::update_eh(field_type ft) {
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   bool allocated_eh = false;
 
@@ -47,13 +47,22 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       }
   }
 
-  FOR_FT_COMPONENTS(ft2, dc) DOCMP {
-    if (f[dc][cmp] && (pols[ft] || have_int_sources)) {
-      if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[gv.ntot()];
-    }
-    else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
-      delete[] f_minus_p[dc][cmp];
-      f_minus_p[dc][cmp] = 0;
+  FOR_FT_COMPONENTS(ft, ec) {
+    component dc = field_type_component(ft2, ec);
+    DOCMP {
+      bool need_fmp = false;
+      if (f[ec][cmp]) {
+	need_fmp = have_int_sources;
+	for (poldata *p = pol[ft]; p && !need_fmp; p = p->next)
+	  need_fmp = need_fmp || p->P[ec][cmp];
+      }
+      if (need_fmp) {
+	if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[gv.ntot()];
+      }
+      else if (f_minus_p[dc][cmp]) { // remove unneeded f_minus_p
+	delete[] f_minus_p[dc][cmp];
+	f_minus_p[dc][cmp] = 0;
+      }
     }
   }
   bool have_f_minus_p = false;
@@ -93,11 +102,11 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 	component dc = direction_component(first_field_component(ft2),
 					   component_direction(ec));
 	DOCMP {
-	  realnum * fmp = f_minus_p[dc][cmp];
-	  memcpy(fmp, f[dc][cmp], sizeof(realnum) * ntot);
-	  for (polarization *p = pols[ft]; p; p = p->next) {
-	    const realnum * P = p->P[ec][cmp];
-	    for (int i=0;i<ntot;i++) fmp[i] -= P[i];
+	  for (int i=0;i<ntot;i++) {
+	    double sum = f[dc][cmp][i];
+            for (polarization *p = pols[ft]; p; p = p->next)
+              sum -= p->P[ec][cmp][i];
+            f_minus_p[dc][cmp][i] = sum;
 	  }
 	}
       }
@@ -164,9 +173,6 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       f_w[ec][cmp] = new realnum[gv.ntot()];
       memcpy(f_w[ec][cmp], f[ec][cmp], gv.ntot() * sizeof(realnum));
     }
-
-    // for solve_cw, when W exists we get W and E from special variables
-    if (f_w[ec][cmp] && skip_w_components) continue;
 
     if (f[ec][cmp] != f[dc][cmp])
       STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, 

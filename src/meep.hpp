@@ -51,14 +51,87 @@ const double nan = NAN;
 const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
-class polarizability_identifier {
- public:
-  field_type ft;
-  double gamma, omeganot;
-  bool operator==(const polarizability_identifier &);
+/* generic base class, only used by subclassing: represents susceptibility 
+   polarizability vector P = chi(omega) W  (where W = E or H). */
+class susceptibility {
+public:
+  susceptibility() { id = cur_id++; ntot = 0; next = NULL; 
+    FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
+      sigma[c][d] = NULL; trivial_sigma[c][d] = true; } }
+  susceptibility(const susceptibility &s) { id = s.id; ntot = s.ntot; 
+    next = NULL; FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
+      sigma[c][d] = NULL; trivial_sigma[c][d] = true; } }
+  virtual susceptibility *clone() const;
+  virtual ~susceptibility() { 
+    FOR_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] sigma[c][d];
+    delete next; }
+
+  int get_id() const { return id; }
+  bool operator==(const susceptibility &s) const { return id == s.id; };
+
+  virtual void update_P(realnum *P[NUM_FIELD_COMPONENTS][2], 
+			realnum *W[NUM_FIELD_COMPONENTS][2], 
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+			double dt, const grid_volume &gv,
+			realnum *P_internal_data) const {
+    (void) P; (void) W; (void) W_prev; (void) dt; (void) gv;
+    (void) P_internal_data; // avoid warnings for unused params
+  }
+
+  virtual bool needs_P(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual bool needs_W_notowned(component c,
+				realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual bool needs_W_prev() const { return false; }
+
+  virtual int num_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
+				const grid_volume &gv) const { 
+    (void) P; (void) gv; return 0;
+  }
+  virtual void init_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
+				  const grid_volume &gv, realnum *data) const {
+    int n = num_internal_data(P, gv);
+    for (int i = 0; i < n; ++i) data[i] = 0.0;
+  }
+  
+  susceptibility *next;
+  int ntot;
+  realnum *sigma[NUM_FIELD_COMPONENTS][5];
+
+  /* trivial_sigma[c][d] is true only if *none* of the processes has a
+     nontrivial sigma (c,d) component.  This differs, from sigma,
+     which is non-NULL only if *this* process needs a nontrivial sigma
+     (c,d).  Coordinated between processes at add_susceptibility, no
+     communication elsewhere.  (We need this for boundary
+     communcations between chunks, where one chunk might have sigma ==
+     0 and the other != 0.) */
+  bool trivial_sigma[NUM_FIELD_COMPONENTS][5];
+
+private:
+  static int cur_id; // unique id to assign to next susceptibility object
+  int id; // id for this object and its clones, for comparison purposes
 };
-class polarizability;
-class polarization;
+
+/* a Lorentzian susceptibility \chi(\omega) = sigma * omega_0^2 / (\omega_0^2 - \omega^2 + i\gamma \omega) */
+class lorentzian_susceptibility : public susceptibility {
+public:
+  lorentzian_susceptibility(double omega_0, double gamma) : omega_0(omega_0), gamma(gamma) {}
+  virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
+  virtual ~lorentzian_susceptibility() {}
+  
+  virtual void update_P(realnum *P[NUM_FIELD_COMPONENTS][2],
+			realnum *W[NUM_FIELD_COMPONENTS][2], 
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+			double dt, const grid_volume &gv,
+			realnum *P_internal_data) const;
+
+  virtual int num_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
+				const grid_volume &gv) const;
+
+private:
+  double omega_0, gamma;
+};
+
+
 class grace;
 
 // h5file.cpp: HDF5 file I/O.  Most users, if they use this
@@ -149,8 +222,7 @@ typedef double (*pml_profile_func)(double u, void *func_data);
 class material_function {
   material_function(const material_function &ef) {(void)ef;} // prevent copying
 public:
-  material_function() : omega(nan), gamma(nan) {}
-  
+  material_function() {}
   virtual ~material_function() {}
   
   /* Specify a restricted grid_volume: all subsequent eps/sigma/etc
@@ -188,17 +260,14 @@ public:
     (void) c; (void) r; sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
   }
 
-  /* specify polarizability used for subsequent calls to sigma(r) */
-  virtual void set_polarizability(field_type ft, double omega_, double gamma_){
-    pol_ft=ft; omega=omega_; gamma=gamma_;
-  }
-  
   // Nonlinear susceptibilities
   virtual bool has_chi3(component c) { (void)c; return false; }
   virtual double chi3(component c, const vec &r) { (void)c; (void)r; return 0.0; }
   virtual bool has_chi2(component c) { (void)c; return false; }
   virtual double chi2(component c, const vec &r) { (void)c; (void)r; return 0.0; }
   
+  // TODO: dielectric tensor, ...
+
 protected:
   // current polarizability for calls to sigma(r):
   field_type pol_ft;
@@ -241,7 +310,7 @@ class structure_chunk {
   int sigsize[5]; // conductivity array size
   grid_volume gv;  // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
-  polarizability *pb;
+  susceptibility *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
 
   int refcount; // reference count of objects using this structure_chunk
 
@@ -261,14 +330,15 @@ class structure_chunk {
 	       pml_profile_func pml_profile, void *pml_profile_data,
 	       double pml_profile_integral);
 
-  void add_polarizability(material_function &sigma, field_type ft, double omega, double gamma);
+  void add_susceptibility(material_function &sigma, field_type ft,
+			  const susceptibility &sus);
 
   void mix_with(const structure_chunk *, double);
 
   int n_proc() const { return the_proc; } // Says which proc owns me!
   int is_mine() const { return the_is_mine; }
 
-  void remove_polarizabilities();
+  void remove_susceptibilities();
 
   // monitor.cpp
   double get_chi1inv(component, direction, const ivec &iloc) const;
@@ -407,18 +477,10 @@ class structure {
   void set_chi2(component c, material_function &eps);
   void set_chi2(material_function &eps);
   void set_chi2(double eps(const vec &));
-  polarizability_identifier
-     add_polarizability(double sigma(const vec &), field_type ft, double omega, double gamma);
-  polarizability_identifier
-     add_polarizability(material_function &sigma, field_type ft, double omega, double gamma);
-  polarizability_identifier
-     add_polarizability(double sigma(const vec &), double omega, double gamma) {
-    return add_polarizability(sigma, E_stuff, omega, gamma); }
-  polarizability_identifier
-     add_polarizability(material_function &sigma, double omega, double gamma) {
-    return add_polarizability(sigma, E_stuff, omega, gamma); }
-
-  void remove_polarizabilities();
+  
+  void add_susceptibility(double sigma(const vec &), field_type c, const susceptibility &sus);
+  void add_susceptibility(material_function &sigma, field_type c, const susceptibility &sus);
+  void remove_susceptibilities();
 
   void set_output_directory(const char *name);
   void mix_with(const structure *, double);
@@ -738,6 +800,15 @@ public:
 enum in_or_out { Incoming=0, Outgoing };
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 
+// data for each susceptibility
+typedef struct poldata_s {
+  realnum *P[NUM_FIELD_COMPONENTS][2]; // polarization vector
+  realnum *data; // internal polarization data for the susceptibility
+  int ndata;
+  const susceptibility *s;
+  struct poldata_s *next; // linked list
+} poldata;
+
 class fields_chunk {
  public:
   realnum *f[NUM_FIELD_COMPONENTS][2]; // fields at current time
@@ -768,13 +839,13 @@ class fields_chunk {
   int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
-  polarization *pols[NUM_FIELD_TYPES], *olpols[NUM_FIELD_TYPES];
+  int npol[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
+  poldata *pol[NUM_FIELD_TYPES]; // array of npol[i] poldata structures
+
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   grid_volume gv;
   volume v;
-  double m; // angular dependence in cyl. coords
-  bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
-  double beta;
+  double m, rshift;
   int is_real, store_pol_energy;
   bandsdata *bands;
   src_vol *sources[NUM_FIELD_TYPES];
@@ -782,9 +853,7 @@ class fields_chunk {
   structure_chunk *s;
   const char *outdir;
 
-  fields_chunk(structure_chunk *, const char *outdir, double m,
-	       bool store_pol_energy, double beta,
-	       bool zero_fields_near_cylorigin);
+  fields_chunk(structure_chunk *, const char *outdir, double m, bool store_pol_energy);
   fields_chunk(const fields_chunk &);
   ~fields_chunk();
 
@@ -809,12 +878,7 @@ class fields_chunk {
   volume get_field_gv(component) const;
   complex<double> get_field(component, const vec &) const;
 
-  double get_polarization_energy(const ivec &) const;
-  double my_polarization_energy(const ivec &) const;
-  double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
-  double my_polarization_energy(const polarizability_identifier &, const ivec &) const;
   double get_chi1inv(component, direction, const ivec &iloc) const;
-  complex<double> analytic_chi1(component c, double freq, const vec &) const;
   
   void backup_component(component c);
   void average_with_backup(component c);
@@ -832,10 +896,10 @@ class fields_chunk {
   void zero_metal(field_type);
   // fields.cpp
   void remove_sources();
-  void remove_polarizabilities();
+  void remove_susceptibilities();
   void zero_fields();
 
-  bool update_eh(field_type ft, bool skip_w_components = false);
+  bool update_eh(field_type ft);
 
   bool alloc_f(component c);
   void figure_out_step_plan();
@@ -868,7 +932,7 @@ class fields_chunk {
   void phase_material(int phasein_time);
   bool step_db(field_type ft);
   void step_source(field_type ft, bool including_integrated);
-  void update_pols(field_type ft);
+  bool update_pols(field_type ft);
   void calc_sources(double time);
 
   // initialize.cpp
@@ -936,15 +1000,14 @@ class fields {
   char *outdir;
 
   // fields.cpp methods:
-  fields(structure *, double m=0, bool store_pol_energy=0, double beta=0,
-	 bool zero_fields_near_cylorigin=true);
+  fields(structure *, double m=0, bool store_pol_energy=0);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;
   void use_real_fields();
   void zero_fields();
   void remove_sources();
-  void remove_polarizabilities();
+  void remove_susceptibilities();
   void remove_fluxes();
   void reset();
 
@@ -1138,7 +1201,6 @@ class fields {
   double get_mu(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
-  complex<double> analytic_chi1(component,double freq, const vec &) const;
   
   void prepare_for_bands(const vec &, double end_time, double fmax=0,
                          double qmin=1e300, double frac_pow_min=0.0);
@@ -1235,10 +1297,6 @@ class fields {
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
   // monitor.cpp
   complex<double> get_field(component c, const ivec &iloc) const;
-  double get_polarization_energy(const ivec &) const;
-  double get_polarization_energy(const vec &) const;
-  double get_polarization_energy(const polarizability_identifier &, const ivec &) const;
-  double get_polarization_energy(const polarizability_identifier &, const vec &) const;
   double get_chi1inv(component, direction, const ivec &iloc) const;
 };
 

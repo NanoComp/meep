@@ -106,15 +106,15 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
   fields f1(&s1);
   f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.299,0.401), 1.0);
-  double total_energy_check_time = 8.0;
+  double field_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.5  , 0.01))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33 , 0.33))) return 0;
     if (!compare_point(f, f1, vec(1.301  , 0.301  , 0.399 ))) return 0;
-    if (f.time() >= total_energy_check_time) {
-      if (!compare(f.total_energy(), f1.total_energy(),
+    if (f.time() >= field_energy_check_time) {
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
@@ -122,7 +122,7 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      total_energy_check_time += 5.0;
+      field_energy_check_time += 5.0;
     }
   }
   return 1;
@@ -145,15 +145,15 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
   fields f1(&s1);
   f1.use_bloch(vec(0.1,0.7,0.3));
   f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.25,0.5), 1.0);
-  double total_energy_check_time = 8.0;
+  double field_energy_check_time = 8.0;
   while (f.time() < ttot) {
     f.step();
     f1.step();
     if (!compare_point(f, f1, vec(0.5  , 0.01, 0.5  ))) return 0;
     if (!compare_point(f, f1, vec(0.46 , 0.33, 0.2  ))) return 0;
     if (!compare_point(f, f1, vec(1.0  , 0.25 , 0.301))) return 0;
-    if (f.time() >= total_energy_check_time) {
-      if (!compare(f.total_energy(), f1.total_energy(),
+    if (f.time() >= field_energy_check_time) {
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()),
@@ -161,7 +161,7 @@ int test_periodic(double eps(const vec &), int splitting, const char *mydirname)
       if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
                    f1.magnetic_energy_in_box(gv.surroundings()),
                    "magnetic energy")) return 0;
-      total_energy_check_time += 5.0;
+      field_energy_check_time += 5.0;
     }
   }
   return 1;
@@ -179,22 +179,22 @@ int test_pml(double eps(const vec &), const char *mydirname) {
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.751,0.5,0.601), 1.0);
   const double deltaT = 10.0;
   const double ttot = 3.1*deltaT;
-  double total_energy_check_time = deltaT;
+  double field_energy_check_time = deltaT;
 
   while (f.time() < f.last_source_time()) f.step();
 
-  double last_energy = f.total_energy();
+  double last_energy = f.field_energy();
   while (f.time() < ttot) {
     f.step();
-    if (f.time() >= total_energy_check_time) {
-      const double new_energy = f.total_energy();
+    if (f.time() >= field_energy_check_time) {
+      const double new_energy = f.field_energy();
       master_printf("Got newE/oldE of %g\n", new_energy/last_energy);
       if (new_energy > last_energy*4e-3) {
         master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
                       last_energy, new_energy, new_energy/last_energy);
         return 0;
       }
-      total_energy_check_time += deltaT;
+      field_energy_check_time += deltaT;
     }
   }
   return 1;
@@ -225,7 +225,7 @@ int test_pml_splitting(double eps(const vec &), int splitting, const char *mydir
     if (!approx_point(f, f1, vec(1.0  , 1.0  , 0.33))) return 0;
     if (!approx_point(f, f1, vec(1.3  , 0.3  , 0.15))) return 0;
     if (f.time() > next_energy_time) {
-      if (!compare(f.total_energy(), f1.total_energy(),
+      if (!compare(f.field_energy(), f1.field_energy(),
                    "   total energy")) return 0;
       next_energy_time += 10.0;
     }

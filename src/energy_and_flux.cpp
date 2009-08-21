@@ -183,27 +183,10 @@ void fields::restore_magnetic_fields() {
     }
 }
 
-static void thermo_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
-			     ivec is, ivec ie,
-			     vec s0, vec s1, vec e0, vec e1,
-			     double dV0, double dV1,
-			     ivec shift, complex<double> shift_phase,
-			     const symmetry &S, int sn,
-			     void *sum_) {
-  long double *sum = (long double *) sum_;
-  (void)shift; (void)shift_phase; (void)S; (void)sn; (void)ichunk; // unused
-  for (polarization *pol = fc->pols[type(cgrid)]; pol; pol = pol->next)
-    if (pol->energy[cgrid])
-      LOOP_OVER_IVECS(fc->gv, is, ie, idx)
-	*sum += IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2)
-	* pol->energy[cgrid][idx];
-}
-
 double fields::thermo_energy_in_box(const volume &where) {
   long double sum = 0.0;
-  FOR_COMPONENTS(c)
-    if (!coordinate_mismatch(gv.dim, c))
-      loop_in_chunks(thermo_chunkloop, (void *) &sum, where, c);
+  (void) where; // unused
+  abort("thermo_energy_in_box no longer supported");
   return sum_to_all(sum);
 }
 

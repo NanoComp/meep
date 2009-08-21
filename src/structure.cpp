@@ -441,6 +441,17 @@ void structure::set_chi2(double eps(const vec &)) {
   set_chi2(epsilon);
 }
 
+void structure::add_susceptibility(double sigma(const vec &), field_type ft, const susceptibility &sus) {
+  simple_material_function sig(sigma);
+  add_susceptibility(sig, ft, sus);
+}
+
+void structure::add_susceptibility(material_function &sigma, field_type ft, const susceptibility &sus) {
+  changing_chunks();
+  for (int i=0;i<num_chunks;i++)
+    chunks[i]->add_susceptibility(sigma, ft, sus);
+}
+
 void structure::use_pml(direction d, boundary_side b, double dx) {
   if (dx <= 0.0) return;
   grid_volume pml_volume = gv;
@@ -489,7 +500,7 @@ structure_chunk::~structure_chunk() {
     delete[] sig[d];
     delete[] siginv[d];
   }
-  if (pb) delete pb;
+  FOR_FIELD_TYPES(ft) { delete chiP[ft]; }
 }
 
 void structure_chunk::mix_with(const structure_chunk *n, double f) {
@@ -529,19 +540,7 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
     }
     condinv_stale = true;
   }
-  // Mix in the polarizability...
-  // FIXME: what if new structure doesn't have same polarizability list?
-  polarizability *po = pb, *pn = n->pb;
-  while (po && pn) {
-    FOR_COMPONENTS(c)
-      if (po->s[c] && pn->s[c])
-        for (int i=0;i<gv.ntot();i++)
-          po->s[c][i] += f*(pn->s[c][i] - po->s[c][i]);
-    po->gamma += f*(pn->gamma - po->gamma);
-    po->omeganot += f*(pn->omeganot - po->omeganot);
-    po = po->next;
-    pn = pn->next;
-  }
+  // Mix in the susceptibility....FIXME.
 }
 
 static inline double pml_x(int i, double dx, double bloc, double a) {
@@ -618,8 +617,17 @@ void structure_chunk::update_condinv() {
 
 structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   refcount = 1;
-  if (o->pb) pb = new polarizability(o->pb);
-  else pb = NULL;
+  
+  FOR_FIELD_TYPES(ft) {
+    {
+      susceptibility *cur = NULL;
+      for (const susceptibility *ocur = o->chiP[ft]; ocur; ocur = ocur->next) {
+	if (cur) { cur->next = ocur->clone(); cur = cur->next; }
+	else { chiP[ft] = cur = ocur->clone(); } 
+	cur->next = NULL;
+      }
+    }
+  }
   a = o->a;
   Courant = o->Courant;
   dt = o->dt;
@@ -791,7 +799,7 @@ structure_chunk::structure_chunk(const grid_volume &thegv,
   : Courant(Courant), v(thegv.surroundings() & vol_limit) {
   refcount = 1;
   pml_fmin = 0.2;
-  pb = NULL;
+  FOR_FIELD_TYPES(ft) { chiP[ft] = NULL; }
   gv = thegv;
   a = thegv.a;
   dt = Courant/a;
@@ -854,15 +862,17 @@ bool structure::equal_layout(const structure &s) const {
   return true;
 }
 
-void structure_chunk::remove_polarizabilities() {
-  delete pb;
-  pb = NULL;
+void structure_chunk::remove_susceptibilities() {
+  FOR_FIELD_TYPES(ft) {
+    delete chiP[ft];
+    chiP[ft] = NULL;
+  }
 }
 
-void structure::remove_polarizabilities() {
+void structure::remove_susceptibilities() {
   changing_chunks();
   for (int i=0;i<num_chunks;i++) 
-    chunks[i]->remove_polarizabilities();
+    chunks[i]->remove_susceptibilities();
 }
 
 // for debugging, display the chunk layout

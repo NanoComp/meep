@@ -445,8 +445,6 @@ void fields::boundary_communications(field_type ft) {
   if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
   delete[] reqs;
   delete[] stats;
-#else
-  (void) ft; // unused
 #endif
 }
 

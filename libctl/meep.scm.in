@@ -40,10 +40,12 @@
 
 (define-class material-type no-parent)
 
-(define-class polarizability no-parent
-  (define-property omega no-default 'number)
-  (define-property gamma no-default 'number)
+(define-class susceptibility no-parent
   (define-property sigma-diag no-default 'vector3))
+(define-class lorentzian-susceptibility susceptibility
+  (define-property omega no-default 'number)
+  (define-property gamma no-default 'number))
+(define polarizability lorentzian-susceptibility) ; backwards compat
 (define (sigma x) (sigma-diag x x x))
 
 (define-class medium material-type
@@ -51,8 +53,8 @@
   (define-property epsilon-offdiag (vector3 0 0 0) 'vector3)
   (define-property mu-diag (vector3 1 1 1) 'vector3)
   (define-property mu-offdiag (vector3 0 0 0) 'vector3)
-  (define-property E-polarizations '() (make-list-type 'polarizability))
-  (define-property H-polarizations '() (make-list-type 'polarizability))
+  (define-property E-susceptibilities '() (make-list-type 'susceptibility))
+  (define-property H-susceptibilities '() (make-list-type 'susceptibility))
   (define-property E-chi2-diag (vector3 0 0 0) 'vector3)
   (define-property E-chi3-diag (vector3 0 0 0) 'vector3)
   (define-property H-chi2-diag (vector3 0 0 0) 'vector3)
@@ -60,6 +62,10 @@
   (define-property D-conductivity-diag (vector3 0 0 0) 'vector3)
   (define-property B-conductivity-diag (vector3 0 0 0) 'vector3)
 )
+
+; backwards compatibility:
+(define E-polarizations E-susceptibilities)
+(define H-polarizations H-susceptibilities)
 
 (define (epsilon eps) (epsilon-diag eps eps eps))
 (define (mu m) (mu-diag m m m)) 
@@ -174,11 +180,6 @@
 (define-param subpixel-maxeval 100000)
 
 (define-param store-polarization-energy? false)
-
-; a "global" conductivity to add to all materials, mostly
-; for the convenience of Casimir calculations
-(define-param global-D-conductivity 0)
-(define-param global-B-conductivity 0)
 
 ; ****************************************************************
 ; Setting up the structure
@@ -390,10 +391,7 @@
   (if (null? structure) (init-structure k-point))
   (set! fields (new-meep-fields structure 
 				(if (= dimensions CYLINDRICAL) m 0)
-				store-polarization-energy?
-				(if (and special-kz? k-point)
-				    (vector3-z k-point) 0.0)
-				(not accurate-fields-near-cylorigin?)))
+				store-polarization-energy?))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))

@@ -168,6 +168,11 @@ static geom_box gv2box(const meep::volume &v)
 
 /***********************************************************************/
 
+struct pol {
+  susceptibility user_s;
+  struct pol *next;
+};
+
 class geom_epsilon : public meep::material_function {
   geometric_object_list geometry;
   geom_box_tree geometry_tree;
@@ -202,13 +207,14 @@ public:
 
   virtual void sigma_row(meep::component c, double sigrow[3],
 			 const meep::vec &r);
-  void add_polarizabilities(meep::structure *s);
-  void add_polarizabilities(meep::field_type ft, meep::structure *s);
+  void add_susceptibilities(meep::structure *s);
+  void add_susceptibilities(meep::field_type ft, meep::structure *s);
 
 private:
   bool get_material_pt(material_type &material, const meep::vec &r);
 
   material_type_list extra_materials;
+  pol *current_pol;
 };
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
@@ -216,6 +222,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
 {
   geometry = g; // don't bother making a copy, only used in one place
   extra_materials = mlist;
+  current_pol = NULL;
 
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
@@ -999,6 +1006,19 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   return cond_val;
 }
 
+/* like susceptibility_equal in ctl-io.cpp, but ignores sigma and id
+   (must be updated manually, re-copying from ctl-io.cpp), if we
+   add new susceptibility subclasses) */
+static bool susceptibility_equiv(const susceptibility *o0, 
+				 const susceptibility *o)
+{
+if (o0->which_subclass != o->which_subclass) return 0;
+if (o0->which_subclass == susceptibility::LORENTZIAN_SUSCEPTIBILITY) {
+if (!lorentzian_susceptibility_equal(o0->subclass.lorentzian_susceptibility_data, o->subclass.lorentzian_susceptibility_data)) return 0;
+}
+return 1;
+}
+
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], 
 			     const meep::vec &r) {
   vector3 p = vec_to_vector3(r);
@@ -1020,16 +1040,16 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
   
   sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
   if (material.which_subclass == MTS::MEDIUM) {
-    polarizability_list plist = 
-      pol_ft == meep::E_stuff ? material.subclass.medium_data->E_polarizations
-      : material.subclass.medium_data->H_polarizations;
-    for (int j = 0; j < plist.num_items; ++j)
-      if (plist.items[j].omega == omega &&
-	  plist.items[j].gamma == gamma) {
+    susceptibility_list slist = 
+      type(c) == meep::E_stuff
+      ? material.subclass.medium_data->E_susceptibilities
+      : material.subclass.medium_data->H_susceptibilities;
+    for (int j = 0; j < slist.num_items; ++j)
+      if (susceptibility_equiv(&slist.items[j], &current_pol->user_s)) {
 	int ic = meep::component_index(c);
-	sigrow[ic] = (ic == 0 ? plist.items[j].sigma_diag.x
-		      : (ic == 1 ? plist.items[j].sigma_diag.y
-			 : plist.items[j].sigma_diag.z));
+	sigrow[ic] = (ic == 0 ? slist.items[j].sigma_diag.x
+		      : (ic == 1 ? slist.items[j].sigma_diag.y
+			 : slist.items[j].sigma_diag.z));
 	break;
       }
   }
@@ -1038,75 +1058,81 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
     material_type_destroy(material);
 }
 
-struct pol {
-  double omega, gamma;
-  struct pol *next;
-};
-
 // add a polarization to the list if it is not already there
-static pol *add_pol(pol *pols,
-		    double omega, double gamma)
+static pol *add_pol(pol *pols, const susceptibility *user_s)
 {
   struct pol *p = pols;
-  while (p && !(p->omega == omega && p->gamma == gamma))
-    p = p->next;
+  while (p && !susceptibility_equiv(user_s, &p->user_s)) p = p->next;
   if (!p) {
     p = new pol;
-    p->omega = omega;
-    p->gamma = gamma;
+    susceptibility_copy(user_s, &p->user_s);
     p->next = pols;
     pols = p;
   }
   return pols;
 }
 
-static pol *add_pols(pol *pols, const polarizability_list plist) {
-  for (int j = 0; j < plist.num_items; ++j) {
-    pols = add_pol(pols,
-		   plist.items[j].omega, plist.items[j].gamma);
-  }
+static pol *add_pols(pol *pols, const susceptibility_list slist) {
+  for (int j = 0; j < slist.num_items; ++j)
+    pols = add_pol(pols, &slist.items[j]);
   return pols;
 }
 
-void geom_epsilon::add_polarizabilities(meep::structure *s) {
-  add_polarizabilities(meep::E_stuff, s);
-  add_polarizabilities(meep::H_stuff, s);
+void geom_epsilon::add_susceptibilities(meep::structure *s) {
+  add_susceptibilities(meep::E_stuff, s);
+  add_susceptibilities(meep::H_stuff, s);
 }
 
-void geom_epsilon::add_polarizabilities(meep::field_type ft, 
+void geom_epsilon::add_susceptibilities(meep::field_type ft, 
 					meep::structure *s) {
   pol *pols = 0;
 
-  // construct a list of the unique polarizabilities in the geometry:
+  // construct a list of the unique susceptibilities in the geometry:
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::MEDIUM)
       pols = add_pols(pols, ft == meep::E_stuff
 		      ? geometry.items[i].material
-		      .subclass.medium_data->E_polarizations
+		      .subclass.medium_data->E_susceptibilities
 		      : geometry.items[i].material
-		      .subclass.medium_data->H_polarizations);
+		      .subclass.medium_data->H_susceptibilities);
   }
   for (int i = 0; i < extra_materials.num_items; ++i)
     if (extra_materials.items[i].which_subclass == MTS::MEDIUM)
       pols = add_pols(pols, ft == meep::E_stuff
 		      ? extra_materials.items[i]
-		      .subclass.medium_data->E_polarizations
+		      .subclass.medium_data->E_susceptibilities
 		      : extra_materials.items[i]
-		      .subclass.medium_data->H_polarizations);
+		      .subclass.medium_data->H_susceptibilities);
   if (default_material.which_subclass == MTS::MEDIUM)
     pols = add_pols(pols, ft == meep::E_stuff
-		    ? default_material.subclass.medium_data->E_polarizations
-		    : default_material.subclass.medium_data->H_polarizations);
+		    ? default_material.subclass.medium_data->E_susceptibilities
+		  : default_material.subclass.medium_data->H_susceptibilities);
     
   for (struct pol *p = pols; p; p = p->next) {
-    master_printf("polarizability: omega=%g, gamma=%g\n",
-		  p->omega, p->gamma);
-    s->add_polarizability(*this, ft, p->omega, p->gamma);
+    meep::susceptibility *sus = NULL;
+    switch (p->user_s.which_subclass) {
+      case susceptibility::LORENTZIAN_SUSCEPTIBILITY: {
+	lorentzian_susceptibility *d =
+	  p->user_s.subclass.lorentzian_susceptibility_data;
+	master_printf("lorentzian susceptibility: omega=%g, gamma=%g\n",
+		      d->omega, d->gamma);
+	sus = new meep::lorentzian_susceptibility(d->omega, d->gamma);
+	break;
+      }
+      default:
+	meep::abort("unknown susceptibility type");
+    }
+
+    current_pol = p;
+    s->add_susceptibility(*this, ft, *sus);
+    delete sus;
   }
+  current_pol = NULL;
   
   while (pols) {
     struct pol *p = pols;
     pols = pols->next;
+    susceptibility_destroy(p->user_s);
     delete p;
   }
 }
@@ -1282,7 +1308,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 					   subpixel_tol,
 					   subpixel_maxeval);
 
-  geps.add_polarizabilities(s);
+  geps.add_susceptibilities(s);
 
   master_printf("-----------\n");
   

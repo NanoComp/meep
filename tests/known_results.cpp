@@ -135,12 +135,12 @@ double polariton_ex(const grid_volume &gv, double eps(const vec &)) {
 double polariton_energy(const grid_volume &gv, double eps(const vec &)) {
   const double ttot = 10.0;
   structure s(gv, eps);
-  s.add_polarizability(sigma, 0.3, 0.1);
-  fields f(&s, 0, 1);
+  s.add_susceptibility(sigma, E_stuff, lorentzian_susceptibility(0.3, 0.1));
+  fields f(&s, 0);
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center(),
 		     complex<double>(0,-2*pi*0.2));
   while (f.round_time() < ttot) f.step();
-  return f.total_energy();
+  return f.field_energy();
 }
 
 int main(int argc, char **argv) {
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
 
   compare(-0.0894851, polariton_ex(volone(1.0, a), one),
           "1D polariton");
-  compare(0.32617294, polariton_energy(volone(1.0, a), one),
+  compare(0.0863443, polariton_energy(volone(1.0, a), one),
           "1D polariton energy");
   compare(5.20605, metallic_ez(voltwo(1.0, 1.0, a), one),
           "1x1 metallic 2D TM");
