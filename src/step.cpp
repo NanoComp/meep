@@ -63,10 +63,10 @@ void fields::step() {
   step_boundaries(B_stuff);
   calc_sources(time() + 0.5*dt); // for integrated H sources
   update_eh(H_stuff);
-  step_boundaries(H_stuff);
-
+  step_boundaries(WH_stuff);
   update_pols(H_stuff);
   step_boundaries(PH_stuff);
+  step_boundaries(H_stuff);
 
   if (fluxes) fluxes->update_half();
 
@@ -76,10 +76,10 @@ void fields::step() {
   step_boundaries(D_stuff);
   calc_sources(time() + dt); // for integrated E sources
   update_eh(E_stuff);
-  step_boundaries(E_stuff);
-
+  step_boundaries(WE_stuff);
   update_pols(E_stuff);
   step_boundaries(PE_stuff);
+  step_boundaries(E_stuff);
 
   if (fluxes) fluxes->update();
   t += 1;

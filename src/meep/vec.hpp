@@ -26,7 +26,7 @@ using namespace std;
 namespace meep {
 
 const int NUM_FIELD_COMPONENTS = 20;
-const int NUM_FIELD_TYPES = 6;
+const int NUM_FIELD_TYPES = 8;
 
 enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
                  Dx, Dy, Dr, Dp, Dz, Bx, By, Br, Bp, Bz, Dielectric, Permeability };
@@ -34,7 +34,7 @@ enum component { Ex=0, Ey, Er, Ep, Ez, Hx, Hy, Hr, Hp, Hz,
 enum derived_component { Sx=100, Sy, Sr, Sp, Sz, EnergyDensity,
 			 D_EnergyDensity, H_EnergyDensity };
 enum ndim { D1=0, D2, D3, Dcyl };
-enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, B_stuff=3, PE_stuff=4, PH_stuff=5 };
+enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, B_stuff=3, PE_stuff=4, PH_stuff=5, WE_stuff=6, WH_stuff=7 };
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P, NO_DIRECTION };
 struct signed_direction {
@@ -69,7 +69,7 @@ inline direction stop_at_direction(ndim dim) {
 component first_field_component(field_type ft);
 
 #define FOR_FIELD_TYPES(ft) for (field_type ft = E_stuff; \
-                                 ft <= PH_stuff; ft = (field_type) (ft+1))
+                                 ft <= WH_stuff; ft = (field_type) (ft+1))
 #define FOR_ELECTRIC_COMPONENTS(c) for (component c = Ex; \
                                         c < Hx; c = (component) (c+1))
 #define FOR_MAGNETIC_COMPONENTS(c) for (component c = Hz; \

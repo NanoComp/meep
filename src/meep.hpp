@@ -81,6 +81,7 @@ public:
   virtual bool needs_P(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual bool needs_W_notowned(component c,
 				realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+
   virtual bool needs_W_prev() const { return false; }
 
   virtual int num_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
@@ -901,6 +902,7 @@ class fields_chunk {
   int is_mine() const { return s->is_mine(); };
   // boundaries.cpp
   void zero_metal(field_type);
+  bool needs_W_notowned(component c);
   // fields.cpp
   void remove_sources();
   void remove_susceptibilities();

@@ -276,6 +276,12 @@ void fields::find_metals() {
     }
 }
 
+bool fields_chunk::needs_W_notowned(component c) {
+  for (susceptibility *chiP = s->chiP[type(c)]; chiP; chiP = chiP->next)
+    if (chiP->needs_W_notowned(c, f)) return true;
+  return false;
+}
+
 void fields::connect_the_chunks() {
   int *nc[NUM_FIELD_TYPES][3][2];
   FOR_FIELD_TYPES(f)
@@ -300,6 +306,21 @@ void fields::connect_the_chunks() {
       B_redundant[5*(num_chunks+i) + bc-Bx] 
       = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
   and_to_all(B_redundant + 5*num_chunks, B_redundant, 5*num_chunks);
+
+  /* Figure out whether we need the notowned W field (== E/H in
+     non-PML regions) in update_pols, e.g. if we have an anisotropic
+     susceptibility.  In this case, we have an additional
+     communication step where we communicate the notowned W.  Then,
+     after updating the polarizations, we communicate the notowned E/H
+     ... this does the E/H communication twice between non-PML regions
+     and hence is somewhat wasteful, but greatly simplifies the case
+     of communicating between a PML region (which has a separate W
+     array) and a non-PML region (no separate W). */
+  bool needs_W_notowned[NUM_FIELD_COMPONENTS];
+  FOR_COMPONENTS(c) needs_W_notowned[c] = false;
+  FOR_E_AND_H(c) for (int i=0;i<num_chunks;i++) 
+    needs_W_notowned[c]= needs_W_notowned[c] || chunks[i]->needs_W_notowned(c);
+  FOR_E_AND_H(c) needs_W_notowned[c] = or_to_all(needs_W_notowned[c]);
 
   for (int i=0;i<num_chunks;i++) {
     // First count the border elements...
@@ -326,10 +347,18 @@ void fields::connect_the_chunks() {
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
 		{
+		  field_type f = type(c);
 		  const int nn = is_real?1:2;
-		  nc[type(corig)][ip][Incoming][i] += nn;
-		  nc[type(c)][ip][Outgoing][j] += nn;
-		  comm_sizes[type(c)][ip][pair] += nn;
+		  nc[f][ip][Incoming][i] += nn;
+		  nc[f][ip][Outgoing][j] += nn;
+		  comm_sizes[f][ip][pair] += nn;
+		}
+		if (needs_W_notowned[corig]) {
+		  field_type f = is_electric(corig) ? WE_stuff : WH_stuff;
+		  const int nn = is_real?1:2;
+		  nc[f][ip][Incoming][i] += nn;
+		  nc[f][ip][Outgoing][j] += nn;
+		  comm_sizes[f][ip][pair] += nn;
 		}
 		if (is_electric(corig) || is_magnetic(corig)) {
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
@@ -417,16 +446,37 @@ void fields::connect_the_chunks() {
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
 		const int m = chunks[j]->gv.index(c, here);
-		const int f = type(c);
 
-		if (ip == CONNECT_PHASE)
-		  chunks[i]->connection_phases[f][wh[f][ip][Incoming][j]/2] =
-		    thephase;
-		DOCMP {
-		  chunks[i]->connections[f][ip][Incoming]
-		    [wh[f][ip][Incoming][j]++] = chunks[i]->f[corig][cmp] + n;
-		  chunks[j]->connections[f][ip][Outgoing]
-		    [wh[f][ip][Outgoing][j]++] = chunks[j]->f[c][cmp] + m;
+		{
+		  field_type f = type(c);
+		  if (ip == CONNECT_PHASE)
+		    chunks[i]->connection_phases[f][wh[f][ip][Incoming][j]/2] =
+		      thephase;
+		  DOCMP {
+		    chunks[i]->connections[f][ip][Incoming]
+		      [wh[f][ip][Incoming][j]++] = 
+		      chunks[i]->f[corig][cmp] + n;
+		    chunks[j]->connections[f][ip][Outgoing]
+		      [wh[f][ip][Outgoing][j]++] = 
+		      chunks[j]->f[c][cmp] + m;
+		  }
+		}
+		
+		if (needs_W_notowned[corig]) {
+		  field_type f = is_electric(corig) ? WE_stuff : WH_stuff;
+		  if (ip == CONNECT_PHASE)
+		    chunks[i]->connection_phases[f][wh[f][ip][Incoming][j]/2] =
+		      thephase;
+		  DOCMP {
+		    chunks[i]->connections[f][ip][Incoming]
+		      [wh[f][ip][Incoming][j]++] = 
+		      (chunks[i]->f_w[corig][cmp] ? chunks[i]->f_w[corig][cmp]
+		       : chunks[i]->f[corig][cmp]) + n;
+		    chunks[j]->connections[f][ip][Outgoing]
+		      [wh[f][ip][Outgoing][j]++] = 
+		      (chunks[j]->f_w[c][cmp] ? chunks[j]->f_w[c][cmp]
+		       : chunks[j]->f[c][cmp]) + m;
+		  }
 		}
 		
 		if (is_electric(corig) || is_magnetic(corig)) {
