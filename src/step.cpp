@@ -64,14 +64,9 @@ void fields::step() {
   calc_sources(time() + 0.5*dt); // for integrated H sources
   update_eh(H_stuff);
   step_boundaries(H_stuff);
-  // because step_boundaries overruns the timing stack...
-  am_now_working_on(Stepping);
 
   update_pols(H_stuff);
   step_boundaries(PH_stuff);
-
-  // because step_boundaries overruns the timing stack...
-  am_now_working_on(Stepping);
 
   if (fluxes) fluxes->update_half();
 
@@ -83,14 +78,8 @@ void fields::step() {
   update_eh(E_stuff);
   step_boundaries(E_stuff);
 
-  // because step_boundaries overruns the timing stack...
-  am_now_working_on(Stepping);
-
   update_pols(E_stuff);
   step_boundaries(PE_stuff);
-
-  // because step_boundaries overruns the timing stack...
-  am_now_working_on(Stepping);
 
   if (fluxes) fluxes->update();
   t += 1;
@@ -148,6 +137,7 @@ void fields_chunk::phase_material(int phasein_time) {
 
 void fields::step_boundaries(field_type ft) {
   connect_chunks(); // re-connect if !chunk_connections_valid
+
   am_now_working_on(MpiTime);
 
   // Do the metals first!

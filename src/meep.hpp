@@ -1273,7 +1273,8 @@ class fields {
   int verbosity; // Turn on verbosity for debugging purposes...
   int synchronized_magnetic_fields; // count number of nested synchs
   double last_wall_time;
-  time_sink working_on, was_working_on;
+#define MEEP_TIMING_STACK_SZ 10
+  time_sink working_on, was_working_on[MEEP_TIMING_STACK_SZ];
   double times_spent[Other+1];
   // fields.cpp
   void figure_out_step_plan();
