@@ -179,7 +179,10 @@
 (define-param subpixel-tol 1e-4)
 (define-param subpixel-maxeval 100000)
 
-(define-param store-polarization-energy? false)
+; a "global" conductivity to add to all materials, mostly
+; for the convenience of Casimir calculations
+(define-param global-D-conductivity 0)
+(define-param global-B-conductivity 0)
 
 ; ****************************************************************
 ; Setting up the structure
@@ -391,7 +394,9 @@
   (if (null? structure) (init-structure k-point))
   (set! fields (new-meep-fields structure 
 				(if (= dimensions CYLINDRICAL) m 0)
-				store-polarization-energy?))
+				(if (and special-kz? k-point)
+				    (vector3-z k-point) 0.0)
+				(not accurate-fields-near-cylorigin?)))
   (if verbose? (meep-fields-verbose fields))
   (if (not (or force-complex-fields?
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))

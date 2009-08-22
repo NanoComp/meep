@@ -344,9 +344,6 @@ void fields::connect_the_chunks() {
 		  nc[f][ip][Incoming][i] += nn;
 		  nc[f][ip][Outgoing][j] += nn;
 		  comm_sizes[f][ip][pair] += nn;
-		  // Note above that the factor of two in 2*nn comes from
-		  // the fact that we have two polarization arrays, pol and
-		  // olpol.
 		}
 	      } // if is_mine and owns...
 	    } // loop over j chunks

@@ -13,6 +13,7 @@ public:
                                const volume &v,
                                double tol=DEFAULT_SUBPIXEL_TOL,
 			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL) {
+    (void) v; (void) tol; (void) maxeval; // unused
     // we are returning inv(1+chi1), so we must compute the inverse
     // inv([1+od od; od 1+od]) = [1+od -od; -od 1+od] / (1+2*o)
     double detinv = 1.0 / (1 + 2 * offdiag);
@@ -149,7 +150,8 @@ int check_pml2d(double eps(const vec &), component c,
       }
       if (dispersion) {
 	notone_val = sigma0;
-	s.add_polarizability(notone, E_stuff, omega0, gamma0);
+	s.add_susceptibility(notone, E_stuff,
+			     lorentzian_susceptibility(omega0, gamma0));
       }
       if (offdiag != 0) s.set_materials(mat, false);
       fields f(&s);
@@ -174,7 +176,8 @@ int check_pml2d(double eps(const vec &), component c,
       }
       if (dispersion) {
 	notone_val = sigma0;
-	s.add_polarizability(notone, E_stuff, omega0, gamma0);
+	s.add_susceptibility(notone, E_stuff,
+			     lorentzian_susceptibility(omega0, gamma0));
       }
       if (offdiag != 0) s.set_materials(mat, false);
       fields f(&s);

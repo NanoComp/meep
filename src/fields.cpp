@@ -26,8 +26,9 @@
 
 namespace meep {
 
-fields::fields(structure *s, double m, bool store_pol_energy) :
-  S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m)
+fields::fields(structure *s, double m, double beta,
+	       bool zero_fields_near_cylorigin) :
+  S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta)
 {
   verbosity = 0;
   synchronized_magnetic_fields = 0;
@@ -53,7 +54,8 @@ fields::fields(structure *s, double m, bool store_pol_energy) :
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i=0;i<num_chunks;i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, store_pol_energy);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m,
+				 beta, zero_fields_near_cylorigin);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
       comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
@@ -169,6 +171,7 @@ fields_chunk::~fields_chunk() {
     delete[] f_w[c][cmp];
     delete[] f_cond[c][cmp];
     delete[] f_minus_p[c][cmp];
+    delete[] f_w_prev[c][cmp];
     delete[] f_backup[c][cmp];
     delete[] f_u_backup[c][cmp];
     delete[] f_w_backup[c][cmp];
@@ -199,7 +202,8 @@ fields_chunk::~fields_chunk() {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
-			   double m, bool store_pol_energy) : gv(the_s->gv), v(the_s->v), m(m), store_pol_energy(store_pol_energy) {
+			   double m, double beta,
+			   bool zero_fields_near_cylorigin) : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin), beta(beta) {
   s = the_s; s->refcount++;
   verbosity = 0;
   outdir = od;
@@ -210,9 +214,22 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
-  FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
-  polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
-  polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
+  FOR_FIELD_TYPES(ft) {
+    poldata *cur = NULL;
+    pol[ft] = NULL;
+    for (susceptibility *chiP = the_s->chiP[ft]; chiP; chiP = chiP->next) {
+      poldata *p = new poldata;
+      // P and data lazily allocated in update_pols
+      FOR_COMPONENTS(c) DOCMP2 p->P[c][cmp] = NULL; 
+      p->ndata = 0; p->data = NULL;
+      p->s = chiP;
+      p->next = NULL;
+      if (cur) { cur->next = p; cur = p; }
+      else { pol[ft] = cur = p; }
+    }
+  }
+  doing_solve_cw = false;
+  solve_cw_omega = 0.0;
   FOR_FIELD_TYPES(ft) sources[ft] = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
@@ -220,6 +237,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
     f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
     f_minus_p[c][cmp] = NULL;
+    f_w_prev[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
     f_u_backup[c][cmp] = NULL;
     f_w_backup[c][cmp] = NULL;
@@ -245,7 +263,8 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   verbosity = thef.verbosity;
   outdir = thef.outdir;
   m = thef.m;
-  store_pol_energy = thef.store_pol_energy;
+  zero_fields_near_cylorigin = thef.zero_fields_near_cylorigin;
+  beta = thef.beta;
   new_s = thef.new_s; new_s->refcount++;
   bands = NULL;
   is_real = thef.is_real;
@@ -253,9 +272,30 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   Courant = thef.Courant;
   dt = thef.dt;
   dft_chunks = NULL;
-  FOR_FIELD_TYPES(ft) pols[ft] = olpols[ft] = NULL;
-  polarization::set_up_polarizations(pols, s, is_real, store_pol_energy);
-  polarization::set_up_polarizations(olpols, s, is_real, store_pol_energy);
+  FOR_FIELD_TYPES(ft) {
+    poldata *cur = NULL;
+    for (poldata *ocur = thef.pol[ft]; ocur; ocur = ocur->next) {
+      poldata *p = new poldata;
+      FOR_COMPONENTS(c) DOCMP2 p->P[c][cmp] = NULL; 
+      p->ndata = 0; p->data = NULL;
+      p->s = ocur->s;
+      p->next = NULL;
+      pol[ft] = NULL;
+      FOR_COMPONENTS(c) DOCMP2 if (ocur->P[c][cmp]) {
+	p->P[c][cmp] = new realnum[gv.ntot()];
+	memcpy(p->P[c][cmp], ocur->P[c][cmp], gv.ntot() * sizeof(realnum));
+      }
+      if (ocur->data) {
+	p->ndata = ocur->ndata;
+	p->data = new realnum[p->ndata];
+	memcpy(p->data, ocur->data, p->ndata * sizeof(realnum));
+      }
+      if (cur) { cur->next = p; cur = p; }
+      else { pol[ft] = cur = p; }
+    }
+  }
+  doing_solve_cw = thef.doing_solve_cw;
+  solve_cw_omega = thef.solve_cw_omega;
   FOR_FIELD_TYPES(ft) sources[ft] = NULL;
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
@@ -303,12 +343,18 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
-  FOR_COMPONENTS(c) DOCMP2 
+  FOR_COMPONENTS(c) DOCMP2 {
     if (thef.f_minus_p[c][cmp]) {
       f_minus_p[c][cmp] = new realnum[gv.ntot()];
       memcpy(f_minus_p[c][cmp], thef.f_minus_p[c][cmp], 
 	     sizeof(realnum) * gv.ntot());
     }
+    if (thef.f_w_prev[c][cmp]) {
+      f_w_prev[c][cmp] = new realnum[gv.ntot()];
+      memcpy(f_w_prev[c][cmp], thef.f_w_prev[c][cmp], 
+	     sizeof(realnum) * gv.ntot());
+    }
+  }
   f_rderiv_int = NULL;
   figure_out_step_plan();
 }

@@ -84,7 +84,7 @@ bool susceptibility::needs_W_notowned(component c,
 // the previous timestep.
 int lorentzian_susceptibility::num_internal_data(
 			 realnum *P[NUM_FIELD_COMPONENTS][2],
-			 const volume &v) const {
+			 const grid_volume &v) const {
   int num = 0;
   FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) num += v.ntot();
   return num;
@@ -94,7 +94,7 @@ void lorentzian_susceptibility::update_P
        (realnum *P[NUM_FIELD_COMPONENTS][2],
 	realnum *W[NUM_FIELD_COMPONENTS][2],
 	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
-	double dt, const volume &v, realnum *P_internal_data) const {
+	double dt, const grid_volume &v, realnum *P_internal_data) const {
   const double omega2pi = 2*pi*omega_0, g2pi = gamma*2*pi;
   const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
   const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);

@@ -34,7 +34,14 @@ void fields::update_eh(field_type ft, bool skip_w_components) {
   chunk_connections_valid = and_to_all(chunk_connections_valid);
 }
 
-bool fields_chunk::update_eh(field_type ft) {
+bool fields_chunk::needs_W_prev(component c) const
+{
+  for (susceptibility *chiP = s->chiP[type(c)]; chiP; chiP = chiP->next)
+    if (chiP->needs_W_prev()) return true;
+  return false;
+}
+
+bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   bool allocated_eh = false;
 
@@ -79,41 +86,15 @@ bool fields_chunk::update_eh(field_type ft) {
   //////////////////////////////////////////////////////////////////////////
   // First, initialize f_minus_p to D - P, if necessary
 
-  if (have_f_minus_p) {
-    if (pols[ft]) {
-      FOR_FT_COMPONENTS(ft, ec) if (f[ec][0]) {
-	for (polarization *np=pols[ft],*op=olpols[ft]; np; 
-	     np=np->next, op=op->next) {
-	  if (np->energy[ec] && op->energy[ec]) {
-	    if (is_real) for (int i = 0; i < ntot; ++i) {
-	      np->energy[ec][i] = op->energy[ec][i] +
-		(0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
-		* f[ec][0][i];
-	    }
-	    else for (int i = 0; i < ntot; ++i) {
-	      np->energy[ec][i] = op->energy[ec][i] +
-		(0.5)*(np->P[ec][0][i] - op->P[ec][0][i])
-		* f[ec][0][i] +
-		(0.5)*(np->P[ec][1][i] - op->P[ec][1][i])
-		* f[ec][1][i];
-	    }
-	  }
-	}
-	component dc = direction_component(first_field_component(ft2),
-					   component_direction(ec));
-	DOCMP {
-	  for (int i=0;i<ntot;i++) {
-	    double sum = f[dc][cmp][i];
-            for (polarization *p = pols[ft]; p; p = p->next)
-              sum -= p->P[ec][cmp][i];
-            f_minus_p[dc][cmp][i] = sum;
-	  }
-	}
+  FOR_FT_COMPONENTS(ft, ec) if (f[ec][0]) {
+    component dc = field_type_component(ft2, ec);
+    DOCMP if (f_minus_p[dc][cmp]) {
+      realnum *fmp = f_minus_p[dc][cmp];
+      memcpy(fmp, f[dc][cmp], sizeof(realnum) * ntot);
+      for (poldata *p = pol[ft]; p; p = p->next) if (p->P[ec][cmp]) {
+	const realnum *P = p->P[ec][cmp];
+	for (int i=0;i<ntot;i++) fmp[i] -= P[i];
       }
-    }
-    else {
-      FOR_FT_COMPONENTS(ft2, dc) if (f[dc][0]) DOCMP
-	memcpy(f_minus_p[dc][cmp], f[dc][cmp], ntot * sizeof(realnum));
     }
   }
 
@@ -172,6 +153,18 @@ bool fields_chunk::update_eh(field_type ft) {
     if (!f_w[ec][cmp] && dsigw != NO_DIRECTION) {
       f_w[ec][cmp] = new realnum[gv.ntot()];
       memcpy(f_w[ec][cmp], f[ec][cmp], gv.ntot() * sizeof(realnum));
+    }
+
+    // for solve_cw, when W exists we get W and E from special variables
+    if (f_w[ec][cmp] && skip_w_components) continue;
+
+    // save W field from this timestep in f_w_prev if needed by pols
+    if (needs_W_prev(ec)) {
+      DOCMP {
+	if (!f_w_prev[ec][cmp]) f_w_prev[ec][cmp] = new realnum[gv.ntot()];
+	memcpy(f_w_prev[ec][cmp], f_w[ec][cmp] ? f_w[ec][cmp] : f[ec][cmp],
+	       sizeof(realnum) * gv.ntot());
+      }
     }
 
     if (f[ec][cmp] != f[dc][cmp])

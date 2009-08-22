@@ -40,21 +40,18 @@ void fields::update_pols(field_type ft) {
 bool fields_chunk::update_pols(field_type ft) {
   bool allocated_fields = false;
 
+  realnum *w[NUM_FIELD_COMPONENTS][2];
+  FOR_COMPONENTS(c) DOCMP2 w[c][cmp] = f_w[c][cmp] ? f_w[c][cmp] : f[c][cmp];
+
   for (poldata *p = pol[ft]; p; p = p->next) {
 
-  DOCMP FOR_FT_COMPONENTS(ft, c) if (f[c][cmp])
-    for (polarization *np=pol,*op=olpol; np; np=np->next,op=op->next) {
-      if (np->pb->ft != ft) abort("bug in update_pols");
-      const double cn = 2 - op->pb->omeganot*op->pb->omeganot;
-      const double co = 0.5 * op->pb->gamma - 1;
-      const double funinv = 1.0 / (1 + 0.5*op->pb->gamma);
-      const realnum *fE = f[c][cmp];
-      const realnum *npP = np->P[c][cmp], *nps = np->s[c];
-      realnum *opP = op->P[c][cmp], *npenergy = np->energy[c];
-      if (npenergy)
-	for (int i = 0; i < ntot; ++i) {
-	  npenergy[i] += 0.5 * (npP[i] - opP[i]) * fE[i];
-	  opP[i] = funinv * (cn * npP[i] + co * opP[i] + nps[i] * fE[i]);
+    // Lazily allocate polarizations P where needed:
+    bool allocated_pol = false;
+    FOR_FT_COMPONENTS(ft, c)
+      if (!p->P[c][0] && p->s->needs_P(c, f)) {
+	DOCMP {
+	  p->P[c][cmp] = new realnum[gv.ntot()];
+	  memset(p->P[c][cmp], 0, gv.ntot() * sizeof(realnum));
 	}
 	allocated_pol = true;
       }
@@ -76,7 +73,7 @@ bool fields_chunk::update_pols(field_type ft) {
     }
 
     // Finally, timestep the polarizations:
-    p->s->update_P(p->P, f, f_prev, dt, gv, p->data);
+    p->s->update_P(p->P, w, f_w_prev, dt, gv, p->data);
   }
 
   return allocated_fields;
