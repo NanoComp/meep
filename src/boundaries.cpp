@@ -362,17 +362,32 @@ void fields::connect_the_chunks() {
 		}
 		if (is_electric(corig) || is_magnetic(corig)) {
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
-		  int common_pols = 0;
+		  int common_pols = 0, ni = 0, cni = 0;
 		  for (poldata *pi=chunks[i]->pol[type(corig)]; pi; 
 		       pi = pi->next)
 		    for (poldata *pj=chunks[j]->pol[type(c)]; pj;
 			 pj = pj->next)
-		      if (*pi->s == *pj->s 
-			  && (pi->P[corig][0] || pj->P[c][0])) common_pols++;
-		  const int nn = (is_real?1:2) * common_pols;
+		      if (*pi->s == *pj->s) { 
+			if (pi->P[corig][0] || pj->P[c][0]) common_pols++;
+			if (pi->data && chunks[i]->is_mine()) {
+			  ni += pi->s->num_internal_notowned_needed(corig, 
+								    pi->P);
+			  cni += pi->s->num_cinternal_notowned_needed(corig, 
+								      pi->P);
+			}
+			else if (pj->data && chunks[j]->is_mine()) {
+			  ni += pj->s->num_internal_notowned_needed(c,pj->P);
+			  cni += pj->s->num_cinternal_notowned_needed(c,pj->P);
+			}
+		      }
+		  const int nn = (is_real?1:2) * (common_pols + cni);
 		  nc[f][ip][Incoming][i] += nn;
 		  nc[f][ip][Outgoing][j] += nn;
 		  comm_sizes[f][ip][pair] += nn;
+		  const connect_phase iip = CONNECT_COPY;
+		  nc[f][iip][Incoming][i] += ni;
+		  nc[f][iip][Outgoing][j] += ni;
+		  comm_sizes[f][iip][pair] += ni;
 		}
 	      } // if is_mine and owns...
 	    } // loop over j chunks
@@ -485,16 +500,55 @@ void fields::connect_the_chunks() {
 		       pi = pi->next)
 		    for (poldata *pj=chunks[j]->pol[type(c)]; pj;
 			 pj = pj->next)
-		      if (*pi->s == *pj->s 
-			  && (pi->P[corig][0] || pj->P[c][0])) {
-			if (ip == CONNECT_PHASE)
-			  chunks[i]->connection_phases[f]
-			    [wh[f][ip][Incoming][j]/2] = thephase;
-			DOCMP {
-			  chunks[i]->connections[f][ip][Incoming]
-			    [wh[f][ip][Incoming][j]++] = pi->P[corig][cmp]+n;
-			  chunks[j]->connections[f][ip][Outgoing]
-			    [wh[f][ip][Outgoing][j]++] = pj->P[c][cmp]+m;
+		      if (*pi->s == *pj->s) {
+			if (pi->P[corig][0] || pj->P[c][0]) {
+			  if (ip == CONNECT_PHASE)
+			    chunks[i]->connection_phases[f]
+			      [wh[f][ip][Incoming][j]/2] = thephase;
+			  DOCMP {
+			    chunks[i]->connections[f][ip][Incoming]
+			      [wh[f][ip][Incoming][j]++] = pi->P[corig][cmp]+n;
+			    chunks[j]->connections[f][ip][Outgoing]
+			      [wh[f][ip][Outgoing][j]++] = pj->P[c][cmp]+m;
+			  }
+
+			  poldata *po = NULL;
+			  if (pi->data && chunks[i]->is_mine())
+			    po = pi;
+			  else if (pj->data && chunks[j]->is_mine())
+			    po = pj;
+			  if (po) {
+			    const connect_phase iip = CONNECT_COPY;
+			    const int ni = po->s->
+			      num_internal_notowned_needed(corig, po->P);
+			    for (int k = 0; k < ni; ++k) {
+			      chunks[i]->connections[f][iip][Incoming]
+			      [wh[f][iip][Incoming][j]++] = pi->data +
+				po->s->internal_notowned_offset
+				(k, corig, n, po->P, chunks[i]->gv);
+			      chunks[j]->connections[f][iip][Outgoing]
+			      [wh[f][iip][Outgoing][j]++] = pj->data +
+				po->s->internal_notowned_offset
+				(k, c, m, po->P, chunks[j]->gv);
+			    }
+			    const int cni = po->s->
+			      num_cinternal_notowned_needed(corig, po->P);
+			    for (int k = 0; k < cni; ++k) {
+			      if (ip == CONNECT_PHASE)
+				chunks[i]->connection_phases[f]
+				  [wh[f][ip][Incoming][j]/2] = thephase;
+			      DOCMP {
+				chunks[i]->connections[f][ip][Incoming]
+				  [wh[f][ip][Incoming][j]++] = pi->data +
+				  po->s->cinternal_notowned_offset
+				  (k, corig, cmp, n, po->P, chunks[i]->gv);
+				chunks[j]->connections[f][ip][Outgoing]
+				  [wh[f][ip][Outgoing][j]++] = pj->data +
+				  po->s->cinternal_notowned_offset
+				  (k, c, cmp, m, po->P, chunks[j]->gv);
+			      }
+			    }
+			  }
 			}
 		      }
 		} // is_electric(corig)

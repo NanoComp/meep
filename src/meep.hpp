@@ -78,12 +78,22 @@ public:
     (void) P_internal_data; // avoid warnings for unused params
   }
 
+  // whether, for the given field W, Meep needs to allocate P[c]
   virtual bool needs_P(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+
+  // whether update_P will need the notowned part of W for this c
+  // (which means that Meep will need to communicate it between chunks)
   virtual bool needs_W_notowned(component c,
 				realnum *W[NUM_FIELD_COMPONENTS][2]) const;
 
+  // whether update_P needs the W_prev field (from the previous timestep)
   virtual bool needs_W_prev() const { return false; }
 
+  /* A susceptibility may be associated with any amount of internal
+     data neede to update the polarization field; for example,
+     it may store the polarization field from previous timesteps,
+     atomic-level populations, or other data.   These routines
+     return the size of this internal-data array and initialize it. */
   virtual int num_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
 				const grid_volume &gv) const { 
     (void) P; (void) gv; return 0;
@@ -93,6 +103,40 @@ public:
     int n = num_internal_data(P, gv);
     for (int i = 0; i < n; ++i) data[i] = 0.0;
   }
+
+  /* The following methods are used in boundaries.cpp to set up any
+     extra communications that may be necessary at chunk boundaries
+     for the internal data of a susceptibility's polarization
+     state. */
+
+  /* the number of notowned fields/data in the internal data that
+     are needed by update_P for the c Yee grid (note: we assume that we only
+     have internal data for c's where we have external polarizations) */
+  virtual int num_internal_notowned_needed(component c,
+					   realnum *P[NUM_FIELD_COMPONENTS][2])
+    const { (void) c; (void) P; return 0; }
+  /* the offset into the internal data of the n'th Yee-grid point in
+     the c Yee grid for the inotowned internal field, where
+     0 <= inotowned < num_internal_notowned_needed. */
+  virtual int internal_notowned_offset(int inotowned, component c, int n,
+				       realnum *P[NUM_FIELD_COMPONENTS][2],
+				       const grid_volume &gv) const {
+    (void) inotowned; (void) n; (void) c; (void) P; (void) gv; return 0; }
+  
+  /* same thing as above, except this gives (possibly complex)
+     internal fields that need to be multiplied by the same phase
+     factor as the fields at boundaries.  Note: we assume internal fields
+     are complex if and only if !is_real (i.e. if EM fields are complex) */
+  virtual int num_cinternal_notowned_needed(component c,
+					   realnum *P[NUM_FIELD_COMPONENTS][2])
+    const { (void) c; (void) P; return 0; }
+  // real/imaginary parts offsets for cmp = 0/1
+  virtual int cinternal_notowned_offset(int inotowned, component c, int cmp, 
+					int n, 
+					realnum *P[NUM_FIELD_COMPONENTS][2],
+					const grid_volume &gv) const {
+    (void) inotowned; (void) n; (void) c; (void) cmp; (void) P; (void) gv; 
+    return 0; }
   
   susceptibility *next;
   int ntot;
