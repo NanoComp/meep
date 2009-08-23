@@ -60,7 +60,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       bool need_fmp = false;
       if (f[ec][cmp]) {
 	need_fmp = have_int_sources;
-	for (poldata *p = pol[ft]; p && !need_fmp; p = p->next)
+	for (polarization_state *p = pol[ft]; p && !need_fmp; p = p->next)
 	  need_fmp = need_fmp || p->P[ec][cmp];
       }
       if (need_fmp) {
@@ -91,10 +91,11 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     DOCMP if (f_minus_p[dc][cmp]) {
       realnum *fmp = f_minus_p[dc][cmp];
       memcpy(fmp, f[dc][cmp], sizeof(realnum) * ntot);
-      for (poldata *p = pol[ft]; p; p = p->next) if (p->P[ec][cmp]) {
-	const realnum *P = p->P[ec][cmp];
-	for (int i=0;i<ntot;i++) fmp[i] -= P[i];
-      }
+      for (polarization_state *p = pol[ft]; p; p = p->next) 
+	if (p->P[ec][cmp]) {
+	  const realnum *P = p->P[ec][cmp];
+	  for (int i=0;i<ntot;i++) fmp[i] -= P[i];
+	}
     }
   }
 

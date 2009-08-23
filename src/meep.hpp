@@ -846,13 +846,13 @@ enum in_or_out { Incoming=0, Outgoing };
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 
 // data for each susceptibility
-typedef struct poldata_s {
+typedef struct polarization_state_s {
   realnum *P[NUM_FIELD_COMPONENTS][2]; // polarization vector
   realnum *data; // internal polarization data for the susceptibility
   int ndata;
   const susceptibility *s;
-  struct poldata_s *next; // linked list
-} poldata;
+  struct polarization_state_s *next; // linked list
+} polarization_state;
 
 class fields_chunk {
  public:
@@ -888,7 +888,7 @@ class fields_chunk {
   complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
   int npol[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
-  poldata *pol[NUM_FIELD_TYPES]; // array of npol[i] poldata structures
+  polarization_state *pol[NUM_FIELD_TYPES]; // array of npol[i] polarization_state structures
 
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   grid_volume gv;

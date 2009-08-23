@@ -363,9 +363,9 @@ void fields::connect_the_chunks() {
 		if (is_electric(corig) || is_magnetic(corig)) {
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
 		  int common_pols = 0, ni = 0, cni = 0;
-		  for (poldata *pi=chunks[i]->pol[type(corig)]; pi; 
+		  for (polarization_state *pi=chunks[i]->pol[type(corig)]; pi; 
 		       pi = pi->next)
-		    for (poldata *pj=chunks[j]->pol[type(c)]; pj;
+		    for (polarization_state *pj=chunks[j]->pol[type(c)]; pj;
 			 pj = pj->next)
 		      if (*pi->s == *pj->s) { 
 			if (pi->P[corig][0] || pj->P[c][0]) common_pols++;
@@ -496,9 +496,9 @@ void fields::connect_the_chunks() {
 		
 		if (is_electric(corig) || is_magnetic(corig)) {
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
-		  for (poldata *pi=chunks[i]->pol[type(corig)]; pi; 
+		  for (polarization_state *pi=chunks[i]->pol[type(corig)]; pi; 
 		       pi = pi->next)
-		    for (poldata *pj=chunks[j]->pol[type(c)]; pj;
+		    for (polarization_state *pj=chunks[j]->pol[type(c)]; pj;
 			 pj = pj->next)
 		      if (*pi->s == *pj->s) {
 			if (pi->P[corig][0] || pj->P[c][0]) {
@@ -512,7 +512,7 @@ void fields::connect_the_chunks() {
 			      [wh[f][ip][Outgoing][j]++] = pj->P[c][cmp]+m;
 			  }
 
-			  poldata *po = NULL;
+			  polarization_state *po = NULL;
 			  if (pi->data && chunks[i]->is_mine())
 			    po = pi;
 			  else if (pj->data && chunks[j]->is_mine())

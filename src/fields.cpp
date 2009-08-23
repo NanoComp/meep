@@ -194,8 +194,8 @@ fields_chunk::~fields_chunk() {
     delete sources[ft];
     delete[] zeroes[ft];
   }
-  FOR_FIELD_TYPES(ft) for (poldata *cur = pol[ft]; cur; ) {
-    poldata *p = cur;
+  FOR_FIELD_TYPES(ft) for (polarization_state *cur = pol[ft]; cur; ) {
+    polarization_state *p = cur;
     cur = cur->next;
     FOR_COMPONENTS(c) DOCMP2 delete[] p->P[c][cmp];
     delete[] p->data;
@@ -217,10 +217,10 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
   dt = s->dt;
   dft_chunks = NULL;
   FOR_FIELD_TYPES(ft) {
-    poldata *cur = NULL;
+    polarization_state *cur = NULL;
     pol[ft] = NULL;
     for (susceptibility *chiP = the_s->chiP[ft]; chiP; chiP = chiP->next) {
-      poldata *p = new poldata;
+      polarization_state *p = new polarization_state;
       // P and data lazily allocated in update_pols
       FOR_COMPONENTS(c) DOCMP2 p->P[c][cmp] = NULL; 
       p->ndata = 0; p->data = NULL;
@@ -275,9 +275,9 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
   dt = thef.dt;
   dft_chunks = NULL;
   FOR_FIELD_TYPES(ft) {
-    poldata *cur = NULL;
-    for (poldata *ocur = thef.pol[ft]; ocur; ocur = ocur->next) {
-      poldata *p = new poldata;
+    polarization_state *cur = NULL;
+    for (polarization_state *ocur = thef.pol[ft]; ocur; ocur = ocur->next) {
+      polarization_state *p = new polarization_state;
       FOR_COMPONENTS(c) DOCMP2 p->P[c][cmp] = NULL; 
       p->ndata = 0; p->data = NULL;
       p->s = ocur->s;
@@ -517,8 +517,8 @@ void fields::remove_sources() {
 
 void fields_chunk::remove_susceptibilities() {
   FOR_FIELD_TYPES(ft) {
-    for (poldata *cur = pol[ft]; cur; ) {
-      poldata *p = cur;
+    for (polarization_state *cur = pol[ft]; cur; ) {
+      polarization_state *p = cur;
       cur = cur->next;
       FOR_COMPONENTS(c) DOCMP2 delete[] p->P[c][cmp];
       delete[] p->data;
@@ -555,7 +555,7 @@ void fields_chunk::zero_fields() {
 #undef ZERO
   }
   if (is_mine()) FOR_FIELD_TYPES(ft)
-      for (poldata *p = pol[ft]; p; p = p->next) {
+      for (polarization_state *p = pol[ft]; p; p = p->next) {
 	FOR_COMPONENTS(c) DOCMP2 if (p->P[c][cmp])
 	  memset(p->P[c][cmp], 0, sizeof(realnum) * gv.ntot());
 	if (p->data) p->s->init_internal_data(p->P, gv, p->data);
@@ -583,7 +583,7 @@ void fields_chunk::use_real_fields() {
     f[c][1] = 0;
   }
   if (is_mine()) FOR_FIELD_TYPES(ft)
-    for (poldata *p = pol[ft]; p; p = p->next) {
+    for (polarization_state *p = pol[ft]; p; p = p->next) {
       FOR_COMPONENTS(c) if (p->P[c][1]) { 
 	delete[] p->P[c][1]; p->P[c][1] = NULL; }
       if (p->data) { // TODO: print an error message in this case?
