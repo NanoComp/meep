@@ -98,7 +98,8 @@ void lorentzian_susceptibility::update_P
   const double omega2pi = 2*pi*omega_0, g2pi = gamma*2*pi;
   const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
   const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
-  (void) W_prev;
+  const double omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
+  (void) W_prev; // unused;
   
   realnum *P_prev;
   P_prev = P_internal_data;
@@ -109,7 +110,7 @@ void lorentzian_susceptibility::update_P
       realnum *p = P[c][cmp], *pp = P_prev;
       for (int i = 0; i < v.ntot(); ++i) {
 	realnum pcur = p[i];
-	p[i] = gamma1inv * (pcur * (2 - omega0dtsqr) 
+	p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
 			    - gamma1 * pp[i] + w[i] * s[i] * omega0dtsqr);
 	pp[i] = pcur;
       }

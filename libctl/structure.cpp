@@ -1013,7 +1013,10 @@ static bool susceptibility_equiv(const susceptibility *o0,
 				 const susceptibility *o)
 {
 if (o0->which_subclass != o->which_subclass) return 0;
-if (o0->which_subclass == susceptibility::LORENTZIAN_SUSCEPTIBILITY) {
+if (o0->which_subclass == susceptibility::DRUDE_SUSCEPTIBILITY) {
+if (!drude_susceptibility_equal(o0->subclass.drude_susceptibility_data, o->subclass.drude_susceptibility_data)) return 0;
+}
+else if (o0->which_subclass == susceptibility::LORENTZIAN_SUSCEPTIBILITY) {
 if (!lorentzian_susceptibility_equal(o0->subclass.lorentzian_susceptibility_data, o->subclass.lorentzian_susceptibility_data)) return 0;
 }
 return 1;
@@ -1117,6 +1120,14 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
 	master_printf("lorentzian susceptibility: omega=%g, gamma=%g\n",
 		      d->omega, d->gamma);
 	sus = new meep::lorentzian_susceptibility(d->omega, d->gamma);
+	break;
+      }
+      case susceptibility::DRUDE_SUSCEPTIBILITY: {
+	drude_susceptibility *d =
+	  p->user_s.subclass.drude_susceptibility_data;
+	master_printf("drude susceptibility: omega=%g, gamma=%g\n",
+		      d->omega, d->gamma);
+	sus = new meep::lorentzian_susceptibility(d->omega, d->gamma, true);
 	break;
       }
       default:

@@ -156,10 +156,13 @@ private:
   int id; // id for this object and its clones, for comparison purposes
 };
 
-/* a Lorentzian susceptibility \chi(\omega) = sigma * omega_0^2 / (\omega_0^2 - \omega^2 + i\gamma \omega) */
+/* a Lorentzian susceptibility 
+   \chi(\omega) = sigma * omega_0^2 / (\omega_0^2 - \omega^2 - i\gamma \omega)
+  If no_omega_0_denominator is true, then we omit the omega_0^2 factor in the
+  denominator to obtain a Drude model. */
 class lorentzian_susceptibility : public susceptibility {
 public:
-  lorentzian_susceptibility(double omega_0, double gamma) : omega_0(omega_0), gamma(gamma) {}
+  lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false) : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
   
@@ -174,6 +177,7 @@ public:
 
 private:
   double omega_0, gamma;
+  bool no_omega_0_denominator;
 };
 
 
