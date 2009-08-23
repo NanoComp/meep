@@ -84,17 +84,23 @@ bool susceptibility::needs_W_notowned(component c,
 // the previous timestep.
 int lorentzian_susceptibility::num_internal_data(
 			 realnum *P[NUM_FIELD_COMPONENTS][2],
-			 const grid_volume &v) const {
+			 const grid_volume &gv) const {
   int num = 0;
-  FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) num += v.ntot();
+  FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) num += gv.ntot();
   return num;
 }
+
+#define SWAP(t,a,b) { t SWAP_temp = a; a = b; b = SWAP_temp; }
+
+  // stable averaging of offdiagonal components
+#define OFFDIAG(u,g,sx,s) (0.25 * ((g[i]+g[i-sx])*u[i]		\
+		   	         + (g[i+s]+g[(i+s)-sx])*u[i+s]))
 
 void lorentzian_susceptibility::update_P
        (realnum *P[NUM_FIELD_COMPONENTS][2],
 	realnum *W[NUM_FIELD_COMPONENTS][2],
 	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
-	double dt, const grid_volume &v, realnum *P_internal_data) const {
+	double dt, const grid_volume &gv, realnum *P_internal_data) const {
   const double omega2pi = 2*pi*omega_0, g2pi = gamma*2*pi;
   const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
   const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
@@ -104,18 +110,63 @@ void lorentzian_susceptibility::update_P
   realnum *P_prev;
   P_prev = P_internal_data;
   FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) {
-    // FIXME: handle offdiagonal sigma
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
     if (w && s) {
       realnum *p = P[c][cmp], *pp = P_prev;
-      for (int i = 0; i < v.ntot(); ++i) {
-	realnum pcur = p[i];
-	p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
-			    - gamma1 * pp[i] + w[i] * s[i] * omega0dtsqr);
-	pp[i] = pcur;
+
+      // directions/strides for offdiagonal terms, similar to update_eh
+      const direction d = component_direction(c);
+      const int is = gv.stride(d) * (is_magnetic(c) ? -1 : +1);
+      direction d1 = cycle_direction(gv.dim, d, 1);
+      component c1 = direction_component(c, d1);
+      int is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
+      const realnum *w1 = W[c1][cmp];
+      const realnum *s1 = w1 ? sigma[c][d1] : NULL;
+      direction d2 = cycle_direction(gv.dim, d, 2);
+      component c2 = direction_component(c, d2);
+      int is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
+      const realnum *w2 = W[c2][cmp];
+      const realnum *s2 = w2 ? sigma[c][d2] : NULL;
+
+      if (s2 && !s1) { // make s1 the non-NULL one if possible
+	SWAP(direction, d1, d2);
+	SWAP(component, c1, c2);
+	SWAP(int, is1, is2);
+	SWAP(const realnum *, w1, w2);
+	SWAP(const realnum *, s1, s2);
+      }
+      if (s1 && s2) { // 3x3 anisotropic
+	LOOP_OVER_VOL_OWNED(gv, c, i) {
+	  realnum pcur = p[i];
+	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
+			      - gamma1 * pp[i] 
+			      + omega0dtsqr * (s[i] * w[i]
+					       + OFFDIAG(s1,w1,is1,is)
+					       + OFFDIAG(s2,w2,is2,is)));
+	  pp[i] = pcur;
+	}
+      }
+      else if (s1) { // 2x2 anisotropic
+	LOOP_OVER_VOL_OWNED(gv, c, i) {
+	  realnum pcur = p[i];
+	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
+			      - gamma1 * pp[i] 
+			      + omega0dtsqr * (s[i] * w[i]
+					       + OFFDIAG(s1,w1,is1,is)));
+	  pp[i] = pcur;
+	}
+      }
+      else { // isotropic
+	LOOP_OVER_VOL_OWNED(gv, c, i) {
+	  realnum pcur = p[i];
+	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
+			      - gamma1 * pp[i] 
+			      + omega0dtsqr * (s[i] * w[i]));
+	  pp[i] = pcur;
+	}
       }
     }
-    P_prev += v.ntot();
+    P_prev += gv.ntot();
   }
 }
 

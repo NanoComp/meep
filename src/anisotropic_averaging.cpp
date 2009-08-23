@@ -216,9 +216,9 @@ void structure_chunk::set_chi1inv(component c,
     double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(gv, here);
     medium.eff_chi1inv_row(c, chi1invrow,
-			   gv.dV(here, smoothing_diameter), tol,maxeval);
+			   gv.dV(here,smoothing_diameter), tol,maxeval);
     medium.eff_chi1inv_row(c, chi1invrow_offdiag,
-			   gv.dV(here-shift1, smoothing_diameter), tol,maxeval);
+			   gv.dV(here-shift1,smoothing_diameter), tol,maxeval);
     if (chi1inv[c][d0]) {
       chi1inv[c][d0][i] = (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
       trivial[0] = trivial[0] && (chi1inv[c][d0][i] == trivial_val[0]);
@@ -279,7 +279,6 @@ void structure_chunk::add_susceptibility(material_function &sigma,
       if (!newsus->sigma[c][d]) abort("Memory allocation error.\n");
     }
     bool trivial[3] = {true, true, true};
-    double sigrow[3];
     direction dc = component_direction(c);
     direction d0 = X, d1 = Y, d2 = Z;
     if (gv.dim == Dcyl) { d0 = R; d1 = P; }
@@ -287,9 +286,15 @@ void structure_chunk::add_susceptibility(material_function &sigma,
     realnum *s0 = newsus->sigma[c][d0];
     realnum *s1 = newsus->sigma[c][d1];
     realnum *s2 = newsus->sigma[c][d2];
+    vec shift1(gv[unit_ivec(gv.dim,component_direction(c))
+		  * (ft == E_stuff ? 1 : -1)]);
     LOOP_OVER_VOL(gv, c, i) {
+      double sigrow[3], sigrow_offdiag[3];
       IVEC_LOOP_LOC(gv, here);
       sigma.sigma_row(c, sigrow, here);
+      sigma.sigma_row(c, sigrow_offdiag, here - shift1);
+      sigrow[(idiag+1) % 3] = sigrow_offdiag[(idiag+1) % 3];
+      sigrow[(idiag+2) % 3] = sigrow_offdiag[(idiag+2) % 3];
       if (s0 && (s0[i] = sigrow[0]) != 0.) trivial[0] = false;
       if (s1 && (s1[i] = sigrow[1]) != 0.) trivial[1] = false;
       if (s2 && (s2[i] = sigrow[2]) != 0.) trivial[2] = false;

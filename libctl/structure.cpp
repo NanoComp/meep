@@ -1050,9 +1050,23 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
     for (int j = 0; j < slist.num_items; ++j)
       if (susceptibility_equiv(&slist.items[j], &current_pol->user_s)) {
 	int ic = meep::component_index(c);
-	sigrow[ic] = (ic == 0 ? slist.items[j].sigma_diag.x
-		      : (ic == 1 ? slist.items[j].sigma_diag.y
-			 : slist.items[j].sigma_diag.z));
+	switch (ic) { // which row of the sigma tensor to return
+	case 0:
+	  sigrow[0] = slist.items[j].sigma_diag.x;
+	  sigrow[1] = slist.items[j].sigma_offdiag.x;
+	  sigrow[2] = slist.items[j].sigma_offdiag.y;
+	  break;
+	case 1:
+	  sigrow[0] = slist.items[j].sigma_offdiag.x;
+	  sigrow[1] = slist.items[j].sigma_diag.y;
+	  sigrow[2] = slist.items[j].sigma_offdiag.z;
+	  break;
+	default: // case 2:
+	  sigrow[0] = slist.items[j].sigma_offdiag.y;
+	  sigrow[1] = slist.items[j].sigma_offdiag.z;
+	  sigrow[2] = slist.items[j].sigma_diag.z;
+	  break;
+	}
 	break;
       }
   }

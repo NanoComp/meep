@@ -41,6 +41,7 @@
 (define-class material-type no-parent)
 
 (define-class susceptibility no-parent
+  (define-property sigma-offdiag (vector3 0 0 0) 'vector3)
   (define-property sigma-diag no-default 'vector3))
 (define-class lorentzian-susceptibility susceptibility
   (define-property omega no-default 'number)
