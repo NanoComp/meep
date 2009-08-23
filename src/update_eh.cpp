@@ -153,6 +153,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     if (!f_w[ec][cmp] && dsigw != NO_DIRECTION) {
       f_w[ec][cmp] = new realnum[gv.ntot()];
       memcpy(f_w[ec][cmp], f[ec][cmp], gv.ntot() * sizeof(realnum));
+      if (needs_W_notowned(ec)) allocated_eh = true; // communication needed
     }
 
     // for solve_cw, when W exists we get W and E from special variables
