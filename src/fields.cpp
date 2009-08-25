@@ -477,14 +477,14 @@ void fields::require_component(component c) {
   if (gv.dim == D2) {
     int i;
     for (i = 0; i < num_chunks; ++i)
-      if (chunks[i]->s->has_chi1inv(Ex, Z) ||
-	  chunks[i]->s->has_chi1inv(Ey, Z) ||
-	  chunks[i]->s->has_chi1inv(Ez, X) ||
-	  chunks[i]->s->has_chi1inv(Ez, Y) ||
-	  chunks[i]->s->has_chi1inv(Hx, Z) ||
-	  chunks[i]->s->has_chi1inv(Hy, Z) ||
-	  chunks[i]->s->has_chi1inv(Hz, X) ||
-	  chunks[i]->s->has_chi1inv(Hz, Y))
+      if (chunks[i]->s->has_chi(Ex, Z) ||
+	  chunks[i]->s->has_chi(Ey, Z) ||
+	  chunks[i]->s->has_chi(Ez, X) ||
+	  chunks[i]->s->has_chi(Ez, Y) ||
+	  chunks[i]->s->has_chi(Hx, Z) ||
+	  chunks[i]->s->has_chi(Hy, Z) ||
+	  chunks[i]->s->has_chi(Hz, X) ||
+	  chunks[i]->s->has_chi(Hz, Y))
 	break;
     aniso2d = or_to_all(i < num_chunks);
   }

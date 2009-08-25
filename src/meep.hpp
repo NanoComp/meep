@@ -370,6 +370,8 @@ class structure_chunk {
   void set_chi1inv(component c, material_function &eps,
                    bool use_anisotropic_averaging,
 		   double tol, int maxeval);
+  bool has_chi(component c, direction d) const;
+  bool has_chisigma(component c, direction d) const;
   bool has_chi1inv(component c, direction d) const;
   void set_conductivity(component c, material_function &eps);
   void update_condinv();
@@ -501,7 +503,7 @@ class structure {
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  bool has_chi1inv(component c, direction d) const;
+  bool has_chi(component c, direction d) const;
   void set_epsilon(material_function &eps,
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,

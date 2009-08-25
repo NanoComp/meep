@@ -466,11 +466,23 @@ void structure::use_pml(direction d, boundary_side b, double dx) {
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
 }
 
-bool structure::has_chi1inv(component c, direction d) const {
+bool structure::has_chi(component c, direction d) const {
   int i;
-  for (i = 0; i < num_chunks && !chunks[i]->has_chi1inv(c, d); i++)
+  for (i = 0; i < num_chunks && !chunks[i]->has_chi(c, d); i++)
     ;
   return or_to_all(i < num_chunks);
+}
+
+bool structure_chunk::has_chi(component c, direction d) const {
+  return has_chisigma(c,d) || has_chi1inv(c, d);
+}
+
+bool structure_chunk::has_chisigma(component c, direction d) const {
+  if (is_mine()) {
+    for (susceptibility *sus = chiP[type(c)]; sus; sus = sus->next)
+      if (sus->sigma[c][d] && !sus->trivial_sigma[c][d]) return true;
+  }
+  return false;
 }
 
 bool structure_chunk::has_chi1inv(component c, direction d) const {
