@@ -37,12 +37,13 @@ double get_the_freq(monitor_point *p, component c) {
   return best_freq;
 }
 
-double freq_at_resolution(double e(const vec &), double a, component c) {
+double freq_at_resolution(double e(const vec &), double a, component c,
+			  double beta) {
   const grid_volume gv = vol2d(2.0,1.0,a);
   structure s(gv, e);
   s.set_epsilon(e);
 
-  fields f(&s);
+  fields f(&s, 0, false, beta);
   f.use_real_fields();
   f.use_bloch(vec(0,0));
   f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(0.5,0.5), 1.0);
@@ -61,18 +62,21 @@ double freq_at_resolution(double e(const vec &), double a, component c) {
   return freq;
 }
 
-void check_convergence(component c, double best_guess)
+void check_convergence(component c, double best_guess, double beta)
 {
   const double amin = 5.0, amax = 30.0, adelta = 5.0;
 
   master_printf("Checking convergence for %s field...\n",
 		component_name(c));
+  if (beta != 0)
+    master_printf("... using exp(i beta z) z-dependence with beta=%g\n", beta);
   if (best_guess)
     master_printf("(The correct frequency should be %g.)\n", best_guess);
 
   for (double a=amax; a >= amin; a-=adelta) {
-    const double freq = freq_at_resolution(holey_2d, a, c);
-    const double freq_shifted = freq_at_resolution(holey_shifted_2d, a, c);
+    const double freq = freq_at_resolution(holey_2d, a, c, beta);
+    const double freq_shifted = freq_at_resolution(holey_shifted_2d, a, c,
+						   beta);
 
     // Initialize best guess at the correct freq.
     if (!best_guess) {
@@ -106,12 +110,9 @@ int main(int argc, char **argv) {
   quiet = true;
 #ifdef HAVE_HARMINV
   master_printf("Running holes square-lattice resolution convergence test.\n");
-  double best_guess = 0.0;
-
-  check_convergence(Ey, 0.179944); // from MPB; correct to >= 4 decimal places
-
-  check_convergence(Ez, 0.166998); // from MPB; correct to >= 4 decimal places
-
+  check_convergence(Ey, 0.179944, 0); // from MPB; correct to >= 4 dec. places
+  check_convergence(Ez, 0.166998, 0); // from MPB; correct to >= 4 dec. places
+  check_convergence(Ez, 0.173605, .1); // from MPB; correct to >= 4 dec. places
 #endif
   return 0;
 }
