@@ -43,7 +43,7 @@ double freq_at_resolution(double e(const vec &), double a, component c,
   structure s(gv, e);
   s.set_epsilon(e);
 
-  fields f(&s, 0, false, beta);
+  fields f(&s, 0, beta);
   f.use_real_fields();
   f.use_bloch(vec(0,0));
   f.add_point_source(c, 0.18, 2.5, 0.0, 6.0, vec(0.5,0.5), 1.0);
@@ -110,12 +110,9 @@ int main(int argc, char **argv) {
   quiet = true;
 #ifdef HAVE_HARMINV
   master_printf("Running holes square-lattice resolution convergence test.\n");
-  double best_guess = 0.0;
-
-  check_convergence(Ey, 0.179944); // from MPB; correct to >= 4 decimal places
-
-  check_convergence(Ez, 0.166998); // from MPB; correct to >= 4 decimal places
-
+  check_convergence(Ey, 0.179944, 0); // from MPB; correct to >= 4 dec. places
+  check_convergence(Ez, 0.166998, 0); // from MPB; correct to >= 4 dec. places
+  check_convergence(Ez, 0.173605, .1); // from MPB; correct to >= 4 dec. places
 #endif
   return 0;
 }
