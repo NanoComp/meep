@@ -261,7 +261,7 @@
 				force-direction
 				(meep-component-direction source-component)
 				gx gy gz
-				ft source-vol 1)))))
+				ft source-vol true)))))
 	(set! counter (+ counter 1)))
       (apply run-until (cons (- T 1) (cons integrate-function step-funcs)))
       force-integral)))
