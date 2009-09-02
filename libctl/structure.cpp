@@ -1131,17 +1131,33 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
       case susceptibility::LORENTZIAN_SUSCEPTIBILITY: {
 	lorentzian_susceptibility *d =
 	  p->user_s.subclass.lorentzian_susceptibility_data;
-	master_printf("lorentzian susceptibility: omega=%g, gamma=%g\n",
-		      d->omega, d->gamma);
-	sus = new meep::lorentzian_susceptibility(d->omega, d->gamma);
+	if (d->which_subclass == lorentzian_susceptibility::NOISY_LORENTZIAN_SUSCEPTIBILITY) {
+	  noisy_lorentzian_susceptibility *nd = d->subclass.noisy_lorentzian_susceptibility_data;
+	  master_printf("noisy lorentzian susceptibility: omega=%g, gamma=%g, amp = %g\n",
+			d->omega, d->gamma, nd->noise_amp);
+	  sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->omega, d->gamma);
+	}
+	else { // just a Lorentzian
+	  master_printf("lorentzian susceptibility: omega=%g, gamma=%g\n",
+			d->omega, d->gamma);
+	  sus = new meep::lorentzian_susceptibility(d->omega, d->gamma);
+	}
 	break;
       }
       case susceptibility::DRUDE_SUSCEPTIBILITY: {
 	drude_susceptibility *d =
 	  p->user_s.subclass.drude_susceptibility_data;
-	master_printf("drude susceptibility: omega=%g, gamma=%g\n",
-		      d->omega, d->gamma);
-	sus = new meep::lorentzian_susceptibility(d->omega, d->gamma, true);
+	if (d->which_subclass == drude_susceptibility::NOISY_DRUDE_SUSCEPTIBILITY) {
+	  noisy_drude_susceptibility *nd = d->subclass.noisy_drude_susceptibility_data;
+	  master_printf("noisy drude susceptibility: omega=%g, gamma=%g, amp = %g\n",
+			d->omega, d->gamma, nd->noise_amp);
+	  sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->omega, d->gamma, true);
+	}
+	else { // just a Drude
+	  master_printf("drude susceptibility: omega=%g, gamma=%g\n",
+			d->omega, d->gamma);
+	  sus = new meep::lorentzian_susceptibility(d->omega, d->gamma, true);
+	}
 	break;
       }
       default:

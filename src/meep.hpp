@@ -175,11 +175,28 @@ public:
   virtual int num_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
 				const grid_volume &gv) const;
 
-private:
+protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
 };
 
+/* like a Lorentzian susceptibility, but the polarization equation
+   includes white noise with a specified amplitude */
+class noisy_lorentzian_susceptibility : public lorentzian_susceptibility {
+public:
+  noisy_lorentzian_susceptibility(double noise_amp, double omega_0, double gamma, bool no_omega_0_denominator = false) : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), noise_amp(noise_amp) {}
+  
+  virtual susceptibility *clone() const { return new noisy_lorentzian_susceptibility(*this); }
+  
+  virtual void update_P(realnum *P[NUM_FIELD_COMPONENTS][2],
+			realnum *W[NUM_FIELD_COMPONENTS][2], 
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+			double dt, const grid_volume &gv,
+			realnum *P_internal_data) const;
+
+protected:
+  double noise_amp;
+};
 
 class grace;
 
@@ -1444,6 +1461,12 @@ complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_
 // in mympi.cpp ... must be here in order to use realnum type
 void broadcast(int from, realnum *data, int size);
 #endif
+
+// random number generation: random.cpp
+void set_random_seed(unsigned long seed);
+double uniform_random(double a, double b); // uniform random in [a,b]
+double gaussian_random(double mean, double stddev); // normal random with given mean and stddev
+int random_int(int a, int b); // uniform random in [a,b)
 
 } /* namespace meep */
 

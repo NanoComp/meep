@@ -187,4 +187,26 @@ void lorentzian_susceptibility::update_P
   }
 }
 
+void noisy_lorentzian_susceptibility::update_P
+       (realnum *P[NUM_FIELD_COMPONENTS][2],
+	realnum *W[NUM_FIELD_COMPONENTS][2],
+	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+	double dt, const grid_volume &gv, realnum *P_internal_data) const {
+  lorentzian_susceptibility::update_P(P, W, W_prev, dt, gv, P_internal_data);
+
+  const double g2pi = gamma*2*pi;
+  const double amp = noise_amp * sqrt(g2pi) * dt*dt / (1 + g2pi*dt/2);
+  /* for uniform random numbers in [-amp,amp] below, multiply amp by sqrt(3) */
+
+  FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) {
+    const realnum *s = sigma[c][component_direction(c)];
+    if (s) {
+      realnum *p = P[c][cmp];
+      LOOP_OVER_VOL_OWNED(gv, c, i)
+	p[i] += gaussian_random(0, amp * sqrt(s[i]));
+      // for uniform random numbers, use uniform_random(-amp * sqrt(s[i]), +amp * sqrt(s[i]))
+    }
+  }
+}
+
 } // namespace meep
