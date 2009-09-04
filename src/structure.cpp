@@ -450,6 +450,30 @@ void structure::add_susceptibility(material_function &sigma, field_type ft, cons
   changing_chunks();
   for (int i=0;i<num_chunks;i++)
     chunks[i]->add_susceptibility(sigma, ft, sus);
+
+  /* Now, synchronize the trivial_sigma array among all
+     chunks/processes.  This will result in some "wasted" memory: if a
+     particular polarization P is needed on *any* chunk, it will be
+     allocated on *every* chunk.  However, this greatly simplifies
+     handling of boundary conditions between chunks; see also the
+     susceptibility::needs_P function.  (Note that the new
+     susceptibility object was added to the beginning of each chunk's
+     chiP[ft] list.) */
+  int trivial_sigma[NUM_FIELD_COMPONENTS][5];
+  FOR_COMPONENTS(c) FOR_DIRECTIONS(d) trivial_sigma[c][d] = true;
+  for (int i=0;i<num_chunks;i++) {
+    const susceptibility *newsus = chunks[i]->chiP[ft];
+    FOR_FT_COMPONENTS(ft,c) FOR_DIRECTIONS(d)
+      trivial_sigma[c][d] = trivial_sigma[c][d] && newsus->trivial_sigma[c][d];
+  }
+  int trivial_sigma_sync[NUM_FIELD_COMPONENTS][5];
+  and_to_all(&trivial_sigma[0][0], &trivial_sigma_sync[0][0],
+	     NUM_FIELD_COMPONENTS * 5);
+  for (int i=0;i<num_chunks;i++) {
+    susceptibility *newsus = chunks[i]->chiP[ft];
+    FOR_FT_COMPONENTS(ft,c) FOR_DIRECTIONS(d)
+      newsus->trivial_sigma[c][d] = trivial_sigma_sync[c][d];
+  }
 }
 
 void structure::use_pml(direction d, boundary_side b, double dx) {

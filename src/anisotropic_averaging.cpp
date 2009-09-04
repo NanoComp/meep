@@ -315,13 +315,6 @@ void structure_chunk::add_susceptibility(material_function &sigma,
     }
   }
 
-  // synchronize triviality among processes:
-  FOR_FT_COMPONENTS(ft,c) if (gv.has_field(c))
-    FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
-      direction d = component_direction(c2);
-      newsus->trivial_sigma[c][d] = and_to_all(newsus->trivial_sigma[c][d]);
-    }
-
   // finally, add to the beginning of the chiP list:
   newsus->next = chiP[ft];
   chiP[ft] = newsus;  
