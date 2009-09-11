@@ -44,10 +44,10 @@
   (define-property sigma-offdiag (vector3 0 0 0) 'vector3)
   (define-property sigma-diag no-default 'vector3))
 (define-class lorentzian-susceptibility susceptibility
-  (define-property omega no-default 'number)
+  (define-property frequency no-default 'number)
   (define-property gamma no-default 'number))
 (define-class drude-susceptibility susceptibility
-  (define-property omega no-default 'number)
+  (define-property frequency no-default 'number)
   (define-property gamma no-default 'number))
 (define-class noisy-lorentzian-susceptibility lorentzian-susceptibility
   (define-property noise-amp no-default 'number))
@@ -55,6 +55,7 @@
   (define-property noise-amp no-default 'number))
 
 (define polarizability lorentzian-susceptibility) ; backwards compat
+(define omega frequency) ; backwards compat
 (define (sigma x) (sigma-diag x x x))
 
 (define-class medium material-type

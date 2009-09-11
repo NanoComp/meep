@@ -1133,14 +1133,14 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
 	  p->user_s.subclass.lorentzian_susceptibility_data;
 	if (d->which_subclass == lorentzian_susceptibility::NOISY_LORENTZIAN_SUSCEPTIBILITY) {
 	  noisy_lorentzian_susceptibility *nd = d->subclass.noisy_lorentzian_susceptibility_data;
-	  master_printf("noisy lorentzian susceptibility: omega=%g, gamma=%g, amp = %g\n",
-			d->omega, d->gamma, nd->noise_amp);
-	  sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->omega, d->gamma);
+	  master_printf("noisy lorentzian susceptibility: frequency=%g, gamma=%g, amp = %g\n",
+			d->frequency, d->gamma, nd->noise_amp);
+	  sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma);
 	}
 	else { // just a Lorentzian
-	  master_printf("lorentzian susceptibility: omega=%g, gamma=%g\n",
-			d->omega, d->gamma);
-	  sus = new meep::lorentzian_susceptibility(d->omega, d->gamma);
+	  master_printf("lorentzian susceptibility: frequency=%g, gamma=%g\n",
+			d->frequency, d->gamma);
+	  sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma);
 	}
 	break;
       }
@@ -1149,14 +1149,14 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
 	  p->user_s.subclass.drude_susceptibility_data;
 	if (d->which_subclass == drude_susceptibility::NOISY_DRUDE_SUSCEPTIBILITY) {
 	  noisy_drude_susceptibility *nd = d->subclass.noisy_drude_susceptibility_data;
-	  master_printf("noisy drude susceptibility: omega=%g, gamma=%g, amp = %g\n",
-			d->omega, d->gamma, nd->noise_amp);
-	  sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->omega, d->gamma, true);
+	  master_printf("noisy drude susceptibility: frequency=%g, gamma=%g, amp = %g\n",
+			d->frequency, d->gamma, nd->noise_amp);
+	  sus = new meep::noisy_lorentzian_susceptibility(nd->noise_amp, d->frequency, d->gamma, true);
 	}
 	else { // just a Drude
-	  master_printf("drude susceptibility: omega=%g, gamma=%g\n",
-			d->omega, d->gamma);
-	  sus = new meep::lorentzian_susceptibility(d->omega, d->gamma, true);
+	  master_printf("drude susceptibility: frequency=%g, gamma=%g\n",
+			d->frequency, d->gamma);
+	  sus = new meep::lorentzian_susceptibility(d->frequency, d->gamma, true);
 	}
 	break;
       }
