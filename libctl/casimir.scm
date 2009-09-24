@@ -9,6 +9,7 @@
 ; weights are w(side, m) = area(side)/total area * 1/(m+1)^4, a rough estimate of the 
 ; contribution to the stress tensor from that side and that m 
 (define (casimir-source-info integration-vol n)
+  (define (modround x n) (modulo (inexact->exact (round x)) n))
   (define (get-src-index n) ;given n, extract out the two values of m for 3-d 
     (let* ((s 0) ;sum of diagonals
 	 (r 0) ;row intersection
@@ -30,7 +31,7 @@
 	 (yshift (vector3    0    (/ sy 2)    0))
 	 (zshift (vector3    0        0   (/ sz 2))))
     (if (and (> sy 1e-15) (> sz 1e-15))  ;3d cartesian: n = 6*f(m1,m2) + s
-	(let* ((s (modulo n 6))
+	(let* ((s (modround n 6))
 	       (nr (/ (- n s) 6))
 	       (ms (get-src-index nr)) ;get (m1 m2)
 	       (m1 (first ms))
@@ -57,7 +58,7 @@
 		(list-ref orientation-list s) 1))
 	(if (= dimensions -2) ;cylindricals - must make sure that the volume has only r >= 0
 	    (let* ((3-sides? (if (<= (vector3-x min-corner) 0) true false)) ;volume passes through the origin
-		   (s (if 3-sides? (modulo n 3) (modulo n 4)))
+		   (s (if 3-sides? (modround n 3) (modround n 4)))
 		   (nr (if 3-sides? (/ (- n s) 3) (/ (- n s) 4))) ;reduced index
 		   (ms (get-src-index nr)) ;extract out both m-phi and m-dct
 		   (m-phi (first ms))
@@ -86,7 +87,7 @@
 	      (list surface-vol
 		    (vector3-x surface-m) (vector3-y surface-m) (vector3-z surface-m)
 		    (list-ref orientation-list s) (if (or (= s 0) (= s 1)) 1 0)))
-	    (let* ((s (modulo n 4)) ;2d or quasi-3d cartesian: n = 4m + s, no ambiguity in m
+	    (let* ((s (modround n 4)) ;2d or quasi-3d cartesian: n = 4m + s, no ambiguity in m
 		   (m (/ (- n s) 4))
 		   (x-const-size (vector3 0 sy )) ;sz may be non-zero for quasi-3d systems
 		   (y-const-size (vector3 sx 0 ))
