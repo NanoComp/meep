@@ -242,15 +242,18 @@ void structure_chunk::set_chi1inv(component c,
     }
     ++ipixel;
   }
-  trivial_chi1inv[c][d0] = trivial[0];
-  trivial_chi1inv[c][d1] = trivial[1];
-  trivial_chi1inv[c][d2] = trivial[2];
-  if (trivial[(idiag+1)%3] && trivial[(idiag+2)%3]) {
-    FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
-      direction d = component_direction(c2);
-      if (d != dc) { delete[] chi1inv[c][d]; chi1inv[c][d] = 0; }
+  direction ds[3]; ds[0] = d0; ds[1] = d1; ds[2] = d2;
+  for (int i = 0; i < 3; ++i) {
+    trivial_chi1inv[c][ds[i]] = trivial[i];
+    if (i != idiag && trivial[i]) { // deallocate trivial offdiag
+      delete[] chi1inv[c][ds[i]]; 
+      chi1inv[c][ds[i]] = 0; 
     }
-    if (trivial[idiag]) { delete[] chi1inv[c][dc]; chi1inv[c][dc] = 0; }
+  }
+  // only deallocate trivial diag if entire tensor is trivial
+  if (trivial[0] && trivial[1] && trivial[2]) {
+    delete[] chi1inv[c][dc];
+    chi1inv[c][dc] = 0;
   }
 }
 
@@ -299,19 +302,19 @@ void structure_chunk::add_susceptibility(material_function &sigma,
       if (s1 && (s1[i] = sigrow[1]) != 0.) trivial[1] = false;
       if (s2 && (s2[i] = sigrow[2]) != 0.) trivial[2] = false;
     }
-    newsus->trivial_sigma[c][d0] = trivial[0];
-    newsus->trivial_sigma[c][d1] = trivial[1];
-    newsus->trivial_sigma[c][d2] = trivial[2];
-    if (trivial[(idiag+1)%3] && trivial[(idiag+2)%3]) {
-      FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
-	direction d = component_direction(c2);
-	if (d != dc) { 
-	  delete[] newsus->sigma[c][d]; newsus->sigma[c][d] = 0;
-	}
+
+    direction ds[3]; ds[0] = d0; ds[1] = d1; ds[2] = d2;
+    for (int i = 0; i < 3; ++i) {
+      newsus->trivial_sigma[c][ds[i]] = trivial[i];
+      if (i != idiag && trivial[i]) { // deallocate trivial offdiag
+	delete[] newsus->sigma[c][ds[i]]; 
+	newsus->sigma[c][ds[i]] = 0; 
       }
-      if (trivial[idiag]) { 
-	delete[] newsus->sigma[c][dc]; newsus->sigma[c][dc] = 0;
-      }
+    }
+    // only deallocate trivial diag if entire tensor is trivial
+    if (trivial[0] && trivial[1] && trivial[2]) {
+      delete[] newsus->sigma[c][dc]; 
+      newsus->sigma[c][dc] = 0; 
     }
   }
 
