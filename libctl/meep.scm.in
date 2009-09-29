@@ -414,8 +414,13 @@
 			      (lambda (s)
 				(zero? (imag-part 
 					(object-property-value s 'phase))))))
-	       (not (or (not k-point) (vector3= k-point (vector3 0))))))
-      (meep-fields-use-real-fields fields))
+	       (not (or (not k-point)
+			(and special-kz?
+			     (= (vector3-x k-point) 0)
+			     (= (vector3-y k-point) 0))
+			(vector3= k-point (vector3 0))))))
+      (meep-fields-use-real-fields fields)
+      (print "Meep: using complex fields.\n"))
   (if k-point (meep-fields-use-bloch fields 
 				     (if special-kz?
 					 (vector3 (vector3-x k-point) 
