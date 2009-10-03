@@ -92,7 +92,6 @@ src subdirectory: main Meep source code
  mpb.cpp: routines for importing MPB eigenmodes as source
  mympi.cpp: wrappers around MPI communications routines for parallel machines
  output_directory.cpp: routines for creating directories for output
- polarization.cpp: routines for Lorentzian polarizabilities
  sources.cpp: routines for current sources 
  sphere-quad.h: header file for spherical quadrature routines
  sphere-quad.cpp: implementation of spherical quadrature routines, used in
@@ -106,9 +105,10 @@ src subdirectory: main Meep source code
  stress.cpp: routines for computation of force spectrum via integration
  	     of the Maxwell stress tensor of the Fourier transformed fields
  structure.cpp: routines to initialize & manipulate structure chunks
+ susceptibility.cpp: polarization updates for various dispersive materials
  time.cpp: routines for displaying time information
  update_eh.cpp: wrapper function for update E/H from D/B
- update_pols.cpp: routine for updating polarization fields
+ update_pols.cpp: updating polarization fields via susceptibility classes
  vec.cpp: routines for initializing & manipulating vectors & volumes
  meep.hpp: header file for all classes & functions in Meep API
  meep_internals.hpp: header file for internal routines not part of Meep API

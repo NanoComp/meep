@@ -15,13 +15,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* This file implements dispersive materials for Meep via a polarization P = \chi(\omega) W,
-   where W is e.g. E or H.  Each subclass of the susceptibility class should implement a different
-   type of \chi(\omega).  The subclass knows how to timestep P given W at the current (and possibly
-   previous) timestep, and any additional internal data that needs to be allocated along with P. 
+/* This file implements dispersive materials for Meep via a
+   polarization P = \chi(\omega) W, where W is e.g. E or H.  Each
+   subclass of the susceptibility class should implement a different
+   type of \chi(\omega).  The subclass knows how to timestep P given W
+   at the current (and possibly previous) timestep, and any additional
+   internal data that needs to be allocated along with P.
 
-   Each \chi(\omega) is spatially multiplied by a (scalar) sigma array.  The meep::fields class is
-   responsible for allocating P and sigma and passing them to susceptibility::update_P. */
+   Each \chi(\omega) is spatially multiplied by a (scalar) sigma
+   array.  The meep::fields class is responsible for allocating P and
+   sigma and passing them to susceptibility::update_P. */
 
 
 #include <string.h>
