@@ -77,7 +77,7 @@ static complex<double> meep_mpb_A(const vec &p) {
   vec p0(p - meep_mpb_A_center);
   LOOP_OVER_DIRECTIONS(p.dim, d) r[d%3] = p0.in_direction(d) / s[d%3] + 0.5;
   double rx = r[0], ry = r[1], rz = r[2];
-  
+
   /* linearly interpolate the amplitude from MPB at point p */
   
   int x, y, z, x2, y2, z2;
@@ -97,6 +97,7 @@ static complex<double> meep_mpb_A(const vec &p) {
   x2 = (nx + (dx >= 0.0 ? x + 1 : x - 1)) % nx;
   y2 = (ny + (dy >= 0.0 ? y + 1 : y - 1)) % ny;
   z2 = (nz + (dz >= 0.0 ? z + 1 : z - 1)) % nz;
+  x = x % nx; y = y % ny; z = z % nz;
   
   /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
   dx = fabs(dx);
@@ -124,17 +125,22 @@ static complex<double> meep_mpb_A(const vec &p) {
 void fields::add_eigenmode_source(component c0, const src_time &src,
 				  const volume &where,
 				  const volume &eig_vol,
-				  int band_num, const vec &kpoint, int parity,
+				  int band_num, 
+				  const vec &kpoint, bool match_frequency,
+				  int parity,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
 #ifdef HAVE_MPB
   if (resolution <= 0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
-  mpb_real k[3] = {0,0,0};
+  mpb_real k[3] = {0,0,0}, kcart[3] = {0,0,0};
   double s[3] = {0,0,0}, o[3] = {0,0,0};
   mpb_real R[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
   mpb_real G[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
+  mpb_real kdir[3] = {0,0,0};
+  double omega_src = real(src.frequency()), kscale = 1.0;
+  double match_tol = sqrt(eigensolver_tol);
 
   if (!eig_vol.contains(where))
     abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
@@ -173,6 +179,18 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
     G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
   }
   
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j)
+      kcart[i] += G[j][i] * k[j];
+  double klen = sqrt(kcart[0]*kcart[0]+kcart[1]*kcart[1]+kcart[2]*kcart[2]);
+  if (klen == 0.0) {
+    if (match_frequency) abort("need nonzero kpoint guess to match frequency");
+    klen = 1;
+  }
+  kdir[0] = kcart[0] / klen;
+  kdir[1] = kcart[1] / klen;
+  kdir[2] = kcart[2] / klen;
+
   maxwell_data *mdata = create_maxwell_data(n[0], n[1], n[2],
 					    &local_N, &N_start, &alloc_N,
 					    band_num, band_num);
@@ -217,23 +235,60 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				       maxwell_zero_k_constraint,
 				       (void *) mdata);
   
-  eigensolver(H, eigvals, maxwell_operator, (void *) mdata,
-	      maxwell_preconditioner2, (void *) mdata,
-	      evectconstraint_chain_func,
-	      (void *) constraints,
-	      W, 3, 
-	      eigensolver_tol, &num_iters, 
-	      EIGS_DEFAULT_FLAGS | (am_master() && !quiet ? EIGS_VERBOSE : 0));
-  if (!quiet)
-    master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n",
-		  band_num, k[0],k[1],k[2], eigvals[band_num-1], num_iters);
+  mpb_real knew[3]; for (int i = 0; i < 3; ++i) knew[i] = k[i];
+
+  do {
+    eigensolver(H, eigvals, maxwell_operator, (void *) mdata,
+		maxwell_preconditioner2, (void *) mdata,
+		evectconstraint_chain_func,
+		(void *) constraints,
+		W, 3, 
+		eigensolver_tol, &num_iters, 
+		EIGS_DEFAULT_FLAGS | 
+		(am_master() && !quiet ? EIGS_VERBOSE : 0));
+    if (!quiet)
+      master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n",
+		    band_num, knew[0],knew[1],knew[2], 
+		    sqrt(eigvals[band_num-1]), num_iters);
+
+    if (match_frequency) {
+      // copy desired single eigenvector into scratch arrays
+      evectmatrix_resize(&W[0], 1, 0);
+      evectmatrix_resize(&W[1], 1, 0);
+      for (int i = 0; i < H.n; ++i)
+	W[0].data[i] = H.data[H.p-1 + i * H.p];
+      
+      // compute the group velocity in the k direction
+      maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
+      mpb_real v, vscratch; // v = Re( W[0]* (dTheta/dk) W[0] ) = g. velocity
+      evectmatrix_XtY_diag_real(W[0], W[1], &v, &vscratch);
+      v /= sqrt(eigvals[band_num - 1]);
+
+      // return to original size
+      evectmatrix_resize(&W[0], band_num, 0);
+      evectmatrix_resize(&W[1], band_num, 0);
+
+      // update k via Newton step
+      kscale = kscale - (sqrt(eigvals[band_num - 1]) - omega_src) 
+	/ (v * abs(kpoint));
+      if (!quiet)
+	master_printf("Newton step: group velocity v=%g, kscale=%g\n",
+		      v, kscale);
+      if (kscale < 0 || kscale > 100)
+	abort("Newton solver not converging -- need a better starting kpoint");
+      for (int i = 0; i < 3; ++i) knew[i] = k[i] * kscale;
+      update_maxwell_data_k(mdata, knew, G[0], G[1], G[2]);
+    }
+  } while (match_frequency 
+	   && fabs(sqrt(eigvals[band_num - 1]) - omega_src) > 
+	   omega_src * match_tol);
   
   evect_destroy_constraints(constraints);
   for (int i = 0; i < 3; ++i)
     destroy_evectmatrix(W[i]);
   
   src_time *src_mpb = src.clone();
-  src_mpb->set_frequency(sqrt(eigvals[band_num - 1]));
+  if (!match_frequency) src_mpb->set_frequency(sqrt(eigvals[band_num - 1]));
   
   complex<mpb_real> *cdata = (complex<mpb_real> *) mdata->fft_data;
   meep_mpb_A_s = s;

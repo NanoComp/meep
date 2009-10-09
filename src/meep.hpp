@@ -1043,7 +1043,9 @@ class fields {
   void add_eigenmode_source(component c, const src_time &src,
 			    const volume &where,
 			    const volume &eig_vol,
-			    int band_num, const vec &kpoint, int parity,
+			    int band_num, 
+			    const vec &kpoint, bool match_frequency,
+			    int parity,
 			    double eig_resolution, double eigensolver_tol,
 			    complex<double> amp,
 			    complex<double> A(const vec &) = 0);
