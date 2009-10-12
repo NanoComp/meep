@@ -162,11 +162,9 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 
     // save W field from this timestep in f_w_prev if needed by pols
     if (needs_W_prev(ec)) {
-      DOCMP {
-	if (!f_w_prev[ec][cmp]) f_w_prev[ec][cmp] = new realnum[gv.ntot()];
-	memcpy(f_w_prev[ec][cmp], f_w[ec][cmp] ? f_w[ec][cmp] : f[ec][cmp],
-	       sizeof(realnum) * gv.ntot());
-      }
+      if (!f_w_prev[ec][cmp]) f_w_prev[ec][cmp] = new realnum[gv.ntot()];
+      memcpy(f_w_prev[ec][cmp], f_w[ec][cmp] ? f_w[ec][cmp] : f[ec][cmp],
+	     sizeof(realnum) * gv.ntot());
     }
 
     if (f[ec][cmp] != f[dc][cmp])
