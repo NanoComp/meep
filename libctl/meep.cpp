@@ -12,6 +12,10 @@ static initialize *meep_init = 0;
 void ctl_start_hook(int *argc, char ***argv)
 {
   meep_init = new initialize(*argc, *argv);
+#ifdef HAVE_LIBCTL_QUIET
+  extern int libctl_quiet;
+  libctl_quiet = !am_master();
+#endif  
 }
 
 void ctl_stop_hook(void)

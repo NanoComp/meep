@@ -382,6 +382,15 @@ AC_EGREP_CPP(yes, [[
 #endif
 ]], [AC_MSG_RESULT(ok)], [AC_MSG_ERROR([libctl version ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX} or later is required])])
 
+# Check for libctl_quiet feature (in libctl 3.1.1 or later):
+AC_MSG_CHECKING([for libctl_quiet feature])
+if grep libctl_quiet "$LIBCTL_DIR/base/main.c" 2>&1 > /dev/null; then
+   AC_MSG_RESULT(yes)
+   AC_DEFINE([HAVE_LIBCTL_QUIET], [1], [If we have the libctl_quiet variable])
+else
+   AC_MSG_RESULT(no)
+fi
+
 # On IRIX, basename/dirname functions in libctl/main.c require -lgen
 AC_CHECK_LIB(gen, basename)
 
