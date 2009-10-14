@@ -331,13 +331,6 @@ public:
   virtual double chi3(component c, const vec &r) { (void)c; (void)r; return 0.0; }
   virtual bool has_chi2(component c) { (void)c; return false; }
   virtual double chi2(component c, const vec &r) { (void)c; (void)r; return 0.0; }
-  
-  // TODO: dielectric tensor, ...
-
-protected:
-  // current polarizability for calls to sigma(r):
-  field_type pol_ft;
-  double omega, gamma;
 };
 
 class simple_material_function : public material_function {
