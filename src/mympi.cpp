@@ -602,6 +602,7 @@ void end_global_communications(void)
 {
 #ifdef HAVE_MPI
   mycomm = mycomm_save;
+  mycomm_save = MPI_COMM_WORLD;
 #endif
 }
 
