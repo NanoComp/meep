@@ -51,7 +51,7 @@ susceptibility *susceptibility::clone() const {
   return sus;
 }
 
-/* Return whether or not we need to allocate P[c].  (We don't need to
+/* Return whether or not we need to allocate P[c][cmp].  (We don't need to
    allocate P[c] if we can be sure it will be zero.)
 
    We are a bit wasteful because if sigma is nontrivial in *any* chunk,
@@ -61,11 +61,12 @@ susceptibility *susceptibility::clone() const {
    have to worry about communicating with something that doesn't exist.
    TODO: reduce memory usage (bookkeeping seem much harder, though).
 */
-bool susceptibility::needs_P(component c, realnum *W[NUM_FIELD_COMPONENTS][2])
+bool susceptibility::needs_P(component c, int cmp,
+			     realnum *W[NUM_FIELD_COMPONENTS][2])
   const {
   if (!is_electric(c) && !is_magnetic(c)) return false;
   FOR_DIRECTIONS(d)
-    if (!trivial_sigma[c][d] && W[direction_component(c, d)][0]) return true;
+    if (!trivial_sigma[c][d] && W[direction_component(c, d)][cmp]) return true;
   return false;
 }
 
@@ -77,7 +78,7 @@ bool susceptibility::needs_W_notowned(component c,
 				realnum *W[NUM_FIELD_COMPONENTS][2]) const {
   FOR_DIRECTIONS(d) if (d != component_direction(c)) {
     component cP = direction_component(c, d);
-    if (needs_P(cP, W) && !trivial_sigma[cP][component_direction(c)])
+    if (needs_P(cP, 0, W) && !trivial_sigma[cP][component_direction(c)])
       return true;
   }
   return false;
@@ -86,10 +87,10 @@ bool susceptibility::needs_W_notowned(component c,
 // for Lorentzian susc. the internal data is just a backup of P from
 // the previous timestep.
 int lorentzian_susceptibility::num_internal_data(
-			 realnum *P[NUM_FIELD_COMPONENTS][2],
+			 realnum *W[NUM_FIELD_COMPONENTS][2],
 			 const grid_volume &gv) const {
   int num = 0;
-  FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) num += gv.ntot();
+  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
   return num;
 }
 
@@ -113,8 +114,7 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
 		   	         + (g[i+s]+g[(i+s)-sx])*u[i+s]))
 
 void lorentzian_susceptibility::update_P
-       (realnum *P[NUM_FIELD_COMPONENTS][2],
-	realnum *W[NUM_FIELD_COMPONENTS][2],
+       (realnum *W[NUM_FIELD_COMPONENTS][2],
 	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
 	double dt, const grid_volume &gv, realnum *P_internal_data) const {
   const double omega2pi = 2*pi*omega_0, g2pi = gamma*2*pi;
@@ -127,12 +127,12 @@ void lorentzian_susceptibility::update_P
       && lorentzian_unstable(omega_0, gamma, dt))
     abort("Lorentzian pole at too high a frequency %g for stability with dt = %g: reduce the Courant factor, increase the resolution, or use a different dielectric model\n", omega_0, dt);
 
-  realnum *P_prev;
-  P_prev = P_internal_data;
-  FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) {
+  realnum *P = P_internal_data;
+  realnum *P_prev = P_internal_data + num_internal_data(W, gv) / 2;
+  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
     if (w && s) {
-      realnum *p = P[c][cmp], *pp = P_prev;
+      realnum *p = P, *pp = P_prev;
 
       // directions/strides for offdiagonal terms, similar to update_eh
       const direction d = component_direction(c);
@@ -186,29 +186,73 @@ void lorentzian_susceptibility::update_P
 	}
       }
     }
+    P += gv.ntot();
     P_prev += gv.ntot();
   }
 }
 
+void lorentzian_susceptibility::subtract_P(field_type ft,
+					   realnum *f[NUM_FIELD_COMPONENTS][2],
+					   realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+					   const grid_volume &gv,
+					   realnum *P_internal_data) const {
+  field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
+  realnum *P = P_internal_data;
+  int ntot = gv.ntot();
+  /* note: don't use FOR_FT_COMPONENTS, use FOR_COMPONENTS to ensure
+     that we step through the P array in exactly the same way as for
+     update_P */
+  FOR_COMPONENTS(ec) DOCMP2 if (needs_P(ec, cmp, f)) {
+    component dc = field_type_component(ft2, ec);
+    if (type(ec) == ft && f_minus_p[dc][cmp]) {
+      realnum *fmp = f_minus_p[dc][cmp];
+      for (int i = 0; i < ntot; ++i) fmp[i] -= P[i];
+    }
+    P += ntot;
+  }
+}
+
+int lorentzian_susceptibility::num_cinternal_notowned_needed(component c,
+				   realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+  return needs_P(c, 0, W) ? 1 : 0;
+}
+
+int lorentzian_susceptibility::cinternal_notowned_offset(
+				        int inotowned, component c0, int cmp0, 
+					int n, 
+					realnum *W[NUM_FIELD_COMPONENTS][2],
+					const grid_volume &gv) const {
+  (void) inotowned; // always = 0
+  int offset = n;
+  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
+    if (c0 == c && cmp0 == cmp) return offset;
+    offset += gv.ntot();
+  }
+  abort("bug: notowned_offset called for unallocated component");
+  return offset;
+}
+
+
 void noisy_lorentzian_susceptibility::update_P
-       (realnum *P[NUM_FIELD_COMPONENTS][2],
-	realnum *W[NUM_FIELD_COMPONENTS][2],
+       (realnum *W[NUM_FIELD_COMPONENTS][2],
 	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
 	double dt, const grid_volume &gv, realnum *P_internal_data) const {
-  lorentzian_susceptibility::update_P(P, W, W_prev, dt, gv, P_internal_data);
+  lorentzian_susceptibility::update_P(W, W_prev, dt, gv, P_internal_data);
 
   const double g2pi = gamma*2*pi;
   const double amp = noise_amp * sqrt(g2pi) * dt*dt / (1 + g2pi*dt/2);
   /* for uniform random numbers in [-amp,amp] below, multiply amp by sqrt(3) */
 
-  FOR_COMPONENTS(c) DOCMP2 if (P[c][cmp]) {
+  realnum *P = P_internal_data;
+  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
     const realnum *s = sigma[c][component_direction(c)];
     if (s) {
-      realnum *p = P[c][cmp];
+      realnum *p = P;
       LOOP_OVER_VOL_OWNED(gv, c, i)
 	p[i] += gaussian_random(0, amp * sqrt(s[i]));
       // for uniform random numbers, use uniform_random(-amp * sqrt(s[i]), +amp * sqrt(s[i]))
     }
+    P += gv.ntot();
   }
 }
 

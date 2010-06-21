@@ -45,35 +45,18 @@ bool fields_chunk::update_pols(field_type ft) {
 
   for (polarization_state *p = pol[ft]; p; p = p->next) {
 
-    // Lazily allocate polarizations P where needed:
-    bool allocated_pol = false;
-    FOR_FT_COMPONENTS(ft, c)
-      if (!p->P[c][0] && p->s->needs_P(c, f)) {
-	DOCMP {
-	  p->P[c][cmp] = new realnum[gv.ntot()];
-	  memset(p->P[c][cmp], 0, gv.ntot() * sizeof(realnum));
-	}
-	allocated_pol = true;
-      }
-    if (allocated_pol) {
-      allocated_fields = true;
-      if (p->data) { // TODO: warning or error message in this weird case?
-	delete[] p->data; p->data = NULL;
-      }
-    }
-
     // Lazily allocate internal polarization data:
     if (!p->data) {
-      p->ndata = p->s->num_internal_data(p->P, gv);
+      p->ndata = p->s->num_internal_data(f, gv);
       if (p->ndata) {
 	p->data = new realnum[p->ndata];
-	p->s->init_internal_data(p->P, gv, p->data);
+	p->s->init_internal_data(f, gv, p->data);
 	allocated_fields = true;
       }
     }
 
     // Finally, timestep the polarizations:
-    p->s->update_P(p->P, w, f_w_prev, dt, gv, p->data);
+    p->s->update_P(w, f_w_prev, dt, gv, p->data);
   }
 
   return allocated_fields;

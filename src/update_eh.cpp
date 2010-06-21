@@ -61,7 +61,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       if (f[ec][cmp]) {
 	need_fmp = have_int_sources;
 	for (polarization_state *p = pol[ft]; p && !need_fmp; p = p->next)
-	  need_fmp = need_fmp || p->P[ec][cmp];
+	  need_fmp = need_fmp || p->s->needs_P(ec, cmp, f);
       }
       if (need_fmp) {
 	if (!f_minus_p[dc][cmp]) f_minus_p[dc][cmp] = new realnum[gv.ntot()];
@@ -91,13 +91,11 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     DOCMP if (f_minus_p[dc][cmp]) {
       realnum *fmp = f_minus_p[dc][cmp];
       memcpy(fmp, f[dc][cmp], sizeof(realnum) * ntot);
-      for (polarization_state *p = pol[ft]; p; p = p->next) 
-	if (p->P[ec][cmp]) {
-	  const realnum *P = p->P[ec][cmp];
-	  for (int i=0;i<ntot;i++) fmp[i] -= P[i];
-	}
     }
   }
+
+  for (polarization_state *p = pol[ft]; p; p = p->next) 
+    p->s->subtract_P(ft, f, f_minus_p, gv, p->data);
 
   //////////////////////////////////////////////////////////////////////////
   // Next, subtract time-integrated sources (i.e. polarizations, not currents)

@@ -362,25 +362,26 @@ void fields::connect_the_chunks() {
 		}
 		if (is_electric(corig) || is_magnetic(corig)) {
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
-		  int common_pols = 0, ni = 0, cni = 0;
+		  int ni = 0, cni = 0;
 		  for (polarization_state *pi=chunks[i]->pol[type(corig)]; pi; 
 		       pi = pi->next)
 		    for (polarization_state *pj=chunks[j]->pol[type(c)]; pj;
 			 pj = pj->next)
 		      if (*pi->s == *pj->s) { 
-			if (pi->P[corig][0] || pj->P[c][0]) common_pols++;
 			if (pi->data && chunks[i]->is_mine()) {
 			  ni += pi->s->num_internal_notowned_needed(corig, 
-								    pi->P);
+								 chunks[i]->f);
 			  cni += pi->s->num_cinternal_notowned_needed(corig, 
-								      pi->P);
+								 chunks[i]->f);
 			}
 			else if (pj->data && chunks[j]->is_mine()) {
-			  ni += pj->s->num_internal_notowned_needed(c,pj->P);
-			  cni += pj->s->num_cinternal_notowned_needed(c,pj->P);
+			  ni += pj->s->num_internal_notowned_needed(c,
+								chunks[j]->f);
+			  cni += pj->s->num_cinternal_notowned_needed(c,
+								chunks[j]->f);
 			}
 		      }
-		  const int nn = (is_real?1:2) * (common_pols + cni);
+		  const int nn = (is_real?1:2) * (cni);
 		  nc[f][ip][Incoming][i] += nn;
 		  nc[f][ip][Outgoing][j] += nn;
 		  comm_sizes[f][ip][pair] += nn;
@@ -501,52 +502,45 @@ void fields::connect_the_chunks() {
 		    for (polarization_state *pj=chunks[j]->pol[type(c)]; pj;
 			 pj = pj->next)
 		      if (*pi->s == *pj->s) {
-			if (pi->P[corig][0] || pj->P[c][0]) {
-			  if (ip == CONNECT_PHASE)
-			    chunks[i]->connection_phases[f]
-			      [wh[f][ip][Incoming][j]/2] = thephase;
-			  DOCMP {
-			    chunks[i]->connections[f][ip][Incoming]
-			      [wh[f][ip][Incoming][j]++] = pi->P[corig][cmp]+n;
-			    chunks[j]->connections[f][ip][Outgoing]
-			      [wh[f][ip][Outgoing][j]++] = pj->P[c][cmp]+m;
-			  }
-
-			  polarization_state *po = NULL;
-			  if (pi->data && chunks[i]->is_mine())
-			    po = pi;
-			  else if (pj->data && chunks[j]->is_mine())
-			    po = pj;
-			  if (po) {
-			    const connect_phase iip = CONNECT_COPY;
-			    const int ni = po->s->
-			      num_internal_notowned_needed(corig, po->P);
-			    for (int k = 0; k < ni; ++k) {
-			      chunks[i]->connections[f][iip][Incoming]
+			polarization_state *po = NULL;
+			fields_chunk *co = NULL;
+			if (pi->data && chunks[i]->is_mine()) {
+			  po = pi;
+			  co = chunks[i];
+			}
+			else if (pj->data && chunks[j]->is_mine()) {
+			  po = pj;
+			  co = chunks[j];
+			}
+			if (po) {
+			  const connect_phase iip = CONNECT_COPY;
+			  const int ni = po->s->
+			    num_internal_notowned_needed(corig, co->f);
+			  for (int k = 0; k < ni; ++k) {
+			    chunks[i]->connections[f][iip][Incoming]
 			      [wh[f][iip][Incoming][j]++] = pi->data +
-				po->s->internal_notowned_offset
-				(k, corig, n, po->P, chunks[i]->gv);
-			      chunks[j]->connections[f][iip][Outgoing]
+			      po->s->internal_notowned_offset
+			      (k, corig, n, co->f, chunks[i]->gv);
+			    chunks[j]->connections[f][iip][Outgoing]
 			      [wh[f][iip][Outgoing][j]++] = pj->data +
-				po->s->internal_notowned_offset
-				(k, c, m, po->P, chunks[j]->gv);
-			    }
-			    const int cni = po->s->
-			      num_cinternal_notowned_needed(corig, po->P);
-			    for (int k = 0; k < cni; ++k) {
-			      if (ip == CONNECT_PHASE)
-				chunks[i]->connection_phases[f]
-				  [wh[f][ip][Incoming][j]/2] = thephase;
-			      DOCMP {
-				chunks[i]->connections[f][ip][Incoming]
-				  [wh[f][ip][Incoming][j]++] = pi->data +
-				  po->s->cinternal_notowned_offset
-				  (k, corig, cmp, n, po->P, chunks[i]->gv);
-				chunks[j]->connections[f][ip][Outgoing]
-				  [wh[f][ip][Outgoing][j]++] = pj->data +
-				  po->s->cinternal_notowned_offset
-				  (k, c, cmp, m, po->P, chunks[j]->gv);
-			      }
+			      po->s->internal_notowned_offset
+			      (k, c, m, co->f, chunks[j]->gv);
+			  }
+			  const int cni = po->s->
+			    num_cinternal_notowned_needed(corig, co->f);
+			  for (int k = 0; k < cni; ++k) {
+			    if (ip == CONNECT_PHASE)
+			      chunks[i]->connection_phases[f]
+				[wh[f][ip][Incoming][j]/2] = thephase;
+			    DOCMP {
+			      chunks[i]->connections[f][ip][Incoming]
+				[wh[f][ip][Incoming][j]++] = pi->data +
+				po->s->cinternal_notowned_offset
+				(k, corig, cmp, n, co->f, chunks[i]->gv);
+			      chunks[j]->connections[f][ip][Outgoing]
+				[wh[f][ip][Outgoing][j]++] = pj->data +
+				po->s->cinternal_notowned_offset
+				(k, c, cmp, m, co->f, chunks[j]->gv);
 			    }
 			  }
 			}

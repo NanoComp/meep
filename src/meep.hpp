@@ -69,8 +69,9 @@ public:
   int get_id() const { return id; }
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
-  virtual void update_P(realnum *P[NUM_FIELD_COMPONENTS][2], 
-			realnum *W[NUM_FIELD_COMPONENTS][2], 
+  // update all of the internal polarization state given the W field
+  // at the current time step, possibly the previous field W_prev, etc.
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
 			double dt, const grid_volume &gv,
 			realnum *P_internal_data) const {
@@ -78,8 +79,20 @@ public:
     (void) P_internal_data; // avoid warnings for unused params
   }
 
+  // subtract all of the internal polarizations from the given f_minus_p
+  // field.  Also given the fields array if it is needed for some reason.
+  // Only update for ft fields.
+  virtual void subtract_P(field_type ft,
+			  realnum *f[NUM_FIELD_COMPONENTS][2], 
+			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+			  const grid_volume &gv,
+			  realnum *P_internal_data) const {
+    (void) f; (void) f_minus_p; (void) gv; (void) P_internal_data;
+  }
+
   // whether, for the given field W, Meep needs to allocate P[c]
-  virtual bool needs_P(component c, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual bool needs_P(component c, int cmp,
+		       realnum *W[NUM_FIELD_COMPONENTS][2]) const;
 
   // whether update_P will need the notowned part of W for this c
   // (which means that Meep will need to communicate it between chunks)
@@ -90,17 +103,18 @@ public:
   virtual bool needs_W_prev() const { return false; }
 
   /* A susceptibility may be associated with any amount of internal
-     data neede to update the polarization field; for example,
-     it may store the polarization field from previous timesteps,
-     atomic-level populations, or other data.   These routines
-     return the size of this internal-data array and initialize it. */
-  virtual int num_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
+     data need to update the polarization field.  This includes the
+     polarization field(s) itself.  It may also, for example, store
+     the polarization field from previous timesteps, atomic-level
+     populations, or other data.  These routines return the size of
+     this internal-data array and initialize it. */
+  virtual int num_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
 				const grid_volume &gv) const { 
-    (void) P; (void) gv; return 0;
+    (void) W; (void) gv; return 0;
   }
-  virtual void init_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
 				  const grid_volume &gv, realnum *data) const {
-    int n = num_internal_data(P, gv);
+    int n = num_internal_data(W, gv);
     for (int i = 0; i < n; ++i) data[i] = 0.0;
   }
 
@@ -113,29 +127,29 @@ public:
      are needed by update_P for the c Yee grid (note: we assume that we only
      have internal data for c's where we have external polarizations) */
   virtual int num_internal_notowned_needed(component c,
-					   realnum *P[NUM_FIELD_COMPONENTS][2])
-    const { (void) c; (void) P; return 0; }
+					   realnum *W[NUM_FIELD_COMPONENTS][2])
+    const { (void) c; (void) W; return 0; }
   /* the offset into the internal data of the n'th Yee-grid point in
      the c Yee grid for the inotowned internal field, where
      0 <= inotowned < num_internal_notowned_needed. */
   virtual int internal_notowned_offset(int inotowned, component c, int n,
-				       realnum *P[NUM_FIELD_COMPONENTS][2],
+				       realnum *W[NUM_FIELD_COMPONENTS][2],
 				       const grid_volume &gv) const {
-    (void) inotowned; (void) n; (void) c; (void) P; (void) gv; return 0; }
+    (void) inotowned; (void) n; (void) c; (void) W; (void) gv; return 0; }
   
   /* same thing as above, except this gives (possibly complex)
      internal fields that need to be multiplied by the same phase
      factor as the fields at boundaries.  Note: we assume internal fields
      are complex if and only if !is_real (i.e. if EM fields are complex) */
   virtual int num_cinternal_notowned_needed(component c,
-					   realnum *P[NUM_FIELD_COMPONENTS][2])
-    const { (void) c; (void) P; return 0; }
+					   realnum *W[NUM_FIELD_COMPONENTS][2])
+    const { (void) c; (void) W; return 0; }
   // real/imaginary parts offsets for cmp = 0/1
   virtual int cinternal_notowned_offset(int inotowned, component c, int cmp, 
 					int n, 
-					realnum *P[NUM_FIELD_COMPONENTS][2],
+					realnum *W[NUM_FIELD_COMPONENTS][2],
 					const grid_volume &gv) const {
-    (void) inotowned; (void) n; (void) c; (void) cmp; (void) P; (void) gv; 
+    (void) inotowned; (void) n; (void) c; (void) cmp; (void) W; (void) gv; 
     return 0; }
   
   susceptibility *next;
@@ -166,15 +180,26 @@ public:
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
   
-  virtual void update_P(realnum *P[NUM_FIELD_COMPONENTS][2],
-			realnum *W[NUM_FIELD_COMPONENTS][2], 
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
 			double dt, const grid_volume &gv,
 			realnum *P_internal_data) const;
 
-  virtual int num_internal_data(realnum *P[NUM_FIELD_COMPONENTS][2],
+  virtual void subtract_P(field_type ft,
+			  realnum *f[NUM_FIELD_COMPONENTS][2], 
+			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+			  const grid_volume &gv,
+			  realnum *P_internal_data) const;
+
+  virtual int num_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
 				const grid_volume &gv) const;
 
+  virtual int num_cinternal_notowned_needed(component c,
+				    realnum *W[NUM_FIELD_COMPONENTS][2]) const;
+  virtual int cinternal_notowned_offset(int inotowned, component c, int cmp, 
+					int n, 
+					realnum *W[NUM_FIELD_COMPONENTS][2],
+					const grid_volume &gv) const;
 protected:
   double omega_0, gamma;
   bool no_omega_0_denominator;
@@ -188,8 +213,7 @@ public:
   
   virtual susceptibility *clone() const { return new noisy_lorentzian_susceptibility(*this); }
   
-  virtual void update_P(realnum *P[NUM_FIELD_COMPONENTS][2],
-			realnum *W[NUM_FIELD_COMPONENTS][2], 
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
 			double dt, const grid_volume &gv,
 			realnum *P_internal_data) const;
@@ -863,7 +887,6 @@ enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 
 // data for each susceptibility
 typedef struct polarization_state_s {
-  realnum *P[NUM_FIELD_COMPONENTS][2]; // polarization vector
   realnum *data; // internal polarization data for the susceptibility
   int ndata;
   const susceptibility *s;
