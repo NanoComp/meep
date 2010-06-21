@@ -79,7 +79,10 @@ int test_metal(double eps(const vec &), int splitting, const char *mydirname) {
   s.set_output_directory(mydirname);
   s1.set_output_directory(mydirname);
 
-  master_printf("Metal test using %d chunks...\n", splitting);
+  s.add_susceptibility(one, E_stuff, lorentzian_susceptibility(0.3, 0.1));
+  s1.add_susceptibility(one, E_stuff, lorentzian_susceptibility(0.3, 0.1));
+
+  master_printf("Metal+dispersion test using %d chunks...\n", splitting);
   fields f(&s);
   f.add_point_source(Hz, 0.7, 2.5, 0.0, 4.0, vec(0.3,0.5), 1.0);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299,0.401), 1.0);
