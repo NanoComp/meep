@@ -94,8 +94,9 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     }
   }
 
-  for (polarization_state *p = pol[ft]; p; p = p->next) 
-    p->s->subtract_P(ft, f, f_minus_p, gv, p->data);
+  for (polarization_state *p = pol[ft]; p; p = p->next)
+    if (p->data)
+      p->s->subtract_P(ft, f, f_minus_p, gv, p->data);
 
   //////////////////////////////////////////////////////////////////////////
   // Next, subtract time-integrated sources (i.e. polarizations, not currents)
