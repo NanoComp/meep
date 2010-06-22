@@ -342,6 +342,13 @@ void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) {
   }
 }
 
+/* Same as yee2cent_offsets, but averages centered grid to get c */
+void grid_volume::cent2yee_offsets(component c, int &offset1, int &offset2) {
+  yee2cent_offsets(c, offset1, offset2);
+  offset1 = -offset1;
+  offset2 = -offset2;
+}
+
 bool volume::contains(const vec &p) const {
   LOOP_OVER_DIRECTIONS(dim,d) {
     if (p.in_direction(d) > in_direction_max(d) ||
