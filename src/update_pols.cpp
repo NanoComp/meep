@@ -48,7 +48,7 @@ bool fields_chunk::update_pols(field_type ft) {
     if (!p->data) {
       p->data = p->s->new_internal_data(f, gv);
       if (p->data) {
-	p->s->init_internal_data(f, gv, p->data);
+	p->s->init_internal_data(f, dt, gv, p->data);
 	allocated_fields = true;
       }
     }

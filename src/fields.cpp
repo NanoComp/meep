@@ -543,7 +543,7 @@ void fields_chunk::zero_fields() {
   }
   if (is_mine()) FOR_FIELD_TYPES(ft)
       for (polarization_state *p = pol[ft]; p; p = p->next) {
-	if (p->data) p->s->init_internal_data(f, gv, p->data);
+	if (p->data) p->s->init_internal_data(f, dt, gv, p->data);
       }
 }
 
@@ -572,7 +572,7 @@ void fields_chunk::use_real_fields() {
       if (p->data) { // TODO: print an error message in this case?
 	p->s->delete_internal_data(p->data);
 	p->data = p->s->new_internal_data(f, gv);
-	p->s->init_internal_data(f, gv, p->data);
+	p->s->init_internal_data(f, dt, gv, p->data);
       }
     }
 }

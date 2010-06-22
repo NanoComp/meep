@@ -112,8 +112,8 @@ public:
   }
   virtual void delete_internal_data(void *data) const;
   virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
-				  const grid_volume &gv, void *data) const {
-    (void) W; (void) gv; (void) data; }
+			 double dt, const grid_volume &gv, void *data) const {
+    (void) W; (void) dt; (void) gv; (void) data; }
   virtual void *copy_internal_data(void *data) const { (void)data; return 0; }
 
   /* The following methods are used in boundaries.cpp to set up any
@@ -188,7 +188,7 @@ public:
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
 				  const grid_volume &gv) const;
   virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
-				  const grid_volume &gv, void *data) const;
+			  double dt, const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
   virtual int num_cinternal_notowned_needed(component c,

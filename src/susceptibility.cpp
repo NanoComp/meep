@@ -111,7 +111,8 @@ void *lorentzian_susceptibility::new_internal_data(
 
 void lorentzian_susceptibility::init_internal_data(
 			  realnum *W[NUM_FIELD_COMPONENTS][2],
-			  const grid_volume &gv, void *data) const {
+			  double dt, const grid_volume &gv, void *data) const {
+  (void) dt; // unused
   lorentzian_data *d = (lorentzian_data *) data;
   size_t sz_data = d->sz_data;
   memset(d, 0, sz_data);
