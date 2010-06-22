@@ -16,7 +16,6 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <complex>
@@ -197,7 +196,7 @@ fields_chunk::~fields_chunk() {
   FOR_FIELD_TYPES(ft) for (polarization_state *cur = pol[ft]; cur; ) {
     polarization_state *p = cur;
     cur = cur->next;
-    delete[] p->data;
+    p->s->delete_internal_data(p->data);
     delete p;
   }
 }
@@ -221,7 +220,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,
     for (susceptibility *chiP = the_s->chiP[ft]; chiP; chiP = chiP->next) {
       polarization_state *p = new polarization_state;
       // P and data lazily allocated in update_pols
-      p->ndata = 0; p->data = NULL;
+      p->data = NULL;
       p->s = chiP;
       p->next = NULL;
       if (cur) { cur->next = p; cur = p; }
@@ -276,15 +275,11 @@ fields_chunk::fields_chunk(const fields_chunk &thef)
     polarization_state *cur = NULL;
     for (polarization_state *ocur = thef.pol[ft]; ocur; ocur = ocur->next) {
       polarization_state *p = new polarization_state;
-      p->ndata = 0; p->data = NULL;
+      p->data = NULL;
       p->s = ocur->s;
       p->next = NULL;
       pol[ft] = NULL;
-      if (ocur->data) {
-	p->ndata = ocur->ndata;
-	p->data = new realnum[p->ndata];
-	memcpy(p->data, ocur->data, p->ndata * sizeof(realnum));
-      }
+      if (ocur->data) p->data = p->s->copy_internal_data(p->data);
       if (cur) { cur->next = p; cur = p; }
       else { pol[ft] = cur = p; }
     }
@@ -513,7 +508,7 @@ void fields_chunk::remove_susceptibilities() {
     for (polarization_state *cur = pol[ft]; cur; ) {
       polarization_state *p = cur;
       cur = cur->next;
-      delete[] p->data;
+      p->s->delete_internal_data(p->data);
       delete p;
     }
     pol[ft] = NULL;
@@ -575,9 +570,8 @@ void fields_chunk::use_real_fields() {
   if (is_mine()) FOR_FIELD_TYPES(ft)
     for (polarization_state *p = pol[ft]; p; p = p->next) {
       if (p->data) { // TODO: print an error message in this case?
-	delete[] p->data;
-	p->ndata = p->s->num_internal_data(f, gv);
-	p->data = new realnum[p->ndata];
+	p->s->delete_internal_data(p->data);
+	p->data = p->s->new_internal_data(f, gv);
 	p->s->init_internal_data(f, gv, p->data);
       }
     }

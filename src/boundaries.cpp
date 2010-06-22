@@ -370,15 +370,15 @@ void fields::connect_the_chunks() {
 		      if (*pi->s == *pj->s) { 
 			if (pi->data && chunks[i]->is_mine()) {
 			  ni += pi->s->num_internal_notowned_needed(corig, 
-								 chunks[i]->f);
+								    pi->data);
 			  cni += pi->s->num_cinternal_notowned_needed(corig, 
-								 chunks[i]->f);
+								     pi->data);
 			}
 			else if (pj->data && chunks[j]->is_mine()) {
 			  ni += pj->s->num_internal_notowned_needed(c,
-								chunks[j]->f);
+								    pj->data);
 			  cni += pj->s->num_cinternal_notowned_needed(c,
-								chunks[j]->f);
+								    pj->data);
 			}
 		      }
 		  const int nn = (is_real?1:2) * (cni);
@@ -503,44 +503,39 @@ void fields::connect_the_chunks() {
 			 pj = pj->next)
 		      if (*pi->s == *pj->s) {
 			polarization_state *po = NULL;
-			fields_chunk *co = NULL;
-			if (pi->data && chunks[i]->is_mine()) {
+			if (pi->data && chunks[i]->is_mine())
 			  po = pi;
-			  co = chunks[i];
-			}
-			else if (pj->data && chunks[j]->is_mine()) {
+			else if (pj->data && chunks[j]->is_mine())
 			  po = pj;
-			  co = chunks[j];
-			}
 			if (po) {
 			  const connect_phase iip = CONNECT_COPY;
 			  const int ni = po->s->
-			    num_internal_notowned_needed(corig, co->f);
+			    num_internal_notowned_needed(corig, po->data);
 			  for (int k = 0; k < ni; ++k) {
 			    chunks[i]->connections[f][iip][Incoming]
-			      [wh[f][iip][Incoming][j]++] = pi->data +
-			      po->s->internal_notowned_offset
-			      (k, corig, n, co->f, chunks[i]->gv);
+			      [wh[f][iip][Incoming][j]++] = 
+			      po->s->internal_notowned_ptr(k, corig, n, 
+							   pi->data);
 			    chunks[j]->connections[f][iip][Outgoing]
-			      [wh[f][iip][Outgoing][j]++] = pj->data +
-			      po->s->internal_notowned_offset
-			      (k, c, m, co->f, chunks[j]->gv);
+			      [wh[f][iip][Outgoing][j]++] =
+			      po->s->internal_notowned_ptr(k, c, m, 
+							   pj->data);
 			  }
 			  const int cni = po->s->
-			    num_cinternal_notowned_needed(corig, co->f);
+			    num_cinternal_notowned_needed(corig, po->data);
 			  for (int k = 0; k < cni; ++k) {
 			    if (ip == CONNECT_PHASE)
 			      chunks[i]->connection_phases[f]
 				[wh[f][ip][Incoming][j]/2] = thephase;
 			    DOCMP {
 			      chunks[i]->connections[f][ip][Incoming]
-				[wh[f][ip][Incoming][j]++] = pi->data +
-				po->s->cinternal_notowned_offset
-				(k, corig, cmp, n, co->f, chunks[i]->gv);
+				[wh[f][ip][Incoming][j]++] =
+				po->s->cinternal_notowned_ptr(k, corig,cmp, n, 
+							      pi->data);
 			      chunks[j]->connections[f][ip][Outgoing]
-				[wh[f][ip][Outgoing][j]++] = pj->data +
-				po->s->cinternal_notowned_offset
-				(k, c, cmp, m, co->f, chunks[j]->gv);
+				[wh[f][ip][Outgoing][j]++] =
+				po->s->cinternal_notowned_ptr(k, c,cmp, m, 
+							     pj->data);
 			    }
 			  }
 			}

@@ -26,7 +26,7 @@
    array.  The meep::fields class is responsible for allocating P and
    sigma and passing them to susceptibility::update_P. */
 
-
+#include <stdlib.h>
 #include <string.h>
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -49,6 +49,10 @@ susceptibility *susceptibility::clone() const {
     sus->trivial_sigma[c][d] = trivial_sigma[c][d];
   }
   return sus;
+}
+
+void susceptibility::delete_internal_data(void *data) const {
+  free(data);
 }
 
 /* Return whether or not we need to allocate P[c][cmp].  (We don't need to
@@ -84,14 +88,60 @@ bool susceptibility::needs_W_notowned(component c,
   return false;
 }
 
+typedef struct {
+  size_t sz_data;
+  int ntot;
+  realnum *P[NUM_FIELD_COMPONENTS][2];
+  realnum *P_prev[NUM_FIELD_COMPONENTS][2];
+  realnum data[1];
+} lorentzian_data;
+
 // for Lorentzian susc. the internal data is just a backup of P from
 // the previous timestep.
-int lorentzian_susceptibility::num_internal_data(
+void *lorentzian_susceptibility::new_internal_data(
 			 realnum *W[NUM_FIELD_COMPONENTS][2],
 			 const grid_volume &gv) const {
   int num = 0;
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
-  return num;
+  size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
+  lorentzian_data *d = (lorentzian_data *) malloc(sz);
+  d->sz_data = sz;
+  return (void*) d;
+}
+
+void lorentzian_susceptibility::init_internal_data(
+			  realnum *W[NUM_FIELD_COMPONENTS][2],
+			  const grid_volume &gv, void *data) const {
+  lorentzian_data *d = (lorentzian_data *) data;
+  size_t sz_data = d->sz_data;
+  memset(d, 0, sz_data);
+  d->sz_data = sz_data;
+  int ntot = d->ntot = gv.ntot();
+  realnum *P = d->data;
+  realnum *P_prev = d->data + ntot;
+  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
+    d->P[c][cmp] = P;
+    d->P_prev[c][cmp] = P_prev;
+    P += 2*ntot;
+    P_prev += 2*ntot;
+  }
+}
+
+void *lorentzian_susceptibility::copy_internal_data(void *data) const {
+  lorentzian_data *d = (lorentzian_data *) data;
+  if (!d) return 0;
+  lorentzian_data *dnew = (lorentzian_data *) malloc(d->sz_data);
+  memcpy(dnew, d, d->sz_data);
+  int ntot = d->ntot;
+  realnum *P = dnew->data;
+  realnum *P_prev = dnew->data + ntot;
+  FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
+    dnew->P[c][cmp] = P;
+    dnew->P_prev[c][cmp] = P_prev;
+    P += 2*ntot;
+    P_prev += 2*ntot;
+  }
+  return (void*) dnew;
 }
 
 /* Return true if the discretized Lorentzian ODE is intrinsically unstable,
@@ -116,7 +166,8 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
 void lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
 	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
-	double dt, const grid_volume &gv, realnum *P_internal_data) const {
+	double dt, const grid_volume &gv, void *P_internal_data) const {
+  lorentzian_data *d = (lorentzian_data *) P_internal_data;
   const double omega2pi = 2*pi*omega_0, g2pi = gamma*2*pi;
   const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
   const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
@@ -127,12 +178,10 @@ void lorentzian_susceptibility::update_P
       && lorentzian_unstable(omega_0, gamma, dt))
     abort("Lorentzian pole at too high a frequency %g for stability with dt = %g: reduce the Courant factor, increase the resolution, or use a different dielectric model\n", omega_0, dt);
 
-  realnum *P = P_internal_data;
-  realnum *P_prev = P_internal_data + num_internal_data(W, gv) / 2;
-  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
+  FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
     if (w && s) {
-      realnum *p = P, *pp = P_prev;
+      realnum *p = d->P[c][cmp], *pp = d->P_prev[c][cmp];
 
       // directions/strides for offdiagonal terms, similar to update_eh
       const direction d = component_direction(c);
@@ -186,73 +235,62 @@ void lorentzian_susceptibility::update_P
 	}
       }
     }
-    P += gv.ntot();
-    P_prev += gv.ntot();
   }
 }
 
 void lorentzian_susceptibility::subtract_P(field_type ft,
-					   realnum *f[NUM_FIELD_COMPONENTS][2],
 					   realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
-					   const grid_volume &gv,
-					   realnum *P_internal_data) const {
+					   void *P_internal_data) const {
+  lorentzian_data *d = (lorentzian_data *) P_internal_data;
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
-  realnum *P = P_internal_data;
-  int ntot = gv.ntot();
-  /* note: don't use FOR_FT_COMPONENTS, use FOR_COMPONENTS to ensure
-     that we step through the P array in exactly the same way as for
-     update_P */
-  FOR_COMPONENTS(ec) DOCMP2 if (needs_P(ec, cmp, f)) {
+  int ntot = d->ntot;
+  FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
     component dc = field_type_component(ft2, ec);
-    if (type(ec) == ft && f_minus_p[dc][cmp]) {
+    if (f_minus_p[dc][cmp]) {
+      realnum *p = d->P[ec][cmp];
       realnum *fmp = f_minus_p[dc][cmp];
-      for (int i = 0; i < ntot; ++i) fmp[i] -= P[i];
+      for (int i = 0; i < ntot; ++i) fmp[i] -= p[i];
     }
-    P += ntot;
   }
 }
 
 int lorentzian_susceptibility::num_cinternal_notowned_needed(component c,
-				   realnum *W[NUM_FIELD_COMPONENTS][2]) const {
-  return needs_P(c, 0, W) ? 1 : 0;
+				   void *P_internal_data) const {
+  lorentzian_data *d = (lorentzian_data *) P_internal_data;
+  return d->P[c][0] ? 1 : 0;
 }
 
-int lorentzian_susceptibility::cinternal_notowned_offset(
-				        int inotowned, component c0, int cmp0, 
+realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
+				        int inotowned, component c, int cmp, 
 					int n, 
-					realnum *W[NUM_FIELD_COMPONENTS][2],
-					const grid_volume &gv) const {
+					void *P_internal_data) const {
+  lorentzian_data *d = (lorentzian_data *) P_internal_data;
   (void) inotowned; // always = 0
-  int offset = n;
-  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
-    if (c0 == c && cmp0 == cmp) return offset;
-    offset += gv.ntot();
-  }
-  abort("bug: notowned_offset called for unallocated component");
-  return offset;
+  if (!d->P[c][cmp]) // never true because of notowned_needed above
+    return NULL;
+  return d->P[c][cmp] + n;
 }
 
 
 void noisy_lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
 	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
-	double dt, const grid_volume &gv, realnum *P_internal_data) const {
+	double dt, const grid_volume &gv, void *P_internal_data) const {
   lorentzian_susceptibility::update_P(W, W_prev, dt, gv, P_internal_data);
+  lorentzian_data *d = (lorentzian_data *) P_internal_data;
 
   const double g2pi = gamma*2*pi;
   const double amp = noise_amp * sqrt(g2pi) * dt*dt / (1 + g2pi*dt/2);
   /* for uniform random numbers in [-amp,amp] below, multiply amp by sqrt(3) */
 
-  realnum *P = P_internal_data;
-  FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
+  FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
     const realnum *s = sigma[c][component_direction(c)];
     if (s) {
-      realnum *p = P;
+      realnum *p = d->P[c][cmp];
       LOOP_OVER_VOL_OWNED(gv, c, i)
 	p[i] += gaussian_random(0, amp * sqrt(s[i]));
       // for uniform random numbers, use uniform_random(-amp * sqrt(s[i]), +amp * sqrt(s[i]))
     }
-    P += gv.ntot();
   }
 }
 

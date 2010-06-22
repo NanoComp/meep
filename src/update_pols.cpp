@@ -16,7 +16,6 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
@@ -47,9 +46,8 @@ bool fields_chunk::update_pols(field_type ft) {
 
     // Lazily allocate internal polarization data:
     if (!p->data) {
-      p->ndata = p->s->num_internal_data(f, gv);
-      if (p->ndata) {
-	p->data = new realnum[p->ndata];
+      p->data = p->s->new_internal_data(f, gv);
+      if (p->data) {
 	p->s->init_internal_data(f, gv, p->data);
 	allocated_fields = true;
       }
