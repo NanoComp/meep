@@ -218,6 +218,58 @@ protected:
   double noise_amp;
 };
 
+class multilevel_susceptibility : public susceptibility {
+public:
+  multilevel_susceptibility(int L, int T,
+			    const realnum *Gamma,
+			    const realnum *N0,
+			    const realnum *alpha,
+			    const realnum *omega,
+			    const realnum *gamma);
+  virtual susceptibility *clone() const { return new multilevel_susceptibility(*this); }
+  virtual ~multilevel_susceptibility() {}
+
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+			double dt, const grid_volume &gv,
+			void *P_internal_data) const;
+
+  virtual void subtract_P(field_type ft,
+			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+			  void *P_internal_data) const;
+
+  virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
+				  const grid_volume &gv) const;
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
+				  double dt, const grid_volume &gv, 
+				  void *data) const;
+  virtual void *copy_internal_data(void *data) const;
+  virtual void delete_internal_data(void *data) const;
+
+  virtual int num_cinternal_notowned_needed(component c,
+					    void *P_internal_data) const;
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, 
+					  int n, 
+					  void *P_internal_data) const;
+
+  // always need notowned W and W_prev for E dot dP/dt terms
+  virtual bool needs_W_notowned(component c,
+				realnum *W[NUM_FIELD_COMPONENTS][2]) const {
+    (void) c; (void) W;
+    return true;
+  }
+  virtual bool needs_W_prev() const { return true; }
+
+protected:
+  int L; // number of atom levels
+  int T; // number of optical transitions
+  realnum *Gamma; // LxL matrix of relaxation rates Gamma[i*L+j] from j -> i
+  realnum *N0; // L initial populations
+  realnum *alpha; // LxT matrix of transition coefficients 1/omega
+  realnum *omega; // T transition frequencies
+  realnum *gamma; // T optical loss rates
+};
+
 class grace;
 
 // h5file.cpp: HDF5 file I/O.  Most users, if they use this
