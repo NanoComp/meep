@@ -21,21 +21,9 @@
 #include <string.h>
 #include "meep.hpp"
 #include "meep_internals.hpp"
+#include "config.h"
 
 namespace meep {
-
-typedef realnum *realnumP;
-
-typedef struct {
-  size_t sz_data;
-  int ntot;
-  realnum *GammaInv; // inv(1 + Gamma * dt / 2)
-  realnumP *P[NUM_FIELD_COMPONENTS][2]; // P[c][cmp][transition][i]
-  realnumP *P_prev[NUM_FIELD_COMPONENTS][2];
-  realnum *N; // ntot x L array of centered grid populations N[i*L + level]
-  realnum *Ntmp; // temporary length L array of levels, used in updating
-  realnum data[1];
-} multilevel_data;
 
 multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
 			    const realnum *theGamma,
@@ -57,40 +45,53 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
   memcpy(gamma, thegamma, sizeof(realnum) * T);
 }
 
-void multilevel_susceptibility::subtract_P(field_type ft,
-			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
-					   void *P_internal_data) const {
-  multilevel_data *d = (multilevel_data *) P_internal_data;
-  field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
-  int ntot = d->ntot;
-  for (int t = 0; t < T; ++t) { 
-    FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp][t]) {
-      component dc = field_type_component(ft2, ec);
-      if (f_minus_p[dc][cmp]) {
-	realnum *p = d->P[ec][cmp][t];
-	realnum *fmp = f_minus_p[dc][cmp];
-	for (int i = 0; i < ntot; ++i) fmp[i] -= p[i];
-      }
-    }
-  }
-}
+#if MEEP_SINGLE
+#  define DGETRF F77_FUNC(sgetrf,SGETRF)
+#  define DGETRI F77_FUNC(sgetri,SGETRI)
+#else 
+#  define DGETRF F77_FUNC(dgetrf,DGETRF)
+#  define DGETRI F77_FUNC(dgetri,DGETRI)
+#endif
+  extern "C" void DGETRF(const int *m,const int *n,realnum *A,const int *lda,int *ipiv,int *info);
+  extern "C" void DGETRI(const int *n,realnum *A,const int *lda,int *ipiv,realnum *work,int *lwork,int *info);
 
-/* U <- 1/U.  U must be real symmetric & positive-definite
-   Returns 1 on success, 0 if failure (e.g. matrix singular) */
-int sqmatrix_invert(realnum *S, int p)
+/* S -> inv(S), where S is a p x p matrix in row-major order */
+static bool invert(realnum *S, int p)
 {
+#ifdef HAVE_LAPACK
+  int info;
+  int *ipiv = new int[p];
+  DGETRF(&p, &p, S, &p, ipiv, &info);
+  if (info < 0) abort("invalid argument %d in DGETRF", -info);
+  if (info > 0) { delete[] ipiv; return false; } // singular
+  
+  int lwork = -1;
+  DGETRI(&p, S, &p, ipiv, NULL, &lwork, &info);
+  if (!info) abort("error %d in DGETRF", info);
+  realnum *work = new realnum[lwork];
+  DGETRI(&p, S, &p, ipiv, work, &lwork, &info);
+  if (info < 0) abort("invalid argument %d in DGETRI", -info);
 
-  if (!lapackglue_potrf('U', p, S, p)) return 0;
-  if (!lapackglue_potri('U', p, S, p)) return 0;
-
-  int i,j;
-  /* Now, copy the upper half onto the lower half of U */
-  for (i = 0; i < p; ++i)
-    for (j = i + 1; j < p; ++j)
-       S[j * p + i] =  S[i * p + j];
-
-  return 1;
+  delete[] work;
+  delete[] ipiv;
+  return info == 0;
+#else /* !HAVE_LAPACK */
+  abort("LAPACK is needed for multilevel-atom support");
+  return false;
+#endif
 }
+
+typedef realnum *realnumP;
+typedef struct {
+  size_t sz_data;
+  int ntot;
+  realnum *GammaInv; // inv(1 + Gamma * dt / 2)
+  realnumP *P[NUM_FIELD_COMPONENTS][2]; // P[c][cmp][transition][i]
+  realnumP *P_prev[NUM_FIELD_COMPONENTS][2];
+  realnum *N; // ntot x L array of centered grid populations N[i*L + level]
+  realnum *Ntmp; // temporary length L array of levels, used in updating
+  realnum data[1];
+} multilevel_data;
 
 void *multilevel_susceptibility::new_internal_data(
 				    realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -114,8 +115,16 @@ void multilevel_susceptibility::init_internal_data(
   memset(d, 0, sz_data);
   d->sz_data = sz_data;
   int ntot = d->ntot = gv.ntot();
-  if (!sqmatrix_invert(Gamma, L)) abort("Gamma matrix singular");
-  d->GammaInv = Gamma;
+
+  /* d->data points to a big block of data that holds GammaInv, P, P_prev, Ntmp, and N.
+     We also initialize a bunch of convenience pointer in d to point to the corresponding
+     data in d->data, so that we don't have to remember in other functions how d->data is
+     laid out. */
+
+  d->GammaInv = d->data;
+  memcpy(d->GammaInv, Gamma, L*L * sizeof(realnum));
+  if (!invert(d->GammaInv, L)) abort("multilevel_susceptibility: Gamma matrix singular");
+
   realnum *P = d->data + L*L;
   realnum *P_prev = d->data + L*L + ntot;
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
@@ -128,6 +137,7 @@ void multilevel_susceptibility::init_internal_data(
       P_prev += 2*ntot;
     }
   }
+
   d->Ntmp = P_prev;
   d->N = P_prev + L; // the last L*ntot block of the data
 
@@ -311,6 +321,24 @@ void multilevel_susceptibility::update_P
 	    pp[i] = pcur;
 	  }
 	}
+      }
+    }
+  }
+}
+
+void multilevel_susceptibility::subtract_P(field_type ft,
+			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+					   void *P_internal_data) const {
+  multilevel_data *d = (multilevel_data *) P_internal_data;
+  field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
+  int ntot = d->ntot;
+  for (int t = 0; t < T; ++t) { 
+    FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp][t]) {
+      component dc = field_type_component(ft2, ec);
+      if (f_minus_p[dc][cmp]) {
+	realnum *p = d->P[ec][cmp][t];
+	realnum *fmp = f_minus_p[dc][cmp];
+	for (int i = 0; i < ntot; ++i) fmp[i] -= p[i];
       }
     }
   }

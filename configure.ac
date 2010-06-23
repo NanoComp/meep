@@ -116,6 +116,15 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
        [AC_MSG_WARN([FFTW needed for MPB])])])])
 
 ###########################################################################
+
+
+if test "x$with_lapack" != xno; then
+   AC_F77_WRAPPERS
+   ACX_BLAS
+   ACX_LAPACK
+fi
+
+###########################################################################
 # Harminv library
 
 # First, try pkg-config, if it is installed.  Note that, annoyingly,
@@ -129,9 +138,13 @@ PKG_CHECK_MODULES(HARMINV, harminv >= 1.1, [CFLAGS="$CFLAGS $HARMINV_CFLAGS"; LI
 
 # As a fallback, check manually for BLAS/LAPACK and harminv libraries:
 if test $have_harminv = no; then
-	AC_F77_WRAPPERS
-	ACX_BLAS
-	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
+        if test "x$acx_lapack_ok" = x; then
+	   AC_F77_WRAPPERS
+	   ACX_BLAS
+	   ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
+	elif test "x$acx_lapack_ok" = xno; then
+	   AC_MSG_WARN([BLAS/LAPACK needed for harminv])
+	fi
 
         save_CC=$CC
 	CC=$CXX # harminv test must use $CXX since harminv may be a C++ lib
@@ -156,6 +169,8 @@ if test $have_mpb = maybe; then
 	AC_F77_WRAPPERS
 	ACX_BLAS
 	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for MPB])])
+  elif test "x$acx_lapack_ok" = xno; then
+       AC_MSG_WARN([BLAS/LAPACK needed for MPB])
   fi
   AC_CHECK_LIB(mpb, maxwell_target_operator1, [have_mpb=yes; LIBS="-lmpb $LIBS"],
                [AC_CHECK_LIB(mpb, maxwell_target_operator1, 

@@ -771,8 +771,8 @@ class grid_volume {
   }
   vec yee_shift(component) const;
   component eps_component() const;
-  void yee2cent_offsets(component c, int &offset1, int &offset2);
-  void cent2yee_offsets(component c, int &offset1, int &offset2);
+  void yee2cent_offsets(component c, int &offset1, int &offset2) const;
+  void cent2yee_offsets(component c, int &offset1, int &offset2) const;
 
   double boundary_location(boundary_side, direction) const;
   ivec big_corner() const;

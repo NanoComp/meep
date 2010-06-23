@@ -330,7 +330,7 @@ vec grid_volume::yee_shift(component c) const {
    locations: i, i+offset1, i+offset2, i+offset1+offset2. 
    (offset2, and possibly offset1, may be zero if only 2 or 1
    locations need to be averaged). */
-void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) {
+void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) const {
   offset1 = offset2 = 0;
   LOOP_OVER_DIRECTIONS(dim,d) {
     if (!iyee_shift(c).in_direction(d)) {
@@ -343,7 +343,7 @@ void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) {
 }
 
 /* Same as yee2cent_offsets, but averages centered grid to get c */
-void grid_volume::cent2yee_offsets(component c, int &offset1, int &offset2) {
+void grid_volume::cent2yee_offsets(component c, int &offset1, int &offset2) const {
   yee2cent_offsets(c, offset1, offset2);
   offset1 = -offset1;
   offset2 = -offset2;
