@@ -45,6 +45,29 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
   memcpy(gamma, thegamma, sizeof(realnum) * T);
 }
 
+multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibility &from) :
+  susceptibility(from) {
+  L = from.L; T = from.T;
+  Gamma = new realnum[L*L];
+  memcpy(Gamma, from.Gamma, sizeof(realnum) * L*L);
+  N0 = new realnum[L];
+  memcpy(N0, from.N0, sizeof(realnum) * L);
+  alpha = new realnum[L*T];
+  memcpy(alpha, from.alpha, sizeof(realnum) * L*T);
+  omega = new realnum[T];
+  memcpy(omega, from.omega, sizeof(realnum) * T);
+  gamma = new realnum[T];
+  memcpy(gamma, from.gamma, sizeof(realnum) * T);  
+}
+
+multilevel_susceptibility::~multilevel_susceptibility() {
+  delete[] Gamma;
+  delete[] N0;
+  delete[] alpha;
+  delete[] omega;
+  delete[] gamma;
+}
+
 #if MEEP_SINGLE
 #  define DGETRF F77_FUNC(sgetrf,SGETRF)
 #  define DGETRI F77_FUNC(sgetri,SGETRI)

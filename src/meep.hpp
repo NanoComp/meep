@@ -220,14 +220,16 @@ protected:
 
 class multilevel_susceptibility : public susceptibility {
 public:
+  multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0) {}
   multilevel_susceptibility(int L, int T,
 			    const realnum *Gamma,
 			    const realnum *N0,
 			    const realnum *alpha,
 			    const realnum *omega,
 			    const realnum *gamma);
+  multilevel_susceptibility(const multilevel_susceptibility &from);
   virtual susceptibility *clone() const { return new multilevel_susceptibility(*this); }
-  virtual ~multilevel_susceptibility() {}
+  virtual ~multilevel_susceptibility();
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
 			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
