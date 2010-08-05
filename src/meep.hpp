@@ -226,7 +226,8 @@ public:
 			    const realnum *N0,
 			    const realnum *alpha,
 			    const realnum *omega,
-			    const realnum *gamma);
+			    const realnum *gamma,
+			    const realnum *sigmat);
   multilevel_susceptibility(const multilevel_susceptibility &from);
   virtual susceptibility *clone() const { return new multilevel_susceptibility(*this); }
   virtual ~multilevel_susceptibility();
@@ -270,6 +271,7 @@ protected:
   realnum *alpha; // LxT matrix of transition coefficients 1/omega
   realnum *omega; // T transition frequencies
   realnum *gamma; // T optical loss rates
+  realnum *sigmat; // 5*T transition-specific sigma-diagonal factors
 };
 
 class grace;

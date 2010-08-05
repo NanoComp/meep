@@ -30,7 +30,8 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
 			    const realnum *theN0,
 			    const realnum *thealpha,
 			    const realnum *theomega,
-			    const realnum *thegamma) {
+			    const realnum *thegamma,
+			    const realnum *thesigmat) {
   L = theL;
   T = theT;
   Gamma = new realnum[L*L];
@@ -43,6 +44,8 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
   memcpy(omega, theomega, sizeof(realnum) * T);
   gamma = new realnum[T];
   memcpy(gamma, thegamma, sizeof(realnum) * T);
+  sigmat = new realnum[T];
+  memcpy(sigmat, thesigmat, sizeof(realnum) * T * 5);
 }
 
 multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibility &from) :
@@ -57,7 +60,9 @@ multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibi
   omega = new realnum[T];
   memcpy(omega, from.omega, sizeof(realnum) * T);
   gamma = new realnum[T];
-  memcpy(gamma, from.gamma, sizeof(realnum) * T);  
+  memcpy(gamma, from.gamma, sizeof(realnum) * T);
+  sigmat = new realnum[T];
+  memcpy(sigmat, from.sigmat, sizeof(realnum) * T * 5);
 }
 
 multilevel_susceptibility::~multilevel_susceptibility() {
@@ -66,6 +71,7 @@ multilevel_susceptibility::~multilevel_susceptibility() {
   delete[] alpha;
   delete[] omega;
   delete[] gamma;
+  delete[] sigmat;
 }
 
 #if MEEP_SINGLE
@@ -309,6 +315,7 @@ void multilevel_susceptibility::update_P
 
     FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp][t]) {
       const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
+      const double st = sigmat[5*t + component_direction(c)];
       if (w && s) {
 	realnum *p = d->P[c][cmp][t], *pp = d->P_prev[c][cmp][t];
 
@@ -340,7 +347,7 @@ void multilevel_susceptibility::update_P
 				  -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
 	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqr) 
 				- gamma1 * pp[i] 
-				+ omega0dtsqr * (s[i] * w[i])) * dNi;
+				+ omega0dtsqr * (st * s[i] * w[i])) * dNi;
 	    pp[i] = pcur;
 	  }
 	}
