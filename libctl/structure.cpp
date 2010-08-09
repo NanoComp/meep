@@ -1,5 +1,6 @@
 #include "meep-ctl.hpp"
 #include <ctlgeom.h>
+#include <string.h>
 
 using namespace ctlio;
 
@@ -1013,7 +1014,10 @@ static bool susceptibility_equiv(const susceptibility *o0,
 				 const susceptibility *o)
 {
 if (o0->which_subclass != o->which_subclass) return 0;
-if (o0->which_subclass == susceptibility::DRUDE_SUSCEPTIBILITY) {
+if (o0->which_subclass == susceptibility::MULTILEVEL_ATOM) {
+if (!multilevel_atom_equal(o0->subclass.multilevel_atom_data, o->subclass.multilevel_atom_data)) return 0;
+}
+else if (o0->which_subclass == susceptibility::DRUDE_SUSCEPTIBILITY) {
 if (!drude_susceptibility_equal(o0->subclass.drude_susceptibility_data, o->subclass.drude_susceptibility_data)) return 0;
 }
 else if (o0->which_subclass == susceptibility::LORENTZIAN_SUSCEPTIBILITY) {
@@ -1073,6 +1077,80 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
   
   if (destroy_material)
     material_type_destroy(material);
+}
+
+/* make multilevel_susceptibility from scheme input data */
+static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
+  if (!d || d->transitions.num_items == 0) return NULL;
+
+  // the user can number the levels however she wants, but we
+  // will renumber them to 0...(L-1)
+  int minlev = d->transitions.items[0].to_level;
+  int maxlev = minlev;
+  for (int t = 0; t < d->transitions.num_items; ++t) {
+    if (minlev > d->transitions.items[t].from_level)
+      minlev = d->transitions.items[t].from_level;
+    if (minlev > d->transitions.items[t].to_level)
+      minlev = d->transitions.items[t].to_level;
+    if (maxlev < d->transitions.items[t].from_level)
+      maxlev = d->transitions.items[t].from_level;
+    if (maxlev < d->transitions.items[t].to_level)
+      maxlev = d->transitions.items[t].to_level;
+  }
+  int L = maxlev - minlev + 1; // number of atom levels
+
+  // count number of radiative transitions
+  int T = 0;
+  for (int t = 0; t < d->transitions.num_items; ++t)
+    if (d->transitions.items[t].frequency != 0)
+      ++T;
+  if (T == 0) return NULL; // don't bother if there is no radiative coupling
+
+  // non-radiative transition-rate matrix Gamma
+  meep::realnum *Gamma = new meep::realnum[L * L];
+  memset(Gamma, 0, sizeof(meep::realnum) * (L*L));
+  for (int t = 0; t < d->transitions.num_items; ++t) {
+    int i = d->transitions.items[t].from_level - minlev;
+    int j = d->transitions.items[t].to_level - minlev;
+    Gamma[i*L+i] += d->transitions.items[t].transition_rate;
+    Gamma[j*L+i] -= d->transitions.items[t].transition_rate;
+  }
+
+  // initial populations of each level
+  meep::realnum *N0 = new meep::realnum[L];
+  memset(N0, 0, sizeof(meep::realnum) * L);
+  for (int p = 0; p < d->initial_populations.num_items && p < L; ++p)
+    N0[p] = d->initial_populations.items[p];
+
+  meep::realnum *alpha = new meep::realnum[L * T];
+  memset(alpha, 0, sizeof(meep::realnum) * (L * T));
+  meep::realnum *omega = new meep::realnum[T];
+  meep::realnum *gamma = new meep::realnum[T];
+  meep::realnum *sigmat = new meep::realnum[T * 5];
+  for (int t = 0, tr = 0; t < d->transitions.num_items; ++t)
+    if (d->transitions.items[t].frequency != 0) {
+      omega[tr] = d->transitions.items[t].frequency; // no 2*pi here
+      gamma[tr] = d->transitions.items[t].gamma;
+      meep::vec sig = vector3_to_vec(d->transitions.items[t].sigma_diag);
+      FOR_DIRECTIONS(dir) sigmat[5*tr + dir] = sig.in_direction(dir);
+      int i = d->transitions.items[t].from_level - minlev;
+      int j = d->transitions.items[t].to_level - minlev;
+      alpha[i * T + tr] = -1.0 / omega[tr];
+      alpha[j * T + tr] = +1.0 / omega[tr];
+      ++tr;
+    }
+
+  meep::multilevel_susceptibility *s
+    = new meep::multilevel_susceptibility(L, T, Gamma, N0, alpha,
+					  omega, gamma, sigmat);
+  delete[] Gamma;
+  delete[] N0;
+  delete[] alpha;
+  delete[] omega;
+  delete[] gamma;
+  delete[] sigmat;
+
+  return s;
 }
 
 // add a polarization to the list if it is not already there
@@ -1160,13 +1238,20 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
 	}
 	break;
       }
+      case susceptibility::MULTILEVEL_ATOM: {
+	multilevel_atom *d = p->user_s.subclass.multilevel_atom_data;
+	sus = make_multilevel_sus(d);
+	break;
+      }
       default:
 	meep::abort("unknown susceptibility type");
     }
 
     current_pol = p;
-    s->add_susceptibility(*this, ft, *sus);
-    delete sus;
+    if (sus) {
+      s->add_susceptibility(*this, ft, *sus);
+      delete sus;
+    }
   }
   current_pol = NULL;
   

@@ -114,6 +114,21 @@
 (define CYLINDRICAL -2) ; special value of dimensions for cylindrical coords
 
 ; ****************************************************************
+; Multilevel-atom nonlinear susceptibilities
+
+(define-class transition no-parent
+  (define-property from-level no-default 'integer non-negative?)
+  (define-property to-level no-default 'integer non-negative?)
+  (define-property transition-rate 0 'number) ; nonradiative rate (0 if none)
+  (define-property frequency 0 'number) ; radiative frequency (0 if none)
+  (define-property sigma-diag (vector3 1 1 1) 'vector3) ; per-transition sigma
+  (define-property gamma 0 'number)) ; optical damping rate
+
+(define-class multilevel-atom susceptibility
+  (define-property initial-populations '() (make-list-type 'number))
+  (define-property transitions '() (make-list-type 'transition)))
+
+; ****************************************************************
 ; Add some predefined variables, for convenience:
 
 (define vacuum (make dielectric (epsilon 1.0)))
