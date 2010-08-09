@@ -68,43 +68,56 @@ inline direction stop_at_direction(ndim dim) {
 
 component first_field_component(field_type ft);
 
-#define FOR_FIELD_TYPES(ft) for (field_type ft = E_stuff; \
-                                 ft <= WH_stuff; ft = (field_type) (ft+1))
-#define FOR_ELECTRIC_COMPONENTS(c) for (component c = Ex; \
-                                        c < Hx; c = (component) (c+1))
-#define FOR_MAGNETIC_COMPONENTS(c) for (component c = Hz; \
-                                        c > Ez; c = (component) (c-1))
-#define FOR_B_COMPONENTS(c) for (component c = Bz; \
-				 c > Dz; c = (component) (c-1))
-#define FOR_H_AND_B(h,b) for (component h=Hx, b=Bx; \
-			      h <= Hz; h = (component) (h+1), b = (component) (b+1))
-#define FOR_D_COMPONENTS(c) for (component c = Dz; \
-                                 c > Hz; c = (component) (c-1))
-#define FOR_E_AND_D(e,d) for (component e = Ex, d = Dx; \
-                              e <= Ez; e = (component) (e+1), d = (component) (d+1))
-#define FOR_E_AND_H(c) for (component c = Ex; c < Dx; c = (component) (c+1))
-#define FOR_D_AND_B(c) for (component c = Dx; c < Dielectric; c = (component) (c+1))
-#define FOR_FT_COMPONENTS(ft,c) for (component c = first_field_component(ft), loop_cstop = component(first_field_component(ft) + 5); c < loop_cstop; c = component(c+1))
-#define FOR_COMPONENTS(c) for (component c = Ex,loop_stop_co=Ey; \
-                               c != loop_stop_co; \
-                               c = (component)((c+1)%NUM_FIELD_COMPONENTS), \
-                               loop_stop_co = Ex)
-#define FOR_DIRECTIONS(d) for (direction d = X,loop_stop_di=Y; \
-                               d != loop_stop_di; \
-                               d = (direction)((d+1)%5), \
-                               loop_stop_di = X)
-#define FOR_SIDES(s) for (boundary_side s = High, loop_stop_bi=Low; \
-			  s != loop_stop_bi; \
-			  s = (boundary_side) ((s+1) % 2), \
-			  loop_stop_bi = High)
+#define FOR_FIELD_TYPES(ft) for (meep::field_type ft = meep::E_stuff;	\
+				 ft <= meep::WH_stuff;			\
+                                 ft = (meep::field_type) (ft+1))
+#define FOR_ELECTRIC_COMPONENTS(c) for (meep::component c = meep::Ex;	\
+                                        c < meep::Hx;			\
+                                        c = (meep::component) (c+1))
+#define FOR_MAGNETIC_COMPONENTS(c) for (meep::component c = meep::Hz;	\
+                                        c > meep::Ez;			\
+                                        c = (meep::component) (c-1))
+#define FOR_B_COMPONENTS(c) for (meep::component c = meep::Bz;	\
+				 c > meep::Dz; c = (meep::component) (c-1))
+#define FOR_H_AND_B(h,b) for (meep::component h=meep::Hx, b=meep::Bx;	\
+			      h <= meep::Hz;				\
+                              h = (meep::component) (h+1),		\
+			      b = (meep::component) (b+1))
+#define FOR_D_COMPONENTS(c) for (meep::component c = meep::Dz;	\
+                                 c > meep::Hz; c = (meep::component) (c-1))
+#define FOR_E_AND_D(e,d) for (meep::component e = meep::Ex, d = meep::Dx; \
+                              e <= meep::Ez; e = (meep::component) (e+1), \
+                              d = (component) (d+1))
+#define FOR_E_AND_H(c) for (meep::component c = meep::Ex; c < meep::Dx; \
+                            c = (meep::component) (c+1))
+#define FOR_D_AND_B(c) for (meep::component c = meep::Dx;		\
+                            c < meep::Dielectric; c = (meep::component) (c+1))
+#define FOR_FT_COMPONENTS(ft,c) for (meep::component c = meep::first_field_component(ft), loop_cstop = meep::component(meep::first_field_component(ft) + 5); c < loop_cstop; c = meep::component(c+1))
+#define FOR_COMPONENTS(c) for (meep::component c = meep::Ex,		\
+                                               loop_stop_co = meep::Ey; \
+                               c != loop_stop_co;			\
+                               c = (meep::component)((c+1) %		\
+					       meep::NUM_FIELD_COMPONENTS), \
+			       loop_stop_co = meep::Ex)
+#define FOR_DIRECTIONS(d) for (meep::direction d = meep::X,		\
+                                               loop_stop_di = meep::Y;	\
+                               d != loop_stop_di;			\
+                               d = (meep::direction)((d+1)%5),		\
+                               loop_stop_di = meep::X)
+#define FOR_SIDES(s) for (meep::boundary_side s = meep::High,		\
+                                             loop_stop_bi = meep::Low;	\
+			  s != loop_stop_bi;				\
+                          s = (meep::boundary_side) ((s+1) % 2),	\
+                          loop_stop_bi = meep::High)
 
 // only loop over directions where we have coordinates
-#define LOOP_OVER_DIRECTIONS(dim, d) for (meep::direction d = meep::start_at_direction(dim), \
-                                     loop_stop_directi = meep::stop_at_direction(dim); \
-                                     d < loop_stop_directi; d = (meep::direction) (d+1))
+#define LOOP_OVER_DIRECTIONS(dim, d)					\
+  for (meep::direction d = meep::start_at_direction(dim),		\
+                       loop_stop_directi = meep::stop_at_direction(dim); \
+       d < loop_stop_directi; d = (meep::direction) (d+1))
 
 // loop over all directions in which we might have fields
-#define LOOP_OVER_FIELD_DIRECTIONS(dim, d) for (direction d = dim == Dcyl ? Z : X; d < (dim == Dcyl ? NO_DIRECTION : R); d = direction(d+1))
+#define LOOP_OVER_FIELD_DIRECTIONS(dim, d) for (meep::direction d = dim == meep::Dcyl ? meep::Z : meep::X; d < (dim == meep::Dcyl ? meep::NO_DIRECTION : meep::R); d = meep::direction(d+1))
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define LOOP_OVER_IVECS(gv, is, ie, idx) \
@@ -117,9 +130,9 @@ component first_field_component(field_type ft);
            loop_d1 = (gv).yucky_direction(0), \
            loop_d2 = (gv).yucky_direction(1), \
            loop_d3 = (gv).yucky_direction(2), \
-           loop_s1 = (gv).stride((direction) loop_d1), \
-           loop_s2 = (gv).stride((direction) loop_d2), \
-           loop_s3 = (gv).stride((direction) loop_d3), \
+	   loop_s1 = (gv).stride((meep::direction) loop_d1),		\
+	   loop_s2 = (gv).stride((meep::direction) loop_d2),		\
+	   loop_s3 = (gv).stride((meep::direction) loop_d3),		\
            idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 \
                 + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
                 + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
@@ -169,8 +182,8 @@ component first_field_component(field_type ft);
            loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1, \
            loop_d1 = (gv).yucky_direction(0), \
            loop_d2 = (gv).yucky_direction(1), \
-           loop_s1 = (gv).stride((direction) loop_d1), \
-           loop_s2 = (gv).stride((direction) loop_d2), \
+	   loop_s1 = (gv).stride((meep::direction) loop_d1),	\
+	   loop_s2 = (gv).stride((meep::direction) loop_d2),	\
            loop_s3 = 1, \
            idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 \
                 + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
@@ -191,7 +204,7 @@ component first_field_component(field_type ft);
 
 #define S1LOOP_OVER_VOL_NOTOWNED(gv, c, idx) \
  for (ivec loop_notowned_is((gv).dim,0), loop_notowned_ie((gv).dim,0); \
-      loop_notowned_is == zero_ivec((gv).dim);) \
+      loop_notowned_is == meep::zero_ivec((gv).dim);)			\
    for (int loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
 		  				       &loop_notowned_is,  \
 						       &loop_notowned_ie); \
@@ -216,7 +229,7 @@ component first_field_component(field_type ft);
   loc.set_direction(direction(loop_d3), (0.5*loop_is3 + loop_i3) * (gv).inva)
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
-#define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? (s0).in_direction(direction(dir)) : (i == 1 ? (s1).in_direction(direction(dir)) : i == n - 1 ? (e0).in_direction(direction(dir)) : (i == n - 2 ? (e1).in_direction(direction(dir)) : 1.0))))
+#define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? (s0).in_direction(meep::direction(dir)) : (i == 1 ? (s1).in_direction(meep::direction(dir)) : i == n - 1 ? (e0).in_direction(meep::direction(dir)) : (i == n - 2 ? (e1).in_direction(meep::direction(dir)) : 1.0))))
 #define IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, k) IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, loop_i##k,loop_n##k,loop_d##k)
 #define IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV) (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 3) * (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 2) * ((dV) * IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 1))))
 
