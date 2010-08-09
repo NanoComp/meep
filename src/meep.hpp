@@ -266,7 +266,7 @@ public:
 protected:
   int L; // number of atom levels
   int T; // number of optical transitions
-  realnum *Gamma; // LxL matrix of relaxation rates Gamma[i*L+j] from j -> i
+  realnum *Gamma; // LxL matrix of relaxation rates Gamma[i*L+j] from i -> j
   realnum *N0; // L initial populations
   realnum *alpha; // LxT matrix of transition coefficients 1/omega
   realnum *omega; // T transition frequencies

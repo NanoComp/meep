@@ -138,21 +138,24 @@ void *multilevel_susceptibility::new_internal_data(
 void multilevel_susceptibility::init_internal_data(
 			  realnum *W[NUM_FIELD_COMPONENTS][2],
 			  double dt, const grid_volume &gv, void *data) const {
-  (void) dt;
   multilevel_data *d = (multilevel_data *) data;
   size_t sz_data = d->sz_data;
   memset(d, 0, sz_data);
   d->sz_data = sz_data;
   int ntot = d->ntot = gv.ntot();
 
-  /* d->data points to a big block of data that holds GammaInv, P, P_prev, Ntmp, and N.
-     We also initialize a bunch of convenience pointer in d to point to the corresponding
-     data in d->data, so that we don't have to remember in other functions how d->data is
+  /* d->data points to a big block of data that holds GammaInv, P,
+     P_prev, Ntmp, and N.  We also initialize a bunch of convenience
+     pointer in d to point to the corresponding data in d->data, so
+     that we don't have to remember in other functions how d->data is
      laid out. */
 
   d->GammaInv = d->data;
-  memcpy(d->GammaInv, Gamma, L*L * sizeof(realnum));
-  if (!invert(d->GammaInv, L)) abort("multilevel_susceptibility: Gamma matrix singular");
+  for (int i = 0; i < L; ++i)
+    for (int j = 0; j < L; ++j)
+      d->GammaInv[i*L + j] = (i == j) + Gamma[i*L + j] * dt/2;
+  if (!invert(d->GammaInv, L)) 
+    abort("multilevel_susceptibility: I + Gamma*dt/2 matrix singular");
 
   realnum *P = d->data + L*L;
   realnum *P_prev = d->data + L*L + ntot;
@@ -232,7 +235,7 @@ void multilevel_susceptibility::update_P
 	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
 	double dt, const grid_volume &gv, void *P_internal_data) const {
   multilevel_data *d = (multilevel_data *) P_internal_data;
-  double dtinv2 = 0.5 / dt;
+  double dt2 = 0.5 * dt;
 
   // field directions and offsets for E * dP dot product.
   component cdot[3] = {Dielectric,Dielectric,Dielectric};
@@ -252,9 +255,9 @@ void multilevel_susceptibility::update_P
     
     // Ntmp = (I - Gamma * dt/2) * N
     for (int l1 = 0; l1 < L; ++l1) {
-      Ntmp[l1] = (1.0 - Gamma[l1*L + l1]*dtinv2) * N[l1]; // diagonal term
-      for (int l2 = 0; l2 < l1; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dtinv2 * N[l2];
-      for (int l2 = l1+1; l2 < L; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dtinv2 * N[l2];
+      Ntmp[l1] = (1.0 - Gamma[l1*L + l1]*dt2) * N[l1]; // diagonal term
+      for (int l2 = 0; l2 < l1; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
+      for (int l2 = l1+1; l2 < L; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
     }
 
     // compute E*8 at point i
