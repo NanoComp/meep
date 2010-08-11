@@ -44,7 +44,7 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
   memcpy(omega, theomega, sizeof(realnum) * T);
   gamma = new realnum[T];
   memcpy(gamma, thegamma, sizeof(realnum) * T);
-  sigmat = new realnum[T];
+  sigmat = new realnum[T * 5];
   memcpy(sigmat, thesigmat, sizeof(realnum) * T * 5);
 }
 
@@ -61,7 +61,7 @@ multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibi
   memcpy(omega, from.omega, sizeof(realnum) * T);
   gamma = new realnum[T];
   memcpy(gamma, from.gamma, sizeof(realnum) * T);
-  sigmat = new realnum[T];
+  sigmat = new realnum[T * 5];
   memcpy(sigmat, from.sigmat, sizeof(realnum) * T * 5);
 }
 
@@ -95,8 +95,10 @@ static bool invert(realnum *S, int p)
   if (info > 0) { delete[] ipiv; return false; } // singular
   
   int lwork = -1;
-  DGETRI(&p, S, &p, ipiv, NULL, &lwork, &info);
-  if (!info) abort("error %d in DGETRF", info);
+  realnum work1;
+  DGETRI(&p, S, &p, ipiv, &work1, &lwork, &info);
+  if (info != 0) abort("error %d in DGETRI workspace query", info);
+  lwork = int(work1);
   realnum *work = new realnum[lwork];
   DGETRI(&p, S, &p, ipiv, work, &lwork, &info);
   if (info < 0) abort("invalid argument %d in DGETRI", -info);
@@ -158,7 +160,7 @@ void multilevel_susceptibility::init_internal_data(
     abort("multilevel_susceptibility: I + Gamma*dt/2 matrix singular");
 
   realnum *P = d->data + L*L;
-  realnum *P_prev = d->data + L*L + ntot;
+  realnum *P_prev = P + ntot;
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
     d->P[c][cmp] = new realnumP[T];
     d->P_prev[c][cmp] = new realnumP[T];
@@ -170,8 +172,8 @@ void multilevel_susceptibility::init_internal_data(
     }
   }
 
-  d->Ntmp = P_prev;
-  d->N = P_prev + L; // the last L*ntot block of the data
+  d->Ntmp = P;
+  d->N = P + L; // the last L*ntot block of the data
 
   // initial populations
   for (int i = 0; i < ntot; ++i)
@@ -198,7 +200,7 @@ void *multilevel_susceptibility::copy_internal_data(void *data) const {
   int ntot = d->ntot;
   dnew->GammaInv = dnew->data;
   realnum *P = dnew->data + L*L;
-  realnum *P_prev = dnew->data + L*L + ntot;
+  realnum *P_prev = P + ntot;
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
     dnew->P[c][cmp] = new realnumP[T];
     dnew->P_prev[c][cmp] = new realnumP[T];
@@ -209,8 +211,8 @@ void *multilevel_susceptibility::copy_internal_data(void *data) const {
       P_prev += 2*ntot;
     }
   }
-  dnew->Ntmp = P_prev;
-  dnew->N = P_prev + L;
+  dnew->Ntmp = P;
+  dnew->N = P + L;
   return (void*) dnew;
 }
 
@@ -284,7 +286,7 @@ void multilevel_susceptibility::update_P
 	realnum dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
 	  - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
 	EdP32 += dP * E8[idot][0];
-	if (d->P[cdot[idot]][1][t]) {
+	if (d->P[cdot[idot]][1]) {
 	  p = d->P[cdot[idot]][1][t]; pp = d->P_prev[cdot[idot]][1][t];
 	  dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
 	    + (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
@@ -316,7 +318,7 @@ void multilevel_susceptibility::update_P
     }
     if (lp < 0 || lm < 0) abort("invalid alpha array for transition %d", t);
 
-    FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp][t]) {
+    FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
       const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
       const double st = sigmat[5*t + component_direction(c)];
       if (w && s) {
@@ -366,7 +368,7 @@ void multilevel_susceptibility::subtract_P(field_type ft,
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
   int ntot = d->ntot;
   for (int t = 0; t < T; ++t) { 
-    FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp][t]) {
+    FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
       component dc = field_type_component(ft2, ec);
       if (f_minus_p[dc][cmp]) {
 	realnum *p = d->P[ec][cmp][t];
