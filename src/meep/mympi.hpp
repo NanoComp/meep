@@ -91,6 +91,8 @@ void begin_global_communications(void);
 void end_global_communications(void);
 void end_divide_parallel(void);
 
+int my_global_rank(void);
+
 } /* namespace meep */
 
 #endif /* MEEP_MY_MPI_H */

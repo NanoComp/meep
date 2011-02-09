@@ -38,8 +38,9 @@ static void init_rand(void) {
     if (rng) gsl_rng_free(rng);
     rng = gsl_rng_alloc(gsl_rng_mt19937);
 #endif
-    rand_inited = true;
-    set_random_seed(time(NULL)); // no infinite loop since rand_inited == true
+    rand_inited = true; // no infinite loop since rand_inited == true
+    set_random_seed(time(NULL) *
+		    (1 + my_global_rank())); 
   }
 }
 

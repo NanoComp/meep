@@ -615,4 +615,14 @@ void end_divide_parallel(void)
 #endif
 }
 
+int my_global_rank() {
+#ifdef HAVE_MPI
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  return rank;
+#else
+  return 0;
+#endif
+}
+
 } // namespace meep
