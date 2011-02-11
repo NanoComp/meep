@@ -453,13 +453,7 @@ void fields::boundary_communications(field_type ft) {
 // IO Routines...
 
 bool am_really_master() {
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  return (rank == 0);
-#else
-  return true;
-#endif
+  return (my_global_rank() == 0);
 }
 
 void master_printf(const char *fmt, ...) {
