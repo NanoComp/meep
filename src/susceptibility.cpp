@@ -267,7 +267,7 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
 					void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   (void) inotowned; // always = 0
-  if (!d->P[c][cmp]) // never true because of notowned_needed above
+  if (!d || !d->P[c][cmp])
     return NULL;
   return d->P[c][cmp] + n;
 }
