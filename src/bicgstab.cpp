@@ -84,15 +84,16 @@ static double norm2(int n, const realnum *x) {
   long double sum = 0;
   for (i = 0; i < n; ++i) {
     double xabs = fabs(x[i]);
-    if (xmax < xabs) xmax = xabs;
+    if (xmax > xabs) xmax = xabs;
   }
+  xmax = max_to_all(xmax);
   if (xmax == 0) return 0;
   scale = 1.0 / xmax;
   for (i = 0; i < n; ++i) {
     double xs = scale * x[i];
     sum += xs * xs;
   }
-  return xmax * sqrt(sum);
+  return xmax * sqrt(sum_to_all(sum));
 }
 
 static void xpay(int n, realnum *x, double a, const realnum *y) {
