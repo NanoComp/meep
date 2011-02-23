@@ -281,7 +281,8 @@ void noisy_lorentzian_susceptibility::update_P
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
 
   const double g2pi = gamma*2*pi;
-  const double amp = noise_amp * sqrt(g2pi) * dt*dt / (1 + g2pi*dt/2);
+  const double w2pi = omega_0*2*pi;
+  const double amp = w2pi * noise_amp * sqrt(g2pi) * dt*dt / (1 + g2pi*dt/2);
   /* for uniform random numbers in [-amp,amp] below, multiply amp by sqrt(3) */
 
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
