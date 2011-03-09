@@ -718,7 +718,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
 	sigsize[d] = o->sigsize[d];
 	for (int i=0;i<2*gv.num_direction(d)+1;i++) {
 	  sig[d][i] = o->sig[d][i];
-	  siginv[d][i] = o->sig[d][i];
+	  siginv[d][i] = o->siginv[d][i];
 	}
       }
 }
