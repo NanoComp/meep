@@ -4,6 +4,8 @@
 #include <meep.hpp>
 using namespace meep;
 
+double Rasymp = 1e-15, stretch = 3.0; // PML parameters
+
 // a simple material with xy offdiagonal terms in the tensors, for testing
 class offdiag_material : public material_function {
 public:
@@ -84,7 +86,7 @@ int check_pml1d(double eps(const vec &), double conductivity) {
     {
       grid_volume gv = vol1d(sz,res);
       gv.center_origin();
-      structure s(gv, eps, pml(dpml));
+      structure s(gv, eps, pml(dpml, Rasymp, stretch));
       s.set_conductivity(By, notone);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
@@ -94,7 +96,7 @@ int check_pml1d(double eps(const vec &), double conductivity) {
     {
       grid_volume gv = vol1d(sz2,res);
       gv.center_origin();
-      structure s(gv, eps, pml(dpml*2));
+      structure s(gv, eps, pml(dpml*2, Rasymp, stretch));
       s.set_conductivity(By, notone);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
@@ -138,7 +140,7 @@ int check_pml2d(double eps(const vec &), component c,
       grid_volume gv = vol2d(sxy,sxy,res);
       gv.center_origin();
       const symmetry S = offdiag != 0 ? rotate2(Z,gv) : mirror(X,gv)*symsign + mirror(Y,gv)*symsign;
-      structure s(gv, eps, pml(dpml), S);
+      structure s(gv, eps, pml(dpml, Rasymp, stretch), S);
       if (conductivity != 0) {
 	notone_val = conductivity;
 	s.set_conductivity(Bx, notone);
@@ -164,7 +166,7 @@ int check_pml2d(double eps(const vec &), component c,
       grid_volume gv = vol2d(sxy2,sxy2,res);
       gv.center_origin();
       const symmetry S = offdiag != 0 ? rotate2(Z,gv) : mirror(X,gv)*symsign + mirror(Y,gv)*symsign;
-      structure s(gv, eps, pml(dpml*2), S);
+      structure s(gv, eps, pml(dpml*2, Rasymp, stretch), S);
       if (conductivity != 0) {
 	notone_val = conductivity;
 	s.set_conductivity(Bx, notone);
@@ -226,7 +228,7 @@ int check_pmlcyl(double eps(const vec &)) {
     {
       grid_volume gv = volcyl(sr,sz,res);
       gv.center_origin();
-      structure s(gv, eps, pml(dpml));
+      structure s(gv, eps, pml(dpml, Rasymp, stretch));
       fields f(&s, 0);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ez, src, veccyl(0.1,0.1));
@@ -235,7 +237,7 @@ int check_pmlcyl(double eps(const vec &)) {
     {
       grid_volume gv = volcyl(sr2,sz2,res);
       gv.center_origin();
-      structure s(gv, eps, pml(dpml*2));
+      structure s(gv, eps, pml(dpml*2, Rasymp, stretch));
       fields f(&s, 0);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ez, src, veccyl(0.1,0.1));
@@ -260,7 +262,8 @@ int pml1d_scaling(double eps(const vec &)) {
     prev_ft = ft;
     {
       grid_volume gv = vol1d(sz,res);
-      structure s(gv, eps, (pml(2*dpml,Z,Low) + pml(dpml,Z,High)) * 1.5);
+      structure s(gv, eps, (pml(2*dpml,Z,Low, Rasymp, stretch)
+			    + pml(dpml,Z,High, Rasymp, stretch)) * 1.5);
       fields f(&s);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ex, src, vec(2*dpml+0.1));
@@ -295,7 +298,7 @@ int pmlcyl_scaling(double eps(const vec &), int m) {
     {
       grid_volume gv = volcyl(sr,sz,res);
       gv.center_origin();
-      structure s(gv, eps, pml(dpml));
+      structure s(gv, eps, pml(dpml, Rasymp, stretch));
       fields f(&s, m);
       gaussian_src_time src(freq, freq / 20);
       f.add_point_source(Ez, src, veccyl(0.5 * (sr - dpml), 0.1));
