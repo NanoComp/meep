@@ -164,7 +164,8 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     case PML: 
       sc->use_pml(d, thickness, s->user_volume.boundary_location(side, d),
 		  Rasymptotic, mean_stretch,
-		  pml_profile, pml_profile_data, pml_profile_integral); 
+		  pml_profile, pml_profile_data,
+		  pml_profile_integral, pml_profile_integral_u); 
       break;
     default: abort("unknown boundary region kind");
     }
@@ -197,7 +198,7 @@ boundary_region pml(double thickness, direction d, boundary_side side,
 		    double Rasymptotic, double mean_stretch) {
   return boundary_region(boundary_region::PML, thickness, 
 			 Rasymptotic, mean_stretch,
-			 pml_quadratic_profile, NULL, 1./3., 
+			 pml_quadratic_profile, NULL, 1./3., 1./4.,
 			 d, side, NULL);
 }
 boundary_region pml(double thickness, direction d,
@@ -594,10 +595,19 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
 			      double Rasymptotic, double mean_stretch,
 			      pml_profile_func pml_profile,
 			      void *pml_profile_data,
-			      double pml_profile_integral) {
+			      double pml_profile_integral,
+			      double pml_profile_integral_u) {
   if (dx <= 0.0) return;
-  const double kappa_prefac = (mean_stretch - 1) / pml_profile_integral;
   const double prefac = (-log(Rasymptotic))/(4*dx*pml_profile_integral);
+  /* The sigma term scales as 1/dx, since Rasymptotic is fixed.  To
+     give the same thickness scaling of the transition reflections,
+     the kappa (stretch) term must be *smoother* by one derivative
+     than the sigma term.  [See Oskooi et al, Opt. Express 16,
+     p. 11376 (2008)].  We accomplish this by making the kappa term
+     scale as pml_profile(x/dx) * (x/dx).   (The pml_profile_integral_u
+     parameter is the integral of this function.) */
+  const double kappa_prefac = (mean_stretch - 1) / pml_profile_integral_u;
+
   // Don't bother with PML if we don't even overlap with the PML region
   // ...note that we should calculate overlap in exactly the same
   // way that "x > 0" is computed below.
@@ -631,6 +641,7 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
 	}
       }
     }
+
     for (int i=gv.little_corner().in_direction(d);
 	 i<=gv.big_corner().in_direction(d)+1;++i) {
       int idx = i - gv.little_corner().in_direction(d);
@@ -638,7 +649,7 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
       if (x > 0) {
 	double s = pml_profile(x/dx, pml_profile_data);
 	sig[d][idx]=0.5*dt*prefac*s;
-	kap[d][idx] = 1 + kappa_prefac*s;
+	kap[d][idx] = 1 + kappa_prefac*s*(x/dx);
 	siginv[d][idx] = 1/(kap[d][idx]+sig[d][idx]);	
       }
     }

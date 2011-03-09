@@ -1278,6 +1278,13 @@ static double scm_pml_profile2(int dim, double *u, void *f_)
   SCM f = (SCM) f_; (void) dim;
   return ctl_convert_number_to_c(gh_call1(f, ctl_convert_number_to_scm(*u)));
 }
+// for integrating profile(u) * u
+static double scm_pml_profile2u(int dim, double *u, void *f_)
+{
+  SCM f = (SCM) f_; (void) dim;
+  return ctl_convert_number_to_c(gh_call1(f, ctl_convert_number_to_scm(*u)))
+    * (*u);
+}
 
 meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double resolution, bool enable_averaging,
@@ -1377,6 +1384,9 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     adaptive_integration(scm_pml_profile2u, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     d, b);
 	}
 	else
@@ -1388,6 +1398,9 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     pml_layers.items[i].mean_stretch,
 	     scm_pml_profile, pml_layers.items[i].pml_profile,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     adaptive_integration(scm_pml_profile2u, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     d,
@@ -1407,6 +1420,9 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     adaptive_integration(scm_pml_profile2u, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     (meep::direction) pml_layers.items[i].direction,
 	     b);
 	}
@@ -1419,6 +1435,9 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     pml_layers.items[i].mean_stretch,
 	     scm_pml_profile, pml_layers.items[i].pml_profile,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
+				  (void*) pml_layers.items[i].pml_profile,
+				  1e-9, 1e-4, 50000, &esterr, &errflag),
+	     adaptive_integration(scm_pml_profile2u, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     (meep::direction) pml_layers.items[i].direction,
