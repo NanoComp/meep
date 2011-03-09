@@ -441,7 +441,7 @@ class structure_chunk {
   realnum *conductivity[NUM_FIELD_COMPONENTS][5];
   realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale; // true if condinv needs to be recomputed
-  double *sig[5], *siginv[5]; // conductivity array for uPML
+  double *sig[5], *kap[5], *siginv[5]; // conductivity array for uPML
   int sigsize[5]; // conductivity array size
   grid_volume gv;  // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
@@ -465,7 +465,7 @@ class structure_chunk {
   void set_chi2(component c, material_function &eps);
   void use_pml(direction, double dx, double boundary_loc, double Rasymptotic, 
 	       pml_profile_func pml_profile, void *pml_profile_data,
-	       double pml_profile_integral);
+	       double pml_profile_integral, double mean_stretch = 1.0);
 
   void add_susceptibility(material_function &sigma, field_type ft,
 			  const susceptibility &sus);
@@ -496,17 +496,17 @@ public:
   typedef enum { NOTHING_SPECIAL, PML } boundary_region_kind;
   
   boundary_region() :
-    kind(NOTHING_SPECIAL), thickness(0.0), Rasymptotic(1e-16), pml_profile(NULL), pml_profile_data(NULL), pml_profile_integral(1.0), d(NO_DIRECTION), side(Low), next(0) {}
-  boundary_region(boundary_region_kind kind, double thickness, double Rasymptotic, pml_profile_func pml_profile, void* pml_profile_data, double pml_profile_integral, direction d, boundary_side side, boundary_region *next = 0) : kind(kind), thickness(thickness), Rasymptotic(Rasymptotic), pml_profile(pml_profile), pml_profile_data(pml_profile_data), pml_profile_integral(pml_profile_integral), d(d), side(side), next(next) {}
+    kind(NOTHING_SPECIAL), thickness(0.0), Rasymptotic(1e-16), mean_stretch(1.0), pml_profile(NULL), pml_profile_data(NULL), pml_profile_integral(1.0), d(NO_DIRECTION), side(Low), next(0) {}
+  boundary_region(boundary_region_kind kind, double thickness, double Rasymptotic, pml_profile_func pml_profile, void* pml_profile_data, double pml_profile_integral, direction d, boundary_side side, boundary_region *next = 0, double mean_stretch = 1.0) : kind(kind), thickness(thickness), Rasymptotic(Rasymptotic), mean_stretch(mean_stretch), pml_profile(pml_profile), pml_profile_data(pml_profile_data), pml_profile_integral(pml_profile_integral), d(d), side(side), next(next) {}
 
-  boundary_region(const boundary_region &r) : kind(r.kind), thickness(r.thickness), Rasymptotic(r.Rasymptotic), pml_profile(r.pml_profile), pml_profile_data(r.pml_profile_data), pml_profile_integral(r.pml_profile_integral), d(r.d), side(r.side) { 
+  boundary_region(const boundary_region &r) : kind(r.kind), thickness(r.thickness), Rasymptotic(r.Rasymptotic), mean_stretch(r.mean_stretch), pml_profile(r.pml_profile), pml_profile_data(r.pml_profile_data), pml_profile_integral(r.pml_profile_integral), d(r.d), side(r.side) { 
     next = r.next ? new boundary_region(*r.next) : 0;
   }
 
   ~boundary_region() { if (next) delete next; }
   
   void operator=(const boundary_region &r) {
-    kind = r.kind; thickness = r.thickness; Rasymptotic = r.Rasymptotic;
+    kind = r.kind; thickness = r.thickness; Rasymptotic = r.Rasymptotic; mean_stretch = r.mean_stretch;
     pml_profile = r.pml_profile; pml_profile_data = r.pml_profile_data;
     pml_profile_integral = r.pml_profile_integral;
     d = r.d; side = r.side;
@@ -535,7 +535,7 @@ public:
 
 private:
   boundary_region_kind kind;
-  double thickness, Rasymptotic;
+  double thickness, Rasymptotic, mean_stretch;
   pml_profile_func pml_profile;
   void *pml_profile_data;
   double pml_profile_integral;

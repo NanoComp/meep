@@ -164,7 +164,7 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     case PML: 
       sc->use_pml(d, thickness, s->user_volume.boundary_location(side, d),
 		  Rasymptotic,
-		  pml_profile, pml_profile_data, pml_profile_integral); 
+		  pml_profile, pml_profile_data, pml_profile_integral, mean_stretch); 
       break;
     default: abort("unknown boundary region kind");
     }
@@ -534,6 +534,7 @@ structure_chunk::~structure_chunk() {
   }
   FOR_DIRECTIONS(d) { 
     delete[] sig[d];
+    delete[] kap[d];
     delete[] siginv[d];
   }
   FOR_FIELD_TYPES(ft) { delete chiP[ft]; }
@@ -588,8 +589,9 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
 			      double Rasymptotic,
 			      pml_profile_func pml_profile,
 			      void *pml_profile_data,
-			      double pml_profile_integral) {
+			      double pml_profile_integral, double mean_stretch) {
   if (dx <= 0.0) return;
+  const double kappa_prefac = (mean_stretch - 1) / pml_profile_integral;
   const double prefac = (-log(Rasymptotic))/(4*dx*pml_profile_integral);
   // Don't bother with PML if we don't even overlap with the PML region
   // ...note that we should calculate overlap in exactly the same
@@ -605,8 +607,9 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
   if (is_mine()) {
     if (sig[d]) {
       delete[] sig[d]; 
+      delete[] kap[d]; 
       delete[] siginv[d];
-      sig[d] = NULL;
+      sig[d] = kap[d] = NULL;
       siginv[d] = NULL;
     }
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, dd) {
@@ -614,9 +617,11 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
 	int spml = (dd==d)?(2*gv.num_direction(d)+2):1;
 	sigsize[dd] = spml;
 	sig[dd] = new double[spml];
+	kap[dd] = new double[spml];
 	siginv[dd] = new double[spml];
 	for (int i=0;i<spml;++i) {
 	  sig[dd][i] = 0.0;
+	  kap[dd][i] = 1.0;
 	  siginv[dd][i] = 1.0;
 	}
       }
@@ -626,8 +631,10 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
       int idx = i - gv.little_corner().in_direction(d);
       double x = pml_x(i, dx, bloc, a);
       if (x > 0) {
-	sig[d][idx]=0.5*dt*prefac*pml_profile(x/dx, pml_profile_data);
-	siginv[d][idx] = 1/(1+sig[d][idx]);	
+	double s = pml_profile(x/dx, pml_profile_data);
+	sig[d][idx]=0.5*dt*prefac*s;
+	kap[d][idx] = 1 + kappa_prefac*s;
+	siginv[d][idx] = 1/(kap[d][idx]+sig[d][idx]);	
       }
     }
   }
@@ -705,6 +712,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   // Allocate the PML conductivity arrays:
   FOR_DIRECTIONS(d) { 
     sig[d] = NULL; 
+    kap[d] = NULL;
     siginv[d] = NULL;
     sigsize[d] = 0;
   }
@@ -714,10 +722,12 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
     FOR_DIRECTIONS(d) 
       if (o->sig[d]) {
 	sig[d] = new double[2*gv.num_direction(d)+1];
+	kap[d] = new double[2*gv.num_direction(d)+1];
 	siginv[d] = new double[2*gv.num_direction(d)+1];
 	sigsize[d] = o->sigsize[d];
 	for (int i=0;i<2*gv.num_direction(d)+1;i++) {
 	  sig[d][i] = o->sig[d][i];
+	  kap[d][i] = o->kap[d][i];
 	  siginv[d][i] = o->siginv[d][i];
 	}
       }
@@ -854,6 +864,7 @@ structure_chunk::structure_chunk(const grid_volume &thegv,
   condinv_stale = false;
   FOR_DIRECTIONS(d) { 
     sig[d] = NULL; 
+    kap[d] = NULL;
     siginv[d] = NULL;
     sigsize[d] = 0;
   }

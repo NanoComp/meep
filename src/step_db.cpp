@@ -116,8 +116,8 @@ bool fields_chunk::step_db(field_type ft) {
       }
       
       STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, Courant, 
-		dsig, s->sig[dsig], s->siginv[dsig], 
-		f_u[cc][cmp], dsigu, s->sig[dsigu], s->siginv[dsigu], 
+		dsig, s->sig[dsig], s->kap[dsig], s->siginv[dsig], 
+		f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu], s->siginv[dsigu], 
 		dt, 
 		s->conductivity[cc][d_c], s->condinv[cc][d_c],f_cond[cc][cmp]);
     }

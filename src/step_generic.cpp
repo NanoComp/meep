@@ -34,7 +34,7 @@ namespace meep {
    g = (g1,g2), where g1 or g2 may be NULL.  Note that dt/dx and/or s1
    and s2 may be negative to flip signs of derivatives.
 
-   PML: sig[k] = sigma[k]*dt/2, siginv[k] = 1 / (1 + sigma[k]*dt/2).
+   PML: sig[k] = sigma[k]*dt/2, siginv[k] = 1 / (kap[k] + sigma[k]*dt/2).
    Here, k is the index in the dsig direction.  if dsig ==
    NO_DIRECTION, then PML is not used.  (dsig is the sigma direction.)
 
@@ -60,8 +60,8 @@ namespace meep {
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const grid_volume &gv, double dtdx,
-	       direction dsig, const DPR sig, const DPR siginv,
-	       RPR fu, direction dsigu, const DPR sigu, const DPR siginvu,
+	       direction dsig, const DPR sig, const DPR kap, const DPR siginv,
+	       RPR fu, direction dsigu, const DPR sigu, const DPR kapu, const DPR siginvu,
 	       double dt, 
 	       const RPR cnd, const RPR cndinv, RPR fcnd)
 {
@@ -113,7 +113,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] = ((1 - dt2 * cnd[i]) * fprev - 
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
 	else {
@@ -121,7 +121,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] = ((1 - dt2 * cnd[i]) * fprev
 		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
@@ -130,14 +130,14 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_ku; double fprev = fu[i];
 	    fu[i] -= dtdx * (g1[i+s1] - g1[i]);
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
@@ -154,7 +154,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
 		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
-	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    f[i] = ((kap[k] - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	  }
 	}
 	else {
@@ -163,7 +163,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
 		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	    f[i] = ((1 - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    f[i] = ((kap[k] - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	  }
 	}
       }
@@ -171,14 +171,14 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	if (g2) {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
-	    f[i] = ((1 - sig[k]) * f[i] -
+	    f[i] = ((kap[k] - sig[k]) * f[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
 	  }
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
-	    f[i] = ((1 - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
+	    f[i] = ((kap[k] - sig[k]) * f[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
 	  }
 	}
       }
@@ -194,8 +194,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
 		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
-	    fu[i] = ((1 - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    fu[i] = ((kap[k] - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	  /////////////////////////////////////////////////////////////
 	}
@@ -205,8 +205,8 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	    realnum fcnd_prev = fcnd[i];
 	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
 		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	    fu[i] = ((1 - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    fu[i] = ((kap[k] - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
@@ -214,16 +214,16 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	if (g2) {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
-	    fu[i] = ((1 - sig[k]) * fu[i] -
+	    fu[i] = ((kap[k] - sig[k]) * fu[i] -
 		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * siginv[k];
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
 	else {
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
-	    fu[i] = ((1 - sig[k]) * fu[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
-	    f[i] = siginvu[ku] * ((1 - sigu[ku]) * f[i] + fu[i] - fprev);
+	    fu[i] = ((kap[k] - sig[k]) * fu[i] - dtdx * (g1[i+s1]-g1[i])) * siginv[k];
+	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
 	  }
 	}
       }
@@ -340,9 +340,9 @@ inline double calc_nonlinear_u(const double Dsqr,
    In PML (dsigw != NO_DIR), we have an additional auxiliary field fw,
    which is updated by the equations:
           fw = u * g
-          df/dt = dfw/dt - sigmaw * fw
+          df/dt = kappaw dfw/dt - sigmaw * fw
    That is, fw is updated like the non-PML f, and f is updated from
-   fw by a little ODE.  Here, sigw[k] = sigmaw[k]*dt/2.
+   fw by a little ODE.  Here, sigw[k] = sigmaw[k]*dt/2, kappaw[k] = kapw[k]
 
 */
 
@@ -351,7 +351,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 		      const RPR u, const RPR u1, const RPR u2,
 		      int s, int s1, int s2,
 		      const RPR chi2, const RPR chi3,
-		      RPR fw, direction dsigw, const DPR sigw)
+		      RPR fw, direction dsigw, const DPR sigw, const DPR kapw)
 {
   if (!f) return;
   
@@ -377,20 +377,20 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2))
 	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
 			       gs, us, chi2[i], chi3[i]);	  
-	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
 	/////////////////////////////////////////////////////////////
       }
       else {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2));
-	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
       }
     }
@@ -399,19 +399,19 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1))
 	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s),
 			       gs, us, chi2[i], chi3[i]);
-	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
       }
       else {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1));
-	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
       }
     }
@@ -425,20 +425,20 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double g2s = g2[i]+g2[i+s]+g2[i-s2]+g2[i+(s-s2)];
 	    double gs = g[i]; double us = u[i];
-	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	    DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs+0.0625*(g1s*g1s+g2s*g2s),
 					     gs, us, chi2[i], chi3[i]);
-	    f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	    f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	  }
 	}
 	else if (g1) {
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double g1s = g1[i]+g1[i+s]+g1[i-s1]+g1[i+(s-s1)];
 	    double gs = g[i]; double us = u[i];
-	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	    DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs + 0.0625*(g1s*g1s),
 					     gs, us, chi2[i], chi3[i]);
-	    f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	    f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	  }
 	}
 	else if (g2) {
@@ -447,25 +447,25 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	else {
 	  LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	    double gs = g[i]; double us = u[i];
-	    DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	    DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	    fw[i] = (gs*us)*calc_nonlinear_u(gs*gs, gs,us, chi2[i],chi3[i]);
-	    f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	    f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	  }
 	}
       }
       else if (u) {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
 	  double gs = g[i]; double us = u[i];
-	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us);
-	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
       }
       else {
 	LOOP_OVER_VOL_OWNED(gv, fc, i) {
-	  DEF_kw; double fwprev = fw[i], sigwkw = sigw[kw];
+	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = g[i];
-	  f[i] += (1 + sigwkw) * fw[i] - (1 - sigwkw) * fwprev;
+	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
       }
     }

@@ -105,8 +105,8 @@ symmetry r_to_minus_r_symmetry(int m);
 void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const grid_volume &gv, double dtdx,
-	       direction dsig, const double *sig, const double *siginv,
-	       realnum *fu, direction dsigu, const double *sigu, const double *siginvu,
+	       direction dsig, const double *sig, const double *kap, const double *siginv,
+	       realnum *fu, direction dsigu, const double *sigu, const double *kapu, const double *siginvu,
 	       double dt, const realnum *cnd, const realnum *cndinv,
 	       realnum *fcnd);
 
@@ -115,7 +115,7 @@ void step_update_EDHB(realnum *f, component fc, const grid_volume &gv,
 		      const realnum *u, const realnum *u1, const realnum *u2,
 		      int s, int s1, int s2,
 		      const realnum *chi2, const realnum *chi3,
-		      realnum *fw, direction dsigw, const double *sigw);
+		      realnum *fw, direction dsigw, const double *sigw, const double *kapw);
 
 void step_beta(realnum *f, component c, const realnum *g,
 	       const grid_volume &gv, double betadt,
@@ -128,8 +128,8 @@ void step_beta(realnum *f, component c, const realnum *g,
 void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum *g2,
 	       int s1, int s2, // strides for g1/g2 shift
 	       const grid_volume &gv, double dtdx,
-	       direction dsig, const double *sig, const double *siginv,
-	       realnum *fu, direction dsigu, const double *sigu, const double *siginvu,
+	       direction dsig, const double *sig, const double *kap, const double *siginv,
+	       realnum *fu, direction dsigu, const double *sigu, const double *kapu, const double *siginvu,
 	       double dt, const realnum *cnd, const realnum *cndinv,
                realnum *fcnd);
 
@@ -138,7 +138,7 @@ void step_update_EDHB_stride1(realnum *f, component fc, const grid_volume &gv,
 		      const realnum *u, const realnum *u1, const realnum *u2,
 		      int s, int s1, int s2,
 		      const realnum *chi2, const realnum *chi3,
-		      realnum *fw, direction dsigw, const double *sigw);
+		      realnum *fw, direction dsigw, const double *sigw, const double *kapw);
 
 void step_beta_stride1(realnum *f, component c, const realnum *g,
 		       const grid_volume &gv, double betadt,
@@ -151,18 +151,18 @@ void step_beta_stride1(realnum *f, component c, const realnum *g,
    which allow gcc (and possibly other compilers) to do additional
    optimizations, especially loop vectorization */
 
-#define STEP_CURL(f, c, g1, g2, s1, s2, gv, dtdx, dsig, sig, siginv, fu, dsigu, sigu, siginvu, dt, cnd, cndinv, fcnd) do { \
+#define STEP_CURL(f, c, g1, g2, s1, s2, gv, dtdx, dsig, sig, kap, siginv, fu, dsigu, sigu, kapu, siginvu, dt, cnd, cndinv, fcnd) do { \
   if (LOOPS_ARE_STRIDE1(gv))						\
-    step_curl_stride1(f, c, g1, g2, s1, s2, gv, dtdx, dsig, sig, siginv, fu, dsigu, sigu, siginvu, dt, cnd, cndinv, fcnd); \
+    step_curl_stride1(f, c, g1, g2, s1, s2, gv, dtdx, dsig, sig, kap, siginv, fu, dsigu, sigu, kapu, siginvu, dt, cnd, cndinv, fcnd); \
   else									\
-    step_curl(f, c, g1, g2, s1, s2, gv, dtdx, dsig, sig, siginv, fu, dsigu, sigu, siginvu, dt, cnd, cndinv, fcnd); \
+    step_curl(f, c, g1, g2, s1, s2, gv, dtdx, dsig, sig, kap, siginv, fu, dsigu, sigu, kapu, siginvu, dt, cnd, cndinv, fcnd); \
 } while (0)
 
-#define STEP_UPDATE_EDHB(f, fc, gv, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw) do { \
+#define STEP_UPDATE_EDHB(f, fc, gv, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw, kapw) do { \
   if (LOOPS_ARE_STRIDE1(gv))						\
-    step_update_EDHB_stride1(f, fc, gv, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw); \
+    step_update_EDHB_stride1(f, fc, gv, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw, kapw); \
   else									\
-    step_update_EDHB(f, fc, gv, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw); \
+    step_update_EDHB(f, fc, gv, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw, sigw, kapw); \
 } while (0)
 
 #define STEP_BETA(f, c, g, gv, betadt, dsig, siginv, fu, dsigu, siginvu, cndinv, fcnd) do {	\

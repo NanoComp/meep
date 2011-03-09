@@ -226,6 +226,7 @@
   (define-property side ALL 'integer)
   (define-property strength 1.0 'number) ; obsolete: R -> R^strength
   (define-property R-asymptotic 1e-15 'number positive?)
+  (define-property mean-stretch 1.0 'number positive?)
   (define-property pml-profile (lambda (u) (* u u)) 'function))
 
 (export-type (make-list-type 'symmetry))
