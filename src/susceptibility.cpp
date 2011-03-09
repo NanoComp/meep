@@ -291,7 +291,8 @@ void noisy_lorentzian_susceptibility::update_P
       realnum *p = d->P[c][cmp];
       LOOP_OVER_VOL_OWNED(gv, c, i)
 	p[i] += gaussian_random(0, amp * sqrt(s[i]));
-      // for uniform random numbers, use uniform_random(-amp * sqrt(s[i]), +amp * sqrt(s[i]))
+      // for uniform random numbers, use uniform_random(-1,1) * amp * sqrt(s[i])
+      // for gaussian random numbers, use gaussian_random(0, amp * sqrt(s[i]))
     }
   }
 }
