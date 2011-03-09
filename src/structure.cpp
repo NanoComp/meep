@@ -163,8 +163,8 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
     case NOTHING_SPECIAL: break;
     case PML: 
       sc->use_pml(d, thickness, s->user_volume.boundary_location(side, d),
-		  Rasymptotic,
-		  pml_profile, pml_profile_data, pml_profile_integral, mean_stretch); 
+		  Rasymptotic, mean_stretch,
+		  pml_profile, pml_profile_data, pml_profile_integral); 
       break;
     default: abort("unknown boundary region kind");
     }
@@ -586,10 +586,10 @@ static inline double pml_x(int i, double dx, double bloc, double a) {
 }
 
 void structure_chunk::use_pml(direction d, double dx, double bloc,
-			      double Rasymptotic,
+			      double Rasymptotic, double mean_stretch,
 			      pml_profile_func pml_profile,
 			      void *pml_profile_data,
-			      double pml_profile_integral, double mean_stretch) {
+			      double pml_profile_integral) {
   if (dx <= 0.0) return;
   const double kappa_prefac = (mean_stretch - 1) / pml_profile_integral;
   const double prefac = (-log(Rasymptotic))/(4*dx*pml_profile_integral);

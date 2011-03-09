@@ -463,9 +463,10 @@ class structure_chunk {
   void update_condinv();
   void set_chi3(component c, material_function &eps);
   void set_chi2(component c, material_function &eps);
-  void use_pml(direction, double dx, double boundary_loc, double Rasymptotic, 
+  void use_pml(direction, double dx, double boundary_loc,
+	       double Rasymptotic, double mean_stretch,
 	       pml_profile_func pml_profile, void *pml_profile_data,
-	       double pml_profile_integral, double mean_stretch);
+	       double pml_profile_integral);
 
   void add_susceptibility(material_function &sigma, field_type ft,
 			  const susceptibility &sus);
