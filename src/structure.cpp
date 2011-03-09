@@ -193,18 +193,23 @@ bool boundary_region::check_ok(const grid_volume &gv) const {
 
 double pml_quadratic_profile(double u, void *d) { (void)d; return u * u; }
 
-boundary_region pml(double thickness, direction d, boundary_side side) {
+boundary_region pml(double thickness, direction d, boundary_side side,
+		    double Rasymptotic, double mean_stretch) {
   return boundary_region(boundary_region::PML, thickness, 
-			 1e-15, pml_quadratic_profile, NULL, 1./3., 
+			 Rasymptotic, mean_stretch,
+			 pml_quadratic_profile, NULL, 1./3., 
 			 d, side, NULL);
 }
-boundary_region pml(double thickness, direction d) {
-  return (pml(thickness, d, Low) + pml(thickness, d, High));
+boundary_region pml(double thickness, direction d,
+		    double Rasymptotic, double mean_stretch) {
+  return (pml(thickness, d, Low, Rasymptotic, mean_stretch) 
+	  + pml(thickness, d, High, Rasymptotic, mean_stretch));
 }
-boundary_region pml(double thickness) {
+boundary_region pml(double thickness,
+		    double Rasymptotic, double mean_stretch) {
   boundary_region r;
   for (int id = 0; id < 5; ++id)
-    r = r + pml(thickness, (direction) id);
+    r = r + pml(thickness, (direction) id, Rasymptotic, mean_stretch);
   return r;
 }
 

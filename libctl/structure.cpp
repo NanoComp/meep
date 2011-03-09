@@ -1372,11 +1372,12 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     pml_layers.items[i].thickness,
 	     pow(pml_layers.items[i].R_asymptotic,
 		 pml_layers.items[i].strength),
+	     pml_layers.items[i].mean_stretch,
 	     scm_pml_profile, pml_layers.items[i].pml_profile,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
-	     d, b, NULL, pml_layers.items[i].mean_stretch);
+	     d, b);
 	}
 	else
 	  br = br + meep::boundary_region
@@ -1384,13 +1385,13 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     pml_layers.items[i].thickness,
 	     pow(pml_layers.items[i].R_asymptotic,
 		 pml_layers.items[i].strength),
+	     pml_layers.items[i].mean_stretch,
 	     scm_pml_profile, pml_layers.items[i].pml_profile,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     d,
-	     (meep::boundary_side) pml_layers.items[i].side,
-	     NULL, pml_layers.items[i].mean_stretch);
+	     (meep::boundary_side) pml_layers.items[i].side);
       }
     }
     else {
@@ -1401,12 +1402,13 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     pml_layers.items[i].thickness,
 	     pow(pml_layers.items[i].R_asymptotic,
 		 pml_layers.items[i].strength),
+	     pml_layers.items[i].mean_stretch,
 	     scm_pml_profile, pml_layers.items[i].pml_profile,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     (meep::direction) pml_layers.items[i].direction,
-	     b, NULL, pml_layers.items[i].mean_stretch);
+	     b);
 	}
 	else
 	  br = br + meep::boundary_region
@@ -1414,13 +1416,13 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 	     pml_layers.items[i].thickness,
 	     pow(pml_layers.items[i].R_asymptotic,
 		 pml_layers.items[i].strength),
+	     pml_layers.items[i].mean_stretch,
 	     scm_pml_profile, pml_layers.items[i].pml_profile,
 	     adaptive_integration(scm_pml_profile2, &umin, &umax, 1,
 				  (void*) pml_layers.items[i].pml_profile,
 				  1e-9, 1e-4, 50000, &esterr, &errflag),
 	     (meep::direction) pml_layers.items[i].direction,
-	     (meep::boundary_side) pml_layers.items[i].side,
-	     NULL, pml_layers.items[i].mean_stretch);
+	     (meep::boundary_side) pml_layers.items[i].side);
     }
   }
   

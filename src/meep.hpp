@@ -498,7 +498,7 @@ public:
   
   boundary_region() :
     kind(NOTHING_SPECIAL), thickness(0.0), Rasymptotic(1e-16), mean_stretch(1.0), pml_profile(NULL), pml_profile_data(NULL), pml_profile_integral(1.0), d(NO_DIRECTION), side(Low), next(0) {}
-  boundary_region(boundary_region_kind kind, double thickness, double Rasymptotic, pml_profile_func pml_profile, void* pml_profile_data, double pml_profile_integral, direction d, boundary_side side, boundary_region *next = 0, double mean_stretch = 1.0) : kind(kind), thickness(thickness), Rasymptotic(Rasymptotic), mean_stretch(mean_stretch), pml_profile(pml_profile), pml_profile_data(pml_profile_data), pml_profile_integral(pml_profile_integral), d(d), side(side), next(next) {}
+  boundary_region(boundary_region_kind kind, double thickness, double Rasymptotic, double mean_stretch, pml_profile_func pml_profile, void* pml_profile_data, double pml_profile_integral, direction d, boundary_side side, boundary_region *next = 0) : kind(kind), thickness(thickness), Rasymptotic(Rasymptotic), mean_stretch(mean_stretch), pml_profile(pml_profile), pml_profile_data(pml_profile_data), pml_profile_integral(pml_profile_integral), d(d), side(side), next(next) {}
 
   boundary_region(const boundary_region &r) : kind(r.kind), thickness(r.thickness), Rasymptotic(r.Rasymptotic), mean_stretch(r.mean_stretch), pml_profile(r.pml_profile), pml_profile_data(r.pml_profile_data), pml_profile_integral(r.pml_profile_integral), d(r.d), side(r.side) { 
     next = r.next ? new boundary_region(*r.next) : 0;
@@ -545,9 +545,12 @@ private:
   boundary_region *next;
 };
 
-boundary_region pml(double thickness, direction d, boundary_side side);
-boundary_region pml(double thickness, direction d);
-boundary_region pml(double thickness);
+boundary_region pml(double thickness, direction d, boundary_side side,
+		    double Rasymptotic = 1e-15, double mean_stretch = 1.0);
+boundary_region pml(double thickness, direction d,
+		    double Rasymptotic = 1e-15, double mean_stretch = 1.0);
+boundary_region pml(double thickness,
+		    double Rasymptotic = 1e-15, double mean_stretch = 1.0);
 #define no_pml() boundary_region()
 
 class structure {
