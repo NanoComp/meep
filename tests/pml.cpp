@@ -4,7 +4,7 @@
 #include <meep.hpp>
 using namespace meep;
 
-double Rasymp = 1e-15, stretch = 3.0; // PML parameters
+double Rasymp = 1e-15, stretch = 2.0; // PML parameters
 
 // a simple material with xy offdiagonal terms in the tensors, for testing
 class offdiag_material : public material_function {
@@ -192,7 +192,7 @@ int check_pml2d(double eps(const vec &), component c,
     master_printf("refl2d:, %g, %g\n", res, refl_const);
     if (i > 0 && 
 	refl_const > prev_refl_const * pow((res - res_step)/res,
-					   offdiag != 0 ? 6.0 : 8.0) * 1.1)
+					   offdiag != 0 ? 6.0 : 8.0) * 1.2)
       return 1;
     prev_refl_const = refl_const;
   }
