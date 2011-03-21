@@ -1131,8 +1131,16 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
     if (d->transitions.items[t].frequency != 0) {
       omega[tr] = d->transitions.items[t].frequency; // no 2*pi here
       gamma[tr] = d->transitions.items[t].gamma;
-      meep::vec sig = vector3_to_vec(d->transitions.items[t].sigma_diag);
-      FOR_DIRECTIONS(dir) sigmat[5*tr + dir] = sig.in_direction(dir);
+      if (dim == meep::Dcyl) {
+	sigmat[5*tr + meep::R] = d->transitions.items[t].sigma_diag.x;
+	sigmat[5*tr + meep::P] = d->transitions.items[t].sigma_diag.y;
+	sigmat[5*tr + meep::Z] = d->transitions.items[t].sigma_diag.z;
+      }
+      else {
+	sigmat[5*tr + meep::X] = d->transitions.items[t].sigma_diag.x;
+	sigmat[5*tr + meep::Y] = d->transitions.items[t].sigma_diag.y;
+	sigmat[5*tr + meep::Z] = d->transitions.items[t].sigma_diag.z;
+      }
       int i = d->transitions.items[t].from_level - minlev;
       int j = d->transitions.items[t].to_level - minlev;
       alpha[i * T + tr] = -1.0 / omega[tr];
