@@ -124,6 +124,8 @@
   (define-property sigma-diag (vector3 1 1 1) 'vector3) ; per-transition sigma
   (define-property gamma 0 'number)) ; optical damping rate
 
+(define (transition-time t) (transition-rate (/ t)))
+
 (define-class multilevel-atom susceptibility
   (define-property initial-populations '() (make-list-type 'number))
   (define-property transitions '() (make-list-type 'transition)))
