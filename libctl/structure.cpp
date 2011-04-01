@@ -601,6 +601,8 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
     goto noavg;
 
   normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
+  if (normal.x == 0 && normal.y == 0 && normal.z == 0)
+    goto noavg; // couldn't get normal vector for this point, punt
   geom_box pixel = gv2box(v);
   pixel.low = vector3_minus(pixel.low, shiftby);
   pixel.high = vector3_minus(pixel.high, shiftby);
