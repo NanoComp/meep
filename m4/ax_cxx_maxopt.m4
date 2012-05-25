@@ -30,7 +30,7 @@ AC_LANG_PUSH([C++])
 AX_COMPILER_VENDOR
 
 AC_ARG_ENABLE(portable-binary, [AC_HELP_STRING([--enable-portable-binary], [disable compiler optimizations that would produce unportable binaries])], 
-	acx_maxopt_portable=$withval, acx_maxopt_portable=no)
+	acx_maxopt_portable=$enableval, acx_maxopt_portable=no)
 
 # Try to determine "good" native compiler flags if none specified via CXXFLAGS
 if test "$ac_test_CXXFLAGS" != "set"; then
