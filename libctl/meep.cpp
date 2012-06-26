@@ -93,6 +93,14 @@ ctlio::number_list dft_force_force(dft_force *f)
   return res;
 }
 
+ctlio::number_list dft_ldos_ldos(dft_ldos *f)
+{
+  ctlio::number_list res;
+  res.num_items = f->Nomega;
+  res.items = f->ldos();
+  return res;
+}
+
 /***************************************************************************/
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,

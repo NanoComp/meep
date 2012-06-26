@@ -939,6 +939,28 @@ public:
   dft_chunk *offdiag1, *offdiag2, *diag;
 };
 
+/* Class to compute local-density-of-states spectra: the power spectrum
+   P(omega) of the work done by the sources.  Specialized to handle only
+   the case where all sources have the same time dependence, which greatly
+   simplifies things because then we can do the spatial integral of E*J
+   *first* and then do the Fourier transform, eliminating the need to
+   store the Fourier transform per point or per current. */
+class dft_ldos {
+public:
+  dft_ldos(double freq_min, double freq_max, int Nfreq);
+  ~dft_ldos() { delete[] Fdft; delete[] Jdft; }
+
+  void update(fields &f); // to be called after each timestep
+  double *ldos() const; // returns array of Nomega values (after last timestep)
+
+private:
+  complex<realnum> *Fdft; // Nomega array of field * J*(x) DFT values
+  complex<realnum> *Jdft; // Nomega array of J(t) DFT values
+public:
+  double omega_min, domega;
+  int Nomega;
+};
+
 enum in_or_out { Incoming=0, Outgoing };
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE=1, CONNECT_COPY=2 };
 

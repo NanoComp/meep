@@ -1005,6 +1005,27 @@
   (harminv! harminv-data harminv-data-dt harminv-results c pt fcen df mxbands))
 
 ; ****************************************************************
+; dft-ldos step function
+
+(define dft-ldos-data '())
+
+(define (get-ldos-freqs f)
+  (arith-sequence
+   (/ (meep-dft-ldos-omega-min-get f) (* 2 pi))
+   (/ (meep-dft-ldos-domega-get f) (* 2 pi))
+   (meep-dft-flux-Nfreq-get f)))
+
+(define (dft-ldos fcen df nfreq)
+  (let ((ldos (new-meep-dft-ldos 
+	       (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
+    (lambda (to-do)
+      (if (eq? to-do 'step)
+	  (meep-dft-ldos-update ldos fields)
+	  (begin 
+	    (set! dft-ldos-data (dft-ldos-ldos ldos))
+	    (display-csv "ldos" (get-ldos-freqs ldos) dft-ldos-data))))))
+
+; ****************************************************************
 ; run functions
 
 ; default time interval (seconds) between progress printouts
