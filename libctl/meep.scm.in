@@ -1013,7 +1013,7 @@
   (arith-sequence
    (/ (meep-dft-ldos-omega-min-get f) (* 2 pi))
    (/ (meep-dft-ldos-domega-get f) (* 2 pi))
-   (meep-dft-flux-Nfreq-get f)))
+   (meep-dft-ldos-Nomega-get f)))
 
 (define (dft-ldos fcen df nfreq)
   (let ((ldos (new-meep-dft-ldos 
