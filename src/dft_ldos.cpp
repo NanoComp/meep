@@ -39,7 +39,7 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq)
 double *dft_ldos::ldos() const {
   double *sum = new double[Nomega];
   for (int i = 0; i < Nomega; ++i)
-    sum[i] = real(Fdft[i] * conj(Jdft[i]));
+    sum[i] = -real(Fdft[i] * conj(Jdft[i]));
   double *out = new double[Nomega];
   sum_to_all(sum, out, Nomega);
   delete[] sum;
