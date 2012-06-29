@@ -14,11 +14,9 @@
 (set! sources (list
                (make eigenmode-source
                  (src (make continuous-src (frequency 0.15)))
-                 (component all-components)
 		 (size 0 6 0)
                  (center -5 0)
 		 (eig-kpoint (vector3 0.52))
-		 (eig-match-freq? true)
 		 (eig-parity TM)
 		 )))
 (set! pml-layers (list (make pml (thickness 1.0))))
