@@ -120,7 +120,7 @@ static complex<double> meep_mpb_A(const vec &p) {
 #endif /* HAVE_MPB */
 
 void fields::add_eigenmode_source(component c0, const src_time &src,
-				  const volume &where,
+				  direction d, const volume &where,
 				  const volume &eig_vol,
 				  int band_num, 
 				  const vec &kpoint, bool match_frequency,
@@ -137,7 +137,12 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   mpb_real G[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
   mpb_real kdir[3] = {0,0,0};
   double omega_src = real(src.frequency()), kscale = 1.0;
-  double match_tol = sqrt(eigensolver_tol);
+  double match_tol = eigensolver_tol * 10;
+
+  if (d == NO_DIRECTION || coordinate_mismatch(gv.dim, d))
+    abort("invalid direction in add_eigenmode_source");
+  if (where.dim != gv.dim || eig_vol.dim != gv.dim)
+    abort("invalid volume dimensionality in add_eigenmode_source");
 
   if (!eig_vol.contains(where))
     abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
@@ -320,38 +325,26 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
     for (i = 0; i < H.n; ++i) hdata[i*H.p + (band_num-1)] *= phase;
   }
 
-  direction normal = where.normal_direction();
   if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
 
-  if (normal == NO_DIRECTION) { // just make currents == eigenfields
-    FOR_MAGNETIC_COMPONENTS(c) 
-      if (gv.has_field(c) && (c0 == Centered || c0 == c)
-	  && (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
-	      || ((parity & EVEN_Z_PARITY) && !is_tm(c))
-	      || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
-	meep_mpb_A_component = component_direction(c) % 3;
+  // use principle of equivalence to obtain equivalent currents
+  FOR_ELECTRIC_COMPONENTS(c) 
+    if (gv.has_field(c) && (c0 == Centered || c0 == c)
+	&& component_direction(c) != d
+	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
+	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
+	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
+      // E current source = d x (eigenmode H)
+      if ((d + 1) % 3 == component_direction(c) % 3) {
+	meep_mpb_A_component = (d + 2) % 3;
+	add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
+      }
+      else {
+	meep_mpb_A_component = (d + 1) % 3;
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
       }
-  }
-  else { // use principle of equivalence to obtain equivalent currents
-    FOR_ELECTRIC_COMPONENTS(c) 
-      if (gv.has_field(c) && (c0 == Centered || c0 == c)
-	  && component_direction(c) != normal
-	  && (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
-	      || ((parity & EVEN_Z_PARITY) && !is_tm(c))
-	      || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
-	// E current source = normal x (eigenmode H)
-	if ((normal + 1) % 3 == component_direction(c) % 3) {
-	  meep_mpb_A_component = (normal + 2) % 3;
-	  add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
-	}
-	else {
-	  meep_mpb_A_component = (normal + 1) % 3;
-	  add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
-	}
       }
-  }
   
   maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   { // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
@@ -360,34 +353,23 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
     for (int i = 0; i < N; ++i) cdata[i] *= scale;
   }
   maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
-  if (normal == NO_DIRECTION) { // just make currents == eigenfields
-    FOR_ELECTRIC_COMPONENTS(c) 
-      if (gv.has_field(c) && (c0 == Centered || c0 == c)
-	  && (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
-	      || ((parity & EVEN_Z_PARITY) && !is_tm(c))
-	      || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
-	meep_mpb_A_component = component_direction(c) % 3;
+  // use principle of equivalence to obtain equivalent currents
+  FOR_MAGNETIC_COMPONENTS(c) 
+    if (gv.has_field(c) && (c0 == Centered || c0 == c)
+	&& component_direction(c) != d
+	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
+	    || ((parity & EVEN_Z_PARITY) && !is_tm(c))
+	    || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
+      // H current source = - d x (eigenmode E)
+      if ((d + 1) % 3 == component_direction(c) % 3) {
+	meep_mpb_A_component = (d + 2) % 3;
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
-      }
-  }
-  else { // use principle of equivalence to obtain equivalent currents
-    FOR_MAGNETIC_COMPONENTS(c) 
-      if (gv.has_field(c) && (c0 == Centered || c0 == c)
-	  && component_direction(c) != normal
-	  && (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
-	      || ((parity & EVEN_Z_PARITY) && !is_tm(c))
-	      || ((parity & ODD_Z_PARITY) && is_tm(c)))) {
-	// H current source = - normal x (eigenmode E)
-	if ((normal + 1) % 3 == component_direction(c) % 3) {
-	  meep_mpb_A_component = (normal + 2) % 3;
-	  add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
 	}
-	else {
-	  meep_mpb_A_component = (normal + 1) % 3;
-	  add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
-	}
+      else {
+	meep_mpb_A_component = (d + 1) % 3;
+	add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
       }
-  }
+    }
   
   delete src_mpb;
   destroy_evectmatrix(H);

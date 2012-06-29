@@ -112,6 +112,7 @@
 (if (defined? 'meep-component-Ex) (include "meep-enums.scm"))
 
 (define CYLINDRICAL -2) ; special value of dimensions for cylindrical coords
+(define AUTOMATIC -1) ; special value for directions, when auto-determined
 
 ; ****************************************************************
 ; Multilevel-atom nonlinear susceptibilities
@@ -361,6 +362,7 @@
   (define-property eig-lattice-center (vector3 infinity infinity infinity) 'vector3)
 
   (define-property component all-components 'integer) ; new default val
+  (define-property direction AUTOMATIC 'integer)
   (define-property eig-band 1 'integer positive?)
   (define-property eig-kpoint no-default 'vector3)
   (define-property eig-match-freq? false 'boolean)
@@ -374,15 +376,20 @@
 	(cen (object-property-value s 'center))
 	(sz (object-property-value s 'size)))
     (if (object-member? 'eigenmode-source s)
-	(let ((ecen (dflt (object-property-value s 'eig-lattice-center)
-			  (vector3 infinity infinity infinity) cen))
-	      (esz (dflt (object-property-value s 'eig-lattice-size)
-			  (vector3 -1 -1 -1) sz)))
+	(let* ((ecen (dflt (object-property-value s 'eig-lattice-center)
+			   (vector3 infinity infinity infinity) cen))
+	       (esz (dflt (object-property-value s 'eig-lattice-size)
+			  (vector3 -1 -1 -1) sz))
+	       (v (volume (center cen) (size sz)))
+	       (d0 (object-property-value s 'direction))
+	       (d (if (negative? d0)
+		      (meep-fields-normal-direction fields v)
+		      d0)))
 	  (if (null? A)
 	      (meep-fields-add-eigenmode-source f
 	       (object-property-value s 'component)
 	       (object-property-value (object-property-value s 'src) 'swigval)
-	       (volume (center cen) (size sz))
+	       d v
 	       (volume (center ecen) (size esz))
 	       (object-property-value s 'eig-band)
 	       (object-property-value s 'eig-kpoint)
@@ -394,7 +401,7 @@
 	      (meep-fields-add-eigenmode-source f
 	       (object-property-value s 'component)
 	       (object-property-value (object-property-value s 'src) 'swigval)
-	       (volume (center cen) (size sz))
+	       d v
 	       (volume (center ecen) (size esz))
 	       (object-property-value s 'eig-band)
 	       (object-property-value s 'eig-kpoint)
@@ -495,7 +502,6 @@
 ; ****************************************************************
 ; Flux spectra
 
-(define AUTOMATIC -1) ; special value for directions, when auto-determined
 (define-class flux-region no-parent
   (define-property center no-default 'vector3)
   (define-property size (vector3 0 0 0) 'vector3)

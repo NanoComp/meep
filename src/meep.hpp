@@ -1275,7 +1275,7 @@ class fields {
 
   // mpb.cpp
   void add_eigenmode_source(component c, const src_time &src,
-			    const volume &where,
+			    direction d, const volume &where,
 			    const volume &eig_vol,
 			    int band_num, 
 			    const vec &kpoint, bool match_frequency,
