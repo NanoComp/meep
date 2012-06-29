@@ -352,7 +352,7 @@
 (define TM ODD-Z)
 
 ; special component for eigenmode-source (not defined during gen-ctl-io)
-(define all-components (if (defined? 'Dielectric) Dielectric 99))
+(define ALL-COMPONENTS (if (defined? 'Dielectric) Dielectric 99))
 
 (define-class eigenmode-source source
   ; the following two properties have special default values -- if we
@@ -361,7 +361,7 @@
   (define-property eig-lattice-size (vector3 -1 -1 -1) 'vector3)
   (define-property eig-lattice-center (vector3 infinity infinity infinity) 'vector3)
 
-  (define-property component all-components 'integer) ; new default val
+  (define-property component ALL-COMPONENTS 'integer) ; new default val
   (define-property direction AUTOMATIC 'integer)
   (define-property eig-band 1 'integer positive?)
   (define-property eig-kpoint no-default 'vector3)
