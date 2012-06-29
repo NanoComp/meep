@@ -16,6 +16,7 @@
                  (src (make continuous-src (frequency 0.15)))
 		 (size 0 6 0)
                  (center -5 0)
+		 (component all-components)
 		 (eig-kpoint (vector3 0.52))
 		 (eig-parity TM)
 		 )))
