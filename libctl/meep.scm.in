@@ -364,7 +364,7 @@
   (define-property component ALL-COMPONENTS 'integer) ; new default val
   (define-property direction AUTOMATIC 'integer)
   (define-property eig-band 1 'integer positive?)
-  (define-property eig-kpoint no-default 'vector3)
+  (define-property eig-kpoint (vector3 0) 'vector3)
   (define-property eig-match-freq? true 'boolean)
   (define-property eig-parity NO-PARITY 'integer)
   (define-property eig-resolution 0 'integer non-negative?)

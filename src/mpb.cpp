@@ -173,17 +173,34 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
     k[2] = kpoint.in_direction(Z);
     break;
   default:
-    abort("unsupported dimensionality in add_mpb_source");
+    abort("unsupported dimensionality in add_eigenmode_source");
   }
+
+  master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+  
+  // if match_frequency is true, all we need is a direction for k
+  // and a crude guess for its value; we must supply this if k==0.
+  if (match_frequency && k[0] == 0 && k[1] == 0 && k[2] == 0) {
+    k[d-X] = omega_src * sqrt(get_eps(eig_vol.center()));
+    master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+    if (s[d-X] > 0) {
+      k[d-X] *= s[d-X]; // put k in G basis (inverted when we compute kcart)
+      if (fabs(k[d-X]) > 0.4)  // ensure k is well inside the Brillouin zone
+	k[d-X] = k[d-X] > 0 ? 0.4 : -0.4;
+      master_printf("NEWER KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+    }
+  }
+  
   for (int i = 0; i < 3; ++i) {
     n[i] = int(resolution * s[i] + 0.5); if (n[i] == 0) n[i] = 1;
     R[i][i] = s[i] = s[i] == 0 ? 1 : s[i];
     G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
   }
-  
+
   for (int i = 0; i < 3; ++i)
     for (int j = 0; j < 3; ++j)
       kcart[i] += G[j][i] * k[j];
+  double klen0 = sqrt(k[0]*k[0]+k[1]*k[1]+k[2]*k[2]);
   double klen = sqrt(kcart[0]*kcart[0]+kcart[1]*kcart[1]+kcart[2]*kcart[2]);
   if (klen == 0.0) {
     if (match_frequency) abort("need nonzero kpoint guess to match frequency");
@@ -271,8 +288,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
       evectmatrix_resize(&W[1], band_num, 0);
 
       // update k via Newton step
-      kscale = kscale - (sqrt(eigvals[band_num - 1]) - omega_src) 
-	/ (v * abs(kpoint));
+      kscale = kscale - (sqrt(eigvals[band_num - 1]) - omega_src) / (v*klen0);
       if (!quiet)
 	master_printf("Newton step: group velocity v=%g, kscale=%g\n",
 		      v, kscale);
@@ -290,7 +306,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
     destroy_evectmatrix(W[i]);
   
   src_time *src_mpb = src.clone();
-  if (!match_frequency) src_mpb->set_frequency(sqrt(eigvals[band_num - 1]));
+  if (!match_frequency)
+    src_mpb->set_frequency(omega_src = sqrt(eigvals[band_num - 1]));
   
   complex<mpb_real> *cdata = (complex<mpb_real> *) mdata->fft_data;
   meep_mpb_A_s = s;
@@ -376,7 +393,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   delete[] eigvals;
   destroy_maxwell_data(mdata);
 #else /* !defined(HAVE_MPB) */
-  abort("Meep must be configured/compiled with MPB for add_mpb_source");
+  abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 #endif
 }
 
