@@ -1014,6 +1014,8 @@
 ; dft-ldos step function
 
 (define dft-ldos-data '())
+(define dft-ldos-Fdata '())
+(define dft-ldos-Jdata '())
 
 (define (get-ldos-freqs f)
   (arith-sequence
@@ -1029,6 +1031,8 @@
 	  (meep-dft-ldos-update ldos fields)
 	  (begin 
 	    (set! dft-ldos-data (dft-ldos-ldos ldos))
+	    (set! dft-ldos-Fdata (dft-ldos-F ldos))
+	    (set! dft-ldos-Jdata (dft-ldos-J ldos))
 	    (display-csv "ldos" (get-ldos-freqs ldos) dft-ldos-data))))))
 
 ; ****************************************************************

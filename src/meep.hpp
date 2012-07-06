@@ -952,6 +952,8 @@ public:
 
   void update(fields &f); // to be called after each timestep
   double *ldos() const; // returns array of Nomega values (after last timestep)
+  complex<double> *F() const; // returns Fdft
+  complex<double> *J() const; // returns Jdft
 
 private:
   complex<realnum> *Fdft; // Nomega array of field * J*(x) DFT values

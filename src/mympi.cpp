@@ -291,6 +291,10 @@ void sum_to_all(const double *in, double *out, int size) {
 #endif
 }
 
+void sum_to_all(const complex<double> *in, complex<double> *out, int size) {
+  sum_to_all((const double*) in, (double*) out, 2*size);
+}
+
 long double sum_to_all(long double in) {
   long double out = in;
 #ifdef HAVE_MPI

@@ -46,6 +46,18 @@ double *dft_ldos::ldos() const {
   return out;
 }
 
+complex<double> *dft_ldos::F() const {
+  complex<double> *out = new complex<double>[Nomega];
+  sum_to_all(Fdft, out, Nomega);
+  return out;
+}
+
+complex<double> *dft_ldos::J() const {
+  complex<double> *out = new complex<double>[Nomega];
+  sum_to_all(Jdft, out, Nomega);
+  return out;
+}
+
 void dft_ldos::update(fields &f)
 {
   complex<realnum> EJ = 0.0; // integral E * J*

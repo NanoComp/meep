@@ -101,6 +101,22 @@ ctlio::number_list dft_ldos_ldos(dft_ldos *f)
   return res;
 }
 
+ctlio::cnumber_list dft_ldos_F(dft_ldos *f)
+{
+  ctlio::cnumber_list res;
+  res.num_items = f->Nomega;
+  res.items = (cnumber *) f->F();
+  return res;
+}
+
+ctlio::cnumber_list dft_ldos_J(dft_ldos *f)
+{
+  ctlio::cnumber_list res;
+  res.num_items = f->Nomega;
+  res.items = (cnumber *) f->J();
+  return res;
+}
+
 /***************************************************************************/
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
