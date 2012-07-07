@@ -958,6 +958,7 @@ public:
 private:
   complex<realnum> *Fdft; // Nomega array of field * J*(x) DFT values
   complex<realnum> *Jdft; // Nomega array of J(t) DFT values
+  double Jsum; // sum of |J| over all points
 public:
   double omega_min, domega;
   int Nomega;

@@ -34,12 +34,26 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq)
   }
   Fdft = new complex<realnum>[Nomega];
   Jdft = new complex<realnum>[Nomega];
+  Jsum = 1.0;
 }
 
+// |c|^2
+static double abs2(complex<double> c) {return real(c)*real(c)+imag(c)*imag(c);}
+
 double *dft_ldos::ldos() const {
+  // we try to get the overall scale factor right (at least for a point source)
+  // so that we can compare against the analytical formula for testing
+  // ... in most practical cases, the scale factor won't matter because
+  //     the user will compute the relative LDOS of 2 cases (e.g. LDOS/vacuum)
+  
+  // overall scale factor
+  double scale = 4.0/pi // from definition of LDOS comparison to power
+    * -0.5 // power = -1/2 Re[E* J]
+    / (Jsum * Jsum); // normalize to unit-integral current
+
   double *sum = new double[Nomega];
-  for (int i = 0; i < Nomega; ++i)
-    sum[i] = -real(Fdft[i] * conj(Jdft[i]));
+  for (int i = 0; i < Nomega; ++i) /* 4/pi * work done by unit dipole */
+    sum[i] = scale * real(Fdft[i] * conj(Jdft[i])) / abs2(Jdft[i]);
   double *out = new double[Nomega];
   sum_to_all(sum, out, Nomega);
   delete[] sum;
@@ -65,6 +79,10 @@ void dft_ldos::update(fields &f)
 
   double scale = (f.dt/sqrt(2*pi));
 
+  // compute Jsum for LDOS normalization purposes
+  // ...don't worry about the tiny inefficiency of recomputing this repeatedly
+  Jsum = 0.0; 
+
   for (int ic=0;ic<f.num_chunks;ic++) if (f.chunks[ic]->is_mine()) {
       for (src_vol *sv = f.chunks[ic]->sources[D_stuff]; sv; sv = sv->next) {
 	component c = direction_component(Ex, component_direction(sv->c));
@@ -75,12 +93,14 @@ void dft_ldos::update(fields &f)
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    EJ += complex<realnum>(fr[idx],fi[idx]) * conj(A);
+	    Jsum += abs(A);
 	  }
 	else if (fr) { // E is purely real
 	  for (int j=0; j<sv->npts; j++) {
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    EJ += fr[idx] * conj(A);
+	    Jsum += abs(A);
 	  }
 	}
       }
@@ -93,12 +113,14 @@ void dft_ldos::update(fields &f)
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    HJ += complex<realnum>(fr[idx],fi[idx]) * conj(A);
+	    Jsum += abs(A);
 	  }
 	else if (fr) { // H is purely real
 	  for (int j=0; j<sv->npts; j++) {
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    HJ += fr[idx] * conj(A);
+	    Jsum += abs(A);
 	  }
 	}
       }
@@ -112,6 +134,10 @@ void dft_ldos::update(fields &f)
     if (f.sources)
       Jdft[i] += Ephase * f.sources->current();
   }
+
+  // correct for dV factors
+  Jsum *= sqrt(f.gv.dV(f.gv.icenter(),1).computational_volume());
+  
 }
 
 }
