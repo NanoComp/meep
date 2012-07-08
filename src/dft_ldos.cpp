@@ -131,8 +131,12 @@ void dft_ldos::update(fields &f)
     Fdft[i] += Ephase * EJ + Hphase * HJ;
 
     // NOTE: take only 1st time dependence: assumes all sources have same J(t)
-    if (f.sources)
-      Jdft[i] += Ephase * f.sources->current();
+    if (f.sources) {
+      if (f.is_real) // todo: not quite right if A is complex
+	Jdft[i] += Ephase * real(f.sources->current());
+      else
+	Jdft[i] += Ephase * f.sources->current();
+    }
   }
 
   // correct for dV factors
