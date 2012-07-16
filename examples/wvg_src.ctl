@@ -32,3 +32,7 @@
 (print "left-going flux = " ; (averaged over y region of width 1.8)
        (/ (flux-in-box X (volume (center -6 0) (size 1.8 6 0))) -1.8)
        "\n")
+
+(print "right-going flux = " ; (averaged over y region of width 1.8)
+       (/ (flux-in-box X (volume (center +6 0) (size 1.8 6 0))) +1.8)
+       "\n")
