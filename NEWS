@@ -1,5 +1,8 @@
 Meep 1.2 (xxx July 2012)
 
+  * Added epsilon-input-file feature to read a scalar dielectric function
+    from an HDF5 file (similar to MPB).
+
   * Support for anisotropic dispersive materials (tensor sigma parameter).
 
   * Support for Drude dispersion model.  New syntax is 

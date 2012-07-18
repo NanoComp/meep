@@ -283,6 +283,27 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
 #endif
 }
 
+#ifdef HAVE_HDF5
+  /* check if the given name is a dataset in group_id, and if so set d
+     to point to a char** with a copy of name. */
+
+  static herr_t find_dataset(hid_t group_id, 
+			     const char *name, void *d)
+  {
+    char **dname = (char **) d;
+    H5G_stat_t info;
+
+    H5Gget_objinfo(group_id, name, 1, &info);
+    if (info.type == H5G_DATASET) {
+      *dname = new char[strlen(name) + 1];
+      strcpy(*dname, name);
+      return 1;
+    }
+    return 0;
+  }
+
+#endif
+
 #define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
 
 realnum *h5file::read(const char *dataname,
@@ -296,12 +317,30 @@ realnum *h5file::read(const char *dataname,
     
     CHECK(file_id >= 0, "error opening HDF5 input file");
 
-    if (is_cur(dataname))
-      data_id = HID(cur_id);
-    else {
-      CHECK(dataset_exists(file_id, dataname),
-	    "missing dataset in HDF5 file");
-      data_id = H5Dopen(file_id, dataname);
+    bool close_data_id = true;
+    if (dataname) {
+      if (is_cur(dataname)) {
+	data_id = HID(cur_id);
+	close_data_id = false;
+      }
+      else {
+	CHECK(dataset_exists(file_id, dataname),
+	      "missing dataset in HDF5 file");
+	data_id = H5Dopen(file_id, dataname);
+      }
+    }
+    else { // find first dataset in file
+      char *dname = 0;
+      CHECK(H5Giterate(file_id, "/",NULL, find_dataset,&dname) >= 0 && dname,
+	    "cannot find dataset in HDF5 file");
+      if (is_cur(dname)) {
+	data_id = HID(cur_id);
+	close_data_id = false;
+      }
+      else {
+	data_id = H5Dopen(file_id, dname);
+      }
+      delete[] dname;
     }
     space_id = H5Dget_space(data_id);
     
@@ -321,7 +360,7 @@ realnum *h5file::read(const char *dataname,
     H5Dread(data_id, REALNUM_H5T, H5S_ALL, H5S_ALL, H5P_DEFAULT,
 	    (void *) data);
     
-    if (!is_cur(dataname))
+    if (close_data_id)
       H5Dclose(data_id);
   }
   

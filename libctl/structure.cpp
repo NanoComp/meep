@@ -169,6 +169,101 @@ static geom_box gv2box(const meep::volume &v)
 
 /***********************************************************************/
 
+static meep::realnum *epsilon_data = NULL;
+static int epsilon_dims[3] = {0,0,0};
+
+static void read_epsilon_file(const char *eps_input_file)
+{
+  delete[] epsilon_data; epsilon_data = NULL;
+  epsilon_dims[0] = epsilon_dims[1] = epsilon_dims[2] = 1;
+  if (eps_input_file && eps_input_file[0]) { // file specified
+    char *fname = new char[strlen(eps_input_file)+1];
+    strcpy(fname, eps_input_file);
+    // parse epsilon-input-file as "fname.h5:dataname"
+    char *dataname = strrchr(fname, ':');
+    if (dataname) *(dataname++) = 0;
+    meep::h5file eps_file(fname, meep::h5file::READONLY, false);
+    int rank; // ignored since rank < 3 is equivalent to singleton dims
+    epsilon_data = eps_file.read(dataname, &rank, epsilon_dims, 3);
+    master_printf("read in %dx%dx%d epsilon-input-file \"%s\"\n",
+		  epsilon_dims[0], epsilon_dims[1], epsilon_dims[2],
+		  eps_input_file);
+  }
+}
+
+/* Linearly interpolate a given point in a 3d grid of data.  The point
+   coordinates should be in the range [0,1], or at the very least [-1,2]
+   ... anything outside [0,1] is *mirror* reflected into [0,1] */
+static meep::realnum linear_interpolate(
+		     meep::realnum rx, meep::realnum ry, meep::realnum rz,
+		     meep::realnum *data, int nx, int ny, int nz, int stride)
+{
+     int x, y, z, x2, y2, z2;
+     meep::realnum dx, dy, dz;
+
+     /* mirror boundary conditions for r just beyond the boundary */
+     if (rx < 0.0) rx = -rx; else if (rx > 1.0) rx = 1.0 - rx;
+     if (ry < 0.0) ry = -ry; else if (ry > 1.0) ry = 1.0 - ry;
+     if (rz < 0.0) rz = -rz; else if (rz > 1.0) rz = 1.0 - rz;
+
+     /* get the point corresponding to r in the epsilon array grid: */
+     x = rx * nx; if (x == nx) --x;
+     y = ry * ny; if (y == ny) --y;
+     z = rz * nz; if (z == nz) --z;
+
+     /* get the difference between (x,y,z) and the actual point
+        ... we shift by 0.5 to center the data points in the pixels */
+     dx = rx * nx - x - 0.5;
+     dy = ry * ny - y - 0.5;
+     dz = rz * nz - z - 0.5;
+
+     /* get the other closest point in the grid, with mirror boundaries: */
+     x2 = (dx >= 0.0 ? x + 1 : x - 1);
+     if (x2 < 0) x2++; else if (x2 == nx) x2--;
+     y2 = (dy >= 0.0 ? y + 1 : y - 1);
+     if (y2 < 0) y2++; else if (y2 == ny) y2--;
+     z2 = (dz >= 0.0 ? z + 1 : z - 1);
+     if (z2 < 0) z2++; else if (z2 == nz) z2--;
+
+     /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
+     dx = fabs(dx);
+     dy = fabs(dy);
+     dz = fabs(dz);
+
+     /* define a macro to give us data(x,y,z) on the grid,
+	in row-major order (the order used by HDF5): */
+#define D(x,y,z) (data[(((x)*ny + (y))*nz + (z)) * stride])
+
+     return(((D(x,y,z)*(1.0-dx) + D(x2,y,z)*dx) * (1.0-dy) +
+	     (D(x,y2,z)*(1.0-dx) + D(x2,y2,z)*dx) * dy) * (1.0-dz) +
+	    ((D(x,y,z2)*(1.0-dx) + D(x2,y,z2)*dx) * (1.0-dy) +
+	     (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
+
+#undef D
+}
+
+// return material of the point p from the file (assumed already read)
+static void epsilon_file_material(material_type &m, vector3 p)
+{
+  material_type_copy(&default_material, &m);
+  if (!epsilon_data) return;
+  if (m.which_subclass != MTS::MEDIUM)
+    meep::abort("epsilon-input-file only works with a type=medium default-material");
+  medium *mm = m.subclass.medium_data;
+  double rx = geometry_lattice.size.x == 0 
+    ? 0 : 0.5 + (p.x-geometry_center.x) / geometry_lattice.size.x;
+  double ry = geometry_lattice.size.y == 0 
+    ? 0 : 0.5 + (p.y-geometry_center.y) / geometry_lattice.size.y;
+  double rz = geometry_lattice.size.z == 0 
+    ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
+  mm->epsilon_diag.x = mm->epsilon_diag.y = mm->epsilon_diag.z = 
+    linear_interpolate(rx, ry, rz, epsilon_data,
+		       epsilon_dims[0], epsilon_dims[1], epsilon_dims[2], 1);
+  mm->epsilon_offdiag.x = mm->epsilon_offdiag.y = mm->epsilon_offdiag.z = 0;
+}
+
+/***********************************************************************/
+
 struct pol {
   susceptibility user_s;
   struct pol *next;
@@ -302,7 +397,7 @@ static material_type eval_material_func(function material_func, vector3 p)
   }
   
   if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
-    material_type_copy(&default_material, &material);
+    epsilon_file_material(material, p);
   }
   CK(material.which_subclass != MTS::MATERIAL_FUNCTION,
      "infinite loop in material functions");
@@ -408,10 +503,19 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
     material_of_unshifted_point_in_tree_inobject(p, restricted_tree,&inobject);
 
   bool destroy_material = false;
-  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
-    material = default_material;
+  if (!inobject && epsilon_data) {
+      epsilon_file_material(material, p);
+      destroy_material = true;
   }
-  if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+  else if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
+    if (epsilon_data) {
+      epsilon_file_material(material, p);
+      destroy_material = true;
+    }
+    else
+      material = default_material;
+  }
+  else if (material.which_subclass == MTS::MATERIAL_FUNCTION) {
     material = eval_material_func(material.subclass.
                                   material_function_data->material_func,
                                   p);
@@ -527,7 +631,7 @@ static bool get_front_object(const meep::volume &v,
 
   if ((o1 && variable_material(o1->material.which_subclass)) ||
       (o2 && variable_material(o2->material.which_subclass)) ||
-      (variable_material(default_material.which_subclass)
+      ((variable_material(default_material.which_subclass) || epsilon_data)
        && (!o1 || !o2 ||
 	   o1->material.which_subclass == MTS::MATERIAL_TYPE_SELF ||
 	   o2->material.which_subclass == MTS::MATERIAL_TYPE_SELF)))
@@ -1309,6 +1413,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				geometric_object_list geometry,
 				material_type_list extra_materials,
 				material_type default_mat,
+				const char *eps_input_file,
 				pml_list pml_layers,
 				symmetry_list symmetries,
 				int num_chunks, double Courant,
@@ -1463,6 +1568,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   
   ensure_periodicity = ensure_periodicity_p;
   default_material = default_mat;
+  read_epsilon_file(eps_input_file);
   geom_epsilon geps(geometry, extra_materials, gv.pad().surroundings());
 
   if (subpixel_maxeval < 0) subpixel_maxeval = 0; // no limit

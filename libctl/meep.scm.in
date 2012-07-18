@@ -38,6 +38,8 @@
 
 ; ****************************************************************
 
+(define-input-var epsilon-input-file "" 'string)
+
 (define-class material-type no-parent)
 
 (define-class susceptibility no-parent
@@ -276,7 +278,8 @@
 		     resolution
 		     eps-averaging? subpixel-tol subpixel-maxeval
 		     (and ensure-periodicity (not (not k)))
-		     geometry extra-materials default-material
+		     geometry extra-materials
+		     default-material epsilon-input-file
 		     pml-layers symmetries num-chunks Courant
 		     global-D-conductivity global-B-conductivity))))
 
