@@ -1016,9 +1016,11 @@ static bool susceptibility_equiv(const susceptibility *o0,
 				 const susceptibility *o)
 {
 if (o0->which_subclass != o->which_subclass) return 0;
+#if 0
 if (o0->which_subclass == susceptibility::MULTILEVEL_ATOM) {
 if (!multilevel_atom_equal(o0->subclass.multilevel_atom_data, o->subclass.multilevel_atom_data)) return 0;
 }
+#endif
 else if (o0->which_subclass == susceptibility::DRUDE_SUSCEPTIBILITY) {
 if (!drude_susceptibility_equal(o0->subclass.drude_susceptibility_data, o->subclass.drude_susceptibility_data)) return 0;
 }
@@ -1081,6 +1083,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
     material_type_destroy(material);
 }
 
+#if 0
 /* make multilevel_susceptibility from scheme input data */
 static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
   if (!d || d->transitions.num_items == 0) return NULL;
@@ -1162,6 +1165,7 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
 
   return s;
 }
+#endif
 
 // add a polarization to the list if it is not already there
 static pol *add_pol(pol *pols, const susceptibility *user_s)
@@ -1248,11 +1252,13 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
 	}
 	break;
       }
+#if 0
       case susceptibility::MULTILEVEL_ATOM: {
 	multilevel_atom *d = p->user_s.subclass.multilevel_atom_data;
 	sus = make_multilevel_sus(d);
 	break;
       }
+#endif
       default:
 	meep::abort("unknown susceptibility type");
     }
