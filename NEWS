@@ -1,3 +1,25 @@
+Meep 1.2 (xxx July 2012)
+
+  * Support for anisotropic dispersive materials (tensor sigma parameter).
+
+  * Support for Drude dispersion model.  New syntax is 
+    'make drude-susceptibility', 'make lorentzian-susceptibility', etc.
+    (old 'make polarizability' is still supported for backwards compatibility).
+
+  * Support for "thermal" dispersive materials which include noise
+    term in the polarization.
+
+  * Added dft-ldos feature for efficient LDOS-spectrum computation.
+
+  * Documented stress-tensor (force) spectrum computation feature.
+
+  * Added "mean-stretch" property of PML (defaults to 1), to support
+    real coordinate stretching for damping evanescent modes.
+
+  * Support for eigenmode-source feature using upcoming MPB release.
+
+  * Various small bugfixes.
+
 Meep 1.1.2 (31 August 2009)
 
   * Added "make check" test (in 2D_convergence) for new special-kz?
