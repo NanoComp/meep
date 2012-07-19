@@ -1,8 +1,8 @@
 SRC = aniso_disp.cpp bench.cpp bragg_transmission.cpp			\
 convergence_cyl_waveguide.cpp cylindrical.cpp flux.cpp harmonics.cpp	\
 integrate.cpp known_results.cpp one_dimensional.cpp physical.cpp	\
-symmetry.cpp three_d.cpp two_dimensional.cpp 2D_convergence.cpp		\
-h5test.cpp pml.cpp
+stress_tensor.cpp symmetry.cpp three_d.cpp two_dimensional.cpp		\
+2D_convergence.cpp h5test.cpp pml.cpp
 
 EXTRA_DIST = $(SRC)
 
@@ -15,7 +15,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 
 .SUFFIXES = .dac .done
 
-check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results one_dimensional physical symmetry three_d two_dimensional 2D_convergence h5test pml
+check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
 
 aniso_disp_SOURCES = aniso_disp.cpp
 aniso_disp_LDADD = $(LIBMEEP)
@@ -49,6 +49,9 @@ one_dimensional_LDADD = $(LIBMEEP)
 
 physical_SOURCES = physical.cpp
 physical_LDADD = $(LIBMEEP)
+
+stress_tensor_SOURCES = stress_tensor.cpp
+stress_tensor_LDADD = $(LIBMEEP)
 
 symmetry_SOURCES = symmetry.cpp
 symmetry_LDADD = $(LIBMEEP)
