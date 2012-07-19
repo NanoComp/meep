@@ -111,12 +111,12 @@ static inline complex<double> my_complex_func3(complex<double> x) {
 /* field_function arguments are passed as a cons pair of (components . func)
    in order to set all four arguments at once. */
 %typemap(guile,in) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) (my_field_func_data data) {
-  $1 = list_length(scm_car($input));
+  $1 = list_length(gh_car($input));
   $2 = new meep::component[$1];
   for (int i = 0; i < $1; ++i)
-    $2[i] = meep::component(integer_list_ref(scm_car($input), i));
+    $2[i] = meep::component(integer_list_ref(gh_car($input), i));
   data.nf = $1;
-  data.func = scm_cdr($input);
+  data.func = gh_cdr($input);
   $3 = my_field_func;
   $4 = &data;
 }
@@ -125,24 +125,24 @@ static inline complex<double> my_complex_func3(complex<double> x) {
 }
 %typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) {
   $1 = SCM_NFALSEP(scm_pair_p($input)) &&
-       SCM_NFALSEP(scm_list_p(scm_car($input))) &&
-       SCM_NFALSEP(scm_procedure_p(scm_cdr($input))); 
+       SCM_NFALSEP(scm_list_p(gh_car($input))) &&
+       SCM_NFALSEP(scm_procedure_p(gh_cdr($input))); 
 }
 
 /* integrate2 arguments are passed as a cons pair of 
    ((components1 . components2) . func)
    in order to set all six arguments at once. */
 %typemap(guile,in) (int num_fields1, const meep::component *components1, int num_fields2, const meep::component *components2, meep::field_function integrand, void *integrand_data_) (my_field_func_data data) {
-  $1 = list_length(scm_car(scm_car($input)));
+  $1 = list_length(gh_car(gh_car($input)));
   $2 = new meep::component[$1];
   for (int i = 0; i < $1; ++i)
-    $2[i] = meep::component(integer_list_ref(scm_car(scm_car($input)), i));
-  $3 = list_length(scm_cdr(scm_car($input)));
+    $2[i] = meep::component(integer_list_ref(gh_car(gh_car($input)), i));
+  $3 = list_length(gh_cdr(gh_car($input)));
   $4 = new meep::component[$3];
   for (int i = 0; i < $3; ++i)
-    $4[i] = meep::component(integer_list_ref(scm_cdr(scm_car($input)), i));
+    $4[i] = meep::component(integer_list_ref(gh_cdr(gh_car($input)), i));
   data.nf = $1 + $3;
-  data.func = scm_cdr($input);
+  data.func = gh_cdr($input);
   $5 = my_field_func;
   $6 = &data;
 }
@@ -152,10 +152,10 @@ static inline complex<double> my_complex_func3(complex<double> x) {
 }
 %typecheck(SWIG_TYPECHECK_POINTER) (int num_fields1, const meep::component *components1, int num_fields2, const meep::component *components2, meep::field_function integrand, void *integrand_data_) (my_field_func_data data) {
   $1 = SCM_NFALSEP(scm_pair_p($input)) &&
-       SCM_NFALSEP(scm_pair_p(scm_car($input))) &&
-       SCM_NFALSEP(scm_list_p(scm_car(scm_car($input)))) &&
-       SCM_NFALSEP(scm_list_p(scm_cdr(scm_car($input)))) &&
-       SCM_NFALSEP(scm_procedure_p(scm_cdr($input))); 
+       SCM_NFALSEP(scm_pair_p(gh_car($input))) &&
+       SCM_NFALSEP(scm_list_p(gh_car(gh_car($input)))) &&
+       SCM_NFALSEP(scm_list_p(gh_cdr(gh_car($input)))) &&
+       SCM_NFALSEP(scm_procedure_p(gh_cdr($input))); 
 }
 
 // Need to tell SWIG about any method that returns a new object
