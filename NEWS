@@ -1,4 +1,7 @@
-Meep 1.2 (xxx July 2012)
+Meep 1.2 (19 July 2012)
+
+  * Fixed to work with Guile version 2.x (older versions still work);
+    requires libctl 3.2 or later.
 
   * Added epsilon-input-file feature to read a scalar dielectric function
     from an HDF5 file (similar to MPB).
