@@ -1,5 +1,5 @@
 bin_PROGRAMS = meep@MEEP_SUFFIX@
-EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm
+EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm meep_wrap.patch
 
 LIBMEEP = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
 
@@ -24,6 +24,7 @@ if WITH_LIBCTL
 if MAINTAINER_MODE
 meep_wrap.cxx: meep.i meep_op_renames.i meep_enum_renames.i meep_renames.i ctl-io.i meep-ctl-swig.hpp meep_swig_bug_workaround.i $(LIBHDRS)
 	swig -I$(top_srcdir)/src -c++ -guile -o $@ meep.i
+	patch -p0 $@ < $(srcdir)/meep_wrap.patch
 else
 meep_wrap.cxx:
 	echo "#error need --with-maintainer-mode to generate this file" 1>&2

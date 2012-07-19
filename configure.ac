@@ -273,16 +273,19 @@ if test "x$GUILE_CONFIG" = "xunknown"; then
         AC_CHECK_LIB(readline, readline)
         AC_CHECK_LIB(dl, dlopen)
         AC_CHECK_LIB(guile-ltdl, scm_lt_dlinit, [], [AC_CHECK_LIB(ltdl, dlopen)])
-        AC_CHECK_LIB(guile, gh_eval_str, [], [AC_MSG_ERROR([linking to guile failed])])
+        AC_CHECK_LIB(guile, gh_eval_str, [],
+                     [AC_CHECK_LIB(guile, scm_eval_string, [],
+		         [AC_MSG_ERROR([linking to guile failed])])])
 else
         CPPFLAGS="$CPPFLAGS `$GUILE_CONFIG compile`"
         LIBS="`$GUILE_CONFIG link` $LIBS"
 	AC_MSG_CHECKING([if linking to guile works])
-	AC_TRY_LINK_FUNC(gh_enter, AC_MSG_RESULT(yes), [
-	AC_MSG_RESULT(no)
-	AC_MSG_ERROR(guile-config is broken)
-	])
+	AC_TRY_LINK_FUNC(gh_enter, AC_MSG_RESULT(yes),
+ 	  [AC_TRY_LINK_FUNC(scm_boot_guile, AC_MSG_RESULT(yes),
+            [AC_MSG_RESULT(no)
+             AC_MSG_ERROR([guile-config is broken])])])
 fi
+AC_CHECK_HEADERS([libguile.h guile/gh.h])
 
 # Check how smob types work in this Guile version:
 

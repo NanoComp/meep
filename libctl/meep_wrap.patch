@@ -1,0 +1,8 @@
+751c751,755
+< typedef SCM (*swig_guile_proc)();
+---
+> #if SCM_MAJOR_VERSION >= 2
+>   typedef scm_t_subr swig_guile_proc;
+> #else
+>   typedef SCM (*swig_guile_proc)();
+> #endif
