@@ -63,7 +63,7 @@ static complex<double> do_ft(fields &f, component c, const vec &pt, double freq)
       emaxcur = max(emaxcur, e);
       f.step();
     }
-    if (emaxcur < 1e-6 * emax) break;
+    if (emaxcur < (sizeof(realnum)==sizeof(float) ? 1e-4 : 1e-6) * emax) break;
     if (T > 500 && emaxcur > 1e-2 * emax) 
       abort("fields do not seem to be decaying");
   } while(1);
@@ -81,7 +81,7 @@ int check_pml1d(double eps(const vec &), double conductivity) {
   if (conductivity != 0) master_printf("...with conductivity %g...\n",
 				       conductivity);
   notone_val = conductivity;
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<(sizeof(realnum)==sizeof(float) ? 5 : 8); i++) {
     double res = 10.0 + 10.0*i;
     {
       grid_volume gv = vol1d(sz,res);

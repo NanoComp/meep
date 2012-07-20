@@ -291,8 +291,19 @@ void sum_to_all(const double *in, double *out, int size) {
 #endif
 }
 
+void sum_to_all(const float *in, double *out, int size) {
+  double *in2 = new double[size];
+  for (int i = 0; i < size; ++i) in2[i] = in[i];
+  sum_to_all(in2, out, size);
+  delete[] in2;
+}
+
 void sum_to_all(const complex<double> *in, complex<double> *out, int size) {
   sum_to_all((const double*) in, (double*) out, 2*size);
+}
+
+void sum_to_all(const complex<float> *in, complex<double> *out, int size) {
+  sum_to_all((const float*) in, (double*) out, 2*size);
 }
 
 long double sum_to_all(long double in) {

@@ -74,8 +74,8 @@ complex<double> *dft_ldos::J() const {
 
 void dft_ldos::update(fields &f)
 {
-  complex<realnum> EJ = 0.0; // integral E * J*
-  complex<realnum> HJ = 0.0; // integral H * J* for magnetic currents
+  complex<double> EJ = 0.0; // integral E * J*
+  complex<double> HJ = 0.0; // integral H * J* for magnetic currents
 
   double scale = (f.dt/sqrt(2*pi));
 
@@ -92,14 +92,14 @@ void dft_ldos::update(fields &f)
 	  for (int j=0; j<sv->npts; j++) {
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
-	    EJ += complex<realnum>(fr[idx],fi[idx]) * conj(A);
+	    EJ += complex<double>(fr[idx],fi[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	else if (fr) { // E is purely real
 	  for (int j=0; j<sv->npts; j++) {
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
-	    EJ += fr[idx] * conj(A);
+	    EJ += double(fr[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	}
@@ -112,22 +112,22 @@ void dft_ldos::update(fields &f)
 	  for (int j=0; j<sv->npts; j++) {
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
-	    HJ += complex<realnum>(fr[idx],fi[idx]) * conj(A);
+	    HJ += complex<double>(fr[idx],fi[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	else if (fr) { // H is purely real
 	  for (int j=0; j<sv->npts; j++) {
 	    const int idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
-	    HJ += fr[idx] * conj(A);
+	    HJ += double(fr[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	}
       }
     }
   for (int i = 0; i < Nomega; ++i) {
-    complex<realnum> Ephase = polar(1.0, (omega_min+i*domega)*f.time())*scale;
-    complex<realnum> Hphase = polar(1.0, (omega_min+i*domega)*(f.time()-f.dt/2))*scale;
+    complex<double> Ephase = polar(1.0, (omega_min+i*domega)*f.time())*scale;
+    complex<double> Hphase = polar(1.0, (omega_min+i*domega)*(f.time()-f.dt/2))*scale;
     Fdft[i] += Ephase * EJ + Hphase * HJ;
 
     // NOTE: take only 1st time dependence: assumes all sources have same J(t)
