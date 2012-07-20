@@ -1,4 +1,4 @@
-Meep 1.2 (19 July 2012)
+Meep 1.2 (20 July 2012)
 
   * Fixed to work with Guile version 2.x (older versions still work);
     requires libctl 3.2 or later.
