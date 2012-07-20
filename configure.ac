@@ -213,34 +213,12 @@ if test "$ok" = "yes"; then
 fi
 
 ##############################################################################
-# Figure out the number of processors so we can quickly build the docs and
-# run the tests...  (FIXME: use more standard autoconf macros)
 
 RUNCODE=""
-
 if test "x$with_mpi" = "xyes"; then
-        cat > test_num_processors.c <<MYEOF
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-int main() {
-  long nprocs;
-  nprocs = sysconf(_SC_NPROCESSORS_ONLN);
-  if (nprocs < 1)
-    nprocs = 1;
-  printf ("%ld\n",nprocs);
-  exit (EXIT_SUCCESS);
-}
-MYEOF
-        $CC -o test_num_processors test_num_processors.c
-        NUMPROCS=`./test_num_processors`
-        rm -f test_num_processors test_num_processors.c
-        echo Looks like we have got "$NUMPROCS" processors
-
-        RUNCODE="mpirun -np $NUMPROCS"
+   AC_CHECK_PROG(MPIRUN, mpirun, mpirun)
+   RUNCODE="$MPIRUN -np 4" # always use 4 processes for 'make check'
 fi
-
 AC_SUBST(RUNCODE)
 
 ##############################################################################

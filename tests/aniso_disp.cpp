@@ -92,49 +92,56 @@ public:
 
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
-  quiet = true;
-  const double res = 200;
-  grid_volume gv = vol3d(0,0,0, res);
-  gv.center_origin();
-  anisodisp_material anisodispmat;
-  structure s(gv, anisodispmat);
-  s.add_susceptibility(anisodispmat, E_stuff, lorentzian_susceptibility(1.1,1e-5));
-  fields f(&s);
-  f.use_bloch(vec(0.813,0,0));
-  f.add_point_source(Ez, 0.5, 1.0, 0.0, 4.0, vec(0,0,0));
-  double T = f.last_source_time();
-  int iT = T / f.dt;
-  while (f.t < iT) {
-    if (f.t % (iT / 10) == 0)
-      master_printf("%g%% done with source\n", f.time()/T * 100);
-    f.step();
+  bool ok = true;
+  // we can only use one process for this 1-pixel simulation
+  if (0 == divide_parallel_processes(count_processors())) {
+    quiet = true;
+    const double res = 200;
+    grid_volume gv = vol3d(0,0,0, res);
+    gv.center_origin();
+    anisodisp_material anisodispmat;
+    structure s(gv, anisodispmat);
+    s.add_susceptibility(anisodispmat, E_stuff, 
+			 lorentzian_susceptibility(1.1,1e-5));
+    fields f(&s);
+    f.use_bloch(vec(0.813,0,0));
+    f.add_point_source(Ez, 0.5, 1.0, 0.0, 4.0, vec(0,0,0));
+    double T = f.last_source_time();
+    int iT = T / f.dt;
+    while (f.t < iT) {
+      if (f.t % (iT / 10) == 0)
+	master_printf("%g%% done with source\n", f.time()/T * 100);
+      f.step();
+    }
+    double T2 = 200;
+    int iT2 = T2 / f.dt;
+    complex<double> *vals = new complex<double>[iT2];
+    while (f.t - iT < iT2) {
+      if ((f.t - iT) % (iT2 / 10) == 0)
+	master_printf("%g%% done with harminv\n", (f.t - iT) * 100.0 / iT2);
+      vals[f.t - iT] = f.get_field(Ez, vec(0.,0.,0.));
+      f.step();
+    }
+    complex<double> amps[8];
+    double freqs_re[8], freqs_im[8];
+    
+    master_printf("done with timestepping, running harminv...\n");
+    int num = do_harminv(vals, iT2, f.dt, 0.0, 1.0, 8, 
+			 amps, freqs_re, freqs_im);
+    
+    // compute the error compared to analytical solution
+    int i0 = 0;
+    for (int i=0;i<num;i++) {
+      master_printf("freq %d is %0.6g, %0.6g\n",i,freqs_re[i],freqs_im[i]);
+      if (fabs(freqs_re[i]-0.41562) < fabs(freqs_re[i0]-0.41562))
+	i0 = i;
+    }
+    master_printf("err. real: %g\n",fabs(freqs_re[i0]-0.41562)/0.41562);
+    master_printf("err. imag: %g\n",fabs(freqs_im[i0]+4.8297e-07)/4.8297e-7);
+    
+    ok = fabs(freqs_re[i0]-0.41562)/0.41562 < 1e-4
+      && fabs(freqs_im[i0]+4.8297e-07)/4.8297e-7 < 0.2;
   }
-  double T2 = 200;
-  int iT2 = T2 / f.dt;
-  complex<double> *vals = new complex<double>[iT2];
-  while (f.t - iT < iT2) {
-    if ((f.t - iT) % (iT2 / 10) == 0)
-      master_printf("%g%% done with harminv\n", (f.t - iT) * 100.0 / iT2);
-    f.step();
-    vals[f.t - iT] = f.get_field(Ez, vec(0.,0.,0.));
-  }
-  complex<double> amps[8];
-  double freqs_re[8], freqs_im[8];
-
-  master_printf("done with timestepping, running harminv...\n");
-  int num = do_harminv(vals, iT2, f.dt, 0.0, 1.0, 8, 
-		       amps, freqs_re, freqs_im);
-
-  // compute the error compared to analytical solution
-  int i0 = 0;
-  for (int i=0;i<num;i++) {
-    master_printf("freq %d is %0.6g, %0.6g\n",i,freqs_re[i],freqs_im[i]);
-    if (fabs(freqs_re[i]-0.41562) < fabs(freqs_re[i0]-0.41562))
-      i0 = i;
-  }
-  master_printf("err. real: %0.8g\n",fabs(freqs_re[i0]-0.41562)/0.41562);
-  master_printf("err. imag: %0.8g\n",fabs(freqs_im[i0]+4.8297e-07)/4.8297e-7);
-  
-  return fabs(freqs_re[i0]-0.41562)/0.41562 > 1e-4
-    || fabs(freqs_im[i0]+4.8297e-07)/4.8297e-7 > 0.2;
+  end_divide_parallel();
+  return !and_to_all(ok);
 }
