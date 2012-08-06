@@ -117,11 +117,11 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 
 ###########################################################################
 
-
-if test "x$with_lapack" != xno; then
-   AC_F77_WRAPPERS
+AC_F77_WRAPPERS
+if test "x$with_lapack" != xno -o "x$with_blas" != xno; then
    ACX_BLAS
    ACX_LAPACK
+   LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
 fi
 
 ###########################################################################
@@ -139,9 +139,9 @@ PKG_CHECK_MODULES(HARMINV, harminv >= 1.1, [CFLAGS="$CFLAGS $HARMINV_CFLAGS"; LI
 # As a fallback, check manually for BLAS/LAPACK and harminv libraries:
 if test $have_harminv = no; then
         if test "x$acx_lapack_ok" = x; then
-	   AC_F77_WRAPPERS
 	   ACX_BLAS
 	   ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
+	   LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
 	elif test "x$acx_lapack_ok" = xno; then
 	   AC_MSG_WARN([BLAS/LAPACK needed for harminv])
 	fi
@@ -166,9 +166,9 @@ AC_CHECK_HEADER(mpb.h, [have_mpb=maybe], [have_mpb=no])
 
 if test $have_mpb = maybe; then
   if test "x$acx_lapack_ok" = x -a "$have_harminv" = xno; then
-	AC_F77_WRAPPERS
 	ACX_BLAS
 	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for MPB])])
+        LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
   elif test "x$acx_lapack_ok" = xno; then
        AC_MSG_WARN([BLAS/LAPACK needed for MPB])
   fi
