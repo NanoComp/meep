@@ -34,6 +34,7 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq)
   }
   Fdft = new complex<realnum>[Nomega];
   Jdft = new complex<realnum>[Nomega];
+  for (int i = 0; i < Nomega; ++i) Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
 }
 
@@ -45,11 +46,12 @@ double *dft_ldos::ldos() const {
   // so that we can compare against the analytical formula for testing
   // ... in most practical cases, the scale factor won't matter because
   //     the user will compute the relative LDOS of 2 cases (e.g. LDOS/vacuum)
-  
+
   // overall scale factor
+  double Jsum_all = sum_to_all(Jsum);
   double scale = 4.0/pi // from definition of LDOS comparison to power
     * -0.5 // power = -1/2 Re[E* J]
-    / (Jsum * Jsum); // normalize to unit-integral current
+    / (Jsum_all * Jsum_all); // normalize to unit-integral current
 
   double *sum = new double[Nomega];
   for (int i = 0; i < Nomega; ++i) /* 4/pi * work done by unit dipole */
