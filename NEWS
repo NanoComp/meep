@@ -1,3 +1,13 @@
+Meep 1.2.1
+
+   * Some fixes to BLAS/LAPACK linking.
+
+   * Bug fixes in LDOS computation.
+
+   * Work around gcc bug #54498, which caused a spurious PML test
+     failure with gcc 4.7 and 4.7.1; thanks to Brahmanand Jogai and
+     Thorsten Alteholz for the bug reports.
+
 Meep 1.2 (20 July 2012)
 
   * Fixed to work with Guile version 2.x (older versions still work);
