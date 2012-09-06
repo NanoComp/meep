@@ -260,15 +260,15 @@ int pml1d_scaling(double eps(const vec &)) {
     dpml = pow(2.0,(double)i);
     double sz = 2*dpml + 10.0 + dpml;
     prev_ft = ft;
-    {
-      grid_volume gv = vol1d(sz,res);
-      structure s(gv, eps, (pml(2*dpml,Z,Low, Rasymp, stretch)
-			    + pml(dpml,Z,High, Rasymp, stretch)) * 1.5);
-      fields f(&s);
-      gaussian_src_time src(freq, freq / 20);
-      f.add_point_source(Ex, src, vec(2*dpml+0.1));
-      ft = do_ft(f, Ex, vec(sz - dpml - 0.1), freq);
-    }
+
+    grid_volume gv = vol1d(sz,res);
+    structure s(gv, eps, (pml(2*dpml,Z,Low, Rasymp, stretch)
+			  + pml(dpml,Z,High, Rasymp, stretch)) * 1.5);
+    fields f(&s);
+    gaussian_src_time src(freq, freq / 20);
+    f.add_point_source(Ex, src, vec(2*dpml+0.1));
+    ft = do_ft(f, Ex, vec(sz - dpml - 0.1), freq);
+
     if (i > 0) {
       refl_const = pow(abs(ft - prev_ft),2.0) / pow(abs(prev_ft),2.0);
       master_printf("refl1d:, %g, %g\n", dpml, refl_const);
@@ -295,15 +295,15 @@ int pmlcyl_scaling(double eps(const vec &), int m) {
     dpml = pow(2.0,(double)i);
     double sr = 5.0 + dpml, sz = dpml + 5.0 + dpml;
     prev_ft = ft;
-    {
-      grid_volume gv = volcyl(sr,sz,res);
-      gv.center_origin();
-      structure s(gv, eps, pml(dpml, Rasymp, stretch));
-      fields f(&s, m);
-      gaussian_src_time src(freq, freq / 20);
-      f.add_point_source(Ez, src, veccyl(0.5 * (sr - dpml), 0.1));
-      ft = do_ft(f, Ez, veccyl(sr - dpml - 0.1,0), freq);
-    }
+
+    grid_volume gv = volcyl(sr,sz,res);
+    gv.center_origin();
+    structure s(gv, eps, pml(dpml, Rasymp, stretch));
+    fields f(&s, m);
+    gaussian_src_time src(freq, freq / 20);
+    f.add_point_source(Ez, src, veccyl(0.5 * (sr - dpml), 0.1));
+    ft = do_ft(f, Ez, veccyl(sr - dpml - 0.1,0), freq);
+
     if (i > 0) {
       refl_const = pow(abs(ft - prev_ft),2.0) / pow(abs(prev_ft),2.0);
       master_printf("reflcyl:, %g, %g\n", dpml, refl_const);
