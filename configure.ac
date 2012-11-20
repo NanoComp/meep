@@ -435,7 +435,7 @@ fi
 
 AC_HEADER_TIME
 AC_CHECK_HEADERS([sys/time.h])
-AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
+AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy jn])
 
 ##############################################################################
 # check for restrict keyword in C++

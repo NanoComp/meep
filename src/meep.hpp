@@ -1565,6 +1565,9 @@ double uniform_random(double a, double b); // uniform random in [a,b]
 double gaussian_random(double mean, double stddev); // normal random with given mean and stddev
 int random_int(int a, int b); // uniform random in [a,b)
 
+// Bessel function (in initialize.cpp)
+double BesselJ(int m, double kr);
+
 } /* namespace meep */
 
 #endif /* MEEP_H */
