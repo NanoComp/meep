@@ -68,7 +68,7 @@ static void cp(const char *a, const char *b) {
 
 static bool is_ok_dir(const char *dirname) {
   DIR *dir;
-  bool direxists;
+  bool direxists = 0;
   if (am_master()) {
     direxists = (dir = opendir(dirname)) != NULL;
     if (direxists) closedir(dir);
