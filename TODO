@@ -9,7 +9,7 @@ Re-entrant functions: foo(vec&) arguments should be foo(vec&, void*)
 where the second argument can be used to pass state (instead of global
 vars).
 
-User proper PML for dispersive media and cylindrical.
+User proper PML for cylindrical coordinates, rather than quasi-PML.
 
 Use more-stable algorithm for dispersive media.
 
@@ -36,8 +36,6 @@ Check sensitivity to rounding error and if there is a better way to handle:
 
 -------------------
 LIBCTL FRONT-END:
-
-Epsilon from file support.
 
 Need a way to reset epsilon when restarting, and also phasing support.
 
