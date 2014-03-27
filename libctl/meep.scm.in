@@ -234,6 +234,8 @@
   (define-property mean-stretch 1.0 'number (lambda (x) (>= x 1.0)))
   (define-property pml-profile (lambda (u) (* u u)) 'function))
 
+(define-class absorber pml) ; just a scalar conductivity ramp
+
 (export-type (make-list-type 'symmetry))
 (export-type (make-list-type 'pml))
 (export-type (make-list-type 'material-type))

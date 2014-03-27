@@ -159,6 +159,8 @@ meep::vec vector3_to_vec(const vector3 v3)
   }
 }
 
+static meep::vec geometry_edge; // geometry_lattice.size / 2
+
 static geom_box gv2box(const meep::volume &v)
 {
   geom_box box;
@@ -269,15 +271,30 @@ struct pol {
   struct pol *next;
 };
 
+// structure to hold a conductivity profile (for scalar absorbing layers)
+struct cond_profile {
+    double L; // thickness
+    int N; // number of points prof[n] from 0..N corresponding to 0..L
+    double *prof; // (NULL if none)
+};
+
+
 class geom_epsilon : public meep::material_function {
   geometric_object_list geometry;
   geom_box_tree geometry_tree;
   geom_box_tree restricted_tree;
+    
+  cond_profile cond[5][2]; // [direction][side]
   
 public:
   geom_epsilon(geometric_object_list g, material_type_list mlist,
 	       const meep::volume &v);
   virtual ~geom_epsilon();
+
+  virtual void set_cond_profile(meep::direction, meep::boundary_side,
+                                double L, double dx,
+                                double (*prof)(int,double*,void*), void*,
+                                double R);
   
   virtual void set_volume(const meep::volume &v);
   virtual void unset_volume(void);
@@ -320,6 +337,8 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   extra_materials = mlist;
   current_pol = NULL;
 
+  FOR_DIRECTIONS(d) FOR_SIDES(b) cond[d][b].prof = NULL;
+
   if (meep::am_master()) {
     for (int i = 0; i < geometry.num_items; ++i) {
       display_geometric_object_info(5, geometry.items[i]);
@@ -358,6 +377,33 @@ geom_epsilon::~geom_epsilon()
 {
   unset_volume();
   destroy_geom_box_tree(geometry_tree);
+  FOR_DIRECTIONS(d) FOR_SIDES(b) if (cond[d][b].prof)
+      delete[] cond[d][b].prof;
+}
+
+void geom_epsilon::set_cond_profile(meep::direction dir,
+                                    meep::boundary_side side, 
+                                    double L, double dx,
+                                    double (*P)(int,double*,void*), void *data,
+                                    double R)
+{
+    if (cond[dir][side].prof) delete[] cond[dir][side].prof;
+
+    int N = int(L / dx + 0.5);
+    cond[dir][side].L = L;
+    cond[dir][side].N = N;
+    double *prof = cond[dir][side].prof = new double[N+1];
+
+    double umin = 0, umax = 1, esterr;
+    int errflag;
+    double prof_int = adaptive_integration(P, &umin,&umax, 1, data, 1e-9, 1e-4,
+                                           50000, &esterr, &errflag);
+
+    double prefac = (-log(R)) / (4*L*prof_int);
+    for (int i = 0; i <= N; ++i) {
+        double u = double(i)/N;
+        prof[i] = prefac * P(1, &u, data);
+    }
 }
 
 void geom_epsilon::unset_volume(void)
@@ -1080,6 +1126,7 @@ static double get_cnd(meep::component c, const medium *m) {
 
 bool geom_epsilon::has_conductivity(meep::component c)
 {
+  FOR_DIRECTIONS(d) FOR_SIDES(b) if (cond[d][b].prof) return true;
   for (int i = 0; i < geometry.num_items; ++i) {
     if (geometry.items[i].material.which_subclass == MTS::MEDIUM) {
       if (get_cnd(c, geometry.items[i].material.subclass.medium_data) != 0)
@@ -1109,6 +1156,38 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   
   if (destroy_material)
     material_type_destroy(material);
+
+  // if the user specified scalar absorbing layers, add their conductivities
+  // to cond_val (isotropically, for both magnetic and electric conductivity).
+  LOOP_OVER_DIRECTIONS(r.dim, d) {
+      double x = r.in_direction(d);
+      double edge = geometry_edge.in_direction(d) - cond[d][meep::High].L;
+      if (cond[d][meep::High].prof && x >= edge) {
+          int N = cond[d][meep::High].N;
+          double ui = N * (x-edge) / cond[d][meep::High].L;
+          int i = int(ui);
+          if (i >= N)
+              cond_val += cond[d][meep::High].prof[N];
+          else {
+              double di = ui - i;
+              cond_val += cond[d][meep::High].prof[i] * (1-di)
+                        + cond[d][meep::High].prof[i+1] * di;
+          }
+      }
+      edge = cond[d][meep::Low].L - geometry_edge.in_direction(d);
+      if (cond[d][meep::Low].prof && x <= edge) {
+          int N = cond[d][meep::Low].N;
+          double ui = N * (edge-x) / cond[d][meep::Low].L;
+          int i = int(ui);
+          if (i >= N)
+              cond_val += cond[d][meep::Low].prof[N];
+          else {
+              double di = ui - i;
+              cond_val += cond[d][meep::Low].prof[i] * (1-di)
+                        + cond[d][meep::Low].prof[i+1] * di;
+          }
+      }
+  }
   
   return cond_val;
 }
@@ -1440,6 +1519,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   set_dimensions(dims);
   
   geometry_lattice.size = size;
+  geometry_edge = vector3_to_vec(size) * 0.5;
 
   master_printf("Working in %s dimensions.\n", meep::dimension_name(dim));
   master_printf("Computational cell is %g x %g x %g with resolution %g\n",
@@ -1487,7 +1567,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
     }
 
   meep::boundary_region br;
-  for (int i = 0; i < pml_layers.num_items; ++i) {
+  for (int i = 0; i < pml_layers.num_items; ++i) if (pml_layers.items[i].which_subclass == pml::PML_SELF) {
     double umin = 0, umax = 1, esterr;
     int errflag;
     using namespace meep;
@@ -1570,6 +1650,45 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
   default_material = default_mat;
   read_epsilon_file(eps_input_file);
   geom_epsilon geps(geometry, extra_materials, gv.pad().surroundings());
+
+  for (int i = 0; i < pml_layers.num_items; ++i)
+      if (pml_layers.items[i].which_subclass == pml::ABSORBER) {
+          pml layer = pml_layers.items[i];
+          if (layer.direction == -1) {
+              LOOP_OVER_DIRECTIONS(gv.dim, d) {
+                  if (layer.side == -1) {
+                      FOR_SIDES(b)
+                          geps.set_cond_profile(d, b,
+                                layer.thickness, gv.inva * 0.5,
+                                scm_pml_profile2, layer.pml_profile,
+                                pow(layer.R_asymptotic,
+                                    layer.strength));
+                  }
+                  else
+                      geps.set_cond_profile(d,
+                                (meep::boundary_side) layer.side,
+                                layer.thickness, gv.inva * 0.5,
+                                scm_pml_profile2, layer.pml_profile,
+                                pow(layer.R_asymptotic,
+                                    layer.strength));
+              }
+          }
+          else if (layer.side == -1) {
+              FOR_SIDES(b)
+                  geps.set_cond_profile((meep::direction) layer.direction,
+                                        b, layer.thickness, gv.inva * 0.5,
+                                        scm_pml_profile2, layer.pml_profile,
+                                        pow(layer.R_asymptotic,
+                                            layer.strength));
+          }
+          else
+              geps.set_cond_profile((meep::direction) layer.direction,
+                                    (meep::boundary_side) layer.side,
+                                    layer.thickness, gv.inva * 0.5,
+                                    scm_pml_profile2, layer.pml_profile,
+                                    pow(layer.R_asymptotic,
+                                        layer.strength));
+      }
 
   if (subpixel_maxeval < 0) subpixel_maxeval = 0; // no limit
 
