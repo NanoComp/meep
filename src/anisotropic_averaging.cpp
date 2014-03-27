@@ -255,6 +255,7 @@ void structure_chunk::set_chi1inv(component c,
     delete[] chi1inv[c][dc];
     chi1inv[c][dc] = 0;
   }
+  medium.unset_volume();
 }
 
 void structure_chunk::add_susceptibility(material_function &sigma, 
@@ -263,6 +264,8 @@ void structure_chunk::add_susceptibility(material_function &sigma,
 {
   if (ft != E_stuff && ft != H_stuff)
     abort("susceptibilities must be for E or H fields");
+
+  sigma.set_volume(gv.pad().surroundings());
 
   susceptibility *newsus = sus.clone();
   newsus->next = NULL;
@@ -321,6 +324,8 @@ void structure_chunk::add_susceptibility(material_function &sigma,
   // finally, add to the beginning of the chiP list:
   newsus->next = chiP[ft];
   chiP[ft] = newsus;  
+
+  sigma.unset_volume();
 }
 
 

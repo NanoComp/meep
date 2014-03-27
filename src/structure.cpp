@@ -781,6 +781,8 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
       chi3[c] = NULL;
     }
   }
+
+  epsilon.unset_volume();
 }
 
 void structure_chunk::set_chi2(component c, material_function &epsilon) {
@@ -815,6 +817,8 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
       chi2[c] = NULL;
     }
   }
+
+  epsilon.unset_volume();
 }
 
 void structure_chunk::set_conductivity(component c, material_function &C) {
@@ -853,6 +857,8 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
     conductivity[c_C][c_d] = NULL;
   }
   condinv_stale = true;
+
+  C.unset_volume();
 }
 
 structure_chunk::structure_chunk(const grid_volume &thegv, 

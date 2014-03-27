@@ -120,11 +120,8 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   // Finally, compute E = chi1inv * D
   
   realnum *dmp[NUM_FIELD_COMPONENTS][2];
-  if (have_f_minus_p) {
-    FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f_minus_p[dc][cmp];
-  } else {
-    FOR_FT_COMPONENTS(ft2,dc) DOCMP2 dmp[dc][cmp] = f[dc][cmp];
-  }
+  FOR_FT_COMPONENTS(ft2,dc) DOCMP2
+      dmp[dc][cmp] = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
 
   DOCMP FOR_FT_COMPONENTS(ft,ec) if (f[ec][cmp]) {
     if (type(ec) != ft) abort("bug in FOR_FT_COMPONENTS");
@@ -188,7 +185,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
       const int d_ec = component_direction(ec);
       const int sR = gv.stride(R), nZ = gv.num_direction(Z);
       realnum *E = f[ec][cmp];
-      const realnum *D = have_f_minus_p ? f_minus_p[dc][cmp] : f[dc][cmp];
+      const realnum *D = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
       const realnum *chi1inv = s->chi1inv[ec][d_ec];
       if (chi1inv)
 	for (int iZ=0; iZ<nZ; iZ++) {
