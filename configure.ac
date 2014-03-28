@@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR(src/step.cpp)
 # definition (in the .hpp file) generally breaks binary compatibility.
 SHARED_VERSION_INFO="7:1:0" # CURRENT:REVISION:AGE
 
-AM_INIT_AUTOMAKE([check-news color-tests parallel-tests silent-rules 1.11])
+AM_INIT_AUTOMAKE([foreign check-news color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
