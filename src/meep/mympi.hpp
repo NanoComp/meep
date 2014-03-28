@@ -1,5 +1,5 @@
 // -*- C++ -*-
-/* Copyright (C) 2005-2012 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2014 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by

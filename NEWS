@@ -1,4 +1,10 @@
-Meep 1.2.1
+Meep 1.2.1 (2 April 2014)
+
+   * Added new absorber type, as an alternative to PML, which simply
+     provides a scalar conductivity gradient for cases where PML fails.
+
+   * Fixed bug which sometimes prevented dispersive materials from being
+     used in PML regions.
 
    * Some fixes to BLAS/LAPACK linking.
 

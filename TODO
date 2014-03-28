@@ -1,3 +1,10 @@
+Near-field to far-field transformations.
+
+Gyromagnetic materials (via general anisotropic conductivities).
+
+Finish implementation of active materials (multilevel atoms and
+saturable absorption/gain).
+
 Support 3d (r,phi,z) cell, where m is "Bloch wavenumber"
       -- gives 6-fold (and n-fold) symmetry as side effect
       -- allows computation of bended photonic-crystal waveguides
