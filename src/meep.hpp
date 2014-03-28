@@ -1472,6 +1472,7 @@ class fields {
                                   complex<double> *fad, double *approx_power);
   void out_bands(FILE *, const char *, int maxbands);
   complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
+public:
   // monitor.cpp
   complex<double> get_field(component c, const ivec &iloc) const;
   double get_chi1inv(component, direction, const ivec &iloc) const;
