@@ -1455,7 +1455,6 @@ class fields {
   void connect_the_chunks(); // Intended to be ultra-private...
   bool on_metal_boundary(const ivec &);
   ivec ilattice_vector(direction) const;
-  bool locate_component_point(component *, ivec *, complex<double> *) const;
   bool locate_point_in_user_volume(ivec *, complex<double> *phase) const;
   void locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
                                            complex<double> kphase[8], int &ncopies) const;
@@ -1476,6 +1475,8 @@ public:
   // monitor.cpp
   complex<double> get_field(component c, const ivec &iloc) const;
   double get_chi1inv(component, direction, const ivec &iloc) const;
+  // boundaries.cpp
+  bool locate_component_point(component *, ivec *, complex<double> *) const;
 };
 
 class flux_vol {
