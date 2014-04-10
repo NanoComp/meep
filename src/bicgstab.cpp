@@ -79,12 +79,13 @@ static double dot(int n, const realnum *x, const realnum *y)
 }
 
 static double norm2(int n, const realnum *x) { 
+  // note: we don't just do sqrt(dot(n, x, x)) in order to avoid overflow
   int i;
   double xmax = 0, scale;
   long double sum = 0;
   for (i = 0; i < n; ++i) {
     double xabs = fabs(x[i]);
-    if (xmax > xabs) xmax = xabs;
+    if (xabs > xmax) xmax = xabs;
   }
   xmax = max_to_all(xmax);
   if (xmax == 0) return 0;
