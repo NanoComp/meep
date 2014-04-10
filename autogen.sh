@@ -9,6 +9,7 @@ while test $# -ge 1; do
 	--disable-*) configure_args="$configure_args $1" ;;
 	--with-*) configure_args="$configure_args $1" ;;
 	--without-*) configure_args="$configure_args $1" ;;
+	--prefix=*) configure_args="$configure_args $1" ;;
 	*) echo "unknown argument $1"; exit 1 ;;
     esac
     shift
