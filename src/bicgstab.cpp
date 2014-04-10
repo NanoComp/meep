@@ -79,7 +79,8 @@ static double dot(int n, const realnum *x, const realnum *y)
 }
 
 static double norm2(int n, const realnum *x) { 
-  int i;
+  return sqrt(dot(n, x, x));
+  /* int i;					// did not work properly
   double xmax = 0, scale;
   long double sum = 0;
   for (i = 0; i < n; ++i) {
@@ -93,7 +94,7 @@ static double norm2(int n, const realnum *x) {
     double xs = scale * x[i];
     sum += xs * xs;
   }
-  return xmax * sqrt(sum_to_all(sum));
+  return xmax * sqrt(sum_to_all(sum)); */
 }
 
 static void xpay(int n, realnum *x, double a, const realnum *y) {
