@@ -1,3 +1,8 @@
+Meep 1.2.2
+
+   * Bug fix in CW solver convergence test; thanks to @FilipDominec
+     for the bug report.
+
 Meep 1.2.1 (2 April 2014)
 
    * Added new absorber type, as an alternative to PML, which simply
