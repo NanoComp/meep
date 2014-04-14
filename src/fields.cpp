@@ -38,7 +38,7 @@ fields::fields(structure *s, double m, double beta,
     S = S + r_to_minus_r_symmetry(m);
   phasein_time = 0;
   bands = NULL;
-  for (int d=0;d<5;d++) k[d] = 0.0;
+  for (int d=0;d<5;d++) { k[d] = 0.0; eikna[d] = 1.0; }
   is_real = 0;
   a = gv.a;
   dt = s->dt;
@@ -90,7 +90,7 @@ fields::fields(const fields &thef) :
   beta = thef.beta;
   phasein_time = thef.phasein_time;
   bands = NULL;
-  for (int d=0;d<5;d++) k[d] = thef.k[d];
+  for (int d=0;d<5;d++) { k[d] = thef.k[d]; eikna[d] = thef.eikna[d]; }
   is_real = thef.is_real;
   a = thef.a;
   dt = thef.dt;
