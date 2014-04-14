@@ -681,8 +681,8 @@ class src_time {
        if (t.next) next = t.next->clone(); else next = NULL;
   }
   
-  complex<double> dipole() const { return current_dipole; }
-  complex<double> current() const { return current_current; }
+  std::complex<double> dipole() const { return current_dipole; }
+  std::complex<double> current() const { return current_current; }
   void update(double time, double dt) {
     if (time != current_time) {
       current_dipole = dipole(time);
@@ -694,7 +694,7 @@ class src_time {
   // subclasses *can* override this method in order to specify the
   // current directly rather than as the derivative of dipole.
   // in that case you would probably ignore the dt argument.
-  virtual complex<double> current(double time, double dt) const { 
+  virtual std::complex<double> current(double time, double dt) const { 
     return ((dipole(time + dt) - dipole(time)) / dt);
   }
 
@@ -705,16 +705,16 @@ class src_time {
   src_time *next;
 
   // subclasses should override these methods:
-  virtual complex<double> dipole(double time) const { (void)time; return 0; }
+  virtual std::complex<double> dipole(double time) const { (void)time; return 0; }
   virtual double last_time() const { return 0.0; }
   virtual src_time *clone() const { return new src_time(*this); }
   virtual bool is_equal(const src_time &t) const { (void)t; return 1; }
-  virtual complex<double> frequency() const { return 0.0; }
-  virtual void set_frequency(complex<double> f) { (void) f; }
+  virtual std::complex<double> frequency() const { return 0.0; }
+  virtual void set_frequency(std::complex<double> f) { (void) f; }
 
  private:
   double current_time;
-  complex<double> current_dipole, current_current;
+  std::complex<double> current_dipole, current_current;
 };
 
 bool src_times_equal(const src_time &t1, const src_time &t2);
@@ -726,12 +726,12 @@ class gaussian_src_time : public src_time {
   gaussian_src_time(double f, double w, double start_time, double end_time);
   virtual ~gaussian_src_time() {}
 
-  virtual complex<double> dipole(double time) const;
+  virtual std::complex<double> dipole(double time) const;
   virtual double last_time() const { return float(peak_time + cutoff); };
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
-  virtual complex<double> frequency() const { return freq; }
-  virtual void set_frequency(complex<double> f) { freq = real(f); }
+  virtual std::complex<double> frequency() const { return freq; }
+  virtual void set_frequency(std::complex<double> f) { freq = real(f); }
 
  private:
   double freq, width, peak_time, cutoff;
@@ -740,44 +740,44 @@ class gaussian_src_time : public src_time {
 // Continuous (CW) source with (optional) slow turn-on and/or turn-off.
 class continuous_src_time : public src_time {
  public:
-  continuous_src_time(complex<double> f, double w = 0.0, 
+  continuous_src_time(std::complex<double> f, double w = 0.0, 
 		      double st = 0.0, double et = infinity,
 		      double s = 3.0) : freq(f), width(w), start_time(float(st)),
 					end_time(float(et)), slowness(s) {}
   virtual ~continuous_src_time() {}
   
-  virtual complex<double> dipole(double time) const;
+  virtual std::complex<double> dipole(double time) const;
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
-  virtual complex<double> frequency() const { return freq; }
-  virtual void set_frequency(complex<double> f) { freq = f; }
+  virtual std::complex<double> frequency() const { return freq; }
+  virtual void set_frequency(std::complex<double> f) { freq = f; }
   
  private:
-  complex<double> freq;
+  std::complex<double> freq;
   double width, start_time, end_time, slowness;
 };
 
 // user-specified source function with start and end times
 class custom_src_time : public src_time {
  public:
-  custom_src_time(complex<double> (*func)(double t, void *), void *data,
+  custom_src_time(std::complex<double> (*func)(double t, void *), void *data,
 		  double st = -infinity, double et = infinity)
     : func(func), data(data), start_time(float(st)), end_time(float(et)) {}
   virtual ~custom_src_time() {}
   
-  virtual complex<double> current(double time, double dt) const { 
+  virtual std::complex<double> current(double time, double dt) const { 
     if (is_integrated) return src_time::current(time,dt);
     else return dipole(time);
   }
-  virtual complex<double> dipole(double time) const { float rtime = float(time);
+  virtual std::complex<double> dipole(double time) const { float rtime = float(time);
     if (rtime >= start_time && rtime <= end_time) return func(time,data); else return 0.0; }
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   
  private:
-  complex<double> (*func)(double t, void *);
+  std::complex<double> (*func)(double t, void *);
   void *data;
   double start_time, end_time;
 };
@@ -788,10 +788,10 @@ class monitor_point {
   ~monitor_point();
   vec loc;
   double t;
-  complex<double> f[NUM_FIELD_COMPONENTS];
+  std::complex<double> f[NUM_FIELD_COMPONENTS];
   monitor_point *next;
 
-  complex<double> get_component(component);
+  std::complex<double> get_component(component);
   double poynting_in_direction(direction d);
   double poynting_in_direction(vec direction_v);
 
@@ -805,12 +805,12 @@ class monitor_point {
   // Note that in either case, fourier_transform assumes that the monitor
   // points are all equally spaced in time.
   void fourier_transform(component w,
-                         complex<double> **a, complex<double> **f, int *numout,
+                         std::complex<double> **a, std::complex<double> **f, int *numout,
                          double fmin=0.0, double fmax=0.0, int maxbands=100);
   // harminv works much like fourier_transform, except that it is not yet
   // implemented.
   void harminv(component w,
-               complex<double> **a, complex<double> **f,
+               std::complex<double> **a, std::complex<double> **f,
                int *numout, double fmin, double fmax,
                int maxbands);
 };
@@ -823,8 +823,8 @@ public:
 	    ivec is_, ivec ie_,
 	    vec s0_, vec s1_, vec e0_, vec e1_,
 	    double dV0_, double dV1_,
-	    complex<double> scale_,
-	    complex<double> extra_weight_,
+	    std::complex<double> scale_,
+	    std::complex<double> extra_weight_,
 	    component c_,
 	    bool use_centered_grid,
 	    const void *data_);
@@ -832,7 +832,7 @@ public:
   
   void update_dft(double time);
 
-  void scale_dft(complex<double> scale);
+  void scale_dft(std::complex<double> scale);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -843,7 +843,7 @@ public:
   component c; // component to DFT (possibly transformed by symmetry)
 
   int N; // number of spatial points (on epsilon grid)
-  complex<realnum> *dft; // N x Nomega array of DFT values.
+  std::complex<realnum> *dft; // N x Nomega array of DFT values.
 
   struct dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
   struct dft_chunk *next_in_dft; // next for this particular DFT vol./component
@@ -855,7 +855,7 @@ public:
      any additional negative or complex weight factor to be used
      in computations involving the fourier-transformed fields.  Because
      it is used in computations involving dft[...], it needs to be public. */
-     complex<double> extra_weight;
+     std::complex<double> extra_weight;
 
 private:
   // parameters passed from field_integrate:
@@ -864,10 +864,10 @@ private:
   vec s0, s1, e0, e1;
   double dV0, dV1;
   bool sqrt_dV_and_interp_weights;
-  complex<double> scale; // scale factor * phase from shift and symmetry
+  std::complex<double> scale; // scale factor * phase from shift and symmetry
 
   // cache of exp(iwt) * scale, of length Nomega
-  complex<realnum> *dft_phase;
+  std::complex<realnum> *dft_phase;
 
   int avg1, avg2; // index offsets for average to get epsilon grid
 };
@@ -901,7 +901,7 @@ public:
   void load_hdf5(fields &f, const char *fname, const char *dprefix = 0,
 		 const char *prefix = 0);
 
-  void scale_dfts(complex<double> scale);
+  void scale_dfts(std::complex<double> scale);
 
   void remove();
 
@@ -930,7 +930,7 @@ public:
   void load_hdf5(fields &f, const char *fname, const char *dprefix = 0,
 		 const char *prefix = 0);
 
-  void scale_dfts(complex<double> scale);
+  void scale_dfts(std::complex<double> scale);
 
   void remove();
 
@@ -952,12 +952,12 @@ public:
 
   void update(fields &f); // to be called after each timestep
   double *ldos() const; // returns array of Nomega values (after last timestep)
-  complex<double> *F() const; // returns Fdft
-  complex<double> *J() const; // returns Jdft
+  std::complex<double> *F() const; // returns Fdft
+  std::complex<double> *J() const; // returns Jdft
 
 private:
-  complex<realnum> *Fdft; // Nomega array of field * J*(x) DFT values
-  complex<realnum> *Jdft; // Nomega array of J(t) DFT values
+  std::complex<realnum> *Fdft; // Nomega array of field * J*(x) DFT values
+  std::complex<realnum> *Jdft; // Nomega array of J(t) DFT values
   double Jsum; // sum of |J| over all points
 public:
   double omega_min, domega;
@@ -1005,7 +1005,7 @@ class fields_chunk {
   int num_zeroes[NUM_FIELD_TYPES];
   realnum **connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
-  complex<realnum> *connection_phases[NUM_FIELD_TYPES];
+  std::complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
   int npol[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
   polarization_state *pol[NUM_FIELD_TYPES]; // array of npol[i] polarization_state structures
@@ -1044,11 +1044,11 @@ class fields_chunk {
 
   double last_source_time();
   // monitor.cpp
-  complex<double> get_field(component, const ivec &) const;
+  std::complex<double> get_field(component, const ivec &) const;
 
   // for non-collective interpolation:
   volume get_field_gv(component) const;
-  complex<double> get_field(component, const vec &) const;
+  std::complex<double> get_field(component, const vec &) const;
 
   double get_chi1inv(component, direction, const ivec &iloc) const;
   
@@ -1079,7 +1079,7 @@ class fields_chunk {
   bool alloc_f(component c);
   void figure_out_step_plan();
 
-  void set_solve_cw_omega(complex<double> omega) {
+  void set_solve_cw_omega(std::complex<double> omega) {
     doing_solve_cw = true;
     solve_cw_omega = omega;
   }
@@ -1092,7 +1092,7 @@ class fields_chunk {
   // we set a flag during cw_solve to replace some
   // time-dependent stuff with the analogous frequency-domain operation
   bool doing_solve_cw; // true when inside solve_cw
-  complex<double> solve_cw_omega; // current omega for solve_cw
+  std::complex<double> solve_cw_omega; // current omega for solve_cw
 
   int verbosity; // Turn on verbosity for debugging purposes...
   // fields.cpp
@@ -1111,7 +1111,7 @@ class fields_chunk {
   void calc_sources(double time);
 
   // initialize.cpp
-  void initialize_field(component, complex<double> f(const vec &));
+  void initialize_field(component, std::complex<double> f(const vec &));
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
@@ -1130,13 +1130,13 @@ typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,
-				ivec shift, complex<double> shift_phase, 
+				ivec shift, std::complex<double> shift_phase, 
 				const symmetry &S, int sn,
 				void *chunkloop_data);
-typedef complex<double> (*field_function)(const complex<double> *fields,
+typedef std::complex<double> (*field_function)(const std::complex<double> *fields,
 					   const vec &loc,
 					   void *integrand_data_);
-typedef double (*field_rfunction)(const complex<double> *fields,
+typedef double (*field_rfunction)(const std::complex<double> *fields,
 				   const vec &loc,
 				   void *integrand_data_);
 
@@ -1168,7 +1168,7 @@ class fields {
   double m;
   double beta;
   int t, phasein_time, is_real;
-  complex<double> k[5], eikna[5];
+  std::complex<double> k[5], eikna[5];
   double coskna[5], sinkna[5];
   boundary_condition boundaries[2][5];
   bandsdata *bands;
@@ -1192,8 +1192,8 @@ class fields {
   void print_times();
   // boundaries.cpp
   void set_boundary(boundary_side,direction,boundary_condition);
-  void use_bloch(direction d, double k) { use_bloch(d, (complex<double>) k); }
-  void use_bloch(direction, complex<double> kz);
+  void use_bloch(direction d, double k) { use_bloch(d, (std::complex<double>) k); }
+  void use_bloch(direction, std::complex<double> kz);
   void use_bloch(const vec &k);
   vec lattice_vector(direction) const;
   // update_eh.cpp
@@ -1257,23 +1257,23 @@ class fields {
   inline double time() const { return t*dt; };
 
   // cw_fields.cpp:
-  bool solve_cw(double tol, int maxiters, complex<double> frequency, int L=2);
+  bool solve_cw(double tol, int maxiters, std::complex<double> frequency, int L=2);
   bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L=2);
 
   // sources.cpp:
   double last_source_time();
   void add_point_source(component c, double freq, double width, double peaktime,
-                        double cutoff, const vec &, complex<double> amp = 1.0,
+                        double cutoff, const vec &, std::complex<double> amp = 1.0,
                         int is_continuous = 0);
   void add_point_source(component c, const src_time &src,
-                        const vec &, complex<double> amp = 1.0);
+                        const vec &, std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
 			 const volume &, 
-			 complex<double> A(const vec &),
-			 complex<double> amp = 1.0);
+			 std::complex<double> A(const vec &),
+			 std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
 			 const volume &, 
-			 complex<double> amp = 1.0);
+			 std::complex<double> amp = 1.0);
   void require_component(component c);
 
   // mpb.cpp
@@ -1284,11 +1284,11 @@ class fields {
 			    const vec &kpoint, bool match_frequency,
 			    int parity,
 			    double eig_resolution, double eigensolver_tol,
-			    complex<double> amp,
-			    complex<double> A(const vec &) = 0);
+			    std::complex<double> amp,
+			    std::complex<double> A(const vec &) = 0);
 
   // initialize.cpp:
-  void initialize_field(component, complex<double> f(const vec &));
+  void initialize_field(component, std::complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
   void initialize_with_n_te(int n);
@@ -1304,7 +1304,7 @@ class fields {
 		      bool snap_unit_dims = false);
   
   // integrate.cpp
-  complex<double> integrate(int num_fields, const component *components,
+  std::complex<double> integrate(int num_fields, const component *components,
 			    field_function fun, void *fun_data_,
 			    const volume &where,
 			    double *maxabs = 0);
@@ -1312,7 +1312,7 @@ class fields {
 		   field_rfunction fun, void *fun_data_,
 		   const volume &where,
 		   double *maxabs = 0);
-  complex<double> integrate2(const fields &fields2,
+  std::complex<double> integrate2(const fields &fields2,
 			     int num_fields1,
 			     const component *components1,
 			     int num_fields2, 
@@ -1345,9 +1345,9 @@ class fields {
   dft_chunk *add_dft(component c, const volume &where,
 		     double freq_min, double freq_max, int Nfreq,
 		     bool include_dV_and_interp_weights = true,
-		     complex<double> weight = 1.0, dft_chunk *chunk_next = 0,
+		     std::complex<double> weight = 1.0, dft_chunk *chunk_next = 0,
 		     bool sqrt_dV_and_interp_weights = false,
-		     complex<double> extra_weight = 1.0,
+		     std::complex<double> extra_weight = 1.0,
 		     bool use_centered_grid = true);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
@@ -1381,11 +1381,11 @@ class fields {
   void prepare_for_bands(const vec &, double end_time, double fmax=0,
                          double qmin=1e300, double frac_pow_min=0.0);
   void record_bands();
-  complex<double> get_band(int n, int maxbands=100);
+  std::complex<double> get_band(int n, int maxbands=100);
   void grace_bands(grace *, int maxbands=100);
   void output_bands(FILE *, const char *, int maxbands=100);
-  complex<double> get_field(int c, const vec &loc) const;
-  complex<double> get_field(component c, const vec &loc) const;
+  std::complex<double> get_field(int c, const vec &loc) const;
+  std::complex<double> get_field(component c, const vec &loc) const;
   double get_field(derived_component c, const vec &loc) const;
 
   // energy_and_flux.cpp
@@ -1425,14 +1425,14 @@ class fields {
   direction normal_direction(const volume &where) const;
 
   // casimir.cpp
-  complex<double> casimir_stress_dct_integral(direction dforce,
+  std::complex<double> casimir_stress_dct_integral(direction dforce,
 					      direction dsource,
 					      double mx, double my, double mz,
 					      field_type ft,
 					      volume where,
 					      bool is_bloch = false);
 
-  void set_solve_cw_omega(complex<double> omega);
+  void set_solve_cw_omega(std::complex<double> omega);
   void unset_solve_cw_omega();
 
  private: 
@@ -1455,9 +1455,9 @@ class fields {
   void connect_the_chunks(); // Intended to be ultra-private...
   bool on_metal_boundary(const ivec &);
   ivec ilattice_vector(direction) const;
-  bool locate_point_in_user_volume(ivec *, complex<double> *phase) const;
+  bool locate_point_in_user_volume(ivec *, std::complex<double> *phase) const;
   void locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
-                                           complex<double> kphase[8], int &ncopies) const;
+                                           std::complex<double> kphase[8], int &ncopies) const;
   // mympi.cpp
   void boundary_communications(field_type);
   // step.cpp
@@ -1466,17 +1466,17 @@ class fields {
   void step_source(field_type ft, bool including_integrated = false);
   void update_pols(field_type ft);
   void calc_sources(double tim);
-  int cluster_some_bands_cleverly(double *tf, double *td, complex<double> *ta,
+  int cluster_some_bands_cleverly(double *tf, double *td, std::complex<double> *ta,
                                   int num_freqs, int fields_considered, int maxbands,
-                                  complex<double> *fad, double *approx_power);
+                                  std::complex<double> *fad, double *approx_power);
   void out_bands(FILE *, const char *, int maxbands);
-  complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
+  std::complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
 public:
   // monitor.cpp
-  complex<double> get_field(component c, const ivec &iloc) const;
+  std::complex<double> get_field(component c, const ivec &iloc) const;
   double get_chi1inv(component, direction, const ivec &iloc) const;
   // boundaries.cpp
-  bool locate_component_point(component *, ivec *, complex<double> *) const;
+  bool locate_component_point(component *, ivec *, std::complex<double> *) const;
 };
 
 class flux_vol {
@@ -1542,19 +1542,19 @@ void deal_with_ctrl_c(int stop_now = 2);
 // zero value) is incremented.
 extern int interrupt;
 
-int do_harminv(complex<double> *data, int n, double dt,
+int do_harminv(std::complex<double> *data, int n, double dt,
 	       double fmin, double fmax, int maxbands,
-	       complex<double> *amps, double *freq_re, double *freq_im,
+	       std::complex<double> *amps, double *freq_re, double *freq_im,
 	       double *errors = NULL,
 	       double spectral_density = 1.1, double Q_thresh = 50,
 	       double rel_err_thresh = 1e20, double err_thresh = 0.01, 
 	       double rel_amp_thresh = -1, double amp_thresh = -1);
 
-complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
-				complex<double> (*eps_func)(complex<double> omega) = 0,
+std::complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
+				std::complex<double> (*eps_func)(std::complex<double> omega) = 0,
 				double Tfft = 0);
 
-complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_type ft);
+std::complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_type ft);
 
 #if MEEP_SINGLE
 // in mympi.cpp ... must be here in order to use realnum type

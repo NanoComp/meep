@@ -27,6 +27,7 @@
 
 #include <meep.hpp>
 using namespace meep;
+using namespace std;
 
 const double nhi = 3, nlo = 1;
 const double wlo = nhi / (nlo + nhi);

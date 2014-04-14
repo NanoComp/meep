@@ -25,6 +25,7 @@
 
 #include <meep.hpp>
 using namespace meep;
+using namespace std;
 
 double size[3] = {3.0,3.0,2.6};
 

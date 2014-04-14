@@ -19,6 +19,7 @@
 
 #include <meep.hpp>
 using namespace meep;
+using namespace std;
 
 double the_value = 1.0;
 double value(const vec &) { return the_value; }

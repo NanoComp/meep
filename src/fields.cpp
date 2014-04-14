@@ -23,6 +23,8 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
 
 fields::fields(structure *s, double m, double beta,

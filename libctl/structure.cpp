@@ -3,6 +3,7 @@
 #include <string.h>
 
 using namespace ctlio;
+using namespace std;
 
 #define master_printf meep::master_printf
 #define MTS material_type_struct

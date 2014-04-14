@@ -69,6 +69,8 @@
 
 */
 
+using namespace std;
+
 namespace meep {
 
 static double dot(int n, const realnum *x, const realnum *y)

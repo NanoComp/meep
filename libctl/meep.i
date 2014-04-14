@@ -14,21 +14,21 @@ static inline int SwigVector3_Check(SCM o) {
 /* Unfortunately, this is not re-entrant.  Damn dynamic scoping. 
    Hopefully, it should be good enough for our purposes. */
 static SCM my_complex_func_scm;
-static inline complex<double> my_complex_func(meep::vec const &v) {
+static inline std::complex<double> my_complex_func(meep::vec const &v) {
   SCM ret = gh_call1(my_complex_func_scm, 
 		     ctl_convert_vector3_to_scm(vec_to_vector3(v)));
   cnumber cret = ctl_convert_cnumber_to_c(ret);
   return std::complex<double>(cret.re, cret.im);
 }
 
-static inline complex<double> my_complex_func2(double t, void *f) {
+static inline std::complex<double> my_complex_func2(double t, void *f) {
   SCM ret = gh_call1((SCM) f, ctl_convert_number_to_scm(t));
   cnumber cret = ctl_convert_cnumber_to_c(ret);
   return std::complex<double>(cret.re, cret.im);
 }
 
 typedef struct { SCM func; int nf; } my_field_func_data;
-static inline complex<double> my_field_func(const complex<double> *fields,
+static inline std::complex<double> my_field_func(const std::complex<double> *fields,
 					    const meep::vec &loc,
 					    void *data_) {
   my_field_func_data *data = (my_field_func_data *) data_;
@@ -47,7 +47,7 @@ static inline complex<double> my_field_func(const complex<double> *fields,
 /* Unfortunately, this is not re-entrant.  Damn dynamic scoping. 
    Hopefully, it should be good enough for our purposes. */
 static SCM my_complex_func3_scm;
-static inline complex<double> my_complex_func3(complex<double> x) {
+static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   cnumber cx;
   cx.re = real(x); cx.im = imag(x);
   SCM ret = gh_call1(my_complex_func3_scm, ctl_convert_cnumber_to_scm(cx));
@@ -57,40 +57,40 @@ static inline complex<double> my_complex_func3(complex<double> x) {
 
 %}
 
-%typecheck(SWIG_TYPECHECK_COMPLEX) complex<double> {
+%typecheck(SWIG_TYPECHECK_COMPLEX) std::complex<double> {
   $1 = SwigComplex_Check($input);
 }
 
-%typemap(guile,out) complex, complex<double>, std::complex<double> {
+%typemap(guile,out) complex, std::complex<double>, std::complex<double> {
   $result = scm_make_rectangular(ctl_convert_number_to_scm($1.real()),
 				 ctl_convert_number_to_scm($1.imag()));
 }
-%typemap(guile,in) complex, complex<double>, std::complex<double> {
+%typemap(guile,in) complex, std::complex<double>, std::complex<double> {
   cnumber cnum = ctl_convert_cnumber_to_c($input);
   $1 = std::complex<double>(cnum.re, cnum.im);
 }
 
-%typemap(guile,in) complex<double>(*)(meep::vec const &) {
+%typemap(guile,in) std::complex<double>(*)(meep::vec const &) {
   my_complex_func_scm = $input;
   $1 = my_complex_func;
 }
-%typecheck(SWIG_TYPECHECK_POINTER) complex<double>(*)(meep::vec const &) {
+%typecheck(SWIG_TYPECHECK_POINTER) std::complex<double>(*)(meep::vec const &) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 
-%typemap(guile,in) complex<double>(*)(complex<double>) {
+%typemap(guile,in) std::complex<double>(*)(std::complex<double>) {
   my_complex_func3_scm = $input;
   $1 = my_complex_func3;
 }
-%typecheck(SWIG_TYPECHECK_POINTER) complex<double>(*)(complex<double>) {
+%typecheck(SWIG_TYPECHECK_POINTER) std::complex<double>(*)(std::complex<double>) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 
-%typemap(guile,in) (complex<double> (*func)(double t, void *), void *data) {
+%typemap(guile,in) (std::complex<double> (*func)(double t, void *), void *data) {
   $1 = my_complex_func2;
   $2 = (void *) $input; // input is SCM pointer to Scheme function
 }
-%typecheck(SWIG_TYPECHECK_POINTER) (complex<double> (*func)(double t, void *), void *data) {
+%typecheck(SWIG_TYPECHECK_POINTER) (std::complex<double> (*func)(double t, void *), void *data) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 

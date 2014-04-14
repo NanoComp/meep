@@ -22,6 +22,8 @@
 
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
 
 ivec grid_volume::round_vec(const vec &p) const {

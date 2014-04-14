@@ -25,6 +25,8 @@
 #endif
 #include <time.h>
 
+using namespace std;
+
 namespace meep {
 
 static bool rand_inited = false;

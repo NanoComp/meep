@@ -179,6 +179,8 @@ integral = f_i [-w0^3/3 + (i+1) w0^2/2
 
 ****************************************************************************/
 
+using namespace std;
+
 namespace meep {
 
 /* The following two functions convert a vec to the nearest ivec

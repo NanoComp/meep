@@ -23,6 +23,8 @@
 #include "meep_internals.hpp"
 #include "config.h"
 
+using namespace std;
+
 namespace meep {
 
 void fields::update_pols(field_type ft) {

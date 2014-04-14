@@ -34,6 +34,8 @@
 
 /* Below are the monitor point routines. */
 
+using namespace std;
+
 namespace meep {
 
 monitor_point::monitor_point() {

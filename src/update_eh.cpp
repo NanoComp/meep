@@ -20,6 +20,8 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
   
 void fields::update_eh(field_type ft, bool skip_w_components) {

@@ -3,6 +3,7 @@
 
 #include <meep.hpp>
 using namespace meep;
+using namespace std;
 
 double Rasymp = 1e-15, stretch = 2.0; // PML parameters
 

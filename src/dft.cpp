@@ -22,6 +22,8 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
 
 struct dft_chunk_data { // for passing to field::loop_in_chunks as void*

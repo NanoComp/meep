@@ -23,6 +23,8 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
 
 /* Below are some routines to output to a grace file. */

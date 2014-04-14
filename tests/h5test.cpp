@@ -8,6 +8,7 @@
 #include "meep_internals.hpp"
 #include "config.h"
 using namespace meep;
+using namespace std;
 
 const double xsize = 2.0;
 const double ysize = 2.0;

@@ -21,6 +21,7 @@
 
 #include <meep.hpp>
 using namespace meep;
+using namespace std;
 
 double one(const vec &) { return 1.0; }
 double targets(const vec &pt) {
