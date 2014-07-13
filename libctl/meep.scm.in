@@ -1226,6 +1226,144 @@
 (if (defined? 'meep-component-Ex) (include "casimir.scm"))
 
 ; ****************************************************************
+; snapshots
+; ****************************************************************
+(define-param snapshots '())
+(define-param nf2ffs '())
+(define-param mode-volumes '())
+
+(define (outputs)
+  (output_snapshots)
+  (output_nf2ffs)
+  (output_mode_volumes)
+  (meep-fields-print-times fields)  
+)
+
+(define (output_snapshots)
+  (let loop_snap ((lst_tmp_snap snapshots))
+    (if (not (null? lst_tmp_snap))
+      (begin
+        (snapshot-output (object-property-value (car lst_tmp_snap) 'snap_ptr))
+        (loop_snap (cdr lst_tmp_snap))          ;; cdr other snapshots
+      )
+    )
+  )    
+)
+
+(define (output_nf2ffs)
+  (let loop_nf2ff ((lst_tmp nf2ffs))
+    (if (not (null? lst_tmp))
+      (begin
+        (nf2ff-process (object-property-value (car lst_tmp) 'nf2ff_ptr))
+        (loop_nf2ff (cdr lst_tmp))          ;; cdr other snapshots
+      )
+    )
+  )   
+)
+
+(define (output_mode_volumes)
+  (let loop_modes ((lst_tmp_mode mode-volumes))
+    (if (not (null? lst_tmp_mode))
+      (begin
+        (mode-volume-output (object-property-value (car lst_tmp_mode) 'mode_ptr))
+        (loop_modes (cdr lst_tmp_mode))          ;; cdr other mode-volumes
+      )
+    )
+  )    
+)
+
+(define num 0)
+(define tmp 0)
+(define (allocate_snap o)
+  (if (null? fields) (init-fields))
+  (set! tmp
+    (new-snapshot 
+      fields 
+      (length (object-property-value o 'components))
+      (object-property-value o 'name) 
+      (object-property-value o 'center)
+      (object-property-value o 'size)
+      (object-property-value o 'radius) 
+      (object-property-value o 'direction)
+      (object-property-value o 'frequency)
+      (object-property-value o 'res)
+    )
+  )
+  (set! num 0)
+  (let loop_comp ((lst_tmp_comp (object-property-value o 'components)))
+    (if (not (null? lst_tmp_comp))
+      (begin
+        (snapshot-add-component tmp (car lst_tmp_comp) num)
+        (set! num (+ num 1))
+        (loop_comp (cdr lst_tmp_comp))
+      )
+    )
+  )
+  (snapshot-create tmp)
+  tmp 
+)
+
+(define (allocate_nf2ff o)
+  (if (null? fields) (init-fields))
+  (new-nf2ff 
+      fields 
+      (object-property-value o 'center)
+      (object-property-value o 'size)
+      (object-property-value o 'frequency)
+      (object-property-value o 'res)
+      (object-property-value o 'direction)
+      (object-property-value o 'name)
+      (object-property-value o 'output)
+  ) 
+)
+
+(define (allocate_mode_vol o)
+  (if (null? fields) (init-fields))
+  (new-mode-volume 
+      fields 
+      (object-property-value o 'center)
+      (object-property-value o 'size)
+      (object-property-value o 'frequency)
+      (object-property-value o 'refractive_index)
+      (object-property-value o 'res)
+      (object-property-value o 'name)
+      (object-property-value o 'output)
+  ) 
+)
+      
+(define-class snapshot no-parent
+  (define-property name no-default 'string)
+	(define-property center no-default 'vector3 )
+	(define-property size (vector3 0 0 0) 'vector3 )
+	(define-property radius 0 'number )
+	(define-property direction 0 'number )
+	(define-property frequency no-default 'number )
+	(define-property components '() (make-list-type 'integer))
+	(define-property res no-default 'number )
+  (define-derived-property snap_ptr 'SCM allocate_snap )
+)
+
+(define-class nf2ff no-parent
+  (define-property name "" 'string)
+	(define-property center no-default 'vector3 )
+	(define-property size (vector3 0 0 0) 'vector3 )
+	(define-property direction 5 'number )  ; 5 == NO_DIRECTION
+	(define-property frequency no-default 'number )
+	(define-property res no-default 'number )
+	(define-property output true 'boolean )
+  (define-derived-property nf2ff_ptr 'SCM allocate_nf2ff )
+)
+
+(define-class mode-vol no-parent
+  (define-property name "" 'string)
+	(define-property center no-default 'vector3 )
+	(define-property size (vector3 0 0 0) 'vector3 )
+	(define-property frequency no-default 'number )
+	(define-property refractive_index no-default 'number )
+	(define-property res no-default 'number )
+	(define-property output false 'boolean )
+  (define-derived-property mode_ptr 'SCM allocate_mode_vol )
+)
 
 ; Load GNU Readline support, for easier command-line editing support.
 ; This is not loaded in by default in Guile 1.3.2+ because readline is
