@@ -20,6 +20,8 @@
 
 #include <meep.hpp>
 
+using namespace std;
+
 namespace meep {
 
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, 

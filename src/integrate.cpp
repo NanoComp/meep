@@ -20,6 +20,8 @@
 
 /* generic integration and related routines, based fields::loop_in_chunk */
 
+using namespace std;
+
 namespace meep {
 
 struct integrate_data {

@@ -46,7 +46,7 @@ inline int rmin_bulk(int m) {
 
 class src_vol {
  public:
-  src_vol(component cc, src_time *st, int n, int *ind, complex<double> *amps);
+  src_vol(component cc, src_time *st, int n, int *ind, std::complex<double> *amps);
   src_vol(const src_vol &sv);
   ~src_vol() { delete next; delete[] index; delete[] A;}
 
@@ -54,10 +54,10 @@ class src_vol {
   int *index; // list of locations of sources in grid (indices)
   int npts; // number of points in list
   component c; // field component the source applies to
-  complex<double> *A; // list of amplitudes
+  std::complex<double> *A; // list of amplitudes
 
-  complex<double> dipole(int j) { return A[j] * t->dipole(); }
-  complex<double> current(int j) { return A[j] * t->current(); }
+  std::complex<double> dipole(int j) { return A[j] * t->dipole(); }
+  std::complex<double> current(int j) { return A[j] * t->current(); }
   void update(double time, double dt) { t->update(time, dt); }
 
   bool operator==(const src_vol &sv) const {
@@ -75,23 +75,23 @@ class bandsdata {
   bandsdata();
   ~bandsdata();
 
-  complex<double> *f[num_bandpts][NUM_FIELD_COMPONENTS];
+  std::complex<double> *f[num_bandpts][NUM_FIELD_COMPONENTS];
   // The following is the polarization at just one point, with Pz and Pp
   // added together (a crude compromize for speed, while still observing the
   // phonon bands).
-  complex<double> *P;
+  std::complex<double> *P;
   int tstart, tend, index[num_bandpts], maxbands, scale_factor;
   fields_chunk *chunk[num_bandpts];
   double dt, fmin, fmax, qmin, fpmin;
   int ntime;
   int verbosity;
 
-  int get_freqs(complex<double> *data, int n,
-                complex<double> *amps, double *freqs, double *decays);
-  int look_for_more_bands(complex<double> *simple_data,
+  int get_freqs(std::complex<double> *data, int n,
+                std::complex<double> *amps, double *freqs, double *decays);
+  int look_for_more_bands(std::complex<double> *simple_data,
                           double *reff, double *refd,
-                          complex<double> *refa,
-                          complex<double> *refdata,
+                          std::complex<double> *refa,
+                          std::complex<double> *refdata,
                           int numref);
 };
 

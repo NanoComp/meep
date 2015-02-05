@@ -23,6 +23,8 @@
 
 #define UNUSED(x) (void) x // silence compiler warnings
 
+using namespace std;
+
 namespace meep {
 
 void fields::set_boundary(boundary_side b,direction d,boundary_condition cond){

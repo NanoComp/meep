@@ -17,6 +17,8 @@
 
 #include "meep.hpp"
 
+using namespace std;
+
 namespace meep {
 
 void fields::finished_working() {

@@ -23,6 +23,8 @@
 #define DEF_ku KDEF(ku,dsigu)
 #define DEF_kw KDEF(kw,dsigw)
 
+using namespace std;
+
 namespace meep {
 
 #define SWAP(t,a,b) { t xxxx = a; a = b; b = xxxx; }

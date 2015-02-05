@@ -26,6 +26,8 @@
 #  endif
 #endif
 
+using namespace std;
+
 namespace meep {
 
 #ifdef HAVE_MPB

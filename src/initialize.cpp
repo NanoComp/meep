@@ -30,6 +30,8 @@
 #  include <gsl/gsl_sf_bessel.h>
 #endif
 
+using namespace std;
+
 namespace meep {
 
 #define J BesselJ

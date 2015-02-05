@@ -26,6 +26,8 @@
 
 #define RESTRICT
 
+using namespace std;
+
 namespace meep {
 
 void fields::step() {

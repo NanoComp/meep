@@ -23,6 +23,8 @@
 #include "meep_internals.hpp"
 #include "config.h"
 
+using namespace std;
+
 namespace meep {
 
 multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,

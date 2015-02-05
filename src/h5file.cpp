@@ -106,6 +106,8 @@ static bool dataset_exists(hid_t id, const char *name)
 
 /*****************************************************************************/
 
+using namespace std;
+
 namespace meep {
 
 // lazy file creation & locking

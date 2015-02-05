@@ -67,6 +67,8 @@ extern "C" int feenableexcept (int EXCEPTS);
 
 #define MPI_REALNUM (sizeof(realnum) == sizeof(double) ? MPI_DOUBLE:MPI_FLOAT)
 
+using namespace std;
+
 namespace meep {
 
 #ifdef HAVE_MPI

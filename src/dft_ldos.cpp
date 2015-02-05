@@ -18,6 +18,8 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
 
 dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq)

@@ -26,6 +26,8 @@
 
 #include "meep.hpp"
 
+using namespace std;
+
 namespace meep {
 
 const char symlink_name[] = "latest_output";

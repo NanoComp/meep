@@ -18,6 +18,8 @@
 #include "meep_internals.hpp"
 #include "bicgstab.hpp"
 
+using namespace std;
+
 namespace meep {
 
 static void fields_to_array(const fields &f, complex<realnum> *x)

@@ -33,14 +33,14 @@ ctlio::cnumber_list dft_ldos_F(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_J(meep::dft_ldos *f);
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
-				   complex<double> (*eps_func)(complex<double> omega) = 0,
+				   std::complex<double> (*eps_func)(std::complex<double> omega) = 0,
 				   double Tfft = 0);
 
 ctlio::cnumber_list make_casimir_g_kz(double T, double dt, double sigma, meep::field_type ft);
 
 // wrapper around constructor to fool SWIG
 meep::volume_list *make_volume_list(const meep::volume &v,
-				    int c, complex<double> weight,
+				    int c, std::complex<double> weight,
 				    meep::volume_list *next);
 
 #endif // MEEP_CTL_SWIG_HPP

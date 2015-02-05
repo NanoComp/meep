@@ -1551,17 +1551,17 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
     case symmetry::SYMMETRY_SELF: break; // identity
     case symmetry::MIRROR_SYM:
       S = S + meep::mirror(meep::direction(symmetries.items[i].direction), gv)
-	* complex<double>(symmetries.items[i].phase.re,
+	* std::complex<double>(symmetries.items[i].phase.re,
 			  symmetries.items[i].phase.im);
       break;
     case symmetry::ROTATE2_SYM:
       S = S + meep::rotate2(meep::direction(symmetries.items[i].direction), gv)
-	* complex<double>(symmetries.items[i].phase.re,
+	* std::complex<double>(symmetries.items[i].phase.re,
 			  symmetries.items[i].phase.im);
       break;
     case symmetry::ROTATE4_SYM:
       S = S + meep::rotate4(meep::direction(symmetries.items[i].direction), gv)
-	* complex<double>(symmetries.items[i].phase.re,
+	* std::complex<double>(symmetries.items[i].phase.re,
 			  symmetries.items[i].phase.im);
       break;
     }

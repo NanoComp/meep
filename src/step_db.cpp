@@ -25,6 +25,8 @@
 
 #define RESTRICT
 
+using namespace std;
+
 namespace meep {
 
 void fields::step_db(field_type ft) {

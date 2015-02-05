@@ -1,6 +1,7 @@
 #include <meep.hpp>
 using namespace meep;
 #include "config.h"
+using namespace std;
 
 const double diameter = 0.8;
 const double r = diameter*0.5;

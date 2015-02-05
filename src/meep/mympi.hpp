@@ -19,7 +19,6 @@
 #define MEEP_MY_MPI_H
 
 #include <complex>
-using namespace std;
 
 namespace meep {
 
@@ -55,8 +54,8 @@ void send(int from, int to, double *data, int size=1);
 void broadcast(int from, double *data, int size);
 void broadcast(int from, char *data, int size);
 void broadcast(int from, int *data, int size);
-void broadcast(int from, complex<double> *data, int size);
-complex<double> broadcast(int from, complex<double> data);
+void broadcast(int from, std::complex<double> *data, int size);
+std::complex<double> broadcast(int from, std::complex<double> data);
 double broadcast(int from, double data);
 int broadcast(int from, int data);
 bool broadcast(int from, bool);
@@ -67,11 +66,11 @@ double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
 void sum_to_all(const double *in, double *out, int size);
 void sum_to_all(const float *in, double *out, int size);
-void sum_to_all(const complex<float> *in, complex<double> *out, int size);
-void sum_to_all(const complex<double> *in, complex<double> *out, int size);
+void sum_to_all(const std::complex<float> *in, std::complex<double> *out, int size);
+void sum_to_all(const std::complex<double> *in, std::complex<double> *out, int size);
 long double sum_to_all(long double);
-complex<double> sum_to_all(complex<double> in);
-complex<long double> sum_to_all(complex<long double> in);
+std::complex<double> sum_to_all(std::complex<double> in);
+std::complex<long double> sum_to_all(std::complex<long double> in);
 int sum_to_all(int);
 int partial_sum_to_all(int in);
 bool or_to_all(bool in);

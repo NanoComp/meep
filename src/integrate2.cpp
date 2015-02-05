@@ -23,6 +23,8 @@
    simulations (assumed to have identical grids etcetera), based on
    fields::loop_in_chunk */
 
+using namespace std;
+
 namespace meep {
 
 struct integrate_data {
