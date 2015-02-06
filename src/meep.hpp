@@ -744,12 +744,12 @@ class band_src_time : public src_time {
   band_src_time(double f, double fwidth, double user_cutoff);
   virtual ~band_src_time() {}
 
-  virtual complex<double> dipole(double time) const;
+  virtual std::complex<double> dipole(double time) const;
   virtual double last_time() const { return float(peak_time + cutoff); };
   virtual src_time *clone() const { return new band_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
-  virtual complex<double> frequency() const { return freq; }
-  virtual void set_frequency(complex<double> f) { freq = real(f); }
+  virtual std::complex<double> frequency() const { return freq; }
+  virtual void set_frequency(std::complex<double> f) { freq = real(f); }
 
  private:
   double freq, width, peak_time, cutoff;
