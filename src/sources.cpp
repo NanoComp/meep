@@ -29,6 +29,7 @@
 #ifdef HAVE_LIBGSL_EXPINT
 #  include <gsl/gsl_sf_expint.h>
 #endif
+
 using namespace std;
 
 namespace meep {

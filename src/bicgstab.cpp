@@ -96,7 +96,7 @@ static double norm2(int n, const realnum *x) {
     double xs = scale * x[i];
     sum += xs * xs;
   }
-  return xmax * sqrt(sum_to_all(sum));
+  return xmax * sqrt(sum_to_all(sum)); 
 }
 
 static void xpay(int n, realnum *x, double a, const realnum *y) {
