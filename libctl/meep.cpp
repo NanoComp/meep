@@ -1,6 +1,7 @@
 #include "meep-ctl.hpp"
 
 using namespace meep;
+using namespace std;
 
 /**************************************************************************/
 

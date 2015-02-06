@@ -46,6 +46,7 @@ w2 = fsolve(@(w)detMwk(w,k),w1-0.1);
 
 #include <meep.hpp>
 using namespace meep;
+using namespace std;
 
 class anisodisp_material : public material_function {
 public:

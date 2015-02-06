@@ -27,6 +27,8 @@
 #  include <harminv.h>
 #endif
 
+using namespace std;
+
 namespace meep {
 
 #define BAND(b,r,t) ((b)[(r)+(t)*nr])

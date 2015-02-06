@@ -24,6 +24,8 @@
 
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
 
 /***************************************************************************/

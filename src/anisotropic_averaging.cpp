@@ -7,6 +7,8 @@
    procedure described in an upcoming paper (similar to the one in
    MPB). */
 
+using namespace std;
+
 namespace meep {
 
 ////////////////////////////////////////////////////////////////////////////

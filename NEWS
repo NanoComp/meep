@@ -1,18 +1,25 @@
+Meep 1.2.2
+
+  * Fix compilation with latest C++ standard (e.g. on OS X 10.9).
+
+  * Bug fix in CW solver convergence test; thanks to @FilipDominec
+    for the bug report.
+
 Meep 1.2.1 (2 April 2014)
 
-   * Added new absorber type, as an alternative to PML, which simply
-     provides a scalar conductivity gradient for cases where PML fails.
+  * Added new absorber type, as an alternative to PML, which simply
+    provides a scalar conductivity gradient for cases where PML fails.
 
-   * Fixed bug which sometimes prevented dispersive materials from being
-     used in PML regions.
+  * Fixed bug which sometimes prevented dispersive materials from being
+    used in PML regions.
 
-   * Some fixes to BLAS/LAPACK linking.
+  * Some fixes to BLAS/LAPACK linking.
 
-   * Bug fixes in LDOS computation.
+  * Bug fixes in LDOS computation.
 
-   * Work around gcc bug #54498, which caused a spurious PML test
-     failure with gcc 4.7 and 4.7.1; thanks to Brahmanand Jogai and
-     Thorsten Alteholz for the bug reports.
+  * Work around gcc bug #54498, which caused a spurious PML test
+    failure with gcc 4.7 and 4.7.1; thanks to Brahmanand Jogai and
+    Thorsten Alteholz for the bug reports.
 
 Meep 1.2 (20 July 2012)
 

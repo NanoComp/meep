@@ -31,6 +31,8 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
+using namespace std;
+
 namespace meep {
 
 int susceptibility::cur_id = 0;

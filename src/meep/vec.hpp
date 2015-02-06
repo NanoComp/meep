@@ -21,8 +21,6 @@
 
 #include <complex>
 
-using namespace std;
-
 namespace meep {
 
 const int NUM_FIELD_COMPONENTS = 20;
@@ -38,20 +36,20 @@ enum field_type { E_stuff=0, H_stuff=1, D_stuff=2, B_stuff=3, PE_stuff=4, PH_stu
 enum boundary_side { High=0, Low };
 enum direction { X=0,Y,Z,R,P, NO_DIRECTION };
 struct signed_direction {
-  signed_direction(direction dd=X,bool f=false, complex<double> ph=1.0) {
+  signed_direction(direction dd=X,bool f=false, std::complex<double> ph=1.0) {
     d = dd; flipped = f; phase = ph;
   };
   signed_direction(const signed_direction &sd) {
     d = sd.d; flipped = sd.flipped; phase = sd.phase;
   }
-  signed_direction operator*(complex<double> ph);
+  signed_direction operator*(std::complex<double> ph);
   bool operator==(const signed_direction &sd) const { return (d == sd.d &&
 						       flipped == sd.flipped
 						       && phase == sd.phase); }
   bool operator!=(const signed_direction &sd) const { return !(*this == sd); }
   direction d;
   bool flipped;
-  complex<double> phase;
+  std::complex<double> phase;
 };
 
 inline int number_of_directions(ndim dim) {
@@ -889,18 +887,18 @@ class symmetry {
   ivec transform_unshifted(const ivec &, int n) const;
   volume transform(const volume &, int n) const;
   component transform(component, int n) const;
-  complex<double> phase_shift(component, int n) const;
+  std::complex<double> phase_shift(component, int n) const;
   derived_component transform(derived_component, int n) const;
-  complex<double> phase_shift(derived_component, int n) const;
+  std::complex<double> phase_shift(derived_component, int n) const;
   int transform(int, int n) const;
-  complex<double> phase_shift(int, int n) const;
+  std::complex<double> phase_shift(int, int n) const;
   int multiplicity() const;
   bool is_primitive(const ivec &) const;
 
   volume_list *reduce(const volume_list *gl) const;
 
   symmetry operator+(const symmetry &) const;
-  symmetry operator*(complex<double>) const;
+  symmetry operator*(std::complex<double>) const;
   symmetry operator-(const symmetry &b) const { return *this + b * (-1.0); }
   symmetry operator-(void) const { return *this * (-1.0); }
   void operator=(const symmetry &);
@@ -908,7 +906,7 @@ class symmetry {
   bool operator!=(const symmetry &S) const { return !(*this == S); };
  private:
   signed_direction S[5];
-  complex<double> ph;
+  std::complex<double> ph;
   vec symmetry_point;
   ivec i_symmetry_point;
   int g; // g is the multiplicity of the symmetry.
@@ -918,12 +916,12 @@ class symmetry {
 
 class volume_list {
 public:
-  volume_list(const volume &v, int c, complex<double> weight = 1.0, volume_list *next = 0) : v(v), c(c), weight(weight), next(next) {}
+  volume_list(const volume &v, int c, std::complex<double> weight = 1.0, volume_list *next = 0) : v(v), c(c), weight(weight), next(next) {}
   ~volume_list() { delete next; }
   
   volume v;
   int c; // component or derived component associated with v (e.g. for flux)
-  complex<double> weight;
+  std::complex<double> weight;
   volume_list *next;
 };
 

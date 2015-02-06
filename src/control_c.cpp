@@ -21,6 +21,8 @@
 
 #include "meep.hpp"
 
+using namespace std;
+
 namespace meep {
 
 int interrupt = 0;

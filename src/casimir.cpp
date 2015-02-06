@@ -36,6 +36,8 @@
 #  include <fftw3.h>
 #endif
 
+using namespace std;
+
 namespace meep {
 
 typedef complex<double> C;
