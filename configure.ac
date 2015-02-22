@@ -367,8 +367,10 @@ AC_CHECK_HEADER(ctl.h, [CTL_H_CPPFLAG=" "], [
 if test "x$CTL_H_CPPFLAG" = "x"; then
   AC_MSG_ERROR([Couldn't find the ctl.h header file for libctl.])
 fi
-AC_SUBST(CTL_H_CPPFLAG)
 
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="$CPPFLAGS $CTL_H_CPPFLAG"
+AC_SUBST(CTL_H_CPPFLAG)
 # Check libctl version >= LIBCTL_MAJOR.LIBCTL_MINOR.LIBCTL_BUGFIX
 LIBCTL_MAJOR=3; LIBCTL_MINOR=2; LIBCTL_BUGFIX=0
 AC_MSG_CHECKING([whether libctl version is at least ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX}])
@@ -378,6 +380,7 @@ AC_EGREP_CPP(yes, [[
   yes
 #endif
 ]], [AC_MSG_RESULT(ok)], [AC_MSG_ERROR([libctl version ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX} or later is required])])
+CPPFLAGS=$save_CPPFLAGS
 
 # Check for libctl_quiet feature (in libctl 3.1.1 or later):
 AC_MSG_CHECKING([for libctl_quiet feature])
