@@ -117,6 +117,7 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 
 ###########################################################################
 
+AC_PROG_F77
 AC_F77_WRAPPERS
 if test "x$with_lapack" != xno -o "x$with_blas" != xno; then
    ACX_BLAS
@@ -359,7 +360,7 @@ AC_CHECK_HEADER(ctl.h, [CTL_H_CPPFLAG=" "], [
   AC_MSG_CHECKING([for alternate ctl.h location])
   for ctl_h_path in /usr/include/ctl /usr/local/include/ctl; do
      CPPFLAGS="$save_CPPFLAGS -I$ctl_h_path"
-     AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <ctl.h>]],[]), [CTL_H_CPPFLAG=-I$ctl_h_path; break])
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctl.h>]],[])], [CTL_H_CPPFLAG=-I$ctl_h_path; break])
   done
   AC_MSG_RESULT([$CTL_H_CPPFLAG])
   CPPFLAGS=$save_CPPFLAGS])
