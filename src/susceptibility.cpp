@@ -143,11 +143,11 @@ void lorentzian_susceptibility::init_internal_data(
     P += 2*ntot;
     P_prev += 2*ntot;
   }
-  master_printf("CHECKING LORENTZIAN STABILITY\n");
+  
+  // TODO - ensure this is printed only once for each oscillator, not for every chunk
   if (!no_omega_0_denominator && gamma >= 0
       && lorentzian_unstable(omega_0, gamma, dt))
-	  master_printf("Lorentzian expected unstable by the Von Neumann stability analysis (omega_0=%g, gamma=%g, dt=%g)\n", omega_0, gamma, dt);
-  master_printf("END CHECKING LORENTZIAN STABILITY\n");
+	  master_printf("Warning: Lorentzian may be unstable according to the Von Neumann stability analysis (omega_0=%g, gamma=%g, dt=%g). Proceed with caution.\n", omega_0, gamma, dt);
 }
 
 void *lorentzian_susceptibility::copy_internal_data(void *data) const {
