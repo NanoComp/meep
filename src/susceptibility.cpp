@@ -111,6 +111,21 @@ void *lorentzian_susceptibility::new_internal_data(
   return (void*) d;
 }
 
+
+/* Return true if the discretized Lorentzian ODE is intrinsically unstable,
+   i.e. if it corresponds to a filter with a pole z outside the unit circle.
+   Note that the pole satisfies the quadratic equation:
+            (z + 1/z - 2)/dt^2 + g*(z - 1/z)/(2*dt) + w^2 = 0
+   where w = 2*pi*omega_0 and g = 2*pi*gamma.   It is just a little
+   algebra from this to get the condition for a root with |z| > 1. */
+static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
+  double w = 2*pi*omega_0, g = 2*pi*gamma;
+  double g2 = g*dt/2, w2 = (w*dt)*(w*dt);
+  double b = (1 - w2/2) / (1 + g2), c = (1 - g2) / (1 + g2);
+  return b*b > c && 2*b*b - c + 2*fabs(b)*sqrt(b*b - c) > 1;
+}
+
+
 void lorentzian_susceptibility::init_internal_data(
 			  realnum *W[NUM_FIELD_COMPONENTS][2],
 			  double dt, const grid_volume &gv, void *data) const {
@@ -128,6 +143,11 @@ void lorentzian_susceptibility::init_internal_data(
     P += 2*ntot;
     P_prev += 2*ntot;
   }
+  master_printf("CHECKING LORENTZIAN STABILITY\n");
+  if (!no_omega_0_denominator && gamma >= 0
+      && lorentzian_unstable(omega_0, gamma, dt))
+	  master_printf("Lorentzian expected unstable by the Von Neumann stability analysis (omega_0=%g, gamma=%g, dt=%g)\n", omega_0, gamma, dt);
+  master_printf("END CHECKING LORENTZIAN STABILITY\n");
 }
 
 void *lorentzian_susceptibility::copy_internal_data(void *data) const {
@@ -147,18 +167,6 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   return (void*) dnew;
 }
 
-/* Return true if the discretized Lorentzian ODE is intrinsically unstable,
-   i.e. if it corresponds to a filter with a pole z outside the unit circle.
-   Note that the pole satisfies the quadratic equation:
-            (z + 1/z - 2)/dt^2 + g*(z - 1/z)/(2*dt) + w^2 = 0
-   where w = 2*pi*omega_0 and g = 2*pi*gamma.   It is just a little
-   algebra from this to get the condition for a root with |z| > 1. */
-static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
-  double w = 2*pi*omega_0, g = 2*pi*gamma;
-  double g2 = g*dt/2, w2 = (w*dt)*(w*dt);
-  double b = (1 - w2/2) / (1 + g2), c = (1 - g2) / (1 + g2);
-  return b*b > c && 2*b*b - c + 2*fabs(b)*sqrt(b*b - c) > 1;
-}
 
 #define SWAP(t,a,b) { t SWAP_temp = a; a = b; b = SWAP_temp; }
 
@@ -176,10 +184,6 @@ void lorentzian_susceptibility::update_P
   const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
   const double omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
   (void) W_prev; // unused;
-
-  //if (!no_omega_0_denominator && gamma >= 0
-      //&& lorentzian_unstable(omega_0, gamma, dt))
-    //abort("Lorentzian pole at too high a frequency %g for stability with dt = %g: reduce the Courant factor, increase the resolution, or use a different dielectric model\n", omega_0, dt);
 
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
