@@ -177,9 +177,9 @@ void lorentzian_susceptibility::update_P
   const double omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
   (void) W_prev; // unused;
 
-  if (!no_omega_0_denominator && gamma >= 0
-      && lorentzian_unstable(omega_0, gamma, dt))
-    abort("Lorentzian pole at too high a frequency %g for stability with dt = %g: reduce the Courant factor, increase the resolution, or use a different dielectric model\n", omega_0, dt);
+  //if (!no_omega_0_denominator && gamma >= 0
+      //&& lorentzian_unstable(omega_0, gamma, dt))
+    //abort("Lorentzian pole at too high a frequency %g for stability with dt = %g: reduce the Courant factor, increase the resolution, or use a different dielectric model\n", omega_0, dt);
 
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
