@@ -118,6 +118,14 @@ ctlio::cnumber_list dft_ldos_J(dft_ldos *f)
   return res;
 }
 
+ctlio::cnumber_list dft_near2far_farfield(dft_near2far *f, const vec &x)
+{
+  ctlio::cnumber_list res;
+  res.num_items = f->Nfreq * 6;
+  res.items = (cnumber *) f->farfield(x);
+  return res;
+}
+
 /***************************************************************************/
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
