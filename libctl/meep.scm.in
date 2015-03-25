@@ -631,7 +631,7 @@
 (define-class near2far-region no-parent
   (define-property center no-default 'vector3)
   (define-property size (vector3 0 0 0) 'vector3)
-  (define-property direction no-default 'integer)
+  (define-property direction AUTOMATIC 'integer)
   (define-property weight 1.0 'cnumber))
 
 (define (fields-add-near2far fields fcen df nfreq . near2fars)
