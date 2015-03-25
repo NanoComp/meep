@@ -130,6 +130,8 @@ void green3d(std::complex<double> *EH, const vec &x,
  
     /* now assemble everything based on source type */
     if (is_electric(c0)) {
+        expfac /= eps;
+
         EH[0] = expfac * (term1*p.x() + term2*rhat.x());
         EH[1] = expfac * (term1*p.y() + term2*rhat.y());
         EH[2] = expfac * (term1*p.z() + term2*rhat.z());
@@ -139,13 +141,15 @@ void green3d(std::complex<double> *EH, const vec &x,
         EH[5] = expfac*term3*rhatcrossp.z() / Z;
     }
     else if (is_magnetic(c0)) {
-        EH[0] = -expfac*term3*rhatcrossp.x() / Z;
-        EH[1] = -expfac*term3*rhatcrossp.y() / Z;
-        EH[2] = -expfac*term3*rhatcrossp.z() / Z;
+        expfac /= mu;
+
+        EH[0] = -expfac*term3*rhatcrossp.x() * Z;
+        EH[1] = -expfac*term3*rhatcrossp.y() * Z;
+        EH[2] = -expfac*term3*rhatcrossp.z() * Z;
         
-        EH[3] = expfac * (term1*p.x() + term2*rhat.x()) / (Z*Z);
-        EH[4] = expfac * (term1*p.y() + term2*rhat.y()) / (Z*Z);
-        EH[5] = expfac * (term1*p.z() + term2*rhat.z()) / (Z*Z);
+        EH[3] = expfac * (term1*p.x() + term2*rhat.x());
+        EH[4] = expfac * (term1*p.y() + term2*rhat.y());
+        EH[5] = expfac * (term1*p.z() + term2*rhat.z());
     }
     else
         abort("unrecognized source type");
@@ -279,7 +283,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix,
                                   const volume &where, double resolution) {
     /* compute output grid size etc. */
     int dims[4] = {1,1,1,1};
-    int dx[3] = {0,0,0};
+    double dx[3] = {0,0,0};
     direction dirs[3] = {X,Y,Z};
     int rank = 0, N = 1;
     LOOP_OVER_DIRECTIONS(where.dim, d) {
@@ -330,7 +334,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix,
     delete[] EH_;
 
     /* collapse trailing singleton dimensions */
-    while (rank > 0 && dims[rank] == 1)
+    while (rank > 0 && dims[rank-1] == 1)
         --rank;
     /* frequencies are the last dimension */
     if (Nfreq > 1)
