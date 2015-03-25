@@ -943,7 +943,7 @@ public:
   dft_chunk *offdiag1, *offdiag2, *diag;
 };
 
-// near2far.cpp (normally created with fields::add_near2far)
+// near2far.cpp (normally created with fields::add_dft_near2far)
 class dft_near2far {
 public:
   /* fourier tranforms of tangential E and H field components in a
