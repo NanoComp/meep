@@ -1619,6 +1619,16 @@ int random_int(int a, int b); // uniform random in [a,b)
 // Bessel function (in initialize.cpp)
 double BesselJ(int m, double kr);
 
+// analytical Green's functions (in near2far.cpp); upon return,
+// EH[0..5] are set to the Ex,Ey,Ez,Hx,Hy,Hz field components at x
+// from a c0 source of amplitude f0 at x0.
+void green2d(std::complex<double> *EH, const vec &x,
+             double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
+void green3d(std::complex<double> *EH, const vec &x,
+             double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
+
 } /* namespace meep */
 
 #endif /* MEEP_H */

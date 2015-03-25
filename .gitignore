@@ -69,6 +69,7 @@ tests/bragg_transmission
 tests/convergence_cyl_waveguide
 tests/cylindrical
 tests/flux
+tests/green
 tests/h5test
 tests/harmonics
 tests/integrate

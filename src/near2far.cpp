@@ -95,9 +95,9 @@ typedef void (*greenfunc)(std::complex<double> *EH, const vec &x,
 
    Adapted from code by M. T. Homer Reid in his SCUFF-EM package
    (file scuff-em/src/libs/libIncField/PointSource.cc), which is GPL v2+. */   
-static void green3d(std::complex<double> *EH, const vec &x,
-                    double freq, double eps, double mu,
-                    const vec &x0, component c0, std::complex<double> f0)
+void green3d(std::complex<double> *EH, const vec &x,
+             double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0)
 {
     vec rhat = x - x0;
     double r = abs(rhat);
@@ -166,9 +166,9 @@ static std::complex<double> hankel(int n, double x) {
 #endif /* !HAVE_LIBGSL */
 
 /* like green3d, but 2d Green's functions */
-static void green2d(std::complex<double> *EH, const vec &x,
-                    double freq, double eps, double mu,
-                    const vec &x0, component c0, std::complex<double> f0)
+void green2d(std::complex<double> *EH, const vec &x,
+             double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0)
 {
     vec rhat = x - x0;
     double r = abs(rhat);
@@ -181,11 +181,10 @@ static void green2d(std::complex<double> *EH, const vec &x,
     std::complex<double> ik = std::complex<double>(0.0, k);
     double kr = k*r;
     double Z = sqrt(mu/eps);
-    std::complex<double> H0 = hankel(1, kr) * f0;
+    std::complex<double> H0 = hankel(0, kr) * f0;
     std::complex<double> H1 = hankel(1, kr) * f0;
     std::complex<double> ikH1 = 0.25 * ik * H1;
 
-    if (meep::Z != 2) abort("hey, what?");
     if (component_direction(c0) == meep::Z) {
         if (is_electric(c0)) { // Ez source
             EH[0] = EH[1] = 0.0;
@@ -214,9 +213,9 @@ static void green2d(std::complex<double> *EH, const vec &x,
         double rhatcrossp = rhat.x() * p.y() - rhat.y() * p.x();
 
         if (is_electric(c0)) { // Exy source
-            EH[0] = (rhat.x() * (pdotrhat/r * 0.25*Z)) * H1 -
+            EH[0] = -(rhat.x() * (pdotrhat/r * 0.25*Z)) * H1 +
                 (rhat.y() * (rhatcrossp * omega*mu * 0.125)) * (H0 - H2);
-            EH[1] = (rhat.y() * (pdotrhat/r * 0.25*Z)) * H1 +
+            EH[1] = -(rhat.y() * (pdotrhat/r * 0.25*Z)) * H1 -
                 (rhat.x() * (rhatcrossp * omega*mu * 0.125)) * (H0 - H2);
             EH[2] = 0.0;
 
@@ -227,9 +226,9 @@ static void green2d(std::complex<double> *EH, const vec &x,
             EH[0] = EH[1] = 0.0;
             EH[2] = rhatcrossp * ikH1;
             
-            EH[3] = (rhat.x() * (pdotrhat/r * 0.25/Z)) * H1 -
+            EH[3] = -(rhat.x() * (pdotrhat/r * 0.25/Z)) * H1 +
                 (rhat.y() * (rhatcrossp * omega*eps * 0.125)) * (H0 - H2);
-            EH[4] = (rhat.y() * (pdotrhat/r * 0.25/Z)) * H1 +
+            EH[4] = -(rhat.y() * (pdotrhat/r * 0.25/Z)) * H1 -
                 (rhat.x() * (rhatcrossp * omega*eps * 0.125)) * (H0 - H2);
             EH[5] = 0.0;
         }
