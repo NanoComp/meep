@@ -361,6 +361,8 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix,
     delete[] EH;
 }
 
+static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
+
 dft_near2far fields::add_dft_near2far(const volume_list *where,
 				double freq_min, double freq_max, int Nfreq){
   dft_chunk *F = 0; /* E and H chunks*/
@@ -374,7 +376,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where,
 
       double weps = get_eps(w->v.center());
       double wmu = get_mu(w->v.center());
-      if (w != where && (eps != weps || mu != wmu))
+      if (w != where && !(approxeq(eps, weps) && approxeq(mu, wmu)))
           abort("dft_near2far requires surfaces in a homogeneous medium");
       eps = weps;
       mu = wmu;
