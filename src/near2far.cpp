@@ -105,12 +105,14 @@ void green3d(std::complex<double> *EH, const vec &x,
 
     if (rhat.dim != D3) abort("wrong dimensionality in green3d");
 
-    /* FIXME: the overall scaling is probably different than in SCUFF-EM */
-
-    double k = 2*pi*freq*sqrt(eps*mu);
+    double n = sqrt(eps*mu);
+    double k = 2*pi*freq*n;
     std::complex<double> ikr = std::complex<double>(0.0, k*r);
     double ikr2   = -(k*r)*(k*r);
-    std::complex<double> expfac = f0 * polar(k*k/(4*pi*r), k*r);
+    /* note that SCUFF-EM computes the fields from the dipole moment p,
+       whereas we need it from the current J = -i*omega*p, so our result
+       is divided by -i*omega compared to SCUFF */
+    std::complex<double> expfac = f0 * polar(k*n/(4*pi*r), k*r + pi*0.5);
     double Z = sqrt(mu/eps);
 
     vec p = zero_vec(rhat.dim);
