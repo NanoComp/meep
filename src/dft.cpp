@@ -30,6 +30,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   double omega_min, domega;
   int Nomega;
   component c;
+  int vc;
   complex<double> weight, extra_weight;
   bool include_dV_and_interp_weights;
   bool sqrt_dV_and_interp_weights;
@@ -44,6 +45,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
 		     complex<double> scale_,
 		     component c_,
 		     bool use_centered_grid,
+                     ivec shift_, const symmetry &S_, int sn_, int vc_,
 		     const void *data_) {
   dft_chunk_data *data = (dft_chunk_data *) data_;
   if (!fc_->f[c_][0])
@@ -83,6 +85,10 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
     fc->gv.yee2cent_offsets(c, avg1, avg2);
   else
     avg1 = avg2 = 0;
+
+  shift = shift_;
+  S = S_; sn = sn_;
+  vc = vc_;
 
   omega_min = data->omega_min;
   domega = data->domega;
@@ -140,7 +146,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 			      void *chunkloop_data)
 {
   dft_chunk_data *data = (dft_chunk_data *) chunkloop_data;
-  (void) shift; (void) ichunk; // unused
+  (void) ichunk; // unused
 
   component c = S.transform(data->c, -sn);
   if (c >= NUM_FIELD_COMPONENTS || !fc->f[c][0])
@@ -150,6 +156,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 				   data->extra_weight,
 				   shift_phase * S.phase_shift(c, sn),
 				   c, cgrid == Centered,
+                                   shift, S, sn, data->vc,
 				   chunkloop_data);
 }
 
@@ -159,12 +166,13 @@ dft_chunk *fields::add_dft(component c, const volume &where,
 			   complex<double> weight, dft_chunk *chunk_next,
 			   bool sqrt_dV_and_interp_weights,
 			   complex<double> extra_weight,
-			   bool use_centered_grid) {
+			   bool use_centered_grid, int vc) {
   if (coordinate_mismatch(gv.dim, c))
     return NULL;
 
   dft_chunk_data data;  
   data.c = c;
+  data.vc = vc;
   if (Nfreq <= 1) freq_min = freq_max = (freq_min + freq_max) * 0.5;
   data.omega_min = freq_min * 2*pi;
   data.domega = Nfreq <= 1 ? 0.0 : 

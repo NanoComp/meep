@@ -626,6 +626,51 @@
   (meep-dft-force-scale-dfts force -1.0))
 
 ; ****************************************************************
+; Near-to-far-field transformations (again similar to dft-foobar)
+
+(define-class near2far-region no-parent
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3)
+  (define-property direction AUTOMATIC 'integer)
+  (define-property weight 1.0 'cnumber))
+
+(define (fields-add-near2far fields fcen df nfreq . near2fars)
+  (fields-add-fluxish-stuff meep-fields-add-dft-near2far 
+			    fields fcen df nfreq near2fars))
+
+(define (add-near2far fcen df nfreq . near2fars)
+  (if (null? fields) (init-fields))
+  (apply fields-add-near2far (append (list fields fcen df nfreq) near2fars)))
+
+(define (scale-near2far-fields s f)
+  (meep-dft-near2far-scale-dfts f s))
+
+(define (get-near2far-freqs f)
+  (arith-sequence
+   (meep-dft-near2far-freq-min-get f)
+   (meep-dft-near2far-dfreq-get f)
+   (meep-dft-near2far-Nfreq-get f)))
+
+(define (get-farfield f x)
+  (dft-near2far-farfield f x))
+
+(define (output-farfields near2far fname where resolution)
+  (meep-dft-near2far-save-farfields near2far fname (get-filename-prefix)
+                                    where resolution))
+
+(define (load-near2far fname near2far)
+  (if (null? fields) (init-fields))
+  (meep-dft-near2far-load-hdf5 near2far fields fname "" (get-filename-prefix)))
+
+(define (save-near2far fname near2far)
+  (if (null? fields) (init-fields))
+  (meep-dft-near2far-save-hdf5 near2far fields fname "" (get-filename-prefix)))
+
+(define (load-minus-near2far fname near2far)
+  (load-near2far fname near2far)
+  (meep-dft-near2far-scale-dfts near2far -1.0))
+
+; ****************************************************************
 ; Generic step functions: these are functions which are called
 ; (potentially) at every time step.  They can either be a thunk
 ; or they can take one argument, to-do.  to-do is either 'step

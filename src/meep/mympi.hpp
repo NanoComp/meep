@@ -65,9 +65,11 @@ int max_to_all(int);
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
 void sum_to_all(const double *in, double *out, int size);
+void sum_to_master(const double *in, double *out, int size);
 void sum_to_all(const float *in, double *out, int size);
 void sum_to_all(const std::complex<float> *in, std::complex<double> *out, int size);
 void sum_to_all(const std::complex<double> *in, std::complex<double> *out, int size);
+void sum_to_master(const std::complex<double> *in, std::complex<double> *out, int size);
 long double sum_to_all(long double);
 std::complex<double> sum_to_all(std::complex<double> in);
 std::complex<long double> sum_to_all(std::complex<long double> in);

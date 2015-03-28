@@ -116,6 +116,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 		      int L) {
   if (is_real) abort("solve_cw is incompatible with use_real_fields()");
   if (L < 1) abort("solve_cw called with L = %d < 1", L);
+  int tsave = t; // save time (gets incremented by iterations)
 
   set_solve_cw_omega(2*pi*frequency);
 
@@ -144,8 +145,6 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   realnum *work = new realnum[nwork + 2*N];
   complex<realnum> *x = reinterpret_cast<complex<realnum>*>(work + nwork);
   complex<realnum> *b = reinterpret_cast<complex<realnum>*>(work + nwork + N);
-
-  int tsave = t; // save time (gets incremented by iterations)
 
   fields_to_array(*this, x); // initial guess = initial fields
 
