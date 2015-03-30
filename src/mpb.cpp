@@ -260,6 +260,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 
   do {
     eigensolver(H, eigvals, maxwell_operator, (void *) mdata,
+#if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 6)
+                NULL, NULL, /* eventually, we can support mu here */
+#endif
 		maxwell_preconditioner2, (void *) mdata,
 		evectconstraint_chain_func,
 		(void *) constraints,
