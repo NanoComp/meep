@@ -402,6 +402,12 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
   return fad;
 }
 
+/* backwards compatibility with harminv < 1.4 */
+#if HARMINV_VERSION_MAJOR < 1 || (HARMINV_VERSION_MAJOR == 1 && HARMINV_VERSION_MINOR < 4)
+#  define harminv_get_amplitude(pa, d, k) *(pa) = harminv_get_amplitude(d, k)
+#  define harminv_get_omega(pw, d, k) *(pw) = harminv_get_omega(d, k)
+#endif
+
 int bandsdata::get_freqs(complex<double> *data, int n, complex<double> *amps,
                          double *freq_re, double *freq_im) {
   
@@ -468,7 +474,7 @@ int do_harminv(complex<double> *data, int n, double dt,
       }
   
   double min_err = harminv_get_freq_error(hd, fsort[0]);
-  harminv_complex aa;
+  complex<double> aa;
   harminv_get_amplitude(&aa, hd, 0);
   double max_amp = abs(aa);
   for (int i = 1; i < nf; ++i) {
@@ -542,10 +548,9 @@ int do_harminv(complex<double> *data, int n, double dt,
       }
   
   for (int i = 0; i < nf; ++i) {
-    harminv_complex oo;
     complex<double> freq;
-    harminv_get_omega(&oo, hd, fsort[i]);
-    freq = oo / (2*pi*dt);
+    harminv_get_omega(&freq, hd, fsort[i]);
+    freq /= (2*pi*dt);
     freq_re[i] = abs(real(freq));
     freq_im[i] = imag(freq);
     harminv_get_amplitude(&(amps[i]), hd, fsort[i]);
