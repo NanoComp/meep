@@ -1,9 +1,17 @@
-Meep 1.2.2
+Meep 1.3 (31 March 2015)
+
+  * New near-to-far-field functionality: given a bounding surface,
+    automatically computes the Fourier-transformed field in any 
+    desired grid of "far-field" points arbitrarily far away.
+
+  * Compatibility with Harminv 1.4 (fixes issue #13: ppc64 portability).
 
   * Fix compilation with latest C++ standard (e.g. on OS X 10.9).
 
   * Bug fix in CW solver convergence test; thanks to @FilipDominec
     for the bug report.
+
+  * Build fix for Fedora 21 (thanks to Dean Brettle) (issue #14).
 
 Meep 1.2.1 (2 April 2014)
 
