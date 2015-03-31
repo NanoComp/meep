@@ -468,9 +468,12 @@ int do_harminv(complex<double> *data, int n, double dt,
       }
   
   double min_err = harminv_get_freq_error(hd, fsort[0]);
-  double max_amp = abs(harminv_get_amplitude(hd, 0));
+  harminv_complex aa;
+  harminv_get_amplitude(&aa, hd, 0);
+  double max_amp = abs(aa);
   for (int i = 1; i < nf; ++i) {
-    double amp = abs(harminv_get_amplitude(hd, i));
+    harminv_get_amplitude(&aa, hd, i);
+    double amp = abs(aa);
     if (max_amp < amp)
       max_amp = amp;
   }
@@ -479,7 +482,8 @@ int do_harminv(complex<double> *data, int n, double dt,
     for (int i = 0; i < nf; ++i) {
       double f = abs(harminv_get_freq(hd, fsort[i]) / dt);
       double err = harminv_get_freq_error(hd, fsort[i]);
-      double amp = abs(harminv_get_amplitude(hd, fsort[i]));
+      harminv_get_amplitude(&aa, hd, fsort[i]);
+      double amp = abs(aa);
       if (f >= fmin && f <= fmax
 	  && abs(harminv_get_Q(hd, fsort[i])) > Q_thresh
 	  && err < err_thresh
@@ -538,10 +542,13 @@ int do_harminv(complex<double> *data, int n, double dt,
       }
   
   for (int i = 0; i < nf; ++i) {
-    complex<double> freq = harminv_get_omega(hd, fsort[i]) / (2*pi*dt);
+    harminv_complex oo;
+    complex<double> freq;
+    harminv_get_omega(&oo, hd, fsort[i]);
+    freq = oo / (2*pi*dt);
     freq_re[i] = abs(real(freq));
     freq_im[i] = imag(freq);
-    amps[i] = harminv_get_amplitude(hd, fsort[i]);
+    harminv_get_amplitude(&(amps[i]), hd, fsort[i]);
     if (errors)
       errors[i] = harminv_get_freq_error(hd, fsort[i]);
   }
