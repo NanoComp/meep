@@ -8,8 +8,8 @@ Meep 1.3 (31 March 2015)
 
   * Fix compilation with latest C++ standard (e.g. on OS X 10.9).
 
-  * Bug fix in CW solver convergence test; thanks to @FilipDominec
-    for the bug report.
+  * Bug fix in CW solver convergence test; thanks to 
+    Wu Chuanren and @FilipDominec for the bug report.
 
   * Build fix for Fedora 21 (thanks to Dean Brettle) (issue #14).
 
