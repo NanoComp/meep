@@ -92,7 +92,7 @@ bool susceptibility::needs_W_notowned(component c,
 
 typedef struct {
   size_t sz_data;
-  int ntot;
+  meep::integer ntot;
   realnum *P[NUM_FIELD_COMPONENTS][2];
   realnum *P_prev[NUM_FIELD_COMPONENTS][2];
   realnum data[1];
@@ -103,7 +103,7 @@ typedef struct {
 void *lorentzian_susceptibility::new_internal_data(
 			 realnum *W[NUM_FIELD_COMPONENTS][2],
 			 const grid_volume &gv) const {
-  int num = 0;
+  meep::integer num = 0;
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) num += 2 * gv.ntot();
   size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
   lorentzian_data *d = (lorentzian_data *) malloc(sz);
@@ -119,7 +119,7 @@ void lorentzian_susceptibility::init_internal_data(
   size_t sz_data = d->sz_data;
   memset(d, 0, sz_data);
   d->sz_data = sz_data;
-  int ntot = d->ntot = gv.ntot();
+  meep::integer ntot = d->ntot = gv.ntot();
   realnum *P = d->data;
   realnum *P_prev = d->data + ntot;
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
@@ -135,7 +135,7 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   if (!d) return 0;
   lorentzian_data *dnew = (lorentzian_data *) malloc(d->sz_data);
   memcpy(dnew, d, d->sz_data);
-  int ntot = d->ntot;
+  meep::integer ntot = d->ntot;
   realnum *P = dnew->data;
   realnum *P_prev = dnew->data + ntot;
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
@@ -188,22 +188,22 @@ void lorentzian_susceptibility::update_P
 
       // directions/strides for offdiagonal terms, similar to update_eh
       const direction d = component_direction(c);
-      const int is = gv.stride(d) * (is_magnetic(c) ? -1 : +1);
+      const meep::integer is = gv.stride(d) * (is_magnetic(c) ? -1 : +1);
       direction d1 = cycle_direction(gv.dim, d, 1);
       component c1 = direction_component(c, d1);
-      int is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
+      meep::integer is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
       const realnum *w1 = W[c1][cmp];
       const realnum *s1 = w1 ? sigma[c][d1] : NULL;
       direction d2 = cycle_direction(gv.dim, d, 2);
       component c2 = direction_component(c, d2);
-      int is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
+      meep::integer is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
       const realnum *w2 = W[c2][cmp];
       const realnum *s2 = w2 ? sigma[c][d2] : NULL;
 
       if (s2 && !s1) { // make s1 the non-NULL one if possible
 	SWAP(direction, d1, d2);
 	SWAP(component, c1, c2);
-	SWAP(int, is1, is2);
+	SWAP(meep::integer, is1, is2);
 	SWAP(const realnum *, w1, w2);
 	SWAP(const realnum *, s1, s2);
       }
@@ -246,26 +246,26 @@ void lorentzian_susceptibility::subtract_P(field_type ft,
 					   void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
-  int ntot = d->ntot;
+  meep::integer ntot = d->ntot;
   FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
     component dc = field_type_component(ft2, ec);
     if (f_minus_p[dc][cmp]) {
       realnum *p = d->P[ec][cmp];
       realnum *fmp = f_minus_p[dc][cmp];
-      for (int i = 0; i < ntot; ++i) fmp[i] -= p[i];
+      for (meep::integer i = 0; i < ntot; ++i) fmp[i] -= p[i];
     }
   }
 }
 
-int lorentzian_susceptibility::num_cinternal_notowned_needed(component c,
+meep::integer lorentzian_susceptibility::num_cinternal_notowned_needed(component c,
 				   void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   return d->P[c][0] ? 1 : 0;
 }
 
 realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
-				        int inotowned, component c, int cmp, 
-					int n, 
+		meep::integer inotowned, component c, meep::integer cmp,
+					meep::integer n,
 					void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   (void) inotowned; // always = 0

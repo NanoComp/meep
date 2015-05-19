@@ -26,7 +26,13 @@ inline double max(double a, double b) { return (a > b) ? a : b; }
 inline double min(double a, double b) { return (a < b) ? a : b; }
 inline int max(int a, int b) { return (a > b) ? a : b; }
 inline int min(int a, int b) { return (a < b) ? a : b; }
+inline long int  max(long int  a, long int  b) { return (a > b) ? a : b; }
+inline long int  min(long int  a, long int  b) { return (a < b) ? a : b; }
+//inline long long int  max(long long int  a, long long int  b) { return (a > b) ? a : b; }
+//inline long long int  min(long long int  a, long long int  b) { return (a < b) ? a : b; }
+
 static inline int abs(int a) { return a < 0 ? -a : a; }
+static inline long int abs(long int a) { return a < 0L ? -a : a; }
 static inline double abs(double a) { return fabs(a); }
 
 // note that C99 has a round() function, but I don't want to rely on it
@@ -46,18 +52,18 @@ inline int rmin_bulk(int m) {
 
 class src_vol {
  public:
-  src_vol(component cc, src_time *st, int n, int *ind, std::complex<double> *amps);
+  src_vol(component cc, src_time *st, meep::integer n, meep::integer *ind, std::complex<double> *amps);
   src_vol(const src_vol &sv);
   ~src_vol() { delete next; delete[] index; delete[] A;}
 
   src_time *t;
-  int *index; // list of locations of sources in grid (indices)
-  int npts; // number of points in list
+  meep::integer *index; // list of locations of sources in grid (indices)
+  meep::integer npts; // number of points in list
   component c; // field component the source applies to
   std::complex<double> *A; // list of amplitudes
 
-  std::complex<double> dipole(int j) { return A[j] * t->dipole(); }
-  std::complex<double> current(int j) { return A[j] * t->current(); }
+  std::complex<double> dipole(meep::integer j) { return A[j] * t->dipole(); }
+  std::complex<double> current(meep::integer j) { return A[j] * t->current(); }
   void update(double time, double dt) { t->update(time, dt); }
 
   bool operator==(const src_vol &sv) const {
@@ -80,7 +86,9 @@ class bandsdata {
   // added together (a crude compromize for speed, while still observing the
   // phonon bands).
   std::complex<double> *P;
-  int tstart, tend, index[num_bandpts], maxbands, scale_factor;
+  int tstart, tend;
+  meep::integer index[num_bandpts];
+  int maxbands, scale_factor;
   fields_chunk *chunk[num_bandpts];
   double dt, fmin, fmax, qmin, fpmin;
   int ntime;
@@ -103,7 +111,7 @@ symmetry r_to_minus_r_symmetry(int m);
 // functions in step_generic.cpp:
 
 void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
-	       int s1, int s2, // strides for g1/g2 shift
+	       meep::integer s1, meep::integer s2, // strides for g1/g2 shift
 	       const grid_volume &gv, double dtdx,
 	       direction dsig, const double *sig, const double *kap, const double *siginv,
 	       realnum *fu, direction dsigu, const double *sigu, const double *kapu, const double *siginvu,
@@ -113,7 +121,7 @@ void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
 void step_update_EDHB(realnum *f, component fc, const grid_volume &gv,
 		      const realnum *g, const realnum *g1, const realnum *g2,
 		      const realnum *u, const realnum *u1, const realnum *u2,
-		      int s, int s1, int s2,
+		      meep::integer s, meep::integer s1, meep::integer s2,
 		      const realnum *chi2, const realnum *chi3,
 		      realnum *fw, direction dsigw, const double *sigw, const double *kapw);
 
@@ -126,7 +134,7 @@ void step_beta(realnum *f, component c, const realnum *g,
 // functions in step_generic_stride1.cpp, generated from step_generic.cpp:
 
 void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum *g2,
-	       int s1, int s2, // strides for g1/g2 shift
+	       meep::integer s1, meep::integer s2, // strides for g1/g2 shift
 	       const grid_volume &gv, double dtdx,
 	       direction dsig, const double *sig, const double *kap, const double *siginv,
 	       realnum *fu, direction dsigu, const double *sigu, const double *kapu, const double *siginvu,
@@ -136,7 +144,7 @@ void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum
 void step_update_EDHB_stride1(realnum *f, component fc, const grid_volume &gv,
 		      const realnum *g, const realnum *g1, const realnum *g2,
 		      const realnum *u, const realnum *u1, const realnum *u2,
-		      int s, int s1, int s2,
+		      meep::integer s, meep::integer s1, meep::integer s2,
 		      const realnum *chi2, const realnum *chi3,
 		      realnum *fw, direction dsigw, const double *sigw, const double *kapw);
 

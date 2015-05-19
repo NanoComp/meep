@@ -108,14 +108,14 @@ int main(int argc, char **argv) {
     f.use_bloch(vec(0.813,0,0));
     f.add_point_source(Ez, 0.5, 1.0, 0.0, 4.0, vec(0,0,0));
     double T = f.last_source_time();
-    int iT = T / f.dt;
+    int iT = static_cast<int>(T / f.dt);
     while (f.t < iT) {
       if (f.t % (iT / 10) == 0)
 	master_printf("%g%% done with source\n", f.time()/T * 100);
       f.step();
     }
     double T2 = 200;
-    int iT2 = T2 / f.dt;
+    int iT2 = static_cast<int>(T2 / f.dt);
     complex<double> *vals = new complex<double>[iT2];
     while (f.t - iT < iT2) {
       if ((f.t - iT) % (iT2 / 10) == 0)

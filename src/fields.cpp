@@ -60,7 +60,7 @@ fields::fields(structure *s, double m, double beta,
 				 beta, zero_fields_near_cylorigin);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
-      comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
+      comm_sizes[ft][ip] = new meep::integer[num_chunks*num_chunks];
       for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
     }
     typedef realnum *realnum_ptr;
@@ -111,7 +111,7 @@ fields::fields(const fields &thef) :
     chunks[i] = new fields_chunk(*thef.chunks[i]);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
-      comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
+      comm_sizes[ft][ip] = new meep::integer[num_chunks*num_chunks];
       for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
     }
     typedef realnum *realnum_ptr;
@@ -441,13 +441,13 @@ bool fields_chunk::alloc_f(component c) {
 	  component bc = direction_component(Bx, component_direction(c));
 	  if (!f[bc][cmp]) {
 	    f[bc][cmp] = new realnum[gv.ntot()];
-	    for (int i=0;i<gv.ntot();i++) f[bc][cmp][i] = 0.0;
+	    for (meep::integer i=0;i<gv.ntot();i++) f[bc][cmp][i] = 0.0;
 	  }
 	  f[c][cmp] = f[bc][cmp];
 	}
 	else {
 	  f[c][cmp] = new realnum[gv.ntot()];
-	  for (int i=0;i<gv.ntot();i++) f[c][cmp][i] = 0.0;
+	  for (meep::integer i=0;i<gv.ntot();i++) f[c][cmp][i] = 0.0;
 	}
       }
     }

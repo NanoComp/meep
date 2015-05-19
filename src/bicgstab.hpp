@@ -24,8 +24,8 @@ namespace meep {
 
 typedef void (*bicgstab_op)(const realnum *x, realnum *y, void *data);
 
-int bicgstabL(const int L, 
-	      const int n, realnum *x,
+meep::integer bicgstabL(const meep::integer L,
+	      const meep::integer n, realnum *x,
 	      bicgstab_op A, void *Adata, const realnum *b,
 	      const double tol, 
 	      int *iters, // input *iters = max iters, output = actual iters

@@ -39,7 +39,7 @@ double fields::count_volume(component c) {
 
 double fields_chunk::count_volume(component c) {
   double vol = 0;
-  for (int i=0;i<gv.ntot();i++)
+  for (meep::integer i=0;i<gv.ntot();i++)
     vol += gv.dV(c,i).full_volume();
   return vol;
 }
@@ -94,14 +94,14 @@ double fields::electric_energy_in_box(const volume &where) {
   long double sum = 0.0;
   FOR_ELECTRIC_COMPONENTS(c)
     sum += field_energy_in_box(c, where);
-  return sum;
+  return static_cast<double>(sum);
 }
 
 double fields::magnetic_energy_in_box(const volume &where) {
   long double sum = 0.0;
   FOR_MAGNETIC_COMPONENTS(c)
     sum += field_energy_in_box(c, where);
-  return sum;
+  return static_cast<double>(sum);
 }
 
 void fields_chunk::backup_component(component c) {
@@ -146,7 +146,7 @@ void fields_chunk::average_with_backup(component c) {
     realnum *fc = f[c][cmp];
     realnum *backup = f_backup[c][cmp];
     if (fc && backup)
-      for (int i = 0; i < gv.ntot(); i++)
+      for (meep::integer i = 0; i < gv.ntot(); i++)
 	fc[i] = 0.5 * (fc[i] + backup[i]);
   }
 }
@@ -189,7 +189,7 @@ double fields::thermo_energy_in_box(const volume &where) {
   long double sum = 0.0;
   (void) where; // unused
   abort("thermo_energy_in_box no longer supported");
-  return sum_to_all(sum);
+  return static_cast<double>(sum_to_all(sum));
 }
 
 /* Compute ExH integral in box using current fields, ignoring fact
@@ -219,7 +219,7 @@ double fields::flux_in_box_wrongH(direction d, const volume &where) {
     cs[0] = cE[i]; cs[1] = cH[i];
     sum += real(integrate(2, cs, dot_integrand, 0, where)) * (1 - 2*i);
   }
-  return sum;
+  return static_cast<double>(sum);
 }
 
 double fields::flux_in_box(direction d, const volume &where) {

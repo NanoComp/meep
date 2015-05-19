@@ -99,7 +99,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   LOOP_OVER_DIRECTIONS(is.dim, d)
     N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   dft = new complex<realnum>[N * Nomega];
-  for (int i = 0; i < N * Nomega; ++i)
+  for (meep::integer i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
   
   next_in_chunk = fc->dft_chunks;
@@ -232,7 +232,7 @@ void dft_chunk::update_dft(double time) {
 
   int idx_dft = 0;
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
-    double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+    double w = static_cast<double>(IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * static_cast<double>(loop_i2)));
     if (sqrt_dV_and_interp_weights) w = sqrt(w);
     double f[2]; // real/imag field value at epsilon point
     if (avg2)
@@ -262,7 +262,7 @@ void dft_chunk::update_dft(double time) {
 }
 
 void dft_chunk::scale_dft(complex<double> scale) {
-  for (int i = 0; i < N * Nomega; ++i)
+  for (meep::integer i = 0; i < N * Nomega; ++i)
     dft[i] *= scale;
   if (next_in_dft)
     next_in_dft->scale_dft(scale);
@@ -271,7 +271,7 @@ void dft_chunk::scale_dft(complex<double> scale) {
 void dft_chunk::operator-=(const dft_chunk &chunk) {
   if (c != chunk.c || N * Nomega != chunk.N * chunk.Nomega) abort("Mismatched chunks in dft_chunk::operator-=");
 
-  for (int i = 0; i < N * Nomega; ++i)
+  for (meep::integer i = 0; i < N * Nomega; ++i)
     dft[i] -= chunk.dft[i];
 
   if (next_in_dft) {
@@ -280,10 +280,10 @@ void dft_chunk::operator-=(const dft_chunk &chunk) {
   }
 }
 
-static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
-  int n = 0;
+static meep::integer dft_chunks_Ntotal(dft_chunk *dft_chunks, meep::integer *my_start) {
+  meep::integer n = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
-    n += cur->N * cur->Nomega * 2;
+    n += cur->N * static_cast<meep::integer>(cur->Nomega * 2) ;
   *my_start = partial_sum_to_all(n) - n; // sum(n) for processes before this
   return sum_to_all(n);
 }
@@ -291,8 +291,8 @@ static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
 // Note: the file must have been created in parallel mode, typically via fields::open_h5file.
 void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
 		   const char *dprefix) {
-  int istart;
-  int n = dft_chunks_Ntotal(dft_chunks, &istart);
+  meep::integer istart;
+  meep::integer n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
@@ -300,7 +300,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
   file->create_data(dataname, 1, &n);
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
-    int Nchunk = cur->N * cur->Nomega * 2;
+    meep::integer Nchunk = cur->N * cur->Nomega * 2;
     file->write_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
     istart += Nchunk;
   }
@@ -314,19 +314,22 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 
 void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
 		   const char *dprefix) {
-  int istart;
-  int n = dft_chunks_Ntotal(dft_chunks, &istart);
+  meep::integer istart;
+  meep::integer n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft", 
 	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", name);
-  int file_rank, file_dims;
+  int file_rank;
+  meep::integer file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
-    abort("incorrect dataset size (%d vs. %d) in load_dft_hdf5 %s:%s", file_dims, n, file->file_name(), dataname);
+    abort("incorrect dataset size (%ld vs. %ld) in load_dft_hdf5 %s:%s",
+    		static_cast<long int>(file_dims),
+    		static_cast<long int>(n), file->file_name(), dataname);
   
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
-    int Nchunk = cur->N * cur->Nomega * 2;
+    meep::integer Nchunk = cur->N * cur->Nomega * 2;
     file->read_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
     istart += Nchunk;
   }
@@ -360,8 +363,8 @@ double *dft_flux::flux() {
   for (int i = 0; i < Nfreq; ++i) F[i] = 0;
   for (dft_chunk *curE = E, *curH = H; curE && curH;
        curE = curE->next_in_dft, curH = curH->next_in_dft)
-    for (int k = 0; k < curE->N; ++k)
-      for (int i = 0; i < Nfreq; ++i)
+    for (meep::integer k = 0; k < curE->N; ++k)
+      for (meep::integer i = 0; i < Nfreq; ++i)
 	F[i] += real(curE->dft[k*Nfreq + i]
 		     * conj(curH->dft[k*Nfreq + i]));
   double *Fsum = new double[Nfreq];

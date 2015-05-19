@@ -298,7 +298,9 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce,
     loop_in_chunks(stress_chunkloop, &data, where, c); 
 
   data.sum = sum_to_all(data.sum);
-  return coefficient * complex<double>(real(data.sum), imag(data.sum));
+  return coefficient * complex<double>(
+		  static_cast<double>(real(data.sum)),
+		  static_cast<double>(imag(data.sum)));
 }
 
   /* Similar to make_g above, but now air/metal systems

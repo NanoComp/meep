@@ -158,9 +158,9 @@ void fields::step_boundaries(field_type ft) {
       int wh[3] = {0,0,0};
       for (int i=0;i<num_chunks;i++) {
 	const int pair = j+i*num_chunks;
-	int n0 = 0;
+	meep::integer n0 = 0;
 	for (int ip=0;ip<3;ip++) {
-	  for (int n=0;n<comm_sizes[ft][ip][pair];n++)
+	  for (meep::integer n=0;n<comm_sizes[ft][ip][pair];n++)
 	    comm_blocks[ft][pair][n0 + n] =
 	      *(chunks[j]->connections[ft][ip][Outgoing][wh[ip]++]);
 	  n0 += comm_sizes[ft][ip][pair];
@@ -177,7 +177,7 @@ void fields::step_boundaries(field_type ft) {
       for (int j=0;j<num_chunks;j++) {
         const int pair = j+i*num_chunks;
 	connect_phase ip = CONNECT_PHASE;
-        for (int n = 0; n < comm_sizes[ft][ip][pair]; n += 2, wh[ip] += 2) {
+        for (meep::integer n = 0; n < comm_sizes[ft][ip][pair]; n += 2, wh[ip] += 2) {
           const double phr = real(chunks[i]->connection_phases[ft][wh[ip]/2]);
           const double phi = imag(chunks[i]->connection_phases[ft][wh[ip]/2]);
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]]) =
@@ -185,14 +185,14 @@ void fields::step_boundaries(field_type ft) {
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]+1]) =
             phr*comm_blocks[ft][pair][n+1] + phi*comm_blocks[ft][pair][n];
         }
-	int n0 = comm_sizes[ft][ip][pair];
+	meep::integer n0 = comm_sizes[ft][ip][pair];
 	ip = CONNECT_NEGATE;
-        for (int n = 0; n < comm_sizes[ft][ip][pair]; ++n)
+        for (meep::integer n = 0; n < comm_sizes[ft][ip][pair]; ++n)
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++])
 	    = -comm_blocks[ft][pair][n0 + n];
 	n0 += comm_sizes[ft][ip][pair];
 	ip = CONNECT_COPY;
-        for (int n = 0; n < comm_sizes[ft][ip][pair]; ++n)
+        for (meep::integer n = 0; n < comm_sizes[ft][ip][pair]; ++n)
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++])
 	    = comm_blocks[ft][pair][n0 + n];
       }
@@ -217,16 +217,16 @@ void fields_chunk::step_source(field_type ft, bool including_integrated) {
 	&& ((ft == D_stuff && is_electric(sv->c))
 	    || (ft == B_stuff && is_magnetic(sv->c)))) {
       if (cndinv)
-	for (int j=0; j<sv->npts; j++) {
-	  const int i = sv->index[j];
+	for (meep::integer j=0; j<sv->npts; j++) {
+	  const meep::integer i = sv->index[j];
 	  const complex<double> A = sv->current(j) * dt * double(cndinv[i]);
 	  f[c][0][i] -= real(A);
 	  if (!is_real) f[c][1][i] -= imag(A);
 	}
       else
-	for (int j=0; j<sv->npts; j++) {
+	for (meep::integer j=0; j<sv->npts; j++) {
 	  const complex<double> A = sv->current(j) * dt;
-	  const int i = sv->index[j];
+	  const meep::integer i = sv->index[j];
 	  f[c][0][i] -= real(A);
 	  if (!is_real) f[c][1][i] -= imag(A);
 	}

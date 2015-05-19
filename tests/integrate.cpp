@@ -265,7 +265,7 @@ void check_splitsym(const grid_volume &gv, int splitting,
 // check LOOP_OVER_VOL and LOOP_OVER_VOL_OWNED macros
 void check_loop_vol(const grid_volume &gv, component c)
 {
-  int count = 0, min_i = gv.ntot(), max_i = 0, count_owned = 0;
+  meep::integer count = 0, min_i = gv.ntot(), max_i = 0, count_owned = 0;
 
   master_printf("Checking %s loops for %s grid_volume...\n",
 		component_name(c), dimension_name(gv.dim));
@@ -279,28 +279,28 @@ void check_loop_vol(const grid_volume &gv, component c)
     ivec ihere0(gv.iloc(c, i));
     vec here0(gv[ihere0]);
     if (ihere0 != ihere)
-      abort("FAILED: wrong LOOP_OVER_VOL iloc at i=%d\n", i);
+      abort("FAILED: wrong LOOP_OVER_VOL iloc at i=%ld\n", static_cast<long int>(i));
     if (abs(here0 - here) > 1e-13)
-      abort("FAILED: wrong LOOP_OVER_VOL loc (err = %g) at i=%d\n",
-	    abs(here0 - here), i);
+      abort("FAILED: wrong LOOP_OVER_VOL loc (err = %g) at i=%ld\n",
+	    abs(here0 - here), static_cast<long int>(i));
     ++count;
     if (i < min_i) min_i = i;
     if (i > max_i) max_i = i;
     if (gv.owns(ihere))
       ++count_owned;
     if (ihere < vmin || ihere > vmax)
-      abort("FAILED: LOOP_OVER_VOL outside V at i=%d\n", i);
+      abort("FAILED: LOOP_OVER_VOL outside V at i=%ld\n", static_cast<long int>(i));
   }
   if (count != gv.ntot())
-    abort("FAILED: LOOP_OVER_VOL has %d iterations instead of ntot=%d\n",
-	  count, gv.ntot());
+    abort("FAILED: LOOP_OVER_VOL has %ld iterations instead of ntot=%ld\n",
+	  static_cast<long int>(count), static_cast<long int>(gv.ntot()));
   if (count_owned != gv.nowned(c))
-    abort("FAILED: LOOP_OVER_VOL has %d owned points instead of nowned=%d\n",
-	  count_owned, gv.nowned(c));
+    abort("FAILED: LOOP_OVER_VOL has %ld owned points instead of nowned=%ld\n",
+	  static_cast<long int>(count_owned), static_cast<long int>(gv.nowned(c)));
   if (min_i != 0)
-    abort("FAILED: LOOP_OVER_VOL has minimum index %d instead of 0\n", min_i);
+    abort("FAILED: LOOP_OVER_VOL has minimum index %ld instead of 0\n", static_cast<long int>(min_i));
   if (max_i != gv.ntot() - 1)
-    abort("FAILED: LOOP_OVER_VOL has max index %d instead of ntot-1\n", max_i);
+    abort("FAILED: LOOP_OVER_VOL has max index %ld instead of ntot-1\n", static_cast<long int>(max_i));
 
   count = 0;
   LOOP_OVER_VOL_OWNED(gv, c, i) {
@@ -309,17 +309,17 @@ void check_loop_vol(const grid_volume &gv, component c)
     ivec ihere0(gv.iloc(c, i));
     vec here0(gv[ihere0]);
     if (ihere0 != ihere)
-      abort("FAILED: wrong LOOP_OVER_VOL_OWNED iloc at i=%d\n", i);
+      abort("FAILED: wrong LOOP_OVER_VOL_OWNED iloc at i=%ld\n", static_cast<long int>(i));
     if (abs(here0 - here) > 1e-13)
-      abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%d\n",
-	    abs(here0 - here), i);
+      abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%ld\n",
+	    abs(here0 - here), static_cast<long int>(i));
     if (!gv.owns(ihere))
-      abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%d\n", i);
+      abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%ld\n", static_cast<long int>(i));
     ++count;
   }
   if (count != count_owned)
-    abort("FAILED: LOOP_OVER_VOL_OWNED has %d iterations instead of %d\n",
-	  count, count_owned);
+    abort("FAILED: LOOP_OVER_VOL_OWNED has %ld iterations instead of %ld\n",
+    		static_cast<long int>(count), static_cast<long int>(count_owned));
 
   count = 0;
   LOOP_OVER_VOL_NOTOWNED(gv, c, i) {
@@ -328,19 +328,19 @@ void check_loop_vol(const grid_volume &gv, component c)
     ivec ihere0(gv.iloc(c, i));
     vec here0(gv[ihere0]);
     if (ihere0 != ihere)
-      abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED iloc at i=%d\n", i);
+      abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED iloc at i=%ld\n", static_cast<long int>(i));
     if (abs(here0 - here) > 1e-13)
-      abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%d\n",
-	    abs(here0 - here), i);
+      abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%ld\n",
+	    abs(here0 - here), static_cast<long int>(i));
     if (gv.owns(ihere))
-      abort("FAILED: LOOP_OVER_VOL_NOTOWNED includes owned at i=%d\n", i);
+      abort("FAILED: LOOP_OVER_VOL_NOTOWNED includes owned at i=%ld\n", static_cast<long int>(i));
     if (ihere < vmin || ihere > vmax)
-      abort("FAILED: LOOP_OVER_VOL_NOTOWNED outside V at i=%d\n", i);
+      abort("FAILED: LOOP_OVER_VOL_NOTOWNED outside V at i=%ld\n", static_cast<long int>(i));
     ++count;
   }
   if (count != gv.ntot() - count_owned)
-    abort("FAILED: LOOP_OVER_VOL_NOTOWNED has %d iterations instead of %d\n",
-	  count, gv.ntot() - count_owned);
+    abort("FAILED: LOOP_OVER_VOL_NOTOWNED has %ld iterations instead of %ld\n",
+    		static_cast<long int>(count), static_cast<long int>(gv.ntot() - count_owned));
 
   master_printf("...PASSED.\n");
 }

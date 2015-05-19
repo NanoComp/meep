@@ -191,8 +191,8 @@ void structure_chunk::set_chi1inv(component c,
   const double smoothing_diameter = 1.0; // FIXME: make user-changable?
       
   // may take a long time in 3d, so prepare to print status messages
-  int npixels = 0, ipixel = 0;
-  int loop_npixels = 0;
+  meep::integer npixels = 0, ipixel = 0;
+  meep::integer loop_npixels = 0;
   LOOP_OVER_VOL(gv, c, i) {
     loop_npixels = loop_n1 * loop_n2 * loop_n3;
     goto breakout; // hack to use loop-size computation from LOOP_OVER_VOL
@@ -213,7 +213,7 @@ void structure_chunk::set_chi1inv(component c,
   double trivial_val[3] = {0,0,0};
   trivial_val[idiag] = 1.0;
   ivec shift1(unit_ivec(gv.dim,component_direction(c))
-	      * (ft == E_stuff ? 1 : -1));
+	      * static_cast<meep::integer>(ft == E_stuff ? 1 : -1));
   LOOP_OVER_VOL(gv, c, i) {
     double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(gv, here);
@@ -237,9 +237,9 @@ void structure_chunk::set_chi1inv(component c,
     if (!quiet && (ipixel+1) % 1000 == 0
 	&& wall_time() > last_output_time + MIN_OUTPUT_TIME) {
       master_printf("subpixel-averaging is %g%% done, %g s remaining\n", 
-		    ipixel * 100.0 / npixels,
-		    (npixels - ipixel) *
-		    (wall_time() - last_output_time) / ipixel);
+		    static_cast<double>(ipixel) * 100.0 / static_cast<double>(npixels),
+		    static_cast<double>(npixels - ipixel) *
+		    (wall_time() - last_output_time) / static_cast<double>(ipixel));
       last_output_time = wall_time();
     }
     ++ipixel;
@@ -295,7 +295,7 @@ void structure_chunk::add_susceptibility(material_function &sigma,
     realnum *s1 = newsus->sigma[c][d1];
     realnum *s2 = newsus->sigma[c][d2];
     vec shift1(gv[unit_ivec(gv.dim,component_direction(c))
-		  * (ft == E_stuff ? 1 : -1)]);
+		  * static_cast<meep::integer>(ft == E_stuff ? 1 : -1)]);
     LOOP_OVER_VOL(gv, c, i) {
       double sigrow[3], sigrow_offdiag[3];
       IVEC_LOOP_LOC(gv, here);

@@ -224,18 +224,19 @@ void structure::check_chunks() {
     for (int j=i+1; j<num_chunks; j++)
       if (chunks[i]->gv.intersect_with(chunks[j]->gv, &vol_intersection))
         abort("chunks[%d] intersects with chunks[%d]\n", i, j);
-  // FIXME: should use 'long long' else will fail if grid > 2e9 points
-  int sum = 0;
+  meep::integer sum = 0;
   for (int i=0; i<num_chunks; i++) {
-    int grid_points = 1;
+    meep::integer grid_points = 1;
     LOOP_OVER_DIRECTIONS(chunks[i]->gv.dim, d)
       grid_points *= chunks[i]->gv.num_direction(d);
     sum += grid_points;
   }
-  int v_grid_points = 1;
+  meep::integer v_grid_points = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) v_grid_points *= gv.num_direction(d);
   if (sum != v_grid_points)
-    abort("v_grid_points = %d, sum(chunks) = %d\n", v_grid_points, sum);
+    abort("v_grid_points = %ld, sum(chunks) = %ld\n",
+    		static_cast<long int>(v_grid_points),
+    		static_cast<long int>(sum));
 }
 
 void structure::add_to_effort_volumes(const grid_volume &new_effort_volume,
@@ -491,7 +492,7 @@ void structure::use_pml(direction d, boundary_side b, double dx) {
   if (b == High)
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d)
   			  - pml_volume.num_direction(d) * 2);
-  const int v_to_user_shift = (user_volume.little_corner().in_direction(d) 
+  const meep::integer v_to_user_shift = (user_volume.little_corner().in_direction(d)
 			       - gv.little_corner().in_direction(d)) / 2;
   if (b == Low && v_to_user_shift != 0)
     pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
@@ -554,33 +555,33 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
       chi1inv[c][d] = new realnum[gv.ntot()];
       trivial_chi1inv[c][d] = n->trivial_chi1inv[c][d];
       if (component_direction(c) == d) // diagonal components = 1 by default
-	for (int i=0;i<gv.ntot();i++) chi1inv[c][d][i] = 1.0;
+	for (meep::integer i=0;i<gv.ntot();i++) chi1inv[c][d][i] = 1.0;
       else
-	for (int i=0;i<gv.ntot();i++) chi1inv[c][d][i] = 0.0;
+	for (meep::integer i=0;i<gv.ntot();i++) chi1inv[c][d][i] = 0.0;
     }
     if (!conductivity[c][d] && n->conductivity[c][d]) {
       conductivity[c][d] = new realnum[gv.ntot()];
-      for (int i=0;i<gv.ntot();i++) conductivity[c][d][i] = 0.0;
+      for (meep::integer i=0;i<gv.ntot();i++) conductivity[c][d][i] = 0.0;
     }
     if (chi1inv[c][d]) {
       trivial_chi1inv[c][d] = 
 	trivial_chi1inv[c][d] && n->trivial_chi1inv[c][d];
       if (n->chi1inv[c][d])
-	for (int i=0;i<gv.ntot();i++)
+	for (meep::integer i=0;i<gv.ntot();i++)
 	  chi1inv[c][d][i] += f*(n->chi1inv[c][d][i] - chi1inv[c][d][i]);
       else {
 	double nval = component_direction(c) == d ? 1.0 : 0.0; // default
-	for (int i=0;i<gv.ntot();i++)
+	for (meep::integer i=0;i<gv.ntot();i++)
 	  chi1inv[c][d][i] += f*(nval - chi1inv[c][d][i]);
       }
     }
     if (conductivity[c][d]) {
       if (n->conductivity[c][d])
-	for (int i=0;i<gv.ntot();i++)
+	for (meep::integer i=0;i<gv.ntot();i++)
 	  conductivity[c][d][i] += f*(n->conductivity[c][d][i]
 				      - conductivity[c][d][i]);
       else
-	for (int i=0;i<gv.ntot();i++)
+	for (meep::integer i=0;i<gv.ntot();i++)
 	  conductivity[c][d][i] += f*(0.0 - conductivity[c][d][i]);
     }
     condinv_stale = true;
@@ -588,9 +589,11 @@ void structure_chunk::mix_with(const structure_chunk *n, double f) {
   // Mix in the susceptibility....FIXME.
 }
 
-static inline double pml_x(int i, double dx, double bloc, double a) {
-  double here = i * 0.5/a;
-  return (0.5/a*((int)(dx*(2*a)+0.5) - (int)(fabs(bloc-here)*(2*a)+0.5)));
+static inline double pml_x(meep::integer i, double dx, double bloc, double a) {
+  double here = static_cast<double>(i) * 0.5/a;
+  return (0.5/a*static_cast<double>(
+		  static_cast<meep::integer>(dx*(2*a)+0.5)
+		  - static_cast<meep::integer>(fabs(bloc-here)*(2*a)+0.5)));
 }
 
 void structure_chunk::use_pml(direction d, double dx, double bloc,
@@ -614,7 +617,7 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
   // ...note that we should calculate overlap in exactly the same
   // way that "x > 0" is computed below.
   bool found_pml = false;
-  for (int i=gv.little_corner().in_direction(d);
+  for (meep::integer i=gv.little_corner().in_direction(d);
        i<=gv.big_corner().in_direction(d)+1;++i)
     if (pml_x(i, dx, bloc, a) > 0) {
       found_pml = true;
@@ -631,12 +634,12 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
     }
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, dd) {
       if (!sig[dd]) {
-	int spml = (dd==d)?(2*gv.num_direction(d)+2):1;
+	meep::integer spml = (dd==d)?(2*gv.num_direction(d)+2):1;
 	sigsize[dd] = spml;
 	sig[dd] = new double[spml];
 	kap[dd] = new double[spml];
 	siginv[dd] = new double[spml];
-	for (int i=0;i<spml;++i) {
+	for (meep::integer i=0;i<spml;++i) {
 	  sig[dd][i] = 0.0;
 	  kap[dd][i] = 1.0;
 	  siginv[dd][i] = 1.0;
@@ -644,9 +647,9 @@ void structure_chunk::use_pml(direction d, double dx, double bloc,
       }
     }
 
-    for (int i=gv.little_corner().in_direction(d);
+    for (meep::integer i=gv.little_corner().in_direction(d);
 	 i<=gv.big_corner().in_direction(d)+1;++i) {
-      int idx = i - gv.little_corner().in_direction(d);
+      meep::integer idx = i - gv.little_corner().in_direction(d);
       double x = pml_x(i, dx, bloc, a);
       if (x > 0) {
 	double s = pml_profile(x/dx, pml_profile_data);
@@ -699,14 +702,14 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
     if (is_mine() && o->chi3[c]) {
       chi3[c] = new realnum[gv.ntot()];
       if (chi3[c] == NULL) abort("Out of memory!\n");
-      for (int i=0;i<gv.ntot();i++) chi3[c][i] = o->chi3[c][i];
+      for (meep::integer i=0;i<gv.ntot();i++) chi3[c][i] = o->chi3[c][i];
     } else {
       chi3[c] = NULL;
     }
     if (is_mine() && o->chi2[c]) {
       chi2[c] = new realnum[gv.ntot()];
       if (chi2[c] == NULL) abort("Out of memory!\n");
-      for (int i=0;i<gv.ntot();i++) chi2[c][i] = o->chi2[c][i];
+      for (meep::integer i=0;i<gv.ntot();i++) chi2[c][i] = o->chi2[c][i];
     } else {
       chi2[c] = NULL;
     }
@@ -743,7 +746,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
 	kap[d] = new double[2*gv.num_direction(d)+1];
 	siginv[d] = new double[2*gv.num_direction(d)+1];
 	sigsize[d] = o->sigsize[d];
-	for (int i=0;i<2*gv.num_direction(d)+1;i++) {
+	for (meep::integer i=0;i<2*gv.num_direction(d)+1;i++) {
 	  sig[d][i] = o->sig[d][i];
 	  kap[d][i] = o->kap[d][i];
 	  siginv[d][i] = o->siginv[d][i];
@@ -759,7 +762,7 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi3
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (int i = 0; i < gv.ntot(); ++i)
+    for (meep::integer i = 0; i < gv.ntot(); ++i)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
@@ -795,7 +798,7 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi2
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (int i = 0; i < gv.ntot(); ++i)
+    for (meep::integer i = 0; i < gv.ntot(); ++i)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
@@ -915,7 +918,7 @@ double structure_chunk::max_eps() const {
   FOR_COMPONENTS(c) { 
     direction d = component_direction(c); 
     if (chi1inv[c][d])
-      for (int i=0;i<gv.ntot();i++) themax = max(themax,1/chi1inv[c][d][i]);
+      for (meep::integer i=0;i<gv.ntot();i++) themax = max(themax,1/chi1inv[c][d][i]);
   }
   return themax;
 }
@@ -951,17 +954,19 @@ void structure::print_layout(void) const {
   direction d0 = gv.yucky_direction(0);
   direction d1 = gv.yucky_direction(1);
   direction d2 = gv.yucky_direction(2);
-  for (int i = 0; i < num_chunks; ++i) {
-    master_printf("chunk[%d] on process %d, resolution %g (%s,%s,%s):"
-		  " (%d,%d,%d) - (%d,%d,%d)\n",
-		  i, chunks[i]->n_proc(), chunks[i]->a,
+  for (meep::integer i = 0; i < num_chunks; ++i) {
+    master_printf("chunk[%ld] on process %ld, resolution %g (%s,%s,%s):"
+		  " (%ld,%ld,%ld) - (%ld,%ld,%ld)\n",
+		  static_cast<long int>(i),
+		  static_cast<long int>(chunks[i]->n_proc()),
+		  chunks[i]->a,
 		  direction_name(d0),direction_name(d1),direction_name(d2),
-		  chunks[i]->gv.little_corner().yucky_val(0),
-		  chunks[i]->gv.little_corner().yucky_val(1),
-		  chunks[i]->gv.little_corner().yucky_val(2),
-		  chunks[i]->gv.big_corner().yucky_val(0),
-		  chunks[i]->gv.big_corner().yucky_val(1),
-		  chunks[i]->gv.big_corner().yucky_val(2));
+		  static_cast<long int>(chunks[i]->gv.little_corner().yucky_val(0)),
+		  static_cast<long int>(chunks[i]->gv.little_corner().yucky_val(1)),
+		  static_cast<long int>(chunks[i]->gv.little_corner().yucky_val(2)),
+		  static_cast<long int>(chunks[i]->gv.big_corner().yucky_val(0)),
+		  static_cast<long int>(chunks[i]->gv.big_corner().yucky_val(1)),
+		  static_cast<long int>(chunks[i]->gv.big_corner().yucky_val(2)));
   }
 }
 

@@ -83,7 +83,8 @@ int test_simple_periodic(double eps(const vec &), int splitting, const char *myd
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("Chunks are %g by %g\n",
-                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
+                  static_cast<double>(f.chunks[0]->gv.nr())/a,
+				  static_cast<double>(f.chunks[0]->gv.nz())/a);
     double field_energy_check_time = 29.0;
     while (f.time() < ttot) {
       f.step();
@@ -132,7 +133,8 @@ int test_simple_metallic(double eps(const vec &), int splitting, const char *myd
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("Chunks are %g by %g\n",
-                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
+                  static_cast<double>(f.chunks[0]->gv.nr())/a,
+				  static_cast<double>(f.chunks[0]->gv.nz())/a);
     double field_energy_check_time = 29.0;
     while (f.time() < ttot) {
       f.step();
@@ -226,7 +228,8 @@ int test_pml(double eps(const vec &), int splitting, const char *mydirname) {
     f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.3, 7.0), 1.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume", 3e-14)) return 0;
     master_printf("Chunks are %g by %g\n",
-                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
+    				static_cast<double>(f.chunks[0]->gv.nr())/a,
+    				static_cast<double>(f.chunks[0]->gv.nz())/a);
     double field_energy_check_time = 10.0;
     while (f.time() < ttot) {
       f.step();
@@ -286,7 +289,8 @@ int test_pattern(double eps(const vec &), int splitting,
     f1.use_bloch(0.0);
     if (!compare(f1.count_volume(Ep), f.count_volume(Ep), "grid_volume")) return 0;
     master_printf("First chunk is %g by %g\n",
-                  f.chunks[0]->gv.nr()/a, f.chunks[0]->gv.nz()/a);
+    		static_cast<double>(f.chunks[0]->gv.nr())/a,
+			static_cast<double>(f.chunks[0]->gv.nz())/a);
     f1.initialize_field(Hp, checkers);
     f.initialize_field(Hp, checkers);
 

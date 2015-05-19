@@ -30,7 +30,7 @@ struct integrate_data {
   component *cS;
   complex<double> *ph;
   complex<double> *fvals;
-  int *offsets;
+  meep::integer *offsets;
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
@@ -53,17 +53,17 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 {
   (void) ichunk; // unused
   integrate_data *data = (integrate_data *) data_;
-  int *off = data->offsets;
+  meep::integer *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fvals = data->fvals, *ph = data->ph;
   complex<long double> sum = 0.0;
   double maxabs = 0;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
-  int ieos[6];
+  meep::integer ieos[6];
   const component *imcs = data->invmu_cs;
   const direction *imds = data->invmu_ds;
-  int imos[6];
+  meep::integer imos[6];
 
   for (int i = 0; i < data->num_fvals; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -123,7 +123,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
     complex<double> integrand = 
       data->integrand(fvals, loc, data->integrand_data_);
     maxabs = max(maxabs, abs(integrand));
-    sum += integrand * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+    sum += integrand * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * static_cast<double>(loop_i2));
   }
 
   data->maxabs = max(data->maxabs, maxabs);
@@ -185,7 +185,7 @@ complex<double> fields::integrate(int num_fvals, const component *components,
       ++data.ninvmu;
     }
   
-  data.offsets = new int[2 * num_fvals];
+  data.offsets = new meep::integer[2 * num_fvals];
   for (int i = 0; i < 2 * num_fvals; ++i)
     data.offsets[i] = 0;
 
@@ -200,7 +200,9 @@ complex<double> fields::integrate(int num_fvals, const component *components,
     *maxabs = max_to_all(data.maxabs);
   data.sum = sum_to_all(data.sum);
 
-  return complex<double>(real(data.sum), imag(data.sum));
+  return complex<double>(
+		  static_cast<double>(real(data.sum)),
+		  static_cast<double>(imag(data.sum)));
 }
 
 typedef struct { 

@@ -46,7 +46,7 @@ monitor_point::~monitor_point() {
   if (next) delete next;
 }
 
-inline complex<double> getcm(const realnum * const f[2], int i) {
+inline complex<double> getcm(const realnum * const f[2], meep::integer i) {
   return complex<double>(f[0][i],f[1][i]);
 }
 

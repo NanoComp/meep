@@ -19,6 +19,7 @@
 #define MEEP_MY_MPI_H
 
 #include <complex>
+#include "meeptypes.hpp"
 
 namespace meep {
 
@@ -51,30 +52,35 @@ bool am_really_master();
 inline int am_master() { return my_rank() == 0; }
 
 void send(int from, int to, double *data, int size=1);
-void broadcast(int from, double *data, int size);
-void broadcast(int from, char *data, int size);
-void broadcast(int from, int *data, int size);
-void broadcast(int from, std::complex<double> *data, int size);
+void broadcast(int from, double *data, meep::integer size);
+void broadcast(int from, char *data, meep::integer size);
+void broadcast(int from, int *data, meep::integer size);
+void broadcast(int from, long int *data, meep::integer size);
+void broadcast(int from, std::complex<double> *data, meep::integer size);
 std::complex<double> broadcast(int from, std::complex<double> data);
 double broadcast(int from, double data);
 int broadcast(int from, int data);
+long int broadcast(int from, long int data);
 bool broadcast(int from, bool);
 double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);
 int max_to_all(int);
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);
-void sum_to_all(const double *in, double *out, int size);
-void sum_to_master(const double *in, double *out, int size);
-void sum_to_all(const float *in, double *out, int size);
-void sum_to_all(const std::complex<float> *in, std::complex<double> *out, int size);
-void sum_to_all(const std::complex<double> *in, std::complex<double> *out, int size);
-void sum_to_master(const std::complex<double> *in, std::complex<double> *out, int size);
+void sum_to_all(const double *in, double *out, meep::integer size);
+void sum_to_master(const double *in, double *out, meep::integer size);
+void sum_to_all(const float *in, double *out, meep::integer size);
+void sum_to_all(const std::complex<float> *in, std::complex<double> *out, meep::integer size);
+void sum_to_all(const std::complex<double> *in, std::complex<double> *out, meep::integer size);
+void sum_to_master(const std::complex<double> *in, std::complex<double> *out, meep::integer size);
 long double sum_to_all(long double);
 std::complex<double> sum_to_all(std::complex<double> in);
 std::complex<long double> sum_to_all(std::complex<long double> in);
 int sum_to_all(int);
 int partial_sum_to_all(int in);
+long int sum_to_all(long int );
+long int partial_sum_to_all(long int in);
+
 bool or_to_all(bool in);
 void or_to_all(const int *in, int *out, int size);
 bool and_to_all(bool in);

@@ -80,46 +80,46 @@ static complex<double> JP(const vec &pt) {
   return polar(Jprime(m_for_J, ktrans*pt.r()),kax*pt.r());
 }
 
-void fields::initialize_with_nth_te(int np0) {
+void fields::initialize_with_nth_te(meep::integer np0) {
   require_component(Hz);
   for (int i=0;i<num_chunks;i++)
     chunks[i]->initialize_with_nth_te(np0, real(k[Z]));
 }
 
-void fields_chunk::initialize_with_nth_te(int np0, double kz) {
-  const int im = int(m);
-  const int n = (im==0) ? np0 - 0 : np0 - 1;
+void fields_chunk::initialize_with_nth_te(meep::integer np0, double kz) {
+  const int im = static_cast<int>(m);
+  const int n = static_cast<int>((im==0) ? np0 - 0 : np0 - 1);
   const double rmax = Jmax(im,n);
-  ktrans = rmax*a/gv.nr();
+  ktrans = rmax*a/static_cast<double>(gv.nr());
   kax = kz*2*pi/a;
   m_for_J = im;
   initialize_field(Hz, JJ);
 }
 
-void fields::initialize_with_nth_tm(int np0) {
+void fields::initialize_with_nth_tm(meep::integer np0) {
   require_component(Ez);
   require_component(Hp);
   for (int i=0;i<num_chunks;i++)
     chunks[i]->initialize_with_nth_tm(np0, real(k[Z]));
 }
 
-void fields_chunk::initialize_with_nth_tm(int np1, double kz) {
-  const int im = int(m);
-  const int n = np1 - 1;
+void fields_chunk::initialize_with_nth_tm(meep::integer np1, double kz) {
+  const int im = static_cast<int>(m);
+  const int n = static_cast<int>(np1 - 1);
   const double rroot = Jroot(im,n);
-  ktrans = rroot*a/gv.nr();
+  ktrans = rroot*a/static_cast<double>(gv.nr());
   kax = kz*2*pi/a;
   m_for_J = im;
   initialize_field(Ez, JJ);
   initialize_field(Hp, JP);
 }
 
-void fields::initialize_with_n_te(int ntot) {
-  for (int n=0;n<ntot;n++) initialize_with_nth_te(n+1);
+void fields::initialize_with_n_te(meep::integer ntot) {
+  for (meep::integer n=0;n<ntot;n++) initialize_with_nth_te(n+1);
 }
 
-void fields::initialize_with_n_tm(int ntot) {
-  for (int n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
+void fields::initialize_with_n_tm(meep::integer ntot) {
+  for (meep::integer n=0;n<ntot;n++) initialize_with_nth_tm(n+1);
 }
 
 void fields::initialize_field(component c, complex<double> func(const vec &)) {

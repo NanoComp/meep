@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "meep/meeptypes.hpp"
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
 
@@ -124,13 +125,13 @@ public:
   /* the number of notowned fields/data in the internal data that
      are needed by update_P for the c Yee grid (note: we assume that we only
      have internal data for c's where we have external polarizations) */
-  virtual int num_internal_notowned_needed(component c,
+  virtual meep::integer num_internal_notowned_needed(component c,
 					   void *P_internal_data) const {
     (void) c; (void) P_internal_data; return 0; }
   /* the offset into the internal data of the n'th Yee-grid point in
      the c Yee grid for the inotowned internal field, where
      0 <= inotowned < size_internal_notowned_needed. */
-  virtual realnum *internal_notowned_ptr(int inotowned, component c, int n,
+  virtual realnum *internal_notowned_ptr(meep::integer inotowned, component c, meep::integer n,
 					 void *P_internal_data) const {
     (void) inotowned; (void) n; (void) c; (void) P_internal_data; return 0; }
   
@@ -138,18 +139,18 @@ public:
      internal fields that need to be multiplied by the same phase
      factor as the fields at boundaries.  Note: we assume internal fields
      are complex if and only if !is_real (i.e. if EM fields are complex) */
-  virtual int num_cinternal_notowned_needed(component c,
+  virtual meep::integer num_cinternal_notowned_needed(component c,
 					   void *P_internal_data) const {
     (void) c; (void) P_internal_data; return 0; }
   // real/imaginary parts offsets for cmp = 0/1
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, 
-					  int n, 
+  virtual realnum *cinternal_notowned_ptr(meep::integer inotowned, component c, meep::integer cmp,
+		  meep::integer n,
 					  void *P_internal_data) const {
     (void) inotowned; (void) n; (void) c; (void) cmp; (void) P_internal_data; 
     return 0; }
   
   susceptibility *next;
-  int ntot;
+  meep::integer ntot;
   realnum *sigma[NUM_FIELD_COMPONENTS][5];
 
   /* trivial_sigma[c][d] is true only if *none* of the processes has a
@@ -191,10 +192,10 @@ public:
 			  double dt, const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
-  virtual int num_cinternal_notowned_needed(component c,
+  virtual meep::integer num_cinternal_notowned_needed(component c,
 					    void *P_internal_data) const;
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, 
-					  int n, 
+  virtual realnum *cinternal_notowned_ptr(meep::integer inotowned, component c, meep::integer cmp,
+		  	  	  	  meep::integer n,
 					  void *P_internal_data) const;
 protected:
   double omega_0, gamma;
@@ -249,10 +250,10 @@ public:
   virtual void *copy_internal_data(void *data) const;
   virtual void delete_internal_data(void *data) const;
 
-  virtual int num_cinternal_notowned_needed(component c,
+  virtual meep::integer num_cinternal_notowned_needed(component c,
 					    void *P_internal_data) const;
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, 
-					  int n, 
+  virtual realnum *cinternal_notowned_ptr(meep::integer inotowned, component c, meep::integer cmp,
+		  	  	  	  meep::integer n,
 					  void *P_internal_data) const;
 
   // always need notowned W and W_prev for E dot dP/dt terms
@@ -290,26 +291,26 @@ public:
   
   bool ok();
   
-  realnum *read(const char *dataname, int *rank, int *dims, int maxrank);
-  void write(const char *dataname, int rank, const int *dims, realnum *data,
+  realnum *read(const char *dataname, int *rank, meep::integer *dims, int maxrank);
+  void write(const char *dataname, int rank, const meep::integer *dims, realnum *data,
 	     bool single_precision = true);
   
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
   
-  void create_data(const char *dataname, int rank, const int *dims,
+  void create_data(const char *dataname, int rank, const meep::integer *dims,
 		   bool append_data = false,
 		   bool single_precision = true);
-  void extend_data(const char *dataname, int rank, const int *dims);
+  void extend_data(const char *dataname, int rank, const meep::integer *dims);
   void create_or_extend_data(const char *dataname, int rank,
-			     const int *dims,
+			     const meep::integer *dims,
 			     bool append_data, bool single_precision);
-  void write_chunk(int rank, const int *chunk_start, const int *chunk_dims,
+  void write_chunk(int rank, const meep::integer *chunk_start, const meep::integer *chunk_dims,
 		   realnum *data);
   void done_writing_chunks();
   
-  void read_size(const char *dataname, int *rank, int *dims, int maxrank);
-  void read_chunk(int rank, const int *chunk_start, const int *chunk_dims,
+  void read_size(const char *dataname, int *rank, meep::integer *dims, int maxrank);
+  void read_chunk(int rank, const meep::integer *chunk_start, const meep::integer *chunk_dims,
 		  realnum *data);
   
   void remove();
@@ -442,7 +443,7 @@ class structure_chunk {
   realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale; // true if condinv needs to be recomputed
   double *sig[5], *kap[5], *siginv[5]; // conductivity array for uPML
-  int sigsize[5]; // conductivity array size
+  meep::integer sigsize[5]; // conductivity array size
   grid_volume gv;  // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
   susceptibility *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
@@ -843,7 +844,7 @@ public:
 
   component c; // component to DFT (possibly transformed by symmetry)
 
-  int N; // number of spatial points (on epsilon grid)
+  meep::integer N; // number of spatial points (on epsilon grid)
   std::complex<realnum> *dft; // N x Nomega array of DFT values.
 
   struct dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
@@ -871,7 +872,7 @@ public:
   // cache of exp(iwt) * scale, of length Nomega
   std::complex<realnum> *dft_phase;
 
-  int avg1, avg2; // index offsets for average to get epsilon grid
+  meep::integer avg1, avg2; // index offsets for average to get epsilon grid
 
   int vc; // component descriptor from the original volume
 };
@@ -1050,7 +1051,7 @@ class fields_chunk {
   realnum **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   int num_zeroes[NUM_FIELD_TYPES];
   realnum **connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
-  int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
+  meep::integer num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   std::complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
   int npol[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
@@ -1158,10 +1159,10 @@ class fields_chunk {
 
   // initialize.cpp
   void initialize_field(component, std::complex<double> f(const vec &));
-  void initialize_with_nth_te(int n, double kz);
-  void initialize_with_nth_tm(int n, double kz);
+  void initialize_with_nth_te(meep::integer n, double kz);
+  void initialize_with_nth_tm(meep::integer n, double kz);
   // boundaries.cpp
-  void alloc_extra_connections(field_type, connect_phase, in_or_out, int);
+  void alloc_extra_connections(field_type, connect_phase, in_or_out, meep::integer);
   // dft.cpp
   void update_dfts(double timeE, double timeH);
 
@@ -1202,9 +1203,9 @@ class fields {
   realnum **comm_blocks[NUM_FIELD_TYPES];
   // This is the same size as each comm_blocks array, and store the sizes
   // of the comm blocks themselves for each connection-phase type
-  int *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
-  int comm_size_tot(int f, int pair) const {
-    int sum = 0; for (int ip=0; ip<3; ++ip) sum+=comm_sizes[f][ip][pair];
+  meep::integer *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
+  meep::integer comm_size_tot(int f, int pair) const {
+    meep::integer sum = 0; for (int ip=0; ip<3; ++ip) sum+=comm_sizes[f][ip][pair];
     return sum;
   }
 
@@ -1335,10 +1336,10 @@ class fields {
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
-  void initialize_with_nth_te(int n);
-  void initialize_with_nth_tm(int n);
-  void initialize_with_n_te(int n);
-  void initialize_with_n_tm(int n);
+  void initialize_with_nth_te(meep::integer n);
+  void initialize_with_nth_tm(meep::integer n);
+  void initialize_with_n_te(meep::integer n);
+  void initialize_with_n_tm(meep::integer n);
   int phase_in_material(const structure *s, double time);
   int is_phasing();
 
