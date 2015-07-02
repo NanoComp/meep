@@ -46,7 +46,7 @@ static void meep_mpb_eps(symmetric_matrix *eps,
   const double *s = eps_data->s;
   const double *o = eps_data->o;
   vec p(eps_data->dim == D3 ?
-	vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[1] + r[1] * s[1]) :
+	vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2]) :
 	(eps_data->dim == D2 ?
 	 vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
 	 /* D1 */ vec(o[2] + r[2] * s[2])));
