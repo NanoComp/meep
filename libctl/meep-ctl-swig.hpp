@@ -24,7 +24,10 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double global_B_conductivity_diag_);
 
 ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, 
-				double fmin, double fmax, int maxbands);
+				double fmin, double fmax, int maxbands,
+                                double spectral_density, double Q_thresh,
+                                double rel_err_thresh, double err_thresh,
+                                double rel_amp_thresh, double amp_thresh);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
 ctlio::number_list dft_force_force(meep::dft_force *f);
