@@ -340,7 +340,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix,
         --rank;
     /* frequencies are the last dimension */
     if (Nfreq > 1)
-        dims[++rank] = Nfreq;
+        dims[rank++] = Nfreq;
 
     /* output to a file with one dataset per component & real/imag part */
     if (am_master()) {
