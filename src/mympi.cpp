@@ -17,8 +17,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#define __STDC_LIMIT_MACROS
-#include <inttypes.h>
 #include "meep.hpp"
 #include "config.h"
 
@@ -146,14 +144,20 @@ void send(int from, int to, double *data, int size) {
 #endif
 }
 
+// cast message size to an int and check if conversion succeeded
+static inline int cast_message_size(meep::integer message_size) {
+  int new_size = static_cast<int>(message_size);
+  if (message_size != static_cast<meep::integer>(new_size)) {
+    abort("MPI message size out of range");
+  }
+  return new_size;
+}
+
 #if MEEP_SINGLE
 void broadcast(int from, realnum *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  if (size > INT32_MAX){
- 	  abort("broadcast size exeeds maximum message size");
-  }
-  MPI_Bcast(data, static_cast<int>(size), MPI_FLOAT, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_FLOAT, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -165,10 +169,7 @@ void broadcast(int from, realnum *data, meep::integer size) {
 void broadcast(int from, double *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  if (size > INT32_MAX){
- 	  abort("broadcast size exeeds maximum message size");
-  }
-  MPI_Bcast(data, static_cast<int>(size), MPI_DOUBLE, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -179,10 +180,7 @@ void broadcast(int from, double *data, meep::integer size) {
 void broadcast(int from, char *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  if (size > INT32_MAX){
-	  abort("broadcast size exeeds maximum message size");
-  }
-  MPI_Bcast(data, static_cast<int>(size), MPI_CHAR, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_CHAR, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -193,10 +191,7 @@ void broadcast(int from, char *data, meep::integer size) {
 void broadcast(int from, complex<double> *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  if (2*size > INT32_MAX){
-  	  abort("broadcast size exeeds maximum message size");
-  }
-  MPI_Bcast(data, static_cast<int>(2*size), MPI_DOUBLE, from, mycomm);
+  MPI_Bcast(data, cast_message_size(2*size), MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -207,10 +202,7 @@ void broadcast(int from, complex<double> *data, meep::integer size) {
 void broadcast(int from, int *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  if (size > INT32_MAX){
-  	  abort("broadcast size exeeds maximum message size");
-  }
-  MPI_Bcast(data, static_cast<int>(size), MPI_INT, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_INT, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -221,10 +213,7 @@ void broadcast(int from, int *data, meep::integer size) {
 void broadcast(int from, long int *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  if (size > INT32_MAX){
-  	  abort("broadcast size exeeds maximum message size");
-  }
-  MPI_Bcast(data, static_cast<int>(size), MPI_LONG, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_LONG, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -326,10 +315,8 @@ double sum_to_all(double in) {
 
 void sum_to_all(const double *in, double *out, meep::integer size) {
 #ifdef HAVE_MPI
-	if (size > INT32_MAX){
-		abort("broadcast size exeeds maximum message size");
-	}
-  MPI_Allreduce((void*) in, out, static_cast<int>(size), MPI_DOUBLE,MPI_SUM,mycomm);
+  MPI_Allreduce((void *)in, out, cast_message_size(size), MPI_DOUBLE, MPI_SUM,
+                mycomm);
 #else
   memcpy(out, in, sizeof(double) * size);
 #endif
@@ -337,10 +324,8 @@ void sum_to_all(const double *in, double *out, meep::integer size) {
 
 void sum_to_master(const double *in, double *out, meep::integer size) {
 #ifdef HAVE_MPI
-	if (size > INT32_MAX){
-		abort("broadcast size exeeds maximum message size");
-	}
-  MPI_Reduce((void*) in, out, static_cast<int>(size), MPI_DOUBLE,MPI_SUM,0,mycomm);
+  MPI_Reduce((void *)in, out, cast_message_size(size), MPI_DOUBLE, MPI_SUM, 0,
+             mycomm);
 #else
   memcpy(out, in, sizeof(double) * size);
 #endif
