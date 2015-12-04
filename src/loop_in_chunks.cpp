@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "config.h"
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
@@ -211,6 +212,10 @@ static ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift) {
 
 static inline int iabs(int i) { return (i < 0 ? -i : i); }
 static inline long int iabs(long int i) { return (i < 0L ? -i : i); }
+
+#ifdef HAVE_LONG_LONG_INT
+static inline long long int iabs(long long int i) { return (i < 0L ? -i : i); }
+#endif
 
 /* Generic function for computing loops within the chunks, often
    integral-like things, over a grid_volume WHERE.  The job of this

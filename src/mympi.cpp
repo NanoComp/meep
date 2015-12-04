@@ -221,6 +221,18 @@ void broadcast(int from, long int *data, meep::integer size) {
 #endif
 }
 
+#ifdef HAVE_LONG_LONG_INT
+void broadcast(int from, long long int *data, meep::integer size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, cast_message_size(size), MPI_LONG_LONG_INT, from, mycomm);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
+#endif
+}
+#endif
 
 complex<double> broadcast(int from, complex<double> data) {
 #ifdef HAVE_MPI
@@ -258,6 +270,17 @@ long int broadcast(int from, long int data) {
   return data;
 }
 
+#ifdef HAVE_LONG_LONG_INT
+long long int broadcast(int from, long long int data) {
+#ifdef HAVE_MPI
+  MPI_Bcast(&data, 1, MPI_LONG_LONG_INT, from, mycomm);
+#else
+  UNUSED(from);
+#endif
+  return data;
+}
+#endif
+
 bool broadcast(int from, bool b) {
   return broadcast(from, (int) b);
 }
@@ -287,10 +310,10 @@ int max_to_all(int in) {
 }
 
 ivec max_to_all(const ivec &pt) {
-  long int  in[5], out[5];
+  meep::integer in[5], out[5];
   for (int i=0; i<5; ++i) in[i] = out[i] = pt.in_direction(direction(i));
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,5,MPI_LONG,MPI_MAX,mycomm);
+  MPI_Allreduce(&in,&out,5,MPI_MEEP_INTEGER,MPI_MAX,mycomm);
 #endif
   ivec ptout(pt.dim);
   for (int i=0; i<5; ++i) ptout.set_direction(direction(i), out[i]);
@@ -377,6 +400,16 @@ long int sum_to_all(long int in) {
   return out;
 }
 
+#ifdef HAVE_LONG_LONG_INT
+long long int sum_to_all(long long int in) {
+  long long int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_LONG_LONG_INT,MPI_SUM,mycomm);
+#endif
+  return out;
+}
+#endif
+
 int partial_sum_to_all(int in) {
   int out = in;
 #ifdef HAVE_MPI
@@ -386,12 +419,22 @@ int partial_sum_to_all(int in) {
 }
 
 long int partial_sum_to_all(long int  in) {
-	long int  out = in;
+  long int  out = in;
 #ifdef HAVE_MPI
   MPI_Scan(&in,&out,1,MPI_LONG,MPI_SUM,mycomm);
 #endif
   return out;
 }
+
+#ifdef HAVE_LONG_LONG_INT
+long long int partial_sum_to_all(long long int in) {
+  long long int  out = in;
+#ifdef HAVE_MPI
+  MPI_Scan(&in,&out,1,MPI_LONG_LONG_INT,MPI_SUM,mycomm);
+#endif
+  return out;
+}
+#endif
 
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;

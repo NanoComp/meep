@@ -19,7 +19,19 @@
 #define MEEP_MY_MPI_H
 
 #include <complex>
+#include "config.h"
 #include "meeptypes.hpp"
+
+#ifdef HAVE_MPI
+#  include <mpi.h>
+#  if SIZEOF_PTRDIFF_T == SIZEOF_INT
+#    define MPI_MEEP_INTEGER MPI_INT
+#  elif SIZEOF_PTRDIFF_T == SIZEOF_LONG_INT
+#    define MPI_MEEP_INTEGER MPI_LONG
+#  elif SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG_INT
+#    define MPI_MEEP_INTEGER MPI_LONG_LONG_INT
+#  endif
+#endif
 
 namespace meep {
 
@@ -76,15 +88,22 @@ void sum_to_master(const std::complex<double> *in, std::complex<double> *out, me
 long double sum_to_all(long double);
 std::complex<double> sum_to_all(std::complex<double> in);
 std::complex<long double> sum_to_all(std::complex<long double> in);
-int sum_to_all(int);
+int sum_to_all(int in);
 int partial_sum_to_all(int in);
-long int sum_to_all(long int );
+long int sum_to_all(long int in);
 long int partial_sum_to_all(long int in);
 
 bool or_to_all(bool in);
 void or_to_all(const int *in, int *out, int size);
 bool and_to_all(bool in);
 void and_to_all(const int *in, int *out, int size);
+
+#ifdef HAVE_LONG_LONG_INT
+void broadcast(int from, long long int *data, meep::integer size);
+long long int broadcast(int from, long long int data);
+long long int sum_to_all(long long int in);
+long long int partial_sum_to_all(long long int in);
+#endif
 
 // IO routines:
 void master_printf(const char *fmt, ...) PRINTF_ATTR(1,2);

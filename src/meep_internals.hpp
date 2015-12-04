@@ -15,6 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include "config.h"
 #include "meep.hpp"
 
 namespace meep {
@@ -28,8 +29,12 @@ inline int max(int a, int b) { return (a > b) ? a : b; }
 inline int min(int a, int b) { return (a < b) ? a : b; }
 inline long int  max(long int  a, long int  b) { return (a > b) ? a : b; }
 inline long int  min(long int  a, long int  b) { return (a < b) ? a : b; }
-//inline long long int  max(long long int  a, long long int  b) { return (a > b) ? a : b; }
-//inline long long int  min(long long int  a, long long int  b) { return (a < b) ? a : b; }
+
+#ifdef HAVE_LONG_LONG_INT
+inline long long int  max(long long int  a, long long int  b) { return (a > b) ? a : b; }
+inline long long int  min(long long int  a, long long int  b) { return (a < b) ? a : b; }
+static inline long long int abs(long long int a) { return a < 0L ? -a : a; }
+#endif
 
 static inline int abs(int a) { return a < 0 ? -a : a; }
 static inline long int abs(long int a) { return a < 0L ? -a : a; }
