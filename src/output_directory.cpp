@@ -102,7 +102,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   
   snprintf(stripped_name, buflen, "%s", bnp);
   for (int i = 0; i < (int)(sizeof(evil_suffs) / sizeof(evil_suffs[0])); ++i) {
-    int sufflen = strlen(evil_suffs[i]);
+    meep::integer sufflen = strlen(evil_suffs[i]);
     if (strcmp(stripped_name + strlen(stripped_name) - sufflen, 
 	       evil_suffs[i]) == 0
 	&& strlen(stripped_name) > size_t(sufflen)) {

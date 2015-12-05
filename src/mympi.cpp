@@ -14,11 +14,9 @@
 %  along with this program; if not, write to the Free Software Foundation,
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
-
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include "meep.hpp"
 #include "config.h"
 
@@ -146,11 +144,20 @@ void send(int from, int to, double *data, int size) {
 #endif
 }
 
+// cast message size to an int and check if conversion succeeded
+static inline int cast_message_size(meep::integer message_size) {
+  int new_size = static_cast<int>(message_size);
+  if (message_size != static_cast<meep::integer>(new_size)) {
+    abort("MPI message size out of range");
+  }
+  return new_size;
+}
+
 #if MEEP_SINGLE
-void broadcast(int from, realnum *data, int size) {
+void broadcast(int from, realnum *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_FLOAT, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_FLOAT, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -159,10 +166,10 @@ void broadcast(int from, realnum *data, int size) {
 }
 #endif
 
-void broadcast(int from, double *data, int size) {
+void broadcast(int from, double *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_DOUBLE, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -170,10 +177,10 @@ void broadcast(int from, double *data, int size) {
 #endif
 }
 
-void broadcast(int from, char *data, int size) {
+void broadcast(int from, char *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_CHAR, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_CHAR, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -181,10 +188,10 @@ void broadcast(int from, char *data, int size) {
 #endif
 }
 
-void broadcast(int from, complex<double> *data, int size) {
+void broadcast(int from, complex<double> *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, 2*size, MPI_DOUBLE, from, mycomm);
+  MPI_Bcast(data, cast_message_size(2*size), MPI_DOUBLE, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
@@ -192,16 +199,40 @@ void broadcast(int from, complex<double> *data, int size) {
 #endif
 }
 
-void broadcast(int from, int *data, int size) {
+void broadcast(int from, int *data, meep::integer size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
-  MPI_Bcast(data, size, MPI_INT, from, mycomm);
+  MPI_Bcast(data, cast_message_size(size), MPI_INT, from, mycomm);
 #else
   UNUSED(from);
   UNUSED(data);
   UNUSED(size);
 #endif
 }
+
+void broadcast(int from, long int *data, meep::integer size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, cast_message_size(size), MPI_LONG, from, mycomm);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
+#endif
+}
+
+#ifdef HAVE_LONG_LONG_INT
+void broadcast(int from, long long int *data, meep::integer size) {
+#ifdef HAVE_MPI
+  if (size == 0) return;
+  MPI_Bcast(data, cast_message_size(size), MPI_LONG_LONG_INT, from, mycomm);
+#else
+  UNUSED(from);
+  UNUSED(data);
+  UNUSED(size);
+#endif
+}
+#endif
 
 complex<double> broadcast(int from, complex<double> data) {
 #ifdef HAVE_MPI
@@ -229,6 +260,26 @@ int broadcast(int from, int data) {
 #endif
   return data;
 }
+
+long int broadcast(int from, long int data) {
+#ifdef HAVE_MPI
+  MPI_Bcast(&data, 1, MPI_LONG, from, mycomm);
+#else
+  UNUSED(from);
+#endif
+  return data;
+}
+
+#ifdef HAVE_LONG_LONG_INT
+long long int broadcast(int from, long long int data) {
+#ifdef HAVE_MPI
+  MPI_Bcast(&data, 1, MPI_LONG_LONG_INT, from, mycomm);
+#else
+  UNUSED(from);
+#endif
+  return data;
+}
+#endif
 
 bool broadcast(int from, bool b) {
   return broadcast(from, (int) b);
@@ -259,10 +310,10 @@ int max_to_all(int in) {
 }
 
 ivec max_to_all(const ivec &pt) {
-  int in[5], out[5];
+  meep::integer in[5], out[5];
   for (int i=0; i<5; ++i) in[i] = out[i] = pt.in_direction(direction(i));
 #ifdef HAVE_MPI
-  MPI_Allreduce(&in,&out,5,MPI_INT,MPI_MAX,mycomm);
+  MPI_Allreduce(&in,&out,5,MPI_MEEP_INTEGER,MPI_MAX,mycomm);
 #endif
   ivec ptout(pt.dim);
   for (int i=0; i<5; ++i) ptout.set_direction(direction(i), out[i]);
@@ -285,38 +336,40 @@ double sum_to_all(double in) {
   return out;
 }
 
-void sum_to_all(const double *in, double *out, int size) {
+void sum_to_all(const double *in, double *out, meep::integer size) {
 #ifdef HAVE_MPI
-  MPI_Allreduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,mycomm);
+  MPI_Allreduce((void *)in, out, cast_message_size(size), MPI_DOUBLE, MPI_SUM,
+                mycomm);
 #else
   memcpy(out, in, sizeof(double) * size);
 #endif
 }
 
-void sum_to_master(const double *in, double *out, int size) {
+void sum_to_master(const double *in, double *out, meep::integer size) {
 #ifdef HAVE_MPI
-  MPI_Reduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,0,mycomm);
+  MPI_Reduce((void *)in, out, cast_message_size(size), MPI_DOUBLE, MPI_SUM, 0,
+             mycomm);
 #else
   memcpy(out, in, sizeof(double) * size);
 #endif
 }
 
-void sum_to_all(const float *in, double *out, int size) {
+void sum_to_all(const float *in, double *out, meep::integer size) {
   double *in2 = new double[size];
-  for (int i = 0; i < size; ++i) in2[i] = in[i];
+  for (meep::integer i = 0; i < size; ++i) in2[i] = in[i];
   sum_to_all(in2, out, size);
   delete[] in2;
 }
 
-void sum_to_all(const complex<double> *in, complex<double> *out, int size) {
+void sum_to_all(const complex<double> *in, complex<double> *out, meep::integer size) {
   sum_to_all((const double*) in, (double*) out, 2*size);
 }
 
-void sum_to_all(const complex<float> *in, complex<double> *out, int size) {
+void sum_to_all(const complex<float> *in, complex<double> *out, meep::integer size) {
   sum_to_all((const float*) in, (double*) out, 2*size);
 }
 
-void sum_to_master(const complex<double> *in, complex<double> *out, int size) {
+void sum_to_master(const complex<double> *in, complex<double> *out, meep::integer size) {
   sum_to_master((const double*) in, (double*) out, 2*size);
 }
 
@@ -339,6 +392,24 @@ int sum_to_all(int in) {
   return out;
 }
 
+long int sum_to_all(long int in) {
+	long int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_LONG,MPI_SUM,mycomm);
+#endif
+  return out;
+}
+
+#ifdef HAVE_LONG_LONG_INT
+long long int sum_to_all(long long int in) {
+  long long int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1,MPI_LONG_LONG_INT,MPI_SUM,mycomm);
+#endif
+  return out;
+}
+#endif
+
 int partial_sum_to_all(int in) {
   int out = in;
 #ifdef HAVE_MPI
@@ -346,6 +417,24 @@ int partial_sum_to_all(int in) {
 #endif
   return out;
 }
+
+long int partial_sum_to_all(long int  in) {
+  long int  out = in;
+#ifdef HAVE_MPI
+  MPI_Scan(&in,&out,1,MPI_LONG,MPI_SUM,mycomm);
+#endif
+  return out;
+}
+
+#ifdef HAVE_LONG_LONG_INT
+long long int partial_sum_to_all(long long int in) {
+  long long int  out = in;
+#ifdef HAVE_MPI
+  MPI_Scan(&in,&out,1,MPI_LONG_LONG_INT,MPI_SUM,mycomm);
+#endif
+  return out;
+}
+#endif
 
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;
@@ -455,7 +544,7 @@ void fields::boundary_communications(field_type ft) {
     for (int j=0;j<num_chunks;j++) {
       const int i = (noti+j)%num_chunks;
       const int pair = j+i*num_chunks;
-      const int comm_size = comm_size_tot(ft,pair);
+      const int comm_size = static_cast<int>(comm_size_tot(ft,pair));
       if (comm_size > 0) {
 	if (chunks[j]->is_mine() && !chunks[i]->is_mine())
 	  MPI_Isend(comm_blocks[ft][pair], comm_size,

@@ -72,7 +72,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
   bands->tend = t + (int)(endtime/dt) - 1;
 
   {
-    int ind[8];
+    meep::integer ind[8];
     double w[8];
     int indind = 0;
     while (bands->index[indind] != -1 && indind < num_bandpts) indind++;
@@ -93,7 +93,7 @@ void fields::prepare_for_bands(const vec &p, double endtime, double fmax,
 
   double cutoff_freq = 0.0;
   if (gv.dim == Dcyl) {
-    cutoff_freq = 1.84*a*dt/(2*pi)/gv.nr()/sqrt(epsmax);
+    cutoff_freq = 1.84*a*dt/(2*pi)/static_cast<double>(gv.nr())/sqrt(epsmax);
     if (m == 0) cutoff_freq *= 0.5;
   }
   bands->fmin = sqrt(cutoff_freq*cutoff_freq + abs(k[Z])*abs(k[Z])*(a*dt)*(a*dt)/epsmax); // FIXME

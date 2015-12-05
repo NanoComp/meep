@@ -20,6 +20,7 @@
 #define MEEP_VEC_H
 
 #include <complex>
+#include "meeptypes.hpp"
 
 namespace meep {
 
@@ -119,7 +120,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (int loop_is1 = (is).yucky_val(0), \
+  for (meep::integer loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -135,8 +136,8 @@ component first_field_component(field_type ft);
                 + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
                 + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
-    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
-      for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
+    for (meep::integer loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
+      for (meep::integer idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
 #define LOOP_OVER_VOL(gv, c, idx) \
@@ -151,7 +152,7 @@ component first_field_component(field_type ft);
 #define LOOP_OVER_VOL_NOTOWNED(gv, c, idx) \
  for (ivec loop_notowned_is((gv).dim,0), loop_notowned_ie((gv).dim,0); \
       loop_notowned_is == zero_ivec((gv).dim);) \
-   for (int loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
+   for (meep::integer loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
 		  				       &loop_notowned_is,  \
 						       &loop_notowned_ie); \
 	loop_ibound++) \
@@ -172,7 +173,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define S1LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (int loop_is1 = (is).yucky_val(0), \
+  for (meep::integer loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -187,8 +188,8 @@ component first_field_component(field_type ft);
                 + (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 \
                 + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
-    for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma("ivdep") \
-      for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
+    for (meep::integer loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma("ivdep") \
+      for (meep::integer idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx++)
 
 #define S1LOOP_OVER_VOL(gv, c, idx) \
@@ -203,7 +204,7 @@ component first_field_component(field_type ft);
 #define S1LOOP_OVER_VOL_NOTOWNED(gv, c, idx) \
  for (ivec loop_notowned_is((gv).dim,0), loop_notowned_ie((gv).dim,0); \
       loop_notowned_is == meep::zero_ivec((gv).dim);)			\
-   for (int loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
+   for (meep::integer loop_ibound = 0; (gv).get_boundary_icorners(c, loop_ibound,     \
 		  				       &loop_notowned_is,  \
 						       &loop_notowned_ie); \
 	loop_ibound++) \
@@ -222,9 +223,12 @@ component first_field_component(field_type ft);
 
 #define IVEC_LOOP_LOC(gv, loc) \
   vec loc((gv).dim); \
-  loc.set_direction(direction(loop_d1), (0.5*loop_is1 + loop_i1) * (gv).inva); \
-  loc.set_direction(direction(loop_d2), (0.5*loop_is2 + loop_i2) * (gv).inva); \
-  loc.set_direction(direction(loop_d3), (0.5*loop_is3 + loop_i3) * (gv).inva)
+  loc.set_direction(direction(loop_d1), (0.5*static_cast<double>(loop_is1) \
+		  + static_cast<double>(loop_i1)) * static_cast<double>((gv).inva)); \
+  loc.set_direction(direction(loop_d2), (0.5*static_cast<double>(loop_is2) \
+		  + static_cast<double>(loop_i2)) * static_cast<double>((gv).inva)); \
+  loc.set_direction(direction(loop_d3), (0.5*static_cast<double>(loop_is3) \
+		  + static_cast<double>(loop_i3)) * static_cast<double>((gv).inva))
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
 #define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir) ((i > 1 && i < n - 2) ? 1.0 : (i == 0 ? (s0).in_direction(meep::direction(dir)) : (i == 1 ? (s1).in_direction(meep::direction(dir)) : i == n - 1 ? (e0).in_direction(meep::direction(dir)) : (i == n - 2 ? (e1).in_direction(meep::direction(dir)) : 1.0))))
@@ -511,7 +515,7 @@ inline vec veccyl(double rr, double zz) {
 }
 
 class ivec;
-ivec iveccyl(int xx, int yy);
+ivec iveccyl(meep::integer xx, meep::integer yy);
 ivec zero_ivec(ndim);
 ivec one_ivec(ndim);
 
@@ -519,17 +523,17 @@ class ivec {
  public:
   ivec() { dim = D2; t[X] = t[Y] = 0; };
   ivec(ndim di) { dim = di; };
-  ivec(ndim di, int val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
-  ivec(int zz) { dim = D1; t[Z] = zz; };
-  ivec(int xx, int yy) { dim = D2; t[X] = xx; t[Y] = yy; };
-  ivec(int xx, int yy, int zz) {
+  ivec(ndim di, meep::integer val) { dim = di; t[0]=t[1]=t[2]=t[3]=t[4]=val; };
+  ivec(meep::integer zz) { dim = D1; t[Z] = zz; };
+  ivec(meep::integer xx, meep::integer yy) { dim = D2; t[X] = xx; t[Y] = yy; };
+  ivec(meep::integer xx, meep::integer yy, meep::integer zz) {
     dim = D3; t[X] = xx; t[Y] = yy; t[Z] = zz; };
-  friend ivec iveccyl(int xx, int yy);
+  friend ivec iveccyl(meep::integer xx, meep::integer yy);
   ~ivec() {};
 
   // Only an idiot (or a macro) would use a yucky function.  Don't be an
   // idiot.
-  int yucky_val(int) const;
+  meep::integer yucky_val(int) const;
 
   ivec operator+(const ivec &a) const {
     ivec result = a;
@@ -589,7 +593,7 @@ class ivec {
     return true;
   };
 
-  ivec operator*(int s) const {
+  ivec operator*(meep::integer s) const {
     ivec result = *this;
     LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= s;
     return result;
@@ -597,17 +601,17 @@ class ivec {
 
   vec operator*(double s) const {
     vec result(dim);
-    LOOP_OVER_DIRECTIONS(dim, d) result.set_direction(d, t[d] * s);
+    LOOP_OVER_DIRECTIONS(dim, d) result.set_direction(d, static_cast<double>(t[d]) * s);
     return result;
   };
   ndim dim;
 
-  int r() const { return t[R]; };
-  int x() const { return t[X]; };
-  int y() const { return t[Y]; };
-  int z() const { return t[Z]; };
-  int in_direction(direction d) const { return t[d]; };
-  void set_direction(direction d, int val) { t[d] = val; };
+  meep::integer r() const { return t[R]; };
+  meep::integer x() const { return t[X]; };
+  meep::integer y() const { return t[Y]; };
+  meep::integer z() const { return t[Z]; };
+  meep::integer in_direction(direction d) const { return t[d]; };
+  void set_direction(direction d, meep::integer val) { t[d] = val; };
 
   ivec round_up_to_even(void) const { 
     ivec result(dim);
@@ -619,7 +623,7 @@ class ivec {
   friend ivec zero_ivec(ndim);
   friend ivec one_ivec(ndim);
  private:
-  int t[5];
+  meep::integer t[5];
 };
 
 inline ivec zero_ivec(ndim di) {
@@ -638,7 +642,7 @@ inline ivec unit_ivec(ndim di, direction d) {
   return pt;
 }
 
-inline ivec iveccyl(int rr, int zz) {
+inline ivec iveccyl(meep::integer rr, meep::integer zz) {
   ivec pt(Dcyl); pt.t[R] = rr; pt.t[Z] = zz; return pt;
 }
 
@@ -722,19 +726,19 @@ class grid_volume {
   double a, inva /* = 1/a */;
 
   void print() const;
-  int stride(direction d) const { return the_stride[d]; };
-  int num_direction(direction d) const {
+  meep::integer stride(direction d) const { return the_stride[d]; };
+  meep::integer num_direction(direction d) const {
     return num[((int) d) % 3];
   };
   // Only an idiot (or a macro) would use a yucky function.  Don't be an
   // idiot.
-  int yucky_num(int) const;
+  meep::integer yucky_num(int) const;
   direction yucky_direction(int) const;
-  void set_num_direction(direction d, int value);
-  int nr() const { return num_direction(R); }
-  int nx() const { return num_direction(X); }
-  int ny() const { return num_direction(Y); }
-  int nz() const { return num_direction(Z); }
+  void set_num_direction(direction d, meep::integer value);
+  meep::integer nr() const { return num_direction(R); }
+  meep::integer nx() const { return num_direction(X); }
+  meep::integer ny() const { return num_direction(Y); }
+  meep::integer nz() const { return num_direction(Z); }
 
   bool has_field(component c) const {
     if (dim == D1) return c == Ex || c == Hy || c == Dx || c == By;
@@ -747,16 +751,16 @@ class grid_volume {
   vec dy() const;
   vec dz() const;
 
-  int ntot() const { return the_ntot; }
-  int nowned_min() const { int n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= num_direction(d); return n; }
-  int nowned(component c) const;
+  meep::integer ntot() const { return the_ntot; }
+  meep::integer nowned_min() const { meep::integer n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= num_direction(d); return n; }
+  meep::integer nowned(component c) const;
   vec operator[](const ivec &p) const { return p*(0.5*inva); };
-  int index(component, const ivec &) const;
+  meep::integer index(component, const ivec &) const;
   ivec round_vec(const vec &) const;
-  void interpolate(component, const vec &, int indices[8], double weights[8]) const;
+  void interpolate(component, const vec &, meep::integer indices[8], double weights[8]) const;
   void interpolate(component, const vec &, ivec locs[8], double weights[8]) const;
 
-  volume dV(component c, int index) const;
+  volume dV(component c, meep::integer index) const;
   volume dV(const ivec &, double diameter = 1.0) const;
   bool intersect_with(const grid_volume &vol_in, grid_volume *intersection = NULL, grid_volume *others = NULL, int *num_others = NULL) const;
   double rmin() const;
@@ -769,21 +773,21 @@ class grid_volume {
   double zmax() const;
   vec center() const;
   ivec icenter() const;
-  vec loc(component, int index) const;
+  vec loc(component, meep::integer index) const;
   vec loc_at_resolution(int index, double res) const;
-  int ntot_at_resolution(double res) const;
-  ivec iloc(component, int index) const;
+  meep::integer ntot_at_resolution(double res) const;
+  ivec iloc(component, meep::integer index) const;
 
-  int yee_index(component c) const {
-    int idx = 0;
+  meep::integer yee_index(component c) const {
+    meep::integer idx = 0;
     LOOP_OVER_DIRECTIONS(dim,d)
       idx += (1-iyee_shift(c).in_direction(d))*stride(d);
     return idx;
   }
   vec yee_shift(component) const;
   component eps_component() const;
-  void yee2cent_offsets(component c, int &offset1, int &offset2) const;
-  void cent2yee_offsets(component c, int &offset1, int &offset2) const;
+  void yee2cent_offsets(component c, meep::integer &offset1, meep::integer &offset2) const;
+  void cent2yee_offsets(component c, meep::integer &offset1, meep::integer &offset2) const;
 
   double boundary_location(boundary_side, direction) const;
   ivec big_corner() const;
@@ -796,7 +800,7 @@ class grid_volume {
   /* differs from little_owned_corner in that it doesn't count
      "ownership" of the r=0 origin for Dcyl, which is updated separately */
   ivec little_owned_corner0(component c) const {
-    return ivec(little_corner() + one_ivec(dim)*2 - iyee_shift(c));
+    return ivec(little_corner() + one_ivec(dim)*static_cast<meep::integer>(2) - iyee_shift(c));
   }
 
   ivec little_owned_corner(component c) const;
@@ -804,7 +808,7 @@ class grid_volume {
   volume surroundings() const;
   volume interior() const;
 
-  bool get_boundary_icorners(component c, int ib, ivec *cs, ivec *ce) const;
+  bool get_boundary_icorners(component c, meep::integer ib, ivec *cs, ivec *ce) const;
 
   friend grid_volume volcyl(double rsize, double zsize, double a);
   friend grid_volume volone(double zsize, double a);
@@ -813,9 +817,9 @@ class grid_volume {
   friend grid_volume vol2d(double xsize, double ysize, double a);
   friend grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
-  grid_volume split(int num, int which) const;
-  grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL, double *effort = NULL) const;
-  grid_volume split_at_fraction(bool want_high, int numer) const;
+  grid_volume split(meep::integer num, meep::integer which) const;
+  grid_volume split_by_effort(meep::integer num, meep::integer which, int Ngv = 0, const grid_volume *v = NULL, double *effort = NULL) const;
+  grid_volume split_at_fraction(bool want_high, meep::integer numer) const;
   grid_volume halve(direction d) const;
   void pad_self(direction d);
   grid_volume pad(direction d) const;
@@ -840,26 +844,26 @@ class grid_volume {
   void set_origin(const ivec &o);
   void shift_origin(const vec &s) { set_origin(origin + s); }
   void shift_origin(const ivec &s) { set_origin(io + s); }
-  void shift_origin(direction d, int s) {shift_origin(unit_ivec(dim, d) * s);}
-  void set_origin(direction d, int o);
+  void shift_origin(direction d, meep::integer s) {shift_origin(unit_ivec(dim, d) * s);}
+  void set_origin(direction d, meep::integer o);
   void center_origin(void) { shift_origin(-icenter()); }
   double origin_in_direction(direction d) const{return origin.in_direction(d);}
-  int iorigin_in_direction(direction d) const{return io.in_direction(d);}
+  meep::integer iorigin_in_direction(direction d) const{return io.in_direction(d);}
   double origin_r() const { return origin.r(); }
   double origin_x() const { return origin.x(); }
   double origin_y() const { return origin.y(); }
   double origin_z() const { return origin.z(); }
 
  private:
-  grid_volume(ndim d, double ta, int na, int nb, int nc);
+  grid_volume(ndim d, double ta, meep::integer na, meep::integer nb, meep::integer nc);
   ivec io; // integer origin ... always change via set_origin etc.!
   vec origin; // cache of operator[](io), for performance
   void update_ntot();
   void set_strides();
   void num_changed() { update_ntot(); set_strides(); }
-  int num[3];
-  int the_stride[5];
-  int the_ntot;
+  meep::integer  num[3];
+  meep::integer the_stride[5];
+  meep::integer the_ntot;
 };
 
 class volume_list;

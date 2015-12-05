@@ -1,7 +1,6 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 #include "config.h"
-
 #define DPR double * restrict
 #define RPR realnum * restrict
 
@@ -13,12 +12,12 @@
    KSTRIDE_DEF defines the relevant strides etc. and goes outside the
    LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
 #define KSTRIDE_DEF(dsig, k, corner)				\
-     const int k##0 = corner.in_direction(dsig)			\
+     const meep::integer k##0 = corner.in_direction(dsig)			\
                       - gv.little_corner().in_direction(dsig);	\
-     const int s##k##1 = gv.yucky_direction(0) == dsig ? 2 : 0; \
-     const int s##k##2 = gv.yucky_direction(1) == dsig ? 2 : 0; \
-     const int s##k##3 = gv.yucky_direction(2) == dsig ? 2 : 0
-#define KDEF(k,dsig) const int k = ((k##0 + s##k##1*loop_i1) + s##k##2*loop_i2) + s##k##3*loop_i3
+     const meep::integer s##k##1 = gv.yucky_direction(0) == dsig ? 2 : 0; \
+     const meep::integer s##k##2 = gv.yucky_direction(1) == dsig ? 2 : 0; \
+     const meep::integer s##k##3 = gv.yucky_direction(2) == dsig ? 2 : 0
+#define KDEF(k,dsig) const meep::integer k = ((k##0 + s##k##1*loop_i1) + s##k##2*loop_i2) + s##k##3*loop_i3
 #define DEF_k KDEF(k,dsig)
 #define DEF_ku KDEF(ku,dsigu)
 #define DEF_kw KDEF(kw,dsigw)
@@ -60,7 +59,7 @@ namespace meep {
    and fu replaces f in the equations above (fu += dt curl g etcetera).
 */
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
-	       int s1, int s2, // strides for g1/g2 shift
+	       meep::integer s1, meep::integer s2, // strides for g1/g2 shift
 	       const grid_volume &gv, double dtdx,
 	       direction dsig, const DPR sig, const DPR kap, const DPR siginv,
 	       RPR fu, direction dsigu, const DPR sigu, const DPR kapu, const DPR siginvu,
@@ -69,7 +68,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 {
   if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
-    SWAP(int, s1, s2);
+    SWAP(meep::integer, s1, s2);
     dtdx = -dtdx; // need to flip derivative sign
   }
 
@@ -351,7 +350,7 @@ inline double calc_nonlinear_u(const double Dsqr,
 void step_update_EDHB(RPR f, component fc, const grid_volume &gv, 
 		      const RPR g, const RPR g1, const RPR g2,
 		      const RPR u, const RPR u1, const RPR u2,
-		      int s, int s1, int s2,
+		      meep::integer s, meep::integer s1, meep::integer s2,
 		      const RPR chi2, const RPR chi3,
 		      RPR fw, direction dsigw, const DPR sigw, const DPR kapw)
 {
@@ -360,7 +359,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
     SWAP(const RPR, g1, g2);
     SWAP(const RPR, u1, u2);
-    SWAP(int, s1, s2);
+    SWAP(meep::integer, s1, s2);
   }
 
   // stable averaging of offdiagonal components

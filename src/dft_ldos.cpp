@@ -93,15 +93,15 @@ void dft_ldos::update(fields &f)
 	realnum *fr = f.chunks[ic]->f[c][0];
 	realnum *fi = f.chunks[ic]->f[c][1];
 	if (fr && fi) // complex E
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (meep::integer j=0; j<sv->npts; j++) {
+	    const meep::integer idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    EJ += complex<double>(fr[idx],fi[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	else if (fr) { // E is purely real
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (meep::integer j=0; j<sv->npts; j++) {
+	    const meep::integer idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    EJ += double(fr[idx]) * conj(A);
 	    Jsum += abs(A);
@@ -113,15 +113,15 @@ void dft_ldos::update(fields &f)
 	realnum *fr = f.chunks[ic]->f[c][0];
 	realnum *fi = f.chunks[ic]->f[c][1];
 	if (fr && fi) // complex H
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (meep::integer j=0; j<sv->npts; j++) {
+	    const meep::integer idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    HJ += complex<double>(fr[idx],fi[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	else if (fr) { // H is purely real
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (meep::integer j=0; j<sv->npts; j++) {
+	    const meep::integer idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    HJ += double(fr[idx]) * conj(A);
 	    Jsum += abs(A);

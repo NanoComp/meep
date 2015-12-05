@@ -79,8 +79,10 @@ fi
 
 # Add lots of compiler warnings in maintainer mode if we are using gcc:
 # (The variable $GXX is set to "yes" by AC_PROG_CXX if we are using g++.)
+# Warning flags must appear before all other flags to prevent reactivation
+# of deactivated warnings.
 if test "$GXX" = "yes" && test "$USE_MAINTAINER_MODE" = yes; then
-        CXXFLAGS="$CXXFLAGS -Wall -W"
+        CXXFLAGS="-Wall -W $CXXFLAGS"
 fi
 
 # For some annoying reason, g++ requires you to compile
@@ -114,6 +116,15 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
   [AC_CHECK_LIB(dfftw, fftw_create_plan, [],
     [AC_CHECK_LIB(fftw, fftw_create_plan, [],
        [AC_MSG_WARN([FFTW needed for MPB])])])])
+
+##############################################################################
+# check size and existence of interger types
+
+AC_TYPE_LONG_LONG_INT
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long int)
+AC_CHECK_SIZEOF(long long int)
+AC_CHECK_SIZEOF(ptrdiff_t)
 
 ###########################################################################
 

@@ -284,18 +284,19 @@ std::complex<double> *dft_near2far::farfield(const vec &x) {
 void dft_near2far::save_farfields(const char *fname, const char *prefix,
                                   const volume &where, double resolution) {
     /* compute output grid size etc. */
-    int dims[4] = {1,1,1,1};
+    meep::integer dims[4] = {1,1,1,1};
     double dx[3] = {0,0,0};
     direction dirs[3] = {X,Y,Z};
-    int rank = 0, N = 1;
+    int rank = 0;
+    meep::integer N = 1;
     LOOP_OVER_DIRECTIONS(where.dim, d) {
-        dims[rank] = int(floor(where.in_direction(d) * resolution));
+        dims[rank] = static_cast<meep::integer>(floor(where.in_direction(d) * resolution));
         if (dims[rank] <= 1) {
             dims[rank] = 1;
             dx[rank] = 0;
         }
         else
-            dx[rank] = where.in_direction(d) / (dims[rank] - 1);
+            dx[rank] = where.in_direction(d) / static_cast<double>(dims[rank] - 1);
         N *= dims[rank];
         dirs[rank++] = d;
     }
@@ -310,18 +311,21 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix,
     std::complex<double> *EH1 = new std::complex<double>[6*Nfreq];
 
     vec x(where.dim);
-    for (int i0 = 0; i0 < dims[0]; ++i0) {
-        x.set_direction(dirs[0], where.in_direction_min(dirs[0]) + i0*dx[0]);
-        for (int i1 = 0; i1 < dims[1]; ++i1) {
+    for (meep::integer i0 = 0; i0 < dims[0]; ++i0) {
+        x.set_direction(dirs[0], where.in_direction_min(dirs[0])
+        		+ static_cast<double>(i0)*dx[0]);
+        for (meep::integer i1 = 0; i1 < dims[1]; ++i1) {
             x.set_direction(dirs[1], 
-                            where.in_direction_min(dirs[1]) + i1*dx[1]);
-            for (int i2 = 0; i2 < dims[2]; ++i2) {
+                            where.in_direction_min(dirs[1])
+                            + static_cast<double>(i1)*dx[1]);
+            for (meep::integer i2 = 0; i2 < dims[2]; ++i2) {
                 x.set_direction(dirs[2], 
-                                where.in_direction_min(dirs[2]) + i2*dx[2]);
+                                where.in_direction_min(dirs[2])
+                                + static_cast<double>(i2)*dx[2]);
                 farfield_lowlevel(EH1, x);
-                int idx = (i0 * dims[1] + i1) * dims[2] + i2;
-                for (int i = 0; i < Nfreq; ++i)
-                    for (int k = 0; k < 6; ++k) {
+                meep::integer idx = (i0 * dims[1] + i1) * dims[2] + i2;
+                for (meep::integer i = 0; i < Nfreq; ++i)
+                    for (meep::integer k = 0; k < 6; ++k) {
                         EH_[((k * 2 + 0) * N + idx) * Nfreq + i] =
                             real(EH1[i * 6 + k]);
                         EH_[((k * 2 + 1) * N + idx) * Nfreq + i] =

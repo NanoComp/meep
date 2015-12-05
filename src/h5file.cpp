@@ -128,7 +128,7 @@ void *h5file::get_id() {
 #    endif
 #  endif
 
-    if (mode != WRITE || IF_EXCLUSIVE(parallel && !am_master(), 0))
+    if ((mode != WRITE) || (IF_EXCLUSIVE(parallel && !am_master(), 0)))
       HID(id) = H5Fopen(filename,
 			mode == READONLY ? H5F_ACC_RDONLY : H5F_ACC_RDWR,
 			access_props);
@@ -245,7 +245,7 @@ void h5file::set_cur(const char *dataname, void *data_id) {
   }
 }
 
-void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
+void h5file::read_size(const char *dataname, int *rank, meep::integer *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
   if (parallel || am_master()) {
@@ -269,7 +269,7 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
     hsize_t *dims_copy = new hsize_t[*rank];
     hsize_t *maxdims = new hsize_t[*rank];
     H5Sget_simple_extent_dims(space_id, dims_copy, maxdims);
-    for (int i = 0; i < *rank; ++i) dims[i] = dims_copy[i];
+    for (meep::integer i = 0; i < *rank; ++i) dims[i] = dims_copy[i];
     delete[] maxdims;
     delete[] dims_copy;
     H5Sclose(space_id);
@@ -309,12 +309,12 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
 #define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
 
 realnum *h5file::read(const char *dataname,
-		     int *rank, int *dims, int maxrank)
+		     int *rank, meep::integer *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
   realnum *data = 0;
   if (parallel || am_master()) {
-    int i, N;
+    meep::integer i, N;
     hid_t file_id = HID(get_id()), space_id, data_id;
     
     CHECK(file_id >= 0, "error opening HDF5 input file");
@@ -369,7 +369,7 @@ realnum *h5file::read(const char *dataname,
   if (!parallel) {
     *rank = broadcast(0, *rank);
     broadcast(0, dims, *rank);
-    int N = 1;
+    meep::integer  N = 1;
     for (int i = 0; i < *rank; ++i)
       N *= dims[i];
     if (!am_master())
@@ -390,7 +390,7 @@ char *h5file::read(const char *dataname)
 {
 #ifdef HAVE_HDF5
   char *data = 0;
-  int len = 0;
+  meep::integer len = 0;
   if (parallel || am_master()) {
     hid_t file_id = HID(get_id()), space_id, data_id, type_id;
     
@@ -475,7 +475,7 @@ void h5file::remove_data(const char *dataname)
 /* Create a dataset, for writing chunks etc.  Note that, in parallel mode,
    this should be called by *all* processors, even those not writing any
    data. */
-void h5file::create_data(const char *dataname, int rank, const int *dims,
+void h5file::create_data(const char *dataname, int rank, const meep::integer *dims,
 			 bool append_data, bool single_precision)
 {
 #ifdef HAVE_HDF5
@@ -543,7 +543,7 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
 	  "file data is missing unlimited dimension for append_data");
     delete[] maxdims;
     for (i = 0; i < rank; ++i)
-      CHECK(dims[i] == (int) dims_copy[i],
+      CHECK(dims[i] == static_cast<meep::integer>(dims_copy[i]),
 	    "file data is inconsistent size for subsequent processor");
     if (rank < rank1)
       CHECK(dims_copy[0] == 1, "rank-0 data is incorrect size");
@@ -571,7 +571,7 @@ void h5file::create_data(const char *dataname, int rank, const int *dims,
    already open; extends it and increments cur_dindex.  Like
    create_data, this is a collective operation and must be called from
    all processes. */
-void h5file::extend_data(const char *dataname, int rank, const int *dims)
+void h5file::extend_data(const char *dataname, int rank, const meep::integer *dims)
 {
 #ifdef HAVE_HDF5
   extending_s *cur = get_extending(dataname);
@@ -595,7 +595,7 @@ void h5file::extend_data(const char *dataname, int rank, const int *dims)
 	"file data is missing unlimited dimension for extend_data");
   delete[] maxdims;
   for (int i = 0; i < rank; ++i)
-    CHECK(dims[i] == (int) dims_copy[i],
+    CHECK(dims[i] == static_cast<meep::integer>(dims_copy[i]),
 	  "file data is inconsistent size for subsequent extend_data");
   
   H5Sclose(space_id);
@@ -615,7 +615,7 @@ void h5file::extend_data(const char *dataname, int rank, const int *dims)
 /* If append_data is true, dataname is the current dataset, and is
    extensible, then as extend_data; otherwise as create_data. */
 void h5file::create_or_extend_data(const char *dataname, int rank,
-				   const int *dims,
+				   const meep::integer *dims,
 				   bool append_data, bool single_precision)
 {
   if (get_extending(dataname))
@@ -642,7 +642,7 @@ void h5file::create_or_extend_data(const char *dataname, int rank,
    that have no data can be skipped).
 */
 void h5file::write_chunk(int rank,
-			 const int *chunk_start, const int *chunk_dims,
+			 const meep::integer *chunk_start, const meep::integer *chunk_dims,
 			 realnum *data)
 {
 #ifdef HAVE_HDF5
@@ -672,7 +672,7 @@ void h5file::write_chunk(int rank,
   start_t *start = new start_t[rank1 + append_data];
   hsize_t *count = new hsize_t[rank1 + append_data];
   
-  int count_prod = 1;
+  meep::integer count_prod = 1;
   for (i = 0; i < rank; ++i) {
     start[i] = chunk_start[i];
     count[i] = chunk_dims[i];
@@ -731,11 +731,11 @@ void h5file::done_writing_chunks() {
     prevent_deadlock(); // closes id
 }
 
-void h5file::write(const char *dataname, int rank, const int *dims,
+void h5file::write(const char *dataname, int rank, const meep::integer *dims,
 		   realnum *data, bool single_precision)
 {
   if (parallel || am_master()) {
-    int *start = new int[rank + 1];
+    meep::integer *start = new meep::integer[rank + 1];
     for (int i = 0; i < rank; i++) start[i] = 0;
     create_data(dataname, rank, dims, false, single_precision);
     if (am_master())
@@ -779,7 +779,7 @@ void h5file::write(const char *dataname, const char *data)
    total dataset's rank and dims first by calling read_size, above,
    (which also opens the dataset for reading). */
 void h5file::read_chunk(int rank,
-			const int *chunk_start, const int *chunk_dims,
+			const meep::integer *chunk_start, const meep::integer *chunk_dims,
 			realnum *data)
 
 {
@@ -806,7 +806,7 @@ void h5file::read_chunk(int rank,
   start_t *start = new start_t[rank1];
   hsize_t *count = new hsize_t[rank1];
   
-  int count_prod = 1;
+  meep::integer count_prod = 1;
   for (int i = 0; i < rank; ++i) {
     start[i] = chunk_start[i];
     count[i] = chunk_dims[i];

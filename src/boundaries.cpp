@@ -37,11 +37,11 @@ void fields::set_boundary(boundary_side b,direction d,boundary_condition cond){
 void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
   for (int b=0;b<2;b++) set_boundary(boundary_side(b), d, Periodic);
-  if (real(kk) * gv.num_direction(d) == 0.5 * a) // check b.z. edge exactly
-    eikna[d] = -exp(-imag(kk) * ((2*pi/a)*gv.num_direction(d)));
+  if (real(kk) * static_cast<double>(gv.num_direction(d)) == 0.5 * a) // check b.z. edge exactly
+    eikna[d] = -exp(-imag(kk) * ((2*pi/a)*static_cast<double>(gv.num_direction(d))));
   else {
     const complex<double> I = complex<double>(0.0,1.0);
-    eikna[d] = exp(I*kk*((2*pi/a)*gv.num_direction(d)));
+    eikna[d] = exp(I*kk*((2*pi/a)*static_cast<double>(gv.num_direction(d))));
   }
   coskna[d] = real(eikna[d]);
   sinkna[d] = imag(eikna[d]);
@@ -63,7 +63,7 @@ void fields::use_bloch(const vec &k) {
 ivec fields::ilattice_vector(direction d) const {
   switch (user_volume.dim) {
   case D1: return ivec(2*user_volume.nz());
-  case Dcyl: return iveccyl(0,2*user_volume.nz()); // Only Z direction here
+  case Dcyl: return iveccyl(static_cast<meep::integer>(0),2*user_volume.nz()); // Only Z direction here
   case D2:
     switch (d) {
     case X: return ivec(user_volume.nx()*2,0);
@@ -285,11 +285,11 @@ bool fields_chunk::needs_W_notowned(component c) {
 }
 
 void fields::connect_the_chunks() {
-  int *nc[NUM_FIELD_TYPES][3][2];
+  meep::integer *nc[NUM_FIELD_TYPES][3][2];
   FOR_FIELD_TYPES(f)
     for (int ip=0;ip<3;ip++)
       for (int io=0;io<2;io++) {
-	nc[f][ip][io] = new int[num_chunks];
+	nc[f][ip][io] = new meep::integer[num_chunks];
 	for (int i=0;i<num_chunks;i++) nc[f][ip][io][i] = 0;
       }
 
@@ -364,7 +364,7 @@ void fields::connect_the_chunks() {
 		}
 		if (is_electric(corig) || is_magnetic(corig)) {
 		  field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
-		  int ni = 0, cni = 0;
+		  meep::integer ni = 0, cni = 0;
 		  for (polarization_state *pi=chunks[i]->pol[type(corig)]; pi; 
 		       pi = pi->next)
 		    for (polarization_state *pj=chunks[j]->pol[type(c)]; pj;
@@ -383,7 +383,7 @@ void fields::connect_the_chunks() {
 								    pj->data);
 			}
 		      }
-		  const int nn = (is_real?1:2) * (cni);
+		  const meep::integer nn = (is_real?1:2) * (cni);
 		  nc[f][ip][Incoming][i] += nn;
 		  nc[f][ip][Outgoing][j] += nn;
 		  comm_sizes[f][ip][pair] += nn;
@@ -413,7 +413,7 @@ void fields::connect_the_chunks() {
      for i < i' */
 
   // wh stores the current indices in the connections array(s)
-  int *wh[NUM_FIELD_TYPES][3][2];
+  meep::integer *wh[NUM_FIELD_TYPES][3][2];
 
   /* Now allocate the connection arrays... this is still slightly
      wasteful (by a factor of 2) because we allocate for chunks we
@@ -428,7 +428,7 @@ void fields::connect_the_chunks() {
 					     in_or_out(io),
 					     nc[f][ip][io][i]);
 	delete[] nc[f][ip][io];
-	wh[f][ip][io] = new int[num_chunks];
+	wh[f][ip][io] = new meep::integer[num_chunks];
       }
       for (int i=0;i<num_chunks;i++) wh[f][ip][Outgoing][i] = 0;
     }
@@ -463,7 +463,7 @@ void fields::connect_the_chunks() {
 		       B_redundant[5*i+corig-Bx] && B_redundant[5*j+c-Bx])) {
 		const connect_phase ip = thephase == 1.0 ? CONNECT_COPY 
 		  : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
-		const int m = chunks[j]->gv.index(c, here);
+		const meep::integer m = chunks[j]->gv.index(c, here);
 
 		{
 		  field_type f = type(c);
@@ -511,9 +511,9 @@ void fields::connect_the_chunks() {
 			  po = pj;
 			if (po) {
 			  const connect_phase iip = CONNECT_COPY;
-			  const int ni = po->s->
+			  const meep::integer ni = po->s->
 			    num_internal_notowned_needed(corig, po->data);
-			  for (int k = 0; k < ni; ++k) {
+			  for (meep::integer k = 0; k < ni; ++k) {
 			    chunks[i]->connections[f][iip][Incoming]
 			      [wh[f][iip][Incoming][j]++] = 
 			      po->s->internal_notowned_ptr(k, corig, n, 
@@ -523,9 +523,9 @@ void fields::connect_the_chunks() {
 			      po->s->internal_notowned_ptr(k, c, m, 
 							   pj->data);
 			  }
-			  const int cni = po->s->
+			  const meep::integer cni = po->s->
 			    num_cinternal_notowned_needed(corig, po->data);
-			  for (int k = 0; k < cni; ++k) {
+			  for (meep::integer k = 0; k < cni; ++k) {
 			    if (ip == CONNECT_PHASE)
 			      chunks[i]->connection_phases[f]
 				[wh[f][ip][Incoming][j]/2] = thephase;
@@ -555,9 +555,9 @@ void fields::connect_the_chunks() {
 }
 
 void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip,
-					   in_or_out io, int num) {
+					   in_or_out io, meep::integer num) {
   if (num == 0) return; // No need to go to any bother...
-  const int tot = num_connections[f][ip][io] + num;
+  const meep::integer tot = num_connections[f][ip][io] + num;
   if (io == Incoming && ip == CONNECT_PHASE) {
     delete[] connection_phases[f];
     connection_phases[f] = new complex<realnum>[tot];

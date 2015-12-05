@@ -38,7 +38,7 @@ void grid_volume::set_origin(const ivec &o) {
   origin = operator[](io); // adjust origin to match io
 }
 
-void grid_volume::set_origin(direction d, int o) {
+void grid_volume::set_origin(direction d, meep::integer o) {
   io.set_direction(d, o);
   origin = operator[](io); // adjust origin to match io
 }
@@ -267,13 +267,13 @@ static direction yucky_dir(ndim dim, int n) {
   return (direction) n ;
 }
 
-int ivec::yucky_val(int n) const {
+meep::integer ivec::yucky_val(int n) const {
   if (has_direction(dim, yucky_dir(dim, n)))
     return in_direction(yucky_dir(dim, n));
   return 0;
 }
 
-int grid_volume::yucky_num(int n) const {
+meep::integer grid_volume::yucky_num(int n) const {
   if (has_direction(dim, yucky_dir(dim, n)))
     return num_direction(yucky_dir(dim, n));
   return 1;
@@ -290,7 +290,7 @@ volume grid_volume::surroundings() const {
 
 volume grid_volume::interior() const {
   return volume(operator[](little_corner()), 
-			  operator[](big_corner() - one_ivec(dim) * 2));
+			  operator[](big_corner() - one_ivec(dim) * static_cast<meep::integer>(2)));
 }
 
 void grid_volume::update_ntot() {
@@ -298,11 +298,11 @@ void grid_volume::update_ntot() {
   LOOP_OVER_DIRECTIONS(dim, d) the_ntot *= num[d%3] + 1;
 }
 
-void grid_volume::set_num_direction(direction d, int value) {
+void grid_volume::set_num_direction(direction d, meep::integer value) {
   num[d%3] = value; num_changed();
 }
 
-grid_volume::grid_volume(ndim td, double ta, int na, int nb, int nc) {
+grid_volume::grid_volume(ndim td, double ta, meep::integer na, meep::integer nb, meep::integer nc) {
   dim = td; a = ta; inva = 1.0 / ta;
   num[0] = na;
   num[1] = nb;
@@ -332,7 +332,7 @@ vec grid_volume::yee_shift(component c) const {
    locations: i, i+offset1, i+offset2, i+offset1+offset2. 
    (offset2, and possibly offset1, may be zero if only 2 or 1
    locations need to be averaged). */
-void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) const {
+void grid_volume::yee2cent_offsets(component c, meep::integer &offset1, meep::integer &offset2) const {
   offset1 = offset2 = 0;
   LOOP_OVER_DIRECTIONS(dim,d) {
     if (!iyee_shift(c).in_direction(d)) {
@@ -345,7 +345,7 @@ void grid_volume::yee2cent_offsets(component c, int &offset1, int &offset2) cons
 }
 
 /* Same as yee2cent_offsets, but averages centered grid to get c */
-void grid_volume::cent2yee_offsets(component c, int &offset1, int &offset2) const {
+void grid_volume::cent2yee_offsets(component c, meep::integer &offset1, meep::integer &offset2) const {
   yee2cent_offsets(c, offset1, offset2);
   offset1 = -offset1;
   offset2 = -offset2;
@@ -380,8 +380,11 @@ bool grid_volume::contains(const vec &p) const {
   // given point.
   const vec o = p - origin;
   LOOP_OVER_DIRECTIONS(dim, d)
-    if (o.in_direction(d) < -inva || o.in_direction(d) > num_direction(d)*inva+inva)
-      return false;
+    if ( (static_cast<double>(o.in_direction(d)) < -inva)
+    		|| (static_cast<double>(o.in_direction(d))
+    				> static_cast<double>(num_direction(d))*inva+inva) ) {
+    	return false;
+      }
   return true;
 }
 
@@ -392,7 +395,7 @@ bool grid_volume::contains(const vec &p) const {
    this function is currently to support the LOOP_OVER_NOT_OWNED
    macro.  (In the future, it may be used for other
    boundary-element-type computations, too.) */
-bool grid_volume::get_boundary_icorners(component c, int ib,
+bool grid_volume::get_boundary_icorners(component c, meep::integer ib,
 				   ivec *cs, ivec *ce) const {
   ivec cl(little_corner() + iyee_shift(c));
   ivec cb(big_corner() + iyee_shift(c));
@@ -437,8 +440,8 @@ ivec grid_volume::little_owned_corner(component c) const {
   return iloc;
 }
 
-int grid_volume::nowned(component c) const {
-  int n = 1;
+meep::integer grid_volume::nowned(component c) const {
+  meep::integer n = 1;
   ivec pt = big_corner() - little_owned_corner(c);
   LOOP_OVER_DIRECTIONS(dim, d) n *= pt.in_direction(d) / 2 + 1;
   return n;
@@ -480,9 +483,9 @@ int grid_volume::has_boundary(boundary_side b,direction d) const {
   return 0; // This should never be reached.
 }
 
-int grid_volume::index(component c, const ivec &p) const {
+meep::integer grid_volume::index(component c, const ivec &p) const {
   const ivec offset = p - io - iyee_shift(c);
-  int idx = 0;
+  meep::integer idx = 0;
   LOOP_OVER_DIRECTIONS(dim,d) idx += offset.in_direction(d)/2*stride(d);
   return idx;
 }
@@ -500,7 +503,7 @@ void grid_volume::set_strides() {
     }
 }
 
-static inline void stupidsort(int *ind, double *w, int l) {
+static inline void stupidsort(meep::integer *ind, double *w, int l) {
   while (l) {
     if (fabs(w[0]) < 2e-15) {
       w[0] = w[l-1];
@@ -531,7 +534,7 @@ static inline void stupidsort(ivec *locs, double *w, int l) {
 }
 
 void grid_volume::interpolate(component c, const vec &p,
-                         int indices[8], double weights[8]) const {
+                         meep::integer indices[8], double weights[8]) const {
   ivec locs[8];
   interpolate(c, p, locs, weights);
   for (int i=0;i<8&&weights[i];i++)
@@ -541,7 +544,9 @@ void grid_volume::interpolate(component c, const vec &p,
     indices[i] = index(c, locs[i]);
   if (!contains(p) && weights[0]) {
     printf("Error at point %g %g\n", p.r(), p.z());
-    printf("Interpolated to point %d %d\n", locs[0].r(), locs[0].z());
+    printf("Interpolated to point %ld %ld\n",
+    		static_cast<long int>(locs[0].r()),
+    		static_cast<long int>(locs[0].z()));
     printf("Or in other words... %g %g\n",
            operator[](locs[0]).r(), operator[](locs[0]).z());
     printf("I %s own the interpolated point.\n",
@@ -557,7 +562,9 @@ void grid_volume::interpolate(component c, const vec &p,
   stupidsort(indices, weights, 8);
   if (!contains(p) && weights[0]) {
     printf("Error at point %g %g\n", p.r(), p.z());
-    printf("Interpolated to point %d %d\n", locs[0].r(), locs[0].z());
+    printf("Interpolated to point %ld %ld\n",
+    		static_cast<long int>(locs[0].r()),
+    		static_cast<long int>(locs[0].z()));
     print();
     abort("Error made in interpolation of %s--fix this bug!!!\n",
           component_name(c));
@@ -570,7 +577,7 @@ void grid_volume::interpolate(component c, const vec &pc,
   const vec p = (pc - yee_shift(c))*a;
   ivec middle(dim);
   LOOP_OVER_DIRECTIONS(dim,d)
-    middle.set_direction(d, ((int) floor(p.in_direction(d)))*2+1);
+    middle.set_direction(d, static_cast<meep::integer>(floor(p.in_direction(d)))*2+1);
   middle += iyee_shift(c);
   const vec midv = operator[](middle);
   const vec dv = (pc - midv)*(2*a);
@@ -642,14 +649,14 @@ volume grid_volume::dV(const ivec &here, double diameter) const {
   return out;
 }
 
-volume grid_volume::dV(component c, int ind) const {
+volume grid_volume::dV(component c, meep::integer ind) const {
   if (!owns(iloc(c, ind))) return empty_volume(dim);
   return dV(iloc(c,ind));
 }
 
 double grid_volume::xmax() const {
   const double qinva = 0.25*inva;
-  return origin.x() + nx()*inva + qinva;
+  return origin.x() + static_cast<double>(nx())*inva + qinva;
 }
 
 double grid_volume::xmin() const {
@@ -659,7 +666,7 @@ double grid_volume::xmin() const {
 
 double grid_volume::ymax() const {
   const double qinva = 0.25*inva;
-  return origin.y() + ny()*inva + qinva;
+  return origin.y() + static_cast<double>(ny())*inva + qinva;
 }
 
 double grid_volume::ymin() const {
@@ -669,7 +676,7 @@ double grid_volume::ymin() const {
 
 double grid_volume::zmax() const {
   const double qinva = 0.25*inva;
-  return origin.z() + nz()*inva + qinva;
+  return origin.z() + static_cast<double>(nz())*inva + qinva;
 }
 
 double grid_volume::zmin() const {
@@ -679,7 +686,7 @@ double grid_volume::zmin() const {
 
 double grid_volume::rmax() const {
   const double qinva = 0.25*inva;
-  if (dim == Dcyl) return origin.r() + nr()*inva + qinva;
+  if (dim == Dcyl) return origin.r() + static_cast<double>(nr())*inva + qinva;
   abort("No rmax in these dimensions.\n");
   return 0.0; // This is never reached.
 }
@@ -726,10 +733,10 @@ double grid_volume::boundary_location(boundary_side b, direction d) const {
 
 ivec grid_volume::big_corner() const {
   switch (dim) {
-  case D1: return io + ivec(nz())*2;
-  case D2: return io + ivec(nx(),ny())*2;
-  case D3: return io + ivec(nx(),ny(),nz())*2;
-  case Dcyl: return io + iveccyl(nr(),nz())*2;
+  case D1: return io + ivec(nz())*static_cast<meep::integer>(2);
+  case D2: return io + ivec(nx(),ny())*static_cast<meep::integer>(2);
+  case D3: return io + ivec(nx(),ny(),nz())*static_cast<meep::integer>(2);
+  case Dcyl: return io + iveccyl(nr(),nz())*static_cast<meep::integer>(2);
   }
   return ivec(0); // This is never reached.
 }
@@ -738,7 +745,8 @@ vec grid_volume::corner(boundary_side b) const {
   if (b == Low) return origin; // Low corner
   vec tmp = origin;
   LOOP_OVER_DIRECTIONS(dim, d)
-    tmp.set_direction(d, tmp.in_direction(d) + num_direction(d) * inva);
+    tmp.set_direction(d, static_cast<double>(tmp.in_direction(d))
+    		+ static_cast<double>(num_direction(d)) * inva);
   return tmp; // High corner
 }
 
@@ -746,16 +754,18 @@ void grid_volume::print() const {
   LOOP_OVER_DIRECTIONS(dim, d)
     printf("%s =%5g - %5g (%5g) \t", 
       direction_name(d), origin.in_direction(d), 
-      origin.in_direction(d)+num_direction(d)/a, num_direction(d)/a); 
+      static_cast<double>(origin.in_direction(d))
+      	  +static_cast<double>(num_direction(d))/a,
+      static_cast<double>(num_direction(d))/a);
   printf("\n");
 }
 
 bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *intersection, grid_volume *others, int *num_others) const {
-  int temp_num[3] = {0,0,0};
+  meep::integer temp_num[3] = {0,0,0};
   ivec new_io(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
-    int minval = max(little_corner().in_direction(d), vol_in.little_corner().in_direction(d));
-    int maxval = min(big_corner().in_direction(d), vol_in.big_corner().in_direction(d));
+    meep::integer minval = max(little_corner().in_direction(d), vol_in.little_corner().in_direction(d));
+    meep::integer maxval = min(big_corner().in_direction(d), vol_in.big_corner().in_direction(d));
     if (minval >= maxval)
       return false;
     temp_num[d%3] = (maxval - minval)/2;
@@ -773,7 +783,7 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
 	  < vol_in.little_corner().in_direction(d)) {
 	// shave off lower slice from vol_containing and add it to others
 	grid_volume other = vol_containing;
-	const int thick = (vol_in.little_corner().in_direction(d)
+	const meep::integer thick = (vol_in.little_corner().in_direction(d)
 			   - vol_containing.little_corner().in_direction(d))/2;
 	other.set_num_direction(d, thick);
 	others[counter] = other;
@@ -789,7 +799,7 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
 	  > vol_in.big_corner().in_direction(d)) {
 	// shave off upper slice from vol_containing and add it to others
 	grid_volume other = vol_containing;
-	const int thick = (vol_containing.big_corner().in_direction(d)
+	const meep::integer thick = (vol_containing.big_corner().in_direction(d)
 			   - vol_in.big_corner().in_direction(d))/2;
 	other.set_num_direction(d, thick);
 	other.shift_origin(d, (vol_containing.num_direction(d) - thick)*2);
@@ -804,9 +814,9 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
     }
     *num_others = counter;
     
-    int initial_points = 1;
+    meep::integer initial_points = 1;
     LOOP_OVER_DIRECTIONS(dim, d) initial_points *= num_direction(d);
-    int final_points , temp = 1;
+    meep::integer final_points , temp = 1;
     LOOP_OVER_DIRECTIONS(dim, d) temp *= intersection->num_direction(d);    
     final_points = temp;
     for (int j=0; j<*num_others; j++) {
@@ -815,8 +825,9 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
       final_points += temp;
     }
     if (initial_points != final_points)
-      abort("intersect_with: initial_points != final_points,  %d, %d\n", 
-	    initial_points, final_points);
+      abort("intersect_with: initial_points != final_points,  %ld, %ld\n",
+    		  static_cast<long int>(initial_points),
+    		  static_cast<long int>(final_points));
   }
   return true;
 }
@@ -836,25 +847,25 @@ vec grid_volume::loc_at_resolution(int index, double res) const {
   return where;
 }
 
-int grid_volume::ntot_at_resolution(double res) const {
-  int mytot = 1;
+meep::integer grid_volume::ntot_at_resolution(double res) const {
+  meep::integer mytot = 1;
   for (int d=X;d<=R;d++)
     if (has_boundary(High,(direction)d)) {
       const double dist = boundary_location(High,(direction)d)
                         - boundary_location(Low,(direction)d);
-      mytot *= max(1,(int)(dist*res+0.5));
+      mytot *= max(static_cast<meep::integer>(1),static_cast<meep::integer>(dist*res+0.5));
     }
   return mytot;
 }
 
-vec grid_volume::loc(component c, int ind) const {
+vec grid_volume::loc(component c, meep::integer ind) const {
   return operator[](iloc(c,ind));
 }
 
-ivec grid_volume::iloc(component c, int ind) const {
+ivec grid_volume::iloc(component c, meep::integer ind) const {
   ivec out(dim);
   LOOP_OVER_DIRECTIONS(dim,d) {
-    int ind_over_stride = ind/stride(d);
+    meep::integer ind_over_stride = ind/stride(d);
     while (ind_over_stride < 0) ind_over_stride += num_direction(d)+1;
     out.set_direction(d, 2*(ind_over_stride%(num_direction(d)+1)));
   }
@@ -898,12 +909,12 @@ vec grid_volume::dz() const {
 }
 
 grid_volume volone(double zsize, double a) {
-  return grid_volume(D1, a, 0, 0, (int) (zsize*a + 0.5));
+  return grid_volume(D1, a, 0, 0, static_cast<meep::integer>(zsize*a + 0.5));
 }
 
 grid_volume voltwo(double xsize, double ysize, double a) {
-  return grid_volume(D2, a, (xsize==0)?1:(int) (xsize*a + 0.5),
-                       (ysize==0)?1:(int) (ysize*a + 0.5),0);
+  return grid_volume(D2, a, (xsize==0)?1:static_cast<meep::integer> (xsize*a + 0.5),
+                       (ysize==0)?1:static_cast<meep::integer> (ysize*a + 0.5),0);
 }
 
 grid_volume vol1d(double zsize, double a) {
@@ -915,46 +926,54 @@ grid_volume vol2d(double xsize, double ysize, double a) {
 }
 
 grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
-  return grid_volume(D3, a,(xsize==0)?1:(int) (xsize*a + 0.5),
-                      (ysize==0)?1:(int) (ysize*a + 0.5),
-                      (zsize==0)?1:(int) (zsize*a + 0.5));
+  return grid_volume(D3, a,(xsize==0)?1:static_cast<meep::integer> (xsize*a + 0.5),
+                      (ysize==0)?1:static_cast<meep::integer> (ysize*a + 0.5),
+                      (zsize==0)?1:static_cast<meep::integer> (zsize*a + 0.5));
 }
 
 grid_volume volcyl(double rsize, double zsize, double a) {
-  if (zsize == 0.0) return grid_volume(Dcyl, a, (int) (rsize*a + 0.5), 0, 1);
-  else return grid_volume(Dcyl, a, (int) (rsize*a + 0.5), 0, (int) (zsize*a + 0.5));
+  if (zsize == 0.0) return grid_volume(Dcyl, a, static_cast<meep::integer> (rsize*a + 0.5), 0, 1);
+  else return grid_volume(Dcyl, a, static_cast<meep::integer> (rsize*a + 0.5), 0, static_cast<meep::integer> (zsize*a + 0.5));
 }
 
-grid_volume grid_volume::split(int n, int which) const {
+grid_volume grid_volume::split(meep::integer n, meep::integer which) const {
   if (n > nowned_min())
-    abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
+    abort("Cannot split %ld grid points into %ld parts\n",
+    		static_cast<long int>(nowned_min()),
+    		static_cast<long int>(n));
   if (n == 1) return *this;
 
   // Try to get as close as we can...
-  int biglen = 0;
-  for (int i=0;i<3;i++) if (num[i] > biglen) biglen = num[i];
-  const int split_point = (int)(biglen*(n/2)/(double)n + 0.5);
-  const int num_low = (int)(split_point*n/(double)biglen + 0.5);
+  meep::integer biglen = 0;
+  for (meep::integer i=0;i<3;i++) if (num[i] > biglen) biglen = num[i];
+  const meep::integer split_point = static_cast<meep::integer>(
+		  static_cast<double>(biglen*(n/2))/static_cast<double>(n) + 0.5);
+  const meep::integer num_low = static_cast<meep::integer>(
+		  static_cast<double>(split_point*n)/static_cast<double>(biglen) + 0.5);
   if (which < num_low)
     return split_at_fraction(false, split_point).split(num_low,which);
   else
     return split_at_fraction(true, split_point).split(n-num_low,which-num_low);
 }
 
-grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_volume *v, double *effort) const {
-  const int grid_points_owned = nowned_min();
+grid_volume grid_volume::split_by_effort(meep::integer n, meep::integer which, int Ngv, const grid_volume *v, double *effort) const {
+  const meep::integer grid_points_owned = nowned_min();
   if (n > grid_points_owned)
-    abort("Cannot split %d grid points into %d parts\n", nowned_min(), n);
+    abort("Cannot split %ld grid points into %ld parts\n",
+    		static_cast<long int>(nowned_min()),
+    		static_cast<long int>(n));
   if (n == 1) return *this;
-  int biglen = 0;
+  meep::integer biglen = 0;
   direction splitdir = NO_DIRECTION;
   LOOP_OVER_DIRECTIONS(dim, d) if (num_direction(d) > biglen) { biglen = num_direction(d); splitdir = d; } 
   double best_split_measure = 1e20, left_effort_fraction = 0;
-  int best_split_point = 0;
+  meep::integer best_split_point = 0;
   vec corner = zero_vec(dim);
-  LOOP_OVER_DIRECTIONS(dim, d) corner.set_direction(d, origin.in_direction(d) + num_direction(d)/a); 
+  LOOP_OVER_DIRECTIONS(dim, d) corner.set_direction(d,
+		  static_cast<double>(origin.in_direction(d))
+		  	  + static_cast<double>(num_direction(d))/a);
 
-  for (int split_point = 1; split_point < biglen; split_point+=1) {
+  for (meep::integer split_point = 1; split_point < biglen; split_point+=1) {
     grid_volume v_left = *this;
     v_left.set_num_direction(splitdir, split_point);
     grid_volume v_right = *this;
@@ -964,27 +983,29 @@ grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_v
     double total_left_effort = 0, total_right_effort = 0;
     grid_volume vol;
     if (Ngv == 0) {
-      total_left_effort = v_left.ntot();
-      total_right_effort = v_right.ntot();
+      total_left_effort = static_cast<double>(v_left.ntot());
+      total_right_effort = static_cast<double>(v_right.ntot());
     }
     else {
       for (int j = 0; j<Ngv; j++) {
 	if (v_left.intersect_with(v[j], &vol))
-	  total_left_effort += effort[j] * vol.ntot();
+	  total_left_effort += effort[j] * static_cast<double>(vol.ntot());
 	if (v_right.intersect_with(v[j], &vol))
-	  total_right_effort += effort[j] * vol.ntot();
+	  total_right_effort += effort[j] * static_cast<double>(vol.ntot());
       }
     }
-    double split_measure = max(total_left_effort/(n/2), total_right_effort/(n-n/2));
+    double split_measure = max(
+    		total_left_effort/static_cast<double>(n/2),
+    		total_right_effort/static_cast<double>(n-n/2));
     if (split_measure < best_split_measure) {
       best_split_measure = split_measure;
       best_split_point = split_point;
       left_effort_fraction = total_left_effort/(total_left_effort + total_right_effort);
     }
   }
-  const int split_point = best_split_point;
+  const meep::integer split_point = best_split_point;
     
-  const int num_low = (int)(left_effort_fraction *n + 0.5);
+  const meep::integer num_low = static_cast<meep::integer>(left_effort_fraction *static_cast<double>(n) + 0.5);
   // Revert to split() when effort method gives less grid points than chunks
   if (num_low > best_split_point*(grid_points_owned/biglen) || 
       (n-num_low) > (grid_points_owned - best_split_point*(grid_points_owned/biglen)))
@@ -996,15 +1017,16 @@ grid_volume grid_volume::split_by_effort(int n, int which, int Ngv, const grid_v
     return split_at_fraction(true, split_point).split_by_effort(n-num_low,which-num_low, Ngv,v,effort);
 }
 
-grid_volume grid_volume::split_at_fraction(bool want_high, int numer) const {
-  int bestd = -1, bestlen = 1;
+grid_volume grid_volume::split_at_fraction(bool want_high, meep::integer numer) const {
+  meep::integer bestd = -1, bestlen = 1;
   for (int i=0;i<3;i++)
     if (num[i] > bestlen) {
       bestd = i;
       bestlen = num[i];
     }
   if (bestd == -1) {
-    for (int i=0;i<3;i++) master_printf("num[%d] = %d\n", i, num[i]);
+    for (int i=0;i<3;i++) master_printf("num[%d] = %ld\n", i,
+    		static_cast<long int>(num[i]));
     abort("Crazy weird splitting error.\n");
   }
   grid_volume retval(dim, a, 1,1,1);
@@ -1052,7 +1074,7 @@ ivec grid_volume::icenter() const {
   case D1: return io + ivec(nz()).round_up_to_even();
   case D2: return io + ivec(nx(), ny()).round_up_to_even();
   case D3: return io + ivec(nx(), ny(), nz()).round_up_to_even();
-  case Dcyl: return io + iveccyl(0, nz()).round_up_to_even();
+  case Dcyl: return io + iveccyl(static_cast<meep::integer>(0), nz()).round_up_to_even();
   }
   abort("Can't do symmetry with these dimensions.\n");
   return ivec(0); // This is never reached.
@@ -1231,9 +1253,9 @@ ivec symmetry::transform(const ivec &ov, int n) const {
   ivec out = ov;
   LOOP_OVER_DIRECTIONS(ov.dim, d) {
     const signed_direction s = transform(d,n);
-    const int sp_d  = i_symmetry_point.in_direction(d);
-    const int sp_sd = i_symmetry_point.in_direction(s.d);
-    const int delta = ov.in_direction(d) - sp_d;
+    const meep::integer sp_d  = i_symmetry_point.in_direction(d);
+    const meep::integer sp_sd = i_symmetry_point.in_direction(s.d);
+    const meep::integer delta = ov.in_direction(d) - sp_d;
     if (s.flipped) out.set_direction(s.d, sp_sd - delta);
     else out.set_direction(s.d, sp_sd + delta);
   }

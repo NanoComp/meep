@@ -80,7 +80,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     break;
   }
 
-  const int ntot = s->gv.ntot();
+  const meep::integer ntot = s->gv.ntot();
 
   if (have_f_minus_p && doing_solve_cw)
     abort("dispersive materials are not yet implemented for solve_cw");
@@ -107,7 +107,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     for (src_vol *sv = sources[ft2]; sv; sv = sv->next) {  
       if (sv->t->is_integrated && f[sv->c][0] && ft == type(sv->c)) {
 	component c = field_type_component(ft2, sv->c);
-	for (int j = 0; j < sv->npts; ++j) { 
+	for (meep::integer j = 0; j < sv->npts; ++j) {
 	  const complex<double> A = sv->dipole(j);
 	  DOCMP {
 	    f_minus_p[c][cmp][sv->index[j]] -= 
@@ -129,13 +129,13 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     if (type(ec) != ft) abort("bug in FOR_FT_COMPONENTS");
     component dc = field_type_component(ft2, ec);
     const direction d_ec = component_direction(ec);
-    const int s_ec = gv.stride(d_ec) * (ft == H_stuff ? -1 : +1);
+    const meep::integer s_ec = gv.stride(d_ec) * (ft == H_stuff ? -1 : +1);
     const direction d_1 = cycle_direction(gv.dim, d_ec, 1);
     const component dc_1 = direction_component(dc,d_1);
-    const int s_1 = gv.stride(d_1) * (ft == H_stuff ? -1 : +1);
+    const meep::integer s_1 = gv.stride(d_1) * (ft == H_stuff ? -1 : +1);
     const direction d_2 = cycle_direction(gv.dim, d_ec, 2);
     const component dc_2 = direction_component(dc,d_2);
-    const int s_2 = gv.stride(d_2) * (ft == H_stuff ? -1 : +1);
+    const meep::integer s_2 = gv.stride(d_2) * (ft == H_stuff ? -1 : +1);
 
     direction dsigw0 = d_ec;
     direction dsigw = s->sigsize[dsigw0] > 1 ? dsigw0 : NO_DIRECTION;
@@ -183,20 +183,20 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 						      || ec == Hr)) {
       component dc = field_type_component(ft2, ec);
       if (f[ec][cmp] == f[dc][cmp]) continue;
-      const int yee_idx = gv.yee_index(ec);
+      const meep::integer yee_idx = gv.yee_index(ec);
       const int d_ec = component_direction(ec);
-      const int sR = gv.stride(R), nZ = gv.num_direction(Z);
+      const meep::integer sR = gv.stride(R), nZ = gv.num_direction(Z);
       realnum *E = f[ec][cmp];
       const realnum *D = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
       const realnum *chi1inv = s->chi1inv[ec][d_ec];
       if (chi1inv)
-	for (int iZ=0; iZ<nZ; iZ++) {
-	  const int i = yee_idx + iZ - sR;
+	for (meep::integer iZ=0; iZ<nZ; iZ++) {
+	  const meep::integer i = yee_idx + iZ - sR;
 	  E[i] = chi1inv[i] * D[i];
 	}
       else
-	for (int iZ=0; iZ<nZ; iZ++) {
-	  const int i = yee_idx + iZ - sR;
+	for (meep::integer iZ=0; iZ<nZ; iZ++) {
+	  const meep::integer i = yee_idx + iZ - sR;
 	  E[i] = D[i];
 	}
     }

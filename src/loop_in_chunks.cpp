@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "config.h"
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
@@ -210,6 +211,11 @@ static ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift) {
 }
 
 static inline int iabs(int i) { return (i < 0 ? -i : i); }
+static inline long int iabs(long int i) { return (i < 0L ? -i : i); }
+
+#ifdef HAVE_LONG_LONG_INT
+static inline long long int iabs(long long int i) { return (i < 0L ? -i : i); }
+#endif
 
 /* Generic function for computing loops within the chunks, often
    integral-like things, over a grid_volume WHERE.  The job of this
@@ -289,8 +295,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     double w0, w1;
-    w0 = 1. - wherec.in_direction_min(d)*gv.a + 0.5*is.in_direction(d);
-    w1 = 1. + wherec.in_direction_max(d)*gv.a - 0.5*ie.in_direction(d);
+    w0 = 1.0 - static_cast<double>(wherec.in_direction_min(d))*gv.a
+    		+ 0.5*static_cast<double>(is.in_direction(d));
+    w1 = 1.0 + static_cast<double>(wherec.in_direction_max(d))*gv.a
+    		- 0.5*static_cast<double>(ie.in_direction(d));
     if (ie.in_direction(d) >= is.in_direction(d) + 3*2) {
       s0.set_direction(d, w0*w0 / 2);
       s1.set_direction(d, 1 - (1-w0)*(1-w0) / 2);
@@ -307,8 +315,12 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       if (snap_empty_dims) {
 	if (w0 > w1) ie.set_direction(d, is.in_direction(d));
 	else is.set_direction(d, ie.in_direction(d));
-	wherec.set_direction_min(d, is.in_direction(d) * (0.5*gv.inva));
-	wherec.set_direction_max(d, is.in_direction(d) * (0.5*gv.inva));
+	wherec.set_direction_min(d,
+			static_cast<double>(is.in_direction(d))
+			* (0.5*static_cast<double>(gv.inva)));
+	wherec.set_direction_max(d,
+			static_cast<double>(is.in_direction(d))
+			* (0.5*static_cast<double>(gv.inva)));
 	w0 = w1 = 1.0;
       }
       s0.set_direction(d, w0);
@@ -366,9 +378,13 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
       vec shift(gv.dim, 0.0);
       ivec shifti(gv.dim, 0);
       LOOP_OVER_DIRECTIONS(gv.dim, d) {
-	shift.set_direction(d, L.in_direction(d) * ishift.in_direction(d));
-	shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
-	ph *= pow(eikna[d], ishift.in_direction(d));
+	shift.set_direction(d,
+			static_cast<double>(L.in_direction(d))
+			* static_cast<double>(ishift.in_direction(d)));
+	shifti.set_direction(d,
+			static_cast<meep::integer>(iL.in_direction(d))
+			* static_cast<meep::integer>(ishift.in_direction(d)));
+	ph *= pow(eikna[d], static_cast<double>(ishift.in_direction(d)));
       }
 
       for (int i = 0; i < num_chunks; ++i) {
@@ -391,7 +407,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 	}
 
 	ivec iscS(max(is-shifti, vec2diel_ceil(vS.get_min_corner(),
-					       gv.a, one_ivec(gv.dim) * 2)));
+					       gv.a, one_ivec(gv.dim) * static_cast<meep::integer>(2))));
 	ivec iecS(min(ie-shifti, vec2diel_floor(vS.get_max_corner(),
 						gv.a, zero_ivec(gv.dim))));
 	if (iscS <= iecS) {
@@ -434,7 +450,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data,
 
 	    // swap endpoints/weights if in wrong order due to S.transform
 	    if (isc.in_direction(d) > iec.in_direction(d)) {
-	      int iswap = isc.in_direction(d);
+	      meep::integer iswap = isc.in_direction(d);
 	      isc.set_direction(d, iec.in_direction(d));
 	      iec.set_direction(d, iswap);
 	      double swap = s0c.in_direction(d);

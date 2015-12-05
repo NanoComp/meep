@@ -172,7 +172,7 @@ static geom_box gv2box(const meep::volume &v)
 /***********************************************************************/
 
 static meep::realnum *epsilon_data = NULL;
-static int epsilon_dims[3] = {0,0,0};
+static meep::integer epsilon_dims[3] = {0,0,0};
 
 static void read_epsilon_file(const char *eps_input_file)
 {
@@ -187,8 +187,10 @@ static void read_epsilon_file(const char *eps_input_file)
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims
     epsilon_data = eps_file.read(dataname, &rank, epsilon_dims, 3);
-    master_printf("read in %dx%dx%d epsilon-input-file \"%s\"\n",
-		  epsilon_dims[0], epsilon_dims[1], epsilon_dims[2],
+    master_printf("read in %ldx%ldx%ld epsilon-input-file \"%s\"\n",
+		  static_cast<long int>(epsilon_dims[0]),
+		  static_cast<long int>(epsilon_dims[1]),
+		  static_cast<long int>(epsilon_dims[2]),
 		  eps_input_file);
   }
 }
@@ -198,9 +200,9 @@ static void read_epsilon_file(const char *eps_input_file)
    ... anything outside [0,1] is *mirror* reflected into [0,1] */
 static meep::realnum linear_interpolate(
 		     meep::realnum rx, meep::realnum ry, meep::realnum rz,
-		     meep::realnum *data, int nx, int ny, int nz, int stride)
+		     meep::realnum *data, meep::integer nx, meep::integer ny, meep::integer nz, meep::integer stride)
 {
-     int x, y, z, x2, y2, z2;
+     meep::integer x, y, z, x2, y2, z2;
      meep::realnum dx, dy, dz;
 
      /* mirror boundary conditions for r just beyond the boundary */
@@ -209,15 +211,15 @@ static meep::realnum linear_interpolate(
      if (rz < 0.0) rz = -rz; else if (rz > 1.0) rz = 1.0 - rz;
 
      /* get the point corresponding to r in the epsilon array grid: */
-     x = rx * nx; if (x == nx) --x;
-     y = ry * ny; if (y == ny) --y;
-     z = rz * nz; if (z == nz) --z;
+     x = static_cast<meep::integer>(rx * static_cast<double>(nx)); if (x == nx) --x;
+     y = static_cast<meep::integer>(ry * static_cast<double>(ny)); if (y == ny) --y;
+     z = static_cast<meep::integer>(rz * static_cast<double>(nz)); if (z == nz) --z;
 
      /* get the difference between (x,y,z) and the actual point
         ... we shift by 0.5 to center the data points in the pixels */
-     dx = rx * nx - x - 0.5;
-     dy = ry * ny - y - 0.5;
-     dz = rz * nz - z - 0.5;
+     dx = rx * static_cast<double>(nx) - static_cast<double>(x) - 0.5;
+     dy = ry * static_cast<double>(ny) - static_cast<double>(y) - 0.5;
+     dz = rz * static_cast<double>(nz) - static_cast<double>(z) - 0.5;
 
      /* get the other closest point in the grid, with mirror boundaries: */
      x2 = (dx >= 0.0 ? x + 1 : x - 1);

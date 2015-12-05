@@ -80,7 +80,7 @@ static void array_to_fields(const complex<realnum> *x, fields &f)
 }
 
 typedef struct {
-  int n;
+  meep::integer n;
   fields *f;
   complex<double> iomega;
   int iters;
@@ -94,11 +94,11 @@ static void fieldop(const realnum *xr, realnum *yr, void *data_)
   array_to_fields(x, *data->f);
   data->f->step();
   fields_to_array(*data->f, y);
-  int n = data->n;
+  meep::integer n = data->n;
   realnum dt_inv = 1.0 / data->f->dt;
   complex<realnum> iomega = complex<realnum>(real(data->iomega),
 					     imag(data->iomega));
-  for (int i = 0; i < n; ++i) y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
+  for (meep::integer i = 0; i < n; ++i) y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
   data->iters++;
 }
 
@@ -122,7 +122,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 
   step(); // step once to make sure everything is allocated
 
-  int N = 0; // size of linear system (on this processor, at least)
+  meep::integer N = 0; // size of linear system (on this processor, at least)
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
       FOR_COMPONENTS(c)
@@ -141,7 +141,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 	}
     }
 
-  int nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
+  meep::integer nwork = bicgstabL(L, N, 0, 0, 0, 0, tol, &maxiters, 0, true);
   realnum *work = new realnum[nwork + 2*N];
   complex<realnum> *x = reinterpret_cast<complex<realnum>*>(work + nwork);
   complex<realnum> *b = reinterpret_cast<complex<realnum>*>(work + nwork + N);
@@ -160,10 +160,10 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
   update_eh(E_stuff);
   fields_to_array(*this, b);
   double mdt_inv = -1.0 / dt;
-  for (int i = 0; i < N/2; ++i) b[i] *= mdt_inv;
+  for (meep::integer i = 0; i < N/2; ++i) b[i] *= mdt_inv;
   {
     double bmax = 0;
-    for (int i = 0; i < N/2; ++i) {
+    for (meep::integer i = 0; i < N/2; ++i) {
       double babs = abs(b[i]);
       if (babs > bmax) bmax = babs;
     }
@@ -177,7 +177,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
 		 * (1.0 / dt));
   data.iters = 0;
 
-  int ierr = bicgstabL(L, N, reinterpret_cast<realnum*>(x),
+  meep::integer ierr = bicgstabL(L, N, reinterpret_cast<realnum*>(x),
 		       fieldop, &data, reinterpret_cast<realnum*>(b),
 		       tol, &maxiters, work, quiet);
 
@@ -185,7 +185,8 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency,
     master_printf("Finished solve_cw after %d steps and %d CG iters.\n", 
 		  data.iters, maxiters);
     if (ierr)
-      master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
+      master_printf(" -- CONVERGENCE FAILURE (%ld) in solve_cw!\n",
+    		  static_cast<long int>(ierr));
   }
 
   array_to_fields(x, *this);

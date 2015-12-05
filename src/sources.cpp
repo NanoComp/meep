@@ -156,7 +156,7 @@ bool custom_src_time::is_equal(const src_time &t) const
 
 /*********************************************************************/
 
-src_vol::src_vol(component cc, src_time *st, int n, int *ind, complex<double> *amps) {
+src_vol::src_vol(component cc, src_time *st, meep::integer n, meep::integer *ind, complex<double> *amps) {
   c = cc;
   if (is_D(c)) c = direction_component(Ex, component_direction(c));
   if (is_B(c)) c = direction_component(Hx, component_direction(c));
@@ -170,9 +170,9 @@ src_vol::src_vol(const src_vol &sv) {
   c = sv.c;
   t = sv.t;
   npts = sv.npts;
-  index = new int[npts];
+  index = new meep::integer[npts];
   A = new complex<double>[npts];
-  for (int j=0; j<npts; j++) {
+  for (meep::integer j=0; j<npts; j++) {
     index[j] = sv.index[j];
     A[j] = sv.A[j];
   }
@@ -189,7 +189,7 @@ src_vol *src_vol::add_to(src_vol *others) {
         abort("Cannot add grid_volume sources with different number of points\n");
       /* Compare all of the indices...if this ever becomes too slow,
 	 we can just compare the first and last indices. */
-      for (int j=0; j<npts; j++) {
+      for (meep::integer j=0; j<npts; j++) {
         if (others->index[j] != index[j])
           abort("Different indices\n");
         others->A[j] += A[j];
@@ -275,10 +275,10 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   (void) dV0; (void) dV1; // grid_volume weighting is included in data->amp
   (void) ichunk;
 
-  int npts = 1;
+  meep::integer npts = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d)
     npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
-  int *index_array = new int[npts];
+  meep::integer *index_array = new meep::integer[npts];
   complex<double> *amps_array = new complex<double>[npts];
 
   complex<double> amp = data->amp * conj(shift_phase);
@@ -305,7 +305,9 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   }
 
   if (idx_vol != npts)
-    abort("add_volume_source: computed wrong npts (%d vs. %d)", npts, idx_vol);
+    abort("add_volume_source: computed wrong npts (%ld vs. %ld)",
+    		static_cast<long int>(npts),
+    		static_cast<long int>(idx_vol));
 
   src_vol *tmp = new src_vol(c, data->src, npts, index_array, amps_array);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;

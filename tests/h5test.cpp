@@ -60,11 +60,14 @@ symmetry make_rotate4z(const grid_volume &gv)
 typedef symmetry (*symfunc)(const grid_volume &);
 
 const double tol = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-8;
-double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
+double compare(double a, double b, const char *nam, meep::integer i0,meep::integer i1,meep::integer i2) {
   if (fabs(a-b) > tol*tol + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a-b));
     master_printf("This gives a fractional error of %g\n", fabs(a-b)/fabs(b));
-    abort("Error in %s at (%d,%d,%d)\n", nam, i0,i1,i2);
+    abort("Error in %s at (%ld,%ld,%ld)\n", nam,
+    		static_cast<long int>(i0),
+			static_cast<long int>(i1),
+			static_cast<long int>(i2));
   }
   return fabs(a-b);
 }
@@ -118,8 +121,10 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     iloc0.set_direction(d, 1+2*int(floor(loc0.in_direction(d)*a-.5)));
     if (file_gv.in_direction(d) == 0.0 &&
-	1. - file_gv.in_direction_min(d)*a + 0.5*iloc0.in_direction(d)
-	<= 1. + file_gv.in_direction_max(d)*a - 0.5*(iloc0.in_direction(d)+2))
+	1. - file_gv.in_direction_min(d)*a
+		+ 0.5*static_cast<double>(iloc0.in_direction(d))
+	<= 1. + file_gv.in_direction_max(d)*a
+		- 0.5*static_cast<double>(iloc0.in_direction(d)+2))
       iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
   loc0 = gv[iloc0];
@@ -127,7 +132,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
-    int rank, dims[2] = {1, 1};
+    int rank;
+    meep::integer dims[2] = {1, 1};
 
     char dataname[256];
     snprintf(dataname, 256, "%s%s", component_name(file_c),
@@ -150,7 +156,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
       for (int i1 = 0; i1 < dims[1]; ++i1) {
 	loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
 	loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
-	int idx = i0 * dims[1] + i1;
+	meep::integer idx = i0 * dims[1] + i1;
 
 	/* Ugh, for rotational symmetries (which mix up components etc.),
 	   we can't guarantee that a component is *exactly* the
@@ -235,8 +241,10 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     iloc0.set_direction(d, 1+2*int(floor(loc0.in_direction(d)*a-.5)));
     if (file_gv.in_direction(d) == 0.0 &&
-	1. - file_gv.in_direction_min(d)*a + 0.5*iloc0.in_direction(d)
-	<= 1. + file_gv.in_direction_max(d)*a - 0.5*(iloc0.in_direction(d)+2))
+	1. - file_gv.in_direction_min(d)*a
+		+ 0.5*static_cast<double>(iloc0.in_direction(d))
+	<= 1. + file_gv.in_direction_max(d)*a
+		- 0.5*static_cast<double>(iloc0.in_direction(d)+2))
       iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
   loc0 = gv[iloc0];
@@ -244,7 +252,8 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   double data_min = meep::infinity, data_max = -meep::infinity;
   double err_max = 0;
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
-    int rank, dims[3] = {1, 1, 1};
+    int rank;
+    meep::integer dims[3] = {1, 1, 1};
 
     char dataname[256];
     snprintf(dataname, 256, "%s%s", component_name(file_c),
@@ -258,13 +267,13 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	 abort("incorrect rank (%d instead of %d) in %s:%s\n",
 	       rank, expected_rank, name, dataname);
     vec loc(loc0.dim);
-    for (int i0 = 0; i0 < dims[0]; ++i0) {
-      for (int i1 = 0; i1 < dims[1]; ++i1) {
-	for (int i2 = 0; i2 < dims[2]; ++i2) {
-	  loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
-	  loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
-	  loc.set_direction(Z, loc0.in_direction(Z) + i2 * gv.inva);
-	  int idx = (i0 * dims[1] + i1) * dims[2] + i2;
+    for (meep::integer i0 = 0; i0 < dims[0]; ++i0) {
+      for (meep::integer i1 = 0; i1 < dims[1]; ++i1) {
+	for (meep::integer i2 = 0; i2 < dims[2]; ++i2) {
+	  loc.set_direction(X, loc0.in_direction(X) + static_cast<double>(i0) * gv.inva);
+	  loc.set_direction(Y, loc0.in_direction(Y) + static_cast<double>(i1) * gv.inva);
+	  loc.set_direction(Z, loc0.in_direction(Z) + static_cast<double>(i2) * gv.inva);
+	  meep::integer idx = (i0 * dims[1] + i1) * dims[2] + i2;
 	  
 	  /* Ugh, for rotational symmetries (which mix up components etc.),
 	     we can't guarantee that a component is *exactly* the
@@ -331,8 +340,8 @@ bool check_2d_monitor(double eps(const vec &),
   ivec iloc0(gv.dim);
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     iloc0.set_direction(d, 1+2*int(floor(pt.in_direction(d)*a-.5)));
-    if (1. - pt.in_direction(d)*a + 0.5*iloc0.in_direction(d)
-	<= 1. + pt.in_direction(d)*a - 0.5*(iloc0.in_direction(d)+2))
+    if (1. - pt.in_direction(d)*a + 0.5*static_cast<double>(iloc0.in_direction(d))
+	<= 1. + pt.in_direction(d)*a - 0.5*static_cast<double>(iloc0.in_direction(d)+2))
       iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
   }
   vec pt0(gv[iloc0]);
@@ -358,7 +367,8 @@ bool check_2d_monitor(double eps(const vec &),
   double err_max = 0;
 
   for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
-    int rank, dims[1] = {1};
+    int rank;
+    meep::integer dims[1] = {1};
 
     char dataname[256];
     snprintf(dataname, 256, "%s%s", component_name(file_c),

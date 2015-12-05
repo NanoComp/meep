@@ -36,7 +36,7 @@ typedef struct {
   ivec min_corner, max_corner;
   int num_chunks;
   realnum *buf;
-  int bufsz;
+  meep::integer bufsz;
   int rank;
   direction ds[3];
 
@@ -48,7 +48,7 @@ typedef struct {
   component *cS;
   complex<double> *ph;
   complex<double> *fields;
-  int *offsets;
+  meep::integer *offsets;
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
@@ -77,7 +77,7 @@ static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   data->min_corner = min(data->min_corner, min(isS, ieS));
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
-  int bufsz = 1;
+  meep::integer bufsz = 1;
   LOOP_OVER_DIRECTIONS(fc->gv.dim, d)
     bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   data->bufsz = max(data->bufsz, bufsz);
@@ -98,8 +98,8 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   //-----------------------------------------------------------------------//
   // Find output chunk dimensions and strides, etc.
 
-  int start[3]={0,0,0}, count[3]={1,1,1};
-  int offset[3]={0,0,0}, stride[3]={1,1,1};
+  meep::integer start[3]={0,0,0}, count[3]={1,1,1};
+  meep::integer offset[3]={0,0,0}, stride[3]={1,1,1};
 
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
@@ -116,14 +116,14 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   // compute the size of the chunk to output, and its strides etc.
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
-    int isd = isS.in_direction(d), ied = ieS.in_direction(d);
+    meep::integer isd = isS.in_direction(d), ied = ieS.in_direction(d);
     start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
-    int j = permute.in_direction(d);
+    meep::integer j = permute.in_direction(d);
     for (int k = i + 1; k < data->rank; ++k) stride[j] *= count[k];
     offset[j] *= stride[j];
     if (offset[j]) stride[j] *= -1;
@@ -133,15 +133,15 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   // Compute the function to output, exactly as in fields::integrate,
   // except that here we store its values in a buffer instead of integrating.
 
-  int *off = data->offsets;
+  meep::integer *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
-  int ieos[6];
+  meep::integer ieos[6];
   const component *imcs = data->invmu_cs;
   const direction *imds = data->invmu_ds;
-  int imos[6];
+  meep::integer imos[6];
 
   for (int i = 0; i < data->num_fields; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -198,7 +198,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
     }
 
     complex<double> fun = data->fun(fields, loc, data->fun_data_);
-    int idx2 = ((((offset[0] + offset[1] + offset[2])
+    meep::integer idx2 = ((((offset[0] + offset[1] + offset[2])
 		  + loop_i1 * stride[0]) 
 		 + loop_i2 * stride[1]) + loop_i3 * stride[2]);
     data->buf[idx2] = data->reim ? imag(fun) : real(fun);
@@ -235,10 +235,11 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   if (data.num_chunks == 0 || !(data.min_corner <= data.max_corner))
     return; // no data to write;
 
-  int rank = 0, dims[3];
+  int rank = 0;
+  meep::integer dims[3];
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in output_hdf5");
-    int n = (data.max_corner.in_direction(d)
+    meep::integer n = (data.max_corner.in_direction(d)
 	     - data.min_corner.in_direction(d)) / 2 + 1;
     if (n > 1) {
       data.ds[rank] = d;
@@ -286,7 +287,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
       ++data.ninvmu;
     }
   
-  data.offsets = new int[2 * num_fields];
+  data.offsets = new meep::integer[2 * num_fields];
   for (int i = 0; i < 2 * num_fields; ++i)
     data.offsets[i] = 0;
   
@@ -323,7 +324,7 @@ void fields::output_hdf5(const char *dataname,
 		0, where, append_data, single_precision);
   }
   else {
-    int len = strlen(dataname) + 5;
+    meep::integer len = strlen(dataname) + 5;
     char *dataname2 = new char[len];
     snprintf(dataname2, len, "%s%s", dataname, ".r");
     output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 

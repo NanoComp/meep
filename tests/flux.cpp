@@ -213,7 +213,7 @@ int flux_2d(const double xmax, const double ymax,
     fluxL += f.dt * (left->flux() - right->flux()
 		     + bottom->flux() - top->flux());
   }
-  double flux = fluxL;
+  double flux = static_cast<double>(fluxL);
   double del_energy = f.field_energy_in_box(box) - init_energy;
   master_printf("Final energy is %g\n", f.field_energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
@@ -284,7 +284,7 @@ int flux_cyl(const double rmax, const double zmax,
     fluxL += f.dt * (left->flux() - right->flux()
 		      + bottom->flux() - top->flux());
   }
-  double flux = fluxL;
+  double flux = static_cast<double>(fluxL);
   double del_energy = f.field_energy_in_box(box) - init_energy;
   master_printf("Final energy is %g\n", f.field_energy_in_box(box));
   master_printf("  delta E: %g\n  net flux: %g\n  ratio: %g\n",
