@@ -1,5 +1,5 @@
 // -*- C++ -*-
-/* Copyright (C) 2005-2014 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -918,6 +918,14 @@ class volume_list {
 public:
   volume_list(const volume &v, int c, std::complex<double> weight = 1.0, volume_list *next = 0) : v(v), c(c), weight(weight), next(next) {}
   ~volume_list() { delete next; }
+  volume_list(const volume_list *vl) : v(vl->v), c(vl->c), weight(vl->weight), next(0) {
+      volume_list *p = vl->next, *q = this;
+      while (p) {
+          q->next = new volume_list(*p);
+          q = q->next;
+          p = p->next;
+      }
+  }
   
   volume v;
   int c; // component or derived component associated with v (e.g. for flux)

@@ -34,7 +34,10 @@ void ctl_export_hook(void)
 /**************************************************************************/
 
 ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, 
-				double fmin, double fmax, int maxbands)
+				double fmin, double fmax, int maxbands,
+                                double spectral_density, double Q_thresh,
+                                double rel_err_thresh, double err_thresh,
+                                double rel_amp_thresh, double amp_thresh)
 {
   complex<double> *amp = new complex<double>[maxbands];
   double *freq_re = new double[maxbands];
@@ -42,7 +45,9 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
   double *freq_err = new double[maxbands];
   maxbands = do_harminv(reinterpret_cast<complex<double>*>(vals.items),
 			vals.num_items, dt, fmin, fmax, maxbands,
-			amp, freq_re, freq_im, freq_err);
+			amp, freq_re, freq_im, freq_err,
+                        spectral_density, Q_thresh,
+                        rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
   ctlio::cvector3_list res;
   res.num_items = maxbands;
   res.items = new cvector3[maxbands];
@@ -115,6 +120,14 @@ ctlio::cnumber_list dft_ldos_J(dft_ldos *f)
   ctlio::cnumber_list res;
   res.num_items = f->Nomega;
   res.items = (cnumber *) f->J();
+  return res;
+}
+
+ctlio::cnumber_list dft_near2far_farfield(dft_near2far *f, const vec &x)
+{
+  ctlio::cnumber_list res;
+  res.num_items = f->Nfreq * 6;
+  res.items = (cnumber *) f->farfield(x);
   return res;
 }
 

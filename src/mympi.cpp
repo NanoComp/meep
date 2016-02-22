@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2014 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -293,6 +293,14 @@ void sum_to_all(const double *in, double *out, int size) {
 #endif
 }
 
+void sum_to_master(const double *in, double *out, int size) {
+#ifdef HAVE_MPI
+  MPI_Reduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,0,mycomm);
+#else
+  memcpy(out, in, sizeof(double) * size);
+#endif
+}
+
 void sum_to_all(const float *in, double *out, int size) {
   double *in2 = new double[size];
   for (int i = 0; i < size; ++i) in2[i] = in[i];
@@ -306,6 +314,10 @@ void sum_to_all(const complex<double> *in, complex<double> *out, int size) {
 
 void sum_to_all(const complex<float> *in, complex<double> *out, int size) {
   sum_to_all((const float*) in, (double*) out, 2*size);
+}
+
+void sum_to_master(const complex<double> *in, complex<double> *out, int size) {
+  sum_to_master((const double*) in, (double*) out, 2*size);
 }
 
 long double sum_to_all(long double in) {

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2014 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ static void meep_mpb_eps(symmetric_matrix *eps,
   const double *s = eps_data->s;
   const double *o = eps_data->o;
   vec p(eps_data->dim == D3 ?
-	vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[1] + r[1] * s[1]) :
+	vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1], o[2] + r[2] * s[2]) :
 	(eps_data->dim == D2 ?
 	 vec(o[0] + r[0] * s[0], o[1] + r[1] * s[1]) :
 	 /* D1 */ vec(o[2] + r[2] * s[2])));
@@ -260,6 +260,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 
   do {
     eigensolver(H, eigvals, maxwell_operator, (void *) mdata,
+#if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 6)
+                NULL, NULL, /* eventually, we can support mu here */
+#endif
 		maxwell_preconditioner2, (void *) mdata,
 		evectconstraint_chain_func,
 		(void *) constraints,

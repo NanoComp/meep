@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2014 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -845,6 +845,7 @@ public:
 	    std::complex<double> extra_weight_,
 	    component c_,
 	    bool use_centered_grid,
+            ivec shift_, const symmetry &S_, int sn_, int vc,
 	    const void *data_);
   ~dft_chunk();
   
@@ -875,7 +876,6 @@ public:
      it is used in computations involving dft[...], it needs to be public. */
      std::complex<double> extra_weight;
 
-private:
   // parameters passed from field_integrate:
   fields_chunk *fc;
   ivec is, ie;
@@ -883,11 +883,15 @@ private:
   double dV0, dV1;
   bool sqrt_dV_and_interp_weights;
   std::complex<double> scale; // scale factor * phase from shift and symmetry
+  ivec shift;
+  symmetry S; int sn;
 
   // cache of exp(iwt) * scale, of length Nomega
   std::complex<realnum> *dft_phase;
 
   int avg1, avg2; // index offsets for average to get epsilon grid
+
+  int vc; // component descriptor from the original volume
 };
 
 void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
@@ -955,6 +959,48 @@ public:
   double freq_min, dfreq;
   int Nfreq;
   dft_chunk *offdiag1, *offdiag2, *diag;
+};
+
+// near2far.cpp (normally created with fields::add_dft_near2far)
+class dft_near2far {
+public:
+  /* fourier tranforms of tangential E and H field components in a
+     medium with the given scalar eps and mu */
+  dft_near2far(dft_chunk *F,
+               double fmin, double fmax, int Nf, double eps, double mu);
+  dft_near2far(const dft_near2far &f);
+
+  /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
+  std::complex<double> *farfield(const vec &x);
+
+  /* like farfield, but requires F to be Nfreq*6 preallocated array, and
+     does *not* perform the reduction over processes...an MPI allreduce
+     summation by the caller is required to get the final result ... used
+     by other output routine to efficiently get far field on a grid of pts */
+  void farfield_lowlevel(std::complex<double> *F, const vec &x);
+
+  /* output far fields on a grid to an HDF5 file */
+  void save_farfields(const char *fname, const char *prefix,
+                      const volume &where, double resolution);
+
+  void save_hdf5(h5file *file, const char *dprefix = 0);
+  void load_hdf5(h5file *file, const char *dprefix = 0);
+
+  void operator-=(const dft_near2far &fl);
+
+  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0,
+		 const char *prefix = 0);
+  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0,
+		 const char *prefix = 0);
+
+  void scale_dfts(std::complex<double> scale);
+
+  void remove();
+
+  double freq_min, dfreq;
+  int Nfreq;
+  dft_chunk *F;
+  double eps, mu;
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1366,7 +1412,7 @@ class fields {
 		     std::complex<double> weight = 1.0, dft_chunk *chunk_next = 0,
 		     bool sqrt_dV_and_interp_weights = false,
 		     std::complex<double> extra_weight = 1.0,
-		     bool use_centered_grid = true);
+		     bool use_centered_grid = true, int vc = 0);
   dft_chunk *add_dft_pt(component c, const vec &where,
 			double freq_min, double freq_max, int Nfreq);
   dft_chunk *add_dft(const volume_list *where,
@@ -1386,6 +1432,9 @@ class fields {
   dft_force add_dft_force(const volume_list *where,
 			  double freq_min, double freq_max, int Nfreq);
 
+  // near2far.cpp
+  dft_near2far add_dft_near2far(const volume_list *where,
+                                double freq_min, double freq_max, int Nfreq);
   // monitor.cpp
   double get_chi1inv(component, direction, const vec &loc) const;
   double get_inveps(component c, direction d, const vec &loc) const {
@@ -1587,6 +1636,16 @@ int random_int(int a, int b); // uniform random in [a,b)
 
 // Bessel function (in initialize.cpp)
 double BesselJ(int m, double kr);
+
+// analytical Green's functions (in near2far.cpp); upon return,
+// EH[0..5] are set to the Ex,Ey,Ez,Hx,Hy,Hz field components at x
+// from a c0 source of amplitude f0 at x0.
+void green2d(std::complex<double> *EH, const vec &x,
+             double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
+void green3d(std::complex<double> *EH, const vec &x,
+             double freq, double eps, double mu,
+             const vec &x0, component c0, std::complex<double> f0);
 
 } /* namespace meep */
 
