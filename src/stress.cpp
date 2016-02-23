@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2014 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -134,10 +134,6 @@ void dft_force::scale_dfts(complex<double> scale) {
 dft_force fields::add_dft_force(const volume_list *where_,
 				double freq_min, double freq_max, int Nfreq){
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
-  direction field_d[3];
-
-  for (int p = 0; p < 3; ++p)
-    field_d[p] = gv.yucky_direction(p);
 
   volume_list *where = S.reduce(where_);
   volume_list *where_save = where;

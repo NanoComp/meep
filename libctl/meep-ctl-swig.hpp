@@ -24,13 +24,17 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 				double global_B_conductivity_diag_);
 
 ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, 
-				double fmin, double fmax, int maxbands);
+				double fmin, double fmax, int maxbands,
+                                double spectral_density, double Q_thresh,
+                                double rel_err_thresh, double err_thresh,
+                                double rel_amp_thresh, double amp_thresh);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
 ctlio::number_list dft_force_force(meep::dft_force *f);
 ctlio::number_list dft_ldos_ldos(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_F(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_J(meep::dft_ldos *f);
+ctlio::cnumber_list dft_near2far_farfield(meep::dft_near2far *f, const meep::vec &x);
 
 ctlio::cnumber_list make_casimir_g(double T, double dt, double sigma, meep::field_type ft,
 				   std::complex<double> (*eps_func)(std::complex<double> omega) = 0,

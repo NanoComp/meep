@@ -1,12 +1,12 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.2.2, meep@ab-initio.mit.edu)
+AC_INIT(meep, 1.3, meep@ab-initio.mit.edu)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="7:2:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="8:0:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign check-news color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
@@ -117,6 +117,7 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 
 ###########################################################################
 
+AC_PROG_F77
 AC_F77_WRAPPERS
 if test "x$with_lapack" != xno -o "x$with_blas" != xno; then
    ACX_BLAS
@@ -359,7 +360,7 @@ AC_CHECK_HEADER(ctl.h, [CTL_H_CPPFLAG=" "], [
   AC_MSG_CHECKING([for alternate ctl.h location])
   for ctl_h_path in /usr/include/ctl /usr/local/include/ctl; do
      CPPFLAGS="$save_CPPFLAGS -I$ctl_h_path"
-     AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <ctl.h>]],[]), [CTL_H_CPPFLAG=-I$ctl_h_path; break])
+     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctl.h>]],[])], [CTL_H_CPPFLAG=-I$ctl_h_path; break])
   done
   AC_MSG_RESULT([$CTL_H_CPPFLAG])
   CPPFLAGS=$save_CPPFLAGS])
@@ -368,6 +369,8 @@ if test "x$CTL_H_CPPFLAG" = "x"; then
 fi
 AC_SUBST(CTL_H_CPPFLAG)
 
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="$CPPFLAGS $CTL_H_CPPFLAG"
 # Check libctl version >= LIBCTL_MAJOR.LIBCTL_MINOR.LIBCTL_BUGFIX
 LIBCTL_MAJOR=3; LIBCTL_MINOR=2; LIBCTL_BUGFIX=0
 AC_MSG_CHECKING([whether libctl version is at least ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX}])
@@ -377,6 +380,7 @@ AC_EGREP_CPP(yes, [[
   yes
 #endif
 ]], [AC_MSG_RESULT(ok)], [AC_MSG_ERROR([libctl version ${LIBCTL_MAJOR}.${LIBCTL_MINOR}.${LIBCTL_BUGFIX} or later is required])])
+CPPFLAGS=$save_CPPFLAGS
 
 # Check for libctl_quiet feature (in libctl 3.1.1 or later):
 AC_MSG_CHECKING([for libctl_quiet feature])
