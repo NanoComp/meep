@@ -915,6 +915,37 @@ public:
   component cE, cH;
 };
 
+// dft.cpp (normally created with fields::add_dft_energy)
+class dft_energy {
+public:
+  dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
+	     double fmin, double fmax, int Nf);
+  dft_energy(const dft_energy &f);
+
+  double *electric();
+  double *magnetic();
+  double *total();
+
+  void save_hdf5(h5file *file, const char *dprefix = 0);
+  void load_hdf5(h5file *file, const char *dprefix = 0);
+
+  void operator-=(const dft_energy &fl) { if (E && fl.E) *E -= *fl.E; if (H && fl.H) *H -= *fl.H; 
+                                          if (D && fl.D) *D -= *fl.D; if (B && fl.B) *B -= *fl.B; }
+
+  void save_hdf5(fields &f, const char *fname, const char *dprefix = 0,
+		 const char *prefix = 0);
+  void load_hdf5(fields &f, const char *fname, const char *dprefix = 0,
+		 const char *prefix = 0);
+
+  void scale_dfts(std::complex<double> scale);
+
+  void remove();
+
+  double freq_min, dfreq;
+  int Nfreq;
+  dft_chunk *E, *H, *D, *B;
+};
+
 // stress.cpp (normally created with fields::add_dft_force)
 class dft_force {
 public:
@@ -1412,6 +1443,9 @@ class fields {
 			      double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
+
+  dft_energy add_dft_energy(const volume_list *where,
+			  double freq_min, double freq_max, int Nfreq);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,

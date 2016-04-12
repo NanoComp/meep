@@ -578,6 +578,74 @@
   (meep-dft-flux-scale-dfts flux -1.0))
 
 ; ****************************************************************
+; Energy spectra
+
+(define-class energy-region no-parent
+  (define-property center no-default 'vector3)
+  (define-property size (vector3 0 0 0) 'vector3)
+  (define-property direction 0 'integer)
+  (define-property weight 1.0 'cnumber))
+
+(define (fields-add-energy fields fcen df nfreq . energys)
+  (fields-add-fluxish-stuff meep-fields-add-dft-energy 
+			    fields fcen df nfreq energys))
+
+(define (add-energy fcen df nfreq . energys)
+  (if (null? fields) (init-fields))
+  (apply fields-add-energy (append (list fields fcen df nfreq) energys)))
+
+(define (scale-energy-fields s f)
+  (meep-dft-energy-scale-dfts f s))
+
+(define (get-energy-freqs f)
+  (arith-sequence
+   (meep-dft-energy-freq-min-get f)
+   (meep-dft-energy-dfreq-get f)
+   (meep-dft-energy-Nfreq-get f)))
+
+(define (get-electric f)
+  (dft-energy-electric f))
+
+(define (get-magnetic f)
+  (dft-energy-magnetic f))
+
+(define (get-total f)
+  (dft-energy-total f))
+
+(define (display-electric-energy . energys)
+  (if (not (null? energys))
+      (apply display-csv
+	     (append (list "electric-energy"
+			   (get-energy-freqs (car energys)))
+		     (map get-electric energys)))))
+
+(define (display-magnetic-energy . energys)
+  (if (not (null? energys))
+      (apply display-csv
+	     (append (list "magnetic-energy"
+			   (get-energy-freqs (car energys)))
+		     (map get-magnetic energys)))))
+
+(define (display-total-energy . energys)
+  (if (not (null? energys))
+      (apply display-csv
+	     (append (list "total-energy"
+			   (get-energy-freqs (car energys)))
+		     (map get-total energys)))))
+
+(define (load-energy fname energy)
+  (if (null? fields) (init-fields))
+  (meep-dft-energy-load-hdf5 energy fields fname "" (get-filename-prefix)))
+
+(define (save-energy fname energy)
+  (if (null? fields) (init-fields))
+  (meep-dft-energy-save-hdf5 energy fields fname "" (get-filename-prefix)))
+
+(define (load-minus-energy fname energy)
+  (load-energy fname energy)
+  (meep-dft-energy-scale-dfts energy -1.0))
+
+; ****************************************************************
 ; Force spectra (from stress tensor) - very similar interface to flux spectra
 
 (define-class force-region no-parent
