@@ -492,10 +492,8 @@ double *dft_energy::total() {
   double *Fm = magnetic();
   double *F = new double[Nfreq];
   for (int i = 0; i < Nfreq; ++i) F[i] = Fe[i]+Fm[i];
-  double *Fsum = new double[Nfreq];
-  sum_to_all(F, Fsum, Nfreq);
-  delete[] F;
-  return Fsum;
+  delete[] Fe, Fm;
+  return F;
 }
 
 dft_energy fields::add_dft_energy(const volume_list *where_,
