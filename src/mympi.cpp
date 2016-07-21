@@ -269,6 +269,14 @@ ivec max_to_all(const ivec &pt) {
   return ptout;
 }
 
+float sum_to_master(float in) {
+  float out = in;
+#ifdef HAVE_MPI
+  MPI_Reduce(&in,&out,1,MPI_FLOAT,MPI_SUM,0,mycomm);
+#endif
+  return out;
+}
+
 double sum_to_master(double in) {
   double out = in;
 #ifdef HAVE_MPI
@@ -293,6 +301,14 @@ void sum_to_all(const double *in, double *out, int size) {
 #endif
 }
 
+void sum_to_master(const float *in, float *out, int size) {
+#ifdef HAVE_MPI
+  MPI_Reduce((void*) in, out, size, MPI_FLOAT,MPI_SUM,0,mycomm);
+#else
+  memcpy(out, in, sizeof(float) * size);
+#endif
+}
+
 void sum_to_master(const double *in, double *out, int size) {
 #ifdef HAVE_MPI
   MPI_Reduce((void*) in, out, size, MPI_DOUBLE,MPI_SUM,0,mycomm);
@@ -300,6 +316,7 @@ void sum_to_master(const double *in, double *out, int size) {
   memcpy(out, in, sizeof(double) * size);
 #endif
 }
+
 
 void sum_to_all(const float *in, double *out, int size) {
   double *in2 = new double[size];
@@ -314,6 +331,10 @@ void sum_to_all(const complex<double> *in, complex<double> *out, int size) {
 
 void sum_to_all(const complex<float> *in, complex<double> *out, int size) {
   sum_to_all((const float*) in, (double*) out, 2*size);
+}
+
+void sum_to_master(const complex<float> *in, complex<float> *out, int size) {
+  sum_to_master((const float*) in, (float*) out, 2*size);
 }
 
 void sum_to_master(const complex<double> *in, complex<double> *out, int size) {
