@@ -119,19 +119,20 @@
 ; ****************************************************************
 ; Multilevel-atom nonlinear susceptibilities
 
-;(define-class transition no-parent
-;  (define-property from-level no-default 'integer non-negative?)
-;  (define-property to-level no-default 'integer non-negative?)
-;  (define-property transition-rate 0 'number) ; nonradiative rate (0 if none)
-;  (define-property frequency 0 'number) ; radiative frequency (0 if none)
-;  (define-property sigma-diag (vector3 1 1 1) 'vector3) ; per-transition sigma
-;  (define-property gamma 0 'number)) ; optical damping rate
+(define-class transition no-parent
+ (define-property from-level no-default 'integer non-negative?)
+ (define-property to-level no-default 'integer non-negative?)
+ (define-property transition-rate 0 'number) ; nonradiative rate (0 if none)
+ (define-property frequency 0 'number) ; radiative frequency (0 if none)
+ (define-property sigma-diag (vector3 1 1 1) 'vector3) ; per-transition sigma
+ (define-property gamma 0 'number) ; optical damping rate
+ (define-property pumping-rate 0 'number)) ; pumping rate (0 if none)
 
-;(define (transition-time t) (transition-rate (/ t)))
+(define (transition-time t) (transition-rate (/ t)))
 
-;(define-class multilevel-atom susceptibility
-;  (define-property initial-populations '() (make-list-type 'number))
-;  (define-property transitions '() (make-list-type 'transition)))
+(define-class multilevel-atom susceptibility
+ (define-property initial-populations '() (make-list-type 'number))
+ (define-property transitions '() (make-list-type 'transition)))
 
 ; ****************************************************************
 ; Add some predefined variables, for convenience:
@@ -658,6 +659,9 @@
   (meep-dft-near2far-save-farfields near2far fname (get-filename-prefix)
                                     where resolution))
 
+(define (output-farflux near2far df where resolution)
+  (meep-dft-near2far-flux near2far df where resolution))
+
 (define (load-near2far fname near2far)
   (if (null? fields) (init-fields))
   (meep-dft-near2far-load-hdf5 near2far fields fname "" (get-filename-prefix)))
@@ -1015,13 +1019,6 @@
 (define harminv-amp vector3-y)
 (define harminv-err vector3-z)
 
-(define-param harminv-spectral-density 1.1)
-(define-param harminv-Q-thresh 50.0)
-(define-param harminv-rel-err-thresh 1e20)
-(define-param harminv-err-thresh 0.01)
-(define-param harminv-rel-amp-thresh -1.0)
-(define-param harminv-amp-thresh -1.0)
-
 (define (analyze-harminv data fcen df maxbands . dt)
   (display-run-data 
    "harminv"
@@ -1030,10 +1027,7 @@
 			   (if (null? dt)
 			       (meep-fields-dt-get fields)
 			       (car dt))
-			   (- fcen (/ df 2)) (+ fcen (/ df 2)) maxbands
-                           harminv-spectral-density harminv-Q-thresh
-                           harminv-rel-err-thresh harminv-err-thresh
-                           harminv-rel-amp-thresh harminv-amp-thresh)))
+			   (- fcen (/ df 2)) (+ fcen (/ df 2)) maxbands)))
     (map (lambda (b) ; b = vector of (freq, amp, error)
 	   (display-run-data 
 	    "harminv"

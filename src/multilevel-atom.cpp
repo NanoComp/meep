@@ -33,7 +33,8 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
 			    const realnum *thealpha,
 			    const realnum *theomega,
 			    const realnum *thegamma,
-			    const realnum *thesigmat) {
+			    const realnum *thesigmat,
+			    const realnum *theRp) {
   L = theL;
   T = theT;
   Gamma = new realnum[L*L];
@@ -48,6 +49,8 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
   memcpy(gamma, thegamma, sizeof(realnum) * T);
   sigmat = new realnum[T * 5];
   memcpy(sigmat, thesigmat, sizeof(realnum) * T * 5);
+  Rp = new realnum[L*L];
+  memcpy(Rp, theRp, sizeof(realnum) * L*L);
 }
 
 multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibility &from) :
@@ -65,6 +68,8 @@ multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibi
   memcpy(gamma, from.gamma, sizeof(realnum) * T);
   sigmat = new realnum[T * 5];
   memcpy(sigmat, from.sigmat, sizeof(realnum) * T * 5);
+  Rp = new realnum[L*L];
+  memcpy(Rp, from.Rp, sizeof(realnum) * L*L);
 }
 
 multilevel_susceptibility::~multilevel_susceptibility() {
@@ -74,6 +79,7 @@ multilevel_susceptibility::~multilevel_susceptibility() {
   delete[] omega;
   delete[] gamma;
   delete[] sigmat;
+  delete[] Rp;
 }
 
 #if MEEP_SINGLE
@@ -118,7 +124,7 @@ typedef realnum *realnumP;
 typedef struct {
   size_t sz_data;
   int ntot;
-  realnum *GammaInv; // inv(1 + Gamma * dt / 2)
+  realnum *GammaInv; // inv(1 - (Gamma + R) * dt / 2)
   realnumP *P[NUM_FIELD_COMPONENTS][2]; // P[c][cmp][transition][i]
   realnumP *P_prev[NUM_FIELD_COMPONENTS][2];
   realnum *N; // ntot x L array of centered grid populations N[i*L + level]
@@ -153,13 +159,14 @@ void multilevel_susceptibility::init_internal_data(
      pointer in d to point to the corresponding data in d->data, so
      that we don't have to remember in other functions how d->data is
      laid out. */
-
+  
   d->GammaInv = d->data;
   for (int i = 0; i < L; ++i)
     for (int j = 0; j < L; ++j)
-      d->GammaInv[i*L + j] = (i == j) + Gamma[i*L + j] * dt/2;
+      d->GammaInv[i*L + j] = (i == j) - (Gamma[i*L + j] + Rp[i*L + j]) * dt/2;
+
   if (!invert(d->GammaInv, L)) 
-    abort("multilevel_susceptibility: I + Gamma*dt/2 matrix singular");
+    abort("multilevel_susceptibility: I - (Gamma+R)*dt/2 matrix singular");
 
   realnum *P = d->data + L*L;
   realnum *P_prev = P + ntot;
@@ -240,7 +247,6 @@ void multilevel_susceptibility::update_P
 	double dt, const grid_volume &gv, void *P_internal_data) const {
   multilevel_data *d = (multilevel_data *) P_internal_data;
   double dt2 = 0.5 * dt;
-
   // field directions and offsets for E * dP dot product.
   component cdot[3] = {Dielectric,Dielectric,Dielectric};
   int o1[3], o2[3];
@@ -250,18 +256,16 @@ void multilevel_susceptibility::update_P
     gv.yee2cent_offsets(c, o1[idot], o2[idot]);
     cdot[idot++] = c;
   }
-
   // update N from W and P
   realnum *GammaInv = d->GammaInv;
   realnum *Ntmp = d->Ntmp;
   LOOP_OVER_VOL_OWNED(gv, Centered, i) {
     realnum *N = d->N + i*L; // N at current point, to update
-    
-    // Ntmp = (I - Gamma * dt/2) * N
+    // Ntmp = (I + (Gamma + Rp) * dt/2) * N
     for (int l1 = 0; l1 < L; ++l1) {
-      Ntmp[l1] = (1.0 - Gamma[l1*L + l1]*dt2) * N[l1]; // diagonal term
-      for (int l2 = 0; l2 < l1; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
-      for (int l2 = l1+1; l2 < L; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
+      Ntmp[l1] = 0;
+      for (int l2 = 0; l2 < L; ++l2)
+    	Ntmp[l1] += ((l1 == l2) + (Gamma[l1*L + l2] + Rp[l1*L + l2])*dt2) * N[l2];
     }
 
     // compute E*8 at point i
@@ -269,14 +273,14 @@ void multilevel_susceptibility::update_P
     for (idot = 0; idot < 3 && cdot[idot] != Dielectric; ++idot) {
       realnum *w = W[cdot[idot]][0], *wp = W_prev[cdot[idot]][0];
       E8[idot][0] = w[i]+w[i+o1[idot]]+w[i+o2[idot]]+w[i+o1[idot]+o2[idot]]
-	+ wp[i]+wp[i+o1[idot]]+wp[i+o2[idot]]+wp[i+o1[idot]+o2[idot]];
+  	+ wp[i]+wp[i+o1[idot]]+wp[i+o2[idot]]+wp[i+o1[idot]+o2[idot]];
       if (W[cdot[idot]][1]) {
-	w = W[cdot[idot]][1]; wp = W_prev[cdot[idot]][1];
-	E8[idot][1] = w[i]+w[i+o1[idot]]+w[i+o2[idot]]+w[i+o1[idot]+o2[idot]]
-	  + wp[i]+wp[i+o1[idot]]+wp[i+o2[idot]]+wp[i+o1[idot]+o2[idot]];
+  	w = W[cdot[idot]][1]; wp = W_prev[cdot[idot]][1];
+  	E8[idot][1] = w[i]+w[i+o1[idot]]+w[i+o2[idot]]+w[i+o1[idot]+o2[idot]]
+  	  + wp[i]+wp[i+o1[idot]]+wp[i+o2[idot]]+wp[i+o1[idot]+o2[idot]];
       }
       else
-	E8[idot][1] = 0;
+  	E8[idot][1] = 0;
     }
 
     // Ntmp = Ntmp + alpha * E * dP
@@ -284,33 +288,33 @@ void multilevel_susceptibility::update_P
       // compute 32 * E * dP at point i
       double EdP32 = 0;
       for (idot = 0; idot < 3 && cdot[idot] != Dielectric; ++idot) {
-	realnum *p = d->P[cdot[idot]][0][t], *pp = d->P_prev[cdot[idot]][0][t];
-	realnum dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
-	  - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
-	EdP32 += dP * E8[idot][0];
-	if (d->P[cdot[idot]][1]) {
-	  p = d->P[cdot[idot]][1][t]; pp = d->P_prev[cdot[idot]][1][t];
-	  dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
-	    + (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
-	  EdP32 += dP * E8[idot][1];
-	}
+  	realnum *p = d->P[cdot[idot]][0][t], *pp = d->P_prev[cdot[idot]][0][t];
+  	realnum dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
+  	  - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
+  	EdP32 += dP * E8[idot][0];
+  	if (d->P[cdot[idot]][1]) {
+  	  p = d->P[cdot[idot]][1][t]; pp = d->P_prev[cdot[idot]][1][t];
+  	  dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
+  	    - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
+  	  EdP32 += dP * E8[idot][1];
+  	}
       }
       EdP32 *= 0.03125; /* divide by 32 */
       for (int l = 0; l < L; ++l) Ntmp[l] += alpha[l*T + t] * EdP32;
     }
-
     // N = GammaInv * Ntmp
     for (int l1 = 0; l1 < L; ++l1) {
       N[l1] = 0;
-      for (int l2 = 0; l2 < L; ++l2) N[l1] += GammaInv[l1*L+l2] * Ntmp[l2];
+      for (int l2 = 0; l2 < L; ++l2)
+  	N[l1] += GammaInv[l1*L+l2] * Ntmp[l2];
     }
   }
 
   // each P is updated as a damped harmonic oscillator
   for (int t = 0; t < T; ++t) {
-    const double omega2pi = 2*pi*omega[t], g2pi = gamma[t]*2*pi;
-    const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
-    const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
+    const double omega2pi = omega[t]*2*pi, g2pi = gamma[t]*2*pi;
+    const double omega0dtsqr = omega2pi*omega2pi*dt*dt;
+    const double gamma1inv = 1 / (1 + g2pi*dt2), gamma1 = (1 - g2pi*dt2);
 
     // figure out which levels this transition couples
     int lp = -1, lm = -1;
@@ -319,7 +323,7 @@ void multilevel_susceptibility::update_P
       if (alpha[l*T + t] < 0) lm = l;
     }
     if (lp < 0 || lm < 0) abort("invalid alpha array for transition %d", t);
-
+    
     FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
       const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
       const double st = sigmat[5*t + component_direction(c)];
@@ -341,20 +345,19 @@ void multilevel_susceptibility::update_P
 	component c2 = direction_component(c, d2);
 	const realnum *w2 = W[c2][cmp];
 	const realnum *s2 = w2 ? sigma[c][d2] : NULL;
-	
-	if (s1 || s2) {
+
+	if (s1 || s2)
 	  abort("nondiagonal saturable gain is not yet supported");
-	}
 	else { // isotropic
 	  LOOP_OVER_VOL_OWNED(gv, c, i) {
 	    realnum pcur = p[i];
 	    const realnum *Ni = N + i*L;
 	    // dNi is population inversion for this transition
-	    double dNi = -0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
-				  -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
+	    double dNi = 0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
+				 -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
 	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqr) 
-				- gamma1 * pp[i] 
-				+ omega0dtsqr * (st * s[i] * w[i])) * dNi;
+				- gamma1 * pp[i]
+				- omega0dtsqr * st * s[i] * w[i] * dNi);
 	    pp[i] = pcur;
 	  }
 	}

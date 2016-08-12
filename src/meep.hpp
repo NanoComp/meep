@@ -220,14 +220,15 @@ protected:
 
 class multilevel_susceptibility : public susceptibility {
 public:
-  multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0) {}
+  multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0), sigmat(0), Rp(0) {}
   multilevel_susceptibility(int L, int T,
 			    const realnum *Gamma,
 			    const realnum *N0,
 			    const realnum *alpha,
 			    const realnum *omega,
 			    const realnum *gamma,
-			    const realnum *sigmat);
+			    const realnum *sigmat,
+			    const realnum *Rp);
   multilevel_susceptibility(const multilevel_susceptibility &from);
   virtual susceptibility *clone() const { return new multilevel_susceptibility(*this); }
   virtual ~multilevel_susceptibility();
@@ -272,6 +273,7 @@ protected:
   realnum *omega; // T transition frequencies
   realnum *gamma; // T optical loss rates
   realnum *sigmat; // 5*T transition-specific sigma-diagonal factors
+  realnum *Rp; // LxL matrix of pumping rates Rp[i*L+j] from i -> j
 };
 
 class grace;
@@ -964,6 +966,9 @@ public:
   /* output far fields on a grid to an HDF5 file */
   void save_farfields(const char *fname, const char *prefix,
                       const volume &where, double resolution);
+
+  /* output Poynting vector of far fields */
+  double *flux(direction df, const volume &where, double resolution);
 
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
