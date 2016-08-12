@@ -119,7 +119,7 @@ typedef realnum *realnumP;
 typedef struct {
   size_t sz_data;
   int ntot;
-  realnum *GammaInv; // inv(1 - (Gamma + R) * dt / 2)
+  realnum *GammaInv; // inv(1 - Gamma * dt / 2)
   realnumP *P[NUM_FIELD_COMPONENTS][2]; // P[c][cmp][transition][i]
   realnumP *P_prev[NUM_FIELD_COMPONENTS][2];
   realnum *N; // ntot x L array of centered grid populations N[i*L + level]
@@ -153,15 +153,14 @@ void multilevel_susceptibility::init_internal_data(
      P_prev, Ntmp, and N.  We also initialize a bunch of convenience
      pointer in d to point to the corresponding data in d->data, so
      that we don't have to remember in other functions how d->data is
-     laid out. */
-  
+     laid out. */  
   d->GammaInv = d->data;
   for (int i = 0; i < L; ++i)
     for (int j = 0; j < L; ++j)
       d->GammaInv[i*L + j] = (i == j) - Gamma[i*L + j]*dt/2;
 
   if (!invert(d->GammaInv, L)) 
-    abort("multilevel_susceptibility: I - (Gamma+R)*dt/2 matrix singular");
+    abort("multilevel_susceptibility: I - Gamma*dt/2 matrix singular");
 
   realnum *P = d->data + L*L;
   realnum *P_prev = P + ntot;
@@ -300,8 +299,7 @@ void multilevel_susceptibility::update_P
     // N = GammaInv * Ntmp
     for (int l1 = 0; l1 < L; ++l1) {
       N[l1] = 0;
-      for (int l2 = 0; l2 < L; ++l2)
-  	N[l1] += GammaInv[l1*L+l2] * Ntmp[l2];
+      for (int l2 = 0; l2 < L; ++l2) N[l1] += GammaInv[l1*L+l2] * Ntmp[l2];
     }
   }
 
@@ -317,8 +315,7 @@ void multilevel_susceptibility::update_P
       if (alpha[l*T + t] > 0) lp = l;
       if (alpha[l*T + t] < 0) lm = l;
     }
-    if (lp < 0 || lm < 0) abort("invalid alpha array for transition %d", t);
-    
+    if (lp < 0 || lm < 0) abort("invalid alpha array for transition %d", t);    
     FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
       const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
       const double st = sigmat[5*t + component_direction(c)];
@@ -340,7 +337,6 @@ void multilevel_susceptibility::update_P
 	component c2 = direction_component(c, d2);
 	const realnum *w2 = W[c2][cmp];
 	const realnum *s2 = w2 ? sigma[c][d2] : NULL;
-
 	if (s1 || s2)
 	  abort("nondiagonal saturable gain is not yet supported");
 	else { // isotropic
