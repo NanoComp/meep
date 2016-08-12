@@ -1032,9 +1032,9 @@
 			       (meep-fields-dt-get fields)
 			       (car dt))
 			   (- fcen (/ df 2)) (+ fcen (/ df 2)) maxbands
-			   harminv-spectral-density harminv-Q-thresh
-			   harminv-rel-err-thresh harminv-err-thresh
-			   harminv-rel-amp-thresh harminv-amp-thresh)))
+			    harminv-spectral-density harminv-Q-thresh
+			    harminv-rel-err-thresh harminv-err-thresh
+			    harminv-rel-amp-thresh harminv-amp-thresh)))
     (map (lambda (b) ; b = vector of (freq, amp, error)
 	   (display-run-data 
 	    "harminv"
