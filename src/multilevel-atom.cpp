@@ -33,8 +33,8 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
 			    const realnum *thealpha,
 			    const realnum *theomega,
 			    const realnum *thegamma,
-			    const realnum *thesigmat,
-			    const realnum *theRp) {
+			    const realnum *thesigmat) {
+
   L = theL;
   T = theT;
   Gamma = new realnum[L*L];
@@ -49,8 +49,6 @@ multilevel_susceptibility::multilevel_susceptibility(int theL, int theT,
   memcpy(gamma, thegamma, sizeof(realnum) * T);
   sigmat = new realnum[T * 5];
   memcpy(sigmat, thesigmat, sizeof(realnum) * T * 5);
-  Rp = new realnum[L*L];
-  memcpy(Rp, theRp, sizeof(realnum) * L*L);
 }
 
 multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibility &from) :
@@ -68,8 +66,6 @@ multilevel_susceptibility::multilevel_susceptibility(const multilevel_susceptibi
   memcpy(gamma, from.gamma, sizeof(realnum) * T);
   sigmat = new realnum[T * 5];
   memcpy(sigmat, from.sigmat, sizeof(realnum) * T * 5);
-  Rp = new realnum[L*L];
-  memcpy(Rp, from.Rp, sizeof(realnum) * L*L);
 }
 
 multilevel_susceptibility::~multilevel_susceptibility() {
@@ -79,7 +75,6 @@ multilevel_susceptibility::~multilevel_susceptibility() {
   delete[] omega;
   delete[] gamma;
   delete[] sigmat;
-  delete[] Rp;
 }
 
 #if MEEP_SINGLE
@@ -163,7 +158,7 @@ void multilevel_susceptibility::init_internal_data(
   d->GammaInv = d->data;
   for (int i = 0; i < L; ++i)
     for (int j = 0; j < L; ++j)
-      d->GammaInv[i*L + j] = (i == j) - (Gamma[i*L + j] + Rp[i*L + j]) * dt/2;
+      d->GammaInv[i*L + j] = (i == j) - Gamma[i*L + j]*dt/2;
 
   if (!invert(d->GammaInv, L)) 
     abort("multilevel_susceptibility: I - (Gamma+R)*dt/2 matrix singular");
@@ -261,11 +256,11 @@ void multilevel_susceptibility::update_P
   realnum *Ntmp = d->Ntmp;
   LOOP_OVER_VOL_OWNED(gv, Centered, i) {
     realnum *N = d->N + i*L; // N at current point, to update
-    // Ntmp = (I + (Gamma + Rp) * dt/2) * N
+    // Ntmp = (I + Gamma*dt/2) * N
     for (int l1 = 0; l1 < L; ++l1) {
       Ntmp[l1] = 0;
       for (int l2 = 0; l2 < L; ++l2)
-    	Ntmp[l1] += ((l1 == l2) + (Gamma[l1*L + l2] + Rp[l1*L + l2])*dt2) * N[l2];
+    	Ntmp[l1] += ((l1 == l2) + Gamma[l1*L + l2]*dt2) * N[l2];
     }
 
     // compute E*8 at point i

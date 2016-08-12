@@ -220,15 +220,14 @@ protected:
 
 class multilevel_susceptibility : public susceptibility {
 public:
-  multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0), sigmat(0), Rp(0) {}
+  multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0), sigmat(0) {}
   multilevel_susceptibility(int L, int T,
 			    const realnum *Gamma,
 			    const realnum *N0,
 			    const realnum *alpha,
 			    const realnum *omega,
 			    const realnum *gamma,
-			    const realnum *sigmat,
-			    const realnum *Rp);
+			    const realnum *sigmat);
   multilevel_susceptibility(const multilevel_susceptibility &from);
   virtual susceptibility *clone() const { return new multilevel_susceptibility(*this); }
   virtual ~multilevel_susceptibility();
@@ -267,13 +266,12 @@ public:
 protected:
   int L; // number of atom levels
   int T; // number of optical transitions
-  realnum *Gamma; // LxL matrix of relaxation rates Gamma[i*L+j] from i -> j
+  realnum *Gamma; // LxL matrix of non-radiative decay and pumping rates Gamma[i*L+j] from i -> j
   realnum *N0; // L initial populations
   realnum *alpha; // LxT matrix of transition coefficients 1/omega
   realnum *omega; // T transition frequencies
   realnum *gamma; // T optical loss rates
   realnum *sigmat; // 5*T transition-specific sigma-diagonal factors
-  realnum *Rp; // LxL matrix of pumping rates Rp[i*L+j] from i -> j
 };
 
 class grace;
