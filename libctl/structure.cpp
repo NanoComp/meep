@@ -1297,8 +1297,8 @@ static meep::susceptibility *make_multilevel_sus(const multilevel_atom *d) {
   for (int t = 0; t < d->transitions.num_items; ++t) {
     int i = d->transitions.items[t].from_level - minlev;
     int j = d->transitions.items[t].to_level - minlev;
-    Gamma[i*L+i] -= (d->transitions.items[t].transition_rate + d->transitions.items[t].pumping_rate);
-    Gamma[j*L+i] += (d->transitions.items[t].transition_rate + d->transitions.items[t].pumping_rate);
+    Gamma[i*L+i] += (d->transitions.items[t].transition_rate + d->transitions.items[t].pumping_rate);
+    Gamma[j*L+i] -= (d->transitions.items[t].transition_rate + d->transitions.items[t].pumping_rate);
   }
   
   // initial populations of each level
