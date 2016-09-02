@@ -19,6 +19,9 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <vector>
+#include <queue>
+
 
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
@@ -429,6 +432,337 @@ public:
   virtual double chi3(component c, const vec &r) { (void)c; return f(r); }
   virtual double chi2(component c, const vec &r) { (void)c; return f(r); }
 };
+
+
+// in anisotropic_averaging.cpp:
+// TODO little description of polygon and stack and such for use with meep
+class simple_polygon {
+public:
+    // polygon defined by a numpy array with dimensions N*2 (containing the points) TODO numpy? dimx? dimy?
+    // and defining an area with a certain epsilon
+    // The matrix is copied internally, so can savely be deleted or reused after calling this constructor.
+    simple_polygon(double* matrix, int dimX, int dimY);
+    // if this constructor is used, care must be taken that matrix is not deleted
+    // externally. The memory pointed to by matrix will be deleted with ~polygon()
+    // TODO where do I need this? Remove it?
+    simple_polygon(double** matrix, int dimX); //TODO why only dimX? dimY=?
+
+    //TODO: only 2nd constructor, or also first? deleted with ~polygon or ~simple_polygon?
+    virtual ~simple_polygon();
+
+    int get_number_of_points() { return _number_of_points; };
+    double* get_polygon_point(int index) { return _polygon_points[index]; };
+
+    void take_ownership_of_point(int index) { _polygon_points[index] = 0; };
+    // The point (double[2]) at index will not be deleted with ~simple_polygon.
+    // It must be deleted by new owner.
+    // TODO why and where do I need this?
+
+    virtual double get_area();
+
+private:
+    int _number_of_points;
+    double** _polygon_points;
+};
+
+// TODO description
+class polygon : public simple_polygon{
+public:
+    // polygon defined by a numpy array with dimensions N*2 (containing the points)
+    // and defining an area with a certain epsilon TODO numpy? dimx? dimy?
+    // The matrix is copied internally, so can savely be deleted or reused after calling this constructor.
+    polygon(double* matrix, int dimX, int dimY) : simple_polygon(matrix, dimX, dimY) {};
+
+    virtual ~polygon();
+
+    void add_inner_polygon(double* matrix, int dimX, int dimY);
+
+    int get_number_inner_polygons() { return _inner_polygons.size(); };
+    simple_polygon* get_inner_polygon(int index) { return _inner_polygons[index]; };
+
+    virtual double get_area(); //TODO do I need this?
+
+protected:
+    std::vector<simple_polygon*> _inner_polygons;
+};
+
+//TODO description
+class material_stack{
+public:
+    //TODO describe both constructors:
+    material_stack(const double* material_heights,
+                   const double* epsilon_values, const int number_of_layers);
+    // the second constructor is for easier integration with the SWIG
+    // interface for python numpy:
+    material_stack(const double* material_heights, const int mh_dim,
+                   const double* epsilon_values, const int ev_dim);
+    ~material_stack();
+
+    // Determines the layers inside the block of height 2 * half_block_size,
+    // centered at center_z. If there is no interface inside block,
+    // lower_layer_eps will have epsilon of material inside block,
+    // upper_layer_eps and percentage_upper_layer will both be zero and the
+    // function will return false. Function will abort with an error if
+    // there are more than two layers inside block.
+    //TODO clearer description; Why half_block_size?
+    bool interface_inside_block(double center_z, double half_block_size,
+                                double &lower_layer_eps, double &upper_layer_eps,
+                                double &percentage_upper_layer) const;
+
+protected:
+    //TODO description
+    void init_material_stack(const double* material_heights,
+                             const double* epsilon_values, const int number_of_layers);
+    double* _material_heights;
+    double* _epsilon_values;
+    int _number_of_layers;
+};
+
+//TODO description; is there a better name?
+class polygons_for_single_material{
+public:
+    polygons_for_single_material(material_stack * mat_stack,
+                                 double block_size, int nx, int ny, int nz);
+
+    polygons_for_single_material(double epsilon,
+                                 double block_size, int nx, int ny);
+
+    ~polygons_for_single_material();
+
+    // added polygon object will be owned by this class and deleted in destructor:
+    polygon *add_polygon(polygon* pol);
+
+    double get_material_epsilon() const { return _epsilon; }
+    const material_stack *get_material_stack() const
+    { return _material_stack; }
+
+    // Returns true if the blocks between small_ivec and big_ivec have either
+    // all an area of zero or all one. Only looks at ivecs' x and y
+    // positions. TODO last sentence is unclear
+    bool is_trivial(const ivec &small_ivec, const ivec &big_ivec);
+
+    // Returns the normalized surface vector of a straight interface
+    // crossing the pixel (=2x2 ivec-pixels), centered at center.
+    // If the interface is not straight, an approximate
+    // surface vector is given.
+    vec normal_vector(const ivec &center);
+
+    // TODO description for both; do I need both?
+    double get_area(const ivec &block)
+    { return get_area(block.x(), block.y()); }
+    double get_area(int i, int j);
+
+private:
+    // Rotate vec v num times by pi/2 in anti-clockwise direction.
+    // Negative num will rotate in clockwise direction.
+    // If mirror_x_before or mirror_y_before is true, v will be flipped in x or
+    // y direction, respectively, before rotation.
+    // v will be changed in place and also returned.
+    // If v is 3D, z-component will be kept unchanged.
+    vec rightanglerotate_2Dvec(
+        vec v, int num, bool mirror_x_before = false,
+        bool mirror_y_before = false) const;
+
+    // TODO is the new description correct?
+    // The following three functions use geometric considerations to calculate
+    // the (normalized - length 1) surface vector of an interface intersecting
+    // two neigboring squares, each of area 1. These squares might be divided by
+    // the interface in two areas each. Needed for the calculation are only the
+    // areas A1 and A2 (for square 1 and 2, respectively) on one side of the
+    // intersecting interface, such that the resulting vector point away from
+    // areas for which A1 and A2 are given.
+    // The interface should be a straight line for correct results, otherwise
+    // an approximately correct result is given. The three cases correspond to
+    // different positions of the interface inside the squares. //TODO elaborate
+    // If the calculation is in 3D, the returned vec will also be 3D, with
+    // a zero z component.
+    vec calc_grad_case1(const double A1, const double A2) const;
+    vec calc_grad_case2(const double A1, const double A2) const;
+    vec calc_grad_case3(const double A1, const double A2) const;
+
+    // Calculates the normalized surface vector of a flat interface intersecting
+    // a 4x4 grid of squares. The single squares each have a size of 1x1.
+    // Needed for the calculation are the areas on one side of the dividing
+    // interface of each of these 16 squares. The area of one such square might
+    // be 1 if the square is completely on one side of the interface or 0 if it
+    // is on the other side, or a fraction inbetween if it is divided by the
+    // interface. The input 'areas' is a 4x4 matrix of these areas,
+    // corresponding to the 4x4 grid of squares. The resulting vector will
+    // point away from the areas for which 'areas' is given.
+    // Mainly the areas in the center 2x2 grid of squares are relevant for the
+    // surface vector, the additional squares are only needed to determine the
+    // case of calculation, see calc_grad_case[1-3] above.
+    // The interface should ideally be a straight line for correct results,
+    // otherwise if an edge is present the algorithm will return approximately
+    // correct values for the surface vector.
+    // If the calculation is in 3D, the returned vec will also be 3D, with
+    // a zero z component.
+    vec calc_gradient_4x4(double** areas) const;
+
+    // Returns whether the given index pair is in bounds of the protected
+    // _areas array
+    bool index_in_bounds(int x, int y);
+
+protected:
+    // TODO description / change name
+    void init_pfsm(material_stack * mat_stack, double epsilon,
+                   double block_size, int nx, int ny, int nz);
+    // TODO describe
+    void message_truncate(double* pt);
+    // TODO describe
+    void split_in_one_dimension(std::queue<double*>* arr, int arr_size,
+                                std::queue<double*>* qpol, int axis);
+    void split_in_one_dimension(std::queue<double*>* arr, int arr_size,
+                                simple_polygon* pol, int axis);
+
+    // Splits pol in rows and columns and adds (substracts if
+    // inner_polygon) areas to _areas. col_arr and row_arr are only
+    // used as temporary buffers during splitting. They must be allocated
+    // before the call, but the items (the queues) must be empty.
+    double split_polygon(
+        simple_polygon* pol, bool inner_polygon,
+        std::queue<double*>* col_arr, std::queue<double*>* row_arr);
+
+    //TODO describe
+    void update_splitting();
+
+    bool is_3D() const { return _nz != 0; };
+
+    bool splitting_done;
+    //TODO what is this?
+    std::queue<polygon*> _polygons; // polygons of same eps/mat_stack are added to queue
+
+    // all polygons inside this class are made of following material:
+    material_stack* _material_stack; // only for 3D
+    double _epsilon;                 // only for 2D
+
+    // Number of blocks to split polygons into. One block should have halve the size of one pixel
+    // to allow calculating averaged eps for different components (half pixel apart due to yee lattice).
+    // TODO put this elsewhere: The smoothing diameter should stay 1 pixel (Meep default) or be an integer multiple thereof,
+    // in which case material_function_for_polygons::eff_chi1inv_row() must be changed.
+    int _nx, _ny, _nz;
+    // The size of one such block ( = width = height = depth):
+    double _block_size;
+
+    // In this 2D array of areas, the 2D matrix corresponds to
+    // rows and columns of the grid_volume (nx x ny).
+    // TODO what about nz?; Which areas are these?
+    double ** _areas;
+};
+
+class material_function_for_polygons : public material_function {
+public:
+    // creates a material function for polygons. thegv is the grid volume object
+    // for the simulation.
+    // TODO: can I savely remove this:
+    // If save_memory is false, all intermediate polygons
+    // will be kept around, allowing one to get the dielectric value at every
+    // point. This is not neccessary for the simulation, since for the
+    // simulation, only the areas of these polygons in every pixel is important.
+    material_function_for_polygons(const grid_volume &thegv);
+
+    virtual ~material_function_for_polygons();
+
+    // Adds a material stack to the material function, for use in 3D case.
+    // Returns mat_ID, which must be used for add_polygon(polygon, mat_ID)
+    // TODO describe parameters
+    unsigned int add_material_stack(
+        double* material_heights,
+        double* epsilon_values, int number_of_layers)
+    {
+        return add_material_stack(material_heights, number_of_layers,
+                                  epsilon_values, number_of_layers);
+    };
+    // This constructor is for easier integration with the SWIG interface for python numpy:
+    unsigned int add_material_stack(
+        double* material_heights, int mh_dim, double* epsilon_values, int ev_dim);
+
+    // Adds a polygon with predefined stack (->mat_ID from add_material_stack)
+    // to the simulation. Care must be taken that none of the polygons overlap.
+    // Only for 3D simulation.
+    // Added polygon object will be owned by this class and deleted in its destructor.
+    polygon& add_polygon(polygon* pol, unsigned int mat_ID);
+
+    // Adds a polygon with predefined stack (->mat_ID from add_material_stack)
+    // to the simulation. Care must be taken that none of the polygons overlap.
+    // Only for 3D simulation.
+    // The matrix is copied internally, so can savely be deleted or reused hereafter.
+    // TODO describe parameters
+    polygon& add_polygon(double* matrix, int dimX, int dimY, unsigned int mat_ID);
+
+    // Adds a polygon with epsilon value eps to the simulation.
+    // Care must be taken that none of the polygons overlap.
+    // Added polygon object will be owned by this class and deleted in its destructor.
+    polygon& add_polygon(polygon* pol, double eps);
+
+    // Adds a polygon with epsilon value eps to the simulation.
+    // Care must be taken that none of the polygons overlap.
+    // The matrix is copied internally, so can savely be deleted or reused hereafter.
+    // TODO describe parameters
+    polygon& add_polygon(double* matrix, int dimX, int dimY, double eps);
+
+    /* Return c'th row of effective 1/(1+chi1) tensor in the given grid_volume v.
+     *       tol has no use. maxeval == 0 if no averaging desired, otherwise, maxeval
+     *       has no use. */
+    // TODO is maxeval still used?
+    virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
+                                 const volume &v,
+                                 double tol = 0,
+                                 int maxeval = 1);
+
+    virtual double eps(const vec &r) { return mean_eps(r); };
+
+    virtual double chi1p1(field_type ft, const vec &r) { (void)ft; return eps(r); }
+
+    // calculates normal vector of interface inside 1 pixel area around center.
+    // TODO really 1 pixel area, why? which direction?
+    vec normal_vector(const ivec &center);
+
+    // calculates mean epsilon of 1 pixel area around center.
+    double mean_eps(const ivec &center);
+    double mean_eps(const vec &r)
+    {   return mean_eps(round_to_block_edge(r)); };
+
+    // calculates mean inverse epsilon of 1 pixel area around center.
+    double mean_inveps(const ivec &center);
+
+    // TODO:
+    //virtual double mu(const vec &r) { return f(r); }
+    //virtual double conductivity(component c, const vec &r) {
+    //  (void)c; return f(r); }
+    //virtual void sigma_row(component c, double sigrow[3], const vec &r) {
+    //  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
+    //  sigrow[component_index(c)] = f(r);
+    //}
+    //virtual double chi3(component c, const vec &r) { (void)c; return f(r); }
+    //virtual double chi2(component c, const vec &r) { (void)c; return f(r); }
+
+protected:
+
+    // This rounds the vec v to the nearest ivec position, i.e. the nearest
+    // border between neigboring blocks. This does not neccessarily return the
+    // block index inside which the vec is. This makes sense for vectors which
+    // are already given on ivec positions.
+    ivec round_to_block_edge(const vec &v);
+
+    bool is_3D() const { return nz != 0; };
+
+    // TODO what is this, where it is used?
+    unsigned int add_epsilon(double eps);
+
+    // The items of this vector correspond to different epsilon/material_stacks;
+    // All polygons of same eps/mat_stack are added to same vector item:
+    std::vector<polygons_for_single_material*> _polygons;
+
+    // Number of blocks to split polygons into. One block should have halve the size of one pixel
+    // to allow calculating averaged eps for different components (half pixel apart due to yee lattice).
+    // The smooting diameter should stay 1 pixel (Meep default) or be an integer multiple thereof,
+    // in which case material_function_for_polygons::eff_chi1inv_row() must be changed.
+    int nx, ny, nz;
+    // the size of one such block ( = width = height = depth):
+    double block_size;
+};
+
 
 class structure;
 
