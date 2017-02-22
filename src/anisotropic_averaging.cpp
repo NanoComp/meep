@@ -744,12 +744,8 @@ double material_stack::chi1p1(const double &z) const
 {
     // if z <= 0, return epsilon of first layer
     for (int i = 0; i < _number_of_layers - 1; ++i) {
-        if (z < _high_z[i])
+        if (z <= _high_z[i])
             return _epsilon[i];
-        // The epsilon value at the exact interface position is the mean
-        // of the two encompassing layer's epsilon values:
-        if (z == _high_z[i]) //TODO just a test; keep or remove?
-            return (_epsilon[i] + _epsilon[i+1])/2;
     }
     // if z > total thickness, return epsilon of last layer:
     return _epsilon[_number_of_layers - 1];
@@ -1961,8 +1957,8 @@ vec polygonal_material::get_gradient_from_sphere_quad(
         }
     }
 
-    // Slightly increased radius so the pixel corners are also included: TODO keep or remove?
-    const double radius = 1.0; //sqrt(gradient2D.dim + 1);
+    // Increased radius so the pixel corners are also included:
+    const double radius = sqrt(gradient2D.dim + 1);
     vec zerovec(zero_vec(gradient2D.dim));
     vec result(zerovec);
     for (int i = 0;
@@ -1972,10 +1968,15 @@ vec polygonal_material::get_gradient_from_sphere_quad(
             double weight, chi1p1;
             vec pt = sphere_pt(zerovec, radius, i, weight);
 
-            // if pt is below y=slope*x + y0, we are inside the material:
-            if (trivial3D ||
+            bool on_edge = fabs(pt.y() - slope * pt.x() + y0) < 0.001;
+
+            bool inside = (
+                on_edge ||
+                trivial3D ||
                 (!invert && pt.y() <= slope * pt.x() + y0) ||
-                (invert && pt.y() > slope * pt.x() + y0))
+                (invert && pt.y() > slope * pt.x() + y0));
+
+            if (inside)
             {
                 if (is_3D()) {
                     chi1p1 = _material_stack->chi1p1(
@@ -2004,11 +2005,14 @@ vec polygonal_material::get_gradient_from_sphere_quad(
              * matter at the end in eff_chi1inv_row, we need to stay
              * consistent within one material_function.
              */
-            result -= pt * weight * (chi1p1 - 1);
+            if (on_edge)
+                result -= pt * weight * (chi1p1 - 1) * 0.5;
+            else
+                result -= pt * weight * (chi1p1 - 1);
         }
 
     // Counter the rotation applied to the slope:
-    result = rightanglerotate_2Dvec(result, -rot_num);
+    result = rightanglerotate_2Dvec(result, -rot_num) / radius;
 
     // Now, we actually only needed the z component, since the input gradient2D
     // is supposed to be more accurate than the lateral part of the result. So
@@ -2091,7 +2095,6 @@ void material_function_for_polygons::add_polygon(const polygon &pol, double eps)
 vec material_function_for_polygons::normal_vector(const ivec &center)
 {
     vec result = vec(is_3D()? D3 : D2, 0.0);
-
     for (
         vector<polygonal_material*>::const_iterator it = _polymats.begin();
         it != _polymats.end();

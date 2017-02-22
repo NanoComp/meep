@@ -449,7 +449,7 @@ public:
     /* Construct a simple_polygon from the flattened points array matrix.
      * (row-major order: {x0, y0, x1, y1, ...})
      * dim1 is the number of points, dim2 must always be 2.
-     * This constructor is needed for a SWIG interface for python-numpy arrays.
+     * This constructor is needed for easier integration with the SWIG interface.
      * The matrix is copied internally, so can savely be deleted or reused after calling this constructor.
      */
     simple_polygon(const double* matrix, std::size_t dim1, std::size_t dim2 = 2);
@@ -493,7 +493,7 @@ public:
     /* Construct a polygon from the flattened points array matrix.
      * (row-major order: {x0, y0, x1, y1, ...})
      * dim1 is the number of points, dim2 must always be 2.
-     * This constructor is needed for a SWIG interface for python-numpy arrays.
+//      * This constructor is needed for easier integration with the SWIG interface.
      * The matrix is copied internally, so can savely be deleted or reused after calling this constructor. */
     polygon(const double* matrix, std::size_t dim1, std::size_t dim2 = 2) : simple_polygon(matrix, dim1, dim2) {};
 
@@ -842,7 +842,7 @@ public:
 
     // Adds a material stack to the material function, for use in 3D case.
     // Returns mat_ID, which must be used for add_polygon(polygon, mat_ID)
-    // This method is for easier integration with the SWIG interface for python numpy:
+    // This method is for easier integration with the SWIG interface:
     unsigned int add_material_stack(
         double* layer_thicknesses, int dim1,
         double* layer_epsilons, int dim2);
