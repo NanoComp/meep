@@ -2,7 +2,8 @@ SRC = aniso_disp.cpp bench.cpp bragg_transmission.cpp			\
 convergence_cyl_waveguide.cpp cylindrical.cpp flux.cpp harmonics.cpp	\
 integrate.cpp known_results.cpp near2far.cpp one_dimensional.cpp	\
 physical.cpp stress_tensor.cpp symmetry.cpp three_d.cpp			\
-two_dimensional.cpp 2D_convergence.cpp h5test.cpp pml.cpp polygons.cpp
+two_dimensional.cpp 2D_convergence.cpp h5test.cpp pml.cpp polygons.cpp  \
+2D_convergence_polygons.cpp
 
 EXTRA_DIST = $(SRC)
 
@@ -15,7 +16,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 
 .SUFFIXES = .dac .done
 
-check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml polygons
+check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml polygons 2D_convergence_polygons
 
 aniso_disp_SOURCES = aniso_disp.cpp
 aniso_disp_LDADD = $(LIBMEEP)
@@ -77,7 +78,10 @@ pml_LDADD = $(LIBMEEP)
 polygons_SOURCES = polygons.cpp
 polygons_LDADD = $(LIBMEEP)
 
-TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml polygons
+2D_convergence_polygons_SOURCES = 2D_convergence_polygons.cpp
+2D_convergence_polygons_LDADD = $(LIBMEEP)
+
+TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml polygons 2D_convergence_polygons
 
 LOG_COMPILER = $(RUNCODE)
 
