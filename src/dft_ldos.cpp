@@ -31,7 +31,7 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq)
   }
   else {
     omega_min = freq_min * 2*pi;
-    domega = (freq_max - freq_min) * 2*pi / Nfreq;
+    domega = (freq_max - freq_min) * 2*pi / (Nfreq - 1);
     Nomega = Nfreq;
   }
   Fdft = new complex<realnum>[Nomega];
