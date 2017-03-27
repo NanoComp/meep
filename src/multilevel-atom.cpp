@@ -229,7 +229,7 @@ realnum *multilevel_susceptibility::cinternal_notowned_ptr(
 					int n, 
 					void *P_internal_data) const {
   multilevel_data *d = (multilevel_data *) P_internal_data;
-  if (!d->P[c][cmp] || inotowned < 0 || inotowned >= T) // never true
+  if (!d || !d->P[c][cmp] || inotowned < 0 || inotowned >= T)
     return NULL;
   return d->P[c][cmp][inotowned] + n;
 }
