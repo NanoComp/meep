@@ -1433,7 +1433,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
       }
       case susceptibility::MULTILEVEL_ATOM: {
 	multilevel_atom *d = p->user_s.subclass.multilevel_atom_data;
-	master_printf("multilevel atom\n");
+	master_printf("multilevel susceptibility: number of items=%d\n",d->transitions.num_items);
 	sus = make_multilevel_sus(d);
 	break;
       }
