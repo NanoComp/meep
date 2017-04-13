@@ -295,7 +295,7 @@ void multilevel_susceptibility::update_P
 	  EdP32 += dP * E8[idot][1];
 	}
       }
-      EdP32 *= 0.03125; /* divide by 32 */
+      EdP32 *= 0.015625; /* divide by 64 */
       for (int l = 0; l < L; ++l) Ntmp[l] += alpha[l*T + t] * EdP32;
     }
 
