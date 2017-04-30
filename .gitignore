@@ -88,3 +88,7 @@ tests/latest_output
 # output files
 examples/*.h5
 examples/*.png
+
+# python files
+__pycache__/
+*.pyc

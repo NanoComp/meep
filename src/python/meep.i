@@ -37,6 +37,48 @@ using namespace meep;
   import_array();
 %}
 
+// %{
+// static void EpsFunc_python(const double R[3], void *f, cdouble EH[6]) {
+//   npy_intp sz3 = 3, stride1 = sizeof(double);
+//   PyObject *Rpy = PyArray_New(&PyArray_Type, 1, &sz3, NPY_DOUBLE, &stride1,
+//                               const_cast<double*>(R), // not NPY_WRITEABLE
+//                               0, NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ALIGNED, NULL);
+//   PyObject *arglist = Py_BuildValue("O", Rpy);
+//   PyObject *result = PyEval_CallObject((PyObject *) f, arglist);
+//   PyArrayObject *EHpy;
+//   int is_new;
+//   Py_DECREF(arglist);
+//   Py_DECREF(Rpy);
+//   if (PyErr_Occurred()) {
+//     ErrExit("python exception handling not supported in libscuff");
+//   }
+//   else if ((EHpy = obj_to_array_contiguous_allow_conversion(result,
+//                                                             NPY_CDOUBLE,
+//                                                             &is_new))) {
+//     if (array_numdims(EHpy) != 1 || array_size(EHpy,0) != 0)
+//       ErrExit("6-component EH field must be returned to libscuff");
+//     memcpy(EH, array_data(EHpy), sizeof(cdouble) * 6);
+//     if (is_new) Py_DECREF((PyObject *) EHpy);
+//   }
+//   else {
+//     ErrExit("invalid EH field returned to libscuff");
+//   }
+//   Py_XDECREF(result);
+// }
+// %}
+
+// %typemap(in)(scuff::EHFuncType EHFunc, void *EHFuncUD) {
+//   $1 = EHFunc_python;
+//   Py_INCREF($input);
+//   $2 = (void *) $input;
+// }
+// %typemap(freearg)(scuff::EHFuncType EHFunc, void *EHFuncUD) {
+//   Py_XDECREF((PyObject *) $2);
+// }
+// %typecheck(SWIG_TYPECHECK_POINTER)(scuff::EHFuncType EHFunc, void *EHFuncUD) {
+//   $1 = PyCallable_Check($input);
+// }
+
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
 %rename(_is) meep::dft_chunk::is;

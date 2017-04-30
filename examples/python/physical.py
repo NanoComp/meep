@@ -18,7 +18,7 @@
 import meep as mp
 
 
-def one():
+def one(vec):
     return 1.0
 
 
@@ -27,7 +27,7 @@ def radiating_2d(xmax):
     ymax = 3.0
 
     # grid_volume
-    gv = mp.grid_volume.voltwo(xmax, ymax, a)
+    gv = mp.voltwo(xmax, ymax, a)
     s = mp.structure(gv, one, mp.pml(ymax / 3))
 
     f = mp.fields(s)
