@@ -51,6 +51,39 @@ const double nan = NAN;
 const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
+
+class Callback {
+public:
+  virtual ~Callback() {}
+  virtual double run(const vec &v) {}
+};
+
+class Caller {
+public:
+  Caller(): _callback(NULL) {}
+  ~Caller() {
+    delCallback();
+  }
+
+  void delCallback() {
+    delete _callback;
+    _callback = 0;
+  }
+
+  void setCallback(Callback *cb) {
+    delCallback();
+    _callback = cb;
+  }
+
+  double operator()(const vec &v) {
+    if(_callback) {
+      return _callback->run(v);
+    }
+  }
+
+  Callback *_callback;
+};
+
 /* generic base class, only used by subclassing: represents susceptibility 
    polarizability vector P = chi(omega) W  (where W = E or H). */
 class susceptibility {
@@ -410,24 +443,26 @@ public:
 };
 
 class simple_material_function : public material_function {
-  double (*f)(const vec &);
+  // double (*f)(const vec &);
+  Caller *caller;
   
 public:
-  simple_material_function(double (*func)(const vec &)) { f = func; }
+  // simple_material_function(double (*func)(const vec &)) { cb = func; }
+  simple_material_function(Caller *c) { caller = c; }
   
   virtual ~simple_material_function() {}
   
-  virtual double chi1p1(field_type ft, const vec &r) { (void)ft; return f(r); }
-  virtual double eps(const vec &r) { return f(r); }
-  virtual double mu(const vec &r) { return f(r); }
+  virtual double chi1p1(field_type ft, const vec &r) { (void)ft; return (*caller)(r); }
+  virtual double eps(const vec &r) { return (*caller)(r); }
+  virtual double mu(const vec &r) { return (*caller)(r); }
   virtual double conductivity(component c, const vec &r) { 
-    (void)c; return f(r); }
+    (void)c; return (*caller)(r); }
   virtual void sigma_row(component c, double sigrow[3], const vec &r) {
     sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
-    sigrow[component_index(c)] = f(r);
+    sigrow[component_index(c)] = (*caller)(r);
   }
-  virtual double chi3(component c, const vec &r) { (void)c; return f(r); }
-  virtual double chi2(component c, const vec &r) { (void)c; return f(r); }
+  virtual double chi3(component c, const vec &r) { (void)c; return (*caller)(r); }
+  virtual double chi2(component c, const vec &r) { (void)c; return (*caller)(r); }
 };
 
 class structure;
@@ -576,13 +611,21 @@ class structure {
 	    bool use_anisotropic_averaging=false,
 	    double tol=DEFAULT_SUBPIXEL_TOL,
 	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  structure(const grid_volume &gv, double eps(const vec &), 
-	    const boundary_region &br = boundary_region(),
-	    const symmetry &s = meep::identity(),
-	    int num_chunks = 0, double Courant = 0.5,
-	    bool use_anisotropic_averaging=false,
-	    double tol=DEFAULT_SUBPIXEL_TOL,
-	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+  // structure(const grid_volume &gv, double eps(const vec &),
+	 //    const boundary_region &br = boundary_region(),
+	 //    const symmetry &s = meep::identity(),
+	 //    int num_chunks = 0, double Courant = 0.5,
+	 //    bool use_anisotropic_averaging=false,
+	 //    double tol=DEFAULT_SUBPIXEL_TOL,
+	 //    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
+  // Takes Caller instance to be compatible with python wrapper
+  structure(const grid_volume &gv, Caller *eps,
+      const boundary_region &br = boundary_region(),
+      const symmetry &s = meep::identity(),
+      int num_chunks = 0, double Courant = 0.5,
+      bool use_anisotropic_averaging=false,
+      double tol=DEFAULT_SUBPIXEL_TOL,
+      int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   structure(const structure *);
   structure(const structure &);
 
@@ -599,7 +642,7 @@ class structure {
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  void set_epsilon(double eps(const vec &),
+  void set_epsilon(Caller *eps,
                    bool use_anisotropic_averaging=true,
 		   double tol=DEFAULT_SUBPIXEL_TOL,
 		   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
@@ -607,20 +650,20 @@ class structure {
 	      bool use_anisotropic_averaging=true,
 	      double tol=DEFAULT_SUBPIXEL_TOL,
 	      int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  void set_mu(double mu(const vec &),
+  void set_mu(Caller *mu,
 	      bool use_anisotropic_averaging=true,
 	      double tol=DEFAULT_SUBPIXEL_TOL,
 	      int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
   void set_conductivity(component c, material_function &conductivity);
-  void set_conductivity(component C, double conductivity(const vec &));
+  void set_conductivity(component C, Caller *conductivity);
   void set_chi3(component c, material_function &eps);
   void set_chi3(material_function &eps);
-  void set_chi3(double eps(const vec &));
+  void set_chi3(Caller *eps);
   void set_chi2(component c, material_function &eps);
   void set_chi2(material_function &eps);
-  void set_chi2(double eps(const vec &));
+  void set_chi2(Caller *eps);
   
-  void add_susceptibility(double sigma(const vec &), field_type c, const susceptibility &sus);
+  void add_susceptibility(Caller *sigma, field_type c, const susceptibility &sus);
   void add_susceptibility(material_function &sigma, field_type c, const susceptibility &sus);
   void remove_susceptibilities();
 

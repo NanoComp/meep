@@ -54,11 +54,25 @@ structure::structure(const grid_volume &thegv, material_function &eps,
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
-structure::structure(const grid_volume &thegv, double eps(const vec &),
-		     const boundary_region &br,
-		     const symmetry &s,
-		     int num, double Courant, bool use_anisotropic_averaging,
-		     double tol, int maxeval) :
+// structure::structure(const grid_volume &thegv, double eps(const vec &),
+// 		     const boundary_region &br,
+// 		     const symmetry &s,
+// 		     int num, double Courant, bool use_anisotropic_averaging,
+// 		     double tol, int maxeval) :
+//   Courant(Courant), v(D1) // Aaack, this is very hokey.
+// {
+//   outdir = ".";
+//   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+//   choose_chunkdivision(thegv, num, br, s);
+//   simple_material_function epsilon(eps);
+//   set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
+// }
+
+structure::structure(const grid_volume &thegv, Caller *eps,
+         const boundary_region &br,
+         const symmetry &s,
+         int num, double Courant, bool use_anisotropic_averaging,
+         double tol, int maxeval) :
   Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
@@ -376,9 +390,15 @@ void structure::set_epsilon(material_function &eps,
     master_printf("time for set_epsilon = %g s\n", wall_time() - tstart);
 }
 
-void structure::set_epsilon(double eps(const vec &),
-                            bool use_anisotropic_averaging,
-			    double tol, int maxeval) {
+// void structure::set_epsilon(double eps(const vec &),
+//                             bool use_anisotropic_averaging,
+// 			    double tol, int maxeval) {
+//   simple_material_function epsilon(eps);
+//   set_epsilon(epsilon, use_anisotropic_averaging, tol, maxeval);
+// }
+
+void structure::set_epsilon(Caller *eps, bool use_anisotropic_averaging,
+                            double tol, int maxeval) {
   simple_material_function epsilon(eps);
   set_epsilon(epsilon, use_anisotropic_averaging, tol, maxeval);
 }
@@ -393,7 +413,7 @@ void structure::set_mu(material_function &m,
     master_printf("time for set_mu = %g s\n", wall_time() - tstart);
 }
 
-void structure::set_mu(double mufunc(const vec &),
+void structure::set_mu(Caller *mufunc,
 		       bool use_anisotropic_averaging,
 		       double tol, int maxeval) {
   simple_material_function mu(mufunc);
@@ -411,7 +431,7 @@ void structure::set_conductivity(component c, material_function &C) {
     master_printf("time for set_conductivity = %g s\n", wall_time() - tstart);
 }
 
-void structure::set_conductivity(component c, double Cfunc(const vec &)) {
+void structure::set_conductivity(component c, Caller *Cfunc) {
   simple_material_function conductivity(Cfunc);
   set_conductivity(c, conductivity);
 }
@@ -428,7 +448,7 @@ void structure::set_chi3(material_function &eps) {
   FOR_ELECTRIC_COMPONENTS(c) set_chi3(c, eps);
 }
 
-void structure::set_chi3(double eps(const vec &)) {
+void structure::set_chi3(Caller *eps) {
   simple_material_function epsilon(eps);
   set_chi3(epsilon);
 }
@@ -444,12 +464,12 @@ void structure::set_chi2(material_function &eps) {
   FOR_ELECTRIC_COMPONENTS(c) set_chi2(c, eps);
 }
 
-void structure::set_chi2(double eps(const vec &)) {
+void structure::set_chi2(Caller *eps) {
   simple_material_function epsilon(eps);
   set_chi2(epsilon);
 }
 
-void structure::add_susceptibility(double sigma(const vec &), field_type ft, const susceptibility &sus) {
+void structure::add_susceptibility(Caller *sigma, field_type ft, const susceptibility &sus) {
   simple_material_function sig(sigma);
   add_susceptibility(sig, ft, sus);
 }

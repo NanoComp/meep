@@ -18,8 +18,13 @@
 import meep as mp
 
 
-def one(vec):
-    return 1.0
+class PyCallback(mp.Callback):
+
+    def __init__(self):
+        mp.Callback.__init__(self)
+
+    def run(self, vec):
+        return 1
 
 
 def radiating_2d(xmax):
@@ -28,7 +33,10 @@ def radiating_2d(xmax):
 
     # grid_volume
     gv = mp.voltwo(xmax, ymax, a)
-    s = mp.structure(gv, one, mp.pml(ymax / 3))
+
+    one_cb = mp.Caller()
+    one_cb.setCallback(PyCallback().__disown__())
+    s = mp.structure(gv, one_cb, mp.pml(ymax / 3))
 
     f = mp.fields(s)
     w = 0.30
@@ -50,11 +58,22 @@ def radiating_2d(xmax):
 
     ratio = pow(abs(amp1) / abs(amp2), 2.0)
     print("Ratio is {} from ({} {}) and ({} {})".format(
-        ratio, float(amp1), amp1, float(amp2), amp2
+        ratio, amp1.real, amp1, amp2.real, amp2
     ))
 
     fail_fmt = "Failed: amp1 = ({}, {}), amp2 = ({}, {})\nabs(amp1/amp2)^2 = {}, too far from 2.0"
-    assert ratio <= 2.12 and ratio >= 1.88, fail_fmt.format(float(amp1), amp1, float(amp2), amp2, ratio)
+    assert ratio <= 2.12 and ratio >= 1.88, fail_fmt.format(amp1.real, amp1, amp2.real, amp2, ratio)
+
+    return 1
+
+
+def attempt(name, allright):
+    if allright:
+        print("Passed {}".format(name))
+    else:
+        mp.abort("Failed {}!".format(name))
+
 
 if __name__ == '__main__':
-    radiating_2d(8.0)
+    print("Trying out some physical tests...")
+    attempt("radiating source should decay spatially as 1/sqrt(r) in 2D.", radiating_2d(8.0))
