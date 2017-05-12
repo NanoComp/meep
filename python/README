@@ -1,0 +1,18 @@
+20170511 
+
+Building with the automake-generated Makefile succeeds, but 
+python can't seem to make head or tail of the resulting _meep.la
+file.
+
+Building with Makefile.manual yields something that successfully compiles,
+but the resulting import into python doesn't work:
+
+>>> import meep
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "meep.py", line 28, in <module>
+    _meep = swig_import_helper()
+  File "meep.py", line 24, in swig_import_helper
+    _mod = imp.load_module('_meep', fp, pathname, description)
+ImportError: ./_meep.so: undefined symbol: _ZN4meep17material_function15eff_chi1inv_rowENS_9componentEPdRKNS_6volumeEdi
+>>> 

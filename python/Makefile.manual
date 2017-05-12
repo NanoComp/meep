@@ -1,0 +1,10 @@
+MEEP=/home/homer/work/Simpetus/meep
+PYTHON=/usr
+CPPFLAGS=-I$(MEEP)/src -I/usr/include/python2.7 -I$(PY_ROOT)/lib/python2.7/dist-packages/numpy/core/include 
+LDFLAGS=-L$(HOME)/codes/lib -L$(MEEP)/src/.libs -L/usr/lib/python2.7
+LIBS="-Wl,-rpath=../src/meep/.libs -lmeep -lgsl -lgslcblas -lopenblas -lfftw3 -lhdf5 -lhdf5_hl -lm -lgfortran -lpython2.7"
+
+all:
+	swig -c++ -python -Wextra $(CPPFLAGS) -o meep_wrap.cxx meep.i
+	$(CXX) $(CPPFLAGS) -c -fPIC meep_wrap.cxx 
+	$(CXX) -shared -fPIC $(LDFLAGS) meep_wrap.o $(LIBS) -o _meep.so
