@@ -14,7 +14,8 @@ AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
-AM_ENABLE_SHARED(no) dnl shared libs cause too many headaches to be default
+# HR 20170511 need shared libraries for python interfaces
+AM_ENABLE_SHARED
 
 MEEP_SUFFIX=""
 
@@ -461,6 +462,12 @@ AC_ARG_WITH(python,
 	[AC_HELP_STRING([--without-python], [don't compile Python interface])],
         with_python=$withval,with_python=yes)
 
+
+if test "$enable_shared" = no; then
+   AC_MSG_WARN([Python interface requires --enable-shared; disabling])
+   have_python=no
+else
+
 if test "x$with_python" = xno; then
   have_python=no
 else
@@ -489,6 +496,8 @@ if test $have_python = yes; then
 fi
 
 fi # with_python
+
+fi # if enable_shared
 
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
