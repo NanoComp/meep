@@ -2,7 +2,7 @@ language: cpp
 addons:
   apt:
     packages:
-    - guile2.0-dev
+    - guile-2.0-dev
     - libgsl0-dev
     - libfftw3-dev
     - gfortran
