@@ -11,7 +11,7 @@ addons:
     - python-numpy
     - swig
 script:
-  - ./autogen.sh --enable-shared --with-python
+  - ./autogen.sh --enable-shared --with-python --without-libctl
   - make
   - ln -s python/.libs/_meep.so python
   - PYTHONPATH=python python -c 'import meep'
