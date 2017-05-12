@@ -31,3 +31,4 @@ meep-python.cpp:	$(SWIG_SRC) $(HPPFILES)
 meep.py:       		meep-python.cpp
 
 endif # MAINTAINER_MODE
+
