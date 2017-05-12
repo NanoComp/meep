@@ -16,3 +16,4 @@ script:
   - cd python
   - ln -s .libs/_meep.so .
   - PYTHONPATH=. python -c 'import meep'
+  - exit 0
