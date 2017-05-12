@@ -13,7 +13,6 @@ addons:
 script:
   - ./autogen.sh --enable-shared --with-python --without-libctl
   - make
-  - pushd python
+  - cd python
   - ln -s .libs/_meep.so .
   - PYTHONPATH=. python -c 'import meep'
-  - popd
