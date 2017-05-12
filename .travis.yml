@@ -1,0 +1,15 @@
+language: cpp
+addons:
+  apt:
+    packages:
+    - gsl
+    - libfftw3-dev
+    - gfortran
+    - libhdf5-serial-dev
+    - liblapack-dev
+    - python-numpy
+    - swig
+script:
+  - ./autogen.sh --enable-shared --with-python
+  - make
+  - PYTHONPATH=src/python:src/python/.libs python -c 'import meep'
