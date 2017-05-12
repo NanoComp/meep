@@ -2,7 +2,7 @@ language: cpp
 addons:
   apt:
     packages:
-    - gsl
+    - libgsl0-dev
     - libfftw3-dev
     - gfortran
     - libhdf5-serial-dev
