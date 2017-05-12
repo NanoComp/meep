@@ -12,4 +12,5 @@ addons:
 script:
   - ./autogen.sh --enable-shared --with-python
   - make
-  - PYTHONPATH=src/python:src/python/.libs python -c 'import meep'
+  - ln -s src/python/.libs/_meep.so .
+  - PYTHONPATH=src/python python -c 'import meep'
