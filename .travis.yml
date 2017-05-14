@@ -11,6 +11,7 @@ addons:
     - python-numpy
     - swig
 script:
+  - /bin/rm -rf libctl
   - git clone https://github.com/stevengj/libctl
   - (cd libctl && git checkout 7d51710e63952d343ce8f241cf92b5cbfd5f1ada && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   - git clone https://github.com/homerreid/harminv
