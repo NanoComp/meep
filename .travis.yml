@@ -11,10 +11,9 @@ addons:
     - python-numpy
     - swig
 script:
-  - ./autogen.sh --enable-shared --with-python --without-libctl
-  - make
-  - cd python
-  - ln -s .libs/_meep.so .
-  - PYTHONPATH=. python -c 'import meep'
-  - cd
-  - exit 0
+  - git clone https://github.com/stevengj/libctl
+  - (cd libctl && git checkout 7d51710e63952d343ce8f241cf92b5cbfd5f1ada && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - git clone https://github.com/homerreid/harminv
+  - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - sh autogen.sh --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl GEN_CTL_IO=$HOME/local/bin/gen-ctl-io CPPFLAGS=-I$HOME/local/include LDFLAGS=-L$HOME/local/lib
+  - make && make check && make install

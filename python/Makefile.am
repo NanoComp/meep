@@ -10,7 +10,6 @@ HPPFILES=	                          \
 BUILT_SOURCES = meep-python.cpp meep.py
 
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
-              -I$(top_srcdir)/src/meep              \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
@@ -26,7 +25,7 @@ endif
 if MAINTAINER_MODE
 
 meep-python.cpp:	$(SWIG_SRC) $(HPPFILES)
-	swig -Wall $(AM_CPPFLAGS) -c++ -python -o $@ $(srcdir)/meep.i
+	swig -Wall $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
 meep.py:       		meep-python.cpp
 
