@@ -166,7 +166,7 @@ fi
 AC_CHECK_HEADER(mpb.h, [have_mpb=maybe], [have_mpb=no])
 
 if test $have_mpb = maybe; then
-  if test "x$acx_lapack_ok" = x -a "$have_harminv" = xno; then
+  if test "x$acx_lapack_ok" = x -a "x$have_harminv" = xno; then
 	ACX_BLAS
 	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for MPB])])
         LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
