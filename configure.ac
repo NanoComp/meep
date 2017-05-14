@@ -185,10 +185,10 @@ fi
 ##############################################################################
 # GNU Scientific Library
 
-AC_CHECK_FUNC(cblas_cgemm, [], [AC_CHECK_LIB(gslcblas, cblas_cgemm)])
-
-AC_CHECK_LIB(gsl, gsl_sf_bessel_Jn, [],
-	[AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
+AC_CHECK_LIB([m],[cos])
+AC_CHECK_LIB([gslcblas],[cblas_dgemm])
+AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
+	     [AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
 
 ##############################################################################
 # Check for HDF5 library
