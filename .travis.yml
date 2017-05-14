@@ -3,7 +3,7 @@ addons:
   apt:
     packages:
     - guile-2.0-dev
-    - libgsl0-dev
+    - libgsl0ldbl
     - libfftw3-dev
     - gfortran
     - libhdf5-serial-dev
