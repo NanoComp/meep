@@ -4,6 +4,7 @@ addons:
     packages:
     - guile-2.0-dev
     - libgsl0ldbl
+    - libgsl0-dev
     - libfftw3-dev
     - gfortran
     - libhdf5-serial-dev
