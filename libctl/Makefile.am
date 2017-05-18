@@ -1,3 +1,4 @@
+lib_LTLIBRARIES = libmeep@MEEP_SUFFIX@-ctl.la
 bin_PROGRAMS = meep@MEEP_SUFFIX@
 EXTRA_DIST = meep.scm.in meep-enums.scm casimir.scm meep_wrap.patch
 
@@ -8,9 +9,10 @@ HDRS = meep-ctl.hpp meep-ctl-const.hpp meep-ctl-swig.hpp
 LIBHDRS = $(top_srcdir)/src/meep.hpp $(top_srcdir)/src/meep/vec.hpp $(top_srcdir)/src/meep/mympi.hpp
 CTLHDRS = $(LIBHDRS) $(srcdir)/meep-ctl.hpp $(top_builddir)/config.h $(srcdir)/meep-ctl-const.hpp ctl-io.h
 
-meep@MEEP_SUFFIX@_SOURCES = meep.cpp structure.cpp meep_wrap.cxx $(HDRS) meep.i meep_op_renames.i meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i
-nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp geom.cpp ctl-io.cpp ctl-io.h ctl-io.i
-meep@MEEP_SUFFIX@_LDADD = $(LIBMEEP) @LIBCTL_LIBS@
+libmeep@MEEP_SUFFIX@_ctl_la_SOURCES = ctl-io.cpp geom.cpp meep.cpp structure.cpp ctl-io.h ctl-io.i $(HDRS) meep.i meep_op_renames.i meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i
+
+nodist_meep@MEEP_SUFFIX@_SOURCES = main.cpp
+meep@MEEP_SUFFIX@_LDADD = libmeep@MEEP_SUFFIX@-ctl.la $(LIBMEEP) @LIBCTL_LIBS@
 
 BUILT_SOURCES = $(nodist_meep_SOURCES) meep_renames.i meep_enum_renames.i meep_swig_bug_workaround.i meep-enums.scm meep_wrap.cxx
 
