@@ -1,0 +1,20 @@
+language: cpp
+addons:
+  apt:
+    packages:
+    - guile-2.0-dev
+    - libgsl0-dev
+    - libfftw3-dev
+    - gfortran
+    - libhdf5-serial-dev
+    - liblapack-dev
+    - python-numpy
+    - swig
+script:
+  - git clone https://github.com/stevengj/libctl libctl-src
+  - (cd libctl-src && git checkout 7d51710e63952d343ce8f241cf92b5cbfd5f1ada && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - git clone https://github.com/homerreid/harminv
+  - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io sh autogen.sh --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
+  - make && make check && make install
+  - exit 0
