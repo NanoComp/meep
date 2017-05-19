@@ -21,7 +21,9 @@
 #define SWIG_FILE_WITH_INIT
 #include "meep/vec.hpp"
 #include "meep.hpp"
+#include "mpSession.hpp"
 using namespace meep;
+using namespace meepSession;
 %}
 
 %include "numpy.i"
@@ -94,6 +96,6 @@ using namespace meep;
 %rename(grid_volume_getitem) meep::grid_volume::operator[];
 %rename(symmetry_assign) meep::symmetry::operator=;
 
-
 %include "meep/vec.hpp"
 %include "meep.hpp"
+%include "mpSession.hpp"

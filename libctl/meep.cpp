@@ -3,6 +3,15 @@
 using namespace meep;
 using namespace std;
 
+/* define a global "verbose" variable set by the --verbose command-line opt. */
+int verbose = 0;
+
+/* a "quiet" variable, that if nonzero suppresses all non-error output...
+   this is used by parallel software to suppress output from processes
+   other than the master process */
+int libctl_quiet = 0;
+
+
 /**************************************************************************/
 
 /* The following are hook functions called from main() when
