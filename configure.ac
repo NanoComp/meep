@@ -490,7 +490,7 @@ else
         CPPFLAGS="$save_CPPFLAGS $PYTHON_INCLUDES"
         AC_CHECK_HEADER([numpy/arrayobject.h],[],[
           AC_MSG_WARN([disabling Python wrappers])
-          have_python=no],[#include <Python.h>])jl$A
+          have_python=no],[#include <Python.h>])
       fi
 
       CPPFLAGS=$save_CPPFLAGS
