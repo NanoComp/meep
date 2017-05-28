@@ -126,6 +126,15 @@ if test "x$with_lapack" != xno -o "x$with_blas" != xno; then
    LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
 fi
 
+##############################################################################
+# GNU Scientific Library
+
+AC_CHECK_LIB([m],[cos])
+AC_CHECK_FUNC(cblas_dgemm, [], [AC_CHECK_LIB(cblas, cblas_dgemm, [], [AC_CHECK_LIB(gslcblas, cblas_dgemm)])])
+AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
+	     [AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
+
+
 ###########################################################################
 # Harminv library
 
@@ -182,13 +191,6 @@ if test $have_mpb = maybe; then
   fi
 fi
 
-##############################################################################
-# GNU Scientific Library
-
-AC_CHECK_LIB([m],[cos])
-AC_CHECK_LIB([gslcblas],[cblas_dgemm])
-AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
-	     [AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
 
 ##############################################################################
 # Check for HDF5 library
