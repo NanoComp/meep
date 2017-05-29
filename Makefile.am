@@ -8,6 +8,10 @@ ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS = src $(LIBCTL) tests examples
 
+if WITH_PYTHON
+  SUBDIRS += python
+endif
+
 EXTRA_DIST = COPYRIGHT m4 meep-pkgconfig.in
 
 pkgconfigdir = $(libdir)/pkgconfig
