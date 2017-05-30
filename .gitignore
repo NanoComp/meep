@@ -10,6 +10,7 @@
 *.dSYM
 *.zip
 *.native
+*.pyc
 _build
 
 # autotools stuff
@@ -52,11 +53,14 @@ libctl/meep_enum_renames.i
 libctl/meep_renames.i
 libctl/meep_swig_bug_workaround.i
 libctl/meep_wrap.cxx
+libctl/meep_wrap.cxx.orig
 meep-pkgconfig
 meep.pc
 src/sphere-quad.h
 src/sphere_quad
 src/step_generic_stride1.cpp
+python/meep-python.cpp
+python/meep.py
 
 # test programs
 tests/2D_convergence
@@ -84,6 +88,9 @@ tests/two_dimensional
 tests/*.trs
 tests/*.log
 tests/latest_output
+python/tests/*.log
+python/tests/*.trs
+python/*.log
 
 # output files
 examples/*.h5
