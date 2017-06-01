@@ -1,0 +1,34 @@
+MEEP=$(HOME)/work/Simpetus/meep-installation
+
+CPPFLAGS += -I$(MEEP)/include -I. -I..
+
+LDFLAGS  += -L. -L$(MEEP)/lib
+
+CXXFLAGS += -O3 -DHAVE_CONFIG_H
+
+##################################################
+##################################################
+##################################################
+MPSESSION_OBJS=mpSession.o\
+ dataStructures.o\
+ structure.o\
+
+CTLGEOM_NOSCHEME_OBJS=\
+ ctl-noscheme.o\
+ geom-noscheme.o\
+ integrator-noscheme.o
+
+SYSTEM_LIBS=-lhdf5 -lz -lharminv  -lblas -lgsl -lm  -lblas -lfftw3 -lgfortran -lm -lquadmath
+LIBS=-lmpSession -lctlgeom-noscheme -lmeep $(SYSTEM_LIBS)
+ 
+pw-source:     		pw-source.o libmpSession.a libctlgeom-noscheme.a
+			$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+libmpSession.a:		$(MPSESSION_OBJS)
+			ar r $@ $^
+
+libctlgeom-noscheme.a:	$(CTLGEOM_NOSCHEME_OBJS)
+			ar r $@ $^
+
+clean:
+		/bin/rm *.o *.a
