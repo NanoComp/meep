@@ -10,12 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex>
+#include "meep/vec.hpp"
 #include "mpSession.hpp"
 
 using namespace meep;
 using namespace meepSession;
-
-typedef std::complex<double> cdouble;
 
 /***************************************************************/
 /*
@@ -85,16 +84,25 @@ int main(int argv, char *argc[])
 
   vector3 x0Left = vector3_scale(-0.5*s, v3_xaxis);
   pw_amp_data leftData = { .k=k, .x0 = x0Left };
-  S.add_continuous_src(fcen, df, component::Ez, x0Left, size,
-                       pw-amp, (void *)&leftData);
+  // S.add_continuous_src(fcen, df, component::Ez, x0Left, size,
+  //                      pw-amp, (void *)&leftData);
 
-  //vector3 x0Bottom = vector3_scale(-0.5*s, v3_yaxis);
- // pw_amp_data bottomData = { .k=k, .x0 = x0Bottom };
- // S.add_continuous_src(fcen, df, component::Ez, x0Bottom, size,
- //                      pw-amp, (void *)&bottomData);
+  vector3 x0Bottom = vector3_scale(-0.5*s, v3_yaxis);
+  pw_amp_data bottomData = { .k=k, .x0 = x0Bottom };
+  // S.add_continuous_src(fcen, df, component::Ez, x0Bottom, size,
+  //                      pw-amp, (void *)&bottomData);
 
   // (run-until T (at-end output-efield-z))
   double T=400.0;
- // S.add_output(component::Ez);
- // S.run_until(T);
+
+  S.add_output(Ez);
+
+  // S.add_step_func(MyFunc1, MyData1, AT_BEGINNING);
+  // S.add_step_func(MyFunc2, MyData2, BEFORE_TIME, 5.0);
+  // S.add_step_func(MyFunc3, MyData3, AT_EVERY,    4.0);
+  // S.add_step_func(MyFunc4, MyData4, DURING_SOURCES);
+  // S.add_step_func(MyFunc5, MyData5, AFTER_SOURCES_PLUS, 10.0);
+
+  S.run_until(T);
+
 }

@@ -9,13 +9,14 @@ CXXFLAGS += -O3 -DHAVE_CONFIG_H
 ##################################################
 ##################################################
 ##################################################
-MPSESSION_OBJS=mpSession.o\
- dataStructures.o\
- structure.o\
+MPSESSION_OBJS=mpSession.o  \
+ step_functions.o           \
+ data_structures.o          \
+ structure.o                \
 
-CTLGEOM_NOSCHEME_OBJS=\
- ctl-noscheme.o\
- geom-noscheme.o\
+CTLGEOM_NOSCHEME_OBJS=      \
+ ctl-noscheme.o             \
+ geom-noscheme.o            \
  integrator-noscheme.o
 
 SYSTEM_LIBS=-lhdf5 -lz -lharminv  -lblas -lgsl -lm  -lblas -lfftw3 -lgfortran -lm -lquadmath

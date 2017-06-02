@@ -5,7 +5,7 @@
 #define CTL_IO_H
 
 #include <ctl-noscheme.h>
-#include "dataStructures.hpp"
+#include "data_structures.hpp"
 
 #ifdef __cplusplus
 extern "C" {

@@ -28,12 +28,15 @@
 #include <math.h>
 
 #include "config.h"
+
 #include "meep.hpp"
+
 #include "ctl-noscheme.h"
 #include "ctlgeom-types.h"
 #include "ctlgeom.h"
 
-#include "dataStructures.hpp"
+#include "data_structures.hpp"
+#include "step_functions.hpp"
 
 using namespace meep;
 
@@ -41,11 +44,17 @@ namespace meepSession {
 
 #define ALL_DIRECTIONS -1
 
+typedef std::complex<double> cdouble;
+
+/***************************************************************/
+/* prototypes for various user-supplied callback routines      */
+/***************************************************************/
+// source amplitude
+typedef cdouble (*amplitude_function)(const vec &, void *UserData);
+
 /***************************************************************/
 /* dataStructures.cpp ******************************************/
 /***************************************************************/
-typedef amplitude_function std::complex<double> A(const vec &);
-
 material_type *make_dielectric(double epsilon);
 void init_pml(ctl_pml *p, double thickness, int direction=ALL_DIRECTIONS);
 ctl_pml *make_pml(double thickness);
@@ -59,7 +68,6 @@ extern vector3 v3_yaxis;
 extern vector3 v3_zaxis;
 extern vector3 v3_ones;
 
-/***************************************************************/
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
@@ -93,6 +101,7 @@ class mpSession
      /***************************************************************/
      /***************************************************************/
      /***************************************************************/
+     void set_verbose();
      void set_dimensions(int dims);
      void set_resolution(int res);
 
@@ -100,11 +109,21 @@ class mpSession
 
      void add_pml_layer(double thickness, int direction=ALL_DIRECTIONS );
 
-     void add_continuous_src(double fcen, double df, component cp,
-                             vector3 
+     //void add_continuous_src(double fcen, double df, component cp,
+     //                       vector3
+
      void add_object(char *format, ...);
 
-     //step_func_list step_funcs;
+     void add_output(component C);
+
+     typedef enum { AT_BEGINNING, AT_END,
+                    BEFORE_TIME, AT_TIME, AFTER_TIME, AT_EVERY,
+                    DURING_SOURCES, AFTER_SOURCES_PLUS
+                  } when;
+
+     void add_step_func(step_function f, void *UserData,
+                        when when_to_run, double T=0.0);
+
      void run_until(double T);
 
      // static fields used as global variables
@@ -113,7 +132,6 @@ class mpSession
    private:
 
      // data fields used to construct the_structure
-     int dimensions;
      int        resolution;
      bool       eps_averaging;
      double     subpixel_tol;
@@ -137,7 +155,20 @@ class mpSession
 
      geometric_object_list objects;
 
-     // 
+     // step functions
+     typedef struct step_func
+      { step_function f;
+        void *user_data;
+        when when_to_run;
+        double T;
+      } step_func;
+
+     typedef struct {
+      int num_items;
+      step_func *items;
+      } step_func_list;
+
+     // low-level meep structures
      structure  *the_structure;
      fields     *the_fields;
 

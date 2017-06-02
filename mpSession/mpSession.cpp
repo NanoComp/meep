@@ -34,6 +34,7 @@ mpSession::mpSession()
   mpSession::air=mpSession::vacuum;
 
   // initialize global variables in libctlgeom
+  dimensions=-1;
   geometry_lattice.size=v3_zeroes;
 
   // default values for data fields used to construct the_structure
@@ -54,11 +55,17 @@ mpSession::mpSession()
   accurate_fields_near_cylorigin=false;
   special_kz=false;
 
+  // other class field initializations
+  verbose=false;
+
 }
+
+void mpSession::set_verbose()
+ { verbose=true; }
 
 void mpSession::set_dimensions(int dims)
 { 
-  dimensions=dims; // global variable in libctlgeom-mpSession
+  dimensions=dims; // global variable in libctl-noscheme
 }
 
 void mpSession::set_resolution(int res)
@@ -99,16 +106,17 @@ int infer_dimensions(double *k)
   return 3;
 }
 /***************************************************************/
-
-/***************************************************************/
 /* based on                                                    */
 /*  (define (init-structure . k_)                              */
 /* in meep.scm                                                 */
 /***************************************************************/
 void mpSession::initStructure(double *kPoint)
 {
+  if (dimensions==-1)
+   dimensions = infer_dimensions(kPoint);
+
   the_structure
-   = make_structure( infer_dimensions(kPoint),
+   = make_structure( dimensions,
                      geometry_lattice.size, geometry_center,
                      resolution,
                      eps_averaging, subpixel_tol, subpixel_maxeval,
@@ -147,6 +155,8 @@ void mpSession::run_until(double T)
 {
   if (!the_fields)
    initFields();
+
+  double T0=the_fields->round_time();
 }
 
 //} // namespace meepSession
