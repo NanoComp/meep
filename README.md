@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/stevengj/meep.svg?branch=master)](https://travis-ci.org/stevengj/meep)
+
 Meep (or MEEP) is a free finite-difference time-domain (FDTD)
 simulation software package developed at MIT to model electromagnetic
 systems.  You can download Meep and learn more about it at the Meep
