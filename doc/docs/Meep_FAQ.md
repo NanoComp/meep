@@ -10,14 +10,14 @@ General
 
 ### What is Meep?
 
-Meep is our free software for finite-difference time-domain simulation. For the meaning of the name "Meep", see [Meep acronym expansions](/Meep_acronym_expansions "wikilink").
+Meep is our free software for finite-difference time-domain simulation. For the meaning of the name "Meep", see [Meep acronym expansions](Meep_acronym_expansions.md).
 
 Installation
 ------------
 
 ### Where can I install Meep?
 
-Meep should run on any Unix-like system, from individual machines to clusters to large parallel supercomputers. We do most of our development on GNU/Linux systems, and precompiled packages are available for Debian and Ubuntu. It should also be possible to install Meep on Windows using the free [Cygwin](/w:Cygwin "wikilink") Unix-compatibility environment. Installing Meep from source code requires some understanding of Unix, however, especially to install the various prerequisites, and we recommend consulting a local Unix guru at your institution if you run into trouble.
+Meep should run on any Unix-like system, from individual machines to clusters to large parallel supercomputers. We do most of our development on GNU/Linux systems, and precompiled packages are available for Debian and Ubuntu. It should also be possible to install Meep on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. Installing Meep from source code requires some understanding of Unix, however, especially to install the various prerequisites, and we recommend consulting a local Unix guru at your institution if you run into trouble.
 
 ### Guile is installed, but configure complains that it can't find guile
 
@@ -32,11 +32,11 @@ There is no simple formula relating the input current amplitude (**J** in Maxwel
 
 See also our online book chapter on [Wave source conditions](http://arxiv.org/abs/arXiv:1301.5366).
 
-If you are worried about this, then you are probably setting up your calculation in the wrong way. Especially in linear materials, the absolute magnitude of the field is useless; the only meaningful quantities are dimensionless ratios like the fractional transmission (the transmitted power relative to the transmitted power in some reference calculation). Almost always, you want to perform two calculations, one of which is a reference, and compute the ratio of a result in one calculation to the result in the reference. For nonlinear calculations, see [Units and nonlinearity in Meep](/Units_and_nonlinearity_in_Meep "wikilink").
+If you are worried about this, then you are probably setting up your calculation in the wrong way. Especially in linear materials, the absolute magnitude of the field is useless; the only meaningful quantities are dimensionless ratios like the fractional transmission (the transmitted power relative to the transmitted power in some reference calculation). Almost always, you want to perform two calculations, one of which is a reference, and compute the ratio of a result in one calculation to the result in the reference. For nonlinear calculations, see [Units and nonlinearity in Meep](Units_and_nonlinearity_in_Meep.md).
 
 ### How do I set the imaginary part of ε?
 
-If you only care about the imaginary part of ε in a narrow bandwidth around some frequency ω, you should set it by using the electric conductivity as described in [Conductivity in Meep](/Conductivity_in_Meep "wikilink"). If you care about the imaginary part of ε over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit it to Meep's dispersive-ε support (see [Material dispersion in Meep](/Material_dispersion_in_Meep "wikilink")).
+If you only care about the imaginary part of ε in a narrow bandwidth around some frequency ω, you should set it by using the electric conductivity as described in [Conductivity in Meep](Conductivity_in_Meep.md). If you care about the imaginary part of ε over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit it to Meep's dispersive-ε support (see [Material dispersion in Meep](Material_dispersion_in_Meep.md)).
 
 Meep doesn't implement a frequency-independent complex ε. Not only is this not physical, but it also leads to both exponentially decaying and exponentially growing solutions in Maxwell's equations from positive- and negative-frequency Fourier components, respectively, so it cannot be simulated in the time domain.
 
@@ -44,25 +44,25 @@ Meep doesn't implement a frequency-independent complex ε. Not only is this not 
 
 Maxwell's equations have exponentially growing solutions for a frequency-independent negative ε. For any physical medium with negative ε, there must be dispersion, and you must likewise use dispersive materials in Meep to have negative ε at some desired frequency. (The requirement of dispersion to obtain negative ε follows from the Kramers–Kronig relations, and also follows from thermodynamic considerations that the energy in the electric field must be positive; see, for example, *Electrodynamics of Continuous Media* by Landau, Pitaevskii, and Lifshitz. At an even more fundamental level, it can be derived from [passivity constraints](http://arxiv.org/abs/arXiv:1405.0238).)
 
-If you solve Maxwell's equations in a homogenous-epsilon material at some real wavevector **k**, you get a dispersion relation \(\omega^2 = c^2 |\mathbf{k}|^2 / \varepsilon\). If ε is positive, there are two real solutions \(\omega^2 = \pm c |\mathbf{k}| / \sqrt{\varepsilon}\), giving oscillating solutions. If ε is negative, there are two *imaginary* solutions ω, corresponding to exponentially decaying and *exponentially growing solutions* from any current source (which can always be spatially decomposed into a superposition of real-**k** values via a spatial Fourier transform).
+If you solve Maxwell's equations in a homogenous-epsilon material at some real wavevector **k**, you get a dispersion relation $\omega^2 = c^2 |\textbf{k}|^2 / \varepsilon$. If ε is positive, there are two real solutions $\omega^2 = \pm c |\textbf{k}| / \sqrt{\varepsilon}$, giving oscillating solutions. If ε is negative, there are two *imaginary* solutions ω, corresponding to exponentially decaying and *exponentially growing solutions* from any current source (which can always be spatially decomposed into a superposition of real-**k** values via a spatial Fourier transform).
 
 If you do a simulation of any kind in the time domain (not just FDTD), you pretty much can't avoid exciting both the decaying and the growing solutions. This is *not* a numerical instability, it is a real solution of the underlying equations (for an unphysical material).
 
-See [Materials in Meep](/Materials_in_Meep "wikilink") for how to include dispersive materials (which can have negative ε and loss) in Meep.
+See [Materials in Meep](Materials_in_Meep.md) for how to include dispersive materials (which can have negative ε and loss) in Meep.
 
 (If you have *both* negative ε and negative μ *everywhere*, the famous case of a negative-index material, then the simulation is fine. However at the boundary between negative- and positive-index materials, you will encounter instabilities: because of the way Maxwell's equations are discretized in FDTD, the ε and μ are discretized on different spatial grids, so you will get a half-pixel or so of εμ &lt; 0 at the boundary between negative and positive indices, which will cause the simulation to diverge. But of course, any physical negative-index metamaterial also involves dispersion.)
 
-Note also that, as a consequence of the above analysis, ε must go to a positive value in the \(\omega\to\pm\infty\) limits to get non-diverging solutions of Maxwell's equations. So the \(\epsilon_\infty\) in your [dispersion model](/Materials_in_Meep "wikilink") must be positive.
+Note also that, as a consequence of the above analysis, ε must go to a positive value in the $\omega\to\pm\infty$ limits to get non-diverging solutions of Maxwell's equations. So the $\epsilon_\infty$ in your [dispersion model](Materials_in_Meep.md) must be positive.
 
 Usage
 -----
 
 ### Why doesn't turning off subpixel averaging work?
 
-By default, when Meep assigns a dielectric constant ε (or μ) to each "pixel", it uses a carefully designed average of the ε values within that pixel. This subpixel averaging generally improves the accuracy of the simulation—perhaps counter-intuitively, for geometries with discontinous ε it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) ε, as long as the averaging is done properly. (See [our papers](/Citing_Meep "wikilink") for more information.)
+By default, when Meep assigns a dielectric constant ε (or μ) to each "pixel", it uses a carefully designed average of the ε values within that pixel. This subpixel averaging generally improves the accuracy of the simulation—perhaps counter-intuitively, for geometries with discontinous ε it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) ε, as long as the averaging is done properly. (See [our papers](Citing_Meep.md) for more information.)
 
-Still, there are times when, for whatever reason, you might not want this feature. (For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging.) In this case, you can disable the subpixel averaging by doing `(set!` `eps-averaging?` `false)` in your control file (see the [Meep Reference](/Meep_Reference "wikilink")).
+Still, there are times when, for whatever reason, you might not want this feature. (For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging.) In this case, you can disable the subpixel averaging by doing `(set!` `eps-averaging?` `false)` in your control file (see the [Meep Reference](Meep_Reference.md)).
 
-Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and plot it, you may notice that there are some pixels with intermediate ε values, right at the boundary between two materials. This has a completely different source. Internally, Meep's simulation is performed on a [Yee grid](/Yee_grid "wikilink"), in which every field component is stored on a slightly different grid (offset from one another by half-pixels), and the ε values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid (the center of each pixel), so all quantities are interpolated onto this grid for output. Therefore, even though the internal ε values are indeed discontinuous when you disable subpixel averaging, the *output* file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.
+Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and plot it, you may notice that there are some pixels with intermediate ε values, right at the boundary between two materials. This has a completely different source. Internally, Meep's simulation is performed on a [Yee grid](Yee_grid.md), in which every field component is stored on a slightly different grid (offset from one another by half-pixels), and the ε values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid (the center of each pixel), so all quantities are interpolated onto this grid for output. Therefore, even though the internal ε values are indeed discontinuous when you disable subpixel averaging, the *output* file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.
 
-[Category:Meep](/Category:Meep "wikilink")
+[Category:Meep](Meep.md)

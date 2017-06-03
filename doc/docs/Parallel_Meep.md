@@ -3,12 +3,12 @@ title: Parallel Meep
 permalink: /Parallel_Meep/
 ---
 
-Meep supports distributed-memory parallelism using [MPI](/w:MPI "wikilink"). This allows it to scale up from small dual-processor machines to large parallel supercomputers, and to work on very large problems that may not even fit into the memory of one machine. We've run it using at least hundreds of processors. Of course, your problem must be sufficiently large in order to benefit from many processors.
+Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.org/wiki/MPI). This allows it to scale up from small dual-processor machines to large parallel supercomputers, and to work on very large problems that may not even fit into the memory of one machine. We've run it using at least hundreds of processors. Of course, your problem must be sufficiently large in order to benefit from many processors.
 
 Installing Parallel Meep
 ------------------------
 
-To install the parallel version of Meep, you must have a version of MPI installed on your system: see the [installation manual](/Meep_Installation#MPI_(parallel_machines) "wikilink").
+To install the parallel version of Meep, you must have a version of MPI installed on your system: see the [installation manual](Meep_Installation#MPI_(parallel_machines).md).
 
 We also *strongly* recommend installing the HDF5 with parallel I/O support if you are going to run with more than a few processors. (configure HDF5 with `--enable-parallel`; you may also have to set the `CC` environment variable to `mpicc`.) Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose to install either the serial or the parallel Meep, but not both.
 
@@ -23,7 +23,10 @@ The parallel version of Meep is designed to operate completely transparently: yo
 
 In order to run MPI programs, you typically have to use a command like `mpirun` with an argument to say how many processes you want to use. (Consult your MPI documentation.) For example, with many popular MPI implementations, to run with 4 processes you would use something like:
 
-`mpirun -np 4 meep-mpi foo.ctl > foo.out`
+```
+mpirun -np 4 meep-mpi foo.ctl > foo.out
+```
+
 
 There is one important requirement: every MPI process must be able to read the `foo.ctl` input file (or whatever your control file is called). On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something.
 
@@ -33,7 +36,7 @@ There is one important requirement: every MPI process must be able to read the `
 
 Parallel Meep works by taking your simulation and dividing the computational cell among the MPI processes. This is the only way of parallelizing a single simulation, and allows you to attack very large problems.
 
-However, there is an alternative strategy for parallelization. If you have many smaller simulations that you want to run, say for many different values of some parameter, then you can just run these as separate jobs. Such parallelization is known as "embarrassingly parallel" because no communication is required. Meep provides no explicit support for this mode of operation, but of course it is quite easy to do yourself: just launch as many Meep jobs as you want, perhaps [changing the parameters via the command-line](/libctl_User_Reference#Command-line_parameters "wikilink") using a shell script.
+However, there is an alternative strategy for parallelization. If you have many smaller simulations that you want to run, say for many different values of some parameter, then you can just run these as separate jobs. Such parallelization is known as "embarrassingly parallel" because no communication is required. Meep provides no explicit support for this mode of operation, but of course it is quite easy to do yourself: just launch as many Meep jobs as you want, perhaps [changing the parameters via the command-line](libctl_User_Reference#Command-line_parameters.md) using a shell script.
 
 Technical Details
 -----------------

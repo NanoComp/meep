@@ -21,4 +21,4 @@ Referencing
 
 We kindly ask you to reference the Meep package and its authors in any publication for which you used Meep. (You are not legally *required* to do so; it is up to your common sense to decide whether you want to comply with this request or not.)
 
-[Category:Meep](/Category:Meep "wikilink")
+[Category:Meep](Meep.md)

@@ -8,7 +8,7 @@ Authors of Meep
 
 Meep's active developers are Ardavan Oskooi and Steven G. Johnson. Meep's initial development was by [David Roundy](http://physics.oregonstate.edu/~roundyd/) while he was at MIT. David was later joined by Mihai Ibanescu and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/).
 
-See also our [Referencing suggestions](/Meep_License_and_Copyright#Referencing "wikilink").
+See also our [Referencing suggestions](Meep_License_and_Copyright#Referencing.md).
 
 Acknowledgements
 ----------------
@@ -19,6 +19,6 @@ We are also grateful to Prof. J. D. Joannopoulos for his continuing support and 
 
 Alejandro Rodriguez was a patient early beta tester of many features.
 
-We are also grateful to the authors of earlier [Fortran](/w:Fortran "wikilink") FDTD programs that were used in our group, which were invaluable as benchmarks in testing our new code. This includes a 2d FDTD code by Jerry Chen, with later improvements by Shanhui Fan, SGJ, and others. There was also a 3d code initially written by Shanhui Fan, with later improvements by Daniel Abrams, Doug Allan, SGJ, Chiyan Luo, and Elefterios Lidorikis.
+We are also grateful to the authors of earlier [Fortran](https://en.wikipedia.org/wiki/Fortran) FDTD programs that were used in our group, which were invaluable as benchmarks in testing our new code. This includes a 2d FDTD code by Jerry Chen, with later improvements by Shanhui Fan, SGJ, and others. There was also a 3d code initially written by Shanhui Fan, with later improvements by Daniel Abrams, Doug Allan, SGJ, Chiyan Luo, and Elefterios Lidorikis.
 
-[Category:Meep](/Category:Meep "wikilink")
+[Category:Meep](Meep.md)

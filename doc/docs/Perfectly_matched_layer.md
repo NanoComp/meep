@@ -14,4 +14,4 @@ There are two useful references on PML in Meep:
 
 PML has some limitations. See also our [recent publication](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376) on the use of adiabatic absorbers as a workaround for cases when PML fails (most notably in periodic media like photonic crystals, where the fundamental idea behind PML breaks down), another [paper on a different case where the PML idea fails](http://math.mit.edu/~stevenj/papers/LohOs09.pdf), and a [third paper](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf) on validation of PML and errors in some proposals.
 
-[Category:Meep](/Category:Meep "wikilink")
+[Category:Meep](Meep.md)

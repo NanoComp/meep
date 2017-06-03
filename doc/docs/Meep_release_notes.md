@@ -3,7 +3,7 @@ title: Meep release notes
 permalink: /Meep_release_notes/
 ---
 
-Here, we describe what has changed between releases of the [Meep](/Meep "wikilink") package. You can also refer to the `NEWS` file in the Meep package (or the `ChangeLog` file for a more detailed listing).
+Here, we describe what has changed between releases of the [Meep](Meep.md) package. You can also refer to the `NEWS` file in the Meep package (or the `ChangeLog` file for a more detailed listing).
 
 Meep 1.3
 --------
@@ -67,17 +67,17 @@ Meep 1.1
 
 <small>20 August 2009</small>
 
--   Meep's [PML](/PML "wikilink") is now a true PML for arbitrary anisotropic, dispersive, and conducting media. (Now uses a slightly unconventional reformulation of PML described at [ab-initio.mit.edu/meep/pml-meep.pdf](http://ab-initio.mit.edu/meep/pml-meep.pdf))
+-   Meep's [PML](PML.md) is now a true PML for arbitrary anisotropic, dispersive, and conducting media. (Now uses a slightly unconventional reformulation of PML described at [ab-initio.mit.edu/meep/pml-meep.pdf](http://ab-initio.mit.edu/meep/pml-meep.pdf))
 -   Fixed bug which caused anisotropic non-diagonal μ to be unstable.
 -   Fix compilation failure with gcc 4.4 due to missing `cstdio` header (thanks to Linran Fan and Bin Shao for the bug reports).
 -   C++ interface: `volume` was renamed to `grid_volume` and `geometric_volume` was renamed to `volume`, to better reflect their respective roles.
 -   Added `accurate-fields-near-cylorigin?` option to have more accurate fields near the *r*=0 origin for large *m* in cylindrical coordinates, at the expense of requiring a smaller Courant factor. (Default is `false`, corresponding to behavior in older Meep versions.)
--   In 2d computational cells, added much more efficient support for \(e^{ikz}\) *z*-dependence, enabled by new `special-kz?` input variable (default is `false` since it only works in 2d and is a little subtle for real fields).
+-   In 2d computational cells, added much more efficient support for $e^{ikz}$ *z*-dependence, enabled by new `special-kz?` input variable (default is `false` since it only works in 2d and is a little subtle for real fields).
 -   Includes preliminary new features to aid in computation of optical forces (both classical and quantum Casimir forces); further documentation pending more testing.
 -   Removed obsolete `doc` directory (all documentation is on the website these days).
 -   Small performance improvements in Lorentzian dispersion handling.
 -   Fix `configure` script failure when cross-compiling.
--   Fix compilation failure with [MPICH](/w:MPICH "wikilink").
+-   Fix compilation failure with [MPICH](https://en.wikipedia.org/wiki/MPICH).
 
 Meep 1.0.3
 ----------
@@ -113,8 +113,8 @@ Meep 1.0
 
 <small>28 March 2009</small>
 
--   New timestepping scheme for off-diagonal anisotropic epsilon and mu, based on technique by Werner and Cary \[ *J. Comp. Phys.* 226, 1085 (2007) \], that improves FDTD stability when anisotropy is present (such as when subpixel averaging is used on isotropic media).
--   Scheme user interface now supports user-specified anisotropic (real-symmetric) epsilon and mu (via `epsilon-diag`, `epsilon-offdiag`, `mu-diag`, and `mu-offdiag` parameters, similar to MPB). Accurate subpixel averaging of anisotropic media based on the method by Kottke, Farjadpour, & Johnson \[ *Phys. Rev. E.* 77, 036611 (2008) \].
+-   New timestepping scheme for off-diagonal anisotropic epsilon and mu, based on technique by Werner and Cary $$ *J. Comp. Phys.* 226, 1085 (2007) $$, that improves FDTD stability when anisotropy is present (such as when subpixel averaging is used on isotropic media).
+-   Scheme user interface now supports user-specified anisotropic (real-symmetric) epsilon and mu (via `epsilon-diag`, `epsilon-offdiag`, `mu-diag`, and `mu-offdiag` parameters, similar to MPB). Accurate subpixel averaging of anisotropic media based on the method by Kottke, Farjadpour, & Johnson $$ *Phys. Rev. E.* 77, 036611 (2008) $$.
 -   Anisotropic dispersive materials are now supported, although currently the dispersive part of the epsilon/mu tensor must be diagonal, via the new `sigma-diag` parameter of polarizability. (The corresponding C++ interface has also removed `delta_epsilon`.)
 -   The `delta-epsilon` parameter of polarizability has been removed; you should use `sigma` instead.
 -   New `fields::integrate2` function (and corresponding Scheme function `integrate2-field-function`) to perform integrations involving two simulations with the same computational cell (e.g. field-overlap calculations for coupled-mode theory).
@@ -154,7 +154,7 @@ Meep 0.20.1
 
 -   Improved handling of nested `synchronized-magnetic` calls.
 -   Bug fix: parallel builds (`make` `-j`) should now work.
--   Bug fix: [pkg-config](/w:pkg-config "wikilink") file was incorrectly installed for MPI version; thanks to Majid Sodagar for the bug report.
+-   Bug fix: [pkg-config](https://en.wikipedia.org/wiki/pkg-config) file was incorrectly installed for MPI version; thanks to Majid Sodagar for the bug report.
 
 Meep 0.20
 ---------
@@ -164,7 +164,7 @@ Meep 0.20
 -   Support for user-specified permeability (mu). Renamed "`dielectric`" to "`medium`" in libctl interface, new "`mu`" property and new `output-bfield` and `output-mu` functions, and new "`Permeability`" and "`Bx`" etc. field types.
 -   Support for user-specified electric and/or magnetic conductivities. These are especially useful to add a desired dissipation loss (an imaginary part of ε/μ) in a narrow bandwidth, without messing around with Lorentzian dispersive materials.
 -   Add predefined `perfect-magnetic-conductor` (μ = −∞) material, along with `perfect-electric-conductor` (ε = −∞).
--   Added `synchronized-magnetic` step function to allow step functions to run with the electric and magnetic fields synchronized in time to second-order accuracy. See [Synchronizing the magnetic and electric fields](/Synchronizing_the_magnetic_and_electric_fields "wikilink").
+-   Added `synchronized-magnetic` step function to allow step functions to run with the electric and magnetic fields synchronized in time to second-order accuracy. See [Synchronizing the magnetic and electric fields](Synchronizing_the_magnetic_and_electric_fields.md).
 -   New PML implementation (UPML instead of split-field), should have lower reflection in many cases.
 -   User-specified PML profile and asymptotic reflection.
 -   Internally, all timestepping code is now handwritten (and much shorter) rather than old verbose Haskell-generated code; this should make it easier to add new features.
@@ -195,14 +195,14 @@ Meep 0.10
 
 <small>21 August 2006</small>
 
--   `eps-averaging?` is now turned on by default (in libctl interface), using much-improved algorithm by Ardavan Farjadpour. This greatly improves accuracy, and also allows continuous tuning of geometric parameters. (See our upcoming paper in *Optics Lett.*, with a preprint at [Citing Meep](/Citing_Meep "wikilink").) New input variables `subpixel-tol` and `subpixel-maxeval` to control the accuracy of the subpixel averaging.
--   Support for \(\chi^{(2)}\) (Pockels) as well as \(\chi^{(3)}\) (Kerr) nonlinearities.
+-   `eps-averaging?` is now turned on by default (in libctl interface), using much-improved algorithm by Ardavan Farjadpour. This greatly improves accuracy, and also allows continuous tuning of geometric parameters. (See our upcoming paper in *Optics Lett.*, with a preprint at [Citing Meep](Citing_Meep.md).) New input variables `subpixel-tol` and `subpixel-maxeval` to control the accuracy of the subpixel averaging.
+-   Support for $\chi^{(2)}$ (Pockels) as well as $\chi^{(3)}$ (Kerr) nonlinearities.
 -   Symmetries no longer require the cell size to be an even number of pixels. Previously, Meep exited with an error in this case, whereas now it simply adds an extra pixel to the cell size as needed.
 -   New `with-prefix` step function to allow you to use a different `filename-prefix` for selected outputs.
 -   New feature for `output-png`: built-in shell variable `$EPS` that refers to the last-output epsilon `.h5` file, which you can use to easily add dielectric contours/overlays to the field output image.
 -   Added `output-png+h5` function that outputs both `.png` and `.h5` files.
 -   New functions `flux-in-box`, `electric-energy-in-box`, `magnetic-energy-in-box`, and `field-energy-in-box` (convenience wrappers around C++ functions).
--   Bug fix in Kerr nonlinearity: `chi3` was accidentally scaled by \(\varepsilon^4\) factor.
+-   Bug fix in Kerr nonlinearity: `chi3` was accidentally scaled by $\varepsilon^4$ factor.
 -   Bug fix: if you specified three or more symmetries, at most two symmetries were used (ignoring the rest).
 -   Bug fix in `rotate2` symmetry, which wasn't working correctly.
 -   Bug fix in `add-flux` for multiple flux regions, thanks to K. Choi.

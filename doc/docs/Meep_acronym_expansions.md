@@ -15,4 +15,4 @@ or (add your own below):
 -   Many Eggheads Earn Prestige
 -   More Electrodynamical Events are Possible (*Mas Eventos Electrodinamicos Posible*)
 
-[Category:Meep](/Category:Meep "wikilink")
+[Category:Meep](Meep.md)

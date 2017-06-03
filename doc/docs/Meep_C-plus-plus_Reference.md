@@ -61,7 +61,7 @@ The following table briefly describes what is in each .cpp file:
 |----------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | Material dispersion                                                                                            | polarization.cpp, update_from_e.cpp, and friends.                                                                          |
 | Vectors, volumes etc.                                                                                          | meep/vec.hpp, vec.cpp                                                                                                        |
-| Geometric objects                                                                                              | handled by [libctl](/libctl "wikilink") functions in libctl's geom.c, called from the libctl front-end (not handled by Meep) |
+| Geometric objects                                                                                              | handled by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) functions in libctl's geom.c, called from the libctl front-end (not handled by Meep) |
 | Fields: initialization, cleanup, chunking, stepping-plan, (dis)affiliation with sources, polarizabilities etc. | fields.cpp                                                                                                                   |
 | Structure: initialization, cleanup, chunking, material parameters, boundary conditions etc.                    | structure.cpp                                                                                                                |
 | MPI interface                                                                                                  | meep/mympi.hpp, mympi.cpp                                                                                                    |
@@ -75,6 +75,6 @@ In particular, you should probably avoid:
 
 -   The `monitor_point` class. Just declare an array to store the fields you want, get them with `fields::get_field`, and analyze them with `do_harminv`. Or, to accumulate the DFT as you run, use the `dft_chunk` class via `fields::add_dft`.
 -   Slice and EPS output. This has been superseded by HDF5 output, which is much more flexible and efficient.
--   [Grace](/w:Grace_(plotting_tool) "wikilink")-based plotting in grace.cpp; a more Unix-like philosophy is to output data in a standard format (e.g. HDF5 or [comma-separated values](/w:comma-separated_values "wikilink")) and then import it however you like into the plotting program of your choice.
+-   [Grace](https://en.wikipedia.org/wiki/Grace_(plotting_tool))-based plotting in grace.cpp; a more Unix-like philosophy is to output data in a standard format (e.g. HDF5 or [comma-separated values](https://en.wikipedia.org/wiki/comma-separated_values)) and then import it however you like into the plotting program of your choice.
 
-[Category:Meep](/Category:Meep "wikilink")
+[Category:Meep](Meep.md)
