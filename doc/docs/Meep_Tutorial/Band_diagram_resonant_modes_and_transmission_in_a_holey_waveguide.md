@@ -153,8 +153,7 @@ unix% h5topng holey-wvg-cavity-eps-000000.00.h5
 unix% h5topng -Zc dkbluered holey-wvg-cavity-hz-slice.h5
 ```
 
-
-+ ![center|ε of N=3 holes](Image:Holey-wvg-cavity-eps-000000.00.png.md)
++ ![center|ε of N=3 holes](../images/Holey-wvg-cavity-eps-000000.00.png.md)
 
 + ![center|thumb|*x*×*t* slice of *H<sub>z</sub>*](../images/Holey-wvg-cavity-hz-slice.png)
 
@@ -415,16 +414,16 @@ For example, there seem to be some bands that run right along the edge of the li
 It is usually a good idea to examine the field patterns for any modes that you are particularly interested in. That is, re-run the simulation with a narrow-bandwidth source, at the particular ω and $\textbf{k}$ you want, and output the field patterns just as we did for the resonant-cavity modes. We have done that for several modes below:
 
 + $k_x=0.4$, $\omega=0.1896$ guided mode:
-![center|kx=0.4, ω=0.1896 guided mode](Image:Holey-wvg-kx=0.4-w=0.1896.gif.md) 
+![center|kx=0.4, ω=0.1896 guided mode](../images/Holey-wvg-kx=0.4-w=0.1896.gif.md) 
 
 + $k_x=0.4$, $\omega=0.3175$ guided mode:
-![center|kx=0.4, ω=0.3175 guided mode](Image:Holey-wvg-kx=0.4-w=0.3175.gif.md)
+![center|kx=0.4, ω=0.3175 guided mode](../images/Holey-wvg-kx=0.4-w=0.3175.gif.md)
 
 + $k_x=0.1$, $\omega=0.4811-0.0017i$ leaky mode:
-![center|kx=0.1, ω=0.4811-0.0017i leaky mode](Image:Holey-wvg-kx=0.10-w=0.4811.gif.md) 
+![center|kx=0.1, ω=0.4811-0.0017i leaky mode](../images/Holey-wvg-kx=0.10-w=0.4811.gif.md) 
 
 +$k_x=0.3$, $\omega=0.8838-0.0018i$ leaky mode:
-![center|kx=0.3, ω=0.8838-0.0018i leaky mode](Image:Holey-wvg-kx=0.30-w=0.8838.gif.md) 
+![center|kx=0.3, ω=0.8838-0.0018i leaky mode](../images/Holey-wvg-kx=0.30-w=0.8838.gif.md) 
 
 +$k_x=0.25$, $\omega=0.2506$ light-cone (extended) mode:
 ![center|kx=0.25, ω=0.2506 light-cone mode](../images/Holey-wvg-kx=0.25-w=0.2506.gif)
