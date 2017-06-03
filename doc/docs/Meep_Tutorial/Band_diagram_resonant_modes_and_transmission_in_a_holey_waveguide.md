@@ -22,7 +22,7 @@ In the following, we will analyze the structure in exactly **the opposite order*
 
 See also the `holey-wvg-cavity.ctl` and `holey-wvg.ctl` files included with Meep, which contain the commands below.
 
-{{TOC}}
+[TOC]
 
 Transmission spectrum
 ---------------------

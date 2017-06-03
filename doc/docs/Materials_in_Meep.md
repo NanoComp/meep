@@ -10,7 +10,7 @@ Similarly for the relative permeability μ(**x**), for which dispersion, nonline
 
 In this section, we describe the form of the equations and material properties that Meep can simulate. The actual interface with which you specify these properties is described in the [Meep reference](Meep_Reference.md). 
 
-{{TOC}}
+[TOC]
 
 Material dispersion
 -------------------
