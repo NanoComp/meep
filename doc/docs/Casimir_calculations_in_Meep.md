@@ -25,7 +25,7 @@ In this section, we introduce the equations and basic considerations involved in
 The general setup for a Casimir force computation is shown in the following figure:
 
 
-![300px|center|thumb|Schematic of Casimir-force calculation on an object, by integrating the Maxwell stress tensor on a surface *S* around the object.](images/surface-force.jpg)
+![300px|center|thumb|Schematic of Casimir-force calculation on an object, by integrating the Maxwell stress tensor on a surface *S* around the object.](images/Surface-force.jpg)
 
 
 
@@ -75,7 +75,7 @@ Example: two-dimensional blocks
 In this section we calculate the Casimir force in the two-dimensional Casimir piston configuration ([Rodriguez et. al](http://math.mit.edu/~stevenj/papers/RodriguezIb07.pdf)) shown below:
 
 
-![250px|thumb|center|Example structure: A two-dimensional piston-like configuration in which we will compute the Casimir force between two blocks between two parallel plates.](images/dblocks-config.jpg)
+![250px|thumb|center|Example structure: A two-dimensional piston-like configuration in which we will compute the Casimir force between two blocks between two parallel plates.](images/Dblocks-config.jpg)
 
 
 
@@ -150,7 +150,7 @@ $$f_n(x) = \sqrt{\frac{c_n}{L}} \cos \left(\frac{n\pi x}{L}\right), ~n = 0,1,\ld
 where $c_n = 1$ if $n=0$ and $c_n=2$ otherwise, $L$ is the side length (if each side has a different length, then the functions $f_n(x)$ will differ for each side). An illustration of these functions for the system under consideration, compared to point sources, is shown below:
 
 
-![400px|thumb|center|Schematic of Casimir calculation via a sequence of time-domain sources around the integration surface.](images/point-dct.jpg)
+![400px|thumb|center|Schematic of Casimir calculation via a sequence of time-domain sources around the integration surface.](images/Point-dct.jpg)
 
 
 
@@ -164,7 +164,7 @@ For the simulation, we must truncate the sum over $n$ to some finite upper limit
 To illustrate the field profiles, below we show four snapshots at different times for what we term $\Gamma^E_{yy;n=2}(\textbf{x},t)$, the $y$-component of the electric field response to a $y$-polarized current source with spatial dependence $f_2(x)$
 
 
-![center|600px|thumb|Snapshots of computed fields from sources around the stress surface.](images/field-visualization.jpg)
+![center|600px|thumb|Snapshots of computed fields from sources around the stress surface.](images/Field-visualization.jpg)
 
 
 
@@ -210,7 +210,7 @@ To find the casimir force, one simply iterates over the parameter lists construc
 The result, when sampled over many values of $h$, is a force curve that varies non monotonically in $h$:
 
 
-![center|350px](images/dblocks-force.jpg)
+![center|350px](images/Dblocks-force.jpg)
 
 
 
