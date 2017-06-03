@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial Multilevel-atomic susceptibility
-permalink: /Meep_Tutorial/Multilevel-atomic_susceptibility/
+# Meep Tutorial Multilevel-atomic susceptibility
 ---
 
 Meep 1.4 introduced a feature to model saturable absorption/gain via multilevel-atomic susceptibility. This is based on a generalization of the [Maxwell-Bloch equations](https://en.wikipedia.org/wiki/Maxwell-Bloch_equations) which involve the interaction of a quantized system having an arbitrary number of levels with the electromagnetic fields. Meep's implementation is similar to that described in [S.-L. Chua et al](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-19-2-1539) (eqns. 1-5). We will demonstrate this feature by computing the lasing thresholds of a two-level, multimode cavity in 1d similar to the example used in [A. Cerjan et al](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-20-1-474) (Fig. 2).

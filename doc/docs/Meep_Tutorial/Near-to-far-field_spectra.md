@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial Near-to-far-field spectra
-permalink: /Meep_Tutorial/Near-to-far-field_spectra/
+# Meep Tutorial Near-to-far-field spectra
 ---
 
 In this example, we demonstrate Meep's near-to-far-field transformation feature, which requires version 1.3+. This feature uses the fields from a "near" bounding surface <i>inside</i> the computational cell to compute the resulting "far" fields <i>outside</i> the computational cell via an analytical transformation. Note that this only works if the "near" surface and the "far" region lie in a single, homogeneous, non-periodic 2d or 3d medium. The analytical transformation is based on the [principle of equivalence](http://arxiv.org/abs/1301.5366): given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. The use of the Fourier-transformed fields for this operation is similar to that for the flux and force spectra: we specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at each frequency for the desired far-field points.

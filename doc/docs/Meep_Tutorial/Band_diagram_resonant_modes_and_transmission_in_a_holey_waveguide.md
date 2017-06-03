@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial Band diagram, resonant modes, and transmission in a holey waveguide
-permalink: /Meep_Tutorial/Band_diagram,_resonant_modes,_and_transmission_in_a_holey_waveguide/
+# Meep Tutorial Band diagram, resonant modes, and transmission in a holey waveguide
 ---
 
 
@@ -153,7 +152,7 @@ unix% h5topng holey-wvg-cavity-eps-000000.00.h5
 unix% h5topng -Zc dkbluered holey-wvg-cavity-hz-slice.h5
 ```
 
-+ ![center|ε of N=3 holes](../images/Holey-wvg-cavity-eps-000000.00.png.md)
++ ![center|ε of N=3 holes](../images/Holey-wvg-cavity-eps-000000.00.png)
 
 + ![center|thumb|*x*×*t* slice of *H<sub>z</sub>*](../images/Holey-wvg-cavity-hz-slice.png)
 
@@ -197,18 +196,12 @@ The structure is exactly the same as above, and only the sources and analysis ar
 (define-param compute-mode? false)
 (if compute-mode?
     (begin
-```
-
-`      `*`...new` `sources` `and` `run` `command...`*
-```
+       ...new sources and run command...
     )
     (begin
-```
 
-`      `*`...sources` `and` `run` `from` `above,` `to` `get` `spectrum...`*
-```
+       ...sources and run from above, to get spectrum...
     ))
-```
 
 
 The `(begin` `...)` is a standard Scheme construct to group several statements into one, much like `{...}` brackets in C. Our new source is still a Gaussian, but is now a point source at the origin:

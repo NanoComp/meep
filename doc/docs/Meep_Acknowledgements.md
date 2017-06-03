@@ -1,6 +1,5 @@
 ---
-title: Meep Acknowledgements
-permalink: /Meep_Acknowledgements/
+# Meep Acknowledgements
 ---
 
 Authors of Meep

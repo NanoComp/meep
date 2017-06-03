@@ -1,6 +1,5 @@
 ---
-title: Yee lattice
-permalink: /Yee_lattice/
+# Yee lattice
 ---
 
 

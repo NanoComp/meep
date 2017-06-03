@@ -1,6 +1,5 @@
 ---
-title: Casimir calculations in Meep
-permalink: /Casimir_calculations_in_Meep/
+# Casimir calculations in Meep
 ---
 
 Computing Casimir forces with Meep

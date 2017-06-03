@@ -1,6 +1,5 @@
 ---
-title: Meep acronym expansions
-permalink: /Meep_acronym_expansions/
+# Meep acronym expansions
 ---
 
 **MEEP** stands for:

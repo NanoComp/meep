@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial Ring resonator in cylindrical coordinates
-permalink: /Meep_Tutorial/Ring_resonator_in_cylindrical_coordinates/
+# Meep Tutorial Ring resonator in cylindrical coordinates
 ---
 
 In the [Meep tutorial](Meep_Tutorial.md), we computed the [modes of a ring resonator](Meep_Tutorial#Modes_of_a_ring_resonator.md) by performing a 2d simulation. Here, we will simulate the *same* structure while [exploiting](Exploiting_symmetry_in_Meep.md) the fact that the system has *continuous* rotational symmetry, by performing the simulation in [cylindrical coordinates](Cylindrical_coordinates_in_Meep.md). See also the `ring-cyl.ctl` example file included with Meep.

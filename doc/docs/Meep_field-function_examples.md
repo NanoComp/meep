@@ -1,6 +1,5 @@
 ---
-title: Meep field-function examples
-permalink: /Meep_field-function_examples/
+# Meep field-function examples
 ---
 
 As described in the [Meep Reference](Meep_Reference.md), Meep provides several routines to integrate, analyze, and output arbitrary user-specified functions of the field components. (See the functions whose names end with "`-field-function`".) This facility, while powerful, requires a bit more Scheme programming than most Meep usage, and is best illustrated by a few examples.

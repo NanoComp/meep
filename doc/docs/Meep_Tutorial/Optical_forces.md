@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial Optical forces
-permalink: /Meep_Tutorial/Optical_forces/
+# Meep Tutorial Optical forces
 ---
 
 Here we will demonstrate Meep's ability to compute classical forces using the [Maxwell stress tensor](https://en.wikipedia.org/wiki/_Maxwell_stress_tensor) (MST) as well as the eigenmode source feature which integrates our mode-solver package [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB). Note that this will require Meep 1.2+ and MPB 1.5+. Our example consists of two identical dielectric waveguides made of lossless Silicon with a square cross section supporting identical modes and separated in air. Due to the symmetry and orientation of the waveguides, the two modes can be chosen to be either symmetric or anti-symmetric with respect to a mirror plane between them. As the two waveguides are brought closer and closer together, the individual guided modes couple more and more and give rise to an optical gradient force that is <i>transverse</i> to the waveguide axis. This is to be contrasted with [radiation pressure](https://en.wikipedia.org/wiki/_Radiation_pressure) that involves momentum exchange between photons and is <i>longitudinal</i> in nature. An interesting phenomena that occurs for this system is that the <i>sign</i> of the force can be tuned to be either attractive or repulsive depending on the relative phase of the two modes. We will demonstrate this effect in this tutorial.

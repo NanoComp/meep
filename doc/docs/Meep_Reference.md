@@ -1,6 +1,5 @@
 ---
-title: Meep Reference
-permalink: /Meep_Reference/
+# Meep Reference
 ---
 
 Here, we document the features exposed to the user by the Meep package. We do not document the Scheme language or the functions provided by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) (see also the [libctl User Reference](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference) section of the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual)).

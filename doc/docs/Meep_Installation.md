@@ -1,6 +1,5 @@
 ---
-title: Meep Installation
-permalink: /Meep_Installation/
+# Meep Installation
 ---
 
 Much like [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB_Installation), the main effort in installing Meep lies in installing the various prerequisite packages. This requires some understanding of how to install software on Unix systems.

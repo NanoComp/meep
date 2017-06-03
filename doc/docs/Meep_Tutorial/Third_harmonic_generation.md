@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial Third harmonic generation
-permalink: /Meep_Tutorial/Third_harmonic_generation/
+# Meep Tutorial Third harmonic generation
 ---
 
 In this example, we consider wave propagation through a simple one-dimensional *nonlinear* medium with a non-zero Kerr susceptibility $\chi^{(3)}$. (See also [Dielectric materials in Meep](Materials_in_Meep.md) and [Units and nonlinearity in Meep](Units_and_nonlinearity_in_Meep.md).) We send in a narrow-band pulse at a frequency $\omega$, and because of the nonlinearity we also get a signal at a frequency $3\omega$. See also the `3rd-harm-1d.ctl` example file included with Meep.

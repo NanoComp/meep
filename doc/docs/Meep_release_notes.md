@@ -1,6 +1,5 @@
 ---
-title: Meep release notes
-permalink: /Meep_release_notes/
+# Meep release notes
 ---
 
 Here, we describe what has changed between releases of the [Meep](Meep.md) package. You can also refer to the `NEWS` file in the Meep package (or the `ChangeLog` file for a more detailed listing).

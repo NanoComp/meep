@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial
-permalink: /Meep_Tutorial/
+# Meep Tutorial
 ---
 
 In this page, we'll go through a couple of simple examples that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes in Meep. All of the examples here are two-dimensional calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features, but of course Meep can do similar calculations in 3d.

@@ -1,6 +1,5 @@
 ---
-title: Materials in Meep
-permalink: /Materials_in_Meep/
+# Materials in Meep
 ---
 
 The material structure in Maxwell's equations is determined by the relative permittivity ε(**x**) and the relative permeability μ(**x**).

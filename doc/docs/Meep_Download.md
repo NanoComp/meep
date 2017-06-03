@@ -1,6 +1,5 @@
 ---
-title: Meep Download
-permalink: /Meep_Download/
+# Meep Download
 ---
 
 The latest release of Meep is **version 1.3** (which requires [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) version 3.2 or later), which may be downloaded from:

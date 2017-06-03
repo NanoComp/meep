@@ -1,6 +1,5 @@
 ---
-title: Cylindrical coordinates in Meep
-permalink: /Cylindrical_coordinates_in_Meep/
+# Cylindrical coordinates in Meep
 ---
 
 Meep supports the simulation of Maxwell's equations in cylindrical coordinates, albeit only for structures that have continuous rotational symmetry around the *z* axis. This reduces 3d problems to 2d ones, and 2d problems to 1d ones, if you have sufficient symmetry.

@@ -17,6 +17,6 @@ FILE=$1
 /bin/cp ${FILE} /tmp/${FILE}
 
 vim -e ${FILE} <<-EndOfHere
-	:so Replacements.vim
+	:so Replacements2.vim
 	:wq!
 EndOfHere

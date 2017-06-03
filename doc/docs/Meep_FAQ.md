@@ -1,6 +1,5 @@
 ---
-title: Meep FAQ
-permalink: /Meep_FAQ/
+# Meep FAQ
 ---
 
 The following are frequently asked questions about Meep.

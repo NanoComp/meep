@@ -1,6 +1,5 @@
 ---
-title: Meep License and Copyright
-permalink: /Meep_License_and_Copyright/
+# Meep License and Copyright
 ---
 
 Meep is copyright © 2005–2017, Massachusetts Institute of Technology.

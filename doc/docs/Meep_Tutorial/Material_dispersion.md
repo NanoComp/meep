@@ -1,6 +1,5 @@
 ---
-title: Meep Tutorial Material dispersion
-permalink: /Meep_Tutorial/Material_dispersion/
+# Meep Tutorial Material dispersion
 ---
 
 In this example, we will perform a simulation with a **frequency-dependent dielectric** ε(ω), corresponding to **material dispersion**. (See [Dielectric materials in Meep](Materials_in_Meep.md) for more information on how material dispersion is supported in Meep.) In particular, we will model a *uniform medium* of the dispersive material; see also the `material-dispersion.ctl` file included with Meep. From the dispersion relation $\omega(k)$, we will compute the numerical ε(ω) via the formula:

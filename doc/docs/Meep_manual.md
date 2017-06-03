@@ -1,6 +1,5 @@
 ---
-title: Meep manual
-permalink: /Meep_manual/
+# Meep manual
 ---
 
 Welcome to the manual for Meep, our free software for time-domain electromagnetic simulations. This manual is organized into the following sections.

@@ -1,6 +1,5 @@
 ---
-title: Perfectly matched layer
-permalink: /Perfectly_matched_layer/
+# Perfectly matched layer
 ---
 
 The **perfectly matched layer** (**PML**) approach to implementing absorbing boundary conditions in FDTD codes was proposed by Berenger in 1994 (see [1](http://dx.doi.org/10.1006/jcph.1994.1159)). The approach involves surrounding the computational cell with a medium that in theory absorbs without any reflection electromagnetic waves at all frequencies and angles of incidence. Berenger showed that it was sufficient to "split" Maxwell's equations into two sets of (unphysical) equations in the absorbing layers, appropriately defined. It was later shown that a similar reflectionless absorbing medium can be constructed as a lossy anisotropic dielectric and magnetic material with "matched" impedance and electrical and magnetic conductivities.

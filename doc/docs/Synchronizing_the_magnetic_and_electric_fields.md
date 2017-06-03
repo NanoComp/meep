@@ -1,6 +1,5 @@
 ---
-title: Synchronizing the magnetic and electric fields
-permalink: /Synchronizing_the_magnetic_and_electric_fields/
+# Synchronizing the magnetic and electric fields
 ---
 
 In the finite-difference time-domain method, the electric and magnetic fields are stored at *different times* (and different positions in space), in a "[leap-frog](https://en.wikipedia.org/wiki/Leapfrog_integration)" fashion. At any given time-step $t$ during the simulation, the **E** and **D** fields are stored at time $t$, but the **H** and **B** fields are stored at time $t-\Delta t/2$ (where $\Delta t$ is the time-step size).

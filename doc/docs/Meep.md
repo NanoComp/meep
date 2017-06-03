@@ -1,6 +1,5 @@
 ---
-title: Meep
-permalink: /Meep/
+# Meep
 ---
 
 

@@ -1,6 +1,5 @@
 ---
-title: Meep C-plus-plus Reference
-permalink: /Meep_C-plus-plus_Reference/
+# Meep C-plus-plus Reference
 ---
 
 Meep Design
