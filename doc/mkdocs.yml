@@ -1,7 +1,7 @@
 site_name: MEEP documentation
 site_author: Homer Reid
 site_favicon: meep.ico
-docs_dir: doc/docs
+docs_dir: 'doc/docs'
 
 repo_url: https://github.com/stevengj/meep/
 
