@@ -2,27 +2,28 @@ site_name: MEEP documentation
 site_author: Homer Reid
 site_favicon: meep.ico
 repo_url: https://github.com/stevengj/meep/
-docs_dir: 'doc'
-site_dir: 
+
+pages:
+- 'Index': 'index.md'
+- 'Meep': 'Meep.md'
+
+#docs_dir: 'doc'
+#site_dir: 
 
 #theme_dir: 'meep-mkdocs-theme'
-theme: readthedocs
+#theme: readthedocs
 
 #python:
 #   version: 2 # for unicode
 #   setup_py_install: True
 
-markdown_extensions:
+#markdown_extensions:
 #    - wikilinks
 #    - toc:
 #        title: Table of Contents
 #    - attr_list
 #    - fenced_code
-    - mdx_math:
-        enable_dollar_delimiter: True
+#    - mdx_math:
+#        enable_dollar_delimiter: True
 
-extra_javascript: ['https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML','mathjaxhelper.js']
-
-pages:
-- 'Index': 'index.md'
-- 'Meep': 'Meep.md'
+#extra_javascript: ['https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML','mathjaxhelper.js']
