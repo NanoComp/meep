@@ -127,17 +127,17 @@ Note that, because of the `to-appended` command, the `ring-cyl-ez.h5` file is a 
 
 + $E_z$ for $\omega=0.118$ $m=3$ mode:
 
-![center](images/Ring-cyl-ez-0.118.png)
+![center](../images/Ring-cyl-ez-0.118.png)
 
 
 + $E_z$ for $\omega=0.148$ $m=4$ mode: 
 
-![center](images/Ring-cyl-ez-0.148.png)
+![center](../images/Ring-cyl-ez-0.148.png)
 
 
 + $E_z$ for $\omega=0.176$ $m=5$ mode:
 
-![center](images/Ring-cyl-ez-0.176.png)
+![center](../images/Ring-cyl-ez-0.176.png)
 
 Because we are looking only at a $\phi=0$ slice, the visual distinction between $m$ values is much less than with the 2d simulation. What is apparent is that, as the frequency increases, the mode becomes more localized in the waveguide and the radiating field (seen in the $r \times t$ slice as curved waves extending outward) becomes less, as expected.
 

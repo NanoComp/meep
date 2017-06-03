@@ -47,14 +47,14 @@ Definition of the two-level medium involves the `multilevel-atom` sub-class of t
 The choice of these parameters requires some care. For example, choosing a pumping rate that lies far beyond threshold will cause large inversion which is not physical and produce meaningless results. The simulation time is also important when operating near the threshold of a particular mode. The fields contain relaxation oscillations and require sufficient time to reach steady state. We also need to choose a small timestep to ensure that the data is smooth and continuous. This requires a large resolution. A large resolution is also necessary to ensure stability when the strength of the source, which depends on `sigma` and `N0`, driving the polarization is large (this also applies to a linear absorber). The spectra at a pumping rate of 0.0073 is shown below. This plot was generated using this [iPython notebook](http://ab-initio.mit.edu/~oskooi/wiki_data/fourier_transform_cavity_field.ipynb).
 
 
-![center|Spectra for 1d laser cavity at pumping rate (Rp) of 0.0073](images/Multilevel_cavity_spectra.png)
+![center|Spectra for 1d laser cavity at pumping rate (Rp) of 0.0073](../images/Multilevel_cavity_spectra.png)
 
 
 
 There are four modes present: two are lasing while the other two are slightly below threshold. The frequency of the passive cavity modes can be computed analytically using the equation $\omega_{cav}=(m+0.5)\pi/(n_{cav}L_{cav})$ where $n_{cav}$ and $L_{cav}$ are the cavity index and length, and $m$ is an integer. The four modes in the figure correspond to $m$=17-20 which are labelled. In the continuum limit, these modes would appear as Dirac delta functions in the spectra. The discretized model, however, produces peaks with finite width. Thus, we need to integrate a fixed number of points around each peak to smooth out the modal intensity. For this simple two-level cavity, the thresholds can be computed analytically using the steady-state ab-initio laser theory (SALT) developed by Prof. A. Douglas Stone and his group at Yale. Based on the default parameters in the script, two modes, $m$=18 and 19, should begin to lase very close to the relaxation rate. We plot the variation of the modal intensity with pumping rate.
 
 
-![center|Modal intensity versus pumping rate for 1d laser cavity](images/Multilevel_modal_intensity.png)
+![center|Modal intensity versus pumping rate for 1d laser cavity](../images/Multilevel_modal_intensity.png)
 
 
 

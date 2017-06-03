@@ -8,7 +8,7 @@ In this example, we demonstrate Meep's near-to-far-field transformation feature,
 There are three steps to using the near-to-far-field feature: first, we need to define the "near" surface(s) as a set of surfaces capturing all outgoing radiation in the desired direction(s); second, we run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, we have Meep compute the far fields at any desired points with the option to save the far fields from a grid of points to an HDF5 file.
 
 
-![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](images/N2ff_comp_cell.png)
+![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
 
 
 
@@ -54,7 +54,7 @@ Radiation Pattern of an Antenna
 We can also use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This example involves an electric-current point source as the emitter in 2d vacuum. We will compute the radiation pattern for different polarizations of the input source. The source is placed in the middle of the 2d computational cell which is surrounded by perfectly-matched layers (PMLs). The near-field surface, used to compute the far fields as described above, is along the inner boundary of the PML. The far fields are computed at several equally-spaced points along the circumference of a circle having a radius many times the source wavelength and thus lying outside of the computational cell. The simulation geometry is shown in the schematic below.
 
 
-![center|Simulation geometry used to compute the radiation pattern of a point source in 2d.](images/Near2far_simulation_geometry.png)
+![center|Simulation geometry used to compute the radiation pattern of a point source in 2d.](../images/Near2far_simulation_geometry.png)
 
 
 
@@ -101,6 +101,6 @@ We compute the far fields at a single frequency `fcen` for three different polar
 We plot the in-plane flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown in the linearly-scaled, polar-coordinate plots below. As expected, the $J_x$ and $J_y$ sources produce dipole radiation patterns while $J_z$ has a monopole pattern. These plots were generated using this [iPython notebook](http://ab-initio.mit.edu/~oskooi/wiki_data/farfield_radiation_pattern.ipynb) and [output file](http://ab-initio.mit.edu/~oskooi/wiki_data/source_Jy_farfields.dat).
 
 
-![center|Far-field radiation patterns of 3 point-dipole sources in 2d.](images/Source_radiation_pattern.png)
+![center|Far-field radiation patterns of 3 point-dipole sources in 2d.](../images/Source_radiation_pattern.png)
 
 

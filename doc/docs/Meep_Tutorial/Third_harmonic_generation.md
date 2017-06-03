@@ -83,7 +83,7 @@ Finally, we'll run the sources, plus additional time for the field to decay at t
 In a linear calculation, we normalize the transmission against some reference spectrum, but in this case there is no obvious normalization so we will just plot the raw data for several values of `k` (i.e. of $\chi^{(3)}$):
 
 
-![center|Transmitted flux for nonlinear media.](images/3rd-harm-1d-flux.png)
+![center|Transmitted flux for nonlinear media.](../images/3rd-harm-1d-flux.png)
 
 
 
@@ -128,7 +128,7 @@ harmonics:, 0, 1.0, 112.62889036581, 1.20863942821229e-16
 That is, the linear transmission is 112.62889036581 at ω, so we'll divide by this value and plot the fractional transmission at ω and 3ω as a function of $\chi^{(3)}$ on a log-log scale:
 
 
-![center|Transmission vs. Kerr coefficient](images/3rd-harm-1d-vs-chi.png)
+![center|Transmission vs. Kerr coefficient](../images/3rd-harm-1d-vs-chi.png)
 
 
 

@@ -115,6 +115,6 @@ There are two important items to note here. The first is that we have defined a 
 We run this simulation over a range of non-zero separation distances and compare the result to that obtained from MPB which shows good agreement. The MPB data for this plot was generated using this [control file](http://ab-initio.mit.edu/~oskooi/wiki_data/parallel-wvgs-mpb.ctl) and [shell script](http://ab-initio.mit.edu/~oskooi/wiki_data/run_wvgs_mpb.sh). The plot of the MPB data was generated using this [iPython notebook](http://ab-initio.mit.edu/~oskooi/wiki_data/MPB_data_plot.ipynb).
 
 
-![center|Normalized force per unit length and input power versus waveguide separation of two parallel waveguides.](images/Waveguide_forces.png)
+![center|Normalized force per unit length and input power versus waveguide separation of two parallel waveguides.](../images/Waveguide_forces.png)
 
 

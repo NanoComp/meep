@@ -38,7 +38,7 @@ $$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^
 The real and imaginary parts of this dielectric function ε(ω) are plotted below:
 
 
-![center|Real and imaginary parts of specified analytical ε(ω).](images/Material-dispersion-eps.png)
+![center|Real and imaginary parts of specified analytical ε(ω).](../images/Material-dispersion-eps.png)
 
 
 
@@ -84,7 +84,7 @@ unix% meep material-dispersion.ctl | tee material-dispersion.out
 we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation $\omega(k)$ (for the real part of ω):
 
 
-![center|Band diagram for dispersive material.](images/Material-dispersion-bands.png)
+![center|Band diagram for dispersive material.](../images/Material-dispersion-bands.png)
 
 
 
@@ -93,14 +93,14 @@ Here, the red circles are the computed points from Meep, whereas the blue line i
 Similarly, the computed and analytical real parts of the dielectric function are given by:
 
 
-![center|Real part of dielectric function](images/Material-dispersion-epsre.png)
+![center|Real part of dielectric function](../images/Material-dispersion-epsre.png)
 
 
 
 which shows excellent agreement between the analytical (blue line) and numerical (red circles) calculations. The imaginary part, however, is more subtle:
 
 
-![center|Real part of dielectric function](images/Material-dispersion-epsim.png)
+![center|Real part of dielectric function](../images/Material-dispersion-epsim.png)
 
 
 
