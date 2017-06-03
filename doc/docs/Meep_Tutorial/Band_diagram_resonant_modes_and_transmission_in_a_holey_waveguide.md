@@ -4,7 +4,7 @@ permalink: /Meep_Tutorial/Band_diagram,_resonant_modes,_and_transmission_in_a_ho
 ---
 
 
-![400px|center|Computational cell for computing transmission and resonant modes for a cavity in a waveguide perforated by periodic holes.](../images/gTut-holey-cavity.png)
+![400px|center|Computational cell for computing transmission and resonant modes for a cavity in a waveguide perforated by periodic holes.](../images/Tut-holey-cavity.png)
 
 
 In this example, we will consider the two-dimensional structure shown above, which is based on a system considered in:
@@ -156,7 +156,7 @@ unix% h5topng -Zc dkbluered holey-wvg-cavity-hz-slice.h5
 
 + ![center|ε of N=3 holes](Image:Holey-wvg-cavity-eps-000000.00.png.md)
 
-+ ![center|thumb|*x*×*t* slice of *H<sub>z</sub>*](../images/gHoley-wvg-cavity-hz-slice.png)
++ ![center|thumb|*x*×*t* slice of *H<sub>z</sub>*](../images/Holey-wvg-cavity-hz-slice.png)
 
 The $H_z$ slice (in which time = vertical) is interesting, because we can see the pulse propagating to the right, bouncing off of the holes, and also exciting a resonant mode in the cavity that sits in the center for a long time as it starts slowly leaking to the right.
 
@@ -178,7 +178,7 @@ unix% grep flux1: holey-wvg-cavity.out0 > flux0.dat
 which we then import into our plotting program, divide the two fluxes, and get:
 
 
-![center|Transmission spectrum.](../images/gHoley-cavity-trans.png)
+![center|Transmission spectrum.](../images/Holey-cavity-trans.png)
 
 
 
@@ -268,7 +268,7 @@ unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ```
 
 
-![right|*H<sub>z</sub>* for resonant-cavity mode.](../images/gHoley-wvg-cavity-hz.gif)
+![right|*H<sub>z</sub>* for resonant-cavity mode.](../images/Holey-wvg-cavity-hz.gif)
 
  The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 (which we could have also found by fitting the transmission spectrum). This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where (see [our online textbook](http://ab-initio.mit.edu/book), ch. 10)
 
@@ -282,7 +282,7 @@ unix% meep N=5 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
 ...
 ```
 
-![center|thumb|400px|Q vs. N (\#layers) for resonant mode in band gap.](../images/gHoley-wvg-cavity-Q.png)
+![center|thumb|400px|Q vs. N (\#layers) for resonant mode in band gap.](../images/Holey-wvg-cavity-Q.png)
 
  The results, shown above, are exactly what we expected: at first, an exponential increase of $Q$ with `N`, and then a saturation at $Q_r \approx 8750$. However, when we look at the `harminv` output for larger `N`, something strange happens—it starts to find *more modes*! For example, at `N=16`, the output is:
 
@@ -301,7 +301,7 @@ unix% meep sy=12 fcen=0.328227374843021 df=0.01 N=16 compute-mode?=true h
 
 
 
-![600px|center|ω=0.328 mode](../images/gHoley-wvg-cavity-hz-001401.23.png)
+![600px|center|ω=0.328 mode](../images/Holey-wvg-cavity-hz-001401.23.png)
 
  From the image, the field is clearly localized around the defect in the center (as opposed to being spread out evenly in the crystal like a band-edge state would be), and in the defect the pattern is higher order than the previous mode (it has an extra pair of nodes in the $y$ direction).
 
@@ -309,7 +309,7 @@ Band diagram
 ------------
 
 
-![thumb|84px|right|Unit cell of ε for periodic waveguide](../images/gHoley-wvg-bands-eps-000000.00.png)
+![thumb|84px|right|Unit cell of ε for periodic waveguide](../images/Holey-wvg-bands-eps-000000.00.png)
 
  Finally, we consider a smaller, more abstract calculation that we really should have done first, if it hadn't already been done in the 1995 paper. In particular, we compute the **band diagram** of the **infinite periodic waveguide** by itself (with no defects). (This is very similar to the types of calculations that [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) performs, but with a different method that has its own strengths and weaknesses.) By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
 
@@ -402,7 +402,7 @@ unix% grep freqs-im: holey-wvg-bands.out > fim.dat
 
 
 Plotting the real parts of ω, we find: 
-![center|Band diagram for holey waveguide. Light cone ω &gt; *ck* is shaded gray.](../images/gHoley-wvg-bands.png)
+![center|Band diagram for holey waveguide. Light cone ω &gt; *ck* is shaded gray.](../images/Holey-wvg-bands.png)
 
  Here, the gray shaded region is the **light cone**, $\omega > ck_x$, which is the region corresponding to modes that are extended in the air surrounding the waveguide. Below the light cone, we see several discrete *guided bands*, which must have field patterns localized to the vicinity of the waveguide. The imaginary part of ω for bands below the light cone is very small, due to either numerical error or the finite computational cell size (some tiny portion of the guided mode overlaps the PML). Note the band gap between the first and second guided mode, from about 0.2 to 0.3.
 
@@ -427,7 +427,7 @@ It is usually a good idea to examine the field patterns for any modes that you a
 ![center|kx=0.3, ω=0.8838-0.0018i leaky mode](Image:Holey-wvg-kx=0.30-w=0.8838.gif.md) 
 
 +$k_x=0.25$, $\omega=0.2506$ light-cone (extended) mode:
-![center|kx=0.25, ω=0.2506 light-cone mode](../images/gHoley-wvg-kx=0.25-w=0.2506.gif)
+![center|kx=0.25, ω=0.2506 light-cone mode](../images/Holey-wvg-kx=0.25-w=0.2506.gif)
 
 -   From the left, the first two pictures show the first two guided bands underneath the light cone at $k_x=0.4$. Note that the second guided band is propagating to the *left*, which is due to its negative slope (note, however, that there is a corresponding right-propagating mode at $k_x=-0.4$). Note that they are strongly (exponentially) localized to the waveguide, as they should be.
 -   The next mode is the first leaky mode at $k_x=0.1$. As $k_x$ goes to zero, in fact, this mode actually becomes lossless, a peculiarity of symmetry related to an effect demonstrated by Ochiai and Sakoda $$*Phys. Rev. B.* **63**, 125107 (2001)$$. However, at this non-zero $k_x$, the radiation loss is clearly visible.
