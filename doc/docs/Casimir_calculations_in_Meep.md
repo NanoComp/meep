@@ -6,7 +6,7 @@ permalink: /Casimir_calculations_in_Meep/
 Computing Casimir forces with Meep
 ----------------------------------
 
-It is possible to use the [Meep](Meep.md) time-domain simulation code in order to calculate [Casimir forces](https://en.wikipedia.org/wiki/Casimir_force) (and related quantities), a quantum-mechanical force that can arise even between neutral bodies due to [quantum vacuum](https://en.wikipedia.org/wiki/Vacuum_state) fluctuations in the electromagnetic field, or equivalently as a result of geometry dependence in the quantum [vacuum energy](https://en.wikipedia.org/wiki/Vacuum_energy). Go [here](http://jdj.mit.edu/wiki/index.php/Meep_download) to download Meep.
+It is possible to use the [Meep](Meep.md) time-domain simulation code in order to calculate [Casimir forces](https://en.wikipedia.org/wiki/Casimir_force) (and related quantities), a quantum-mechanical force that can arise even between neutral bodies due to [quantum vacuum](https://en.wikipedia.org/wiki/Vacuum_state) fluctuations in the electromagnetic field, or equivalently as a result of geometry dependence in the quantum [vacuum energy](https://en.wikipedia.org/wiki/Vacuum_energy). Go [here](http://jdj.mit.edu/wiki/index.php/Meep_Download) to download Meep.
 
 Calculating Casimir forces in a classical finite-difference time-domain (FDTD) Maxwell simulation like Meep is possible because of a new algorithm described in:
 

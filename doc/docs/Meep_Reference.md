@@ -5,7 +5,7 @@ permalink: /Meep_Reference/
 
 Here, we document the features exposed to the user by the Meep package. We do not document the Scheme language or the functions provided by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) (see also the [libctl User Reference](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference) section of the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual)).
 
-This page is simply a compact listing of the functions exposed by the interface; for a gentler introduction, see the [Meep tutorial](Meep_tutorial.md). Also, we note that this page is not, and probably never will be, a *complete* listing of *all* functions. In particular, because of the [SWIG wrappers](#SWIG_wrappers.md), *every* function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
+This page is simply a compact listing of the functions exposed by the interface; for a gentler introduction, see the [Meep tutorial](Meep_Tutorial.md). Also, we note that this page is not, and probably never will be, a *complete* listing of *all* functions. In particular, because of the [SWIG wrappers](#SWIG_wrappers.md), *every* function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
 
 See also our [parallel Meep instructions](Parallel_Meep.md) for parallel (MPI) machines.
 
@@ -26,7 +26,7 @@ Specifies the current sources to be present in the simulation; defaults to none.
 Specifies the spatial (mirror/rotation) symmetries to exploit in the simulation (defaults to none). The symmetries *must* be obeyed by *both* the structure *and* by the sources. See also: [Exploiting symmetry in Meep](Exploiting_symmetry_in_Meep.md).
 
 `pml-layers` $$list of `pml` class$$
-Specifies the absorbing [PML](Perfectly_matched_layers.md) boundary layers to use; defaults to none.
+Specifies the absorbing [PML](Perfectly_matched_layer.md) boundary layers to use; defaults to none.
 
 `geometry-lattice` $$`lattice` class$$
 Specifies the size of the unit cell (which is centered on the origin of the coordinate system). Any sizes of `no-size` imply (effectively) a reduced-dimensionality calculation (but a 2d $xy$ calculation is especially optimized); see `dimensions` below. Defaults to a cubic cell of unit size.
@@ -196,29 +196,29 @@ These properties allow you to specify ε as an arbitrary real-symmetric tensor, 
 
 :; `D-conductivity` $$`number`$$
 
-:: The (frequency-independent) electric conductivity $\sigma_D$. Default value = 0. You can also specify an diagonal anisotropic conductivity tensor by using the property `D-conductivity-diag` $$$vector3$$$, which takes three numbers or a $vector3$ to give the $\sigma_D$ tensor diagonal. See also [Conductivity in Meep](Conductivity_in_Meep.md).
+:: The (frequency-independent) electric conductivity $\sigma_D$. Default value = 0. You can also specify an diagonal anisotropic conductivity tensor by using the property `D-conductivity-diag` $$$vector3$$$, which takes three numbers or a $vector3$ to give the $\sigma_D$ tensor diagonal. See also [Conductivity in Meep](Materials_in_Meep.md#Conductivity).
 
 :; `B-conductivity` $$`number`$$
 
-:: The (frequency-independent) magnetic conductivity $\sigma_B$. Default value = 0. You can also specify an diagonal anisotropic conductivity tensor by using the property `B-conductivity-diag` $$$vector3$$$, which takes three numbers or a $vector3$ to give the $\sigma_B$ tensor diagonal. See also [Conductivity in Meep](Conductivity_in_Meep.md).
+:: The (frequency-independent) magnetic conductivity $\sigma_B$. Default value = 0. You can also specify an diagonal anisotropic conductivity tensor by using the property `B-conductivity-diag` $$$vector3$$$, which takes three numbers or a $vector3$ to give the $\sigma_B$ tensor diagonal. See also [Conductivity in Meep](Materials_in_Meep.md#Conductivity).
 
 :; `chi2` $$`number`$$
 
-:: The nonlinear (Pockels) susceptibility $\chi^{(2)}$. Default value = 0. See also [Nonlinearity in Meep](Nonlinearity_in_Meep.md).
+:: The nonlinear (Pockels) susceptibility $\chi^{(2)}$. Default value = 0. See also [Nonlinearity in Meep](Materials_in_Meep.md#Nonlinearity).
 
 :; `chi3` $$`number`$$
 
-:: The nonlinear (Kerr) susceptibility $\chi^{(3)}$. Default value = 0. (See e.g. [Meep Tutorial/Third harmonic generation](Meep_Tutorial/Third_harmonic_generation.md).) See also [Nonlinearity in Meep](Nonlinearity_in_Meep.md).
+:: The nonlinear (Kerr) susceptibility $\chi^{(3)}$. Default value = 0. (See e.g. [Meep Tutorial/Third harmonic generation](Meep_Tutorial/Third_harmonic_generation.md).) See also [Nonlinearity in Meep](Materials_in_Meep.md#Nonlinearity).
 
 :; `E-susceptibilities` $$list of `susceptibility` class$$
 
-:: List of dispersive susceptibilities (see below) added to the dielectric constant ε, in order to model material dispersion; defaults to none. (See e.g. [Meep Tutorial/Material dispersion](Meep_Tutorial/Material_dispersion.md).) See also [Material dispersion in Meep](Material_dispersion_in_Meep.md). For backwards compatibility, synonyms of `E-susceptibilities` are `E-polarizations` and `polarizations`.
+:: List of dispersive susceptibilities (see below) added to the dielectric constant ε, in order to model material dispersion; defaults to none. (See e.g. [Meep Tutorial/Material dispersion](Meep_Tutorial/Material_dispersion.md).) See also [Material dispersion in Meep](Materials_in_Meep.md#Dispersion). For backwards compatibility, synonyms of `E-susceptibilities` are `E-polarizations` and `polarizations`.
 
 :; `H-susceptibilities` $$list of `susceptibility` class$$
 
 
 
-List of dispersive susceptibilities (see below) added to the permeability μ, in order to model material dispersion; defaults to none. (See e.g. [Meep Tutorial/Material dispersion](Meep_Tutorial/Material_dispersion.md).) See also [Material dispersion in Meep](Material_dispersion_in_Meep.md). For backwards compatibility, a synonym of `H-susceptibilities` is `H-polarizations`.
+List of dispersive susceptibilities (see below) added to the permeability μ, in order to model material dispersion; defaults to none. (See e.g. [Meep Tutorial/Material dispersion](Meep_Tutorial/Material_dispersion.md).) See also [Material dispersion in Meep](Materials_in_Meep.md#Dispersion). For backwards compatibility, a synonym of `H-susceptibilities` is `H-polarizations`.
 
 ```
 perfect-metal
@@ -240,7 +240,7 @@ Instead of `material-func`, you can use `epsilon-func`: for `epsilon-func`, you 
 
 **Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra-materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. (For dispersive materials, you need to include a material with the *same* γ<sub>*n*</sub> and ω<sub>*n*</sub> values, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously if you want and a matching σ<sub>*n*</sub> need not be specified in `extra-materials`. For nonlinear or conductivity materials, your `extra-materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously if you want.)
 
-**Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep (where the imaginary part is a frequency-independent loss), but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the conductivity (see [Conductivity in Meep](Conductivity_in_Meep.md)). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent imaginary (and real) ε (and/or μ), and you need to specify that frequency dependence by fitting to Lorentzian (and/or Drude) resonances via the `lorentzian-susceptibility` (or `drude-susceptibility`) classes below.
+**Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep (where the imaginary part is a frequency-independent loss), but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the conductivity (see [Conductivity in Meep](Materials_in_Meep.md#Conductivity)). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent imaginary (and real) ε (and/or μ), and you need to specify that frequency dependence by fitting to Lorentzian (and/or Drude) resonances via the `lorentzian-susceptibility` (or `drude-susceptibility`) classes below.
 
 Dispersive dielectric (and magnetic) materials, above, are specified via a list of objects that are subclasses of type `susceptibility`.
 
@@ -248,7 +248,7 @@ Dispersive dielectric (and magnetic) materials, above, are specified via a list 
 susceptibility
 ```
 
-Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ (see [Material dispersion in Meep](Material_dispersion_in_Meep.md)):
+Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ (see [Material dispersion in Meep](Materials_in_Meep.md#Dispersion)):
 
 `sigma` $$`number`$$
 The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma-diag` $$$vector3$$$, which takes three numbers or a $vector3$ to give the $\sigma_n$ tensor diagonal, and `sigma-offdiag` $$$vector3$$$ which specifies the offdiagonal elements (defaults to 0). That is, `(sigma-diag` `a` `b` `c)` and `(sigma-offdiag` `u` `v` `w)` corresponds to a σ tensor
@@ -261,7 +261,7 @@ The scale factor σ. You can also specify an anisotropic σ tensor by using the 
 lorentzian-susceptibility
 ```
 
-Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form (see [Material dispersion in Meep](Material_dispersion_in_Meep.md)), with the parameters (in addition to σ):
+Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form (see [Material dispersion in Meep](Materials_in_Meep.md#Dispersion)), with the parameters (in addition to σ):
 
 `frequency` $$`number`$$
 The resonance frequency $f_n = \omega_n / 2\pi$.
@@ -273,7 +273,7 @@ The resonance loss rate $\gamma_n / 2\pi$.
 drude-susceptibility
 ```
 
-Specifies a single dispersive susceptibility of Drude form (see [Material dispersion in Meep](Material_dispersion_in_Meep.md)), with the parameters (in addition to σ):
+Specifies a single dispersive susceptibility of Drude form (see [Material dispersion in Meep](Materials_in_Meep.md#Dispersion)), with the parameters (in addition to σ):
 
 `frequency` $$`number`$$
 The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a resonance frequency).
@@ -287,7 +287,7 @@ Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptib
 noisy-lorentzian-susceptibility` or `noisy-drude-susceptibility
 ```
 
-Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form (see [Material dispersion in Meep](Material_dispersion_in_Meep.md)), with the same σ, `frequency`, and `gamma`) parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
+Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form (see [Material dispersion in Meep](Materials_in_Meep.md#Dispersion)), with the same σ, `frequency`, and `gamma`) parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
 
 `noise-amp` $$`number`$$
 The noise has root-mean square amplitude σ⋅`noise-amp`.
@@ -432,7 +432,7 @@ A 90° (fourfold) rotational symmetry (a.k.a. $C_4$). Here, the `direction` is t
 
 ### pml
 
-This class is used for specifying the PML absorbing boundary layers around the cell, if any, via the `pml-layers` input variable. See also [Perfectly matched layers](Perfectly_matched_layers.md). `pml-layers` can be zero or more `pml` objects, with multiple objects allowing you to specify different PML layers on different boundaries.
+This class is used for specifying the PML absorbing boundary layers around the cell, if any, via the `pml-layers` input variable. See also [Perfectly matched layers](Perfectly_matched_layer.md). `pml-layers` can be zero or more `pml` objects, with multiple objects allowing you to specify different PML layers on different boundaries.
 
 ```
 pml
@@ -815,7 +815,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux spectra
 
-Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [transmission/reflection spectra introduction](Meep_Introduction#Transmission/reflection_spectra.md) and the [Meep tutorial](Meep_tutorial.md). The most important function is:
+Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [transmission/reflection spectra introduction](Meep_Introduction#Transmission/reflection_spectra.md) and the [Meep tutorial](Meep_Tutorial.md). The most important function is:
 
 ```
 (add-flux` `fcen` `df` `nfreq` `flux-regions...)
@@ -854,7 +854,7 @@ Given a flux object, returns a list of the frequencies that it is computing the 
 
 Given a flux object, returns a list of the current flux spectrum that it has accumulated.
 
-As described in the [Meep tutorial](Meep_tutorial.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in the [Meep tutorial](Meep_Tutorial.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 ```
 (save-flux` `filename` `flux)
@@ -951,7 +951,7 @@ Given a force object, returns a list of the frequencies that it is computing the
 
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
-As described in the [Meep tutorial](Meep_tutorial.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in the [Meep tutorial](Meep_Tutorial.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 ```
 (save-force` `filename` `force)
@@ -1021,7 +1021,7 @@ Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in the [Meep tutorial](Meep_tutorial.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in the [Meep tutorial](Meep_Tutorial.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 ```
 (save-near2far` `filename` `near2far)
@@ -1095,7 +1095,7 @@ Run the simulation until all sources have turned off, calling the given step fun
 
 As `run-sources`, but with an additional first argument: either a number, in which case it is an *additional* time (in Meep units) to run for after the sources are off, *or* it is a function (of no arguments). In the latter case, the simulation runs until the sources are off *and* `(cond?)` returns `true`.
 
-In particular, a useful first argument to `run-sources+` or `run-until` is often given by (as in the [Meep tutorial](Meep_tutorial.md)):
+In particular, a useful first argument to `run-sources+` or `run-until` is often given by (as in the [Meep tutorial](Meep_Tutorial.md)):
 
 ```
 (stop-when-fields-decayed` `dT` `c` `pt` `decay-by)
@@ -1103,7 +1103,7 @@ In particular, a useful first argument to `run-sources+` or `run-until` is often
 
 Return a `cond?` function, suitable for passing to `run-until`/`run-sources+`, that examines the component `c` (e.g. `Ex`, etc.) at the point `pt` (a `vector3`) and keeps running until its absolute value *squared* has decayed by at least `decay-by` from its maximum previous value. In particular, it keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value over that time period—in this way, it won't be fooled just because the field happens to go through 0 at some instant.
 
-Note that, if you make `decay-by` very small, you may need to increase the `cutoff` property of your source(s), to decrease the amplitude of the small high-frequency components that are excited when the source turns off. (High frequencies near the [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have slow group velocities and are absorbed poorly by [PML](PML.md).)
+Note that, if you make `decay-by` very small, you may need to increase the `cutoff` property of your source(s), to decrease the amplitude of the small high-frequency components that are excited when the source turns off. (High frequencies near the [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have slow group velocities and are absorbed poorly by [PML](Perfectly_matched_layer.md).)
 
 Finally, another two run functions, useful for computing ω(**k**) band diagrams, are
 
@@ -1255,7 +1255,7 @@ For example, `(map` `harminv-freq-re` `harminv-results)` gives you a list of the
 
 ### Step-function modifiers
 
-Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. (See also the [Meep tutorial](Meep_tutorial.md) for examples.)
+Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. (See also the [Meep tutorial](Meep_Tutorial.md) for examples.)
 
 #### Miscellaneous step-function modifiers
 

@@ -3,7 +3,7 @@ title: Meep C-plus-plus Tutorial
 permalink: /Meep_C-plus-plus_Tutorial/
 ---
 
-Instead of using the libctl/Scheme interface described in the [Meep tutorial](Meep_tutorial.md), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the greatest level of flexibility in setting up FDTD simulations. There are 19 examples of such C++ programs in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
+Instead of using the libctl/Scheme interface described in the [Meep tutorial](Meep_Tutorial.md), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the greatest level of flexibility in setting up FDTD simulations. There are 19 examples of such C++ programs in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
 
 Differences from libctl
 -----------------------

@@ -38,7 +38,7 @@ The [Meep manual](Meep_manual.md) gives examples of all of these kinds of comput
 Download
 --------
 
-Please see the [Meep Download](Meep_Download.md) page to get the latest version of Meep; the differences between versions are described in the [Meep release notes](Meep_release_notes.md). The installation instructions can be found in the [installation section](Meep_installation.md) of the [Meep manual](Meep_manual.md).
+Please see the [Meep Download](Meep_Download.md) page to get the latest version of Meep; the differences between versions are described in the [Meep release notes](Meep_release_notes.md). The installation instructions can be found in the [installation section](Meep_Installation.md) of the [Meep manual](Meep_manual.md).
 
 The latest development sources are available on [Github](https://github.com/stevengj/meep).
 

@@ -13,8 +13,7 @@
 :%s/(\/[Hh]arminv_installation "wikilink")/(http:\/\/ab-initio.mit.edu\/wiki\/index.php\/Harminv_installation)/g
 :%s/(\/[Hh]5utils "wikilink")/(http:\/\/ab-initio.mit.edu\/wiki\/index.php\/H5utils)/g
 :%s/(\/Guile_and_Scheme_links "wikilink")/(http:\/\/ab-initio.mit.edu\/wiki\/index.php\/Guile_and_Scheme_links)/g
-:%s/perfectly_matched_layers/Perfectly_matched_layers/g
-:%s/perfectly_matched_layer/Perfectly_matched_layer/g
+:%s/[Pp]erfectly_matched_layer[s]\?/Perfectly_matched_layer/g
 :%s/[(][/]Category:\([^ ]*\) "wikilink"/(\1.md/g
 :%s/[(][/]\([^ ]*\) "wikilink"/(\1.md/g
 :%s/\\\[/$$/g

@@ -3,7 +3,7 @@ title: Units and nonlinearity in Meep
 permalink: /Units_and_nonlinearity_in_Meep/
 ---
 
-For linear calculations in electromagnetism, most quantities of interest are naturally expressed as dimensionless quantities, such as the ratio of the wavelength to a given lengthscale, the transmitted or reflected power as a fraction of input power, or the lifetime in units of the optical period. Matters are more complicated when one includes nonlinear effects, however, because in this case the absolute amplitude of the electric field becomes significant. On this page, we discuss how to relate Meep's units to those of experimental quantities relevant for nonlinear problems. See also [Nonlinearities in Meep](Nonlinearities_in_Meep.md).
+For linear calculations in electromagnetism, most quantities of interest are naturally expressed as dimensionless quantities, such as the ratio of the wavelength to a given lengthscale, the transmitted or reflected power as a fraction of input power, or the lifetime in units of the optical period. Matters are more complicated when one includes nonlinear effects, however, because in this case the absolute amplitude of the electric field becomes significant. On this page, we discuss how to relate Meep's units to those of experimental quantities relevant for nonlinear problems. See also [Nonlinearities in Meep](Materials_in_Meep.md#Nonlinearity).
 
 Kerr nonlinearities
 -------------------

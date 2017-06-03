@@ -7,7 +7,7 @@ Meep implements the **finite-difference time-domain** (**FDTD**) method for comp
 
 In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful computational methods in electromagnetism, each of which has their own special uses—we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
 
-This introduction does *not* describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in the [Meep tutorial](Meep_tutorial.md).
+This introduction does *not* describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in the [Meep tutorial](Meep_Tutorial.md).
 
 Maxwell's equations
 -------------------
@@ -97,7 +97,7 @@ Finally, in systems that are composed of a small number of easily-analyzed piece
 Applications of FDTD
 --------------------
 
-In this section, we sketch out a few of the basic ways in which FDTD can be used to analyze electromagnetic problems. Specific examples of how to use these techniques in Meep are described in the [Meep tutorial](Meep_tutorial.md).
+In this section, we sketch out a few of the basic ways in which FDTD can be used to analyze electromagnetic problems. Specific examples of how to use these techniques in Meep are described in the [Meep tutorial](Meep_Tutorial.md).
 
 ### Field patterns and Green's functions
 

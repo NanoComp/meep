@@ -67,7 +67,7 @@ Meep 1.1
 
 <small>20 August 2009</small>
 
--   Meep's [PML](PML.md) is now a true PML for arbitrary anisotropic, dispersive, and conducting media. (Now uses a slightly unconventional reformulation of PML described at [ab-initio.mit.edu/meep/pml-meep.pdf](http://ab-initio.mit.edu/meep/pml-meep.pdf))
+-   Meep's [PML](Perfectly_matched_layer.md) is now a true PML for arbitrary anisotropic, dispersive, and conducting media. (Now uses a slightly unconventional reformulation of PML described at [ab-initio.mit.edu/meep/pml-meep.pdf](http://ab-initio.mit.edu/meep/pml-meep.pdf))
 -   Fixed bug which caused anisotropic non-diagonal μ to be unstable.
 -   Fix compilation failure with gcc 4.4 due to missing `cstdio` header (thanks to Linran Fan and Bin Shao for the bug reports).
 -   C++ interface: `volume` was renamed to `grid_volume` and `geometric_volume` was renamed to `volume`, to better reflect their respective roles.
