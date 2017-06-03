@@ -49,7 +49,7 @@ For `CYLINDRICAL` simulations with |*m*| &gt; 1, compute more accurate fields 
 Specifies the computational grid resolution, in pixels per distance unit. Defaults to `10`.
 
 `k-point` $$`false` or `vector3`$$
-If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a vector, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\textbf{k}\cdot\textbf{R})$ times the fields at the other side, separated by the lattice vector $\textbf{R}$. The `k-point` vector is specified in *Cartesian* coordinates, in units of 2π/distance. (This is *different* from [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), equivalent to taking MPB's `k-points` through the function `reciprocal->cartesian`.)
+If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a vector, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. The `k-point` vector is specified in *Cartesian* coordinates, in units of 2π/distance. (This is *different* from [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), equivalent to taking MPB's `k-points` through the function `reciprocal->cartesian`.)
 
 `ensure-periodicity` $$`boolean`$$
 If `true` (the default), *and* if the boundary conditions are periodic (`k-point` is not `false`), then the geometric objects are automatically repeated periodically according to the lattice vectors (the size of the computational cell).
@@ -127,7 +127,7 @@ Specify particular boundary in some direction (e.g. $+x$ or $-x$). One of `Low` 
 Specify a particular field (or other) component. One of `Ex`, `Ey`, `Ez`, `Er`, `Ep`, `Hx`, `Hy`, `Hz`, `Hy`, `Hp`, `Hz`, `Bx`, `By`, `Bz`, `By`, `Bp`, `Bz`, `Dx`, `Dy`, `Dz`, `Dr`, `Dp`, `Dielectric`, `Permeability`, for: $E_x$, $E_y$, $E_z$, $E_r$, $E_\phi$, $H_x$, $H_y$, $H_z$, $H_r$, $H_\phi$, $B_x$, $B_y$, $B_z$, $B_r$, $B_\phi$, $D_x$, $D_y$, $D_z$, $D_r$, $D_\phi$, $\varepsilon$, $\mu$, respectively.
 
 `derived-component` constants
-These are additional components, which are not actually stored by Meep but are computed as needed, mainly for use in output functions. One of `Sx`, `Sy`, `Sz`, `Sr`, `Sp`, `EnergyDensity`, `D-EnergyDensity`, `H-EnergyDensity` for: $S_x$, $S_y$, $S_z$, $S_r$, $S_\phi$ (components of the Poynting vector $\mathrm{Re}\,\textbf{E}^* \times \textbf{H}$), $(\textbf{E}^* \cdot \textbf{D} + \textbf{H}^* \cdot \textbf{B})/2$, $\textbf{E}^* \cdot \textbf{D}/2$, $\textbf{H}^* \cdot \textbf{B}/2$, respectively.
+These are additional components, which are not actually stored by Meep but are computed as needed, mainly for use in output functions. One of `Sx`, `Sy`, `Sz`, `Sr`, `Sp`, `EnergyDensity`, `D-EnergyDensity`, `H-EnergyDensity` for: $S_x$, $S_y$, $S_z$, $S_r$, $S_\phi$ (components of the Poynting vector $\mathrm{Re}\,\mathbf{E}^* \times \mathbf{H}$), $(\mathbf{E}^* \cdot \mathbf{D} + \mathbf{H}^* \cdot \mathbf{B})/2$, $\mathbf{E}^* \cdot \mathbf{D}/2$, $\mathbf{H}^* \cdot \mathbf{B}/2$, respectively.
 
 Classes
 -------
@@ -471,7 +471,7 @@ The main reason to use `absorber` is if you have **a case in which PML fails:**
 
 ### source
 
-The `source` class is used to specify the current sources (via the `sources` input variable). Note that all sources in Meep are separable in time and space, i.e. of the form $\textbf{J}(\textbf{x},t) = \textbf{A}(\textbf{x}) \cdot f(t)$ for some functions $\textbf{A}$ and $f$. (Non-separable sources can be simulated, however, by modifying the sources after each time step.) When real fields are being used (which is the default in many cases...see the `force-complex-fields?` input variable), only the real part of the current source is used by Meep.
+The `source` class is used to specify the current sources (via the `sources` input variable). Note that all sources in Meep are separable in time and space, i.e. of the form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions $\mathbf{A}$ and $f$. (Non-separable sources can be simulated, however, by modifying the sources after each time step.) When real fields are being used (which is the default in many cases...see the `force-complex-fields?` input variable), only the real part of the current source is used by Meep.
 
 **Important note**: These are *current* sources (**J** terms in Maxwell's equations), even though they are labelled by electric/magnetic field components. They do *not* specify a particular electric/magnetic field (which would be what is called a "hard" source in the FDTD literature). There is no fixed relationship between the current source and the resulting field amplitudes; it depends on the surrounding geometry, as described in the [Meep FAQ](Meep_FAQ#How_does_the_current_amplitude_relate_to_the_resulting_field_amplitude?.md) and in [our book chapter online](http://arxiv.org/abs/arXiv:1301.5366).
 
@@ -719,31 +719,31 @@ Equivalent to `(get-field-point` `Dielectric` `pt)`.
 (flux-in-box` `dir` `box)
 ```
 
-Given a `direction` constant, and a `meep::volume*`, returns the flux (the integral of $\Re [\textbf{E}^* \times \textbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `(flux-in-box` `X` `(volume` `(center` `0)` `(size` `0` `1` `1)))`.
+Given a `direction` constant, and a `meep::volume*`, returns the flux (the integral of $\Re [\mathbf{E}^* \times \mathbf{H}]$) in that volume. Most commonly, you specify a volume that is a plane or a line, and a direction perpendicular to it, e.g. `(flux-in-box` `X` `(volume` `(center` `0)` `(size` `0` `1` `1)))`.
 
 ```
 (electric-energy-in-box` `box)
 ```
 
-Given a `meep::volume*`, returns the integral of the electric-field energy $\textbf{E}^* \cdot \textbf{D}/2$ in the given volume. (If the volume has zero size along a dimension, a lower-dimensional integral is used.)
+Given a `meep::volume*`, returns the integral of the electric-field energy $\mathbf{E}^* \cdot \mathbf{D}/2$ in the given volume. (If the volume has zero size along a dimension, a lower-dimensional integral is used.)
 
 ```
 (magnetic-energy-in-box` `box)
 ```
 
-Given a `meep::volume*`, returns the integral of the magnetic-field energy $\textbf{H}^* \cdot \textbf{B}/2$in the given volume. (If the volume has zero size along a dimension, a lower-dimensional integral is used.)
+Given a `meep::volume*`, returns the integral of the magnetic-field energy $\mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. (If the volume has zero size along a dimension, a lower-dimensional integral is used.)
 
 ```
 (field-energy-in-box` `box)
 ```
 
-Given a `meep::volume*`, returns the integral of the electric+magnetic-field energy $\textbf{E}^* \cdot \textbf{D}/2 + \textbf{H}^* \cdot \textbf{B}/2$in the given volume. (If the volume has zero size along a dimension, a lower-dimensional integral is used.)
+Given a `meep::volume*`, returns the integral of the electric+magnetic-field energy $\mathbf{E}^* \cdot \mathbf{D}/2 + \mathbf{H}^* \cdot \mathbf{B}/2$in the given volume. (If the volume has zero size along a dimension, a lower-dimensional integral is used.)
 
 Note that if you are at a fixed frequency and you use complex fields (Bloch-periodic boundary conditions or `fields-complex?=true`), then one half of the flux or energy integrals above corresponds to the time-average of the flux or energy for a simulation with real fields.
 
 Often, you want the integration box to be the entire computational cell. A useful function to return this box, which you can then use for the `box` arguments above, is `(meep-fields-total-volume` `fields)`, where `fields` is the global variable (above) holding the current `meep::fields` object.
 
-One powerful feature is that you can supply an arbitrary function $f(\textbf{x},c_1,c_2,\ldots)$ of position $\textbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output-field-function`, described later). This is done via the functions:
+One powerful feature is that you can supply an arbitrary function $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its maximum, or output it (via `output-field-function`, described later). This is done via the functions:
 
 ```
 (integrate-field-function` `cs` `func` `[where]` `[fields-var])
@@ -883,9 +883,9 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `
 
 Very similar to flux spectra, you can also compute **force spectra**: forces on an object as a function of frequency, computed by Fourier transforming the fields and integrating the vacuum [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor)
 
-$$\sigma_{ij} = E_i^*E_j + H_i^*H_j - \frac{1}{2} \delta_{ij} \left( |\textbf{E}|^2 + |\textbf{H}|^2 \right)$$
+$$\sigma_{ij} = E_i^*E_j + H_i^*H_j - \frac{1}{2} \delta_{ij} \left( |\mathbf{E}|^2 + |\mathbf{H}|^2 \right)$$
 
-over a surface *S* via $\textbf{F} = \int_S \sigma d\textbf{A}$. We recommend that you normally **only evaluate the stress tensor over a surface lying in vacuum**, as the interpretation and definition of the stress tensor in arbitrary media is often problematic (the subject of extensive and controversial literature). (It is fine if the surface *encloses* an object made of arbitrary materials, as long as the surface itself is in vacuum.)
+over a surface *S* via $\mathbf{F} = \int_S \sigma d\mathbf{A}$. We recommend that you normally **only evaluate the stress tensor over a surface lying in vacuum**, as the interpretation and definition of the stress tensor in arbitrary media is often problematic (the subject of extensive and controversial literature). (It is fine if the surface *encloses* an object made of arbitrary materials, as long as the surface itself is in vacuum.)
 
 See also the [optical forces Meep tutorial](Meep_Tutorial/Optical_forces.md).
 
@@ -1146,13 +1146,13 @@ Output the relative permeability function μ. Note that this only outputs the fr
 output-hpwr
 ```
 
-Output the magnetic-field energy density $\textbf{H}^* \cdot \textbf{B} / 2$
+Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 
 ```
 output-dpwr
 ```
 
-Output the electric-field energy density $\textbf{E}^* \cdot \textbf{D} / 2$
+Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 
 ```
 output-tot-pwr

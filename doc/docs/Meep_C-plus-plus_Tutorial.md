@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 ```
 
 
-This example, doesn't do much — it just runs a Gaussian source and outputs the $\textbf{H}_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
+This example, doesn't do much — it just runs a Gaussian source and outputs the $\mathbf{H}_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
 
 ```
 double eps(const vec &p) {
@@ -61,7 +61,7 @@ double eps(const vec &p) {
 ```
 
 
-which returns the dielectric function $\varepsilon(\textbf{x})$ (here, just a 2×3 rectangle of ε=12 in the upper-left corner). Unlike in the libctl front-end, by default the origin **0** of the coordinate system is at the *corner* of the computational cell.
+which returns the dielectric function $\varepsilon(\mathbf{x})$ (here, just a 2×3 rectangle of ε=12 in the upper-left corner). Unlike in the libctl front-end, by default the origin **0** of the coordinate system is at the *corner* of the computational cell.
 
 Now that you have the basic flavor, we can proceed to some more specific examples.
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv){ 
 ```
 
 
-Note the constructor for the `grid_volume` class in 1D which takes as parameters the size of the cell and the resolution. The sources in Meep are excitations of the polarization vector in $\textbf{D}=\epsilon\textbf{E}+\textbf{P}$. The polarization can be any one of the six cartesian or cylindrical fields. There are a variety of sources including dipole and current sources, gaussian pulses and a continuous wave sources. For now, we use a gaussian source centered at the midgap frequency with a narrow width, along with the start time and end time of the source.
+Note the constructor for the `grid_volume` class in 1D which takes as parameters the size of the cell and the resolution. The sources in Meep are excitations of the polarization vector in $\mathbf{D}=\epsilon\mathbf{E}+\mathbf{P}$. The polarization can be any one of the six cartesian or cylindrical fields. There are a variety of sources including dipole and current sources, gaussian pulses and a continuous wave sources. For now, we use a gaussian source centered at the midgap frequency with a narrow width, along with the start time and end time of the source.
 
 ```
  const double w_midgap = (sqrt(eps1)+sqrt(eps2))/(4*sqrt(eps1)*sqrt(eps2));

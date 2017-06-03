@@ -6,7 +6,7 @@ As described in the [Meep Reference](Meep_Reference.md), Meep provides several r
 
 Every field-function that can be passed to these routines is of the form *f*(**r**,components...), where **r** is a position vector and "components..." are zero or more field components that the function depends on. The set of desired components is user-specified. As an arbitrary example, suppose we are interested in the strange function:
 
-$$f(\textbf{r}, E_x, H_z, \varepsilon) = x |\textbf{r}| + E_x - \varepsilon H_z$$
+$$f(\mathbf{r}, E_x, H_z, \varepsilon) = x |\mathbf{r}| + E_x - \varepsilon H_z$$
 
 We would define this function, in Scheme, by:
 

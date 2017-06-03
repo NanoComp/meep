@@ -60,13 +60,13 @@ integrate this result, multiplied by a known function $g(-t)$, over time $t$.
 
 The Casimir force is given by an expression of the form:
 
-$$F_i = \sum_n \mathrm{Im} \int_0^\infty dt \, g(t) \int_S dS_j(\textbf{x}) f_n(\textbf{x}) \Gamma_{ij;n}(t,\textbf{x})$$
+$$F_i = \sum_n \mathrm{Im} \int_0^\infty dt \, g(t) \int_S dS_j(\mathbf{x}) f_n(\mathbf{x}) \Gamma_{ij;n}(t,\mathbf{x})$$
 
 where the $\Gamma_{ij;n}$ are the fields in response to sources related to the functions $f_n$ (discussed in detail later), $S$ is an arbitrary closed surface enclosing the object for which we want to compute the Casimir force, $g(t)$ is a known function, and the index $n$ ranges over all of the integers.
 
-The functions $\Gamma_{ij;n}(t,\textbf{x})$ are related to the Maxwell stress tensor introduced in the previous section. Here the frequency integration has been turned into an integration over time, which is especially suited for our purposes.
+The functions $\Gamma_{ij;n}(t,\mathbf{x})$ are related to the Maxwell stress tensor introduced in the previous section. Here the frequency integration has been turned into an integration over time, which is especially suited for our purposes.
 
-Note that the precise implementation of step (3) will greatly affect the efficiency of the method. For example, computing the fields due to each source at each point on the surface separately requires a separate Meep calculation for each source (and polarization). This corresponds to taking $f_n(\textbf{x}) = \delta(\textbf{x}-\textbf{x}_n)$ for each point $\textbf{x}_n \in S$, and the sum over $n$ becomes an integration over $S$. As described in Part II ([arXiv:0906.5170](http://arxiv.org/abs/arXiv:0906.5170)), we are free to take $f_n$ to be any basis of orthogonal functions. Picking an extended basis (e.g. cosine functions or complex exponentials $e^{ikx}$) greatly reduces the number of simulations required.
+Note that the precise implementation of step (3) will greatly affect the efficiency of the method. For example, computing the fields due to each source at each point on the surface separately requires a separate Meep calculation for each source (and polarization). This corresponds to taking $f_n(\mathbf{x}) = \delta(\mathbf{x}-\mathbf{x}_n)$ for each point $\mathbf{x}_n \in S$, and the sum over $n$ becomes an integration over $S$. As described in Part II ([arXiv:0906.5170](http://arxiv.org/abs/arXiv:0906.5170)), we are free to take $f_n$ to be any basis of orthogonal functions. Picking an extended basis (e.g. cosine functions or complex exponentials $e^{ikx}$) greatly reduces the number of simulations required.
 
 Example: two-dimensional blocks
 -------------------------------
@@ -140,7 +140,7 @@ Here we can pass in either field type Ex or Hx. Since the E/H fields are defined
 
 ### Sources
 
-The user does not have to explicitly construct the $f_n(\textbf{x})$ source basis for Casimir calculations. This is all done inside of Meep (see below). The user only has to specify how many harmonic moments $n$ to use for the simulation. Here we briefly describe what is done inside of Meep.
+The user does not have to explicitly construct the $f_n(\mathbf{x})$ source basis for Casimir calculations. This is all done inside of Meep (see below). The user only has to specify how many harmonic moments $n$ to use for the simulation. Here we briefly describe what is done inside of Meep.
 
 The built-in source basis used in Meep for this type of computation consists of a Cosine basis. For each side of $S$ and each non-negative integer $n$, this defines a source distribution:
 
@@ -160,7 +160,7 @@ For the simulation, we must truncate the sum over $n$ to some finite upper limit
 ```
 
 
-To illustrate the field profiles, below we show four snapshots at different times for what we term $\Gamma^E_{yy;n=2}(\textbf{x},t)$, the $y$-component of the electric field response to a $y$-polarized current source with spatial dependence $f_2(x)$
+To illustrate the field profiles, below we show four snapshots at different times for what we term $\Gamma^E_{yy;n=2}(\mathbf{x},t)$, the $y$-component of the electric field response to a $y$-polarized current source with spatial dependence $f_2(x)$
 
 
 ![center|600px|thumb|Snapshots of computed fields from sources around the stress surface.](images/Field-visualization.jpg)
@@ -426,9 +426,9 @@ An example geometry which is $z$-invariant is shown below:
 
 
 
-This example is also treated in rods-plates.ctl ([8](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl)). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\textbf{E}(x,y,z) = \textbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\textbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
+This example is also treated in rods-plates.ctl ([8](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl)). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
 
-$$\textbf{F}^{3D} = \int_0^\infty dk_z F^{2D}(k_z)$$
+$$\mathbf{F}^{3D} = \int_0^\infty dk_z F^{2D}(k_z)$$
 
 To run this type of computation, we proceed exactly as before, except that we have an additional external index variable `k_z`. Strictly speaking, $k_z$ is an internal variable, but we've found it most efficient to output the individual $F^{2D}(k_z)$ and then pass them to a separate integration routine. This also helps in determining the appropriate upper bound and sampling rate on the $k_z$-integral:
 
@@ -486,7 +486,7 @@ For systems with cylindrical symmetry, the Casimir force computation can be redu
 
 The hole in the bottom plane, coupled with the high degree of anisotropy of the upper elliptical particle, results in a repulsive force when the particle is centered above the hole. This system is simulated in [repulsive-particle.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/repulsive-particle.ctl). The size parameters used in the ctl file are noted on the figure above.
 
-The harmonic expansion for systems with cylindrical symmetry is derived in Part II. The important change is that there is a new multipole index $m$, such that the field dependence of the source functions is of the form $\textbf{E}(r,\phi,z) = \textbf{E}(r\phi)e^{im\phi}$. The important code differences between cylindrical symmetry and a normal 2d computation are shown here:
+The harmonic expansion for systems with cylindrical symmetry is derived in Part II. The important change is that there is a new multipole index $m$, such that the field dependence of the source functions is of the form $\mathbf{E}(r,\phi,z) = \mathbf{E}(r\phi)e^{im\phi}$. The important code differences between cylindrical symmetry and a normal 2d computation are shown here:
 
 ```
  (set! dimensions -2)                                    ;%%% Tells Meep that we're in cylindrical coordinates

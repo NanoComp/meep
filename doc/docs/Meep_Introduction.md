@@ -15,14 +15,14 @@ Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equ
 
 |                                                                                           |                                         |
 |-------------------------------------------------------------------------------------------|-----------------------------------------|
-| $\frac{d\textbf{B}}{dt} = -\nabla\times\textbf{E} - \textbf{J}_B - \sigma_B \textbf{B}$ | $\textbf{B} = \mu \textbf{H}$         |
-| $\frac{d\textbf{D}}{dt} = \nabla\times\textbf{H} - \textbf{J} - \sigma_D \textbf{D}$    | $\textbf{D} = \varepsilon \textbf{E}$ |
+| $\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$ | $\mathbf{B} = \mu \mathbf{H}$         |
+| $\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$    | $\mathbf{D} = \varepsilon \mathbf{E}$ |
 
 Where **D** is the displacement field, ε is the dielectric constant, **J** is the current density (of electric charge), and **J**<sub>*B*</sub> is the *magnetic-charge* current density. (Magnetic currents are a convenient computational fiction in some situations.) **B** is the magnetic flux density (often called the magnetic field), μ is the magnetic permeability, and **H** is the magnetic field. The $\sigma_B$ and $\sigma_D$ terms correspond to (frequency-independent) magnetic and electric conductivities, respectively. The divergence equations are implicitly:
 
 |                                                                                                  |                                                                                                           |
 |--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| $\nabla \cdot \textbf{B} = - \int^t \nabla \cdot (\textbf{J}_B(t') + \sigma_B \textbf{B}) dt'$ | $\nabla \cdot \textbf{D} = - \int^t \nabla \cdot (\textbf{J}(t') + \sigma_D \textbf{D})dt' \equiv \rho$ |
+| $\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$ | $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$ |
 
 Most generally, ε depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials in Meep](Materials_in_Meep.md).
 
@@ -47,7 +47,7 @@ Boundary conditions and symmetries
 
 On a computer, we can only simulate a finite region of space, which means that we must terminate our simulation with some **boundary conditions**. Three basic types of terminations are supported in Meep: **Bloch-periodic boundaries**, **metallic walls**, and **PML absorbing layers**. Also, one can exploit **symmetries** of a problem to further reduce the computational requirements.
 
-With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\textbf{k}$. This can be used to solve for the modes of photonic crystals, waveguides, and so on, much like in [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) (see [our online textbook](http://ab-initio.mit.edu/book), ch. 3).
+With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\mathbf{k}$. This can be used to solve for the modes of photonic crystals, waveguides, and so on, much like in [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) (see [our online textbook](http://ab-initio.mit.edu/book), ch. 3).
 
 An even simpler boundary condition is a metallic wall, where the fields are simply forced to be zero on the boundaries, as if the cell were surrounded by a perfect metal (zero absorption, zero skin depth). More generally, you can place perfect metal materials anywhere you want in the computational cell, e.g. to simulate metallic cavities of an arbitrary shape.
 
@@ -104,7 +104,7 @@ The most obvious thing that you can do with a time-domain simulation, of course,
 
 The field pattern from a given localized source at a particular frequency ω is a form of the **Green's function** of the system. More specifically, one typically writes the "dyadic" Green's function
 
-$$G_{ij}(\omega; \textbf{x}, \textbf{x}')$$ which gives the $i$<sup>th</sup> component of (say) **E** at **x** from a point current source **J** at $\textbf{x'}$, such that $\textbf{J}(\textbf{x})=\hat\textbf{e}_j \cdot \exp(-i\omega t) \cdot \delta(\textbf{x}-\textbf{x}')$. To obtain this in FDTD, you simply place the requisite point source at $\textbf{x'}$ and wait for a long enough time for all other frequency components to die out (noting that the mere act of turning on a current source at $t=0$ introduces a spectrum of frequencies). Alternatively, you can use the [Meep frequency-domain solver](Meep_frequency-domain_solver.md) to find the response directly (by solving the associated linear equation).
+$$G_{ij}(\omega; \mathbf{x}, \mathbf{x}')$$ which gives the $i$<sup>th</sup> component of (say) **E** at **x** from a point current source **J** at $\mathbf{x'}$, such that $\mathbf{J}(\mathbf{x})=\hat\mathbf{e}_j \cdot \exp(-i\omega t) \cdot \delta(\mathbf{x}-\mathbf{x}')$. To obtain this in FDTD, you simply place the requisite point source at $\mathbf{x'}$ and wait for a long enough time for all other frequency components to die out (noting that the mere act of turning on a current source at $t=0$ introduces a spectrum of frequencies). Alternatively, you can use the [Meep frequency-domain solver](Meep_frequency-domain_solver.md) to find the response directly (by solving the associated linear equation).
 
 Given the Green's function, one can then compute a wide variety of useful things, from the radiated flux, to the local density of states (proportional to $\sum_i G_{ii}$), to Born approximations for small scatterers. Even more powerfully, one can compute many such quantities *for multiple frequencies simultaneously* using the Fourier transform of a short pulse as described below.
 
@@ -112,11 +112,11 @@ Given the Green's function, one can then compute a wide variety of useful things
 
 Perhaps the most common task to which FDTD is applied is that of computing the transmission or scattering spectra from some finite structure, such as a resonant cavity, in response to some stimulus. One could, of course, compute the fields (and thus the transmitted flux) at each frequency ω separately, as described above. However, it is much more efficient to compute a broadband response via a single computation by Fourier-transforming the response to a short pulse.
 
-For example, suppose we want the transmitted power through some structure. For fields at a given frequency ω, this is the integral of the Poynting vector (in the normal $\hat\textbf{n}$ direction) over a plane on the far side of the structure:
+For example, suppose we want the transmitted power through some structure. For fields at a given frequency ω, this is the integral of the Poynting vector (in the normal $\hat\mathbf{n}$ direction) over a plane on the far side of the structure:
 
-$$P(\omega) = \mathrm{Re}\, \hat\textbf{n}\cdot \int \textbf{E}_\omega(\textbf{x})^* \times \textbf{H}_\omega(\textbf{x}) \, d^2\textbf{x}$$ Now, if we input a short pulse, it is tempting to compute the integral $P(t)$ of the Poynting vector at each time, and then Fourier-transform this to find $P(\omega)$. That is **incorrect**, however, because what we want is the flux of the Fourier-transformed *fields* **E** and **H**, which is not the same as the transform of the flux (because the flux is not a linear function of the fields).
+$$P(\omega) = \mathrm{Re}\, \hat\mathbf{n}\cdot \int \mathbf{E}_\omega(\mathbf{x})^* \times \mathbf{H}_\omega(\mathbf{x}) \, d^2\mathbf{x}$$ Now, if we input a short pulse, it is tempting to compute the integral $P(t)$ of the Poynting vector at each time, and then Fourier-transform this to find $P(\omega)$. That is **incorrect**, however, because what we want is the flux of the Fourier-transformed *fields* **E** and **H**, which is not the same as the transform of the flux (because the flux is not a linear function of the fields).
 
-Instead, what one does is to accumulate the Fourier transforms $\textbf{E}_\omega(\textbf{x})$ and $\textbf{H}_\omega(\textbf{x})$ for every point in the flux plane via summation over the discrete time steps $n$:
+Instead, what one does is to accumulate the Fourier transforms $\mathbf{E}_\omega(\mathbf{x})$ and $\mathbf{H}_\omega(\mathbf{x})$ for every point in the flux plane via summation over the discrete time steps $n$:
 
 $$\tilde{f}(\omega) = \frac{1}{\sqrt{2\pi}}  \sum_n e^{i\omega n \Delta t} f(n\Delta t) \Delta t \approx \frac{1}{\sqrt{2\pi}} \int e^{i\omega t} f(t) dt$$ and then, at the end of the time-stepping, computing $P(\omega)$ by the fluxes of these Fourier-transformed fields. Meep takes care of all of this for you automatically, of course—you simply specify the regions over which you want to integrate the flux, and the frequencies that you want to compute.
 
@@ -124,9 +124,9 @@ There are other possible methods of time-series analysis, of course. One method 
 
 The power $P(\omega)$ by itself is not very useful — one needs to *normalize*, dividing by the incident power at each frequency, to get the transmission spectrum. Typically, this is done by running the simulation *twice*: once with only the incident wave and no scattering structure, and once with the scattering structure, where the first calculation is used for normalization.
 
-It gets more tricky if one wants to compute the *reflection* spectrum as well as the transmission. You can't simply compute the flux in the backwards direction, because this would give you the sum of the reflected and the incident power. You also can't simply subtract the incident power from backwards flux to get the transmitted power, because in general there will be interference effects (between incident and reflected waves) that are not subtracted. Rather, you have to subtract the Fourier-transformed incident *fields* $\textbf{E}_\omega^{(0)}(\textbf{x})$ and $\textbf{H}_\omega^{(0)}(\textbf{x})$ to get the reflected/scattered power:
+It gets more tricky if one wants to compute the *reflection* spectrum as well as the transmission. You can't simply compute the flux in the backwards direction, because this would give you the sum of the reflected and the incident power. You also can't simply subtract the incident power from backwards flux to get the transmitted power, because in general there will be interference effects (between incident and reflected waves) that are not subtracted. Rather, you have to subtract the Fourier-transformed incident *fields* $\mathbf{E}_\omega^{(0)}(\mathbf{x})$ and $\mathbf{H}_\omega^{(0)}(\mathbf{x})$ to get the reflected/scattered power:
 
-$$P_r(\omega) = \mathrm{Re}\,\hat\textbf{n}\cdot\int \left[ \textbf{E}_\omega(\textbf{x}) - \textbf{E}_\omega^{(0)}(\textbf{x}) \right]^* \times \left[ \textbf{H}_\omega(\textbf{x}) - \textbf{H}_\omega^{(0)}(\textbf{x}) \right] \, d^2\textbf{x}$$ Again, you can do this easily in practice by running the simulation twice, once without and once with the scatterer, and telling Meep to subtract the Fourier transforms in the reflected plane before computing the flux. And again, after computing the reflected power you will normalize by the incident power to get the reflection spectrum.
+$$P_r(\omega) = \mathrm{Re}\,\hat\mathbf{n}\cdot\int \left[ \mathbf{E}_\omega(\mathbf{x}) - \mathbf{E}_\omega^{(0)}(\mathbf{x}) \right]^* \times \left[ \mathbf{H}_\omega(\mathbf{x}) - \mathbf{H}_\omega^{(0)}(\mathbf{x}) \right] \, d^2\mathbf{x}$$ Again, you can do this easily in practice by running the simulation twice, once without and once with the scatterer, and telling Meep to subtract the Fourier transforms in the reflected plane before computing the flux. And again, after computing the reflected power you will normalize by the incident power to get the reflection spectrum.
 
 Meep is designed to make these kinds of calculations easy, as long as you have some idea of what is going on.
 

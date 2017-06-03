@@ -21,5 +21,6 @@
 :%s/\\(/$/g
 :%s/\\)/$/g
 :%s/^`\(.*\)`$/```\r\1\r```\r/g
-:%s/\\mathbf/\\textbf/g
 :%s/```\n\n```\n//g
+%s/^title: /# /
+%g/^permalink: /d

@@ -9,7 +9,7 @@ Kerr nonlinearities
 
 Meep supports instantaneous Kerr nonlinearities characterized by a susceptibility $\chi^{(3)}$, corresponding to a constitutive relation (in Meep's units):
 
-$$\textbf{D} = \left( \varepsilon + \chi^{(3)} \cdot |\textbf{E}|^2 \right) \textbf{E}$$
+$$\mathbf{D} = \left( \varepsilon + \chi^{(3)} \cdot |\mathbf{E}|^2 \right) \mathbf{E}$$
 
 However, the number usually reported for the strength of the Kerr nonlinearity is the AC Kerr coefficient $n_2$, defined by the effective change in refractive index $\Delta n$ for a planewave with time-average intensity $I$ travelling through a homogeneous Kerr material:
 

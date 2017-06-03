@@ -305,7 +305,7 @@ Band diagram
 
  Finally, we consider a smaller, more abstract calculation that we really should have done first, if it hadn't already been done in the 1995 paper. In particular, we compute the **band diagram** of the **infinite periodic waveguide** by itself (with no defects). (This is very similar to the types of calculations that [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) performs, but with a different method that has its own strengths and weaknesses.) By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
 
-Let us briefly review the problem (see the above paper for more information, or the book *Photonic Crystals: Molding the Flow of Light* by Joannopoulos et al.). In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\textbf{k}\cdot\textbf{x}-\omega t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $\omega(\textbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
+Let us briefly review the problem (see the above paper for more information, or the book *Photonic Crystals: Molding the Flow of Light* by Joannopoulos et al.). In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-\omega t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $\omega(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
 
 Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity (we put in a pulse and analyze the response via [harminv](http://ab-initio.mit.edu/wiki/index.php/harminv)), except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown at right. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
@@ -360,7 +360,7 @@ Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is "random", t
 ```
 
 
-(Note that, regardless of the source, we don't have an `X` symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$.) Now, there are two ways to proceed. First, we could set the value of $\textbf{k}$ via the `k-point` variable, and then use `run-sources+` with `harminv` just as we did to calculate a resonant mode:
+(Note that, regardless of the source, we don't have an `X` symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$.) Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k-point` variable, and then use `run-sources+` with `harminv` just as we did to calculate a resonant mode:
 
 ```
 (set-param! k-point (vector3 0.4 0))
@@ -368,7 +368,7 @@ Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is "random", t
 ```
 
 
-which would give us the frequencies at a single $\textbf{k} = 0.4 \cdot 2\pi \hat{\textbf{x}}$. Note that, in Meep, $\textbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. (This is *different* from [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), which uses the basis of the reciprocal lattice vectors!) However, this only gives us one $\textbf{k}$. Instead, there is a built-in function `run-k-points`, which takes as input a time to run after the sources finish (like the `300` above) and a *list* of $\textbf{k}$ points:
+which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. (This is *different* from [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), which uses the basis of the reciprocal lattice vectors!) However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function `run-k-points`, which takes as input a time to run after the sources finish (like the `300` above) and a *list* of $\mathbf{k}$ points:
 
 ```
 (define-param k-interp 19)
@@ -376,7 +376,7 @@ which would give us the frequencies at a single $\textbf{k} = 0.4 \cdot 2\pi \ha
 ```
 
 
-Here, we have used [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl)'s built-in `interpolate` function to interpolate a set of 19 $\textbf{k}$ points between $\textbf{k} = 0$ and $\textbf{k} = 0.5 \cdot 2\pi \hat{\textbf{x}}$, to cover the irreducible Brillouin zone. `run-k-points` automatically runs `harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. (It also calls `output-epsilon`.) The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
+Here, we have used [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl)'s built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. `run-k-points` automatically runs `harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. (It also calls `output-epsilon`.) The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
 
 ```
 freqs:, 14, 0.325, 0.0, 0.0, 0.171671252741341, 0.319717964514696, 0.323470450791478
@@ -384,7 +384,7 @@ freqs-im:, 14, 0.325, 0.0, 0.0, -8.74808991364674e-8, 1.82230861728163e-4,
 ```
 
 
-where the first numeric column is an index (1, 2, 3, ...), the next three columns are the components of $\textbf{k}$, and the remaining columns are the real part of ω (for the `freqs:` lines) or the imaginary part of ω (for the `freqs-im:` lines). Now we can just do:
+where the first numeric column is an index (1, 2, 3, ...), the next three columns are the components of $\mathbf{k}$, and the remaining columns are the real part of ω (for the `freqs:` lines) or the imaginary part of ω (for the `freqs-im:` lines). Now we can just do:
 
 ```
 unix% meep holey-wvg-bands.ctl | tee holey-wvg-bands.out
@@ -404,7 +404,7 @@ Computing band diagrams, especially for leaky modes, with a time-domain program 
 
 For example, there seem to be some bands that run right along the edge of the light cone. These are not leaky modes, but are artifacts of the fact that PML boundaries do not absorb well for light that is travelling parallel to the boundary, corresponding to extended modes at the boundary of the light cone. Below, we will see that these modes are not localized to the waveguide.
 
-It is usually a good idea to examine the field patterns for any modes that you are particularly interested in. That is, re-run the simulation with a narrow-bandwidth source, at the particular ω and $\textbf{k}$ you want, and output the field patterns just as we did for the resonant-cavity modes. We have done that for several modes below:
+It is usually a good idea to examine the field patterns for any modes that you are particularly interested in. That is, re-run the simulation with a narrow-bandwidth source, at the particular ω and $\mathbf{k}$ you want, and output the field patterns just as we did for the resonant-cavity modes. We have done that for several modes below:
 
 + $k_x=0.4$, $\omega=0.1896$ guided mode:
 ![center|kx=0.4, ω=0.1896 guided mode](../images/Holey-wvg-kx=0.4-w=0.1896.gif.md) 
