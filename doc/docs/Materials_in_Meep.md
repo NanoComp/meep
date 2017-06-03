@@ -8,11 +8,13 @@ However, ε is not only a function of position. In general, it also depends on f
 
 Similarly for the relative permeability μ(**x**), for which dispersion, nonlinearity, and anisotropy are all supported as well.
 
-In this section, we describe the form of the equations and material properties that Meep can simulate. The actual interface with which you specify these properties is described in the [Meep reference](Meep_Reference.md). __TOC__
+In this section, we describe the form of the equations and material properties that Meep can simulate. The actual interface with which you specify these properties is described in the [Meep reference](Meep_Reference.md). 
+
+{{TOC}}
 
 Material dispersion
 -------------------
-<a name="Dispersion">
+<a name="Dispersion"></a>
 
 Physically, material dispersion arises because the polarization of the material does not respond instantaneously to an applied field **E**, and this is essentially the way that it is implemented in FDTD. In particular, $\mathbf{D} = \varepsilon\mathbf{E}$ is expanded to:
 
@@ -67,7 +69,7 @@ Meep can keep track of this energy for the Lorentzian polarizability terms (but 
 
 Conductivity and complex ε
 --------------------------
-<a name="Conductivity">
+<a name="Conductivity"></a>
 
 Often, you only care about the absorption loss in a narrow bandwidth, where you just want to set the imaginary part of ε (or μ) to some known experimental value, in the same way that you often just care about setting a dispersionless real ε that is the correct value in your bandwidth of interest.
 
@@ -79,7 +81,7 @@ For example, suppose you want to simulate a medium with $\varepsilon = 3.4 + 0.1
 
 Nonlinearity
 ------------
-<a name="Nonlinearity">
+<a name="Nonlinearity"></a>
 
 
 In general, ε can be changed anisotropically by the **E** field itself, with:
