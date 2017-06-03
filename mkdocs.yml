@@ -2,16 +2,16 @@ site_name: MEEP documentation
 site_author: Homer Reid
 site_favicon: meep.ico
 repo_url: https://github.com/stevengj/meep/
+docs_dir: 'doc'
 
 pages:
 - 'Index': 'index.md'
 - 'Meep': 'Meep.md'
 
-#docs_dir: 'doc'
 #site_dir: 
 
 #theme_dir: 'meep-mkdocs-theme'
-#theme: readthedocs
+theme: readthedocs
 
 #python:
 #   version: 2 # for unicode
