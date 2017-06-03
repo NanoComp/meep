@@ -1,8 +1,8 @@
 site_name: MEEP documentation
 site_author: Homer Reid
 site_favicon: meep.ico
-docs_dir: 'doc'
 repo_url: https://github.com/stevengj/meep/
+docs_dir: 'doc'
 
 #theme_dir: 'meep-mkdocs-theme'
 theme: readthedocs
@@ -21,3 +21,7 @@ markdown_extensions:
         enable_dollar_delimiter: True
 
 extra_javascript: ['https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML','mathjaxhelper.js']
+
+pages:
+ 'Index': 'index.md'
+ 'Meep': 'Meep.md'
