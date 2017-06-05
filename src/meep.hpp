@@ -220,7 +220,7 @@ protected:
 
 class multilevel_susceptibility : public susceptibility {
 public:
-  multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0) {}
+  multilevel_susceptibility() : L(0), T(0), Gamma(0), N0(0), alpha(0), omega(0), gamma(0), sigmat(0) {}
   multilevel_susceptibility(int L, int T,
 			    const realnum *Gamma,
 			    const realnum *N0,
@@ -266,7 +266,7 @@ public:
 protected:
   int L; // number of atom levels
   int T; // number of optical transitions
-  realnum *Gamma; // LxL matrix of relaxation rates Gamma[i*L+j] from i -> j
+  realnum *Gamma; // LxL matrix of relaxation and pumping rates Gamma[i*L+j] from i -> j
   realnum *N0; // L initial populations
   realnum *alpha; // LxT matrix of transition coefficients 1/omega
   realnum *omega; // T transition frequencies
