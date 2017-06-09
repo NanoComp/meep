@@ -37,8 +37,7 @@ PyObject *py_callback = NULL;
 
 static PyObject* vec2py(const meep::vec &v) {
 
-    PyObject *py_vec;
-    double x = 0, y = 0, z = 0, r = 0;
+    double x = 0, y = 0, z = 0;
 
     switch (v.dim) {
       case meep::D1:
@@ -56,16 +55,11 @@ static PyObject* vec2py(const meep::vec &v) {
       case meep::Dcyl:
         r = v.r();
         z = v.z();
+        return Py_BuildValue("(ddd)", r, z, 0);
         break;
     }
 
-    if(v.dim == meep::Dcyl) {
-        py_vec = Py_BuildValue("(ddd)", r, z, 0);
-    } else {
-        py_vec = Py_BuildValue("(ddd)", x, y, z);
-    }
-
-    return py_vec;
+    return Py_BuildValue("(ddd)", x, y, z);
 }
 
 static double py_callback_wrap(const meep::vec &v) {
