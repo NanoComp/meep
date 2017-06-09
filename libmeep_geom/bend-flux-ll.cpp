@@ -43,6 +43,8 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 int main(int argv, char *argc[])
 {
+  (void )argv; // currently unused
+  (void )argc;
 
   double sx=16.0;       // size of cell in X direction
   double sy=32.0;       // size of cell in Y direction
@@ -74,11 +76,11 @@ int main(int argv, char *argc[])
    //	     (center (* -0.5 pad) wvg-ycen)
    //	     (size (- sx pad) w infinity)
    //	     (material (make dielectric (epsilon 12))))
-   vector e1=v3(1.0, 0.0, 0.0);
-   vector e2=v3(0.0, 1.0, 0.0);
-   vector e3=v3(0.0, 0.0, 1.0);
+   vector3 e1=v3(1.0, 0.0, 0.0);
+   vector3 e2=v3(0.0, 1.0, 0.0);
+   vector3 e3=v3(0.0, 0.0, 1.0);
 
-   material_type dielectric = make_dielectric(12.0);
+   material_type dielectric = meep_geom::make_dielectric(12.0);
    bool no_bend=false; // if true, have straight waveguide, not bend
 
    if (no_bend)
@@ -89,8 +91,8 @@ int main(int argv, char *argc[])
                               e1, e2, e3,
                               v3(HUGE_VAL, w, HUGE_VAL)
                              );
-      geometric_object_list g={ objects, 1 };
-      set_materials_from_geometry(the_structure, g);
+      geometric_object_list g={ 1, objects };
+      meep_geom::set_materials_from_geometry(&the_structure, g);
     }
    else
     {
@@ -113,8 +115,8 @@ int main(int argv, char *argc[])
                               v3(-sx*pad, w, HUGE_VAL)
                              );
    
-      geometric_object_list g={ objects, 3 };
-      set_materials_from_geometry(the_structure, g);
+      geometric_object_list g={ 3, objects };
+      meep_geom::set_materials_from_geometry(&the_structure, g);
     };
 
   fields f(&the_structure);
@@ -129,7 +131,7 @@ int main(int argv, char *argc[])
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
   gaussian_src_time src(fcen, df);
-  f.add_volume_source(Ez, src, vec(1-0.5*sx, wvg-ycen), vec(0,w));
+  f.add_volume_source(Ez, src, vec(1-0.5*sx, wvg_ycen), vec(0,w));
 
   //
   // didn't finish porting the rest yet
@@ -143,16 +145,28 @@ int main(int argv, char *argc[])
   //		      (center (- (/ sx 2) 1.5) wvg-ycen) (size 0 (* w 2)))
   //		    (make flux-region
   //		      (center wvg-xcen (- (/ sy 2) 1.5)) (size (* w 2) 0)))))
-
+ 
+  volume *trans_volume=
+   no_bend ? new volume(vec(0.5*sx-1.5, wvg_ycen), vec(0.0, 2.0*w))
+           : new volume(vec(wvg_xcen, 0.5*sy-1.5), vec(2.0*w, 0.0));
+  volume_list trans_vl(*trans_volume, 1);
+  dft_flux trans=f.add_dft_flux(&trans_vl, fcen-0.5*df, fcen+0.5*df, nfreq);
+  
   //(define refl ; reflected flux
   //      (add-flux fcen df nfreq
   //		(make flux-region 
   //		  (center (+ (* -0.5 sx) 1.5) wvg-ycen) (size 0 (* w 2)))))
   //
+  volume refl_volume( vec(-0.5*sx+1.5, wvg_ycen), vec(0.0,2.0*w));
+  volume_list refl_vl(refl_volume, 1);
+  dft_flux refl=f.add_dft_flux(&refl_vl, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   //; for normal run, load negated fields to subtract incident from refl. fields
   //(if (not no-bend?) (load-minus-flux "refl-flux" refl))
-  //
+
+  //for(
+  // double last_source_time();
+
   //(run-sources+ 
   // (stop-when-fields-decayed 50 Ez
   //			   (if no-bend? 
