@@ -645,7 +645,7 @@ class structure {
 
  private:
   void use_pml(direction d, boundary_side b, double dx);
-  void add_to_effort_volumes(const grid_volume &new_effort_volume, 
+  void add_to_effort_volumes(const grid_volume &new_effort_volume,
 			     double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks,
 			    const boundary_region &br, const symmetry &s);
@@ -1314,7 +1314,7 @@ class fields {
   void add_point_source(component c, const src_time &src,
                         const vec &, std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
-			 const volume &, 
+			 const volume &,
 			 std::complex<double> A(const vec &),
 			 std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,

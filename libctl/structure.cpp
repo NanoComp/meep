@@ -1692,7 +1692,7 @@ meep::structure *make_structure(int dims, vector3 size, vector3 center,
 
   if (subpixel_maxeval < 0) subpixel_maxeval = 0; // no limit
 
-  meep::structure *s = new meep::structure(gv, geps, br, S, 
+  meep::structure *s = new meep::structure(gv, geps, br, S,
 					   num_chunks, Courant,
 					   enable_averaging,
 					   subpixel_tol,
