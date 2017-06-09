@@ -514,7 +514,6 @@ AC_CONFIG_FILES([
 	libctl/Makefile
 	libctl/meep.scm
 	libmeep_geom/Makefile
-	libmeep_hl/Makefile
 	python/Makefile
 ])
 
