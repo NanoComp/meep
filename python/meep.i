@@ -53,10 +53,7 @@ static PyObject* vec2py(const meep::vec &v) {
         z = v.z();
         break;
       case meep::Dcyl:
-        r = v.r();
-        z = v.z();
-        return Py_BuildValue("(ddd)", r, z, 0);
-        break;
+        return Py_BuildValue("(ddd)", v.r(), v.z(), 0);
     }
 
     return Py_BuildValue("(ddd)", x, y, z);
