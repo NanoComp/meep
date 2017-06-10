@@ -9,6 +9,8 @@ HPPFILES=	                          \
 
 BUILT_SOURCES = meep-python.cpp meep.py
 
+CLEANFILES = $(BUILT_SOURCES) meep-python.h
+
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_builddir) # for config.h
 
@@ -16,6 +18,12 @@ _meep_la_SOURCES = meep-python.cpp
 _meep_la_LIBADD = $(top_builddir)/src/libmeep.la $(PYTHON_LIBS)
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+
+TEST_DIR = tests
+TESTS = $(TEST_DIR)/test_physical.py
+TEST_EXTENSIONS = .py
+PY_LOG_COMPILER = $(PYTHON)
+AM_TESTS_ENVIRONMENT = PYTHONPATH='$(top_srcdir)/python/.libs'; export PYTHONPATH;
 
 if WITH_PYTHON
   python_PYTHON = meep.py

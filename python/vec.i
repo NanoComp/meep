@@ -18,7 +18,8 @@
 
 // 322:  Redundant declarations are ok. The wrappers are created correctly.
 // 503:  We don't need to create class-specific wrappers for friend functions
-// TODO: Check all 509's individually
+// TODO: Check all 509's individually.
+// TODO: Move warnfilters to separate 'warnings.i' file.
 %warnfilter(509);
 %warnfilter(322,509) meep::component_direction;
 %warnfilter(322,509) meep::direction_component;
@@ -47,7 +48,7 @@
 
 
 // Renaming python builtins
-%rename(ftype) meep::type;
+%rename(meep_type) meep::type;
 %rename(vec_abs) meep::abs;
 %rename(vec_max) meep::max;
 %rename(vec_min) meep::min;
@@ -55,9 +56,9 @@
 %rename(symmetry_reduce) meep::symmetry::reduce;
 
 // Operator renaming
+// TODO: Test these
 %rename(volume_and) meep::volume::operator&&;
 %rename(grid_volume_getitem) meep::grid_volume::operator[];
 %rename(symmetry_assign) meep::symmetry::operator=;
-
 
 %include "meep/vec.hpp"

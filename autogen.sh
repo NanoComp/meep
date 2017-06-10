@@ -28,4 +28,4 @@ if test x$verbose = xyes; then
     cat config.log
 fi
 
-test $config = bad && exit 1
+test $config = good || exit 1
