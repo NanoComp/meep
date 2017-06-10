@@ -2,12 +2,12 @@ site_name: MEEP documentation
 site_author: Homer Reid
 repo_url: https://github.com/homerreid/meep/
 
-pages:
-- 'Index1': '/doc/docs/Meep.mp'
-- 'Index2': 'docs/Meep.mp'
-- 'Index3': 'Meep.mp'
+#pages:
+#- 'Index1': '/doc/docs/Meep.mp'
+#- 'Index2': 'docs/Meep.mp'
+#- 'Index3': 'Meep.mp'
 
-docs_dir: 'doc'
+docs_dir: 'doc/docs'
 #site_dir:
 
 theme_dir: 'doc/meep-mkdocs-theme'
