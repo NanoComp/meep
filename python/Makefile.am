@@ -15,7 +15,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
-_meep_la_LIBADD = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la $(PYTHON_LIBS)
+_meep_la_LIBADD = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la $(PYTHON_LIBS) -lctlgeom
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
