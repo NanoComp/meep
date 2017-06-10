@@ -21,8 +21,12 @@
 #define SWIG_FILE_WITH_INIT
 #include "meep/vec.hpp"
 #include "meep.hpp"
+#include "ctl-math.h"
+#include "ctlgeom.h"
 
 using namespace meep;
+
+extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %}
 
@@ -67,6 +71,23 @@ static double py_callback_wrap(const meep::vec &v) {
     Py_XDECREF(pyret);
     return ret;
 }
+
+
+static vector3 pyv3_to_v3(PyObject *po) {
+    // TODO(chogan): ref counting
+    double x = PyFloat_AsDouble(PyObject_GetAttrString(po, "x"));
+    double y = PyFloat_AsDouble(PyObject_GetAttrString(po, "y"));
+    double z = PyFloat_AsDouble(PyObject_GetAttrString(po, "z"));
+    vector3 v = {x, y, z};
+    return v;
+}
+
+static material_type pymaterial_to_material(PyObject *po) {
+    // TODO(chogan): ref counting
+    material_type m;
+    m.data = PyLong_AsVoidPtr(PyObject_GetAttrString(po, "data"));
+    return m;
+}
 %}
 
 %typemap(in) double (*)(const meep::vec &) {
@@ -79,6 +100,25 @@ static double py_callback_wrap(const meep::vec &v) {
 }
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
   $1 = PyCallable_Check($input);
+}
+
+%typemap(in) vector3 {
+    // TODO(chogan): Account for inputs of tuples, np.array, list
+    $1 = pyv3_to_v3($input);
+}
+
+%typemap(in) GEOMETRIC_OBJECT {
+    // TODO(chogan): Switch statement for type of geometric object
+    material_type material = pymaterial_to_material(PyObject_GetAttrString($input, "material"));
+    vector3 center = pyv3_to_v3(PyObject_GetAttrString($input, "center"));
+    double radius = PyFloat_AsDouble(PyObject_GetAttrString($input, "radius"));
+    geometric_object o = make_sphere(material, center, radius);
+    $1 = o;
+}
+
+%typemap(out) boolean {
+    int b = $1 == 0 ? 0 : 1;
+    $result = PyBool_FromLong(b);
 }
 
 // Rename python builtins
@@ -96,6 +136,8 @@ static double py_callback_wrap(const meep::vec &v) {
 %include "vec.i"
 
 %include "meep.hpp"
+
+extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %ignore eps_func;
 %ignore inveps_func;
