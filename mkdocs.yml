@@ -6,7 +6,7 @@ repo_url: https://github.com/homerreid/meep/
 #- 'Index': 'index.md'
 
 docs_dir: 'doc'
-#site_dir: 
+#site_dir:
 
 theme_dir: 'doc/meep-mkdocs-theme'
 theme: readthedocs
