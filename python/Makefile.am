@@ -15,12 +15,14 @@ AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
-_meep_la_LIBADD = $(top_builddir)/src/libmeep.la $(PYTHON_LIBS)
+_meep_la_LIBADD = $(top_builddir)/src/libmeep.la $(PYTHON_LIBS) -lctlgeom
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 TEST_DIR = tests
-TESTS = $(TEST_DIR)/test_physical.py
+TESTS =                           \
+    $(TEST_DIR)/test_geom.py      \
+    $(TEST_DIR)/test_physical.py
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(PYTHON)
 AM_TESTS_ENVIRONMENT = PYTHONPATH='$(top_srcdir)/python/.libs'; export PYTHONPATH;
@@ -33,7 +35,7 @@ endif
 if MAINTAINER_MODE
 
 meep-python.cpp:	$(SWIG_SRC) $(HPPFILES)
-	swig -Wall $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
+	swig -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
 meep.py:       		meep-python.cpp
 
