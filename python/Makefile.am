@@ -21,8 +21,8 @@ _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 TEST_DIR = tests
 TESTS =                           \
-	$(TEST_DIR)/test_geom.py      \
-	$(TEST_DIR)/test_physical.py
+    $(TEST_DIR)/test_geom.py      \
+    $(TEST_DIR)/test_physical.py
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(PYTHON)
 AM_TESTS_ENVIRONMENT = PYTHONPATH='$(top_srcdir)/python/.libs'; export PYTHONPATH;
