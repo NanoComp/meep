@@ -19,6 +19,9 @@
 
 %{
 #define SWIG_FILE_WITH_INIT
+
+#include <string>
+
 #include "meep/vec.hpp"
 #include "meep.hpp"
 #include "ctl-math.h"
@@ -74,19 +77,41 @@ static double py_callback_wrap(const meep::vec &v) {
 
 
 static vector3 pyv3_to_v3(PyObject *po) {
-    // TODO(chogan): ref counting
-    double x = PyFloat_AsDouble(PyObject_GetAttrString(po, "x"));
-    double y = PyFloat_AsDouble(PyObject_GetAttrString(po, "y"));
-    double z = PyFloat_AsDouble(PyObject_GetAttrString(po, "z"));
+    PyObject *py_x = PyObject_GetAttrString(po, "x");
+    PyObject *py_y = PyObject_GetAttrString(po, "y");
+    PyObject *py_z = PyObject_GetAttrString(po, "z");
+    double x = PyFloat_AsDouble(py_x);
+    double y = PyFloat_AsDouble(py_y);
+    double z = PyFloat_AsDouble(py_z);
+    Py_DECREF(py_x);
+    Py_DECREF(py_y);
+    Py_DECREF(py_z);
+
     vector3 v = {x, y, z};
     return v;
 }
 
 static material_type pymaterial_to_material(PyObject *po) {
-    // TODO(chogan): ref counting
     material_type m;
+    // TODO(chogan): I don't think this will work unless the original python
+    // data was created from PyLong_FromVoidPtr(). Need to test.
     m.data = PyLong_AsVoidPtr(PyObject_GetAttrString(po, "data"));
     return m;
+}
+
+static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
+    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_sphere, "material"));
+
+    PyObject *py_center = PyObject_GetAttrString(py_sphere, "center");
+    vector3 center = pyv3_to_v3(py_center);
+
+    PyObject *py_radius = PyObject_GetAttrString(py_sphere, "radius");
+    double radius = PyFloat_AsDouble(py_radius);
+
+    Py_XDECREF(py_center);
+    Py_XDECREF(py_radius);
+
+    return make_sphere(material, center, radius);
 }
 %}
 
@@ -103,17 +128,48 @@ static material_type pymaterial_to_material(PyObject *po) {
 }
 
 %typemap(in) vector3 {
-    // TODO(chogan): Account for inputs of tuples, np.array, list
+    // TODO(chogan): Accept inputs of tuple, np.array, list?
     $1 = pyv3_to_v3($input);
 }
 
 %typemap(in) GEOMETRIC_OBJECT {
-    // TODO(chogan): Switch statement for type of geometric object
-    material_type material = pymaterial_to_material(PyObject_GetAttrString($input, "material"));
-    vector3 center = pyv3_to_v3(PyObject_GetAttrString($input, "center"));
-    double radius = PyFloat_AsDouble(PyObject_GetAttrString($input, "radius"));
-    geometric_object o = make_sphere(material, center, radius);
-    $1 = o;
+    PyObject *py_type = PyObject_Type($input);
+    PyObject *name = PyObject_GetAttrString(py_type, "__name__");
+
+    std::string go_type(PyString_AsString(name));
+
+    if(go_type == "Sphere") {
+        $1 = pysphere_to_sphere($input);
+    }
+    else if(go_type == "Cylinder") {
+        // TODO(chogan)
+        // $1 = pycylinder_to_cylinder($input);
+    }
+    else if(go_type == "Wedge") {
+        // TODO(chogan)
+        // $1 = pywedge_to_wedge($input);
+    }
+    else if(go_type == "Cone") {
+        // TODO(chogan)
+        // $1 = pycone_to_cone($input);
+    }
+    else if(go_type == "Block") {
+        // TODO(chogan)
+        // $1 = pyblock_to_block($input);
+    }
+    else if(go_type == "Ellipsoid") {
+        // TODO(chogan)
+        // $1 = pyellipsoid_to_ellipsoid($input);
+    }
+    else if(go_type == "CompoundGeometricObject") {
+        // TODO(chogan)
+        // $1 = pycgo_to_cgo($input);
+    }
+    else {
+        // TODO(chogan): Fail
+    }
+    Py_XDECREF(py_type);
+    Py_XDECREF(name);
 }
 
 %typemap(out) boolean {
