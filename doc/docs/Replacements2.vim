@@ -1,1 +1,0 @@
-:%s/\\textbf/\\mathbf/g

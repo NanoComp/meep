@@ -8,7 +8,7 @@ repo_url: https://github.com/homerreid/meep/
 #- 'Index3': 'Meep.mp'
 
 docs_dir: 'doc/docs'
-#site_dir:
+site_dir: 'doc/site'
 
 theme_dir: 'doc/meep-mkdocs-theme'
 theme: readthedocs

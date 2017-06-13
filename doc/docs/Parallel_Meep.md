@@ -7,7 +7,7 @@ Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.or
 Installing Parallel Meep
 ------------------------
 
-To install the parallel version of Meep, you must have a version of MPI installed on your system: see the [installation manual](Meep_Installation#MPI_(parallel_machines).md).
+To install the parallel version of Meep, you must have a version of MPI installed on your system. See the [Installation manual](Installation.md#mpi-parallel-machines).
 
 We also *strongly* recommend installing the HDF5 with parallel I/O support if you are going to run with more than a few processors. (configure HDF5 with `--enable-parallel`; you may also have to set the `CC` environment variable to `mpicc`.) Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose to install either the serial or the parallel Meep, but not both.
 
@@ -35,7 +35,7 @@ There is one important requirement: every MPI process must be able to read the `
 
 Parallel Meep works by taking your simulation and dividing the computational cell among the MPI processes. This is the only way of parallelizing a single simulation, and allows you to attack very large problems.
 
-However, there is an alternative strategy for parallelization. If you have many smaller simulations that you want to run, say for many different values of some parameter, then you can just run these as separate jobs. Such parallelization is known as "embarrassingly parallel" because no communication is required. Meep provides no explicit support for this mode of operation, but of course it is quite easy to do yourself: just launch as many Meep jobs as you want, perhaps [changing the parameters via the command-line](libctl_User_Reference#Command-line_parameters.md) using a shell script.
+However, there is an alternative strategy for parallelization. If you have many smaller simulations that you want to run, say for many different values of some parameter, then you can just run these as separate jobs. Such parallelization is known as "embarrassingly parallel" because no communication is required. Meep provides no explicit support for this mode of operation, but of course it is quite easy to do yourself: just launch as many Meep jobs as you want, perhaps changing the parameters via the command-line using a shell script.
 
 Technical Details
 -----------------
