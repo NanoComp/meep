@@ -7,7 +7,7 @@ mkdocs package (useful for verifying on your local machine before
 committing), install the `mkdocs` package, then run the 
 following command from the top-level meep repository tree:
 
-% mkdocs --serve
+% mkdocs serve
 
 and then open the following URL in a browser window:
 
