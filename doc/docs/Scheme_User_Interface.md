@@ -2,11 +2,11 @@
 # Scheme User Interface
 ---
 
-The user interface is documented in this page. We do not document the Scheme language or the functions provided by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl). See also the [libctl User Reference](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference) section of the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual).
+The Scheme user interface is documented in this page. We do not document the Scheme language or the functions provided by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl). See also the [libctl User Reference](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference) section of the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual).
 
-This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [tutorial](Scheme_Tutorial.md). Also, we note that this page is not a *complete* listing of *all* functions. In particular, because of the [SWIG wrappers](#SWIG_Wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
+This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [tutorial](Scheme_Tutorial.md). Also, we note that this page is not a *complete* listing of *all* functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
 
-See also our [parallel Meep instructions](Parallel_Meep.md) for parallel (MPI) machines.
+See also: instructions for [parallel Meep ](Parallel_Meep.md) for MPI machines.
 
 [TOC]
 
@@ -68,7 +68,7 @@ If `true` (the default) *and* if the boundary conditions are periodic (`k-point`
 
 **`eps-averaging?` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If `true` (the default), then subpixel averaging is used when initializing the dielectric function (see the [reference](License_and_Copyright.md#referencing)). The input variables `subpixel-maxeval` (default 100000) and `subpixel-tol` (default 1.0e-4) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
+If `true` (the default), then subpixel averaging is used when initializing the dielectric function. See the [reference publication](License_and_Copyright.md#referencing). The input variables `subpixel-maxeval` (default 100000) and `subpixel-tol` (default 1.0e-4) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average ε with diminishing returns for the actual FDTD error.
 
 **`force-complex-fields?` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -76,7 +76,7 @@ By default, Meep runs its simulations with purely real fields whenever possible.
 
 **`filename-prefix` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-A string prepended to all output filenames. If empty (the default), then Meep uses the name of the current ctl file, with ".ctl" replaced by "-" (e.g. `foo.ctl` uses a `"foo-"` prefix). See also [Output file names](Scheme_User_Interface.md#output-file-names).
+A string prepended to all output filenames. If empty (the default), then Meep uses the name of the current ctl file, with ".ctl" replaced by "-" (e.g. `foo.ctl` uses a `"foo-"` prefix). See also: [Output File Names](Scheme_User_Interface.md#output-file-names).
 
 **`Courant` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -98,7 +98,7 @@ Time interval (seconds) after which Meep prints a progress message. Default is 4
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep turns off support for material dispersion, nonlinearities, and similar properties if none of the objects in the `geometry` have materials with these properties—since they are not needed, it is faster to omit their calculation. This doesn't work however if you use a `material-function`: materials via a user-specified function of position instead of just geometric objects. If only your material function returns a nonlinear material, for example, Meep won't notice this unless you tell it explicitly via `extra-materials`. `extra-materials` is a list of materials that Meep should look for in the computational cell in addition to any materials that are specified by geometric objects. You should list any materials other than scalar dielectrics that are returned by `material-function`s here.
 
-The following require a bit more understanding of the inner workings of Meep to use (see also the [SWIG wrappers](#SWIG_Wrappers).
+The following require a bit more understanding of the inner workings of Meep to use. See also: [SWIG wrappers](#swig-wrappers).
 
 **`structure` [`meep::structure*`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -181,7 +181,7 @@ The size of the computational cell. Defaults to unit lengths.
 
 If any dimension has the special size `no-size`, then the dimensionality of the problem is essentially reduced by one. Strictly speaking, the dielectric function is taken to be uniform along that dimension.
 
-Because Maxwell's equations are scale-invariant, you can use any units of distance you want to specify the cell size: nanometers, inches, parsecs, whatever. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also [Units in Meep](Introduction.md#units-in-meep).
+Because Maxwell's equations are scale-invariant, you can use any units of distance you want to specify the cell size: nanometers, inches, parsecs, whatever. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also: [Units](Introduction.md#units-in-meep).
 
 ### material
 
@@ -189,7 +189,7 @@ This class is used to specify the materials that geometric objects are made of. 
 
 **`medium`**  
 
-An electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials in Meep](Materials.md). For backwards compatibility, a synonym for `medium` is `dielectric`. It has several properties:
+An electromagnetic medium which is possibly nonlinear and/or dispersive. See also: [Materials](Materials.md). For backwards compatibility, a synonym for `medium` is `dielectric`. It has several properties:
 
 **`epsilon` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `(index n)` as a synonym for `(epsilon (* n n))`; note that this is not really the refractive index if you also specify μ, since the true index is $\sqrt{\mu\epsilon}$.
@@ -229,11 +229,11 @@ The nonlinear (Kerr) susceptibility $\chi^{(3)}$. Default is 0. See also [Nonlin
 
 **`E-susceptibilities` [ list of `susceptibility` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-List of dispersive susceptibilities (see below) added to the dielectric constant ε in order to model material dispersion. Defaults to none. See also [Material dispersion in Meep](Materials.md#material-dispersion). For backwards compatibility, synonyms of `E-susceptibilities` are `E-polarizations` and `polarizations`.
+List of dispersive susceptibilities (see below) added to the dielectric constant ε in order to model material dispersion. Defaults to none. See also: [Material Dispersion](Materials.md#material-dispersion). For backwards compatibility, synonyms of `E-susceptibilities` are `E-polarizations` and `polarizations`.
 
 **`H-susceptibilities` [ list of `susceptibility` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none. See also [Material dispersion in Meep](Materials.md#material-dispersion). For backwards compatibility, a synonym of `H-susceptibilities` is `perfect-metal`.
+List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none. See also: [Material Dispersion](Materials.md#material-dispersion). For backwards compatibility, a synonym of `H-susceptibilities` is `perfect-metal`.
 
 **`perfect-metal`**  
 
@@ -399,7 +399,7 @@ Here are some examples of geometric objects created using the above classes, ass
 
 ### symmetry
 
-This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources for Meep to exploit. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the computational cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also [Exploiting symmetry in Meep](Exploiting_Symmetry.md).
+This class is used for the `symmetries` input variable to specify symmetries which must preserve both the structure *and* the sources for Meep to exploit. Any number of symmetries can be exploited simultaneously but there is no point in specifying redundant symmetries: the computational cell can be reduced by at most a factor of 4 in 2d and 8 in 3d. See also: [Exploiting Symmetry](Exploiting_Symmetry.md).
 
 **`symmetry`**  
 
@@ -485,7 +485,7 @@ The source class has the following properties:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the time-dependence of the source (see below). No default.
 
-**`component` [`component` constant]**
+**`component` [`component` constant ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the direction and type of the current component: e.g. `Ex`, `Ey`, etcetera for an electric-charge current, and `Hx`, `Hy`, etcetera for a magnetic-charge current. Note that currents pointing in an arbitrary direction are specified simply as multiple current sources with the appropriate amplitudes for each component. No default.
 
@@ -527,7 +527,7 @@ The parity (= polarization in 2d) of the mode to calculate, assuming the structu
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The spatial resolution to use in MPB for the eigenmode calculations. This defaults to the same resolution as Meep, but you can use a higher resolution in which case the structure is linearly interpolated from the Meep pixels.
 
-**`eig-tolerance` [`number`, defaults to 10<sup>–7</sup>]**  
+**`eig-tolerance` [`number`, defaults to 10<sup>–7</sup> ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance.
 
@@ -549,7 +549,7 @@ A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smo
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency *f* in units of c/distance (or ω in units of 2πc/distance) (see [Units in Meep](Meep_Introduction#Units_in_Meep.md)). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The frequency *f* in units of c/distance (or ω in units of 2πc/distance). See: [Units](Meep_Introduction#Units_in_Meep.md). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -573,7 +573,7 @@ A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The center frequency *f* in units of c/distance (or ω in units of 2πc/distance) (see [Units in Meep](Meep_Introduction#Units_in_Meep.md)). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The center frequency *f* in units of c/distance (or ω in units of 2πc/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
 
 **`width` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -672,7 +672,7 @@ The output file names used by Meep, e.g. for HDF5 files, are automatically prefi
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return the current prefix string that is prepended, by default, to all file names.
 
-If you don't want to use *any* prefix, then you should set `filename-prefix` to `false`.
+If you don't want to use any prefix, then you should set `filename-prefix` to `false`.
 
 In addition to the filename prefix, you can also specify that all the output files be written into a newly-created directory (if it does not yet exist). This is done by running:
 
@@ -759,19 +759,19 @@ It is also possible to timestep both fields simultaneously (e.g. doing one times
 
 Once the fields/simulation have been initialized, you can change the values of various parameters by using the following functions:
 
-**`(reset-meep)`**
+**`(reset-meep)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Reset all of Meep's parameters, deleting the fields, structures, etcetera, from memory as if you had not run any computations.
 
-**`(restart-fields)`**
+**`(restart-fields)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Restart the fields at time zero, with zero fields. (Does *not* reset the Fourier transforms of the flux planes, which continue to be accumulated.)
 
-**`(change-k-point! k)`**
+**`(change-k-point! k)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Change the `k-point` (the Bloch periodicity).
 
-**`(change-sources! new-sources)`**
+**`(change-sources! new-sources)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Change the `sources` input variable to `new-sources`, and changes the sources used for the current simulation.
 
@@ -779,47 +779,47 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [transmission/reflection spectra introduction](Meep_Introduction#Transmission/reflection_spectra.md) and the [tutorial](Scheme_Tutorial.md). The most important function is:
 
-**`(add-flux fcen df nfreq flux-regions...)`**
+**`(add-flux fcen df nfreq flux-regions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Add a bunch of `flux-region`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *flux object*, which you can pass to the functions below to get the flux spectrum, etcetera.
 
 As described in the tutorial, you normally use `add-flux` via statements like:
 
-**`(define transmission (add-flux ...))`**
+**`(define transmission (add-flux ...))`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 to store the flux object in a variable. `add-flux` initializes the fields if necessary, just like calling `run`, so you should only call it *after* setting up your `geometry`, `sources`, `pml-layers`, etcetera. You can create as many flux objects as you want, e.g. to look at powers flowing in different regions or in different frequency ranges. Note, however, that Meep has to store (and update at every time step) a number of Fourier components equal to the number of grid points intersecting the flux region multiplied by the number of electric and magnetic field components required to get the Poynting vector multiplied by `nfreq`, so this can get quite expensive (in both memory and time) if you want a lot of frequency points over large regions of space.
 
 Once you have called `add-flux`, the Fourier transforms of the fields are accumulated automatically during time-stepping by the `run` functions. At any time, you can ask for Meep to print out the current flux spectrum via:
 
-**`(display-fluxes fluxes...)`**
+**`(display-fluxes fluxes...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the flux spectra.
 
 You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `(display-fluxes` `f1` `f2` `f3)` is actually equivalent to `(display-csv` `"flux"` `(get-flux-freqs` `f1)` `(get-fluxes` `f1)` `(get-fluxes` `f2)` `(get-fluxes` `f3)`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
-**`(get-flux-freqs flux)`**
+**`(get-flux-freqs flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a flux object, returns a list of the frequencies that it is computing the spectrum for.
 
-**`(get-fluxes flux)`**
+**`(get-fluxes flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a flux object, returns a list of the current flux spectrum that it has accumulated.
 
 As described in the [tutorial](Scheme_Tutorial.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
-**`(save-flux filename flux)`**
+**`(save-flux filename flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given name (without the ".h5" suffix) (the current filename-prefix is prepended automatically).
 
-**`(load-flux filename flux)`**
+**`(load-flux filename flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name (without the ".h5" suffix) (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-flux` in a simulation of *the same dimensions* (for both the computational cell and the flux regions) with the *same number of processors*.
 
-**`(load-minus-flux filename flux)`**
+**`(load-minus-flux filename flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `load-flux`, but negates the Fourier-transformed fields after they are loaded. This means that they will be *subtracted* from any future field Fourier transforms that are accumulated.
 
-**`(scale-flux-fields s flux)`**
+**`(scale-flux-fields s flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g. `load-minus-flux` is equivalent to `load-flux` followed by `scale-flux-fields` with `s=-1`.
 
@@ -831,7 +831,7 @@ $$\sigma_{ij} = E_i^*E_j + H_i^*H_j - \frac{1}{2} \delta_{ij} \left( |\mathbf{E}
 
 over a surface *S* via $\mathbf{F} = \int_S \sigma d\mathbf{A}$. We recommend that you normally **only evaluate the stress tensor over a surface lying in vacuum**, as the interpretation and definition of the stress tensor in arbitrary media is often problematic (the subject of extensive and controversial literature). It is fine if the surface *encloses* an object made of arbitrary materials, as long as the surface itself is in vacuum.
 
-See also the [optical forces tutorial](Scheme_Tutorials/Optical_Forces.md).
+See also: [Optical Forces Tutorial](Scheme_Tutorials/Optical_Forces.md).
 
 Most commonly, you will want to **normalize** the force spectrum in some way, just as for flux spectra. Most simply, you could divide two different force spectra to compute the ratio of forces on two objects. Often, you will divide a force spectrum by a flux spectrum, to divide the force *F* by the incident power *P* on an object, in order to compute the useful dimensionless ratio *Fc*/*P* where *c*=1 in Meep units. For example, it is a simple exercise to show that the force *F* on a perfectly reflecting mirror with normal-incident power *P* satisfies *Fc*/*P*=2, and for a perfectly absorbing (black) surface *Fc*/*P*=1.
 
@@ -841,25 +841,25 @@ The usage is similar to the flux spectra: you define a set of `force-region` obj
 
 A region (volume, plane, line, or point) in which to compute the integral of the stress tensor of the Fourier-transformed fields. Its properties are:
 
-**`center [ vector3 ]`**
+**`center [ vector3 ]`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The center of the force region (no default).
 
-**`size [ vector3 ]`**
+**`size [ vector3 ]`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The size of the force region along each of the coordinate axes; default is (0,0,0) (a single point).
 
-**`direction [ direction constant ]`**
+**`direction [ direction constant ]`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). Unlike `flux-region`, you must specify this explicitly, because there is not generally any relationship between the direction of the force and the orientation of the force region.
 
-**`weight [ cnumber ]`**
+**`weight [ cnumber ]`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A weight factor to multiply the force by when it is computed; default is `1.0`.
 
 In most circumstances, you should define a set of `force-region`s whose union is a closed surface (lying in vacuum and enclosing the object that is experiencing the force).
 
-**`(add-force fcen df nfreq force-regions...)`**
+**`(add-force fcen df nfreq force-regions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Add a bunch of `force-region`s to the current simulation (initializing the fields if they have not yet been initialized), telling Meep to accumulate the appropriate field Fourier transforms for `nfreq` equally spaced frequencies covering the frequency range `fcen-df/2` to `fcen+df/2`. Return a *force object*, which you can pass to the functions below to get the force spectrum, etcetera.
 
@@ -986,7 +986,7 @@ A common point of confusion is described in the article: [The Run Function Is No
 
 ### Run Functions
 
-The following run functions are available. (You can also write your own, using the lower-level [C++/SWIG functions](#SWIG_Wrappers), but these should suffice for most needs.)
+The following run functions are available. (You can also write your own, using the lower-level [C++/SWIG functions](#swig-wrappers), but these should suffice for most needs.)
 
 **`(run-until cond?/time step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -996,13 +996,13 @@ Run the simulation until a certain time or condition, calling the given step fun
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Run the simulation until all sources have turned off, calling the given step functions (if any) at each timestep. Note that this does *not* mean that the fields will be zero at the end: in general, some fields will still be bouncing around that were excited by the sources.
 
-**`(run-sources+ cond?/time step-functions...)`**
+**`(run-sources+ cond?/time step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `run-sources`, but with an additional first argument: either a number, in which case it is an *additional* time (in Meep units) to run for after the sources are off, *or* it is a function (of no arguments). In the latter case, the simulation runs until the sources are off *and* `(cond?)` returns `true`.
 
 In particular, a useful first argument to `run-sources+` or `run-until` is often given by as in the [tutorial](Scheme_Tutorial.md):
 
-**`(stop-when-fields-decayed dT c pt decay-by)`**
+**`(stop-when-fields-decayed dT c pt decay-by)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return a `cond?` function, suitable for passing to `run-until`/`run-sources+`, that examines the component `c` (e.g. `Ex`, etc.) at the point `pt` (a `vector3`) and keeps running until its absolute value *squared* has decayed by at least `decay-by` from its maximum previous value. In particular, it keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value over that time period—in this way, it won't be fooled just because the field happens to go through 0 at some instant.
 
@@ -1128,11 +1128,11 @@ Rather than writing a brand-new step function every time we want to do something
 
 #### Miscellaneous Step-Function Modifiers
 
-**(`combine-step-funcs` `step-functions`...)**  
+**`(combine-step-funcs step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, return a new step function that (on each step) calls all of the passed step functions.
 
-**(`synchronized-magnetic` `step-functions`...)**  
+**`(synchronized-magnetic step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given zero or more step functions, return a new step function that (on each step) calls all of the passed step functions with the magnetic field synchronized in time with the electric field. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
@@ -1213,7 +1213,7 @@ This suffices for most purposes. However, sometimes you need a step function tha
 Low-Level Functions
 -------------------
 
-By default, Meep reads input functions like `sources` and `geometry` and creates *global* variables `structure` and `fields` to store the corresponding C++ objects. Given these, you can then call essentially *any* function in the C++ interface, because all of the C++ functions are automatically made accessible to Scheme by a wrapper-generator program called [SWIG](https://en.wikipedia.org/wiki/SWIG)
+By default, Meep reads input functions like `sources` and `geometry` and creates *global* variables `structure` and `fields` to store the corresponding C++ objects. Given these, you can then call essentially *any* function in the C++ interface, because all of the C++ functions are automatically made accessible to Scheme by a wrapper-generator program called [SWIG](https://en.wikipedia.org/wiki/SWIG).
 
 ### Initializing the Structure and Fields
 

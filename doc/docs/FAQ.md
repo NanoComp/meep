@@ -31,13 +31,13 @@ Physics
 
 There is no simple formula relating the input current amplitude (**J** in Maxwell's equations) to the resulting fields (**E**) etcetera, even at the same point as the current. The exact same current will produce a different field and radiate a different total power depending upon the surrounding materials/geometry, and depending on the frequency. This is a physical consequence of the geometry's effect on the local density of states; it can also be thought of as feedback from reflections on the source. As a simple example, if you put a current source inside a perfect electric conductor, the resulting field will be zero. As another example, the frequency-dependence of the radiated power in vacuum is part of the reason why the sky is blue.
 
-See also our online book chapter on [Wave source conditions](http://arxiv.org/abs/arXiv:1301.5366).
+See also our online book chapter on [Wave Source Conditions](http://arxiv.org/abs/arXiv:1301.5366).
 
-If you are worried about this, then you are probably setting up your calculation in the wrong way. Especially in linear materials, the absolute magnitude of the field is useless; the only meaningful quantities are dimensionless ratios like the fractional transmission: the transmitted power relative to the transmitted power in some reference calculation. Almost always, you want to perform two calculations, one of which is a reference, and compute the ratio of a result in one calculation to the result in the reference. For nonlinear calculations, see [Units and nonlinearity in Meep](Units_and_Nonlinearity.md).
+If you are worried about this, then you are probably setting up your calculation in the wrong way. Especially in linear materials, the absolute magnitude of the field is useless; the only meaningful quantities are dimensionless ratios like the fractional transmission: the transmitted power relative to the transmitted power in some reference calculation. Almost always, you want to perform two calculations, one of which is a reference, and compute the ratio of a result in one calculation to the result in the reference. For nonlinear calculations, see [Units and Nonlinearity](Units_and_Nonlinearity.md).
 
 ### How do I set the imaginary part of ε?
 
-If you only care about the imaginary part of ε in a narrow bandwidth around some frequency ω, you should set it by using the electric conductivity as described in [Conductivity in Meep](Materialsmd#Conductivity). If you care about the imaginary part of ε over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit it to Meep's dispersive-ε support. See [material dispersion](Materials.md#material-dispersion).
+If you only care about the imaginary part of ε in a narrow bandwidth around some frequency ω, you should set it by using the electric conductivity as described in [Conductivity](Materialsmd#Conductivity). If you care about the imaginary part of ε over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit it to Meep's dispersive-ε support. See [Material Dispersion](Materials.md#material-dispersion).
 
 Meep doesn't implement a frequency-independent complex ε. Not only is this not physical, but it also leads to both exponentially decaying and exponentially growing solutions in Maxwell's equations from positive- and negative-frequency Fourier components, respectively. Thus, it cannot be simulated in the time domain.
 
@@ -60,7 +60,7 @@ Usage
 
 ### Why doesn't turning off subpixel averaging work?
 
-By default, when Meep assigns a dielectric constant ε or μ to each pixel, it uses a carefully designed average of the ε values within that pixel. This subpixel averaging generally improves the accuracy of the simulation—perhaps counter-intuitively, for geometries with discontinous ε it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) ε, as long as the averaging is done properly. For details, see the [Meep reference](License_and_Copyright.md#referencing).
+By default, when Meep assigns a dielectric constant ε or μ to each pixel, it uses a carefully designed average of the ε values within that pixel. This subpixel averaging generally improves the accuracy of the simulation—perhaps counter-intuitively, for geometries with discontinous ε it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) ε, as long as the averaging is done properly. For details, see the [reference publication](License_and_Copyright.md#referencing).
 
 Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by doing `(set! eps-averaging? false)` in your control file. See the [User Interface](Scheme_User_Interface.md).
 

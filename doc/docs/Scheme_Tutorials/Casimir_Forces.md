@@ -5,6 +5,8 @@
 Computing Casimir Forces with Meep
 ----------------------------------
 
+[TOC]
+
 It is possible to use the Meep time-domain simulation code in order to calculate [Casimir forces](https://en.wikipedia.org/wiki/Casimir_force) and related quantities, a quantum-mechanical force that can arise even between neutral bodies due to [quantum vacuum](https://en.wikipedia.org/wiki/Vacuum_state) fluctuations in the electromagnetic field, or equivalently as a result of geometry dependence in the quantum [vacuum energy](https://en.wikipedia.org/wiki/Vacuum_energy).
 
 Calculating Casimir forces in a classical finite-difference time-domain (FDTD) Maxwell simulation like Meep is based on the algorithm described in:
@@ -15,8 +17,6 @@ Calculating Casimir forces in a classical finite-difference time-domain (FDTD) M
 These papers describe how any time-domain code may be used to efficiently compute Casimir forces without modification of the internal code. Meep contains several optimizations of these algorithms, allowing for very rapid computation of Casimir forces (reasonably-sized two-dimensional systems can be solved in a matter of seconds).
 
 This page will provide some tutorial examples showing how these calculations are performed for simple geometries. For a derivation of these methods, the reader is referred to the papers above, which will be referred to as Part I and Part II in this webpage.
-
-[TOC]
 
 Introduction
 ------------
@@ -68,7 +68,7 @@ The functions $\Gamma_{ij;n}(t,\mathbf{x})$ are related to the Maxwell stress te
 
 Note that the precise implementation of step (3) will greatly affect the efficiency of the method. For example, computing the fields due to each source at each point on the surface separately requires a separate Meep calculation for each source (and polarization). This corresponds to taking $f_n(\mathbf{x}) = \delta(\mathbf{x}-\mathbf{x}_n)$ for each point $\mathbf{x}_n \in S$, and the sum over $n$ becomes an integration over $S$. As described in Part II ([arXiv:0906.5170](http://arxiv.org/abs/arXiv:0906.5170)), we are free to take $f_n$ to be any basis of orthogonal functions. Picking an extended basis (e.g. cosine functions or complex exponentials $e^{ikx}$) greatly reduces the number of simulations required.
 
-Example: two-dimensional blocks
+Example: Two-Dimensional Blocks
 -------------------------------
 
 In this section we calculate the Casimir force in the two-dimensional Casimir piston configuration ([Rodriguez et. al](http://math.mit.edu/~stevenj/papers/RodriguezIb07.pdf)) shown below:
@@ -380,7 +380,7 @@ Print out the values of the force, along with the relevant (external) simulation
 ```
 
 
-Example: dispersive materials
+Example: Dispersive Materials
 -----------------------------
 
 As discussed in Part I, the treatment of dispersive materials is very similar to the normal case of metals or non-dispersive dielectrics. Here we show how to add them in to the computation. We treat only the case of **lossless** dielectrics; the case of loss is more complicated, and the loss terms tend not to greatly affect the Casimir force.
@@ -416,7 +416,7 @@ There are two important things to note about the definitions above. First, "sigm
 
 Now the `Silicon` that we have defined can be use in the Casimir calculations like any other material type.
 
-Example: z-invariant geometry
+Example: Z-Invariant Geometry
 -----------------------------
 
 An example geometry which is $z$-invariant is shown below:
@@ -474,7 +474,7 @@ The value of $g(t)$ in this case is given by the formula:
 
 $$g(-t) = \frac{i}{2\pi}\left( \frac{2}{t^3} + \frac{3\sigma}{2t^2} + \frac{\sigma^2}{2t}\right)$$
 
-Example: cylindrical symmetry
+Example: Cylindrical Symmetry
 -----------------------------
 
 For systems with cylindrical symmetry, the Casimir force computation can be reduced as in the case of $z$-invariant geometries to a sum of forces obtained from two-dimensional computations. An example is a recently-discovered system [Levin et. al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.105.090403) that exhibits a repulsive Casimir force between vacuum-separated dielectrics. This system is shown below:
@@ -511,7 +511,7 @@ Here the order of $m$ and $n$ are important. Otherwise the code proceeds as befo
 
 In general, for $m > 1$, the $e^{im\phi}$ field dependence will give rise to short wavelength excitations. The factor of $\Delta x$ that commonly appears in the Courant stability criterion must then be modified, due to the singular nature of cylindrical coordinates at the origin. The effect on a computation is that usually the Courant factor must be increased for $m \geq 2$ (independent of $n$).
 
-Example: three-dimensional periodic systems
+Example: Three-Dimensional Periodic Systems
 -------------------------------------------
 
 Three-dimensional periodic systems are another example of systems that can be easily analyzed with Meep. In this example, we consider the Casimir force between a periodic array of dielectric spheres and a metallic plate, shown below and simulated in periodic-sphere-plate.ctl ([9](http://ab-initio.mit.edu/~mccauley/casimir-examples/periodic-sphere-plate.ctl)):
