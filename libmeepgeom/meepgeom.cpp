@@ -1545,7 +1545,9 @@ void set_materials_from_geometry(meep::structure *s,
   master_printf("Computational cell is %g x %g x %g with resolution %g\n",
                 size.x, size.y, size.z, resolution);  
   
-  material_type_list extra_materials={.items=0, .num_items=0};
+  material_type_list extra_materials;
+  extra_materials.items=0;
+  extra_materials.num_items=0;
   geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
   s->set_materials(geps, use_anisotropic_averaging, tol, maxeval);
   geps.add_susceptibilities(s);
