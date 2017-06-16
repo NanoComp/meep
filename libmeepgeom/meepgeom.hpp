@@ -44,12 +44,14 @@ namespace meep_geom {
 /***************************************************************/
 /***************************************************************/
 void set_materials_from_geometry(meep::structure *s,
-                                 geometric_object_list g, 
+                                 geometric_object_list g,
 		                 bool use_anisotropic_averaging=true,
 		                 double tol=DEFAULT_SUBPIXEL_TOL,
 	  	                 int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,
                                  bool ensure_periodicity=false,
                                  bool verbose=false);
+
+material_type make_dielectric(double epsilon);
 
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);

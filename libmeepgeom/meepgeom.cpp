@@ -14,7 +14,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#include "meep_geom.hpp"
+#include "meepgeom.hpp"
 
 namespace meep_geom {
 
@@ -23,39 +23,55 @@ namespace meep_geom {
 /***************************************************************/
 /* global variables for default material                       */
 /***************************************************************/
-vector3 ones={1.0,1.0,1.0};
-vector3 zeroes={0.0,0.0,0.0};
+material_type vacuum;
+material_type air;
+medium_struct vacuum_medium;
+material_data vacuum_material_data;
+bool materials_initialized = false;
 
-//susceptibility_list empty_sus_list{ .items=0, .num_items=0 };
-susceptibility_list empty_sus_list{ 0, 0 };
+void initialize_materials()
+{
+  materials_initialized=true;
 
-medium_struct vacuum_medium{
- .epsilon_diag        = ones,
- .epsilon_offdiag     = zeroes,
- .mu_diag             = ones, 
- .mu_offdiag          = zeroes,
- .E_susceptibilities  = empty_sus_list,
- .H_susceptibilities  = empty_sus_list,
- .E_chi2_diag         = zeroes,
- .E_chi3_diag         = zeroes,
- .H_chi2_diag         = zeroes,
- .H_chi3_diag         = zeroes,
- .D_conductivity_diag = zeroes,
- .B_conductivity_diag = zeroes
-}; 
+  vector3 ones, zeroes;
+  ones.x   = ones.y   = ones.z   = 1.0;
+  zeroes.x = zeroes.y = zeroes.z = 0.0;
 
-material_data vacuum_material_data{
- material_data::MEDIUM, 0, 0, &vacuum_medium
-};
+  vacuum_medium.epsilon_diag 
+   = vacuum_medium.mu_diag 
+   = ones; 
 
-material_type vacuum { (void *)&vacuum_material_data };
-material_type air = vacuum;
+  vacuum_medium.epsilon_offdiag 
+   = vacuum_medium.mu_offdiag
+   = vacuum_medium.E_chi2_diag
+   = vacuum_medium.E_chi3_diag
+   = vacuum_medium.H_chi2_diag
+   = vacuum_medium.H_chi3_diag
+   = vacuum_medium.D_conductivity_diag
+   = vacuum_medium.B_conductivity_diag 
+   = zeroes;
+
+  vacuum_medium.E_susceptibilities.num_items=0;
+  vacuum_medium.E_susceptibilities.items=0;
+  vacuum_medium.H_susceptibilities.num_items=0;
+  vacuum_medium.H_susceptibilities.items=0;
+   
+  vacuum_material_data.which_subclass = material_data::MEDIUM;
+  vacuum_material_data.user_func=0;
+  vacuum_material_data.user_data=0;
+  vacuum_material_data.medium = &vacuum_medium;
+
+  vacuum.data=(void *)&vacuum_material_data;
+  air = vacuum;
+}
 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
 material_type make_dielectric(double epsilon)
 {
+  if (!materials_initialized) initialize_materials();
+
   material_data *md = (material_data *)malloc(sizeof(*md));
   md->which_subclass=material_data::MEDIUM;
   md->user_func=0;
@@ -1490,6 +1506,7 @@ void set_materials_from_geometry(meep::structure *s,
                                  bool verbose)
 {
   geom_epsilon::verbose=verbose;
+  if (!materials_initialized) initialize_materials();
 
   // set global variables in libctlgeom based on data fields in s
   default_material     = vacuum;

@@ -16,7 +16,7 @@
 #include "ctl-math.h"
 #include "ctlgeom.h"
 
-#include "meep_geom.hpp"
+#include "meepgeom.hpp"
 
 using namespace meep;
 
