@@ -54,5 +54,13 @@ class TestSphere(unittest.TestCase):
         self.assertFalse(gm.Vector3(10, 10, 10) in s)
 
 
+class TestCylinder(unittest.TestCase):
+
+    def test_contains_point(self):
+        c = gm.Cylinder(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
+        point = gm.Vector3(0, 0, 0)
+        self.assertIn(point, c)
+
+
 if __name__ == '__main__':
     unittest.main()

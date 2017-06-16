@@ -45,3 +45,44 @@ class Sphere(GeometricObject):
             self._radius = val
         else:
             raise ValueError("Radius cannot be negative. Got {}".format(val))
+
+
+# TODO(chogan): Add tests
+class Cylinder(GeometricObject):
+
+    def __init__(self, axis=Vector3(0, 0, 1), radius=None, height=None, **kwargs):
+        # self.process_func = unit_vector3
+        self._axis = Vector3(0.0, 0.0, 1.0)
+        self._radius = None
+        self._height = None
+        super(GeometricObject, self).__init__(**kwargs)
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @property
+    def height(self):
+        return self._height
+
+    @axis.setter
+    def axis(self, val):
+        self._axis = self.process_func(val)
+
+    @radius.setter
+    def radius(self, val):
+        if non_negative(val) or not val:
+            self._radius = val
+        else:
+            raise ValueError("Cylinder.radius cannot be negative: {}".format(val))
+
+    @height.setter
+    def height(self, val):
+        if non_negative(val) or not val:
+            self._height = val
+        else:
+            raise ValueError("Cylinder.height cannot be negative: {}".format(val))

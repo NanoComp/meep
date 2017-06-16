@@ -113,6 +113,29 @@ static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
 
     return make_sphere(material, center, radius);
 }
+
+static geometric_object pycylinder_to_cylinder(PyObject *py_cyl) {
+    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_cyl, "material"));
+
+    PyObject *py_center = PyObject_GetAttrString(py_cyl, "center");
+    vector3 center = pyv3_to_v3(py_center);
+
+    PyObject *py_radius = PyObject_GetAttrString(py_cyl, "radius");
+    double radius = PyFloat_AsDouble(py_radius);
+
+    PyObject *py_height = PyObject_GetAttrString(py_cyl, "height");
+    double height = PyFloat_AsDouble(py_height);
+
+    PyObject *py_axis = PyObject_GetAttrString(py_cyl, "axis");
+    vector3 axis = pyv3_to_v3(py_axis);
+
+    Py_XDECREF(py_center);
+    Py_XDECREF(py_radius);
+    Py_XDECREF(py_height);
+    Py_XDECREF(py_axis);
+
+    return make_cylinder(material, center, radius, height, axis);
+}
 %}
 
 %typemap(in) double (*)(const meep::vec &) {
@@ -132,6 +155,16 @@ static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
     $1 = pyv3_to_v3($input);
 }
 
+// Typemap suite for GEOMETRIC_OBJECT
+
+%typecheck(SWIG_TYPECHECK_POINTER) GEOMETRIC_OBJECT {
+    PyObject *geom_mod = PyImport_ImportModule("geom");
+    PyObject *geom_dict = PyModule_GetDict(geom_mod);
+    PyObject *py_sphere = PyDict_GetItemString(geom_dict, "GeometricObject");
+    $1 = PyObject_IsInstance($input, py_sphere);
+    Py_XDECREF(geom_mod);
+}
+
 %typemap(in) GEOMETRIC_OBJECT {
     PyObject *py_type = PyObject_Type($input);
     PyObject *name = PyObject_GetAttrString(py_type, "__name__");
@@ -142,8 +175,7 @@ static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
         $1 = pysphere_to_sphere($input);
     }
     else if(go_type == "Cylinder") {
-        // TODO(chogan)
-        // $1 = pycylinder_to_cylinder($input);
+        $1 = pycylinder_to_cylinder($input);
     }
     else if(go_type == "Wedge") {
         // TODO(chogan)
@@ -172,8 +204,12 @@ static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
     Py_XDECREF(name);
 }
 
+%typemap(freearg) GEOMETRIC_OBJECT {
+    geometric_object_destroy($1);
+}
+
 %typemap(out) boolean {
-    int b = $1 == 0 ? 0 : 1;
+    long b = $1 == 0 ? 0 : 1;
     $result = PyBool_FromLong(b);
 }
 
