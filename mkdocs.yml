@@ -1,6 +1,6 @@
-site_name: MEEP documentation
-site_author: Homer Reid
-repo_url: https://github.com/homerreid/meep/
+site_name: MEEP Documentation
+site_author: S. G. Johnson et al.
+repo_url: https://github.com/stevengj/meep/
 
 #pages:
 #- 'Index1': '/doc/docs/Meep.mp'
