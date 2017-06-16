@@ -55,7 +55,7 @@ void bend_flux(bool no_bend)
   gv.center_origin();
   structure the_structure(gv, dummy_eps, pml(1.0));
 
-  double wvg_ycen = -0.5*(sy - w - 2.0*pad); // y center of horiz. wvg
+  double wvg_ycen = -0.5*(sy - w - 2.0*pad); //y center of horiz. wvg
   double wvg_xcen =  0.5*(sx - w - 2.0*pad); //x center of vert. wvg
 
    //  (set! geometry
@@ -92,26 +92,20 @@ void bend_flux(bool no_bend)
     }
    else
     {
-      geometric_object objects[3];
+      geometric_object objects[2];
       objects[0] = make_block(dielectric,
                               v3(-0.5*pad, wvg_ycen),
                               e1, e2, e3,
-                              v3(-sx*pad, w, HUGE_VAL)
+                              v3(sx-pad, w, HUGE_VAL)
                              );
    
       objects[1] = make_block(dielectric,
-                              v3(0.0, wvg_ycen),
+                              v3(wvg_xcen, 0.5*pad),
                               e1, e2, e3,
-                              v3(-sx*pad, w, HUGE_VAL)
+                              v3(w, sy-pad, HUGE_VAL)
                              );
    
-      objects[2] = make_block(dielectric,
-                              v3(-0.5*pad, wvg_ycen),
-                              e1, e2, e3,
-                              v3(-sx*pad, w, HUGE_VAL)
-                             );
-   
-      geometric_object_list g={ 3, objects };
+      geometric_object_list g={ 2, objects };
       meep_geom::set_materials_from_geometry(&the_structure, g);
     };
 
@@ -130,7 +124,6 @@ void bend_flux(bool no_bend)
   volume v( vec(1.0-0.5*sx, wvg_ycen), vec(0.0,w) );
   f.add_volume_source(Ez, src, v);
 
-
   //(define trans ; transmitted flux
   //      (add-flux fcen df nfreq
   //		(if no-bend?
@@ -138,14 +131,15 @@ void bend_flux(bool no_bend)
   //		      (center (- (/ sx 2) 1.5) wvg-ycen) (size 0 (* w 2)))
   //		    (make flux-region
   //		      (center wvg-xcen (- (/ sy 2) 1.5)) (size (* w 2) 0)))))
-  int nfreq=100; //  number of frequencies at which to compute flux
+  double f_start = fcen-0.5*df;
+  double f_end   = fcen+0.5*df;
+  int nfreq      = 100; //  number of frequencies at which to compute flux
  
   volume *trans_volume=
    no_bend ? new volume(vec(0.5*sx-1.5, wvg_ycen), vec(0.0, 2.0*w))
            : new volume(vec(wvg_xcen, 0.5*sy-1.5), vec(2.0*w, 0.0));
-  dft_flux trans=f.add_dft_flux( Z,
-                                 *trans_volume,
-                                 fcen-0.5*df, fcen+0.5*df, nfreq);
+  volume_list trans_vl = volume_list(*trans_volume, Sz);
+  dft_flux trans=f.add_dft_flux(&trans_vl, f_start, f_end, nfreq);
   
   //(define refl ; reflected flux
   //      (add-flux fcen df nfreq
@@ -153,9 +147,8 @@ void bend_flux(bool no_bend)
   //		  (center (+ (* -0.5 sx) 1.5) wvg-ycen) (size 0 (* w 2)))))
   //
   volume refl_volume( vec(-0.5*sx+1.5, wvg_ycen), vec(0.0,2.0*w));
-  dft_flux refl=f.add_dft_flux(Z,
-                               refl_volume, 
-                               fcen-0.5*df, fcen+0.5*df, nfreq);
+  volume_list refl_vl= volume_list(refl_volume, Sz);
+  dft_flux refl=f.add_dft_flux(&refl_vl, f_start, f_end, nfreq);
 
   //; for normal run, load negated fields to subtract incident from refl. fields
   //(if (not no-bend?) (load-minus-flux "refl-flux" refl))
@@ -167,7 +160,7 @@ void bend_flux(bool no_bend)
 
   //(run-sources+ 
   // (stop-when-fields-decayed 50 Ez
-  //			   (if no-bend? 
+  //			   (if no-bend?
   //			       (vector3 (- (/ sx 2) 1.5) wvg-ycen)
   //			       (vector3 wvg-xcen (- (/ sy 2) 1.5)))
   //			   1e-3)
@@ -176,7 +169,7 @@ void bend_flux(bool no_bend)
                            : vec(wvg_xcen, 0.5*sy - 1.5);
   double DeltaT=50.0, NextCheckTime = f.round_time() + DeltaT;
   double Tol=1.0e-3;
-  double max_abs=0.0;
+  double max_abs=0.0, cur_max=0.0;
   bool Done=false;
   do
    {  
@@ -184,35 +177,42 @@ void bend_flux(bool no_bend)
 
      // manually check fields-decayed condition
      double absEz = abs(f.get_field(Ez, eval_point));
-     max_abs = fmax(max_abs, absEz);
+     cur_max = fmax(cur_max, absEz);
      if ( f.round_time() >= NextCheckTime )
       { NextCheckTime += DeltaT;
-        if (max_abs > 0.0 && absEz<Tol*absEz)
+        max_abs = fmax(max_abs, cur_max);
+        if ( (max_abs>0.0) && cur_max < Tol*max_abs)
          Done=true;
+        cur_max=0.0;
       };
-     printf("%+.2e %+.2e \n",f.round_time(),absEz);
-
-   } while(Done);
+     //printf("%.2e %.2e %.2e %.2e\n",f.round_time(),absEz,max_abs,cur_max);
+   } while(!Done);
 
   //; for normalization run, save flux fields for refl. plane
   //(if no-bend? (save-flux "refl-flux" refl))
   if (no_bend)
    refl.save_hdf5(f, dataname);
-
-  //printf("Trans: %e\n",
+  
   //(display-fluxes trans refl)
+  printf("%11s | %12s | %12s\n", "   Time    ", " trans flux", "  refl flux");
+  double f0=fcen-0.5*df, fstep=df/(nfreq-1);
+  double *trans_flux=trans.flux();
+  double *refl_flux=refl.flux();
+  for(int nf=0; nf<nfreq; nf++)
+   printf("%.4e | %+.4e | %+.4e\n",f0+nf*fstep,trans_flux[nf],refl_flux[nf]);
 
 }
 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-int main(int argv, char *argc[])
+int main(int argc, char *argv[])
 {
-  (void )argv; // currently unused
-  (void )argc;
+  initialize mpi(argc, argv);
 
   bend_flux(true);
   bend_flux(false);
 
+  // success if we made it here
+  exit(0);
 }

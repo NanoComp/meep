@@ -12,10 +12,15 @@ libmeep_geom_la_SOURCES = \
 
 libmeep_geom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
-noinst_PROGRAMS      = pw-source-ll bend-flux-ll
+check_PROGRAMS      = pw-source-ll bend-flux-ll ring-ll
 
 pw_source_ll_SOURCES = pw-source-ll.cpp
 pw_source_ll_LDADD   = libmeep_geom.la $(MEEPLIBS)
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeep_geom.la $(MEEPLIBS)
+
+ring_ll_SOURCES = ring-ll.cpp
+ring_ll_LDADD   = libmeep_geom.la $(MEEPLIBS)
+
+TESTS               = pw-source-ll bend-flux-ll ring-ll
