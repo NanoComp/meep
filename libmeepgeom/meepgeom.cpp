@@ -23,55 +23,30 @@ namespace meep_geom {
 /***************************************************************/
 /* global variables for default material                       */
 /***************************************************************/
-material_type vacuum;
-material_type air;
-medium_struct vacuum_medium;
-material_data vacuum_material_data;
-bool materials_initialized = false;
+medium_struct vacuum_medium =
+ { {1.0, 1.0, 1.0}, /* epsilon_diag    */
+   {0.0, 0.0, 0.0}, /* epsilon_offdiag */
+   {1.0, 1.0, 1.0}, /* mu_diag         */
+   {0.0, 0.0, 0.0}, /* mu_offdiag      */
+   {0, 0},          /* E_susceptibilities */
+   {0, 0},          /* H_susceptibilities */
+   {0.0, 0.0, 0.0}, /* E_chi2_diag     */
+   {0.0, 0.0, 0.0}, /* E_chi3_diag     */
+   {0.0, 0.0, 0.0}, /* H_chi2_diag     */
+   {0.0, 0.0, 0.0}, /* H_chi3_diag     */
+   {0.0, 0.0, 0.0}, /* D_conductivity_diag  */
+   {0.0, 0.0, 0.0}  /* B_conductivity_diag  */
+ };
+material_data vacuum_material_data = 
+ { material_data::MEDIUM, 0, 0, &vacuum_medium };
 
-void initialize_materials()
-{
-  materials_initialized=true;
-
-  vector3 ones, zeroes;
-  ones.x   = ones.y   = ones.z   = 1.0;
-  zeroes.x = zeroes.y = zeroes.z = 0.0;
-
-  vacuum_medium.epsilon_diag 
-   = vacuum_medium.mu_diag 
-   = ones; 
-
-  vacuum_medium.epsilon_offdiag 
-   = vacuum_medium.mu_offdiag
-   = vacuum_medium.E_chi2_diag
-   = vacuum_medium.E_chi3_diag
-   = vacuum_medium.H_chi2_diag
-   = vacuum_medium.H_chi3_diag
-   = vacuum_medium.D_conductivity_diag
-   = vacuum_medium.B_conductivity_diag 
-   = zeroes;
-
-  vacuum_medium.E_susceptibilities.num_items=0;
-  vacuum_medium.E_susceptibilities.items=0;
-  vacuum_medium.H_susceptibilities.num_items=0;
-  vacuum_medium.H_susceptibilities.items=0;
-   
-  vacuum_material_data.which_subclass = material_data::MEDIUM;
-  vacuum_material_data.user_func=0;
-  vacuum_material_data.user_data=0;
-  vacuum_material_data.medium = &vacuum_medium;
-
-  vacuum.data=(void *)&vacuum_material_data;
-  air = vacuum;
-}
+material_type vacuum = { (void *)&vacuum_material_data };
 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
 material_type make_dielectric(double epsilon)
 {
-  if (!materials_initialized) initialize_materials();
-
   material_data *md = (material_data *)malloc(sizeof(*md));
   md->which_subclass=material_data::MEDIUM;
   md->user_func=0;
@@ -1506,7 +1481,6 @@ void set_materials_from_geometry(meep::structure *s,
                                  bool verbose)
 {
   geom_epsilon::verbose=verbose;
-  if (!materials_initialized) initialize_materials();
 
   // set global variables in libctlgeom based on data fields in s
   default_material     = vacuum;

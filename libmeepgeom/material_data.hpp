@@ -90,7 +90,6 @@ typedef struct material_data_struct
 
 // global variables and exported functions
 extern material_type vacuum;
-extern material_type air;
 material_type make_dielectric(double epsilon);
 
 void read_epsilon_file(const char *eps_input_file);
