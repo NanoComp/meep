@@ -6,6 +6,7 @@
 *.lo
 *.a
 *.la
+*.so
 *.dylib
 *.dSYM
 *.zip
