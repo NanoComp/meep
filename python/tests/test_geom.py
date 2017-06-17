@@ -56,6 +56,22 @@ class TestSphere(unittest.TestCase):
 
 class TestCylinder(unittest.TestCase):
 
+    def test_non_neg_height_constructor(self):
+        gm.Cylinder(height=0.0)
+        gm.Cylinder(height=1.0)
+
+        with self.assertRaises(ValueError) as ctx:
+            gm.Cylinder(height=-1)
+            self.assertIn("Got -1", ctx.exception)
+
+    def test_non_neg_height_setter(self):
+        s = gm.Cylinder(height=0.0)
+        s.height = 1.0
+
+        with self.assertRaises(ValueError) as ctx:
+            s.height = -1.0
+            self.assertIn("Got -1.0", ctx.exception)
+
     def test_contains_point(self):
         c = gm.Cylinder(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
         point = gm.Vector3(0, 0, 0)

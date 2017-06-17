@@ -52,14 +52,14 @@ class Cylinder(GeometricObject):
 
     def __init__(self, axis=Vector3(0, 0, 1), radius=None, height=None, **kwargs):
         # self.process_func = unit_vector3
-        self._axis = Vector3(0.0, 0.0, 1.0)
-        self._radius = None
-        self._height = None
-        super(GeometricObject, self).__init__(**kwargs)
+        self.axis = axis
+        self.radius = radius
+        self.height = height
+        super(Cylinder, self).__init__(**kwargs)
 
-    @property
-    def axis(self):
-        return self._axis
+    # @property
+    # def axis(self):
+    #     return self._axis
 
     @property
     def radius(self):
@@ -69,9 +69,9 @@ class Cylinder(GeometricObject):
     def height(self):
         return self._height
 
-    @axis.setter
-    def axis(self, val):
-        self._axis = self.process_func(val)
+    # @axis.setter
+    # def axis(self, val):
+    #     self._axis = self.process_func(val)
 
     @radius.setter
     def radius(self, val):
