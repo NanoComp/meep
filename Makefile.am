@@ -6,7 +6,7 @@ endif
 
 ACLOCAL_AMFLAGS=-I m4
 
-SUBDIRS = src $(LIBCTL) tests examples
+SUBDIRS = src $(LIBCTL) tests examples libmeepgeom 
 
 if WITH_PYTHON
   SUBDIRS += python
