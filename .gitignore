@@ -6,6 +6,7 @@
 *.lo
 *.a
 *.la
+*.so
 *.dylib
 *.dSYM
 *.zip
@@ -88,6 +89,16 @@ tests/two_dimensional
 tests/*.trs
 tests/*.log
 tests/latest_output
+
+# libmeepgeom tests
+libmeepgeom/bend-flux-ll
+libmeepgeom/pw-source-ll
+libmeepgeom/ring-ll
+libmeepgeom/*.log
+libmeepgeom/*.trs
+libmeepgeom/*.h5
+
+# python tests
 python/tests/*.log
 python/tests/*.trs
 python/*.log
