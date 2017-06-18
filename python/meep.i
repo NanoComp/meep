@@ -91,6 +91,20 @@ static vector3 pyv3_to_v3(PyObject *po) {
     return v;
 }
 
+static vector3 get_attr_v3(PyObject *py_obj, char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+    vector3 result = pyv3_to_v3(py_attr);
+    Py_XDECREF(py_attr);
+    return result;
+}
+
+static double get_attr_dbl(PyObject *py_obj, char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+    double result = PyFloat_AsDouble(py_attr);
+    Py_XDECREF(py_attr);
+    return result;
+}
+
 static material_type pymaterial_to_material(PyObject *po) {
     material_type m;
     // TODO(chogan): I don't think this will work unless the original python
@@ -101,42 +115,87 @@ static material_type pymaterial_to_material(PyObject *po) {
 
 static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
     material_type material = pymaterial_to_material(PyObject_GetAttrString(py_sphere, "material"));
-
-    PyObject *py_center = PyObject_GetAttrString(py_sphere, "center");
-    vector3 center = pyv3_to_v3(py_center);
-
-    PyObject *py_radius = PyObject_GetAttrString(py_sphere, "radius");
-    double radius = PyFloat_AsDouble(py_radius);
-
-    Py_XDECREF(py_center);
-    Py_XDECREF(py_radius);
+    vector3 center = get_attr_v3(py_sphere, "center");
+    double radius = get_attr_dbl(py_sphere, "radius");
 
     return make_sphere(material, center, radius);
 }
 
 static geometric_object pycylinder_to_cylinder(PyObject *py_cyl) {
     material_type material = pymaterial_to_material(PyObject_GetAttrString(py_cyl, "material"));
-
-    PyObject *py_center = PyObject_GetAttrString(py_cyl, "center");
-    vector3 center = pyv3_to_v3(py_center);
-
-    PyObject *py_radius = PyObject_GetAttrString(py_cyl, "radius");
-    double radius = PyFloat_AsDouble(py_radius);
-
-    PyObject *py_height = PyObject_GetAttrString(py_cyl, "height");
-    double height = PyFloat_AsDouble(py_height);
-
-    PyObject *py_axis = PyObject_GetAttrString(py_cyl, "axis");
-    vector3 axis = pyv3_to_v3(py_axis);
-
-    Py_XDECREF(py_center);
-    Py_XDECREF(py_radius);
-    Py_XDECREF(py_height);
-    Py_XDECREF(py_axis);
+    vector3 center = get_attr_v3(py_cyl, "center");
+    vector3 axis = get_attr_v3(py_cyl, "axis");
+    double radius = get_attr_dbl(py_cyl, "radius");
+    double height = get_attr_dbl(py_cyl, "height");
 
     return make_cylinder(material, center, radius, height, axis);
 }
+
+static geometric_object pywedge_to_wedge(PyObject *py_wedge) {
+    geometric_object cyl = pycylinder_to_cylinder(py_wedge);
+    double wedge_angle = get_attr_dbl(py_wedge, "wedge_angle");
+    vector3 wedge_start = get_attr_v3(py_wedge, "wedge_start");
+
+    double radius = cyl.subclass.cylinder_data->radius;
+    double height = cyl.subclass.cylinder_data->height;
+    vector3 axis = cyl.subclass.cylinder_data->axis;
+
+    geometric_object w = make_wedge(cyl.material, cyl.center, radius, height, axis, wedge_angle, wedge_start);
+
+    geometric_object_destroy(cyl);
+
+    return w;
+}
+
+static geometric_object pycone_to_cone(PyObject *py_cone) {
+    geometric_object cyl = pycylinder_to_cylinder(py_cone);
+    double radius2 = get_attr_dbl(py_cone, "radius2");
+    double radius = cyl.subclass.cylinder_data->radius;
+    double height = cyl.subclass.cylinder_data->height;
+    vector3 axis = cyl.subclass.cylinder_data->axis;
+
+    geometric_object c = make_cone(cyl.material, cyl.center, radius, height, axis, radius2);
+
+    geometric_object_destroy(cyl);
+
+    return c;
+}
+
+static geometric_object pyblock_to_block(PyObject *py_blk) {
+    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_blk, "material"));
+    vector3 center = get_attr_v3(py_blk, "center");
+    vector3 e1 = get_attr_v3(py_blk, "e1");
+    vector3 e2 = get_attr_v3(py_blk, "e2");
+    vector3 e3 = get_attr_v3(py_blk, "e3");
+    vector3 size = get_attr_v3(py_blk, "size");
+
+    return make_block(material, center, e1, e2, e3, size);
+}
+
+static geometric_object pyellipsoid_to_ellipsoid(PyObject *py_ell) {
+    geometric_object blk = pyblock_to_block(py_ell);
+
+    material_type material = blk.material;
+    vector3 center = blk.center;
+    vector3 e1 = blk.subclass.block_data->e1;
+    vector3 e2 = blk.subclass.block_data->e2;
+    vector3 e3 = blk.subclass.block_data->e3;
+    vector3 size = blk.subclass.block_data->size;
+
+    geometric_object ellipsoid = make_ellipsoid(material, center, e1, e2, e3, size);
+
+    geometric_object_destroy(blk);
+
+    return ellipsoid;
+}
+
+// static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
+
+// }
+
 %}
+
+// Typemap suite for double func(meep::vec &)
 
 %typemap(in) double (*)(const meep::vec &) {
   $1 = py_callback_wrap;
@@ -149,6 +208,8 @@ static geometric_object pycylinder_to_cylinder(PyObject *py_cyl) {
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
   $1 = PyCallable_Check($input);
 }
+
+// Typemap suite for vector3
 
 %typemap(in) vector3 {
     // TODO(chogan): Accept inputs of tuple, np.array, list?
@@ -178,31 +239,33 @@ static geometric_object pycylinder_to_cylinder(PyObject *py_cyl) {
         $1 = pycylinder_to_cylinder($input);
     }
     else if(go_type == "Wedge") {
-        // TODO(chogan)
-        // $1 = pywedge_to_wedge($input);
+        $1 = pywedge_to_wedge($input);
     }
     else if(go_type == "Cone") {
-        // TODO(chogan)
-        // $1 = pycone_to_cone($input);
+        $1 = pycone_to_cone($input);
     }
     else if(go_type == "Block") {
-        // TODO(chogan)
-        // $1 = pyblock_to_block($input);
+        $1 = pyblock_to_block($input);
     }
     else if(go_type == "Ellipsoid") {
-        // TODO(chogan)
-        // $1 = pyellipsoid_to_ellipsoid($input);
+        $1 = pyellipsoid_to_ellipsoid($input);
     }
     else if(go_type == "CompoundGeometricObject") {
         // TODO(chogan)
         // $1 = pycgo_to_cgo($input);
     }
     else {
-        // TODO(chogan): Fail
+        // TODO(chogan): Exception
+        printf("Error: %s is not a valid GeometricObject type\n", go_type);
     }
     Py_XDECREF(py_type);
     Py_XDECREF(name);
 }
+
+// TODO(chogan)
+// %typemap(out) GEOMETRIC_OBJECT {
+
+// }
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     geometric_object_destroy($1);

@@ -74,9 +74,62 @@ class TestCylinder(unittest.TestCase):
 
     def test_contains_point(self):
         c = gm.Cylinder(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
-        point = gm.Vector3(0, 0, 0)
-        self.assertIn(point, c)
 
+        self.assertIn(gm.Vector3(0, 0, 0), c)
+        self.assertIn(gm.Vector3(2, 0, 0), c)
+        self.assertIn(gm.Vector3(2, 0, 2), c)
+
+        self.assertNotIn(gm.Vector3(2.0001, 0, 0), c)
+        self.assertNotIn(gm.Vector3(10, 10, 10), c)
+
+
+class TestWedge(unittest.TestCase):
+
+    def test_default_properties(self):
+        import math
+        w = gm.Wedge(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
+        self.assertEqual(w.wedge_angle, 8 * math.atan(1))
+
+    def test_contains_point(self):
+        w = gm.Wedge(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
+        self.assertIn(gm.Vector3(2.0, 0, 0), w)
+
+
+class TestCone(unittest.TestCase):
+
+    def test_contains_point(self):
+        c = gm.Cone(center=gm.Vector3(0, 0, 0), radius=2.0, height=3.0, axis=gm.Vector3(0, 0, 1))
+        self.assertIn(gm.Vector3(0, 0, 1), c)
+
+
+class TestBlock(unittest.TestCase):
+
+    def test_contains_point(self):
+        b = gm.Block(size=gm.Vector3(1, 1, 1), center=gm.Vector3(0, 0, 0))
+        self.assertIn(gm.Vector3(0, 0, 0), b)
+
+
+class TestEllipsoid(unittest.TestCase):
+
+    def test_contains_point(self):
+        e = gm.Ellipsoid(size=gm.Vector3(1, 1, 1), center=gm.Vector3(0, 0, 0))
+        self.assertIn(gm.Vector3(0, 0, 0), e)
+
+    # TODO(chogan): Allow python to read this member after it's computed in C
+    def test_inverse_semi_axes(self):
+        pass
+
+
+# class TestCompoundGeometricObject(unittest.TestCase):
+
+#     def test_convert_pylist_to_cgo_list(self):
+#         s = gm.Sphere(center=gm.Vector3(0, 0, 0), radius=2.0)
+#         c = gm.Cylinder(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
+#         b = gm.Block(size=gm.Vector3(1, 1, 1), center=gm.Vector3(0, 0, 0))
+
+#         objects = [s, c, b]
+
+#         mp.set_materials_from_geometry(the_structure, objects)
 
 if __name__ == '__main__':
     unittest.main()
