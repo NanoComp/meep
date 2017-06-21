@@ -3,6 +3,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import meep as mp
 import geom as gm
 
 
@@ -120,16 +121,29 @@ class TestEllipsoid(unittest.TestCase):
         pass
 
 
-# class TestCompoundGeometricObject(unittest.TestCase):
+class TestCompoundGeometricObject(unittest.TestCase):
 
-#     def test_convert_pylist_to_cgo_list(self):
-#         s = gm.Sphere(center=gm.Vector3(0, 0, 0), radius=2.0)
-#         c = gm.Cylinder(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
-#         b = gm.Block(size=gm.Vector3(1, 1, 1), center=gm.Vector3(0, 0, 0))
+    def test_convert_pylist_to_cgo_list(self):
+        s = gm.Sphere(center=gm.Vector3(0, 0, 0), radius=2.0)
+        c = gm.Cylinder(center=gm.Vector3(0, 0, 0), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
+        b = gm.Block(size=gm.Vector3(1, 1, 1), center=gm.Vector3(0, 0, 0))
 
-#         objects = [s, c, b]
+        cgo = gm.CompoundGeometricObject(center=gm.Vector3(0, 0, 0), component_objects=[s, c, b])
 
-#         mp.set_materials_from_geometry(the_structure, objects)
+        sxy = 2.0 * (1 + 1 + 4 + 2)
+        resolution = 10.0
+        gv = mp.voltwo(sxy, sxy, resolution)
+
+        def dummy_eps(v):
+            return 1.0
+
+        dpml = 2.0
+        sym = mp.mirror(mp.Y, gv)
+
+        the_structure = mp.structure(gv, dummy_eps, mp.pml(dpml), sym)
+
+        mp.set_materials_from_geometry(the_structure, cgo)
+
 
 if __name__ == '__main__':
     unittest.main()

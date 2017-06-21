@@ -149,5 +149,5 @@ class Ellipsoid(Block):
 class CompoundGeometricObject(GeometricObject):
 
     def __init__(self, component_objects=[], **kwargs):
-        super().__init__(self, **kwargs)
+        super(CompoundGeometricObject, self).__init__(**kwargs)
         self.component_objects = component_objects

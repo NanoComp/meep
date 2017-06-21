@@ -26,8 +26,10 @@
 #include "meep.hpp"
 #include "ctl-math.h"
 #include "ctlgeom.h"
+#include "meepgeom.hpp"
 
 using namespace meep;
+using namespace meep_geom;
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
@@ -40,6 +42,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %}
 
 %{
+static geometric_object pycgo_to_cgo(PyObject *py_cgo);
 PyObject *py_callback = NULL;
 
 static PyObject* vec2py(const meep::vec &v) {
@@ -189,9 +192,72 @@ static geometric_object pyellipsoid_to_ellipsoid(PyObject *py_ell) {
     return ellipsoid;
 }
 
-// static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
+static geometric_object py_gobj_to_gobj(PyObject *po) {
+    geometric_object o;
+    PyObject *py_type = PyObject_Type(po);
+    PyObject *name = PyObject_GetAttrString(py_type, "__name__");
 
-// }
+    std::string go_type(PyString_AsString(name));
+
+    if(go_type == "Sphere") {
+        o = pysphere_to_sphere(po);
+    }
+    else if(go_type == "Cylinder") {
+        o = pycylinder_to_cylinder(po);
+    }
+    else if(go_type == "Wedge") {
+        o = pywedge_to_wedge(po);
+    }
+    else if(go_type == "Cone") {
+        o = pycone_to_cone(po);
+    }
+    else if(go_type == "Block") {
+        o = pyblock_to_block(po);
+    }
+    else if(go_type == "Ellipsoid") {
+        o = pyellipsoid_to_ellipsoid(po);
+    }
+    else if(go_type == "CompoundGeometricObject") {
+        o = pycgo_to_cgo(po);
+    }
+    else {
+        // TODO(chogan): Exception
+        printf("Error: %s is not a valid GeometricObject type\n", go_type);
+    }
+    Py_XDECREF(py_type);
+    Py_XDECREF(name);
+
+    return o;
+}
+
+static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
+    // TODO(chogan): Allow tuple too?
+    if(!PyList_Check(py_cgo)) {
+        // TODO(chogan)
+        // Exception?
+        printf("Error: pycgo_to_cgo expected a list\n");
+    }
+
+    int length = PyList_Size(py_cgo);
+
+    vector3 center = get_attr_v3(py_cgo, "center");
+    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_cgo, "material"));
+
+    geometric_object o = make_geometric_object(material, center);
+
+    o.which_subclass = geometric_object::COMPOUND_GEOMETRIC_OBJECT;
+    o.subclass.compound_geometric_object_data = new compound_geometric_object();
+    o.subclass.compound_geometric_object_data->component_objects.num_items = length;
+    o.subclass.compound_geometric_object_data->component_objects.items = new geometric_object[length];
+
+    for(int i = 0; i < length; i++) {
+        PyObject *py_gobj = PyList_GetItem(py_cgo, i);
+        geometric_object go = py_gobj_to_gobj(py_gobj);
+        geometric_object_copy(&go, &o.subclass.compound_geometric_object_data->component_objects.items[i]);
+    }
+
+    return o;
+}
 
 %}
 
@@ -227,39 +293,7 @@ static geometric_object pyellipsoid_to_ellipsoid(PyObject *py_ell) {
 }
 
 %typemap(in) GEOMETRIC_OBJECT {
-    PyObject *py_type = PyObject_Type($input);
-    PyObject *name = PyObject_GetAttrString(py_type, "__name__");
-
-    std::string go_type(PyString_AsString(name));
-
-    if(go_type == "Sphere") {
-        $1 = pysphere_to_sphere($input);
-    }
-    else if(go_type == "Cylinder") {
-        $1 = pycylinder_to_cylinder($input);
-    }
-    else if(go_type == "Wedge") {
-        $1 = pywedge_to_wedge($input);
-    }
-    else if(go_type == "Cone") {
-        $1 = pycone_to_cone($input);
-    }
-    else if(go_type == "Block") {
-        $1 = pyblock_to_block($input);
-    }
-    else if(go_type == "Ellipsoid") {
-        $1 = pyellipsoid_to_ellipsoid($input);
-    }
-    else if(go_type == "CompoundGeometricObject") {
-        // TODO(chogan)
-        // $1 = pycgo_to_cgo($input);
-    }
-    else {
-        // TODO(chogan): Exception
-        printf("Error: %s is not a valid GeometricObject type\n", go_type);
-    }
-    Py_XDECREF(py_type);
-    Py_XDECREF(name);
+    $1 = py_gobj_to_gobj($input);
 }
 
 // TODO(chogan)
@@ -276,6 +310,26 @@ static geometric_object pyellipsoid_to_ellipsoid(PyObject *py_ell) {
     $result = PyBool_FromLong(b);
 }
 
+// Typemap suite for geometric_object_list
+
+%typemap(in) geometric_object_list {
+    geometric_object o = py_gobj_to_gobj($input);
+    geometric_object_list l;
+    l.num_items = o.subclass.compound_geometric_object_data->component_objects.num_items;
+    l.items = o.subclass.compound_geometric_object_data->component_objects.items;
+    $1 = l;
+}
+
+// TODO(chogan)
+// %typemap(out) geometric_object_list {
+
+// }
+
+// TODO(chogan)
+// %typemap(freearg) geometric_object_list {
+
+// }
+
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
 %rename(_is) meep::dft_chunk::is;
@@ -289,8 +343,8 @@ static geometric_object pyellipsoid_to_ellipsoid(PyObject *py_ell) {
 %feature("immutable") meep::fields_chunk::num_connections;
 
 %include "vec.i"
-
 %include "meep.hpp"
+%include "meepgeom.hpp"
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
