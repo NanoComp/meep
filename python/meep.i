@@ -312,11 +312,28 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
 
 // Typemap suite for geometric_object_list
 
+%typecheck(SWIG_TYPECHECK_POINTER) geometric_object_list {
+    $1 = PyList_Check($input);
+}
+
 %typemap(in) geometric_object_list {
-    geometric_object o = py_gobj_to_gobj($input);
+    if(!PyList_Check($input)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a list");
+        SWIG_fail;
+    }
+
+    int length = PyList_Size($input);
+
     geometric_object_list l;
-    l.num_items = o.subclass.compound_geometric_object_data->component_objects.num_items;
-    l.items = o.subclass.compound_geometric_object_data->component_objects.items;
+    l.num_items = length;
+    l.items = new geometric_object[length];
+
+    for(int i = 0; i < length; i++) {
+        PyObject *py_gobj = PyList_GetItem($input, i);
+        geometric_object go = py_gobj_to_gobj(py_gobj);
+        geometric_object_copy(&go, &l.items[length]);
+    }
+
     $1 = l;
 }
 
@@ -325,10 +342,12 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
 
 // }
 
-// TODO(chogan)
-// %typemap(freearg) geometric_object_list {
-
-// }
+%typemap(freearg) geometric_object_list {
+    for(int i = 0; i < $1.num_items; i++) {
+        geometric_object_destroy($1.items[i]);
+    }
+    delete[] $1.items;
+}
 
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
