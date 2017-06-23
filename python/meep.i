@@ -110,14 +110,13 @@ static double get_attr_dbl(PyObject *py_obj, char *name) {
 
 static material_type pymaterial_to_material(PyObject *po) {
     material_type m;
-    // TODO(chogan): I don't think this will work unless the original python
-    // data was created from PyLong_FromVoidPtr(). Need to test.
-    m.data = PyLong_AsVoidPtr(PyObject_GetAttrString(po, "data"));
+    material_type_copy((material_type*)po, &m);
     return m;
 }
 
 static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
-    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_sphere, "material"));
+    PyObject *py_material = PyObject_GetAttrString(py_sphere, "material");
+    material_type material = pymaterial_to_material(py_material);
     vector3 center = get_attr_v3(py_sphere, "center");
     double radius = get_attr_dbl(py_sphere, "radius");
 
@@ -125,7 +124,8 @@ static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
 }
 
 static geometric_object pycylinder_to_cylinder(PyObject *py_cyl) {
-    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_cyl, "material"));
+    PyObject *py_material = PyObject_GetAttrString(py_cyl, "material");
+    material_type material = pymaterial_to_material(py_material);
     vector3 center = get_attr_v3(py_cyl, "center");
     vector3 axis = get_attr_v3(py_cyl, "axis");
     double radius = get_attr_dbl(py_cyl, "radius");
