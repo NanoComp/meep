@@ -47,10 +47,8 @@ def main(args):
     dielectric = gm.Medium(epsilon_diag=gm.Vector3(n2, n2, n2))
     v3zero = gm.Vector3(0.0, 0.0, 0.0)
     zaxis = gm.Vector3(0.0, 0.0, 1.0)
-    huge_val = 1 << 33
-    objects.append(gm.Cylinder(material=dielectric, center=v3zero, radius=r + w, height=huge_val, axis=zaxis))
-    # TODO(chogan): Get vacuum material_type working
-    objects.append(gm.Cylinder(material=gm.Medium(), center=v3zero, radius=r, height=huge_val, axis=zaxis))
+    objects.append(gm.Cylinder(material=dielectric, center=v3zero, radius=r + w, height=float('inf'), axis=zaxis))
+    objects.append(gm.Cylinder(material=gm.Medium(), center=v3zero, radius=r, height=float('inf'), axis=zaxis))
 
     mp.set_materials_from_geometry(the_structure, objects)
     f = mp.fields(the_structure)
@@ -59,7 +57,7 @@ def main(args):
     # put a single point source at some arbitrary place, pointing in some
     # arbitrary direction.  We will only look for TM modes (E out of the plane).
     fcen = 0.15  # pulse center frequency
-    df = 0.1  # df
+    df = 0.1
     src = mp.gaussian_src_time(fcen, df)
     v = mp.volume(mp.vec(r + 0.1, 0.0), mp.vec(0.0, 0.0))
     f.add_volume_source(mp.Ez, src, v)
