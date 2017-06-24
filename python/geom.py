@@ -13,16 +13,79 @@ class Vector3(object):
         self.y = float(y)
         self.z = float(z)
 
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y and self.z == other.z
 
-class MaterialType(object):
 
-    def __init__(self, data=None):
-        self.data = data
+class Medium(object):
+
+    def __init__(self, epsilon_diag=Vector3(1, 1, 1),
+                 epsilon_offdiag=Vector3(0, 0, 0),
+                 mu_diag=Vector3(1, 1, 1),
+                 mu_offdiag=Vector3(0, 0, 0),
+                 E_susceptibilities=[],
+                 H_susceptibilities=[],
+                 E_chi2_diag=Vector3(0, 0, 0),
+                 E_chi3_diag=Vector3(0, 0, 0),
+                 H_chi2_diag=Vector3(0, 0, 0),
+                 H_chi3_diag=Vector3(0, 0, 0),
+                 D_conductivity_diag=Vector3(0, 0, 0),
+                 B_conductivity_diag=Vector3(0, 0, 0)):
+
+        self.epsilon_diag = epsilon_diag
+        self.epsilon_offdiag = epsilon_offdiag
+        self.mu_diag = mu_diag
+        self.mu_offdiag = mu_offdiag
+        self.E_susceptibilities = E_susceptibilities
+        self.H_susceptibilities = H_susceptibilities
+        self.E_chi2_diag = E_chi2_diag
+        self.E_chi3_diag = E_chi3_diag
+        self.H_chi2_diag = H_chi2_diag
+        self.H_chi3_diag = H_chi3_diag
+        self.D_conductivity_diag = D_conductivity_diag
+        self.B_conductivity_diag = B_conductivity_diag
+
+
+class Susceptibility(object):
+
+    def __init__(self, sigma_diag, sigma_offdiag=Vector3(0, 0, 0)):
+        self.sigma_diag = sigma_diag
+        self.sigma_offdiag = sigma_offdiag
+
+
+# class LorentzianSusceptibility(Susceptibility):
+
+#     def __init__(self, sigma_diag, frequency, gamma, **kwargs):
+#         super(LorentzianSusceptibility, self).__init__(sigma_diag, **kwargs)
+#         self.frequency = frequency
+#         self.gamma = gamma
+
+
+# class DrudeSusceptibility(Susceptibility):
+
+#     def __init__(self, sigma_diag, frequency, gamma, **kwargs):
+#         super(DrudeSusceptibility, self).__init__(sigma_diag, **kwargs)
+#         self.frequency = frequency
+#         self.gamma = gamma
+
+
+# class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
+
+#     def __init__(self, sigma_diag, frequency, gamma, noise_amp, **kwargs):
+#         super(NoisyLorentzianSusceptibility, self).__init__(sigma_diag, frequency, **kwargs)
+#         self.noise_amp = noise_amp
+
+
+# class NoisyDrudeSusceptibility(DrudeSusceptibility):
+
+#     def __init__(self, sigma_diag, frequency, gamma, noise_amp, **kwargs):
+#         super(NoisyDrudeSusceptibility, self).__init__(sigma_diag, frequency, **kwargs)
+#         self.noise_amp = noise_amp
 
 
 class GeometricObject(object):
 
-    def __init__(self, material=MaterialType(), center=None):
+    def __init__(self, material=Medium(), center=None):
         self.material = material
         self.center = center
 
@@ -146,6 +209,7 @@ class Ellipsoid(Block):
         return self._inverse_semi_axes  # map(lambda x: 2.0 / x, self.size)
 
 
+# TODO(chogan): Write tests
 class CompoundGeometricObject(GeometricObject):
 
     def __init__(self, component_objects=[], **kwargs):

@@ -43,12 +43,14 @@ def main(args):
     # and the inner (air) cylinder second.
 
     objects = []
-    dielectric = mp.make_dielectric(n * n)
+    n2 = n * n
+    dielectric = gm.Medium(epsilon_diag=gm.Vector3(n2, n2, n2))
     v3zero = gm.Vector3(0.0, 0.0, 0.0)
     zaxis = gm.Vector3(0.0, 0.0, 1.0)
-    objects.append(gm.Cylinder(material=dielectric, center=v3zero, radius=r + w, height=1 << 35, axis=zaxis))
+    huge_val = 1 << 33
+    objects.append(gm.Cylinder(material=dielectric, center=v3zero, radius=r + w, height=huge_val, axis=zaxis))
     # TODO(chogan): Get vacuum material_type working
-    objects.append(gm.Cylinder(center=v3zero, radius=r, height=1 << 35, axis=zaxis))
+    objects.append(gm.Cylinder(material=gm.Medium(), center=v3zero, radius=r, height=huge_val, axis=zaxis))
 
     mp.set_materials_from_geometry(the_structure, objects)
     f = mp.fields(the_structure)

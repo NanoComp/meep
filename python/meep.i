@@ -94,24 +94,94 @@ static vector3 pyv3_to_v3(PyObject *po) {
     return v;
 }
 
-static vector3 get_attr_v3(PyObject *py_obj, char *name) {
+static vector3 get_attr_v3(PyObject *py_obj, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if(!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        // TODO(chogan): Pass error to wrapper, then to python
+    }
+
     vector3 result = pyv3_to_v3(py_attr);
     Py_XDECREF(py_attr);
     return result;
 }
 
-static double get_attr_dbl(PyObject *py_obj, char *name) {
+static double get_attr_dbl(PyObject *py_obj, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if(!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        // TODO(chogan): Pass error to wrapper, then to python
+    }
+
     double result = PyFloat_AsDouble(py_attr);
     Py_XDECREF(py_attr);
     return result;
 }
 
+static susceptibility_struct py_susceptibility_to_susceptibility(PyObject *po) {
+    // TODO(chogan): Accont for subclasses. Are all subclasses needed? Several are duplicates
+    susceptibility_struct s;
+    s.sigma_diag = get_attr_v3(po, "sigma_diag");
+    s.sigma_offdiag = get_attr_v3(po, "sigma_offdiag");
+
+    return s;
+}
+
+static susceptibility_list py_list_to_susceptibility_list(PyObject *po) {
+    if(!PyList_Check(po)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a list\n");
+        // TODO(chogan): Pass error to wrapper, then to python
+    }
+
+    susceptibility_list sl;
+    sl.num_items = PyList_Size(po);
+    sl.items = new susceptibility_struct[sl.num_items];
+
+    for(int i = 0; i < sl.num_items; i++) {
+        // TODO(chogan): Account for subclasses
+        susceptibility_struct s = py_susceptibility_to_susceptibility(PyList_GetItem(po, i));
+        sl.items[i].sigma_diag = s.sigma_diag;
+        sl.items[i].sigma_offdiag = s.sigma_offdiag;
+    }
+
+    return sl;
+}
+
 static material_type pymaterial_to_material(PyObject *po) {
-    material_type m;
-    material_type_copy((material_type*)po, &m);
-    return m;
+
+    material_data *md = new material_data();
+    md->which_subclass = material_data::MEDIUM;
+    md->user_func = 0;
+    md->user_data = 0;
+    md->medium = new medium_struct();
+
+    md->medium->epsilon_diag = get_attr_v3(po, "epsilon_diag");
+    md->medium->epsilon_offdiag = get_attr_v3(po, "epsilon_offdiag");
+    md->medium->mu_diag = get_attr_v3(po, "mu_diag");
+    md->medium->mu_offdiag = get_attr_v3(po, "mu_offdiag");
+
+    PyObject *py_e_susceptibilities = PyObject_GetAttrString(po, "E_susceptibilities");
+    PyObject *py_h_susceptibilities = PyObject_GetAttrString(po, "H_susceptibilities");
+
+    md->medium->E_susceptibilities = py_list_to_susceptibility_list(py_e_susceptibilities);
+    md->medium->H_susceptibilities = py_list_to_susceptibility_list(py_h_susceptibilities);
+
+    Py_XDECREF(py_e_susceptibilities);
+    Py_XDECREF(py_h_susceptibilities);
+
+    md->medium->E_chi2_diag = get_attr_v3(po, "E_chi2_diag");
+    md->medium->E_chi3_diag = get_attr_v3(po, "E_chi3_diag");
+    md->medium->H_chi2_diag = get_attr_v3(po, "H_chi2_diag");
+    md->medium->H_chi3_diag = get_attr_v3(po, "H_chi3_diag");
+    md->medium->D_conductivity_diag = get_attr_v3(po, "D_conductivity_diag");
+    md->medium->B_conductivity_diag = get_attr_v3(po, "B_conductivity_diag");
+
+    material_type mt = { (void *)md };
+
+    return mt;
+
 }
 
 static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
@@ -222,7 +292,7 @@ static geometric_object py_gobj_to_gobj(PyObject *po) {
     }
     else {
         // TODO(chogan): Exception
-        printf("Error: %s is not a valid GeometricObject type\n", go_type);
+        PyErr_Format(PyExc_TypeError, "Error: %s is not a valid GeometricObject type\n", go_type.c_str());
     }
     Py_XDECREF(py_type);
     Py_XDECREF(name);
@@ -230,16 +300,28 @@ static geometric_object py_gobj_to_gobj(PyObject *po) {
     return o;
 }
 
-static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
-    // TODO(chogan): Allow tuple too?
-    if(!PyList_Check(py_cgo)) {
-        // TODO(chogan)
-        // Exception?
-        printf("Error: pycgo_to_cgo expected a list\n");
+static geometric_object_list py_list_to_gobj_list(PyObject *po) {
+    if(!PyList_Check(po)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a list");
+        // TODO(chogan): Pass error to wrapper
     }
 
-    int length = PyList_Size(py_cgo);
+    int length = PyList_Size(po);
 
+    geometric_object_list l;
+    l.num_items = length;
+    l.items = new geometric_object[length];
+
+    for(int i = 0; i < length; i++) {
+        PyObject *py_gobj = PyList_GetItem(po, i);
+        geometric_object go = py_gobj_to_gobj(py_gobj);
+        geometric_object_copy(&go, l.items + i);
+    }
+
+    return l;
+}
+
+static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
     vector3 center = get_attr_v3(py_cgo, "center");
     material_type material = pymaterial_to_material(PyObject_GetAttrString(py_cgo, "material"));
 
@@ -247,14 +329,11 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
 
     o.which_subclass = geometric_object::COMPOUND_GEOMETRIC_OBJECT;
     o.subclass.compound_geometric_object_data = new compound_geometric_object();
-    o.subclass.compound_geometric_object_data->component_objects.num_items = length;
-    o.subclass.compound_geometric_object_data->component_objects.items = new geometric_object[length];
 
-    for(int i = 0; i < length; i++) {
-        PyObject *py_gobj = PyList_GetItem(py_cgo, i);
-        geometric_object go = py_gobj_to_gobj(py_gobj);
-        geometric_object_copy(&go, &o.subclass.compound_geometric_object_data->component_objects.items[i]);
-    }
+    PyObject *py_component_objects = PyObject_GetAttrString(py_cgo, "component_objects");
+    o.subclass.compound_geometric_object_data->component_objects = py_list_to_gobj_list(py_component_objects);
+
+    Py_XDECREF(py_component_objects);
 
     return o;
 }
@@ -296,11 +375,6 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
     $1 = py_gobj_to_gobj($input);
 }
 
-// TODO(chogan)
-// %typemap(out) GEOMETRIC_OBJECT {
-
-// }
-
 %typemap(freearg) GEOMETRIC_OBJECT {
     geometric_object_destroy($1);
 }
@@ -317,30 +391,8 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
 }
 
 %typemap(in) geometric_object_list {
-    if(!PyList_Check($input)) {
-        PyErr_SetString(PyExc_TypeError, "Expected a list");
-        SWIG_fail;
-    }
-
-    int length = PyList_Size($input);
-
-    geometric_object_list l;
-    l.num_items = length;
-    l.items = new geometric_object[length];
-
-    for(int i = 0; i < length; i++) {
-        PyObject *py_gobj = PyList_GetItem($input, i);
-        geometric_object go = py_gobj_to_gobj(py_gobj);
-        geometric_object_copy(&go, &l.items[length]);
-    }
-
-    $1 = l;
+    $1 = py_list_to_gobj_list($input);
 }
-
-// TODO(chogan)
-// %typemap(out) geometric_object_list {
-
-// }
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
