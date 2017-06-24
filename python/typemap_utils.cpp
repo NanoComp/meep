@@ -15,8 +15,8 @@
  *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-// Utility functions for typemaps
- 
+// Utility functions for pymeep typemaps
+
 static PyObject* vec2py(const meep::vec &v) {
 
     double x = 0, y = 0, z = 0;
@@ -92,6 +92,20 @@ static double get_attr_dbl(PyObject *py_obj, const char *name) {
     return result;
 }
 
+static material_type get_attr_material(PyObject *po) {
+    PyObject *py_material = PyObject_GetAttrString(po, "material");
+
+    if(!py_material) {
+        PyErr_SetString(PyExc_ValueError, "Object's material is not set\n");
+        // TODO(chogan): Pass error to wrapper
+    }
+
+    material_type m = pymaterial_to_material(py_material);
+    Py_XDECREF(py_material);
+
+    return m;
+}
+
 static susceptibility_struct py_susceptibility_to_susceptibility(PyObject *po) {
     // TODO(chogan): Accont for subclasses. Are all subclasses needed? Several are duplicates
     susceptibility_struct s;
@@ -153,12 +167,10 @@ static material_type pymaterial_to_material(PyObject *po) {
     material_type mt = { (void *)md };
 
     return mt;
-
 }
 
 static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
-    PyObject *py_material = PyObject_GetAttrString(py_sphere, "material");
-    material_type material = pymaterial_to_material(py_material);
+    material_type material = get_attr_material(py_sphere);
     vector3 center = get_attr_v3(py_sphere, "center");
     double radius = get_attr_dbl(py_sphere, "radius");
 
@@ -166,8 +178,7 @@ static geometric_object pysphere_to_sphere(PyObject *py_sphere) {
 }
 
 static geometric_object pycylinder_to_cylinder(PyObject *py_cyl) {
-    PyObject *py_material = PyObject_GetAttrString(py_cyl, "material");
-    material_type material = pymaterial_to_material(py_material);
+    material_type material = get_attr_material(py_cyl);
     vector3 center = get_attr_v3(py_cyl, "center");
     vector3 axis = get_attr_v3(py_cyl, "axis");
     double radius = get_attr_dbl(py_cyl, "radius");
@@ -207,7 +218,7 @@ static geometric_object pycone_to_cone(PyObject *py_cone) {
 }
 
 static geometric_object pyblock_to_block(PyObject *py_blk) {
-    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_blk, "material"));
+    material_type material = get_attr_material(py_blk);
     vector3 center = get_attr_v3(py_blk, "center");
     vector3 e1 = get_attr_v3(py_blk, "e1");
     vector3 e2 = get_attr_v3(py_blk, "e2");
@@ -295,7 +306,7 @@ static geometric_object_list py_list_to_gobj_list(PyObject *po) {
 
 static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
     vector3 center = get_attr_v3(py_cgo, "center");
-    material_type material = pymaterial_to_material(PyObject_GetAttrString(py_cgo, "material"));
+    material_type material = get_attr_material(py_cgo);
 
     geometric_object o = make_geometric_object(material, center);
 

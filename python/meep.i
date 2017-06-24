@@ -35,6 +35,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %}
 
+%include "exception.i"
 %include "numpy.i"
 
 %init %{
@@ -47,11 +48,15 @@ PyObject *py_callback = NULL;
 static PyObject* vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static vector3 pyv3_to_v3(PyObject *po);
+
 static vector3 get_attr_v3(PyObject *py_obj, const char *name);
 static double get_attr_dbl(PyObject *py_obj, const char *name);
+static material_type get_attr_material(PyObject *po);
+static material_type pymaterial_to_material(PyObject *po);
+
 static susceptibility_struct py_susceptibility_to_susceptibility(PyObject *po);
 static susceptibility_list py_list_to_susceptibility_list(PyObject *po);
-static material_type pymaterial_to_material(PyObject *po);
+
 static geometric_object pysphere_to_sphere(PyObject *py_sphere);
 static geometric_object pycylinder_to_cylinder(PyObject *py_cyl);
 static geometric_object pywedge_to_wedge(PyObject *py_wedge);

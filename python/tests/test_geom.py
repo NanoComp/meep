@@ -82,7 +82,7 @@ class TestCylinder(unittest.TestCase):
             self.assertIn("Got -1.0", ctx.exception)
 
     def test_contains_point(self):
-        c = gm.Cylinder(center=zeros(), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
+        c = gm.Cylinder(center=zeros(), radius=2.0, height=4.0)
 
         self.assertIn(zeros(), c)
         self.assertIn(gm.Vector3(2, 0, 0), c)
@@ -90,6 +90,11 @@ class TestCylinder(unittest.TestCase):
 
         self.assertNotIn(gm.Vector3(2.0001, 0, 0), c)
         self.assertNotIn(gm.Vector3(10, 10, 10), c)
+
+    def test_required_args(self):
+        c = gm.Cylinder(radius=2.0, height=4.0)
+
+        self.assertIn(zeros(), c)
 
 
 class TestWedge(unittest.TestCase):
