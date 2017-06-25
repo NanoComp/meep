@@ -46,25 +46,25 @@ PyObject *py_callback = NULL;
 
 static PyObject* vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
-static vector3 pyv3_to_v3(PyObject *po);
+static int pyv3_to_v3(PyObject *po, vector3 *v);
 
-static vector3 get_attr_v3(PyObject *py_obj, const char *name);
-static double get_attr_dbl(PyObject *py_obj, const char *name);
-static material_type get_attr_material(PyObject *po);
-static material_type pymaterial_to_material(PyObject *po);
+static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
+static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
+// static material_type get_attr_material(PyObject *po);
+// static material_type pymaterial_to_material(PyObject *po);
 
-static susceptibility_struct py_susceptibility_to_susceptibility(PyObject *po);
-static susceptibility_list py_list_to_susceptibility_list(PyObject *po);
+// static susceptibility_struct py_susceptibility_to_susceptibility(PyObject *po);
+// static susceptibility_list py_list_to_susceptibility_list(PyObject *po);
 
-static geometric_object pysphere_to_sphere(PyObject *py_sphere);
-static geometric_object pycylinder_to_cylinder(PyObject *py_cyl);
-static geometric_object pywedge_to_wedge(PyObject *py_wedge);
-static geometric_object pycone_to_cone(PyObject *py_cone);
-static geometric_object pyblock_to_block(PyObject *py_blk);
-static geometric_object pyellipsoid_to_ellipsoid(PyObject *py_ell);
-static geometric_object py_gobj_to_gobj(PyObject *po);
-static geometric_object_list py_list_to_gobj_list(PyObject *po);
-static geometric_object pycgo_to_cgo(PyObject *py_cgo);
+// static geometric_object pysphere_to_sphere(PyObject *py_sphere);
+static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *o);
+// static geometric_object pywedge_to_wedge(PyObject *py_wedge);
+// static geometric_object pycone_to_cone(PyObject *py_cone);
+// static geometric_object pyblock_to_block(PyObject *py_blk);
+// static geometric_object pyellipsoid_to_ellipsoid(PyObject *py_ell);
+// static geometric_object py_gobj_to_gobj(PyObject *po);
+// static geometric_object_list py_list_to_gobj_list(PyObject *po);
+// static geometric_object pycgo_to_cgo(PyObject *py_cgo);
 
 #include "typemap_utils.cpp"
 
@@ -88,7 +88,9 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo);
 
 %typemap(in) vector3 {
     // TODO(chogan): Accept inputs of tuple, np.array, list?
-    $1 = pyv3_to_v3($input);
+    if(!pyv3_to_v3($input, &$1)) {
+        SWIG_fail;
+    }
 }
 
 // Typemap suite for GEOMETRIC_OBJECT
@@ -102,7 +104,9 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo);
 }
 
 %typemap(in) GEOMETRIC_OBJECT {
-    $1 = py_gobj_to_gobj($input);
+    if(!py_gobj_to_gobj($input, &$1)) {
+        SWIG_fail;
+    }
 }
 
 %typemap(freearg) GEOMETRIC_OBJECT {
@@ -116,20 +120,20 @@ static geometric_object pycgo_to_cgo(PyObject *py_cgo);
 
 // Typemap suite for geometric_object_list
 
-%typecheck(SWIG_TYPECHECK_POINTER) geometric_object_list {
-    $1 = PyList_Check($input);
-}
+// %typecheck(SWIG_TYPECHECK_POINTER) geometric_object_list {
+//     $1 = PyList_Check($input);
+// }
 
-%typemap(in) geometric_object_list {
-    $1 = py_list_to_gobj_list($input);
-}
+// %typemap(in) geometric_object_list {
+//     $1 = py_list_to_gobj_list($input);
+// }
 
-%typemap(freearg) geometric_object_list {
-    for(int i = 0; i < $1.num_items; i++) {
-        geometric_object_destroy($1.items[i]);
-    }
-    delete[] $1.items;
-}
+// %typemap(freearg) geometric_object_list {
+//     for(int i = 0; i < $1.num_items; i++) {
+//         geometric_object_destroy($1.items[i]);
+//     }
+//     delete[] $1.items;
+// }
 
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;

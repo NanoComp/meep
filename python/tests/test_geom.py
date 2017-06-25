@@ -93,7 +93,9 @@ class TestCylinder(unittest.TestCase):
     def test_default_center(self):
         c = gm.Cylinder(radius=2.0, height=4.0)
 
-        self.assertIn(zeros(), c)
+        with self.assertRaises(ValueError) as ctx:
+            self.assertIn(zeros(), c)
+            self.assertIn("Vector3 is not initialized", ctx.exception)
 
 
 class TestWedge(unittest.TestCase):
