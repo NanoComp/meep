@@ -48,7 +48,7 @@ class Medium(object):
 
 class Susceptibility(object):
 
-    def __init__(self, sigma_diag, sigma_offdiag=Vector3(0, 0, 0)):
+    def __init__(self, sigma_diag=Vector3(1, 1, 1), sigma_offdiag=Vector3(0, 0, 0)):
         self.sigma_diag = sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
@@ -85,7 +85,7 @@ class Susceptibility(object):
 
 class GeometricObject(object):
 
-    def __init__(self, material=Medium(), center=None):
+    def __init__(self, material=Medium(), center=Vector3(0, 0, 0)):
         self.material = material
         self.center = center
 
@@ -95,7 +95,7 @@ class GeometricObject(object):
 
 class Sphere(GeometricObject):
 
-    def __init__(self, radius=None, **kwargs):
+    def __init__(self, radius=1.0, **kwargs):
         self.radius = radius
         super(Sphere, self).__init__(**kwargs)
 
@@ -113,7 +113,7 @@ class Sphere(GeometricObject):
 
 class Cylinder(GeometricObject):
 
-    def __init__(self, axis=Vector3(0, 0, 1), radius=None, height=None, **kwargs):
+    def __init__(self, axis=Vector3(0, 0, 1), radius=1.0, height=1.0, **kwargs):
         self.axis = axis
         self.radius = radius
         self.height = height
@@ -160,8 +160,7 @@ class Cone(Cylinder):
 # TODO(chogan): Write tests
 class Block(GeometricObject):
 
-    def __init__(self, size, e1=Vector3(1, 0, 0), e2=Vector3(0, 1, 0),
-                 e3=Vector3(0, 0, 1), **kwargs):
+    def __init__(self, size, e1=Vector3(1, 0, 0), e2=Vector3(0, 1, 0), e3=Vector3(0, 0, 1), **kwargs):
         self.size = size
         self.e1 = e1
         self.e2 = e2
@@ -206,7 +205,8 @@ class Ellipsoid(Block):
 
     @property
     def inverse_semi_axes(self):
-        return self._inverse_semi_axes  # map(lambda x: 2.0 / x, self.size)
+        # TODO(chogan): Compute map(lambda x: 2.0 / x, self.size) in C
+        return self._inverse_semi_axes
 
 
 # TODO(chogan): Write tests

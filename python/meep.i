@@ -35,7 +35,6 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %}
 
-%include "exception.i"
 %include "numpy.i"
 
 %init %{

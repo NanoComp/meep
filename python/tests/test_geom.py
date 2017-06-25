@@ -2,6 +2,9 @@ import os
 import sys
 import unittest
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import geom as gm
+
 
 def zeros():
     return gm.Vector3(0, 0, 0)
@@ -11,27 +14,23 @@ def ones():
     return gm.Vector3(1, 1, 1)
 
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import geom as gm
-
-
 class TestSphere(unittest.TestCase):
 
     def test_kwargs_passed_to_parent(self):
         s = gm.Sphere()
         self.assertEqual(s.material.epsilon_diag, ones())
-        self.assertEqual(s.center, None)
-        self.assertEqual(s.radius, None)
+        self.assertEqual(s.center, zeros())
+        self.assertEqual(s.radius, 1)
 
         s = gm.Sphere(radius=1.0)
         self.assertEqual(s.material.epsilon_diag, ones())
-        self.assertEqual(s.center, None)
+        self.assertEqual(s.center, zeros())
         self.assertEqual(s.radius, 1.0)
 
-        s = gm.Sphere(center=(1, 1, 1))
+        s = gm.Sphere(center=ones())
         self.assertEqual(s.material.epsilon_diag, ones())
-        self.assertEqual(s.center, (1, 1, 1))
-        self.assertEqual(s.radius, None)
+        self.assertEqual(s.center, ones())
+        self.assertEqual(s.radius, 1)
 
     def test_invalid_kwarg_raises_exception(self):
         with self.assertRaises(TypeError):
@@ -91,7 +90,7 @@ class TestCylinder(unittest.TestCase):
         self.assertNotIn(gm.Vector3(2.0001, 0, 0), c)
         self.assertNotIn(gm.Vector3(10, 10, 10), c)
 
-    def test_required_args(self):
+    def test_default_center(self):
         c = gm.Cylinder(radius=2.0, height=4.0)
 
         self.assertIn(zeros(), c)
