@@ -20,17 +20,17 @@ class Vector3(object):
 class Medium(object):
 
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
-                 epsilon_offdiag=Vector3(0, 0, 0),
+                 epsilon_offdiag=Vector3(),
                  mu_diag=Vector3(1, 1, 1),
-                 mu_offdiag=Vector3(0, 0, 0),
+                 mu_offdiag=Vector3(),
                  E_susceptibilities=[],
                  H_susceptibilities=[],
-                 E_chi2_diag=Vector3(0, 0, 0),
-                 E_chi3_diag=Vector3(0, 0, 0),
-                 H_chi2_diag=Vector3(0, 0, 0),
-                 H_chi3_diag=Vector3(0, 0, 0),
-                 D_conductivity_diag=Vector3(0, 0, 0),
-                 B_conductivity_diag=Vector3(0, 0, 0)):
+                 E_chi2_diag=Vector3(),
+                 E_chi3_diag=Vector3(),
+                 H_chi2_diag=Vector3(),
+                 H_chi3_diag=Vector3(),
+                 D_conductivity_diag=Vector3(),
+                 B_conductivity_diag=Vector3()):
 
         self.epsilon_diag = epsilon_diag
         self.epsilon_offdiag = epsilon_offdiag
@@ -48,7 +48,7 @@ class Medium(object):
 
 class Susceptibility(object):
 
-    def __init__(self, sigma_diag=Vector3(1, 1, 1), sigma_offdiag=Vector3(0, 0, 0)):
+    def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3()):
         self.sigma_diag = sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
@@ -85,7 +85,7 @@ class Susceptibility(object):
 
 class GeometricObject(object):
 
-    def __init__(self, material=Medium(), center=Vector3(0, 0, 0)):
+    def __init__(self, material=Medium(), center=Vector3()):
         self.material = material
         self.center = center
 

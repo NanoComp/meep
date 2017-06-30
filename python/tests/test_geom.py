@@ -22,10 +22,10 @@ class TestSphere(unittest.TestCase):
         self.assertEqual(s.center, zeros())
         self.assertEqual(s.radius, 1)
 
-        s = gm.Sphere(radius=1.0)
+        s = gm.Sphere(radius=2.0)
         self.assertEqual(s.material.epsilon_diag, ones())
         self.assertEqual(s.center, zeros())
-        self.assertEqual(s.radius, 1.0)
+        self.assertEqual(s.radius, 2.0)
 
         s = gm.Sphere(center=ones())
         self.assertEqual(s.material.epsilon_diag, ones())
@@ -90,8 +90,8 @@ class TestCylinder(unittest.TestCase):
         self.assertNotIn(gm.Vector3(2.0001, 0, 0), c)
         self.assertNotIn(gm.Vector3(10, 10, 10), c)
 
-    def test_default_center(self):
-        c = gm.Cylinder(radius=2.0, height=4.0)
+    def test_missing_required_arg_throws(self):
+        c = gm.Cylinder(radius=2.0, height=4.0, center=None)
 
         with self.assertRaises(ValueError) as ctx:
             self.assertIn(zeros(), c)
