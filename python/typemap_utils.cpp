@@ -58,7 +58,7 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
     PyObject *py_z = PyObject_GetAttrString(po, "z");
 
     if(!py_x || !py_y || !py_z) {
-        PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized\n");
+        PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized");
         return 0;
     }
 
@@ -385,8 +385,26 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     if(!py_type || !name) {
         return 0;
     }
+    
+    char *bytes;
 
-    std::string go_type(PyString_AsString(name));
+    if(PyUnicode_Check(name)) {
+        // Python 3
+        Py_ssize_t size;
+        bytes = PyUnicode_AsUTF8AndSize(name, &size);
+        if(!size) {
+            return 0;
+        }
+    } else {
+        // Python 2
+        bytes = PyBytes_AsString(name);
+    }
+
+    if(!bytes) {
+        return 0;
+    }
+
+    std::string go_type(bytes);
 
     if(go_type == "Sphere") {
         success = pysphere_to_sphere(po, o);
