@@ -62,9 +62,9 @@ static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *w);
 static int pycone_to_cone(PyObject *py_cone, geometric_object *cone);
 static int pyblock_to_block(PyObject *py_blk, geometric_object *blk);
 static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
-// static geometric_object py_gobj_to_gobj(PyObject *po);
+static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
-// static geometric_object pycgo_to_cgo(PyObject *py_cgo);
+static int pycgo_to_cgo(PyObject *py_cgo, geometric_object *o);
 
 #include "typemap_utils.cpp"
 
@@ -87,7 +87,6 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 // Typemap suite for vector3
 
 %typemap(in) vector3 {
-    // TODO(chogan): Accept inputs of tuple, np.array, list?
     if(!pyv3_to_v3($input, &$1)) {
         SWIG_fail;
     }
@@ -112,6 +111,8 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %typemap(freearg) GEOMETRIC_OBJECT {
     geometric_object_destroy($1);
 }
+
+// Typemap suite for boolean
 
 %typemap(out) boolean {
     long b = $1 == 0 ? 0 : 1;

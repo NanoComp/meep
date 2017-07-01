@@ -23,4 +23,4 @@ script:
   - make && make check && make install
   # Build and test pymeep with python 3.6
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
-  - cd python && make clean && make && make check && make install
+  - cd python && touch meep.i && make && make check && make install

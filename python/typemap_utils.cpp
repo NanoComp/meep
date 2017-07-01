@@ -123,7 +123,7 @@ static int get_attr_material(PyObject *po, material_type *m) {
 }
 
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s) {
-    // TODO(chogan): Accont for subclasses. Are all subclasses needed? Several are duplicates
+    // TODO(chogan): Accont for subclasses.
     if(!get_attr_v3(po, &s->sigma_diag, "sigma_diag") ||
        !get_attr_v3(po, &s->sigma_offdiag, "sigma_offdiag")) {
 
@@ -326,6 +326,57 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
     return 1;
 }
 
+static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
+    if(!PyList_Check(po)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a list");
+        return 0;
+    }
+
+    int length = PyList_Size(po);
+
+    l->num_items = length;
+    l->items = new geometric_object[length];
+
+    for(int i = 0; i < length; i++) {
+        PyObject *py_gobj = PyList_GetItem(po, i);
+        geometric_object go;
+        if(!py_gobj_to_gobj(py_gobj, &go)) {
+            return 0;
+        }
+        geometric_object_copy(&go, &l->items[i]);
+    }
+
+    return 1;
+}
+
+static int pycgo_to_cgo(PyObject *py_cgo, geometric_object *o) {
+    vector3 center;
+    material_type material;
+
+    if(!get_attr_v3(py_cgo, &center, "center") || !get_attr_material(py_cgo, &material)) {
+        return 0;
+    }
+
+    *o = make_geometric_object(material, center);
+
+    o->which_subclass = geometric_object::COMPOUND_GEOMETRIC_OBJECT;
+    o->subclass.compound_geometric_object_data = new compound_geometric_object();
+
+    PyObject *py_component_objects = PyObject_GetAttrString(py_cgo, "component_objects");
+
+    if(!py_component_objects) {
+        return 0;
+    }
+
+    if(!py_list_to_gobj_list(py_component_objects, &o->subclass.compound_geometric_object_data->component_objects)) {
+        return 0;
+    }
+
+    Py_XDECREF(py_component_objects);
+
+    return 1;
+}
+
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     int success = 0;
     PyObject *py_type = PyObject_Type(po);
@@ -355,9 +406,9 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     else if(go_type == "Ellipsoid") {
         success = pyellipsoid_to_ellipsoid(po, o);
     }
-    // else if(go_type == "CompoundGeometricObject") {
-    //     success = pycgo_to_cgo(po);
-    // }
+    else if(go_type == "CompoundGeometricObject") {
+        success = pycgo_to_cgo(po, o);
+    }
     else {
         PyErr_Format(PyExc_TypeError, "Error: %s is not a valid GeometricObject type\n", go_type.c_str());
         return 0;
@@ -367,43 +418,3 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
 
     return success;
 }
-
-static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
-    if(!PyList_Check(po)) {
-        PyErr_SetString(PyExc_TypeError, "Expected a list");
-        return 0;
-    }
-
-    int length = PyList_Size(po);
-
-    l->num_items = length;
-    l->items = new geometric_object[length];
-
-    for(int i = 0; i < length; i++) {
-        PyObject *py_gobj = PyList_GetItem(po, i);
-        geometric_object go;
-        if(!py_gobj_to_gobj(py_gobj, &go)) {
-            return 0;
-        }
-        geometric_object_copy(&go, &l->items[i]);
-    }
-
-    return 1;
-}
-
-// static geometric_object pycgo_to_cgo(PyObject *py_cgo) {
-//     vector3 center = get_attr_v3(py_cgo, "center");
-//     material_type material = get_attr_material(py_cgo);
-
-//     geometric_object o = make_geometric_object(material, center);
-
-//     o.which_subclass = geometric_object::COMPOUND_GEOMETRIC_OBJECT;
-//     o.subclass.compound_geometric_object_data = new compound_geometric_object();
-
-//     PyObject *py_component_objects = PyObject_GetAttrString(py_cgo, "component_objects");
-//     o.subclass.compound_geometric_object_data->component_objects = py_list_to_gobj_list(py_component_objects);
-
-//     Py_XDECREF(py_component_objects);
-
-//     return o;
-// }

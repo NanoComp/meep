@@ -53,6 +53,8 @@ class Susceptibility(object):
         self.sigma_offdiag = sigma_offdiag
 
 
+# TODO(chogan): Susceptibility sublcasses
+
 # class LorentzianSusceptibility(Susceptibility):
 
 #     def __init__(self, sigma_diag, frequency, gamma, **kwargs):
@@ -157,7 +159,6 @@ class Cone(Cylinder):
         super(Cone, self).__init__(**kwargs)
 
 
-# TODO(chogan): Write tests
 class Block(GeometricObject):
 
     def __init__(self, size, e1=Vector3(1, 0, 0), e2=Vector3(0, 1, 0), e3=Vector3(0, 0, 1), **kwargs):
@@ -166,6 +167,8 @@ class Block(GeometricObject):
         self.e2 = e2
         self.e3 = e3
         super(Block, self).__init__(**kwargs)
+
+    # TODO(chogan): post-processed properties
 
     # @property
     # def e1(self):
@@ -205,7 +208,7 @@ class Ellipsoid(Block):
 
     @property
     def inverse_semi_axes(self):
-        # TODO(chogan): Compute map(lambda x: 2.0 / x, self.size) in C
+        # TODO(chogan): Compute map(lambda x: 2.0 / x, self.size) (in C?)
         return self._inverse_semi_axes
 
 
