@@ -17,6 +17,13 @@
 
 // Utility functions for pymeep typemaps
 
+#if PY_MAJOR_VERSION >= 3
+    #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
+#else
+    #define PyObject_ToCharPtr(n) PyString_AsString(n)
+#endif
+
+
 static PyObject* vec2py(const meep::vec &v) {
 
     double x = 0, y = 0, z = 0;
@@ -382,23 +389,7 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     PyObject *py_type = PyObject_Type(po);
     PyObject *name = PyObject_GetAttrString(py_type, "__name__");
 
-    if(!py_type || !name) {
-        return 0;
-    }
-    
-    char *bytes;
-
-    if(PyUnicode_Check(name)) {
-        // Python 3
-        Py_ssize_t size;
-        bytes = PyUnicode_AsUTF8AndSize(name, &size);
-        if(!size) {
-            return 0;
-        }
-    } else {
-        // Python 2
-        bytes = PyBytes_AsString(name);
-    }
+    char *bytes = PyObject_ToCharPtr(name);
 
     if(!bytes) {
         return 0;
