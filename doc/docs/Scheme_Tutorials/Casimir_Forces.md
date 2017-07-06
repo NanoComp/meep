@@ -23,10 +23,11 @@ Introduction
 
 In this section, we introduce the equations and basic considerations involved in computing the force using the method presented in Rodriguez et. al. ([1](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.80.012115)). Note that we keep the details of the derivation to a minimum and instead focus on the calculational aspects of the resulting algorithm.
 
-The general setup for a Casimir force computation is shown in the following figure:
+The general setup for a Casimir force computation by integrating the Maxwell stress tensor on a surface *S* around an object is shown in the following figure:
 
-![300px|center|thumb|Schematic of Casimir-force calculation on an object, by integrating the Maxwell stress tensor on a surface *S* around the object.](../images/Surface-force.jpg)
-
+<center>
+![](../images/Surface-force.jpg)
+</center>
 
 The goal is to determine the Casimir force on one object (shown in red) due to the presence of other objects (blue).
 
@@ -73,12 +74,11 @@ Example: Two-Dimensional Blocks
 
 In this section we calculate the Casimir force in the two-dimensional Casimir piston configuration ([Rodriguez et. al](http://math.mit.edu/~stevenj/papers/RodriguezIb07.pdf)) shown below:
 
+<center>
+![](../images/Dblocks-config.jpg)
+</center>
 
-![250px|thumb|center|Example structure: A two-dimensional piston-like configuration in which we will compute the Casimir force between two blocks between two parallel plates.](../images/Dblocks-config.jpg)
-
-
-
-This is described in the sample file rods-plates.ctl ([2](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl)). The dashed red lines indicate the surface $S$. This system consists of two metal $a\times a$ squares in between metallic sidewalls. To run a simulation in which the blocks are (nondispersive) dielectrics one can simply change their materials in the definitions as in a normal Meep simulation. For dispersive dielectrics a few extra steps are needed, which is discussed in a later section.
+This is described in this [sample file](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). The dashed red lines indicate the surface $S$. This system consists of two metal $a\times a$ squares in between metallic sidewalls. To run a simulation in which the blocks are (nondispersive) dielectrics one can simply change their materials in the definitions as in a normal Meep simulation. For dispersive dielectrics a few extra steps are needed, which is discussed in a later section.
 
 First define the geometry, consisting of the two metal sidewalls (each 2 pixels thick) and the two blocks:
 
@@ -148,10 +148,9 @@ $$f_n(x) = \sqrt{\frac{c_n}{L}} \cos \left(\frac{n\pi x}{L}\right), ~n = 0,1,\ld
 
 where $c_n = 1$ if $n=0$ and $c_n=2$ otherwise, $L$ is the side length (if each side has a different length, then the functions $f_n(x)$ will differ for each side). An illustration of these functions for the system under consideration, compared to point sources, is shown below:
 
-
-![400px|thumb|center|Schematic of Casimir calculation via a sequence of time-domain sources around the integration surface.](../images/Point-dct.jpg)
-
-
+<center>
+![](../images/Point-dct.jpg)
+</center>
 
 For the simulation, we must truncate the sum over $n$ to some finite upper limit `n-max`. Typically, a value of 10 is sufficient to get results to within 1%:
 
@@ -159,13 +158,11 @@ For the simulation, we must truncate the sum over $n$ to some finite upper limit
  (define-param n-max 10) 
 ```
 
-
 To illustrate the field profiles, below we show four snapshots at different times for what we term $\Gamma^E_{yy;n=2}(\mathbf{x},t)$, the $y$-component of the electric field response to a $y$-polarized current source with spatial dependence $f_2(x)$
 
-
-![center|600px|thumb|Snapshots of computed fields from sources around the stress surface.](../images/Field-visualization.jpg)
-
-
+<center>
+![](../images/Field-visualization.jpg)
+</center>
 
 As the fields continue to propagate, the finite conductivity `Sigma` causes the fields to decay rapidly. By $T\simeq 20$ the fields have all but vanished. Note that the user is not confined to use this Cosine basis, but that this type is already built into meep and therefore offers the greatest convenience.
 
@@ -208,10 +205,9 @@ To find the casimir force, one simply iterates over the parameter lists construc
 
 The result, when sampled over many values of $h$, is a force curve that varies non monotonically in $h$:
 
-
-![center|350px](../images/Dblocks-force.jpg)
-
-
+<center>
+![](../images/Dblocks-force.jpg)
+</center>
 
 Here the force is measured relative to the value obtained by the PFA (proximity-force approximation), a simple approximation for the force used in lieu of an exact analytic expression or a numerically accurate value. As is clear from the figure, the behavior of the force deviates significantly from the PFA, indicating the need for accurate algorithms for computing the Casimir force.
 
@@ -230,10 +226,9 @@ This numerical artifact can be removed by a simple procedure, called vacuum subt
 
 The procedure for the double blocks case is illustrated below:
 
-
-![center](../images/Vac.jpg)
-
-
+<center>
+![](../images/Vac.jpg)
+</center>
 
 In an ideal case of infinite spatial resolution, only the first term is nonzero. However, due to discretization effects, for finite resolution they can be quite large and will depend on the source surface. The total vacuum-subtracted force, however, will still be well-behaved for finite resolution.
 
@@ -387,17 +382,25 @@ As discussed in Part I, the treatment of dispersive materials is very similar to
 
 A lossless dielectric material with a single Lorentzian resonance, e.g., Silicon, is defined by a resonant frequency $\omega_0$ (this is the angular frequency in radians), an oscillator strength $C$ and a high frequency dielectric $\epsilon_f$:
 
+<center>
+
 $\epsilon(\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2}$
+
+</center>
 
 (here we follow the notations of Parts I and II, rather than the rest of the wiki, in which $\xi$ denotes real frequency in FDTD, and $\omega$ denotes the more abstract complex frequency mapping).
 
 The conductivity mapping $\omega^2 = \xi^2 + i \sigma \xi$ must be applied to all dispersions. Applying this to $\epsilon(\xi)$ above gives the new dispersion function:
 
+<center>
+
 $\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2 - i\sigma \xi}$
+
+</center>
 
 So the new dispersion is a Lorentzian, but with an additional loss term. This is the correct material to define in Meep.
 
-It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Scheme Tutorials/Material Dispersion](../Scheme_Tutorials/Material_Dispersion.md)). Here is how we go about it (further material examples are defined in materials.scm ([6](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm)), and rods-plates.ctl ([7](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl)) demonstrates their use.
+It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Scheme Tutorials/Material Dispersion](../Scheme_Tutorials/Material_Dispersion.md)). Here is how we go about it (further material examples are defined in [materials.scm](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm), and [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) demonstrates their use.
 
 ```
  (define length-scale 1e-6) ;length scale - units of 1 micron
@@ -419,14 +422,13 @@ Now the `Silicon` that we have defined can be use in the Casimir calculations li
 Example: Z-Invariant Geometry
 -----------------------------
 
-An example geometry which is $z$-invariant is shown below:
+An example geometry in 3d which is $z$-invariant is shown below:
 
+<center>
+![](../images/Extruded-blocks.jpg)
+</center>
 
-![250px|thumb|center|Example of a three-dimensional, $z$-invariant geometry](../images/Extruded-blocks.jpg)
-
-
-
-This example is also treated in rods-plates.ctl ([8](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl)). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
+This example is also treated in the [sample file](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
 
 $$\mathbf{F}^{3D} = \int_0^\infty dk_z F^{2D}(k_z)$$
 
@@ -479,10 +481,9 @@ Example: Cylindrical Symmetry
 
 For systems with cylindrical symmetry, the Casimir force computation can be reduced as in the case of $z$-invariant geometries to a sum of forces obtained from two-dimensional computations. An example is a recently-discovered system [Levin et. al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.105.090403) that exhibits a repulsive Casimir force between vacuum-separated dielectrics. This system is shown below:
 
-
-![250px|thumb|center|Setup of the three-dimensional, cylindrically symmetric geometry of Levin et. al. As the ellipse approaches the hole in the plane, it feels a repulsive Casimir force upwards.](../images/Repulsive.jpg)
-
-
+<center>
+![](../images/Repulsive.jpg)
+</center>
 
 The hole in the bottom plane, coupled with the high degree of anisotropy of the upper elliptical particle, results in a repulsive force when the particle is centered above the hole. This system is simulated in [repulsive-particle.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/repulsive-particle.ctl). The size parameters used in the ctl file are noted on the figure above.
 
@@ -516,10 +517,9 @@ Example: Three-Dimensional Periodic Systems
 
 Three-dimensional periodic systems are another example of systems that can be easily analyzed with Meep. In this example, we consider the Casimir force between a periodic array of dielectric spheres and a metallic plate, shown below and simulated in periodic-sphere-plate.ctl ([9](http://ab-initio.mit.edu/~mccauley/casimir-examples/periodic-sphere-plate.ctl)):
 
-
-![350px|thumb|center|Setup of the three-dimensional periodic array of dielectric spheres over metal. The unit cell consists of a single sphere and a square segment of the metal plate](../images/Spheres-plane.jpg)
-
-
+<center>
+![](../images/Spheres-plane.jpg)
+</center>
 
 In this example, the plate can either be perfect metal, or dispersive gold (the default). Set `dispersion?` to false to get a perfect metal plate. We denote the $z$-direction to be the vector normal to the plate, and the $x$ and $y$ directions to be parallel to the plate. In this case we have two directions of Bloch periodicity, $k_x$ and $k_y$. However, unlike the previous case of $z$-invariance, here the source surface $S$ intersects the periodic bounding surface.
 
