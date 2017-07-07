@@ -1483,6 +1483,7 @@ void set_materials_from_geometry(meep::structure *s,
   geom_epsilon::verbose=verbose;
 
   // set global variables in libctlgeom based on data fields in s
+  geom_initialize();
   default_material     = vacuum;
   ensure_periodicity   = _ensure_periodicity;
   meep::grid_volume gv = s->gv;

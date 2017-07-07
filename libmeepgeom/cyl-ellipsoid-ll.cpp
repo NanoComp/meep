@@ -82,10 +82,14 @@ int main(int argc, char *argv[])
   //vector3 size   = {1.0, 2.0, HUGE_VAL};
   vector3 size   = {1.0, 2.0, 2.0/1.0e20};
   objects[0] = make_cylinder(dielectric, center, radius, height, zhat);
-  //objects[1] = make_ellipsoid(meep_geom::vacuum, center, xhat, yhat, zhat, size);
-  //geometric_object_list g={ 2, objects };
-geometric_object_list g={ 1, objects };
+  objects[1] = make_ellipsoid(meep_geom::vacuum, center, xhat, yhat, zhat, size);
+  geometric_object_list g={ 2, objects };
   meep_geom::set_materials_from_geometry(&the_structure, g);
+
+/***************************************************************/
+vector3 shiftby;
+geometric_object mygo=object_of_point0(g, center, &shiftby);
+/***************************************************************/
 
   // (set! sources (list (make source (src (make gaussian-src (frequency 1) (fwidth 0.1)))
                      //  (center 0 0 0) (component src-cmpt))))
@@ -94,8 +98,7 @@ geometric_object_list g={ 1, objects };
   double df   = 0.1;
   gaussian_src_time src(fcen, df);
   vec src_point = vec(0.0, 0.0);
- // vec src_size  = vec(10.0, 10.0);
-  vec src_size  = vec(2.0/1e20, 2.0/1e20);
+  vec src_size  = vec(10.0, 10.0);
   f.add_volume_source(src_cmpt, src, volume(src_point, src_size));
 
   //(define print-stuff (lambda () (print "field:, " (get-field-point src-cmpt (vector3 4.13 3.75 0)) "\n")))
