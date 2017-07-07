@@ -22,9 +22,10 @@ _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 TEST_DIR = tests
-TESTS =                           \
-    $(TEST_DIR)/test_geom.py      \
-    $(TEST_DIR)/test_physical.py  \
+TESTS =                               \
+	$(TEST_DIR)/test_cyl_ellipsoid.py \
+    $(TEST_DIR)/test_geom.py          \
+    $(TEST_DIR)/test_physical.py      \
     $(TEST_DIR)/test_ring.py
 
 TEST_EXTENSIONS = .py
