@@ -46,43 +46,41 @@ class Medium(object):
         self.B_conductivity_diag = B_conductivity_diag
 
 
-class Susceptibility(object):
+class Susceptibility:
 
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3()):
         self.sigma_diag = sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
 
-# TODO(chogan): Susceptibility sublcasses
+class LorentzianSusceptibility(Susceptibility):
 
-# class LorentzianSusceptibility(Susceptibility):
-
-#     def __init__(self, sigma_diag, frequency, gamma, **kwargs):
-#         super(LorentzianSusceptibility, self).__init__(sigma_diag, **kwargs)
-#         self.frequency = frequency
-#         self.gamma = gamma
+    def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
+        super(LorentzianSusceptibility, self).__init__(**kwargs)
+        self.frequency = frequency
+        self.gamma = gamma
 
 
-# class DrudeSusceptibility(Susceptibility):
+class DrudeSusceptibility(Susceptibility):
 
-#     def __init__(self, sigma_diag, frequency, gamma, **kwargs):
-#         super(DrudeSusceptibility, self).__init__(sigma_diag, **kwargs)
-#         self.frequency = frequency
-#         self.gamma = gamma
-
-
-# class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
-
-#     def __init__(self, sigma_diag, frequency, gamma, noise_amp, **kwargs):
-#         super(NoisyLorentzianSusceptibility, self).__init__(sigma_diag, frequency, **kwargs)
-#         self.noise_amp = noise_amp
+    def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
+        super(DrudeSusceptibility, self).__init__(**kwargs)
+        self.frequency = frequency
+        self.gamma = gamma
 
 
-# class NoisyDrudeSusceptibility(DrudeSusceptibility):
+class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
 
-#     def __init__(self, sigma_diag, frequency, gamma, noise_amp, **kwargs):
-#         super(NoisyDrudeSusceptibility, self).__init__(sigma_diag, frequency, **kwargs)
-#         self.noise_amp = noise_amp
+    def __init__(self, noise_amp=0.0, **kwargs):
+        super(NoisyLorentzianSusceptibility, self).__init__(**kwargs)
+        self.noise_amp = noise_amp
+
+
+class NoisyDrudeSusceptibility(DrudeSusceptibility):
+
+    def __init__(self, noise_amp=0.0, **kwargs):
+        super(NoisyDrudeSusceptibility, self).__init__(**kwargs)
+        self.noise_amp = noise_amp
 
 
 class GeometricObject(object):
@@ -168,53 +166,8 @@ class Block(GeometricObject):
         self.e3 = e3
         super(Block, self).__init__(**kwargs)
 
-    # TODO(chogan): post-processed properties
-
-    # @property
-    # def e1(self):
-    #     return self._e1
-
-    # @property
-    # def e2(self):
-    #     return self._e2
-
-    # @property
-    # def e3(self):
-    #     return self._e3
-
-    # # TODO(chogan): Cache the result?
-    # @property
-    # def projection_matrix(self):
-    #     return Matrix3x3(self.e1, self.e2, self.e3).inverse()
-
-    # @e1.setter
-    # def e1(self, val):
-    #     self._e1 = self.process_func1(val)
-
-    # @e2.setter
-    # def e2(self, val):
-    #     self._e2 = self.process_func2(val)
-
-    # @e3.setter
-    # def e3(self, val):
-    #     self._e3 = self.process_func3(val)
-
 
 class Ellipsoid(Block):
 
     def __init__(self, **kwargs):
-        self._inverse_semi_axes = None
         super(Ellipsoid, self).__init__(**kwargs)
-
-    @property
-    def inverse_semi_axes(self):
-        # TODO(chogan): Compute map(lambda x: 2.0 / x, self.size) (in C?)
-        return self._inverse_semi_axes
-
-
-# TODO(chogan): Write tests
-class CompoundGeometricObject(GeometricObject):
-
-    def __init__(self, component_objects=[], **kwargs):
-        super(CompoundGeometricObject, self).__init__(**kwargs)
-        self.component_objects = component_objects

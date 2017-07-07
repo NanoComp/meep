@@ -62,9 +62,9 @@ static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *w);
 static int pycone_to_cone(PyObject *py_cone, geometric_object *cone);
 static int pyblock_to_block(PyObject *py_blk, geometric_object *blk);
 static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
+static std::string py_class_name_as_string(PyObject *po);
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
-static int pycgo_to_cgo(PyObject *py_cgo, geometric_object *o);
 
 #include "typemap_utils.cpp"
 
@@ -109,7 +109,9 @@ static int pycgo_to_cgo(PyObject *py_cgo, geometric_object *o);
 }
 
 %typemap(freearg) GEOMETRIC_OBJECT {
-    geometric_object_destroy($1);
+    if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
+        geometric_object_destroy($1);
+    }
 }
 
 // Typemap suite for boolean
@@ -135,6 +137,22 @@ static int pycgo_to_cgo(PyObject *py_cgo, geometric_object *o);
     for(int i = 0; i < $1.num_items; i++) {
         geometric_object_destroy($1.items[i]);
     }
+    delete[] $1.items;
+}
+
+// Typemap suite for susceptibility_list
+
+%typecheck(SWIG_TYPECHECK_POINTER) susceptibility_list {
+    $1 = PyList_Check($input);
+}
+
+%typemap(in) susceptibility_list {
+    if(!py_list_to_susceptibility_list($input, &$1)) {
+        SWIG_fail;
+    }
+}
+
+%typemap(freearg) susceptibility_list {
     delete[] $1.items;
 }
 

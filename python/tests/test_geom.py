@@ -90,13 +90,12 @@ class TestCylinder(unittest.TestCase):
         self.assertNotIn(gm.Vector3(2.0001, 0, 0), c)
         self.assertNotIn(gm.Vector3(10, 10, 10), c)
 
-    # TODO(chogan): Broken on python 3
-    # def test_missing_required_arg_throws(self):
-    #     c = gm.Cylinder(radius=2.0, height=4.0, center=None)
+    def test_missing_required_arg_throws(self):
+        c = gm.Cylinder(radius=2.0, height=4.0, center=None)
 
-    #     with self.assertRaises(ValueError) as ctx:
-    #         self.assertIn(zeros(), c)
-    #         self.assertIn("Vector3 is not initialized", ctx.exception)
+        with self.assertRaises(ValueError) as ctx:
+            self.assertIn(zeros(), c)
+            self.assertIn("Vector3 is not initialized", ctx.exception)
 
 
 class TestWedge(unittest.TestCase):
@@ -130,23 +129,6 @@ class TestEllipsoid(unittest.TestCase):
     def test_contains_point(self):
         e = gm.Ellipsoid(size=ones(), center=zeros())
         self.assertIn(zeros(), e)
-
-    # TODO(chogan): Allow python to read this member after it's computed (in C?)
-    def test_inverse_semi_axes(self):
-        pass
-
-
-# TODO(chogan): Need to call a method that takes a CGO to test its typemap
-class TestCompoundGeometricObject(unittest.TestCase):
-
-    def test_convert_pylist_to_cgo_list(self):
-        s = gm.Sphere(center=zeros(), radius=2.0)
-        c = gm.Cylinder(center=zeros(), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
-        b = gm.Block(size=ones(), center=zeros())
-
-        cgo = gm.CompoundGeometricObject(center=zeros(), component_objects=[s, c, b])
-
-        self.assertIn(zeros(), cgo)
 
 
 if __name__ == '__main__':

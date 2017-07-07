@@ -130,12 +130,27 @@ static int get_attr_material(PyObject *po, material_type *m) {
 }
 
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s) {
-    // TODO(chogan): Accont for subclasses.
     if(!get_attr_v3(po, &s->sigma_diag, "sigma_diag") ||
-       !get_attr_v3(po, &s->sigma_offdiag, "sigma_offdiag")) {
+       !get_attr_v3(po, &s->sigma_offdiag, "sigma_offdiag") ||
+       !get_attr_dbl(po, &s->frequency, "frequency") ||
+       !get_attr_dbl(po, &s->gamma, "gamma")) {
 
         return 0;
     }
+
+    if(!get_attr_dbl(po, &s->noise_amp, "noise_amp")) {
+        s->noise_amp = 0;
+    }
+
+    std::string class_name = py_class_name_as_string(po);
+
+    if(class_name.find(std::string("Drude")) != std::string::npos) {
+        s->drude = true;
+    } else {
+        s->drude = false;
+    }
+
+    s->is_self = false;
 
     return 1;
 }
@@ -151,13 +166,17 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
     sl->items = new susceptibility_struct[length];
 
     for(int i = 0; i < length; i++) {
-        // TODO(chogan): Account for subclasses
         susceptibility_struct s;
         if(!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &s)) {
             return 0;
         }
         sl->items[i].sigma_diag = s.sigma_diag;
         sl->items[i].sigma_offdiag = s.sigma_offdiag;
+        sl->items[i].frequency = s.frequency;
+        sl->items[i].gamma = s.gamma;
+        sl->items[i].noise_amp = s.noise_amp;
+        sl->items[i].drude = s.drude;
+        sl->items[i].is_self = s.is_self;
     }
 
     return 1;
@@ -220,6 +239,7 @@ static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
        !get_attr_dbl(py_sphere, &radius, "radius") ||
        !get_attr_material(py_sphere, &material)) {
 
+        go->subclass.sphere_data = NULL;
         return 0;
     }
 
@@ -239,6 +259,7 @@ static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *cyl) {
        !get_attr_dbl(py_cyl, &height, "height") ||
        !get_attr_material(py_cyl, &material)) {
 
+        cyl->subclass.cylinder_data = NULL;
         return 0;
     }
 
@@ -259,6 +280,8 @@ static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *wedge) {
     if(!get_attr_dbl(py_wedge, &wedge_angle, "wedge_angle") ||
        !get_attr_v3(py_wedge, &wedge_start, "wedge_start")) {
 
+        wedge->subclass.cylinder_data = NULL;
+        geometric_object_destroy(cyl);
         return 0;
     }
 
@@ -281,6 +304,8 @@ static int pycone_to_cone(PyObject *py_cone, geometric_object *cone) {
 
     double radius2;
     if(!get_attr_dbl(py_cone, &radius2, "radius2")) {
+        cone->subclass.cylinder_data = NULL;
+        geometric_object_destroy(cyl);
         return 0;
     }
 
@@ -306,6 +331,7 @@ static int pyblock_to_block(PyObject *py_blk, geometric_object *blk) {
        !get_attr_v3(py_blk, &e3, "e3") ||
        !get_attr_v3(py_blk, &size, "size")) {
 
+        blk->subclass.block_data = NULL;
         return 0;
     }
 
@@ -356,46 +382,23 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
     return 1;
 }
 
-static int pycgo_to_cgo(PyObject *py_cgo, geometric_object *o) {
-    vector3 center;
-    material_type material;
-
-    if(!get_attr_v3(py_cgo, &center, "center") || !get_attr_material(py_cgo, &material)) {
-        return 0;
-    }
-
-    *o = make_geometric_object(material, center);
-
-    o->which_subclass = geometric_object::COMPOUND_GEOMETRIC_OBJECT;
-    o->subclass.compound_geometric_object_data = new compound_geometric_object();
-
-    PyObject *py_component_objects = PyObject_GetAttrString(py_cgo, "component_objects");
-
-    if(!py_component_objects) {
-        return 0;
-    }
-
-    if(!py_list_to_gobj_list(py_component_objects, &o->subclass.compound_geometric_object_data->component_objects)) {
-        return 0;
-    }
-
-    Py_XDECREF(py_component_objects);
-
-    return 1;
-}
-
-static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
-    int success = 0;
+static std::string py_class_name_as_string(PyObject *po) {
     PyObject *py_type = PyObject_Type(po);
     PyObject *name = PyObject_GetAttrString(py_type, "__name__");
 
     char *bytes = PyObject_ToCharPtr(name);
 
-    if(!bytes) {
-        return 0;
-    }
+    std::string class_name(bytes);
 
-    std::string go_type(bytes);
+    Py_XDECREF(py_type);
+    Py_XDECREF(name);
+
+    return class_name;
+}
+
+static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
+    int success = 0;
+    std::string go_type = py_class_name_as_string(po);
 
     if(go_type == "Sphere") {
         success = pysphere_to_sphere(po, o);
@@ -415,15 +418,10 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     else if(go_type == "Ellipsoid") {
         success = pyellipsoid_to_ellipsoid(po, o);
     }
-    else if(go_type == "CompoundGeometricObject") {
-        success = pycgo_to_cgo(po, o);
-    }
     else {
         PyErr_Format(PyExc_TypeError, "Error: %s is not a valid GeometricObject type\n", go_type.c_str());
         return 0;
     }
-    Py_XDECREF(py_type);
-    Py_XDECREF(name);
 
     return success;
 }
