@@ -19,7 +19,7 @@ Don't worry, though—simple things are simple and you don't need to be an exper
 
 The ctl file is actually implemented on top of the [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) library, a set of utilities that are in turn built on top of the Scheme language. Thus, there are three sources of possible commands and syntax for a ctl file:
 
--   [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) a powerful and beautiful programming language developed at MIT. The syntax is particularly simple: all statements are of the form `(function` `arguments...)`. We run Scheme under the [GNU Guile](https://en.wikipedia.org/wiki/GNU_Guile) interpreter which is designed to be plugged into programs as a scripting and extension language. You don't need to know much Scheme for a basic ctl file, but it is always there if you need it. More information is available on [Guile and Scheme](Guile_and_Scheme_Information.md).
+-   [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) a powerful and beautiful programming language developed at MIT. The syntax is particularly simple: all statements are of the form `(function` `arguments...)`. We run Scheme under the [Guile](https://en.wikipedia.org/wiki/GNU_Guile) interpreter which is designed to be plugged into programs as a scripting and extension language. You don't need to know much Scheme for a basic ctl file, but it is always there if you need it. More information is available on [Guile and Scheme](Guile_and_Scheme_Information.md).
 -   [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl), a library that we built on top of Guile to simplify communication between Scheme and scientific computation software. libctl sets the basic tone of the interface and defines a number of useful functions (such as multi-variable optimization, numeric integration, and so on). See the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual) pages.
 -   Meep itself, which defines all the interface features that are specific to FDTD calculations. This manual is primarily focused on documenting these features.
 
@@ -56,7 +56,7 @@ Now, we can add the waveguide. Most commonly, the structure is specified by a `l
                       (material (make dielectric (epsilon 12))))))
 ```
 
-![right|thumb|Dielectric function (black = high, white = air), for straight waveguide simulation.](images/Tutorial-wvg-straight-eps-000000.00.png)
+<center>![](images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 
  The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) (the center of the computational cell). By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown at right.
 
@@ -110,7 +110,7 @@ unix% h5topng -S3 -Zc dkbluered -a yarg -A eps-000000.00.h5 ez-000200.0
 
 Briefly, the `-Zc` `dkbluered` makes the color scale go from dark blue (negative) to white (zero) to dark red (positive), and the `-a/-A` options overlay the dielectric function as light gray contours. This results in the image:  
 
-![center|300px](images/Tutorial-wvg-straight-ez-000200.00.png)
+<center>![](images/Tutorial-wvg-straight-ez-000200.00.png)</center>
 
 Here, we see that the the source has excited the waveguide mode, but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML layers. If we look carefully, we see somethinge else—the image is "speckled" towards the right side. This is because, by turning on the current abruptly at $t=0$, we have excited high-frequency components (very high order modes), and we have not waited long enough for them to die away; we'll eliminate these in the next section by turning on the source more smoothly.
 
@@ -135,7 +135,7 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 (set! resolution 10)
 ```
 
-![center|300px|right|Bent waveguide dielectric function and coordinate system.](images/Tutorial-wvg-bent-eps-000000.00.png)
+<center>![](images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
  Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12×1 is centered at $(-2,-3.5)$. Also shown in green is the source plane at $x=-7$ (see below).
 
@@ -180,11 +180,11 @@ unix% convert ez.t*.png ez.gif
 
 Here, we are using an animated GIF format for the output, which is not the most efficient animation format (e.g. `ez.mpg`, for [MPEG](https://en.wikipedia.org/wiki/MPEG) format, would be better), but it is unfortunately the only format supported by this Wiki software. This results in the following animation :
 
-![thumb|162px|right|field propagation through a waveguide bend](images/Tutorial-wvg-ez.gif)
+<center>![](images/Tutorial-wvg-ez.gif)</center>
 
-![thumb|161px|right|field snapshot in a waveguide bend](images/Tutorial-wvg-bent2-ez-000300.00.png)
+<center>![](images/Tutorial-wvg-bent2-ez-000300.00.png)</center>
 
-![thumb|80px|right|x by time slice of bent waveguide (vertical = time).](images/Tutorial-wvg-bent-ez-tslice.png)
+<center>![](images/Tutorial-wvg-bent-ez-tslice.png)</center>
 
  It is clear that the transmission around the bend is rather low for this frequency and structure—both large reflection and large radiation loss are clearly visible. Moreover, since we operating are just barely below the cutoff for single-mode behavior, we are able to excite a second *leaky* mode after the waveguide bend, whose second-order mode pattern (superimposed with the fundamental mode) is apparent in the animation. At right, we show a field snapshot from a simulation with a larger cell along the $y$ direction, in which you can see that the second-order leaky mode decays away, leaving us with the fundamental mode propagating downward.
 
@@ -397,13 +397,9 @@ unix% grep flux1: bend0.out > bend0.dat
 unix% grep flux1: bend.out > bend.dat
 ```
 
-
 Now, we import them to Matlab (using its `dlmread` command), and plot the results:
 
-
-![center|Transmission/reflection/loss around a 90° waveguide bend.](images/Tut-bend-flux.png)
-
-
+<center>![](images/Tut-bend-flux.png)</center>
 
 What are we plotting here? The transmission is the transmitted flux (second column of `bend.dat`) *divided by* the incident flux (second column of `bend0.dat`), to give us the *fraction* of power transmitted. The reflection is the reflected flux (third column of `bend.dat`) *divided by* the incident flux (second column of `bend0.dat`); we also have to multiply by $-1$ because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. Finally, the loss is simply 1 - transmission - reflection.
 
@@ -515,9 +511,11 @@ unix% convert ring-ez-*.png ring-ez-0.118.gif
 
 The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are below, in which you can clearly see the radiating fields that produce the losses:
 
-![center|ω=0.118 mode](images/Tut-ring-ez-0.118.gif)
-![center|ω=0.147 mode](images/Tut-ring-ez-0.147.gif)
-![center|ω=0.175 mode](images/Tut-ring-ez-0.175.gif)
+<center>
+![](images/Tut-ring-ez-0.118.gif)
+![](images/Tut-ring-ez-0.147.gif)
+![](images/Tut-ring-ez-0.175.gif)
+</center>
 
 (Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding an angular φ dependence $e^{\pm i m\phi}$ for $m$ = 3, 4, and 5 in this case.)
 
