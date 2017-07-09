@@ -401,7 +401,6 @@ static std::string py_class_name_as_string(PyObject *po) {
 
     Py_XDECREF(py_type);
     Py_XDECREF(name);
-    delete bytes;
 
     return class_name;
 }
