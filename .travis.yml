@@ -23,4 +23,15 @@ script:
   - make && make check && make install
   # Build and test pymeep with python 3.6
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
-  - cd python && make clean && make && make check && make install
+  - pushd python && make clean && make && make check && make install && popd
+
+before_deploy:
+  - make dist
+deploy:
+  provider: releases
+  api_key:
+    secure: QgfuB0UAOE7oIQxWaaiVP1ofrBIQql3CW0aX3r8FJewk1jgK7yn+owpgtUHWvdV+77q14+6GFW0ljq/RaA4O1ltttg15DhaJ2tpmnEnEzJWOR1uB2hcmiSn0WO1UF6rcwtS4XX2KOhsbRl7Yt7rNb+GoQB3yvya8CQJ2NwWt7YLdWJblbPeTYY4xm5uqHt3vXltO3vOofivc+e/dykFzNoeY6bSNemc2aCDHyZAxU70D6T1gbd/VbNF/f4gmPmnF13tfi318vRJyM1LRQs/T34GOjEnZj6jf9p1RQaYgSf7eqeNVT5THy1NQDmeMWUMCiDY9O+xQiZ3TwTKCrMLuEJtKMp9Qpv7hO/8xdveu10dzJjpQbslppxvdnT9EeA9eATTl8oAAX993yaAovQySIiUT98Rt2+ComhVB8AEsR5zmzUHFOSuPhvjC+75W4FE8t3VtMeUhEowTzlqlbfomKm3fR6MB/sA0lG8+wo2w1zSftFPAGOITLRDXbftkqQb9o2VhEeWa0x2l6aigCJ+/8+PAn3UeTT+lFH96jy9lWHKLD9+lhGlwoUp514R9zlmaCxZHRu71eaXr0nYWaw5zktAB26G2brb3km4FQ9P1nrmfykvxFaEcwQOGs6K3qE4J+KpVha6wBpBh+DycfUPDFKvnO/6SSeO35fIBEplJj+A=
+  file: "meep-${TRAVIS_TAG}.tar.gz"
+  skip_cleanup: true
+  on:
+    tags: true
