@@ -44,6 +44,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %{
 PyObject *py_callback = NULL;
 
+static PyObject *py_geometric_object();
 static PyObject* vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
@@ -95,11 +96,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 // Typemap suite for GEOMETRIC_OBJECT
 
 %typecheck(SWIG_TYPECHECK_POINTER) GEOMETRIC_OBJECT {
-    PyObject *geom_mod = PyImport_ImportModule("geom");
-    PyObject *geom_dict = PyModule_GetDict(geom_mod);
-    PyObject *py_sphere = PyDict_GetItemString(geom_dict, "GeometricObject");
-    $1 = PyObject_IsInstance($input, py_sphere);
-    Py_XDECREF(geom_mod);
+    $1 = PyObject_IsInstance($input, py_geometric_object());
 }
 
 %typemap(in) GEOMETRIC_OBJECT {
@@ -117,8 +114,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 // Typemap suite for boolean
 
 %typemap(out) boolean {
-    long b = $1 == 0 ? 0 : 1;
-    $result = PyBool_FromLong(b);
+    $result = PyBool_FromLong($1);
 }
 
 // Typemap suite for geometric_object_list

@@ -17,7 +17,7 @@ def ones():
 class TestSphere(unittest.TestCase):
 
     def test_kwargs_passed_to_parent(self):
-        s = gm.Sphere()
+        s = gm.Sphere(1.0)
         self.assertEqual(s.material.epsilon_diag, ones())
         self.assertEqual(s.center, zeros())
         self.assertEqual(s.radius, 1)
@@ -27,7 +27,7 @@ class TestSphere(unittest.TestCase):
         self.assertEqual(s.center, zeros())
         self.assertEqual(s.radius, 2.0)
 
-        s = gm.Sphere(center=ones())
+        s = gm.Sphere(1.0, center=ones())
         self.assertEqual(s.material.epsilon_diag, ones())
         self.assertEqual(s.center, ones())
         self.assertEqual(s.radius, 1)
@@ -65,15 +65,15 @@ class TestSphere(unittest.TestCase):
 class TestCylinder(unittest.TestCase):
 
     def test_non_neg_height_constructor(self):
-        gm.Cylinder(height=0.0)
-        gm.Cylinder(height=1.0)
+        gm.Cylinder(radius=1.0, height=0.0)
+        gm.Cylinder(radius=1.0, height=1.0)
 
         with self.assertRaises(ValueError) as ctx:
-            gm.Cylinder(height=-1)
+            gm.Cylinder(radius=1.0, height=-1)
             self.assertIn("Got -1", ctx.exception)
 
     def test_non_neg_height_setter(self):
-        s = gm.Cylinder(height=0.0)
+        s = gm.Cylinder(radius=1.0, height=0.0)
         s.height = 1.0
 
         with self.assertRaises(ValueError) as ctx:

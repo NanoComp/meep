@@ -17,13 +17,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
-_meep_la_LIBADD = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la -L$(top_srcdir)/libmeepgeom/.libs $(PYTHON_LIBS) -lctlgeom -lmeepgeom
+_meep_la_LIBADD = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la $(top_builddir)/libmeepgeom/libmeepgeom.la $(PYTHON_LIBS) -lctlgeom
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 TEST_DIR = tests
 TESTS =                               \
-	$(TEST_DIR)/test_cyl_ellipsoid.py \
+    $(TEST_DIR)/test_cyl_ellipsoid.py \
     $(TEST_DIR)/test_geom.py          \
     $(TEST_DIR)/test_physical.py      \
     $(TEST_DIR)/test_ring.py

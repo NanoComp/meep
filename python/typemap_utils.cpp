@@ -23,6 +23,15 @@
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
 #endif
 
+static PyObject *py_geometric_object() {
+    static PyObject *geometric_object = NULL;
+    if (geometric_object == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("geom");
+        geometric_object = PyObject_GetAttrString(geom_mod, "GeometricObject");
+        Py_XDECREF(geom_mod);
+    }
+    return geometric_object;
+}
 
 static PyObject* vec2py(const meep::vec &v) {
 
@@ -392,6 +401,7 @@ static std::string py_class_name_as_string(PyObject *po) {
 
     Py_XDECREF(py_type);
     Py_XDECREF(name);
+    delete bytes;
 
     return class_name;
 }

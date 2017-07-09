@@ -45,10 +45,8 @@ def main(args):
     objects = []
     n2 = n * n
     dielectric = gm.Medium(epsilon_diag=gm.Vector3(n2, n2, n2))
-    v3zero = gm.Vector3(0.0, 0.0, 0.0)
-    zaxis = gm.Vector3(0.0, 0.0, 1.0)
-    objects.append(gm.Cylinder(material=dielectric, center=v3zero, radius=r + w, height=float('inf'), axis=zaxis))
-    objects.append(gm.Cylinder(material=gm.Medium(), center=v3zero, radius=r, height=float('inf'), axis=zaxis))
+    objects.append(gm.Cylinder(r + w, material=dielectric))
+    objects.append(gm.Cylinder(r))
 
     mp.set_materials_from_geometry(the_structure, objects)
     f = mp.fields(the_structure)

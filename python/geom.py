@@ -2,8 +2,11 @@ import math
 import meep as mp
 
 
-def non_negative(x):
-    return x >= 0
+def check_nonnegative(prop, val):
+    if val >= 0:
+        return val
+    else:
+        raise ValueError("{} cannot be negative. Got {}".format(prop, val))
 
 
 class Vector3(object):
@@ -95,7 +98,7 @@ class GeometricObject(object):
 
 class Sphere(GeometricObject):
 
-    def __init__(self, radius=1.0, **kwargs):
+    def __init__(self, radius, **kwargs):
         self.radius = radius
         super(Sphere, self).__init__(**kwargs)
 
@@ -105,15 +108,12 @@ class Sphere(GeometricObject):
 
     @radius.setter
     def radius(self, val):
-        if not val or non_negative(val):
-            self._radius = val
-        else:
-            raise ValueError("Radius cannot be negative. Got {}".format(val))
+        self._radius = check_nonnegative("Sphere.radius", val)
 
 
 class Cylinder(GeometricObject):
 
-    def __init__(self, axis=Vector3(0, 0, 1), radius=1.0, height=1.0, **kwargs):
+    def __init__(self, radius, axis=Vector3(0, 0, 1), height=float('inf'), **kwargs):
         self.axis = axis
         self.radius = radius
         self.height = height
@@ -129,32 +129,26 @@ class Cylinder(GeometricObject):
 
     @radius.setter
     def radius(self, val):
-        if non_negative(val) or not val:
-            self._radius = val
-        else:
-            raise ValueError("Cylinder.radius cannot be negative: {}".format(val))
+        self._radius = check_nonnegative("Cylinder.radius", val)
 
     @height.setter
     def height(self, val):
-        if non_negative(val) or not val:
-            self._height = val
-        else:
-            raise ValueError("Cylinder.height cannot be negative: {}".format(val))
+        self._height = check_nonnegative("Cylinder.height", val)
 
 
 class Wedge(Cylinder):
 
-    def __init__(self, wedge_angle=8 * math.atan(1), wedge_start=Vector3(1, 0, 0), **kwargs):
+    def __init__(self, radius, wedge_angle=2 * math.pi, wedge_start=Vector3(1, 0, 0), **kwargs):
         self.wedge_angle = wedge_angle
         self.wedge_start = wedge_start
-        super(Wedge, self).__init__(**kwargs)
+        super(Wedge, self).__init__(radius, **kwargs)
 
 
 class Cone(Cylinder):
 
-    def __init__(self, radius2=0, **kwargs):
+    def __init__(self, radius, radius2=0, **kwargs):
         self.radius2 = radius2
-        super(Cone, self).__init__(**kwargs)
+        super(Cone, self).__init__(radius, **kwargs)
 
 
 class Block(GeometricObject):
