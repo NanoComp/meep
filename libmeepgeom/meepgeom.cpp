@@ -425,7 +425,10 @@ public:
 
   static bool verbose;
 
-private:
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+// FIXME
+//private:
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   bool get_material_pt(material_type &material, const meep::vec &r);
 
   material_type_list extra_materials;
@@ -1519,7 +1522,7 @@ void set_materials_from_geometry(meep::structure *s,
                  meep::dimension_name(s->gv.dim));
   master_printf("Computational cell is %g x %g x %g with resolution %g\n",
                 size.x, size.y, size.z, resolution);  
-  
+   
   material_type_list extra_materials;
   extra_materials.items=0;
   extra_materials.num_items=0;

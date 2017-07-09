@@ -59,10 +59,14 @@ int main(int argc, char *argv[])
   // (if (= src-cmpt Hz) 
   //  (set! symmetries (list (make mirror-sym (direction X) (phase -1))
   //  (set! symmetries (list (make mirror-sym (direction Y) (phase -1))
+  geometry_lattice.size.x=10.0;
+  geometry_lattice.size.y=10.0;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(10.0, 10.0, resolution);
   gv.center_origin();
-  symmetry sym = (src_cmpt==Ez) ?  mirror(X,gv) + mirror(Y,gv)
-                                : -mirror(X,gv) - mirror(Y,gv);
+ // symmetry sym = (src_cmpt==Ez) ?  mirror(X,gv) + mirror(Y,gv)
+ //                               : -mirror(X,gv) - mirror(Y,gv);
+  symmetry sym = identity();
   structure the_structure(gv, dummy_eps, pml(1.0), sym);
 
   // (set! geometry (list 
@@ -75,21 +79,15 @@ int main(int argc, char *argv[])
   geometric_object objects[2];
   vector3 center = {0.0, 0.0, 0.0};
   double radius  = 3.0;
-  double height  = HUGE_VAL;
+  double height  = 1.0e20;
   vector3 xhat   = {1.0, 0.0, 0.0};
   vector3 yhat   = {0.0, 1.0, 0.0};
   vector3 zhat   = {0.0, 0.0, 1.0};
-  //vector3 size   = {1.0, 2.0, HUGE_VAL};
-  vector3 size   = {1.0, 2.0, 2.0/1.0e20};
+  vector3 size   = {1.0, 2.0, 1.0e20};
   objects[0] = make_cylinder(dielectric, center, radius, height, zhat);
   objects[1] = make_ellipsoid(meep_geom::vacuum, center, xhat, yhat, zhat, size);
   geometric_object_list g={ 2, objects };
   meep_geom::set_materials_from_geometry(&the_structure, g);
-
-/***************************************************************/
-vector3 shiftby;
-geometric_object mygo=object_of_point0(g, center, &shiftby);
-/***************************************************************/
 
   // (set! sources (list (make source (src (make gaussian-src (frequency 1) (fwidth 0.1)))
                      //  (center 0 0 0) (component src-cmpt))))
@@ -105,10 +103,16 @@ geometric_object mygo=object_of_point0(g, center, &shiftby);
   //
   //(run-until 23 (at-beginning output-epsilon)
   //	      (at-end print-stuff))
-  f.output_hdf5(Dielectric, f.total_volume());
+  //f.output_hdf5(Dielectric, f.total_volume());
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+  f.output_hdf5(Ez, f.total_volume());
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   double stop_time=23.0;
   while( f.round_time() < stop_time)
    f.step();
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+  f.output_hdf5(Ez, f.total_volume());
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   meep::vec eval_pt=vec(4.13, 3.75);
   std::complex<double> out_field=f.get_field(src_cmpt, eval_pt);

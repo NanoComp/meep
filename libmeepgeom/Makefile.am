@@ -6,18 +6,17 @@ lib_LTLIBRARIES = libmeepgeom.la
 pkginclude_HEADERS = meepgeom.hpp material_data.hpp
 
 #AM_CPPFLAGS = -I$(top_srcdir)/src -std=c++11
-AM_CPPFLAGS = -I$(top_srcdir)/src -ggdb
+AM_CPPFLAGS = -I$(top_srcdir)/src 
 
 libmeepgeom_la_SOURCES = \
  meepgeom.cpp meepgeom.hpp material_data.hpp
 
-libmeepgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ -ggdb
+libmeepgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ 
 
 check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll
 
 cyl_ellipsoid_ll_SOURCES = cyl-ellipsoid-ll.cpp
 cyl_ellipsoid_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
-cyl_ellipsoid_ll_LDFLAGS = -ggdb
 
 pw_source_ll_SOURCES = pw-source-ll.cpp
 pw_source_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)

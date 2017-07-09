@@ -55,11 +55,15 @@ int main(int argc, char *argv[])
 
   // (set-param! resolution 10)
   // (set! geometry-lattice (make lattice (size sxy sxy no-size)))
+  geometry_lattice.size.x=sxy;
+  geometry_lattice.size.y=sxy;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sxy, sxy, resolution);
   gv.center_origin();
 
   // (set! symmetries (list (make mirror-sym (direction Y))))
-  symmetry sym=mirror(Y, gv);
+  //symmetry sym=mirror(Y, gv);
+  symmetry sym=identity();
 
   // (set! pml-layers (list (make pml (thickness dpml))))
   // ; exploit the mirror symmetry in structure+source:
@@ -77,8 +81,8 @@ int main(int argc, char *argv[])
   geometric_object objects[2];
   vector3 v3zero = {0.0, 0.0, 0.0};
   vector3 zaxis  = {0.0, 0.0, 1.0};
-  objects[0] = make_cylinder(dielectric, v3zero, r+w, HUGE_VAL, zaxis);
-  objects[1] = make_cylinder(meep_geom::vacuum,  v3zero, r,   HUGE_VAL, zaxis);
+  objects[0] = make_cylinder(dielectric, v3zero, r+w, ENORMOUS, zaxis);
+  objects[1] = make_cylinder(meep_geom::vacuum,  v3zero, r, ENORMOUS, zaxis);
   geometric_object_list g={ 2, objects }; 
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);

@@ -85,7 +85,7 @@ void bend_flux(bool no_bend)
       objects[0] = make_block(dielectric,
                               v3(0.0, wvg_ycen),
                               e1, e2, e3,
-                              v3(HUGE_VAL, w, HUGE_VAL)
+                              v3(ENORMOUS, w, ENORMOUS)
                              );
       geometric_object_list g={ 1, objects };
       meep_geom::set_materials_from_geometry(&the_structure, g);
@@ -96,13 +96,13 @@ void bend_flux(bool no_bend)
       objects[0] = make_block(dielectric,
                               v3(-0.5*pad, wvg_ycen),
                               e1, e2, e3,
-                              v3(sx-pad, w, HUGE_VAL)
+                              v3(sx-pad, w, ENORMOUS)
                              );
    
       objects[1] = make_block(dielectric,
                               v3(wvg_xcen, 0.5*pad),
                               e1, e2, e3,
-                              v3(w, sy-pad, HUGE_VAL)
+                              v3(w, sy-pad, ENORMOUS)
                              );
    
       geometric_object_list g={ 2, objects };
