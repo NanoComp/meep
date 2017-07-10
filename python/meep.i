@@ -19,10 +19,19 @@
 
 %{
 #define SWIG_FILE_WITH_INIT
+
+#include <string>
+
 #include "meep/vec.hpp"
 #include "meep.hpp"
+#include "ctl-math.h"
+#include "ctlgeom.h"
+#include "meepgeom.hpp"
 
 using namespace meep;
+using namespace meep_geom;
+
+extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %}
 
@@ -35,39 +44,34 @@ using namespace meep;
 %{
 PyObject *py_callback = NULL;
 
-static PyObject* vec2py(const meep::vec &v) {
+static PyObject *py_geometric_object();
+static PyObject* vec2py(const meep::vec &v);
+static double py_callback_wrap(const meep::vec &v);
+static int pyv3_to_v3(PyObject *po, vector3 *v);
 
-    double x = 0, y = 0, z = 0;
+static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
+static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
+static int get_attr_material(PyObject *po, material_type *m);
+static int pymaterial_to_material(PyObject *po, material_type *mt);
 
-    switch (v.dim) {
-      case meep::D1:
-        z = v.z();
-        break;
-      case meep::D2:
-        x = v.x();
-        y = v.y();
-        break;
-      case meep::D3:
-        x = v.x();
-        y = v.y();
-        z = v.z();
-        break;
-      case meep::Dcyl:
-        return Py_BuildValue("(ddd)", v.r(), v.z(), 0);
-    }
+static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
+static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
 
-    return Py_BuildValue("(ddd)", x, y, z);
-}
+static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go);
+static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *o);
+static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *w);
+static int pycone_to_cone(PyObject *py_cone, geometric_object *cone);
+static int pyblock_to_block(PyObject *py_blk, geometric_object *blk);
+static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
+static std::string py_class_name_as_string(PyObject *po);
+static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
+static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
-static double py_callback_wrap(const meep::vec &v) {
-    PyObject *pyv = vec2py(v);
-    PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
-    Py_XDECREF(pyv);
-    double ret = PyFloat_AsDouble(pyret);
-    Py_XDECREF(pyret);
-    return ret;
-}
+#include "typemap_utils.cpp"
+
 %}
+
+// Typemap suite for double func(meep::vec &)
 
 %typemap(in) double (*)(const meep::vec &) {
   $1 = py_callback_wrap;
@@ -79,6 +83,73 @@ static double py_callback_wrap(const meep::vec &v) {
 }
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
   $1 = PyCallable_Check($input);
+}
+
+// Typemap suite for vector3
+
+%typemap(in) vector3 {
+    if(!pyv3_to_v3($input, &$1)) {
+        SWIG_fail;
+    }
+}
+
+// Typemap suite for GEOMETRIC_OBJECT
+
+%typecheck(SWIG_TYPECHECK_POINTER) GEOMETRIC_OBJECT {
+    $1 = PyObject_IsInstance($input, py_geometric_object());
+}
+
+%typemap(in) GEOMETRIC_OBJECT {
+    if(!py_gobj_to_gobj($input, &$1)) {
+        SWIG_fail;
+    }
+}
+
+%typemap(freearg) GEOMETRIC_OBJECT {
+    if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
+        geometric_object_destroy($1);
+    }
+}
+
+// Typemap suite for boolean
+
+%typemap(out) boolean {
+    $result = PyBool_FromLong($1);
+}
+
+// Typemap suite for geometric_object_list
+
+%typecheck(SWIG_TYPECHECK_POINTER) geometric_object_list {
+    $1 = PyList_Check($input);
+}
+
+%typemap(in) geometric_object_list {
+    if(!py_list_to_gobj_list($input, &$1)) {
+        SWIG_fail;
+    }
+}
+
+%typemap(freearg) geometric_object_list {
+    for(int i = 0; i < $1.num_items; i++) {
+        geometric_object_destroy($1.items[i]);
+    }
+    delete[] $1.items;
+}
+
+// Typemap suite for susceptibility_list
+
+%typecheck(SWIG_TYPECHECK_POINTER) susceptibility_list {
+    $1 = PyList_Check($input);
+}
+
+%typemap(in) susceptibility_list {
+    if(!py_list_to_susceptibility_list($input, &$1)) {
+        SWIG_fail;
+    }
+}
+
+%typemap(freearg) susceptibility_list {
+    delete[] $1.items;
 }
 
 // Rename python builtins
@@ -94,8 +165,10 @@ static double py_callback_wrap(const meep::vec &v) {
 %feature("immutable") meep::fields_chunk::num_connections;
 
 %include "vec.i"
-
 %include "meep.hpp"
+%include "meepgeom.hpp"
+
+extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %ignore eps_func;
 %ignore inveps_func;
