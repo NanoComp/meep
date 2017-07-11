@@ -60,8 +60,10 @@ meep.pc
 src/sphere-quad.h
 src/sphere_quad
 src/step_generic_stride1.cpp
+python/meep/
 python/meep-python.cpp
 python/meep.py
+python/__init__.py
 
 # test programs
 tests/2D_convergence
