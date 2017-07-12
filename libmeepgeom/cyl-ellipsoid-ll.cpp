@@ -17,6 +17,43 @@ using namespace meep;
 typedef std::complex<double> cdouble;
 
 /***************************************************************/
+/* return true if the datasets match, false if not             */
+/***************************************************************/
+bool compare_hdf5_datasets(const char *file1, const char *name1,
+                           const char *file2, const char *name2,
+                           int expected_rank=2,
+                           double rel_tol=1.0e-4, double abs_tol=1.0e-8)
+{
+  h5file f1(file1, h5file::READONLY, false);
+  int rank1; 
+  int *dims1=new int[expected_rank];
+  double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
+  if (!data1) return false;
+
+  h5file f2(file2, h5file::READONLY, false);
+  int rank2;
+  int *dims2=new int[expected_rank];
+  double *data2 = f2.read(name2, &rank2, dims2, expected_rank);
+  if (!data2) return false;
+
+  if ( rank1!=expected_rank || rank2!=expected_rank ) return false;
+
+  size_t size = 1;
+  for(int r=0; r<expected_rank; r++)
+   { if (dims1[r]!=dims2[r])
+      return false;
+     size *= dims1[r];
+   };
+
+  for(size_t n=0; n<size; n++)
+   { double d1=data1[n], d2=data2[n], diff = fabs(d1-d2), max = fmax(abs(d1),abs(d2));
+     if ( diff>abs_tol || diff>max*rel_tol ) return false;
+   };
+
+  return true;
+}
+
+/***************************************************************/
 /* dummy material function needed to pass to structure( )      */
 /* constructor as a placeholder before we can call             */
 /* set_materials_from_geometry                                 */
@@ -25,6 +62,7 @@ double dummy_eps(const vec &) { return 1.0; }
 
 /***************************************************************/
 /* usage: cyl-ellipsoid [ --polarization xx ]                  */
+/*                      [ --eps_ref_file path/to/file ]        */
 /*  where xx = S for TE polarization (default)                 */
 /*             P for TM polarization                           */
 /***************************************************************/
@@ -34,19 +72,29 @@ int main(int argc, char *argv[])
 
   // simple argument parsing 
   meep::component src_cmpt=Ez;
+  char *eps_ref_file=const_cast<char *>("cyl_ellipsoid-eps-ref.h5");
   for(int narg=1; narg<argc; narg++)
-   if ( argv[narg] && !strcmp(argv[narg],"--polarization") )
-    { if (narg+1 == argc) 
-       meep::abort("no option specified for --polarization");
-      else if (!strcasecmp(argv[narg+1],"S"))
-       printf("Using S-polarization\n");
-      else if (!strcasecmp(argv[narg+1],"P"))
-       { src_cmpt=Hz;
-         printf("Using P-polarization\n");
-       }
-      else 
-       meep::abort("invalid --polarization %s",argv[narg+1]);
-    };
+   { 
+     if ( argv[narg] && !strcmp(argv[narg],"--polarization") )
+      { if (narg+1 == argc) 
+         meep::abort("no option specified for --polarization");
+        else if (!strcasecmp(argv[narg+1],"S"))
+         master_printf("Using S-polarization\n");
+        else if (!strcasecmp(argv[narg+1],"P"))
+         { src_cmpt=Hz;
+           master_printf("Using P-polarization\n");
+         }
+        else 
+         meep::abort("invalid --polarization %s",argv[narg+1]);
+      }
+     else if (argv[narg] && !strcmp(argv[narg],"--eps_ref_file"))
+      { if (narg+1 == argc) 
+         meep::abort("no option specified for --eps_ref_file");
+        eps_ref_file=argv[++narg];
+      }
+     else
+      meep::abort("unrecognized command-line option %s",argv[narg]);
+   };
 
   //(set-param! resolution 100)
   double resolution = 100.0; 
@@ -64,9 +112,8 @@ int main(int argc, char *argv[])
   geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(10.0, 10.0, resolution);
   gv.center_origin();
- // symmetry sym = (src_cmpt==Ez) ?  mirror(X,gv) + mirror(Y,gv)
- //                               : -mirror(X,gv) - mirror(Y,gv);
-  symmetry sym = identity();
+  symmetry sym = (src_cmpt==Ez) ?  mirror(X,gv) + mirror(Y,gv)
+                                : -mirror(X,gv) - mirror(Y,gv);
   structure the_structure(gv, dummy_eps, pml(1.0), sym);
 
   // (set! geometry (list 
@@ -97,25 +144,50 @@ int main(int argc, char *argv[])
   gaussian_src_time src(fcen, df);
   vec src_point = vec(0.0, 0.0);
   vec src_size  = vec(10.0, 10.0);
-  f.add_volume_source(src_cmpt, src, volume(src_point, src_size));
+  f.add_point_source(src_cmpt, src, src_point);
+
+  // first test: write permittivity to HDF5 file and
+  // compare with contents of reference file
+  if ( am_really_master() )
+   { f.output_hdf5(Dielectric, f.total_volume());
+     #define DATAFILE "eps-000000000.h5"
+     #define DATASET  "eps"
+     if (compare_hdf5_datasets(DATAFILE, DATASET, eps_ref_file, DATASET))
+      master_printf("Dielectric output test successful.\n");
+     else
+      abort("Dielectric output error in cyl-ellipsoid-ll");
+   };
 
   //(define print-stuff (lambda () (print "field:, " (get-field-point src-cmpt (vector3 4.13 3.75 0)) "\n")))
   //
-  //(run-until 23 (at-beginning output-epsilon)
-  //	      (at-end print-stuff))
-  //f.output_hdf5(Dielectric, f.total_volume());
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  f.output_hdf5(Ez, f.total_volume());
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  double stop_time=23.0;
+  // (run-until 23 (at-beginning output-epsilon)
+  //	           (at-end output-efield-z)
+  //	           (at-end print-stuff))
+  double duration=23.0;
+  double start_time = f.round_time();
+  double stop_time = start_time + duration;
   while( f.round_time() < stop_time)
    f.step();
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  f.output_hdf5(Ez, f.total_volume());
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+ 
+  // second test: compare field component at specified evaluation
+  // point to reference values
+  if ( am_really_master() )
+   { 
+     // ref values obtained by running `meep cyl-ellipsoid.ctl`
+     #define REF_EZ -8.29555720049629e-5
+     #define REF_HZ -4.5623185899766e-5
+     #define RELTOL 0.05
+     double ref_out_field = (src_cmpt==Ez) ? REF_EZ : REF_HZ;
+     double out_field  = real(f.get_field(src_cmpt, vec(4.13, 3.75)));
+     double diff = fabs(out_field - ref_out_field);
+     printf("field: %e\n",out_field);
 
-  meep::vec eval_pt=vec(4.13, 3.75);
-  std::complex<double> out_field=f.get_field(src_cmpt, eval_pt);
-  printf("field: %e + i%e = %e\n",real(out_field), imag(out_field), abs(out_field));
+     if ( fabs(diff) <= RELTOL*fabs(ref_out_field) )
+      printf("Field component output test successful.");
+     else
+      abort("field output error in cyl-ellipsoid-ll");
+   };
+
+  return 0;
 
 }

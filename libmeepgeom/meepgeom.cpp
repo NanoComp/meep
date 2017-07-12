@@ -224,7 +224,6 @@ static geom_box gv2box(const meep::volume &v)
   return box;
 }
 
-
 static bool is_variable(material_type mt)
 {
   material_data *md = (material_data *)mt.data;
@@ -1191,9 +1190,9 @@ static bool mu_not_1(material_type &m)
            && (     mm->mu_diag.x!=1
                 ||  mm->mu_diag.y!=1
                 ||  mm->mu_diag.z!=1
-                ||  mm->mu_offdiag.x!=1
-                ||  mm->mu_offdiag.y!=1
-                ||  mm->mu_offdiag.z!=1
+                ||  mm->mu_offdiag.x!=0
+                ||  mm->mu_offdiag.y!=0
+                ||  mm->mu_offdiag.z!=0
               )
         );
 }

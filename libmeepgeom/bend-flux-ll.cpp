@@ -51,6 +51,9 @@ void bend_flux(bool no_bend)
 
   // (set! geometry-lattice (make lattice (size sx sy no-size)))
   // (set! pml-layers (list (make pml (thickness 1.0))))
+  geometry_lattice.size.x=10.0;
+  geometry_lattice.size.y=10.0;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
   structure the_structure(gv, dummy_eps, pml(1.0));

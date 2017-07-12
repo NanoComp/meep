@@ -24,8 +24,10 @@ pw_source_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 ring_ll_SOURCES = ring-ll.cpp
 ring_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
-TESTS               = pw-source-ll ring-ll cyl-ellipsoid-ll
+TESTS           = cyl-ellipsoid-ll
 
 noinst_PROGRAMS = bend-flux-ll
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+noinst_DATA = cyl-ellipsoid-eps-ref.h5
