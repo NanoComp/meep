@@ -15,16 +15,24 @@ Maxwell's Equations
 
 Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations), which describe the interactions of electric (**E**) and magnetic (**H**) fields with one another and with matter and sources. In particular, the equations for the evolution of the fields are:
 
+<center>
+
 |                                                                                           |                                         |
 |-------------------------------------------------------------------------------------------|-----------------------------------------|
 | $\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$ | $\mathbf{B} = \mu \mathbf{H}$         |
 | $\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$    | $\mathbf{D} = \varepsilon \mathbf{E}$ |
 
+</center>
+
 Where **D** is the displacement field, ε is the dielectric constant, **J** is the current density (of electric charge), and **J**<sub>*B*</sub> is the *magnetic-charge* current density. (Magnetic currents are a convenient computational fiction in some situations.) **B** is the magnetic flux density (often called the magnetic field), μ is the magnetic permeability, and **H** is the magnetic field. The $\sigma_B$ and $\sigma_D$ terms correspond to (frequency-independent) magnetic and electric conductivities, respectively. The divergence equations are implicitly:
+
+<center>
 
 |                                                                                                  |                                                                                                           |
 |--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | $\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$ | $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$ |
+
+</center>
 
 Most generally, ε depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
 
@@ -60,7 +68,7 @@ Another way in which the computational cell is reduced in size is by **symmetry*
 Finite-Difference Time-Domain Methods
 -------------------------------------
 
-FDTD methods divide space and time into a finite rectangular grid. As [described below](#The_Illusion_of_Continuity), Meep tries to hide this discreteness from the user as much as possible, but there are a few consequences of discretization that it is good to be familiar with.
+FDTD methods divide space and time into a finite rectangular grid. As [described below](#the-illusion-of-continuity), Meep tries to hide this discreteness from the user as much as possible, but there are a few consequences of discretization that it is good to be familiar with.
 
 Perhaps the most important thing you need to know is this: if the grid has some spatial resolution $\Delta x$, then our discrete time-step $\Delta t$ is given by $\Delta t = S \Delta x$, where $S$ is the Courant factor and must satisfy $S < n_\textrm{min} / \sqrt{\mathrm{\# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), in order for the method to be stable (not diverge). In Meep, $S=0.5$ by default (which is sufficient for 1 to 3 dimensions), but can be changed by the user. This means that **when you double the grid resolution, the number of time steps doubles as well** (for the same simulation period). Thus, in three dimensions, if you double the resolution, then the amount of memory increases by 8 and the amount of computational time increases by (at least) 16.
 
@@ -72,7 +80,7 @@ Many references are available on FDTD methods for electromagnetism. See, for exa
 
 ### The Illusion of Continuity
 
-Although FDTD inherently uses discretized space and time, as much as possible Meep attempts to maintain the illusion that you are using a continuous system. At the beginning of the simulation, you specify the spatial resolution, but from that point onwards you generally work in continuous coordinates in your chosen units (see [units in Meep](#Units_in_Meep), above).
+Although FDTD inherently uses discretized space and time, as much as possible Meep attempts to maintain the illusion that you are using a continuous system. At the beginning of the simulation, you specify the spatial resolution, but from that point onwards you generally work in continuous coordinates in your chosen units. See [units in Meep](Introduction.md#units-in-meep), above.
 
 For example, you specify the dielectric function as a function ε(**x**) of continuous **x**, or as a set of solid objects like spheres, cylinders, etcetera, and Meep is responsible for figuring out how they are to be represented on a discrete grid. Or if you want to specify a point source, you simply specify the point **x** where you want the source to reside—Meep will figure out the closest grid points to **x** and add currents to those points, weighted according to their distance from **x**. If you change **x** continuously, the current in Meep will also change continuously by changing the weights. If you ask for the flux through a certain rectangle, then Meep will linearly interpolate the field values from the grid onto that rectangle.
 
@@ -85,7 +93,7 @@ Other Numerical Methods in Computational Electromagnetics
 
 FDTD is, of course, not the only numerical method in computational electromagnetics, nor is it always the best one. In general, we advocate having several tools in your toolbox, and selecting the most convenient one for each task (see [our online textbook](http://ab-initio.mit.edu/book), appendix D).
 
-For example, although FDTD can be used to compute electromagnetic eigenmodes (below), in lossless structures it is often quicker, easier, and more reliable to use a specialized eigenmode solver such as our [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) package. See also the [frequency vs. time domain](MPB_Introduction#Frequency-Domain_vs._Time-Domain.md) discussion in the MPB manual and the [resonant modes](#Resonant_modes.md) discussion below.
+For example, although FDTD can be used to compute electromagnetic eigenmodes (below), in lossless structures it is often quicker, easier, and more reliable to use a specialized eigenmode solver such as our [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) package. See also the [frequency vs. time domain](http://ab-initio.mit.edu/wiki/index.php/MPB_Introduction) discussion in the MPB manual and the [resonant modes](Introduction.md#resonant-modes) discussion below.
 
 For computing the field pattern or response of a structure at a *single frequency*, it may be more efficient to directly solve the corresponding linear equation rather than iterating in time. Indeed, we have an experimental implementation of this method directly in Meep (i.e. a finite-difference frequency-domain solver) — see the [frequency-domain solver](Scheme_User_Interface.md#frequency-domain-solver). However, especially in cases where there are large differences in scale (e.g. with metals with a shallow skin depth), it may be better to use a method that allows a variable resolution in different spatial regions, such as a finite-element or boundary-element method. Boundary-element methods are especially powerful when you have a large volume-to-surface ratio, such as for scattering calculations over small objects in a large (∞) volume.
 

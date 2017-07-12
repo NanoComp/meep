@@ -2,11 +2,6 @@ site_name: MEEP Documentation
 site_author: S. G. Johnson et al.
 repo_url: https://github.com/stevengj/meep/
 
-#pages:
-#- 'Index1': '/doc/docs/Meep.mp'
-#- 'Index2': 'docs/Meep.mp'
-#- 'Index3': 'Meep.mp'
-
 docs_dir: 'doc/docs'
 site_dir: 'doc/site'
 
@@ -27,3 +22,39 @@ markdown_extensions:
         enable_dollar_delimiter: True
 
 extra_javascript: ['https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML','mathjaxhelper.js']
+
+pages:
+- Download:        'Download.md'
+- Release Notes:   'Release_Notes.md'
+- FAQ:             'FAQ.md'
+- Meep manual:     'Meep.md'
+- Introduction:
+    - Introduction: 'Introduction.md'
+    - Materials:     'Materials.md'
+    - Exploiting symmetry: 'Exploiting_Symmetry.md'
+    - Cylindrical coordinates: 'Cylindrical_Coordinates.md'
+    - Perfectly matched layer: 'Perfectly_Matched_Layer.md'
+    - Parallel meep.md:        'Parallel_Meep.md'
+    - Scheme user interface: 'Scheme_User_Interface.md'
+    - Synchronizing the magnetic and electric fields: 'Synchronizing_the_Magnetic_and_Electric_Fields.md'
+    - Field function examples: 'Field_Function_Examples.md'
+    - Yee lattice: 'Yee_Lattice.md'
+    - Guile and Scheme information: 'Guile_and_Scheme_Information.md'
+    - The run function is not a loop: 'The_Run_Function_Is_Not_A_Loop.md'
+    - Units and nonlinearity: 'Units_and_Nonlinearity.md'
+- Installation:    'Installation.md'
+- Scheme Tutorial: 
+    - Scheme tutorial:         'Scheme_Tutorial.md'
+    - Local density of states: 'Scheme_Tutorials/Local_Density_of_States.md'
+    - Optical forces:          'Scheme_Tutorials/Optical_Forces.md'
+    - Near-to-far field spectra: 'Scheme_Tutorials/Near_to_Far_Field_Spectra.md'
+    - Casimir forces:          'Scheme_Tutorials/Casimir_Forces.md'
+    - Ring resonator in cylindrical coordinates: 'Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md'
+    - Multilevel atomic susceptibility: 'Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md'
+    - Resonant modes and transmission in a waveguide cavity: 'Scheme_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
+    - Material dispersion.md:  'Scheme_Tutorials/Material_Dispersion.md'
+    - Third harmonic generation: 'Scheme_Tutorials/Third_Harmonic_Generation.md'
+- C++ Tutorial:    'C++_Tutorial.md'
+- C++_User_Interface: 'C++_User_Interface.md'
+- Acknowledgements: 'Acknowledgements.md'
+- License and Copyright: 'License_and_Copyright.md'

@@ -187,7 +187,9 @@ while (f.time() < curr_time + 1/w_midgap) {
 
 After we convert the hdf5 files to PNG format and superimpose the images on the dielectric background to produce an animated, we obtain the following:
 
-![center|Resonant mode of fabry-perot cavity](images/Fabryperot.gif)
+<center>
+![](images/Fabryperot.gif)
+</center>
 
 Compiling
 ---------

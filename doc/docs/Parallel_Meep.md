@@ -2,7 +2,7 @@
 # Parallel Meep
 ---
 
-Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.org/wiki/MPI). This allows it to scale up from small dual-processor machines to large parallel supercomputers, and to work on very large problems that may not even fit into the memory of one machine. We've run it using at least hundreds of processors. Of course, your problem must be sufficiently large in order to benefit from many processors.
+Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.org/wiki/MPI). This allows it to scale up from small dual-processor machines to large parallel supercomputers, and to work on very large problems that may not even fit into the memory of one machine. We've run it using hundreds of processors. Of course, your problem must be sufficiently large in order to benefit from many processors.
 
 Installing Parallel Meep
 ------------------------
