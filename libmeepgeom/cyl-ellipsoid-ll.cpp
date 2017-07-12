@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
   // simple argument parsing 
   meep::component src_cmpt=Ez;
-  char *eps_ref_file=const_cast<char *>("cyl_ellipsoid-eps-ref.h5");
+  char *eps_ref_file=const_cast<char *>("cyl-ellipsoid-eps-ref.h5");
   for(int narg=1; narg<argc; narg++)
    { 
      if ( argv[narg] && !strcmp(argv[narg],"--polarization") )
@@ -149,10 +149,11 @@ int main(int argc, char *argv[])
   // first test: write permittivity to HDF5 file and
   // compare with contents of reference file
   if ( am_really_master() )
-   { f.output_hdf5(Dielectric, f.total_volume());
-     #define DATAFILE "eps-000000000.h5"
-     #define DATASET  "eps"
-     if (compare_hdf5_datasets(DATAFILE, DATASET, eps_ref_file, DATASET))
+   { 
+     f.output_hdf5(Dielectric, f.total_volume());
+     bool status=compare_hdf5_datasets("eps-000000000.h5", "eps",
+                                        eps_ref_file,      "eps");
+     if (status)
       master_printf("Dielectric output test successful.\n");
      else
       abort("Dielectric output error in cyl-ellipsoid-ll");

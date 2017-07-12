@@ -51,8 +51,8 @@ void bend_flux(bool no_bend)
 
   // (set! geometry-lattice (make lattice (size sx sy no-size)))
   // (set! pml-layers (list (make pml (thickness 1.0))))
-  geometry_lattice.size.x=10.0;
-  geometry_lattice.size.y=10.0;
+  geometry_lattice.size.x=16.0;
+  geometry_lattice.size.y=32.0;
   geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
@@ -168,6 +168,8 @@ void bend_flux(bool no_bend)
   //			       (vector3 wvg-xcen (- (/ sy 2) 1.5)))
   //			   1e-3)
   // (at-beginning output-epsilon))
+  char *prefix = const_cast<char *>(no_bend ? "straight" : "bent");
+  f.output_hdf5(Dielectric, f.total_volume(), 0, false, true, prefix);
   vec eval_point = no_bend ? vec(0.5*sx-1.5, wvg_ycen)
                            : vec(wvg_xcen, 0.5*sy - 1.5);
   double DeltaT=50.0, NextCheckTime = f.round_time() + DeltaT;

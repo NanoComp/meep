@@ -34,7 +34,7 @@ AM_TESTS_ENVIRONMENT = PYTHONPATH='$(top_srcdir)/python/.libs'; export PYTHONPAT
 
 if WITH_PYTHON
   python_PYTHON = meep.py
-  pyexec_LTLIBRARIES = _meep@MEEP_SUFFIX@.la
+  pyexec_LTLIBRARIES = _meep.la
 endif
 
 if MAINTAINER_MODE
