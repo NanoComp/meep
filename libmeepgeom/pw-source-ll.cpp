@@ -85,6 +85,9 @@ int main(int argc, char **argv)
 
   // (set! geometry-lattice (make lattice (size sxy sxy no-size)))
   // (set! pml-layers (list (make pml (thickness dpml))))
+  geometry_lattice.size.x=sxy;
+  geometry_lattice.size.y=sxy;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sxy, sxy, resolution);
   gv.center_origin();
   structure the_structure(gv, dummy_eps, pml(dpml));

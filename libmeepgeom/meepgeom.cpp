@@ -224,7 +224,6 @@ static geom_box gv2box(const meep::volume &v)
   return box;
 }
 
-
 static bool is_variable(material_type mt)
 {
   material_data *md = (material_data *)mt.data;
@@ -425,7 +424,10 @@ public:
 
   static bool verbose;
 
-private:
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+// FIXME
+//private:
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   bool get_material_pt(material_type &material, const meep::vec &r);
 
   material_type_list extra_materials;
@@ -1188,9 +1190,9 @@ static bool mu_not_1(material_type &m)
            && (     mm->mu_diag.x!=1
                 ||  mm->mu_diag.y!=1
                 ||  mm->mu_diag.z!=1
-                ||  mm->mu_offdiag.x!=1
-                ||  mm->mu_offdiag.y!=1
-                ||  mm->mu_offdiag.z!=1
+                ||  mm->mu_offdiag.x!=0
+                ||  mm->mu_offdiag.y!=0
+                ||  mm->mu_offdiag.z!=0
               )
         );
 }
@@ -1483,6 +1485,7 @@ void set_materials_from_geometry(meep::structure *s,
   geom_epsilon::verbose=verbose;
 
   // set global variables in libctlgeom based on data fields in s
+  geom_initialize();
   default_material     = vacuum;
   ensure_periodicity   = _ensure_periodicity;
   meep::grid_volume gv = s->gv;
@@ -1518,7 +1521,7 @@ void set_materials_from_geometry(meep::structure *s,
                  meep::dimension_name(s->gv.dim));
   master_printf("Computational cell is %g x %g x %g with resolution %g\n",
                 size.x, size.y, size.z, resolution);  
-  
+   
   material_type_list extra_materials;
   extra_materials.items=0;
   extra_materials.num_items=0;

@@ -51,6 +51,9 @@ void bend_flux(bool no_bend)
 
   // (set! geometry-lattice (make lattice (size sx sy no-size)))
   // (set! pml-layers (list (make pml (thickness 1.0))))
+  geometry_lattice.size.x=16.0;
+  geometry_lattice.size.y=32.0;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
   structure the_structure(gv, dummy_eps, pml(1.0));
@@ -85,7 +88,7 @@ void bend_flux(bool no_bend)
       objects[0] = make_block(dielectric,
                               v3(0.0, wvg_ycen),
                               e1, e2, e3,
-                              v3(HUGE_VAL, w, HUGE_VAL)
+                              v3(ENORMOUS, w, ENORMOUS)
                              );
       geometric_object_list g={ 1, objects };
       meep_geom::set_materials_from_geometry(&the_structure, g);
@@ -96,13 +99,13 @@ void bend_flux(bool no_bend)
       objects[0] = make_block(dielectric,
                               v3(-0.5*pad, wvg_ycen),
                               e1, e2, e3,
-                              v3(sx-pad, w, HUGE_VAL)
+                              v3(sx-pad, w, ENORMOUS)
                              );
    
       objects[1] = make_block(dielectric,
                               v3(wvg_xcen, 0.5*pad),
                               e1, e2, e3,
-                              v3(w, sy-pad, HUGE_VAL)
+                              v3(w, sy-pad, ENORMOUS)
                              );
    
       geometric_object_list g={ 2, objects };
@@ -165,6 +168,8 @@ void bend_flux(bool no_bend)
   //			       (vector3 wvg-xcen (- (/ sy 2) 1.5)))
   //			   1e-3)
   // (at-beginning output-epsilon))
+  char *prefix = const_cast<char *>(no_bend ? "straight" : "bent");
+  f.output_hdf5(Dielectric, f.total_volume(), 0, false, true, prefix);
   vec eval_point = no_bend ? vec(0.5*sx-1.5, wvg_ycen)
                            : vec(wvg_xcen, 0.5*sy - 1.5);
   double DeltaT=50.0, NextCheckTime = f.round_time() + DeltaT;
