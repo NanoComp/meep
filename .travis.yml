@@ -24,9 +24,7 @@ script:
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
   - make && make install
   # - make && make check && make install
-  - echo "CWD" `pwd`
-  - make check
-  - cat tests/test_geom.log
+  - cd python && make check
   # Build and test pymeep with python 3.6
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
   - pushd python && make clean && make && make check && make install && popd

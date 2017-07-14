@@ -30,7 +30,9 @@ TESTS =                               \
 
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(PYTHON)
-AM_TESTS_ENVIRONMENT = PYTHONPATH=$(abs_top_builddir)/python:$PYTHONPATH; export PYTHONPATH;
+AM_TESTS_ENVIRONMENT =
+    PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH \
+    export PYTHONPATH;
 
 if WITH_PYTHON
   pkgpython_PYTHON = geom.py __init__.py
