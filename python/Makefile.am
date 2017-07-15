@@ -49,7 +49,7 @@ __init__.py: meep.py
 
 pymeep: .libs/_meep.so __init__.py
 	test -d meep || mkdir meep
-	cp __init__.py geom.py .libs/_meep.so meep
+	cp __init__.py $(srcdir)/geom.py .libs/_meep.so meep
 
 all-local: pymeep
 
