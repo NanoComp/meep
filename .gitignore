@@ -57,6 +57,7 @@ libctl/meep_wrap.cxx
 libctl/meep_wrap.cxx.orig
 meep-pkgconfig
 meep.pc
+build/
 src/sphere-quad.h
 src/sphere_quad
 src/step_generic_stride1.cpp
