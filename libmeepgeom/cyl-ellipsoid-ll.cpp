@@ -3,6 +3,7 @@
 /***************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <complex>
 
 #include "meep.hpp"
@@ -11,6 +12,10 @@
 #include "ctlgeom.h"
 
 #include "meepgeom.hpp"
+
+#ifndef DATADIR
+  #define DATADIR "./"
+#endif
 
 using namespace meep;
 
@@ -72,7 +77,7 @@ int main(int argc, char *argv[])
 
   // simple argument parsing 
   meep::component src_cmpt=Ez;
-  char *eps_ref_file=const_cast<char *>("cyl-ellipsoid-eps-ref.h5");
+  std::string eps_ref_file = "cyl-ellipsoid-eps-ref.h5";
   for(int narg=1; narg<argc; narg++)
    { 
      if ( argv[narg] && !strcmp(argv[narg],"--polarization") )
@@ -95,6 +100,9 @@ int main(int argc, char *argv[])
      else
       meep::abort("unrecognized command-line option %s",argv[narg]);
    };
+
+   std::string eps_ref_path = DATADIR + eps_ref_file;
+
 
   //(set-param! resolution 100)
   double resolution = 100.0; 
@@ -152,7 +160,7 @@ int main(int argc, char *argv[])
    { 
      f.output_hdf5(Dielectric, f.total_volume());
      bool status=compare_hdf5_datasets("eps-000000000.h5", "eps",
-                                        eps_ref_file,      "eps");
+                                        eps_ref_path.c_str(), "eps");
      if (status)
       master_printf("Dielectric output test successful.\n");
      else
