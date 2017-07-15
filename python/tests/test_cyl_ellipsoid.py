@@ -1,13 +1,12 @@
 from __future__ import division
 
+# Simple test for libmeepgeom, modeled after meep_test.ctl
 import unittest
 
 import meep as mp
 from meep.geom import Cylinder, Ellipsoid, Medium, Vector3
 from meep.source import GaussianSource
 
-
-# Simple test for libmeepgeom, modeled after meep_test.ctl
 
 # Dummy material function needed to pass to structure( ) constructor as a
 # placeholder before we can call set_materials_from_geometry
