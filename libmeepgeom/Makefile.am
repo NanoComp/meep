@@ -6,7 +6,7 @@ lib_LTLIBRARIES = libmeepgeom.la
 pkginclude_HEADERS = meepgeom.hpp material_data.hpp
 
 #AM_CPPFLAGS = -I$(top_srcdir)/src -std=c++11
-AM_CPPFLAGS = -I$(top_srcdir)/src 
+AM_CPPFLAGS = -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
 
 libmeepgeom_la_SOURCES = \
  meepgeom.cpp meepgeom.hpp material_data.hpp

@@ -8,7 +8,7 @@ HPPFILES=                                    \
  $(top_srcdir)/libmeepgeom/meepgeom.hpp      \
  $(top_srcdir)/libmeepgeom/material_data.hpp 
 
-BUILT_SOURCES = meep-python.cpp meep.py
+BUILT_SOURCES = meep-python.cpp meep.py __init__.py
 
 CLEANFILES = $(BUILT_SOURCES) meep-python.h
 
@@ -30,19 +30,31 @@ TESTS =                               \
 
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(PYTHON)
-AM_TESTS_ENVIRONMENT = PYTHONPATH='$(top_srcdir)/python/.libs'; export PYTHONPATH;
+TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
-  python_PYTHON = meep.py
-  pyexec_LTLIBRARIES = _meep.la
+  pkgpython_PYTHON = geom.py __init__.py
+  pkgpyexec_LTLIBRARIES = _meep.la
 endif
 
 if MAINTAINER_MODE
 
-meep-python.cpp:	$(SWIG_SRC) $(HPPFILES)
+meep-python.cpp: $(SWIG_SRC) $(HPPFILES)
 	swig -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
-meep.py:       		meep-python.cpp
+meep.py: meep-python.cpp
+
+__init__.py: meep.py
+	cp $< $@
+
+pymeep: .libs/_meep.so __init__.py
+	test -d meep || mkdir meep
+	cp __init__.py $(srcdir)/geom.py .libs/_meep.so meep
+
+all-local: pymeep
+
+clean-local:
+	rm -rf meep
 
 endif # MAINTAINER_MODE
 
