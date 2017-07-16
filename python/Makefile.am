@@ -26,18 +26,25 @@ TESTS =                               \
     $(TEST_DIR)/test_cyl_ellipsoid.py \
     $(TEST_DIR)/test_geom.py          \
     $(TEST_DIR)/test_physical.py      \
-    $(TEST_DIR)/test_ring.py
+    $(TEST_DIR)/test_ring.py          \
+    $(TEST_DIR)/test_source.py
 
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
-  pkgpython_PYTHON = geom.py __init__.py
+  pkgpython_PYTHON = geom.py __init__.py source.py
   pkgpyexec_LTLIBRARIES = _meep.la
 endif
 
 if MAINTAINER_MODE
+
+PY_PKG_FILES =               \
+    __init__.py              \
+    $(srcdir)/geom.py        \
+    $(srcdir)/source.py      \
+    .libs/_meep.so
 
 meep-python.cpp: $(SWIG_SRC) $(HPPFILES)
 	swig -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
@@ -49,7 +56,7 @@ __init__.py: meep.py
 
 pymeep: .libs/_meep.so __init__.py
 	test -d meep || mkdir meep
-	cp __init__.py $(srcdir)/geom.py .libs/_meep.so meep
+	cp $(PY_PKG_FILES) meep
 
 all-local: pymeep
 

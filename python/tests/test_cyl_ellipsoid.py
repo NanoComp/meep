@@ -1,12 +1,11 @@
 from __future__ import division
 
 import argparse
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import meep as mp
-import geom as gm
+import meep.geom as gm
+from meep.source import GaussianSource
 
 
 # Simple test for libmeepgeom, modeled after meep_test.ctl
@@ -53,10 +52,10 @@ def main(args):
     f = mp.fields(the_structure)
     fcen = 1.0
     df = 0.1
-    src = mp.gaussian_src_time(fcen, df)
+    src = GaussianSource(fcen, df)
     src_point = mp.vec(0.0, 0.0)
     src_size = mp.vec(10.0, 10.0)
-    f.add_volume_source(src_cmpt, src, mp.volume(src_point, src_size))
+    f.add_volume_source(src_cmpt, src.swigobj, mp.volume(src_point, src_size))
 
     f.output_hdf5(mp.Dielectric, f.total_volume())
     stop_time = 23.0
