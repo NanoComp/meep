@@ -86,4 +86,6 @@ We need to run for a sufficiently long time to ensure that the Fourier-transform
 
 We run several simulations spanning a number of different notch sizes and plot the result in the following figure which shows good agreement between the two methods.
 
-![center|LDOS for a metallic cavity.](../images/Metalcavity_ldos.png)
+<center>
+![](../images/Metalcavity_ldos.png)
+</center>

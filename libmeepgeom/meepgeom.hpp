@@ -40,6 +40,10 @@ namespace meep_geom {
 #define R_DIR 4
 #define PHI_DIR 5
 
+// large (but not strictly inf!) floating-point number for
+// effectively infinite lengths
+#define ENORMOUS 1e20
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/

@@ -21,9 +21,13 @@ $$\mathbf{D} = \varepsilon_\infty \mathbf{E} + \mathbf{P}$$
 
 where $\varepsilon_\infty$, which [must be positive](FAQ.md), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω). **Note:** Meep's definition of ω uses a sign convention $\exp(-i\omega t)$ for the time dependence—ε formulas in engineering papers that use the opposite sign convention for ω will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of γ and σ as-is for loss; don't be confused by the difference in ω sign convention and flip the sign of the parameters. In particular, Meep supports any material dispersion of the form of a sum of harmonic resonances, plus a term from the frequency-independent electric conductivity:
 
+<center>
+
 $$\varepsilon(\omega,\mathbf{x}) = \left( 1 + \frac{i \cdot \sigma_D(\mathbf{x})}{\omega}  \right) \left[ \varepsilon_\infty(\mathbf{x})  + \sum_n \frac{\sigma_n(\mathbf{x}) \cdot \omega_n^2 }{\omega_n^2 - \omega^2 - i\omega\gamma_n} \right] ,$$
 
 $= \left( 1 + \frac{i \cdot \sigma_D(\mathbf{x})}{2\pi f}  \right) \left[ \varepsilon_\infty(\mathbf{x})  + \sum_n \frac{\sigma_n(\mathbf{x}) \cdot f_n^2 }{f_n^2 - f^2 - if\gamma_n/2\pi} \right] ,$
+
+</center>
 
 where $\sigma_D$ is the electric conductivity, $\omega_n$ and $\gamma_n$ are user-specified constants. Actually, the numbers that one specifies are $f_n = \omega_n / 2\pi$ and $\gamma_n / 2\pi$. The $\sigma_n(\mathbf{x})$ is a user-specified function of position giving the strength of the *n*-th resonance. The σ parameters can be anisotropic (real-symmetric) tensors, while the frequency-independent term $\varepsilon_\infty$ can be an arbitrary real-symmetric tensor as well. This corresponds to evolving **P** via the equations:
 
@@ -61,8 +65,11 @@ If γ above is nonzero, then the dielectric function ε(ω) becomes *complex*, w
 
 If you look at Maxwell's equations, then $d\mathbf{P}/dt$ plays exactly the same role as a current $\mathbf{J}$. Just as $\mathbf{J} \cdot \mathbf{E}$ is the rate of change of mechanical energy (the power expended by the electric field on moving the currents), therefore, the rate at which energy is lost to absorption is given by:
 
+<center>
 
 absorption rate $\sim \frac{d\mathbf{P}}{dt} \cdot \mathbf{E}$
+
+</center>
 
 Meep can keep track of this energy for the Lorentzian polarizability terms but not for the conductivity terms. For gain, this gives the amount of energy expended in amplifying the field.
 
