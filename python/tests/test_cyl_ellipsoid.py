@@ -1,6 +1,8 @@
 from __future__ import division
 
 # Simple test for libmeepgeom, modeled after meep_test.ctl
+import os
+import subprocess
 import unittest
 
 import meep as mp
@@ -35,18 +37,50 @@ def add_source(fields, src_cmpt):
     fields.add_point_source(src_cmpt, src, src_point)
 
 
-def compare_hdf5_datasets(test_file, ref_file):
-    # TODO
-    return True
+def compare_hdf5_datasets(file1, file2):
+
+    ret = subprocess.check_call(['h5diff', file1, file2])
+
+    return not ret
+
+    # f1 = mp.h5file(file1, mp.h5file.READONLY, False)
+    # data1, rank1, dims1 = f1.read(name1)
+    # if not data1:
+    #     return False
+
+    # f2 = mp.h5file(file2, mp.h5file.READONLY, False)
+    # data2, rank2, dims2 = f2.read(name2)
+    # if not data2:
+    #     return False
+
+    # if len(dims1) != expected_rank or len(dims2) != expected_rank:
+    #     return False
+
+    # size = 1
+    # for r in range(expected_rank):
+    #     if dims1[r] != dims2[r]:
+    #         return False
+    #     size *= dims1[r]
+
+    # for n in range(size):
+    #     d1 = data1[n]
+    #     d2 = data2[n]
+    #     diff = abs(d1 - d2)
+    #     maximum = max(abs(d1), abs(d2))
+    #     if diff > abs_tol or diff > maximum * rel_tol:
+    #         return False
+
+    # return True
 
 
 class TestCylEllipsoid(unittest.TestCase):
 
     def setUp(self):
 
-        # TODO(chogan): Need abs path to this file
-        self.eps_ref_file = 'cyl-ellipsoid-eps-ref.h5'
-        self.src_cmpt = mp.Hz
+        test_dir = os.path.abspath(os.path.realpath(os.path.dirname(__file__)))
+        libmeepgeom_dir = os.path.join(test_dir, '..', '..', 'libmeepgeom')
+        self.eps_ref_file = os.path.join(libmeepgeom_dir, 'cyl-ellipsoid-eps-ref.h5')
+        self.src_cmpt = mp.Ez
         resolution = 100.0
 
         gv = mp.voltwo(10.0, 10.0, resolution)
@@ -62,8 +96,8 @@ class TestCylEllipsoid(unittest.TestCase):
 
     def test_hdf5_output(self):
         self.f.output_hdf5(mp.Dielectric, self.f.total_volume())
-        # TODO(chogan): Get hdf5 filename programatically? Use abs path.
-        status = compare_hdf5_datasets('eps-000000000.h5', self.eps_ref_file)
+        # TODO(chogan): Get hdf5 filename programatically?
+        status = compare_hdf5_datasets('eps-000000000.h5', self.eps_ref_file,)
         self.assertTrue(status, "HDF5 output differs")
 
     def test_fields(self):
@@ -88,78 +122,3 @@ class TestCylEllipsoid(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-# def main(args):
-
-#     if args.polarization in 'Pp':
-#         src_cmpt = mp.Hz
-#         print("Using P-polarization")
-#     else:
-#         src_cmpt = mp.Ez
-#         print("Using S-polarization")
-
-#     resolution = 100.0
-
-#     # mp.geometry_lattice.size.x = 10.0
-#     # mp.geometry_lattice.size.y = 10.0
-#     # mp.geometry_lattice.size.z = 0.0
-
-#     gv = mp.voltwo(10.0, 10.0, resolution)
-#     gv.center_origin()
-
-#     if src_cmpt == mp.Ez:
-#         sym = mp.mirror(mp.X, gv) + mp.mirror(mp.Y, gv)
-#     else:
-#         sym = -mp.mirror(mp.X, gv) - mp.mirror(mp.Y, gv)
-
-#     the_structure = mp.structure(gv, dummy_eps, mp.pml(1.0), sym)
-
-#     set_materials(the_structure)
-
-#     f = mp.fields(the_structure)
-#     add_source(f, src_cmpt)
-
-#     f.output_hdf5(mp.Dielectric, f.total_volume())
-
-#     # TODO(chogan): Get hdf5 filename programatically?
-#     status = compare_hdf5_datasets('eps-000000000.h5', args.eps_ref_file)
-
-#     assert status, "HDF5 output differs"
-
-#     duration = 23.0
-#     start_time = f.round_time()
-#     stop_time = start_time + duration
-
-#     while f.round_time() < stop_time:
-#         f.step()
-
-#     ref_ez = -8.29555720049629e-5
-#     ref_hz = -4.5623185899766e-5
-#     ref_out_field = ref_ez if src_cmpt == mp.Ez else ref_hz
-
-#     out_field = f.get_field(src_cmpt, mp.vec(4.13, 3.75)).real
-#     diff = abs(out_field - ref_out_field)
-
-#     assert abs(diff) <= 0.05 * abs(ref_out_field), "Field output differs"
-
-#     print("field: {} + i{}".format(out_field.real, out_field.imag))
-
-
-# if __name__ == '__main__':
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument(
-#         '-p',
-#         '--polarization',
-#         default='S',
-#         help="'S' for TE polarization or 'P' for TM polarization"
-#     )
-#     parser.add_argument(
-#         '-f',
-#         '--eps-ref-file',
-#         default='cyl-ellipsoid-eps-ref.h5',
-#         help='The reference h5 file for results comparison'
-#     )
-#     args = parser.parse_args()
-
-#     sys.exit(main(args))
