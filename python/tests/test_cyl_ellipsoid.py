@@ -1,6 +1,8 @@
 from __future__ import division
 
 # Simple test for libmeepgeom, modeled after meep_test.ctl
+import os
+import subprocess
 import unittest
 
 import meep as mp
