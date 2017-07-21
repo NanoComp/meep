@@ -9,3 +9,10 @@ home page:
 * http://ab-initio.mit.edu/meep/
 
 and the latest documentation is available on [readthedocs](http://meep.readthedocs.io/en/latest/Meep/).
+
+To compile directly from the git repository, you need to run
+```
+sh autogen.sh
+make
+```
+in the cloned directory in order to generate the necessary files.  (You will need GNU autotools and SWIG installed, among other things.)
