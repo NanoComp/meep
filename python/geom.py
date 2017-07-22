@@ -19,6 +19,21 @@ class Vector3(object):
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.z == other.z
 
+    def __add__(self, other):
+        self.x += other.x
+        self.y += other.y
+        self.z += other.z
+
+    def __sub__(self, other):
+        self.x -= other.x
+        self.y -= other.y
+        self.z -= other.z
+
+    def scale(self, s):
+        self.x *= s
+        self.y *= s
+        self.z *= s
+
 
 class Medium(object):
 
