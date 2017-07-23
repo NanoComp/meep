@@ -43,6 +43,7 @@ if MAINTAINER_MODE
 PY_PKG_FILES =               \
     __init__.py              \
     $(srcdir)/geom.py        \
+    $(srcdir)/simulation.py  \
     $(srcdir)/source.py      \
     .libs/_meep.so
 
