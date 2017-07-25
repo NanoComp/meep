@@ -91,6 +91,30 @@ ctlio::number_list dft_flux_flux(dft_flux *f)
   return res;
 }
 
+ctlio::number_list dft_energy_electric(dft_energy *f)
+{
+  ctlio::number_list res;
+  res.num_items = f->Nfreq;
+  res.items = f->electric();
+  return res;
+}
+
+ctlio::number_list dft_energy_magnetic(dft_energy *f)
+{
+  ctlio::number_list res;
+  res.num_items = f->Nfreq;
+  res.items = f->magnetic();
+  return res;
+}
+
+ctlio::number_list dft_energy_total(dft_energy *f)
+{
+  ctlio::number_list res;
+  res.num_items = f->Nfreq;
+  res.items = f->total();
+  return res;
+}
+
 ctlio::number_list dft_force_force(dft_force *f)
 {
   ctlio::number_list res;

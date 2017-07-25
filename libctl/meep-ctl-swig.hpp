@@ -30,6 +30,9 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
                                 double rel_amp_thresh, double amp_thresh);
 
 ctlio::number_list dft_flux_flux(meep::dft_flux *f);
+ctlio::number_list dft_energy_electric(meep::dft_energy *f);
+ctlio::number_list dft_energy_magnetic(meep::dft_energy *f);
+ctlio::number_list dft_energy_total(meep::dft_energy *f);
 ctlio::number_list dft_force_force(meep::dft_force *f);
 ctlio::number_list dft_ldos_ldos(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_F(meep::dft_ldos *f);
