@@ -99,6 +99,9 @@ class Simulation(object):
         self.verbose = verbose
         self.progress_interval = 4
         self.dimensions = dimensions
+        self.init_fields_hooks = []
+        self.progress_interval = 4
+        self.run_index = 0
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -115,40 +118,37 @@ class Simulation(object):
                 return 3
         return self.dimensions
 
-    def _init_geometry(self):
-        if self.structure is None:
-            self._init_structure(self.k_point)
-
-        if not self.geometry:
-            raise ValueError("Simulation.geometry cannot be empty")
-
-        mp.set_materials_from_geometry(self.structure, self.geometry)
-
     def _init_structure(self, k=None):
         # TODO(chogan): More descriptive name for not_not_k?
-        not_not_k = True if k is None else k
-        self.structure = mp.structure(
-            self._infer_dimensions(k),
-            self.cell.size,
-            self.geometry_center,
-            self.resolution,
-            self.eps_averaging,
-            self.subpixel_tol,
-            self.subpixel_maxeval,
-            self.ensure_periodicity and not_not_k,
-            self.geometry,
-            self.extra_materials,
-            self.default_material,
-            self.epsion_input_file,
-            self.pml_layers,
-            self.symmetries,
-            self.num_chunks,
-            self.courant,
-            self.global_d_conductivity,
-            self.global_b_conductivity
-        )
+        # not_not_k = True if k is None else k
 
-        self._init_geometry()
+        # self.structure = mp.structure(
+        #     self._infer_dimensions(k),
+        #     self.cell.size,
+        #     self.geometry_center,
+        #     self.resolution,
+        #     self.eps_averaging,
+        #     self.subpixel_tol,
+        #     self.subpixel_maxeval,
+        #     self.ensure_periodicity and not_not_k,
+        #     self.geometry,
+        #     self.extra_materials,
+        #     self.default_material,
+        #     self.epsion_input_file,
+        #     self.pml_layers,
+        #     self.symmetries,
+        #     self.num_chunks,
+        #     self.courant,
+        #     self.global_d_conductivity,
+        #     self.global_b_conductivity
+        # )
+        gv = mp.grid_volume()
+
+        def eps(v):
+            return 1
+
+        self.structure = mp.structure(gv, eps)
+        mp.set_materials_from_geometry(self.structure, self.geometry)
 
     def _init_fields(self):
         is_cylindrical = self.dimensions == CYLINDRICAL
@@ -193,12 +193,50 @@ class Simulation(object):
         if self.fields is None:
             self._init_fields()
 
-        self.fields.round_time()
+        return self.fields.round_time()
 
-    def _run_until(self, args):
-        pass
+    def _eval_step_func(self, func, todo):
+        # TODO(chogan): Should func have a 'self' param?
+        num_args = get_num_args(func)
+        if num_args == 0:
+            if todo == 'step':
+                func()
+        else:
+            func(todo)
 
-    def _run_sources_until(self, cond, *step_funcs):
+    def _run_until(self, step_funcs, cond):
+        # TODO(chogan): Interactive?
+        # TODO(chogan): while loops make more sense than recursion here.
+        if self.fields is None:
+            self._init_fields()
+
+        if isinstance(cond, numbers.Number):
+            stop_time = cond
+            t0 = self._round_time()
+
+            def stop_cond():
+                return self._round_time() >= t0 + stop_time
+
+            new_step_funcs = step_funcs.copy()
+            new_step_funcs.update({'display_progress': (t0, t0 + stop_time, self.progress_interval)})
+            self._run_until(stop_cond, new_step_funcs)
+        else:
+            for func_string in step_funcs:
+                f = getattr(self, func_string)
+                self._eval_step_func(f, 'step')
+
+            if cond():
+                for func_string in step_funcs:
+                    f = getattr(self, func_string)
+                    self._eval_step_func(f, 'finish')
+
+                print("run {} finished at t = {} ({} timesteps)".format(self.run_index, mp.time(), self.fields.t.get()))
+                self.run_index += 1
+            else:
+                self.fields.step()
+                self._run_until(cond, step_funcs)
+
+    def _run_sources_until(self, step_funcs, cond):
         if self.fields is None:
             self._init_fields()
 
@@ -211,7 +249,7 @@ class Simulation(object):
                 cond and self._round_time() >= ts
             arg = f
 
-        self._run_until(arg, *step_funcs)
+        self._run_until(step_funcs, arg)
 
     def add_source(self, src):
         if self.fields is None:
@@ -284,15 +322,6 @@ class Simulation(object):
     def output_epsilon(self):
         self.output_component(mp.Dielectric)
 
-    def eval_step_func(self, func, todo):
-        # TODO(chogan): Should func have a 'self' param?
-        num_args = get_num_args(func)
-        if num_args == 0:
-            if todo == 'step':
-                func()
-        else:
-            func(todo)
-
     def when_true_funcs(self, cond, *step_funcs):
         def f(todo):
             if todo == 'finish' or cond():
@@ -329,12 +358,12 @@ class Simulation(object):
 
         self.after_time(time, *step_funcs)
 
-    def run(self, until=None, sources=False, *step_funcs):
+    def run(self, step_funcs, until=None, sources=False):
         run_until = until is not None
         sources_plus_cond = sources and run_until
 
         if sources_plus_cond:
-            self._run_until(until, *step_funcs)
+            self._run_until(step_funcs, until)
         elif run_until:
             self._run_sources_until(until, *step_funcs)
         elif until is None and sources:
