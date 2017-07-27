@@ -23,10 +23,10 @@ Meep on Amazon Web Services (AWS)
 
 The latest version of Meep preinstalled on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) can be accessed for free on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as an [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). Instructions for accessing this AMI are provided by [Simpetus](http://www.simpetuscloud.com/launchsims.html).
 
-Precompiled Meep packages for Debian and Ubuntu
------------------------------------------------
+Precompiled Meep packages for Ubuntu
+------------------------------------
 
-Precompiled packages of Meep are available for [Debian](https://en.wikipedia.org/wiki/Debian) and [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) as **meep**. The Debian package is available in the [testing](http://packages.debian.org/testing/science/meep) repository. We highly recommend using Debian or Ubuntu, as in Debian or Ubuntu the Meep software and all of its dependencies can be installed using just one line:
+Precompiled packages of Meep are available for [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) as **meep**. The Ubuntu 16.10 package is available in the [science](https://packages.ubuntu.com/yakkety/meep) repository. We highly recommend using Ubuntu as the Meep software and all of its dependencies can be installed using just one line:
 
 ```
 sudo apt-get install meep h5utils
@@ -43,6 +43,4 @@ Python User Interface
 
 A native Python user interface for Meep is currently under development by [Simpetus](http://www.simpetuscloud.com).
 
-A non-native version was developed by the [Photonics Research Group](http://photonics.intec.ugent.be/) at Ghent University, in particular thanks to Emmanuel Lambert, Martin Fiers, Shavkat Nizamov, Martijn Tassaert, Peter Bienstman, and Wim Bogaerts. This project is now being maintained by Filip Dominec. More information is available:
-
--   [Python-Meep](http://f.dominec.eu/meep/)
+A non-native version was developed by the [Photonics Research Group](http://photonics.intec.ugent.be/) at Ghent University, in particular thanks to Emmanuel Lambert, Martin Fiers, Shavkat Nizamov, Martijn Tassaert, Peter Bienstman, and Wim Bogaerts. This [project](http://f.dominec.eu/meep/) is now maintained by Filip Dominec.

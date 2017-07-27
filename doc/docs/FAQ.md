@@ -16,7 +16,7 @@ Installation
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like system, such as Linux, from individual machines to clusters to large parallel supercomputers. Precompiled packages are available for Debian and Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
+Meep runs on any Unix-like system, such as Linux, from individual machines to clusters to large parallel supercomputers. Precompiled packages are available for Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
 
 Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. We recommend consulting a Linux administrator at your institution if you run into trouble. Finally, Meep is available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free offering provided by [Simpetus](http://www.simpetuscloud.com).
 
