@@ -45,10 +45,9 @@ sim = Simulation(cell=Lattice(size=Vector3(sxy, sxy, no_size)),
 # sim.symmetries = [mp.mirror(mp.Y)]
 
 step_funcs = {
-    # 'at_beginning': (output_epsilon),
-    'after_sources': (mp.Ez, Vector3(r + 0.1), df)
+    # 'at_beginning': sim.output_epsilon,
+    'after_sources': mp.harminv(mp.Ez, Vector3(r + 0.1), df)
 }
-import pdb; pdb.set_trace()
 sim.run(step_funcs, until=300, sources=True)
 
 # # Output fields for one period at the end.  (If we output

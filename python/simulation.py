@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numbers
 
 import meep as mp
@@ -142,12 +144,25 @@ class Simulation(object):
         #     self.global_d_conductivity,
         #     self.global_b_conductivity
         # )
-        gv = mp.grid_volume()
+        dims = self._infer_dimensions(k)
 
-        def eps(v):
+        if dims == 0 or dims == 1:
+            gv = mp.vol1d(self.cell.size.z, self.resolution)
+        elif dims == 2:
+            gv = mp.vol2d(self.cell.size.x, self.cell.size.y, self.resolution)
+        elif dims == 3:
+            gv = mp.vol3d(self.cell.size.x, self.cell.size.y, self.cell.size.z, self.resolution)
+        elif dims == CYLINDRICAL:
+            gv = mp.volcyl(self.cell.size.x, self.cell.size.z, self.resolution)
+        else:
+            raise ValueError("Unsupported dimentionality: {}".format(dims))
+
+        gv.center_origin()
+
+        def dummy_eps(v):
             return 1
 
-        self.structure = mp.structure(gv, eps)
+        self.structure = mp.structure(gv, dummy_eps)
         mp.set_materials_from_geometry(self.structure, self.geometry)
 
     def _init_fields(self):
@@ -189,6 +204,22 @@ class Simulation(object):
         for hook in self.init_fields_hooks:
             hook()
 
+    def display_progress(self, t0, t, dt):
+        t_0 = mp.wall_time()
+        tlast = mp.wall_time()
+
+        t1 = mp.wall_time()
+
+        if t1 - tlast >= dt:
+            msg_fmt = "Meep progress: {}/{} = {:.1g}%% done in {:.1g}s, {} s to go"
+            val1 = mp.time() - t0
+            val2 = t
+            val3 = (mp.time() - t0) / (0.01 * t)
+            val4 = t1 - t_0
+            val5 = ((t1 - t_0) * (t / (mp.time() - t0)) - (t1 - t_0))
+            print(msg_fmt.format(val1, val2, val3, val4, val5))
+            tlast = t1
+
     def _round_time(self):
         if self.fields is None:
             self._init_fields()
@@ -204,11 +235,17 @@ class Simulation(object):
         else:
             func(todo)
 
+    def _call_step_func(self, name, funcs_dict):
+        if name in funcs_dict:
+            getattr(self, name)(funcs_dict[name])
+
     def _run_until(self, step_funcs, cond):
         # TODO(chogan): Interactive?
         # TODO(chogan): while loops make more sense than recursion here.
         if self.fields is None:
             self._init_fields()
+
+        self._call_step_func('at_beginning', step_funcs)
 
         if isinstance(cond, numbers.Number):
             stop_time = cond
@@ -218,8 +255,8 @@ class Simulation(object):
                 return self._round_time() >= t0 + stop_time
 
             new_step_funcs = step_funcs.copy()
-            new_step_funcs.update({'display_progress': (t0, t0 + stop_time, self.progress_interval)})
-            self._run_until(stop_cond, new_step_funcs)
+            # new_step_funcs.update({'display_progress': (self, t0, t0 + stop_time, self.progress_interval)})
+            self._run_until(new_step_funcs, stop_cond)
         else:
             for func_string in step_funcs:
                 f = getattr(self, func_string)
@@ -234,7 +271,7 @@ class Simulation(object):
                 self.run_index += 1
             else:
                 self.fields.step()
-                self._run_until(cond, step_funcs)
+                self._run_until(step_funcs, cond)
 
     def _run_sources_until(self, step_funcs, cond):
         if self.fields is None:
@@ -328,7 +365,7 @@ class Simulation(object):
                 for f in step_funcs:
                     self.eval_step_func(f, todo)
 
-    def at_beginning(self, *step_funcs):
+    def at_beginning(self, step_funcs):
         # Work around python 2's lack of 'nonlocal' keyword
         done = [False]
 
@@ -339,7 +376,7 @@ class Simulation(object):
                 done[0] = True
         return step_func
 
-    def after_time(self, t, *step_funcs):
+    def after_time(self, t, step_funcs):
         if self.fields is None:
             self._init_fields()
 
@@ -350,7 +387,7 @@ class Simulation(object):
 
         self.when_true_funcs(f, *step_funcs)
 
-    def after_sources(self, *step_funcs):
+    def after_sources(self, step_funcs):
         if self.fields is None:
             self._init_fields()
 
