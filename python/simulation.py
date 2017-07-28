@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function
 
 import numbers
 
@@ -273,7 +273,7 @@ class Simulation(object):
                 self.fields.step()
                 self._run_until(step_funcs, cond)
 
-    def _run_sources_until(self, step_funcs, cond):
+    def _run_sources_until(self, cond, step_funcs):
         if self.fields is None:
             self._init_fields()
 
@@ -395,14 +395,17 @@ class Simulation(object):
 
         self.after_time(time, *step_funcs)
 
-    def run(self, step_funcs, until=None, sources=False):
-        run_until = until is not None
-        sources_plus_cond = sources and run_until
+    def run(self, *step_funcs, **kwargs):
+        until = kwargs.pop('until', None)
+        sources = kwargs.pop('sources', None)
 
-        if sources_plus_cond:
-            self._run_until(step_funcs, until)
-        elif run_until:
-            self._run_sources_until(until, *step_funcs)
+        if kwargs:
+            raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
+
+        if sources and until:
+            self._run_sources_until(until, step_funcs)
+        elif until:
+            self._run_until(until, step_funcs)
         elif until is None and sources:
             self._run_sources(step_funcs)
         else:

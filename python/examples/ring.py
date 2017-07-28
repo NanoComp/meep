@@ -44,11 +44,12 @@ sim = Simulation(cell=Lattice(size=Vector3(sxy, sxy, no_size)),
 # TODO(chogan): Write python wrapper
 # sim.symmetries = [mp.mirror(mp.Y)]
 
-step_funcs = {
-    # 'at_beginning': sim.output_epsilon,
-    'after_sources': mp.harminv(mp.Ez, Vector3(r + 0.1), df)
-}
-sim.run(step_funcs, until=300, sources=True)
+
+def say_hi():
+    print("hi")
+
+
+sim.run(sim.at_beginning(say_hi), until=300)
 
 # # Output fields for one period at the end.  (If we output
 # # at a single time, we might accidentally catch the Ez field when it is
