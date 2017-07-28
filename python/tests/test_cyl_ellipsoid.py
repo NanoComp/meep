@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import meep as mp
 import geom as gm
 
+from mpi4py import MPI
 
 # Simple test for libmeepgeom, modeled after meep_test.ctl
 
@@ -18,6 +19,8 @@ def dummy_eps(vec):
 
 
 def main(args):
+
+    comm=MPI.COMM_WORLD
 
     src_cmpt = mp.Ez
 
