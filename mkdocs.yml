@@ -27,7 +27,7 @@ pages:
 - Download:        'Download.md'
 - Release Notes:   'Release_Notes.md'
 - FAQ:             'FAQ.md'
-- Meep manual:     'Meep.md'
+- Meep manual:     'index.md'
 - Introduction:
     - Introduction: 'Introduction.md'
     - Materials:     'Materials.md'
