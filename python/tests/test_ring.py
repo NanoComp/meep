@@ -2,12 +2,11 @@
 # Calculating 2d ring-resonator modes, from the Meep tutorial.
 from __future__ import division
 
-import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import meep as mp
-import geom as gm
+import meep.geom as gm
+from meep.source import GaussianSource
 
 
 # dummy material function needed to pass to structure( )
@@ -56,9 +55,9 @@ def main(args):
     # arbitrary direction.  We will only look for TM modes (E out of the plane).
     fcen = 0.15  # pulse center frequency
     df = 0.1
-    src = mp.gaussian_src_time(fcen, df)
+    src = GaussianSource(fcen, df)
     v = mp.volume(mp.vec(r + 0.1, 0.0), mp.vec(0.0, 0.0))
-    f.add_volume_source(mp.Ez, src, v)
+    f.add_volume_source(mp.Ez, src.swigobj, v)
 
     T = 300.0
     stop_time = f.last_source_time() + T

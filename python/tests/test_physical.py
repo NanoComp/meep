@@ -14,13 +14,10 @@
 #  along with this program if not, write to the Free Software Foundation,
 #  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
-import sys
 import unittest
 
-mod_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(mod_dir, '..'))
 import meep as mp
+from meep.source import ContinuousSource
 
 
 def one(vec):
@@ -41,8 +38,8 @@ class TestPhysical(unittest.TestCase):
 
         f = mp.fields(s)
 
-        src = mp.continuous_src_time(w)
-        f.add_point_source(mp.Ez, src, self.pnt_src_vec)
+        src = ContinuousSource(w)
+        f.add_point_source(mp.Ez, src.swigobj, self.pnt_src_vec)
 
         # let the source reach steady state
         if solve_cw:

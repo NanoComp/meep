@@ -39,8 +39,8 @@ class initialize {
 #  define NORETURN_ATTR __attribute__((noreturn))
 #  define PRINTF_ATTR(f,a) __attribute__((format(printf, f, a)))
 #else
-#  define NORETURN_ATTR 
-#  define PRINTF_ATTR(f,a) 
+#  define NORETURN_ATTR
+#  define PRINTF_ATTR(f,a)
 #endif
 
 void abort(const char *fmt, ...) NORETURN_ATTR PRINTF_ATTR(1,2);
@@ -49,6 +49,7 @@ int count_processors();
 int my_rank();
 bool am_really_master();
 inline int am_master() { return my_rank() == 0; }
+bool with_mpi();
 
 void send(int from, int to, double *data, int size=1);
 void broadcast(int from, double *data, int size);
