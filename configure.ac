@@ -14,8 +14,6 @@ AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
-# need shared libraries for python interfaces
-AM_ENABLE_SHARED
 
 MEEP_SUFFIX=""
 
