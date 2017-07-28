@@ -14,6 +14,7 @@ AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
+AC_ENABLE_SHARED
 
 MEEP_SUFFIX=""
 
@@ -457,46 +458,44 @@ program_transform_name="s,_,-,g;$program_transform_name"
 # checks for python
 ##############################################################################
 AC_ARG_WITH(python,
-	[AC_HELP_STRING([--without-python], [don't compile Python interface])],
-        with_python=$withval,with_python=yes)
+	[AC_HELP_STRING([--with-python], [compile Python interface])],
+        with_python=$withval,with_python=no)
 
-if test "$enable_shared" = no; then
+if test "$with_python" = yes -a "$enable_shared" = no; then
    AC_MSG_WARN([Python interface requires --enable-shared; disabling])
+   with_python=no
+fi
+
+if test "x$with_python" = xno; then
    have_python=no
 else
+   AM_PATH_PYTHON([],[have_python=yes],[have_python=no])
+   if test $have_python = yes; then
 
-  if test "x$with_python" = xno; then
-    have_python=no
-  else
-    AM_PATH_PYTHON([],[have_python=yes],[have_python=no])
-    if test $have_python = yes; then
-
-      AC_MSG_CHECKING([for Python include directory])
-      pinc=`echo "import distutils.sysconfig; print (distutils.sysconfig.get_python_inc())" | $PYTHON - 2>/dev/null`
-      AC_MSG_RESULT([${pinc:-unknown}])
-      test -n "$pinc" && PYTHON_INCLUDES="-I$pinc"
-      save_CPPFLAGS=$CPPFLAGS
-      CPPFLAGS="$CPPFLAGS $PYTHON_INCLUDES"
-      AC_CHECK_HEADER([Python.h], [], [AC_MSG_WARN([disabling Python wrappers]) 
+     AC_MSG_CHECKING([for Python include directory])
+     pinc=`echo "import distutils.sysconfig; print (distutils.sysconfig.get_python_inc())" | $PYTHON - 2>/dev/null`
+     AC_MSG_RESULT([${pinc:-unknown}])
+     test -n "$pinc" && PYTHON_INCLUDES="-I$pinc"
+     save_CPPFLAGS=$CPPFLAGS
+     CPPFLAGS="$CPPFLAGS $PYTHON_INCLUDES"
+     AC_CHECK_HEADER([Python.h], [], [AC_MSG_WARN([disabling Python wrappers]) 
                                        have_python=no])
 
-      if test $have_python = yes; then
-        AC_MSG_CHECKING([for Numpy include directory])
-        pinc=`echo "import numpy; print (numpy.get_include())" | $PYTHON - 2>/dev/null`
-        AC_MSG_RESULT([${pinc:-unknown}])
-        test -n "$pinc" && PYTHON_INCLUDES="$PYTHON_INCLUDES -I$pinc"
-        CPPFLAGS="$save_CPPFLAGS $PYTHON_INCLUDES"
-        AC_CHECK_HEADER([numpy/arrayobject.h],[],[
-          AC_MSG_WARN([disabling Python wrappers])
-          have_python=no],[#include <Python.h>])
-      fi
+     if test $have_python = yes; then
+       AC_MSG_CHECKING([for Numpy include directory])
+       pinc=`echo "import numpy; print (numpy.get_include())" | $PYTHON - 2>/dev/null`
+       AC_MSG_RESULT([${pinc:-unknown}])
+       test -n "$pinc" && PYTHON_INCLUDES="$PYTHON_INCLUDES -I$pinc"
+       CPPFLAGS="$save_CPPFLAGS $PYTHON_INCLUDES"
+       AC_CHECK_HEADER([numpy/arrayobject.h],[],[
+         AC_MSG_WARN([disabling Python wrappers])
+         have_python=no],[#include <Python.h>])
+     fi
 
-      CPPFLAGS=$save_CPPFLAGS
-    fi # have_python
+     CPPFLAGS=$save_CPPFLAGS
+   fi # have_python
 
-  fi # with_python
-
-fi # enable_shared
+fi # with_python
 
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
