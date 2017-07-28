@@ -173,7 +173,7 @@ Meep defines several types of classes, the most numerous of which are the variou
 
 ### lattice
 
-The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the computational cell. In [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), you can use this to specify a variety of affine lattice structures. In [Meep](Meep.md), only rectangular Cartesian computational cells are supported, so the only property of lattice that you should normally use is its `size`.
+The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the computational cell. In [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), you can use this to specify a variety of affine lattice structures. In [Meep](index.md), only rectangular Cartesian computational cells are supported, so the only property of lattice that you should normally use is its `size`.
 
 **`size` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

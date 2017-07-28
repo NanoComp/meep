@@ -1532,5 +1532,4 @@ void set_materials_from_geometry(meep::structure *s,
   master_printf("-----------\n");
 }
 
-
 } // namespace meep_geom
