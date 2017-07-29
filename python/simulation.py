@@ -226,6 +226,12 @@ class Simulation(object):
 
         return self.fields.round_time()
 
+    def _time(self):
+        if self.fields is None:
+            self._init_fields()
+
+        return self.fields.time()
+
     def _eval_step_func(self, func, todo):
         # TODO(chogan): Should func have a 'self' param?
         num_args = get_num_args(func)
@@ -235,43 +241,49 @@ class Simulation(object):
         else:
             func(todo)
 
+    def _combine_step_funcs(self, step_funcs):
+        closure = {'step_funcs': step_funcs}
+
+        def f(todo):
+            for f in closure['step_funcs']:
+                self._eval_step_func(f, todo)
+        return f
+
     def _call_step_func(self, name, funcs_dict):
         if name in funcs_dict:
             getattr(self, name)(funcs_dict[name])
 
-    def _run_until(self, step_funcs, cond):
+    def _run_until(self, cond, step_funcs):
         # TODO(chogan): Interactive?
         # TODO(chogan): while loops make more sense than recursion here.
         if self.fields is None:
             self._init_fields()
 
-        self._call_step_func('at_beginning', step_funcs)
-
         if isinstance(cond, numbers.Number):
-            stop_time = cond
-            t0 = self._round_time()
+            closure = {
+                'stop_time': cond,
+                't0': self._round_time()
+            }
 
             def stop_cond():
-                return self._round_time() >= t0 + stop_time
+                return self._round_time() >= closure['t0'] + closure['stop_time']
 
-            new_step_funcs = step_funcs.copy()
+            # new_step_funcs = step_funcs.copy()
             # new_step_funcs.update({'display_progress': (self, t0, t0 + stop_time, self.progress_interval)})
-            self._run_until(new_step_funcs, stop_cond)
+            self._run_until(stop_cond, step_funcs)
         else:
-            for func_string in step_funcs:
-                f = getattr(self, func_string)
-                self._eval_step_func(f, 'step')
+            for func in step_funcs:
+                self._eval_step_func(func, 'step')
 
             if cond():
-                for func_string in step_funcs:
-                    f = getattr(self, func_string)
-                    self._eval_step_func(f, 'finish')
+                for func in step_funcs:
+                    self._eval_step_func(func, 'finish')
 
-                print("run {} finished at t = {} ({} timesteps)".format(self.run_index, mp.time(), self.fields.t.get()))
+                print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self._time(), self.fields.t))
                 self.run_index += 1
             else:
                 self.fields.step()
-                self._run_until(step_funcs, cond)
+                self._run_until(cond, step_funcs)
 
     def _run_sources_until(self, cond, step_funcs):
         if self.fields is None:
@@ -287,6 +299,12 @@ class Simulation(object):
             arg = f
 
         self._run_until(step_funcs, arg)
+
+    def _harminv(self, data, dt, results, c, pt, fcen, df, maxbands):
+        pass
+
+    def harminv(self, c, pt, fcen, df, *mxbands):
+        return self._harminv([], 0, [], c, pt, fcen, df, mxbands)
 
     def add_source(self, src):
         if self.fields is None:
@@ -363,31 +381,38 @@ class Simulation(object):
         def f(todo):
             if todo == 'finish' or cond():
                 for f in step_funcs:
-                    self.eval_step_func(f, todo)
+                    self._eval_step_func(f, todo)
+        return f
 
-    def at_beginning(self, step_funcs):
+    def at_beginning(self, *step_funcs):
         # Work around python 2's lack of 'nonlocal' keyword
-        done = [False]
+        closure = {
+            'done': False,
+            'step_funcs': step_funcs
+        }
 
         def step_func(todo):
-            if not done[0]:
-                for f in step_funcs:
-                    self.eval_step_func(f, todo)
-                done[0] = True
+            if not closure['done']:
+                for f in closure['step_funcs']:
+                    self._eval_step_func(f, todo)
+                closure['done'] = True
         return step_func
 
-    def after_time(self, t, step_funcs):
+    def after_time(self, t, *step_funcs):
         if self.fields is None:
             self._init_fields()
 
-        t0 = self._round_time()
+        closure = {
+            't0': self._round_time(),
+            't': t
+        }
 
         def f():
-            return self._round_time() >= t0 + t
+            return self._round_time() >= closure['t0'] + closure['t']
 
         self.when_true_funcs(f, *step_funcs)
 
-    def after_sources(self, step_funcs):
+    def after_sources(self, *step_funcs):
         if self.fields is None:
             self._init_fields()
 

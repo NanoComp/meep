@@ -42,19 +42,18 @@ sim = Simulation(cell=Lattice(size=Vector3(sxy, sxy, no_size)),
 
 # exploit the mirror symmetry in structure+source:
 # TODO(chogan): Write python wrapper
-# sim.symmetries = [mp.mirror(mp.Y)]
+sim.symmetries = [mp.mirror(mp.Y)]
 
 
 def say_hi():
-    print("hi")
+    print("Hi")
 
+harminv_func = sim.harminv(mp.Ez, Vector3(r + 0.1), fcen, df)
 
-sim.run(sim.at_beginning(say_hi), until=300)
+sim.run(sim.at_beginning(say_hi), sim.after_sources(harminv_func), until=300, sources=True)
 
-# # Output fields for one period at the end.  (If we output
-# # at a single time, we might accidentally catch the Ez field when it is
-# # almost zero and get a distorted view.)
-# step_funcs = [
-#     sim.at_every(1 / fcen / 20, sim.output_efield_z)
-# ]
+# Output fields for one period at the end.  (If we output
+# at a single time, we might accidentally catch the Ez field when it is
+# almost zero and get a distorted view.)
+
 # sim.run(until=1 / fcen, *step_funcs)
