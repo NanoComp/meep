@@ -57,7 +57,7 @@ def main(args):
     df = 0.1
     src = GaussianSource(fcen, df)
     v = mp.volume(mp.vec(r + 0.1, 0.0), mp.vec(0.0, 0.0))
-    f.add_volume_source(mp.Ez, src.swigobj, v)
+    f.add_volume_source(mp.Ez, src, v)
 
     T = 300.0
     stop_time = f.last_source_time() + T

@@ -55,7 +55,7 @@ def main(args):
     src = GaussianSource(fcen, df)
     src_point = mp.vec(0.0, 0.0)
     src_size = mp.vec(10.0, 10.0)
-    f.add_volume_source(src_cmpt, src.swigobj, mp.volume(src_point, src_size))
+    f.add_volume_source(src_cmpt, src, mp.volume(src_point, src_size))
 
     f.output_hdf5(mp.Dielectric, f.total_volume())
     stop_time = 23.0
