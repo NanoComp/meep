@@ -6,9 +6,7 @@ The latest development sources are available on [GitHub](https://github.com/stev
 
 The latest release of Meep is **version 1.3** which can be downloaded from:
 
--   <http://ab-initio.mit.edu/meep/meep-1.3.tar.gz>
-
-Older releases may be found at <http://ab-initio.mit.edu/meep/old>
+-   <https://github.com/stevengj/meep/releases>
 
 Meep is free software under the [GNU GPL](License_and_Copyright.md).
 

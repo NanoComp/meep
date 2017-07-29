@@ -2,18 +2,18 @@
 # Scheme User Interface
 ---
 
-The Scheme user interface is documented in this page. We do not document the Scheme language or the functions provided by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl). See also the [libctl User Reference](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference) section of the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual).
+The Scheme user interface is documented in this page. We do not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). See also the [libctl User Reference](https://libctl.readthedocs.io/en/latest/Libctl_User_Reference/) section of the [libctl manual](https://libctl.readthedocs.io).
 
-This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [tutorial](Scheme_Tutorial.md). Also, we note that this page is not a *complete* listing of *all* functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
+This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [tutorial](Scheme_Tutorial.md). Also, we note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
 
-See also: instructions for [parallel Meep ](Parallel_Meep.md) for MPI machines.
+See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines.
 
 [TOC]
 
 Input Variables
 ---------------
 
-These are global variables that you can set to control various parameters of the Meep computation. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `geometric-object`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `cnumber`, and `vector3`, are defined by [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference).
+These are global variables that you can set to control various parameters of the Meep computation. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `geometric-object`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `cnumber`, and `vector3`, are defined by [libctl](https://libctl.readthedocs.io/en/latest/Libctl_User_Reference/).
 
 **`geometry` [ list of `geometric-object` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -60,7 +60,7 @@ Specifies the computational grid resolution in pixels per distance unit. Default
 
 **`k-point` [`false` or `vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a vector, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. The `k-point` vector is specified in *Cartesian* coordinates in units of 2π/distance. Note: this is *different* from [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), equivalent to taking MPB's `k-points` through the function `reciprocal->cartesian`.
+If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a vector, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. The `k-point` vector is specified in *Cartesian* coordinates in units of 2π/distance. Note: this is *different* from [MPB](http://mpb.readthedocs.io), equivalent to taking MPB's `k-points` through the function `reciprocal->cartesian`.
 
 **`ensure-periodicity` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -167,13 +167,13 @@ Classes are complex datatypes with various "properties" which may have default v
 (make class (prop1 val1) (prop2 val2) ...)
 ```
 
-See also the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual).
+See also the [libctl manual](https://libctl.readthedocs.io).
 
-Meep defines several types of classes, the most numerous of which are the various geometric object classes which are the same as those used in [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB). You can also get a list of the available classes, along with their property types and default values, at runtime with the `(help)` command.
+Meep defines several types of classes, the most numerous of which are the various geometric object classes which are the same as those used in [MPB](http://mpb.readthedocs.io). You can also get a list of the available classes, along with their property types and default values, at runtime with the `(help)` command.
 
 ### lattice
 
-The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the computational cell. In [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), you can use this to specify a variety of affine lattice structures. In [Meep](index.md), only rectangular Cartesian computational cells are supported, so the only property of lattice that you should normally use is its `size`.
+The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the computational cell. In [MPB](http://mpb.readthedocs.io), you can use this to specify a variety of affine lattice structures. In [Meep](index.md), only rectangular Cartesian computational cells are supported, so the only property of lattice that you should normally use is its `size`.
 
 **`size` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -505,7 +505,7 @@ An overall (complex) amplitude multiplying the the current source. Default is `1
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Scheme function of a single argument, that takes a vector3 giving a position and returns a (complex) current amplitude for that point. The position argument is *relative* to the `center` of the current source, so that you can move your current around without changing your function. The default is `'()` (null), meaning that a constant amplitude of 1.0 is used. Note that your amplitude function (if any) is *multiplied* by the `amplitude` property, so both properties can be used simultaneously.
 
-As described in section 4.2 of [our book chapter online](http://arxiv.org/abs/arXiv:1301.5366), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) (version 1.5 or later) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. (Note: this feature does *not* work in cylindrical coordinates.) To do this, instead of a `source` you should use an `eigenmode-source`:
+As described in section 4.2 of [our book chapter online](http://arxiv.org/abs/arXiv:1301.5366), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](http://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. (Note: this feature does *not* work in cylindrical coordinates.) To do this, instead of a `source` you should use an `eigenmode-source`:
 
 **`eigenmode-source`**  
 
@@ -630,7 +630,7 @@ Miscellaneous Functions
 
 Here, we describe a number of miscellaneous useful functions provided by Meep.
 
-See also the [reference section](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference) of the libctl manual, which describes a number of useful functions defined by libctl.
+See also the [reference section](https://libctl.readthedocs.io/en/latest/Libctl_User_Reference/) of the libctl manual, which describes a number of useful functions defined by libctl.
 
 ### Geometry Utilities
 

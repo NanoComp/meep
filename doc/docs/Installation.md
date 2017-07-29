@@ -2,7 +2,7 @@
 # Installation
 ---
 
-**Important Note**: Installing Meep from source can be challenging for novice users. As a simple workaround, the latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetuscloud.com/launchsims.html).
+**Note**: Installing Meep from source can be challenging for novice users. As a simple workaround, the latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetuscloud.com/launchsims.html).
 
 The main effort in installing Meep lies in installing the various prerequisite packages. This requires some understanding of how to install software on Unix systems.
 
@@ -27,7 +27,7 @@ apt-get install meep h5utils
 
 To build the latest version of Meep from source on Ubuntu 16.04, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html). 
 
-The source tarballs are available on the [Download page](Download.md).
+The source tarballs are available on the [releases pages](https://github.com/stevengj/meep/releases).
 
 Installation on macOS 
 -----------------------
@@ -51,7 +51,7 @@ Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [
 ./configure && make && make install
 ```
 
-Use the same commands for [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl), then [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), then Meep.
+Use the same commands for [libctl](https://libctl.readthedocs.io), then [MPB](https://mpb.readthedocs.io), then Meep.
 
 You are done, and can now run Meep just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
 
@@ -103,11 +103,11 @@ If you don't want to type these commands every time you log in, you can put them
 
 ### Fun with Fortran
 
-Meep, along with many of the libraries it calls, is written in C or C++, but it also calls libraries such as BLAS and LAPACK (see below) that are usually compiled from Fortran. This can cause some added difficulty because of the various linking schemes used by Fortran compilers. Our `configure` script attempts to detect the Fortran linking scheme automatically, but in order for this to work ''you must use the same Fortran compiler and options with Meep as were used to compile BLAS/LAPACK''.
+Meep, along with many of the libraries it calls, is written in C or C++, but it also calls libraries such as BLAS and LAPACK (see below) that are usually compiled from Fortran. This can cause some added difficulty because of the various linking schemes used by Fortran compilers. Our `configure` script attempts to detect the Fortran linking scheme automatically, but in order for this to work you must use the same Fortran compiler and options with Meep as were used to compile BLAS/LAPACK.
 
-By default, Meep looks for a vendor Fortran compiler first (`f77`, `xlf`, etcetera) and then looks for GNU `g77`. In order to manually specify a Fortran compiler `foobar` you would configure it with '`./configure F77=foobar ...`'.
+By default, Meep looks for a vendor Fortran compiler first (`f77`, `xlf`, etcetera) and then looks for GNU `g77`. In order to manually specify a Fortran compiler `foobar` you would configure it with `./configure F77=foobar ...`.
 
-If, when you compiled BLAS/LAPACK, you used compiler options that alter the linking scheme (e.g. `g77`'s `-fcase-upper` or `-fno-underscoring`), you will need to pass the same flags to Meep via '`./configure FFLAGS="...''flags''..." ...`'.
+If, when you compiled BLAS/LAPACK, you used compiler options that alter the linking scheme (e.g. `g77`'s `-fcase-upper` or `-fno-underscoring`), you will need to pass the same flags to Meep via `./configure FFLAGS=...flags... ...`.
 
 ### Picking a Compiler
 
@@ -126,7 +126,7 @@ BLAS and LAPACK (recommended)
 
 BLAS and LAPACK libraries are required in order to install [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
 
-Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance-critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, tt makes a big difference if you also use [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB).
+Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance-critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, it makes a big difference if you also use [MPB](https://mpb.readthedocs.io).
 
 ### BLAS
 
@@ -177,7 +177,7 @@ libctl (recommended)
 
 [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl), which requires Guile, is required to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **3.2 or later** is required.
 
-Instead of using Guile directly, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](http://ab-initio.mit.edu/libctl), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/The_libctl_Manual), as this will give you a general overview of what the user interface will be like.
+Instead of using Guile directly, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
 
 If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the MPB or Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
 
@@ -233,7 +233,7 @@ Install into `dir/bin`, etcetera, as described above.
 
 **`--with-mpi`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep-mpi.` Requires MPI to be installed, as described above. Does **not** compile the serial Meep. If you want that, you will have to `make distclean` and install the serial version separately. Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS="-lfoo" ...`).
+Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep-mpi.` Requires MPI to be installed, as described above. Does **not** compile the serial Meep. If you want that, you will have to `make distclean` and install the serial version separately. Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
 
 **`--with-libctl=dir`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

@@ -2,13 +2,13 @@
 # Scheme Tutorial
 ---
 
-[TOC]
-
 In this page, we'll go through a couple of simple examples that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes using Meep. All of the examples here are two-dimensional calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features, but of course Meep can do similar calculations in 3d.
 
 This tutorial uses the Scheme scripting interface to Meep, which is what we expect most users to use most of the time. There is also a C++ interface that may give additional flexibility in some situations; that is described in the [C++ tutorial](C++_Tutorial.md).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses our free [h5utils](http://ab-initio.mit.edu/wiki/index.php/H5utils) programs. You could also use any other program, such as [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html), that supports reading HDF5 files.
+
+[TOC]
 
 The ctl File
 ------------
@@ -17,13 +17,13 @@ The use of Meep revolves around the control file, abbreviated "ctl" and typicall
 
 Don't worry, though—simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
 
-The ctl file is actually implemented on top of the [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) library, a set of utilities that are in turn built on top of the Scheme language. Thus, there are three sources of possible commands and syntax for a ctl file:
+The ctl file is actually implemented on top of the [libctl](https://libctl.readthedocs.io) library, a set of utilities that are in turn built on top of the Scheme language. Thus, there are three sources of possible commands and syntax for a ctl file:
 
 -   [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) a powerful and beautiful programming language developed at MIT. The syntax is particularly simple: all statements are of the form `(function` `arguments...)`. We run Scheme under the [Guile](https://en.wikipedia.org/wiki/GNU_Guile) interpreter which is designed to be plugged into programs as a scripting and extension language. You don't need to know much Scheme for a basic ctl file, but it is always there if you need it. More information is available on [Guile and Scheme](Guile_and_Scheme_Information.md).
--   [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl), a library that we built on top of Guile to simplify communication between Scheme and scientific computation software. libctl sets the basic tone of the interface and defines a number of useful functions (such as multi-variable optimization, numeric integration, and so on). See the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/Libctl_manual) pages.
+-   [libctl](https://libctl.readthedocs.io/), a library that we built on top of Guile to simplify communication between Scheme and scientific computation software. libctl sets the basic tone of the interface and defines a number of useful functions (such as multi-variable optimization, numeric integration, and so on). See the [libctl manual](https://libctl.readthedocs.io).
 -   Meep itself, which defines all the interface features that are specific to FDTD calculations. This manual is primarily focused on documenting these features.
 
-At this point, please take a moment to leaf through the libctl tutorial to get a feel for the basic style of the interface, before we get to the Meep-specific stuff below. (If you've used [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), all of this stuff should already be familiar, although Meep is somewhat more complex because it can perform a wider variety of computations.)
+At this point, please take a moment to leaf through the libctl tutorial to get a feel for the basic style of the interface, before we get to the Meep-specific stuff below. [MPB](http://mpb.readthedocs.io) has a similar interface.
 
 Okay, let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command-line (herein denoted by the `unix%` prompt):
 
@@ -46,7 +46,7 @@ Before we define the structure, however, we have to define the computational cel
 (set! geometry-lattice (make lattice (size 16 8 no-size)))
 ```
 
-(The name `geometry-lattice` comes from [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported.) `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter says that the computational cell has no size in the *z* direction, i.e. it is two-dimensional.
+(The name `geometry-lattice` comes from [MPB](http://mpb.readthedocs.io), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported.) `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter says that the computational cell has no size in the *z* direction, i.e. it is two-dimensional.
 
 Now, we can add the waveguide. Most commonly, the structure is specified by a `list` of geometric objects, stored in the `geometry` variable. Here, we do:
 
@@ -246,7 +246,7 @@ Above, we hard-coded all of the parameters like the cell size, the waveguide wid
 ```
 
 
-(Notice that a semicolon "`;`" begins a comment, which is ignored by Meep.) `define-param` is a [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) feature to define variables that can be overridden from the command line. We could now do `meep` `sx=17` `tut-wvg-bend-trans.ctl` to change the X size to 17, without editing the ctl file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
+(Notice that a semicolon "`;`" begins a comment, which is ignored by Meep.) `define-param` is a [libctl](https://libctl.readthedocs.io) feature to define variables that can be overridden from the command line. We could now do `meep` `sx=17` `tut-wvg-bend-trans.ctl` to change the X size to 17, without editing the ctl file, for example. We'll also define a couple of parameters to set the width of the waveguide and the "padding" between it and the edge of the computational cell:
 
 ```
 (define-param pad 4) ; padding distance between waveguide and cell edge         
