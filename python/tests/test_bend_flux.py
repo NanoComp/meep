@@ -2,12 +2,9 @@
 # From the Meep tutorial: transmission around a 90-degree waveguide bend in 2d.
 from __future__ import division
 
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import meep as mp
-import geom as gm
+import meep.geom as gm
+from meep.source import GaussianSource
 
 
 # dummy material function needed to pass to structure()
@@ -57,9 +54,9 @@ def bend_flux(no_bend):
 
     fcen = 0.15  # pulse center frequency
     df = 0.1
-    src = mp.gaussian_src_time(fcen, df)
+    src = GaussianSource(fcen, df)
     v = mp.volume(mp.vec(1.0 - 0.5 * sx, wvg_ycen), mp.vec(0.0, w))
-    f.add_volume_source(mp.Ez, src, v)
+    f.add_volume_source(mp.Ez, src.swigobj, v)
 
     f_start = fcen - 0.5 * df
     f_end = fcen + 0.5 * df

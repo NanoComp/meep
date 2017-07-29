@@ -82,7 +82,7 @@ initialize::initialize(int &argc, char** &argv) {
   MPI_Init(&argc, &argv);
   int major, minor;
   MPI_Get_version(&major, &minor);
-  if (!quiet) master_printf("Using MPI version %d.%d, %d processes\n", 
+  if (!quiet) master_printf("Using MPI version %d.%d, %d processes\n",
 			    major, minor, count_processors());
 #else
   UNUSED(argc);
@@ -452,6 +452,14 @@ int count_processors() {
 #endif
 }
 
+bool with_mpi() {
+#ifdef HAVE_MPI
+  return true;
+#else
+  return false;
+#endif
+}
+
 void fields::boundary_communications(field_type ft) {
   // Communicate the data around!
 #if 0 // This is the blocking version, which should always be safe!
@@ -554,7 +562,7 @@ void master_fclose(FILE *f) {
    of code that should be executed by only one process at a time.
 
    They work by having each process wait for a message from the
-   previous process before starting. 
+   previous process before starting.
 
    Each critical section is passed an integer "tag"...ideally, this
    should be a unique identifier for each critical section so that
@@ -569,7 +577,7 @@ void begin_critical_section(int tag)
      if (process_rank > 0) { /* wait for a message before continuing */
 	  MPI_Status status;
 	  int recv_tag = tag - 1; /* initialize to wrong value */
-	  MPI_Recv(&recv_tag, 1, MPI_INT, process_rank - 1, tag, 
+	  MPI_Recv(&recv_tag, 1, MPI_INT, process_rank - 1, tag,
 		   mycomm, &status);
 	  if (recv_tag != tag) abort("invalid tag received in begin_critical_section");
      }
@@ -585,7 +593,7 @@ void end_critical_section(int tag)
      MPI_Comm_rank(mycomm, &process_rank);
      MPI_Comm_size(mycomm, &num_procs);
      if (process_rank != num_procs - 1) { /* send a message to next process */
-	  MPI_Send(&tag, 1, MPI_INT, process_rank + 1, tag, 
+	  MPI_Send(&tag, 1, MPI_INT, process_rank + 1, tag,
 		   mycomm);
      }
 #else
