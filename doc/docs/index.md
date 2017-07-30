@@ -63,4 +63,4 @@ Contacts and Feedback
 
 If you have questions or problems regarding Meep, you are encouraged to query the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/).
 
-For professional consulting as well as free access to Meep in the public cloud via Amazon Web Services (AWS), see [Simpetus](http://www.simpetuscloud.com).
+Professional consulting services as well as free access to Meep in the public cloud via Amazon Web Services (AWS) are provided by [Simpetus](http://www.simpetuscloud.com).

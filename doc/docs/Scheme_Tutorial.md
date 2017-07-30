@@ -2,9 +2,7 @@
 # Scheme Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes using Meep. All of the examples here are two-dimensional calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features, but of course Meep can do similar calculations in 3d.
-
-This tutorial uses the Scheme scripting interface to Meep, which is what we expect most users to use most of the time. There is also a C++ interface that may give additional flexibility in some situations; that is described in the [C++ tutorial](C++_Tutorial.md).
+In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are two-dimensional calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetuscloud.com/projects.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses our free [h5utils](http://ab-initio.mit.edu/wiki/index.php/H5utils) programs. You could also use any other program, such as [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html), that supports reading HDF5 files.
 
@@ -13,7 +11,7 @@ In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files 
 The ctl File
 ------------
 
-The use of Meep revolves around the control file, abbreviated "ctl" and typically called something like `foo.ctl` (although you can use any file name you wish). The ctl file specifies the geometry you wish to study, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
+The use of Meep revolves around the control file, abbreviated "ctl" and typically called something like `foo.ctl`. The ctl file specifies the geometry you wish to study, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
 
 Don't worry, though—simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
 

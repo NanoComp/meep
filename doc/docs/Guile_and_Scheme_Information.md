@@ -2,7 +2,7 @@
 # Guile and Scheme Information
 ---
 
-There are many places you can go to find out more regarding Guile and the Scheme programming language. We list a few of them here:
+There are many places you can go to find out more regarding Guile and the Scheme programming language. We list a few of them here.
 
 [TOC]
 

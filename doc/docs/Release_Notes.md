@@ -2,7 +2,7 @@
 # Release Notes
 ---
 
-Here, we describe what has changed between releases of the [Meep](index.md) package. You can also refer to the `NEWS` file in the Meep package (or the `ChangeLog` file for a more detailed listing).
+Here, we describe what has changed between releases of the [Meep](index.md) package. You can also refer to the `NEWS` file in the Meep package or the `ChangeLog` file for a more detailed listing.
 
 Meep 1.3
 --------
