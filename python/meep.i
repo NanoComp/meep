@@ -37,7 +37,63 @@ extern number adaptive_integration(multivar_func f, number *xmin, number *xmax,
                                    integer n, void *fdata, number abstol,
                                    number reltol, integer maxnfe, number *esterr,
                                    integer *errflag);
+static double py_pml_profile(double u, void *f);
+static double py_pml_profile2(int dim, double *u, void *f);
+static double py_pml_profile2u(int dim, double *u, void *f);
 %}
+
+// Wrapper for Python PML profile function
+static double py_pml_profile(double u, void *f) {
+    PyObject *func = (PyObject *)f;
+    PyObject *d = PyFloat_FromDouble(u);
+
+    if(PyCallable_Check(func)) {
+        PyObject *pyret = PyObject_FunctionObjArgs(func, d, NULL);
+        double ret = PyFloat_AsDouble(pyret);
+        Py_XDECREF(pyret);
+        Py_XDECREF(d);
+        return ret;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Object is not callable");
+        return 0;
+    }
+}
+
+// For passing to multidimensional integration routine
+static double py_pml_profile2(int dim, double *u, void *f) {
+    PyObject *func = (PyObject *)f;
+    PyObject *d = PyFloat_FromDouble(*u);
+    (void)dim;
+
+    if(PyCallable_Check(func)) {
+        PyObject *pyret = PyObject_FunctionObjArgs(func, d, NULL);
+        double ret = PyFloat_AsDouble(pyret);
+        Py_XDECREF(pyret);
+        Py_XDECREF(d);
+        return ret;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Object is not callable");
+        return 0;
+    }
+}
+
+// For integrating profile(u) * u
+static double py_pml_profile2u(int dim, double *u, void *f) {
+    PyObject *func = (PyObject *)f;
+    PyObject *d = PyFloat_FromDouble(*u);
+    (void)dim;
+
+    if(PyCallable_Check(func)) {
+        PyObject *pyret = PyObject_FunctionObjArgs(func, d, NULL);
+        double ret = PyFloat_AsDouble(pyret);
+        Py_XDECREF(pyret);
+        Py_XDECREF(d);
+        return ret * (*u);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Object is not callable");
+        return 0;
+    }
+}
 
 %include "numpy.i"
 
@@ -74,10 +130,9 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 #include "typemap_utils.cpp"
 
-static double py_pml_profile(double u, void *f);
-static double py_pml_profile2(int dim, double *u, void *f);
-static double py_pml_profile2u(int dim, double *u, void *f);
 %}
+
+
 
 // Typemap suite for double func(meep::vec &)
 

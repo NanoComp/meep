@@ -39,7 +39,6 @@ class Pml(object):
         self.mean_stretch = mean_stretch
         self.pml_profile = pml_profile
 
-        # TODO(chogan): Set pml_profile on boundary_region?
         if direction == -1 and side == -1:
             self.swigobj = mp.pml(thickness, r_asymptotic, mean_stretch)
         elif direction == -1:
@@ -109,20 +108,23 @@ class Volume(object):
 
 class Simulation(object):
 
-    def __init__(self, cell, geometry, sources, resolution, dimensions=2, pml_layers=[], verbose=False):
+    def __init__(self, cell, geometry, sources, resolution,
+                 dimensions=2, pml_layers=[], symmetries=[], verbose=False):
         self.cell = cell
-        self.geometry_center = None
+        self.geometry = geometry
+        self.sources = sources
         self.resolution = resolution
+        self.dimensions = dimensions
+        self.pml_layers = pml_layers
+        self.symmetries = symmetries
+        self.geometry_center = None
         self.eps_averaging = True
         self.subpixel_tol = 1e-4
         self.subpixel_maxeval = 100000
         self.ensure_periodicity = False
-        self.geometry = geometry
         self.extra_materials = []
         self.default_material = None
         self.epsion_input_file = ''
-        self.pml_layers = pml_layers
-        self.symmetries = []
         self.num_chunks = 0
         self.courant = 0.5
         self.global_d_conductivity = 0
@@ -132,12 +134,10 @@ class Simulation(object):
         self.fields = None
         self.structure = None
         self.accurate_fields_near_cylorigin = False
-        self.sources = []
         self.m = 0
         self.force_complex_fields = False
         self.verbose = verbose
         self.progress_interval = 4
-        self.dimensions = dimensions
         self.init_fields_hooks = []
         self.progress_interval = 4
         self.run_index = 0
@@ -565,8 +565,8 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
             pml.mean_stretch,
             mp.py_pml_profile,
             pml.pml_profile,
-            adaptive_integration(),                                                            errflag),
-            adaptive_integration(f=mp.py_pml_profile2u),
+            adaptive_integration(),
+            adaptive_integration(f=mp.py_pml_profile2u)
         )
 
         if pml.direction == -1:
