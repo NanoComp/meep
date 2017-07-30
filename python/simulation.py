@@ -1,6 +1,9 @@
 from __future__ import division, print_function
 
+import functools
 import numbers
+import os
+import re
 
 import meep as mp
 from meep.geom import Vector3
@@ -26,17 +29,23 @@ class Pml(object):
     def __init__(self, thickness,
                  direction=-1,
                  side=-1,
-                 strength=1.0,
                  r_asymptotic=1e-15,
                  mean_stretch=1.0,
                  pml_profile=lambda u: u * u):
 
         self.direction = direction
         self.side = side
-        self.strength = strength
         self.r_asymptotic = r_asymptotic
         self.mean_stretch = mean_stretch
         self.pml_profile = pml_profile
+
+        # TODO(chogan): Set pml_profile on boundary_region?
+        if direction == -1 and side == -1:
+            self.swigobj = mp.pml(thickness, r_asymptotic, mean_stretch)
+        elif direction == -1:
+            self.swigobj = mp.pml(thickness, side, r_asymptotic, mean_stretch)
+        else:
+            self.swigobj = mp.pml(thickness, direction, side, r_asymptotic, mean_stretch)
 
     @property
     def r_asymptotic(self):
@@ -56,6 +65,34 @@ class Pml(object):
             self._mean_stretch = val
         else:
             raise ValueError("Pml.mean_stretch must be >= 1. Got {}".format(val))
+
+
+class Absorber(Pml):
+    pass
+
+
+class Symmetry(object):
+
+    def __init__(self, direction, phase=1 + 0j):
+        self.direction = direction
+        self.phase = phase
+        self.swigobj = None
+
+
+class Rotate2(Symmetry):
+    pass
+
+
+class Rotate4(Symmetry):
+    pass
+
+
+class Mirror(Symmetry):
+    pass
+
+
+class Identity(Symmetry):
+    pass
 
 
 class Volume(object):
@@ -104,6 +141,13 @@ class Simulation(object):
         self.init_fields_hooks = []
         self.progress_interval = 4
         self.run_index = 0
+        self.filename_prefix = ''
+        self.include_files = []
+        self.output_append_h5 = []
+        self.output_single_precision = False
+        self.output_volume = []
+        self.last_eps_filename = ''
+        self.output_h5_hook = lambda fname: False
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -121,29 +165,6 @@ class Simulation(object):
         return self.dimensions
 
     def _init_structure(self, k=None):
-        # TODO(chogan): More descriptive name for not_not_k?
-        # not_not_k = True if k is None else k
-
-        # self.structure = mp.structure(
-        #     self._infer_dimensions(k),
-        #     self.cell.size,
-        #     self.geometry_center,
-        #     self.resolution,
-        #     self.eps_averaging,
-        #     self.subpixel_tol,
-        #     self.subpixel_maxeval,
-        #     self.ensure_periodicity and not_not_k,
-        #     self.geometry,
-        #     self.extra_materials,
-        #     self.default_material,
-        #     self.epsion_input_file,
-        #     self.pml_layers,
-        #     self.symmetries,
-        #     self.num_chunks,
-        #     self.courant,
-        #     self.global_d_conductivity,
-        #     self.global_b_conductivity
-        # )
         dims = self._infer_dimensions(k)
 
         if dims == 0 or dims == 1:
@@ -162,7 +183,28 @@ class Simulation(object):
         def dummy_eps(v):
             return 1
 
-        self.structure = mp.structure(gv, dummy_eps)
+        sym = mp.symmetry()
+
+        # Initialize swig objects for each symmetry and combine them into one
+        for s in self.symmetries:
+            if isinstance(s, Identity):
+                s.swigobj = mp.identity()
+            elif isinstance(s, Rotate2):
+                s.swigobj = mp.rotate2(s.direction, gv)
+                sym += s.swigobj * complex(s.phase.real, s.phase.imag)
+            elif isinstance(s, Rotate4):
+                s.swigobj = mp.rotate4(s.direction, gv)
+                sym += s.swigobj * complex(s.phase.real, s.phase.imag)
+            elif isinstance(s, Mirror):
+                s.swigobj = mp.mirror(s.direction, gv)
+                sym += s.swigobj * complex(s.phase.real, s.phase.imag)
+            else:
+                s.swigobj = mp.symmetry()
+
+        # TODO(chogan): Create a boundary_region from pml_layers
+        br = _create_boundary_region_from_pml_layers(self.pml_layers, gv)
+
+        self.structure = mp.structure(gv, dummy_eps, br, sym)
         mp.set_materials_from_geometry(self.structure, self.geometry)
 
     def _init_fields(self):
@@ -192,7 +234,7 @@ class Simulation(object):
         if use_real(self):
             self.fields.use_real_fields()
         else:
-            print("Meep: using comlex fields.")
+            print("Meep: using complex fields.")
 
         if self.k_point:
             v = Vector3(self.k_point.x, self.k_point.y) if self.special_kz else self.k_point
@@ -205,20 +247,23 @@ class Simulation(object):
             hook()
 
     def display_progress(self, t0, t, dt):
-        t_0 = mp.wall_time()
-        tlast = mp.wall_time()
+        closure = {
+            't_0': mp.wall_time(),
+            'tlast': mp.wall_time(),
+        }
 
-        t1 = mp.wall_time()
-
-        if t1 - tlast >= dt:
-            msg_fmt = "Meep progress: {}/{} = {:.1g}%% done in {:.1g}s, {} s to go"
-            val1 = mp.time() - t0
-            val2 = t
-            val3 = (mp.time() - t0) / (0.01 * t)
-            val4 = t1 - t_0
-            val5 = ((t1 - t_0) * (t / (mp.time() - t0)) - (t1 - t_0))
-            print(msg_fmt.format(val1, val2, val3, val4, val5))
-            tlast = t1
+        def f():
+            t1 = mp.wall_time()
+            if t1 - closure['tlast'] >= dt:
+                msg_fmt = "Meep progress: {}/{} = {:.1g}%% done in {:.1g}s, {} s to go"
+                val1 = mp.time() - t0
+                val2 = t
+                val3 = (mp.time() - t0) / (0.01 * t)
+                val4 = t1 - closure['t_0']
+                val5 = ((t1 - closure['t_0']) * (t / (mp.time() - t0)) - (t1 - closure['t_0']))
+                print(msg_fmt.format(val1, val2, val3, val4, val5))
+                closure['tlast'] = t1
+        return f
 
     def _round_time(self):
         if self.fields is None:
@@ -231,6 +276,17 @@ class Simulation(object):
             self._init_fields()
 
         return self.fields.time()
+
+    # TODO(chogan): Property getter?
+    def _get_filename_prefix(self):
+        if self.filename_prefix is False:
+            return ""
+        else:
+            if self.include_files and self.filename_prefix == '':
+                filename = os.path.split(self.include_files[0])
+                return re.sub(r'\.py', '', re.sub(r'\.ctl', '', filename))
+            else:
+                return self.filename_prefix
 
     def _eval_step_func(self, func, todo):
         # TODO(chogan): Should func have a 'self' param?
@@ -262,43 +318,51 @@ class Simulation(object):
         if isinstance(cond, numbers.Number):
             closure = {
                 'stop_time': cond,
-                't0': self._round_time()
+                't0': self._round_time(),
             }
 
             def stop_cond():
                 return self._round_time() >= closure['t0'] + closure['stop_time']
 
-            # new_step_funcs = step_funcs.copy()
-            # new_step_funcs.update({'display_progress': (self, t0, t0 + stop_time, self.progress_interval)})
-            self._run_until(stop_cond, step_funcs)
-        else:
+            cond = stop_cond
+
+            new_step_funcs = [f for f in step_funcs]
+
+            new_step_funcs.append(self.display_progress(
+                closure['t0'], closure['t0'] + closure['stop_time'], self.progress_interval
+            ))
+
+            step_funcs = new_step_funcs
+
+        while not cond():
             for func in step_funcs:
                 self._eval_step_func(func, 'step')
 
-            if cond():
-                for func in step_funcs:
-                    self._eval_step_func(func, 'finish')
+            self.fields.step()
 
-                print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self._time(), self.fields.t))
-                self.run_index += 1
-            else:
-                self.fields.step()
-                self._run_until(cond, step_funcs)
+        for func in step_funcs:
+            self._eval_step_func(func, 'finish')
+
+        print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self._time(), self.fields.t))
+        self.run_index += 1
 
     def _run_sources_until(self, cond, step_funcs):
         if self.fields is None:
             self._init_fields()
 
-        ts = self.fields.last_source_time()
+        closure = {'ts': self.fields.last_source_time()}
 
         if isinstance(cond, numbers.Number):
-            arg = (ts - self._round_time()) + cond
+            arg = (closure['ts'] - self._round_time()) + cond
         else:
             def f():
-                cond and self._round_time() >= ts
+                cond() and self._round_time() >= closure['ts']
             arg = f
 
-        self._run_until(step_funcs, arg)
+        self._run_until(arg, step_funcs)
+
+    def _run_sources(self, step_funcs):
+        self._run_sources_until(self, 0, step_funcs)
 
     def _harminv(self, data, dt, results, c, pt, fcen, df, maxbands):
         pass
@@ -366,16 +430,28 @@ class Simulation(object):
     def add_flux(self, flux):
         pass
 
-    def output_component(self, c, h5file):
+    def output_component(self, c, *h5file):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
-        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
+        vol = self.fields.total_volume() if not self.output_volume else self.output_volume
+        h5 = self.output_append_h5 if not h5file else h5file[0]
+        append = not h5file and self.output_append_h5
 
-        # self.fields.output_hdf5(c, vol)
+        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision, self._get_filename_prefix())
+
+        if not h5file:
+            nm = self.fields.h5file.name(mp.component_name(c), self._get_filename_prefix(), True)
+            if c == mp.Dielectric:
+                self.last_eps_filename = nm
+            self.output_h5_hook(nm)
 
     def output_epsilon(self):
         self.output_component(mp.Dielectric)
+
+    # TODO(chogan): Write rest of convenience functions generated in define-output-field
+    def output_efield_z(self):
+        self.output_component(self, mp.Ez)
 
     def when_true_funcs(self, cond, *step_funcs):
         def f(todo):
@@ -397,6 +473,23 @@ class Simulation(object):
                     self._eval_step_func(f, todo)
                 closure['done'] = True
         return step_func
+
+    def at_every(self, dt, *step_funcs):
+        if self.fields is None:
+            self._init_fields()
+
+        closure = {
+            'tlast': self._round_time(),
+            'step_funcs': step_funcs
+        }
+
+        def f(todo):
+            t = self._round_time()
+            if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * self.fields.dt):
+                for func in closure['step_funcs']:
+                    self._eval_step_func(func, todo)
+                closure['tlast'] = t
+        return f
 
     def after_time(self, t, *step_funcs):
         if self.fields is None:
@@ -435,3 +528,72 @@ class Simulation(object):
             self._run_sources(step_funcs)
         else:
             raise ValueError("Invalid run configuration")
+
+
+def _create_boundary_region_from_pml_layers(pml_layers, gv):
+    br = mp.boundary_region()
+
+    for pml in pml_layers:
+
+        if isinstance(pml, Absorber):
+            continue
+
+        umin = 0.0
+        umax = 1.0
+        esterr = 1.0
+        errflag = 1
+
+        adaptive_integration = functools.partial(
+            mp.adaptive_integration,
+            f=mp.py_pml_profile2,
+            xmin=umin,
+            xmax=umax,
+            n=1,
+            fdata=pml.pml_profile,
+            abstol=1e-9,
+            reltol=1e-4,
+            maxnfe=50000,
+            esterr=esterr,
+            errflag=errflag
+        )
+
+        create_boundary_region = functools.partial(
+            mp.boundary_region,
+            mp.boundary_region.PML,
+            pml.thickness,
+            pml.r_asymptotic,
+            pml.mean_stretch,
+            mp.py_pml_profile,
+            pml.pml_profile,
+            adaptive_integration(),                                                            errflag),
+            adaptive_integration(f=mp.py_pml_profile2u),
+        )
+
+        if pml.direction == -1:
+            d = mp.start_at_direction(gv.dim)
+            loop_stop_directi = mp.stop_at_direction(gv.dim)
+
+            while d < loop_stop_directi:
+                if pml.side == -1:
+                    b = mp.High
+                    loop_stop_bi = mp.Low
+
+                    while b != loop_stop_bi:
+                        br += create_boundary_region(d, b)
+                        b = (b + 1) % 2
+                        loop_stop_bi = mp.High
+                else:
+                    br += create_boundary_region(d, pml.side)
+                d += 1
+        else:
+            if pml.side == -1:
+                b = mp.High
+                loop_stop_bi = mp.Low
+
+                while b != loop_stop_bi:
+                    br += create_boundary_region(pml.direction)
+                    b = (b + 1) % 2
+                    loop_stop_bi = mp.High
+            else:
+                br += create_boundary_region(pml.direction, pml.side)
+    return br

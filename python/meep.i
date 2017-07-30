@@ -24,6 +24,7 @@
 
 #include "meep/vec.hpp"
 #include "meep.hpp"
+#include "meep/mympi.hpp"
 #include "ctl-math.h"
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
@@ -32,7 +33,10 @@ using namespace meep;
 using namespace meep_geom;
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
-
+extern number adaptive_integration(multivar_func f, number *xmin, number *xmax,
+                                   integer n, void *fdata, number abstol,
+                                   number reltol, integer maxnfe, number *esterr,
+                                   integer *errflag);
 %}
 
 %include "numpy.i"
@@ -70,6 +74,9 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 #include "typemap_utils.cpp"
 
+static double py_pml_profile(double u, void *f);
+static double py_pml_profile2(int dim, double *u, void *f);
+static double py_pml_profile2u(int dim, double *u, void *f);
 %}
 
 // Typemap suite for double func(meep::vec &)
@@ -200,9 +207,13 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 %include "vec.i"
 %include "meep.hpp"
+%include "meep/mympi.hpp"
 %include "meepgeom.hpp"
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
-
+extern number adaptive_integration(multivar_func f, number *xmin, number *xmax,
+                                   integer n, void *fdata, number abstol,
+                                   number reltol, integer maxnfe, number *esterr,
+                                   integer *errflag);
 %ignore eps_func;
 %ignore inveps_func;

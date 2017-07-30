@@ -4,7 +4,7 @@ from __future__ import division
 import meep as mp
 from meep.geom import Cylinder, Lattice, Medium, Vector3
 from meep.source import GaussianSource, Source
-from meep.simulation import Simulation, Pml, no_size
+from meep.simulation import Simulation, Mirror, Pml, no_size
 
 
 n = 3.4  # index of waveguide
@@ -17,8 +17,8 @@ sxy = 2 * (r + w + pad + dpml)  # cell size
 # Create a ring waveguide by two overlapping cylinders - later objects
 # take precedence over earlier objects, so we put the outer cylinder first.
 # and the inner (air) cylinder second.
-
-dielectric = Medium(epsilon_diag=Vector3(n * n, n * n, n * n))
+nsqr = n * n
+dielectric = Medium(epsilon_diag=Vector3(nsqr, nsqr, nsqr))
 air = Medium(epsilon_diag=Vector3(1, 1, 1))
 
 c1 = Cylinder(r + w, material=dielectric)
@@ -38,22 +38,18 @@ sim = Simulation(cell=Lattice(size=Vector3(sxy, sxy, no_size)),
                  geometry=[c1, c2],
                  sources=[src],
                  resolution=10,
+                 symmetries=[Mirror(mp.Y)],
                  pml_layers=[Pml(dpml)])
 
-# exploit the mirror symmetry in structure+source:
-# TODO(chogan): Write python wrapper
-sim.symmetries = [mp.mirror(mp.Y)]
+# harminv_func = sim.harminv(mp.Ez, Vector3(r + 0.1), fcen, df)
 
-
-def say_hi():
-    print("Hi")
-
-harminv_func = sim.harminv(mp.Ez, Vector3(r + 0.1), fcen, df)
-
-sim.run(sim.at_beginning(say_hi), sim.after_sources(harminv_func), until=300, sources=True)
+sim.run(
+    sim.at_beginning(sim.output_epsilon),
+    # sim.after_sources(harminv_func),
+    until=300, sources=True
+)
 
 # Output fields for one period at the end.  (If we output
 # at a single time, we might accidentally catch the Ez field when it is
 # almost zero and get a distorted view.)
-
-# sim.run(until=1 / fcen, *step_funcs)
+sim.run(sim.at_every((1 / fcen / 20), sim.output_efield_z), until=(1 / fcen))
