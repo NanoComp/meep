@@ -2,7 +2,7 @@
 # Installation
 ---
 
-**Important Note**: Installing Meep from source can be challenging for novice users. As a simple workaround, the latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetuscloud.com/launchsims.html).
+**Note**: Installing Meep from source can be challenging for novice users. As a simple workaround, the latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetuscloud.com/launchsims.html).
 
 The main effort in installing Meep lies in installing the various prerequisite packages. This requires some understanding of how to install software on Unix systems.
 
@@ -15,22 +15,24 @@ For those installing Meep on a parallel supercomputer, a note of caution: most s
 Installation on Linux
 -------------------------
 
-For most [Linux distributions](https://en.wikipedia.org/wiki/Linux_distribution), there should be precompiled packages for most of Meep's prerequisites below, and we highly recommend installing those prerequisites using the available packages for your system whenever possible. Using precompiled packages means that you don't have to worry about how to install things manually. You are using packages which have already been tweaked to work well with your system, and usually your packages will be automatically upgraded when you upgrade the rest of your system.
+For most [Linux distributions](https://en.wikipedia.org/wiki/Linux_distribution), there should be precompiled packages for most of Meep's prerequisites below, and we *highly* recommend installing those prerequisites using the available packages for your system whenever possible. Using precompiled packages means that you don't have to worry about how to install things manually. You are using packages which have already been tweaked to work well with your system, and usually your packages will be automatically upgraded when you upgrade the rest of your system.
 
-The following precompiled packages are available: BLAS and LAPACK (possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software)), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [H5utils](http://ab-initio.mit.edu/wiki/index.php/H5utils).
+The following precompiled packages are available: BLAS and LAPACK possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [H5utils](http://ab-initio.mit.edu/wiki/index.php/H5utils).
 
-The easiest installation is on [Debian](https://en.wikipedia.org/wiki/Debian) and [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(operating_system)) which have precompiled packages for Meep. On Debian, just do:
+The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(operating_system)) which has precompiled packages for Meep:
 
 ```
 apt-get install meep h5utils
 ```
 
-to install everything. See also the [Download page](Download.md).
+To build the latest version of Meep from source on Ubuntu 16.04, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html). 
 
-Installation on MacOS X
+The source tarballs are available on the [releases pages](https://github.com/stevengj/meep/releases).
+
+Installation on macOS 
 -----------------------
 
-Since [MacOS X](https://en.wikipedia.org/wiki/Mac_OS_X) is, at its heart, a Unix system, one can, in principle compile and install Meep and all its prerequisites just as on any other Unix system. However, this process is much easier using the [Homebrew](https://en.wikipedia.org/wiki/Homebrew_(package_management_software)) package to install most of the prerequisites, since it will handle dependencies and other details for you. You will need [administrator privileges](http://support.apple.com/kb/PH3920) on your Mac.
+Since [macOS](https://en.wikipedia.org/wiki/MacOS) is, at its heart, a Unix system, one can, in principle compile and install Meep and all its prerequisites just as on any other Unix system. However, this process is much easier using the [Homebrew](https://en.wikipedia.org/wiki/Homebrew_(package_management_software)) package to install most of the prerequisites, since it will handle dependencies and other details for you. You will need [administrator privileges](http://support.apple.com/kb/PH3920) on your Mac.
 
 The first steps are:
 
@@ -49,9 +51,11 @@ Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [
 ./configure && make && make install
 ```
 
-Use the same commands for [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl), then [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB), then Meep.
+Use the same commands for [libctl](https://libctl.readthedocs.io), then [MPB](https://mpb.readthedocs.io), then Meep.
 
 You are done, and can now run Meep just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
+
+To build the latest version of Meep from source on macOS Sierra, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
 Unix Installation Basics
 ------------------------
@@ -99,11 +103,11 @@ If you don't want to type these commands every time you log in, you can put them
 
 ### Fun with Fortran
 
-Meep, along with many of the libraries it calls, is written in C or C++, but it also calls libraries such as BLAS and LAPACK (see below) that are usually compiled from Fortran. This can cause some added difficulty because of the various linking schemes used by Fortran compilers. Our `configure` script attempts to detect the Fortran linking scheme automatically, but in order for this to work ''you must use the same Fortran compiler and options with Meep as were used to compile BLAS/LAPACK''.
+Meep, along with many of the libraries it calls, is written in C or C++, but it also calls libraries such as BLAS and LAPACK (see below) that are usually compiled from Fortran. This can cause some added difficulty because of the various linking schemes used by Fortran compilers. Our `configure` script attempts to detect the Fortran linking scheme automatically, but in order for this to work you must use the same Fortran compiler and options with Meep as were used to compile BLAS/LAPACK.
 
-By default, Meep looks for a vendor Fortran compiler first (`f77`, `xlf`, etcetera) and then looks for GNU `g77`. In order to manually specify a Fortran compiler `foobar` you would configure it with '`./configure F77=foobar ...`'.
+By default, Meep looks for a vendor Fortran compiler first (`f77`, `xlf`, etcetera) and then looks for GNU `g77`. In order to manually specify a Fortran compiler `foobar` you would configure it with `./configure F77=foobar ...`.
 
-If, when you compiled BLAS/LAPACK, you used compiler options that alter the linking scheme (e.g. `g77`'s `-fcase-upper` or `-fno-underscoring`), you will need to pass the same flags to Meep via '`./configure FFLAGS="...''flags''..." ...`'.
+If, when you compiled BLAS/LAPACK, you used compiler options that alter the linking scheme (e.g. `g77`'s `-fcase-upper` or `-fno-underscoring`), you will need to pass the same flags to Meep via `./configure FFLAGS=...flags... ...`.
 
 ### Picking a Compiler
 
@@ -122,7 +126,7 @@ BLAS and LAPACK (recommended)
 
 BLAS and LAPACK libraries are required in order to install [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
 
-Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance-critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, tt makes a big difference if you also use [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB).
+Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance-critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, it makes a big difference if you also use [MPB](https://mpb.readthedocs.io).
 
 ### BLAS
 
@@ -166,14 +170,14 @@ Guile is required in order to use the Scheme interface, and is strongly recommen
 
 Guile is an extension/scripting language implementation based on Scheme, and we use it to provide a rich, fully-programmable user interface with minimal effort. It's free, of course, and you can download it from the [Guile homepage](http://www.gnu.org/software/guile/). Guile is typically included with Linux systems.
 
-- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package.
+- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package. Note: SWIG does [not support the latest version of Guile](https://github.com/swig/swig/issues/312) which requires than an older version (2.0.11) be used.
 
 libctl (recommended)
 --------------------
 
 [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl), which requires Guile, is required to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **3.2 or later** is required.
 
-Instead of using Guile directly, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](http://ab-initio.mit.edu/libctl), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](http://ab-initio.mit.edu/wiki/index.php/The_libctl_Manual), as this will give you a general overview of what the user interface will be like.
+Instead of using Guile directly, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
 
 If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the MPB or Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
 
@@ -229,7 +233,7 @@ Install into `dir/bin`, etcetera, as described above.
 
 **`--with-mpi`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep-mpi.` Requires MPI to be installed, as described above. Does **not** compile the serial Meep. If you want that, you will have to `make distclean` and install the serial version separately. Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS="-lfoo" ...`).
+Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep-mpi.` Requires MPI to be installed, as described above. Does **not** compile the serial Meep. If you want that, you will have to `make distclean` and install the serial version separately. Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
 
 **`--with-libctl=dir`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -286,7 +290,7 @@ make
 ```
 
 
-in the `meep` directory. (And subsequently, if you are editing the sources you should include `--enable-maintainer-mode` whenever you reconfigure.) To do this, however, you will need a number of additional packages beyond those listed above:
+in the `meep` directory. And subsequently, if you are editing the sources you should include `--enable-maintainer-mode` whenever you reconfigure. To do this, however, you will need a number of additional packages beyond those listed above:
 
 -   GNU [autoconf](http://www.gnu.org/software/autoconf/), [automake](http://sources.redhat.com/automake/), and [libtool](http://www.gnu.org/software/libtool/libtool.html) — these are used to create the Makefiles and configure scripts, and to build shared libraries.
 -   [SWIG](http://www.swig.org/) — the Scheme/libctl interface to Meep is largely generated by a program called *SWIG* (Simple Wrapper and Interface Generator). We currently require SWIG version 1.3.25 or later. Moreover, if you are using 1.3.27 or earlier, you must patch the file `Source/Modules/guile.cxx` with [this bug fix](http://cvs.sourceforge.net/viewcvs.py/swig/SWIG/Source/Modules/guile.cxx?r1=1.33&r2=1.34).

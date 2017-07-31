@@ -2,8 +2,6 @@
 # Band Diagram, Resonant Modes, and Transmission of a Waveguide Cavity
 ---
 
-[TOC]
-
 <center>
 ![](../images/Tut-holey-cavity.png)
 </center>
@@ -19,6 +17,8 @@ Third, by making a sequence of: ordinary waveguide with no holes, periodic struc
 In the following, we will analyze the structure in exactly **the opposite order** of what we really should do. Really, we should analyze the periodic system *first* to understand the band gap, *then* analyze the resonant mode, and then *finally* analyze the transmission spectrum. Since all of those calculations have already been done (see the reference in the book), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
 
 See also the `holey-wvg-cavity.ctl` and `holey-wvg.ctl` files included with Meep, which contain the commands below.
+
+[TOC]
 
 Transmission Spectrum
 ---------------------

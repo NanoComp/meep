@@ -2,7 +2,7 @@
 # Guile and Scheme Information
 ---
 
-There are many places you can go to find out more regarding Guile and the Scheme programming language. We list a few of them here:
+There are many places you can go to find out more regarding Guile and the Scheme programming language. We list a few of them here.
 
 [TOC]
 
@@ -68,9 +68,9 @@ In Scheme, we would then use
 
 The variable *foo* would then be a list of numbers '(1 3 12.2 14.5 16 18).
 
-### Tricks Specific to Libctl-Using Programs such as [MPB](http://ab-initio.mit.edu/wiki/index.php/MIT_Photonic_Bands) or [Meep](index.md)
+### Tricks Specific to Libctl-Using Programs such as [MPB](http://mpb.readthedocs.io) or [Meep](index.md)
 
-[libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl) has a couple of built-in functions `arith-sequence` and `interpolate` (see the [user reference](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference)) to construct lists of a regular sequence of values, which you can use in conjunction with `map` as above:
+[libctl](http://libctl.readthedocs.io) has a couple of built-in functions `arith-sequence` and `interpolate` (see the [user reference](http://ab-initio.mit.edu/wiki/index.php/Libctl_User_Reference)) to construct lists of a regular sequence of values, which you can use in conjunction with `map` as above:
 
 `(map (lambda (x) `*`...do` `stuff` `with` `x...`*`) (arith-sequence x-min dx num-x))`
 
