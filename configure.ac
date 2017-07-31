@@ -469,9 +469,7 @@ fi
 if test "x$with_python" = xno; then
    have_python=no
 else
-   AC_MSG_NOTICE([hello, AM_PATH_PYTHON])
    AM_PATH_PYTHON([],[have_python=yes],[have_python=no])
-   AC_MSG_NOTICE([hello,, have_python=$have_python])
    if test $have_python = yes; then
 
      AC_MSG_CHECKING([for Python include directory])
