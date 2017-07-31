@@ -6,11 +6,11 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free finite-difference time-domain (FDTD) simulation software package developed at MIT to model electromagnetic systems. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Its features include:
+ **Meep** is a free finite-difference time-domain (FDTD) simulation software package to model electromagnetic systems. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Its features include:
 
 -   **Free software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
--   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like systems such as [Linux](https://en.wikipedia.org/wiki/Linux) and [macOS](https://en.wikipedia.org/wiki/MacOS).
+-   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [macOS](https://en.wikipedia.org/wiki/MacOS).
 -   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
 -   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size — even/odd mirror symmetries and 90°/180° rotations.
@@ -36,7 +36,7 @@ The [tutorial](Scheme_Tutorial.md) gives examples of all of these kinds of compu
 Download
 --------
 
-The latest development sources are available on [Github](https://github.com/stevengj/meep). The source tarballs are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). The installation instructions can be found in the [Installation](Installation.md) page.
+The latest development sources are available on [GitHub](https://github.com/stevengj/meep). The source tarballs are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). The installation instructions can be found in the [Installation](Installation.md) page.
 
 Documentation
 -------------
@@ -51,7 +51,7 @@ Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu
 
 ### Bug Reports and Feature Requests
 
-For bug reports and feature requests, please [file a Meep Github issue](https://github.com/stevengj/meep/issues).
+For bug reports and feature requests, please [file a Meep GitHub issue](https://github.com/stevengj/meep/issues).
 
 Acknowledgements
 ----------------

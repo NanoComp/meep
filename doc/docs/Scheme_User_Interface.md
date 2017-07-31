@@ -4,7 +4,7 @@
 
 The Scheme user interface is documented in this page. We do not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). See also the [libctl User Reference](https://libctl.readthedocs.io/en/latest/Libctl_User_Reference/) section of the [libctl manual](https://libctl.readthedocs.io).
 
-This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [tutorial](Scheme_Tutorial.md). Also, we note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
+This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [Tutorial](Scheme_Tutorial.md). Also, we note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
 
 See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines.
 

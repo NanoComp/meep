@@ -41,8 +41,6 @@ pages:
     - Synchronizing the Magnetic and Electric Fields: 'Synchronizing_the_Magnetic_and_Electric_Fields.md'
     - Field Function Examples: 'Field_Function_Examples.md'
     - Yee Lattice: 'Yee_Lattice.md'
-    - Guile and Scheme Information: 'Guile_and_Scheme_Information.md'
-    - The Run Function is Not a Loop: 'The_Run_Function_Is_Not_A_Loop.md'
     - Units and Nonlinearity: 'Units_and_Nonlinearity.md'
 - Scheme Interface:
     - User Interface: 'Scheme_User_Interface.md'
@@ -56,6 +54,9 @@ pages:
     - Tutorial/Resonant Modes and Transmission in a Waveguide Cavity: 'Scheme_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
     - Tutorial/Material Dispersion:  'Scheme_Tutorials/Material_Dispersion.md'
     - Tutorial/Third Harmonic Generation: 'Scheme_Tutorials/Third_Harmonic_Generation.md'
+    - The Run Function is Not a Loop: 'The_Run_Function_Is_Not_A_Loop.md'
+    - Guile and Scheme Information: 'Guile_and_Scheme_Information.md'
 - C++ Interface:
     - User Interface: 'C++_User_Interface.md'
     - Tutorial/Basics:    'C++_Tutorial.md'
+

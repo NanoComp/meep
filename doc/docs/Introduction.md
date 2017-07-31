@@ -4,9 +4,9 @@
 
 Meep implements the **finite-difference time-domain** (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and then the fields are evolved in time using discrete time steps—as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems essentially exactly.
 
-In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful computational methods in electromagnetism, each of which has their own special uses—we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
+In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses—we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
 
-This introduction does *not* describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in the [tutorial](Scheme_Tutorial.md).
+This introduction does *not* describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in the [Tutorial](Scheme_Tutorial.md).
 
 [TOC]
 
@@ -40,13 +40,13 @@ Meep supports simulation in [cylindrical coordinates](Cylindrical_Coordinates.md
 
 ### Units in Meep
 
-You may have noticed the lack of annoying constants like ε<sub>0</sub>, μ<sub>0</sub>, and [c](https://en.wikipedia.org/wiki/Speed_of_light) — that's because Meep uses "dimensionless" units where all these constants are unity (you can tell it was written by theorists). As a practical matter, almost everything you might want to compute (transmission spectra, frequencies, etcetera) is expressed as a ratio anyway, so the units end up cancelling.
+You may have noticed the lack of annoying constants like ε<sub>0</sub>, μ<sub>0</sub>, and [c](https://en.wikipedia.org/wiki/Speed_of_light) — that's because Meep uses **dimensionless** units where all these constants are unity. As a practical matter, almost everything you might want to compute (transmission spectra, frequencies, etcetera) is expressed as a ratio anyway, so the units end up cancelling.
 
 In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units** (see [our online textbook](http://ab-initio.mit.edu/book), ch. 2). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
 
 Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently ω is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](http://mpb.readthedocs.io).
 
-For example, suppose we are describing some nanophotonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a = 1 \mu\textrm{m}$. Then, if we want to specify a source corresponding to $\lambda = 1.55 \mu\textrm{m}$, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
+For example, suppose we are describing some photonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a = 1 \mu\textrm{m}$. Then, if we want to specify a source corresponding to $\lambda = 1.55 \mu\textrm{m}$, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
 
 A transmission spectrum, for example, would be a ratio of transmitted to incident intensities, so the units of **E** are irrelevant unless there are nonlinearities.
 
@@ -74,9 +74,9 @@ Perhaps the most important thing you need to know is this: if the grid has some 
 
 The second most important thing you should know is that, in order to discretize the equations with second-order accuracy, FDTD methods **store different field components at different grid locations**. This discretization is known as a *Yee lattice*, and is described in more detail at: [Yee lattices](Yee_Lattice.md). As a consequence, **Meep must interpolate the field components to a common point** whenever you want to combine, compare, or output the field components (e.g. in computing energy density or flux). Most of the time, you don't need to worry too much about this interpolation since it is automatic. However, because it is a simple linear interpolation, while **E** and **D** may be discontinuous across dielectric boundaries, it means that the interpolated **E** and **D** fields may be less accurate than you might expect right around dielectric interfaces.
 
-Many references are available on FDTD methods for electromagnetism. See, for example:
+Many references are available on FDTD methods for computational electromagnetics. See, for example:
 
--   Allen Taflove and Susan C. Hagness, *Computational Electrodynamics: The Finite-Difference Time-Domain Method* (Artech: Norwood, MA, 2000).
+-   Allen Taflove and Susan C. Hagness, *Computational Electrodynamics: The Finite-Difference Time-Domain Method* (Artech: Norwood, MA, 2005).
 
 ### The Illusion of Continuity
 
@@ -86,7 +86,7 @@ For example, you specify the dielectric function as a function ε(**x**) of cont
 
 In general, the philosophy of the Meep interface is **pervasive interpolation**, so that if you change any input continuously then the response of the Meep simulation will change continuously as well, so that it will converge as rapidly and as smoothly as possible to the continuous solution as you increase the spatial resolution.
 
-For example, the ε function used internally by Meep is not simply a discretely sampled version of the ε(**x**) specified by the user. Rather, each grid point is a kind of average of the ε in the surrounding pixel. Our subpixel average is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD. See the [Meep reference](License_and_Copyright.md#referencing).
+For example, the ε function used internally by Meep is not simply a discretely sampled version of the ε(**x**) specified by the user. Rather, each grid point is a kind of average of the ε in the surrounding pixel. Our subpixel average is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD. See: [Referencing](Acknowledgements.md#referencing).
 
 Other Numerical Methods in Computational Electromagnetics
 ---------------------------------------------------------
