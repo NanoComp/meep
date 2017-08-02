@@ -37,63 +37,136 @@ extern number adaptive_integration(multivar_func f, number *xmin, number *xmax,
                                    integer n, void *fdata, number abstol,
                                    number reltol, integer maxnfe, number *esterr,
                                    integer *errflag);
-static double py_pml_profile(double u, void *f);
-static double py_pml_profile2(int dim, double *u, void *f);
-static double py_pml_profile2u(int dim, double *u, void *f);
+
+extern double py_pml_profile(double u, void *f);
+extern double py_pml_profile2(int dim, double *u, void *f);
+extern double py_pml_profile2u(int dim, double *u, void *f);
 %}
 
+%inline %{
+double py_pml_helper(PyObject *f, PyObject *d) {
+    if(!PyCallable_Check(f)) {
+        PyErr_SetString(PyExc_TypeError, "py_pml_profile: Object is not callable");
+        // TODO(chogan): Fix this error handling.
+        throw;
+    }
+    PyObject *pyret = PyObject_CallFunctionObjArgs(f, d, NULL);
+    double ret = PyFloat_AsDouble(pyret);
+    Py_XDECREF(pyret);
+    Py_XDECREF(d);
+    return ret;
+}
+
 // Wrapper for Python PML profile function
-static double py_pml_profile(double u, void *f) {
+double py_pml_profile(double u, void *f) {
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(u);
 
-    if(PyCallable_Check(func)) {
-        PyObject *pyret = PyObject_FunctionObjArgs(func, d, NULL);
-        double ret = PyFloat_AsDouble(pyret);
-        Py_XDECREF(pyret);
-        Py_XDECREF(d);
-        return ret;
-    } else {
-        PyErr_SetString(PyExc_TypeError, "Object is not callable");
-        return 0;
-    }
+    return py_pml_helper(func, d);
 }
 
 // For passing to multidimensional integration routine
-static double py_pml_profile2(int dim, double *u, void *f) {
+double py_pml_profile2(int dim, double *u, void *f) {
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(*u);
     (void)dim;
 
-    if(PyCallable_Check(func)) {
-        PyObject *pyret = PyObject_FunctionObjArgs(func, d, NULL);
-        double ret = PyFloat_AsDouble(pyret);
-        Py_XDECREF(pyret);
-        Py_XDECREF(d);
-        return ret;
-    } else {
-        PyErr_SetString(PyExc_TypeError, "Object is not callable");
-        return 0;
-    }
+    return py_pml_helper(func, d);
 }
 
 // For integrating profile(u) * u
-static double py_pml_profile2u(int dim, double *u, void *f) {
+double py_pml_profile2u(int dim, double *u, void *f) {
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(*u);
     (void)dim;
 
-    if(PyCallable_Check(func)) {
-        PyObject *pyret = PyObject_FunctionObjArgs(func, d, NULL);
-        double ret = PyFloat_AsDouble(pyret);
-        Py_XDECREF(pyret);
-        Py_XDECREF(d);
-        return ret * (*u);
-    } else {
-        PyErr_SetString(PyExc_TypeError, "Object is not callable");
-        return 0;
-    }
+    return py_pml_helper(func, d) * (*u);
 }
+
+number f_py_wrapper(integer n, number *x, void *f_py_p) {
+    PyObject *f_py = (PyObject *)f_py_p;
+
+    PyObject *py_list = PyList_New(n);
+
+    for(int i = 0; i < n; i++) {
+        PyObject *num = PyFloat_FromDouble(x[i]);
+        Py_INCREF(num);
+        PyList_SetItem(py_list, i, num);
+    }
+
+    // TODO(chogan): Double check the ref counting for py_list and its items.
+    PyObject *py_ret = PyObject_CallFunctionObjArgs(f_py, py_list, NULL);
+
+    number ret = PyFloat_AsDouble(py_ret);
+    Py_XDECREF(py_ret);
+    return ret;
+}
+
+// Python wrapper for adaptive_integration
+PyObject *py_adaptive_integration(PyObject *py_func, PyObject *py_xmin,
+                                  PyObject *py_xmax, PyObject *py_abstol,
+                                  PyObject *py_reltol, PyObject *py_maxnfe) {
+    int n, maxnfe, errflag;
+    number abstol, reltol, integral;
+    number *xmin, *xmax;
+
+    if(!PyList_Check(py_xmin) || !PyList_Check(py_xmax)) {
+        PyErr_SetString(PyExc_TypeError, "adaptive_integration: Expected a list");
+        throw;
+    }
+
+    n = (int)PyList_Size(py_xmin);
+    abstol = fabs(PyFloat_AsDouble(py_abstol));
+    reltol = fabs(PyFloat_AsDouble(py_reltol));
+    maxnfe = PyInt_AsLong(py_maxnfe);
+
+    // if(PyErr_Occurred()) {
+    //     PyErr_Print();
+    //     PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: Couldn't convert Python maxnfe to an integer");
+    //     throw;
+    // }
+
+    if((int)PyList_Size(py_xmax) != n) {
+        PyErr_SetString(PyExc_ValueError, "adaptive_integration: xmin/xmax dimension mismatch");
+        throw;
+    }
+
+    xmin = (number *)malloc(sizeof(number) * n);
+    xmax = (number *)malloc(sizeof(number) * n);
+
+    if(!xmin || !xmax) {
+        PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: error, out of memory!");
+        throw;
+    }
+
+    for(int i = 0; i < n; i++) {
+        xmin[i] = PyFloat_AsDouble(PyList_GetItem(py_xmin, i));
+        xmax[i] = PyFloat_AsDouble(PyList_GetItem(py_xmax, i));
+    }
+
+    integral = adaptive_integration(f_py_wrapper, xmin, xmax, n, (void*)py_func, abstol,
+                                    reltol, maxnfe, &abstol, &errflag);
+
+    free(xmax);
+    free(xmin);
+
+    switch(errflag) {
+        case 3:
+            PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: invalid inputs");
+            throw;
+        case 1:
+            PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: maxnfe too small");
+            throw;
+        case 2:
+            PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: lenwork too small");
+            throw;
+        default:
+            break;
+    }
+
+    return Py_BuildValue("[dd]", integral, abstol);
+}
+%}
 
 %include "numpy.i"
 
@@ -246,6 +319,15 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
         SWIG_exception_fail(SWIG_ArgError(tmp_res), "Couldn't convert Python object to meep::src_time");
     }
     $1 = reinterpret_cast<meep::src_time *>(tmp_ptr);
+}
+
+// Typemap suite for boundary_region
+%typecheck(SWIG_TYPECHECK_POINTER) double (*)(double u, void *func_data) {
+    $1 = PyCallable_Check($input);
+}
+
+%typemap(in) double (*)(double u, void *func_data) {
+    $1 = (pml_profile_func)$input;
 }
 
 // Rename python builtins

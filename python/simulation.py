@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 
-import functools
 import numbers
 import os
 import re
@@ -33,6 +32,7 @@ class Pml(object):
                  mean_stretch=1.0,
                  pml_profile=lambda u: u * u):
 
+        self.thickness = thickness
         self.direction = direction
         self.side = side
         self.r_asymptotic = r_asymptotic
@@ -538,36 +538,26 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
         if isinstance(pml, Absorber):
             continue
 
-        umin = 0.0
-        umax = 1.0
-        esterr = 1.0
-        errflag = 1
+        umin = [0.0]
+        umax = [1.0]
 
-        adaptive_integration = functools.partial(
-            mp.adaptive_integration,
-            f=mp.py_pml_profile2,
-            xmin=umin,
-            xmax=umax,
-            n=1,
-            fdata=pml.pml_profile,
-            abstol=1e-9,
-            reltol=1e-4,
-            maxnfe=50000,
-            esterr=esterr,
-            errflag=errflag
-        )
-
-        create_boundary_region = functools.partial(
-            mp.boundary_region,
+        integration_args = [
+            umin,
+            umax,
+            1e-9,
+            1e-4,
+            50000,
+        ]
+        boundary_region_args = [
             mp.boundary_region.PML,
             pml.thickness,
             pml.r_asymptotic,
             pml.mean_stretch,
             mp.py_pml_profile,
             pml.pml_profile,
-            adaptive_integration(),
-            adaptive_integration(f=mp.py_pml_profile2u)
-        )
+            mp.py_adaptive_integration(mp.py_pml_profile2, *integration_args),
+            mp.py_adaptive_integration(mp.py_pml_profile2u, *integration_args)
+        ]
 
         if pml.direction == -1:
             d = mp.start_at_direction(gv.dim)
@@ -579,11 +569,11 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
                     loop_stop_bi = mp.Low
 
                     while b != loop_stop_bi:
-                        br += create_boundary_region(d, b)
+                        br += mp.boundary_region(*(boundary_region_args + [d, b]))
                         b = (b + 1) % 2
                         loop_stop_bi = mp.High
                 else:
-                    br += create_boundary_region(d, pml.side)
+                    br += mp.boundary_region(*(boundary_region_args + [d, pml.side]))
                 d += 1
         else:
             if pml.side == -1:
@@ -591,9 +581,9 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
                 loop_stop_bi = mp.Low
 
                 while b != loop_stop_bi:
-                    br += create_boundary_region(pml.direction)
+                    br += mp.boundary_region(*(boundary_region_args + [pml.direction]))
                     b = (b + 1) % 2
                     loop_stop_bi = mp.High
             else:
-                br += create_boundary_region(pml.direction, pml.side)
+                br += mp.boundary_region(*(boundary_region_args + [pml.direction, pml.side]))
     return br
