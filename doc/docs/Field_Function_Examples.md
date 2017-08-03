@@ -69,4 +69,4 @@ As described in [Synchronizing the magnetic and electric fields](Synchronizing_t
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
 ```
 
-See also the section [writing your own step functions](Scheme_User_Interface.md#Writing_Your_Own_Step_Functions).
+See also the section [writing your own step functions](Scheme_User_Interface.md#writing-your-own-step-functions).

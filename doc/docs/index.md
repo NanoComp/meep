@@ -6,19 +6,19 @@
 ![](images/Meep-banner.png)
 </center>
 
- **Meep** is a free finite-difference time-domain (FDTD) simulation software package developed at MIT to model electromagnetic systems. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Its features include:
+ **Meep** is a free finite-difference time-domain (FDTD) simulation software package to model electromagnetic systems. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Its features include:
 
 -   **Free software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
--   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like system such as [Linux](https://en.wikipedia.org/wiki/Linux).
+-   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [macOS](https://en.wikipedia.org/wiki/MacOS).
 -   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
 -   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size — even/odd mirror symmetries and 90°/180° rotations.
--   Complete **scriptability** — either via a [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) scripting front-end via [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl), or callable as a [C++](https://en.wikipedia.org/wiki/C_plus_plus) library. A [Python](https://en.wikipedia.org/wiki/Python_programming_language) interface is under development.
+-   Complete **scriptability** — either via a [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) scripting front-end via [libctl](http://libctl.readthedocs.io), or callable as a [C++](https://en.wikipedia.org/wiki/C_plus_plus) library. A [Python](https://en.wikipedia.org/wiki/Python_programming_language) interface is under development.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
 -   Arbitrary material and source distributions.
 -   Field analyses including flux spectra, Maxwell stress tensor, frequency extraction, local density of states and energy integrals, near to far field transformations; completely programmable.
--   Multi-parameter optimization, root-finding, integration, etcetera via [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl).
+-   Multi-parameter optimization, root-finding, integration, etcetera via [libctl](https://libctl.readthedocs.io) and/or [NLopt](https://nlopt.readthedocs.io).
 
 Time-Domain Simulation
 ----------------------
@@ -36,14 +36,14 @@ The [tutorial](Scheme_Tutorial.md) gives examples of all of these kinds of compu
 Download
 --------
 
-The latest development sources are available on [Github](https://github.com/stevengj/meep). The source tarballs are available on the [Download](Download.md) page. The differences between versions are described in the [Release Notes](Release_Notes.md). The installation instructions can be found in the [Installation](Installation.md) page.
+The latest development sources are available on [GitHub](https://github.com/stevengj/meep). The source tarballs are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). The installation instructions can be found in the [Installation](Installation.md) page.
 
 Documentation
 -------------
 
 See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial](Scheme_Tutorial.md) are the most important things to read. We also have an [FAQ](FAQ.md).
 
-Please [cite Meep](License_and_Copyright.md#Referencing) in any publication for which you found it useful.
+Please [cite Meep](Acknowledgements.md#Referencing) in any publication for which you found it useful.
 
 ### Mailing Lists
 
@@ -51,16 +51,16 @@ Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu
 
 ### Bug Reports and Feature Requests
 
-For bug reports and feature requests, please [file a Meep Github issue](https://github.com/stevengj/meep/issues).
+For bug reports and feature requests, please [file a Meep GitHub issue](https://github.com/stevengj/meep/issues).
 
 Acknowledgements
 ----------------
 
-Meep's developers are Steven G. Johnson, Ardavan Oskooi, M.T. Homer Reid, and Christopher Hogan. Please see the [Acknowledgements](Acknowledgements.md) for a more complete listing of those to whom we are grateful.
+The Meep project is maintained by [Simpetus](http://www.simpetuscloud.com) and the open-source community on [GitHub](https://github.com/stevengj/meep). Please see the [Acknowledgements](Acknowledgements.md) for a more complete listing of those to whom we are grateful.
 
 Contacts and Feedback
 ---------------------
 
 If you have questions or problems regarding Meep, you are encouraged to query the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/).
 
-For professional consulting as well as free access to Meep in the public cloud via Amazon Web Services (AWS), see [Simpetus](http://www.simpetuscloud.com).
+Professional consulting services as well as free access to Meep in the public cloud via Amazon Web Services (AWS) are provided by [Simpetus](http://www.simpetuscloud.com).

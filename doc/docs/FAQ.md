@@ -9,18 +9,24 @@ General
 
 ### What is Meep?
 
-Meep is our free software for finite-difference time-domain simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
+Meep is a free-software package for finite-difference time-domain (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
+
+### Who are the developers of Meep?
+
+Meep was originally developed as part of graduate research at MIT. The project is now being maintained by [Simpetus](http://www.simpetuscloud.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
 
 Installation
 ------------
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like system, such as Linux, from individual machines to clusters to large parallel supercomputers. Precompiled packages are available for Debian and Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
+Meep runs on any Unix-like system, such as Linux and macOS, from notebooks to desktops to high-performance computing (HPC) clusters. Precompiled packages are available for Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
 
-Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. We recommend consulting a Linux administrator at your institution if you run into trouble. Finally, Meep is available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free offering provided by [Simpetus](http://www.simpetuscloud.com).
+Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Step-by-step instructions are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
-### Guile is installed, but configure complains that it can't find guile
+Meep is also available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetuscloud.com/launchsims.html).
+
+### Guile is installed, but configure complains that it can't find `guile`
 
 With most Linux distributions as well as Cygwin, packages like [Guile](http://www.gnu.org/software/guile) are split into two parts: a `guile` package that just contains the libraries and executables, and a `guile-dev` or `guile-devel` package that contains the header files and other things needed to compile programs using Guile. Usually, the former is installed by default but the latter is not. You need to install both, which means that you probably need to install `guile-dev`. Similarly for any other library packages needed by Meep.
 

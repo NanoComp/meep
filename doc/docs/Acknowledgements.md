@@ -5,9 +5,22 @@
 Authors
 ---------------
 
-Meep's developers are Steven G. Johnson, Ardavan Oskooi, M.T. Homer Reid, and Christopher Hogan. Meep's initial development was led by [David Roundy](http://physics.oregonstate.edu/~roundyd/), Mihai Ibanescu, and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/).
+Meep originated as part of graduate research at MIT with initial contributions by Steven G. Johnson, Ardavan Oskooi, [David Roundy](http://physics.oregonstate.edu/~roundyd/), Mihai Ibanescu, and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetuscloud.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
 
-See also our [Referencing suggestions](License_and_Copyright#Referencing.md).
+Referencing
+-----------
+
+We kindly request that you use the following reference in any publication for which you use Meep:
+
+- A.F. Oskooi, D. Roundy, M. Ibanescu, P. Bermel, J.D. Joannopoulos, and S.G. Johnson, [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, vol. 181, pp. 687-702 (2010). ([pdf](http://math.mit.edu/~stevenj/papers/OskooiRo10.pdf))
+
+If you want a one-sentence description of the algorithm for inclusion in a publication, we recommend something like:
+
+- Simulations were performed with the finite-difference time-domain (FDTD) method [ref FDTD], using a freely available software package [ref Meep].
+
+As a general reference on the FDTD method you might use, for example:
+
+- A. Taflove and S.C. Hagness, Computational Electrodynamics: The Finite-Difference Time-Domain Method, Artech: Norwood, MA, (2005).
 
 Financial Support
 -----------------
