@@ -542,6 +542,7 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
         umax = [1.0]
 
         integration_args = [
+            pml.pml_profile,
             umin,
             umax,
             1e-9,
@@ -550,21 +551,21 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
         ]
         boundary_region_args = [
             mp.boundary_region.PML,
-            pml.thickness,
-            pml.r_asymptotic,
-            pml.mean_stretch,
+            pml.swigobj.thickness,
+            pml.swigobj.r_asymptotic,
+            pml.swigobj.mean_stretch,
             mp.py_pml_profile,
             pml.pml_profile,
-            mp.py_adaptive_integration(mp.py_pml_profile2, *integration_args),
-            mp.py_adaptive_integration(mp.py_pml_profile2u, *integration_args)
+            mp.py_adaptive_integration2(*integration_args),
+            mp.py_adaptive_integration2u(*integration_args)
         ]
 
-        if pml.direction == -1:
+        if pml.swigobj.direction == -1:
             d = mp.start_at_direction(gv.dim)
             loop_stop_directi = mp.stop_at_direction(gv.dim)
 
             while d < loop_stop_directi:
-                if pml.side == -1:
+                if pml.swigobj.side == -1:
                     b = mp.High
                     loop_stop_bi = mp.Low
 
@@ -573,17 +574,17 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
                         b = (b + 1) % 2
                         loop_stop_bi = mp.High
                 else:
-                    br += mp.boundary_region(*(boundary_region_args + [d, pml.side]))
+                    br += mp.boundary_region(*(boundary_region_args + [d, pml.swigobj.side]))
                 d += 1
         else:
-            if pml.side == -1:
+            if pml.swigobj.side == -1:
                 b = mp.High
                 loop_stop_bi = mp.Low
 
                 while b != loop_stop_bi:
-                    br += mp.boundary_region(*(boundary_region_args + [pml.direction]))
+                    br += mp.boundary_region(*(boundary_region_args + [pml.swigobj.direction]))
                     b = (b + 1) % 2
                     loop_stop_bi = mp.High
             else:
-                br += mp.boundary_region(*(boundary_region_args + [pml.direction, pml.side]))
+                br += mp.boundary_region(*(boundary_region_args + [pml.swigobj.direction, pml.swigobj.side]))
     return br

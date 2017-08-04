@@ -43,6 +43,43 @@ extern double py_pml_profile2(int dim, double *u, void *f);
 extern double py_pml_profile2u(int dim, double *u, void *f);
 %}
 
+%include "numpy.i"
+
+%init %{
+  import_array();
+%}
+
+%{
+PyObject *py_callback = NULL;
+
+static PyObject *py_geometric_object();
+static PyObject *py_source_time_object();
+static PyObject* vec2py(const meep::vec &v);
+static double py_callback_wrap(const meep::vec &v);
+static int pyv3_to_v3(PyObject *po, vector3 *v);
+
+static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
+static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
+static int get_attr_material(PyObject *po, material_type *m);
+static int pymaterial_to_material(PyObject *po, material_type *mt);
+
+static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
+static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
+
+static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go);
+static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *o);
+static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *w);
+static int pycone_to_cone(PyObject *py_cone, geometric_object *cone);
+static int pyblock_to_block(PyObject *py_blk, geometric_object *blk);
+static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
+static std::string py_class_name_as_string(PyObject *po);
+static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
+static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
+
+#include "typemap_utils.cpp"
+
+%}
+
 %inline %{
 double py_pml_helper(PyObject *f, PyObject *d) {
     if(!PyCallable_Check(f)) {
@@ -86,24 +123,29 @@ double py_pml_profile2u(int dim, double *u, void *f) {
 number f_py_wrapper(integer n, number *x, void *f_py_p) {
     PyObject *f_py = (PyObject *)f_py_p;
 
-    PyObject *py_list = PyList_New(n);
+    PyObject *py_func_name = PyObject_GetAttrString(f_py, "__name__");
 
-    for(int i = 0; i < n; i++) {
-        PyObject *num = PyFloat_FromDouble(x[i]);
-        Py_INCREF(num);
-        PyList_SetItem(py_list, i, num);
+    char *bytes = PyObject_ToCharPtr(py_func_name);
+
+    Py_DECREF(py_func_name);
+    std::string func_name(bytes);
+
+    if(func_name == "py_pml_profile") {
+        return py_pml_profile(*x, f_py_p);
     }
-
-    // TODO(chogan): Double check the ref counting for py_list and its items.
-    PyObject *py_ret = PyObject_CallFunctionObjArgs(f_py, py_list, NULL);
-
-    number ret = PyFloat_AsDouble(py_ret);
-    Py_XDECREF(py_ret);
-    return ret;
+    else if(func_name == "py_pml_profile2") {
+        return py_pml_profile2(n, x, f_py_p);
+    }
+    else if(func_name == "py_pml_profile2u") {
+        return py_pml_profile2u(n, x, f_py_p);
+    }
+    else {
+        // Error
+    }
 }
 
 // Python wrapper for adaptive_integration
-PyObject *py_adaptive_integration(PyObject *py_func, PyObject *py_xmin,
+PyObject *py_adaptive_integration(multivar_func func, PyObject *py_func, PyObject *py_xmin,
                                   PyObject *py_xmax, PyObject *py_abstol,
                                   PyObject *py_reltol, PyObject *py_maxnfe) {
     int n, maxnfe, errflag;
@@ -144,7 +186,7 @@ PyObject *py_adaptive_integration(PyObject *py_func, PyObject *py_xmin,
         xmax[i] = PyFloat_AsDouble(PyList_GetItem(py_xmax, i));
     }
 
-    integral = adaptive_integration(f_py_wrapper, xmin, xmax, n, (void*)py_func, abstol,
+    integral = adaptive_integration(func, xmin, xmax, n, py_func, abstol,
                                     reltol, maxnfe, &abstol, &errflag);
 
     free(xmax);
@@ -166,45 +208,14 @@ PyObject *py_adaptive_integration(PyObject *py_func, PyObject *py_xmin,
 
     return Py_BuildValue("[dd]", integral, abstol);
 }
+
+PyObject *py_adaptive_integration2(PyObject *py_xmin, PyObject *py_func, PyObject *py_xmax, PyObject *py_abstol,
+                                  PyObject *py_reltol, PyObject *py_maxnfe) {
+
+    return py_adaptive_integration(py_pml_profile2, py_func, py_xmin, py_xmax, py_abstol,
+                                   py_reltol, py_maxnfe);
+}
 %}
-
-%include "numpy.i"
-
-%init %{
-  import_array();
-%}
-
-%{
-PyObject *py_callback = NULL;
-
-static PyObject *py_geometric_object();
-static PyObject *py_source_time_object();
-static PyObject* vec2py(const meep::vec &v);
-static double py_callback_wrap(const meep::vec &v);
-static int pyv3_to_v3(PyObject *po, vector3 *v);
-
-static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
-static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
-static int get_attr_material(PyObject *po, material_type *m);
-static int pymaterial_to_material(PyObject *po, material_type *mt);
-
-static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
-static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
-
-static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go);
-static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *o);
-static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *w);
-static int pycone_to_cone(PyObject *py_cone, geometric_object *cone);
-static int pyblock_to_block(PyObject *py_blk, geometric_object *blk);
-static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
-static std::string py_class_name_as_string(PyObject *po);
-static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
-static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
-
-#include "typemap_utils.cpp"
-
-%}
-
 
 
 // Typemap suite for double func(meep::vec &)
@@ -328,6 +339,14 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 %typemap(in) double (*)(double u, void *func_data) {
     $1 = (pml_profile_func)$input;
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) void *pml_profile_data {
+    $1 = PyCallable_Check($input);
+}
+
+%typemap(in) void *pml_profile_data {
+    $1 = (void*)$input;
 }
 
 // Rename python builtins
