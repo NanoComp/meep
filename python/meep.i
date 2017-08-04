@@ -45,6 +45,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 PyObject *py_callback = NULL;
 
 static PyObject *py_geometric_object();
+static PyObject *py_source_time_object();
 static PyObject* vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
@@ -150,6 +151,39 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 %typemap(freearg) susceptibility_list {
     delete[] $1.items;
+}
+
+// Typemap suite for sources
+
+%typecheck(SWIG_TYPECHECK_POINTER) const meep::src_time & {
+    int py_source_time = PyObject_IsInstance($input, py_source_time_object());
+    int swig_src_time = PyObject_IsInstance($input, py_meep_src_time_object());
+
+    $1 = py_source_time || swig_src_time;
+}
+
+%typemap(in) const meep::src_time & {
+    PyObject *swig_obj = NULL;
+    void *tmp_ptr = 0;
+    int tmp_res = 0;
+
+    if(PyObject_IsInstance($input, py_source_time_object())) {
+        swig_obj = PyObject_GetAttrString($input, "swigobj");
+    } else if(PyObject_IsInstance($input, py_meep_src_time_object())) {
+        swig_obj = $input;
+        Py_XINCREF(swig_obj);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Expected a meep.source.SourceTime or a meep.src_time\n");
+        SWIG_fail;
+    }
+
+    tmp_res = SWIG_ConvertPtr(swig_obj, &tmp_ptr, $1_descriptor, 0);
+    Py_XDECREF(swig_obj);
+
+    if(!SWIG_IsOK(tmp_res)) {
+        SWIG_exception_fail(SWIG_ArgError(tmp_res), "Couldn't convert Python object to meep::src_time");
+    }
+    $1 = reinterpret_cast<meep::src_time *>(tmp_ptr);
 }
 
 // Rename python builtins
