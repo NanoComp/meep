@@ -20,6 +20,7 @@
 %{
 #define SWIG_FILE_WITH_INIT
 
+#include <complex>
 #include <string>
 
 #include "meep/vec.hpp"
@@ -37,10 +38,6 @@ extern number adaptive_integration(multivar_func f, number *xmin, number *xmax,
                                    integer n, void *fdata, number abstol,
                                    number reltol, integer maxnfe, number *esterr,
                                    integer *errflag);
-
-extern double py_pml_profile(double u, void *f);
-extern double py_pml_profile2(int dim, double *u, void *f);
-extern double py_pml_profile2u(int dim, double *u, void *f);
 %}
 
 %include "numpy.i"
@@ -78,145 +75,82 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 #include "typemap_utils.cpp"
 
-%}
+// Wrapper for Python PML profile function
+double py_pml_profile(double u, void *f) {
+    PyObject *func = (PyObject *)f;
+    PyObject *d = PyFloat_FromDouble(u);
 
-%inline %{
-double py_pml_helper(PyObject *f, PyObject *d) {
-    if(!PyCallable_Check(f)) {
+    if(!PyCallable_Check(func)) {
         PyErr_SetString(PyExc_TypeError, "py_pml_profile: Object is not callable");
         // TODO(chogan): Fix this error handling.
         throw;
     }
-    PyObject *pyret = PyObject_CallFunctionObjArgs(f, d, NULL);
+
+    PyObject *pyret = PyObject_CallFunctionObjArgs(func, d, NULL);
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
     Py_XDECREF(d);
     return ret;
 }
 
-// Wrapper for Python PML profile function
-double py_pml_profile(double u, void *f) {
-    PyObject *func = (PyObject *)f;
-    PyObject *d = PyFloat_FromDouble(u);
+PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
+                     double spectral_density, double Q_thresh, double rel_err_thresh,
+                     double err_thresh, double rel_amp_thresh, double amp_thresh) {
 
-    return py_pml_helper(func, d);
-}
+    std::complex<double> *amp = new std::complex<double>[maxbands];
+    double *freq_re = new double[maxbands];
+    double *freq_im = new double[maxbands];
+    double *freq_err = new double[maxbands];
 
-// For passing to multidimensional integration routine
-double py_pml_profile2(int dim, double *u, void *f) {
-    PyObject *func = (PyObject *)f;
-    PyObject *d = PyFloat_FromDouble(*u);
-    (void)dim;
-
-    return py_pml_helper(func, d);
-}
-
-// For integrating profile(u) * u
-double py_pml_profile2u(int dim, double *u, void *f) {
-    PyObject *func = (PyObject *)f;
-    PyObject *d = PyFloat_FromDouble(*u);
-    (void)dim;
-
-    return py_pml_helper(func, d) * (*u);
-}
-
-number f_py_wrapper(integer n, number *x, void *f_py_p) {
-    PyObject *f_py = (PyObject *)f_py_p;
-
-    PyObject *py_func_name = PyObject_GetAttrString(f_py, "__name__");
-
-    char *bytes = PyObject_ToCharPtr(py_func_name);
-
-    Py_DECREF(py_func_name);
-    std::string func_name(bytes);
-
-    if(func_name == "py_pml_profile") {
-        return py_pml_profile(*x, f_py_p);
-    }
-    else if(func_name == "py_pml_profile2") {
-        return py_pml_profile2(n, x, f_py_p);
-    }
-    else if(func_name == "py_pml_profile2u") {
-        return py_pml_profile2u(n, x, f_py_p);
-    }
-    else {
-        // Error
-    }
-}
-
-// Python wrapper for adaptive_integration
-PyObject *py_adaptive_integration(multivar_func func, PyObject *py_func, PyObject *py_xmin,
-                                  PyObject *py_xmax, PyObject *py_abstol,
-                                  PyObject *py_reltol, PyObject *py_maxnfe) {
-    int n, maxnfe, errflag;
-    number abstol, reltol, integral;
-    number *xmin, *xmax;
-
-    if(!PyList_Check(py_xmin) || !PyList_Check(py_xmax)) {
-        PyErr_SetString(PyExc_TypeError, "adaptive_integration: Expected a list");
-        throw;
-    }
-
-    n = (int)PyList_Size(py_xmin);
-    abstol = fabs(PyFloat_AsDouble(py_abstol));
-    reltol = fabs(PyFloat_AsDouble(py_reltol));
-    maxnfe = PyInt_AsLong(py_maxnfe);
-
-    // if(PyErr_Occurred()) {
-    //     PyErr_Print();
-    //     PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: Couldn't convert Python maxnfe to an integer");
-    //     throw;
-    // }
-
-    if((int)PyList_Size(py_xmax) != n) {
-        PyErr_SetString(PyExc_ValueError, "adaptive_integration: xmin/xmax dimension mismatch");
-        throw;
-    }
-
-    xmin = (number *)malloc(sizeof(number) * n);
-    xmax = (number *)malloc(sizeof(number) * n);
-
-    if(!xmin || !xmax) {
-        PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: error, out of memory!");
-        throw;
-    }
+    Py_ssize_t n = PyList_Size(vals);
+    std::complex<double> *items = new std::complex<double>[n];
 
     for(int i = 0; i < n; i++) {
-        xmin[i] = PyFloat_AsDouble(PyList_GetItem(py_xmin, i));
-        xmax[i] = PyFloat_AsDouble(PyList_GetItem(py_xmax, i));
+        Py_complex py_c = PyComplex_AsCComplex(PyList_GetItem(vals, i));
+        std::complex<double> c(py_c.real, py_c.imag);
+        items[i] = c;
     }
 
-    integral = adaptive_integration(func, xmin, xmax, n, py_func, abstol,
-                                    reltol, maxnfe, &abstol, &errflag);
+    maxbands = do_harminv(items, n, dt, f_min, f_max, maxbands, amp,
+                          freq_re, freq_im, freq_err, spectral_density, Q_thresh,
+                          rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
 
-    free(xmax);
-    free(xmin);
+    PyObject *res = PyList_New(maxbands);
 
-    switch(errflag) {
-        case 3:
-            PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: invalid inputs");
-            throw;
-        case 1:
-            PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: maxnfe too small");
-            throw;
-        case 2:
-            PyErr_SetString(PyExc_RuntimeError, "adaptive_integration: lenwork too small");
-            throw;
-        default:
-            break;
+    for(int i = 0; i < maxbands; i++) {
+        Py_complex pyfreq = {freq_re[i], freq_im[i]};
+        Py_complex pyamp = {amp[i].real(), amp[i].imag()};
+        Py_complex pyfreq_err = {freq_err[i], 0};
+
+        PyObject *pyobj = Py_BuildValue("(DDD)", &pyfreq, &pyamp, &pyfreq_err);
+        PyList_SetItem(res, i, pyobj);
     }
 
-    return Py_BuildValue("[dd]", integral, abstol);
-}
+    delete[] freq_err;
+    delete[] freq_im;
+    delete[] freq_re;
+    delete[] amp;
+    delete[] items;
 
-PyObject *py_adaptive_integration2(PyObject *py_xmin, PyObject *py_func, PyObject *py_xmax, PyObject *py_abstol,
-                                  PyObject *py_reltol, PyObject *py_maxnfe) {
-
-    return py_adaptive_integration(py_pml_profile2, py_func, py_xmin, py_xmax, py_abstol,
-                                   py_reltol, py_maxnfe);
+    return res;
 }
 %}
 
+// This is necessary so that SWIG wraps py_pml_profile as a SWIG function
+// pointer object instead of as a built-in function
+%constant double py_pml_profile(double u, void *f);
+%ignore py_pml_profile;
+double py_pml_profile(double u, void *f);
+
+PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
+                     double spectral_density, double Q_thresh, double rel_err_thresh,
+                     double err_thresh, double rel_amp_thresh, double amp_thresh);
+
+// Typemap suite for do_harminv
+
+%typecheck(SWIG_TYPECHECK_POINTER) PyObject *vals {
+    $1 = PyList_Check($input);
+}
 
 // Typemap suite for double func(meep::vec &)
 
@@ -333,13 +267,6 @@ PyObject *py_adaptive_integration2(PyObject *py_xmin, PyObject *py_func, PyObjec
 }
 
 // Typemap suite for boundary_region
-%typecheck(SWIG_TYPECHECK_POINTER) double (*)(double u, void *func_data) {
-    $1 = PyCallable_Check($input);
-}
-
-%typemap(in) double (*)(double u, void *func_data) {
-    $1 = (pml_profile_func)$input;
-}
 
 %typecheck(SWIG_TYPECHECK_POINTER) void *pml_profile_data {
     $1 = PyCallable_Check($input);
@@ -367,9 +294,6 @@ PyObject *py_adaptive_integration2(PyObject *py_xmin, PyObject *py_func, PyObjec
 %include "meepgeom.hpp"
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
-extern number adaptive_integration(multivar_func f, number *xmin, number *xmax,
-                                   integer n, void *fdata, number abstol,
-                                   number reltol, integer maxnfe, number *esterr,
-                                   integer *errflag);
+
 %ignore eps_func;
 %ignore inveps_func;

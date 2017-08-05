@@ -31,8 +31,7 @@ c2 = Cylinder(r, material=air)
 fcen = 0.15  # pulse center frequency
 df = 0.1  # pulse width (in frequency)
 
-g_src = GaussianSource(fcen, df)
-src = Source(g_src, mp.Ez, Vector3(r + 0.1))
+src = Source(GaussianSource(fcen, df), mp.Ez, Vector3(r + 0.1))
 
 sim = Simulation(cell=Lattice(size=Vector3(sxy, sxy, no_size)),
                  geometry=[c1, c2],
@@ -41,11 +40,9 @@ sim = Simulation(cell=Lattice(size=Vector3(sxy, sxy, no_size)),
                  symmetries=[Mirror(mp.Y)],
                  pml_layers=[Pml(dpml)])
 
-# harminv_func = sim.harminv(mp.Ez, Vector3(r + 0.1), fcen, df)
-
 sim.run(
     sim.at_beginning(sim.output_epsilon),
-    # sim.after_sources(harminv_func),
+    sim.after_sources(sim.harminv(mp.Ez, Vector3(r + 0.1), fcen, df)),
     until=300, sources=True
 )
 

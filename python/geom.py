@@ -27,10 +27,14 @@ class Vector3(object):
         self.y += other.y
         self.z += other.z
 
+        return self
+
     def __sub__(self, other):
         self.x -= other.x
         self.y -= other.y
         self.z -= other.z
+
+        return self
 
     def __getitem__(self, i):
         if i == 0:
@@ -46,6 +50,8 @@ class Vector3(object):
         self.x *= s
         self.y *= s
         self.z *= s
+
+        return self
 
 
 # TODO(chogan): Write tests
