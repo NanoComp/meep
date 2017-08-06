@@ -46,6 +46,10 @@ sim.run(
     until=300, sources=True
 )
 
+# print(sim.harminv_data[0])
+# print(sim.harminv_data[1])
+# print(len(sim.harminv_data))
+
 # Output fields for one period at the end.  (If we output
 # at a single time, we might accidentally catch the Ez field when it is
 # almost zero and get a distorted view.)

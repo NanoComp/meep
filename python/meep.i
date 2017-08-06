@@ -34,10 +34,6 @@ using namespace meep;
 using namespace meep_geom;
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
-extern number adaptive_integration(multivar_func f, number *xmin, number *xmax,
-                                   integer n, void *fdata, number abstol,
-                                   number reltol, integer maxnfe, number *esterr,
-                                   integer *errflag);
 %}
 
 %include "numpy.i"
@@ -283,6 +279,8 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
 // Operator renaming
 %rename(boundary_region_assign) meep::boundary_region::operator=;
+
+%rename(get_field_from_comp) meep::fields::get_field(component, const vec &) const;
 
 // TODO:  Fix these with a typemap when necessary
 %feature("immutable") meep::fields_chunk::connections;

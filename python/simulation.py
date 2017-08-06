@@ -3,6 +3,7 @@ from __future__ import division, print_function
 import numbers
 import os
 import re
+import sys
 
 import meep as mp
 from meep.geom import Vector3
@@ -175,6 +176,14 @@ class Simulation(object):
         self.harminv_err_thresh = 0.01
         self.harminv_rel_amp_thresh = -1.0
         self.harminv_amp_thresh = -1.0
+        self.interactive = False
+
+        self._init_include_files()
+
+    def _init_include_files(self):
+        for arg in sys.argv:
+            if isinstance(arg, basestring) and arg.endswith('.py'):
+                self.include_files.append(arg)
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -286,25 +295,17 @@ class Simulation(object):
 
         return self.fields.round_time()
 
-    def _time(self):
-        if self.fields is None:
-            self._init_fields()
-
-        return self.fields.time()
-
     def _get_field_point(self, c, pt):
-        return self.fields.get_field(c, pt)
+        x = self.fields.get_field_from_comp(c, pt)
+        print(x)
+        return x
 
-    # TODO(chogan): Property getter?
     def _get_filename_prefix(self):
-        if self.filename_prefix is False:
-            return ""
+        if self.include_files and self.filename_prefix == '':
+            _, filename = os.path.split(self.include_files[0])
+            return re.sub(r'\.py', '', filename)
         else:
-            if self.include_files and self.filename_prefix == '':
-                filename = os.path.split(self.include_files[0])
-                return re.sub(r'\.py', '', re.sub(r'\.ctl', '', filename))
-            else:
-                return self.filename_prefix
+            return self.filename_prefix
 
     def _eval_step_func(self, func, todo):
         num_args = get_num_args(func)
@@ -317,13 +318,13 @@ class Simulation(object):
     def _combine_step_funcs(self, *step_funcs):
         closure = {'step_funcs': step_funcs}
 
-        def f(todo):
+        def _combine(todo):
             for func in closure['step_funcs']:
                 self._eval_step_func(func, todo)
-        return f
+        return _combine
 
     def _run_until(self, cond, step_funcs):
-        # TODO(chogan): Interactive?
+        self.interactive = False
         if self.fields is None:
             self._init_fields()
 
@@ -338,40 +339,42 @@ class Simulation(object):
 
             cond = stop_cond
 
-            new_step_funcs = [f for f in step_funcs]
-
-            new_step_funcs.append(self.display_progress(
+            step_funcs = list(step_funcs)
+            step_funcs.append(self.display_progress(
                 closure['t0'], closure['t0'] + closure['stop_time'], self.progress_interval
             ))
-
-            step_funcs = new_step_funcs
 
         while not cond():
             for func in step_funcs:
                 self._eval_step_func(func, 'step')
-
             self.fields.step()
 
+        # Translating the recursive scheme version of run-until into an iterative version
+        # (because python isn't tail-call-optimized) means we need one extra iteration to
+        # be the same as scheme.
         for func in step_funcs:
-            self._eval_step_func(func, 'finish')
+            self._eval_step_func(func, 'step')
 
-        print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self._time(), self.fields.t))
+        # for func in step_funcs:
+        #     self._eval_step_func(func, 'finish')
+
+        print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
 
     def _run_sources_until(self, cond, step_funcs):
         if self.fields is None:
             self._init_fields()
 
-        closure = {'ts': self.fields.last_source_time()}
+        ts = self.fields.last_source_time()
 
         if isinstance(cond, numbers.Number):
-            arg = (closure['ts'] - self._round_time()) + cond
+            new_cond = (ts - self._round_time()) + cond
         else:
             def f():
-                cond() and self._round_time() >= closure['ts']
-            arg = f
+                cond() and self._round_time() >= ts
+            new_cond = f
 
-        self._run_until(arg, step_funcs)
+        self._run_until(new_cond, step_funcs)
 
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
@@ -380,17 +383,19 @@ class Simulation(object):
 
         closure = {'data': data, 'data_dt': data_dt}
 
-        def f(c, pt):
+        def _collect1(c, pt):
             closure['data'] = []
 
             closure2 = {'t0': 0}
 
-            def f2():
+            def _collect2():
                 closure['data_dt'] = self.meep_time() - closure2['t0']
                 closure2['t0'] = self.meep_time()
-                closure['data'].append(self._get_field_point(c, py_v3_to_vec(self.dimensions, pt)))
-            return f2
-        return f
+                v3 = py_v3_to_vec(self.dimensions, pt)
+                import ipdb; ipdb.set_trace()
+                self.harminv_data.append(self._get_field_point(c, v3))
+            return _collect2
+        return _collect1
 
     def _display_run_data(self, data_name, data):
         print("{}{}:, {}".format(data_name, self.run_index, ', '.join(data)))
@@ -398,7 +403,7 @@ class Simulation(object):
     def _analyze_harminv(self, data, fcen, df, maxbands, dt=None):
         self._display_run_data('harminv', ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error'])
 
-        bands = mp.py_do_harminv(data, dt if dt else self.fields.dt, fcen - df / 2, fcen + df / 2,
+        bands = mp.py_do_harminv(self.harminv_data, dt if dt else self.fields.dt, fcen - df / 2, fcen + df / 2,
                                  maxbands, self.harminv_spectral_density, self.harminv_Q_thresh,
                                  self.harminv_rel_err_thresh, self.harminv_err_thresh,
                                  self.harminv_rel_amp_thresh, self.harminv_amp_thresh)
@@ -410,33 +415,33 @@ class Simulation(object):
         return bands
 
     def _harminv(self, data, dt, results, c, pt, fcen, df, maxbands):
-        _data = []
-        _dt = 0
-        _c = c
-        _pt = pt
-        _fcen = fcen
-        _df = df
-        _maxbands = maxbands
-
         closure = {
+            '_data': [],
+            '_dt': 0,
+            '_c': c,
+            '_pt': pt,
+            '_fcen': fcen,
+            '_df': df,
+            '_maxbands': maxbands,
             'data': data,
             'dt': dt,
             'results': results,
         }
 
-        def f():
-            closure['data'] = list(reversed(closure['data']))
-            closure['dt'] = _dt
-            if _maxbands is None or _maxbands == 0:
+        def _harm():
+            closure['data'] = closure['_data']
+            closure['dt'] = closure['_dt']
+            if closure['_maxbands'] is None or closure['_maxbands'] == 0:
                 mb = 100
             else:
-                mb = _maxbands
+                mb = closure['_maxbands']
 
-            closure['results'] = self._analyze_harminv(closure['data'], _fcen, _df, mb, _dt)
+            closure['results'] = self._analyze_harminv(closure['data'], closure['_fcen'],
+                                                       closure['_df'], mb, closure['_dt'])
 
-        f1 = self._collect_harminv(_data, _dt)
+        f1 = self._collect_harminv(closure['_data'], closure['_dt'])
 
-        return self._combine_step_funcs(self.at_end(f), f1(_c, _pt))
+        return self._combine_step_funcs(self.at_end(_harm), f1(closure['_c'], closure['_pt']))
 
     def harminv(self, c, pt, fcen, df, mxbands=None):
         return self._harminv(self.harminv_data, self.harminv_data_dt, self.harminv_results,
@@ -513,10 +518,10 @@ class Simulation(object):
             'tlast': mp.wall_time(),
         }
 
-        def f():
+        def _disp():
             t1 = mp.wall_time()
             if t1 - closure['tlast'] >= dt:
-                msg_fmt = "Meep progress: {}/{} = {:.1g}% done in {:.1g}s, {} s to go"
+                msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
                 val1 = self.meep_time() - t0
                 val2 = t
                 val3 = (self.meep_time() - t0) / (0.01 * t)
@@ -524,7 +529,7 @@ class Simulation(object):
                 val5 = ((t1 - closure['t_0']) * (t / (self.meep_time() - t0)) - (t1 - closure['t_0']))
                 print(msg_fmt.format(val1, val2, val3, val4, val5))
                 closure['tlast'] = t1
-        return f
+        return _disp
 
     def output_component(self, c, h5file=None):
         if self.fields is None:
@@ -550,11 +555,11 @@ class Simulation(object):
         self.output_component(mp.Ez)
 
     def when_true_funcs(self, cond, *step_funcs):
-        def f(todo):
+        def _true(todo):
             if todo == 'finish' or cond():
                 for f in step_funcs:
                     self._eval_step_func(f, todo)
-        return f
+        return _true
 
     def at_beginning(self, *step_funcs):
         # Work around python 2's lack of 'nonlocal' keyword
@@ -563,12 +568,12 @@ class Simulation(object):
             'step_funcs': step_funcs
         }
 
-        def step_func(todo):
+        def _beg(todo):
             if not closure['done']:
                 for f in closure['step_funcs']:
                     self._eval_step_func(f, todo)
                 closure['done'] = True
-        return step_func
+        return _beg
 
     def at_every(self, dt, *step_funcs):
         if self.fields is None:
@@ -579,22 +584,22 @@ class Simulation(object):
             'step_funcs': step_funcs
         }
 
-        def f(todo):
+        def _every(todo):
             t = self._round_time()
             if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * self.fields.dt):
                 for func in closure['step_funcs']:
                     self._eval_step_func(func, todo)
                 closure['tlast'] = t
-        return f
+        return _every
 
     def at_end(self, *step_funcs):
-        def f(todo):
+        def _end(todo):
             if todo == 'finish':
                 for func in step_funcs:
                     self._eval_step_func(func, 'step')
                 for func in step_funcs:
                     self._eval_step_func(func, 'finish')
-        return f
+        return _end
 
     def after_time(self, t, *step_funcs):
         if self.fields is None:
@@ -605,10 +610,10 @@ class Simulation(object):
             't': t
         }
 
-        def f():
+        def _after_t():
             return self._round_time() >= closure['t0'] + closure['t']
 
-        return self.when_true_funcs(f, *step_funcs)
+        return self.when_true_funcs(_after_t, *step_funcs)
 
     def after_sources(self, *step_funcs):
         if self.fields is None:
