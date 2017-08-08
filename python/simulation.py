@@ -242,7 +242,9 @@ class Simulation(object):
 
         br = _create_boundary_region_from_pml_layers(self.pml_layers, gv)
 
-        self.structure = mp.structure(gv, dummy_eps, br, sym)
+        self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
+                                      self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+
         mp.set_materials_from_geometry(self.structure, self.geometry)
 
     def _init_fields(self):
@@ -296,9 +298,7 @@ class Simulation(object):
         return self.fields.round_time()
 
     def _get_field_point(self, c, pt):
-        x = self.fields.get_field_from_comp(c, pt)
-        print(x)
-        return x
+        return self.fields.get_field_from_comp(c, pt)
 
     def _get_filename_prefix(self):
         if self.include_files and self.filename_prefix == '':
@@ -392,7 +392,6 @@ class Simulation(object):
                 closure['data_dt'] = self.meep_time() - closure2['t0']
                 closure2['t0'] = self.meep_time()
                 v3 = py_v3_to_vec(self.dimensions, pt)
-                import ipdb; ipdb.set_trace()
                 self.harminv_data.append(self._get_field_point(c, v3))
             return _collect2
         return _collect1
