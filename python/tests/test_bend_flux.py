@@ -56,7 +56,7 @@ def bend_flux(no_bend):
     df = 0.1
     src = GaussianSource(fcen, df)
     v = mp.volume(mp.vec(1.0 - 0.5 * sx, wvg_ycen), mp.vec(0.0, w))
-    f.add_volume_source(mp.Ez, src.swigobj, v)
+    f.add_volume_source(mp.Ez, src, v)
 
     f_start = fcen - 0.5 * df
     f_end = fcen + 0.5 * df

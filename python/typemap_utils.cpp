@@ -26,11 +26,31 @@
 static PyObject *py_geometric_object() {
     static PyObject *geometric_object = NULL;
     if (geometric_object == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("geom");
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
         geometric_object = PyObject_GetAttrString(geom_mod, "GeometricObject");
         Py_XDECREF(geom_mod);
     }
     return geometric_object;
+}
+
+static PyObject *py_source_time_object() {
+    static PyObject *source_time_object = NULL;
+    if (source_time_object == NULL) {
+        PyObject *source_mod = PyImport_ImportModule("meep.source");
+        source_time_object = PyObject_GetAttrString(source_mod, "SourceTime");
+        Py_XDECREF(source_mod);
+    }
+    return source_time_object;
+}
+
+static PyObject *py_meep_src_time_object() {
+    static PyObject *src_time = NULL;
+    if (src_time == NULL) {
+        PyObject *meep_mod = PyImport_ImportModule("meep");
+        src_time = PyObject_GetAttrString(meep_mod, "src_time");
+        Py_XDECREF(meep_mod);
+    }
+    return src_time;
 }
 
 static PyObject* vec2py(const meep::vec &v) {

@@ -4,7 +4,7 @@ integrate.cpp known_results.cpp near2far.cpp one_dimensional.cpp	\
 physical.cpp stress_tensor.cpp symmetry.cpp three_d.cpp			\
 two_dimensional.cpp 2D_convergence.cpp h5test.cpp pml.cpp
 
-EXTRA_DIST = $(SRC) pythonMeep.bash
+EXTRA_DIST = $(SRC)
 
 OBJ = $(SRC:.cpp=.o)
 DAC = $(SRC:.cpp=.dac)
@@ -74,7 +74,7 @@ h5test_LDADD = $(LIBMEEP)
 pml_SOURCES = pml.cpp
 pml_LDADD = $(LIBMEEP)
 
-TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml pythonMeep.bash
+TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
 
 LOG_COMPILER = $(RUNCODE)
 

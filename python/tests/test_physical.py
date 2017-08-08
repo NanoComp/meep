@@ -39,7 +39,7 @@ class TestPhysical(unittest.TestCase):
         f = mp.fields(s)
 
         src = ContinuousSource(w)
-        f.add_point_source(mp.Ez, src.swigobj, self.pnt_src_vec)
+        f.add_point_source(mp.Ez, src, self.pnt_src_vec)
 
         # let the source reach steady state
         if solve_cw:
