@@ -40,13 +40,29 @@ namespace meep_geom {
 #define R_DIR 4
 #define PHI_DIR 5
 
+// constant used in meep.scm
+#define ALL_SIDES -1
+#define ALL_DIRECTIONS -1
+
 // large (but not strictly inf!) floating-point number for
 // effectively infinite lengths
 #define ENORMOUS 1e20
 
+// tiny floating-point number for effectively zero lengthsh
+#define TINY 1e-20
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
+void add_absorbing_layer(double thickness,
+                         int direction=ALL_DIRECTIONS, int side=ALL_SIDES,
+                         double strength=1.0, double R_asymptotic=1.0e-15, double mean_stretch=1.0,
+                         meep::pml_profile_func func=meep::pml_quadratic_profile, void *func_data=0);
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+
 void set_materials_from_geometry(meep::structure *s,
                                  geometric_object_list g,
 		                 bool use_anisotropic_averaging=true,
