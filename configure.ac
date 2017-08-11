@@ -491,6 +491,11 @@ else
         AC_CHECK_HEADER([numpy/arrayobject.h],[],[
           AC_MSG_WARN([disabling Python wrappers])
           have_python=no],[#include <Python.h>])
+
+        if test "x$with_mpi" = "xyes"; then
+          AX_PYTHON_MODULE([mpi4py],[])
+        fi
+
       fi
 
       CPPFLAGS=$save_CPPFLAGS

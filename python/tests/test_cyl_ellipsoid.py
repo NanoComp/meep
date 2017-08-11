@@ -7,6 +7,7 @@ import meep as mp
 import meep.geom as gm
 from meep.source import GaussianSource
 
+from mpi4py import MPI
 
 # Simple test for libmeepgeom, modeled after meep_test.ctl
 
@@ -17,6 +18,8 @@ def dummy_eps(vec):
 
 
 def main(args):
+
+    comm=MPI.COMM_WORLD
 
     src_cmpt = mp.Ez
 
