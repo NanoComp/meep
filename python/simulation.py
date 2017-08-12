@@ -87,9 +87,9 @@ class Absorber(Pml):
 
 class Symmetry(object):
 
-    def __init__(self, direction, phase=1 + 0j):
+    def __init__(self, direction, phase=1):
         self.direction = direction
-        self.phase = phase
+        self.phase = complex(phase)
         self.swigobj = None
 
 
@@ -127,7 +127,7 @@ class Volume(object):
 
 class Simulation(object):
 
-    def __init__(self, cell_size, geometry, sources, resolution,
+    def __init__(self, cell_size, geometry, sources, resolution, eps_averaging=True,
                  dimensions=2, pml_layers=[], symmetries=[], verbose=False):
         self.cell_size = cell_size
         self.geometry = geometry
@@ -137,7 +137,7 @@ class Simulation(object):
         self.pml_layers = pml_layers
         self.symmetries = symmetries
         self.geometry_center = Vector3()
-        self.eps_averaging = True
+        self.eps_averaging = eps_averaging
         self.subpixel_tol = 1e-4
         self.subpixel_maxeval = 100000
         self.ensure_periodicity = False
@@ -218,7 +218,6 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
-        gv.shift_origin(py_v3_to_vec(self.dimensions, self.geometry_center))
 
         def dummy_eps(v):
             return 1
@@ -299,7 +298,8 @@ class Simulation(object):
         return self.fields.round_time()
 
     def _get_field_point(self, c, pt):
-        return self.fields.get_field_from_comp(c, pt)
+        v3 = py_v3_to_vec(self.dimensions, pt)
+        return self.fields.get_field_from_comp(c, v3)
 
     def _get_filename_prefix(self):
         if self.include_files and self.filename_prefix == '':
@@ -392,8 +392,7 @@ class Simulation(object):
             def _collect2():
                 closure['data_dt'] = self.meep_time() - closure2['t0']
                 closure2['t0'] = self.meep_time()
-                v3 = py_v3_to_vec(self.dimensions, pt)
-                self.harminv_data.append(self._get_field_point(c, v3))
+                self.harminv_data.append(self._get_field_point(c, pt))
             return _collect2
         return _collect1
 

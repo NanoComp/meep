@@ -57,6 +57,10 @@ class Vector3(object):
         return self
 
 
+def epsilon(n):
+    return Vector3(n * n, n * n, n * n)
+
+
 # TODO(chogan): Write tests
 class Matrix3x3(object):
 
@@ -177,7 +181,7 @@ class GeometricObject(object):
 class Sphere(GeometricObject):
 
     def __init__(self, radius, **kwargs):
-        self.radius = radius
+        self.radius = float(radius)
         super(Sphere, self).__init__(**kwargs)
 
     @property
@@ -191,10 +195,10 @@ class Sphere(GeometricObject):
 
 class Cylinder(GeometricObject):
 
-    def __init__(self, radius, axis=Vector3(0, 0, 1), height=float('inf'), **kwargs):
+    def __init__(self, radius, axis=Vector3(0, 0, 1), height=1e20, **kwargs):
         self.axis = axis
-        self.radius = radius
-        self.height = height
+        self.radius = float(radius)
+        self.height = float(height)
         super(Cylinder, self).__init__(**kwargs)
 
     @property

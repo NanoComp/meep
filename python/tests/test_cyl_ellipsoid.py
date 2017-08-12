@@ -59,10 +59,10 @@ class TestCylEllipsoid(unittest.TestCase):
         self.duration = 23.0
         self.start_time = self.f.round_time()
         self.stop_time = self.start_time + self.duration
+        add_source(self.f, self.src_cmpt)
+        self.f.output_hdf5(mp.Dielectric, self.f.total_volume())
 
     def run_simulation(self):
-        add_source(self.f, self.src_cmpt)
-
         while self.f.round_time() < self.stop_time:
             self.f.step()
 
