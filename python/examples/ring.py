@@ -2,7 +2,7 @@
 from __future__ import division
 
 import meep as mp
-from meep.geom import Cylinder, Medium, Vector3
+from meep.geom import Cylinder, epsilon, Medium, Vector3
 from meep.source import GaussianSource, Source
 from meep.simulation import Simulation, Mirror, Pml, no_size
 
@@ -17,8 +17,7 @@ sxy = 2 * (r + w + pad + dpml)  # cell size
 # Create a ring waveguide by two overlapping cylinders - later objects
 # take precedence over earlier objects, so we put the outer cylinder first.
 # and the inner (air) cylinder second.
-nsqr = n * n
-dielectric = Medium(epsilon_diag=Vector3(nsqr, nsqr, nsqr))
+dielectric = Medium(epsilon_diag=epsilon(n))
 air = Medium(epsilon_diag=Vector3(1, 1, 1))
 
 c1 = Cylinder(r + w, material=dielectric)

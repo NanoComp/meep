@@ -397,7 +397,8 @@ class Simulation(object):
         return _collect1
 
     def _display_run_data(self, data_name, data):
-        print("{}{}:, {}".format(data_name, self.run_index, ', '.join(data)))
+        data_str = [str(f) for f in data]
+        print("{}{}:, {}".format(data_name, self.run_index, ', '.join(data_str)))
 
     def _analyze_harminv(self, data, fcen, df, maxbands, dt=None):
         self._display_run_data('harminv', ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error'])
