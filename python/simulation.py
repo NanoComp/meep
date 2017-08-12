@@ -127,9 +127,9 @@ class Volume(object):
 
 class Simulation(object):
 
-    def __init__(self, cell, geometry, sources, resolution,
+    def __init__(self, cell_size, geometry, sources, resolution,
                  dimensions=2, pml_layers=[], symmetries=[], verbose=False):
-        self.cell = cell
+        self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
         self.resolution = resolution
@@ -190,7 +190,7 @@ class Simulation(object):
 
             def requires_2d(self, k):
                 cond1 = False if k is None else not k
-                cond2 = self.cell.size.z == self.no_size
+                cond2 = self.cell_size.z == self.no_size
                 cond3 = cond1 or self.special_kz or k.z == 0
                 return cond2 and cond3
 
@@ -207,13 +207,13 @@ class Simulation(object):
         dims = self._infer_dimensions(k)
 
         if dims == 0 or dims == 1:
-            gv = mp.vol1d(self.cell.size.z, self.resolution)
+            gv = mp.vol1d(self.cell_size.z, self.resolution)
         elif dims == 2:
-            gv = mp.vol2d(self.cell.size.x, self.cell.size.y, self.resolution)
+            gv = mp.vol2d(self.cell_size.x, self.cell_size.y, self.resolution)
         elif dims == 3:
-            gv = mp.vol3d(self.cell.size.x, self.cell.size.y, self.cell.size.z, self.resolution)
+            gv = mp.vol3d(self.cell_size.x, self.cell_size.y, self.cell_size.z, self.resolution)
         elif dims == CYLINDRICAL:
-            gv = mp.volcyl(self.cell.size.x, self.cell.size.z, self.resolution)
+            gv = mp.volcyl(self.cell_size.x, self.cell_size.z, self.resolution)
         else:
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 

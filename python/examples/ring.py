@@ -2,7 +2,7 @@
 from __future__ import division
 
 import meep as mp
-from meep.geom import Cylinder, Lattice, Medium, Vector3
+from meep.geom import Cylinder, Medium, Vector3
 from meep.source import GaussianSource, Source
 from meep.simulation import Simulation, Mirror, Pml, no_size
 
@@ -33,7 +33,7 @@ df = 0.1  # pulse width (in frequency)
 
 src = Source(GaussianSource(fcen, df), mp.Ez, Vector3(r + 0.1))
 
-sim = Simulation(cell=Lattice(size=Vector3(sxy, sxy, no_size)),
+sim = Simulation(cell_size=Vector3(sxy, sxy, no_size),
                  geometry=[c1, c2],
                  sources=[src],
                  resolution=10,
@@ -45,10 +45,6 @@ sim.run(
     sim.after_sources(sim.harminv(mp.Ez, Vector3(r + 0.1), fcen, df)),
     until=300, sources=True
 )
-
-# print(sim.harminv_data[0])
-# print(sim.harminv_data[1])
-# print(len(sim.harminv_data))
 
 # Output fields for one period at the end.  (If we output
 # at a single time, we might accidentally catch the Ez field when it is
