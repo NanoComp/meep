@@ -7,7 +7,6 @@ addons:
     - libfftw3-dev
     - gfortran
     - libhdf5-serial-dev
-    - hdf5-tools
     - liblapack-dev
     - python-numpy
     - swig

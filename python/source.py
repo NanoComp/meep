@@ -41,13 +41,13 @@ class ContinuousSource(SourceTime):
 
 class GaussianSource(SourceTime):
 
-    def __init__(self, frequency, width, start_time=0, cutoff=5.0):
+    def __init__(self, frequency, width, fwidth=True, start_time=0, cutoff=5.0):
         super(GaussianSource, self).__init__()
         self.frequency = frequency
-        self.width = width
-        self.start_time = 0
+        self.width = 1 / width if fwidth else width
+        self.start_time = start_time
         self.cutoff = cutoff
-        self.swigobj = mp.gaussian_src_time(frequency, width, start_time, start_time + 2 * width * cutoff)
+        self.swigobj = mp.gaussian_src_time(frequency, self.width, start_time, start_time + 2 * self.width * cutoff)
         self.swigobj.is_integrated = self.is_integrated
 
 
