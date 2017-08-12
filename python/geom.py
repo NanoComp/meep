@@ -46,6 +46,9 @@ class Vector3(object):
         else:
             raise IndexError("No value at index {}".format(i))
 
+    def __repr__(self):
+        return "<{}, {}, {}>".format(self.x, self.y, self.z)
+
     def scale(self, s):
         self.x *= s
         self.y *= s
@@ -71,6 +74,9 @@ class Matrix3x3(object):
             return self.c3
         else:
             raise IndexError("No value at index {}".format(i))
+
+    def __repr__(self):
+        return "{}\n{}\n{}".format(self.row(0), self.row(1), self.row(2))
 
     def row(self, i):
         return Vector3(self.c1[i], self.c2[i], self.c3[i])
@@ -237,42 +243,3 @@ class Ellipsoid(Block):
 
     def __init__(self, **kwargs):
         super(Ellipsoid, self).__init__(**kwargs)
-
-
-# TODO(chogan): Write tests
-class Lattice(object):
-
-    def __init__(self, basis1=Vector3(1, 0, 0),
-                 basis2=Vector3(0, 1, 0),
-                 basis3=Vector3(0, 0, 1),
-                 size=Vector3(1, 1, 1),
-                 basis_size=Vector3(1, 1, 1)):
-
-        self.basis1 = basis1
-        self.basis2 = basis2
-        self.basis3 = basis3
-        self.size = size
-        self.basis_size = basis_size
-
-    @property
-    def b1(self):
-        return self.basis1.scale(self.basis_size.x)
-
-    @property
-    def b2(self):
-        return self.basis2.scale(self.basis_size.y)
-
-    @property
-    def b3(self):
-        return self.basis3.scale(self.basis_size.z)
-
-    @property
-    def basis(self):
-        B = Matrix3x3(self.b1, self.b2, self.b3)
-        if B.determinant() == 0:
-            raise ValueError("Lattice basis vectors must be linearly independent!")
-        return B
-
-    @property
-    def metric(self, B):
-        return B.transpose() * self.basis

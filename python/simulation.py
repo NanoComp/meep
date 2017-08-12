@@ -136,7 +136,7 @@ class Simulation(object):
         self.dimensions = dimensions
         self.pml_layers = pml_layers
         self.symmetries = symmetries
-        self.geometry_center = None
+        self.geometry_center = Vector3()
         self.eps_averaging = True
         self.subpixel_tol = 1e-4
         self.subpixel_maxeval = 100000
@@ -218,6 +218,7 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
+        gv.shift_origin(py_v3_to_vec(self.dimensions, self.geometry_center))
 
         def dummy_eps(v):
             return 1
@@ -355,8 +356,8 @@ class Simulation(object):
         for func in step_funcs:
             self._eval_step_func(func, 'step')
 
-        # for func in step_funcs:
-        #     self._eval_step_func(func, 'finish')
+        for func in step_funcs:
+            self._eval_step_func(func, 'finish')
 
         print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
