@@ -1,3 +1,5 @@
+from __future__ import division
+
 import meep as mp
 from meep.geom import Vector3, check_nonnegative
 
@@ -41,13 +43,13 @@ class ContinuousSource(SourceTime):
 
 class GaussianSource(SourceTime):
 
-    def __init__(self, frequency, width, start_time=0, cutoff=5.0):
+    def __init__(self, frequency, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0):
         super(GaussianSource, self).__init__()
         self.frequency = frequency
-        self.width = width
-        self.start_time = 0
+        self.width = max(width, 1 / fwidth)
+        self.start_time = start_time
         self.cutoff = cutoff
-        self.swigobj = mp.gaussian_src_time(frequency, width, start_time, start_time + 2 * width * cutoff)
+        self.swigobj = mp.gaussian_src_time(frequency, self.width, start_time, start_time + 2 * self.width * cutoff)
         self.swigobj.is_integrated = self.is_integrated
 
 
