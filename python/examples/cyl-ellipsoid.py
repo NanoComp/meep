@@ -1,14 +1,14 @@
 from __future__ import division
 
 import meep as mp
-from meep.geom import Cylinder, epsilon, Ellipsoid, Vector3, Medium
+from meep.geom import Cylinder, Ellipsoid, index, Vector3, Medium
 from meep.simulation import Mirror, Pml, Simulation, no_size
 from meep.source import GaussianSource, Source
 
 
 def main():
 
-    c = Cylinder(radius=3, material=Medium(epsilon_diag=epsilon(3.5)))
+    c = Cylinder(radius=3, material=Medium(epsilon_diag=index(3.5)))
     e = Ellipsoid(size=Vector3(1, 2, 1e20))
 
     src_cmpt = mp.Hz

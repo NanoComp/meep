@@ -58,7 +58,11 @@ class Vector3(object):
 
 
 def epsilon(n):
-    return Vector3(n * n, n * n, n * n)
+    return Vector3(n, n, n)
+
+
+def index(n):
+    return epsilon(n * n)
 
 
 # TODO(chogan): Write tests
