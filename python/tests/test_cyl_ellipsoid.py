@@ -31,7 +31,7 @@ def set_materials(structure):
 def add_source(fields, src_cmpt):
     fcen = 1.0
     df = 0.1
-    src = GaussianSource(fcen, df)
+    src = GaussianSource(fcen, fwidth=df)
     src_point = mp.vec(0.0, 0.0)
     fields.add_point_source(src_cmpt, src, src_point)
 
