@@ -22,7 +22,7 @@ def main():
 
     sim = Simulation(cell_size=Vector3(10, 10, no_size),
                      geometry=[c, e],
-                     pml_layers=[Pml(1.0)],
+                     boundary_layers=[Pml(1.0)],
                      sources=[sources],
                      symmetries=symmetries,
                      resolution=100,

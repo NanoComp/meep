@@ -134,13 +134,13 @@ class Volume(object):
 class Simulation(object):
 
     def __init__(self, cell_size, geometry, sources, resolution, eps_averaging=True,
-                 dimensions=2, pml_layers=[], symmetries=[], verbose=False):
+                 dimensions=2, boundary_layers=[], symmetries=[], verbose=False):
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
         self.resolution = resolution
         self.dimensions = dimensions
-        self.pml_layers = pml_layers
+        self.boundary_layers = boundary_layers
         self.symmetries = symmetries
         self.geometry_center = Vector3()
         self.eps_averaging = eps_averaging
@@ -246,7 +246,7 @@ class Simulation(object):
             else:
                 s.swigobj = mp.symmetry()
 
-        br = _create_boundary_region_from_pml_layers(self.pml_layers, gv)
+        br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
 
         self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
@@ -646,31 +646,31 @@ class Simulation(object):
             raise ValueError("Invalid run configuration")
 
 
-def _create_boundary_region_from_pml_layers(pml_layers, gv):
+def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
     br = mp.boundary_region()
 
-    for pml in pml_layers:
+    for layer in boundary_layers:
 
-        if isinstance(pml, Absorber):
+        if isinstance(layer, Absorber):
             continue
 
         boundary_region_args = [
             mp.boundary_region.PML,
-            pml.thickness,
-            pml.r_asymptotic,
-            pml.mean_stretch,
+            layer.thickness,
+            layer.r_asymptotic,
+            layer.mean_stretch,
             mp.py_pml_profile,
-            pml.pml_profile,
+            layer.pml_profile,
             1 / 3,  # TODO(chogan): Call adaptive_integration instead of hard-coding integral
             1 / 4,  # TODO(chogan): Call adaptive_integration instead of hard-coding integral
         ]
 
-        if pml.direction == -1:
+        if layer.direction == -1:
             d = mp.start_at_direction(gv.dim)
             loop_stop_directi = mp.stop_at_direction(gv.dim)
 
             while d < loop_stop_directi:
-                if pml.side == -1:
+                if layer.side == -1:
                     b = mp.High
                     loop_stop_bi = mp.Low
 
@@ -679,17 +679,17 @@ def _create_boundary_region_from_pml_layers(pml_layers, gv):
                         b = (b + 1) % 2
                         loop_stop_bi = mp.High
                 else:
-                    br += mp.boundary_region(*(boundary_region_args + [d, pml.side]))
+                    br += mp.boundary_region(*(boundary_region_args + [d, layer.side]))
                 d += 1
         else:
-            if pml.side == -1:
+            if layer.side == -1:
                 b = mp.High
                 loop_stop_bi = mp.Low
 
                 while b != loop_stop_bi:
-                    br += mp.boundary_region(*(boundary_region_args + [pml.direction]))
+                    br += mp.boundary_region(*(boundary_region_args + [layer.direction]))
                     b = (b + 1) % 2
                     loop_stop_bi = mp.High
             else:
-                br += mp.boundary_region(*(boundary_region_args + [pml.direction, pml.side]))
+                br += mp.boundary_region(*(boundary_region_args + [layer.direction, layer.side]))
     return br

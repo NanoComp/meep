@@ -40,7 +40,7 @@ def main(args):
                      sources=[src],
                      resolution=10,
                      symmetries=[Mirror(mp.Y)],
-                     pml_layers=[Pml(dpml)])
+                     boundary_layers=[Pml(dpml)])
 
     sim.run(
         sim.at_beginning(sim.output_epsilon),
