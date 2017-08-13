@@ -9,19 +9,25 @@ import meep as mp
 from meep.geom import Vector3
 from meep.source import EigenModeSource, check_positive
 
-# TODO(chogan): Hopefully we don't have to require funcsigs
 try:
     from inspect import signature
+
+    # Python 3
+    def get_num_args(func):
+        sig = signature(func)
+        return len(sig.parameters)
+
 except ImportError:
-    from funcsigs import signature
+    # Python 2
+    def get_num_args(func):
+        argc = func.func_code.co_argcount
+        if 'self' in func.func_code.co_varnames:
+            argc -= 1
+        return argc
+
 
 CYLINDRICAL = -2
 no_size = 1e-20
-
-
-def get_num_args(func):
-    sig = signature(func)
-    return len(sig.parameters)
 
 
 def py_v3_to_vec(dims, v3):
