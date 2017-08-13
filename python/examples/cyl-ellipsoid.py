@@ -25,8 +25,7 @@ def main():
                      boundary_layers=[Pml(1.0)],
                      sources=[sources],
                      symmetries=symmetries,
-                     resolution=100,
-                     eps_averaging=False)
+                     resolution=100)
 
     def print_stuff():
         v = Vector3(4.13, 3.75, 0)

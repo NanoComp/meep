@@ -251,7 +251,8 @@ class Simulation(object):
         self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
 
-        mp.set_materials_from_geometry(self.structure, self.geometry)
+        mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging,
+                                       self.subpixel_tol, self.subpixel_maxeval, self.ensure_periodicity)
 
     def _init_fields(self):
         is_cylindrical = self.dimensions == CYLINDRICAL
