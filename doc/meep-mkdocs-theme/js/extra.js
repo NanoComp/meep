@@ -1,36 +1,6 @@
-# HR 20170807 startup javascript code to fix broken search box on readthedocs
-# inspired by similar code in the nodecmu project:
-# https://github.com/nodemcu/nodemcu-firmware/blob/master/docs/js/extra.js
-
-$( document ).ready(function() {
-    fixSearch();
-});
-
- function fixSearch() {
-    var target = document.getElementById('rtd-search-form');
-    var config = {attributes: true, childList: true};
-
-    var observer = new MutationObserver(function(mutations) {
-      // if it isn't disconnected it'll loop infinitely because the observed element is modified
-      observer.disconnect();
-      var form = $('#rtd-search-form');
-      form.empty();
-
- // HR 20170807 the following fancier code attempts to determine the appropriate github branch/readthedocs version on the fly; for now I'm hard-coding it to 'latest'
- //     form.attr('action', 'https://' + window.location.hostname + '/en/' + determineSelectedBranch() + '/search.html');
-      form.attr('action', 'https://' + window.location.hostname + '/en/latest/search.html');
-
-      $('<input>').attr({
-        type: "text",
-        name: "q",
-        placeholder: "Search docs"
-      }).appendTo(form);
-    });
-    // don't run this outside RTD hosting
-    if (window.location.origin.indexOf('readthedocs') > -1) {
-      observer.observe(target, config);
-    }
-  }
+//HR 20170807 startup javascript code to fix broken search box on readthedocs
+//inspired by similar code in the nodecmu project:
+//https://github.com/nodemcu/nodemcu-firmware/blob/master/docs/js/extra.js
 
   /**
    * Analyzes the URL of the current page to find out what the selected GitHub branch is. It's usually
@@ -52,3 +22,33 @@ $( document ).ready(function() {
     }
     return branch;
   }
+
+ function fixSearch() {
+    var target = document.getElementById('rtd-search-form');
+    var config = {attributes: true, childList: true};
+
+    var observer = new MutationObserver(function(mutations) {
+      // if it isn't disconnected it'll loop infinitely because the observed element is modified
+      observer.disconnect();
+      var form = $('#rtd-search-form');
+      form.empty();
+
+ // HR 20170807 the following fancier code attempts to determine the appropriate github branch/readthedocs version on the fly; for now I'm hard-coding it to 'latest'
+ //     form.attr('action', 'https://' + window.location.hostname + '/en/' + determineSelectedBranch() + '/search.html');
+        form.attr('action', 'https://' + window.location.hostname + '/en/latest/search.html');
+
+      $('<input>').attr({
+        type: "text",
+        name: "q",
+        placeholder: "Search docs"
+      }).appendTo(form);
+    });
+    // don't run this outside RTD hosting
+    if (window.location.origin.indexOf('readthedocs') > -1) {
+      observer.observe(target, config);
+    }
+  }
+
+$( document ).ready(function() {
+    fixSearch();
+});

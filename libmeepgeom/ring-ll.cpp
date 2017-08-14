@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex>
+#include <vector>
 
 #include "meep.hpp"
 
@@ -103,13 +104,52 @@ int main(int argc, char *argv[])
   // (run-sources+ 300 
   // 	(at-beginning output-epsilon)
   // 	(after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
-  double T = 300.0;
-  double stop_time = f.last_source_time() + T;
-  while( f.round_time() < stop_time )
+  while( f.round_time() < f.last_source_time() )
    f.step();
 
-  // TODO: translate call to harminv
-  // int bands = do_harminv (... Ez, vec3(r+0.1), fcen, df) 
+  double T = 300.0;
+  double stop_time = f.round_time() + T;
+  std::vector<cdouble> fieldData;
+  vec eval_pt(r+0.1,0.0);
+  while( f.round_time() < stop_time )
+   { f.step();
+     fieldData.push_back( f.get_field(Ez, eval_pt) );
+   };
+  
+  #define MAXBANDS 100
+  cdouble amp[MAXBANDS];
+  double freq_re[MAXBANDS];
+  double freq_im[MAXBANDS];
+  double err[MAXBANDS];
+  master_printf("starting do_harminv...\n");
+  int bands=do_harminv( &fieldData[0], fieldData.size(), f.dt,
+                        fcen-0.5*df, fcen+0.5*df, MAXBANDS,
+                        amp, freq_re, freq_im, err);
+  master_printf("harminv0: | real(freq) | imag(freq)  |     Q      |  abs(amp)  |          amp          | err\n");
+  master_printf("--------------------------------------------------------------------------------------------\n");
+  for(int nb=0; nb<bands; nb++)
+   master_printf("harminv0: | %.4e | %+.4e | %.4e | %.4e | {%+.2e,%+.2e} | %.1e \n",
+                  freq_re[nb], freq_im[nb], 0.5*freq_re[nb]/freq_im[nb], 
+                  abs(amp[nb]), real(amp[nb]), imag(amp[nb]), err[nb]);
+
+  // test comparison with expected values
+  int ref_bands=3;
+  double ref_freq_re[3] = {  1.1807e-01, 1.4716e-01,  1.7525e-01  };
+  double ref_freq_im[3] = { -7.6133e-04, -2.1156e-04, -5.2215e-05 };
+  cdouble ref_amp[3]    = { -8.28e-04-1.34e-03i, +1.23e-03-1.25e-02i, +2.83e-03-6.52e-04i};
+  if (bands!=3)
+   abort("harminv found only %i/%i bands\n",bands,ref_bands);
+  for(int nb=0; nb<bands; nb++)
+   if (    fabs(freq_re[nb]-ref_freq_re[nb]) > 1.0e-2*fabs(ref_freq_re[nb])
+        || fabs(freq_im[nb]-ref_freq_im[nb]) > 1.0e-2*fabs(ref_freq_im[nb])
+        ||  abs(    amp[nb]-    ref_amp[nb]) > 1.0e-2* abs(    ref_amp[nb])
+ 
+      ) 
+    abort("harminv band %i disagrees with ref: {re f, im f, re A, im A}={%e,%e,%e,%e}!= {%e,%e,%e,%e}\n",
+           nb, freq_re[nb],     freq_im[nb],     real(amp[nb]),     imag(amp[nb]),
+               ref_freq_re[nb], ref_freq_im[nb], real(ref_amp[nb]), imag(ref_amp[nb]));
+
+  master_printf("all harminv results match reference values\n");
 
   // ; Output fields for one period at the end.  (If we output
   // ; at a single time, we might accidentally catch the Ez field
@@ -124,6 +164,9 @@ int main(int argc, char *argv[])
         NextOutputTime += DeltaT;
       };
    };
+
+  // this seems to be necessary to prevent failures
+  all_wait();
 
   // success if we made it here
   exit(0);
