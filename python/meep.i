@@ -23,6 +23,7 @@
 #include <string>
 
 #include "meep/vec.hpp"
+#include "meep/mympi.hpp"
 #include "meep.hpp"
 #include "ctl-math.h"
 #include "ctlgeom.h"
@@ -199,6 +200,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %feature("immutable") meep::fields_chunk::num_connections;
 
 %include "vec.i"
+%include "meep/mympi.hpp"
 %include "meep.hpp"
 %include "meepgeom.hpp"
 
@@ -206,3 +208,14 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %ignore eps_func;
 %ignore inveps_func;
+
+// test for mpi and do requisite setup if present
+%pythoncode %{
+if mp.with_mpi():
+    print '\n**\n** hi, using python mpi\n**\n**\n'
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    print '\n**\n** everything worked foryaf\n**\n**\n'
+else
+    print '\n**\n** hi, not using python mpi\n**\n**\n'
+%}
