@@ -492,7 +492,14 @@ else
           AC_MSG_WARN([disabling Python wrappers])
           have_python=no],[#include <Python.h>])
 
-        AX_PYTHON_MODULE([mpi4py],[])
+        # if we are building --with-mpi then the python mpi4py
+        # package is mandatory
+        if test "x$with_mpi" = "xyes"; then
+          AX_PYTHON_MODULE([mpi4py],[])
+          if test "x${HAVE_PYMOD_MPI4PY}" != "xyes"; then
+            AC_MSG_ERROR([could not find mpi4py package; configure --without-mpi or --without-python])
+          fi
+        fi
         
       fi
 
