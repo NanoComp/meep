@@ -211,11 +211,10 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 // test for mpi and do requisite setup if present
 %pythoncode %{
-if mp.with_mpi():
-    print '\n**\n** hi, using python mpi\n**\n**\n'
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
-    print '\n**\n** everything worked foryaf\n**\n**\n'
-else
-    print '\n**\n** hi, not using python mpi\n**\n**\n'
+if with_mpi():
+    try:
+        from mpi4py import MPI
+        comm = MPI.COMM_WORLD
+    except:     
+        print '\n**\n** failed to load python MPI module (mpi4py)\n**\n'
 %}

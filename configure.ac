@@ -491,6 +491,9 @@ else
         AC_CHECK_HEADER([numpy/arrayobject.h],[],[
           AC_MSG_WARN([disabling Python wrappers])
           have_python=no],[#include <Python.h>])
+
+        AX_PYTHON_MODULE([mpi4py],[])
+        
       fi
 
       CPPFLAGS=$save_CPPFLAGS
