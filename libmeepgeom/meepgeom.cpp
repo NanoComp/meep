@@ -1486,7 +1486,9 @@ double pml_profile_wrapper(int dim, double *u, void *user_data)
 
 /***************************************************************/
 /* mechanism for allowing users to specify non-PML absorbing   */
-/* layers                                                      */
+/* layers.                                                     */
+/* internally an absorber_list is a std::vector<absorber>,     */
+/* but callers only ever see an opaque pointer.                */
 /***************************************************************/
 typedef struct absorber {
   double thickness;
@@ -1499,9 +1501,21 @@ typedef struct absorber {
   void *pml_profile_data;
 } absorber;
 
-std::vector<absorber> absorbers;
+typedef std::vector<absorber> absorber_list_type;
 
-void add_absorbing_layer(double thickness, int direction, int side,
+void *create_absorber_list()
+{
+  absorber_list_type *list = new absorber_list_type;
+  return (void *)list;
+}
+
+void destroy_absorber_list(void *absorber_list)
+{ absorber_list_type *list=(absorber_list_type *)absorber_list;
+  delete list;
+}
+
+void add_absorbing_layer(void *absorber_list,
+                         double thickness, int direction, int side,
                          double strength, double R_asymptotic, double mean_stretch,
                          meep::pml_profile_func func, void *func_data)
 {
@@ -1515,7 +1529,8 @@ void add_absorbing_layer(double thickness, int direction, int side,
   myabsorber.pml_profile=func;
   myabsorber.pml_profile_data=func_data;
 
-  absorbers.push_back( myabsorber );
+  absorber_list_type *list = (absorber_list_type *)absorber_list;
+  list->push_back( myabsorber );
 }
 
 /***************************************************************/
@@ -1527,7 +1542,7 @@ void set_materials_from_geometry(meep::structure *s,
                                  double tol,
                                  int maxeval,
                                  bool _ensure_periodicity,
-                                 bool verbose)
+                                 bool verbose, void *absorber_list=0)
 {
   geom_epsilon::verbose=verbose;
 
@@ -1577,17 +1592,20 @@ void set_materials_from_geometry(meep::structure *s,
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
-  for(std::vector<absorber>::iterator layer=absorbers.begin(); layer!=absorbers.end(); layer++)
-   { LOOP_OVER_DIRECTIONS(gv.dim,d)
-      { if (layer->direction!=ALL_DIRECTIONS && layer->direction!=d) continue;
-        FOR_SIDES(b)
-         { if (layer->side!=ALL_SIDES && layer->side!=b ) continue;
-           pml_profile_thunk mythunk;
-           mythunk.func      = layer->pml_profile;
-           mythunk.func_data = layer->pml_profile_data;
-           geps.set_cond_profile(d,b,layer->thickness, gv.inva*0.5,
-                                 pml_profile_wrapper, (void *)&mythunk,
-                                 pow(layer->R_asymptotic,layer->strength));
+  if (absorber_list)
+   { absorber_list_type *list=(absorber_list_type *)absorber_list;
+     for(std::vector<absorber>::iterator layer=list->begin(); layer!=list->end(); layer++)
+      { LOOP_OVER_DIRECTIONS(gv.dim,d)
+         { if (layer->direction!=ALL_DIRECTIONS && layer->direction!=d) continue;
+           FOR_SIDES(b)
+            { if (layer->side!=ALL_SIDES && layer->side!=b ) continue;
+              pml_profile_thunk mythunk;
+              mythunk.func      = layer->pml_profile;
+              mythunk.func_data = layer->pml_profile_data;
+              geps.set_cond_profile(d,b,layer->thickness, gv.inva*0.5,
+                                    pml_profile_wrapper, (void *)&mythunk,
+                                    pow(layer->R_asymptotic,layer->strength));
+            };
          };
       };
    };

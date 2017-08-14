@@ -52,9 +52,15 @@ namespace meep_geom {
 #define TINY 1e-20
 
 /***************************************************************/
+/* these routines create and append absorbing layers to a      */
+/* list of absorbing layers, represented to the user by an     */
+/* opaque pointer which may optionally be passed to            */
+/* set_materials_from_geom                                     */
 /***************************************************************/
-/***************************************************************/
-void add_absorbing_layer(double thickness,
+void *create_absorber_list();
+void destroy_absorber_list();
+void add_absorbing_layer(void *absorber_list,
+                         double thickness,
                          int direction=ALL_DIRECTIONS, int side=ALL_SIDES,
                          double strength=1.0, double R_asymptotic=1.0e-15, double mean_stretch=1.0,
                          meep::pml_profile_func func=meep::pml_quadratic_profile, void *func_data=0);
@@ -62,14 +68,14 @@ void add_absorbing_layer(double thickness,
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-
 void set_materials_from_geometry(meep::structure *s,
                                  geometric_object_list g,
 		                 bool use_anisotropic_averaging=true,
 		                 double tol=DEFAULT_SUBPIXEL_TOL,
 	  	                 int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,
                                  bool ensure_periodicity=false,
-                                 bool verbose=false);
+                                 bool verbose=false,
+                                 void *absorber_list=0);
 
 material_type make_dielectric(double epsilon);
 
