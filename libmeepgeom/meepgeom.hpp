@@ -58,7 +58,7 @@ namespace meep_geom {
 /* set_materials_from_geom                                     */
 /***************************************************************/
 void *create_absorber_list();
-void destroy_absorber_list();
+void destroy_absorber_list(void *absorber_list);
 void add_absorbing_layer(void *absorber_list,
                          double thickness,
                          int direction=ALL_DIRECTIONS, int side=ALL_SIDES,

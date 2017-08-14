@@ -1542,7 +1542,7 @@ void set_materials_from_geometry(meep::structure *s,
                                  double tol,
                                  int maxeval,
                                  bool _ensure_periodicity,
-                                 bool verbose, void *absorber_list=0)
+                                 bool verbose, void *absorber_list)
 {
   geom_epsilon::verbose=verbose;
 
@@ -1594,7 +1594,7 @@ void set_materials_from_geometry(meep::structure *s,
   /***************************************************************/
   if (absorber_list)
    { absorber_list_type *list=(absorber_list_type *)absorber_list;
-     for(std::vector<absorber>::iterator layer=list->begin(); layer!=list->end(); layer++)
+     for(absorber_list_type::iterator layer=list->begin(); layer!=list->end(); layer++)
       { LOOP_OVER_DIRECTIONS(gv.dim,d)
          { if (layer->direction!=ALL_DIRECTIONS && layer->direction!=d) continue;
            FOR_SIDES(b)
