@@ -9,11 +9,13 @@ addons:
     - libhdf5-serial-dev
     - liblapack-dev
     - python-numpy
+    - python-mpi4py
     - swig
 before_script:
   - wget https://repo.continuum.io/miniconda/Miniconda3-4.3.14-Linux-x86_64.sh
   - bash Miniconda3-4.3.14-Linux-x86_64.sh -b -p ${HOME}/miniconda3
   - ${HOME}/miniconda3/bin/conda install -y numpy
+  - ${HOME}/miniconda3/bin/conda install -y mpi4py
 script:
   - git clone https://github.com/stevengj/libctl libctl-src
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
@@ -23,6 +25,6 @@ script:
   - make distclean
   - mkdir build && pushd build
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl && make && make check && make install)
-  # Build and test pymeep with python 3.6
-  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
+  # Build and test pymeep with python 3.6j
+  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-mpi)
   - pushd python && make clean && make && make check && make install && popd
