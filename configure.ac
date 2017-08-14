@@ -459,17 +459,18 @@ program_transform_name="s,_,-,g;$program_transform_name"
 # checks for python
 ##############################################################################
 AC_ARG_WITH(python,
-	[AC_HELP_STRING([--without-python], [don't compile Python interface])],
-        with_python=$withval,with_python=yes)
+	[AC_HELP_STRING([--with-python], [compile Python interface])],
+        with_python=$withval,with_python=no)
 
-if test "$enable_shared" = no; then
-   AC_MSG_WARN([Python interface requires --enable-shared; disabling])
-   have_python=no
+if test "x$with_python" = xno; then
+  have_python=no
 else
 
-  if test "x$with_python" = xno; then
-    have_python=no
+  if test "$enable_shared" = no; then
+     AC_MSG_WARN([Python interface requires --enable-shared; disabling])
+     have_python=no
   else
+
     AM_PATH_PYTHON([],[have_python=yes],[have_python=no])
     if test $have_python = yes; then
 
@@ -496,9 +497,8 @@ else
       CPPFLAGS=$save_CPPFLAGS
     fi # have_python
 
-  fi # with_python
-
-fi # enable_shared
+  fi # enabled_shared
+fi # with_python
 
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
