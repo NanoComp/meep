@@ -168,6 +168,9 @@ int main(int argc, char *argv[])
       };
    };
 
+  // this seems to be necessary to prevent failures
+  all_wait();
+
   // success if we made it here
   master_printf("ring-ll test successful.\n");
 
