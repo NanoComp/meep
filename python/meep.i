@@ -23,6 +23,7 @@
 #include <string>
 
 #include "meep/vec.hpp"
+#include "meep/mympi.hpp"
 #include "meep.hpp"
 #include "ctl-math.h"
 #include "ctlgeom.h"
@@ -199,6 +200,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %feature("immutable") meep::fields_chunk::num_connections;
 
 %include "vec.i"
+%include "meep/mympi.hpp"
 %include "meep.hpp"
 %include "meepgeom.hpp"
 

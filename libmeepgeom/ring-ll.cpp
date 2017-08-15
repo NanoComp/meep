@@ -151,6 +151,9 @@ int main(int argc, char *argv[])
 
   master_printf("all harminv results match reference values\n");
 
+  // this seems to be necessary to prevent failures
+  all_wait();
+
   // ; Output fields for one period at the end.  (If we output
   // ; at a single time, we might accidentally catch the Ez field
   // ; when it is almost zero and get a distorted view.)
@@ -169,6 +172,6 @@ int main(int argc, char *argv[])
   all_wait();
 
   // success if we made it here
-  exit(0);
+  master_printf("ring-ll test successful.\n");
 
 }
