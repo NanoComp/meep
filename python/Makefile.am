@@ -30,7 +30,11 @@ TESTS =                               \
     $(TEST_DIR)/test_source.py
 
 TEST_EXTENSIONS = .py
-PY_LOG_COMPILER = $(PYTHON)
+if WITH_MPI
+  PY_LOG_COMPILER = mpirun -np `nproc` $(PYTHON)
+else
+  PY_LOG_COMPILER = $(PYTHON)
+endif
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON

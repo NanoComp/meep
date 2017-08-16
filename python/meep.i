@@ -216,10 +216,9 @@ if with_mpi():
     try:
         from mpi4py import MPI
     except ImportError:
-        print '\n**\n** failed to load python MPI module (mpi4py)\n**\n'
+        print('\n**\n** failed to load python MPI module (mpi4py)\n**\n')
         pass
     else:
-        print '\n**\n** howdage foryaf\n**\n'
         comm = MPI.COMM_WORLD
-        print '\n**\n** successfully loaded python MPI module (mpi4py)\n**\n'
+        print('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
 %}

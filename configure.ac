@@ -61,6 +61,7 @@ if test "x$with_mpi" = "xyes"; then
           AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])])
   fi
 fi
+AM_CONDITIONAL(WITH_MPI, test "x$with_mpi" != xno)
 
 ##############################################################################
 # Compiler flags
