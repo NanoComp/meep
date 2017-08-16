@@ -15,6 +15,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 
 .SUFFIXES = .dac .done
 
+VERBOSE=1
 check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
 
 aniso_disp_SOURCES = aniso_disp.cpp

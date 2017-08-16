@@ -35,6 +35,7 @@ if WITH_MPI
 else
   PY_LOG_COMPILER = $(PYTHON)
 endif
+VERBOSE=1
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON

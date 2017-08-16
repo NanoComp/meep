@@ -9,9 +9,10 @@ addons:
     - libhdf5-serial-dev
     - liblapack-dev
     - python-numpy
-    - python-mpi4py
     - swig
     - libopenmpi-dev
+    - mpi-default-bin
+    - python-mpi4py
 before_script:
   - wget https://repo.continuum.io/miniconda/Miniconda3-4.3.14-Linux-x86_64.sh
   - bash Miniconda3-4.3.14-Linux-x86_64.sh -b -p ${HOME}/miniconda3
