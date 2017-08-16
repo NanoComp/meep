@@ -78,6 +78,8 @@ def main(args):
             f.output_hdf5(mp.Ez, f.total_volume())
             NextOutputTime += DeltaT
 
+    mp.all_wait()
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

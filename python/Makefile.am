@@ -9,7 +9,7 @@ HPPFILES=                                    \
  $(top_srcdir)/libmeepgeom/material_data.hpp 
 
 BUILT_SOURCES = meep-python.cpp meep.py __init__.py
-
+)_
 CLEANFILES = $(BUILT_SOURCES) meep-python.h
 
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
@@ -29,7 +29,6 @@ TESTS =                               \
     $(TEST_DIR)/test_ring.py          \
     $(TEST_DIR)/test_source.py
 
-VERBOSE=1
 TEST_EXTENSIONS = .py
 if WITH_MPI
   PY_LOG_COMPILER = mpirun -np `nproc` $(PYTHON)

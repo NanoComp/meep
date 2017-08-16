@@ -77,7 +77,12 @@ pml_LDADD = $(LIBMEEP)
 
 TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
 
-LOG_COMPILER = $(RUNCODE)
+##LOG_COMPILER = $(RUNCODE)
+if WITH_MPI
+  LOG_COMPILER = mpirun -np `nproc`
+else
+  LOG_COMPILER = $(RUNCODE)
+endif
 
 # Note: this requires GNU make
 

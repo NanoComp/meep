@@ -118,6 +118,7 @@ def main(args):
 
     bend_flux(True)
     bend_flux(False)
+    mp.all_wait()
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

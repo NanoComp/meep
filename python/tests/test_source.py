@@ -68,3 +68,4 @@ class TestSourceTypemaps(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+    mp.all_wait()
