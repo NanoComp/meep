@@ -30,6 +30,7 @@ TESTS =                               \
     $(TEST_DIR)/test_source.py
 
 VERBOSE=1
+AUTOMAKE_OPTIONS = serial-tests
 TEST_EXTENSIONS = .py
 if WITH_MPI
   PY_LOG_COMPILER = "mpirun -np `nproc` $(PYTHON)"
