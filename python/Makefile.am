@@ -29,13 +29,13 @@ TESTS =                               \
     $(TEST_DIR)/test_ring.py          \
     $(TEST_DIR)/test_source.py
 
+VERBOSE=1
 TEST_EXTENSIONS = .py
 if WITH_MPI
-  PY_LOG_COMPILER = mpirun -np `nproc` $(PYTHON)
+  PY_LOG_COMPILER = "mpirun -np `nproc` $(PYTHON)"
 else
   PY_LOG_COMPILER = $(PYTHON)
 endif
-VERBOSE=1
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
