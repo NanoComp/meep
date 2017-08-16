@@ -32,6 +32,5 @@ script:
   - pushd python && make clean && make && make check && make install && popd
 after_script:
    - cat test-suite.log
-   - cat test-suite.log
    - cat python/test-suite.log
    - cat python/tests/test-suite.log
