@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "../../python/examples/ring.py", line 5, in <module>
+    import meep as mp
+  File "/home/chris/dev/simpetus/meep/build/python/meep/__init__.py", line 3390, in <module>
+    from .geom import (
+ImportError: cannot import name 'SusceptibilityorentzianSusceptibility'
+FAIL examples/ring.py (exit status: 1)

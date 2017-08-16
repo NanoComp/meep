@@ -1,34 +1,31 @@
 from __future__ import division
 
 import meep as mp
-from meep.geom import Cylinder, Ellipsoid, index, Vector3, Medium
-from meep.simulation import Mirror, Pml, Simulation, no_size
-from meep.source import GaussianSource, Source
 
 
 def main():
 
-    c = Cylinder(radius=3, material=Medium(epsilon_diag=index(3.5)))
-    e = Ellipsoid(size=Vector3(1, 2, 1e20))
+    c = mp.Cylinder(radius=3, material=mp.Medium(epsilon_diag=mp.index(3.5)))
+    e = mp.Ellipsoid(size=mp.Vector3(1, 2, 1e20))
 
     src_cmpt = mp.Hz
-    sources = Source(src=GaussianSource(1, 0.1), component=src_cmpt, center=Vector3())
+    sources = mp.Source(src=mp.GaussianSource(1, 0.1), component=src_cmpt, center=mp.Vector3())
 
     if src_cmpt == mp.Ez:
-        symmetries = [Mirror(mp.X), Mirror(mp.Y)]
+        symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
 
     if src_cmpt == mp.Hz:
-        symmetries = [Mirror(mp.X, -1), Mirror(mp.Y, -1)]
+        symmetries = [mp.Mirror(mp.X, -1), mp.Mirror(mp.Y, -1)]
 
-    sim = Simulation(cell_size=Vector3(10, 10, no_size),
-                     geometry=[c, e],
-                     boundary_layers=[Pml(1.0)],
-                     sources=[sources],
-                     symmetries=symmetries,
-                     resolution=100)
+    sim = mp.Simulation(cell_size=mp.Vector3(10, 10),
+                        geometry=[c, e],
+                        boundary_layers=[mp.Pml(1.0)],
+                        sources=[sources],
+                        symmetries=symmetries,
+                        resolution=100)
 
     def print_stuff():
-        v = Vector3(4.13, 3.75, 0)
+        v = mp.Vector3(4.13, 3.75, 0)
         p = sim._get_field_point(src_cmpt, v)
         print("t, Ez: {} {}+{}i".format(sim._round_time(), p.real, p.imag))
 

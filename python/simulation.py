@@ -25,9 +25,13 @@ except ImportError:
             argc -= 1
         return argc
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 CYLINDRICAL = -2
-no_size = 1e-20
 
 
 def py_v3_to_vec(dims, v3):
@@ -196,7 +200,7 @@ class Simulation(object):
 
             def requires_2d(self, k):
                 cond1 = False if k is None else not k
-                cond2 = self.cell_size.z == self.no_size
+                cond2 = self.cell_size.z == 0
                 cond3 = cond1 or self.special_kz or k.z == 0
                 return cond2 and cond3
 

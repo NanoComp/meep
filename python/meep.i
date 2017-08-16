@@ -295,3 +295,46 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %ignore eps_func;
 %ignore inveps_func;
+
+%pythoncode %{
+    from .geom import (
+        Block,
+        Cone,
+        Cylinder,
+        DrudeSusceptibility,
+        Ellipsoid,
+        GeometricObject,
+        Matrix3x3,
+        Medium,
+        NoisyDrudeSusceptibility,
+        NoisyLorentzianSusceptibility,
+        Sphere,
+        Susceptibility,
+        Vector3,
+        Wedge,
+        check_nonnegative,
+        epsilon,
+        index,
+    )
+    from .simulation import (
+        Absorber,
+        Identity,
+        Mirror,
+        Pml,
+        Rotate2,
+        Rotate4,
+        Simulation,
+        Symmetry,
+        Volume,
+        py_v3_to_vec,
+    )
+    from .source import (
+        ContinuousSource,
+        CustomSource,
+        EigenModeSource,
+        GaussianSource,
+        Source,
+        SourceTime,
+        check_positive,
+    )
+%}

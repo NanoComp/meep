@@ -2,11 +2,7 @@
 from __future__ import division
 
 import sys
-
 import meep as mp
-from meep.geom import Cylinder, epsilon, Medium, Vector3
-from meep.source import GaussianSource, Source
-from meep.simulation import Simulation, Mirror, Pml, no_size
 
 
 def main(args):
@@ -20,11 +16,11 @@ def main(args):
     # Create a ring waveguide by two overlapping cylinders - later objects
     # take precedence over earlier objects, so we put the outer cylinder first.
     # and the inner (air) cylinder second.
-    dielectric = Medium(epsilon_diag=epsilon(n * n))
-    air = Medium(epsilon_diag=Vector3(1, 1, 1))
+    dielectric = mp.Medium(epsilon_diag=mp.epsilon(n * n))
+    air = mp.Medium(epsilon_diag=mp.Vector3(1, 1, 1))
 
-    c1 = Cylinder(r + w, material=dielectric)
-    c2 = Cylinder(r, material=air)
+    c1 = mp.Cylinder(r + w, material=dielectric)
+    c2 = mp.Cylinder(r, material=air)
 
     # If we don't want to excite a specific mode symmetry, we can just
     # put a single point source at some arbitrary place, pointing in some
@@ -33,18 +29,18 @@ def main(args):
     fcen = 0.15  # pulse center frequency
     df = 0.1  # pulse width (in frequency)
 
-    src = Source(GaussianSource(fcen, df), mp.Ez, Vector3(r + 0.1))
+    src = mp.Source(mp.GaussianSource(fcen, df), mp.Ez, mp.Vector3(r + 0.1))
 
-    sim = Simulation(cell_size=Vector3(sxy, sxy, no_size),
-                     geometry=[c1, c2],
-                     sources=[src],
-                     resolution=10,
-                     symmetries=[Mirror(mp.Y)],
-                     boundary_layers=[Pml(dpml)])
+    sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
+                        geometry=[c1, c2],
+                        sources=[src],
+                        resolution=10,
+                        symmetries=[mp.Mirror(mp.Y)],
+                        boundary_layers=[mp.Pml(dpml)])
 
     sim.run(
         sim.at_beginning(sim.output_epsilon),
-        sim.after_sources(sim.harminv(mp.Ez, Vector3(r + 0.1), fcen, df)),
+        sim.after_sources(sim.harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)),
         until=300, sources=True
     )
 
