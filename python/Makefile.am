@@ -32,7 +32,7 @@ TESTS =                               \
 VERBOSE=1
 TEST_EXTENSIONS = .py
 if WITH_MPI
-  PY_LOG_COMPILER = "mpirun -np `nproc` $(PYTHON)"
+  PY_LOG_COMPILER = mpirun -np `nproc` $(PYTHON)
 else
   PY_LOG_COMPILER = $(PYTHON)
 endif
