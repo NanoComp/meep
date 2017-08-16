@@ -8,11 +8,9 @@ addons:
     - gfortran
     - libhdf5-serial-dev
     - liblapack-dev
-    - python-numpy
     - swig
     - libopenmpi-dev
     - mpi-default-bin
-    - python-mpi4py
 before_script:
   - wget https://repo.continuum.io/miniconda/Miniconda3-4.3.14-Linux-x86_64.sh
   - bash Miniconda3-4.3.14-Linux-x86_64.sh -b -p ${HOME}/miniconda3
@@ -20,7 +18,7 @@ before_script:
   - ${HOME}/miniconda3/bin/conda install -y mpi4py
 script:
   - git clone https://github.com/stevengj/libctl libctl-src
-  - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make CFLAGS="-W" CXXFLAGS="-W" && make install)
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-mpi)

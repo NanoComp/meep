@@ -30,8 +30,8 @@ TESTS =                               \
     $(TEST_DIR)/test_source.py
 
 TEST_EXTENSIONS = .py
-#PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
-PY_LOG_COMPILER = $(PYTHON)
+##PY_LOG_COMPILER = $(PYTHON)
+PY_LOG_COMPILER = mpirun -np 1 $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
