@@ -9,7 +9,7 @@ HPPFILES=                                    \
  $(top_srcdir)/libmeepgeom/material_data.hpp 
 
 BUILT_SOURCES = meep-python.cpp meep.py __init__.py
-)_
+
 CLEANFILES = $(BUILT_SOURCES) meep-python.h
 
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
@@ -68,4 +68,3 @@ clean-local:
 	rm -rf meep
 
 endif # MAINTAINER_MODE
-

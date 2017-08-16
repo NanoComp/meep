@@ -220,5 +220,5 @@ if with_mpi():
         pass
     else:
         comm = MPI.COMM_WORLD
-        mp.master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
+        master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
 %}
