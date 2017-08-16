@@ -31,7 +31,8 @@ TESTS =                               \
 
 TEST_EXTENSIONS = .py
 if WITH_MPI
-  PY_LOG_COMPILER = mpirun -np `nproc` $(PYTHON)
+##  PY_LOG_COMPILER = mpirun -np `nproc` $(PYTHON)
+  PY_LOG_COMPILER = $(PYTHON)
 else
   PY_LOG_COMPILER = $(PYTHON)
 endif
