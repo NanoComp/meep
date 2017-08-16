@@ -26,7 +26,10 @@ script:
 #  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-mpi)
 #  - make distclean
 #  - mkdir build && pushd build
-#  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-mpi && make && make check && make install)
+  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-mpi && make && make check && make install)
   # Build and test pymeep with python 3.6
-  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python sh autogen.sh --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-mpi --with-python && make && make check && make install)
 #  - pushd python && make clean && make && make check && make install && popd
+after_script:
+   - cat test-suite.log
+   - cat python/test-suite.log
+   - cat python/tests/test-suite.log
