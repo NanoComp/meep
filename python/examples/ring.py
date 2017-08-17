@@ -15,8 +15,8 @@ def main():
     # Create a ring waveguide by two overlapping cylinders - later objects
     # take precedence over earlier objects, so we put the outer cylinder first.
     # and the inner (air) cylinder second.
-    dielectric = mp.Medium(epsilon_diag=mp.epsilon(n * n))
-    air = mp.Medium(epsilon_diag=mp.Vector3(1, 1, 1))
+    dielectric = mp.Medium(epsilon=n * n)
+    air = mp.Medium()
 
     c1 = mp.Cylinder(r + w, material=dielectric)
     c2 = mp.Cylinder(r, material=air)

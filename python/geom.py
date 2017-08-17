@@ -57,14 +57,6 @@ class Vector3(object):
         return self
 
 
-def epsilon(n):
-    return Vector3(n, n, n)
-
-
-def index(n):
-    return epsilon(n * n)
-
-
 # TODO(chogan): Write tests
 class Matrix3x3(object):
 
@@ -119,7 +111,15 @@ class Medium(object):
                  H_chi2_diag=Vector3(),
                  H_chi3_diag=Vector3(),
                  D_conductivity_diag=Vector3(),
-                 B_conductivity_diag=Vector3()):
+                 B_conductivity_diag=Vector3(),
+                 epsilon=None,
+                 index=None):
+
+        if epsilon:
+            epsilon_diag = Vector3(epsilon, epsilon, epsilon)
+        elif index:
+            i2 = index * index
+            epsilon_diag = Vector3(i2, i2, i2)
 
         self.epsilon_diag = epsilon_diag
         self.epsilon_offdiag = epsilon_offdiag
