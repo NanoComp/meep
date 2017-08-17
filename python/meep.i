@@ -313,8 +313,6 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Vector3,
         Wedge,
         check_nonnegative,
-        epsilon,
-        index,
     )
     from .simulation import (
         Absorber,
