@@ -24,7 +24,7 @@ def main():
                         symmetries=symmetries,
                         resolution=100)
 
-    def print_stuff():
+    def print_stuff(sim_obj):
         v = mp.Vector3(4.13, 3.75, 0)
         p = sim._get_field_point(src_cmpt, v)
         print("t, Ez: {} {}+{}i".format(sim._round_time(), p.real, p.imag))

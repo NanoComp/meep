@@ -9,21 +9,6 @@ import meep as mp
 from meep.geom import Vector3
 from meep.source import EigenModeSource, check_positive
 
-try:
-    from inspect import signature
-
-    # Python 3
-    def get_num_args(func):
-        sig = signature(func)
-        return len(sig.parameters)
-
-except ImportError:
-    # Python 2
-    def get_num_args(func):
-        argc = func.func_code.co_argcount
-        if 'self' in func.func_code.co_varnames:
-            argc -= 1
-        return argc
 
 try:
     basestring
@@ -32,6 +17,14 @@ except NameError:
 
 
 CYLINDRICAL = -2
+
+
+def get_num_args(func):
+    return func.__code__.co_argcount
+
+
+def is_bound(f):
+    return hasattr(f, '__self__') and f.__self__ is not None
 
 
 def py_v3_to_vec(dims, v3):
@@ -322,15 +315,27 @@ class Simulation(object):
     def _eval_step_func(self, func, todo):
         num_args = get_num_args(func)
         if num_args == 0:
+            raise ValueError("Step function '{}'' requires at least 1 argument".format(func.__name__))
+        elif num_args == 1:
             if todo == 'step':
-                func()
+                if is_bound(func):
+                    # Bound method already has self as first argument
+                    func()
+                else:
+                    func(self)
+        elif num_args == 2:
+            if is_bound(func):
+                # Bound method already has self as first argument
+                func(todo)
+            else:
+                func(self, todo)
         else:
-            func(todo)
+            raise ValueError("Step function '{}' can only take 1 or 2 arguments".format(func.__name__))
 
     def _combine_step_funcs(self, *step_funcs):
         closure = {'step_funcs': step_funcs}
 
-        def _combine(todo):
+        def _combine(sim, todo):
             for func in closure['step_funcs']:
                 self._eval_step_func(func, todo)
         return _combine
@@ -346,7 +351,7 @@ class Simulation(object):
                 't0': self._round_time(),
             }
 
-            def stop_cond():
+            def stop_cond(sim):
                 return self._round_time() >= closure['t0'] + closure['stop_time']
 
             cond = stop_cond
@@ -356,7 +361,7 @@ class Simulation(object):
                 closure['t0'], closure['t0'] + closure['stop_time'], self.progress_interval
             ))
 
-        while not cond():
+        while not cond(self):
             for func in step_funcs:
                 self._eval_step_func(func, 'step')
             self.fields.step()
@@ -382,7 +387,7 @@ class Simulation(object):
         if isinstance(cond, numbers.Number):
             new_cond = (ts - self._round_time()) + cond
         else:
-            def f():
+            def f(sim):
                 cond() and self._round_time() >= ts
             new_cond = f
 
@@ -400,7 +405,7 @@ class Simulation(object):
 
             closure2 = {'t0': 0}
 
-            def _collect2():
+            def _collect2(sim):
                 closure['data_dt'] = self.meep_time() - closure2['t0']
                 closure2['t0'] = self.meep_time()
                 self.harminv_data.append(self._get_field_point(c, pt))
@@ -439,7 +444,7 @@ class Simulation(object):
             'results': results,
         }
 
-        def _harm():
+        def _harm(sim):
             closure['data'] = closure['_data']
             closure['dt'] = closure['_dt']
             if closure['_maxbands'] is None or closure['_maxbands'] == 0:
@@ -529,7 +534,7 @@ class Simulation(object):
             'tlast': mp.wall_time(),
         }
 
-        def _disp():
+        def _disp(sim):
             t1 = mp.wall_time()
             if t1 - closure['tlast'] >= dt:
                 msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
@@ -566,8 +571,8 @@ class Simulation(object):
         self.output_component(mp.Ez)
 
     def when_true_funcs(self, cond, *step_funcs):
-        def _true(todo):
-            if todo == 'finish' or cond():
+        def _true(sim, todo):
+            if todo == 'finish' or cond(sim):
                 for f in step_funcs:
                     self._eval_step_func(f, todo)
         return _true
@@ -579,7 +584,7 @@ class Simulation(object):
             'step_funcs': step_funcs
         }
 
-        def _beg(todo):
+        def _beg(sim, todo):
             if not closure['done']:
                 for f in closure['step_funcs']:
                     self._eval_step_func(f, todo)
@@ -595,7 +600,7 @@ class Simulation(object):
             'step_funcs': step_funcs
         }
 
-        def _every(todo):
+        def _every(sim, todo):
             t = self._round_time()
             if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * self.fields.dt):
                 for func in closure['step_funcs']:
@@ -604,7 +609,7 @@ class Simulation(object):
         return _every
 
     def at_end(self, *step_funcs):
-        def _end(todo):
+        def _end(sim, todo):
             if todo == 'finish':
                 for func in step_funcs:
                     self._eval_step_func(func, 'step')
@@ -621,7 +626,7 @@ class Simulation(object):
             't': t
         }
 
-        def _after_t():
+        def _after_t(sim):
             return self._round_time() >= closure['t0'] + closure['t']
 
         return self.when_true_funcs(_after_t, *step_funcs)

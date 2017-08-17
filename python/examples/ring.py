@@ -1,11 +1,10 @@
 # Calculating 2d ring-resonator modes, from the Meep tutorial.
 from __future__ import division
 
-import sys
 import meep as mp
 
 
-def main(args):
+def main():
     n = 3.4  # index of waveguide
     w = 1  # width of waveguide
     r = 1  # inner radius of ring
@@ -50,4 +49,4 @@ def main(args):
     sim.run(sim.at_every((1 / fcen / 20), sim.output_efield_z), until=(1 / fcen))
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    main()
