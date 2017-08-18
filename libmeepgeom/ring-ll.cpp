@@ -169,6 +169,6 @@ int main(int argc, char *argv[])
   all_wait();
 
   // success if we made it here
-  exit(0);
+  return 0;
 
 }
