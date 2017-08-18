@@ -165,10 +165,7 @@ int main(int argc, char *argv[])
       };
    };
 
-  // this seems to be necessary to prevent failures
-  all_wait();
-
   // success if we made it here
-  exit(0);
+  return 0;
 
 }
