@@ -219,5 +219,5 @@ int main(int argc, char *argv[])
   bend_flux(false);
 
   // success if we made it here
-  exit(0);
+  return 0;
 }

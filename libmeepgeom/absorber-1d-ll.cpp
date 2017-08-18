@@ -60,10 +60,10 @@ int main(int argc, char *argv[])
   boundary_region br = use_pml ? pml(1.0) : boundary_region();
   structure the_structure(gv, dummy_eps, br);
 
-  void *absorber_list=0;
+  meep_geom::absorber_list alist=0;
   if (!use_pml)
-   { absorber_list = meep_geom::create_absorber_list();
-     meep_geom::add_absorbing_layer(absorber_list, 1.0, Z);
+   { alist = meep_geom::create_absorber_list();
+     meep_geom::add_absorbing_layer(alist, 1.0, Z);
    };
 
   geometric_object_list g={ 0, 0};
@@ -73,10 +73,10 @@ int main(int argc, char *argv[])
 	  	                         DEFAULT_SUBPIXEL_MAXEVAL, // maxeval
                                          false,                    // ensure_periodicity
                                          false,                    // verbose
-                                         absorber_list);
+                                         alist);
 
-  if (absorber_list)
-   meep_geom::destroy_absorber_list(absorber_list);
+  if (alist)
+   meep_geom::destroy_absorber_list(alist);
 
   // (set! sources (list (make source (src (make gaussian-src (frequency (/ 0.803)) (fwidth 0.1))) (center 0 0 0) (component Ex))))
   fields f(&the_structure);

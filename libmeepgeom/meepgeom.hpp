@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <vector>
 
 #include <meep.hpp>
 #include <ctlgeom.h>
@@ -52,14 +53,27 @@ namespace meep_geom {
 #define TINY 1e-20
 
 /***************************************************************/
-/* these routines create and append absorbing layers to a      */
-/* list of absorbing layers, represented to the user by an     */
-/* opaque pointer which may optionally be passed to            */
-/* set_materials_from_geom                                     */
+/* these routines create and append absorbing layers to an     */
+/* optional list of absorbing layers which is added to the     */
+/* material geometry by set_materials_from_geometry.           */
 /***************************************************************/
-void *create_absorber_list();
-void destroy_absorber_list(void *absorber_list);
-void add_absorbing_layer(void *absorber_list,
+typedef struct absorber {
+  double thickness;
+  int direction;
+  int side;
+  double strength;
+  double R_asymptotic;
+  double mean_stretch;
+  meep::pml_profile_func pml_profile;
+  void *pml_profile_data;
+} absorber;
+
+typedef std::vector<absorber> absorber_list_type;
+typedef absorber_list_type *absorber_list;
+
+absorber_list create_absorber_list();
+void destroy_absorber_list(absorber_list alist);
+void add_absorbing_layer(absorber_list alist,
                          double thickness,
                          int direction=ALL_DIRECTIONS, int side=ALL_SIDES,
                          double strength=1.0, double R_asymptotic=1.0e-15, double mean_stretch=1.0,
@@ -75,7 +89,7 @@ void set_materials_from_geometry(meep::structure *s,
 	  	                 int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,
                                  bool ensure_periodicity=false,
                                  bool verbose=false,
-                                 void *absorber_list=0);
+                                 absorber_list alist=0);
 
 material_type make_dielectric(double epsilon);
 

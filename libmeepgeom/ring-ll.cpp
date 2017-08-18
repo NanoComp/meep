@@ -126,6 +126,6 @@ int main(int argc, char *argv[])
    };
 
   // success if we made it here
-  exit(0);
+  return 0;
 
 }
