@@ -641,17 +641,15 @@ class Simulation(object):
 
     def run(self, *step_funcs, **kwargs):
         until = kwargs.pop('until', None)
-        sources = kwargs.pop('sources', None)
+        until_after_sources = kwargs.pop('until_after_sources', None)
 
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
-        if sources and until:
-            self._run_sources_until(until, step_funcs)
+        if until_after_sources:
+            self._run_sources_until(until_after_sources, step_funcs)
         elif until:
             self._run_until(until, step_funcs)
-        elif until is None and sources:
-            self._run_sources(step_funcs)
         else:
             raise ValueError("Invalid run configuration")
 

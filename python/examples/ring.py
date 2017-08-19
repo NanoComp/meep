@@ -40,7 +40,7 @@ def main():
     sim.run(
         sim.at_beginning(sim.output_epsilon),
         sim.after_sources(sim.harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)),
-        until=300, sources=True
+        until_after_sources=300
     )
 
     # Output fields for one period at the end.  (If we output
