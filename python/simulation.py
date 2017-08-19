@@ -452,8 +452,10 @@ class Simulation(object):
             else:
                 mb = closure['_maxbands']
 
-            closure['results'] = self._analyze_harminv(closure['data'], closure['_fcen'],
-                                                       closure['_df'], mb, closure['_dt'])
+            closure['results'].extend(
+                self._analyze_harminv(closure['data'], closure['_fcen'],
+                                      closure['_df'], mb, closure['_dt'])
+            )
 
         f1 = self._collect_harminv(closure['_data'], closure['_dt'])
 

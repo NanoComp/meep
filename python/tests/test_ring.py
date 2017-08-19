@@ -2,82 +2,62 @@
 # Calculating 2d ring-resonator modes, from the Meep tutorial.
 from __future__ import division
 
-import sys
-
+import unittest
 import meep as mp
-import meep.geom as gm
-from meep.source import GaussianSource
 
-
-# dummy material function needed to pass to structure( )
-# constructor as a placeholder before we can call
-# set_materials_from_geometry
 
 def dummy_eps(vec):
     return 1.0
 
 
-def main(args):
+class TestRing(unittest.TestCase):
 
-    n = 3.4  # index of waveguide
-    w = 1.0  # width of waveguide
-    r = 1.0  # inner radius of ring
+    def init(self):
+        n = 3.4
+        w = 1
+        r = 1
+        pad = 4
+        dpml = 2
+        sxy = 2 * (r + w + pad + dpml)
 
-    pad = 4  # padding between waveguide and edge of PML
-    dpml = 2  # thickness of PML
+        dielectric = mp.Medium(epsilon=n * n)
+        air = mp.Medium()
 
-    sxy = 2.0 * (r + w + pad + dpml)  # cell size
-    resolution = 10.0
+        c1 = mp.Cylinder(r + w, material=dielectric)
+        c2 = mp.Cylinder(r, material=air)
 
-    gv = mp.voltwo(sxy, sxy, resolution)
-    gv.center_origin()
+        fcen = 0.15
+        df = 0.1
 
-    sym = mp.mirror(mp.Y, gv)
+        src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1))
 
-    # exploit the mirror symmetry in structure+source:
-    the_structure = mp.structure(gv, dummy_eps, mp.pml(dpml), sym)
+        self.sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
+                                 geometry=[c1, c2],
+                                 sources=[src],
+                                 resolution=10,
+                                 symmetries=[mp.Mirror(mp.Y)],
+                                 boundary_layers=[mp.Pml(dpml)])
 
-    # Create a ring waveguide by two overlapping cylinders - later objects
-    # take precedence over earlier objects, so we put the outer cylinder first.
-    # and the inner (air) cylinder second.
+        self.harminv = self.sim.harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
 
-    objects = []
-    n2 = n * n
-    dielectric = gm.Medium(epsilon_diag=gm.Vector3(n2, n2, n2))
-    objects.append(gm.Cylinder(r + w, material=dielectric))
-    objects.append(gm.Cylinder(r))
+    def test_harminv(self):
+        self.init()
 
-    mp.set_materials_from_geometry(the_structure, objects)
-    f = mp.fields(the_structure)
+        self.sim.run(
+            self.sim.at_beginning(self.sim.output_epsilon),
+            self.sim.after_sources(self.harminv),
+            until_after_sources=300
+        )
+        band1, band2, band3 = self.sim.harminv_results
 
-    # If we don't want to excite a specific mode symmetry, we can just
-    # put a single point source at some arbitrary place, pointing in some
-    # arbitrary direction.  We will only look for TM modes (E out of the plane).
-    fcen = 0.15  # pulse center frequency
-    df = 0.1
-    src = GaussianSource(fcen, df)
-    v = mp.volume(mp.vec(r + 0.1, 0.0), mp.vec(0.0, 0.0))
-    f.add_volume_source(mp.Ez, src, v)
+        self.assertAlmostEqual(band1[0].real, 0.118101315147, places=3)
+        self.assertAlmostEqual(band1[0].imag, -0.000731513241623, places=3)
+        self.assertAlmostEqual(abs(band1[1].real), 0.00341267634436, places=3)
+        self.assertAlmostEqual(band1[1].real, -0.00304951667301, places=3)
+        self.assertAlmostEqual(band1[1].imag, -0.00153192946717, places=3)
 
-    T = 300.0
-    stop_time = f.last_source_time() + T
-    while f.round_time() < stop_time:
-        f.step()
-
-    # TODO: translate call to harminv
-    # int bands = do_harminv (... Ez, vec3(r+0.1), fcen, df)
-
-    # Output fields for one period at the end.  (If we output
-    # at a single time, we might accidentally catch the Ez field
-    # when it is almost zero and get a distorted view.)
-    DeltaT = 1.0 / (20 * fcen)
-    NextOutputTime = f.round_time() + DeltaT
-    while f.round_time() < 1.0 / fcen:
-        f.step()
-        if f.round_time() >= NextOutputTime:
-            f.output_hdf5(mp.Ez, f.total_volume())
-            NextOutputTime += DeltaT
-
+        fp = self.sim._get_field_point(mp.Ez, mp.Vector3(1, 1))
+        self.assertAlmostEqual(fp, -0.08185972142450348)
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    unittest.main()

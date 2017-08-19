@@ -104,9 +104,12 @@ libmeepgeom/*.h5
 # python tests
 python/tests/*.log
 python/tests/*.trs
+python/examples/*.trs
 python/*.h5
 python/*.log
 
 # output files
 examples/*.h5
 examples/*.png
+python/examples/*.h5
+python/examples/*.png
