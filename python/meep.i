@@ -304,7 +304,6 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         DrudeSusceptibility,
         Ellipsoid,
         GeometricObject,
-        Matrix3x3,
         Medium,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,

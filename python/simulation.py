@@ -333,10 +333,9 @@ class Simulation(object):
             raise ValueError("Step function '{}' can only take 1 or 2 arguments".format(func.__name__))
 
     def _combine_step_funcs(self, *step_funcs):
-        closure = {'step_funcs': step_funcs}
 
         def _combine(sim, todo):
-            for func in closure['step_funcs']:
+            for func in step_funcs:
                 self._eval_step_func(func, todo)
         return _combine
 
@@ -346,20 +345,16 @@ class Simulation(object):
             self._init_fields()
 
         if isinstance(cond, numbers.Number):
-            closure = {
-                'stop_time': cond,
-                't0': self._round_time(),
-            }
+            stop_time = cond
+            t0 = self._round_time()
 
             def stop_cond(sim):
-                return self._round_time() >= closure['t0'] + closure['stop_time']
+                return self._round_time() >= t0 + stop_time
 
             cond = stop_cond
 
             step_funcs = list(step_funcs)
-            step_funcs.append(self.display_progress(
-                closure['t0'], closure['t0'] + closure['stop_time'], self.progress_interval
-            ))
+            step_funcs.append(self.display_progress(t0, t0 + stop_time, self.progress_interval))
 
         while not cond(self):
             for func in step_funcs:
@@ -531,10 +526,8 @@ class Simulation(object):
         pass
 
     def display_progress(self, t0, t, dt):
-        closure = {
-            't_0': mp.wall_time(),
-            'tlast': mp.wall_time(),
-        }
+        t_0 = mp.wall_time()
+        closure = {'tlast': mp.wall_time()}
 
         def _disp(sim):
             t1 = mp.wall_time()
@@ -543,8 +536,8 @@ class Simulation(object):
                 val1 = self.meep_time() - t0
                 val2 = t
                 val3 = (self.meep_time() - t0) / (0.01 * t)
-                val4 = t1 - closure['t_0']
-                val5 = ((t1 - closure['t_0']) * (t / (self.meep_time() - t0)) - (t1 - closure['t_0']))
+                val4 = t1 - t_0
+                val5 = ((t1 - t_0) * (t / (self.meep_time() - t0)) - (t1 - t_0))
                 print(msg_fmt.format(val1, val2, val3, val4, val5))
                 closure['tlast'] = t1
         return _disp
@@ -580,15 +573,11 @@ class Simulation(object):
         return _true
 
     def at_beginning(self, *step_funcs):
-        # Work around python 2's lack of 'nonlocal' keyword
-        closure = {
-            'done': False,
-            'step_funcs': step_funcs
-        }
+        closure = {'done': False}
 
         def _beg(sim, todo):
             if not closure['done']:
-                for f in closure['step_funcs']:
+                for f in step_funcs:
                     self._eval_step_func(f, todo)
                 closure['done'] = True
         return _beg
@@ -597,15 +586,12 @@ class Simulation(object):
         if self.fields is None:
             self._init_fields()
 
-        closure = {
-            'tlast': self._round_time(),
-            'step_funcs': step_funcs
-        }
+        closure = {'tlast': self._round_time()}
 
         def _every(sim, todo):
             t = self._round_time()
             if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * self.fields.dt):
-                for func in closure['step_funcs']:
+                for func in step_funcs:
                     self._eval_step_func(func, todo)
                 closure['tlast'] = t
         return _every
@@ -623,13 +609,10 @@ class Simulation(object):
         if self.fields is None:
             self._init_fields()
 
-        closure = {
-            't0': self._round_time(),
-            't': t
-        }
+        t0 = self._round_time()
 
         def _after_t(sim):
-            return self._round_time() >= closure['t0'] + closure['t']
+            return self._round_time() >= t0 + t
 
         return self.when_true_funcs(_after_t, *step_funcs)
 

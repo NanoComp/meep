@@ -9,7 +9,7 @@ def main():
     e = mp.Ellipsoid(size=mp.Vector3(1, 2, 1e20))
 
     src_cmpt = mp.Hz
-    sources = mp.Source(src=mp.GaussianSource(1, 0.1), component=src_cmpt, center=mp.Vector3())
+    sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.1), component=src_cmpt, center=mp.Vector3())
 
     if src_cmpt == mp.Ez:
         symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]

@@ -1,7 +1,4 @@
-import functools
 import math
-import operator
-
 import meep as mp
 
 
@@ -55,47 +52,6 @@ class Vector3(object):
         self.z *= s
 
         return self
-
-
-# TODO(chogan): Write tests
-class Matrix3x3(object):
-
-    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
-        self.c1 = c1
-        self.c2 = c2
-        self.c3 = c3
-
-    def __getitem__(self, i):
-        if i == 0:
-            return self.c1
-        elif i == 1:
-            return self.c2
-        elif i == 2:
-            return self.c3
-        else:
-            raise IndexError("No value at index {}".format(i))
-
-    def __repr__(self):
-        return "{}\n{}\n{}".format(self.row(0), self.row(1), self.row(2))
-
-    def row(self, i):
-        return Vector3(self.c1[i], self.c2[i], self.c3[i])
-
-    def determinant(self):
-        sum1 = sum([
-            functools.reduce(operator.mul, [self[x][x] for x in range(3)]),
-            functools.reduce(operator.mul, [self[0][1], self[1][2], self[2][0]]),
-            functools.reduce(operator.mul, [self[1][0], self[2][1], self[0][2]])
-        ])
-        sum2 = sum([
-            functools.reduce(operator.mul, [self[0][2], self[1][1], self[2][0]]),
-            functools.reduce(operator.mul, [self[0][1], self[1][0], self[2][2]]),
-            functools.reduce(operator.mul, [self[1][2], self[2][1], self[0][0]])
-        ])
-        return sum1 - sum2
-
-    def transpose(self):
-        return Matrix3x3(self.row(0), self.row(1), self.row(2))
 
 
 class Medium(object):
