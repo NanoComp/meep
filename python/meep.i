@@ -315,6 +315,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
     )
     from .simulation import (
         Absorber,
+        Harminv,
         Identity,
         Mirror,
         Pml,

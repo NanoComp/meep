@@ -38,17 +38,17 @@ class TestRing(unittest.TestCase):
                                  symmetries=[mp.Mirror(mp.Y)],
                                  boundary_layers=[mp.Pml(dpml)])
 
-        self.harminv = self.sim.harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
+        self.h = mp.Harminv(self.sim, mp.Ez, mp.Vector3(r + 0.1), fcen, df)
 
     def test_harminv(self):
         self.init()
 
         self.sim.run(
             self.sim.at_beginning(self.sim.output_epsilon),
-            self.sim.after_sources(self.harminv),
+            self.sim.after_sources(self.h()),
             until_after_sources=300
         )
-        band1, band2, band3 = self.sim.harminv_results
+        band1, band2, band3 = self.h.harminv_results
 
         self.assertAlmostEqual(band1[0].real, 0.118101315147, places=3)
         self.assertAlmostEqual(band1[0].imag, -0.000731513241623, places=3)

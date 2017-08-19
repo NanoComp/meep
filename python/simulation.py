@@ -128,6 +128,95 @@ class Volume(object):
         self.swigobj = mp.volume(vec1, vec2)
 
 
+class Harminv(object):
+
+    def __init__(self, sim, c, pt, fcen, df, mxbands=None):
+        self.c = c
+        self.pt = pt
+        self.fcen = fcen
+        self.df = df
+        self.mxbands = mxbands
+        self.harminv_data = []
+        self.harminv_data_dt = 0
+        self.harminv_results = []
+        self.harminv_spectral_density = 1.1
+        self.harminv_Q_thresh = 50.0
+        self.harminv_rel_err_thresh = 1e20
+        self.harminv_err_thresh = 0.01
+        self.harminv_rel_amp_thresh = -1.0
+        self.harminv_amp_thresh = -1.0
+        self.simulation = sim
+
+    def __call__(self):
+        return self._harminv()
+
+    def _display_run_data(self, data_name, data):
+        data_str = [str(f) for f in data]
+        print("{}{}:, {}".format(data_name, self.simulation.run_index, ', '.join(data_str)))
+
+    def _collect_harminv(self, data, data_dt):
+
+        closure = {'data': data, 'data_dt': data_dt}
+
+        def _collect1(c, pt):
+            closure['data'] = []
+
+            closure2 = {'t0': 0}
+
+            def _collect2(sim):
+                closure['data_dt'] = self.simulation.meep_time() - closure2['t0']
+                closure2['t0'] = self.simulation.meep_time()
+                self.harminv_data.append(self.simulation._get_field_point(c, pt))
+            return _collect2
+        return _collect1
+
+    def _analyze_harminv(self, data, fcen, df, maxbands, dt=None):
+        self._display_run_data('harminv', ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error'])
+
+        bands = mp.py_do_harminv(self.harminv_data, dt if dt else self.simulation.fields.dt,
+                                 fcen - df / 2, fcen + df / 2, maxbands, self.harminv_spectral_density,
+                                 self.harminv_Q_thresh, self.harminv_rel_err_thresh, self.harminv_err_thresh,
+                                 self.harminv_rel_amp_thresh, self.harminv_amp_thresh)
+
+        for freq, amp, err in bands:
+            Q = freq.real / (-2 * freq.imag)
+            self._display_run_data('harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
+
+        return bands
+
+    def _harminv(self):
+        closure = {
+            '_data': [],
+            '_dt': 0,
+            '_c': self.c,
+            '_pt': self.pt,
+            '_fcen': self.fcen,
+            '_df': self.df,
+            '_maxbands': self.mxbands,
+            'data': self.harminv_data,
+            'dt': self.harminv_data_dt,
+            'results': self.harminv_results,
+        }
+
+        def _harm(sim):
+            closure['data'] = closure['_data']
+            closure['dt'] = closure['_dt']
+            if closure['_maxbands'] is None or closure['_maxbands'] == 0:
+                mb = 100
+            else:
+                mb = closure['_maxbands']
+
+            closure['results'].extend(
+                self._analyze_harminv(closure['data'], closure['_fcen'],
+                                      closure['_df'], mb, closure['_dt'])
+            )
+
+        f1 = self._collect_harminv(closure['_data'], closure['_dt'])
+
+        return self.simulation._combine_step_funcs(self.simulation.at_end(_harm),
+                                                   f1(closure['_c'], closure['_pt']))
+
+
 class Simulation(object):
 
     def __init__(self, cell_size, geometry, sources, resolution, eps_averaging=True,
@@ -170,15 +259,6 @@ class Simulation(object):
         self.output_volume = []
         self.last_eps_filename = ''
         self.output_h5_hook = lambda fname: False
-        self.harminv_data = []
-        self.harminv_data_dt = 0
-        self.harminv_results = []
-        self.harminv_spectral_density = 1.1
-        self.harminv_Q_thresh = 50.0
-        self.harminv_rel_err_thresh = 1e20
-        self.harminv_err_thresh = 0.01
-        self.harminv_rel_amp_thresh = -1.0
-        self.harminv_amp_thresh = -1.0
         self.interactive = False
 
         self._init_include_files()
@@ -314,8 +394,8 @@ class Simulation(object):
 
     def _eval_step_func(self, func, todo):
         num_args = get_num_args(func)
-        if num_args == 0:
-            raise ValueError("Step function '{}'' requires at least 1 argument".format(func.__name__))
+        if num_args != 1 and num_args != 2:
+            raise ValueError("Step function '{}'' requires 1 or 2 arguments".format(func.__name__))
         elif num_args == 1:
             if todo == 'step':
                 if is_bound(func):
@@ -329,8 +409,6 @@ class Simulation(object):
                 func(todo)
             else:
                 func(self, todo)
-        else:
-            raise ValueError("Step function '{}' can only take 1 or 2 arguments".format(func.__name__))
 
     def _combine_step_funcs(self, *step_funcs):
 
@@ -390,75 +468,6 @@ class Simulation(object):
 
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
-
-    def _collect_harminv(self, data, data_dt):
-
-        closure = {'data': data, 'data_dt': data_dt}
-
-        def _collect1(c, pt):
-            closure['data'] = []
-
-            closure2 = {'t0': 0}
-
-            def _collect2(sim):
-                closure['data_dt'] = self.meep_time() - closure2['t0']
-                closure2['t0'] = self.meep_time()
-                self.harminv_data.append(self._get_field_point(c, pt))
-            return _collect2
-        return _collect1
-
-    def _display_run_data(self, data_name, data):
-        data_str = [str(f) for f in data]
-        print("{}{}:, {}".format(data_name, self.run_index, ', '.join(data_str)))
-
-    def _analyze_harminv(self, data, fcen, df, maxbands, dt=None):
-        self._display_run_data('harminv', ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error'])
-
-        bands = mp.py_do_harminv(self.harminv_data, dt if dt else self.fields.dt, fcen - df / 2, fcen + df / 2,
-                                 maxbands, self.harminv_spectral_density, self.harminv_Q_thresh,
-                                 self.harminv_rel_err_thresh, self.harminv_err_thresh,
-                                 self.harminv_rel_amp_thresh, self.harminv_amp_thresh)
-
-        for freq, amp, err in bands:
-            Q = freq.real / (-2 * freq.imag)
-            self._display_run_data('harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
-
-        return bands
-
-    def _harminv(self, data, dt, results, c, pt, fcen, df, maxbands):
-        closure = {
-            '_data': [],
-            '_dt': 0,
-            '_c': c,
-            '_pt': pt,
-            '_fcen': fcen,
-            '_df': df,
-            '_maxbands': maxbands,
-            'data': data,
-            'dt': dt,
-            'results': results,
-        }
-
-        def _harm(sim):
-            closure['data'] = closure['_data']
-            closure['dt'] = closure['_dt']
-            if closure['_maxbands'] is None or closure['_maxbands'] == 0:
-                mb = 100
-            else:
-                mb = closure['_maxbands']
-
-            closure['results'].extend(
-                self._analyze_harminv(closure['data'], closure['_fcen'],
-                                      closure['_df'], mb, closure['_dt'])
-            )
-
-        f1 = self._collect_harminv(closure['_data'], closure['_dt'])
-
-        return self._combine_step_funcs(self.at_end(_harm), f1(closure['_c'], closure['_pt']))
-
-    def harminv(self, c, pt, fcen, df, mxbands=None):
-        return self._harminv(self.harminv_data, self.harminv_data_dt, self.harminv_results,
-                             c, pt, fcen, df, mxbands)
 
     def add_source(self, src):
         if self.fields is None:
