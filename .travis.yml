@@ -32,6 +32,8 @@ script:
   - make distclean
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make CFLAGS="-W" CXXFLAGS="-W" && make install)
   - pushd python && make clean && make CFLAGS="-W" CXXFLAGS="-W" && make check && make install && popd
+  - popd
   # the following is useful for debugging travis failures
 after_script:
+   - cat test-suite.log
    - cat python/test-suite.log
