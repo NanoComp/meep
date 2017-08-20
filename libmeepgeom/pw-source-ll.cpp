@@ -139,6 +139,6 @@ int main(int argc, char **argv)
   f.output_hdf5(Ez, f.total_volume());
 
   // success if we made it here
-  exit(0);
+  return 0;
 
 }
