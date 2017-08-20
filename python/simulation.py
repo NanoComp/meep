@@ -5,6 +5,8 @@ import os
 import re
 import sys
 
+import numpy as np
+
 import meep as mp
 from meep.geom import Vector3
 from meep.source import EigenModeSource, check_positive
@@ -362,7 +364,7 @@ class Simulation(object):
 
         if self.k_point:
             v = Vector3(self.k_point.x, self.k_point.y) if self.special_kz else self.k_point
-            self.fields.use_bloch(v)
+            self.fields.use_bloch(py_v3_to_vec(self.dimensions, v))
 
         for s in self.sources:
             self.add_source(s)
@@ -468,6 +470,50 @@ class Simulation(object):
 
     def _run_sources(self, step_funcs):
         self._run_sources_until(self, 0, step_funcs)
+
+    def _run_k_point(self, t, k):
+        components = [s.component for s in self.sources]
+        pts = [s.center for s in self.sources]
+
+        src_freqs_min = min([s.src.frequency - 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else 1e20
+                             for s in self.sources])
+        fmin = max(0, src_freqs_min)
+
+        fmax = max([s.src.frequency + 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else 0
+                    for s in self.sources])
+
+        if not components or fmin > fmax:
+            raise ValueError("Running with k_points requires a 'GaussianSource' source")
+
+        self.change_k_point(k)
+        self.restart_fields()
+
+        h = Harminv(self, components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
+        self._run_sources_until(t, [self.after_sources(h())])
+
+        return [r[0] for r in h.harminv_results]
+
+    def _run_k_points(self, t, k_points):
+        k_index = 0
+        all_freqs = []
+
+        for k in k_points:
+            k_index += 1
+
+            if k_index == 1:
+                self._init_fields()
+                self.output_epsilon()
+
+            freqs = self._run_k_point(t, k)
+
+            print("freqs:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
+            print(', '.join([str(f.real) for f in freqs]))
+            print("freqs-im:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
+            print(', '.join([str(f.imag) for f in freqs]))
+
+            all_freqs.append(freqs)
+
+        return all_freqs
 
     def add_source(self, src):
         if self.fields is None:
@@ -633,15 +679,38 @@ class Simulation(object):
 
         return self.after_time(time, *step_funcs)
 
+    def change_k_point(self, k):
+        self.k_point = k
+
+        if self.fields:
+            cond1 = not (not self.k_point or self.k_point == mp.Vector3())
+
+            if cond1 and self.fields.is_real != 0:
+                self.fields = None
+                self._init_fields()
+            else:
+                if self.k_point:
+                    self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point))
+
+    def restart_fields(self):
+        if self.fields is not None:
+            self.fields.t = 0
+            self.fields.zero_fields()
+        else:
+            self._init_fields()
+
     def run(self, *step_funcs, **kwargs):
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
+        k_points = kwargs.pop('k_points', None)
 
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
         if until_after_sources:
             self._run_sources_until(until_after_sources, step_funcs)
+        elif k_points:
+            self._run_k_points(k_points, *step_funcs)
         elif until:
             self._run_until(until, step_funcs)
         else:
@@ -689,9 +758,26 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
                 loop_stop_bi = mp.Low
 
                 while b != loop_stop_bi:
-                    br += mp.boundary_region(*(boundary_region_args + [layer.direction]))
+                    br += mp.boundary_region(*(boundary_region_args + [layer.direction, b]))
                     b = (b + 1) % 2
                     loop_stop_bi = mp.High
             else:
                 br += mp.boundary_region(*(boundary_region_args + [layer.direction, layer.side]))
     return br
+
+
+def interpolate(n, nums):
+    res = []
+    if isinstance(nums[0], mp.Vector3):
+        for low, high in zip(nums, nums[1:]):
+            x = np.linspace(low.x, high.x, n + 1, endpoint=False).tolist()
+            y = np.linspace(low.y, high.y, n + 1, endpoint=False).tolist()
+            z = np.linspace(low.z, high.z, n + 1, endpoint=False).tolist()
+
+            for i in range(len(x)):
+                res.append(mp.Vector3(x[i], y[i], z[i]))
+    else:
+        for low, high in zip(nums, nums[1:]):
+            res.extend(np.linspace(low, high, n + 1, endpoint=False).tolist())
+
+    return res + [nums[-1]]

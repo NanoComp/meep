@@ -27,6 +27,7 @@ TESTS =                               \
     $(TEST_DIR)/test_geom.py          \
     $(TEST_DIR)/test_physical.py      \
     $(TEST_DIR)/test_ring.py          \
+    $(TEST_DIR)/test_simulation.py    \
     $(TEST_DIR)/test_source.py
 
 TEST_EXTENSIONS = .py
