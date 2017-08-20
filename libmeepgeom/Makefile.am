@@ -13,7 +13,10 @@ libmeepgeom_la_SOURCES = \
 
 libmeepgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ 
 
-check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll
+check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll
+
+absorber_1d_ll_SOURCES = absorber-1d-ll.cpp
+absorber_1d_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 cyl_ellipsoid_ll_SOURCES = cyl-ellipsoid-ll.cpp
 cyl_ellipsoid_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)

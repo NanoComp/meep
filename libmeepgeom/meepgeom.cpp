@@ -14,6 +14,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <vector>
 #include "meepgeom.hpp"
 
 namespace meep_geom {
@@ -1471,6 +1472,53 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
   }
 }
 
+typedef struct pml_profile_thunk
+{
+ meep::pml_profile_func func;
+ void *func_data;
+} pml_profile_thunk;
+
+double pml_profile_wrapper(int dim, double *u, void *user_data)
+{ (void )dim; // unused
+  pml_profile_thunk *mythunk = (pml_profile_thunk *)user_data;
+  return mythunk->func(u[0], mythunk->func_data);
+}
+
+/***************************************************************/
+/* mechanism for allowing users to specify non-PML absorbing   */
+/* layers.                                                     */
+/***************************************************************/
+absorber_list create_absorber_list()
+{
+  absorber_list alist = new absorber_list_type;
+  return alist;
+}
+
+void destroy_absorber_list(absorber_list alist)
+{ delete alist;
+}
+
+void add_absorbing_layer(absorber_list alist,
+                         double thickness, int direction, int side,
+                         double strength, double R_asymptotic, double mean_stretch,
+                         meep::pml_profile_func func, void *func_data)
+{
+  absorber myabsorber;
+  myabsorber.thickness=thickness;
+  myabsorber.direction=direction;
+  myabsorber.side=side;
+  myabsorber.strength=strength;
+  myabsorber.R_asymptotic=R_asymptotic;
+  myabsorber.mean_stretch=mean_stretch;
+  myabsorber.pml_profile=func;
+  myabsorber.pml_profile_data=func_data;
+
+  if (alist==0)
+   meep::abort("invalid absorber_list in add_absorbing_layer");
+
+  alist->push_back( myabsorber );
+}
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
@@ -1480,7 +1528,7 @@ void set_materials_from_geometry(meep::structure *s,
                                  double tol,
                                  int maxeval,
                                  bool _ensure_periodicity,
-                                 bool verbose)
+                                 bool verbose, absorber_list alist)
 {
   geom_epsilon::verbose=verbose;
 
@@ -1526,6 +1574,30 @@ void set_materials_from_geometry(meep::structure *s,
   extra_materials.items=0;
   extra_materials.num_items=0;
   geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
+  
+  /***************************************************************/
+  /***************************************************************/
+  /***************************************************************/
+  if (alist)
+   { for(absorber_list_type::iterator layer=alist->begin(); layer!=alist->end(); layer++)
+      { LOOP_OVER_DIRECTIONS(gv.dim,d)
+         { if (layer->direction!=ALL_DIRECTIONS && layer->direction!=d) continue;
+           FOR_SIDES(b)
+            { if (layer->side!=ALL_SIDES && layer->side!=b ) continue;
+              pml_profile_thunk mythunk;
+              mythunk.func      = layer->pml_profile;
+              mythunk.func_data = layer->pml_profile_data;
+              geps.set_cond_profile(d,b,layer->thickness, gv.inva*0.5,
+                                    pml_profile_wrapper, (void *)&mythunk,
+                                    pow(layer->R_asymptotic,layer->strength));
+            };
+         };
+      };
+   };
+
+  /***************************************************************/
+  /***************************************************************/
+  /***************************************************************/
   s->set_materials(geps, use_anisotropic_averaging, tol, maxeval);
   geps.add_susceptibilities(s);
 
