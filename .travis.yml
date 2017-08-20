@@ -34,6 +34,6 @@ script:
   - pushd python && make clean && make CFLAGS="-W" CXXFLAGS="-W" && make check && make install && popd
   - popd
   # the following is useful for debugging travis failures
-after_script:
-   - cat test-suite.log
-   - cat python/test-suite.log
+#after_script:
+#   - cat test-suite.log
+#   - cat python/test-suite.log
