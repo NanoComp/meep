@@ -710,7 +710,7 @@ class Simulation(object):
         if until_after_sources:
             self._run_sources_until(until_after_sources, step_funcs)
         elif k_points:
-            self._run_k_points(k_points, *step_funcs)
+            return self._run_k_points(k_points, *step_funcs)
         elif until:
             self._run_until(until, step_funcs)
         else:
