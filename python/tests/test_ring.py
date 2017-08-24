@@ -48,7 +48,7 @@ class TestRing(unittest.TestCase):
             self.sim.after_sources(self.h()),
             until_after_sources=300
         )
-        band1, band2, band3 = self.h.harminv_results
+        band1, band2, band3 = self.h.results
 
         self.assertAlmostEqual(band1[0].real, 0.118101315147, places=3)
         self.assertAlmostEqual(band1[0].imag, -0.000731513241623, places=3)

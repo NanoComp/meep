@@ -138,85 +138,67 @@ class Harminv(object):
         self.fcen = fcen
         self.df = df
         self.mxbands = mxbands
-        self.harminv_data = []
-        self.harminv_data_dt = 0
-        self.harminv_results = []
-        self.harminv_spectral_density = 1.1
-        self.harminv_Q_thresh = 50.0
-        self.harminv_rel_err_thresh = 1e20
-        self.harminv_err_thresh = 0.01
-        self.harminv_rel_amp_thresh = -1.0
-        self.harminv_amp_thresh = -1.0
+        self.data = []
+        self.data_dt = 0
+        self.results = []
+        self.spectral_density = 1.1
+        self.Q_thresh = 50.0
+        self.rel_err_thresh = 1e20
+        self.err_thresh = 0.01
+        self.rel_amp_thresh = -1.0
+        self.amp_thresh = -1.0
         self.simulation = sim
 
     def __call__(self):
         return self._harminv()
 
-    def _display_run_data(self, data_name, data):
+    def _display_run_data(self, sim, data_name, data):
         data_str = [str(f) for f in data]
-        print("{}{}:, {}".format(data_name, self.simulation.run_index, ', '.join(data_str)))
+        print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
 
-    def _collect_harminv(self, data, data_dt):
-
-        closure = {'data': data, 'data_dt': data_dt}
+    def _collect_harminv(self):
 
         def _collect1(c, pt):
-            closure['data'] = []
-
-            closure2 = {'t0': 0}
+            self.t0 = 0
 
             def _collect2(sim):
-                closure['data_dt'] = self.simulation.meep_time() - closure2['t0']
-                closure2['t0'] = self.simulation.meep_time()
-                self.harminv_data.append(self.simulation._get_field_point(c, pt))
+                self.data_dt = sim.meep_time() - self.t0
+                self.t0 = sim.meep_time()
+                self.data.append(sim._get_field_point(c, pt))
             return _collect2
         return _collect1
 
-    def _analyze_harminv(self, data, fcen, df, maxbands, dt=None):
-        self._display_run_data('harminv', ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error'])
+    def _analyze_harminv(self, sim, maxbands):
+        harminv_cols = ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error']
+        self._display_run_data(sim, 'harminv', harminv_cols)
 
-        bands = mp.py_do_harminv(self.harminv_data, dt if dt else self.simulation.fields.dt,
-                                 fcen - df / 2, fcen + df / 2, maxbands, self.harminv_spectral_density,
-                                 self.harminv_Q_thresh, self.harminv_rel_err_thresh, self.harminv_err_thresh,
-                                 self.harminv_rel_amp_thresh, self.harminv_amp_thresh)
+        dt = self.data_dt if self.data_dt is not None else sim.fields.dt
+
+        bands = mp.py_do_harminv(self.data, dt, self.fcen - self.df / 2, self.fcen + self.df / 2, maxbands,
+                                 self.spectral_density, self.Q_thresh, self.rel_err_thresh, self.err_thresh,
+                                 self.rel_amp_thresh, self.amp_thresh)
 
         for freq, amp, err in bands:
             Q = freq.real / (-2 * freq.imag)
-            self._display_run_data('harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
+            self._display_run_data(sim, 'harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
 
         return bands
 
     def _harminv(self):
-        closure = {
-            '_data': [],
-            '_dt': 0,
-            '_c': self.c,
-            '_pt': self.pt,
-            '_fcen': self.fcen,
-            '_df': self.df,
-            '_maxbands': self.mxbands,
-            'data': self.harminv_data,
-            'dt': self.harminv_data_dt,
-            'results': self.harminv_results,
-        }
 
         def _harm(sim):
-            closure['data'] = closure['_data']
-            closure['dt'] = closure['_dt']
-            if closure['_maxbands'] is None or closure['_maxbands'] == 0:
+
+            if self.mxbands is None or self.mxbands == 0:
                 mb = 100
             else:
-                mb = closure['_maxbands']
+                mb = self.mxbands
 
-            closure['results'].extend(
-                self._analyze_harminv(closure['data'], closure['_fcen'],
-                                      closure['_df'], mb, closure['_dt'])
-            )
+            self.results.extend(self._analyze_harminv(sim, mb))
 
-        f1 = self._collect_harminv(closure['_data'], closure['_dt'])
+        f1 = self._collect_harminv()
 
         return self.simulation._combine_step_funcs(self.simulation.at_end(_harm),
-                                                   f1(closure['_c'], closure['_pt']))
+                                                   f1(self.c, self.pt))
 
 
 class Simulation(object):
@@ -416,7 +398,7 @@ class Simulation(object):
 
         def _combine(sim, todo):
             for func in step_funcs:
-                self._eval_step_func(func, todo)
+                sim._eval_step_func(func, todo)
         return _combine
 
     def _run_until(self, cond, step_funcs):
@@ -429,7 +411,7 @@ class Simulation(object):
             t0 = self._round_time()
 
             def stop_cond(sim):
-                return self._round_time() >= t0 + stop_time
+                return sim._round_time() >= t0 + stop_time
 
             cond = stop_cond
 
@@ -491,7 +473,7 @@ class Simulation(object):
         h = Harminv(self, components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
         self._run_sources_until(t, [self.after_sources(h())])
 
-        return [r[0] for r in h.harminv_results]
+        return [r[0] for r in h.results]
 
     def _run_k_points(self, t, k_points):
         k_index = 0
@@ -588,11 +570,11 @@ class Simulation(object):
             t1 = mp.wall_time()
             if t1 - closure['tlast'] >= dt:
                 msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
-                val1 = self.meep_time() - t0
+                val1 = sim.meep_time() - t0
                 val2 = t
-                val3 = (self.meep_time() - t0) / (0.01 * t)
+                val3 = (sim.meep_time() - t0) / (0.01 * t)
                 val4 = t1 - t_0
-                val5 = ((t1 - t_0) * (t / (self.meep_time() - t0)) - (t1 - t_0))
+                val5 = ((t1 - t_0) * (t / (sim.meep_time() - t0)) - (t1 - t_0))
                 print(msg_fmt.format(val1, val2, val3, val4, val5))
                 closure['tlast'] = t1
         return _disp
@@ -624,7 +606,7 @@ class Simulation(object):
         def _true(sim, todo):
             if todo == 'finish' or cond(sim):
                 for f in step_funcs:
-                    self._eval_step_func(f, todo)
+                    sim._eval_step_func(f, todo)
         return _true
 
     def at_beginning(self, *step_funcs):
@@ -633,7 +615,7 @@ class Simulation(object):
         def _beg(sim, todo):
             if not closure['done']:
                 for f in step_funcs:
-                    self._eval_step_func(f, todo)
+                    sim._eval_step_func(f, todo)
                 closure['done'] = True
         return _beg
 
@@ -644,10 +626,10 @@ class Simulation(object):
         closure = {'tlast': self._round_time()}
 
         def _every(sim, todo):
-            t = self._round_time()
-            if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * self.fields.dt):
+            t = sim._round_time()
+            if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * sim.fields.dt):
                 for func in step_funcs:
-                    self._eval_step_func(func, todo)
+                    sim._eval_step_func(func, todo)
                 closure['tlast'] = t
         return _every
 
@@ -655,9 +637,9 @@ class Simulation(object):
         def _end(sim, todo):
             if todo == 'finish':
                 for func in step_funcs:
-                    self._eval_step_func(func, 'step')
+                    sim._eval_step_func(func, 'step')
                 for func in step_funcs:
-                    self._eval_step_func(func, 'finish')
+                    sim._eval_step_func(func, 'finish')
         return _end
 
     def after_time(self, t, *step_funcs):
@@ -667,7 +649,7 @@ class Simulation(object):
         t0 = self._round_time()
 
         def _after_t(sim):
-            return self._round_time() >= t0 + t
+            return sim._round_time() >= t0 + t
 
         return self.when_true_funcs(_after_t, *step_funcs)
 
