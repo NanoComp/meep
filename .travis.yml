@@ -27,4 +27,3 @@ script:
 after_script:
    - cat tests/test-suite.log
    - cat python/test-suite.log
-   - exit 0
