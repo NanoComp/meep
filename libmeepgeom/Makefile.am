@@ -29,8 +29,11 @@ ring_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 TESTS           = cyl-ellipsoid-ll
 
-noinst_PROGRAMS = bend-flux-ll
+noinst_PROGRAMS = bend-flux-ll holey_wvg_cavity_ll
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+holey_wvg_cavity_ll_SOURCES = holey-wvg-cavity-ll.cpp
+holey_wvg_cavity_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 noinst_DATA = cyl-ellipsoid-eps-ref.h5
