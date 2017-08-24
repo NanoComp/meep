@@ -22,7 +22,6 @@ script:
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   # Build and test meep with python
-  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make CFLAGS="-W" CXXFLAGS="-W" && make check && make install)
 # the following is useful for debugging travis failures
 after_script:
