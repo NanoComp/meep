@@ -60,9 +60,9 @@ class TestHolyWvgBands(unittest.TestCase):
             (0.9726561278186849, -0.0031192234222098274),
             (0.9855957702101914, -0.003945157134867143),
         ]
-        for (r, i), (res, _, _) in zip(expected, h.results):
-            self.assertAlmostEqual(res.real, r)
-            self.assertAlmostEqual(res.imag, i)
+        for (r, i), m in zip(expected, h.modes):
+            self.assertAlmostEqual(m.freq.real, r)
+            self.assertAlmostEqual(m.freq.imag, i)
 
 
 if __name__ == '__main__':

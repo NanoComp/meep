@@ -4,6 +4,7 @@ import numbers
 import os
 import re
 import sys
+from collections import namedtuple
 
 import numpy as np
 
@@ -130,6 +131,9 @@ class Volume(object):
         self.swigobj = mp.volume(vec1, vec2)
 
 
+Mode = namedtuple('Mode', ['freq', 'Q', 'amp', 'err'])
+
+
 class Harminv(object):
 
     def __init__(self, sim, c, pt, fcen, df, mxbands=None):
@@ -140,7 +144,7 @@ class Harminv(object):
         self.mxbands = mxbands
         self.data = []
         self.data_dt = 0
-        self.results = []
+        self.modes = []
         self.spectral_density = 1.1
         self.Q_thresh = 50.0
         self.rel_err_thresh = 1e20
@@ -178,11 +182,13 @@ class Harminv(object):
                                  self.spectral_density, self.Q_thresh, self.rel_err_thresh, self.err_thresh,
                                  self.rel_amp_thresh, self.amp_thresh)
 
+        modes = []
         for freq, amp, err in bands:
             Q = freq.real / (-2 * freq.imag)
+            modes.append(Mode(freq, Q, amp, err))
             self._display_run_data(sim, 'harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
 
-        return bands
+        return modes
 
     def _harminv(self):
 
@@ -193,7 +199,7 @@ class Harminv(object):
             else:
                 mb = self.mxbands
 
-            self.results.extend(self._analyze_harminv(sim, mb))
+            self.modes = self._analyze_harminv(sim, mb)
 
         f1 = self._collect_harminv()
 
@@ -473,7 +479,7 @@ class Simulation(object):
         h = Harminv(self, components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
         self._run_sources_until(t, [self.after_sources(h())])
 
-        return [r[0] for r in h.results]
+        return [m.freq for m in h.modes]
 
     def _run_k_points(self, t, k_points):
         k_index = 0

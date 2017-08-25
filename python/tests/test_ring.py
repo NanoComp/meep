@@ -48,13 +48,13 @@ class TestRing(unittest.TestCase):
             self.sim.after_sources(self.h()),
             until_after_sources=300
         )
-        band1, band2, band3 = self.h.results
+        m1, m2, m3 = self.h.modes
 
-        self.assertAlmostEqual(band1[0].real, 0.118101315147, places=3)
-        self.assertAlmostEqual(band1[0].imag, -0.000731513241623, places=3)
-        self.assertAlmostEqual(abs(band1[1].real), 0.00341267634436, places=3)
-        self.assertAlmostEqual(band1[1].real, -0.00304951667301, places=3)
-        self.assertAlmostEqual(band1[1].imag, -0.00153192946717, places=3)
+        self.assertAlmostEqual(m1.freq.real, 0.118101315147, places=3)
+        self.assertAlmostEqual(m1.freq.imag, -0.000731513241623, places=3)
+        self.assertAlmostEqual(abs(m1.amp.real), 0.00341267634436, places=3)
+        self.assertAlmostEqual(m1.amp.real, -0.00304951667301, places=3)
+        self.assertAlmostEqual(m1.amp.imag, -0.00153192946717, places=3)
 
         fp = self.sim._get_field_point(mp.Ez, mp.Vector3(1, 1))
         self.assertAlmostEqual(fp, -0.08185972142450348)
