@@ -32,14 +32,16 @@ class TestHolyWvgBands(unittest.TestCase):
     def test_run_k_points(self):
         all_freqs = self.sim.run(mp.interpolate(19, [mp.Vector3(), mp.Vector3(0.5)]), k_points=5)
 
-        self.assertAlmostEqual(all_freqs[17][0].real, 0.1942497850393511)
-        self.assertAlmostEqual(all_freqs[17][0].imag, 0.001381460274205755)
-        self.assertAlmostEqual(all_freqs[18][0].real, 0.19782709203322993)
-        self.assertAlmostEqual(all_freqs[18][0].imag, -0.0013233828667934015)
-        self.assertAlmostEqual(all_freqs[19][0].real, 0.1927618763491877)
-        self.assertAlmostEqual(all_freqs[19][0].imag, 0.001034260690735336)
-        self.assertAlmostEqual(all_freqs[20][0].real, 0.19335527231544278)
-        self.assertAlmostEqual(all_freqs[20][0].imag, 4.6649450258959025e-4)
+        expected = [
+            (0.1942497850393511, 0.001381460274205755),
+            (0.19782709203322993, -0.0013233828667934015),
+            (0.1927618763491877, 0.001034260690735336),
+            (0.19335527231544278, 4.6649450258959025e-4)
+        ]
+
+        for (r, i), f in zip(expected, all_freqs[17:21][0]):
+            self.assertAlmostEqual(r, f.real)
+            self.assertAlmostEqual(i, f.imag)
 
     def test_fields_at_kx(self):
         self.sim.k_point = mp.Vector3(3.5)
@@ -61,8 +63,8 @@ class TestHolyWvgBands(unittest.TestCase):
             (0.9855957702101914, -0.003945157134867143),
         ]
         for (r, i), m in zip(expected, h.modes):
-            self.assertAlmostEqual(m.freq.real, r)
-            self.assertAlmostEqual(m.freq.imag, i)
+            self.assertAlmostEqual(m.freq, r)
+            self.assertAlmostEqual(m.freq_imag, i)
 
 
 if __name__ == '__main__':
