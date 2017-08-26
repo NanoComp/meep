@@ -38,14 +38,14 @@ class TestRing(unittest.TestCase):
                                  symmetries=[mp.Mirror(mp.Y)],
                                  boundary_layers=[mp.Pml(dpml)])
 
-        self.h = mp.Harminv(self.sim, mp.Ez, mp.Vector3(r + 0.1), fcen, df)
+        self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
 
     def test_harminv(self):
         self.init()
 
         self.sim.run(
-            self.sim.at_beginning(self.sim.output_epsilon),
-            self.sim.after_sources(self.h()),
+            mp.at_beginning(self.sim.output_epsilon),
+            self.sim.after_sources(self.h),
             until_after_sources=300
         )
         m1, m2, m3 = self.h.modes

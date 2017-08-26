@@ -46,7 +46,7 @@ def main():
 
         sim.run(
             sim.at_beginning(sim.output_epsilon),
-            sim.after_sources(mp.Harminv(sim, mp.Hz, mp.Vector3(0.1234), fcen, df)()),
+            sim.after_sources(mp.Harminv(mp.Hz, mp.Vector3(0.1234), fcen, df)),
             until_after_sources=300
         )
 

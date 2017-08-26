@@ -45,8 +45,8 @@ class TestHolyWvgBands(unittest.TestCase):
 
     def test_fields_at_kx(self):
         self.sim.k_point = mp.Vector3(3.5)
-        h = mp.Harminv(self.sim, mp.Hz, mp.Vector3(0.1234), self.fcen, self.df)
-        self.sim.run(self.sim.after_sources(h()), until_after_sources=300)
+        h = mp.Harminv(mp.Hz, mp.Vector3(0.1234), self.fcen, self.df)
+        self.sim.run(self.sim.after_sources(h), until_after_sources=300)
 
         expected = [
             (0.19990240131986522, 3.8522735413802275e-8),

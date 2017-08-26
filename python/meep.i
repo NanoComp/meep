@@ -324,6 +324,9 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Simulation,
         Symmetry,
         Volume,
+        at_beginning,
+        at_end,
+        display_progress,
         interpolate,
         py_v3_to_vec,
     )

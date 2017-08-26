@@ -23,11 +23,15 @@ CYLINDRICAL = -2
 
 
 def get_num_args(func):
+    if isinstance(func, Harminv):
+        return 2
     return func.__code__.co_argcount
 
 
 def is_bound(f):
-    return hasattr(f, '__self__') and f.__self__ is not None
+    return (hasattr(f, '__self__') and
+            f.__self__ is not None and
+            isinstance(f.__self__, Simulation))
 
 
 def py_v3_to_vec(dims, v3):
@@ -136,7 +140,7 @@ Mode = namedtuple('Mode', ['freq', 'freq_imag', 'Q', 'amp', 'err'])
 
 class Harminv(object):
 
-    def __init__(self, sim, c, pt, fcen, df, mxbands=None):
+    def __init__(self, c, pt, fcen, df, mxbands=None):
         self.c = c
         self.pt = pt
         self.fcen = fcen
@@ -151,10 +155,10 @@ class Harminv(object):
         self.err_thresh = 0.01
         self.rel_amp_thresh = -1.0
         self.amp_thresh = -1.0
-        self.simulation = sim
+        self.step_func = self._harminv()
 
-    def __call__(self):
-        return self._harminv()
+    def __call__(self, sim, todo):
+        self.step_func(sim, todo)
 
     def _display_run_data(self, sim, data_name, data):
         data_str = [str(f) for f in data]
@@ -203,8 +207,7 @@ class Harminv(object):
 
         f1 = self._collect_harminv()
 
-        return self.simulation._combine_step_funcs(self.simulation.at_end(_harm),
-                                                   f1(self.c, self.pt))
+        return _combine_step_funcs(at_end(_harm), f1(self.c, self.pt))
 
 
 class Simulation(object):
@@ -384,6 +387,7 @@ class Simulation(object):
 
     def _eval_step_func(self, func, todo):
         num_args = get_num_args(func)
+
         if num_args != 1 and num_args != 2:
             raise ValueError("Step function '{}'' requires 1 or 2 arguments".format(func.__name__))
         elif num_args == 1:
@@ -400,13 +404,6 @@ class Simulation(object):
             else:
                 func(self, todo)
 
-    def _combine_step_funcs(self, *step_funcs):
-
-        def _combine(sim, todo):
-            for func in step_funcs:
-                sim._eval_step_func(func, todo)
-        return _combine
-
     def _run_until(self, cond, step_funcs):
         self.interactive = False
         if self.fields is None:
@@ -422,7 +419,7 @@ class Simulation(object):
             cond = stop_cond
 
             step_funcs = list(step_funcs)
-            step_funcs.append(self.display_progress(t0, t0 + stop_time, self.progress_interval))
+            step_funcs.append(display_progress(t0, t0 + stop_time, self.progress_interval))
 
         while not cond(self):
             for func in step_funcs:
@@ -476,8 +473,8 @@ class Simulation(object):
         self.change_k_point(k)
         self.restart_fields()
 
-        h = Harminv(self, components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
-        self._run_sources_until(t, [self.after_sources(h())])
+        h = Harminv(components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
+        self._run_sources_until(t, [self.after_sources(h)])
 
         return [complex(m.freq, m.freq_imag) for m in h.modes]
 
@@ -568,23 +565,6 @@ class Simulation(object):
     def add_flux(self, flux):
         pass
 
-    def display_progress(self, t0, t, dt):
-        t_0 = mp.wall_time()
-        closure = {'tlast': mp.wall_time()}
-
-        def _disp(sim):
-            t1 = mp.wall_time()
-            if t1 - closure['tlast'] >= dt:
-                msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
-                val1 = sim.meep_time() - t0
-                val2 = t
-                val3 = (sim.meep_time() - t0) / (0.01 * t)
-                val4 = t1 - t_0
-                val5 = ((t1 - t_0) * (t / (sim.meep_time() - t0)) - (t1 - t_0))
-                print(msg_fmt.format(val1, val2, val3, val4, val5))
-                closure['tlast'] = t1
-        return _disp
-
     def output_component(self, c, h5file=None):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
@@ -608,23 +588,6 @@ class Simulation(object):
     def output_efield_z(self):
         self.output_component(mp.Ez)
 
-    def when_true_funcs(self, cond, *step_funcs):
-        def _true(sim, todo):
-            if todo == 'finish' or cond(sim):
-                for f in step_funcs:
-                    sim._eval_step_func(f, todo)
-        return _true
-
-    def at_beginning(self, *step_funcs):
-        closure = {'done': False}
-
-        def _beg(sim, todo):
-            if not closure['done']:
-                for f in step_funcs:
-                    sim._eval_step_func(f, todo)
-                closure['done'] = True
-        return _beg
-
     def at_every(self, dt, *step_funcs):
         if self.fields is None:
             self._init_fields()
@@ -639,15 +602,6 @@ class Simulation(object):
                 closure['tlast'] = t
         return _every
 
-    def at_end(self, *step_funcs):
-        def _end(sim, todo):
-            if todo == 'finish':
-                for func in step_funcs:
-                    sim._eval_step_func(func, 'step')
-                for func in step_funcs:
-                    sim._eval_step_func(func, 'finish')
-        return _end
-
     def after_time(self, t, *step_funcs):
         if self.fields is None:
             self._init_fields()
@@ -657,7 +611,7 @@ class Simulation(object):
         def _after_t(sim):
             return sim._round_time() >= t0 + t
 
-        return self.when_true_funcs(_after_t, *step_funcs)
+        return _when_true_funcs(_after_t, *step_funcs)
 
     def after_sources(self, *step_funcs):
         if self.fields is None:
@@ -752,6 +706,64 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
             else:
                 br += mp.boundary_region(*(boundary_region_args + [layer.direction, layer.side]))
     return br
+
+
+# Private step functions
+
+def _combine_step_funcs(*step_funcs):
+    def _combine(sim, todo):
+        for func in step_funcs:
+            sim._eval_step_func(func, todo)
+    return _combine
+
+
+def _when_true_funcs(cond, *step_funcs):
+    def _true(sim, todo):
+        if todo == 'finish' or cond(sim):
+            for f in step_funcs:
+                sim._eval_step_func(f, todo)
+    return _true
+
+
+# Public step functions
+
+def at_beginning(*step_funcs):
+    closure = {'done': False}
+
+    def _beg(sim, todo):
+        if not closure['done']:
+            for f in step_funcs:
+                sim._eval_step_func(f, todo)
+            closure['done'] = True
+    return _beg
+
+
+def at_end(*step_funcs):
+    def _end(sim, todo):
+        if todo == 'finish':
+            for func in step_funcs:
+                sim._eval_step_func(func, 'step')
+            for func in step_funcs:
+                sim._eval_step_func(func, 'finish')
+    return _end
+
+
+def display_progress(t0, t, dt):
+    t_0 = mp.wall_time()
+    closure = {'tlast': mp.wall_time()}
+
+    def _disp(sim):
+        t1 = mp.wall_time()
+        if t1 - closure['tlast'] >= dt:
+            msg_fmt = "Meep progress: {}/{} = {:.1f}% done in {:.1f}s, {:.1f}s to go"
+            val1 = sim.meep_time() - t0
+            val2 = t
+            val3 = (sim.meep_time() - t0) / (0.01 * t)
+            val4 = t1 - t_0
+            val5 = ((t1 - t_0) * (t / (sim.meep_time() - t0)) - (t1 - t_0))
+            print(msg_fmt.format(val1, val2, val3, val4, val5))
+            closure['tlast'] = t1
+    return _disp
 
 
 def interpolate(n, nums):
