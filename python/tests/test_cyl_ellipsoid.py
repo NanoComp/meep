@@ -43,10 +43,10 @@ class TestCylEllipsoid(unittest.TestCase):
 
     def run_simulation(self):
 
-        self.sim.run(self.sim.at_beginning(self.sim.output_epsilon),
-                     self.sim.at_every(0.25, self.print_stuff),
-                     self.sim.at_end(self.print_stuff),
-                     self.sim.at_end(self.sim.output_efield_z),
+        self.sim.run(mp.at_beginning(mp.output_epsilon),
+                     mp.at_every(0.25, self.print_stuff),
+                     mp.at_end(self.print_stuff),
+                     mp.at_end(mp.output_efield_z),
                      until=23)
 
         ref_out_field = self.ref_Ez if self.src_cmpt == mp.Ez else self.ref_Hz

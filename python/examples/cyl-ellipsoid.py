@@ -29,10 +29,10 @@ def main():
         p = sim._get_field_point(src_cmpt, v)
         print("t, Ez: {} {}+{}i".format(sim._round_time(), p.real, p.imag))
 
-    sim.run(sim.at_beginning(sim.output_epsilon),
-            sim.at_every(0.25, print_stuff),
-            sim.at_end(print_stuff),
-            sim.at_end(sim.output_efield_z),
+    sim.run(mp.at_beginning(mp.output_epsilon),
+            mp.at_every(0.25, print_stuff),
+            mp.at_end(print_stuff),
+            mp.at_end(mp.output_efield_z),
             until=23)
 
     print("stopped at meep time = {}".format(sim._round_time()))

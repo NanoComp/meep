@@ -38,15 +38,15 @@ def main():
                         boundary_layers=[mp.Pml(dpml)])
 
     sim.run(
-        sim.at_beginning(sim.output_epsilon),
-        sim.after_sources(mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)),
+        mp.at_beginning(mp.output_epsilon),
+        mp.after_sources(mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)),
         until_after_sources=300
     )
 
     # Output fields for one period at the end.  (If we output
     # at a single time, we might accidentally catch the Ez field when it is
     # almost zero and get a distorted view.)
-    sim.run(sim.at_every((1 / fcen / 20), sim.output_efield_z), until=(1 / fcen))
+    sim.run(mp.at_every((1 / fcen / 20), mp.output_efield_z), until=(1 / fcen))
 
 if __name__ == '__main__':
     main()

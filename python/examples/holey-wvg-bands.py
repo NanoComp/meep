@@ -45,12 +45,12 @@ def main():
         sim.k_point = mp.Vector3(kx)
 
         sim.run(
-            sim.at_beginning(sim.output_epsilon),
-            sim.after_sources(mp.Harminv(mp.Hz, mp.Vector3(0.1234), fcen, df)),
+            mp.at_beginning(mp.output_epsilon),
+            mp.after_sources(mp.Harminv(mp.Hz, mp.Vector3(0.1234), fcen, df)),
             until_after_sources=300
         )
 
-        sim.run(sim.at_every(1 / fcen / 20, sim.output_hfield_z), until=1 / fcen)
+        sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 
     else:
         sim.run(mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]), k_points=300)

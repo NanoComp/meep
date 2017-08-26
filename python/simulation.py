@@ -28,12 +28,6 @@ def get_num_args(func):
     return func.__code__.co_argcount
 
 
-def is_bound(f):
-    return (hasattr(f, '__self__') and
-            f.__self__ is not None and
-            isinstance(f.__self__, Simulation))
-
-
 def py_v3_to_vec(dims, v3):
     if dims == 1:
         if v3.x == v3.y == v3.z:
@@ -385,25 +379,6 @@ class Simulation(object):
         else:
             return self.filename_prefix
 
-    def _eval_step_func(self, func, todo):
-        num_args = get_num_args(func)
-
-        if num_args != 1 and num_args != 2:
-            raise ValueError("Step function '{}'' requires 1 or 2 arguments".format(func.__name__))
-        elif num_args == 1:
-            if todo == 'step':
-                if is_bound(func):
-                    # Bound method already has self as first argument
-                    func()
-                else:
-                    func(self)
-        elif num_args == 2:
-            if is_bound(func):
-                # Bound method already has self as first argument
-                func(todo)
-            else:
-                func(self, todo)
-
     def _run_until(self, cond, step_funcs):
         self.interactive = False
         if self.fields is None:
@@ -423,17 +398,17 @@ class Simulation(object):
 
         while not cond(self):
             for func in step_funcs:
-                self._eval_step_func(func, 'step')
+                _eval_step_func(self, func, 'step')
             self.fields.step()
 
         # Translating the recursive scheme version of run-until into an iterative version
         # (because python isn't tail-call-optimized) means we need one extra iteration to
         # be the same as scheme.
         for func in step_funcs:
-            self._eval_step_func(func, 'step')
+            _eval_step_func(self, func, 'step')
 
         for func in step_funcs:
-            self._eval_step_func(func, 'finish')
+            _eval_step_func(self, func, 'finish')
 
         print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
@@ -474,7 +449,7 @@ class Simulation(object):
         self.restart_fields()
 
         h = Harminv(components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
-        self._run_sources_until(t, [self.after_sources(h)])
+        self._run_sources_until(t, [after_sources(h)])
 
         return [complex(m.freq, m.freq_imag) for m in h.modes]
 
@@ -487,7 +462,7 @@ class Simulation(object):
 
             if k_index == 1:
                 self._init_fields()
-                self.output_epsilon()
+                output_epsilon(self)
 
             freqs = self._run_k_point(t, k)
 
@@ -581,46 +556,6 @@ class Simulation(object):
                 self.last_eps_filename = nm
             self.output_h5_hook(nm)
 
-    def output_epsilon(self):
-        self.output_component(mp.Dielectric)
-
-    # TODO(chogan): Write rest of convenience functions generated in define-output-field
-    def output_efield_z(self):
-        self.output_component(mp.Ez)
-
-    def at_every(self, dt, *step_funcs):
-        if self.fields is None:
-            self._init_fields()
-
-        closure = {'tlast': self._round_time()}
-
-        def _every(sim, todo):
-            t = sim._round_time()
-            if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * sim.fields.dt):
-                for func in step_funcs:
-                    sim._eval_step_func(func, todo)
-                closure['tlast'] = t
-        return _every
-
-    def after_time(self, t, *step_funcs):
-        if self.fields is None:
-            self._init_fields()
-
-        t0 = self._round_time()
-
-        def _after_t(sim):
-            return sim._round_time() >= t0 + t
-
-        return _when_true_funcs(_after_t, *step_funcs)
-
-    def after_sources(self, *step_funcs):
-        if self.fields is None:
-            self._init_fields()
-
-        time = self.fields.last_source_time() - self._round_time()
-
-        return self.after_time(time, *step_funcs)
-
     def change_k_point(self, k):
         self.k_point = k
 
@@ -713,19 +648,46 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
 def _combine_step_funcs(*step_funcs):
     def _combine(sim, todo):
         for func in step_funcs:
-            sim._eval_step_func(func, todo)
+            _eval_step_func(sim, func, todo)
     return _combine
+
+
+def _eval_step_func(sim, func, todo):
+    num_args = get_num_args(func)
+
+    if num_args != 1 and num_args != 2:
+        raise ValueError("Step function '{}'' requires 1 or 2 arguments".format(func.__name__))
+    elif num_args == 1:
+        if todo == 'step':
+            func(sim)
+    elif num_args == 2:
+        func(sim, todo)
 
 
 def _when_true_funcs(cond, *step_funcs):
     def _true(sim, todo):
         if todo == 'finish' or cond(sim):
             for f in step_funcs:
-                sim._eval_step_func(f, todo)
+                _eval_step_func(sim, f, todo)
     return _true
 
 
 # Public step functions
+
+def after_sources(*step_funcs):
+    def _after_sources(sim, todo):
+        time = sim.fields.last_source_time()
+        if sim._round_time() > time:
+            for func in step_funcs:
+                _eval_step_func(sim, func, todo)
+    return _after_sources
+
+
+def after_time(t, *step_funcs):
+    def _after_t(sim):
+        return sim._round_time() >= t
+    return _when_true_funcs(_after_t, *step_funcs)
+
 
 def at_beginning(*step_funcs):
     closure = {'done': False}
@@ -733,7 +695,7 @@ def at_beginning(*step_funcs):
     def _beg(sim, todo):
         if not closure['done']:
             for f in step_funcs:
-                sim._eval_step_func(f, todo)
+                _eval_step_func(sim, f, todo)
             closure['done'] = True
     return _beg
 
@@ -742,10 +704,22 @@ def at_end(*step_funcs):
     def _end(sim, todo):
         if todo == 'finish':
             for func in step_funcs:
-                sim._eval_step_func(func, 'step')
+                _eval_step_func(sim, func, 'step')
             for func in step_funcs:
-                sim._eval_step_func(func, 'finish')
+                _eval_step_func(sim, func, 'finish')
     return _end
+
+
+def at_every(dt, *step_funcs):
+    closure = {'tlast': 0.0}
+
+    def _every(sim, todo):
+        t = sim._round_time()
+        if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * sim.fields.dt):
+            for func in step_funcs:
+                _eval_step_func(sim, func, todo)
+            closure['tlast'] = t
+    return _every
 
 
 def display_progress(t0, t, dt):
@@ -764,6 +738,15 @@ def display_progress(t0, t, dt):
             print(msg_fmt.format(val1, val2, val3, val4, val5))
             closure['tlast'] = t1
     return _disp
+
+
+def output_epsilon(sim):
+    sim.output_component(mp.Dielectric)
+
+
+# TODO(chogan): Write rest of convenience functions generated in meep.scm:define-output-field
+def output_efield_z(sim):
+    sim.output_component(mp.Ez)
 
 
 def interpolate(n, nums):

@@ -44,8 +44,8 @@ class TestRing(unittest.TestCase):
         self.init()
 
         self.sim.run(
-            mp.at_beginning(self.sim.output_epsilon),
-            self.sim.after_sources(self.h),
+            mp.at_beginning(mp.output_epsilon),
+            mp.after_sources(self.h),
             until_after_sources=300
         )
         m1, m2, m3 = self.h.modes

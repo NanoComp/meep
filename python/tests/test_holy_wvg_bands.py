@@ -1,5 +1,6 @@
 import unittest
 import meep as mp
+from meep import after_sources
 
 
 class TestHolyWvgBands(unittest.TestCase):
@@ -39,6 +40,7 @@ class TestHolyWvgBands(unittest.TestCase):
             (0.19335527231544278, 4.6649450258959025e-4)
         ]
 
+        self.assertTrue(any(l for l in all_freqs))
         for (r, i), f in zip(expected, all_freqs[17:21][0]):
             self.assertAlmostEqual(r, f.real)
             self.assertAlmostEqual(i, f.imag)
@@ -46,7 +48,7 @@ class TestHolyWvgBands(unittest.TestCase):
     def test_fields_at_kx(self):
         self.sim.k_point = mp.Vector3(3.5)
         h = mp.Harminv(mp.Hz, mp.Vector3(0.1234), self.fcen, self.df)
-        self.sim.run(self.sim.after_sources(h), until_after_sources=300)
+        self.sim.run(after_sources(h), until_after_sources=300)
 
         expected = [
             (0.19990240131986522, 3.8522735413802275e-8),
@@ -62,6 +64,8 @@ class TestHolyWvgBands(unittest.TestCase):
             (0.9726561278186849, -0.0031192234222098274),
             (0.9855957702101914, -0.003945157134867143),
         ]
+
+        self.assertTrue(h.modes)
         for (r, i), m in zip(expected, h.modes):
             self.assertAlmostEqual(m.freq, r)
             self.assertAlmostEqual(m.freq_imag, i)
