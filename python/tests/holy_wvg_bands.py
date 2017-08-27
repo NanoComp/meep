@@ -68,7 +68,7 @@ class TestHolyWvgBands(unittest.TestCase):
         self.assertTrue(h.modes)
         for (r, i), m in zip(expected, h.modes):
             self.assertAlmostEqual(m.freq, r)
-            self.assertAlmostEqual(m.freq_imag, i)
+            self.assertAlmostEqual(m.decay, i)
 
 
 if __name__ == '__main__':

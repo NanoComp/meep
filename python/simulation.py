@@ -129,7 +129,7 @@ class Volume(object):
         self.swigobj = mp.volume(vec1, vec2)
 
 
-Mode = namedtuple('Mode', ['freq', 'freq_imag', 'Q', 'amp', 'err'])
+Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 
 class Harminv(object):
@@ -451,7 +451,7 @@ class Simulation(object):
         h = Harminv(components[0], pts[0], 0.5 * (fmin + fmax), fmax - fmin)
         self._run_sources_until(t, [after_sources(h)])
 
-        return [complex(m.freq, m.freq_imag) for m in h.modes]
+        return [complex(m.freq, m.decay) for m in h.modes]
 
     def _run_k_points(self, t, k_points):
         k_index = 0
