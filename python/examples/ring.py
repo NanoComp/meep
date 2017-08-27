@@ -15,11 +15,9 @@ def main():
     # Create a ring waveguide by two overlapping cylinders - later objects
     # take precedence over earlier objects, so we put the outer cylinder first.
     # and the inner (air) cylinder second.
-    dielectric = mp.Medium(epsilon=n * n)
-    air = mp.Medium()
 
-    c1 = mp.Cylinder(radius=r + w, material=dielectric)
-    c2 = mp.Cylinder(radius=r, material=air)
+    c1 = mp.Cylinder(radius=r + w, material=mp.Medium(index=n))
+    c2 = mp.Cylinder(radius=r)
 
     # If we don't want to excite a specific mode symmetry, we can just
     # put a single point source at some arbitrary place, pointing in some

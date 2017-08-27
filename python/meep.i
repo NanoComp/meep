@@ -272,6 +272,18 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
     $1 = (void*)$input;
 }
 
+// Typemap suite for dtf_flux
+
+%typemap(out) double* flux {
+    int size = arg1->Nfreq;
+    $result = PyList_New(size);
+    for(int i = 0; i < size; i++) {
+        PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
+    }
+
+  delete $1;
+}
+
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
 %rename(_is) meep::dft_chunk::is;
@@ -315,6 +327,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
     )
     from .simulation import (
         Absorber,
+        FluxRegion,
         Harminv,
         Identity,
         Mirror,
@@ -326,14 +339,22 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Volume,
         after_sources,
         after_time,
+        arith_sequence,
         at_beginning,
         at_end,
         at_every,
+        during_sources,
         display_progress,
-        output_epsilon,
-        output_efield_z,
+        get_flux_freqs,
+        get_fluxes,
+        in_volume,
         interpolate,
+        output_epsilon,
+        output_hfield_z,
+        output_efield_z,
         py_v3_to_vec,
+        stop_when_fields_decayed,
+        to_appended
     )
     from .source import (
         ContinuousSource,

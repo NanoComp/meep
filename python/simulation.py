@@ -5,6 +5,7 @@ import os
 import re
 import sys
 from collections import namedtuple
+from collections import Sequence
 
 import numpy as np
 
@@ -20,6 +21,7 @@ except NameError:
 
 
 CYLINDRICAL = -2
+AUTOMATIC = -1
 
 
 def get_num_args(func):
@@ -129,6 +131,15 @@ class Volume(object):
         self.swigobj = mp.volume(vec1, vec2)
 
 
+class FluxRegion(object):
+
+    def __init__(self, center, size=Vector3(), direction=AUTOMATIC, weight=1.0):
+        self.center = center
+        self.size = size
+        self.direction = direction
+        self.weight = complex(weight)
+
+
 Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 
@@ -154,10 +165,6 @@ class Harminv(object):
     def __call__(self, sim, todo):
         self.step_func(sim, todo)
 
-    def _display_run_data(self, sim, data_name, data):
-        data_str = [str(f) for f in data]
-        print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
-
     def _collect_harminv(self):
 
         def _collect1(c, pt):
@@ -172,7 +179,7 @@ class Harminv(object):
 
     def _analyze_harminv(self, sim, maxbands):
         harminv_cols = ['frequency', 'imag.', 'freq.', 'Q', '|amp|', 'amplitude', 'error']
-        self._display_run_data(sim, 'harminv', harminv_cols)
+        display_run_data(sim, 'harminv', harminv_cols)
 
         dt = self.data_dt if self.data_dt is not None else sim.fields.dt
 
@@ -184,7 +191,7 @@ class Harminv(object):
         for freq, amp, err in bands:
             Q = freq.real / (-2 * freq.imag)
             modes.append(Mode(freq.real, freq.imag, Q, amp, err))
-            self._display_run_data(sim, 'harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
+            display_run_data(sim, 'harminv', [freq.real, freq.imag, Q, abs(amp), amp, err])
 
         return modes
 
@@ -196,7 +203,6 @@ class Harminv(object):
                 mb = 100
             else:
                 mb = self.mxbands
-
             self.modes = self._analyze_harminv(sim, mb)
 
         f1 = self._collect_harminv()
@@ -423,7 +429,7 @@ class Simulation(object):
             new_cond = (ts - self._round_time()) + cond
         else:
             def f(sim):
-                cond() and self._round_time() >= ts
+                return cond(sim) and sim._round_time() >= ts
             new_cond = f
 
         self._run_until(new_cond, step_funcs)
@@ -537,8 +543,28 @@ class Simulation(object):
                     src.amplitude * 1.0
                 )
 
-    def add_flux(self, flux):
-        pass
+    def add_flux(self, fcen, df, nfreq, *fluxes):
+        if self.fields is None:
+            self._init_fields()
+
+        return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
+
+    def display_fluxes(self, fluxes):
+        display_csv(self, 'flux', zip(get_flux_freqs(fluxes), get_fluxes(fluxes)))
+
+    def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
+        vol_list = None
+
+        for s in stufflist:
+            v = Volume(center=s.center, size=s.size)
+            d0 = s.direction
+            d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
+            c = mp.direction_component(mp.Sx, d)
+            vol_list = mp.volume_list(Volume(center=s.center, size=s.size).swigobj, c, s.weight, vol_list)
+
+        stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+
+        return stuff
 
     def output_component(self, c, h5file=None):
         if self.fields is None:
@@ -722,6 +748,89 @@ def at_every(dt, *step_funcs):
     return _every
 
 
+def before_time(t, *step_funcs):
+    def _before_t(sim):
+        return sim._round_time() < t
+    return _when_true_funcs(_before_t, *step_funcs)
+
+
+def during_sources(*step_funcs):
+    def _during_sources(sim, todo):
+        time = sim.fields.last_source_time()
+        if sim._round_time() < time:
+            for func in step_funcs:
+                _eval_step_func(sim, func, todo)
+    return _during_sources
+
+
+def in_volume(v, *step_funcs):
+    closure = {'cur_eps': ''}
+
+    def _in_volume(sim, todo):
+        v_save = sim.output_volume
+        eps_save = sim.last_eps_filename
+        sim.output_volume = v.swigobj
+        if closure['cur_eps']:
+            sim.last_eps_filename = closure['cur_eps']
+        for func in step_funcs:
+            _eval_step_func(sim, func, todo)
+
+        closure['cur_eps'] = sim.last_eps_filename
+        sim.output_volume = v_save
+        if eps_save:
+            sim.last_eps_filename = eps_save
+    return _in_volume
+
+
+def to_appended(fname, *step_funcs):
+    closure = {'h5': None}
+
+    def _to_appended(sim, todo):
+        if closure['h5'] is None:
+            closure['h5'] = sim.fields.open_h5file(fname, mp.h5file.WRITE, sim._get_filename_prefix())
+        h5save = sim.output_append_h5
+        sim.output_append_h5 = closure['h5']
+
+        for func in step_funcs:
+            _eval_step_func(sim, func, todo)
+
+        if todo == 'finish':
+            sim.output_h5_hook(sim.fields.h5file_name(fname, sim._get_filename_prefix()))
+        sim.output_append_h5 = h5save
+    return _to_appended
+
+
+def stop_when_fields_decayed(dt, c, pt, decay_by):
+
+    closure = {
+        'max_abs': 0,
+        'cur_max': 0,
+        't0': 0,
+    }
+
+    def _stop(sim):
+        fabs = abs(sim._get_field_point(c, pt)) * abs(sim._get_field_point(c, pt))
+        closure['cur_max'] = max(closure['cur_max'], fabs)
+
+        if sim._round_time() <= dt + closure['t0']:
+            return False
+        else:
+            old_cur = closure['cur_max']
+            closure['cur_max'] = 0
+            closure['t0'] = sim._round_time()
+            closure['max_abs'] = max(closure['max_abs'], old_cur)
+            if closure['max_abs'] != 0:
+                fmt = "field decay(t = {}): {} / {} = {}"
+                print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
+            return old_cur <= closure['max_abs'] * decay_by
+    return _stop
+
+
+def display_csv(sim, name, data):
+    for d in data:
+        display_run_data(sim, name, d)
+
+
 def display_progress(t0, t, dt):
     t_0 = mp.wall_time()
     closure = {'tlast': mp.wall_time()}
@@ -740,13 +849,33 @@ def display_progress(t0, t, dt):
     return _disp
 
 
+def display_run_data(sim, data_name, data):
+    if isinstance(data, Sequence):
+        data_str = [str(f) for f in data]
+    else:
+        data_str = [str(data)]
+    print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
+
+
 def output_epsilon(sim):
     sim.output_component(mp.Dielectric)
 
 
 # TODO(chogan): Write rest of convenience functions generated in meep.scm:define-output-field
+def output_hfield_z(sim):
+    sim.output_component(mp.Hz)
+
+
 def output_efield_z(sim):
     sim.output_component(mp.Ez)
+
+
+def get_flux_freqs(f):
+    return arith_sequence(f.freq_min, f.dfreq, f.Nfreq)
+
+
+def get_fluxes(f):
+    return f.flux()
 
 
 def interpolate(n, nums):
@@ -764,3 +893,7 @@ def interpolate(n, nums):
             res.extend(np.linspace(low, high, n + 1, endpoint=False).tolist())
 
     return res + [nums[-1]]
+
+
+def arith_sequence(start, step, n):
+    return np.linspace(start, start + step * n, num=n, endpoint=False).tolist()
