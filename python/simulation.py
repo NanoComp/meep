@@ -677,7 +677,7 @@ def _when_true_funcs(cond, *step_funcs):
 def after_sources(*step_funcs):
     def _after_sources(sim, todo):
         time = sim.fields.last_source_time()
-        if sim._round_time() > time:
+        if sim._round_time() >= time:
             for func in step_funcs:
                 _eval_step_func(sim, func, todo)
     return _after_sources
