@@ -66,7 +66,7 @@ gaussian_src_time::gaussian_src_time(double f, double fwidth, double s)
   freq = f;
   width = 1.0 / fwidth;
   peak_time = width * s;
-  cutoff = width * s * 2;
+  cutoff = width * s;
 
   // this is to make last_source_time as small as possible
   while (exp(-cutoff*cutoff / (2*width*width)) < 1e-100)
