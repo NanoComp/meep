@@ -61,6 +61,7 @@ if test "x$with_mpi" = "xyes"; then
           AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])])
   fi
 fi
+AM_CONDITIONAL(WITH_MPI, test "x$with_mpi" != xno)
 
 ##############################################################################
 # Compiler flags
@@ -492,6 +493,16 @@ else
         AC_CHECK_HEADER([numpy/arrayobject.h],[],[
           AC_MSG_WARN([disabling Python wrappers])
           have_python=no],[#include <Python.h>])
+
+        # if we are building --with-mpi then the python mpi4py
+        # package is mandatory
+        if test "x$with_mpi" = "xyes"; then
+          AX_PYTHON_MODULE([mpi4py],[])
+          if test "x${HAVE_PYMOD_MPI4PY}" != "xyes"; then
+            AC_MSG_ERROR([could not find mpi4py package; configure --without-mpi or --without-python])
+          fi
+        fi
+        
       fi
 
       CPPFLAGS=$save_CPPFLAGS

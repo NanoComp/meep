@@ -30,7 +30,11 @@ TESTS =                               \
     $(TEST_DIR)/test_source.py
 
 TEST_EXTENSIONS = .py
-PY_LOG_COMPILER = $(PYTHON)
+if WITH_MPI
+  PY_LOG_COMPILER = mpirun -np `nproc` $(PYTHON)
+else
+  PY_LOG_COMPILER = $(PYTHON)
+endif
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
@@ -46,10 +50,10 @@ PY_PKG_FILES =               \
     $(srcdir)/source.py      \
     .libs/_meep.so
 
-meep-python.cpp: $(SWIG_SRC) $(HPPFILES)
+meep-python.cpp:	$(SWIG_SRC) $(HPPFILES)
 	swig -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
-meep.py: meep-python.cpp
+meep.py:	meep-python.cpp
 
 __init__.py: meep.py
 	cp $< $@
@@ -64,4 +68,3 @@ clean-local:
 	rm -rf meep
 
 endif # MAINTAINER_MODE
-
