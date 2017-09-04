@@ -18,8 +18,8 @@ def main():
     dielectric = mp.Medium(epsilon=n * n)
     air = mp.Medium()
 
-    c1 = mp.Cylinder(r + w, material=dielectric)
-    c2 = mp.Cylinder(r, material=air)
+    c1 = mp.Cylinder(radius=r + w, material=dielectric)
+    c2 = mp.Cylinder(radius=r, material=air)
 
     # If we don't want to excite a specific mode symmetry, we can just
     # put a single point source at some arbitrary place, pointing in some
