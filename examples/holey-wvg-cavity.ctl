@@ -43,6 +43,7 @@
 
 ; false = transmission spectrum, true = resonant modes:
 (define-param compute-mode? false)
+(define trans '())
 
 (if compute-mode?
     (begin
@@ -70,7 +71,7 @@
 
       (set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
       
-      (define trans ; transmitted flux
+      (set! trans ; transmitted flux
 	(add-flux fcen df nfreq
 		  (make flux-region
 		    (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2)))))
