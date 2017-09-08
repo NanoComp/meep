@@ -43,7 +43,6 @@
 
 ; false = transmission spectrum, true = resonant modes:
 (define-param compute-mode? false)
-(define trans '())
 
 (if compute-mode?
     (begin
@@ -71,10 +70,10 @@
 
       (set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
       
-      (set! trans ; transmitted flux
+      (let ((trans ; transmitted flux
 	(add-flux fcen df nfreq
 		  (make flux-region
-		    (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2)))))
+		    (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2))))))
       
       (run-sources+ (stop-when-fields-decayed 
 		     50 Ey
@@ -86,4 +85,4 @@
                      (to-appended "hz-slice" (at-every 0.4 output-hfield-z)))))
       
       (display-fluxes trans) ; print out the flux spectrum
-      ))
+      )))
