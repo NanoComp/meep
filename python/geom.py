@@ -19,6 +19,40 @@ class Vector3(object):
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.z == other.z
 
+    def __add__(self, other):
+        self.x += other.x
+        self.y += other.y
+        self.z += other.z
+
+        return self
+
+    def __sub__(self, other):
+        self.x -= other.x
+        self.y -= other.y
+        self.z -= other.z
+
+        return self
+
+    def __getitem__(self, i):
+        if i == 0:
+            return self.x
+        elif i == 1:
+            return self.y
+        elif i == 2:
+            return self.z
+        else:
+            raise IndexError("No value at index {}".format(i))
+
+    def __repr__(self):
+        return "<{}, {}, {}>".format(self.x, self.y, self.z)
+
+    def scale(self, s):
+        self.x *= s
+        self.y *= s
+        self.z *= s
+
+        return self
+
 
 class Medium(object):
 
@@ -33,7 +67,15 @@ class Medium(object):
                  H_chi2_diag=Vector3(),
                  H_chi3_diag=Vector3(),
                  D_conductivity_diag=Vector3(),
-                 B_conductivity_diag=Vector3()):
+                 B_conductivity_diag=Vector3(),
+                 epsilon=None,
+                 index=None):
+
+        if epsilon:
+            epsilon_diag = Vector3(epsilon, epsilon, epsilon)
+        elif index:
+            i2 = index * index
+            epsilon_diag = Vector3(i2, i2, i2)
 
         self.epsilon_diag = epsilon_diag
         self.epsilon_offdiag = epsilon_offdiag
@@ -99,7 +141,7 @@ class GeometricObject(object):
 class Sphere(GeometricObject):
 
     def __init__(self, radius, **kwargs):
-        self.radius = radius
+        self.radius = float(radius)
         super(Sphere, self).__init__(**kwargs)
 
     @property
@@ -113,10 +155,10 @@ class Sphere(GeometricObject):
 
 class Cylinder(GeometricObject):
 
-    def __init__(self, radius, axis=Vector3(0, 0, 1), height=float('inf'), **kwargs):
+    def __init__(self, radius, axis=Vector3(0, 0, 1), height=1e20, **kwargs):
         self.axis = axis
-        self.radius = radius
-        self.height = height
+        self.radius = float(radius)
+        self.height = float(height)
         super(Cylinder, self).__init__(**kwargs)
 
     @property

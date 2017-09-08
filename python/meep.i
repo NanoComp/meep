@@ -20,10 +20,12 @@
 %{
 #define SWIG_FILE_WITH_INIT
 
+#include <complex>
 #include <string>
 
 #include "meep/vec.hpp"
 #include "meep.hpp"
+#include "meep/mympi.hpp"
 #include "ctl-math.h"
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
@@ -32,7 +34,6 @@ using namespace meep;
 using namespace meep_geom;
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
-
 %}
 
 %include "numpy.i"
@@ -70,7 +71,82 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 #include "typemap_utils.cpp"
 
+// Wrapper for Python PML profile function
+double py_pml_profile(double u, void *f) {
+    PyObject *func = (PyObject *)f;
+    PyObject *d = PyFloat_FromDouble(u);
+
+    if(!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_TypeError, "py_pml_profile: Object is not callable");
+        // TODO(chogan): Fix this error handling.
+        throw;
+    }
+
+    PyObject *pyret = PyObject_CallFunctionObjArgs(func, d, NULL);
+    double ret = PyFloat_AsDouble(pyret);
+    Py_XDECREF(pyret);
+    Py_XDECREF(d);
+    return ret;
+}
+
+PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
+                     double spectral_density, double Q_thresh, double rel_err_thresh,
+                     double err_thresh, double rel_amp_thresh, double amp_thresh) {
+
+    std::complex<double> *amp = new std::complex<double>[maxbands];
+    double *freq_re = new double[maxbands];
+    double *freq_im = new double[maxbands];
+    double *freq_err = new double[maxbands];
+
+    Py_ssize_t n = PyList_Size(vals);
+    std::complex<double> *items = new std::complex<double>[n];
+
+    for(int i = 0; i < n; i++) {
+        Py_complex py_c = PyComplex_AsCComplex(PyList_GetItem(vals, i));
+        std::complex<double> c(py_c.real, py_c.imag);
+        items[i] = c;
+    }
+
+    maxbands = do_harminv(items, n, dt, f_min, f_max, maxbands, amp,
+                          freq_re, freq_im, freq_err, spectral_density, Q_thresh,
+                          rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
+
+    PyObject *res = PyList_New(maxbands);
+
+    for(int i = 0; i < maxbands; i++) {
+        Py_complex pyfreq = {freq_re[i], freq_im[i]};
+        Py_complex pyamp = {amp[i].real(), amp[i].imag()};
+        Py_complex pyfreq_err = {freq_err[i], 0};
+
+        PyObject *pyobj = Py_BuildValue("(DDD)", &pyfreq, &pyamp, &pyfreq_err);
+        PyList_SetItem(res, i, pyobj);
+    }
+
+    delete[] freq_err;
+    delete[] freq_im;
+    delete[] freq_re;
+    delete[] amp;
+    delete[] items;
+
+    return res;
+}
 %}
+
+// This is necessary so that SWIG wraps py_pml_profile as a SWIG function
+// pointer object instead of as a built-in function
+%constant double py_pml_profile(double u, void *f);
+%ignore py_pml_profile;
+double py_pml_profile(double u, void *f);
+
+PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
+                     double spectral_density, double Q_thresh, double rel_err_thresh,
+                     double err_thresh, double rel_amp_thresh, double amp_thresh);
+
+// Typemap suite for do_harminv
+
+%typecheck(SWIG_TYPECHECK_POINTER) PyObject *vals {
+    $1 = PyList_Check($input);
+}
 
 // Typemap suite for double func(meep::vec &)
 
@@ -186,6 +262,16 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
     $1 = reinterpret_cast<meep::src_time *>(tmp_ptr);
 }
 
+// Typemap suite for boundary_region
+
+%typecheck(SWIG_TYPECHECK_POINTER) void *pml_profile_data {
+    $1 = PyCallable_Check($input);
+}
+
+%typemap(in) void *pml_profile_data {
+    $1 = (void*)$input;
+}
+
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
 %rename(_is) meep::dft_chunk::is;
@@ -194,15 +280,68 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 // Operator renaming
 %rename(boundary_region_assign) meep::boundary_region::operator=;
 
+%rename(get_field_from_comp) meep::fields::get_field(component, const vec &) const;
+
 // TODO:  Fix these with a typemap when necessary
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;
 
 %include "vec.i"
 %include "meep.hpp"
+%include "meep/mympi.hpp"
 %include "meepgeom.hpp"
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %ignore eps_func;
 %ignore inveps_func;
+
+%pythoncode %{
+    from .geom import (
+        Block,
+        Cone,
+        Cylinder,
+        DrudeSusceptibility,
+        Ellipsoid,
+        GeometricObject,
+        Medium,
+        NoisyDrudeSusceptibility,
+        NoisyLorentzianSusceptibility,
+        Sphere,
+        Susceptibility,
+        Vector3,
+        Wedge,
+        check_nonnegative,
+    )
+    from .simulation import (
+        Absorber,
+        Harminv,
+        Identity,
+        Mirror,
+        Pml,
+        Rotate2,
+        Rotate4,
+        Simulation,
+        Symmetry,
+        Volume,
+        after_sources,
+        after_time,
+        at_beginning,
+        at_end,
+        at_every,
+        display_progress,
+        output_epsilon,
+        output_efield_z,
+        interpolate,
+        py_v3_to_vec,
+    )
+    from .source import (
+        ContinuousSource,
+        CustomSource,
+        EigenModeSource,
+        GaussianSource,
+        Source,
+        SourceTime,
+        check_positive,
+    )
+%}

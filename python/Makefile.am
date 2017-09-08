@@ -22,12 +22,14 @@ _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 TEST_DIR = tests
-TESTS =                               \
-    $(TEST_DIR)/test_cyl_ellipsoid.py \
-    $(TEST_DIR)/test_geom.py          \
-    $(TEST_DIR)/test_physical.py      \
-    $(TEST_DIR)/test_ring.py          \
-    $(TEST_DIR)/test_source.py
+TESTS =                                    \
+    $(TEST_DIR)/cyl_ellipsoid.py      \
+    $(TEST_DIR)/geom.py               \
+    $(TEST_DIR)/holey_wvg_bands.py    \
+    $(TEST_DIR)/physical.py           \
+    $(TEST_DIR)/ring.py               \
+    $(TEST_DIR)/simulation.py         \
+    $(TEST_DIR)/source.py
 
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(PYTHON)
@@ -43,6 +45,7 @@ if MAINTAINER_MODE
 PY_PKG_FILES =               \
     __init__.py              \
     $(srcdir)/geom.py        \
+    $(srcdir)/simulation.py  \
     $(srcdir)/source.py      \
     .libs/_meep.so
 
