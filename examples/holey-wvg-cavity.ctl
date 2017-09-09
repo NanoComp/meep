@@ -71,18 +71,18 @@
       (set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
       
       (let ((trans ; transmitted flux
-	(add-flux fcen df nfreq
-		  (make flux-region
-		    (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2))))))
+	      (add-flux fcen df nfreq
+		        (make flux-region
+		          (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2))))))
       
-      (run-sources+ (stop-when-fields-decayed 
-		     50 Ey
-		     (vector3 (- (* 0.5 sx) dpml 0.5) 0)
-		     1e-3)
-		    (at-beginning output-epsilon)
-		    (during-sources
-                     (in-volume (volume (center 0 0) (size sx 0))
-                     (to-appended "hz-slice" (at-every 0.4 output-hfield-z)))))
+          (run-sources+ (stop-when-fields-decayed
+		        50 Ey
+		        (vector3 (- (* 0.5 sx) dpml 0.5) 0)
+		        1e-3)
+		        (at-beginning output-epsilon)
+		        (during-sources
+                        (in-volume (volume (center 0 0) (size sx 0))
+                                   (to-appended "hz-slice" (at-every 0.4 output-hfield-z)))))
       
-      (display-fluxes trans) ; print out the flux spectrum
+          (display-fluxes trans) ; print out the flux spectrum
       )))
