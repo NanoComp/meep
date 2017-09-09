@@ -47,6 +47,7 @@ PyObject *py_callback = NULL;
 
 static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
+static PyObject *py_material_object();
 static PyObject* vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
@@ -282,6 +283,16 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
     }
 
   delete $1;
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) material_type _default_material {
+    $1 = PyObject_IsInstance($input, py_material_object());
+}
+
+%typemap(in) material_type _default_material {
+    if(!pymaterial_to_material($input, &$1)) {
+        SWIG_fail;
+    }
 }
 
 // Rename python builtins

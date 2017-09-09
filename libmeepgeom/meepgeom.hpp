@@ -89,6 +89,7 @@ void set_materials_from_geometry(meep::structure *s,
                                  int maxeval=DEFAULT_SUBPIXEL_MAXEVAL,
                                  bool ensure_periodicity=false,
                                  bool verbose=false,
+                                 material_type _default_material=vacuum,
                                  absorber_list alist=0);
 
 material_type make_dielectric(double epsilon);

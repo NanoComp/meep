@@ -13,12 +13,12 @@ def check_positive(prop, val):
 
 class Source(object):
 
-    def __init__(self, src, component, center, size=Vector3(), amplitude=complex(1.0), amp_func=None):
+    def __init__(self, src, component, center, size=Vector3(), amplitude=1.0, amp_func=None):
         self.src = src
         self.component = component
         self.center = center
         self.size = size
-        self.amplitude = amplitude
+        self.amplitude = complex(amplitude)
         self.amp_func = amp_func
 
 

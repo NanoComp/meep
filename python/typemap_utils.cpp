@@ -53,6 +53,16 @@ static PyObject *py_meep_src_time_object() {
     return src_time;
 }
 
+static PyObject *py_material_object() {
+    static PyObject *material_object = NULL;
+    if(material_object == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        material_object = PyObject_GetAttrString(geom_mod, "Medium");
+        Py_XDECREF(geom_mod);
+    }
+    return material_object;
+}
+
 static PyObject* vec2py(const meep::vec &v) {
 
     double x = 0, y = 0, z = 0;

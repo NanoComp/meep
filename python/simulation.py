@@ -33,9 +33,9 @@ def get_num_args(func):
 def py_v3_to_vec(dims, v3):
     if dims == 1:
         if v3.x == v3.y == v3.z:
-            return mp.vec(dims, v3.x)
+            return mp.vec_from_dim(0, v3.x)
         else:
-            return mp.vec(dims)
+            return mp.vec(v3.z)
     elif dims == 2:
         return mp.vec(v3.x, v3.y)
     elif dims == 3:
@@ -117,7 +117,7 @@ class Identity(Symmetry):
 
 class Volume(object):
 
-    def __init__(self, center, size=Vector3(), dims=2,):
+    def __init__(self, center, size=Vector3(), dims=2):
         self.center = center
         self.size = size
         self.dims = dims
@@ -214,7 +214,7 @@ class Simulation(object):
 
     def __init__(self, cell_size, geometry, sources, resolution, eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
-                 force_complex_fields=False):
+                 force_complex_fields=False, default_material=mp.Medium()):
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
@@ -228,7 +228,7 @@ class Simulation(object):
         self.subpixel_maxeval = 100000
         self.ensure_periodicity = False
         self.extra_materials = []
-        self.default_material = None
+        self.default_material = default_material
         self.epsion_input_file = ''
         self.num_chunks = 0
         self.courant = 0.5
@@ -322,8 +322,8 @@ class Simulation(object):
         self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
 
-        mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging,
-                                       self.subpixel_tol, self.subpixel_maxeval, self.ensure_periodicity)
+        mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
+                                       self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material)
 
     def _init_fields(self):
         is_cylindrical = self.dimensions == CYLINDRICAL
@@ -486,7 +486,7 @@ class Simulation(object):
         if self.fields is None:
             self._init_fields()
 
-        where = Volume(src.center, src.size).swigobj
+        where = Volume(src.center, src.size, dims=self.dimensions).swigobj
 
         if isinstance(src, EigenModeSource):
             if src.direction < 0:
@@ -494,7 +494,7 @@ class Simulation(object):
             else:
                 direction = src.direction
 
-            eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size).swigobj
+            eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size, self.dimensions).swigobj
 
             if src.amp_func is None:
                 self.fields.add_eigenmode_src(
@@ -573,11 +573,12 @@ class Simulation(object):
         vol_list = None
 
         for s in stufflist:
-            v = Volume(center=s.center, size=s.size)
+            v = Volume(center=s.center, size=s.size, dims=self.dimensions)
             d0 = s.direction
             d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
             c = mp.direction_component(mp.Sx, d)
-            vol_list = mp.volume_list(Volume(center=s.center, size=s.size).swigobj, c, s.weight, vol_list)
+            v2 = Volume(center=s.center, size=s.size, dims=self.dimensions).swigobj
+            vol_list = mp.volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
 
