@@ -23,6 +23,8 @@
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
 
+#include <vector>
+
 namespace meep {
 
 /* We use the type realnum for large arrays, e.g. the fields.
@@ -1165,7 +1167,8 @@ class fields_chunk {
 
 enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
 enum time_sink { Connecting, Stepping, Boundaries, MpiTime,
-                 FieldOutput, FourierTransforming, Other };
+                 FieldOutput, FourierTransforming, 
+                 ArraySlice, Other };
 
 typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid,
 				ivec is, ivec ie,
@@ -1284,6 +1287,30 @@ class fields {
 		      const char *prefix = NULL, bool timestamp = false);
   const char *h5file_name(const char *name,
 			  const char *prefix = NULL, bool timestamp = false);
+
+  // array_slice.cpp methods
+
+  // given a subvolume, compute the dimensions of the array slice
+  // needed to store field data for that subvolume.
+  // the data parameter is used internally in get_array_slice
+  // and should be ignored by external callers.
+  int get_array_slice_dimensions(const volume &where, int dims[3], int directions[3], void *data=0);
+
+  // given a subvolume, return a column-major array containing
+  // the requested components of the fields in that subvolume,
+  // after applying fun if it is non-null.
+  // if slice is non-null, it must be a user-allocated buffer
+  // of the correct size.
+  std::complex<double> *get_array_slice(const volume &where,
+                       std::vector<component> components,
+                       field_function fun=0, void *fun_data_=0,
+                       std::complex<double> *slice=0);
+
+  // for when you have no field function but you do have a
+  // caller-allocated buffer for the slice
+  std::complex<double> *get_array_slice(const volume &where,
+                       std::vector<component> components,
+                       std::complex<double> *slice);
 
   // step.cpp methods:
   double last_step_output_wall_time;
