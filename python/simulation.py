@@ -213,7 +213,8 @@ class Harminv(object):
 class Simulation(object):
 
     def __init__(self, cell_size, geometry, sources, resolution, eps_averaging=True,
-                 dimensions=2, boundary_layers=[], symmetries=[], verbose=False):
+                 dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
+                 force_complex_fields=False):
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
@@ -239,7 +240,7 @@ class Simulation(object):
         self.structure = None
         self.accurate_fields_near_cylorigin = False
         self.m = 0
-        self.force_complex_fields = False
+        self.force_complex_fields = force_complex_fields
         self.verbose = verbose
         self.progress_interval = 4
         self.init_fields_hooks = []
