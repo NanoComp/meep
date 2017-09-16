@@ -1301,6 +1301,8 @@ class fields {
   // after applying fun if it is non-null.
   // if slice is non-null, it must be a user-allocated buffer
   // of the correct size.
+  // otherwise, a new buffer is allocated and returned; it
+  // must eventually be caller-deallocated via delete[].
   std::complex<double> *get_array_slice(const volume &where,
                        std::vector<component> components,
                        field_function fun=0, void *fun_data_=0,

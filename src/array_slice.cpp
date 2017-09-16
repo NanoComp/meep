@@ -39,7 +39,7 @@ typedef struct {
   ivec min_corner, max_corner;
   int num_chunks;
   cdouble *slice;
-  size_t slice_size;
+  int slice_size;
   int rank;
   direction ds[3];
 
@@ -83,7 +83,7 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
 				  void *data_)
 {
   UNUSED(ichnk);UNUSED(cgrid);UNUSED(s0);UNUSED(s1);UNUSED(e0);UNUSED(e1);
-  UNUSED(dV0);UNUSED(dV1);UNUSED(shift_phase);
+  UNUSED(dV0);UNUSED(dV1);UNUSED(shift_phase); UNUSED(fc);
   array_slice_data *data = (array_slice_data *) data_;
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
@@ -154,6 +154,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   const direction *imds = data->invmu_ds;
   int imos[6];
   int num_components=data->components.size();
+  int slice_size=data->slice_size;
 
   for (int i = 0; i < num_components; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -207,10 +208,9 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 	    f[k] = 0;
 	fields[i] = complex<double>(f[0], f[1]) * ph[i];
       }
-    }
-
     complex<double> fun = data->fun(fields, loc, data->fun_data_);
     data->slice[ i*slice_size + idx] = fun;
+    }
     //int idx2 = ((((offset[0] + offset[1] + offset[2])
     // + loop_i1 * stride[0]) 
     // + loop_i2 * stride[1]) + loop_i3 * stride[2]);
@@ -289,7 +289,7 @@ cdouble *fields::get_array_slice(const volume &where,
 
   int num_components = components.size();
  
-  size_t slize_size = dims[0];
+  int slice_size = dims[0];
   for(int r=1; r<rank; r++)
    slice_size *= dims[r];
   if (slice==0) 
