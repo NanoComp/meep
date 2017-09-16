@@ -550,8 +550,24 @@ class Simulation(object):
 
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
-    def display_fluxes(self, fluxes):
-        display_csv(self, 'flux', zip(get_flux_freqs(fluxes), get_fluxes(fluxes)))
+    def display_fluxes(self, *fluxes):
+        display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))
+
+    def load_flux(self, fname, flux):
+        if self.fields is None:
+            self._init_fields()
+
+        flux.load_hdf5(self.fields, fname, '', self._get_filename_prefix())
+
+    def save_flux(self, fname, flux):
+        if self.fields is None:
+            self._init_fields()
+
+        flux.save_hdf5(self.fields, fname, '', self._get_filename_prefix())
+
+    def load_minus_flux(self, fname, flux):
+        self.load_flux(fname, flux)
+        flux.scale_dfts(complex(-1.0))
 
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
         vol_list = None
