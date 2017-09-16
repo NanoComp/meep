@@ -339,7 +339,6 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Volume,
         after_sources,
         after_time,
-        arith_sequence,
         at_beginning,
         at_end,
         at_every,

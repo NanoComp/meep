@@ -72,7 +72,7 @@ class TestSimulation(unittest.TestCase):
             0.15360721442885392
         ]
 
-        res = mp.arith_sequence(0.15, 0.000400801603206, 10)
+        res = np.linspace(0.15, 0.15 + 0.000400801603206 * 10, num=10, endpoint=False)
 
         self.assertEqual(len(expected), len(res))
         np.testing.assert_allclose(expected, res)

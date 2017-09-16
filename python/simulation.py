@@ -871,7 +871,7 @@ def output_efield_z(sim):
 
 
 def get_flux_freqs(f):
-    return arith_sequence(f.freq_min, f.dfreq, f.Nfreq)
+    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
 
 
 def get_fluxes(f):
@@ -893,7 +893,3 @@ def interpolate(n, nums):
             res.extend(np.linspace(low, high, n + 1, endpoint=False).tolist())
 
     return res + [nums[-1]]
-
-
-def arith_sequence(start, step, n):
-    return np.linspace(start, start + step * n, num=n, endpoint=False).tolist()
