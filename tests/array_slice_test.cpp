@@ -350,7 +350,7 @@ int main(int argc, char **argv)
   double Sf2_ky[5] = {0.2, 0.2, 0, 0, 0};
 
   const grid_volume gv = vol2d(xsize, ysize, a);
-  for(int iS=0; iS<3; iS++)
+  for(int iS=0; iS<1; /*3;*/ iS++)
    for(int splitting=0; splitting<1; /*5;*/ splitting++)
     { 
       symfunc Sf=Sf2[iS];

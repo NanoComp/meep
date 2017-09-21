@@ -141,9 +141,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   }
   
   //-----------------------------------------------------------------------//
-  // Compute the function to output, exactly as in fields::integrate,
-  // except that here we store its values in a buffer instead of integrating.
-
+  // Compute the function to output, exactly as in fields::integrate.
   int *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
@@ -208,13 +206,21 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 	    f[k] = 0;
 	fields[i] = complex<double>(f[0], f[1]) * ph[i];
       }
-    complex<double> fun = data->fun(fields, loc, data->fun_data_);
-    data->slice[ i*slice_size + idx] = fun;
     }
-    //int idx2 = ((((offset[0] + offset[1] + offset[2])
-    // + loop_i1 * stride[0]) 
-    // + loop_i2 * stride[1]) + loop_i3 * stride[2]);
-    //data->buf[idx2] = fun;
+int slice_offset[3], slice_stride[3];
+for(int ii=0; ii<3; ii++)
+ { slice_offset[ii]=offset[ii];
+   slice_stride[ii]=stride[ii];
+ };
+master_printf("count:  {%i,%i,%i}\n",count[0],count[1],count[2]);
+master_printf("stride: {%i,%i,%i}\n",stride[0],stride[1],stride[2]);
+master_printf("offset: {%i,%i,%i}\n",offset[0],offset[1],offset[2]);
+    int idx2 = ((((slice_offset[0] + slice_offset[1] + slice_offset[2])
+                   + loop_i1 * slice_stride[0])
+                   + loop_i2 * slice_stride[1])
+                   + loop_i3 * slice_stride[2]);
+printf("{%2i,%2i,%2i} %4i\n",loop_i1,loop_i2,loop_i3,idx2);
+    //data->slice[idx2] = data->fun(fields, loc, data->fun_data_);
   };
 
 }
@@ -293,7 +299,8 @@ cdouble *fields::get_array_slice(const volume &where,
   for(int r=1; r<rank; r++)
    slice_size *= dims[r];
   if (slice==0) 
-   slice = new cdouble[num_components * slice_size];
+   slice = new cdouble[slice_size];
+printf("slice_size=%i\n",slice_size);
 
   data.slice      = slice;
   data.slice_size = slice_size;
