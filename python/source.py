@@ -13,7 +13,7 @@ def check_positive(prop, val):
 
 class Source(object):
 
-    def __init__(self, src, component, center, size=Vector3(), amplitude=1.0, amp_func=None):
+    def __init__(self, src, component, center, size=Vector3(), amplitude=complex(1.0), amp_func=None):
         self.src = src
         self.component = component
         self.center = center
@@ -30,9 +30,9 @@ class SourceTime(object):
 
 class ContinuousSource(SourceTime):
 
-    def __init__(self, frequency, start_time=0, end_time=float('inf'), width=0, cutoff=3.0):
+    def __init__(self, frequency, start_time=0, end_time=1.0e20, width=0, cutoff=3.0):
         super(ContinuousSource, self).__init__()
-        self.frequency = frequency
+        self.frequency = float(frequency)
         self.start_time = start_time
         self.end_time = end_time
         self.width = width
@@ -45,7 +45,7 @@ class GaussianSource(SourceTime):
 
     def __init__(self, frequency, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0):
         super(GaussianSource, self).__init__()
-        self.frequency = frequency
+        self.frequency = float(frequency)
         self.width = max(width, 1 / fwidth)
         self.start_time = start_time
         self.cutoff = cutoff
@@ -55,7 +55,7 @@ class GaussianSource(SourceTime):
 
 class CustomSource(SourceTime):
 
-    def __init__(self, src_func, start_time=float('-inf'), end_time=float('inf')):
+    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20):
         super(CustomSource, self).__init__()
         self.src_func = src_func
         self.start_time = start_time
