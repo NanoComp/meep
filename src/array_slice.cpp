@@ -35,28 +35,36 @@ namespace meep {
 typedef struct {
 
   // information related to the volume covered by the
-  // array slice (its size, etcetera)
+  // array slice (its size, etcetera) 
+  // these fields are filled in by get_array_slice_dimensions
+  // if the data parameter is non-null
   ivec min_corner, max_corner;
   int num_chunks;
-  cdouble *slice;
-  int slice_size;
   int rank;
   direction ds[3];
+  int slice_size;
 
   // the function to output and related info (offsets for averaging, etc.)
+  field_function fun;
+  void *fun_data_;
   std::vector<component> components;
+
+  cdouble *slice;
+
+  // temporary internal storage buffers
   component *cS;
   cdouble *ph;
   cdouble *fields;
   int *offsets;
+
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
+
   int ninvmu;
   component invmu_cs[3];
   direction invmu_ds[3];
-  field_function fun;
-  void *fun_data_;
+
 } array_slice_data;
 
 #define UNUSED(x) (void) x // silence compiler warnings
@@ -109,8 +117,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   //-----------------------------------------------------------------------//
   // Find output chunk dimensions and strides, etc.
 
-  int start[3]={0,0,0}, count[3]={1,1,1};
-  int offset[3]={0,0,0}, stride[3]={1,1,1};
+  int count[3]={1,1,1}, offset[3]={0,0,0}, stride[3]={1,1,1};
 
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
@@ -128,7 +135,6 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
-    start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }
@@ -152,7 +158,6 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   const direction *imds = data->invmu_ds;
   int imos[6];
   int num_components=data->components.size();
-  int slice_size=data->slice_size;
 
   for (int i = 0; i < num_components; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -207,20 +212,11 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 	fields[i] = complex<double>(f[0], f[1]) * ph[i];
       }
     }
-int slice_offset[3], slice_stride[3];
-for(int ii=0; ii<3; ii++)
- { slice_offset[ii]=offset[ii];
-   slice_stride[ii]=stride[ii];
- };
-master_printf("count:  {%i,%i,%i}\n",count[0],count[1],count[2]);
-master_printf("stride: {%i,%i,%i}\n",stride[0],stride[1],stride[2]);
-master_printf("offset: {%i,%i,%i}\n",offset[0],offset[1],offset[2]);
-    int idx2 = ((((slice_offset[0] + slice_offset[1] + slice_offset[2])
-                   + loop_i1 * slice_stride[0])
-                   + loop_i2 * slice_stride[1])
-                   + loop_i3 * slice_stride[2]);
-printf("{%2i,%2i,%2i} %4i\n",loop_i1,loop_i2,loop_i3,idx2);
-    //data->slice[idx2] = data->fun(fields, loc, data->fun_data_);
+    int idx2 = ((((offset[0] + offset[1] + offset[2])
+                   + loop_i1 * stride[0])
+                   + loop_i2 * stride[1])
+                   + loop_i3 * stride[2]);
+    data->slice[idx2] = data->fun(fields, loc, data->fun_data_);
   };
 
 }
@@ -237,7 +233,7 @@ printf("{%2i,%2i,%2i} %4i\n",loop_i1,loop_i2,loop_i3,idx2);
 /* initialized appopriately for subsequent use in              */
 /* get_array_slice.                                            */
 /***************************************************************/
-int fields::get_array_slice_dimensions(const volume &where, int dims[3], int directions[3], void *caller_data)
+int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *caller_data)
 {
   am_now_working_on(ArraySlice);
 
@@ -260,16 +256,19 @@ int fields::get_array_slice_dimensions(const volume &where, int dims[3], int dir
   if (data->num_chunks == 0 || !(data->min_corner <= data->max_corner))
     return 0; // no data to write;
 
-  int rank=0;
+  int rank=0, slice_size=1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in array_slice");
     int n = (data->max_corner.in_direction(d)
 	     - data->min_corner.in_direction(d)) / 2 + 1;
     if (n > 1) {
-      directions[rank] = d;   
+      data->ds[rank] = d;
       dims[rank++] = n;
+      slice_size *= n;
     }
   }
+  data->rank=rank;
+  data->slice_size=slice_size;
   finished_working();
 
   return rank;
@@ -278,7 +277,7 @@ int fields::get_array_slice_dimensions(const volume &where, int dims[3], int dir
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-cdouble *fields::get_array_slice(const volume &where,
+cdouble *fields::do_get_array_slice(const volume &where,
                                  std::vector<component> components,
                                  field_function fun, void *fun_data_,
                                  cdouble *slice) {
@@ -286,30 +285,32 @@ cdouble *fields::get_array_slice(const volume &where,
   am_now_working_on(ArraySlice);
 
   /***************************************************************/
+  /* call get_array_slice_dimensions to get slice dimensions and */
+  /* partially initialze an array_slice_data struct              */
   /***************************************************************/
-  /***************************************************************/
-  int dims[3], directions[3];
+  int dims[3];
   array_slice_data data;
-  int rank=get_array_slice_dimensions(where, dims, directions, &data);
-  if (rank==0) return 0; // no data to write
+  int rank=get_array_slice_dimensions(where, dims, &data);
+  int slice_size=data.slice_size;
+  if (rank==0 || slice_size==0) return 0; // no data to write
 
-  int num_components = components.size();
- 
-  int slice_size = dims[0];
-  for(int r=1; r<rank; r++)
-   slice_size *= dims[r];
   if (slice==0) 
    slice = new cdouble[slice_size];
-printf("slice_size=%i\n",slice_size);
-
   data.slice      = slice;
-  data.slice_size = slice_size;
+
+  data.fun        = fun ? fun : default_field_function;
+  data.fun_data_  = fun_data_;
   data.components = components;
-  data.cS = new component[num_components];
-  data.ph = new complex<double>[num_components];
-  data.fields = new complex<double>[num_components];
-  data.fun = fun ? fun : default_field_function;
-  data.fun_data_ = fun_data_;
+
+  int num_components = components.size();
+
+  data.cS      = new component[num_components];
+  data.ph      = new cdouble[num_components];
+  data.fields  = new cdouble[num_components];
+  
+  data.offsets = new int[2 * num_components];
+  for (int i = 0; i < 2 * num_components; ++i)
+    data.offsets[i] = 0;
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
   data.ninveps = 0;
@@ -336,10 +337,6 @@ printf("slice_size=%i\n",slice_size);
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;
     }
-  
-  data.offsets = new int[2 * num_components];
-  for (int i = 0; i < 2 * num_components; ++i)
-    data.offsets[i] = 0;
  
   loop_in_chunks(get_array_slice_chunkloop, (void *) &data,
 		 where, Centered, true, true);

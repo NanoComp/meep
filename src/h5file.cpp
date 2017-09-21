@@ -309,7 +309,7 @@ void h5file::read_size(const char *dataname, int *rank, int *dims, int maxrank)
 #define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
 
 realnum *h5file::read(const char *dataname,
-		     int *rank, int *dims, int maxrank)
+	 	     int *rank, int *dims, int maxrank)
 {
 #ifdef HAVE_HDF5
   realnum *data = 0;

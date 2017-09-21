@@ -1294,25 +1294,33 @@ class fields {
   // needed to store field data for that subvolume.
   // the data parameter is used internally in get_array_slice
   // and should be ignored by external callers.
-  int get_array_slice_dimensions(const volume &where, int dims[3], int directions[3], void *data=0);
+  int get_array_slice_dimensions(const volume &where, int dims[3], void *data=0);
 
   // given a subvolume, return a column-major array containing
-  // the requested components of the fields in that subvolume,
-  // after applying fun if it is non-null.
+  // the given function of the field components in that subvolume
   // if slice is non-null, it must be a user-allocated buffer
   // of the correct size.
   // otherwise, a new buffer is allocated and returned; it
   // must eventually be caller-deallocated via delete[].
-  std::complex<double> *get_array_slice(const volume &where,
-                       std::vector<component> components,
-                       field_function fun=0, void *fun_data_=0,
-                       std::complex<double> *slice=0);
+  double *get_array_slice(const volume &where,
+                          std::vector<component> components,
+                          field_function fun, void *fun_data,
+                          double *slice=0);
 
-  // for when you have no field function but you do have a
-  // caller-allocated buffer for the slice
-  std::complex<double> *get_array_slice(const volume &where,
-                       std::vector<component> components,
-                       std::complex<double> *slice);
+  cdouble *get_complex_array_slice(const volume &where,
+                                   std::vector<component> components,
+                                   field_function fun, 
+                                   void *fun_data,
+                                   cdouble *slice=0);
+
+  // alternative entry points for when you have no field 
+  // function, i.e. you want just a single component
+  // for the slice
+  double *get_array_slice(const volume &where, component c,
+                          cdouble *slice=0);
+  cdouble *get_complex_array_slice(const volume &where,
+                                   component c,
+                                   cdouble *slice=0);
 
   // step.cpp methods:
   double last_step_output_wall_time;
