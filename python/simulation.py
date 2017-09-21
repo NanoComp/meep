@@ -44,7 +44,7 @@ def py_v3_to_vec(dims, v3):
         raise ValueError("Invalid dimensions in Volume: {}".format(dims))
 
 
-class Pml(object):
+class PML(object):
 
     def __init__(self, thickness,
                  direction=-1,
@@ -73,7 +73,7 @@ class Pml(object):
 
     @r_asymptotic.setter
     def r_asymptotic(self, val):
-        self._r_asymptotic = check_positive('Pml.r_asymptotic', val)
+        self._r_asymptotic = check_positive('PML.r_asymptotic', val)
 
     @property
     def mean_stretch(self):
@@ -84,10 +84,10 @@ class Pml(object):
         if val >= 1:
             self._mean_stretch = val
         else:
-            raise ValueError("Pml.mean_stretch must be >= 1. Got {}".format(val))
+            raise ValueError("PML.mean_stretch must be >= 1. Got {}".format(val))
 
 
-class Absorber(Pml):
+class Absorber(PML):
     pass
 
 
@@ -647,7 +647,7 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
             continue
 
         boundary_region_args = [
-            mp.boundary_region.PML,
+            mp.boundary_region.pml,
             layer.thickness,
             layer.r_asymptotic,
             layer.mean_stretch,

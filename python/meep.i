@@ -342,7 +342,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Harminv,
         Identity,
         Mirror,
-        Pml,
+        PML,
         Rotate2,
         Rotate4,
         Simulation,
