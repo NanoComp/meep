@@ -85,7 +85,7 @@ class TestBendFlux(unittest.TestCase):
 
         ]
 
-        res = zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl))
+        res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
         np.testing.assert_allclose(expected, res[:20])
 
@@ -123,7 +123,7 @@ class TestBendFlux(unittest.TestCase):
 
         ]
 
-        res = zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl))
+        res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
 
         np.testing.assert_allclose(expected, res[:20])
 
