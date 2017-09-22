@@ -647,7 +647,7 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
             continue
 
         boundary_region_args = [
-            mp.boundary_region.pml,
+            mp.boundary_region.PML,
             layer.thickness,
             layer.r_asymptotic,
             layer.mean_stretch,

@@ -22,6 +22,29 @@ class TestEigenModeSource(unittest.TestCase):
         self.assertEqual(custom_lattice.eig_lattice_center, elc)
 
 
+class TestSourceTime(unittest.TestCase):
+
+    def test_source_wavelength(self):
+        g_src = GaussianSource(wavelength=10)
+        c_src = ContinuousSource(wavelength=10)
+
+        self.assertAlmostEqual(1. / 10., g_src.frequency)
+        self.assertAlmostEqual(1. / 10., c_src.frequency)
+
+    def test_source_frequency(self):
+        g_src = GaussianSource(10)
+        c_src = ContinuousSource(10)
+
+        self.assertEqual(10, g_src.frequency)
+        self.assertEqual(10, c_src.frequency)
+
+        with self.assertRaises(ValueError):
+            GaussianSource()
+
+        with self.assertRaises(ValueError):
+            ContinuousSource()
+
+
 class TestSourceTypemaps(unittest.TestCase):
 
     expected_msg = "Expected a meep.source.SourceTime or a meep.src_time\n"

@@ -30,26 +30,34 @@ class SourceTime(object):
 
 class ContinuousSource(SourceTime):
 
-    def __init__(self, frequency, start_time=0, end_time=1.0e20, width=0, cutoff=3.0):
+    def __init__(self, frequency=None, start_time=0, end_time=1.0e20, width=0, cutoff=3.0, wavelength=None):
+        if frequency is None and wavelength is None:
+            raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
+
         super(ContinuousSource, self).__init__()
-        self.frequency = float(frequency)
+        self.frequency = 1 / wavelength if wavelength else frequency
         self.start_time = start_time
         self.end_time = end_time
         self.width = width
         self.cutoff = cutoff
-        self.swigobj = mp.continuous_src_time(frequency, width, start_time, end_time, cutoff)
+        self.swigobj = mp.continuous_src_time(self.frequency, self.width, self.start_time,
+                                              self.end_time, self.cutoff)
         self.swigobj.is_integrated = self.is_integrated
 
 
 class GaussianSource(SourceTime):
 
-    def __init__(self, frequency, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0):
+    def __init__(self, frequency=None, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0, wavelength=None):
+        if frequency is None and wavelength is None:
+            raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
+
         super(GaussianSource, self).__init__()
-        self.frequency = float(frequency)
+        self.frequency = 1 / wavelength if wavelength else frequency
         self.width = max(width, 1 / fwidth)
         self.start_time = start_time
         self.cutoff = cutoff
-        self.swigobj = mp.gaussian_src_time(frequency, self.width, start_time, start_time + 2 * self.width * cutoff)
+        self.swigobj = mp.gaussian_src_time(self.frequency, self.width, self.start_time,
+                                            self.start_time + 2 * self.width * self.cutoff)
         self.swigobj.is_integrated = self.is_integrated
 
 
