@@ -20,18 +20,18 @@ class Vector3(object):
         return self.x == other.x and self.y == other.y and self.z == other.z
 
     def __add__(self, other):
-        self.x += other.x
-        self.y += other.y
-        self.z += other.z
+        x = self.x + other.x
+        y = self.y + other.y
+        z = self.z + other.z
 
-        return self
+        return Vector3(x, y, z)
 
     def __sub__(self, other):
-        self.x -= other.x
-        self.y -= other.y
-        self.z -= other.z
+        x = self.x - other.x
+        y = self.y - other.y
+        z = self.z - other.z
 
-        return self
+        return Vector3(x, y, z)
 
     def __getitem__(self, i):
         if i == 0:
@@ -47,11 +47,11 @@ class Vector3(object):
         return "<{}, {}, {}>".format(self.x, self.y, self.z)
 
     def scale(self, s):
-        self.x *= s
-        self.y *= s
-        self.z *= s
+        x = self.x * s
+        y = self.y * s
+        z = self.z * s
 
-        return self
+        return Vector3(x, y, z)
 
 
 class Medium(object):
