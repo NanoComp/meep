@@ -62,7 +62,11 @@ symmetry make_rotate4z(const grid_volume &gv)
 
 typedef symmetry (*symfunc)(const grid_volume &);
 
+/***************************************************************/
+/* compare two real-valued numbers *****************************/
+/***************************************************************/
 const double tol = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-8;
+
 double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
   if (fabs(a-b) > tol*tol + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a-b));
@@ -72,6 +76,9 @@ double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
   return fabs(a-b);
 }
 
+/***************************************************************/
+/* compare two complex-valued numbers **************************/
+/***************************************************************/
 double compare(cdouble a, cdouble b, const char *nam, int i0,int i1,int i2) {
   if (abs(a-b) > tol*tol + abs(b) * tol || b != b) {
     master_printf("{%g,%g} vs. {%g,%g} differs by\t%g\n", real(a), imag(a), real(b), imag(b), abs(a-b));
@@ -81,16 +88,21 @@ double compare(cdouble a, cdouble b, const char *nam, int i0,int i1,int i2) {
   return abs(a-b);
 }
 
-bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
-	      double kx, double ky,
-	      component src_c, int file_c,
-	      volume where,
-	      bool real_fields, int expected_rank,
-	      const char *filename, 
-	      const char *h5file_path) {
+double get_reim(complex<double> x, int reim)
+{
+  return reim ? imag(x) : real(x);
+}
 
+/***************************************************************/
+/* modeled after check_2d in h5test.cpp  ***********************/
+/***************************************************************/
+bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
+	      double kx, double ky, component src_c, int eval_c,
+	      volume where, bool real_fields, int expected_rank,
+	      const char *casename) {
   
   (void) expected_rank;
+
   /***************************************************************/
   /* initialize structure, fields, sources and run calculation   */
   /***************************************************************/
@@ -104,106 +116,96 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   if (real_fields) f.use_real_fields();
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, gv.center(), 1.0, 1);
 
-  if (file_c >= int(Dielectric)) real_fields = true;
+  if (eval_c >= int(Dielectric)) real_fields = true;
 
   while (f.time() <= 3.0 && !interrupt)
     f.step();
 
-  bool has_imag = !(f.is_real) && file_c != Dielectric && file_c != Permeability;
+  bool has_imag = !(f.is_real) && eval_c != Dielectric && eval_c != Permeability;
 
   /***************************************************************/
   /* fetch array slice using get_array_slice *********************/
   /***************************************************************/
   int dims[3];
   int rank=f.get_array_slice_dimensions(where, dims);
+  if (rank!=2)
+   abort("case %s: rank=%i (should be %i)",casename,rank,2);
   double *slice; 
   cdouble *zslice;
-  component c=component(file_c);
+  component c=component(eval_c);
   if (has_imag)
    zslice=f.get_complex_array_slice(where, c);
   else
    slice=f.get_array_slice(where, c);
 
   /***************************************************************/
-  /* now read in the same slice from the hdf5 file and compare   */
+  /* test each element of the array slice against the            */
+  /* corresponding element in the fields array                   */
   /***************************************************************/
-  char file_path[256];
-  if(h5file_path)
-   snprintf(file_path,256,"%s/%s.h5",h5file_path,filename);
-  else
-   snprintf(file_path,256,"%s.h5",filename);
-  h5file *datafile = f.open_h5file(file_path);
-  if (datafile==0)
-   abort("could not open file %s",file_path);
-  int file_dims[2];
-  int file_rank;
-  double *file_slice=0; 
-  cdouble *file_zslice=0;
+
+  // compute corner coordinate of slice
+  vec loc0(where.get_min_corner());
+  ivec iloc0(gv.dim);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    iloc0.set_direction(d, 1+2*int(floor(loc0.in_direction(d)*a-.5)));
+    if (where.in_direction(d) == 0.0 &&
+	1. - where.in_direction_min(d)*a + 0.5*iloc0.in_direction(d)
+	<= 1. + where.in_direction_max(d)*a - 0.5*(iloc0.in_direction(d)+2))
+      iloc0.set_direction(d, iloc0.in_direction(d) + 2); // snap to grid
+  }
+  loc0 = gv[iloc0];
+
+  double data_min = meep::infinity, data_max = -meep::infinity;
+  double err_max = 0;
+  for (int reim = 0; reim < (real_fields ? 1 : 2); ++reim) {
+    vec loc(loc0.dim);
+    for (int i0 = 0; i0 < dims[0]; ++i0) {
+      for (int i1 = 0; i1 < dims[1]; ++i1) {
+	loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
+	loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
+	int idx = i0 * dims[1] + i1;
+
+	/* Ugh, for rotational symmetries (which mix up components etc.),
+	   we can't guarantee that a component is *exactly* the
+	   same as its rotated version, and we don't know which one
+	   was written to the file (HR 20170921 file->slice). */
+	int cs = eval_c;
+	complex<double> ph = 1.0;
+	double correct_value=get_reim(f.get_field(eval_c,loc),reim);
+	double   slice_value=has_imag ? get_reim(zslice[idx],reim)
+                                      : slice[idx];
+	double diff = fabs(correct_value-slice_value);
+	for (int sn = 1; sn < f.S.multiplicity(); ++sn) {
+	  vec loc2(f.S.transform(loc, sn));
+	  int cs2 = f.S.transform(eval_c, sn);
+	  complex<double> ph2 = f.S.phase_shift(cs2, -sn);
+	  double correct_value2=get_reim(f.get_field(cs2,loc2)*ph2,reim);
+	  double diff2 = fabs(correct_value2-slice_value);
+
+	  if (diff2 < diff) {
+	    loc = loc2;
+	    cs = cs2;
+	    ph = ph2;
+	    diff = diff2;
+	  }
+	};
+
+	double err = compare(slice_value,
+			     get_reim(f.get_field(cs, loc) * ph, reim),
+			     casename,i0,i1,0);
+	err_max = max(err, err_max);
+	data_min = min(data_min, slice_value);
+	data_max = max(data_max, slice_value);
+      }
+    }
+  };
 
   if (has_imag)
-   { char dataname[256];
-
-     snprintf(dataname, 256, "%s.r", component_name(c));
-     double *rslice = datafile->read(dataname, &file_rank, file_dims, 2);
-     snprintf(dataname, 256, "%s.i", component_name(c));
-     double *islice = datafile->read(dataname, &file_rank, file_dims, 2);
-
-     int slice_size = file_dims[0]*file_dims[1];
-     file_zslice = new cdouble[slice_size];
-     for(int n=0; n<slice_size; n++)
-      file_zslice[n] = cdouble(rslice[n], islice[n]);
-
-     delete[] rslice;
-     delete[] islice;
-   }
+   delete zslice;
   else
-   { char dataname[256];
-     snprintf(dataname, 256, "%s", component_name(c));
-printf("Reading data
-     file_slice = datafile->read(dataname, &file_rank, dims, 2);
-   };
+   delete slice;
 
-  /***************************************************************/
-  /* test array dimensions match *********************************/
-  /***************************************************************/
-  if (rank!=file_rank)
-   abort("rank=%i (should be %i)",rank,file_rank);
-  if (     (dims[0]!=file_dims[0]) 
-        || (dims[1]!=file_dims[1])
-     )
-   abort("dims={%i,%i}, should be {%i,%i}",dims[0],dims[1],file_dims[0],file_dims[1]);
-
-  /***************************************************************/
-  /* test array contents match ***********************************/
-  /***************************************************************/
-  double err_max=0.0, data_min=meep::infinity, data_max=-1.0*meep::infinity;
-  for(int nx=0, nn=0; nx<dims[0]; nx++)
-   for(int ny=0; ny<dims[0]; ny++, nn++)
-    { double val, err;
-      if (has_imag)
-       { val = abs(zslice[nn]);
-         err = compare(zslice[nn], file_zslice[nn], component_name(c), nx, ny, 0);
-       }
-      else
-       { val = fabs(slice[nn]);
-         err = compare(slice[nn], file_slice[nn], component_name(c), nx, ny, 0);
-       } 
-      err_max  = fmax(err, err_max);
-      data_max = fmax(val, data_max);
-      data_min = fmin(val, data_min);
-    };
-
-  if (has_imag)
-   { delete zslice;
-     delete file_zslice;
-   }
-  else
-   { delete slice;
-     delete file_slice;
-   };
-  delete datafile;
-
-  master_printf("Passed %s (%g..%g), err=%g\n", component_name(c),
+  master_printf("Passed case %s, cmpt %s (%g..%g), err=%g\n", casename, component_name(c),
 		data_min, data_max,
 		err_max / max(fabs(data_min), fabs(data_max)));
 
@@ -212,7 +214,7 @@ printf("Reading data
 
 #if 0
 bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
-	      component src_c, int file_c,
+	      component src_c, int eval_c,
 	      volume file_gv,
 	      bool real_fields, int expected_rank,
 	      const char *name) {
@@ -223,16 +225,16 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
   if (real_fields) f.use_real_fields();
   f.add_point_source(src_c, 0.3, 2.0, 0.0, 1.0, gv.center(), 1.0, 1);
 
-  if (file_c >= Dielectric) real_fields = true;
+  if (eval_c >= Dielectric) real_fields = true;
 
   while (f.time() <= 3.0 && !interrupt)
     f.step();
 
   h5file *file = f.open_h5file(name);
-  if (is_derived(file_c))
-    f.output_hdf5(derived_component(file_c), file_gv, file);
+  if (is_derived(eval_c))
+    f.output_hdf5(derived_component(eval_c), file_gv, file);
   else
-    f.output_hdf5(component(file_c), file_gv, file);
+    f.output_hdf5(component(eval_c), file_gv, file);
 
   file->write("stringtest", "Hello, world!\n");
 
@@ -263,7 +265,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     int rank, dims[3] = {1, 1, 1};
 
     char dataname[256];
-    snprintf(dataname, 256, "%s%s", component_name(file_c),
+    snprintf(dataname, 256, "%s%s", component_name(eval_c),
 	     reim ? ".i" : (real_fields ? "" : ".r"));
 
     realnum *h5data = file->read(dataname, &rank, dims, 3);
@@ -286,13 +288,13 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	     we can't guarantee that a component is *exactly* the
 	     same as its rotated version, and we don't know which one
 	     was written to the file. */
-	  int cs = file_c;
+	  int cs = eval_c;
 	  complex<double> ph = 1.0;
-	  double diff = fabs(get_reim(f.get_field(file_c, loc), reim) -
+	  double diff = fabs(get_reim(f.get_field(eval_c, loc), reim) -
 			     h5data[idx]);
 	  for (int sn = 1; sn < f.S.multiplicity(); ++sn) {
 	    vec loc2(f.S.transform(loc, sn));
-	    int cs2 = f.S.transform(file_c, sn);
+	    int cs2 = f.S.transform(eval_c, sn);
 	    complex<double> ph2 = f.S.phase_shift(cs2, -sn);
 	    double diff2 = fabs(get_reim(f.get_field(cs2, loc2)*ph2, reim) -
 				h5data[idx]);
@@ -338,28 +340,21 @@ int main(int argc, char **argv)
   /* allow user to say e.g. --single2dtest 0 1 0 1 1             */
   /* to run just a single one of the 2D tests below              */
   /***************************************************************/
-  char *h5file_path=0;
   int which2dtest[5];
   bool single2dtest=false;
   for(int narg=1; narg<argc; narg++)
-   { if ( !strcmp(argv[narg],"--h5file_path") )
-       { if (argc<narg+1) abort("invalid command-line syntax");
-         h5file_path=argv[narg+1];
-         printf("looking for h5files in directory %s\n",h5file_path);
-       }
-     else if ( !strcmp(argv[narg],"--single2dtest") )
-      { single2dtest=true;
-        if (argc<narg+6) abort("invalid command-line syntax");
-        sscanf(argv[narg+1],"%i",which2dtest+0);
-        sscanf(argv[narg+2],"%i",which2dtest+1);
-        sscanf(argv[narg+3],"%i",which2dtest+2);
-        sscanf(argv[narg+4],"%i",which2dtest+3);
-        sscanf(argv[narg+5],"%i",which2dtest+4);
-        printf("Running single 2d test (%i,%i,%i,%i,%i)\n",
-                which2dtest[0], which2dtest[1], which2dtest[2],
-                which2dtest[3], which2dtest[4]);
-      };
-   };
+   if ( !strcmp(argv[narg],"--single2dtest") )
+    { single2dtest=true;
+      if (argc<narg+6) abort("invalid command-line syntax");
+      sscanf(argv[narg+1],"%i",which2dtest+0);
+      sscanf(argv[narg+2],"%i",which2dtest+1);
+      sscanf(argv[narg+3],"%i",which2dtest+2);
+      sscanf(argv[narg+4],"%i",which2dtest+3);
+      sscanf(argv[narg+5],"%i",which2dtest+4);
+      printf("Running single 2d test (%i,%i,%i,%i,%i)\n",
+              which2dtest[0], which2dtest[1], which2dtest[2],
+              which2dtest[3], which2dtest[4]);
+    };
 
   /***************************************************************/
   /***************************************************************/
@@ -385,9 +380,13 @@ int main(int argc, char **argv)
   double Sf2_kx[5] = {0.3, 0, 0.3, 0, 0};
   double Sf2_ky[5] = {0.2, 0.2, 0, 0, 0};
 
-  /* this test takes too long, so only do 1/chances of the cases,
-     "randomly" selected */
-  srand(314159); /* deterministic "rand" */
+  /* 
+     if the user didn't specify --single2dtest, then... 
+     this test takes too long, so only do 1/chances of the cases,
+     randomly selected 
+  */
+  //srand(314159); /* deterministic "rand" */
+  srand(time(0)); // HR 20170921 make it more interesting
   chances = argc > 1 ? atoi(argv[1]) : 5;
 
   for (int iS = 0; iS < 5; ++iS)
@@ -409,16 +408,15 @@ int main(int argc, char **argv)
 
 	     if (skip) continue;
 
-	     char name[1024];
-	     snprintf(name, 1024, "check_2d_tm_%s_%d_%s_%s%s",
+	     char casename[1024];
+	     snprintf(casename, 1024, "check_2d_tm_%s_%d_%s_%s%s",
 		      Sf2_name[iS], splitting, gv_2d_name[igv],
 		      component_name(tm_c[ic]), use_real ? "_r" : "");
-	     master_printf("Checking %s...\n", name);
+	     master_printf("Checking case %s...\n", casename);
 	     if (!check_2d(funky_eps_2d, a, splitting,
 			   Sf2[iS], Sf2_kx[iS], Sf2_ky[iS],
 			   Ez, tm_c[ic], gv_2d[igv],
-			   use_real, gv_2d_rank[igv], 
-                           name, h5file_path))
+			   use_real, gv_2d_rank[igv], casename))
 		return 1;
 	   };
 #if 0
