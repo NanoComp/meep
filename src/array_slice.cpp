@@ -226,9 +226,16 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                    + loop_i2 * stride[1])
                    + loop_i3 * stride[2]);
     if (has_imag)
+{
      zslice[idx2] = data->fun(fields, loc, data->fun_data);
+printf("%i={%e,%e}\n",idx2,real(zslice[idx2]),imag(zslice[idx2]));
+}
     else
+{
      slice[idx2]  = real(data->fun(fields, loc, data->fun_data));
+printf("%i=%e (%e,%e)\n",idx2,slice[idx2],loc.x(),loc.y());
+}
+
   };
 
 }
@@ -307,15 +314,18 @@ void *fields::do_get_array_slice(const volume &where,
   int slice_size=data.slice_size;
   if (rank==0 || slice_size==0) return 0; // no data to write
 
+  cdouble *zslice;
+  double *slice;
   if (vslice==0)
-   if (has_imag)
-    { cdouble *zslice = new cdouble[slice_size];
-      vslice = (void *)zslice;
-    } 
-   else
-    { double *slice  = new double[slice_size];
-      vslice = (void *)slice;
-    };
+   { if (has_imag)
+      { zslice = new cdouble[slice_size];
+        vslice = (void *)zslice;
+      } 
+     else
+      { slice  = new double[slice_size];
+        vslice = (void *)slice;
+      };
+   };
    
   data.vslice     = vslice;
   data.has_imag   = has_imag;
@@ -366,6 +376,14 @@ void *fields::do_get_array_slice(const volume &where,
   /* repeatedly call sum_to_all to consolidate full array slice  */
   /* on all cores                                                */
   /***************************************************************/
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+#if 0
+printf("Before: \n");
+for(int nx=0, nn=0; nx<dims[0]; nx++)
+ for(int ny=0; ny<dims[1]; ny++, nn++)
+  printf("{%i,%i}: %e \n",nx,ny,slice[nx*dims[0] + ny]);
+#endif
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 #define BUFSIZE 1<<16 // use 64k buffer
   if (has_imag)
    { cdouble buffer[BUFSIZE];
@@ -392,6 +410,14 @@ void *fields::do_get_array_slice(const volume &where,
         offset+=size;
       };
    };
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+#if 0
+printf("After: \n");
+for(int nx=0, nn=0; nx<dims[0]; nx++)
+ for(int ny=0; ny<dims[1]; ny++, nn++)
+  printf("{%i,%i}: %e \n",nx,ny,slice[nx*dims[0]+ ny]);
+#endif
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
   delete[] data.offsets;
   delete[] data.fields;

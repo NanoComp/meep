@@ -121,7 +121,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   while (f.time() <= 3.0 && !interrupt)
     f.step();
 
-  bool has_imag = !(f.is_real) && eval_c != Dielectric && eval_c != Permeability;
+  bool has_imag = !(f.is_real) && (eval_c != Dielectric) && (eval_c != Permeability);
+printf("has_imag=%s\n",has_imag ? "true" : "false");
 
   /***************************************************************/
   /* fetch array slice using get_array_slice *********************/
@@ -372,7 +373,8 @@ int main(int argc, char **argv)
   };
   char gv_2d_name[4][20] = {"plane", "plane-supercell", "line", "point"};
   int gv_2d_rank[4] = {2,2,1,0};
-  int tm_c[5] = {Dielectric, Ez, Hy, Sx, D_EnergyDensity};
+  //int tm_c[5] = {Dielectric, Ez, Hy, Sx, D_EnergyDensity};
+  int tm_c[5] = {Ez, Dielectric, Hy, Sx, D_EnergyDensity};
   symfunc Sf2[5] = {make_identity, make_mirrorx, make_mirrory, make_mirrorxy,
 		   make_rotate4z};
   char Sf2_name[5][32] = {"identity", "mirrorx", "mirrory", "mirrorxy",
@@ -388,7 +390,6 @@ int main(int argc, char **argv)
   //srand(314159); /* deterministic "rand" */
   srand(time(0)); // HR 20170921 make it more interesting
   chances = argc > 1 ? atoi(argv[1]) : 5;
-
   for (int iS = 0; iS < 5; ++iS)
     for (int splitting = 0; splitting < 5; ++splitting)
       for (int igv = 0; igv < 4; ++igv)
@@ -416,8 +417,8 @@ int main(int argc, char **argv)
 	     if (!check_2d(funky_eps_2d, a, splitting,
 			   Sf2[iS], Sf2_kx[iS], Sf2_ky[iS],
 			   Ez, tm_c[ic], gv_2d[igv],
-			   use_real, gv_2d_rank[igv], casename))
-		return 1;
+			   use_real, gv_2d_rank[igv], casename)
+                ) return 1;
 	   };
 #if 0
   for (int iS = 0; iS < 3; ++iS)
