@@ -46,10 +46,11 @@ typedef struct {
 
   // the function to output and related info (offsets for averaging, etc.)
   field_function fun;
-  void *fun_data_;
+  void *fun_data;
   std::vector<component> components;
 
-  cdouble *slice;
+  void *vslice;
+  bool has_imag;
 
   // temporary internal storage buffers
   component *cS;
@@ -158,6 +159,14 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   const direction *imds = data->invmu_ds;
   int imos[6];
   int num_components=data->components.size();
+  
+  double *slice;
+  cdouble *zslice;
+  bool has_imag = data->has_imag;
+  if (has_imag)
+   zslice = (cdouble *)data->vslice;
+  else
+   slice = (double *)data->vslice;
 
   for (int i = 0; i < num_components; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -216,7 +225,10 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                    + loop_i1 * stride[0])
                    + loop_i2 * stride[1])
                    + loop_i3 * stride[2]);
-    data->slice[idx2] = data->fun(fields, loc, data->fun_data_);
+    if (has_imag)
+     zslice[idx2] = data->fun(fields, loc, data->fun_data);
+    else
+     slice[idx2]  = real(data->fun(fields, loc, data->fun_data));
   };
 
 }
@@ -277,10 +289,11 @@ int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *c
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-cdouble *fields::do_get_array_slice(const volume &where,
+void *fields::do_get_array_slice(const volume &where,
                                  std::vector<component> components,
-                                 field_function fun, void *fun_data_,
-                                 cdouble *slice) {
+                                 field_function fun, void *fun_data,
+                                 bool has_imag,
+                                 void *vslice) {
 
   am_now_working_on(ArraySlice);
 
@@ -294,12 +307,20 @@ cdouble *fields::do_get_array_slice(const volume &where,
   int slice_size=data.slice_size;
   if (rank==0 || slice_size==0) return 0; // no data to write
 
-  if (slice==0) 
-   slice = new cdouble[slice_size];
-  data.slice      = slice;
-
+  if (vslice==0)
+   if (has_imag)
+    { cdouble *zslice = new cdouble[slice_size];
+      vslice = (void *)zslice;
+    } 
+   else
+    { double *slice  = new double[slice_size];
+      vslice = (void *)slice;
+    };
+   
+  data.vslice     = vslice;
+  data.has_imag   = has_imag;
   data.fun        = fun ? fun : default_field_function;
-  data.fun_data_  = fun_data_;
+  data.fun_data   = fun_data;
   data.components = components;
 
   int num_components = components.size();
@@ -341,21 +362,83 @@ cdouble *fields::do_get_array_slice(const volume &where,
   loop_in_chunks(get_array_slice_chunkloop, (void *) &data,
 		 where, Centered, true, true);
 
+  /***************************************************************/
+  /* repeatedly call sum_to_all to consolidate full array slice  */
+  /* on all cores                                                */
+  /***************************************************************/
+#define BUFSIZE 1<<16 // use 64k buffer
+  if (has_imag)
+   { cdouble buffer[BUFSIZE];
+     cdouble *slice = (cdouble *)vslice;
+     int offset=0, remaining=slice_size;
+     while(remaining!=0)
+      { 
+        int size = (remaining > BUFSIZE ? BUFSIZE : remaining);
+        sum_to_all(slice + offset, buffer, size);
+        memcpy(slice+offset, buffer, size*sizeof(cdouble));
+        remaining-=size;
+        offset+=size;
+      };
+   }
+  else
+   { double buffer[BUFSIZE];
+     double *slice = (double *)vslice;
+     int offset=0, remaining=slice_size;
+     while(remaining!=0)
+      { int size = (remaining > BUFSIZE ? BUFSIZE : remaining);
+        sum_to_all(slice + offset, buffer, size);
+        memcpy(slice+offset, buffer, size*sizeof(double));
+        remaining-=size;
+        offset+=size;
+      };
+   };
+
   delete[] data.offsets;
   delete[] data.fields;
   delete[] data.ph;
   delete[] data.cS;
   finished_working();
 
-  return slice;
+  return vslice;
 }
 
 /***************************************************************/
-/* alternative entry points to get_array_slice                 */
+/* entry points to get_array_slice                             */
 /***************************************************************/
-cdouble *fields::get_array_slice(const volume &where,
-                                 std::vector<component> components,
-                                 cdouble *slice)
-{ return get_array_slice(where, components, 0, 0, slice); }
+double *fields::get_array_slice(const volume &where,
+                                std::vector<component> components,
+                                field_function fun, void *fun_data,
+                                double *slice)
+{
+  return (double *)do_get_array_slice(where, components,
+                                      fun, fun_data, false,
+                                      (void *)slice);
+} 
+
+cdouble *fields::get_complex_array_slice(const volume &where,
+                                         std::vector<component> components,
+                                         field_function fun, void *fun_data,
+                                         cdouble *slice)
+{
+  return (cdouble *)do_get_array_slice(where, components,
+                                       fun, fun_data, true,
+                                       (void *)slice);
+}
+
+double *fields::get_array_slice(const volume &where, component c,
+                                double *slice)
+{
+  std::vector<component> components(c);
+  return (double *)do_get_array_slice(where, components, 
+                                      0, 0, false, (void *)slice);
+}
+
+cdouble *fields::get_complex_array_slice(const volume &where, component c,
+                                         cdouble *slice)
+{
+  std::vector<component> components(c);
+  return (cdouble *)do_get_array_slice(where, components,
+                                       0, 0, true, (void *)slice);
+}
 
 } // namespace meep

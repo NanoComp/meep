@@ -1307,20 +1307,26 @@ class fields {
                           field_function fun, void *fun_data,
                           double *slice=0);
 
-  cdouble *get_complex_array_slice(const volume &where,
+  std::complex<double> *get_complex_array_slice(const volume &where,
                                    std::vector<component> components,
                                    field_function fun, 
                                    void *fun_data,
-                                   cdouble *slice=0);
+                                   std::complex<double> *slice=0);
 
   // alternative entry points for when you have no field 
   // function, i.e. you want just a single component
   // for the slice
   double *get_array_slice(const volume &where, component c,
-                          cdouble *slice=0);
-  cdouble *get_complex_array_slice(const volume &where,
-                                   component c,
-                                   cdouble *slice=0);
+                          double *slice=0);
+  std::complex<double> *get_complex_array_slice(const volume &where,
+                                                component c,
+                                                std::complex<double> *slice=0);
+ 
+  // master routine for all above entry points
+  void *do_get_array_slice(const volume &where,
+                           std::vector<component> components,
+                           field_function fun, void *fun_data_,
+                           bool has_imag, void *vslice);
 
   // step.cpp methods:
   double last_step_output_wall_time;

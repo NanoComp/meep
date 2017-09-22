@@ -72,6 +72,15 @@ double compare(double a, double b, const char *nam, int i0,int i1,int i2) {
   return fabs(a-b);
 }
 
+double compare(cdouble a, cdouble b, const char *nam, int i0,int i1,int i2) {
+  if (abs(a-b) > tol*tol + abs(b) * tol || b != b) {
+    master_printf("{%g,%g} vs. {%g,%g} differs by\t%g\n", real(a), imag(a), real(b), imag(b), abs(a-b));
+    master_printf("This gives a fractional error of %g\n", abs(a-b)/abs(b));
+    abort("Error in %s at (%d,%d,%d)\n", nam, i0,i1,i2);
+  }
+  return abs(a-b);
+}
+
 bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      double kx, double ky,
 	      component src_c, int file_c,
@@ -81,6 +90,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	      const char *h5file_path) {
 
   
+  (void) expected_rank;
   /***************************************************************/
   /* initialize structure, fields, sources and run calculation   */
   /***************************************************************/
@@ -105,35 +115,38 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   /* fetch array slice using get_array_slice *********************/
   /***************************************************************/
   int dims[3];
-  int rank=get_array_slice_dimensions(where, dims);
-  double *slice, *zslice;
+  int rank=f.get_array_slice_dimensions(where, dims);
+  double *slice; 
+  cdouble *zslice;
+  component c=component(file_c);
   if (has_imag)
-   zslice=get_complex_array_slice(where, file_c);
+   zslice=f.get_complex_array_slice(where, c);
   else
-   slice=get_array_slice(where, file_c);
+   slice=f.get_array_slice(where, c);
 
   /***************************************************************/
   /* now read in the same slice from the hdf5 file and compare   */
   /***************************************************************/
   char file_path[256];
   if(h5file_path)
-   snprintf(file_path,256,"%s/%s",h5file_path,filename);
+   snprintf(file_path,256,"%s/%s.h5",h5file_path,filename);
   else
-   snprintf(file_path,256,"%s",filename);
+   snprintf(file_path,256,"%s.h5",filename);
   h5file *datafile = f.open_h5file(file_path);
   if (datafile==0)
    abort("could not open file %s",file_path);
   int file_dims[2];
   int file_rank;
-  double *file_slice=0, cdouble *file_zslice=0;
+  double *file_slice=0; 
+  cdouble *file_zslice=0;
 
   if (has_imag)
    { char dataname[256];
 
      snprintf(dataname, 256, "%s.r", component_name(c));
-     double *rslice = file->read(dataname, &file_rank, file_dims, 2);
+     double *rslice = datafile->read(dataname, &file_rank, file_dims, 2);
      snprintf(dataname, 256, "%s.i", component_name(c));
-     double *islice = file->read(dataname, &file_rank, file_dims, 2);
+     double *islice = datafile->read(dataname, &file_rank, file_dims, 2);
 
      int slice_size = file_dims[0]*file_dims[1];
      file_zslice = new cdouble[slice_size];
@@ -146,7 +159,8 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   else
    { char dataname[256];
      snprintf(dataname, 256, "%s", component_name(c));
-     file_slice = file->read(dataname, &file_rank, dims, 2);
+printf("Reading data
+     file_slice = datafile->read(dataname, &file_rank, dims, 2);
    };
 
   /***************************************************************/
@@ -154,7 +168,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   /***************************************************************/
   if (rank!=file_rank)
    abort("rank=%i (should be %i)",rank,file_rank);
-  if (     (dims[0]!=file_dims[0]) || 
+  if (     (dims[0]!=file_dims[0]) 
         || (dims[1]!=file_dims[1])
      )
    abort("dims={%i,%i}, should be {%i,%i}",dims[0],dims[1],file_dims[0],file_dims[1]);
@@ -162,17 +176,17 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
   /***************************************************************/
   /* test array contents match ***********************************/
   /***************************************************************/
-  double err_max=0.0, data_min=meep::infinity, data_max=-meep_infinity;
+  double err_max=0.0, data_min=meep::infinity, data_max=-1.0*meep::infinity;
   for(int nx=0, nn=0; nx<dims[0]; nx++)
-   for(int ny=0, nn=0; ny<dims[0]; ny++, nn++)
+   for(int ny=0; ny<dims[0]; ny++, nn++)
     { double val, err;
       if (has_imag)
        { val = abs(zslice[nn]);
-         err = compare(zslice[nn], file_zslice[nn], name, nx, ny, 0);
+         err = compare(zslice[nn], file_zslice[nn], component_name(c), nx, ny, 0);
        }
       else
        { val = fabs(slice[nn]);
-         err = compare(slice[nn], file_slice[nn], name, nx, ny, 0);
+         err = compare(slice[nn], file_slice[nn], component_name(c), nx, ny, 0);
        } 
       err_max  = fmax(err, err_max);
       data_max = fmax(val, data_max);
@@ -187,9 +201,9 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
    { delete slice;
      delete file_slice;
    };
-  delete file;
+  delete datafile;
 
-  master_printf("Passed %s (%g..%g), err=%g\n", name,
+  master_printf("Passed %s (%g..%g), err=%g\n", component_name(c),
 		data_min, data_max,
 		err_max / max(fabs(data_min), fabs(data_max)));
 
@@ -331,16 +345,16 @@ int main(int argc, char **argv)
    { if ( !strcmp(argv[narg],"--h5file_path") )
        { if (argc<narg+1) abort("invalid command-line syntax");
          h5file_path=argv[narg+1];
-         printf("looking for h5files in directory %s",h5file_path);
+         printf("looking for h5files in directory %s\n",h5file_path);
        }
      else if ( !strcmp(argv[narg],"--single2dtest") )
       { single2dtest=true;
         if (argc<narg+6) abort("invalid command-line syntax");
-        sscanf(which2dtest+0,"%i",argv[narg+1]);
-        sscanf(which2dtest+1,"%i",argv[narg+2]);
-        sscanf(which2dtest+2,"%i",argv[narg+3]);
-        sscanf(which2dtest+3,"%i",argv[narg+4]);
-        sscanf(which2dtest+4,"%i",argv[narg+5]);
+        sscanf(argv[narg+1],"%i",which2dtest+0);
+        sscanf(argv[narg+2],"%i",which2dtest+1);
+        sscanf(argv[narg+3],"%i",which2dtest+2);
+        sscanf(argv[narg+4],"%i",which2dtest+3);
+        sscanf(argv[narg+5],"%i",which2dtest+4);
         printf("Running single 2d test (%i,%i,%i,%i,%i)\n",
                 which2dtest[0], which2dtest[1], which2dtest[2],
                 which2dtest[3], which2dtest[4]);
