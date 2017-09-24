@@ -19,7 +19,7 @@ class Test3rdHarm1d(unittest.TestCase):
 
         default_material = mp.Medium(index=1, chi3=self.k)
 
-        pml_layers = mp.PML(self.dpml)
+        pml_layers = mp.pml(self.dpml)
 
         sources = mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ex,
                             center=mp.Vector3(0, 0, (-0.5 * self.sz) + self.dpml), amplitude=self.amp)

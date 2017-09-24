@@ -34,7 +34,7 @@ class TestPhysical(unittest.TestCase):
 
         w = 0.30
 
-        s = mp.structure(self.gv, one, mp.pml(self.ymax / 3.0))
+        s = mp.structure(self.gv, one, mp._pml(self.ymax / 3.0))
 
         f = mp.fields(s)
 

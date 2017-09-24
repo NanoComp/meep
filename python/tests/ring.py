@@ -36,7 +36,7 @@ class TestRing(unittest.TestCase):
                                  sources=[src],
                                  resolution=10,
                                  symmetries=[mp.Mirror(mp.Y)],
-                                 boundary_layers=[mp.PML(dpml)])
+                                 boundary_layers=[mp.pml(dpml)])
 
         self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
 

@@ -44,7 +44,7 @@ def py_v3_to_vec(dims, v3):
         raise ValueError("Invalid dimensions in Volume: {}".format(dims))
 
 
-class PML(object):
+class pml(object):
 
     def __init__(self, thickness,
                  direction=-1,
@@ -61,11 +61,11 @@ class PML(object):
         self.pml_profile = pml_profile
 
         if direction == -1 and side == -1:
-            self.swigobj = mp.pml(thickness, r_asymptotic, mean_stretch)
+            self.swigobj = mp._pml(thickness, r_asymptotic, mean_stretch)
         elif direction == -1:
-            self.swigobj = mp.pml(thickness, side, r_asymptotic, mean_stretch)
+            self.swigobj = mp._pml(thickness, side, r_asymptotic, mean_stretch)
         else:
-            self.swigobj = mp.pml(thickness, direction, side, r_asymptotic, mean_stretch)
+            self.swigobj = mp._pml(thickness, direction, side, r_asymptotic, mean_stretch)
 
     @property
     def r_asymptotic(self):
@@ -73,7 +73,7 @@ class PML(object):
 
     @r_asymptotic.setter
     def r_asymptotic(self, val):
-        self._r_asymptotic = check_positive('PML.r_asymptotic', val)
+        self._r_asymptotic = check_positive('pml.r_asymptotic', val)
 
     @property
     def mean_stretch(self):
@@ -84,10 +84,10 @@ class PML(object):
         if val >= 1:
             self._mean_stretch = val
         else:
-            raise ValueError("PML.mean_stretch must be >= 1. Got {}".format(val))
+            raise ValueError("pml.mean_stretch must be >= 1. Got {}".format(val))
 
 
-class Absorber(PML):
+class Absorber(pml):
     pass
 
 

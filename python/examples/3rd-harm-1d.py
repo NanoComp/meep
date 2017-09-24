@@ -25,7 +25,7 @@ cell = mp.Vector3(0, 0, sz)
 # and pass it to the Simulation constructor
 default_material = mp.Medium(index=1, chi3=k)
 
-pml_layers = mp.PML(dpml)
+pml_layers = mp.pml(dpml)
 
 sources = mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ex,
                     center=mp.Vector3(0, 0, (-0.5 * sz) + dpml), amplitude=amp)

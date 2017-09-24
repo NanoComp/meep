@@ -30,7 +30,7 @@ class TestBendFlux(unittest.TestCase):
         sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
                              center=mp.Vector3(1 + (-0.5 * sx), wvg_ycen), size=mp.Vector3(0, w))]
 
-        pml_layers = [mp.PML(1.0)]
+        pml_layers = [mp.pml(1.0)]
         resolution = 10
         nfreq = 100
 
