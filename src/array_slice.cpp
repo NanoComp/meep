@@ -160,8 +160,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   int imos[6];
   int num_components=data->components.size();
   
-  double *slice;
-  cdouble *zslice;
+  double *slice=0;
+  cdouble *zslice=0;
   bool has_imag = data->has_imag;
   if (has_imag)
    zslice = (cdouble *)data->vslice;
