@@ -57,6 +57,26 @@ class TestSimulation(unittest.TestCase):
         np.testing.assert_allclose([v.y for v in expected], [v.y for v in res])
         np.testing.assert_allclose([v.z for v in expected], [v.z for v in res])
 
+    def test_arith_sequence(self):
+
+        expected = [
+            0.15,
+            0.15040080160320599,
+            0.15080160320641198,
+            0.15120240480961797,
+            0.15160320641282396,
+            0.15200400801602995,
+            0.15240480961923594,
+            0.15280561122244193,
+            0.15320641282564793,
+            0.15360721442885392
+        ]
+
+        res = np.linspace(0.15, 0.15 + 0.000400801603206 * 10, num=10, endpoint=False)
+
+        self.assertEqual(len(expected), len(res))
+        np.testing.assert_allclose(expected, res)
+
 
 if __name__ == '__main__':
     unittest.main()
