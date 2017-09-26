@@ -1313,40 +1313,21 @@ class fields {
                                    void *fun_data,
                                    std::complex<double> *slice=0);
 
-  // alternative entry points for when you have no field 
+  // alternative entry points for when you have no field
   // function, i.e. you want just a single component
-  // for the slice
-  double *get_array_slice(const volume &where, component c, double *slice=0);
+  // for the slice. (The slice_length parameter is only
+  // present to facilitate SWIG-generated python wrappers;
+  // it is ignored by the C code).
+  double *get_array_slice(const volume &where, component c, double *slice=0, int slice_length=0);
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 component c,
-                                                std::complex<double> *slice=0);
- 
+                                                std::complex<double> *slice=0, int slice_length=0);
+
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where,
                            std::vector<component> components,
                            field_function fun, void *fun_data_,
                            bool has_imag, void *vslice);
-
-  /***************************************************************/
-  /* TEMPORARY HACKS for python wrappers: I can't figure out     */
-  /* how to write swig typemaps for functions with *both* array  */
-  /* arguments and other arguments, so use class variables and   */
-  /* setter functions to handle the 'volume' and 'component'     */
-  /* arguments to array_slice routines                           */
-  /***************************************************************/
-  volume *array_slice_volume;
-  component array_slice_component;
-  void py_set_array_slice_volume(const volume &where)
-   { array_slice_volume=new volume(where); }
-  void py_set_array_slice_component(component c)
-   { array_slice_component=c; }
-  int py_get_array_slice_dimensions(int *dims, int len)
-   { (void) len; return get_array_slice_dimensions(*array_slice_volume, dims); }
-  void py_get_array_slice(double *slice, int len)
-   { (void) len; get_array_slice(*array_slice_volume, array_slice_component, slice); }
-  /***************************************************************/
-  /* END TEMPORARY HACKS *****************************************/
-  /***************************************************************/
 
   // step.cpp methods:
   double last_step_output_wall_time;

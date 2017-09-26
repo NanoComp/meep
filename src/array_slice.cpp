@@ -452,16 +452,18 @@ cdouble *fields::get_complex_array_slice(const volume &where,
 }
 
 double *fields::get_array_slice(const volume &where, component c,
-                                double *slice)
+                                double *slice, int slice_length)
 {
+  (void) slice_length;
   std::vector<component> components(c);
   return (double *)do_get_array_slice(where, components, 
                                       0, 0, false, (void *)slice);
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, component c,
-                                         cdouble *slice)
+                                         cdouble *slice, int slice_length)
 {
+  (void) slice_length;
   std::vector<component> components(c);
   return (cdouble *)do_get_array_slice(where, components,
                                        0, 0, true, (void *)slice);
