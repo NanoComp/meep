@@ -262,11 +262,9 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
     }
     $1 = reinterpret_cast<meep::src_time *>(tmp_ptr);
 
-// Typemap suite for array_slice
-%apply(PyObject*, int *INPLACE_ARRAY1[3], PyObject*) { const volume &where, int dims[3], void *data)};
-
 }
 
+<<<<<<< HEAD
 // Typemap suite for boundary_region
 
 %typecheck(SWIG_TYPECHECK_POINTER) void *pml_profile_data {
@@ -298,6 +296,9 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
         SWIG_fail;
     }
 }
+
+// Typemap suite for array_slice
+%apply(PyObject*, int *INPLACE_ARRAY1[3], PyObject*) {(const volume &where, int dims[3], void *data)};
 
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
