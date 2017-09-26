@@ -298,7 +298,8 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 }
 
 // Typemap suite for array_slice
-%apply(PyObject*, int *INPLACE_ARRAY1[3], PyObject*) {(const volume &where, int dims[3], void *data)};
+%apply (int *INPLACE_ARRAY1, int DIM1) {(int *dims, int len)};
+%apply (double *INPLACE_ARRAY1, int DIM1) {(double *slice, int len)};
 
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;

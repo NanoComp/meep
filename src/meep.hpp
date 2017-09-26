@@ -1327,6 +1327,27 @@ class fields {
                            field_function fun, void *fun_data_,
                            bool has_imag, void *vslice);
 
+  /***************************************************************/
+  /* TEMPORARY HACKS for python wrappers: I can't figure out     */
+  /* how to write swig typemaps for functions with *both* array  */
+  /* arguments and other arguments, so use class variables and   */
+  /* setter functions to handle the 'volume' and 'component'     */
+  /* arguments to array_slice routines                           */
+  /***************************************************************/
+  volume *array_slice_volume;
+  component array_slice_component;
+  void py_set_array_slice_volume(const volume &where)
+   { array_slice_volume=new volume(where); }
+  void py_set_array_slice_component(component c)
+   { array_slice_component=c; }
+  int py_get_array_slice_dimensions(int *dims, int len)
+   { (void) len; return get_array_slice_dimensions(*array_slice_volume, dims); }
+  void py_get_array_slice(double *slice, int len)
+   { (void) len; get_array_slice(*array_slice_volume, array_slice_component, slice); }
+  /***************************************************************/
+  /* END TEMPORARY HACKS *****************************************/
+  /***************************************************************/
+
   // step.cpp methods:
   double last_step_output_wall_time;
   int last_step_output_t;
