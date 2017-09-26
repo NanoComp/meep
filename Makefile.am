@@ -9,7 +9,7 @@ ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = src $(LIBCTL) tests examples libmeepgeom
 
 if WITH_PYTHON
-  SUBDIRS += python python_examples
+  SUBDIRS += python
 endif
 
 EXTRA_DIST = COPYRIGHT m4 meep-pkgconfig.in
