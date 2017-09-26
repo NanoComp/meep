@@ -143,7 +143,6 @@ printf("has_imag=%s\n",has_imag ? "true" : "false");
   /* test each element of the array slice against the            */
   /* corresponding element in the fields array                   */
   /***************************************************************/
-
   // compute corner coordinate of slice
   vec loc0(where.get_min_corner());
   ivec iloc0(gv.dim);
@@ -369,7 +368,7 @@ int main(int argc, char **argv)
        volume(vec(pad1,pad2), vec(xsize-pad2,ysize-pad1)),
        volume(vec(-pad1,-pad2), vec(2*xsize-pad2,2*ysize-pad1)),
        volume(vec(pad1,pad2), vec(xsize-pad2,pad2)),
-       volume(vec(pad1,pad2), vec(pad1,pad2)),
+       volume(vec(pad1,pad2), vec(pad1,pad2))
   };
   char gv_2d_name[4][20] = {"plane", "plane-supercell", "line", "point"};
   int gv_2d_rank[4] = {2,2,1,0};
