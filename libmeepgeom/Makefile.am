@@ -37,4 +37,4 @@ noinst_PROGRAMS = bend-flux-ll
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
-noinst_DATA = cyl-ellipsoid-eps-ref.h5
+noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
