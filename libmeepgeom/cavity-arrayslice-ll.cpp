@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
   gv.center_origin();
 
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
+  structure the_structure(gv, dummy_eps, pml(dpml), sym);
 
   // (set! geometry
   //    (append ; combine lists of objects:
