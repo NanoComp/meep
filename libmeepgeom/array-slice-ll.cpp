@@ -179,50 +179,42 @@ int main(int argc, char *argv[])
      f.output_hdf5(file, "slice_2d", 1, &src_cmpt,
                    default_field_function, 0, reim, v2d);
      master_printf("Wrote binary data to file %s.h5\n",H5FILENAME);
+     delete file;
      exit(0);
    }
   else
    { 
+     //
+     // read 1D and 2D array-slice data from HDF5 file
+     //
      h5file *file = f.open_h5file(H5FILENAME, h5file::READONLY);
      file_slice1d = file->read("slice_1d", &rank, dims1D, 1);
-master_printf("rank=%i, dims1D=%i\n",rank,dims1D[0]);
      if (rank!=1 || dims1D[0]!=NX)
       abort("failed to read 1D reference data from file %s.h5",H5FILENAME);
      file_slice2d = file->read("slice_2d", &rank, dims2D, 2);
-master_printf("rank=%i, dims2D=%i,%i\n",rank,dims2D[0],dims2D[1]);
      if (rank!=2 || dims2D[0]!=NX || dims2D[1]!=NY)
       abort("failed to read 2D reference data from file %s.h5",H5FILENAME);
-   };
+     delete file;
 
-  /***************************************************************/
-  /***************************************************************/
-  /***************************************************************/
-  rank=f.get_array_slice_dimensions(v1d, dims1D);
-  if (rank!=1 || dims1D[0]!=NX)
-   abort("incorrect dimensions for 1D slice");
-  double *slice1d=f.get_array_slice(v1d, src_cmpt);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-FILE *ff=fopen("/tmp/goof","w");
-for(int n=0; n<NX; n++)
- fprintf(ff,"%i %e %e\n",n,slice1d[n],file_slice1d[n]);
-fclose(ff);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
- // double MaxErr1D=Compare(slice1d, file_slice1d, NX, "Hz_1d");
- // master_printf("1D: max rel error %e\n",MaxErr1D);
+     //
+     // generate 1D and 2D array slices and compare to 
+     // data read from file
+     //
+     rank=f.get_array_slice_dimensions(v1d, dims1D);
+     if (rank!=1 || dims1D[0]!=NX)
+      abort("incorrect dimensions for 1D slice");
+     double *slice1d=f.get_array_slice(v1d, src_cmpt);
+     double MaxErr1D=Compare(slice1d, file_slice1d, NX, "Hz_1d");
+     master_printf("1D: max rel error %e\n",MaxErr1D);
 
-  rank=f.get_array_slice_dimensions(v2d, dims2D);
-  if (rank!=2 || dims2D[0]!=NX || dims2D[1]!=NY)
-   abort("incorrect dimensions for 2D slice");
-  double *slice2d=f.get_array_slice(v2d, src_cmpt);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-ff=fopen("/tmp/goof2","w");
-for(int nx=0; nx<NX; nx++)
- for(int ny=0; ny<NY; ny++)
- fprintf(ff,"%i %i %e %e\n",nx,ny,slice2d[nx*NY + ny],file_slice2d[nx*NY + ny]);
-fclose(ff);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  double MaxErr2D=Compare(slice2d, file_slice2d, NX*NY, "Hz_2d");
-  master_printf("2D: max rel error %e\n",MaxErr2D);
+     rank=f.get_array_slice_dimensions(v2d, dims2D);
+     if (rank!=2 || dims2D[0]!=NX || dims2D[1]!=NY)
+      abort("incorrect dimensions for 2D slice");
+     double *slice2d=f.get_array_slice(v2d, src_cmpt);
+     double MaxErr2D=Compare(slice2d, file_slice2d, NX*NY, "Hz_2d");
+     master_printf("2D: max rel error %e\n",MaxErr2D);
+
+   }; // if (write_files) ... else ...
 
   return 0;
 }
