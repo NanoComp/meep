@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   int dims[2], rank;
     
-  volume v1d( vec(-0.25*sx), vec(+0.25*sx) );
+  volume v1d( vec(-0.25*sx, 0.0), vec(+0.25*sx, 0.0) );
   rank=f.get_array_slice_dimensions(v1d, dims);
   printf("1d slice: rank=%i, dim=%i\n",rank,dims[0]);
   double *slice1d=f.get_array_slice(v1d, Hz);

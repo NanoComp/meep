@@ -1309,15 +1309,14 @@ class fields {
 
   std::complex<double> *get_complex_array_slice(const volume &where,
                                    std::vector<component> components,
-                                   field_function fun, 
+                                   field_function fun,
                                    void *fun_data,
                                    std::complex<double> *slice=0);
 
   // alternative entry points for when you have no field 
   // function, i.e. you want just a single component
   // for the slice
-  double *get_array_slice(const volume &where, component c,
-                          double *slice=0);
+  double *get_array_slice(const volume &where, component c, double *slice=0);
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 component c,
                                                 std::complex<double> *slice=0);
