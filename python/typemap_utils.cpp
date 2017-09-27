@@ -55,7 +55,7 @@ static PyObject *py_meep_src_time_object() {
 
 static PyObject *py_material_object() {
     static PyObject *material_object = NULL;
-    if(material_object == NULL) {
+    if (material_object == NULL) {
         PyObject *geom_mod = PyImport_ImportModule("meep.geom");
         material_object = PyObject_GetAttrString(geom_mod, "Medium");
         Py_XDECREF(geom_mod);
@@ -103,7 +103,7 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
     PyObject *py_y = PyObject_GetAttrString(po, "y");
     PyObject *py_z = PyObject_GetAttrString(po, "z");
 
-    if(!py_x || !py_y || !py_z) {
+    if (!py_x || !py_y || !py_z) {
         PyErr_SetString(PyExc_ValueError, "Vector3 is not initialized");
         return 0;
     }
@@ -125,12 +125,12 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-    if(!py_attr) {
+    if (!py_attr) {
         PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
         return 0;
     }
 
-    if(!pyv3_to_v3(py_attr, v)) {
+    if (!pyv3_to_v3(py_attr, v)) {
         return 0;
     }
 
@@ -141,7 +141,7 @@ static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-    if(!py_attr) {
+    if (!py_attr) {
         PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
         return 0;
     }
@@ -154,12 +154,12 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
-    if(!py_material) {
+    if (!py_material) {
         PyErr_SetString(PyExc_ValueError, "Object's material is not set\n");
         return 0;
     }
 
-    if(!pymaterial_to_material(py_material, m)) {
+    if (!pymaterial_to_material(py_material, m)) {
         return 0;
     }
 
@@ -169,7 +169,7 @@ static int get_attr_material(PyObject *po, material_type *m) {
 }
 
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s) {
-    if(!get_attr_v3(po, &s->sigma_diag, "sigma_diag") ||
+    if (!get_attr_v3(po, &s->sigma_diag, "sigma_diag") ||
        !get_attr_v3(po, &s->sigma_offdiag, "sigma_offdiag") ||
        !get_attr_dbl(po, &s->frequency, "frequency") ||
        !get_attr_dbl(po, &s->gamma, "gamma")) {
@@ -177,13 +177,13 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
         return 0;
     }
 
-    if(!get_attr_dbl(po, &s->noise_amp, "noise_amp")) {
+    if (!get_attr_dbl(po, &s->noise_amp, "noise_amp")) {
         s->noise_amp = 0;
     }
 
     std::string class_name = py_class_name_as_string(po);
 
-    if(class_name.find(std::string("Drude")) != std::string::npos) {
+    if (class_name.find(std::string("Drude")) != std::string::npos) {
         s->drude = true;
     } else {
         s->drude = false;
@@ -195,7 +195,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 }
 
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl) {
-    if(!PyList_Check(po)) {
+    if (!PyList_Check(po)) {
         PyErr_SetString(PyExc_TypeError, "Expected a list\n");
         return 0;
     }
@@ -206,7 +206,7 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 
     for(int i = 0; i < length; i++) {
         susceptibility_struct s;
-        if(!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &s)) {
+        if (!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &s)) {
             return 0;
         }
         sl->items[i].sigma_diag = s.sigma_diag;
@@ -229,7 +229,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     md->user_data = 0;
     md->medium = new medium_struct();
 
-    if(!get_attr_v3(po, &md->medium->epsilon_diag, "epsilon_diag") ||
+    if (!get_attr_v3(po, &md->medium->epsilon_diag, "epsilon_diag") ||
        !get_attr_v3(po, &md->medium->epsilon_offdiag, "epsilon_offdiag") ||
        !get_attr_v3(po, &md->medium->mu_diag, "mu_diag") ||
        !get_attr_v3(po, &md->medium->mu_offdiag, "mu_offdiag")) {
@@ -240,11 +240,11 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     PyObject *py_e_susceptibilities = PyObject_GetAttrString(po, "E_susceptibilities");
     PyObject *py_h_susceptibilities = PyObject_GetAttrString(po, "H_susceptibilities");
 
-    if(!py_e_susceptibilities || !py_h_susceptibilities) {
+    if (!py_e_susceptibilities || !py_h_susceptibilities) {
         return 0;
     }
 
-    if(!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium->E_susceptibilities) ||
+    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium->E_susceptibilities) ||
        !py_list_to_susceptibility_list(py_h_susceptibilities, &md->medium->H_susceptibilities)) {
 
         return 0;
@@ -253,7 +253,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     Py_XDECREF(py_e_susceptibilities);
     Py_XDECREF(py_h_susceptibilities);
 
-    if(!get_attr_v3(po, &md->medium->E_chi2_diag, "E_chi2_diag") ||
+    if (!get_attr_v3(po, &md->medium->E_chi2_diag, "E_chi2_diag") ||
        !get_attr_v3(po, &md->medium->E_chi3_diag, "E_chi3_diag") ||
        !get_attr_v3(po, &md->medium->H_chi2_diag, "H_chi2_diag") ||
        !get_attr_v3(po, &md->medium->H_chi3_diag, "H_chi3_diag") ||
@@ -274,7 +274,7 @@ static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
     vector3 center;
     double radius;
     
-    if(!get_attr_v3(py_sphere, &center, "center") ||
+    if (!get_attr_v3(py_sphere, &center, "center") ||
        !get_attr_dbl(py_sphere, &radius, "radius") ||
        !get_attr_material(py_sphere, &material)) {
 
@@ -292,7 +292,7 @@ static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *cyl) {
     vector3 center, axis;
     double radius, height;
 
-    if(!get_attr_v3(py_cyl, &center, "center") ||
+    if (!get_attr_v3(py_cyl, &center, "center") ||
        !get_attr_v3(py_cyl, &axis, "axis") ||
        !get_attr_dbl(py_cyl, &radius, "radius") ||
        !get_attr_dbl(py_cyl, &height, "height") ||
@@ -309,14 +309,14 @@ static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *cyl) {
 
 static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *wedge) {
     geometric_object cyl;
-    if(!pycylinder_to_cylinder(py_wedge, &cyl)) {
+    if (!pycylinder_to_cylinder(py_wedge, &cyl)) {
         return 0;
     }
 
     double wedge_angle; 
     vector3 wedge_start;
 
-    if(!get_attr_dbl(py_wedge, &wedge_angle, "wedge_angle") ||
+    if (!get_attr_dbl(py_wedge, &wedge_angle, "wedge_angle") ||
        !get_attr_v3(py_wedge, &wedge_start, "wedge_start")) {
 
         wedge->subclass.cylinder_data = NULL;
@@ -337,12 +337,12 @@ static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *wedge) {
 
 static int pycone_to_cone(PyObject *py_cone, geometric_object *cone) {
     geometric_object cyl;
-    if(!pycylinder_to_cylinder(py_cone, &cyl)) {
+    if (!pycylinder_to_cylinder(py_cone, &cyl)) {
         return 0;
     }
 
     double radius2;
-    if(!get_attr_dbl(py_cone, &radius2, "radius2")) {
+    if (!get_attr_dbl(py_cone, &radius2, "radius2")) {
         cone->subclass.cylinder_data = NULL;
         geometric_object_destroy(cyl);
         return 0;
@@ -363,7 +363,7 @@ static int pyblock_to_block(PyObject *py_blk, geometric_object *blk) {
     material_type material;
     vector3 center, e1, e2, e3, size;
 
-    if(!get_attr_material(py_blk, &material) ||
+    if (!get_attr_material(py_blk, &material) ||
        !get_attr_v3(py_blk, &center, "center") ||
        !get_attr_v3(py_blk, &e1, "e1") ||
        !get_attr_v3(py_blk, &e2, "e2") ||
@@ -380,7 +380,7 @@ static int pyblock_to_block(PyObject *py_blk, geometric_object *blk) {
 
 static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
     geometric_object blk;
-    if(!pyblock_to_block(py_ell, &blk)) {
+    if (!pyblock_to_block(py_ell, &blk)) {
         return 0;
     }
 
@@ -399,7 +399,7 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
 }
 
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
-    if(!PyList_Check(po)) {
+    if (!PyList_Check(po)) {
         PyErr_SetString(PyExc_TypeError, "Expected a list");
         return 0;
     }
@@ -412,7 +412,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
     for(int i = 0; i < length; i++) {
         PyObject *py_gobj = PyList_GetItem(po, i);
         geometric_object go;
-        if(!py_gobj_to_gobj(py_gobj, &go)) {
+        if (!py_gobj_to_gobj(py_gobj, &go)) {
             return 0;
         }
         geometric_object_copy(&go, &l->items[i]);
@@ -439,22 +439,22 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     int success = 0;
     std::string go_type = py_class_name_as_string(po);
 
-    if(go_type == "Sphere") {
+    if (go_type == "Sphere") {
         success = pysphere_to_sphere(po, o);
     }
-    else if(go_type == "Cylinder") {
+    else if (go_type == "Cylinder") {
         success = pycylinder_to_cylinder(po, o);
     }
-    else if(go_type == "Wedge") {
+    else if (go_type == "Wedge") {
         success = pywedge_to_wedge(po, o);
     }
-    else if(go_type == "Cone") {
+    else if (go_type == "Cone") {
         success = pycone_to_cone(po, o);
     }
-    else if(go_type == "Block") {
+    else if (go_type == "Block") {
         success = pyblock_to_block(po, o);
     }
-    else if(go_type == "Ellipsoid") {
+    else if (go_type == "Ellipsoid") {
         success = pyellipsoid_to_ellipsoid(po, o);
     }
     else {

@@ -32,10 +32,7 @@ def get_num_args(func):
 
 def py_v3_to_vec(dims, v3):
     if dims == 1:
-        if v3.x == v3.y == v3.z:
-            return mp.vec_from_dim(0, v3.x)
-        else:
-            return mp.vec(v3.z)
+        return mp.vec(v3.z)
     elif dims == 2:
         return mp.vec(v3.x, v3.y)
     elif dims == 3:

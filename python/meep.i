@@ -285,11 +285,11 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
   delete $1;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) material_type _default_material {
+%typecheck(SWIG_TYPECHECK_POINTER) material_type {
     $1 = PyObject_IsInstance($input, py_material_object());
 }
 
-%typemap(in) material_type _default_material {
+%typemap(in) material_type {
     if(!pymaterial_to_material($input, &$1)) {
         SWIG_fail;
     }

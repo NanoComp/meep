@@ -35,7 +35,7 @@ class ContinuousSource(SourceTime):
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
 
         super(ContinuousSource, self).__init__()
-        self.frequency = 1 / wavelength if wavelength else frequency
+        self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.start_time = start_time
         self.end_time = end_time
         self.width = width
@@ -52,7 +52,7 @@ class GaussianSource(SourceTime):
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
 
         super(GaussianSource, self).__init__()
-        self.frequency = 1 / wavelength if wavelength else frequency
+        self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.width = max(width, 1 / fwidth)
         self.start_time = start_time
         self.cutoff = cutoff
