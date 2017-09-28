@@ -80,31 +80,31 @@ static complex<double> meep_mpb_A(const vec &p) {
   double rx = r[0], ry = r[1], rz = r[2];
 
   /* linearly interpolate the amplitude from MPB at point p */
-  
+
   int x, y, z, x2, y2, z2;
   double dx, dy, dz;
-  
+
   /* get the point corresponding to r in the epsilon array grid: */
   x = int(rx * nx);
   y = int(ry * ny);
   z = int(rz * nz);
-  
+
   /* get the difference between (x,y,z) and the actual point */
   dx = rx * nx - x;
   dy = ry * ny - y;
   dz = rz * nz - z;
-  
+
   /* get the other closest point in the grid, with periodic boundaries: */
   x2 = (nx + (dx >= 0.0 ? x + 1 : x - 1)) % nx;
   y2 = (ny + (dy >= 0.0 ? y + 1 : y - 1)) % ny;
   z2 = (nz + (dz >= 0.0 ? z + 1 : z - 1)) % nz;
   x = x % nx; y = y % ny; z = z % nz;
-  
+
   /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
   dx = fabs(dx);
   dy = fabs(dy);
   dz = fabs(dz);
-  
+
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by MPB): */
 #define D(x,y,z) (data[(((x)*ny + (y))*nz + (z)) * 3])
@@ -124,7 +124,7 @@ static complex<double> meep_mpb_A(const vec &p) {
 void fields::add_eigenmode_source(component c0, const src_time &src,
 				  direction d, const volume &where,
 				  const volume &eig_vol,
-				  int band_num, 
+				  int band_num,
 				  const vec &kpoint, bool match_frequency,
 				  int parity,
 				  double resolution, double eigensolver_tol,
@@ -179,7 +179,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   }
 
   master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
-  
+
   // if match_frequency is true, all we need is a direction for k
   // and a crude guess for its value; we must supply this if k==0.
   if (match_frequency && k[0] == 0 && k[1] == 0 && k[2] == 0) {
@@ -192,7 +192,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
       master_printf("NEWER KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
     }
   }
-  
+
   for (int i = 0; i < 3; ++i) {
     n[i] = int(resolution * s[i] + 0.5); if (n[i] == 0) n[i] = 1;
     R[i][i] = s[i] = s[i] == 0 ? 1 : s[i];
@@ -217,23 +217,23 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 					    band_num, band_num);
   if (local_N != n[0] * n[1] * n[2])
     abort("MPI version of MPB library not supported");
-  
+
   set_maxwell_data_parity(mdata, parity);
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
-  
+
   if (k[0] == 0 && k[1] == 0 && k[2] == 0) {
     evectmatrix H; H.p = band_num; H.c = 2;
     band_num -= maxwell_zero_k_num_const_bands(H, mdata);
     if (band_num == 0)
       abort("zero-frequency bands at k=0 are ill-defined");
   }
-  
+
   meep_mpb_eps_data eps_data;
   eps_data.s = s; eps_data.o = o; eps_data.dim = gv.dim; eps_data.f = this;
   set_maxwell_dielectric(mdata, mesh_size, R, G, meep_mpb_eps,NULL, &eps_data);
   if (check_maxwell_dielectric(mdata, 0))
     abort("invalid dielectric function for MPB");
-  
+
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num,
 				     local_N, N_start, alloc_N);
   for (int i = 0; i < H.n * H.p; ++i) {
@@ -246,7 +246,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   for (int i = 0; i < 3; ++i)
     W[i] = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num,
 			      local_N, N_start, alloc_N);
-  
+
   evectconstraint_chain *constraints = NULL;
   constraints = evect_add_constraint(constraints,
 				     maxwell_parity_constraint,
@@ -255,7 +255,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
     constraints = evect_add_constraint(constraints,
 				       maxwell_zero_k_constraint,
 				       (void *) mdata);
-  
+
   mpb_real knew[3]; for (int i = 0; i < 3; ++i) knew[i] = k[i];
 
   do {
@@ -266,13 +266,13 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 		maxwell_preconditioner2, (void *) mdata,
 		evectconstraint_chain_func,
 		(void *) constraints,
-		W, 3, 
-		eigensolver_tol, &num_iters, 
-		EIGS_DEFAULT_FLAGS | 
+		W, 3,
+		eigensolver_tol, &num_iters,
+		EIGS_DEFAULT_FLAGS |
 		(am_master() && !quiet ? EIGS_VERBOSE : 0));
     if (!quiet)
       master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n",
-		    band_num, knew[0],knew[1],knew[2], 
+		    band_num, knew[0],knew[1],knew[2],
 		    sqrt(eigvals[band_num-1]), num_iters);
 
     if (match_frequency) {
@@ -281,7 +281,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
       evectmatrix_resize(&W[1], 1, 0);
       for (int i = 0; i < H.n; ++i)
 	W[0].data[i] = H.data[H.p-1 + i * H.p];
-      
+
       // compute the group velocity in the k direction
       maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
       mpb_real v, vscratch; // v = Re( W[0]* (dTheta/dk) W[0] ) = g. velocity
@@ -302,18 +302,18 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
       for (int i = 0; i < 3; ++i) knew[i] = k[i] * kscale;
       update_maxwell_data_k(mdata, knew, G[0], G[1], G[2]);
     }
-  } while (match_frequency 
-	   && fabs(sqrt(eigvals[band_num - 1]) - omega_src) > 
+  } while (match_frequency
+	   && fabs(sqrt(eigvals[band_num - 1]) - omega_src) >
 	   omega_src * match_tol);
-  
+
   evect_destroy_constraints(constraints);
   for (int i = 0; i < 3; ++i)
     destroy_evectmatrix(W[i]);
-  
+
   src_time *src_mpb = src.clone();
   if (!match_frequency)
     src_mpb->set_frequency(omega_src = sqrt(eigvals[band_num - 1]));
-  
+
   complex<mpb_real> *cdata = (complex<mpb_real> *) mdata->fft_data;
   meep_mpb_A_s = s;
   meep_mpb_A_n = n;
@@ -351,7 +351,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
 
   // use principle of equivalence to obtain equivalent currents
-  FOR_ELECTRIC_COMPONENTS(c) 
+  FOR_ELECTRIC_COMPONENTS(c)
     if (gv.has_field(c) && (c0 == Centered || c0 == c)
 	&& component_direction(c) != d
 	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
@@ -367,7 +367,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
       }
       }
-  
+
   maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   { // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
     double scale = -1.0 / omega_src;
@@ -376,7 +376,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   }
   maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
   // use principle of equivalence to obtain equivalent currents
-  FOR_MAGNETIC_COMPONENTS(c) 
+  FOR_MAGNETIC_COMPONENTS(c)
     if (gv.has_field(c) && (c0 == Centered || c0 == c)
 	&& component_direction(c) != d
 	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
@@ -392,12 +392,15 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
       }
     }
-  
+
   delete src_mpb;
   destroy_evectmatrix(H);
   delete[] eigvals;
   destroy_maxwell_data(mdata);
 #else /* !defined(HAVE_MPB) */
+  (void) c0; (void) src; (void) d; (void) where; (void) eig_vol; (void) band_num;
+  (void) kpoint; (void) match_frequency; (void) parity; (void) resolution;
+  (void) eigensolver_tol; (void) amp; (void) A;
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 #endif
 }

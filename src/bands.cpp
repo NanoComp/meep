@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2015 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -204,9 +204,9 @@ void fields::out_bands(FILE *o, const char *name, int maxbands) {
   if (am_master()) {
     for (int i = 0; i < num_found; ++i) {
       // k k k m index freq decay Q approx_power
-      fprintf(o, "%s\t%g\t%g\t%g\t%g\t%d\t%g \t%g \t%g \t%g\n", 
-	      name, 
-	      real(k[0]), real(k[1]), real(k[2]),   
+      fprintf(o, "%s\t%g\t%g\t%g\t%g\t%d\t%g \t%g \t%g \t%g\n",
+	      name,
+	      real(k[0]), real(k[1]), real(k[2]),
 	      m, i, fabs(real(fad[i])), imag(fad[i]),
 	      -fabs(real(fad[i])) / (2 * imag(fad[i])),
 	      approx_power[i]);
@@ -410,18 +410,22 @@ complex<double> *fields::clever_cluster_bands(int maxbands, double *approx_power
 
 int bandsdata::get_freqs(complex<double> *data, int n, complex<double> *amps,
                          double *freq_re, double *freq_im) {
-  
+
   const double total_time = n*dt;
   const double qminhere = 1.0/(1.0/qmin + 0.25/(fmin*total_time));
   return do_harminv(data, n, dt, fmin, fmax, maxbands,
 		    amps,  freq_re, freq_im, NULL, 1.1, qminhere);
 }
 
-int do_harminv(complex<double> *data, int n, double dt, 
+int do_harminv(complex<double> *data, int n, double dt,
 	       double fmin, double fmax, int maxbands,
 	       complex<double> *amps, double *freq_re, double *freq_im, double *errors,
 	       double spectral_density, double Q_thresh, double rel_err_thresh, double err_thresh, double rel_amp_thresh, double amp_thresh) {
 #ifndef HAVE_HARMINV
+  (void) data; (void) n; (void) dt; (void) fmin; (void) fmax; (void) maxbands;
+  (void) amps; (void) freq_re; (void) freq_im; (void) errors;
+  (void) spectral_density; (void) Q_thresh; (void) rel_err_thresh;
+  (void) err_thresh; (void) rel_amp_thresh; (void) amp_thresh;
   abort("compiled without Harminv library, required for do_harminv");
   return 0;
 #else
@@ -461,18 +465,18 @@ int do_harminv(complex<double> *data, int n, double dt,
   int nf = harminv_get_num_freqs(hd);
   if (nf == 0) return 0;
   int *fsort = new int[nf]; // indices of frequencies, sorted as needed
-  
+
   for (int i = 0; i < nf; ++i)
     fsort[i] = i;
   for (int i = 0; i < nf; ++i) // sort in increasing order of error
-    for (int j = i + 1; j < nf; ++j) 
+    for (int j = i + 1; j < nf; ++j)
       if (harminv_get_freq_error(hd, fsort[i]) >
 	  harminv_get_freq_error(hd, fsort[j])) {
 	int k = fsort[i];
 	fsort[i] = fsort[j];
 	fsort[j] = k;
       }
-  
+
   double min_err = harminv_get_freq_error(hd, fsort[0]);
   complex<double> aa;
   harminv_get_amplitude(&aa, hd, 0);
@@ -503,7 +507,7 @@ int do_harminv(complex<double> *data, int n, double dt,
   }
   { // eliminate positive/negative frequency pairs
     // set indices to -1 for frequencies to be eliminated
-    for (int i = 0; i < nf; ++i) 
+    for (int i = 0; i < nf; ++i)
       if (fsort[i] != -1) { // i hasn't been eliminated yet
 	double f = harminv_get_freq(hd, fsort[i]);
 	if (f < 0.0) {
@@ -533,20 +537,20 @@ int do_harminv(complex<double> *data, int n, double dt,
 	fsort[j++] = fsort[i];
     nf = j;
   }
-  
+
   if (nf > maxbands)
     nf = maxbands;
-  
+
   // sort again, this time in increasing order of freq:
   for (int i = 0; i < nf; ++i) // simple O(nf^2) sort
-    for (int j = i + 1; j < nf; ++j) 
+    for (int j = i + 1; j < nf; ++j)
       if (abs(harminv_get_freq(hd, fsort[i])) >
 	  abs(harminv_get_freq(hd, fsort[j]))) {
 	int k = fsort[i];
 	fsort[i] = fsort[j];
 	fsort[j] = k;
       }
-  
+
   for (int i = 0; i < nf; ++i) {
     complex<double> freq;
     harminv_get_omega(&freq, hd, fsort[i]);
