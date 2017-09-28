@@ -653,7 +653,6 @@ class structure {
 };
 
 class src_vol;
-class bandsdata;
 class fields;
 class fields_chunk;
 class flux_vol;
@@ -1062,7 +1061,6 @@ class fields_chunk {
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
   double beta;
   int is_real;
-  bandsdata *bands;
   src_vol *sources[NUM_FIELD_TYPES];
   structure_chunk *new_s;
   structure_chunk *s;
@@ -1145,8 +1143,6 @@ class fields_chunk {
   component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
   direction plus_deriv_direction[NUM_FIELD_COMPONENTS],
             minus_deriv_direction[NUM_FIELD_COMPONENTS];
-  // bands.cpp
-  void record_bands(int tcount);
   // step.cpp
   void phase_in_material(structure_chunk *s);
   void phase_material(int phasein_time);
@@ -1216,7 +1212,6 @@ class fields {
   std::complex<double> k[5], eikna[5];
   double coskna[5], sinkna[5];
   boundary_condition boundaries[2][5];
-  bandsdata *bands;
   char *outdir;
 
   // fields.cpp methods:
@@ -1426,12 +1421,6 @@ class fields {
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
 
-  void prepare_for_bands(const vec &, double end_time, double fmax=0,
-                         double qmin=1e300, double frac_pow_min=0.0);
-  void record_bands();
-  std::complex<double> get_band(int n, int maxbands=100);
-  void grace_bands(grace *, int maxbands=100);
-  void output_bands(FILE *, const char *, int maxbands=100);
   std::complex<double> get_field(int c, const vec &loc) const;
   std::complex<double> get_field(component c, const vec &loc) const;
   double get_field(derived_component c, const vec &loc) const;
@@ -1514,11 +1503,6 @@ class fields {
   void step_source(field_type ft, bool including_integrated = false);
   void update_pols(field_type ft);
   void calc_sources(double tim);
-  int cluster_some_bands_cleverly(double *tf, double *td, std::complex<double> *ta,
-                                  int num_freqs, int fields_considered, int maxbands,
-                                  std::complex<double> *fad, double *approx_power);
-  void out_bands(FILE *, const char *, int maxbands);
-  std::complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc) const;
@@ -1549,30 +1533,6 @@ class flux_vol {
   direction d;
   volume where;
   double cur_flux, cur_flux_half;
-};
-
-class grace_point;
-enum grace_type { XY, ERROR_BARS };
-
-class grace {
- public:
-  grace(const char *fname, const char *dirname = ".");
-  ~grace();
-
-  void new_set(grace_type t = XY);
-  void new_curve();
-  void set_legend(const char *);
-  void set_range(double xmin, double xmax, double ymin, double ymax);
-  void output_point(double x, double y,
-                    double dy = -1.0, double extra = -1.0);
-  void output_out_of_order(int n, double x, double y,
-                           double dy = -1.0, double extra= -1.0);
- private:
-  void flush_pts();
-  FILE *f;
-  char *fn, *dn;
-  grace_point *pts;
-  int set_num,sn;
 };
 
 // The following is a utility function to parse the executable name use it
