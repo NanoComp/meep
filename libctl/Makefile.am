@@ -37,17 +37,17 @@ endif
 
 # workaround missing namespace prefix in swig
 meep_renames.i: $(LIBHDRS)
-	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; sed 's/^ *class \+\([A-Za-z_0-9:]*\)\( *\| *:[^{]*\){.*$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename" | sort -u; echo; grep -hv typedef $(LIBHDRS) | sed 's/\(inline\|const\|extern\|static\) \+//g' | sed 's/^[A-Za-z_0-9:<>]\+[* ]\+\([A-Za-z_0-9:]*\) *(.*$$/%rename(meep_\1) meep::\1;/' | grep "%rename" | sort -u; ) > $@
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; perl -pe 's/^ *class +([A-Za-z_0-9:]*)( *| *:[^{]*){.*$$/%rename(meep_\1) meep::\1;/' $(LIBHDRS) | grep "%rename" | sort -u; echo; grep -hv typedef $(LIBHDRS) | perl -pe 's/(inline|const|extern|static) +//g' | perl -pe 's/^[A-Za-z_0-9:<>]+[* ]+([A-Za-z_0-9:]*) *\(.*$$/%rename(meep_\1) meep::\1;/' | grep "%rename" | sort -u; ) > $@
 
 # work around bug in swig, where it doesn't prepend namespace to friend funcs
 meep_swig_bug_workaround.i: $(LIBHDRS)
-	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; grep -h friend $(LIBHDRS) | sed 's/^ *friend \+[A-Za-z_0-9:<>]\+[* ]\+\([A-Za-z_0-9:]*\) *(.*$$/%ignore \1;/' | grep "%ignore" | sort -u;) > $@
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; grep -h friend $(LIBHDRS) | perl -pe 's/^ *friend +[A-Za-z_0-9:<>]+[* ]+([A-Za-z_0-9:]*) *\(.*$$/%ignore \1;/' | grep "%ignore" | sort -u;) > $@
 
 meep_enum_renames.i: $(LIBHDRS)
-	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; for f in $(LIBHDRS); do egrep "^enum" $$f | sed 's/enum \+\([A-Za-z_0-9:]\+\).*$$/\1/g' | while read enum; do cat $$f | tr -d '\n' | sed 's/.*enum \+'$${enum}' *{\([^}]*\)}.*/\1/g' | sed 's/= *[0-9]\+//g' |tr -d ' \t' | tr ',' '\n' | sed 's/^.*$$/'"%rename(meep_$${enum}_\0) meep::\0;/g"; echo; done; done;) > $@
+	(echo "// AUTOMATICALLY GENERATED -- DO NOT EDIT"; for f in $(LIBHDRS); do egrep "^enum" $$f | perl -pe 's/enum +([A-Za-z_0-9:]+).*$$/\1/g' | while read enum; do cat $$f | tr -d '\n' | perl -pe 's/.*enum +'$${enum}' *{([^}]*)}.*/\1/g' | perl -pe 's/= *[0-9]+//g' |tr -d ' \t' | tr ',' '\n' | perl -pe 's/^(.*)$$/'"%rename(meep_$${enum}_\1) meep::\1;/g"; echo; done; done;) > $@
 
 meep-enums.scm: meep_enum_renames.i
-	(sed 's/%rename(\([A-Za-z0-9_]*\)) *\([A-Za-z0-9:_]*\);$$/(define \2 (\1))/' meep_enum_renames.i | sed 's/[A-Za-z0-9:_]*:://g' | sed 's/_/-/g' | sed 's,//,;,'; echo "(define Centered Dielectric)") > $@
+	(perl -pe 's/%rename\(([A-Za-z0-9_]*)\) *([A-Za-z0-9:_]*);$$/(define \2 (\1))/' meep_enum_renames.i | perl -pe 's/[A-Za-z0-9:_]*:://g' | perl -pe 's/_/-/g' | perl -pe 's,//,;,'; echo "(define Centered Dielectric)") > $@
 
 ##############################################################################
 #      stuff below is based on example Makefile.in included with libctl
