@@ -1,7 +1,12 @@
-// -*- C++ -*-   
+// -*- C++ -*-
 %module meep
 %{
 #include "meep-ctl.hpp"
+
+#if SCM_MAJOR_VERSION >= 2
+#  define SCM_VECTORP(o) scm_vector_p(o)
+#  define SCM_VECTOR_LENGTH(o) scm_c_vector_length(o)
+#endif
 
 static inline int SwigComplex_Check(SCM o) {
   return SCM_REALP(o) || SCM_COMPLEXP(o);
@@ -11,11 +16,11 @@ static inline int SwigVector3_Check(SCM o) {
   return SCM_VECTORP(o) && SCM_VECTOR_LENGTH(o) == 3;
 }
 
-/* Unfortunately, this is not re-entrant.  Damn dynamic scoping. 
+/* Unfortunately, this is not re-entrant.  Damn dynamic scoping.
    Hopefully, it should be good enough for our purposes. */
 static SCM my_complex_func_scm;
 static inline std::complex<double> my_complex_func(meep::vec const &v) {
-  SCM ret = gh_call1(my_complex_func_scm, 
+  SCM ret = gh_call1(my_complex_func_scm,
 		     ctl_convert_vector3_to_scm(vec_to_vector3(v)));
   cnumber cret = ctl_convert_cnumber_to_c(ret);
   return std::complex<double>(cret.re, cret.im);
@@ -44,7 +49,7 @@ static inline std::complex<double> my_field_func(const std::complex<double> *fie
   return std::complex<double>(cret.re, cret.im);
 }
 
-/* Unfortunately, this is not re-entrant.  Damn dynamic scoping. 
+/* Unfortunately, this is not re-entrant.  Damn dynamic scoping.
    Hopefully, it should be good enough for our purposes. */
 static SCM my_complex_func3_scm;
 static inline std::complex<double> my_complex_func3(std::complex<double> x) {
@@ -94,13 +99,13 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
   $1 = SCM_NFALSEP(scm_procedure_p($input));
 }
 
-%typemap(guile,in) meep::vec { 
+%typemap(guile,in) meep::vec {
   $1 = vector3_to_vec(ctl_convert_vector3_to_c($input));
 }
-%typemap(guile,out) meep::vec { 
+%typemap(guile,out) meep::vec {
   $result = ctl_convert_vector3_to_scm(vec_to_vector3($1));
 }
-%typemap(guile,in) meep::vec const & %{ 
+%typemap(guile,in) meep::vec const & %{
   meep::vec vec__$1 = vector3_to_vec(ctl_convert_vector3_to_c($input));
   $1 = &vec__$1;
 %}
@@ -126,10 +131,10 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
 %typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) {
   $1 = SCM_NFALSEP(scm_pair_p($input)) &&
        SCM_NFALSEP(scm_list_p(gh_car($input))) &&
-       SCM_NFALSEP(scm_procedure_p(gh_cdr($input))); 
+       SCM_NFALSEP(scm_procedure_p(gh_cdr($input)));
 }
 
-/* integrate2 arguments are passed as a cons pair of 
+/* integrate2 arguments are passed as a cons pair of
    ((components1 . components2) . func)
    in order to set all six arguments at once. */
 %typemap(guile,in) (int num_fields1, const meep::component *components1, int num_fields2, const meep::component *components2, meep::field_function integrand, void *integrand_data_) (my_field_func_data data) {
@@ -155,7 +160,7 @@ static inline std::complex<double> my_complex_func3(std::complex<double> x) {
        SCM_NFALSEP(scm_pair_p(gh_car($input))) &&
        SCM_NFALSEP(scm_list_p(gh_car(gh_car($input)))) &&
        SCM_NFALSEP(scm_list_p(gh_cdr(gh_car($input)))) &&
-       SCM_NFALSEP(scm_procedure_p(gh_cdr($input))); 
+       SCM_NFALSEP(scm_procedure_p(gh_cdr($input)));
 }
 
 // Need to tell SWIG about any method that returns a new object
