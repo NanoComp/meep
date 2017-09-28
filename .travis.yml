@@ -27,15 +27,7 @@ script:
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make && make check && make install)
   - popd
   # Build and test pymeep with python 3.6
-  - make distclean
   - mkdir build3 && pushd build3
-  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make && pushd python && make check && make install)
-#  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make)
-#  - pushd python && make check && make install
+  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make)
+  - pushd python && make check && make install
   - popd
-
-# the following is useful for debugging travis failures
-after_script:
-   - if [ -r test-suite.log ]; then cat test-suite.log; fi
-   - if [ -r tests/test-suite.log ]; then cat tests/test-suite.log; fi
-   - if [ -r python/test-suite.log ]; then cat python/test-suite.log; fi
