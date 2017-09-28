@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
 	  	                         DEFAULT_SUBPIXEL_MAXEVAL, // maxeval
                                          false,                    // ensure_periodicity
                                          false,                    // verbose
+                                         meep_geom::vacuum,
                                          alist);
 
   if (alist)

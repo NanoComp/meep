@@ -25,7 +25,7 @@ class TestHoleyWvgBands(unittest.TestCase):
             geometry=[b, c],
             sources=[s],
             symmetries=[sym],
-            boundary_layers=[mp.Pml(1, direction=mp.Y)],
+            boundary_layers=[mp.pml(1, direction=mp.Y)],
             resolution=20
         )
 

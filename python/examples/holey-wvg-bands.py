@@ -36,7 +36,7 @@ def main():
     sym = mp.Mirror(direction=mp.Y, phase=-1)
 
     sim = mp.Simulation(cell_size=cell, geometry=[b, c], sources=[s], symmetries=[sym],
-                        boundary_layers=[mp.Pml(dpml, direction=mp.Y)], resolution=20)
+                        boundary_layers=[mp.pml(dpml, direction=mp.Y)], resolution=20)
 
     kx = False  # if true, do run at specified kx and get fields
     k_interp = 19  # # k-points to interpolate, otherwise

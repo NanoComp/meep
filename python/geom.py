@@ -69,7 +69,8 @@ class Medium(object):
                  D_conductivity_diag=Vector3(),
                  B_conductivity_diag=Vector3(),
                  epsilon=None,
-                 index=None):
+                 index=None,
+                 chi3=None):
 
         if epsilon:
             epsilon_diag = Vector3(epsilon, epsilon, epsilon)
@@ -84,7 +85,7 @@ class Medium(object):
         self.E_susceptibilities = E_susceptibilities
         self.H_susceptibilities = H_susceptibilities
         self.E_chi2_diag = E_chi2_diag
-        self.E_chi3_diag = E_chi3_diag
+        self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else E_chi3_diag
         self.H_chi2_diag = H_chi2_diag
         self.H_chi3_diag = H_chi3_diag
         self.D_conductivity_diag = D_conductivity_diag
