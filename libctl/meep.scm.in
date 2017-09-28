@@ -22,8 +22,10 @@
 ; this case, we assume that the procedure returns 1 argument,
 ; as this is the most useful default for our purposes.  Sigh.
 
-(define (procedure-num-args p) 
-  (let ((arity (procedure-property p 'arity)))
+(define (procedure-num-args p)
+  (let ((arity (if (defined? 'procedure-minimum-arity)
+                   (procedure-minimum-arity p)
+                   (procedure-property p 'arity))))
     (if arity (car arity) 1)))
 
 ; ****************************************************************
@@ -80,7 +82,7 @@
 (define H-polarizations H-susceptibilities)
 
 (define (epsilon eps) (epsilon-diag eps eps eps))
-(define (mu m) (mu-diag m m m)) 
+(define (mu m) (mu-diag m m m))
 
 (define dielectric medium) ; old name for backwards compatibility
 (define polarizations E-polarizations) ; backwards compatibility
@@ -168,7 +170,7 @@
   (if (not (null? ds))
       (apply
        map
-       (cons 
+       (cons
 	(lambda (. vs) (display-run-data name vs))
 	ds))))
 
@@ -246,8 +248,8 @@
 (define-param Courant 0.5)
 
 (define (infer-dimensions k)
-  (if (and (not (null? k)) (= dimensions 3)) ; infer dimensions            
-      (if (and (= (vector3-z (object-property-value geometry-lattice 'size)) 
+  (if (and (not (null? k)) (= dimensions 3)) ; infer dimensions
+      (if (and (= (vector3-z (object-property-value geometry-lattice 'size))
 		  no-size)
 	       (or (not k) special-kz? (zero? (vector3-z k))))
 	  2
@@ -265,7 +267,7 @@
   (let ((v (apply make (cons volume-class args))))
     (let ((cen (object-property-value v 'center))
 	  (sz (object-property-value v 'size)))
-      (new-meep-volume 
+      (new-meep-volume
        (vector3- cen (vector3-scale 0.5 sz))
        (vector3+ cen (vector3-scale 0.5 sz))))))
 
@@ -274,7 +276,7 @@
 (define (init-structure . k_)
   (let ((k (if (null? k_) '() (car k_)))
 	(s (object-property-value geometry-lattice 'size)))
-    (set! structure (make-structure 
+    (set! structure (make-structure
 		     (infer-dimensions k)
 		     s geometry-center
 		     resolution
@@ -297,8 +299,8 @@
   (define-property width 0 'number)
   (define-property cutoff 3.0 'number)
   (define-derived-property swigval 'SCM
-    (lambda (o) 
-      (let ((s (new-meep-continuous-src-time 
+    (lambda (o)
+      (let ((s (new-meep-continuous-src-time
 		(* 1.0 (object-property-value o 'frequency))
 		(object-property-value o 'width)
 		(object-property-value o 'start-time)
@@ -312,13 +314,13 @@
   (define-property start-time 0 'number)
   (define-property cutoff 5.0 'number)
   (define-derived-property swigval 'SCM
-    (lambda (o) 
+    (lambda (o)
       (let ((s (new-meep-gaussian-src-time
 		(* 1.0 (object-property-value o 'frequency))
 		(object-property-value o 'width)
 		(object-property-value o 'start-time)
 		(+ (object-property-value o 'start-time)
-		   (* 2 (object-property-value o 'width) 
+		   (* 2 (object-property-value o 'width)
 		      (object-property-value o 'cutoff))))))
 	(meep-src-time-is-integrated-set s (object-property-value o 'is-integrated?))
 	s))))
@@ -327,8 +329,8 @@
   (define-property start-time (- infinity) 'number)
   (define-property end-time infinity 'number)
   (define-derived-property swigval 'SCM
-    (lambda (o) 
-      (let ((s (new-meep-custom-src-time 
+    (lambda (o)
+      (let ((s (new-meep-custom-src-time
 		(object-property-value o 'src-func)
 		(object-property-value o 'start-time)
 		(object-property-value o 'end-time))))
@@ -412,7 +414,7 @@
 	       (object-property-value s 'eig-kpoint)
 	       (object-property-value s 'eig-parity)
 	       (object-property-value s 'eig-resolution)
-	       (object-property-value s 'eig-tolerance) 
+	       (object-property-value s 'eig-tolerance)
 	       (object-property-value s 'amplitude) A)))
 	(if (null? A)
 	    (meep-fields-add-volume-source f
@@ -432,7 +434,7 @@
 (define init-fields-hooks '()) ; list of thunks to execute after init-fields
 (define (init-fields)
   (if (null? structure) (init-structure k-point))
-  (set! fields (new-meep-fields structure 
+  (set! fields (new-meep-fields structure
 				(if (= dimensions CYLINDRICAL) m 0)
 				(if (and special-kz? k-point)
 				    (vector3-z k-point) 0.0)
@@ -442,7 +444,7 @@
 	       (and (= dimensions CYLINDRICAL) (not (zero? m)))
 	       (not (for-all? symmetries
 			      (lambda (s)
-				(zero? (imag-part 
+				(zero? (imag-part
 					(object-property-value s 'phase))))))
 	       (not (or (not k-point)
 			(and special-kz?
@@ -451,20 +453,20 @@
 			(vector3= k-point (vector3 0))))))
       (meep-fields-use-real-fields fields)
       (print "Meep: using complex fields.\n"))
-  (if k-point (meep-fields-use-bloch fields 
+  (if k-point (meep-fields-use-bloch fields
 				     (if special-kz?
-					 (vector3 (vector3-x k-point) 
+					 (vector3 (vector3-x k-point)
 						  (vector3-y k-point))
 					 k-point)))
   (map (lambda (s) (add-source s fields)) sources)
   (map (lambda (thunk) (thunk)) init-fields-hooks))
 
-(define (meep-time) 
-  (if (null? fields) (init-fields)) 
+(define (meep-time)
+  (if (null? fields) (init-fields))
   (meep-fields-time fields))
 
-(define (meep-round-time) 
-  (if (null? fields) (init-fields)) 
+(define (meep-round-time)
+  (if (null? fields) (init-fields))
   (meep-fields-round-time fields))
 
 (define (get-field-point c pt)
@@ -481,7 +483,7 @@
   (if (not (null? fields))
       (if (and (not (or (not k-point) (vector3= k-point (vector3 0))))
 	       (not (zero? (meep-fields-is-real-get fields))))
-	  (begin (delete-meep-fields fields) 
+	  (begin (delete-meep-fields fields)
 		 (set! fields '())
 		 (init-fields))
 	  (if k-point (meep-fields-use-bloch fields k-point)))))
@@ -532,13 +534,13 @@
 		  vl))))
        stufflist)
   (let ((stuff
-	 (add-dft-stuff fields vl 
+	 (add-dft-stuff fields vl
 			(- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
     (delete-meep-volume-list vl)
     stuff))
 
 (define (fields-add-flux fields fcen df nfreq . fluxes)
-  (fields-add-fluxish-stuff meep-fields-add-dft-flux 
+  (fields-add-fluxish-stuff meep-fields-add-dft-flux
 			    fields fcen df nfreq fluxes))
 
 (define (add-flux fcen df nfreq . fluxes)
@@ -587,7 +589,7 @@
   (define-property weight 1.0 'cnumber))
 
 (define (fields-add-force fields fcen df nfreq . forcees)
-  (fields-add-fluxish-stuff meep-fields-add-dft-force 
+  (fields-add-fluxish-stuff meep-fields-add-dft-force
 			    fields fcen df nfreq forcees))
 
 (define (add-force fcen df nfreq . forcees)
@@ -635,7 +637,7 @@
   (define-property weight 1.0 'cnumber))
 
 (define (fields-add-near2far fields fcen df nfreq . near2fars)
-  (fields-add-fluxish-stuff meep-fields-add-dft-near2far 
+  (fields-add-fluxish-stuff meep-fields-add-dft-near2far
 			    fields fcen df nfreq near2fars))
 
 (define (add-near2far fcen df nfreq . near2fars)
@@ -685,7 +687,7 @@
   (if (= 0 (procedure-num-args func))
       (if (eq? to-do 'step) (func))
       (func to-do)))
- 
+
 ; Some convenient wrappers for step functions passed to run.  e.g., these
 ; can be used to only output at certain times, instead of ata every time step.
 
@@ -701,7 +703,7 @@
 
 ; evaluate step-funcs whenever (cond?) is true/false.
 (define (when-true cond? . step-funcs) (when-true-funcs cond? step-funcs))
-(define (when-false cond? . step-funcs) 
+(define (when-false cond? . step-funcs)
   (when-true-funcs (lambda () (not (cond?))) step-funcs))
 
 ; output at an interval of dT (in meep/simulation time).
@@ -710,7 +712,7 @@
   (let ((Tlast (meep-round-time)))
     (lambda (to-do)
       (let ((T (meep-round-time)))
-	(if (or (eq? to-do 'finish) 
+	(if (or (eq? to-do 'finish)
 		(>= T (+ Tlast dT (* -0.5 (meep-fields-dt-get fields)))))
 	    (begin
 	      (map (lambda (f) (eval-step-func f to-do)) step-funcs)
@@ -824,14 +826,14 @@
 
 (define (output-component c . h5file)
   (if (null? fields) (error "init-fields is required before output-component"))
-  (meep-fields-output-hdf5 
-   fields c 
+  (meep-fields-output-hdf5
+   fields c
    (if (null? output-volume)
        (meep-fields-total-volume fields)
        output-volume)
-   (if (null? h5file) output-append-h5 (car h5file)) 
+   (if (null? h5file) output-append-h5 (car h5file))
    (and (null? h5file) (not (null? output-append-h5)))
-   output-single-precision? 
+   output-single-precision?
    (get-filename-prefix))
   (if (null? h5file)
       (let ((nm (meep-fields-h5file-name fields (meep-component-name c)
@@ -865,19 +867,19 @@
 
 (define (output-components fname . cs)
   (if (null? fields) (error "init-fields is required before output-component"))
-  (let ((f 
+  (let ((f
 	 (if (null? output-append-h5)
 	     (list (meep-fields-open-h5file fields fname (meep-h5file-WRITE)
 					    (get-filename-prefix) true))
 	     '())))
-    (map (lambda (c) 
+    (map (lambda (c)
 	   (apply output-component (cons c f))
-	   (if (null? output-append-h5) 
+	   (if (null? output-append-h5)
 	       (meep-h5file-prevent-deadlock (car f))))
 	 cs)
     (if (null? output-append-h5) (delete-meep-h5file (car f))))
   (if (null? output-append-h5)
-      (output-h5-hook (meep-fields-h5file-name 
+      (output-h5-hook (meep-fields-h5file-name
 		       fields fname (get-filename-prefix) true))))
 
 ; convenience functions, similar to MPB:
@@ -945,8 +947,8 @@
       (let ((h5save output-append-h5))
 	(set! output-append-h5 h5)
 	(map (lambda (f) (eval-step-func f to-do)) step-funcs)
-	(if (eq? to-do 'finish) 
-	    (begin 
+	(if (eq? to-do 'finish)
+	    (begin
 	      (delete-meep-h5file h5)
 	      (output-h5-hook (meep-fields-h5file-name
 			       fields fname (get-filename-prefix)))))
@@ -965,9 +967,9 @@
       (set! output-h5-hook hooksave))))
 
 (define (h5topng rm? options . step-funcs)
-  (apply convert-h5 (cons rm? (cons (string-append 
+  (apply convert-h5 (cons rm? (cons (string-append
 				     "EPS=\"" meep-last-eps-filename "\"; "
-				     "h5topng " options) 
+				     "h5topng " options)
 				    step-funcs))))
 
 (define (output-png-rm? rm? c options)
@@ -975,14 +977,14 @@
     (lambda (to-do)
       (if (eq? to-do 'step)
 	  (begin
-	    (set! maxabs 
+	    (set! maxabs
 		  (max maxabs
-		       (meep-fields-max-abs 
+		       (meep-fields-max-abs
 			fields c
 			(if (null? output-volume)
 			    (meep-fields-total-volume fields)
 			    output-volume))))
-	    ((h5topng rm? 
+	    ((h5topng rm?
 		      (string-append "-M " (number->string maxabs) " " options)
 		      (lambda () (output-component c))) to-do))))))
 
@@ -1001,7 +1003,7 @@
   `(lambda (c pt)
      (set! ,data '())
      (let ((t0 0))
-       (lambda () 
+       (lambda ()
 	 (set! ,data-dt (- (meep-time) t0))
 	 (set! t0 (meep-time))
 	 (set! ,data (cons (get-field-point c pt) ,data))))))
@@ -1023,7 +1025,7 @@
 (define-param harminv-amp-thresh -1.0)
 
 (define (analyze-harminv data fcen df maxbands . dt)
-  (display-run-data 
+  (display-run-data
    "harminv"
    (list "frequency" "imag. freq." "Q" "|amp|" "amplitude" "error"))
   (let ((bands (do-harminv data
@@ -1035,7 +1037,7 @@
                            harminv-rel-err-thresh harminv-err-thresh
                            harminv-rel-amp-thresh harminv-amp-thresh)))
     (map (lambda (b) ; b = vector of (freq, amp, error)
-	   (display-run-data 
+	   (display-run-data
 	    "harminv"
 	    (list
 	     (harminv-freq-re b)
@@ -1055,7 +1057,7 @@
        (lambda ()
 	 (set! ,data (reverse data')) ; put in correct order
 	 (set! ,dt dt')
-	 (set! ,results 
+	 (set! ,results
 	       (analyze-harminv ,data fcen' df'
 				(if (list? maxbands')
 				    (if (null? maxbands') 100 (car maxbands'))
@@ -1084,12 +1086,12 @@
    (meep-dft-ldos-Nomega-get f)))
 
 (define (dft-ldos fcen df nfreq)
-  (let ((ldos (new-meep-dft-ldos 
+  (let ((ldos (new-meep-dft-ldos
 	       (- fcen (/ df 2)) (+ fcen (/ df 2)) nfreq)))
     (lambda (to-do)
       (if (eq? to-do 'step)
 	  (meep-dft-ldos-update ldos fields)
-	  (begin 
+	  (begin
 	    (set! dft-ldos-data (dft-ldos-ldos ldos))
 	    (set! dft-ldos-Fdata (dft-ldos-F ldos))
 	    (set! dft-ldos-Jdata (dft-ldos-J ldos))
@@ -1108,10 +1110,10 @@
       (let ((t (meep-wall-time)))
 	(if (>= (- t tlast) dt)
 	    (begin
-	      (print "Meep progress: " 
+	      (print "Meep progress: "
 		     (- (meep-time) T0) "/" T " = "
 		     (round-dig 1 (/ (- (meep-time) T0) (* 0.01 T))) "% done"
-		     " in " (round-dig 1 (- t t0)) "s, " 
+		     " in " (round-dig 1 (- t t0)) "s, "
 		     (round-dig 1 ( - (* (- t t0) (/ T (- (meep-time) T0)))
 				      (- t t0))) "s to go\n")
 	      (set! tlast t)))))))
@@ -1123,9 +1125,9 @@
   (if (null? fields) (init-fields))
   (if (number? cond?) ; cond? is a time to run for
       (let ((T0 (meep-round-time))) ; current Meep time
-	(apply run-until (cons (lambda () (>= (meep-round-time) 
+	(apply run-until (cons (lambda () (>= (meep-round-time)
 					      (+ T0 cond?)))
-			       (cons (display-progress T0 (+ T0 cond?) 
+			       (cons (display-progress T0 (+ T0 cond?)
 						       progress-interval)
 				     step-funcs))))
       (begin ; otherwise, cond? is a boolean thunk
@@ -1145,7 +1147,7 @@
 (define (run-sources+ cond? . step-funcs)
   (if (null? fields) (init-fields))
   (let ((Ts (meep-fields-last-source-time fields)))
-  (apply run-until 
+  (apply run-until
 	 (cons (if (number? cond?)
 		   (+ (- Ts (meep-round-time)) cond?)
 		   (lambda () (and (cond?) (>= (meep-round-time) Ts))))
@@ -1176,7 +1178,7 @@
 		  (print "field decay(t = " (meep-time)"): "
 			 old-cur " / " max-abs " = " (/ old-cur max-abs) "\n"))
 	      (<= old-cur (* max-abs decay-by))))))))
-	    
+
 
 ; ****************************************************************
 ; band diagrams
@@ -1185,7 +1187,7 @@
   (define cs (map (lambda (o) (object-property-value o 'component)) sources))
   (define pts (map (lambda (o) (object-property-value o 'center)) sources))
   (define As (map (lambda (o) (object-property-value o 'amplitude)) sources))
-  (define fmin 
+  (define fmin
     (max 0 (apply min (map (lambda (o)
 			     (let ((t (object-property-value o 'src)))
 			       (if (object-member? 'gaussian-src t)
@@ -1193,7 +1195,7 @@
 				      (/ 1 (object-property-value t 'width) 2))
 				   infinity)))
 			   sources))))
-  (define fmax 
+  (define fmax
     (apply max (map (lambda (o)
 		      (let ((t (object-property-value o 'src)))
 			(if (object-member? 'gaussian-src t)
@@ -1207,8 +1209,8 @@
   ; with correct relative amplitudes?
   (change-k-point! k)
   (restart-fields)
-  (run-sources+ T (after-sources 
-		   (harminv (car cs) (car pts) 
+  (run-sources+ T (after-sources
+		   (harminv (car cs) (car pts)
 			    (* 0.5 (+ fmin fmax)) (- fmax fmin))))
   (map harminv-freq harminv-results))
 
@@ -1219,11 +1221,11 @@
 	 (set! k-index (+ k-index 1))
 	 (if (= k-index 1) (begin (init-fields) (output-epsilon)))
 	 (let ((freqs (run-k-point T k)))
-	   (print "freqs:, " k-index 
+	   (print "freqs:, " k-index
 		  ", " (vector3-x k) ", " (vector3-y k) ", " (vector3-z k))
-	   (map (lambda (x) (print ", " x)) (map real-part freqs)) 
+	   (map (lambda (x) (print ", " x)) (map real-part freqs))
 	   (print "\n")
-	   (print "freqs-im:, " k-index 
+	   (print "freqs-im:, " k-index
 		  ", " (vector3-x k) ", " (vector3-y k) ", " (vector3-z k))
 	   (map (lambda (x) (print ", " x)) (map imag-part freqs))
 	   (print "\n")

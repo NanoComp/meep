@@ -23,7 +23,7 @@
 (define-param df 0.02) ; turn-on bandwidth
 (define-param kdir (vector3 1 1)) ; direction of k (length is irrelevant)
 (define k (vector3-scale (* 2 pi fcen)
-			 (unit-vector3 kdir))) ; k with correct length
+                         (unit-vector3 kdir))) ; k with correct length
 
 (set! sources
       (list
