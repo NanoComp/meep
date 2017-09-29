@@ -1304,7 +1304,7 @@ class fields {
   // must eventually be caller-deallocated via delete[].
   double *get_array_slice(const volume &where,
                           std::vector<component> components,
-                          field_function fun, void *fun_data,
+                          field_rfunction rfun, void *fun_data,
                           double *slice=0);
 
   std::complex<double> *get_complex_array_slice(const volume &where,
@@ -1314,11 +1314,12 @@ class fields {
                                    std::complex<double> *slice=0);
 
   // alternative entry points for when you have no field
-  // function, i.e. you want just a single component
-  // for the slice. (The slice_length parameter is only
+  // function, i.e. you want just a single component or 
+  // derived component.) (The slice_length parameter is only
   // present to facilitate SWIG-generated python wrappers;
   // it is ignored by the C code).
   double *get_array_slice(const volume &where, component c, double *slice=0, int slice_length=0);
+  double *get_array_slice(const volume &where, derived_component c, double *slice=0, int slice_length=0);
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 component c,
                                                 std::complex<double> *slice=0, int slice_length=0);
@@ -1326,8 +1327,10 @@ class fields {
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where,
                            std::vector<component> components,
-                           field_function fun, void *fun_data_,
-                           bool has_imag, void *vslice);
+                           field_function fun,
+                           field_rfunction rfun,
+                           void *fun_data,
+                           void *vslice);
 
   // step.cpp methods:
   double last_step_output_wall_time;

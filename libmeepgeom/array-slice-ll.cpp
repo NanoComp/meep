@@ -39,18 +39,36 @@ cdouble default_field_function(const cdouble *fields,
 #define RELTOL 1.0e-6
 double Compare(double *d1, double *d2, int N, const char *Name)
 {
-  double MaxRelErr=0.0;
+  double Norm1=0.0, Norm2=0.0, NormDelta=0.0;
   for(int n=0; n<N; n++)
-   { 
-     double Scale = fmax( fabs(d1[n]), fabs(d2[n]) );
-     if (Scale<1.0e-8)
-      continue;
-     double RelErr = fabs(d1[n] - d2[n]) / Scale;
-     MaxRelErr = fmax(RelErr, MaxRelErr);
-     if (MaxRelErr > RELTOL)
-      abort("error at %s[%i]: should be %e, is %e",Name,n,d1[n],d2[n]);
+   { Norm1     += d1[n]*d1[n];
+     Norm2     += d2[n]*d2[n];
+     NormDelta += (d1[n]-d2[n])*(d1[n]-d2[n]);
    };
-  return MaxRelErr;
+  Norm1=sqrt(Norm1);
+  Norm2=sqrt(Norm2);
+  NormDelta=sqrt(NormDelta);
+  double RelErr = NormDelta / (0.5*(Norm1+Norm2));
+  if (RelErr > RELTOL)
+   abort("fail: rel error in %s data = %e\n",Name,RelErr);
+  return RelErr;
+}
+
+double Compare(cdouble *d1, cdouble *d2, int N, const char *Name)
+{
+  double Norm1=0.0, Norm2=0.0, NormDelta=0.0;
+  for(int n=0; n<N; n++)
+   { Norm1     += norm(d1[n]);
+     Norm2     += norm(d2[n]);
+     NormDelta += norm(d1[n]-d2[n]);
+   };
+  Norm1=sqrt(Norm1);
+  Norm2=sqrt(Norm2);
+  NormDelta=sqrt(NormDelta);
+  double RelErr = NormDelta / (0.5*(Norm1+Norm2));
+  if (RelErr > RELTOL)
+   abort("fail: rel error in %s data = %e\n",Name,RelErr);
+  return RelErr;
 }
 
 /***************************************************************/
@@ -166,7 +184,8 @@ int main(int argc, char *argv[])
 
   int reim=0;
   int rank, dims1D[1], dims2D[2];
-  double *file_slice1d=0, *file_slice2d=0;
+  cdouble *file_slice1d=0;
+  double *file_slice2d=0;
 
 #define H5FILENAME "array-slice-ll"
 #define NX 126
@@ -174,10 +193,8 @@ int main(int argc, char *argv[])
   if (write_files)
    { 
      h5file *file = f.open_h5file(H5FILENAME);
-     f.output_hdf5(file, "slice_1d", 1, &src_cmpt,
-                   default_field_function, 0, reim, v1d);
-     f.output_hdf5(file, "slice_2d", 1, &src_cmpt,
-                   default_field_function, 0, reim, v2d);
+     f.output_hdf5(Hz, v1d, file);
+     f.output_hdf5(Sy, v2d, file);
      master_printf("Wrote binary data to file %s.h5\n",H5FILENAME);
      delete file;
      exit(0);
@@ -188,10 +205,19 @@ int main(int argc, char *argv[])
      // read 1D and 2D array-slice data from HDF5 file
      //
      h5file *file = f.open_h5file(H5FILENAME, h5file::READONLY);
-     file_slice1d = file->read("slice_1d", &rank, dims1D, 1);
+     double *rdata = file->read("hz.r", &rank, dims1D, 1);
      if (rank!=1 || dims1D[0]!=NX)
-      abort("failed to read 1D reference data from file %s.h5",H5FILENAME);
-     file_slice2d = file->read("slice_2d", &rank, dims2D, 2);
+      abort("failed to read 1D data(hz.r) from file %s.h5",H5FILENAME);
+     double *idata = file->read("hz.i", &rank, dims1D, 1);
+     if (rank!=1 || dims1D[0]!=NX)
+      abort("failed to read 1D data(hz.i) from file %s.h5",H5FILENAME);
+     file_slice1d = new cdouble[dims1D[0]];
+     for(int n=0; n<dims1D[0]; n++)
+      file_slice1d[n] = cdouble(rdata[n], idata[n]);
+     delete[] rdata;
+     delete[] idata;
+  
+     file_slice2d = file->read("sy", &rank, dims2D, 2);
      if (rank!=2 || dims2D[0]!=NX || dims2D[1]!=NY)
       abort("failed to read 2D reference data from file %s.h5",H5FILENAME);
      delete file;
@@ -203,16 +229,16 @@ int main(int argc, char *argv[])
      rank=f.get_array_slice_dimensions(v1d, dims1D);
      if (rank!=1 || dims1D[0]!=NX)
       abort("incorrect dimensions for 1D slice");
-     double *slice1d=f.get_array_slice(v1d, src_cmpt);
-     double MaxErr1D=Compare(slice1d, file_slice1d, NX, "Hz_1d");
-     master_printf("1D: max rel error %e\n",MaxErr1D);
+     cdouble *slice1d=f.get_complex_array_slice(v1d, Hz);
+     double RelErr1D=Compare(slice1d, file_slice1d, NX, "Hz_1d");
+     master_printf("1D: rel error %e\n",RelErr1D);
 
      rank=f.get_array_slice_dimensions(v2d, dims2D);
      if (rank!=2 || dims2D[0]!=NX || dims2D[1]!=NY)
       abort("incorrect dimensions for 2D slice");
-     double *slice2d=f.get_array_slice(v2d, src_cmpt);
-     double MaxErr2D=Compare(slice2d, file_slice2d, NX*NY, "Hz_2d");
-     master_printf("2D: max rel error %e\n",MaxErr2D);
+     double *slice2d=f.get_array_slice(v2d, Sy);
+     double RelErr2D=Compare(slice2d, file_slice2d, NX*NY, "Sy_2d");
+     master_printf("2D: rel error %e\n",RelErr2D);
 
    }; // if (write_files) ... else ...
 

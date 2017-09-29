@@ -59,7 +59,7 @@ xMax = +0.25*sx;
 yMin = -0.15*sy;
 yMax = +0.15*sy;
 
-# 1D slice
+# 1D slice of Hz data
 dims1d=np.zeros(3,dtype=np.int32)
 v1d=mp.volume( mp.vec(xMin, 0.0), mp.vec(xMax, 0.0) )
 rank1d  = sim.fields.get_array_slice_dimensions(v1d, dims1d);
@@ -67,7 +67,7 @@ NX1 = dims1d[0];
 slice1d = np.zeros(NX1, dtype=np.double);
 sim.fields.get_array_slice(v1d, mp.Hz, slice1d);
 
-# 2D slice
+# 2D slice of Hz data
 dims2d=np.zeros(3,dtype=np.int32)
 v2d=mp.volume( mp.vec(xMin, yMin), mp.vec(xMax, yMax) )
 rank2d  = sim.fields.get_array_slice_dimensions(v2d, dims2d);

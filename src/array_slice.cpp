@@ -45,12 +45,13 @@ typedef struct {
   int slice_size;
 
   // the function to output and related info (offsets for averaging, etc.)
+  // note: either fun *or* rfun should be non-NULL (not both)
   field_function fun;
+  field_rfunction rfun;
   void *fun_data;
   std::vector<component> components;
 
   void *vslice;
-  bool has_imag;
 
   // temporary internal storage buffers
   component *cS;
@@ -71,12 +72,20 @@ typedef struct {
 #define UNUSED(x) (void) x // silence compiler warnings
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
-static cdouble default_field_function(const cdouble *fields,
-				      const vec &loc, void *data_)
+static cdouble default_field_func(const cdouble *fields,
+				  const vec &loc, void *data_)
 {
   (void) loc; // unused
   (void) data_; // unused
   return fields[0];
+}
+
+static double default_field_rfunc(const cdouble *fields,
+				  const vec &loc, void *data_)
+{
+  (void) loc; // unused
+  (void) data_; // unused
+  return real(fields[0]);
 }
 
 /***************************************************************/
@@ -162,8 +171,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   
   double *slice=0;
   cdouble *zslice=0;
-  bool has_imag = data->has_imag;
-  if (has_imag)
+  bool complex_data = (data->rfun==0);
+  if (complex_data)
    zslice = (cdouble *)data->vslice;
   else
    slice = (double *)data->vslice;
@@ -225,10 +234,11 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                    + loop_i1 * stride[0])
                    + loop_i2 * stride[1])
                    + loop_i3 * stride[2]);
-    if (has_imag)
+
+    if (complex_data)
      zslice[idx2] = data->fun(fields, loc, data->fun_data);
     else
-     slice[idx2]  = real(data->fun(fields, loc, data->fun_data));
+     slice[idx2]  = data->rfun(fields, loc, data->fun_data);
 
   };
 
@@ -288,12 +298,13 @@ int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *c
 }
 
 /***************************************************************/
-/***************************************************************/
+/* precisely one of fun, rfun should be non-NULL               */
 /***************************************************************/
 void *fields::do_get_array_slice(const volume &where,
                                  std::vector<component> components,
-                                 field_function fun, void *fun_data,
-                                 bool has_imag,
+                                 field_function fun,
+                                 field_rfunction rfun,
+                                 void *fun_data,
                                  void *vslice) {
 
   am_now_working_on(ArraySlice);
@@ -308,10 +319,11 @@ void *fields::do_get_array_slice(const volume &where,
   int slice_size=data.slice_size;
   if (rank==0 || slice_size==0) return 0; // no data to write
 
+  bool complex_data = (rfun==0);
   cdouble *zslice;
   double *slice;
   if (vslice==0)
-   { if (has_imag)
+   { if (complex_data)
       { zslice = new cdouble[slice_size];
         vslice = (void *)zslice;
       } 
@@ -322,8 +334,8 @@ void *fields::do_get_array_slice(const volume &where,
    };
    
   data.vslice     = vslice;
-  data.has_imag   = has_imag;
-  data.fun        = fun ? fun : default_field_function;
+  data.fun        = fun;
+  data.rfun       = rfun;
   data.fun_data   = fun_data;
   data.components = components;
 
@@ -371,8 +383,8 @@ void *fields::do_get_array_slice(const volume &where,
   /* on all cores                                                */
   /***************************************************************/
 #define BUFSIZE 1<<16 // use 64k buffer
-  if (has_imag)
-   { cdouble buffer[BUFSIZE];
+  if (complex_data)
+   { cdouble *buffer = new cdouble[BUFSIZE];
      cdouble *slice = (cdouble *)vslice;
      int offset=0, remaining=slice_size;
      while(remaining!=0)
@@ -383,9 +395,10 @@ void *fields::do_get_array_slice(const volume &where,
         remaining-=size;
         offset+=size;
       };
+     delete[] buffer;
    }
   else
-   { double buffer[BUFSIZE];
+   { double *buffer = new double[BUFSIZE];
      double *slice = (double *)vslice;
      int offset=0, remaining=slice_size;
      while(remaining!=0)
@@ -395,6 +408,7 @@ void *fields::do_get_array_slice(const volume &where,
         remaining-=size;
         offset+=size;
       };
+     delete[] buffer;
    };
 
   delete[] data.offsets;
@@ -411,11 +425,11 @@ void *fields::do_get_array_slice(const volume &where,
 /***************************************************************/
 double *fields::get_array_slice(const volume &where,
                                 std::vector<component> components,
-                                field_function fun, void *fun_data,
+                                field_rfunction rfun, void *fun_data,
                                 double *slice)
 {
   return (double *)do_get_array_slice(where, components,
-                                      fun, fun_data, false,
+                                      0, rfun, fun_data,
                                       (void *)slice);
 } 
 
@@ -425,7 +439,7 @@ cdouble *fields::get_complex_array_slice(const volume &where,
                                          cdouble *slice)
 {
   return (cdouble *)do_get_array_slice(where, components,
-                                       fun, fun_data, true,
+                                       fun, 0, fun_data,
                                        (void *)slice);
 }
 
@@ -435,8 +449,23 @@ double *fields::get_array_slice(const volume &where, component c,
   (void) slice_length;
   std::vector<component> components(1);
   components[0]=c;
-  return (double *)do_get_array_slice(where, components, 
-                                      0, 0, false, (void *)slice);
+  return (double *)do_get_array_slice(where, components,
+                                      0, default_field_rfunc, 0,
+                                      (void *)slice);
+}
+
+double *fields::get_array_slice(const volume &where,
+                                derived_component c,
+                                double *slice, int slice_length)
+{
+  (void) slice_length;
+  int nfields;
+  component carray[12];
+  field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
+  std::vector<component> cs(carray, carray+nfields);
+  return (double *)do_get_array_slice(where, cs,
+                                      0, rfun, &nfields,
+                                      (void *)slice);
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, component c,
@@ -446,7 +475,8 @@ cdouble *fields::get_complex_array_slice(const volume &where, component c,
   std::vector<component> components(1);
   components[0]=c;
   return (cdouble *)do_get_array_slice(where, components,
-                                       0, 0, true, (void *)slice);
+                                       default_field_func, 0, 0,
+                                       (void *)slice);
 }
 
 } // namespace meep
