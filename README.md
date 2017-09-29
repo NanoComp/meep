@@ -1,4 +1,4 @@
-[![Latest Docs](http://meep.readthedocs.io/en/latest/?badge=latest)](http://meep.readthedocs.io/en/latest/)
+[![Latest Docs](https://readthedocs.org/projects/meep/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
 [![Build Status](https://travis-ci.org/stevengj/meep.svg?branch=master)](https://travis-ci.org/stevengj/meep)
 
 Meep (or MEEP) is a free finite-difference time-domain (FDTD)
