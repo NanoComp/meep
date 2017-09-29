@@ -261,6 +261,7 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
         SWIG_exception_fail(SWIG_ArgError(tmp_res), "Couldn't convert Python object to meep::src_time");
     }
     $1 = reinterpret_cast<meep::src_time *>(tmp_ptr);
+
 }
 
 // Typemap suite for boundary_region
@@ -294,6 +295,11 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
         SWIG_fail;
     }
 }
+
+// Typemap suite for array_slice
+// TODO: add (cdouble *, int) version
+%apply (double* INPLACE_ARRAY1, int DIM1) {(double *slice, int slice_length)};
+%apply int INPLACE_ARRAY1[ANY] { int [3] };
 
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
