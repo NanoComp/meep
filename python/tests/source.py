@@ -57,7 +57,7 @@ class TestSourceTypemaps(unittest.TestCase):
         gv = mp.voltwo(16, 16, 10)
         gv.center_origin()
         sym = mp.mirror(mp.Y, gv)
-        the_structure = mp.structure(gv, dummy_eps, mp._pml(2), sym)
+        the_structure = mp.structure(gv, dummy_eps, mp.pml(2), sym)
         objects = []
         objects.append(Cylinder(1))
         mp.set_materials_from_geometry(the_structure, objects)

@@ -58,11 +58,11 @@ class PML(object):
         self.pml_profile = pml_profile
 
         if direction == -1 and side == -1:
-            self.swigobj = mp._pml(thickness, r_asymptotic, mean_stretch)
+            self.swigobj = mp.pml(thickness, r_asymptotic, mean_stretch)
         elif direction == -1:
-            self.swigobj = mp._pml(thickness, side, r_asymptotic, mean_stretch)
+            self.swigobj = mp.pml(thickness, side, r_asymptotic, mean_stretch)
         else:
-            self.swigobj = mp._pml(thickness, direction, side, r_asymptotic, mean_stretch)
+            self.swigobj = mp.pml(thickness, direction, side, r_asymptotic, mean_stretch)
 
     @property
     def r_asymptotic(self):
