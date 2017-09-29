@@ -23,6 +23,8 @@
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
 
+#include <vector>
+
 namespace meep {
 
 /* We use the type realnum for large arrays, e.g. the fields.
@@ -1165,7 +1167,8 @@ class fields_chunk {
 
 enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
 enum time_sink { Connecting, Stepping, Boundaries, MpiTime,
-                 FieldOutput, FourierTransforming, Other };
+                 FieldOutput, FourierTransforming, 
+                 ArraySlice, Other };
 
 typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid,
 				ivec is, ivec ie,
@@ -1284,6 +1287,50 @@ class fields {
 		      const char *prefix = NULL, bool timestamp = false);
   const char *h5file_name(const char *name,
 			  const char *prefix = NULL, bool timestamp = false);
+
+  // array_slice.cpp methods
+
+  // given a subvolume, compute the dimensions of the array slice
+  // needed to store field data for that subvolume.
+  // the data parameter is used internally in get_array_slice
+  // and should be ignored by external callers.
+  int get_array_slice_dimensions(const volume &where, int dims[3], void *data=0);
+
+  // given a subvolume, return a column-major array containing
+  // the given function of the field components in that subvolume
+  // if slice is non-null, it must be a user-allocated buffer
+  // of the correct size.
+  // otherwise, a new buffer is allocated and returned; it
+  // must eventually be caller-deallocated via delete[].
+  double *get_array_slice(const volume &where,
+                          std::vector<component> components,
+                          field_rfunction rfun, void *fun_data,
+                          double *slice=0);
+
+  std::complex<double> *get_complex_array_slice(const volume &where,
+                                   std::vector<component> components,
+                                   field_function fun,
+                                   void *fun_data,
+                                   std::complex<double> *slice=0);
+
+  // alternative entry points for when you have no field
+  // function, i.e. you want just a single component or 
+  // derived component.) (The slice_length parameter is only
+  // present to facilitate SWIG-generated python wrappers;
+  // it is ignored by the C code).
+  double *get_array_slice(const volume &where, component c, double *slice=0, int slice_length=0);
+  double *get_array_slice(const volume &where, derived_component c, double *slice=0, int slice_length=0);
+  std::complex<double> *get_complex_array_slice(const volume &where,
+                                                component c,
+                                                std::complex<double> *slice=0, int slice_length=0);
+
+  // master routine for all above entry points
+  void *do_get_array_slice(const volume &where,
+                           std::vector<component> components,
+                           field_function fun,
+                           field_rfunction rfun,
+                           void *fun_data,
+                           void *vslice);
 
   // step.cpp methods:
   double last_step_output_wall_time;

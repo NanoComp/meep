@@ -185,7 +185,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
     delete[] h5data;
   }
 
-  file->remove();
+  //file->remove();
   delete file;
 
   master_printf("Passed %s (%g..%g), err=%g\n", name,
@@ -300,7 +300,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
     delete[] h5data;
   }
 
-  file->remove();
+  //file->remove();
   delete file;
 
   master_printf("Passed %s (%g..%g), err=%g\n", name,
@@ -384,7 +384,7 @@ bool check_2d_monitor(double eps(const vec &),
 
   delete[] mon;
 
-  file->remove();
+  //file->remove();
   delete file;
 
   master_printf("Passed %s (%g..%g), err=%g\n", name,

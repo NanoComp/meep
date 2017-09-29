@@ -21,8 +21,7 @@ script:
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
-  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io sh autogen.sh --verbose --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl)
-  - make distclean
+  - autoreconf --verbose --install --symlink --force
   - mkdir build && pushd build
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make && make check && make install)
   - popd
@@ -31,3 +30,7 @@ script:
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make)
   - pushd python && make check && make install
   - popd
+after_script:
+  - if [ -r test-suite.log ]; then cat test-suite.log; fi
+  - if [ -r tests/test-suite.log ]; then cat tests/test-suite.log; fi
+  - if [ -r python/test-suite.log ]; then cat python/test-suite.log; fi
