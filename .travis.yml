@@ -30,7 +30,7 @@ script:
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make)
   - pushd python && make check && make install
   - popd
-after_script:
-  - if [ -r test-suite.log ]; then cat test-suite.log; fi
-  - if [ -r tests/test-suite.log ]; then cat tests/test-suite.log; fi
-  - if [ -r python/test-suite.log ]; then cat python/test-suite.log; fi
+after_failure:
+  - test -r test-suite.log && cat test-suite.log
+  - test -r tests/test-suite.log && cat tests/test-suite.log
+  - test -r python/test-suite.log && cat python/test-suite.log
