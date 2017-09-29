@@ -40,6 +40,7 @@ before_script:
 # build matrix:
 ##################################################
 matrix:
+  include
   - python: "2.7"
     env: MPICONF="--without-mpi"
   - python: "2.7"
