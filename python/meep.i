@@ -264,7 +264,6 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
 }
 
-<<<<<<< HEAD
 // Typemap suite for boundary_region
 
 %typecheck(SWIG_TYPECHECK_POINTER) void *pml_profile_data {
