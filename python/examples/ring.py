@@ -33,7 +33,7 @@ def main():
                         sources=[src],
                         resolution=10,
                         symmetries=[mp.Mirror(mp.Y)],
-                        boundary_layers=[mp.pml(dpml)])
+                        boundary_layers=[mp.PML(dpml)])
 
     sim.run(
         mp.at_beginning(mp.output_epsilon),
