@@ -13,6 +13,10 @@
 
 #include "meepgeom.hpp"
 
+#ifndef DATADIR
+  #define DATADIR "./"
+#endif
+
 using namespace meep;
 
 typedef std::complex<double> cdouble;
@@ -92,7 +96,7 @@ void usage(char *progname)
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-int main(int argc, char *argv[])
+int main(int argc, char *argv[], char **envp)
 {
   initialize mpi(argc, argv);
 
@@ -182,12 +186,11 @@ int main(int argc, char *argv[])
   volume v1d( vec(xMin, 0.0),  vec(xMax, 0.0) );
   volume v2d( vec(xMin, yMin), vec(xMax, yMax) );
 
-  int reim=0;
   int rank, dims1D[1], dims2D[2];
   cdouble *file_slice1d=0;
   double *file_slice2d=0;
 
-#define H5FILENAME "array-slice-ll"
+#define H5FILENAME DATADIR"array-slice-ll"
 #define NX 126
 #define NY 38
   if (write_files)
