@@ -1528,13 +1528,15 @@ void set_materials_from_geometry(meep::structure *s,
                                  double tol,
                                  int maxeval,
                                  bool _ensure_periodicity,
-                                 bool verbose, absorber_list alist)
+                                 bool verbose,
+                                 material_type _default_material,
+                                 absorber_list alist)
 {
   geom_epsilon::verbose=verbose;
 
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
-  default_material     = vacuum;
+  default_material     = _default_material;
   ensure_periodicity   = _ensure_periodicity;
   meep::grid_volume gv = s->gv;
   double resolution    = gv.a;

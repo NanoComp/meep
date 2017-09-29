@@ -28,8 +28,8 @@ namespace meep {
 /* We use the type realnum for large arrays, e.g. the fields.
    For local variables and small arrays, we use double precision,
    but for things like the fields we can often get away with
-   single precision (since the errors are not dominated by roundoff). 
-   However, we will default to using double-precision for large 
+   single precision (since the errors are not dominated by roundoff).
+   However, we will default to using double-precision for large
    arrays, as the factor of two in memory and the moderate increase
    in speed currently don't seem worth the loss of precision. */
 #define MEEP_SINGLE 0 // 1 for single precision, 0 for double
@@ -51,18 +51,18 @@ const double nan = NAN;
 const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
-/* generic base class, only used by subclassing: represents susceptibility 
+/* generic base class, only used by subclassing: represents susceptibility
    polarizability vector P = chi(omega) W  (where W = E or H). */
 class susceptibility {
 public:
-  susceptibility() { id = cur_id++; ntot = 0; next = NULL; 
+  susceptibility() { id = cur_id++; ntot = 0; next = NULL;
     FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
       sigma[c][d] = NULL; trivial_sigma[c][d] = true; } }
-  susceptibility(const susceptibility &s) { id = s.id; ntot = s.ntot; 
+  susceptibility(const susceptibility &s) { id = s.id; ntot = s.ntot;
     next = NULL; FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {
       sigma[c][d] = NULL; trivial_sigma[c][d] = true; } }
   virtual susceptibility *clone() const;
-  virtual ~susceptibility() { 
+  virtual ~susceptibility() {
     FOR_COMPONENTS(c) FOR_DIRECTIONS(d) delete[] sigma[c][d];
     delete next; }
 
@@ -71,8 +71,8 @@ public:
 
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
-			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 			double dt, const grid_volume &gv,
 			void *P_internal_data) const {
     (void) P; (void) W; (void) W_prev; (void) dt; (void) gv;
@@ -83,7 +83,7 @@ public:
   // field.  Also given the fields array if it is needed for some reason.
   // Only update for ft fields.
   virtual void subtract_P(field_type ft,
-			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
 			  void *P_internal_data) const {
     (void) ft; (void) f_minus_p; (void) P_internal_data;
   }
@@ -107,7 +107,7 @@ public:
      populations, or other data.  These routines return the size of
      this internal-data array and initialize it. */
   virtual void* new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
-				  const grid_volume &gv) const { 
+				  const grid_volume &gv) const {
     (void) W; (void) gv; return 0;
   }
   virtual void delete_internal_data(void *data) const;
@@ -133,7 +133,7 @@ public:
   virtual realnum *internal_notowned_ptr(int inotowned, component c, int n,
 					 void *P_internal_data) const {
     (void) inotowned; (void) n; (void) c; (void) P_internal_data; return 0; }
-  
+
   /* same thing as above, except this gives (possibly complex)
      internal fields that need to be multiplied by the same phase
      factor as the fields at boundaries.  Note: we assume internal fields
@@ -142,12 +142,12 @@ public:
 					   void *P_internal_data) const {
     (void) c; (void) P_internal_data; return 0; }
   // real/imaginary parts offsets for cmp = 0/1
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, 
-					  int n, 
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
+					  int n,
 					  void *P_internal_data) const {
-    (void) inotowned; (void) n; (void) c; (void) cmp; (void) P_internal_data; 
+    (void) inotowned; (void) n; (void) c; (void) cmp; (void) P_internal_data;
     return 0; }
-  
+
   susceptibility *next;
   int ntot;
   realnum *sigma[NUM_FIELD_COMPONENTS][5];
@@ -166,7 +166,7 @@ private:
   int id; // id for this object and its clones, for comparison purposes
 };
 
-/* a Lorentzian susceptibility 
+/* a Lorentzian susceptibility
    \chi(\omega) = sigma * omega_0^2 / (\omega_0^2 - \omega^2 - i\gamma \omega)
   If no_omega_0_denominator is true, then we omit the omega_0^2 factor in the
   denominator to obtain a Drude model. */
@@ -175,14 +175,14 @@ public:
   lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false) : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
-  
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
-			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 			double dt, const grid_volume &gv,
 			void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft,
-			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
 			  void *P_internal_data) const;
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -193,8 +193,8 @@ public:
 
   virtual int num_cinternal_notowned_needed(component c,
 					    void *P_internal_data) const;
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, 
-					  int n, 
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
+					  int n,
 					  void *P_internal_data) const;
 protected:
   double omega_0, gamma;
@@ -206,11 +206,11 @@ protected:
 class noisy_lorentzian_susceptibility : public lorentzian_susceptibility {
 public:
   noisy_lorentzian_susceptibility(double noise_amp, double omega_0, double gamma, bool no_omega_0_denominator = false) : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), noise_amp(noise_amp) {}
-  
+
   virtual susceptibility *clone() const { return new noisy_lorentzian_susceptibility(*this); }
-  
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
-			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 			double dt, const grid_volume &gv,
 			void *P_internal_data) const;
 
@@ -232,27 +232,27 @@ public:
   virtual susceptibility *clone() const { return new multilevel_susceptibility(*this); }
   virtual ~multilevel_susceptibility();
 
-  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2], 
-			realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+  virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
+			realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 			double dt, const grid_volume &gv,
 			void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft,
-			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+			  realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
 			  void *P_internal_data) const;
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
 				  const grid_volume &gv) const;
   virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2],
-				  double dt, const grid_volume &gv, 
+				  double dt, const grid_volume &gv,
 				  void *data) const;
   virtual void *copy_internal_data(void *data) const;
   virtual void delete_internal_data(void *data) const;
 
   virtual int num_cinternal_notowned_needed(component c,
 					    void *P_internal_data) const;
-  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp, 
-					  int n, 
+  virtual realnum *cinternal_notowned_ptr(int inotowned, component c, int cmp,
+					  int n,
 					  void *P_internal_data) const;
 
   // always need notowned W and W_prev for E dot dP/dt terms
@@ -284,19 +284,19 @@ public:
   typedef enum {
     READONLY, READWRITE, WRITE
   } access_mode;
-  
+
   h5file(const char *filename_, access_mode m=READWRITE, bool parallel_=true);
   ~h5file(); // closes the files (and any open dataset)
-  
+
   bool ok();
-  
+
   realnum *read(const char *dataname, int *rank, int *dims, int maxrank);
   void write(const char *dataname, int rank, const int *dims, realnum *data,
 	     bool single_precision = true);
-  
+
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
-  
+
   void create_data(const char *dataname, int rank, const int *dims,
 		   bool append_data = false,
 		   bool single_precision = true);
@@ -307,14 +307,14 @@ public:
   void write_chunk(int rank, const int *chunk_start, const int *chunk_dims,
 		   realnum *data);
   void done_writing_chunks();
-  
+
   void read_size(const char *dataname, int *rank, int *dims, int maxrank);
   void read_chunk(int rank, const int *chunk_start, const int *chunk_dims,
 		  realnum *data);
-  
+
   void remove();
   void remove_data(const char *dataname);
-  
+
   const char *file_name() const { return filename; }
 
   void prevent_deadlock(); // hackery for exclusive mode
@@ -327,8 +327,7 @@ private:
   void unset_cur();
   void set_cur(const char *dataname, void *data_id);
   char *cur_dataname;
-  bool cur_append_data;
-  
+
   /* linked list to keep track of which datasets we are extending...
      this is necessary so that create_or_extend_data can know whether
      to create (overwrite) a dataset or extend it. */
@@ -338,7 +337,7 @@ private:
     struct extending_s *next;
   } *extending;
   extending_s *get_extending(const char *dataname) const;
-  
+
   /* store hid_t values as hid_t* cast to void*, so that
      files including meep.h don't need hdf5.h */
   void *id; /* file */
@@ -354,7 +353,7 @@ typedef double (*pml_profile_func)(double u, void *func_data);
 #define DEFAULT_SUBPIXEL_MAXEVAL 100000
 
 /* This class is used to compute position-dependent material properties
-   like the dielectric function, permeability (mu), polarizability sigma, 
+   like the dielectric function, permeability (mu), polarizability sigma,
    nonlinearities, et cetera.  Simple cases of stateless functions are
    handled by canned subclasses below, but more complicated cases
    can be handled by creating a user-defined subclass of material_function.
@@ -366,12 +365,12 @@ class material_function {
 public:
   material_function() {}
   virtual ~material_function() {}
-  
+
   /* Specify a restricted grid_volume: all subsequent eps/sigma/etc
      calls will be for points inside v, until the next set_volume. */
   virtual void set_volume(const volume &v) {(void)v;}
   virtual void unset_volume(void) {} // unrestrict the grid_volume
-  
+
   virtual double chi1p1(field_type ft, const vec &r) { (void)ft; (void)r; return 1.0; }
 
   /* scalar dielectric function */
@@ -380,11 +379,11 @@ public:
   /* scalar permeability function */
   virtual bool has_mu() { return false; } /* true if mu != 1 */
   virtual double mu(const vec &r) { return chi1p1(H_stuff, r);  }
-  
+
   /* scalar conductivity function */
   virtual bool has_conductivity(component c) { (void)c; return false; }
-  virtual double conductivity(component c, const vec &r) { 
-    (void) c; (void)r; return 0.0; }  
+  virtual double conductivity(component c, const vec &r) {
+    (void) c; (void)r; return 0.0; }
 
   // fallback routine based on spherical quadrature
   vec normal_vector(field_type ft, const volume &v);
@@ -393,10 +392,10 @@ public:
      ... virtual so that e.g. libctl can override with more-efficient
      libctlgeom-based routines.  maxeval == 0 if no averaging desired. */
   virtual void eff_chi1inv_row(component c, double chi1inv_row[3],
-			       const volume &v, 
-			       double tol=DEFAULT_SUBPIXEL_TOL, 
+			       const volume &v,
+			       double tol=DEFAULT_SUBPIXEL_TOL,
 			       int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  
+
   /* polarizability sigma function: return c'th row of tensor */
   virtual void sigma_row(component c, double sigrow[3], const vec &r) {
     (void) c; (void) r; sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
@@ -411,16 +410,16 @@ public:
 
 class simple_material_function : public material_function {
   double (*f)(const vec &);
-  
+
 public:
   simple_material_function(double (*func)(const vec &)) { f = func; }
-  
+
   virtual ~simple_material_function() {}
-  
+
   virtual double chi1p1(field_type ft, const vec &r) { (void)ft; return f(r); }
   virtual double eps(const vec &r) { return f(r); }
   virtual double mu(const vec &r) { return f(r); }
-  virtual double conductivity(component c, const vec &r) { 
+  virtual double conductivity(component c, const vec &r) {
     (void)c; return f(r); }
   virtual void sigma_row(component c, double sigrow[3], const vec &r) {
     sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
@@ -495,17 +494,17 @@ double pml_quadratic_profile(double, void*);
 class boundary_region {
 public:
   typedef enum { NOTHING_SPECIAL, PML } boundary_region_kind;
-  
+
   boundary_region() :
     kind(NOTHING_SPECIAL), thickness(0.0), Rasymptotic(1e-16), mean_stretch(1.0), pml_profile(NULL), pml_profile_data(NULL), pml_profile_integral(1.0), pml_profile_integral_u(1.0), d(NO_DIRECTION), side(Low), next(0) {}
   boundary_region(boundary_region_kind kind, double thickness, double Rasymptotic, double mean_stretch, pml_profile_func pml_profile, void* pml_profile_data, double pml_profile_integral, double pml_profile_integral_u, direction d, boundary_side side, boundary_region *next = 0) : kind(kind), thickness(thickness), Rasymptotic(Rasymptotic), mean_stretch(mean_stretch), pml_profile(pml_profile), pml_profile_data(pml_profile_data), pml_profile_integral(pml_profile_integral), pml_profile_integral_u(pml_profile_integral_u), d(d), side(side), next(next) {}
 
-  boundary_region(const boundary_region &r) : kind(r.kind), thickness(r.thickness), Rasymptotic(r.Rasymptotic), mean_stretch(r.mean_stretch), pml_profile(r.pml_profile), pml_profile_data(r.pml_profile_data), pml_profile_integral(r.pml_profile_integral), pml_profile_integral_u(r.pml_profile_integral_u), d(r.d), side(r.side) { 
+  boundary_region(const boundary_region &r) : kind(r.kind), thickness(r.thickness), Rasymptotic(r.Rasymptotic), mean_stretch(r.mean_stretch), pml_profile(r.pml_profile), pml_profile_data(r.pml_profile_data), pml_profile_integral(r.pml_profile_integral), pml_profile_integral_u(r.pml_profile_integral_u), d(r.d), side(r.side) {
     next = r.next ? new boundary_region(*r.next) : 0;
   }
 
   ~boundary_region() { if (next) delete next; }
-  
+
   void operator=(const boundary_region &r) {
     kind = r.kind; thickness = r.thickness; Rasymptotic = r.Rasymptotic; mean_stretch = r.mean_stretch;
     pml_profile = r.pml_profile; pml_profile_data = r.pml_profile_data;
@@ -576,7 +575,7 @@ class structure {
 	    bool use_anisotropic_averaging=false,
 	    double tol=DEFAULT_SUBPIXEL_TOL,
 	    int maxeval=DEFAULT_SUBPIXEL_MAXEVAL);
-  structure(const grid_volume &gv, double eps(const vec &), 
+  structure(const grid_volume &gv, double eps(const vec &),
 	    const boundary_region &br = boundary_region(),
 	    const symmetry &s = meep::identity(),
 	    int num_chunks = 0, double Courant = 0.5,
@@ -619,7 +618,7 @@ class structure {
   void set_chi2(component c, material_function &eps);
   void set_chi2(material_function &eps);
   void set_chi2(double eps(const vec &));
-  
+
   void add_susceptibility(double sigma(const vec &), field_type c, const susceptibility &sus);
   void add_susceptibility(material_function &sigma, field_type c, const susceptibility &sus);
   void remove_susceptibilities();
@@ -645,7 +644,7 @@ class structure {
 
  private:
   void use_pml(direction d, boundary_side b, double dx);
-  void add_to_effort_volumes(const grid_volume &new_effort_volume, 
+  void add_to_effort_volumes(const grid_volume &new_effort_volume,
 			     double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks,
 			    const boundary_region &br, const symmetry &s);
@@ -654,7 +653,6 @@ class structure {
 };
 
 class src_vol;
-class bandsdata;
 class fields;
 class fields_chunk;
 class flux_vol;
@@ -673,14 +671,14 @@ class src_time {
 
   src_time() { is_integrated = true; current_time = nan; current_current = 0.0; next = NULL; }
   virtual ~src_time() { delete next; }
-  src_time(const src_time &t) { 
+  src_time(const src_time &t) {
        is_integrated = t.is_integrated;
        current_time = t.current_time;
        current_current = t.current_current;
        current_dipole = t.current_dipole;
        if (t.next) next = t.next->clone(); else next = NULL;
   }
-  
+
   std::complex<double> dipole() const { return current_dipole; }
   std::complex<double> current() const { return current_current; }
   void update(double time, double dt) {
@@ -694,13 +692,13 @@ class src_time {
   // subclasses *can* override this method in order to specify the
   // current directly rather than as the derivative of dipole.
   // in that case you would probably ignore the dt argument.
-  virtual std::complex<double> current(double time, double dt) const { 
+  virtual std::complex<double> current(double time, double dt) const {
     return ((dipole(time + dt) - dipole(time)) / dt);
   }
 
   double last_time_max() { return last_time_max(0.0); }
   double last_time_max(double after);
-  
+
   src_time *add_to(src_time *others, src_time **added) const;
   src_time *next;
 
@@ -740,19 +738,19 @@ class gaussian_src_time : public src_time {
 // Continuous (CW) source with (optional) slow turn-on and/or turn-off.
 class continuous_src_time : public src_time {
  public:
-  continuous_src_time(std::complex<double> f, double w = 0.0, 
+  continuous_src_time(std::complex<double> f, double w = 0.0,
 		      double st = 0.0, double et = infinity,
 		      double s = 3.0) : freq(f), width(w), start_time(float(st)),
 					end_time(float(et)), slowness(s) {}
   virtual ~continuous_src_time() {}
-  
+
   virtual std::complex<double> dipole(double time) const;
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
   virtual void set_frequency(std::complex<double> f) { freq = f; }
-  
+
  private:
   std::complex<double> freq;
   double width, start_time, end_time, slowness;
@@ -765,8 +763,8 @@ class custom_src_time : public src_time {
 		  double st = -infinity, double et = infinity)
     : func(func), data(data), start_time(float(st)), end_time(float(et)) {}
   virtual ~custom_src_time() {}
-  
-  virtual std::complex<double> current(double time, double dt) const { 
+
+  virtual std::complex<double> current(double time, double dt) const {
     if (is_integrated) return src_time::current(time,dt);
     else return dipole(time);
   }
@@ -775,7 +773,7 @@ class custom_src_time : public src_time {
   virtual double last_time() const { return end_time; };
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
-  
+
  private:
   std::complex<double> (*func)(double t, void *);
   void *data;
@@ -830,7 +828,7 @@ public:
             ivec shift_, const symmetry &S_, int sn_, int vc,
 	    const void *data_);
   ~dft_chunk();
-  
+
   void update_dft(double time);
 
   void scale_dft(std::complex<double> scale);
@@ -846,8 +844,8 @@ public:
   int N; // number of spatial points (on epsilon grid)
   std::complex<realnum> *dft; // N x Nomega array of DFT values.
 
-  struct dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
-  struct dft_chunk *next_in_dft; // next for this particular DFT vol./component
+  class dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
+  class dft_chunk *next_in_dft; // next for this particular DFT vol./component
 
   /* When computing things like -0.5*|E|^2 for the stress tensor,
      we cannot incorporate the minus sign into the scale factor
@@ -1063,7 +1061,6 @@ class fields_chunk {
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
   double beta;
   int is_real;
-  bandsdata *bands;
   src_vol *sources[NUM_FIELD_TYPES];
   structure_chunk *new_s;
   structure_chunk *s;
@@ -1097,11 +1094,11 @@ class fields_chunk {
   std::complex<double> get_field(component, const vec &) const;
 
   double get_chi1inv(component, direction, const ivec &iloc) const;
-  
+
   void backup_component(component c);
   void average_with_backup(component c);
   void restore_component(component c);
-  
+
   void set_output_directory(const char *name);
   void verbose(int gv=1) { verbosity = gv; }
 
@@ -1134,7 +1131,7 @@ class fields_chunk {
     solve_cw_omega = 0.0;
   }
 
- private: 
+ private:
   // we set a flag during cw_solve to replace some
   // time-dependent stuff with the analogous frequency-domain operation
   bool doing_solve_cw; // true when inside solve_cw
@@ -1146,8 +1143,6 @@ class fields_chunk {
   component plus_component[NUM_FIELD_COMPONENTS], minus_component[NUM_FIELD_COMPONENTS];
   direction plus_deriv_direction[NUM_FIELD_COMPONENTS],
             minus_deriv_direction[NUM_FIELD_COMPONENTS];
-  // bands.cpp
-  void record_bands(int tcount);
   // step.cpp
   void phase_in_material(structure_chunk *s);
   void phase_material(int phasein_time);
@@ -1176,7 +1171,7 @@ typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid,
 				ivec is, ivec ie,
 				vec s0, vec s1, vec e0, vec e1,
 				double dV0, double dV1,
-				ivec shift, std::complex<double> shift_phase, 
+				ivec shift, std::complex<double> shift_phase,
 				const symmetry &S, int sn,
 				void *chunkloop_data);
 typedef std::complex<double> (*field_function)(const std::complex<double> *fields,
@@ -1217,7 +1212,6 @@ class fields {
   std::complex<double> k[5], eikna[5];
   double coskna[5], sinkna[5];
   boundary_condition boundaries[2][5];
-  bandsdata *bands;
   char *outdir;
 
   // fields.cpp methods:
@@ -1285,7 +1279,7 @@ class fields {
 		   bool append_data = false,
 		   bool single_precision = false,
 		   const char *prefix = 0);
-  h5file *open_h5file(const char *name, 
+  h5file *open_h5file(const char *name,
 		      h5file::access_mode mode = h5file::WRITE,
 		      const char *prefix = NULL, bool timestamp = false);
   const char *h5file_name(const char *name,
@@ -1314,11 +1308,11 @@ class fields {
   void add_point_source(component c, const src_time &src,
                         const vec &, std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
-			 const volume &, 
+			 const volume &,
 			 std::complex<double> A(const vec &),
 			 std::complex<double> amp = 1.0);
   void add_volume_source(component c, const src_time &src,
-			 const volume &, 
+			 const volume &,
 			 std::complex<double> amp = 1.0);
   void require_component(component c);
 
@@ -1326,7 +1320,7 @@ class fields {
   void add_eigenmode_source(component c, const src_time &src,
 			    direction d, const volume &where,
 			    const volume &eig_vol,
-			    int band_num, 
+			    int band_num,
 			    const vec &kpoint, bool match_frequency,
 			    int parity,
 			    double eig_resolution, double eigensolver_tol,
@@ -1348,7 +1342,7 @@ class fields {
 		      component cgrid = Centered,
 		      bool use_symmetry = true,
 		      bool snap_unit_dims = false);
-  
+
   // integrate.cpp
   std::complex<double> integrate(int num_fields, const component *components,
 			    field_function fun, void *fun_data_,
@@ -1361,7 +1355,7 @@ class fields {
   std::complex<double> integrate2(const fields &fields2,
 			     int num_fields1,
 			     const component *components1,
-			     int num_fields2, 
+			     int num_fields2,
 			     const component *components2,
 			     field_function integrand,
 			     void *integrand_data_,
@@ -1386,7 +1380,7 @@ class fields {
   double max_abs(int c, const volume &where);
   double max_abs(component c, const volume &where);
   double max_abs(derived_component c, const volume &where);
-  
+
   // dft.cpp
   dft_chunk *add_dft(component c, const volume &where,
 		     double freq_min, double freq_max, int Nfreq,
@@ -1426,13 +1420,7 @@ class fields {
   double get_mu(const vec &loc) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p=NULL) const;
-  
-  void prepare_for_bands(const vec &, double end_time, double fmax=0,
-                         double qmin=1e300, double frac_pow_min=0.0);
-  void record_bands();
-  std::complex<double> get_band(int n, int maxbands=100);
-  void grace_bands(grace *, int maxbands=100);
-  void output_bands(FILE *, const char *, int maxbands=100);
+
   std::complex<double> get_field(int c, const vec &loc) const;
   std::complex<double> get_field(component c, const vec &loc) const;
   double get_field(derived_component c, const vec &loc) const;
@@ -1484,7 +1472,7 @@ class fields {
   void set_solve_cw_omega(std::complex<double> omega);
   void unset_solve_cw_omega();
 
- private: 
+ private:
   int verbosity; // Turn on verbosity for debugging purposes...
   int synchronized_magnetic_fields; // count number of nested synchs
   double last_wall_time;
@@ -1515,11 +1503,6 @@ class fields {
   void step_source(field_type ft, bool including_integrated = false);
   void update_pols(field_type ft);
   void calc_sources(double tim);
-  int cluster_some_bands_cleverly(double *tf, double *td, std::complex<double> *ta,
-                                  int num_freqs, int fields_considered, int maxbands,
-                                  std::complex<double> *fad, double *approx_power);
-  void out_bands(FILE *, const char *, int maxbands);
-  std::complex<double> *clever_cluster_bands(int maxbands, double *approx_power = NULL);
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc) const;
@@ -1531,12 +1514,12 @@ public:
 class flux_vol {
  public:
   flux_vol(fields *f_, direction d_, const volume &where_) : where(where_) {
-    f = f_; d = d_; cur_flux = cur_flux_half = 0; 
+    f = f_; d = d_; cur_flux = cur_flux_half = 0;
     next = f->fluxes; f->fluxes = this;
   }
   ~flux_vol() { delete next; }
 
-  void update_half() { cur_flux_half = flux_wrongE(); 
+  void update_half() { cur_flux_half = flux_wrongE();
                        if (next) next->update_half(); }
   void update() { cur_flux = (flux_wrongE() + cur_flux_half) * 0.5;
                   if (next) next->update(); }
@@ -1550,30 +1533,6 @@ class flux_vol {
   direction d;
   volume where;
   double cur_flux, cur_flux_half;
-};
-
-class grace_point;
-enum grace_type { XY, ERROR_BARS };
-
-class grace {
- public:
-  grace(const char *fname, const char *dirname = ".");
-  ~grace();
-  
-  void new_set(grace_type t = XY);
-  void new_curve();
-  void set_legend(const char *);
-  void set_range(double xmin, double xmax, double ymin, double ymax);
-  void output_point(double x, double y,
-                    double dy = -1.0, double extra = -1.0);
-  void output_out_of_order(int n, double x, double y,
-                           double dy = -1.0, double extra= -1.0);
- private:
-  void flush_pts();
-  FILE *f;
-  char *fn, *dn;
-  grace_point *pts;
-  int set_num,sn;
 };
 
 // The following is a utility function to parse the executable name use it
@@ -1596,7 +1555,7 @@ int do_harminv(std::complex<double> *data, int n, double dt,
 	       std::complex<double> *amps, double *freq_re, double *freq_im,
 	       double *errors = NULL,
 	       double spectral_density = 1.1, double Q_thresh = 50,
-	       double rel_err_thresh = 1e20, double err_thresh = 0.01, 
+	       double rel_err_thresh = 1e20, double err_thresh = 0.01,
 	       double rel_amp_thresh = -1, double amp_thresh = -1);
 
 std::complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_type ft,

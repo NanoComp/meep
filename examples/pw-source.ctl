@@ -16,18 +16,18 @@
 ; in Meep are defined relative to the center of the current source,
 ; whereas we want a fixed origin.)  Actually, it is a function of k
 ; and x0 that returns a function of x ...
-(define ((pw-amp k x0) x)
-  (exp (* 0+1i (vector3-dot k (vector3+ x x0)))))
+(define (pw-amp k x0) (lambda (x)
+  (exp (* 0+1i (vector3-dot k (vector3+ x x0))))))
 
 (define-param fcen 0.8) ; pulse center frequency
 (define-param df 0.02) ; turn-on bandwidth
 (define-param kdir (vector3 1 1)) ; direction of k (length is irrelevant)
-(define k (vector3-scale (* 2 pi fcen) 
-			 (unit-vector3 kdir))) ; k with correct length
+(define k (vector3-scale (* 2 pi fcen)
+                         (unit-vector3 kdir))) ; k with correct length
 
-(set! sources 
+(set! sources
       (list
-       
+
        ; left
        (make source
 	 (src (make continuous-src (frequency fcen) (fwidth df)))

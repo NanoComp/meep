@@ -23,6 +23,7 @@ _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 TEST_DIR = tests
 TESTS =                                    \
+    $(TEST_DIR)/3rd_harm_1d.py        \
     $(TEST_DIR)/bend_flux.py          \
     $(TEST_DIR)/cyl_ellipsoid.py      \
     $(TEST_DIR)/geom.py               \

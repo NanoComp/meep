@@ -35,7 +35,7 @@ class TestHoleyWvgCavity(unittest.TestCase):
         self.sim = mp.Simulation(cell_size=cell,
                                  geometry=geometry,
                                  sources=[],
-                                 boundary_layers=[mp.Pml(self.dpml)],
+                                 boundary_layers=[mp.pml(self.dpml)],
                                  resolution=20)
 
     def test_resonant_modes(self):

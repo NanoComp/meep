@@ -70,31 +70,6 @@ class src_vol {
 
 const int num_bandpts = 32;
 
-class bandsdata {
- public:
-  bandsdata();
-  ~bandsdata();
-
-  std::complex<double> *f[num_bandpts][NUM_FIELD_COMPONENTS];
-  // The following is the polarization at just one point, with Pz and Pp
-  // added together (a crude compromize for speed, while still observing the
-  // phonon bands).
-  std::complex<double> *P;
-  int tstart, tend, index[num_bandpts], maxbands, scale_factor;
-  fields_chunk *chunk[num_bandpts];
-  double dt, fmin, fmax, qmin, fpmin;
-  int ntime;
-  int verbosity;
-
-  int get_freqs(std::complex<double> *data, int n,
-                std::complex<double> *amps, double *freqs, double *decays);
-  int look_for_more_bands(std::complex<double> *simple_data,
-                          double *reff, double *refd,
-                          std::complex<double> *refa,
-                          std::complex<double> *refdata,
-                          int numref);
-};
-
 symmetry r_to_minus_r_symmetry(int m);
 
 #define MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds

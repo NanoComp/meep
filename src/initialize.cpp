@@ -45,7 +45,7 @@ double J(int m, double kr) {
   return 0;
 #endif
 }
-static double Jprime(int m, double kr) { 
+static double Jprime(int m, double kr) {
   if (m) return 0.5*(J(m-1,kr)-J(m+1,kr));
   else return -J(1,kr);
 }
@@ -53,6 +53,7 @@ static double Jroot(int m, int n) {
 #ifdef HAVE_LIBGSL
   return gsl_sf_bessel_zero_Jnu(m, n+1);
 #else
+  (void) m; (void) n;
   abort("not compiled with GSL, required for Bessel functions");
   return 0;
 #endif
