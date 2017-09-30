@@ -244,20 +244,12 @@ class Simulation(object):
         self.progress_interval = 4
         self.run_index = 0
         self.filename_prefix = ''
-        self.include_files = []
         self.output_append_h5 = None
         self.output_single_precision = False
         self.output_volume = []
         self.last_eps_filename = ''
         self.output_h5_hook = lambda fname: False
         self.interactive = False
-
-        self._init_include_files()
-
-    def _init_include_files(self):
-        for arg in sys.argv:
-            if isinstance(arg, basestring) and arg.endswith('.py'):
-                self.include_files.append(arg)
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -377,11 +369,12 @@ class Simulation(object):
         return self.fields.get_field_from_comp(c, v3)
 
     def _get_filename_prefix(self):
-        if self.include_files and self.filename_prefix == '':
-            _, filename = os.path.split(self.include_files[0])
-            return re.sub(r'\.py', '', filename)
+        _, filename = os.path.split(sys.argv[0])
+
+        if filename == 'ipykernel_launcher.py':
+            return ''
         else:
-            return self.filename_prefix
+            return re.sub(r'\.py', '', filename)
 
     def _run_until(self, cond, step_funcs):
         self.interactive = False
@@ -770,11 +763,17 @@ def before_time(t, *step_funcs):
 
 
 def during_sources(*step_funcs):
+    closure = {'finished': False}
+
     def _during_sources(sim, todo):
         time = sim.fields.last_source_time()
         if sim._round_time() < time:
             for func in step_funcs:
-                _eval_step_func(sim, func, todo)
+                _eval_step_func(sim, func, 'step')
+        elif closure['finished'] is False:
+            for func in step_funcs:
+                _eval_step_func(sim, func, 'finish')
+            closure['finished'] = True
     return _during_sources
 
 
@@ -810,6 +809,8 @@ def to_appended(fname, *step_funcs):
             _eval_step_func(sim, func, todo)
 
         if todo == 'finish':
+            closure['h5'].__swig_destroy__(closure['h5'])
+            closure['h5'] = None
             sim.output_h5_hook(sim.fields.h5file_name(fname, sim._get_filename_prefix()))
         sim.output_append_h5 = h5save
     return _to_appended
