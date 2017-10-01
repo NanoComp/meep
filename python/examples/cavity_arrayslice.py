@@ -35,7 +35,7 @@ for i in range(3):
 sim = mp.Simulation(cell_size=cell,
                          geometry=geometry,
                          sources=[],
-                         boundary_layers=[mp.pml(dpml)],
+                         boundary_layers=[mp.PML(dpml)],
                          resolution=20)
 
 ##################################################
