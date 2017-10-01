@@ -61,7 +61,6 @@ class TestMaterialDispersion(unittest.TestCase):
         res = [(f.real, f.imag) for fs in all_freqs[:10] for f in fs]
 
         # TODO(chogan): Workaround for py2 double free
-        self.sim.fields.thisown = 0
 
         np.testing.assert_allclose(expected, res)
 

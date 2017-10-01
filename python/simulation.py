@@ -597,6 +597,7 @@ class Simulation(object):
             cond1 = not (not self.k_point or self.k_point == mp.Vector3())
 
             if cond1 and self.fields.is_real != 0:
+                self.fields.__swig_destroy__(self.fields)
                 self.fields = None
                 self._init_fields()
             else:
