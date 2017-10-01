@@ -17,6 +17,7 @@ before_script:
   - bash Miniconda3-4.3.14-Linux-x86_64.sh -b -p ${HOME}/miniconda3
   - ${HOME}/miniconda3/bin/conda install -y numpy
 script:
+  - set -e
   - git clone https://github.com/stevengj/libctl libctl-src
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   - git clone https://github.com/stevengj/harminv
