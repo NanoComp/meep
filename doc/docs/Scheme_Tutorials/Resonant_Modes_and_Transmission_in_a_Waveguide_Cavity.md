@@ -25,7 +25,7 @@ Transmission Spectrum
 
 To calculate the transmission spectrum, much as in the bend example in the [tutorial](../Scheme_Tutorial.md), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll define some parameters defining our structure, as in the figure above. Note that we'll choose units so that our periodicity is 1 which is a typical choice for photonic crystals.
 
-```
+```scm
 ; Some parameters to describe the geometry:                                     
 (define-param eps 13) ; dielectric constant of waveguide                        
 (define-param w 1.2) ; width of waveguide                                       
@@ -38,21 +38,21 @@ To calculate the transmission spectrum, much as in the bend example in the [tuto
 (define-param dpml 1) ; PML thickness   
 ```
 
-Given these parameters, the size of the cell in the $x$ direction, which we'll denote `sx`, is given by `sx = 2*(pad+dpml+N) + d - 1`, which in Scheme is expressed as:
+Given these parameters, the size of the cell in the $x$ direction, which we'll denote `sx`, is given by `sx = 2 * (pad + dpml + N) + d - 1`, which in Scheme is expressed as:
 
-```
+```scm
 (define sx (+ (* 2 (+ pad dpml N)) d -1)) ; size of cell in x direction
 ```
 
 Now, the computational cell is:
 
-```
+```scm
 (set! geometry-lattice (make lattice (size sx sy no-size)))
 ```
 
-Our `geometry` will consist of a single `block` for the waveguide, and `2N` cylindrical holes. To make the holes, we could use some kind of loop (see also [how to write a loop in Scheme](../Guile_and_Scheme_Information.md#How to Write a Loop in Scheme)), but in this case it is even easier to to use the predefined function `geometric-object-duplicates`, which replicates a given object by shifting by a given vector a given number of times. See the [User Interface](../Scheme_User_Interface.md#geometry-utilities).
+Our `geometry` will consist of a single `block` for the waveguide, and `2N` cylindrical holes. To make the holes, we could use some kind of loop (see also [how to write a loop in Scheme](../Guile_and_Scheme_Information.md#how-to-write-a-loop-in-scheme)), but in this case it is even easier to to use the predefined function `geometric-object-duplicates`, which replicates a given object by shifting by a given vector a given number of times. See the [User Interface](../Scheme_User_Interface.md#geometry-utilities).
 
-```
+```scm
 (set! geometry
       (append ; combine lists of objects:                                       
        (list (make block (center 0 0) (size infinity w infinity)
@@ -69,22 +69,22 @@ Note that we call `geometric-object-duplicates` twice, for the holes before and 
 
 The absorbing boundaries are:
 
-```
+```scm
 (set! pml-layers (list (make pml (thickness dpml))))
 (set-param! resolution 20)
 ```
 
 Now, we'll define a couple of parameters to determine the frequency range to look at. We already know from our calculation below that this structure has a P-polarized band gap for frequencies from about 0.2 to 0.3, so we'll want to cover this range.
 
-```
+```scm
 (define-param fcen 0.25) ; pulse center frequency
 (define-param df 0.2)  ; pulse width (in frequency)
 (define-param nfreq 500) ; number of frequencies at which to compute flux
 ```
 
-The source will now be the usual Gaussian pulse centered at `fcen`, located at one edge of the cell just outside the PML, at $x =$ `dpml - 0.5*sx`. Ideally, we would excite exactly the fundamental mode of the waveguide, but it is good enough to just excite it with a line source. Moreover, since we are interested in the P-polarized polarization (electric field in the plane), we will excite it with a $J_y$ current source (transverse to the propagation direction), which is specified as `Ey`:
+The source will now be the usual Gaussian pulse centered at `fcen`, located at one edge of the cell just outside the PML, at $x =$ `dpml - 0.5 * sx`. Ideally, we would excite exactly the fundamental mode of the waveguide, but it is good enough to just excite it with a line source. Moreover, since we are interested in the P-polarized polarization (electric field in the plane), we will excite it with a $J_y$ current source (transverse to the propagation direction), which is specified as `Ey`:
 
-```
+```scm
 (set! sources (list
                (make source
                  (src (make gaussian-src (frequency fcen) (fwidth df)))
@@ -95,7 +95,7 @@ The source will now be the usual Gaussian pulse centered at `fcen`, located at o
 
 The structure has mirror symmetry planes through the $x$ and $y$ axes. The source breaks the mirror symmetry through the $y$ axis, but we still have *odd* mirror symmetry through the $x$ axis:
 
-```
+```scm
 (set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
 ```
 
@@ -103,17 +103,16 @@ Note that we specify the plane by its normal, the $y$ direction. See also: [Expl
 
 Finally, we need to tell Meep to [compute the flux spectrum](../Introduction.md#transmissionreflection-spectra) at the other end of the computational cell, after the holes but before the PML:
 
-```
+```scm
 (define trans ; transmitted flux                                          
         (add-flux fcen df nfreq
                   (make flux-region
                     (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2)))))
 ```
 
-
 Now, we can run the simulation, using `run-sources+` to run until the sources have finished, plus some additional time to allow the fields to propagate through the structure. As in the [tutorial](../Scheme_Tutorial.md), we'll use `stop-when-fields-decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
 
-```
+```scm
 (run-sources+ (stop-when-fields-decayed
                50 Ey
                (vector3 (- (* 0.5 sx) dpml 0.5) 0)
@@ -127,13 +126,13 @@ Now, we can run the simulation, using `run-sources+` to run until the sources ha
 
 Note that we've outputted ε at the beginning—this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in the tutorial. Now, after we run the simulation:
 
-```
+```html
 unix% meep holey-wvg-cavity.ctl | tee holey-wvg-cavity.out
 ```
 
 which takes some time because we need to wait for the cavity mode to decay away. We can plot the dielectric function and $H_z$ field pattern via `h5topng`:
 
-```
+```html
 unix% h5topng holey-wvg-cavity-eps-000000.00.h5
 unix% h5topng -Zc dkbluered holey-wvg-cavity-hz-slice.h5
 ```
@@ -148,14 +147,13 @@ The $H_z$ slice in which time = vertical is interesting, because we can see the 
 
 Of course, the main point of this section is to get the quantitative transmission spectrum. To do this, we need to normalize our flux by running the simulation with no holes:
 
-```
+```html
 unix% meep N=0 holey-wvg-cavity.ctl | tee holey-wvg-cavity.out0
 ```
 
-
 which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in the tutorial, giving us comma-delimited text which is the frequency and fluxes:
 
-```
+```html
 unix% grep flux1: holey-wvg-cavity.out > flux.dat
 unix% grep flux1: holey-wvg-cavity.out0 > flux0.dat
 ```
@@ -168,7 +166,7 @@ which we then import into our plotting program, divide the two fluxes, and get:
 
 The band gap is clearly visible as the range of very low transmission, and in the middle of the band gap is a sharp peak corresponding to the resonant mode trapped in the defect. The inset enlarges this peak, and shows that we didn't use quite enough frequency points to capture the whole shape although we could fit to a Lorentzian if we wanted. At the edges of the band gaps, the transmission goes up in broad Fabry-Perot resonance peaks which we will examine in more detail below. There is also some high-frequency oscillation visible at the left of the plot, which is a numerical artifact due to our pulse not having enough amplitude in that range.
 
-The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform—because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunatly, there is a **much better way to study high-$Q$ resonances**, as described in the next section. See also the tutorial on [ring resonators](../Scheme_Tutorial.md#Modes of a Ring Resonator).
+The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform—because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunatly, there is a **much better way to study high-$Q$ resonances**, as described in the next section. See also the tutorial on [ring resonators](../Scheme_Tutorial.md#modes-of-a-ring-resonator).
 
 Resonant Modes
 --------------
@@ -177,7 +175,7 @@ To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to e
 
 The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same `holey-wvg-cavity.ctl` input file for *both* calculations, and select between the two with an `if` statement controlled by a `compute-mode?` variable:
 
-```
+```scm
 ; false = transmission spectrum, true = resonant modes:                         
 (define-param compute-mode? false)
 (if compute-mode?
@@ -193,7 +191,7 @@ The structure is exactly the same as above, and only the sources and analysis ar
 
 The `(begin ...)` is a standard Scheme construct to group several statements into one, much like `{...}` brackets in C. Our new source is still a Gaussian, but is now a point source at the origin:
 
-```
+```scm
 (set! sources (list
                (make source
                  (src (make gaussian-src (frequency fcen) (fwidth df)))
@@ -202,7 +200,7 @@ The `(begin ...)` is a standard Scheme construct to group several statements int
 
 Moreover, we are now using a *magnetic* current oriented in the $z$ direction (`Hz`). This source matches the symmetry of the P-polarized resonant mode that we are looking for. If we didn't know in advance what symmetry we were looking for, we would put the source *off-center* in a *non-symmetric* location, which would excite *all* modes regardless of symmetry. However, in many cases the symmetry is known, and placing a symmetric source allows us to limit the number of modes we excite and also to exploit the fact that we now have *two* mirror symmetry planes in this problem, saving us a factor of *four* in computation:
 
-```
+```scm
 (set! symmetries
       (list (make mirror-sym (direction Y) (phase -1))
             (make mirror-sym (direction X) (phase -1))))
@@ -212,32 +210,31 @@ Here, you may notice a strange thing: we have specified `(phase -1)` for both mi
 
 Finally, we can run:
 
-```
+```scm
 (run-sources+ 400
               (at-beginning output-epsilon)
               (after-sources (harminv Hz (vector3 0) fcen df)))
 (run-until (/ 1 fcen) (at-every (/ 1 fcen 20) output-hfield-z))
 ```
 
-Just as in the [ring-resonator example](../Scheme_Tutorial.md#Modes of a Ring Resonator), we use the `harminv` command (which calls [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
+Just as in the [ring-resonator example](../Scheme_Tutorial.md#modes-of-a-ring-resonator), we use the `harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
 
 We can now run the simulation, setting `compute-mode?=true` to do the resonant-mode calculation:
 
-```
+```html
 unix% meep compute-mode?=true holey-wvg-cavity.ctl
 ```
 
 Inspecting the output, we see that it finds a single resonant mode in the gap:
 
-```
+```html
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
 harminv0:, 0.235109393214226, -3.14979827803982e-4, 373.213413146792, 9.44684723593584, 6.69397286173395-6.66585703608155i, 3.35873386748359e-9
 ```
 
-
 Because it was a single high-$Q$ mode, this mode should be all that we have left at the end of the simulation:
 
-```
+```html
 unix% h5topng -RZc dkbluered -C holey-wvg-cavity-eps-000000.00.h5 holey-wvg-cavity-hz-*.h5
 unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ```
@@ -246,13 +243,13 @@ unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ![](../images/Holey-wvg-cavity-hz.gif)
 </center>
 
- The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where (see [our online textbook](http://ab-initio.mit.edu/book), ch. 10)
+The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where (see [our online textbook](http://ab-initio.mit.edu/book), ch. 10)
 
 $$\frac{1}{Q} = \frac{1}{Q_w} + \frac{1}{Q_r}$$
 
 There are a variety of ways to separate out the two decay channels. For example, we can look at the power radiated in different directions. Here, we'll just increase the number `N` of holes and see what happens—as we increase `N`, $Q_w$ should increase exponentially while $Q_r$ remains roughly fixed, so that $Q$ eventually saturates at $Q_r$.
 
-```
+```html
 unix% meep N=4 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
 unix% meep N=5 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
 ...
@@ -264,7 +261,7 @@ unix% meep N=5 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
 
 The results, shown above, are exactly what we expected: at first, an exponential increase of $Q$ with `N`, and then a saturation at $Q_r \approx 8750$. However, when we look at the `harminv` output for larger `N`, something strange happens—it starts to find *more modes*! For example, at `N=16`, the output is:
 
-```
+```html
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
 harminv0:, 0.235201161007777, -1.34327185513047e-5, 8754.78631184943, 9.83220617825986, 6.83285024080876-7.06996717944934i, 3.03237056700397e-9
 harminv0:, 0.328227374843021, -4.6405752015136e-4, 353.649451404175, 0.134284355228178, -0.131856646632894-0.0254187489419837i, 4.11557526694386e-7
@@ -272,7 +269,7 @@ harminv0:, 0.328227374843021, -4.6405752015136e-4, 353.649451404175, 0.13428
 
 What is this extra mode at $\omega=0.32823$? This is right around the **edge of the band gap** (actually, just above the edge). There are two possibilities. First, it could be a *band edge* state: the propagating states in the periodic waveguide go to zero group velocity as they approach the edge of the gap, corresponding to long-lived resonances in a long but finite crystal. Second, it could be a higher-order resonant mode that for a slightly larger defect will be pulled further into the gap, but is currently very delocalized. In this case, it turns out to be the latter. To see the mode, we will simply run the simulation again with a narrow-band source, and we will also increase the $y$ cell size `sy` because it turns out that the mode is fairly spread out in that direction:
 
-```
+```html
 unix% meep sy=12 fcen=0.328227374843021 df=0.01 N=16 compute-mode?=true holey-wvg-cavity.ctl
 ```
 
@@ -289,15 +286,15 @@ Band Diagram
 ![](../images/Holey-wvg-bands-eps-000000.00.png)
 </center>
 
-Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the **infinite periodic waveguide** by itself with no defects. This is very similar to the types of calculations that [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
+Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the **infinite periodic waveguide** by itself with no defects. This is very similar to the types of calculations that [MPB](https://mpb.readthedocs.io) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
 
 Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-\omega t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $\omega(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
 
-Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](http://ab-initio.mit.edu/wiki/index.php/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown at right. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
+Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown at right. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
-Thus, we will define our computational cell as follows. See also the `holey-wvg-bands.ctl` file included with Meep.
+Thus, we will define our computational cell as follows. See also the `holey-wvg-bands.ctl` file in the `examples/` subdirectory.
 
-```
+```scm
 ; Some parameters to describe the geometry:
 (define-param eps 13) ; dielectric constant of waveguide
 (define-param w 1.2) ; width of waveguide
@@ -315,15 +312,15 @@ Thus, we will define our computational cell as follows. See also the `holey-wvg-
 
 Note that our cell is now size `1` in the x direction, and there is no need for `geometric-object-duplicate`. We just have a single air hole in the unit cell. The PML absorbing boundaries have something new:
 
-```
+```scm
 (set! pml-layers (list (make pml (direction Y) (thickness dpml))))
 ```
 
 Since our structure is periodic, we don't want any absorbing layers in the $x$ direction: adding `(direction Y)` just specifies PML layers on the $y$ boundaries.
 
-As before, our source will be a Gaussian pulse from a magnetic (`Hz`) point source:
+As before, our source will be a Gaussian pulse from an $H_z$ point source:
 
-```
+```scm
 (define-param fcen 0.25) ; pulse center frequency                            
 (define-param df 1.5) ; pulse freq. width: large df = short impulse
 (set! sources (list
@@ -334,34 +331,34 @@ As before, our source will be a Gaussian pulse from a magnetic (`Hz`) point sour
 
 Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is random, to help ensure that the source will couple to an arbitrary mode, but the $y$ coordinate is 0. This means that we will only be looking at *P*-polarized *odd*-symmetry modes (recalling the pseudovector subtlety discussed above). As usually, we will exploit this via:
 
-```
+```scm
 (set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
 ```
 
 Note that, regardless of the source, we don't have an `X` symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$. Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k-point` variable, and then use `run-sources+` with `harminv` just as we did to calculate a resonant mode:
 
-```
+```scm
 (set-param! k-point (vector3 0.4 0))
 (run-sources+ 300 (after-sources (harminv Hz (vector3 0.1234) fcen df)))
 ```
 
 which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB, which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function `run-k-points`, which takes as input a time to run after the sources finish, like the `300` above, and a *list* of $\mathbf{k}$ points:
 
-```
+```scm
 (define-param k-interp 19)
 (run-k-points 300 (interpolate k-interp (list (vector3 0) (vector3 0.5))))
 ```
 
 Here, we have used [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl)'s built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. `run-k-points` automatically runs `harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output-epsilon`. The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
 
-```
+```html
 freqs:, 14, 0.325, 0.0, 0.0, 0.171671252741341, 0.319717964514696, 0.323470450791478
 freqs-im:, 14, 0.325, 0.0, 0.0, -8.74808991364674e-8, 1.82230861728163e-4, 0.00144227925408331
 ```
 
 where the first numeric column is an index (1, 2, 3, ...), the next three columns are the components of $\mathbf{k}$, and the remaining columns are the real part of ω (for the `freqs:` lines) or the imaginary part of ω (for the `freqs-im:` lines). Now we can just do:
 
-```
+```html
 unix% meep holey-wvg-bands.ctl | tee holey-wvg-bands.out
 unix% grep freqs: holey-wvg-bands.out > fre.dat
 unix% grep freqs-im: holey-wvg-bands.out > fim.dat

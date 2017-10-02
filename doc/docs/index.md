@@ -10,11 +10,11 @@
 
 -   **Free software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
--   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [macOS](https://en.wikipedia.org/wiki/MacOS).
+-   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [MacOS](https://en.wikipedia.org/wiki/MacOS).
 -   Arbitrary **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** σ.
 -   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
--   Exploitation of **symmetries** to reduce the computation size — even/odd mirror symmetries and 90°/180° rotations.
--   Complete **scriptability** — either via a [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) scripting front-end via [libctl](http://libctl.readthedocs.io), or callable as a [C++](https://en.wikipedia.org/wiki/C_plus_plus) library. A [Python](https://en.wikipedia.org/wiki/Python_programming_language) interface is under development.
+-   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
+-   Complete **scriptability** &mdash; either via a [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) scripting front-end via [libctl](http://libctl.readthedocs.io), or callable as a [C++](https://en.wikipedia.org/wiki/C_plus_plus) library. A [Python](https://en.wikipedia.org/wiki/Python_programming_language) interface is under development.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
 -   Arbitrary material and source distributions.
 -   Field analyses including flux spectra, Maxwell stress tensor, frequency extraction, local density of states and energy integrals, near to far field transformations; completely programmable.
@@ -31,7 +31,7 @@ A time-domain electromagnetic simulation simply takes [Maxwell's equations](http
 
 Using these results, one can then compute many other things, such as the local density of states from the trace of the Green's function. Meep's scriptable interface makes it possible to combine many sorts of computations along with multi-parameter optimization etcetera in sequence or in parallel.
 
-The [tutorial](Scheme_Tutorial.md) gives examples of all of these kinds of computations.
+The [tutorial](Scheme_Tutorials/Basics.md) gives examples of all of these kinds of computations.
 
 Download
 --------
@@ -41,7 +41,7 @@ The latest development sources are available on [GitHub](https://github.com/stev
 Documentation
 -------------
 
-See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial](Scheme_Tutorial.md) are the most important things to read. We also have an [FAQ](FAQ.md).
+See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial](Scheme_Tutorials/Basics.md) are the most important things to read. We also have an [FAQ](FAQ.md).
 
 Please [cite Meep](Acknowledgements.md#Referencing) in any publication for which you found it useful.
 

@@ -20,7 +20,7 @@ Installation
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like system, such as Linux and macOS, from notebooks to desktops to high-performance computing (HPC) clusters. Precompiled packages are available for Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
+Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to high-performance computing (HPC) clusters. Precompiled packages are available for Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
 
 Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Step-by-step instructions are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
@@ -63,6 +63,10 @@ Note also that, as a consequence of the above analysis, ε must go to a positive
 
 Usage
 -----
+
+### Is there a Python interface?
+
+A high-level Python interface is currently under development and will likely be released by the end of 2017. Another [Python interface](https://github.com/FilipDominec/python-meep-utils) has been independently developed by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University. Unfortunately, this interface has a number of shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. These will all be addressed in the newer interface.
 
 ### Why doesn't turning off subpixel averaging work?
 

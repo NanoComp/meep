@@ -45,9 +45,11 @@ pages:
     - Field Function Examples: 'Field_Function_Examples.md'
     - Yee Lattice: 'Yee_Lattice.md'
     - Units and Nonlinearity: 'Units_and_Nonlinearity.md'
+- Python Interface:
+    - Tutorial/Basics: 'Python_Tutorials/Basics.md'
 - Scheme Interface:
     - User Interface: 'Scheme_User_Interface.md'
-    - Tutorial/Basics:         'Scheme_Tutorial.md'
+    - Tutorial/Basics:         'Scheme_Tutorials/Basics.md'
     - Tutorial/Local Density of States: 'Scheme_Tutorials/Local_Density_of_States.md'
     - Tutorial/Optical Forces:          'Scheme_Tutorials/Optical_Forces.md'
     - Tutorial/Near-to-Far Field Spectra: 'Scheme_Tutorials/Near_to_Far_Field_Spectra.md'

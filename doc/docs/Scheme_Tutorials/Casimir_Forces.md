@@ -79,7 +79,7 @@ This is described in this [sample file](http://ab-initio.mit.edu/~mccauley/casim
 
 First define the geometry, consisting of the two metal sidewalls (each 2 pixels thick) and the two blocks:
 
-```
+```scm
  (set-param! resolution 40) 
  (define a 1)
  (define-param h 0.5)
@@ -95,7 +95,7 @@ First define the geometry, consisting of the two metal sidewalls (each 2 pixels 
 
 Define an air buffer on either side of the blocks and the PML thickness. Then set the computational cell size, and add in pml on the left/right sides:
 
-```
+```scm
  (define buffer 1)
  (define dpml 1)
  (set! geometry-lattice (make lattice (size (+ dpml buffer a a a buffer dpml) (+ (/ 2 resolution) h a h (/ 2 resolution)) no-size))) 
@@ -105,14 +105,14 @@ Define an air buffer on either side of the blocks and the PML thickness. Then se
 
 Define the source surface $S$; here we take it to be a square with edges 0.05 away from the right block on each side:
 
-```
+```scm
  (define S (volume (center a 0) (size (+ a 0.1) (+ a 0.1))))
 ```
 
 
 As described in Part II, we add a uniform, frequency-independent D-conductivity $\sigma$ everywhere:
 
-```
+```scm
  (define Sigma 1)
 ```
 
@@ -167,25 +167,23 @@ As the fields continue to propagate, the finite conductivity `Sigma` causes the 
 
 Computing the Casimir force involves running several independent Meep simulations for each set of parameters. The fact that they are independent makes the problem very easy to run in parallel, which is why we implemented the calculation as a series of independent Meep simulations. These parameters are grouped into the following lists:
 
-```
+```scm
  (define pol-list (list Ex Ey Ez Hx Hy Hz))          ;source polarizations
  (define side-list (list 0 1 2 3))                            ;each side of the square surface S
  (define n-list (if (eq? n-max 0) (list 0) (interpolate (- n-max 1) (list 0 n-max))))    ;number of terms in source sum
 ```
 
-
 For each value of n, side number, and polarization, we run a short meep simulation. For convenience, the source construction, simulation, and field integration are all taken care of by the Scheme function `casimir-force-contrib`, defined in "/libctl/casimir.scm" (included in the Meep-1.1 release):
 
-```
+```scm
  (casimir-force-contrib force-direction integration-vol N Sigma T source-component gt)
 ```
-
 
 Here the desired component of the Casimir force is the X direction (all others are zero by symmetry), and the source volume is S. The integer N is defined to be $N\equiv 4\times n + \mathrm{side}$.
 
 To find the casimir force, one simply iterates over the parameter lists constructed above, each time adding the result of `casimir-force-contrib` to the total force:
 
-```
+```scm
  (define total-force 0)
  (do ((n 0 (1+ n))) ((= n (length n-list))) ;source components
      (do ((side 0 (1+ side))) ((= side (length side-list))) ;sides of S
@@ -196,7 +194,6 @@ To find the casimir force, one simply iterates over the parameter lists construc
                        (+ total-force
                             (casimir-force-contrib X S N Sigma T curr-pol gt)))))))
 ```
-
 
 ### Results
 
@@ -254,25 +251,23 @@ Each Casimir force calculation requires many different, very short Meep simulati
 
 Our strategy (shown in rods-plates.ctl ([5](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl))) is as follows: each Casimir force calculation has a set of "internal" indices, each of which denotes a separate simulation. The sum of the results from all of these simulations gives the actual force. In our example (as in most examples), the internal indices are the source polarization, the list of sides for the source surface, and the harmonic moments $n$:
 
-```
+```scm
  (define pol-list (list Ex Ey Ez Hx Hy Hz)) ;source polarizations
  (define sides (list 0 1 2 3)) ;four sides of square/rectangle
  (define n-list (parallel-make-list n-min n-max 1))
 ```
 
-
 The function `(parallel-make-list` `x-min` `x-max` `dx)` is similar to the `interpolate` function, making a list of equally spaced elements (of spacing dx) between x-min and x-max. The difference is that the spacing is fixed at dx, so the upper limit will be rounded; also if x-min and x-max are equal, it returns a list of one element.
 
 All internal indices are combined into one list:
 
-```
+```scm
  (define Int-list (list n-list pol-list sides))
 ```
 
-
 Similarly, the "external" parameters correspond to different physical configurations. For example, if we want to simulate over a range of sidewall spacing $h$ and block separations $d$, as in the example calculation above, we don't have to run separate simulations. Rather, we just group all of them together into Ext-list:
 
-```
+```scm
  (define-param d-min 1)
  (define-param d-max 2)
  (define-param dd 0.25)
@@ -284,10 +279,9 @@ Similarly, the "external" parameters correspond to different physical configurat
  (define Ext-list (list d-list h-list))
 ```
 
-
 Now define several lists to be used later:
 
-```
+```scm
  (define param-info (make-params-list Ext-list Int-list))
  (define param-list (list-ref param-info 0))   ;%%% Each element contains all relevant parameters for a single simulation
  (define Next (list-ref param-info 1))
@@ -296,20 +290,18 @@ Now define several lists to be used later:
  (define force-list (make-list Next 0)) ;%%% Holds the final values of the forces
 ```
 
-
 Divide up the computation into multiple processors:
 
-```
+```scm
  (define nproc (meep-count-processors))
  (define ngroups (min Nsims nproc))
  (define mygroup (meep-divide-parallel-processes ngroups)) ;%%% Index of the current processor group
  (define my-sims (get-indices Nsims nproc mygroup))  
 ```
 
-
 `my-sims` contains the indices of the list `param-list` that the local processor group will simulate. For each element of `my-sims`, we wish to have a routine to run the simulation and add its contribution to the list of forces `force-list`. This is done below for the procedure `run-sim`:
 
-```
+```scm
  (define (run-sim current-sim)    ;%%% current-sim is the index of the current simulation
     (let*  ((index-info (get-ie-indices current-sim Next Nint))   ;indices (i-internal, i-external) of the current force component
                (i-internal (list-ref index-info 0))
@@ -330,27 +322,24 @@ Divide up the computation into multiple processors:
        (list-set! force-list i-external (+ curr-force (list-ref force-list i-external)))))
 ```
 
-
 Now call `run-sim` for every index of `my-sims`:
 
-```
+```scm
  (do ((j 0 (1+ j))) ((= j (length my-sims)))
       (run-sim (list-ref my-sims j)))
 ```
 
-
 After the computation, the force values are stored in each local group; they must be re-summed globally by calling `sum-to-all`. However, when we do this, we must take into account that `sum-to-all` will add the force for each processor in the local group. This means that if there are four CPUs in the local group, the force contribution will be counted four times. This is undone by first dividing the force list by the number of processors in the local group:
 
-```
+```scm
  (define myprocs (meep-count-processors))
  (define (renorm x) (/ x myprocs))
  (set! force-list (map renorm force-list))
 ```
 
-
 We can now sum up all force contributions:
 
-```
+```scm
  (meep-begin-global-communications)
  (define total-force (complex-sum-list-to-all force-list))
  (meep-end-global-communications)
@@ -359,7 +348,7 @@ We can now sum up all force contributions:
 
 Print out the values of the force, along with the relevant (external) simulation parameters:
 
-```
+```scm
  (define Ext-params-list (list-direct-prod Ext-list))  ;%%% Take a direct product of Ext-list, for printing
  (do ((j 0 (1+ j))) ((= j (length Ext-params-list)))
     (let* ((curr-params (list-ref Ext-params-list j))
@@ -370,7 +359,6 @@ Print out the values of the force, along with the relevant (external) simulation
  (sleep 2) ;%%% Sometimes this is useful to keep the printing from getting entangled with end-divide-parallel below
  (meep-end-divide-parallel)
 ```
-
 
 Example: Dispersive Materials
 -----------------------------
@@ -397,9 +385,9 @@ $\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2 - i\sigma \xi
 
 So the new dispersion is a Lorentzian, but with an additional loss term. This is the correct material to define in Meep.
 
-It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Scheme Tutorials/Material Dispersion](../Scheme_Tutorials/Material_Dispersion.md)). Here is how we go about it (further material examples are defined in [materials.scm](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm), and [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) demonstrates their use.
+It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Scheme Tutorials/Material Dispersion](../Scheme_Tutorials/Material_Dispersion.md)). Here is how we go about it (further material examples are defined in [materials.scm](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm), and [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) demonstrates their use).
 
-```
+```scm
  (define length-scale 1e-6) ;length scale - units of 1 micron
  (define w0 (* wconv 6.6e15)) ;convert angular frequency (in radians / second)
  (define eps0 11.87) ;DC dielectric
@@ -410,7 +398,6 @@ It is easy to define a dispersive material in Meep (discussed further in [Materi
                        (omega (/ w0 (* 2 pi))) (sigma (- eps0 epsf)) 
                        (gamma (/ Sigma (* 2 pi)))))))
 ```
-
 
 There are two important things to note about the definitions above. First, "sigma", the oscillator strength variable in the polarizability class, is different from "Sigma", which is our global conductivity (of course "Sigma" is not built in, so it can be renamed). Also, both w0 and Sigma are divided by a factor of $2 \pi$. This is because both the resonant frequency and dissipation passed into Meep must be specified in units of $2 \pi c/a$, whereas both `w0` and `Sigma` are given in units of $c/a$.
 
@@ -431,29 +418,27 @@ $$\mathbf{F}^{3D} = \int_0^\infty dk_z F^{2D}(k_z)$$
 
 To run this type of computation, we proceed exactly as before, except that we have an additional external index variable `k_z`. Strictly speaking, $k_z$ is an internal variable, but we've found it most efficient to output the individual $F^{2D}(k_z)$ and then pass them to a separate integration routine. This also helps in determining the appropriate upper bound and sampling rate on the $k_z$-integral:
 
-```
+```scm
  (define-param kz-min 0)
  (define-param kz-max 2) 
  (define-param dkz 0.2)
  (define kz-list (parallel-make-list kz-min kz-max dkz))
 ```
 
-
 In almost all cases, the integrand $F^{2D}(k_z)$ is exponentially decreasing, with the rate of decrease determined by the appropriate scale of the separation between different objects in the computation.
 
 Now inside of `run-sim`, with `curr-kz` the current value of $k_z$, we set the Bloch-periodic boundary conditions as follows:
 
-```
+```scm
  (set! k-point (vector3 0 0 (* 0.5 curr-kz)))
 ```
 
 
 Also, there are a number of optimizations to the Meep time-stepping when the Bloch vector is parallel to the $z$-axis; these are turned on by:
 
-```
+```scm
  (set! special-kz? true)
 ```
-
 
 (the reason for the factor of 0.5 is that the definition of the Bloch vector in Meep has an additional factor of 2 in the exponential). Other than these modifications, the computation mirrors that of a 2D computation.
 
@@ -463,11 +448,10 @@ For the case where all materials are made of perfect metallic or perfect magneti
 
 This new function $g(t)$ is computed in the function `make-casimir-g-kz`; use this value of $g(t)$ in `casimir-force-contrib`:
 
-```
+```scm
  (define gtE  (make-casimir-g-kz T (/ Courant resolution) Sigma Ex))   ;%%% g(t) for perfectly conducting materials
  (define gtH (make-casimir-g-kz T (/ Courant resolution) Sigma Hx))
 ```
-
 
 The value of $g(t)$ in this case is given by the formula:
 
@@ -486,7 +470,7 @@ The hole in the bottom plane, coupled with the high degree of anisotropy of the 
 
 The harmonic expansion for systems with cylindrical symmetry is derived in Part II. The important change is that there is a new multipole index $m$, such that the field dependence of the source functions is of the form $\mathbf{E}(r,\phi,z) = \mathbf{E}(r\phi)e^{im\phi}$. The important code differences between cylindrical symmetry and a normal 2d computation are shown here:
 
-```
+```scm
  (set! dimensions -2)                                    ;%%% Tells Meep that we're in cylindrical coordinates
  (define pol-list (list Er Ep Ez Hr Hp Hz))  ;%%% Field polarizations for cylindrical symmetry
  (define sides (list 0 1 2))                             ;%%% The source surface is a cylinder, which has only three sides when phi = const.
@@ -495,13 +479,11 @@ The harmonic expansion for systems with cylindrical symmetry is derived in Part 
  (define m-list (parallel-make-list m-min m-max 1))
 ```
 
-
 In cylindrical coordinates, all source surfaces and objects have size `no-size` in the $phi$-direction. Also, the source index passed to `casimir-force-contrib` is given by:
 
-```
+```scm
  (make-casimir-src-index curr-m curr-n)
 ```
-
 
 Here the order of $m$ and $n$ are important. Otherwise the code proceeds as before.
 
@@ -522,19 +504,17 @@ In this example, the plate can either be perfect metal, or dispersive gold (the 
 
 The effect is that, instead of being a closed surface, $S$ is now the union of two infinite planes. As we want the force per area of the unit cell, in the calculation we take $S$ to be the transverse dimensions of the unit cell. For this type of surface, there are two modifications; first, there are only two sides:
 
-```
+```scm
 (define side-list (list -1 1))
 ```
-
 
 and the surface used in the computation (which straddles the plate) will be either a plane on top (for `curr-side` `=` `1`) or below (`curr-side` `=` `-1`) the plate.
 
 The second change is that instead of `casimir-force-contrib`, we call `casimir-force-contrib-bloch`, which is specifically designed for periodic systems:
 
-```
+```scm
  (set! curr-force (* curr-side (casimir-force-contrib-bloch Z S (vector3 curr-kx curr-ky 0) Sigma T curr-pol gt)))
 ```
-
 
 The arguments are similar to `casimir-force-contrib`, except that now we pass in the Bloch vector (which will be set inside of the function), and instead of a side index we simply pass in $S$, which is only one side of the source surface. As the program cannot detect the orientation of the surface if there is only one side, we have to explicitly multiply by the normal vector (given by `curr-side`). Otherwise, the computation proceeds as in the above cases, with the integration over $k_x$ and $k_y$ done outside of the program.
 
@@ -548,5 +528,4 @@ If you examine periodic-sphere-plate.ctl in the example above, you will notice t
 As discussed in Part I, the temporal convergence of the force $F(t)$ can be accelerated by picking the right value of the global conductivity $\sigma$. $\sigma$ should be high enough to dampen out oscillations in $F(t)$, but on the other hand a high conductivity reduces the velocity of waves propagating in the medium (see Part I), slowing convergence. We've found that if the characteristic separation between two objects (e.g. the distance between parallel plates) in vacuum is $d$, then picking $\sigma ~\sim~ 0.5/d$. This is illustrated in the function `scale-sigma-T` in periodic-sphere-plate.ctl above. Both the value of $\sigma$ and the total runtime $T$ of the simulation are adjusted depending on the separation between the objects.
 
 If the dielectric of the medium is non-zero, then for non-dispersive media the optimal value of $\sigma$ follows from group velocity considerations. For dispersive media, the convergence should be experimented with to determine the best value. Generally, as the dielectric $\epsilon$ of the medium increases, $\sigma$ should decrease.
-
 
