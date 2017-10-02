@@ -20,7 +20,7 @@ We will validate both this prediction and the LDOS calculations above by computi
 
 We'll first set up the two dimensional simulation with the metal cavity and PML absorbing boundary layers
 
-```
+```scm
  (set-param! resolution 200)
  (define-param sxy 2)
  (define-param dpml 1)
@@ -36,7 +36,7 @@ We'll first set up the two dimensional simulation with the metal cavity and PML 
 
 Next we'll create a notch opening in the cavity so that the field can radiate away
 
-```
+```scm
  (define-param w 0)
  (if (> w 0)
        (set! geometry
@@ -47,24 +47,22 @@ Next we'll create a notch opening in the cavity so that the field can radiate aw
 
 We can now set up the *S*-polarized source in the middle of the cavity where we will also compute the LDOS as they are co-located. We know the mode frequency of the closed cavity analytically. Of course, the frequency will shift with the size of the notch which necessitates a Gaussian pulse. Also note that in Meep, frequency is specified in units of $2\pi$
 
-```
+```scm
  (define-param fcen (/ (sqrt 0.5) a))
  (define-param df 0.2)
  (set! sources (list (make source
         (src (make gaussian-src (frequency fcen) (fwidth df))) (component Ez) (center 0 0))))
 ```
 
-
 As both the structure and sources have a mirror symmetry in the Y direction, we can exploit this to halve the size of the computational cell
 
-```
+```scm
  (set! symmetries (list (make mirror-sym (direction Y))))
 ```
 
-
 In the first part of the calculation, we compute the Purcell enhancement. This requires the mode frequency and quality factor
 
-```
+```scm
  (define-param Th 500)
  (run-sources+ Th (after-sources (harminv Ez (vector3 0) fcen df)))
  (define f (harminv-freq-re (car harminv-results)))
@@ -73,10 +71,9 @@ In the first part of the calculation, we compute the Purcell enhancement. This r
  (print "ldos0:, " (/ Q Vmode (* 2 pi f pi 0.5)))
 ```
 
-
 Next, we rerun the same simulation and compute the LDOS using Meep's built-in `dft-ldos` feature at the mode frequency.
 
-```
+```scm
  (reset-meep)
  (define-param T (* 2 Q (/ f)))
  (run-sources+ T (dft-ldos f 0 1))

@@ -2,7 +2,7 @@
 # Optical Forces
 ---
 
-Here we will demonstrate Meep's ability to compute classical forces using the [Maxwell stress tensor](https://en.wikipedia.org/wiki/_Maxwell_stress_tensor) (MST) as well as the eigenmode source feature which integrates our mode-solver package [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB). Our example consists of two identical dielectric waveguides made of lossless Silicon with a square cross section supporting identical modes and separated in air. Due to the symmetry and orientation of the waveguides, the two modes can be chosen to be either symmetric or anti-symmetric with respect to a mirror plane between them. As the two waveguides are brought closer and closer together, the individual guided modes couple more and more and give rise to an optical gradient force that is <i>transverse</i> to the waveguide axis. This is to be contrasted with [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) that involves momentum exchange between photons and is <i>longitudinal</i> in nature. An interesting phenomena that occurs for this system is that the <i>sign</i> of the force can be tuned to be either attractive or repulsive depending on the relative phase of the two modes. We will demonstrate this effect in this tutorial.
+Here we will demonstrate Meep's ability to compute classical forces using the [Maxwell stress tensor](https://en.wikipedia.org/wiki/_Maxwell_stress_tensor) (MST) as well as the eigenmode source feature which integrates our mode-solver package [MPB](https://mpb.readthedocs.io). Our example consists of two identical dielectric waveguides made of lossless Silicon with a square cross section supporting identical modes and separated in air. Due to the symmetry and orientation of the waveguides, the two modes can be chosen to be either symmetric or anti-symmetric with respect to a mirror plane between them. As the two waveguides are brought closer and closer together, the individual guided modes couple more and more and give rise to an optical gradient force that is <i>transverse</i> to the waveguide axis. This is to be contrasted with [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) that involves momentum exchange between photons and is <i>longitudinal</i> in nature. An interesting phenomena that occurs for this system is that the <i>sign</i> of the force can be tuned to be either attractive or repulsive depending on the relative phase of the two modes. We will demonstrate this effect in this tutorial.
 
 The optical gradient force arising from the evanescent coupling of the modes of two adjacent structures can, in addition to the MST, be computed using the following analytic expression:
 
@@ -14,7 +14,7 @@ We can therefore compute the optical gradient force in two ways, one indirect an
 
 First, let's set up the two-dimensional computational cell although since we are interested in a propagating mode of the structure which requires an axial wavevector, this will in fact be a three-dimensional simulation
 
-```
+```scm
  (set-param! resolution 30)
  (define-param nSi 3.45)
  (define Si (make medium (index nSi)))
@@ -35,7 +35,7 @@ First, let's set up the two-dimensional computational cell although since we are
 
 There are two mirror symmetries that we can exploit to reduce the simulation size by a factor of four.
 
-```
+```scm
  (define-param xodd? true)
  (set! symmetries (list 
         (make mirror-sym (direction X) (phase (if xodd? -1 +1)))
@@ -44,14 +44,14 @@ There are two mirror symmetries that we can exploit to reduce the simulation siz
 
 Next, we set the Bloch-periodic boundary condition in order to excite a specific guided mode of the waveguide system corresponding to a wavevector of $\pi/a$
 
-```
+```scm
  (define-param beta 0.5)
  (set! k-point (vector3 0 0 beta))
 ```
 
 Since we do not know apriori what the eigenmode frequency will be at any given separation distance, we first excite a spectrum of frequencies using a broadband volume source in each waveguide and then determine the resonant frequency using `harminv`. The use of a Bloch periodic boundary condition in the `z` direction will mean that the excited mode (if any) will propagate indefinitely in time which is why we stop the simulation at a fixed 200 time units after the Gaussian-pulsed sources have turned off.
 
-```
+```scm
  (define-param fcen 0.22)
  (define-param df 0.06)
  (set! sources (list 
@@ -66,9 +66,9 @@ Since we do not know apriori what the eigenmode frequency will be at any given s
  (print "freq:, " s ", " f "\n")
 ```
 
-Once we have determined what the eigenmode frequency is, we then use this value to accurately excite the mode of interest using the `eigenmode-source` feature and also compute the force on the waveguide and the power in the guided mode only at this value. The `eigenmode-mode` feature invokes [MPB](http://ab-initio.mit.edu/wiki/index.php/MPB) via a library routine in order to compute the relevant mode of interest and subsequently imports the steady-state field profile into the Meep simulation for use as the initial amplitude of the source. This enables an efficient excitation of the relevant eigenmode of interest in the time domain to a much higher degree of accuracy than would otherwise be possible had we simply used a point-dipole source. For more details, refer to [chapter 4 of our book](http://arxiv.org/abs/1301.5366).
+Once we have determined what the eigenmode frequency is, we then use this value to accurately excite the mode of interest using the `eigenmode-source` feature and also compute the force on the waveguide and the power in the guided mode only at this value. The `eigenmode-mode` feature invokes [MPB](https://mpb.readthedocs.io) via a library routine in order to compute the relevant mode of interest and subsequently imports the steady-state field profile into the Meep simulation for use as the initial amplitude of the source. This enables an efficient excitation of the relevant eigenmode of interest in the time domain to a much higher degree of accuracy than would otherwise be possible had we simply used a point-dipole source. For more details, refer to [chapter 4 of our book](http://arxiv.org/abs/1301.5366).
 
-```
+```scm
  (reset-meep)
  (change-sources! (list
     (make eigenmode-source

@@ -163,7 +163,7 @@ Classes
 
 Classes are complex datatypes with various "properties" which may have default values. Classes can be "subclasses" of other classes. Subclasses inherit all the properties of their superclass and can be used in any place the superclass is expected. An object of a class is constructed with:
 
-```
+```scm
 (make class (prop1 val1) (prop2 val2) ...)
 ```
 
@@ -369,7 +369,7 @@ An ellipsoid. This is actually a subclass of `block`, and inherits all the same 
 
 Here are some examples of geometric objects created using the above classes, assuming `mat` is some material we have defined:
 
-```
+```scm
 ; A cylinder of infinite radius and height 0.25 pointing along the x axis,
 ; centered at the origin:
 (make cylinder (center 0 0 0) (material mat) 
@@ -377,19 +377,19 @@ Here are some examples of geometric objects created using the above classes, ass
 ```
 
 
-```
+```scm
 ; An ellipsoid with its long axis pointing along (1,1,1), centered on
 ; the origin (the other two axes are orthogonal and have equal
 ; semi-axis lengths):
 (make ellipsoid (center 0 0 0) (material mat)
                 (size 0.8 0.2 0.2)
-               (e1 1 1 1)
-               (e2 0 1 -1)
-               (e3 -2 1 1))
+                (e1 1 1 1)
+                (e2 0 1 -1)
+                (e3 -2 1 1))
 ```
 
 
-```
+```scm
 ; A unit cube of material m with a spherical air hole of radius 0.2 at
 ; its center, the whole thing centered at (1,2,3):
 (set! geometry (list
@@ -1221,7 +1221,7 @@ The `structure` and `fields` variables are automatically initialized when any of
 
 If you want to time step more than one field simultaneously, the easiest way is probably to do something like:
 
-```
+```scm
 (init-fields)
 (define my-fields fields)
 (set! fields '())

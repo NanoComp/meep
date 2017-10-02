@@ -22,7 +22,7 @@ The parallel version of Meep is designed to operate completely transparently: yo
 
 In order to run MPI programs, you typically have to use a command like `mpirun` with an argument to say how many processes you want to use. Consult your MPI documentation. For example, with many popular MPI implementations, to run with 4 processes you would use something like:
 
-```
+```html
 mpirun -np 4 meep-mpi foo.ctl > foo.out
 ```
 

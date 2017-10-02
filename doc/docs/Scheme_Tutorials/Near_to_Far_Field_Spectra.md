@@ -12,9 +12,9 @@ There are three steps to using the near-to-far-field feature. First, we need to 
 
 ![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
 
-For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in a separate [tutorial](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). To do this, we simply remove the last portion of that control file, beginning right after the line `(set!` `symmetries` `(list` `(make` `mirror-sym` `(direction` `Y)` `(phase` `-1))))`, and insert the following lines:
+For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in a separate [tutorial](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). To do this, we simply remove the last portion of that control file, beginning right after the line `(set! symmetries (list (make mirror-sym (direction Y) (phase -1))))`, and insert the following lines:
 
-```
+```scm
 (define-param d1 0.2)
 (define nearfield
          (add-near2far fcen 0 1
@@ -31,7 +31,7 @@ We are creating a "near" bounding surface, consisting of three separate regions 
 
 We then time step the fields until, at a random point, they have sufficiently decayed away as the computational cell is surrounded by PMLs, and output the far-field spectra over a rectangular area that lies <i>outside</i> of the computational cell:
 
-```
+```scm
 (run-sources+ (stop-when-fields-decayed 50 Hz (vector3 0.12 -0.37) 1e-8))
 (define-param d2 20)
 (define-param h 4)
@@ -56,7 +56,7 @@ We can also use the near-to-far-field transformation feature to compute the [rad
 
 We use the `get-farfield` routine to compute the far fields by looping over a set of points along the circumference of the circle. The simulation script is shown below.
 
-```
+```scm
 (set-param! resolution 50)
 (define-param sxy 4)
 (define-param dpml 1)

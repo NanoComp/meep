@@ -35,10 +35,3 @@ You can also install the [parallel version of Meep](http://packages.debian.org/t
 ```
 sudo apt-get install meep-mpi-default
 ```
-
-Python User Interface
-----------------
-
-A native Python user interface for Meep is currently under development by [Simpetus](http://www.simpetuscloud.com).
-
-A non-native version was developed by the [Photonics Research Group](http://photonics.intec.ugent.be/) at Ghent University, in particular thanks to Emmanuel Lambert, Martin Fiers, Shavkat Nizamov, Martijn Tassaert, Peter Bienstman, and Wim Bogaerts. This [project](http://f.dominec.eu/meep/) is now maintained by Filip Dominec.

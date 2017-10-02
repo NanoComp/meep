@@ -76,6 +76,6 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--no_bend', action='store_true', default=False,
-                        help="Stright waveguide without bend.")
+                        help="Straight waveguide without bend.")
     args = parser.parse_args()
     main(args)

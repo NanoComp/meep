@@ -9,7 +9,7 @@ Hello World
 
 Let's consider a "Hello World" example.  Suppose we start with a control file that runs for 200 time units and outputs <math>E_z</math> on each time step:
 
-```
+```scm
  (run-until 200 output-efield-z)
 ```
 
@@ -20,15 +20,13 @@ The Wrong Way
 
 Many users will naively write:
 
-```
- (run-until 200
-     output-efield-z
-     (print "Hello World!\n"))
+```scm
+ (run-until 200 output-efield-z (print "Hello World!\n"))     
 ```
 
 **This is wrong.**  It will output "Hello World!" *once*, then give an error.  What is going on? The problem is that you are thinking of `run-until` in the wrong way, as if it were a loop:
 
-```
+```scm
   for time < 200 do
       output-efield-z
       (print "Hello World!\n")
@@ -36,7 +34,7 @@ Many users will naively write:
 
 This is **not** what is happening. Instead, `run-until` is just a *function* that runs the simulation, and its arguments should be *functions* that are called for each time step.  That is, it is really doing something like:
 
-```
+```html
   evaluate the arguments: 200: a number
            output-efield-z: a function
            (print "Hello World!\n"): prints output and returns #<unspecified>;
@@ -56,7 +54,7 @@ What we should have passed to `run-until`, instead of the *result* of calling `(
 
 First, we could explicitly define a function, call it `my-hello`, that does what we want:
 
-```
+```scm
  (define (my-hello) (print "Hello World!\n"))
  (run-until 200 output-efield-z my-hello)
 ```
@@ -65,7 +63,7 @@ Notice two things. First, `my-hello` is a function of no arguments, which means 
 
 A second possibility is that we could use Scheme's `lambda` construct to define our function in-line. The `lambda` syntax in Scheme allows you to define *anonymous* functions without assigning them a name via `define`, and to stick the function definition right into another expression. It works like this:
 
-```
+```scm
  (run-until 200 output-efield-z (lambda () (print "Hello World!\n")))
 ```
 
