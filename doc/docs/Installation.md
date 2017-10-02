@@ -21,7 +21,7 @@ The following precompiled packages are available: BLAS and LAPACK possibly as pa
 
 The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(operating_system)) which has precompiled packages for Meep:
 
-```html
+```
 apt-get install meep h5utils
 ```
 
@@ -40,14 +40,14 @@ The first steps are:
 -   Install Homebrew: download from the [Homebrew site](http://brew.sh/) and follow the instructions there.
 -   Run the following commands in the terminal to compile and install the prerequisites. This may take a while to complete because it will install lots of other stuff first
 
-```html
+```
 brew doctor
 brew install homebrew/science/hdf5 homebrew/science/openblas guile fftw h5utils
 ```
 
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv) and, in the `harminv` directory, do:
 
-```html
+```
 ./configure && make && make install
 ```
 
@@ -66,7 +66,7 @@ First, let's review some important information about installing software on Unix
 
 Most of the software below, including Meep, installs under `/usr/local` by default. That is, libraries go in `/usr/local/lib`, programs in `/usr/local/bin`, etc. If you don't have `root` privileges on your machine, you may need to install somewhere else, e.g. under `$HOME/install` (the `install/` subdirectory of your home directory). Most of the programs below use a GNU-style `configure` script, which means that all you would do to install there would be:
 
-```html
+```
  ./configure --prefix=$HOME/install
 ```
 
@@ -76,7 +76,7 @@ when configuring the program. The directories `$HOME/install/lib` etc. are creat
 
 There are two further complications. First, if you install in a non-standard location and `/usr/local` is considered non-standard by some proprietary compilers, you will need to tell the compilers where to find the libraries and header files that you installed. You do this by setting two environment variables:
 
-```html
+```
  export LDFLAGS="-L/usr/local/lib"
  export CPPFLAGS="-I/usr/local/include"
 ```
@@ -85,7 +85,7 @@ Of course, substitute whatever installation directory you used. Do this **before
 
 You might also need to update your `PATH` so that you can run the executables you installed although `/usr/local/bin/` is in the default `PATH` on many systems. e.g. if we installed in our home directory as described above, we would do:
 
-```html
+```
  export PATH="$HOME/install/bin:$PATH"
 ```
 
@@ -93,7 +93,7 @@ You might also need to update your `PATH` so that you can run the executables yo
 
 Second, many of the packages installed below (e.g. Guile) are installed as shared libraries. You need to make sure that your runtime linker knows where to find these shared libraries. The bad news is that every operating system does this in a slightly different way. The good news is that, when you run `make install` for the packages involving shared libraries, the output includes the necessary instructions specific to your system, so pay close attention! It will say something like `add LIBDIR to the <foobar> environment variable`, where `LIBDIR` will be your library installation directory (e.g. `/usr/local/lib`) and `<foobar>` is some environment variable specific to your system (e.g. `LD_LIBRARY_PATH` on some systems, including Linux). For example, you might do:
 
-```html
+```
  export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 ```
 
@@ -136,7 +136,7 @@ You can find more BLAS information, as well as a basic implementation, on the [B
 
 Note that the generic BLAS does not come with a `Makefile`; compile it with something like: </nowiki>
 
-```html
+```
   wget http://www.netlib.org/blas/blas.tgz
   gunzip blas.tgz
   tar xf blas.tar
@@ -212,7 +212,7 @@ Meep
 
 Once you've installed all of the prerequisites, you can install Meep via:
 
-```html
+```
 ./configure
 make
 sudo make install
@@ -220,7 +220,7 @@ sudo make install
 
 Assuming you've set your `LDFLAGS` etcetera, the configure script should find all of the libraries you've installed and, with luck, compile successfully. The `sudo` in the last command uses administrator privileges to install the binaries in standard system directories. Alternatively, you can just use `make install` if you have used `--prefix` to change the installation directory to something like your home directory. This is described below. To make sure Meep is working, you can run its test suite via:
 
-```html
+```
 make check
 ```
 
@@ -276,7 +276,7 @@ If you want to modify the Meep source code, you will want to have a number of ad
 
 Once you have Git, you can grab the latest development version of Meep with:
 
-```html
+```
  git clone  git://github.com/stevengj/meep
 ```
 
@@ -284,11 +284,10 @@ This gives you a fresh, up-to-date Meep repository in a directory `meep`. See [g
 
 Git will give you an absolutely minimal set of sources; to create a usable Meep directory, you should run:
 
-```html
+```
 sh autogen.sh
 make
 ```
-
 
 in the `meep` directory. And subsequently, if you are editing the sources you should include `--enable-maintainer-mode` whenever you reconfigure. To do this, however, you will need a number of additional packages beyond those listed above:
 

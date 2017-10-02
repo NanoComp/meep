@@ -13,7 +13,7 @@ Meep simulations are Python scripts which involve specifying the device geometry
 
 Executing Meep programs is normally done at the Unix command line (herein denoted by the `unix%` prompt) as follows:
 
-```sh
+```
  unix% python foo.py >& foo.out
 ```
 
@@ -181,20 +181,20 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 
 Here, `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
 
-```html
+```
 unix% h5ls ez.h5 
 ez                       Dataset {161, 161, 330/Inf}
 ```
 
 That is, the file contains a 162×162×330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
-```html
+```
 unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
 ```
 
 This is similar to the command before with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program (although there is other software that will do the trick as well).
 
-```html
+```
 unix% convert ez.t*.png ez.gif
 ```
 Here, we are using an animated GIF format for the output. This results in the following animation:
@@ -207,7 +207,7 @@ It is clear that the transmission around the bend is rather low for this frequen
 
 Instead of doing an animation, another interesting possibility is to make an image from a $x \times t$ slice. Here is the $y=-3.5$ slice, which gives us an image of the fields in the first waveguide branch as a function of time.
 
-```html
+```
 unix% h5topng -0y -35 -Zc dkbluered ez.h5
 ```
 Here, the `-0y -35` specifies the $y=-3.5$ slice, where we have multiplied by 10 (our resolution) to get the pixel coordinate.
@@ -368,7 +368,7 @@ sim.display_fluxes(trans, refl)
 
 This prints a series of outputs like:
 
-```html
+```
 flux1:, 0.1, 7.91772317108475e-7, -3.16449591437196e-7
 flux1:, 0.101010101010101, 1.18410865137737e-6, -4.85527604203706e-7
 flux1:, 0.102020202020202, 1.77218779386503e-6, -7.37944901819701e-7
@@ -381,14 +381,14 @@ This is comma-delimited data, which can easily be imported a plotting program (e
 
 Now, we need to run the simulation *twice*, once with `-n` and once without:
 
-```html
+```
 unix% python bend-flux.py -n | tee bend0.out
 unix% python bend-flux.py |tee bend.out
 ```
 
 The `tee` command is a useful Unix command that saves the output to a file *and* displays it on the screen, so that we can see what is going on as it runs. Then, we should pull out the `flux1` lines into a separate file to import them into our plotting program:
 
-```html
+```
 unix% grep flux1: bend0.out > bend0.dat
 unix% grep flux1: bend.out > bend.dat
 ```
@@ -457,7 +457,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 
 The signal-processing is performed by the `Harminv` routine, which takes four arguments: the field component $E_z$ and position $(r+0.1,0)$ to analyze, and a frequency range given by a center frequency and bandwidth (same as the source pulse). Note that we wrap `Harminv` in `after-sources(...)`, since we only want to analyze the frequencies in the source-free system (the presence of a source will distort the analysis). At the end of the run, `Harminv` prints a series of lines (beginning with `harminv0:`, to make it easy to `grep` for) listing the frequencies it found:
 
-```html
+```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
 harminv0:, 0.118101575043663, -7.31885828253851e-4, 80.683059081382, 0.00341388964904578, -0.00305022905294175-0.00153321402956404i, 1.02581433904604e-5
 harminv0:, 0.147162555528154, -2.32636643253225e-4, 316.29272471914, 0.0286457663908165, 0.0193127882016469-0.0211564681361413i, 7.32532621851082e-7
@@ -491,7 +491,7 @@ df=0.01
 
 After each one of these commands, we'll convert the fields into PNG images and thence into an animated GIF (as with the bend movie, above), via:
 
-```html
+```
 unix% h5topng -RZc dkbluered -C ring-eps-000000.00.h5 ring-ez-*.h5
 unix% convert ring-ez-*.png ring-ez-0.118.gif
 ```
@@ -508,7 +508,7 @@ Each of these modes is, of course, doubly-degenerate according to the representa
 
 You may have noticed, by the way, that when you run with the narrow-bandwidth source, `Harminv` gives you slightly different frequency and $Q$ estimates, with a much smaller error estimate &mdash; this is not too strange, since by exciting a single mode you generate a cleaner signal that can be analyzed more accurately. For example, the narrow-bandwidth source for the $\omega=0.175$ mode gives:
 
-```html
+```
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 

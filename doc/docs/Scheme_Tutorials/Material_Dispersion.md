@@ -70,7 +70,7 @@ The `run-k-points` function returns a *list of lists* of frequencies—one list 
 
 Alternatively we could just read all of the frequencies into Octave/Matlab or a spreadsheet and compute the ratios there. After running the program with
 
-```html
+```
 unix% meep material-dispersion.ctl | tee material-dispersion.out
 ```
 

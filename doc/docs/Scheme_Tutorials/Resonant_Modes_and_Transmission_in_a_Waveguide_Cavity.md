@@ -126,13 +126,13 @@ Now, we can run the simulation, using `run-sources+` to run until the sources ha
 
 Note that we've outputted ε at the beginning—this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in the tutorial. Now, after we run the simulation:
 
-```html
+```
 unix% meep holey-wvg-cavity.ctl | tee holey-wvg-cavity.out
 ```
 
 which takes some time because we need to wait for the cavity mode to decay away. We can plot the dielectric function and $H_z$ field pattern via `h5topng`:
 
-```html
+```
 unix% h5topng holey-wvg-cavity-eps-000000.00.h5
 unix% h5topng -Zc dkbluered holey-wvg-cavity-hz-slice.h5
 ```
@@ -147,13 +147,13 @@ The $H_z$ slice in which time = vertical is interesting, because we can see the 
 
 Of course, the main point of this section is to get the quantitative transmission spectrum. To do this, we need to normalize our flux by running the simulation with no holes:
 
-```html
+```
 unix% meep N=0 holey-wvg-cavity.ctl | tee holey-wvg-cavity.out0
 ```
 
 which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in the tutorial, giving us comma-delimited text which is the frequency and fluxes:
 
-```html
+```
 unix% grep flux1: holey-wvg-cavity.out > flux.dat
 unix% grep flux1: holey-wvg-cavity.out0 > flux0.dat
 ```
@@ -221,20 +221,20 @@ Just as in the [ring-resonator example](../Scheme_Tutorial.md#modes-of-a-ring-re
 
 We can now run the simulation, setting `compute-mode?=true` to do the resonant-mode calculation:
 
-```html
+```
 unix% meep compute-mode?=true holey-wvg-cavity.ctl
 ```
 
 Inspecting the output, we see that it finds a single resonant mode in the gap:
 
-```html
+```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
 harminv0:, 0.235109393214226, -3.14979827803982e-4, 373.213413146792, 9.44684723593584, 6.69397286173395-6.66585703608155i, 3.35873386748359e-9
 ```
 
 Because it was a single high-$Q$ mode, this mode should be all that we have left at the end of the simulation:
 
-```html
+```
 unix% h5topng -RZc dkbluered -C holey-wvg-cavity-eps-000000.00.h5 holey-wvg-cavity-hz-*.h5
 unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ```
@@ -249,7 +249,7 @@ $$\frac{1}{Q} = \frac{1}{Q_w} + \frac{1}{Q_r}$$
 
 There are a variety of ways to separate out the two decay channels. For example, we can look at the power radiated in different directions. Here, we'll just increase the number `N` of holes and see what happens—as we increase `N`, $Q_w$ should increase exponentially while $Q_r$ remains roughly fixed, so that $Q$ eventually saturates at $Q_r$.
 
-```html
+```
 unix% meep N=4 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
 unix% meep N=5 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
 ...
@@ -261,7 +261,7 @@ unix% meep N=5 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
 
 The results, shown above, are exactly what we expected: at first, an exponential increase of $Q$ with `N`, and then a saturation at $Q_r \approx 8750$. However, when we look at the `harminv` output for larger `N`, something strange happens—it starts to find *more modes*! For example, at `N=16`, the output is:
 
-```html
+```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
 harminv0:, 0.235201161007777, -1.34327185513047e-5, 8754.78631184943, 9.83220617825986, 6.83285024080876-7.06996717944934i, 3.03237056700397e-9
 harminv0:, 0.328227374843021, -4.6405752015136e-4, 353.649451404175, 0.134284355228178, -0.131856646632894-0.0254187489419837i, 4.11557526694386e-7
@@ -269,7 +269,7 @@ harminv0:, 0.328227374843021, -4.6405752015136e-4, 353.649451404175, 0.13428
 
 What is this extra mode at $\omega=0.32823$? This is right around the **edge of the band gap** (actually, just above the edge). There are two possibilities. First, it could be a *band edge* state: the propagating states in the periodic waveguide go to zero group velocity as they approach the edge of the gap, corresponding to long-lived resonances in a long but finite crystal. Second, it could be a higher-order resonant mode that for a slightly larger defect will be pulled further into the gap, but is currently very delocalized. In this case, it turns out to be the latter. To see the mode, we will simply run the simulation again with a narrow-band source, and we will also increase the $y$ cell size `sy` because it turns out that the mode is fairly spread out in that direction:
 
-```html
+```
 unix% meep sy=12 fcen=0.328227374843021 df=0.01 N=16 compute-mode?=true holey-wvg-cavity.ctl
 ```
 
@@ -351,14 +351,14 @@ which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \ha
 
 Here, we have used [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl)'s built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. `run-k-points` automatically runs `harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output-epsilon`. The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
 
-```html
+```
 freqs:, 14, 0.325, 0.0, 0.0, 0.171671252741341, 0.319717964514696, 0.323470450791478
 freqs-im:, 14, 0.325, 0.0, 0.0, -8.74808991364674e-8, 1.82230861728163e-4, 0.00144227925408331
 ```
 
 where the first numeric column is an index (1, 2, 3, ...), the next three columns are the components of $\mathbf{k}$, and the remaining columns are the real part of ω (for the `freqs:` lines) or the imaginary part of ω (for the `freqs-im:` lines). Now we can just do:
 
-```html
+```
 unix% meep holey-wvg-bands.ctl | tee holey-wvg-bands.out
 unix% grep freqs: holey-wvg-bands.out > fre.dat
 unix% grep freqs-im: holey-wvg-bands.out > fim.dat

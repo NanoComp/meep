@@ -97,7 +97,7 @@ Notice how we separated everything with commas, and prefixed the line with `"har
 
 We want to run this for a bunch of values of $\chi^{(3)}$. We could write a [loop in Scheme](../Guile_and_Scheme_Information.md#how-to-write-a-loop-in-scheme), but it is often more convenient just to use the Unix shell when we want to wrap the *entire* simulation in a loop. In particular, for the [bash shell](https://en.wikipedia.org/wiki/Bash), we'll just do:
 
-```html
+```
  unix% (for logk in `seq -6 0.2 0`; do meep k="(expt 10 $logk)" 3rd-harm-1d.ctl |grep harmonics:; done) | tee harmonics.dat
 ```
 
@@ -105,7 +105,7 @@ Notice how we've used the `seq` function to get a sequence of exponents from -6 
 
 If we run the simulation with `k=0`, i.e. for a linear medium, we get:
 
-```html
+```
 harmonics:, 0, 1.0, 112.62889036581, 1.20863942821229e-16
 ```
 
@@ -119,12 +119,12 @@ As can be shown from coupled-mode theory or, equivalently, follows from [Fermi's
 
 Finally, we note that increasing the current amplitude by a factor of $F$ or the Kerr susceptibility $\chi^{(3)}$ by a factor $F^3$ should generate the *same* third-harmonic power in the *weak* nonlinearity approximation. And indeed, we see:
 
-```html
+```
 unix% meep k=1e-3 amp=1.0 3rd-harm-1d.ctl |grep harmonics:
 harmonics:, 0.001, 1.0, 112.604527737141, 0.0107492681364892
 ```
 
-```html
+```
 unix% meep k=1e-6 amp=10.0 3rd-harm-1d.ctl |grep harmonics:
 harmonics:, 1.0e-6, 10.0, 11262.8172173065, 0.0108962174934311
 ```

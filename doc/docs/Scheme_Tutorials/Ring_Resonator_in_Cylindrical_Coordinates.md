@@ -82,7 +82,7 @@ Now, we are ready to run our simulation. Recall that, in the 2d calculation, we 
 
 In particular, we'll run:
 
-```html
+```
 unix% meep m=3 ring-cyl.ctl | grep harminv
 unix% meep m=4 ring-cyl.ctl | grep harminv
 unix% meep m=5 ring-cyl.ctl | grep harminv
@@ -90,7 +90,7 @@ unix% meep m=5 ring-cyl.ctl | grep harminv
 
 giving the combined output:
 
-```html
+```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
 harminv0:, 0.11834848194079, -6.80930025762674e-4, 86.9020879261668, 0.257477542991357, -0.234862526831655-0.105519091330034i, 2.6465657298186e-10
 harminv0:, 0.147555705534808, -1.91078761299536e-4, 386.112262114517, 1.93737432741834, 1.35411847722594+1.38556213652616i, 2.73521325130449e-11
@@ -107,7 +107,7 @@ This illustrates the general principle that you need to check several parameters
 
 Finally, we can get the field images. Since we only are exciting one mode per `m` here anyway, according to `harminv`, we don't really need to use a narrow-band source. We'll do so anyway just to remind you of the general procedure, however, e.g. for the $\omega=0.118$ $m=3$ mode:
 
-```html
+```
 unix% meep m=3 fcen=0.118 df=0.01 ring-cyl.ctl
 unix% h5topng -S 2 -Zc dkbluered -C ring-cyl-eps-001200.00.h5 ring-cyl-ez.h5
 ```

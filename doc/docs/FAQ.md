@@ -66,7 +66,7 @@ Usage
 
 ### Is there a Python interface?
 
-A high-level Python interface is currently under development and will likely be released by the end of 2017. Another [Python interface](https://github.com/FilipDominec/python-meep-utils) has been independently developed by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University. Unfortunately, this interface has a number of shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. These will all be addressed in the newer interface.
+An official Python interface is currently under development and will likely be released by the end of 2017. An unofficial [Python interface](https://github.com/FilipDominec/python-meep-utils) has been independently developed by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University. Unfortunately, this interface has a number of shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. These will all be addressed in the official interface.
 
 ### Why doesn't turning off subpixel averaging work?
 
