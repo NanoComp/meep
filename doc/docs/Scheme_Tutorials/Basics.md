@@ -137,7 +137,7 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 
  Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12×1 is centered at $(-2,-3.5)$. Also shown in green is the source plane at $x=-7$ (see below).
 
-We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in a separate [tutorial](Scheme_Tutorials/Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ (which excites many other frequencies because of the discontinuity), we will ramp it on slowly (technically, Meep uses a $\tanh$ turn-on function) over a time proportional to the `width` of 20 time units (a little over three periods). Finally, just for variety, we'll specify the (vacuum) `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in a separate [tutorial](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ (which excites many other frequencies because of the discontinuity), we will ramp it on slowly (technically, Meep uses a $\tanh$ turn-on function) over a time proportional to the `width` of 20 time units (a little over three periods). Finally, just for variety, we'll specify the (vacuum) `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```scm
 (set! sources (list
@@ -402,7 +402,7 @@ Again, we must run *both* simulations in order to get the normalization right. T
 Modes of a Ring Resonator
 -------------------------
 
-As described in the [Introduction](Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes—frequencies and decay rates—of some electromagnetic cavity structure. (You might want to read that introduction again to recall the basic computational strategy.) Here, we will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. (This can be also found in the `examples/ring.ctl` file included with Meep.) In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
+As described in the [Introduction](Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes—frequencies and decay rates—of some electromagnetic cavity structure. (You might want to read that introduction again to recall the basic computational strategy.) Here, we will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. (This can be also found in the `examples/ring.ctl` file included with Meep.) In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -519,24 +519,24 @@ This tells Meep to exploit a mirror-symmetry plane through the origin perpendicu
 
 Everything else about your simulation is the same: you can still get the fields at any point, the output file still covers the whole ring, and the harminv outputs are exactly the same. Internally, however, Meep is only doing computations with half of the structure, and the simulation is around twice as fast ([YMMV](https://en.wikipedia.org/wiki/YMMV)).
 
-In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `(make mirror-sym (direction Y) (phase -1))`. See the [User Interface](Scheme_User_Interface.md#symmetry) for more symmetry possibilities.
+In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `(make mirror-sym (direction Y) (phase -1))`. See the [User Interface](../Scheme_User_Interface.md#symmetry) for more symmetry possibilities.
 
-In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Ring Resonator in Cylindrical Coordinates](Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
 
 More Examples
 -------------
 
 The examples above suffice to illustrate the most basic features of Meep. However, there are many more advanced features that have not been demonstrated here. So, we hope to add, over time, a sequence of examples that exhibit more complicated structures and computational techniques. The ones we have so far are listed below.
 
--   [Ring Resonator in Cylindrical Coordinates](Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md)
--   [Resonant Modes and Transmission in a Waveguide Cavity](Scheme_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)
--   [Third Harmonic Generation](Scheme_Tutorials/Third_Harmonic_Generation.md) (Kerr nonlinearity)
--   [Material Dispersion](Scheme_Tutorials/Material_Dispersion.md)
--   [Casimir Forces](Scheme_Tutorials/Casimir_Forces.md)
--   [Local Density of States](Scheme_Tutorials/Local_Density_of_States.md) (Purcell enhancement)
--   [Optical Forces](Scheme_Tutorials/Optical_Forces.md) (Maxwell stress tensor; also includes an `eigenmode-source` example)
--   [Near to Far-Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md) (radiation pattern of an antenna)
--   [Multilevel Atomic Susceptibility](Scheme_Tutorials/Multilevel_Atomic_Susceptibility.md) (saturable absorption/gain)
+-   [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md)
+-   [Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)
+-   [Third Harmonic Generation](Third_Harmonic_Generation.md) (Kerr nonlinearity)
+-   [Material Dispersion](Material_Dispersion.md)
+-   [Casimir Forces](Casimir_Forces.md)
+-   [Local Density of States](Local_Density_of_States.md) (Purcell enhancement)
+-   [Optical Forces](Optical_Forces.md) (Maxwell stress tensor; also includes an `eigenmode-source` example)
+-   [Near to Far-Field Spectra](Near_to_Far_Field_Spectra.md) (radiation pattern of an antenna)
+-   [Multilevel Atomic Susceptibility](Multilevel_Atomic_Susceptibility.md) (saturable absorption/gain)
 
 Editors and ctl
 ---------------
