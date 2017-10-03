@@ -4,7 +4,7 @@
 
 The Scheme user interface is documented in this page. We do not document the Scheme language or the functions provided by [libctl](https://libctl.readthedocs.io). See also the [libctl User Reference](https://libctl.readthedocs.io/en/latest/Libctl_User_Reference/) section of the [libctl manual](https://libctl.readthedocs.io).
 
-This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [Tutorial](Scheme_Tutorial.md). Also, we note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
+This page is simply a compact listing of the functions exposed by the interface. For a gentler introduction, see the [Tutorial](Scheme_Tutorials/Basics.md). Also, we note that this page is not a complete listing of all functions. In particular, because of the [SWIG wrappers](#swig-wrappers), every function in the C++ interface is accessible from Scheme, but not all of these functions are documented or intended for end users.
 
 See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines.
 
@@ -777,7 +777,7 @@ Change the `sources` input variable to `new-sources`, and changes the sources us
 
 ### Flux Spectra
 
-Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [transmission/reflection spectra introduction](Introduction.md#transmissionreflection-spectra) and the [tutorial](Scheme_Tutorial.md). The most important function is:
+Given a bunch of `flux-region` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [transmission/reflection spectra introduction](Introduction.md#transmissionreflection-spectra) and the [tutorial](Scheme_Tutorials/Basics.md). The most important function is:
 
 **`(add-flux fcen df nfreq flux-regions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -805,7 +805,7 @@ Given a flux object, returns a list of the frequencies that it is computing the 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a flux object, returns a list of the current flux spectrum that it has accumulated.
 
-As described in the [tutorial](Scheme_Tutorial.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in the [tutorial](Scheme_Tutorials/Basics.md), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-flux filename flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -887,7 +887,7 @@ Given a force object, returns a list of the frequencies that it is computing the
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a force object, returns a list of the current force spectrum that it has accumulated.
 
-As described in the [tutorial](Scheme_Tutorial.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+As described in the [tutorial](Scheme_Tutorials/Basics.md), to compute the force from scattered fields often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-force filename force)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -943,7 +943,7 @@ Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
-For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in the [tutorial](Scheme_Tutorial.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
+For a scattered-field computation, you often want to separate the scattered and incident fields. Just as is described in the [tutorial](Scheme_Tutorials/Basics.md) for flux computations, you can do this by saving the Fourier-transformed incident from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 **`(save-near2far filename near2far)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1000,7 +1000,7 @@ Run the simulation until all sources have turned off, calling the given step fun
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `run-sources`, but with an additional first argument: either a number, in which case it is an *additional* time (in Meep units) to run for after the sources are off, *or* it is a function (of no arguments). In the latter case, the simulation runs until the sources are off *and* `(cond?)` returns `true`.
 
-In particular, a useful first argument to `run-sources+` or `run-until` is often given by as in the [tutorial](Scheme_Tutorial.md):
+In particular, a useful first argument to `run-sources+` or `run-until` is often given by as in the [tutorial](Scheme_Tutorials/Basics.md):
 
 **`(stop-when-fields-decayed dT c pt decay-by)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1060,7 +1060,7 @@ Outputs *all* the components of the field *X*, where *X* is either `h`, `b`, `e`
 
 **`(output-png component h5topng-options)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](http://ab-initio.mit.edu/wiki/index.php/H5utils), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc` `bluered"`). See also the [tutorial](Scheme_Tutorial.md#output-tips-and-tricks).
+Output the given field component (e.g. `Ex`, etc.) as a [PNG](https://en.wikipedia.org/wiki/PNG) image, by first outputting the HDF5 file, then converting to PNG via [h5topng](http://ab-initio.mit.edu/wiki/index.php/H5utils), then deleting the HDF5 file. The second argument is a string giving options to pass to h5topng (e.g. `"-Zc` `bluered"`). See also the [tutorial](Scheme_Tutorials/Basics.md#output-tips-and-tricks).
 
 It is often useful to use the `h5topng` `-C` or `-A` options to overlay the dielectric function when outputting fields. To do this, you need to know the name of the dielectric-function `.h5` file (which must have been previously output by output-epsilon). To make this easier, a built-in shell variable `$EPS` is provided which refers to the last-output dielectric-function `.h5` file. So, for example `(output-png` `Ez` `"-C` `$EPS")` will output the $E_z$ field and overlay the dielectric contours.
 
@@ -1124,7 +1124,7 @@ For example, `(map harminv-freq-re harminv-results)` gives you a list of the rea
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also the [tutorial](Scheme_Tutorial.md) for examples.
+Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also the [tutorial](Scheme_Tutorials/Basics.md) for examples.
 
 #### Miscellaneous Step-Function Modifiers
 
