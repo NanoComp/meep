@@ -55,7 +55,7 @@ matrix:
 ##################################################
 script:
   - autoreconf --verbose --install --symlink --force
-  - mkdir build && pushd build
+  - mkdir -p build && pushd build
   - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python ${MPICONF} && make && make check && make install)
   - popd
 
