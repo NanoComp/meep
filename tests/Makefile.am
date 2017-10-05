@@ -75,7 +75,8 @@ h5test_LDADD = $(LIBMEEP)
 pml_SOURCES = pml.cpp
 pml_LDADD = $(LIBMEEP)
 
-TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml 
+#TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml 
+TESTS = aniso_disp
 
 LOG_COMPILER = $(RUNCODE)
 

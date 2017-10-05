@@ -34,6 +34,7 @@ if test "x$with_mpi" = "xyes"; then
   ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
   CXX=$MPICXX
   MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
+  MBP_SUFFIX="${MPB_SUFFIX}_mpi"
 
   # Detect stupid MPICH problem with SEEK_SET conflicting between
   # the mpi.h header file and the stdio.h header file in C++
