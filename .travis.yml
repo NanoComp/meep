@@ -17,6 +17,7 @@ addons:
     - swig
     - libopenmpi-dev
     - mpi-default-bin
+    - openmpi-bin
 install:
   - pip install numpy mpi4py
 
@@ -65,8 +66,8 @@ script:
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python ${MPICONF}
   - make
 #
-  - pushd tests 
-  - make check TESTS=${CORETESTS}
+  - pushd tests
+  - make check TESTS=${CORETESTS} VERBOSE=1
   - popd
 #
   - pushd libmeepgeom 
