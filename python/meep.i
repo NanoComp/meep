@@ -311,8 +311,6 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
 %rename(get_field_from_comp) meep::fields::get_field(component, const vec &) const;
 
-%rename(_pml) meep::pml;
-
 // TODO:  Fix these with a typemap when necessary
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;
@@ -350,7 +348,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Harminv,
         Identity,
         Mirror,
-        pml,
+        PML,
         Rotate2,
         Rotate4,
         Simulation,

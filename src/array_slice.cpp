@@ -18,6 +18,7 @@
 /* HDF5 output of fields and arbitrary functions thereof.  Works
    very similarly to integrate.cpp (using fields::loop_in_chunks). */
 
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -258,7 +259,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /***************************************************************/
 int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *caller_data)
 {
-  am_now_working_on(ArraySlice);
+  am_now_working_on(FieldOutput);
 
   // use a local data structure if the caller didn't provide one
   array_slice_data local_data;
@@ -307,7 +308,7 @@ void *fields::do_get_array_slice(const volume &where,
                                  void *fun_data,
                                  void *vslice) {
 
-  am_now_working_on(ArraySlice);
+  am_now_working_on(FieldOutput);
 
   /***************************************************************/
   /* call get_array_slice_dimensions to get slice dimensions and */

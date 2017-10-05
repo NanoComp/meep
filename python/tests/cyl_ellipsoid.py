@@ -30,7 +30,7 @@ class TestCylEllipsoid(unittest.TestCase):
 
         self.sim = mp.Simulation(cell_size=mp.Vector3(10, 10),
                                  geometry=[c, e],
-                                 boundary_layers=[mp.pml(1.0)],
+                                 boundary_layers=[mp.PML(1.0)],
                                  sources=[sources],
                                  symmetries=symmetries,
                                  resolution=100)
