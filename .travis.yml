@@ -47,9 +47,9 @@ matrix:
   - python: "2.7"
     env: MPICONF="--without-mpi" CORETESTS="${CORETESTS1}"
   - python: "2.7"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}"
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}"
   - python: "3.4"
-    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS1}"
+    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}"
   - python: "3.4"
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}"
 
@@ -81,7 +81,7 @@ script:
 ##################################################
 ##################################################
 ##################################################
-after_script:
+after_failure:
   - if [ -r test-suite.log ]; then cat test-suite.log; fi
   - if [ -r tests/test-suite.log ]; then cat tests/test-suite.log; fi
   - if [ -r python/test-suite.log ]; then cat python/test-suite.log; fi
