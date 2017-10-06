@@ -374,7 +374,7 @@ class Simulation(object):
         if filename == 'ipykernel_launcher.py':
             return ''
         else:
-            return re.sub(r'\.py', '', filename)
+            return re.sub(r'\.py$', '', filename)
 
     def _run_until(self, cond, step_funcs):
         self.interactive = False
