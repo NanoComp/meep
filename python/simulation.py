@@ -597,7 +597,6 @@ class Simulation(object):
             cond1 = not (not self.k_point or self.k_point == mp.Vector3())
 
             if cond1 and self.fields.is_real != 0:
-                self.fields.__swig_destroy__(self.fields)
                 self.fields = None
                 self._init_fields()
             else:
@@ -810,7 +809,6 @@ def to_appended(fname, *step_funcs):
             _eval_step_func(sim, func, todo)
 
         if todo == 'finish':
-            closure['h5'].__swig_destroy__(closure['h5'])
             closure['h5'] = None
             sim.output_h5_hook(sim.fields.h5file_name(fname, sim._get_filename_prefix()))
         sim.output_append_h5 = h5save
