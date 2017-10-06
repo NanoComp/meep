@@ -113,8 +113,8 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
 			double *T, double *R, bool use_hdf5) {
   const grid_volume gv = volone(zsize, a);
 
-  structure s(gv, eps_bragg, pml(0.5));
-  fields f(&s);
+  structure *s = new structure(gv, eps_bragg, pml(0.5));
+  fields f(s);
   f.use_real_fields();
 
   structure s0(gv, eps_nlo, pml(0.5));
@@ -170,6 +170,7 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
     R[i] = -flux[i] / flux0[i];
   delete[] flux;
   delete[] flux0;
+  delete s; // tests whether okay to delete s before f
 }
 
 inline double max2(double a, double b) { return (a > b ? a : b); }
