@@ -70,4 +70,3 @@ clean-local:
 	rm -rf meep
 
 endif # MAINTAINER_MODE
-

@@ -1,6 +1,10 @@
-language: cpp
+language: python
 dist: trusty
 sudo: false
+
+##################################################
+# required linux packages and python packages 
+##################################################
 addons:
   apt:
     packages:
@@ -10,28 +14,74 @@ addons:
     - gfortran
     - libhdf5-serial-dev
     - liblapack-dev
-    - python-numpy
     - swig
+    - libopenmpi-dev
+    - mpi-default-bin
+    - openmpi-bin
+install:
+  - pip install numpy mpi4py
+
+##################################################
+# environment variables applied to all build cases 
+##################################################
+env:
+  global:
+  - CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io
+  - CORETESTS1="known_results symmetry bragg_transmission one_dimensional integrate convergence_cyl_waveguide aniso_disp harmonics stress_tensor near2far"
+  - CORETESTS2="h5test three_d bench flux cylindrical two_dimensional physical 2D_convergence pml"
+
+##################################################
+# common installations performed before all build cases
+##################################################
 before_script:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-4.3.14-Linux-x86_64.sh
-  - bash Miniconda3-4.3.14-Linux-x86_64.sh -b -p ${HOME}/miniconda3
-  - ${HOME}/miniconda3/bin/conda install -y numpy
-script:
-  - set -e
   - git clone https://github.com/stevengj/libctl libctl-src
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+
+##################################################
+# build matrix:
+##################################################
+matrix:
+  include:
+  - python: "2.7"
+    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS1}"
+  - python: "2.7"
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}"
+  - python: "3.4"
+    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}"
+  - python: "3.4"
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}"
+
+##################################################
+# build/test instructions    
+##################################################
+script:
+  - set -e
   - autoreconf --verbose --install --symlink --force
-  - mkdir build && pushd build
-  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make && make check && make install)
+  - mkdir -p build && pushd build
+#
+  - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python ${MPICONF}
+  - make
+#
+  - pushd tests
+  - make check TESTS=${CORETESTS} VERBOSE=1
   - popd
-  # Build and test pymeep with python 3.6
-  - mkdir build3 && pushd build3
-  - (CPPFLAGS=-I${HOME}/local/include LDFLAGS=-L${HOME}/local/lib GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io PYTHON=${HOME}/miniconda3/bin/python ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python && make)
-  - pushd python && make check && make install
+#
+  - pushd libmeepgeom 
+  - make check
   - popd
+#
+  - pushd python
+  - make check
+  - popd
+#
+  - popd
+
+##################################################
+##################################################
+##################################################
 after_failure:
-  - test -r test-suite.log && cat test-suite.log
-  - test -r tests/test-suite.log && cat tests/test-suite.log
-  - test -r python/test-suite.log && cat python/test-suite.log
+  - if [ -r test-suite.log ]; then cat test-suite.log; fi
+  - if [ -r tests/test-suite.log ]; then cat tests/test-suite.log; fi
+  - if [ -r python/test-suite.log ]; then cat python/test-suite.log; fi
