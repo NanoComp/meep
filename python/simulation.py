@@ -668,9 +668,9 @@ class Simulation(object):
         self.k_point = k
 
         if self.fields:
-            cond1 = not (not self.k_point or self.k_point == mp.Vector3())
+            needs_complex_fields = not (not self.k_point or self.k_point == mp.Vector3())
 
-            if cond1 and self.fields.is_real != 0:
+            if needs_complex_fields and self.fields.is_real:
                 self.fields = None
                 self._init_fields()
             else:
