@@ -32,6 +32,7 @@ TESTS =                                 \
     $(TEST_DIR)/material_dispersion.py  \
     $(TEST_DIR)/physical.py             \
     $(TEST_DIR)/ring.py                 \
+    $(TEST_DIR)/ring_cyl.py             \
     $(TEST_DIR)/simulation.py           \
     $(TEST_DIR)/source.py
 

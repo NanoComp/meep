@@ -13,7 +13,7 @@ pad = 4  # padding between waveguide and edge of PML
 dpml = 2  # thickness of PML
 
 sr = r + w + pad + dpml  # radial size (cell is from 0 to sr)
-dimensions = -1  # mp.CYLINDRICAL
+dimensions = mp.CYLINDRICAL
 cell = mp.Vector3(sr, 0, 0)
 
 # in cylindrical coordinates, the phi (angular) dependence of the fields
@@ -28,7 +28,7 @@ geometry = [
     )
 ]
 
-pml_layers = [mp.pml(dpml)]
+pml_layers = [mp.PML(dpml)]
 resolution = 10
 
 # If we don't want to excite a specific mode symmetry, we can just
@@ -54,6 +54,7 @@ sim = mp.Simulation(
     resolution=resolution,
     sources=sources,
     dimensions=dimensions,
+    m=m
 )
 
 h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
@@ -65,8 +66,8 @@ sim.run(mp.after_sources(h), until_after_sources=200)
 # to a file to get an r-by-t picture.  We'll also output from -sr to -sr
 # instead of from 0 to sr.
 sim.run(mp.in_volume(
-    mp.Volume(center=mp.Vector3(), size=mp.Vector3(2 * sr)),
+    mp.Volume(center=mp.Vector3(), size=mp.Vector3(2 * sr), is_cylindrical=True),
     mp.at_beginning(mp.output_epsilon),
-    mp.to_appended("ez", mp.at_every(1 / fcen / 20, mp.output_efield_z)),
-    until=1 / fcen)
+    mp.to_appended("ez", mp.at_every(1 / fcen / 20, mp.output_efield_z))),
+    until=1 / fcen
 )

@@ -30,11 +30,14 @@ def get_num_args(func):
     return func.__code__.co_argcount
 
 
-def py_v3_to_vec(dims, v3):
+def py_v3_to_vec(dims, v3, is_cylindrical=False):
     if dims == 1:
         return mp.vec(v3.z)
     elif dims == 2:
-        return mp.vec(v3.x, v3.y)
+        if is_cylindrical:
+            return mp.veccyl(v3.x, v3.z)
+        else:
+            return mp.vec(v3.x, v3.y)
     elif dims == 3:
         return mp.vec(v3.x, v3.y, v3.z)
     else:
@@ -114,7 +117,7 @@ class Identity(Symmetry):
 
 class Volume(object):
 
-    def __init__(self, center, size=Vector3(), dims=2):
+    def __init__(self, center, size=Vector3(), dims=2, is_cylindrical=False):
         self.center = center
         self.size = size
         self.dims = dims
@@ -122,8 +125,8 @@ class Volume(object):
         v1 = center - size.scale(0.5)
         v2 = center + size.scale(0.5)
 
-        vec1 = py_v3_to_vec(self.dims, v1)
-        vec2 = py_v3_to_vec(self.dims, v2)
+        vec1 = py_v3_to_vec(self.dims, v1, is_cylindrical)
+        vec2 = py_v3_to_vec(self.dims, v2, is_cylindrical)
 
         self.swigobj = mp.volume(vec1, vec2)
 
@@ -211,7 +214,7 @@ class Simulation(object):
 
     def __init__(self, cell_size, geometry, sources, resolution, eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
-                 force_complex_fields=False, default_material=mp.Medium()):
+                 force_complex_fields=False, default_material=mp.Medium(), m=0):
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
@@ -236,7 +239,7 @@ class Simulation(object):
         self.fields = None
         self.structure = None
         self.accurate_fields_near_cylorigin = False
-        self.m = 0
+        self.m = m
         self.force_complex_fields = force_complex_fields
         self.verbose = verbose
         self.progress_interval = 4
@@ -250,6 +253,7 @@ class Simulation(object):
         self.last_eps_filename = ''
         self.output_h5_hook = lambda fname: False
         self.interactive = False
+        self.is_cylindrical = False
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -280,6 +284,8 @@ class Simulation(object):
             gv = mp.vol3d(self.cell_size.x, self.cell_size.y, self.cell_size.z, self.resolution)
         elif dims == CYLINDRICAL:
             gv = mp.volcyl(self.cell_size.x, self.cell_size.z, self.resolution)
+            self.dimensions = 2
+            self.is_cylindrical = True
         else:
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
@@ -345,7 +351,7 @@ class Simulation(object):
 
         if self.k_point:
             v = Vector3(self.k_point.x, self.k_point.y) if self.special_kz else self.k_point
-            self.fields.use_bloch(py_v3_to_vec(self.dimensions, v))
+            self.fields.use_bloch(py_v3_to_vec(self.dimensions, v, self.is_cylindrical))
 
         for s in self.sources:
             self.add_source(s)
@@ -365,7 +371,7 @@ class Simulation(object):
         return self.fields.round_time()
 
     def _get_field_point(self, c, pt):
-        v3 = py_v3_to_vec(self.dimensions, pt)
+        v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
     def _get_filename_prefix(self):
@@ -476,7 +482,8 @@ class Simulation(object):
         if self.fields is None:
             self._init_fields()
 
-        where = Volume(src.center, src.size, dims=self.dimensions).swigobj
+        where = Volume(src.center, src.size, dims=self.dimensions,
+                       is_cylindrical=self.is_cylindrical).swigobj
 
         if isinstance(src, EigenModeSource):
             if src.direction < 0:
@@ -484,7 +491,8 @@ class Simulation(object):
             else:
                 direction = src.direction
 
-            eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size, self.dimensions).swigobj
+            eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size, self.dimensions,
+                             is_cylindrical=self.is_cylindrical).swigobj
 
             if src.amp_func is None:
                 self.fields.add_eigenmode_src(
@@ -563,11 +571,13 @@ class Simulation(object):
         vol_list = None
 
         for s in stufflist:
-            v = Volume(center=s.center, size=s.size, dims=self.dimensions)
+            v = Volume(center=s.center, size=s.size, dims=self.dimensions,
+                       is_cylindrical=self.is_cylindrical)
             d0 = s.direction
             d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
             c = mp.direction_component(mp.Sx, d)
-            v2 = Volume(center=s.center, size=s.size, dims=self.dimensions).swigobj
+            v2 = Volume(center=s.center, size=s.size, dims=self.dimensions,
+                        is_cylindrical=self.is_cylindrical).swigobj
             vol_list = mp.volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
@@ -601,7 +611,7 @@ class Simulation(object):
                 self._init_fields()
             else:
                 if self.k_point:
-                    self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point))
+                    self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical))
 
     def restart_fields(self):
         if self.fields is not None:
