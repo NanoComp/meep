@@ -34,6 +34,7 @@ if test "x$with_mpi" = "xyes"; then
   ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
   CXX=$MPICXX
   MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
+  MBP_SUFFIX="${MPB_SUFFIX}_mpi"
 
   # Detect stupid MPICH problem with SEEK_SET conflicting between
   # the mpi.h header file and the stdio.h header file in C++
@@ -219,9 +220,11 @@ fi
 RUNCODE=""
 if test "x$with_mpi" = "xyes"; then
    AC_CHECK_PROG(MPIRUN, mpirun, mpirun)
-   RUNCODE="$MPIRUN -np 4" # always use 4 processes for 'make check'
+   # always use 2 processes for 'make check'
+   RUNCODE="$MPIRUN -np 2 --verbose -output-filename mpirun.out --timestamp-output" 
 fi
 AC_SUBST(RUNCODE)
+AM_CONDITIONAL(WITH_MPI, test "x$with_mpi" = "xyes")
 
 ##############################################################################
 # Libraries and flags (other than -lmeep) required to link Meep:

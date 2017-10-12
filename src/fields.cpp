@@ -160,8 +160,6 @@ bool fields::have_component(component c) {
 }
 
 fields_chunk::~fields_chunk() {
-  if (s->refcount-- <= 1) delete s; // delete if not shared
-  if (new_s && new_s->refcount-- <= 1) delete new_s; // delete if not shared
   is_real = 0; // So that we can make sure to delete everything...
   // for mu=1 non-PML regions, H==B to save space/time - don't delete twice!
   DOCMP2 FOR_H_AND_B(hc,bc) if (f[hc][cmp] == f[bc][cmp]) f[bc][cmp] = NULL;
@@ -198,6 +196,8 @@ fields_chunk::~fields_chunk() {
     p->s->delete_internal_data(p->data);
     delete p;
   }
+  if (s->refcount-- <= 1) delete s; // delete if not shared
+  if (new_s && new_s->refcount-- <= 1) delete new_s; // delete if not shared
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od,

@@ -101,10 +101,11 @@ int main(int argc, char **argv) {
     grid_volume gv = vol3d(0,0,0, res);
     gv.center_origin();
     anisodisp_material anisodispmat;
-    structure s(gv, anisodispmat);
-    s.add_susceptibility(anisodispmat, E_stuff, 
-			 lorentzian_susceptibility(1.1,1e-5));
-    fields f(&s);
+    structure *s = new structure(gv, anisodispmat);
+    s->add_susceptibility(anisodispmat, E_stuff, 
+                          lorentzian_susceptibility(1.1,1e-5));
+    fields f(s);
+    delete s; // should be safe since structure_chunk in f is refcounted
     f.use_bloch(vec(0.813,0,0));
     f.add_point_source(Ez, 0.5, 1.0, 0.0, 4.0, vec(0,0,0));
     double T = f.last_source_time();

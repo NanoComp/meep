@@ -22,16 +22,17 @@ _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 TEST_DIR = tests
-TESTS =                                    \
-    $(TEST_DIR)/3rd_harm_1d.py        \
-    $(TEST_DIR)/bend_flux.py          \
-    $(TEST_DIR)/cyl_ellipsoid.py      \
-    $(TEST_DIR)/geom.py               \
-    $(TEST_DIR)/holey_wvg_bands.py    \
-    $(TEST_DIR)/holey_wvg_cavity.py   \
-    $(TEST_DIR)/physical.py           \
-    $(TEST_DIR)/ring.py               \
-    $(TEST_DIR)/simulation.py         \
+TESTS =                                 \
+    $(TEST_DIR)/3rd_harm_1d.py          \
+    $(TEST_DIR)/bend_flux.py            \
+    $(TEST_DIR)/cyl_ellipsoid.py        \
+    $(TEST_DIR)/geom.py                 \
+    $(TEST_DIR)/holey_wvg_bands.py      \
+    $(TEST_DIR)/holey_wvg_cavity.py     \
+    $(TEST_DIR)/material_dispersion.py  \
+    $(TEST_DIR)/physical.py             \
+    $(TEST_DIR)/ring.py                 \
+    $(TEST_DIR)/simulation.py           \
     $(TEST_DIR)/source.py
 
 TEST_EXTENSIONS = .py
@@ -70,4 +71,3 @@ clean-local:
 	rm -rf meep
 
 endif # MAINTAINER_MODE
-

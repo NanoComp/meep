@@ -177,7 +177,12 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
         return 0;
     }
 
-    if (!get_attr_dbl(po, &s->noise_amp, "noise_amp")) {
+    if (PyObject_HasAttrString(po, "noise_amp")) {
+        if(!get_attr_dbl(po, &s->noise_amp, "noise_amp")) {
+            return 0;
+        }
+    }
+    else {
         s->noise_amp = 0;
     }
 

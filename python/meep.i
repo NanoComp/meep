@@ -333,6 +333,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         DrudeSusceptibility,
         Ellipsoid,
         GeometricObject,
+        LorentzianSusceptibility,
         Medium,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,
@@ -381,4 +382,15 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         SourceTime,
         check_positive,
     )
+
+    if with_mpi():
+        try:
+            from mpi4py import MPI
+        except ImportError:
+            print('\n**\n** failed to load python MPI module (mpi4py)\n**\n')
+            pass
+        else:
+            # this variable reference is needed for lazy initialization of MPI
+            comm = MPI.COMM_WORLD
+            master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
 %}
