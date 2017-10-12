@@ -1318,15 +1318,6 @@ static bool susceptibility_equiv(const susceptibility *o0,
   return 1;
 }
 
-void susceptibility_copy(const susceptibility *src,
-			 susceptibility *dest)
-{
-  memcpy(dest, src, sizeof(*dest));
-}
-
-void susceptibility_destroy(susceptibility *src)
-{ free(src); }
-
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], 
 			     const meep::vec &r) {
   vector3 p = vec_to_vector3(r);
@@ -1390,7 +1381,7 @@ static pol *add_pol(pol *pols, const susceptibility *user_s)
   while (p && !susceptibility_equiv(user_s, &p->user_s)) p = p->next;
   if (!p) {
     p = new pol;
-    susceptibility_copy(user_s, &p->user_s);
+    p->user_s = *user_s;
     p->next = pols;
     pols = p;
   }
@@ -1459,15 +1450,17 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
     if(noisy) master_printf(" amp=%g ",ss->noise_amp);
     master_printf("\n");
 
-    s->add_susceptibility(*this, ft, *sus);
-    delete sus;
+    current_pol = p;
+    if(sus) {
+      s->add_susceptibility(*this, ft, *sus);
+      delete sus;
+    }
   }
   current_pol = NULL;
   
   while (pols) {
     struct pol *p = pols;
     pols = pols->next;
-    susceptibility_destroy( &(p->user_s) );
     delete p;
   }
 }

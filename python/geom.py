@@ -92,10 +92,10 @@ class Medium(object):
         self.B_conductivity_diag = B_conductivity_diag
 
 
-class Susceptibility:
+class Susceptibility(object):
 
-    def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3()):
-        self.sigma_diag = sigma_diag
+    def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
+        self.sigma_diag = mp.Vector3(sigma, sigma, sigma) if sigma else sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
 
