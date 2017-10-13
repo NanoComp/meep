@@ -652,17 +652,23 @@ class Simulation(object):
         if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
 
-    def get_array(self, center, size, component=mp.Ez):
+    def get_array(self, center, size, component=mp.Ez, arr=None):
         self.dim_sizes = np.zeros(3, dtype=np.int32)
         vol = Volume(center, size=size, dims=self.dimensions)
         rank = self.fields.get_array_slice_dimensions(vol.swigobj, self.dim_sizes)
         sizes = self.dim_sizes.copy()
         sizes[rank:] = 1
         n = np.prod(sizes)
-        arr = np.zeros(n, dtype=np.double)
+
+        if arr is not None:
+            # TODO(chogan): Check size
+            pass
+        else:
+            arr = np.zeros(n, dtype=np.float64)
+
         self.fields.get_array_slice(vol.swigobj, component, arr)
 
-        return arr
+        return arr.reshape([s for s in self.dim_sizes if s != 0])
 
     def change_k_point(self, k):
         self.k_point = k

@@ -65,9 +65,9 @@ plt.plot(x1d, slice1d)
 
 # plot 2D slice
 plt.subplot(1, 2, 2)
-dy = (yMax - yMin) / sim.dim_sizes[1]
-dx = (xMax - xMin) / sim.dim_sizes[0]
+dy = (yMax - yMin) / slice2d.shape[1]
+dx = (xMax - xMin) / slice2d.shape[0]
 (x2d, y2d) = np.mgrid[slice(xMin, xMax, dx), slice(yMin, yMax, dy)]
-plt.contourf(x2d, y2d, np.reshape(slice2d, (sim.dim_sizes[0], sim.dim_sizes[1])))
+plt.contourf(x2d, y2d, slice2d)
 plt.colorbar()
 plt.show()

@@ -81,7 +81,8 @@ class TestCavityArraySlice(unittest.TestCase):
         center = mp.Vector3((self.x_min + self.x_max) / 2, (self.y_min + self.y_max) / 2)
         hl_slice2d = self.sim.get_array(center=center, size=size, component=mp.Hz)
 
-        np.testing.assert_allclose(slice2d, hl_slice2d)
+        np.testing.assert_allclose(slice2d.reshape(NX2, NY2), hl_slice2d)
+        np.testing.assert_allclose(slice2d, hl_slice2d.flatten())
 
 
 if __name__ == '__main__':
