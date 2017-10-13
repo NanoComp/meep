@@ -377,7 +377,7 @@ class Simulation(object):
     def _get_filename_prefix(self):
         _, filename = os.path.split(sys.argv[0])
 
-        if filename == 'ipykernel_launcher.py' or filename == '__main__':
+        if filename == 'ipykernel_launcher.py' or filename == '__main__.py':
             return ''
         else:
             return re.sub(r'\.py$', '', filename)
