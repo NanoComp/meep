@@ -350,19 +350,19 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep::component {
-    $1 = PyLong_Check($input) && PyLong_AsLong($input) < 100;
+    $1 = PyInteger_Check($input) && PyInteger_AsLong($input) < 100;
 }
 
 %typemap(in) meep::component {
-    $1 = static_cast<meep::component>(PyLong_AsLong($input));
+    $1 = static_cast<meep::component>(PyInteger_AsLong($input));
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep::derived_component {
-    $1 = PyLong_Check($input) && PyLong_AsLong($input) >= 100;
+    $1 = PyInteger_Check($input) && PyInteger_AsLong($input) >= 100;
 }
 
 %typemap(in) meep::derived_component {
-    $1 = static_cast<meep::derived_component>(PyLong_AsLong($input));
+    $1 = static_cast<meep::derived_component>(PyInteger_AsLong($input));
 }
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
