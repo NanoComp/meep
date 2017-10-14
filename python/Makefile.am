@@ -40,7 +40,7 @@ PY_LOG_COMPILER = $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
-  pkgpython_PYTHON = geom.py __init__.py source.py
+  pkgpython_PYTHON = geom.py __init__.py source.py simulation.py
   pkgpyexec_LTLIBRARIES = _meep.la
 endif
 
