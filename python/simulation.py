@@ -652,23 +652,34 @@ class Simulation(object):
         if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
 
-    def get_array(self, center, size, component=mp.Ez, arr=None):
-        self.dim_sizes = np.zeros(3, dtype=np.int32)
+    def get_array(self, center, size, component=mp.Ez, cmplx=False, arr=None):
+        dim_sizes = np.zeros(3, dtype=np.int32)
+        # TODO(chogan): Account for cylindrical Volume after PR 106 is merged
         vol = Volume(center, size=size, dims=self.dimensions)
-        rank = self.fields.get_array_slice_dimensions(vol.swigobj, self.dim_sizes)
-        sizes = self.dim_sizes.copy()
-        sizes[rank:] = 1
-        n = np.prod(sizes)
+        self.fields.get_array_slice_dimensions(vol.swigobj, dim_sizes)
+
+        dims = [s for s in dim_sizes if s != 0]
 
         if arr is not None:
-            # TODO(chogan): Check size
-            pass
+            if cmplx and not np.iscomplexobj(arr):
+                raise ValueError("Requested a complex slice, but provided array of type {}.".format(arr.dtype))
+
+            for a, b in zip(arr.shape, dims):
+                if a != b:
+                    fmt = "Expected dimensions {}, but got {}"
+                    raise ValueError(fmt.format(dims, arr.shape))
+
+            arr = np.require(arr, requirements=['C', 'W'])
+
         else:
-            arr = np.zeros(n, dtype=np.float64)
+            arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
 
-        self.fields.get_array_slice(vol.swigobj, component, arr)
+        if np.iscomplexobj(arr):
+            self.fields.get_complex_array_slice(vol.swigobj, component, arr)
+        else:
+            self.fields.get_array_slice(vol.swigobj, component, arr)
 
-        return arr.reshape([s for s in self.dim_sizes if s != 0])
+        return arr
 
     def change_k_point(self, k):
         self.k_point = k

@@ -10,6 +10,8 @@ import numpy as np
 class TestCavityArraySlice(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.realpath(os.path.join(__file__, '..', 'data')))
+    expected_1d = np.load(os.path.join(data_dir, 'cavity_arrayslice_1d.npy'))
+    expected_2d = np.load(os.path.join(data_dir, 'cavity_arrayslice_2d.npy'))
 
     def setUp(self):
 
@@ -48,46 +50,65 @@ class TestCavityArraySlice(unittest.TestCase):
         self.y_min = -0.15 * sy
         self.y_max = +0.15 * sy
 
+        self.size_1d = mp.Vector3(self.x_max - self.x_min)
+        self.center_1d = mp.Vector3((self.x_min + self.x_max) / 2)
+
+        self.size_2d = mp.Vector3(self.x_max - self.x_min, self.y_max - self.y_min)
+        self.center_2d = mp.Vector3((self.x_min + self.x_max) / 2, (self.y_min + self.y_max) / 2)
+
     def test_1d_slice(self):
         self.sim.run(until_after_sources=0)
-
-        # Low level 1D slice of Hz data
-        # dims1d = np.zeros(3, dtype=np.int32)
-        # v1d = mp.volume(mp.vec(self.x_min, 0.0), mp.vec(self.x_max, 0.0))
-        # self.sim.fields.get_array_slice_dimensions(v1d, dims1d)
-        # NX1 = dims1d[0]
-        # slice1d = np.zeros(NX1, dtype=np.double)
-        # self.sim.fields.get_array_slice(v1d, mp.Hz, slice1d)
-
-        expected = np.load(os.path.join(self.data_dir, 'cavity_arrayslice_1d.npy'))
-
-        size = mp.Vector3(self.x_max - self.x_min)
-        center = mp.Vector3((self.x_min + self.x_max) / 2)
-        hl_slice1d = self.sim.get_array(center=center, size=size, component=mp.Hz)
-
-        np.testing.assert_allclose(expected, hl_slice1d)
+        hl_slice1d = self.sim.get_array(center=self.center_1d, size=self.size_1d, component=mp.Hz)
+        np.testing.assert_allclose(self.expected_1d, hl_slice1d)
 
     def test_2d_slice(self):
         self.sim.run(until_after_sources=0)
+        hl_slice2d = self.sim.get_array(center=self.center_2d, size=self.size_2d, component=mp.Hz)
+        np.testing.assert_allclose(self.expected_2d, hl_slice2d)
 
-        # Low level 2D slice of Hz data
-        # dims2d = np.zeros(3, dtype=np.int32)
-        # v2d = mp.volume(mp.vec(self.x_min, self.y_min), mp.vec(self.x_max, self.y_max))
-        # self.sim.fields.get_array_slice_dimensions(v2d, dims2d)
-        # NX2 = dims2d[0]
-        # NY2 = dims2d[1]
-        # N2 = NX2 * NY2
-        # slice2d = np.zeros(N2, dtype=np.double)
-        # self.sim.fields.get_array_slice(v2d, mp.Hz, slice2d)
+    def test_1d_slice_user_array(self):
+        self.sim.run(until_after_sources=0)
+        arr = np.zeros(126, dtype=np.float64)
+        self.sim.get_array(center=self.center_1d, size=self.size_1d, component=mp.Hz, arr=arr)
+        np.testing.assert_allclose(self.expected_1d, arr)
 
-        expected = np.load(os.path.join(self.data_dir, 'cavity_arrayslice_2d.npy'))
+    def test_2d_slice_user_array(self):
+        self.sim.run(until_after_sources=0)
+        arr = np.zeros((126, 38), dtype=np.float64)
+        self.sim.get_array(center=self.center_2d, size=self.size_2d, component=mp.Hz, arr=arr)
+        np.testing.assert_allclose(self.expected_2d, arr)
 
-        size = mp.Vector3(self.x_max - self.x_min, self.y_max - self.y_min)
-        center = mp.Vector3((self.x_min + self.x_max) / 2, (self.y_min + self.y_max) / 2)
-        hl_slice2d = self.sim.get_array(center=center, size=size, component=mp.Hz)
+    def test_illegal_user_array(self):
+        self.sim.run(until_after_sources=0)
 
-        np.testing.assert_allclose(expected, hl_slice2d)
+        with self.assertRaises(ValueError):
+            arr = np.zeros(128)
+            self.sim.get_array(center=self.center_1d, size=self.size_1d,
+                               component=mp.Hz, arr=arr)
 
+        with self.assertRaises(ValueError):
+            arr = np.zeros((126, 39))
+            self.sim.get_array(center=self.center_2d, size=self.size_2d,
+                               component=mp.Hz, arr=arr)
+
+        with self.assertRaises(ValueError):
+            arr = np.zeros((126, 38))
+            self.sim.get_array(center=self.center_2d, size=self.size_2d,
+                               component=mp.Hz, cmplx=True, arr=arr)
+
+    def test_1d_complex_slice(self):
+        self.sim.run(until_after_sources=0)
+        hl_slice1d = self.sim.get_array(center=self.center_1d, size=self.size_1d,
+                                        component=mp.Hz, cmplx=True)
+        self.assertTrue(hl_slice1d.dtype == np.complex128)
+        self.assertTrue(hl_slice1d.shape[0] == 126)
+
+    def test_2d_complex_slice(self):
+        self.sim.run(until_after_sources=0)
+        hl_slice2d = self.sim.get_array(center=self.center_2d, size=self.size_2d,
+                                        component=mp.Hz, cmplx=True)
+        self.assertTrue(hl_slice2d.dtype == np.complex128)
+        self.assertTrue(hl_slice2d.shape[0] == 126 and hl_slice2d.shape[1] == 38)
 
 if __name__ == '__main__':
     unittest.main()
