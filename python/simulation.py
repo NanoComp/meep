@@ -130,6 +130,9 @@ class Volume(object):
 
         self.swigobj = mp.volume(vec1, vec2)
 
+    def to_cylindrical(self):
+        return Volume(self.center, self.size, self.dims, is_cylindrical=True)
+
 
 class FluxRegion(object):
 
@@ -212,7 +215,7 @@ class Harminv(object):
 
 class Simulation(object):
 
-    def __init__(self, cell_size, geometry, sources, resolution, eps_averaging=True,
+    def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
                  force_complex_fields=False, default_material=mp.Medium(), m=0):
         self.cell_size = cell_size
@@ -793,7 +796,12 @@ def in_volume(v, *step_funcs):
     def _in_volume(sim, todo):
         v_save = sim.output_volume
         eps_save = sim.last_eps_filename
-        sim.output_volume = v.swigobj
+
+        if sim.is_cylindrical:
+            sim.output_volume = v.to_cylindrical().swigobj
+        else:
+            sim.output_volume = v.swigobj
+
         if closure['cur_eps']:
             sim.last_eps_filename = closure['cur_eps']
         for func in step_funcs:

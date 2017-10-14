@@ -66,7 +66,7 @@ sim.run(mp.after_sources(h), until_after_sources=200)
 # to a file to get an r-by-t picture.  We'll also output from -sr to -sr
 # instead of from 0 to sr.
 sim.run(mp.in_volume(
-    mp.Volume(center=mp.Vector3(), size=mp.Vector3(2 * sr), is_cylindrical=True),
+    mp.Volume(center=mp.Vector3(), size=mp.Vector3(2 * sr)),
     mp.at_beginning(mp.output_epsilon),
     mp.to_appended("ez", mp.at_every(1 / fcen / 20, mp.output_efield_z))),
     until=1 / fcen
