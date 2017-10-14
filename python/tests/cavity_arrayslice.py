@@ -1,5 +1,6 @@
 from __future__ import division
 
+import os
 import unittest
 
 import meep as mp
@@ -7,6 +8,8 @@ import numpy as np
 
 
 class TestCavityArraySlice(unittest.TestCase):
+
+    data_dir = os.path.abspath(os.path.realpath(os.path.join(__file__, '..', 'data')))
 
     def setUp(self):
 
@@ -49,40 +52,41 @@ class TestCavityArraySlice(unittest.TestCase):
         self.sim.run(until_after_sources=0)
 
         # Low level 1D slice of Hz data
-        dims1d = np.zeros(3, dtype=np.int32)
-        v1d = mp.volume(mp.vec(self.x_min, 0.0), mp.vec(self.x_max, 0.0))
-        self.sim.fields.get_array_slice_dimensions(v1d, dims1d)
-        NX1 = dims1d[0]
-        slice1d = np.zeros(NX1, dtype=np.double)
-        self.sim.fields.get_array_slice(v1d, mp.Hz, slice1d)
+        # dims1d = np.zeros(3, dtype=np.int32)
+        # v1d = mp.volume(mp.vec(self.x_min, 0.0), mp.vec(self.x_max, 0.0))
+        # self.sim.fields.get_array_slice_dimensions(v1d, dims1d)
+        # NX1 = dims1d[0]
+        # slice1d = np.zeros(NX1, dtype=np.double)
+        # self.sim.fields.get_array_slice(v1d, mp.Hz, slice1d)
 
-        # High level equivalent
+        expected = np.load(os.path.join(self.data_dir, 'cavity_arrayslice_1d.npy'))
+
         size = mp.Vector3(self.x_max - self.x_min)
         center = mp.Vector3((self.x_min + self.x_max) / 2)
         hl_slice1d = self.sim.get_array(center=center, size=size, component=mp.Hz)
 
-        np.testing.assert_allclose(slice1d, hl_slice1d)
+        np.testing.assert_allclose(expected, hl_slice1d)
 
     def test_2d_slice(self):
         self.sim.run(until_after_sources=0)
 
         # Low level 2D slice of Hz data
-        dims2d = np.zeros(3, dtype=np.int32)
-        v2d = mp.volume(mp.vec(self.x_min, self.y_min), mp.vec(self.x_max, self.y_max))
-        self.sim.fields.get_array_slice_dimensions(v2d, dims2d)
-        NX2 = dims2d[0]
-        NY2 = dims2d[1]
-        N2 = NX2 * NY2
-        slice2d = np.zeros(N2, dtype=np.double)
-        self.sim.fields.get_array_slice(v2d, mp.Hz, slice2d)
+        # dims2d = np.zeros(3, dtype=np.int32)
+        # v2d = mp.volume(mp.vec(self.x_min, self.y_min), mp.vec(self.x_max, self.y_max))
+        # self.sim.fields.get_array_slice_dimensions(v2d, dims2d)
+        # NX2 = dims2d[0]
+        # NY2 = dims2d[1]
+        # N2 = NX2 * NY2
+        # slice2d = np.zeros(N2, dtype=np.double)
+        # self.sim.fields.get_array_slice(v2d, mp.Hz, slice2d)
 
-        # High level equivalent
+        expected = np.load(os.path.join(self.data_dir, 'cavity_arrayslice_2d.npy'))
+
         size = mp.Vector3(self.x_max - self.x_min, self.y_max - self.y_min)
         center = mp.Vector3((self.x_min + self.x_max) / 2, (self.y_min + self.y_max) / 2)
         hl_slice2d = self.sim.get_array(center=center, size=size, component=mp.Hz)
 
-        np.testing.assert_allclose(slice2d.reshape(NX2, NY2), hl_slice2d)
-        np.testing.assert_allclose(slice2d, hl_slice2d.flatten())
+        np.testing.assert_allclose(expected, hl_slice2d)
 
 
 if __name__ == '__main__':
