@@ -2,13 +2,13 @@
 # Band Diagram, Resonant Modes, and Transmission of a Waveguide Cavity
 ---
 
-In this example, we will consider the two-dimensional structure shown below, which is based on a system considered in chapter 7 of this [online textbook](http://ab-initio.mit.edu/book). In particular, there are three basic ideas behind this structure, which we briefly summarize.
+In this example, we will consider the 2d structure shown below, which is based on a system considered in chapter 7 of this [online textbook](http://ab-initio.mit.edu/book). In particular, there are three basic ideas behind this structure, which we briefly summarize.
 
 <center>
 ![](../images/Tut-holey-cavity.png)
 </center>
 
-First, by taking a dielectric wavgeuide and perforating it with a periodic sequence of holes, we form a kind of photonic crystal: there are still index-guided modes propagating losslessly down the periodic waveguide, but there is also a partial *photonic band gap*: a range of frequencies in which *no guided modes* exist.
+First, by taking a dielectric wavgeuide and perforating it with a periodic sequence of holes, we form a kind of **photonic crystal**: there are still index-guided modes propagating losslessly down the periodic waveguide, but there is also a partial photonic band gap: a range of frequencies in which *no guided modes* exist.
 
 Second, by making a *defect* in the periodic sequence, in this case by separating one pair of holes by a greater amount, we can trap a **resonant cavity mode**: it is localized along the waveguide direction by the band gap, and partially in the transverse direction by index guiding. Because there is no complete gap, however, the mode has some intrinsic radiative losses: even with infinitely many holes/periods, it leaks away slowly into the surrounding air.
 
@@ -16,118 +16,143 @@ Third, by combining several structures in sequence &mdash; ordinary waveguide wi
 
 In the following, we will analyze the structure in exactly **the opposite order** of what we really should do. Really, we should analyze the periodic system first to understand the band gap, then analyze the resonant mode, and finally analyze the transmission spectrum. Since all of those calculations have already been done (see the reference in the book), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
 
-See also the `holey-wvg-cavity.ctl` and `holey-wvg.ctl` files in the `examples/` subdirectory of the Meep source, which contain the commands below.
+See also the `holey-wvg-cavity.py` and `holey-wvg-bands.py` files in the `python/examples` subdirectory of the Meep source, which contain the commands below.
 
 [TOC]
 
 Transmission Spectrum
 ---------------------
 
-To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll define some parameters of our structure as in the figure above. Note that we'll choose units so that our periodicity is 1 which is a typical choice for photonic crystals.
+To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll load the necessary modules which will enable passing parameters from the command line:
 
-```scm
-; Some parameters to describe the geometry:                                     
-(define-param eps 13) ; dielectric constant of waveguide                        
-(define-param w 1.2) ; width of waveguide                                       
-(define-param r 0.36) ; radius of holes                                         
-(define-param d 1.4) ; defect spacing (ordinary spacing = 1)                    
-(define-param N 3) ; number of holes on either side of defect                   
-; The cell dimensions                                                           
-(define-param sy 6) ; size of cell in y direction (perpendicular to wvg.)       
-(define-param pad 2) ; padding between last hole and PML edge                   
-(define-param dpml 1) ; PML thickness   
+```py
+import meep as mp
+import argparse
+
+def main(args):
 ```
 
-Given these parameters, the size of the cell in the $x$ direction, which we'll denote `sx`, is given by `sx = 2 * (pad + dpml + N) + d - 1`, which in Scheme is expressed as:
+Next, we'll define some parameters of our structure as in the figure above. Note that we'll choose units so that our periodicity is 1 which is a typical choice for photonic crystals.
 
-```scm
-(define sx (+ (* 2 (+ pad dpml N)) d -1)) ; size of cell in x direction
+```py
+eps = 13          # dielectric constant of waveguide
+w = 1.2           # width of waveguide
+r = 0.36          # radius of holes
+d = 1.4           # defect spacing (ordinary spacing = 1)
+N = args.N        # number of holes on either side of defect
+
+sy = args.sy      # size of cell in y direction (perpendicular to wvg.)
+pad = 2           # padding between last hole and PML edge
+dpml = 1          # PML thickness
+
+resolution = 20
+```
+
+Given these parameters, the size of the cell in the $x$ direction, which we'll denote `sx`, is given by:
+
+```py
+sx = 2*(pad + dpml + N) + d - 1  # size of cell in x direction
 ```
 
 Now, the computational cell is:
 
-```scm
-(set! geometry-lattice (make lattice (size sx sy no-size)))
+```py
+cell = mp.Vector3(sx, sy, 0)
 ```
 
-Our `geometry` will consist of a single `block` for the waveguide, and `2N` cylindrical holes. To make the holes, we could use some kind of loop (see also [How to Write a Loop in Scheme](../Guile_and_Scheme_Information.md#how-to-write-a-loop-in-scheme)), but in this case it is even easier to use the predefined function `geometric-object-duplicates`, which replicates a given object by shifting by a given vector a given number of times. See the [User Interface](../Scheme_User_Interface.md#geometry-utilities).
+Our `geometry` will consist of a single `Block` for the waveguide, and `2N` cylindrical holes:
 
-```scm
-(set! geometry
-      (append ; combine lists of objects:                                       
-       (list (make block (center 0 0) (size infinity w infinity)
-                   (material (make dielectric (epsilon eps)))))
-       (geometric-object-duplicates (vector3 1 0) 0 (- N 1)
-        (make cylinder (center (/ d 2) 0) (radius r) (height infinity)
-              (material air)))
-       (geometric-object-duplicates (vector3 -1 0) 0 (- N 1)
-        (make cylinder (center (/ d -2) 0) (radius r) (height infinity)
-              (material air)))))
+```py
+blk = mp.Block(size=mp.Vector3(1e20, w, 1e20), material=mp.Medium(epsilon=eps))
+geometry = [blk]
+
+for i in range(N):
+    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
+    geometry.append(mp.Cylinder(r, center=mp.Vector3(-(d / 2 + i))))
 ```
 
-Note that we call `geometric-object-duplicates` twice, for the holes before and after the defect, and that we combine the resulting lists with the standard Scheme `append` function. As usual, later objects in `geometry` take precedence over earlier objects, so the `cylinder` objects will punch holes through the `block`.
+To make the holes, we have used a `for` loop. Note that the geometry objects are combined using the `append` function. As usual, later objects in `geometry` take precedence over earlier objects, so the `Cylinder` objects will punch holes through the `Block`.
 
 The absorbing boundaries surrounding the computational cell are:
 
-```scm
-(set! pml-layers (list (make pml (thickness dpml))))
-(set-param! resolution 20)
+```py
+pml_layers = [mp.PML(1.0)]
 ```
 
-Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a P-polarized band gap for frequencies from about 0.2 to 0.3, so we'll want to cover this range.
+Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a $P$-polarized band gap for frequencies from about 0.2 to 0.3, so we'll want to cover this range.
 
-```scm
-(define-param fcen 0.25) ; pulse center frequency
-(define-param df 0.2)  ; pulse frequency width
-(define-param nfreq 500) ; number of frequencies at which to compute flux
+```py
+fcen = args.fcen   # pulse center frequency
+df = args.df       # pulse frequency width
 ```
 
-The source will now be the usual Gaussian pulse centered at `fcen`, located at one edge of the cell just outside the PML, at $x =$ `- 0.5 * sx + dpml`. Ideally, we would excite exactly the fundamental mode of the waveguide, but it is good enough to just excite it with a line source. Moreover, since we are interested in the $P$ polarization (electric field in the plane), we will excite it with a $J_y$ current source (transverse to the propagation direction), which is specified as `Ey`:
+The source will now be the usual Gaussian pulse centered at `fcen`, located at one edge of the cell just outside the PML, at `x = - 0.5 * sx + dpml`. Ideally, we would excite exactly the fundamental mode of the waveguide, but it is good enough to just excite it with a line source. Moreover, since we are interested in the $P$ polarization (electric field in the plane), we will excite it with a $J_y$ current source (transverse to the propagation direction), which is specified as `Ey`:
 
-```scm
-(set! sources (list
-               (make source
-                 (src (make gaussian-src (frequency fcen) (fwidth df)))
-                 (component Ey)
-                 (center (+ dpml (* -0.5 sx)) 0)
-                 (size 0 w))))
+```py
+src = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ey,
+                 mp.Vector3(-0.5 * sx + dpml), size=mp.Vector3(0, w))]
 ```
 
-The structure has mirror symmetry planes through the $X$ and $Y$ axes. The source breaks the mirror symmetry through the $Y$ axis, but we still have *odd* mirror symmetry through the $X$ axis:
+The structure has mirror symmetry planes through the $X$ and $Y$ axes. The source breaks the mirror symmetry through the $Y$ axis, but we still have *odd* mirror symmetry through the $Z$ axis:
 
-```scm
-(set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
+```py
+sym = [mp.Mirror(mp.Y, phase=-1)]
 ```
 
-Note that we specify the plane by its normal, the $Y$ direction. See also [Exploiting Symmetry](../Exploiting_Symmetry.md).
+Note that we specify the plane by its normal, the $Y$ direction. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). Putting all these objects together via the `Simulation` object:
+
+```py
+sim = mp.Simulation(cell_size=cell,
+                    geometry=geometry,
+                    boundary_layers=pml_layers,
+                    sources=src,
+                    symmetries=sym,
+                    resolution=resolution)
+```
 
 Finally, we need to tell Meep to [compute the flux spectrum](../Introduction.md#transmissionreflection-spectra) at the other end of the computational cell, after the holes but before the PML:
 
-```scm
-(define trans ; transmitted flux                                          
-        (add-flux fcen df nfreq
-                  (make flux-region
-                    (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2)))))
+```py
+freg = mp.FluxRegion(center=mp.Vector3(0.5 * sx - dpml - 0.5),
+                     size=mp.Vector3(0, 2 * w))
+
+nfreq = 500 # number of frequencies at which to compute flux
+
+# transmitted flux
+trans = sim.add_flux(fcen, df, nfreq, freg)
 ```
 
-Now, we can run the simulation, using `run-sources+` to run until the sources have finished, plus some additional time to allow the fields to propagate through the structure. As in [Tutorial/Basics](Basics), we'll use `stop-when-fields-decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
+Now, we can run the simulation until the sources have finished plus some additional time to allow the fields to propagate through the structure. As in [Tutorial/Basics](Basics), we'll use `stop_when_fields_decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
 
-```scm
-(run-sources+ (stop-when-fields-decayed
-               50 Ey
-               (vector3 (- (* 0.5 sx) dpml 0.5) 0)
-               1e-3)
-              (at-beginning output-epsilon)
-              (during-sources
-               (in-volume (volume (center 0 0) (size sx 0))
-                (to-appended "hz-slice" (at-every 0.4 output-hfield-z)))))
-(display-fluxes trans) ; print out the flux spectrum
+```py
+vol = mp.Volume(mp.Vector3(0), size=mp.Vector3(sx))
+
+sim.run(mp.at_beginning(mp.output_epsilon),
+        mp.during_sources(mp.in_volume(vol, mp.to_appended("hz-slice", mp.at_every(0.4, mp.output_hfield_z)))),
+        until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3((0.5 * sx) - dpml - 0.5, 0), 1e-3))
+
+sim.display_fluxes(trans)  # print out the flux spectrum
 ```
 
-Note that we've outputted $\varepsilon$ at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics). Now, we run the simulation:
+Note that we've outputted $\varepsilon$ at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics).
+
+Finally, we specify all the command-line parameters with default values via [argparse](https://docs.python.org/3/library/argparse.html):
+
+```py
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-N', type=int, default=3, help='number of holes on either side of defect')
+    parser.add_argument('-sy', type=int, default=6, help='size of cell in y direction (perpendicular to wvg.)')
+    parser.add_argument('-fcen', type=float, default=0.25, help='pulse center frequency')
+    parser.add_argument('-df', type=float, default=0.2, help='pulse frequency width')
+    args = parser.parse_args()
+    main(args)
+```
+
+Now, we run the simulation:
 
 ```sh
-unix% meep holey-wvg-cavity.ctl | tee holey-wvg-cavity.out
+unix% python holey-wvg-cavity.py | tee holey-wvg-cavity.out
 ```
 
 which takes a few seconds as we need to wait for the cavity mode to decay away. We can plot the dielectric function and $H_z$ field pattern via `h5topng`:
@@ -148,10 +173,10 @@ The $H_z$ slice in which time = vertical is interesting, because we can see the 
 Of course, the main point of this section is to get the quantitative transmission spectrum. To do this, we need to normalize our flux by running the simulation with no holes:
 
 ```sh
-unix% meep N=0 holey-wvg-cavity0.ctl | tee holey-wvg-cavity.out
+unix% python holey-wvg-cavity.py -N 0 | tee holey-wvg-cavity0.out
 ```
 
-which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in the tutorial, giving us comma-delimited text which is the frequency and fluxes:
+which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in the [Basics tutorial](Basics/#transmission-spectrum-around-a-waveguide-bend), giving us comma-delimited text which is the frequency and fluxes:
 
 ```sh
 unix% grep flux1: holey-wvg-cavity.out > flux.dat
@@ -166,63 +191,52 @@ which we then import into our plotting program, divide the two fluxes, and get:
 
 The band gap is clearly visible as the range of very low transmission, and in the middle of the band gap is a sharp peak corresponding to the resonant mode trapped in the defect. The inset enlarges this peak, and shows that we didn't use quite enough frequency points to capture the whole shape although we could fit to a Lorentzian if we wanted. At the edges of the band gaps, the transmission goes up in broad Fabry-Perot resonance peaks which we will examine in more detail below. There is also some high-frequency oscillation visible at the left of the plot, which is a numerical artifact due to our pulse not having enough amplitude in that range.
 
-The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunatly, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on [ring resonators](Basics/#modes-of-a-ring-resonator).
+The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunatly, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on ring resonators.
 
 Resonant Modes
 --------------
 
-To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them *directly*, placing a source *inside* the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the [ring-resonator example](Basics/#modes-of-a-ring-resonator) and the [resonant-modes introduction](../Introduction.md#resonant-modes).
+To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them directly, placing a source inside the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the ring-resonator example and the [resonant-modes introduction](../Introduction.md#resonant-modes).
 
-The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same `holey-wvg-cavity.ctl` input file for *both* calculations, and select between the two with an `if` statement controlled by a `compute-mode?` variable:
+The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same `holey-wvg-cavity.py` input file for *both* calculations, and select between the two with an `if` statement controlled by a `-r` or `--resonant_modes` command line parameter:
 
-```scm
-; false = transmission spectrum, true = resonant modes:                         
-(define-param compute-mode? false)
-(if compute-mode?
-    (begin
-       ...new sources and run command...
-    )
-    (begin
-
-       ...sources and run from above, to get spectrum...
-    ))
-
+```py
+if args.resonant_modes:
+   ...new sources and run command...
+else:  
+   ...sources and run from above, to get spectrum...
 ```
 
-The `(begin ...)` is a standard Scheme construct to group several statements into one, much like `{...}` brackets in C. Our new source is still a Gaussian, but is now a point source at the origin:
+Our new source is still a Gaussian, but is now a point source at the origin:
 
-```scm
-(set! sources (list
-               (make source
-                 (src (make gaussian-src (frequency fcen) (fwidth df)))
-                 (component Hz) (center 0 0))))
+```py
+src = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Hz, mp.Vector3(0))]
 ```
 
-Moreover, we are now using a *magnetic* current oriented in the $z$ direction (`Hz`). This source matches the symmetry of the P-polarized resonant mode that we are looking for. If we didn't know in advance what symmetry we were looking for, we would put the source *off-center* in a *non-symmetric* location, which would excite *all* modes regardless of symmetry. However, in many cases the symmetry is known, and placing a symmetric source allows us to limit the number of modes we excite and also to exploit the fact that we now have *two* mirror symmetry planes in this problem, saving us a factor of *four* in computation:
+Moreover, we are now using a *magnetic* current oriented in the $z$ direction ($H_z$). This source matches the symmetry of the $P$-polarized resonant mode that we are looking for. If we didn't know in advance what symmetry we were looking for, we would put the source off-center in a non-symmetric location, which would excite *all* modes regardless of symmetry. However, in many cases the symmetry is known, and placing a symmetric source allows us to limit the number of modes we excite and also to exploit the fact that we now have *two* mirror symmetry planes in this problem, saving us a factor of *four* in computation:
 
-```scm
-(set! symmetries
-      (list (make mirror-sym (direction Y) (phase -1))
-            (make mirror-sym (direction X) (phase -1))))
+```py
+sym = [mp.Mirror(mp.Y, phase=-1), mp.Mirror(mp.X, phase=-1)]
 ```
 
-Here, you may notice a strange thing: we have specified `(phase -1)` for both mirror planes corresponding to *odd* symmetry. However, it may seem at first glance that an $H_z$ dipole at the origin has *even* symmetry! The subtlety here is that the magnetic field is a [pseudovector](https://en.wikipedia.org/wiki/pseudovector), and is multiplied by $-1$ under mirror flips, so it is odd when it looks even and vice versa. We aren't just being pedantic here—if you don't realize the difference between vectors, such as electric fields and currents, and pseudovectors, such as magnetic fields and currents, then you will have endless confusion because the electric and magnetic fields will *seem* to have different symmetry. See also [Exploiting Symmetry](../Exploiting_Symmetry.md).
+Here, you may notice a strange thing: we have specified `phase=-1` for both mirror planes corresponding to *odd* symmetry. However, it may seem at first glance that an $H_z$ dipole at the origin has *even* symmetry! The subtlety here is that the magnetic field is a [pseudovector](https://en.wikipedia.org/wiki/pseudovector), and is multiplied by $-1$ under mirror flips, so it is odd when it looks even and vice versa. We aren't just being pedantic here &mdash; if you don't realize the difference between vectors, such as electric fields and currents, and pseudovectors, such as magnetic fields and currents, then you will have endless confusion because the electric and magnetic fields will *seem* to have different symmetry. See also [Exploiting Symmetry](../Exploiting_Symmetry.md).
 
 Finally, we can begin the time stepping:
 
-```scm
-(run-sources+ 400
-              (at-beginning output-epsilon)
-              (after-sources (harminv Hz (vector3 0) fcen df)))
-(run-until (/ 1 fcen) (at-every (/ 1 fcen 20) output-hfield-z))
+```py
+sim.run(mp.at_beginning(mp.output_epsilon),
+        mp.after_sources(mp.Harminv(mp.Hz, mp.Vector3(), fcen, df)),
+        until_after_sources=400)
+
+sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-Just as in the [ring-resonator example](Basics/#modes-of-a-ring-resonator), we use the `harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
+Just as in the ring-resonator example, we use the `harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
 
-We can now launch the simulation, setting `compute-mode?=true` to do the resonant-mode calculation:
+We can now launch the simulation, setting the `-r` command-line parameter to do the resonant-mode calculation:
 
 ```sh
-unix% meep compute-mode?=true holey-wvg-cavity.ctl
+unix% python holey-wvg-cavity.py -r
 ```
 
 Inspecting the output, we see that it finds a single resonant mode in the gap:
@@ -249,9 +263,9 @@ $$\frac{1}{Q} = \frac{1}{Q_w} + \frac{1}{Q_r}$$
 
 There are a variety of ways to separate out the two decay channels. For example, we can look at the power radiated in different directions. Here, we'll just increase the number `N` of holes and see what happens &mdash; as we increase `N`, $Q_w$ should increase exponentially while $Q_r$ remains roughly fixed, so that $Q$ eventually saturates at $Q_r$.
 
-```
-unix% meep N=4 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
-unix% meep N=5 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
+```sh
+unix% python holey-wvg-cavity.py -r -N=4 |grep harminv
+unix% python holey-wvg-cavity.py -r -N=5 |grep harminv
 ...
 ```
 
@@ -292,64 +306,71 @@ Let us briefly review the problem. In a periodic system of this sort, the eigen-
 
 Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
-Thus, we will define our computational cell as follows. See also the `holey-wvg-bands.ctl` file in the `examples/` subdirectory.
+Thus, we will define our computational cell as follows. See also the `holey-wvg-bands.py` file in the `python/examples/` subdirectory.
 
-```scm
-; Some parameters to describe the geometry:
-(define-param eps 13) ; dielectric constant of waveguide
-(define-param w 1.2) ; width of waveguide
-(define-param r 0.36) ; radius of holes
-; The cell dimensions
-(define-param sy 12) ; size of cell in y direction (perpendicular to wvg.)
-(define-param dpml 1) ; PML thickness (y direction only!)
-(set! geometry-lattice (make lattice (size 1 sy no-size)))
-(set! geometry
-       (list (make block (center 0 0) (size infinity w infinity)
-                   (material (make dielectric (epsilon eps))))
-              (make cylinder (center 0 0) (radius r) (height infinity) (material air))))
-(set-param! resolution 20)
+```py
+# Some parameters to describe the geometry:
+eps = 13    # dielectric constant of waveguide
+w = 1.2     # width of waveguide
+r = 0.36    # radius of holes
+
+# The cell dimensions
+sy = 12     # size of cell in y direction (perpendicular to wvg.)
+dpml = 1    # PML thickness (y direction only!)
+cell = mp.Vector3(1, sy)
+
+b = mp.Block(size=mp.Vector3(1e20, w, 1e20), material=mp.Medium(epsilon=eps))
+c = mp.Cylinder(radius=r)
+
+resolution=20
 ```
 
-Note that our cell is now size `1` in the x direction, and there is no need for `geometric-object-duplicate`. We just have a single air hole in the unit cell. The PML absorbing boundaries have something new:
+Note that our cell is now size `1` in the $x$ direction, and there is no need for any loops to duplicate the geometry. We just have a single air hole in the unit cell. The PML absorbing boundaries have something new:
 
-```scm
-(set! pml-layers (list (make pml (direction Y) (thickness dpml))))
+```py
+pml_layers = mp.PML(dpml, direction=mp.Y)
 ```
 
-Since our structure is periodic, we don't want any absorbing layers in the $x$ direction: adding `(direction Y)` just specifies PML layers on the $y$ boundaries.
+Since our structure is periodic, we don't want any absorbing layers in the $x$ direction: adding `direction=mp.Y` just specifies PML layers on the $y$ boundaries.
 
 As before, our source will be a Gaussian pulse from an $H_z$ point source:
 
-```scm
-(define-param fcen 0.25) ; pulse center frequency                            
-(define-param df 1.5) ; pulse freq. width: large df = short impulse
-(set! sources (list
-               (make source
-                 (src (make gaussian-src (frequency fcen) (fwidth df)))
-                 (component Hz) (center 0.1234 0))))
+```py
+fcen = 0.25  # pulse center frequency
+df = 1.5     # pulse freq. width: large df = short impulse
+
+s = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Hz,
+              center=mp.Vector3(0.1234,0))
 ```
 
 Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is random, to help ensure that the source will couple to an arbitrary mode, but the $y$ coordinate is 0. This means that we will only be looking at *P*-polarized *odd*-symmetry modes (recalling the pseudovector subtlety discussed above). As usually, we will exploit this via:
 
-```scm
-(set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
+```py
+sym = mp.Mirror(direction=mp.Y, phase=-1)
 ```
 
-Note that, regardless of the source, we don't have an $X$ symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$. Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k-point` variable, and then use `run-sources+` with `harminv` just as we did to calculate a resonant mode:
+Note that, regardless of the source, we don't have an $X$ symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$. Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k_point` variable, and then use `until_after_sources` with `harminv` just as we did to calculate a resonant mode:
 
-```scm
-(set-param! k-point (vector3 0.4 0))
-(run-sources+ 300 (after-sources (harminv Hz (vector3 0.1234) fcen df)))
+```py
+kx = 0.4
+sim.k_point = mp.Vector3(kx)
+
+sim.run(mp.at_beginning(mp.output_epsilon),
+        mp.after_sources(mp.Harminv(mp.Hz, mp.Vector3(0.1234), fcen, df)),
+        until_after_sources=300)
+
+sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function `run-k-points`, which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
+which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
 
-```scm
-(define-param k-interp 19)
-(run-k-points 300 (interpolate k-interp (list (vector3 0) (vector3 0.5))))
+```py
+k_interp = 19
+
+sim.run(mp.interpolate(k_interp, [mp.Vector3(0), mp.Vector3(0.5)]), k_points=300)
 ```
 
-Here, we have used [libctl](http://ab-initio.mit.edu/wiki/index.php/Libctl)'s built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. `run-k-points` automatically runs `harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output-epsilon`. The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
+Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs `harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
 
 ```
 freqs:, 14, 0.325, 0.0, 0.0, 0.171671252741341, 0.319717964514696, 0.323470450791478
@@ -358,8 +379,8 @@ freqs-im:, 14, 0.325, 0.0, 0.0, -8.74808991364674e-8, 1.82230861728163e-4,
 
 where the first numeric column is an index (1, 2, 3, ...), the next three columns are the components of $\mathbf{k}$, and the remaining columns are the real part of ω (for the `freqs:` lines) or the imaginary part of ω (for the `freqs-im:` lines). Now we can just do:
 
-```
-unix% meep holey-wvg-bands.ctl | tee holey-wvg-bands.out
+```sh
+unix% python holey-wvg-bands.py | tee holey-wvg-bands.out
 unix% grep freqs: holey-wvg-bands.out > fre.dat
 unix% grep freqs-im: holey-wvg-bands.out > fim.dat
 ```

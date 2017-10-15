@@ -56,11 +56,11 @@ For bug reports and feature requests, please [file a Meep GitHub issue](https://
 Acknowledgements
 ----------------
 
-The Meep project is maintained by [Simpetus](http://www.simpetuscloud.com) and the open-source community on [GitHub](https://github.com/stevengj/meep). Please see the [Acknowledgements](Acknowledgements.md) for a more complete listing of those to whom we are grateful.
+The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source community on [GitHub](https://github.com/stevengj/meep). Please see the [Acknowledgements](Acknowledgements.md) for a more complete listing of those to whom we are grateful.
 
 Contacts and Feedback
 ---------------------
 
 If you have questions or problems regarding Meep, you are encouraged to query the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/).
 
-Professional consulting services as well as free access to Meep in the public cloud via Amazon Web Services (AWS) are provided by [Simpetus](http://www.simpetuscloud.com).
+Professional consulting services as well as free access to Meep in the public cloud via Amazon Web Services (AWS) are provided by [Simpetus](http://www.simpetus.com).

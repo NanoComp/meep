@@ -2,14 +2,14 @@
 # Python Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples using the Python interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetuscloud.com/projects.html).
+In this page, we'll go through a couple of simple examples using the Python interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
 
 [TOC]
 
 The Meep Python Library
 -----------------------
 
-Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as NumPy, SciPy, and matplotlib can be used to augment the simulation functionality which will also be demonstrated. Much of the low-level functionality of the Python interface has been abstracted which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available.
+Meep simulations are Python scripts which involve specifying the device geometry, materials, current sources, monitor fields, and everything else necessary to set up a calculation. A Python script provides the flexibility to customize the simulation for practically any application particularly those involving parameter sweeps and optimization. Python libraries such as [NumPy](http://www.numpy.org/), [SciPy](https://www.scipy.org/), and [matplotlib](https://matplotlib.org/) can be used to augment the simulation functionality which will also be demonstrated. Much of the low-level functionality of the Python interface has been abstracted which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available.
 
 Executing Meep programs is normally done at the Unix command line (herein denoted by the `unix%` prompt) as follows:
 
@@ -17,7 +17,7 @@ Executing Meep programs is normally done at the Unix command line (herein denote
  unix% python foo.py >& foo.out
 ```
 
-which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either IPython via a shell terminal or a Jupyter notebook via a web browser. If you use one of these approaches now, you can paste in the commands from the tutorial as you follow it and see what they do.
+which reads the Python script `foo.py` and executes it, saving the output to the file `foo.out`. If you want to set up simulations in interactive mode where you can type commands and see the results immediately, you will need to use either [IPython](http://ipython.org/) via a shell terminal or a [Jupyter notebook](https://jupyter.org/) via a web browser. If you use one of these approaches now, you can paste in the commands from the tutorial as you follow it and see what they do.
 
 Fields in a Waveguide
 ---------------------
@@ -51,7 +51,7 @@ The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 
 
 <center>![](../images/Python-Tutorial-wvg-straight-eps-000000.00.png)</center>
 
-Now that we have the structure, we need to specify the current sources using the `sources` object which is a set of objects. The simplest thing is to add a point source $J_z$:
+Now that we have the structure, we need to specify the current sources using the `sources` object. The simplest thing is to add a single point source $J_z$:
 
 ```py
 sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
@@ -59,7 +59,7 @@ sources = [mp.Source(mp.ContinuousSource(frequency=0.15),
                      center=mp.Vector3(-7,0))]
 ```
 
-Here, we gave the source a frequency of 0.15, and specified a `ContinuousSrc` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $\varepsilon=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 &#956;m to the right of the left edge of the cell—we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+Here, we gave the source a frequency of 0.15, and specified a `ContinuousSrc` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $\varepsilon=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component `Ez` (e.g., if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 &#956;m to the right of the left edge of the cell—we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
 Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML)— which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 around all sides of the cell, we do:
 
