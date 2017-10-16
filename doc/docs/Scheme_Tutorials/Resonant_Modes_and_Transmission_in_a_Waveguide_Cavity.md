@@ -16,7 +16,7 @@ Third, by combining several structures in sequence &mdash; ordinary waveguide wi
 
 In the following, we will analyze the structure in exactly **the opposite order** of what we really should do. Really, we should analyze the periodic system first to understand the band gap, then analyze the resonant mode, and finally analyze the transmission spectrum. Since all of those calculations have already been done (see the reference in the book), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
 
-See also the `holey-wvg-cavity.ctl` and `holey-wvg.ctl` files in the `examples/` subdirectory of the Meep source, which contain the commands below.
+See also the `holey-wvg-cavity.ctl` and `holey-wvg-bands.ctl` files in the `examples/` subdirectory of the Meep source, which contain the commands below.
 
 [TOC]
 
@@ -74,12 +74,12 @@ The absorbing boundaries surrounding the computational cell are:
 (set-param! resolution 20)
 ```
 
-Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a P-polarized band gap for frequencies from about 0.2 to 0.3, so we'll want to cover this range.
+Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a P-polarized band gap for frequencies in the range 0.2 to 0.3, so we'll want to cover this interval.
 
 ```scm
-(define-param fcen 0.25) ; pulse center frequency
-(define-param df 0.2)  ; pulse frequency width
-(define-param nfreq 500) ; number of frequencies at which to compute flux
+(define-param fcen 0.25) ; pulse center frequency
+(define-param df 0.2)    ; pulse frequency width
+(define-param nfreq 500) ; number of frequencies at which to compute flux
 ```
 
 The source will now be the usual Gaussian pulse centered at `fcen`, located at one edge of the cell just outside the PML, at $x =$ `- 0.5 * sx + dpml`. Ideally, we would excite exactly the fundamental mode of the waveguide, but it is good enough to just excite it with a line source. Moreover, since we are interested in the $P$ polarization (electric field in the plane), we will excite it with a $J_y$ current source (transverse to the propagation direction), which is specified as `Ey`:
@@ -124,7 +124,7 @@ Now, we can run the simulation, using `run-sources+` to run until the sources ha
 (display-fluxes trans) ; print out the flux spectrum
 ```
 
-Note that we've outputted $\varepsilon$ at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics). Now, we run the simulation:
+Note that we've outputted $\varepsilon$ at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics). Now, we launch the simulation:
 
 ```sh
 unix% meep holey-wvg-cavity.ctl | tee holey-wvg-cavity.out
@@ -166,12 +166,12 @@ which we then import into our plotting program, divide the two fluxes, and get:
 
 The band gap is clearly visible as the range of very low transmission, and in the middle of the band gap is a sharp peak corresponding to the resonant mode trapped in the defect. The inset enlarges this peak, and shows that we didn't use quite enough frequency points to capture the whole shape although we could fit to a Lorentzian if we wanted. At the edges of the band gaps, the transmission goes up in broad Fabry-Perot resonance peaks which we will examine in more detail below. There is also some high-frequency oscillation visible at the left of the plot, which is a numerical artifact due to our pulse not having enough amplitude in that range.
 
-The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunatly, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on [ring resonators](Basics/#modes-of-a-ring-resonator).
+The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunately, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on [ring resonators](Basics/#modes-of-a-ring-resonator).
 
 Resonant Modes
 --------------
 
-To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them *directly*, placing a source *inside* the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the [ring-resonator example](Basics/#modes-of-a-ring-resonator) and the [resonant-modes introduction](../Introduction.md#resonant-modes).
+To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them *directly*, placing a source *inside* the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the [ring-resonator example](Basics/#modes-of-a-ring-resonator) and the [Introduction](../Introduction.md#resonant-modes).
 
 The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same `holey-wvg-cavity.ctl` input file for *both* calculations, and select between the two with an `if` statement controlled by a `compute-mode?` variable:
 
@@ -243,11 +243,11 @@ unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ![](../images/Holey-wvg-cavity-hz.gif)
 </center>
 
-The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where (see this [online textbook](http://ab-initio.mit.edu/book), ch. 10)
+The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where 
 
 $$\frac{1}{Q} = \frac{1}{Q_w} + \frac{1}{Q_r}$$
 
-There are a variety of ways to separate out the two decay channels. For example, we can look at the power radiated in different directions. Here, we'll just increase the number `N` of holes and see what happens &mdash; as we increase `N`, $Q_w$ should increase exponentially while $Q_r$ remains roughly fixed, so that $Q$ eventually saturates at $Q_r$.
+(See this [online textbook](http://ab-initio.mit.edu/book), ch. 10 for more details). There are a variety of ways to separate out the two decay channels. For example, we can look at the power radiated in different directions. Here, we'll just increase the number `N` of holes and see what happens &mdash; as we increase `N`, $Q_w$ should increase exponentially while $Q_r$ remains roughly fixed, so that $Q$ eventually saturates at $Q_r$.
 
 ```
 unix% meep N=4 compute-mode?=true holey-wvg-cavity.ctl |grep harminv
@@ -286,13 +286,13 @@ Band Diagram
 ![](../images/Holey-wvg-bands-eps-000000.00.png)
 </center>
 
-Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the **infinite periodic waveguide** by itself with no defects. This is very similar to the types of calculations that [MPB](https://mpb.readthedocs.io) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
+Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the infinite periodic waveguide by itself with no defects. This is very similar to the types of calculations that [MPB](https://mpb.readthedocs.io) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
 
 Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-\omega t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $\omega(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
 
 Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
-Thus, we will define our computational cell as follows. See also the `holey-wvg-bands.ctl` file in the `examples/` subdirectory.
+Thus, we will define our computational cell as follows.
 
 ```scm
 ; Some parameters to describe the geometry:

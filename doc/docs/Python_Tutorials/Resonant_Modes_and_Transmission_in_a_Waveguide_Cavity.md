@@ -14,7 +14,7 @@ Second, by making a *defect* in the periodic sequence, in this case by separatin
 
 Third, by combining several structures in sequence &mdash; ordinary waveguide with no holes, periodic structure, defect, periodic structure, waveguide &mdash; we can make a **filter**. See chapter 10 of this [online textbook](http://ab-initio.mit.edu/book). In particular, because there is now a finite number of holes, the resonant mode can now leak into the waveguide as well as to the surrounding air. Then, input light from the waveguide at the resonance frequency undergoes resonant coupling, and is transmitted to the other side with a Lorentzian transmission spectrum. In the limit where the resonant mode couples much more strongly with the waveguide than the air (i.e. if there are not too many holes and the radiative leakage is slow), then in a symmetric structure we should get 100% transmission on resonance, forming a narrow-band filter.
 
-In the following, we will analyze the structure in exactly **the opposite order** of what we really should do. Really, we should analyze the periodic system first to understand the band gap, then analyze the resonant mode, and finally analyze the transmission spectrum. Since all of those calculations have already been done (see the reference in the book), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
+In the following, we will analyze the structure in exactly the opposite order of what we really should do. Really, we should analyze the periodic system first to understand the band gap, then analyze the resonant mode, and finally analyze the transmission spectrum. Since all of those calculations have already been done (see the reference in the book), however, we can jump straight to the transmission spectrum (which is conceptually the easiest computation to understand) and work backwards.
 
 See also the `holey-wvg-cavity.py` and `holey-wvg-bands.py` files in the `python/examples` subdirectory of the Meep source, which contain the commands below.
 
@@ -32,7 +32,7 @@ import argparse
 def main(args):
 ```
 
-Next, we'll define some parameters of our structure as in the figure above. Note that we'll choose units so that our periodicity is 1 which is a typical choice for photonic crystals.
+Next, we'll define some parameters of our structure as in the figure above. All lengths are in units of microns (&#956;m). The periodicity of the photonic crystal is 1 &#956;m.
 
 ```py
 eps = 13          # dielectric constant of waveguide
@@ -48,7 +48,7 @@ dpml = 1          # PML thickness
 resolution = 20
 ```
 
-Given these parameters, the size of the cell in the $x$ direction, which we'll denote `sx`, is given by:
+Given these parameters, the size of the cell in the $X$ direction, which we'll denote `sx`, is given by:
 
 ```py
 sx = 2*(pad + dpml + N) + d - 1  # size of cell in x direction
@@ -71,7 +71,7 @@ for i in range(N):
     geometry.append(mp.Cylinder(r, center=mp.Vector3(-(d / 2 + i))))
 ```
 
-To make the holes, we have used a `for` loop. Note that the geometry objects are combined using the `append` function. As usual, later objects in `geometry` take precedence over earlier objects, so the `Cylinder` objects will punch holes through the `Block`.
+To create the holes, we have used a `for` loop. Note that the geometry objects are combined using the `append` function. As usual, later objects in `geometry` take precedence over earlier objects, so the `Cylinder` objects will punch holes through the `Block`.
 
 The absorbing boundaries surrounding the computational cell are:
 
@@ -79,7 +79,7 @@ The absorbing boundaries surrounding the computational cell are:
 pml_layers = [mp.PML(1.0)]
 ```
 
-Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a $P$-polarized band gap for frequencies from about 0.2 to 0.3, so we'll want to cover this range.
+Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a $P$-polarized band gap for frequencies in the range 0.2 to 0.3, so we'll want to cover this interval.
 
 ```py
 fcen = args.fcen   # pulse center frequency
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     main(args)
 ```
 
-Now, we run the simulation:
+Now, we launch the simulation:
 
 ```sh
 unix% python holey-wvg-cavity.py | tee holey-wvg-cavity.out
@@ -176,7 +176,7 @@ Of course, the main point of this section is to get the quantitative transmissio
 unix% python holey-wvg-cavity.py -N 0 | tee holey-wvg-cavity0.out
 ```
 
-which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in the [Basics tutorial](Basics/#transmission-spectrum-around-a-waveguide-bend), giving us comma-delimited text which is the frequency and fluxes:
+which completes a lot more quickly because there is no resonant mode. We then `grep` for the flux as in [Tutorial/Basics](Basics/#transmission-spectrum-around-a-waveguide-bend), giving us comma-delimited text which is the frequency and fluxes:
 
 ```sh
 unix% grep flux1: holey-wvg-cavity.out > flux.dat
@@ -191,14 +191,14 @@ which we then import into our plotting program, divide the two fluxes, and get:
 
 The band gap is clearly visible as the range of very low transmission, and in the middle of the band gap is a sharp peak corresponding to the resonant mode trapped in the defect. The inset enlarges this peak, and shows that we didn't use quite enough frequency points to capture the whole shape although we could fit to a Lorentzian if we wanted. At the edges of the band gaps, the transmission goes up in broad Fabry-Perot resonance peaks which we will examine in more detail below. There is also some high-frequency oscillation visible at the left of the plot, which is a numerical artifact due to our pulse not having enough amplitude in that range.
 
-The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunatly, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on ring resonators.
+The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunately, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on ring resonators.
 
 Resonant Modes
 --------------
 
-To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them directly, placing a source inside the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the ring-resonator example and the [resonant-modes introduction](../Introduction.md#resonant-modes).
+To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them directly, placing a source inside the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the ring-resonator example and the [Introduction](../Introduction.md#resonant-modes).
 
-The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same `holey-wvg-cavity.py` input file for *both* calculations, and select between the two with an `if` statement controlled by a `-r` or `--resonant_modes` command line parameter:
+The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same `holey-wvg-cavity.py` input file for *both* calculations, and select between the two with an `if` statement controlled by a `-r` or `--resonant_modes` command-line parameter:
 
 ```py
 if args.resonant_modes:
@@ -231,7 +231,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-Just as in the ring-resonator example, we use the `harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
+Just as in the ring-resonator example, we use the `Harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
 
 We can now launch the simulation, setting the `-r` command-line parameter to do the resonant-mode calculation:
 
@@ -257,15 +257,15 @@ unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ![](../images/Holey-wvg-cavity-hz.gif)
 </center>
 
-The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where (see this [online textbook](http://ab-initio.mit.edu/book), ch. 10)
+The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where 
 
 $$\frac{1}{Q} = \frac{1}{Q_w} + \frac{1}{Q_r}$$
 
-There are a variety of ways to separate out the two decay channels. For example, we can look at the power radiated in different directions. Here, we'll just increase the number `N` of holes and see what happens &mdash; as we increase `N`, $Q_w$ should increase exponentially while $Q_r$ remains roughly fixed, so that $Q$ eventually saturates at $Q_r$.
+(See this [online textbook](http://ab-initio.mit.edu/book), ch. 10 for more details.) There are a variety of ways to separate out the two decay channels. For example, we can look at the power radiated in different directions. Here, we'll just increase the number `N` of holes and see what happens &mdash; as we increase `N`, $Q_w$ should increase exponentially while $Q_r$ remains roughly fixed, so that $Q$ eventually saturates at $Q_r$.
 
 ```sh
-unix% python holey-wvg-cavity.py -r -N=4 |grep harminv
-unix% python holey-wvg-cavity.py -r -N=5 |grep harminv
+unix% python holey-wvg-cavity.py -r -N 4 |grep harminv
+unix% python holey-wvg-cavity.py -r -N 5 |grep harminv
 ...
 ```
 
@@ -273,7 +273,7 @@ unix% python holey-wvg-cavity.py -r -N=5 |grep harminv
 ![](../images/Holey-wvg-cavity-Q.png)
 </center>
 
-The results, shown above, are exactly what we expected: at first, an exponential increase of $Q$ with `N`, and then a saturation at $Q_r \approx 8750$. However, when we look at the `harminv` output for larger `N`, something strange happens &mdash; it starts to find *more modes*! For example, at `N=16`, the output is:
+The results, shown above, are exactly what we expected: at first, an exponential increase of $Q$ with `N`, and then a saturation at $Q_r \approx 8750$. However, when we look at the `Harminv` output for larger `N`, something strange happens &mdash; it starts to find *more modes*! For example, at `N=16`, the output is:
 
 ```
 harminv0:, frequency, imag. freq., Q, |amp|, amplitude, error
@@ -284,7 +284,7 @@ harminv0:, 0.328227374843021, -4.6405752015136e-4, 353.649451404175, 0.13428
 What is this extra mode at $\omega=0.32823$? This is right around the **edge of the band gap** (actually, just above the edge). There are two possibilities. First, it could be a *band edge* state: the propagating states in the periodic waveguide go to zero group velocity as they approach the edge of the gap, corresponding to long-lived resonances in a long but finite crystal. Second, it could be a higher-order resonant mode that for a slightly larger defect will be pulled further into the gap, but is currently very delocalized. In this case, it turns out to be the latter. To see the mode, we will simply run the simulation again with a narrow-band source, and we will also increase the $y$ cell size `sy` because it turns out that the mode is fairly spread out in that direction:
 
 ```sh
-unix% meep sy=12 fcen=0.328227374843021 df=0.01 N=16 compute-mode?=true holey-wvg-cavity.ctl
+unix% python holey-wvg-cavity.py -r -sy 12 -fcen 0.328227374843021 -df 0.01 -N 16
 ```
 
 <center>
@@ -300,13 +300,13 @@ Band Diagram
 ![](../images/Holey-wvg-bands-eps-000000.00.png)
 </center>
 
-Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the **infinite periodic waveguide** by itself with no defects. This is very similar to the types of calculations that [MPB](https://mpb.readthedocs.io) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
+Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the infinite periodic waveguide by itself with no defects. This is very similar to the types of calculations that [MPB](https://mpb.readthedocs.io) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
 
 Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-\omega t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $\omega(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
 
 Solving for these eigenmodes is very similar to solving for the resonant modes of a cavity. We put in a pulse and analyze the response via [harminv](https://github.com/stevengj/harminv) except that our computational cell and boundary conditions are different. In particular, our computational cell is simply the *unit cell* of the periodicity, shown above. The ε function then obeys periodic boundary conditions, but the *fields* obey **Bloch-periodic** boundary conditions: the fields at the right side are $\exp(i k_x \cdot 1)$ times the fields at the left side. For each $k_x$, we will do a *separate* computation to get the frequencies at that $k_x$.
 
-Thus, we will define our computational cell as follows. See also the `holey-wvg-bands.py` file in the `python/examples/` subdirectory.
+Thus, we will define our computational cell as follows.
 
 ```py
 # Some parameters to describe the geometry:
@@ -349,7 +349,7 @@ Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is random, to 
 sym = mp.Mirror(direction=mp.Y, phase=-1)
 ```
 
-Note that, regardless of the source, we don't have an $X$ symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$. Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k_point` variable, and then use `until_after_sources` with `harminv` just as we did to calculate a resonant mode:
+Note that, regardless of the source, we don't have an $X$ symmetry plane because this symmetry is broken by our boundary condition for $0 < k_x < \pi$. Now, there are two ways to proceed. First, we could set the value of $\mathbf{k}$ via the `k_point` variable, and then use `until_after_sources` with `Harminv` just as we did to calculate a resonant mode:
 
 ```py
 kx = 0.4
@@ -362,7 +362,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
+which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `Harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
 
 ```py
 k_interp = 19
@@ -370,7 +370,7 @@ k_interp = 19
 sim.run(mp.interpolate(k_interp, [mp.Vector3(0), mp.Vector3(0.5)]), k_points=300)
 ```
 
-Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs `harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `harminv:` lines, but it also outputs a series of lines like:
+Here, we have used Meep's built-in `interpolate` function to interpolate a set of 19 $\mathbf{k}$ points between $\mathbf{k} = 0$ and $\mathbf{k} = 0.5 \cdot 2\pi \hat{\mathbf{x}}$, to cover the irreducible Brillouin zone. This function automatically runs `Harminv`, using the frequency range and location taken from the Gaussian source in the `sources` list. It also calls `output_epsilon`. The output is not only the usual `Harminv:` lines, but it also outputs a series of lines like:
 
 ```
 freqs:, 14, 0.325, 0.0, 0.0, 0.171671252741341, 0.319717964514696, 0.323470450791478
