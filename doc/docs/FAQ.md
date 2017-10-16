@@ -13,7 +13,7 @@ Meep is a free-software package for finite-difference time-domain (FDTD) simulat
 
 ### Who are the developers of Meep?
 
-Meep was originally developed as part of graduate research at MIT. The project is now being maintained by [Simpetus](http://www.simpetuscloud.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
+Meep was originally developed as part of graduate research at MIT. The project is now being maintained by [Simpetus](http://www.simpetus.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
 
 Installation
 ------------
@@ -24,7 +24,7 @@ Meep runs on any Unix-like operating system, such as Linux and macOS, from noteb
 
 Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Step-by-step instructions are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
-Meep is also available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetuscloud.com/launchsims.html).
+Meep is also available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
 ### Guile is installed, but configure complains that it can't find `guile`
 

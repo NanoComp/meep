@@ -2,9 +2,9 @@
 # Download
 ---
 
-The latest development sources are available on [GitHub](https://github.com/stevengj/meep).
+The latest development source is available on [GitHub](https://github.com/stevengj/meep).
 
-The latest release of Meep is **version 1.3** which can be downloaded from:
+The current stable release is **version 1.3** which can be downloaded from:
 
 -   <https://github.com/stevengj/meep/releases>
 
@@ -19,7 +19,7 @@ Please subscribe to the **meep-announce** mailing list to receive notifications 
 Meep on Amazon Web Services (AWS)
 ---------------------------------
 
-The latest version of Meep preinstalled on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) can be accessed for free on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as an [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS) provided by [Simpetus](http://www.simpetuscloud.com/launchsims.html).
+The current stable version of Meep preinstalled on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) can be accessed for free on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as an [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS) provided by [Simpetus](http://www.simpetus.com/launchsims.html).
 
 Precompiled Meep packages for Ubuntu
 ------------------------------------
@@ -30,7 +30,7 @@ Precompiled packages of Meep are available for [Ubuntu](https://en.wikipedia.org
 sudo apt-get install meep h5utils
 ```
 
-You can also install the [parallel version of Meep](http://packages.debian.org/testing/science/meep-mpi-default) which is based on [Open-MPI](https://www.open-mpi.org/) using:
+You can also install the [parallel version of Meep](http://packages.debian.org/testing/science/meep-mpi-default) which is based on [Open MPI](https://www.open-mpi.org/) using:
 
 ```
 sudo apt-get install meep-mpi-default
