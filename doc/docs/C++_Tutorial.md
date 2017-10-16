@@ -2,7 +2,7 @@
 # C++ Tutorial
 ---
 
-Instead of using the Scheme interface described in the [Scheme Tutorial](Scheme_Tutorial.md), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are numerous examples in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good additional reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
+Instead of using the [Scheme interface](Scheme_User_Interface/), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are numerous examples in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good additional reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
 
 Differences from libctl
 -----------------------
