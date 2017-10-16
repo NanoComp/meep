@@ -198,19 +198,19 @@ In order to compile your code and link against the Meep library, you must link i
 
 (1) After compiling the Meep package following the instructions elsewhere, place foo.cpp in the `tests/` subdirectory, cd to the same directory, and invoke:
 
-```
+```sh
 make foo.dac
 ```
 
 Run the resulting executable via:
 
-```
+```sh
 ./foo.dac
 ```
 
 (2) Use the [pkg-config](https://en.wikipedia.org/wiki/pkg-config) program which is installed by default on most Linux systems:
 
-```
+```sh
 ` g++ `pkg-config --cflags meep` foo.cpp -o foo `pkg-config --libs meep` `
 ```
 
@@ -218,6 +218,6 @@ Naturally, replace `g++` with the name of your C++ compiler if you are not using
 
 (3) Compile with g++, this time invoking each library separately:
 
-```
+```sh
 g++ -malign-double foo.cpp -o foo -lmeep -lhdf5 -lz -lgsl -lharminv -llapack -lcblas -latlas -lfftw3 -lm
 ```

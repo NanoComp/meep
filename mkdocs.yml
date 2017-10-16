@@ -48,6 +48,7 @@ pages:
 - Python Interface:
     - Tutorial/Basics: 'Python_Tutorials/Basics.md'
     - Tutorial/Resonant Modes and Transmission in a Waveguide Cavity: 'Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md'
+    - Tutorial/Material Dispersion: 'Python_Tutorials/Material_Dispersion.md'
 - Scheme Interface:
     - User Interface: 'Scheme_User_Interface.md'
     - Tutorial/Basics: 'Scheme_Tutorials/Basics.md'

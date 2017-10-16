@@ -191,12 +191,12 @@ which we then import into our plotting program, divide the two fluxes, and get:
 
 The band gap is clearly visible as the range of very low transmission, and in the middle of the band gap is a sharp peak corresponding to the resonant mode trapped in the defect. The inset enlarges this peak, and shows that we didn't use quite enough frequency points to capture the whole shape although we could fit to a Lorentzian if we wanted. At the edges of the band gaps, the transmission goes up in broad Fabry-Perot resonance peaks which we will examine in more detail below. There is also some high-frequency oscillation visible at the left of the plot, which is a numerical artifact due to our pulse not having enough amplitude in that range.
 
-The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunately, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on ring resonators.
+The narrower the resonance peak (higher $Q$), the harder this sort of direct transmission simulation is to perform &mdash; because of the Fourier uncertainty principle, we need to run for a time inversely related to the frequency resolution we would like to obtain. Fortunately, there is a much better way to study high-$Q$ resonances, as described in the next section. See also the tutorial on [ring resonators](Basics/#modes-of-a-ring-resonator).
 
 Resonant Modes
 --------------
 
-To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them directly, placing a source inside the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the ring-resonator example and the [Introduction](../Introduction.md#resonant-modes).
+To study high-$Q$ (long lifetime) resonant modes, it is much more efficient to excite them directly, placing a source inside the cavity, and analyze the resulting fields to obtain the frequencies and lifetimes of the modes. Here, we do precisely that for the above structure. See also the [ring-resonator example](Basics/#modes-of-a-ring-resonator) and the [Introduction](../Introduction.md#resonant-modes).
 
 The structure is exactly the same as above, and only the sources and analysis are different. Because of that, we use the same `holey-wvg-cavity.py` input file for *both* calculations, and select between the two with an `if` statement controlled by a `-r` or `--resonant_modes` command-line parameter:
 
@@ -231,7 +231,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-Just as in the ring-resonator example, we use the `Harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
+Just as in the [ring-resonator example](Basics/#modes-of-a-ring-resonator), we use the `Harminv` command (which calls [Harminv](https://github.com/stevengj/harminv)) to analyze the response at a point (here the $H_z$ field at the origin) for some time after the source has turned off. At the end, we also output the $H_z$ field for one period, to help us visualize the field below.
 
 We can now launch the simulation, setting the `-r` command-line parameter to do the resonant-mode calculation:
 
