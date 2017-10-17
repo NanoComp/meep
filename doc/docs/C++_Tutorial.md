@@ -14,7 +14,7 @@ The most notable difference is that, while the libctl interface puts the origin 
 Overview
 --------
 
-We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below and the [C++ User Interface](C++_User_Interface.md). The C++ program should begin with:
+We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below and the [C++ interface](C++_User_Interface.md). The C++ program should begin with:
 
 ```c++
 #include <meep.hpp>
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 }
 ```
 
-This example doesn't do much — it just runs a Gaussian source and outputs the $\mathbf{H}_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
+This example doesn't do much &mdash; it just runs a Gaussian source and outputs the $\mathbf{H}_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
 
 ```c++
 double eps(const vec &p) {
