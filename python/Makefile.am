@@ -36,7 +36,7 @@ TESTS =                                 \
     $(TEST_DIR)/source.py
 
 TEST_EXTENSIONS = .py
-PY_LOG_COMPILER = $(PYTHON)
+PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON

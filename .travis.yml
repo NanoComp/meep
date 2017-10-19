@@ -12,7 +12,6 @@ addons:
     - libgsl0-dev
     - libfftw3-dev
     - gfortran
-    - libhdf5-serial-dev
     - liblapack-dev
     - swig
     - libopenmpi-dev
