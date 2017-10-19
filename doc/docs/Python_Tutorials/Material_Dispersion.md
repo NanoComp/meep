@@ -28,7 +28,7 @@ corresponding to the dielectric function:
 
 $$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^2 - f^2 -if \cdot 10^{-5}/2\pi} + \frac{0.5^2 \cdot 2\cdot 10^{-5}}{0.5^2 - f^2 -if \cdot 0.1 / 2\pi}$$
 
-The real and imaginary parts of this dielectric function ε(ω) are plotted below:
+The real and imaginary parts of this dielectric function $\varepsilon(\omega)$ are plotted below:
 
 <center>
 ![](../images/Material-dispersion-eps.png)

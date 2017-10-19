@@ -221,8 +221,7 @@ Above, we outputted the full 2d data slice at every 0.6 time units, resulting in
 To create the movie above, all we really need are the *images* corresponding to each time. Images can be stored much more efficiently than raw arrays of numbers &mdash; to exploit this fact, Meep allows you to output PNG images instead of HDF5 files. In particular, instead of `output-efield-z` as above, we can use `mp.output_png(mp.Ez, "-Zc dkbluered")`, where Ez is the component to output and the `"-Zc` `dkbluered"` are options for `h5topng` of [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) which is the program that is actually used to create the image files. That is:
 
 ```py
-sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")),
-        until=200)
+sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)        
 ```
 
 will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a uniform color scale for all images, based on the minimum/maximum field values over <i>all</i> time steps. That is not possible, here, because we output an image before knowing the field values at future time steps. Thus, what `output_png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
@@ -238,8 +237,7 @@ This will put *all* of the output files (`.h5`, `.png`, etcetera) into a newly-c
 What if we want to output an $x \times t$ slice, as above? To do this, we only really wanted the values at $y=-3.5$, and therefore we can exploit another powerful output feature &mdash; Meep allows us to output only **a subset of the computational cell**. This is done using the `in_volume` function, which like `at_every` and `to_appended` is another function that modifies the behavior of other output functions. In particular, we can do:
 
 ```
-sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to_appended("ez-slice", mp.output_efield_z)),
-        until=200)
+sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to_appended("ez-slice", mp.output_efield_z)), until=200)        
 ```
 
 The first argument to `in_volume` is a volume which applies to all of the nested output functions. Note that `to_appended`, `at_every`, and `in_volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162×330 corresponding to the desired $x \times t$ slice.
@@ -436,7 +434,7 @@ Now, we don't know the frequency of the mode(s) ahead of time, so we'll just hit
 
 ```py
 fcen = 0.15  # pulse center frequency
-df = 0.1  # pulse width (in frequency)
+df = 0.1     # pulse width (in frequency)
 src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1))
 ```
 
@@ -528,3 +526,12 @@ Everything else about your simulation is the same: you can still get the fields 
 In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `mp.Mirror(mp.Y, phase=-1)`. See the User Interface for more symmetry possibilities.
 
 In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also Ring Resonator in Cylindrical Coordinates for how to solve for modes of this cylindrical geometry much more efficiently.
+
+More Examples
+-------------
+
+The examples above suffice to illustrate the most basic features of Meep. However, there are many more advanced features that have not been demonstrated here:
+
+-   [Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)
+-   [Third Harmonic Generation](Third_Harmonic_Generation.md) (Kerr nonlinearity)
+-   [Material Dispersion](Material_Dispersion.md)

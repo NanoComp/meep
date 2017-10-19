@@ -526,7 +526,7 @@ In this case, we actually have a lot more symmetry that we could potentially exp
 More Examples
 -------------
 
-The examples above suffice to illustrate the most basic features of Meep. However, there are many more advanced features that have not been demonstrated here. So, we hope to add, over time, a sequence of examples that exhibit more complicated structures and computational techniques. The ones we have so far are listed below.
+The examples above suffice to illustrate the most basic features of Meep. However, there are many more advanced features that have not been demonstrated here:
 
 -   [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md)
 -   [Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)
@@ -536,7 +536,7 @@ The examples above suffice to illustrate the most basic features of Meep. Howeve
 -   [Local Density of States](Local_Density_of_States.md) (Purcell enhancement)
 -   [Optical Forces](Optical_Forces.md) (Maxwell stress tensor; also includes an `eigenmode-source` example)
 -   [Near to Far-Field Spectra](Near_to_Far_Field_Spectra.md) (radiation pattern of an antenna)
--   [Multilevel Atomic Susceptibility](Multilevel_Atomic_Susceptibility.md) (saturable absorption/gain)
+-   [Multilevel-Atomic Susceptibility](Multilevel_Atomic_Susceptibility.md) (saturable absorption/gain)
 
 Editors and ctl
 ---------------
