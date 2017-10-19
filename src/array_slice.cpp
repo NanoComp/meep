@@ -15,8 +15,10 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* HDF5 output of fields and arbitrary functions thereof.  Works
-   very similarly to integrate.cpp (using fields::loop_in_chunks). */
+/* create and return arrays of field components on user-specified
+   spatial slices. Uses fields::loop_in_chunks analogous to 
+   h5fields.cpp
+*/
 
 
 #include <stdio.h>
