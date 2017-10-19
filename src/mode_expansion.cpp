@@ -15,7 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* given an arbitrary field configuration, compute the coefficients
+/* given an arbitrary field configuration F, compute the coefficients
    in an expansion of F as a linear combination of normal modes
    of the geometry as computed by mpb.
 */
@@ -33,7 +33,9 @@ typedef complex<double> cdouble;
 
 namespace meep {
 
-/***************************************************************************/
+// prototype for optional user-supplied function to provide an
+// initial estimate of the wavevector of band #band at frequency freq
+typedef vec (*kpoint_func)(void *user_data, double freq, int band);
 
 typedef struct {
 
@@ -234,57 +236,50 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 }
 
 /***************************************************************/
-/* given a volume, fill in the dims[] and directions[] arrays  */
-/* describing the array slice needed to store field data for   */
-/* all grid points in the volume.                              */
-/*                                                             */
-/* return value is rank of array slice.                        */
-/*                                                             */
-/* if caller_data is non-NULL, it should point to a            */
-/* caller-allocated array_slice_data structure which will be   */
-/* initialized appopriately for subsequent use in              */
-/* get_array_slice.                                            */
 /***************************************************************/
-int fields::get_mode_expansion_coefficients(dft_flux flux,
-                                            int
+/***************************************************************/
+std::vec<cdouble> fields::get_mode_coefficients(dft_flux flux,
+                                                direction d,
+                                                const volume where,
+                                                std::vec<int> bands,
+                                                kpoint_func user_func,
+                                                void *user_data)
 {
-  am_now_working_on(FieldOutput);
+  am_now_working_on(ModeExpansion);
 
-  // use a local data structure if the caller didn't provide one
-  array_slice_data local_data;
-  array_slice_data *data=(array_slice_data *)caller_data;
-  if (data==0)
-   data=&local_data;
+  // create output array
+  std::vec<cdouble> coefficients(bands.size());
 
-  data->min_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
-  data->max_corner = gv.round_vec(where.get_min_corner()) - one_ivec(gv.dim);
-  data->num_chunks = 0;
+  // some default inputs for add_eigenmode_source
+  component DefaultComponent = Dielectric;
+  vec kpoint(0,0,0);
+  int parity = 0; /* NO_PARITY */
+  bool match_frequency = true
+  double eig_resolution = a;
+  double eigensolver_tol = 1.0e-7;
+  cdouble amp=1.0;
 
-  loop_in_chunks(get_array_slice_dimensions_chunkloop,
-                 (void *) data, where, Centered, true, true);
+  // loop over all frequencies in the dft_flux
+  for(int nfreq=0; nfreq<flux.NFreq; nfreq++)
+   { 
+     double freq = flux.freq_min + ((double)nfreq)*flux.dfreq;
+     continuous_src_time src(freq);
 
-  data->max_corner = max_to_all(data->max_corner);
-  data->min_corner = -max_to_all(-data->min_corner); // i.e., min_to_all
-  data->num_chunks = sum_to_all(data->num_chunks);
-  if (data->num_chunks == 0 || !(data->min_corner <= data->max_corner))
-    return 0; // no data to write;
+     // loop over caller's list of requested bands
+     for(int nband=0; nband<bands.size(); nband++)
+      { 
+        int band = bands[nband];
 
-  int rank=0, slice_size=1;
-  LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (rank >= 3) abort("too many dimensions in array_slice");
-    int n = (data->max_corner.in_direction(d)
-	     - data->min_corner.in_direction(d)) / 2 + 1;
-    if (n > 1) {
-      data->ds[rank] = d;
-      dims[rank++] = n;
-      slice_size *= n;
-    }
-  }
-  data->rank=rank;
-  data->slice_size=slice_size;
-  finished_working();
+        // query user's function for initial k-point guess
+        if (user_func)
+         kpoint = user_func(user_data, freq, nband);
+      
+        add_eigenmode_source(DefaultComponent, src, d, where, where,
+                             band, kpoint, match_frequency, parity,
+                             eig_resolution, eigensolver_tol, amp);
+      };
+   };
 
-  return rank;
 }
 
 /***************************************************************/
