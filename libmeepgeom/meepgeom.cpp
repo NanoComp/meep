@@ -110,6 +110,19 @@ static bool material_type_equal(const material_type m1, const material_type m2)
     }
 }
 
+material_type make_user_material(user_material_func user_func, 
+                                 void *user_data)
+{
+  material_data *md = (material_data *)malloc(sizeof(*md));
+  md->which_subclass=material_data::MATERIAL_FUNCTION;
+  md->user_func=user_func;
+  md->user_data=user_data;
+  md->medium=0;
+  material_type mt = { (void *)md };
+  return mt;
+}
+
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
@@ -274,7 +287,9 @@ static geom_box gv2box(const meep::volume &v)
   return box;
 }
 
-static bool is_variable(material_type md)
+// TODO rename this to something more descriptive like
+//      is_user_defined_material
+static bool is_variable(material_type mt)
 {
   return (md->which_subclass == material_data::MATERIAL_FUNCTION);
 }
@@ -614,11 +629,13 @@ static material_type eval_material_func(function material_func, vector3 p)
 
 static void material_epsmu(meep::field_type ft, material_type material,
 		    symmetric_matrix *epsmu, symmetric_matrix *epsmu_inv) {
-  material_data *md = material;
+  vector3 zero={0.0, 0.0, 0.0};
+  cdouble eps;
+  material_data *md=(material_data *)material.data;
   if (ft == meep::E_stuff)
     switch (md->which_subclass) {
+
     case material_data::MEDIUM:
-      {
       epsmu->m00 = md->medium->epsilon_diag.x;
       epsmu->m11 = md->medium->epsilon_diag.y;
       epsmu->m22 = md->medium->epsilon_diag.z;
@@ -627,9 +644,8 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m12 = md->medium->epsilon_offdiag.z;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
-      }
+
     case material_data::PERFECT_METAL:
-      {
       epsmu->m00 = -meep::infinity;
       epsmu->m11 = -meep::infinity;
       epsmu->m22 = -meep::infinity;
@@ -639,14 +655,21 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
-      }
+      
+    case material_data::MATERIAL_FUNCTION:
+      eps = md->user_func( zero, md->user_data);
+      epsmu->m00 = epsmu->m11 = epsmu->m22 = real(eps);
+      epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+      epsmu_inv->m00 = epsmu_inv->m11 = epsmu_inv->m22 = real(1.0/eps);
+      epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+      break;
+
     default:
       meep::abort("unknown material type");
   }
   else
     switch (md->which_subclass) {
     case material_data::MEDIUM:
-      {
       epsmu->m00 = md->medium->mu_diag.x;
       epsmu->m11 = md->medium->mu_diag.y;
       epsmu->m22 = md->medium->mu_diag.z;
@@ -655,9 +678,8 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m12 = md->medium->mu_offdiag.z;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
-      }
+      
     case material_data::PERFECT_METAL:
-      {
       epsmu->m00 = 1.0;
       epsmu->m11 = 1.0;
       epsmu->m22 = 1.0;
@@ -667,7 +689,15 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
-      }
+
+    case material_data::MATERIAL_FUNCTION:
+      eps = md->user_func( zero, md->user_data);
+      epsmu->m00 = epsmu->m11 = epsmu->m22 = real(eps);
+      epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+      epsmu_inv->m00 = epsmu_inv->m11 = epsmu_inv->m22 = real(1.0/eps);
+      epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+      break;
+
     default:
       meep::abort("unknown material type");
   }
@@ -700,8 +730,6 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
     destroy_material = true;
   }
   return destroy_material;
-}
-
 // returns trace of the tensor diagonal
 double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
 {
