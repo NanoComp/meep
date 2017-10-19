@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are two-dimensional calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetuscloud.com/projects.html).
+In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are two-dimensional calculations, simply because they are quicker than 3d computations and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses our free [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) programs. You could also use any other program, such as [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html), that supports reading HDF5 files.
 
@@ -25,7 +25,7 @@ At this point, please take a moment to leaf through the libctl tutorial to get a
 
 Okay, let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command-line (herein denoted by the `unix%` prompt):
 
-```
+```sh
  unix% meep foo.ctl >& foo.out
 ```
 
@@ -96,13 +96,13 @@ Here, we are outputting the dielectric function $\epsilon$ and the electric-fiel
 
 It should complete in a few seconds. If you are running interactively, the two output files will be called `eps-000000.00.h5` and `ez-000200.00.h5` (notice that the file names include the time at which they were output). If we were running a `tutorial.ctl` file, then the outputs will be `tutorial-eps-000000.00.h5` and `tutorial-ez-000200.00.h5`. In any case, we can now analyze and visualize these files with a wide variety of programs that support the [HDF5](https://en.wikipedia.org/wiki/HDF5) format, including our own [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md), and in particular the `h5topng` program to convert them to [PNG](https://en.wikipedia.org/wiki/PNG) images.
 
-```
+```sh
 unix% h5topng -S3 eps-000000.00.h5
 ```
 
 This will create `eps-000000.00.png`, where the `-S3` increases the image scale by 3 (so that it is around 450 pixels wide, in this case). In fact, precisely this command is what created the dielectric image above. Much more interesting, however, are the fields:
 
-```
+```sh
 unix% h5topng -S3 -Zc dkbluered -a yarg -A eps-000000.00.h5 ez-000200.00.h5
 ```
 
@@ -158,20 +158,20 @@ Finally, we'll run the simulation. Instead of running `output-efield-z` only at 
 
 Here, `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a ctl file (e.g. `tutorial-ez.h5` for `tutorial.ctl`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
 
-```
+```sh
 unix% h5ls ez.h5 
 ez                       Dataset {161, 161, 330/Inf}
 ```
 
 That is, the file contains a single dataset `ez` that is a 162×162×330 array, where the last dimension is time. (This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images.) Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
-```
+```sh
 unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
 ```
 
 This is similar to the command before, with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program (although there is other software that will do the trick as well).
 
-```
+```sh
 unix% convert ez.t*.png ez.gif
 ```
 
@@ -187,7 +187,7 @@ Here, we are using an animated GIF format for the output. This results in the fo
 
 Instead of doing an animation, another interesting possibility is to make an image from a $x \times t$ slice. Here is the $y=-3.5$ slice, which gives us an image of the fields in the first waveguide branch as a function of time.
 
-```
+```sh
 unix% h5topng -0y -35 -Zc dkbluered ez.h5
 ```
 
@@ -372,14 +372,14 @@ This is comma-delimited data, which can easily be imported into any spreadsheet 
 
 Now, we need to run the simulation *twice*, once with `no-bend?=true` and once with `no-bend?=false` (the default):
 
-```
+```sh
 unix% meep no-bend?=true bend-flux.ctl | tee bend0.out
 unix% meep bend-flux.ctl | tee bend.out
 ```
 
 The `tee` command is a useful Unix command that saves the output to a file *and* displays it on the screen, so that we can see what is going on as it runs. Then, we should pull out the `flux1` lines into a separate file to import them into our plotting program:
 
-```
+```sh
 unix% grep flux1: bend0.out > bend0.dat
 unix% grep flux1: bend.out > bend.dat
 ```
@@ -392,7 +392,7 @@ What are we plotting here? The transmission is the transmitted flux (second colu
 
 We should also check whether our data is converged, by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll just try doubling the cell size:
 
-```
+```sh
 unix% meep sx=32 sy=64 no-bend?=true bend-flux.ctl |tee bend0-big.out
 unix% meep sx=32 sy=64 bend-flux.ctl |tee bend-big.out
 ```
@@ -478,13 +478,13 @@ In particular, to output the field at the end we might add an `(at-end` `output-
 
 Now, we can get our modes just by running e.g.:
 
-```
+```sh
 unix% meep fcen=0.118 df=0.01 ring.ctl
 ```
 
 After each one of these commands, we'll convert the fields into PNG images and thence into an animated GIF (as with the bend movie, above), via:
 
-```
+```sh
 unix% h5topng -RZc dkbluered -C ring-eps-000000.00.h5 ring-ez-*.h5
 unix% convert ring-ez-*.png ring-ez-0.118.gif
 ```

@@ -42,7 +42,7 @@ Meep supports simulation in [cylindrical coordinates](Cylindrical_Coordinates.md
 
 You may have noticed the lack of annoying constants like ε<sub>0</sub>, μ<sub>0</sub>, and [c](https://en.wikipedia.org/wiki/Speed_of_light) — that's because Meep uses **dimensionless** units where all these constants are unity. As a practical matter, almost everything you might want to compute (transmission spectra, frequencies, etcetera) is expressed as a ratio anyway, so the units end up cancelling.
 
-In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units** (see [our online textbook](http://ab-initio.mit.edu/book), ch. 2). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
+In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units** (see this [online textbook](http://ab-initio.mit.edu/book), ch. 2). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
 
 Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently ω is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](http://mpb.readthedocs.io).
 
@@ -57,7 +57,7 @@ Boundary Conditions and Symmetries
 
 On a computer, we can only simulate a finite region of space, which means that we must terminate our simulation with some **boundary conditions**. Three basic types of terminations are supported in Meep: **Bloch-periodic boundaries**, **metallic walls**, and **PML absorbing layers**. Also, one can exploit **symmetries** of a problem to further reduce the computational requirements.
 
-With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\mathbf{k}$. This can be used to solve for the modes of photonic crystals, waveguides, and so on, much like in [MPB](http://mpb.readthedocs.io). See [our online textbook](http://ab-initio.mit.edu/book), ch. 3.
+With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\mathbf{k}$. This can be used to solve for the modes of photonic crystals, waveguides, and so on, much like in [MPB](http://mpb.readthedocs.io). See this [online textbook](http://ab-initio.mit.edu/book), ch. 3.
 
 An even simpler boundary condition is a metallic wall, where the fields are simply forced to be zero on the boundaries, as if the cell were surrounded by a perfect metal (zero absorption, zero skin depth). More generally, you can place perfect metal materials anywhere you want in the computational cell, e.g. to simulate metallic cavities of an arbitrary shape.
 
@@ -91,7 +91,7 @@ For example, the ε function used internally by Meep is not simply a discretely 
 Other Numerical Methods in Computational Electromagnetics
 ---------------------------------------------------------
 
-FDTD is, of course, not the only numerical method in computational electromagnetics, nor is it always the best one. In general, we advocate having several tools in your toolbox, and selecting the most convenient one for each task (see [our online textbook](http://ab-initio.mit.edu/book), appendix D).
+FDTD is, of course, not the only numerical method in computational electromagnetics, nor is it always the best one. In general, we advocate having several tools in your toolbox, and selecting the most convenient one for each task (see this [online textbook](http://ab-initio.mit.edu/book), appendix D).
 
 For example, although FDTD can be used to compute electromagnetic eigenmodes (below), in lossless structures it is often quicker, easier, and more reliable to use a specialized eigenmode solver such as our [MPB](http://mpb.readthedocs.io) package. See also the [frequency vs. time domain](http://mpb.readthedocs.io/en/latest/Introduction/) discussion in the MPB manual and the [resonant modes](Introduction.md#resonant-modes) discussion below.
 
