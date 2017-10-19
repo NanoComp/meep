@@ -2,7 +2,7 @@
 # Near to Far Field Spectra
 ---
 
-In this example, we demonstrate Meep's near-to-far-field transformation feature. This feature uses the fields from a "near" bounding surface <i>inside</i> the computational cell to compute the resulting "far" fields <i>outside</i> the computational cell via an analytical transformation. Note that this only works if the "near" surface and the "far" region lie in a single, homogeneous, non-periodic 2d or 3d medium. The analytical transformation is based on the [principle of equivalence](http://arxiv.org/abs/1301.5366): given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. The use of the Fourier-transformed fields for this operation is similar to that for the flux and force spectra: we specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at each frequency for the desired far-field points.
+We demonstrate Meep's near-to-far-field transformation feature using two examples. This feature uses the fields from a "near" bounding surface <i>inside</i> the computational cell to compute the resulting "far" fields <i>outside</i> the computational cell via an analytical transformation. Note that this only works if the "near" surface and the "far" region lie in a single, homogeneous, non-periodic 2d or 3d medium. The analytical transformation is based on the [principle of equivalence](http://arxiv.org/abs/1301.5366): given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. The use of the Fourier-transformed fields for this operation is similar to that for the flux and force spectra: we specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at each frequency for the desired far-field points.
 
 There are three steps to using the near-to-far-field feature. First, we need to define the "near" surface(s) as a set of surfaces capturing all outgoing radiation in the desired direction(s). Second, we run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s). Third, we have Meep compute the far fields at any desired points with the option to save the far fields from a grid of points to an HDF5 file.
 
@@ -10,7 +10,7 @@ There are three steps to using the near-to-far-field feature. First, we need to 
 
 ### Radiation Pattern of an Antenna
 
-In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point source as the emitter in 2d vacuum. We will compute the radiation pattern for different polarizations of the input source. The source is placed in the middle of the 2d computational cell which is surrounded by perfectly-matched layers (PMLs). The near-field surface, used to compute the far fields as described above, is along the inner boundary of the PML. The far fields are computed at several equally-spaced points along the circumference of a circle having a radius many times the source wavelength and thus lying outside of the computational cell. The simulation geometry is shown in the schematic below.
+In this example, we use the near-to-far-field transformation feature to compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. See the `antenna-radiation.ctl` file in the `examples/` subdirectory. This involves an electric-current point source as the emitter in 2d vacuum. We will compute the radiation pattern for different polarizations of the input source. The source is placed in the middle of the 2d computational cell which is surrounded by perfectly-matched layers (PMLs). The near-field surface, used to compute the far fields as described above, is along the inner boundary of the PML. The far fields are computed at several equally-spaced points along the circumference of a circle having a radius many times the source wavelength and thus lying outside of the computational cell. The simulation geometry is shown in the schematic below.
 
 <center>
 ![](../images/Near2far_simulation_geometry.png)
@@ -63,14 +63,16 @@ We plot the in-plane flux normalized by its maximum value over the entire interv
 
 ### Far-Field Intensity of a Cavity
 
-For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in a separate [tutorial](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md) shown below.
+For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). See the `cavity-farfield.ctl` file. The structure is shown at the bottom of the left image below.
 
 ![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
 
-To do this, we simply remove the last portion of that control file, beginning right after the line:
+To do this, we simply remove the last portion of `holey-wvg-cavity.ctl`, beginning right after the line:
 
 ```scm
-(set! symmetries (list (make mirror-sym (direction Y) (phase -1)))) 
+(set! symmetries
+      (list (make mirror-sym (direction Y) (phase -1))
+            (make mirror-sym (direction X) (phase -1))))
 ```
 
 and insert the following lines:
