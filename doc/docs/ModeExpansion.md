@@ -1,17 +1,19 @@
 # Eigenmode decomposition of arbitrary field configurations
 
 *Eigenmode decomposition* exploits MEEP's interconnectivity
-with the [MPB][MPB] mode solver to represent an arbitrary
-time-harmonic field configuration as a superposition of 
+with the [MPB][MPB] mode solver to express an arbitrary
+time-harmonic field configuration as a superposition of
 the normal harmonic modes of your structure.
+
+[TOC]
 
 ## Theoretical background
 
 Consider a waveguide structure of infinite extent in the $z$
 direction with constant cross section in the transverse
-$[\vec\rho=(x,y)]$ directions. Then for any given
-angular frequency $\omega$ we may solve Maxwell's
-equations to obtain the *normal modes* of the
+$[\vec\rho=(x,y)]$ directions. For any given
+angular frequency $\omega$ we may solve the time-harmonic
+Maxwell equations to obtain the *normal modes* of the
 structure---an infinite set of vector-valued
 functions of the transverse coordinates
 $\{\mathbf{E}^\pm_n(\vec{\rho}), \mathbf{H}^\pm_n(\vec{\rho})\}$,
@@ -29,7 +31,7 @@ $$
    \sum_{n} \left\{   \alpha^+_n \mathbf E^+_n(\vec \rho)e^{+i\beta_n z}
                     + \alpha^-_n \mathbf E^-_n(\vec \rho)e^{-i\beta_n z}
             \right\}
-    \qquad (1a)
+    \qquad (1\textbf{a})
 $$
 $$
    \mathbf{H}(\mathbf{x}) = 
@@ -37,9 +39,10 @@ $$
    \sum_{n} \left\{   \alpha^+_n \mathbf H^+_n(\vec \rho)e^{+i\beta_n z}
                     + \alpha^-_n \mathbf H^-_n(\vec \rho)e^{-i\beta_n z}
             \right\}
-    \qquad (1b)
+    \qquad (1\textbf{b})
 $$
-where the expansion coefficients $\{\alpha^{\pm}_n\}$
+where (as discussed further [below](ModeExpansion.md#UnderTheHood))
+the expansion coefficients $\{\alpha^{\pm}_n\}$
 may be extracted from knowledge of the time-harmonic
 fields $\mathbf{E},\mathbf{H}$ on any cross-sectional
 surface $S$ transverse to the waveguide.
@@ -50,30 +53,86 @@ the $\{\alpha_n^\pm\}$ coefficients above for any
 resulting from a MEEP calculation. In calculations
 of this sort,
 
---the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
++  the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
     of equations (1a,b) above will be frequency-domain
     fields stored in a `dft_flux` object in a MEEP
-    run, where you will have arranges this `dft_flux` object
+    run, where you will have arranged this `dft_flux` object
     to live on a cross-sectional surface $S$ transverse
     to the waveguide;
 
---the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
+-  the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
     and $\{\beta_n\}$ propagation constants are computed
-    automatically under the hood by MPB as normal modes 
+    automatically under the hood by [MPB][MPB] as normal modes 
     of an infinitely extended waveguide with the same 
     cross-sectional material distribution that your structure
     has on the transverse slice $S$, and
 
---the $\alpha_n^\pm$ coefficients for as many bands 
+-  the $\alpha_n^\pm$ coefficients for as many bands 
    as you like are computed by calling `get_eigenmode_coefficients(),`
    as discussed below.
+$$
+where the expansion coefficients $\{\alpha^{\pm}_n\}$
+may be extracted from knowledge of the time-harmonic
+fields $\mathbf{E},\mathbf{H}$ on any surface $S$
+transverse to the waveguide.
+To recall how this works, remember that the normal modes
+satisfy an orthogonality relation of the form
+$$ \left\langle \mathbf{E}_m^{\sigma} \right|
+   \left.       \mathbf{H}^\tau_n     \right\rangle
+   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
+   \qquad \Big( \{\sigma,\tau\}\in\{+,-\}\Big)
+$$
+where the inner product involves an integration over
+transverse coordinates:
+$$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
+   \equiv
+   \int_{S} 
+    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
+    \cdot \hat{\mathbf{n}} \, dA
+$$
+where $S$ is any surface transverse to the direction of propagation
+and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
+just $\hat{\mathbf{z}}$ in the case considered above).
+
+$$ \alpha^+_n = $$
+    \qquad (1b)
+$$
+where (as discussed further [below](ModeExpansion.md#UnderTheHood))
+the expansion coefficients $\{\alpha^{\pm}_n\}$
+may be extracted from knowledge of the time-harmonic
+fields $\mathbf{E},\mathbf{H}$ on any cross-sectional
+surface $S$ transverse to the waveguide.
+
+The idea of mode expansion in MEEP is to compute
+the $\{\alpha_n^\pm\}$ coefficients above for any
+*arbitrary* time-harmonic field distribution 
+resulting from a MEEP calculation. In calculations
+of this sort,
+
++   the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
+    of equations (1a,b) above will be frequency-domain
+    fields stored in a `dft_flux` object in a MEEP
+    run, where you will have arranged this `dft_flux` object
+    to live on a cross-sectional surface $S$ transverse
+    to the waveguide;
+
++   the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
+    and $\{\beta_n\}$ propagation constants are computed
+    automatically under the hood by [MPB][MPB] as normal modes 
+    of an infinitely extended waveguide with the same 
+    cross-sectional material distribution that your structure
+    has on the transverse slice $S$, and
+
++   the $\alpha_n^\pm$ coefficients for as many bands
+    as you like are computed by calling `get_eigenmode_coefficients()`
+    in python or C++, as discussed below.
 
 ## C++ function prototype
 
 The basic routine here is
 
 ```c++
-std::vector<cdouble> 
+std::vector<cdouble>
  fields::get_eigenmode_coefficients(dft_flux *flux,
                                     direction d,
                                     const volume &where,
@@ -91,13 +150,14 @@ where
 
 + `bands` is an array of integers that you populate with the indices of the modes for which you want expansion coefficients
 
-+ `user_func` is an *optional* function you supply to provide initial estimates of the wavevector of a mode with given frequency and band index; if nonzero, it should be a function pointer to a function of prototype
++ `user_func` is an *optional* function you supply to provide initial estimates of the wavevector of a mode with given
+frequency and band index; its prototype is
 
-```
+```c++
  vec (*kpoint_func)(void user_data, double freq, int band);
 ```
 
-which returns a `vec` giving your best guess for the 
+which returns a `vec` giving your best guess for the
 wavevector of the `band`th mode at frequency `freq`.
 
 The return value of `get_mode_coefficients` is an array
@@ -110,16 +170,80 @@ The expansion coefficient for the mode with frequency `nf`
 and band index `nb` is stored in the `nb*num_freqs + nf`
 slot of this array.
 
-## First example: Junction of planar waveguides
+## Sample application: tapering between waveguides
 
-As a simple first problem, we'll consider
-a 2D problem involving an impedance mismatch
-between two planar waveguides, as shown in 
-this figure:
+As a demonstration of mode expansion, we'll consider
+the problem of *tapering* between waveguides of
+different sizes. More specifically, we'll suppose
+we have incoming power, carried by a single
+mode (typically the fundamental mode) of a first waveguide
+(waveguide A)
+that we wish to route into a single mode (typically the
+same mode) of a second, larger, waveguide (waveguide B),
+losing as little power as possible to reflections or
+inter-mode scattering in the process.
+Simply jamming the ends of the two waveguides together
+will result in significant losses due to the abrupt "impedance" mismatch
+at the interface, so instead we will consider gradually
+morphing ("tapering") the waveguide cross section
+from that of waveguide A to that of waveguide B
+over a finite length *L*---with a taper profile
+of smoothness index $p$---and study the
+dependence of the mode-to-mode power transfer on $L$ and $p$.
 
-![PlanarWaveguideJunction](images/PlanarWaveguideJunction.png)
+### First case: 2D geometry
 
-In this case the geometry is invariant in the $x$
+As a first example of relatively modest computational
+cost, we'll consider a 2D ($z$-invariant) problem
+in which the smaller and larger waveguides are simply
+finite-thickness slabs of dielectric material suspended
+in vacuum.
+More specifically, power travels in the *x* direction
+with the fields confined in the *y* direction by the
+dielectric; the smaller and larger
+waveguides have thicknesses $h_A$ and $h_B\ge h_A$ and are
+connected by a taper region of length $L$, so the
+slab thickness as a function of $x$ reads
+$$ h(x) =
+   \begin{cases} h_A,    \qquad &x<-\frac{L}{2} \\
+                 T_p(x), \qquad -\frac{L}{2}\le\!\! &x \le+\frac{L}{2} \\
+                 h_B     \qquad &x >+\frac{L}{2}
+   \end{cases}
+$$
+where the taper function $T_p(x)$ is a $C^{p}$ function,
+i.e. $p$ is the index of its first discontinuous derivative.
+For the cases $p=0$ (simple linear taper) and $p=1$,
+the taper functions are
+$$ T_p(x)=\begin{cases}
+   h_0 + \Delta \left(\frac{x}{L}\right), \qquad &p=0 \\[5pt]
+   h_0 + \Delta \Big[ \frac{3}{2}\left(\frac{x}{L}\right)
+                       -2\left(\frac{x}{L}\right)^3
+                 \Big],\qquad&p=1
+   \end{cases}
+$$
+where
+$$ h_0\equiv \frac{h_A+h_B}{2}, \qquad \Delta = h_B - h_A$$
+are the average and difference of the smaller and larger waveguide
+thicknesses.
+
+Here are pictures of the $p=0$ and $p=1$ taper geometries:
+
+<p align="center"> <b><i>p</i>=0 Taper</b></p>
+
+![Taper2D_p0.png](modeExpansionFiles/Taper2D_p0.png)
+
+<p align="center"> <b><i>p</i>=1 Taper</b> </p>
+
+![Taper2D_p1.png](modeExpansionFiles/Taper2D_p1.png)
+
+### Defining material functions
+
+Because the material geometries we will be studying here
+are too complicated to be described as assemblies of
+the [usual geometric primitives like blocks and cylinders](Python_User_Interface.md#GeometricObject),
+we will instead write our own [user-defined material function](Python_User_Interface.md#material_function).
+
+this case the geometry is invariant in the $x$
 direction and the waveguides are simply planar
 slabs, of finite thickness in the $y$ direction,
 with the flow of power in the $z$ direction.
@@ -137,6 +261,140 @@ value is `--ratio 2` (bigger slab is 2$\times$ thickness
 of smaller slab), while for `--ratio 1` the two waveguides
 are in fact identical and there should be no power
 reflected at $z=0$.
+
+## Second example: Junction of cylindrical waveguides
+
+Next we consider a geometry similar to the one we
+just studied, but now involving a junction of *cylindrical*
+waveguides.
+
+![CylindricalWaveguideJunction](images/CylindricalWaveguideJunction.png)
+
+Now the waveguides are confining in both $x$ and $y$
+directions, with radii $R_1$ for $z<0$ and $R_2$ for $z>0$.
+
+The code for this problem is in `libmeepgeom/fiber-junction.cpp;`
+as before, it excites the structure using a single eigenmode of the
+smaller waveguide and observes how the single-mode field
+in the smaller waveguide goes over to a multi-mode field
+in the larger waveguide.
+Again the code offers a command-line option `--ratio` that sets the
+ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
+while for `--ratio 1` we expect perfect transmission of power.
+ 
+<a name="UnderTheHood"></a> 
+## Under the hood: How mode expansion works
+
+The theoretical basis of the mode-expansion algorithm
+is the orthogonality relation satisfied by the normal
+modes:
+$$ \left\langle \mathbf{E}_m^{\sigma} \right|
+   \left.       \mathbf{H}^\tau_n     \right\rangle
+   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
+   \qquad \Big( \{\sigma,\tau\}\in\{+,-\}\Big)
+$$
+where the inner product involves an integration over
+transverse coordinates:
+<a name="OverlapEquation"></a>
+$$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
+   \equiv
+   \int_{S} 
+    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
+    \cdot \hat{\mathbf{n}} \, dA
+  \qquad (*)
+$$
+where $S$ is any surface transverse to the direction of propagation
+and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
+just $\hat{\mathbf{z}}$ in the case considered above).
+
+<a name="Other routines"></a>
+## Related computational routines
+
+Besides `get_eigenmode_coefficients,` there are a few
+computational routines in `libmeep` that you may find useful
+for problems like those considered above.
+
+### Routine for computing MPB eigenmodes (in `mpb.cpp`)
+````
+  void *fields::get_eigenmode(double &omega,
+                              direction d, const volume &where,
+                              const volume &eig_vol,
+                              int band_num,
+                              const vec &kpoint, bool match_frequency,
+                              int parity,
+                              double resolution,
+                              double eigensolver_tol);
+````
+
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega`
+for the portion of your geometry lying in `where` (typically
+a cross-sectional slice of a waveguide). `kpoint` is an initial
+starting guess for what the propagation vector of the waveguide
+mode will be.
+
+### Routines for working with MPB eigenmodes (in `mpb.cpp`)
+
+The return value of `get_eigenmode` is an opaque pointer to
+a data structure storing information about the computed eigenmode,
+which may be passed to the following routines:
+
+````
+// get a single component of the eigenmode field at a given point in space
+std::complex<double> eigenmode_amplitude(const vec &p, void *vedata, component c);
+
+// get the group velocity of the eigenmode 
+double get_group_velocity(void *vedata);
+
+// free all memory associated with the eigenmode
+void destroy_eigenmode_data(void *vedata);
+````
+
+### Routines for exporting frequency-domain fields (in `dft.cpp`)
+
+````
+  void output_flux_fields(dft_flux *flux, const volume where,
+                          const char *HDF5FileName);
+
+  void output_mode_fields(void *mode_data, dft_flux *flux,
+                          const volume where, 
+                          const char *HDF5FileName);
+````
+
+`output_flux_fields` exports the components of the (frequency-domain) fields
+stored in `flux` to an HDF5 file with the given file name. `where` is the
+`volume` passed to the `flux` constructor. In general, `flux` will store
+data for fields at multiple frequencies, each of which will
+
+`output_mode_fields` is similar, but instead exports the components of the eigenmode
+described by `mode_data` (which should be the return value of a call to `get_eigenmode`).
+
+### Routines for computing overlap integrals (in `dft.cpp`)
+
+````
+  std::complex<double> get_mode_flux_overlap(void *mode_data, 
+                                             dft_flux *flux, 
+                                             int num_freq, 
+                                             const volume where);
+
+  std::complex<double> get_mode_mode_overlap(void *mode1_data,
+                                             void *mode2_data,
+                                             dft_flux *flux,
+                                             const volume where);
+````
+
+`get_mode_flux_overlap` computes the overlap integral
+(defined by [equation (*) above](#OverlapEquation))
+between the eigenmode described by `mode_data`
+and the fields stored in `flux` (for the `num_freq`th stored
+frequency, where `num_freq` ranges from 0 to `flux->Nfreq-1`.)
+`mode_data` should be the return value of a previous call to 
+`get_eigenmode.`
+
+`get_mode_mode_overlap` is similar, but computes the overlap
+integral between two eigenmodes. (`mode1_data` and `mode2_data` may be
+identical, in which case you get the inner product of the 
+mode with itself; by the normalization convention used in MPB,
+this should equal the group velocity of the mode.)
 
 ## Second example: Junction of cylindrical waveguides
 
@@ -158,12 +416,13 @@ Again the code offers a command-line option `--ratio` that sets the
 ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
 while for `--ratio 1` we expect perfect transmission of power
 $z=0$.
- 
+
+<a name="UnderTheHood"></a> 
 ## Under the hood: How mode expansion works
 
 The theoretical basis of the mode-expansion algorithm
 is the orthogonality relation satisfied by the normal
-modes 
+modes
 $$ \left\langle \mathbf{E}_m^{\sigma} \right|
    \left.       \mathbf{H}^\tau_n     \right\rangle
    =C_{m}\delta_{mn}\delta_{\sigma\tau} 
