@@ -3,7 +3,7 @@
 *Eigenmode decomposition* exploits MEEP's interconnectivity
 with the [MPB][MPB] mode solver to express an arbitrary
 time-harmonic field configuration as a superposition of
-the normal harmonic modes of your structure. In this 
+the normal harmonic modes of your structure.
 
 ## Theoretical background
 
@@ -275,5 +275,6 @@ identical, in which case you get the inner product of the
 mode with itself; by the normalization convention used in MPB,
 this should equal the group velocity of the mode.)
 
+## Second example: Junction of cylindrical waveguides
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md
