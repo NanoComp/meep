@@ -69,7 +69,6 @@ of this sort,
 -  the $\alpha_n^\pm$ coefficients for as many bands 
    as you like are computed by calling `get_eigenmode_coefficients(),`
    as discussed below.
-=======
 $$
 where the expansion coefficients $\{\alpha^{\pm}_n\}$
 may be extracted from knowledge of the time-harmonic
@@ -95,7 +94,6 @@ and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
 
 $$ \alpha^+_n = $$
-=======
     \qquad (1b)
 $$
 where the expansion coefficients $\{\alpha^{\pm}_n\}$
@@ -132,21 +130,20 @@ of this sort,
 The basic routine here is
 
 ```c++
-std::vector<cdouble> 
- fields::get_eigenmode_coefficients(dft_flux *flux,
-                                    direction d,
-                                    const volume &where,
-                                    std::vector<int> bands,
-                                    kpoint_func k_func=0,
-                                    void *user_data=0);
+std::vec<cdouble> fields::get_mode_coefficients(dft_flux flux,
+                                                direction d,
+                                                const volume where,
+                                                std::vec<int> bands,
+                                                kpoint_func user_func=0,
+                                                void *user_data=0);
 ```
 where
 
-+ `flux` is a `dft_flux` object pre-populated with frequency-domain field data resulting from a time-domain MEEP calculation you have run to tabulate fields on a cross-sectional slice perpendicular to your waveguide
++ `flux` is a `dft_flux` object pre-populated with frequency-domain field data from a time-domain MEEP calculation you have run
 
 + `d` is the direction of power flow in the waveguide
 
-+ `where` is a `volume` describing the cross-sectional surface $S$
++ `where` is a `volume` corresponding to the cross-sectional area $\Gamma$ over which we integrate in equation (1) above to extract mode-expansion coefficients
 
 + `bands` is an array of integers that you populate with the indices of the modes for which you want expansion coefficients
 
@@ -168,7 +165,6 @@ is the number of frequencies stored in your `flux` object
 of your `bands` input array. 
 The expansion coefficient for the mode with frequency `nf`
 and band index `nb` is stored in the `nb*num_freqs + nf`
-slot of this array.
 
 ## First example: Junction of planar waveguides
 
