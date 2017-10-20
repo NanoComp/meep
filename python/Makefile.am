@@ -21,6 +21,13 @@ _meep_la_LIBADD = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la $(top_builddir)/li
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
+# material_dispersion.py test must be excluded from test suite for MPI build
+if WITH_MPI
+  MDPYTEST=
+else
+  MDPYTEST=$(TEST_DIR)/material_dispersion.py
+endif
+
 TEST_DIR = tests
 TESTS =                                 \
     $(TEST_DIR)/3rd_harm_1d.py          \
@@ -29,14 +36,14 @@ TESTS =                                 \
     $(TEST_DIR)/geom.py                 \
     $(TEST_DIR)/holey_wvg_bands.py      \
     $(TEST_DIR)/holey_wvg_cavity.py     \
-    $(TEST_DIR)/material_dispersion.py  \
+    $(MDPYTEST)				\
     $(TEST_DIR)/physical.py             \
     $(TEST_DIR)/ring.py                 \
     $(TEST_DIR)/simulation.py           \
     $(TEST_DIR)/source.py
 
 TEST_EXTENSIONS = .py
-PY_LOG_COMPILER = $(PYTHON)
+PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
 if WITH_PYTHON
