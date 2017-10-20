@@ -73,42 +73,43 @@ of this sort,
 The basic routine here is
 
 ```c++
-std::vector<cdouble> 
- fields::get_eigenmode_coefficients(dft_flux *flux,
-                                    direction d,
-                                    const volume &where,
-                                    std::vector<int> bands,
-                                    kpoint_func k_func=0,
-                                    void *user_data=0);
+std::vec<cdouble> fields::get_mode_coefficients(dft_flux flux,
+                                                direction d,
+                                                const volume where,
+                                                std::vec<int> bands,
+                                                kpoint_func user_func=0,
+                                                void *user_data=0);
 ```
 where
 
-+ `flux` is a `dft_flux` object pre-populated with frequency-domain field data resulting from a time-domain MEEP calculation you have run to tabulate fields on a cross-sectional slice perpendicular to your waveguide
++ `flux` is a `dft_flux` object pre-populated with frequency-domain field data from a time-domain MEEP calculation you have run
 
 + `d` is the direction of power flow in the waveguide
 
-+ `where` is a `volume` describing the cross-sectional surface $S$
++ `where` is a `volume` corresponding to the cross-sectional area $\Gamma$ over which we integrate in equation (1) above to extract mode-expansion coefficients
 
 + `bands` is an array of integers that you populate with the indices of the modes for which you want expansion coefficients
 
-+ `user_func` is an *optional* function you supply to provide initial estimates of the wavevector of a mode with given frequency and band index; if nonzero, it should be a function pointer to a function of prototype
++ `user_func` is an *optional* function you supply to provide
+initial estimates of the wavevector of a mode with given
+frequency and band index; its prototype is
 
 ```
  vec (*kpoint_func)(void user_data, double freq, int band);
 ```
 
-which returns a `vec` giving your best guess for the 
+and it should return a `vec` giving your best guess for the 
 wavevector of the `band`th mode at frequency `freq`.
 
 The return value of `get_mode_coefficients` is an array
 of type `cdouble` (short for `std::complex<double>`),
+<<<<<<< HEAD
 of length `num_freqs * num_bands`, where `num_freqs`
 is the number of frequencies stored in your `flux` object
 (equal to `flux->Nfreq`) and `num_bands` is the length
 of your `bands` input array. 
 The expansion coefficient for the mode with frequency `nf`
 and band index `nb` is stored in the `nb*num_freqs + nf`
-slot of this array.
 
 ## First example: Junction of planar waveguides
 
@@ -180,6 +181,8 @@ $$
 where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
+
+## Second example: Junction of cylindrical waveguides
 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md
