@@ -11,7 +11,7 @@
 -   **Free software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
 -   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [MacOS](https://en.wikipedia.org/wiki/MacOS).
--   Arbitrary **anisotropic** electric permittivity $\varepsilon$ and magnetic permeability $\mu$, along with **dispersive** $\varepsilon(\mu)$ and $\mu(\omega)$ including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** $\sigma$.
+-   Arbitrary **anisotropic** electric permittivity $\varepsilon$ and magnetic permeability $\mu$, along with **dispersive** $\varepsilon(\omega)$ and $\mu(\omega)$ including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** $\sigma$.
 -   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
 -   Complete **scriptability** &mdash; either via a [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) scripting front-end via [libctl](http://libctl.readthedocs.io), or callable as a [C++](https://en.wikipedia.org/wiki/C_plus_plus) library. An official [Python](https://en.wikipedia.org/wiki/Python_programming_language) interface is under development.
