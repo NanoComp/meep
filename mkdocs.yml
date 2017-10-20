@@ -69,3 +69,4 @@ pages:
 - C++ Interface:
     - User Interface: 'C++_User_Interface.md'
     - Tutorial/Basics: 'C++_Tutorial.md'
+    - Mode expansion: 'ModeExpansion.md'
