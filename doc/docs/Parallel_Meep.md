@@ -7,22 +7,22 @@ Meep supports distributed-memory parallelism using [MPI](https://en.wikipedia.or
 Installing Parallel Meep
 ------------------------
 
-To install the parallel version of Meep, you must have a version of MPI installed on your system. See the [Installation manual](Installation.md#mpi-parallel-machines).
+To install the parallel version of Meep, you must have a version of MPI installed on your system. See [Installation](Installation.md#mpi-parallel-machines).
 
 We also *strongly* recommend installing the HDF5 with parallel I/O support if you are going to run with more than a few processors. configure HDF5 with `--enable-parallel`; you may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose to install either the serial or the parallel Meep, but not both.
 
-If you don't install HDF5 with parallel I/O support, you can still do I/O from MPI — Meep has some hacks to let it write HDF5 files using serial I/O from multiple processes, one at a time. However, this does not scale very well to many processors. We've also observed some MPI implementations to freeze under the strain of trying to write from many processes at once. YMMV.
+If you don't install HDF5 with parallel I/O support, you can still do I/O from MPI &mdash; Meep has some hacks to let it write HDF5 files using serial I/O from multiple processes, one at a time. However, this does not scale very well to many processors. We've also observed some MPI implementations to freeze under the strain of trying to write from many processes at once. YMMV.
 
 Then you just `configure` Meep `--with-mpi`. The `meep` executable is installed as `meep-mpi`, so that you can have both the serial and parallel versions installed at the same time.
 
 Using Parallel Meep
 -------------------
 
-The parallel version of Meep is designed to operate completely transparently: you use the same `.ctl` file as for the serial version, and the output is the same, but it is just faster, hopefully.
+The parallel version of Meep is designed to operate completely transparently: you use the same Python or Scheme file as for the serial version, and the output is the same, but it is just faster, hopefully.
 
 In order to run MPI programs, you typically have to use a command like `mpirun` with an argument to say how many processes you want to use. Consult your MPI documentation. For example, with many popular MPI implementations, to run with 4 processes you would use something like:
 
-```html
+```sh
 mpirun -np 4 meep-mpi foo.ctl > foo.out
 ```
 

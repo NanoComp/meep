@@ -8,7 +8,7 @@ The main effort in installing Meep lies in installing the various prerequisite p
 
 It is also possible to install Meep on Windows systems by using a free Unix-compatibility environment such as [Cygwin](http://www.cygwin.org/). For more information, see these [step-by-step instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
-For those installing Meep on a parallel supercomputer, a note of caution: most supercomputers have more than one different compiler installed, and different versions of libraries compiled with different compilers. Meep is written in C++, and it is almost impossible to mix C++ code compiled by different compilers—pick one set of compilers by one vendor and stick with it consistently.
+For those installing Meep on a parallel supercomputer, a note of caution: most supercomputers have multiple compilers installed, and different versions of libraries compiled with different compilers. Meep is written in C++, and it is almost impossible to mix C++ code compiled by different compilers &mdash; pick one set of compilers by one vendor and stick with it consistently.
 
 [TOC]
 
@@ -17,11 +17,11 @@ Installation on Linux
 
 For most [Linux distributions](https://en.wikipedia.org/wiki/Linux_distribution), there should be precompiled packages for most of Meep's prerequisites below, and we *highly* recommend installing those prerequisites using the available packages for your system whenever possible. Using precompiled packages means that you don't have to worry about how to install things manually. You are using packages which have already been tweaked to work well with your system, and usually your packages will be automatically upgraded when you upgrade the rest of your system.
 
-The following precompiled packages are available: BLAS and LAPACK possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [H5utils](http://ab-initio.mit.edu/wiki/index.php/H5utils).
+The following precompiled packages are available: BLAS and LAPACK possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md).
 
 The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(operating_system)) which has precompiled packages for Meep:
 
-```
+```sh
 apt-get install meep h5utils
 ```
 
@@ -40,14 +40,14 @@ The first steps are:
 -   Install Homebrew: download from the [Homebrew site](http://brew.sh/) and follow the instructions there.
 -   Run the following commands in the terminal to compile and install the prerequisites. This may take a while to complete because it will install lots of other stuff first
 
-```
+```sh
 brew doctor
 brew install homebrew/science/hdf5 homebrew/science/openblas guile fftw h5utils
 ```
 
-Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv) and, in the `harminv` directory, do:
+Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) and, in the `harminv` directory, do:
 
-```
+```sh
 ./configure && make && make install
 ```
 
@@ -66,7 +66,7 @@ First, let's review some important information about installing software on Unix
 
 Most of the software below, including Meep, installs under `/usr/local` by default. That is, libraries go in `/usr/local/lib`, programs in `/usr/local/bin`, etc. If you don't have `root` privileges on your machine, you may need to install somewhere else, e.g. under `$HOME/install` (the `install/` subdirectory of your home directory). Most of the programs below use a GNU-style `configure` script, which means that all you would do to install there would be:
 
-```
+```sh
  ./configure --prefix=$HOME/install
 ```
 
@@ -76,7 +76,7 @@ when configuring the program. The directories `$HOME/install/lib` etc. are creat
 
 There are two further complications. First, if you install in a non-standard location and `/usr/local` is considered non-standard by some proprietary compilers, you will need to tell the compilers where to find the libraries and header files that you installed. You do this by setting two environment variables:
 
-```
+```bash
  export LDFLAGS="-L/usr/local/lib"
  export CPPFLAGS="-I/usr/local/include"
 ```
@@ -85,7 +85,7 @@ Of course, substitute whatever installation directory you used. Do this **before
 
 You might also need to update your `PATH` so that you can run the executables you installed although `/usr/local/bin/` is in the default `PATH` on many systems. e.g. if we installed in our home directory as described above, we would do:
 
-```
+```bash
  export PATH="$HOME/install/bin:$PATH"
 ```
 
@@ -93,7 +93,7 @@ You might also need to update your `PATH` so that you can run the executables yo
 
 Second, many of the packages installed below (e.g. Guile) are installed as shared libraries. You need to make sure that your runtime linker knows where to find these shared libraries. The bad news is that every operating system does this in a slightly different way. The good news is that, when you run `make install` for the packages involving shared libraries, the output includes the necessary instructions specific to your system, so pay close attention! It will say something like `add LIBDIR to the <foobar> environment variable`, where `LIBDIR` will be your library installation directory (e.g. `/usr/local/lib`) and `<foobar>` is some environment variable specific to your system (e.g. `LD_LIBRARY_PATH` on some systems, including Linux). For example, you might do:
 
-```
+```bash
  export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 ```
 
@@ -124,7 +124,7 @@ One thing to watch out for is that libraries like LAPACK, Guile, HDF5, etcetera,
 BLAS and LAPACK (recommended)
 -----------------------------
 
-BLAS and LAPACK libraries are required in order to install [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
+BLAS and LAPACK libraries are required in order to install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
 
 Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance-critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, it makes a big difference if you also use [MPB](https://mpb.readthedocs.io).
 
@@ -136,7 +136,7 @@ You can find more BLAS information, as well as a basic implementation, on the [B
 
 Note that the generic BLAS does not come with a `Makefile`; compile it with something like: </nowiki>
 
-```
+```sh
   wget http://www.netlib.org/blas/blas.tgz
   gunzip blas.tgz
   tar xf blas.tar
@@ -159,9 +159,9 @@ We currently recommend installing OpenBLAS which includes LAPACK so you do not n
 Harminv (recommended)
 ---------------------
 
-To use Meep to extract resonant frequencies and decay rates, you must install [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv) which requires BLAS and LAPACK.
+To use Meep to extract resonant frequencies and decay rates, you must install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) which requires BLAS and LAPACK.
 
-See the [Harminv installation](http://ab-initio.mit.edu/wiki/index.php/Harminv_installation) instructions.
+See the [Harminv installation](https://github.com/stevengj/harminv/blob/master/doc/installation.md) instructions.
 
 Guile (recommended)
 -----------------------
@@ -170,7 +170,7 @@ Guile is required in order to use the Scheme interface, and is strongly recommen
 
 Guile is an extension/scripting language implementation based on Scheme, and we use it to provide a rich, fully-programmable user interface with minimal effort. It's free, of course, and you can download it from the [Guile homepage](http://www.gnu.org/software/guile/). Guile is typically included with Linux systems.
 
-- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package. Note: SWIG does [not support the latest version of Guile](https://github.com/swig/swig/issues/312) which requires than an older version (2.0.11) be used.
+- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package. Note: SWIG does [not support the latest version of Guile](https://github.com/swig/swig/issues/312) which requires that an older version (2.0.11) be used.  Meep contains a workaround for newer versions as well.
 
 libctl (recommended)
 --------------------
@@ -184,7 +184,7 @@ If you are not the system administrator of your machine, and/or want to install 
 MPI (parallel machines)
 -----------------------
 
-Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). You can learn about MPI from its [homepage](http://mpi-forum.org/docs/). Most commercial supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
+Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). You can learn about MPI from its [homepage](http://mpi-forum.org/). Most commercial supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
 
 In order for the MPI version of the Scheme interface to run successfully, we have a slightly nonstandard requirement: each process must be able to read from the disk. This way, Guile can boot for each process and they can all read your control file in parallel. Most commercial supercomputers satisfy this requirement. On the other hand, the C++ interface to Meep does not have this requirement.
 
@@ -197,9 +197,9 @@ HDF5 (recommended)
 
 Meep outputs its fields and other volumetric data in the HDF5 format, so you must install the HDF5 libraries if you want to visualize the fields.
 
-HDF is a widely-used, free, portable library and file format for multi-dimensional scientific data, developed in the National Center for Supercomputing Applications (NCSA) at the University of Illinois. You can get HDF and learn about it on the [HDF homepage](http://www.hdfgroup.org).
+HDF is a widely-used, free, portable library and file format for multi-dimensional scientific data, developed in the National Center for Supercomputing Applications (NCSA) at the University of Illinois. You can get HDF and learn about it on the [HDF homepage](https://www.hdfgroup.org).
 
-There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including our own [h5utils](http://ab-initio.mit.edu/wiki/index.php/H5utils) utilities.
+There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) utilities.
 
 HDF5 includes parallel I/O support under MPI, which can be enabled by configuring it with `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose one or the other.
 
@@ -212,7 +212,7 @@ Meep
 
 Once you've installed all of the prerequisites, you can install Meep via:
 
-```
+```sh
 ./configure
 make
 sudo make install
@@ -220,7 +220,7 @@ sudo make install
 
 Assuming you've set your `LDFLAGS` etcetera, the configure script should find all of the libraries you've installed and, with luck, compile successfully. The `sudo` in the last command uses administrator privileges to install the binaries in standard system directories. Alternatively, you can just use `make install` if you have used `--prefix` to change the installation directory to something like your home directory. This is described below. To make sure Meep is working, you can run its test suite via:
 
-```
+```sh
 make check
 ```
 
@@ -272,24 +272,24 @@ Meep for Developers
 
 If you want to modify the Meep source code, you will want to have a number of additional packages, most importantly:
 
--   The [Git](http://git-scm.com/) version-control system.
+-   The [Git](https://git-scm.com/) version-control system.
 
 Once you have Git, you can grab the latest development version of Meep with:
 
-```
- git clone  git://github.com/stevengj/meep
+```sh
+ git clone https://github.com/stevengj/meep.git
 ```
 
-This gives you a fresh, up-to-date Meep repository in a directory `meep`. See [git-scm.com](http://git-scm.com/) for more information on using Git; perhaps the most useful command is `git` `pull`, which you can execute periodically to get any new updates to the development version.
+This gives you a fresh, up-to-date Meep repository in a directory `meep`. See [git-scm.com](https://git-scm.com/) for more information on using Git; perhaps the most useful command is `git pull`, which you can execute periodically to get any new updates to the development version.
 
 Git will give you an absolutely minimal set of sources; to create a usable Meep directory, you should run:
 
-```
+```sh
 sh autogen.sh
 make
 ```
 
 in the `meep` directory. And subsequently, if you are editing the sources you should include `--enable-maintainer-mode` whenever you reconfigure. To do this, however, you will need a number of additional packages beyond those listed above:
 
--   GNU [autoconf](http://www.gnu.org/software/autoconf/), [automake](http://sources.redhat.com/automake/), and [libtool](http://www.gnu.org/software/libtool/libtool.html) — these are used to create the Makefiles and configure scripts, and to build shared libraries.
--   [SWIG](http://www.swig.org/) — the Scheme/libctl interface to Meep is largely generated by a program called *SWIG* (Simple Wrapper and Interface Generator). We currently require SWIG version 1.3.25 or later. Moreover, if you are using 1.3.27 or earlier, you must patch the file `Source/Modules/guile.cxx` with [this bug fix](http://cvs.sourceforge.net/viewcvs.py/swig/SWIG/Source/Modules/guile.cxx?r1=1.33&r2=1.34).
+-   GNU [autoconf](https://www.gnu.org/software/autoconf/autoconf.html), [automake](https://www.gnu.org/software/automake/), and [libtool](https://www.gnu.org/software/libtool/libtool.html) &mdash; these are used to create the Makefiles and configure scripts, and to build shared libraries.
+-   [SWIG](http://www.swig.org/) &mdash; the Scheme/libctl interface to Meep is largely generated by a program called *SWIG* (Simple Wrapper and Interface Generator).

@@ -63,7 +63,7 @@ This is **wrong**, and will cause Meep to exit with a strange error message. The
 
 Here, we have defined a function `my-weird-output` of no arguments that, when called, outputs our function `f`. We then pass this function to `run-until`. In contrast, our incorrect code above corresponds to passing `(my-weird-output)`, the *result* of calling `my-weird-output`, to `run-until`.
 
-As described in [Synchronizing the magnetic and electric fields](Synchronizing_the_Magnetic_and_Electric_Fields.md), because this example function combines electric and magnetic fields, we may want to synchronize them in time in order to compute this function more accurately, by wrapping it with `synchronized-magnetic`:
+As described in [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md), because this example function combines electric and magnetic fields, we may want to synchronize them in time in order to compute this function more accurately, by wrapping it with `synchronized-magnetic`:
 
 ```scm
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
