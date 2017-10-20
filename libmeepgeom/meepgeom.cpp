@@ -110,7 +110,10 @@ static bool material_type_equal(const material_type m1, const material_type m2)
     }
 }
 
-material_type make_user_material(user_material_func user_func, 
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+material_type make_user_material(user_material_func user_func,
                                  void *user_data)
 {
   material_data *md = (material_data *)malloc(sizeof(*md));
@@ -288,7 +291,7 @@ static geom_box gv2box(const meep::volume &v)
 }
 
 // TODO rename this to something more descriptive like
-//      is_user_defined_material
+//      is_user_defined_material?
 static bool is_variable(material_type mt)
 {
   return (md->which_subclass == material_data::MATERIAL_FUNCTION);
@@ -629,8 +632,6 @@ static material_type eval_material_func(function material_func, vector3 p)
 
 static void material_epsmu(meep::field_type ft, material_type material,
 		    symmetric_matrix *epsmu, symmetric_matrix *epsmu_inv) {
-  vector3 zero={0.0, 0.0, 0.0};
-  cdouble eps;
   material_data *md=(material_data *)material.data;
   if (ft == meep::E_stuff)
     switch (md->which_subclass) {
@@ -656,14 +657,6 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
       
-    case material_data::MATERIAL_FUNCTION:
-      eps = md->user_func( zero, md->user_data);
-      epsmu->m00 = epsmu->m11 = epsmu->m22 = real(eps);
-      epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-      epsmu_inv->m00 = epsmu_inv->m11 = epsmu_inv->m22 = real(1.0/eps);
-      epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
-      break;
-
     default:
       meep::abort("unknown material type");
   }
@@ -687,14 +680,6 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu_inv->m11 = 1.0;
       epsmu_inv->m22 = 1.0;
       epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-      epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
-      break;
-
-    case material_data::MATERIAL_FUNCTION:
-      eps = md->user_func( zero, md->user_data);
-      epsmu->m00 = epsmu->m11 = epsmu->m22 = real(eps);
-      epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-      epsmu_inv->m00 = epsmu_inv->m11 = epsmu_inv->m22 = real(1.0/eps);
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
 
@@ -724,10 +709,17 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
     else
       material = (material_type) default_material;
   }
-  else if (md->which_subclass == material_data::MATERIAL_FUNCTION) {
-    // TODO figure this out
-    // material = eval_material_func(md->user_material_func,md->user_data,p);
+  else if (md->which_subclass == material_data::MATERIAL_FUNCTION) { 
+
+    // is *THIS* what I want to do here? This can't be right...
+    material_data *new_material_data = (material_data *)malloc(sizeof(material_data));
+    new_material_data->which_subclass = material_data::MEDIUM;
+    new_material_data->user_func = 0;
+    new_material_data->user_data = 0;
+    new_material_data->medium = md->user_func(p, md->user_data);
+    material.data = (void *)new_material_data;
     destroy_material = true;
+
   }
   return destroy_material;
 } 
