@@ -652,13 +652,16 @@ class Simulation(object):
         if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
 
-    def get_array(self, center, size, component=mp.Ez, cmplx=False, arr=None):
+    def get_array(self, center, size, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.int32)
         # TODO(chogan): Account for cylindrical Volume after PR 106 is merged
         vol = Volume(center, size=size, dims=self.dimensions)
         self.fields.get_array_slice_dimensions(vol.swigobj, dim_sizes)
 
         dims = [s for s in dim_sizes if s != 0]
+
+        if cmplx is None:
+            cmplx = component < mp.Dielectric and not self.fields.is_real
 
         if arr is not None:
             if cmplx and not np.iscomplexobj(arr):
