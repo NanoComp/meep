@@ -730,6 +730,8 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
     destroy_material = true;
   }
   return destroy_material;
+} 
+
 // returns trace of the tensor diagonal
 double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
 {
