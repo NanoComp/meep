@@ -31,7 +31,7 @@ A time-domain electromagnetic simulation simply takes [Maxwell's equations](http
 
 Using these results, one can then compute many other things, such as the local density of states from the trace of the Green's function. Meep's scriptable interface makes it possible to combine many sorts of computations along with multi-parameter optimization etcetera in sequence or in parallel.
 
-The [Tutorial/Basics](Scheme_Tutorials/Basics.md) gives examples of all of these kinds of computations.
+[Tutorial/Basics](Scheme_Tutorials/Basics.md) gives examples of all of these kinds of computations.
 
 Download
 --------
@@ -43,7 +43,7 @@ Documentation
 
 See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial](Scheme_Tutorials/Basics.md) are the most important things to read. We also have an [FAQ](FAQ.md).
 
-Please [cite Meep](Acknowledgements.md#Referencing) in any publication for which you found it useful.
+Please [cite Meep](Acknowledgements.md#referencing) in any publication for which you found it useful.
 
 ### Mailing Lists
 
