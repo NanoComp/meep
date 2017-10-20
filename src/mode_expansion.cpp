@@ -270,13 +270,16 @@ std::vec<cdouble> fields::get_mode_coefficients(dft_flux flux,
       { 
         int band = bands[nband];
 
-        // query user's function for initial k-point guess
+        // query user's function (if present) for initial k-point guess
         if (user_func)
          kpoint = user_func(user_data, freq, nband);
-      
+       
+        // add source
         add_eigenmode_source(DefaultComponent, src, d, where, where,
                              band, kpoint, match_frequency, parity,
                              eig_resolution, eigensolver_tol, amp);
+       
+        // evaluate projection and normalization integrals
       };
    };
 
