@@ -13,7 +13,7 @@ The ctl File
 
 The use of Meep revolves around the control file, abbreviated "ctl" and typically called something like `foo.ctl`. The ctl file specifies the geometry you wish to study, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
 
-Don't worry, though—simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
+Don't worry, though &mdash; simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
 
 The ctl file is actually implemented on top of the [libctl](https://libctl.readthedocs.io) library, a set of utilities that are in turn built on top of the Scheme language. Thus, there are three sources of possible commands and syntax for a ctl file:
 
@@ -23,7 +23,7 @@ The ctl file is actually implemented on top of the [libctl](https://libctl.readt
 
 At this point, please take a moment to leaf through the libctl tutorial to get a feel for the basic style of the interface, before we get to the Meep-specific stuff below. [MPB](http://mpb.readthedocs.io) has a similar interface.
 
-Okay, let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command-line (herein denoted by the `unix%` prompt):
+Okay, let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command line:
 
 ```sh
  unix% meep foo.ctl >& foo.out
@@ -137,7 +137,7 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 
  Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12×1 is centered at $(-2,-3.5)$. Also shown in green is the source plane at $x=-7$ (see below).
 
-We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in a separate [tutorial](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ (which excites many other frequencies because of the discontinuity), we will ramp it on slowly (technically, Meep uses a $\tanh$ turn-on function) over a time proportional to the `width` of 20 time units (a little over three periods). Finally, just for variety, we'll specify the (vacuum) `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ (which excites many other frequencies because of the discontinuity), we will ramp it on slowly (technically, Meep uses a $\tanh$ turn-on function) over a time proportional to the `width` of 20 time units (a little over three periods). Finally, just for variety, we'll specify the (vacuum) `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```scm
 (set! sources (list
@@ -521,7 +521,7 @@ Everything else about your simulation is the same: you can still get the fields 
 
 In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `(make mirror-sym (direction Y) (phase -1))`. See the [User Interface](../Scheme_User_Interface.md#symmetry) for more symmetry possibilities.
 
-In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
 
 More Examples
 -------------

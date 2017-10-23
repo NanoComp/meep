@@ -25,9 +25,9 @@ The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(op
 apt-get install meep h5utils
 ```
 
-To build the latest version of Meep from source on Ubuntu 16.04, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html). 
+Zipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases).
 
-The source tarballs are available on the [releases pages](https://github.com/stevengj/meep/releases).
+To build the latest version of Meep from source on Ubuntu, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html).
 
 Installation on MacOS 
 -----------------------
@@ -132,7 +132,7 @@ Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally perfor
 
 The first thing you must have on your system is a BLAS implementation. "BLAS" stands for "Basic Linear Algebra Subroutines," and is a standard interface for operations like matrix multiplication. It is designed as a building-block for other linear-algebra applications, and is used both directly by our code and in LAPACK (see below). By using it, we can take advantage of many highly-optimized implementations of these operations that have been written to the BLAS interface. Note that you will need implementations of BLAS levels 1-3.
 
-You can find more BLAS information, as well as a basic implementation, on the [BLAS homepage](http://www.netlib.org/blas/). Once you get things working with the basic BLAS implementation, it might be a good idea to try and find a more optimized BLAS code for your hardware. Vendor-optimized BLAS implementations are available as part of the Intel MKL, HP CXML, IBM ESSL, SGI sgimath, and other libraries. An excellent, high-performance, free-software BLAS implementation is  [OpenBLAS](http://www.openblas.net). Another is [ATLAS](http://math-atlas.sourceforge.net/).
+You can find more BLAS information, as well as a basic implementation, on its [homepage](http://www.netlib.org/blas/). Once you get things working with the basic BLAS implementation, it might be a good idea to try and find a more optimized BLAS code for your hardware. Vendor-optimized BLAS implementations are available as part of the Intel MKL, HP CXML, IBM ESSL, SGI sgimath, and other libraries. An excellent, high-performance, free-software BLAS implementation is  [OpenBLAS](http://www.openblas.net). Another is [ATLAS](http://math-atlas.sourceforge.net/).
 
 Note that the generic BLAS does not come with a `Makefile`; compile it with something like: </nowiki>
 
@@ -150,7 +150,7 @@ Replace `-O3` with your favorite optimization options. On Linux, this could be `
 
 ### LAPACK
 
-LAPACK, the Linear Algebra PACKage, is a standard collection of routines, built on BLAS, for more-complicated (dense) linear algebra operations like matrix inversion and diagonalization. You can download LAPACK from the [LAPACK homepage](http://www.netlib.org/lapack).
+LAPACK, the Linear Algebra PACKage, is a standard collection of routines, built on BLAS, for more-complicated (dense) linear algebra operations like matrix inversion and diagonalization. You can download LAPACK from its [homepage](http://www.netlib.org/lapack).
 
 Note that Meep looks for LAPACK by linking with `-llapack`. This means that the library must be called `liblapack.a` and be installed in a standard directory like `/usr/local/lib`. Alternatively, you can specify another directory via the `LDFLAGS` environment variable as described earlier. See also below for the `--with-lapack=''lib''` option to our `configure` script, to manually specify a library location.
 
@@ -184,7 +184,7 @@ If you are not the system administrator of your machine, and/or want to install 
 MPI (parallel machines)
 -----------------------
 
-Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). You can learn about MPI from its [homepage](http://mpi-forum.org/). Most commercial supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
+Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). Most commercial supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
 
 In order for the MPI version of the Scheme interface to run successfully, we have a slightly nonstandard requirement: each process must be able to read from the disk. This way, Guile can boot for each process and they can all read your control file in parallel. Most commercial supercomputers satisfy this requirement. On the other hand, the C++ interface to Meep does not have this requirement.
 
@@ -266,6 +266,11 @@ By default, Meep's `configure` script picks compiler flags to optimize Meep as m
 **`--with-gcc-arch=arch`, `--without-gcc-arch`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
+
+Python Meep
+-----------
+
+An alpha version of Python Meep is available, currently only for the serial (i.e., non-parallel) version. This can be installed on Ubuntu in two ways: [building from source](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html) or as a [pre-compiled package using Conda](https://gist.github.com/ChristopherHogan/c22bb7cc7248f7595c4b09d0e3b16735).
 
 Meep for Developers
 -------------------

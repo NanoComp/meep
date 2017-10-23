@@ -105,7 +105,7 @@ For complex fields in nonlinear systems, the physical interpretration of the abo
 
 For a discussion of how to relate $\chi^{(3)}$ in Meep to experimental Kerr coefficients, see [Units and Nonlinearity](Units_and_Nonlinearity.md).
 
-Magnetic Permeability $mu$
+Magnetic Permeability $\mu$
 -----------------------
 
 All of the above features that are supported for the electric permittivity $\varepsilon$ are also supported for the magnetic permeability $\mu$. That is, Meep supports $\mu$ with dispersion from magnetic conductivity and Lorentzian resonances, as well as magnetic $\chi^{(2)}$ and $\chi^{(3)}$ nonlinearities. The description of these is exactly the same as above, so we won't repeat it here &mdash; just take the above descriptions and replace $\varepsilon$, **E**, **D**, and $\sigma$<sub>D</sub> by $\mu$, **H**, **B**, and $\sigma$<sub>B</sub>, respectively.
