@@ -49,12 +49,14 @@ double fields::time_spent_on(time_sink s) {
 
 static const char *ts2n(time_sink s) {
   switch (s) {
-  case Stepping: return "time stepping";
   case Connecting: return "connnecting chunks";
+  case Stepping: return "time stepping";
   case Boundaries: return "copying borders";
   case MpiTime: return "communicating";
   case FieldOutput: return "outputting fields";
   case FourierTransforming: return "Fourier transforming";
+  case ArraySlicing:        return "array slicing";
+  case ModeExpansion:       return "mode expanding";
   case Other: break;
   }
   return "everything else";
