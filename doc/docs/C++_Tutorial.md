@@ -2,7 +2,7 @@
 # C++ Tutorial
 ---
 
-Instead of using the Scheme interface described in the [Scheme Tutorial](Scheme_Tutorial.md), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are numerous examples in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good additional reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
+Instead of using the [Scheme interface](Scheme_User_Interface/), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are numerous examples in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good additional reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
 
 Differences from libctl
 -----------------------
@@ -14,7 +14,7 @@ The most notable difference is that, while the libctl interface puts the origin 
 Overview
 --------
 
-We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below and the [C++ User Interface](C++_User_Interface.md). The C++ program should begin with:
+We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below and the [C++ interface](C++_User_Interface.md). The C++ program should begin with:
 
 ```c++
 #include <meep.hpp>
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 }
 ```
 
-This example doesn't do much — it just runs a Gaussian source and outputs the $\mathbf{H}_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
+This example doesn't do much &mdash; it just runs a Gaussian source and outputs the $\mathbf{H}_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
 
 ```c++
 double eps(const vec &p) {
@@ -198,19 +198,19 @@ In order to compile your code and link against the Meep library, you must link i
 
 (1) After compiling the Meep package following the instructions elsewhere, place foo.cpp in the `tests/` subdirectory, cd to the same directory, and invoke:
 
-```
+```sh
 make foo.dac
 ```
 
 Run the resulting executable via:
 
-```
+```sh
 ./foo.dac
 ```
 
 (2) Use the [pkg-config](https://en.wikipedia.org/wiki/pkg-config) program which is installed by default on most Linux systems:
 
-```
+```sh
 ` g++ `pkg-config --cflags meep` foo.cpp -o foo `pkg-config --libs meep` `
 ```
 
@@ -218,6 +218,6 @@ Naturally, replace `g++` with the name of your C++ compiler if you are not using
 
 (3) Compile with g++, this time invoking each library separately:
 
-```
+```sh
 g++ -malign-double foo.cpp -o foo -lmeep -lhdf5 -lz -lgsl -lharminv -llapack -lcblas -latlas -lfftw3 -lm
 ```

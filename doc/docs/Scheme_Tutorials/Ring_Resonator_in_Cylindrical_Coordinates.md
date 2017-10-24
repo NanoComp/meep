@@ -2,7 +2,9 @@
 # Ring Resonator in Cylindrical Coordinates
 ---
 
-In the [tutorial](../Scheme_Tutorial.md), we computed the [modes of a ring resonator](../Scheme_Tutorial.md#modes-of-a-ring-resonator) by performing a 2d simulation. Here, we will simulate the *same* structure while [exploiting](../Exploiting_Symmetry.md) the fact that the system has *continuous* rotational symmetry, by performing the simulation in [cylindrical coordinates](../Cylindrical_Coordinates.md). See also `ring-cyl.ctl` in the `example/` subdirectory.
+In [Tutorial/Basics/Modes of a Ring Resonator](Basics), we computed the modes of a ring resonator by performing a 2d simulation. Here, we will simulate the *same* structure while [exploiting](../Exploiting_Symmetry.md) the fact that the system has *continuous* rotational symmetry, by performing the simulation in [cylindrical coordinates](../Cylindrical_Coordinates.md). See also `ring-cyl.ctl` in the `example/` subdirectory.
+
+[TOC]
 
 The ctl File
 ------------
@@ -82,7 +84,7 @@ Now, we are ready to run our simulation. Recall that, in the 2d calculation, we 
 
 In particular, we'll run:
 
-```
+```sh
 unix% meep m=3 ring-cyl.ctl | grep harminv
 unix% meep m=4 ring-cyl.ctl | grep harminv
 unix% meep m=5 ring-cyl.ctl | grep harminv
@@ -107,7 +109,7 @@ This illustrates the general principle that you need to check several parameters
 
 Finally, we can get the field images. Since we only are exciting one mode per `m` here anyway, according to `harminv`, we don't really need to use a narrow-band source. We'll do so anyway just to remind you of the general procedure, however, e.g. for the $\omega=0.118$ $m=3$ mode:
 
-```
+```sh
 unix% meep m=3 fcen=0.118 df=0.01 ring-cyl.ctl
 unix% h5topng -S 2 -Zc dkbluered -C ring-cyl-eps-001200.00.h5 ring-cyl-ez.h5
 ```

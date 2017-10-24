@@ -4,9 +4,9 @@
 
 Meep implements the **finite-difference time-domain** (**FDTD**) method for computational electromagnetics. This is a widely used technique in which space is divided into a discrete grid and then the fields are evolved in time using discrete time steps—as the grid and the time steps are made finer and finer, this becomes a closer and closer approximation for the true continuous equations, and one can simulate many practical problems essentially exactly.
 
-In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses—we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
+In this section, we introduce the equations and the electromagnetic units employed by Meep, the FDTD method, and Meep's approach to FDTD. Also, FDTD is only one of several useful methods in computational electromagnetics, each of which has their own special uses &mdash; we mention a few of the other methods, and try to give some hints as to which applications FDTD is well suited for and when you should consider a different method.
 
-This introduction does *not* describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in the [Tutorial](Scheme_Tutorial.md).
+This introduction does *not* describe the user interface with which you can tell Meep to perform these tasks. Instead, we focus here on the *concepts* that are being simulated. The user interface is introduced in [Tutorial/Basics](Scheme_Tutorials/Basics).
 
 [TOC]
 
@@ -24,7 +24,7 @@ Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equ
 
 </center>
 
-Where **D** is the displacement field, ε is the dielectric constant, **J** is the current density (of electric charge), and **J**<sub>*B*</sub> is the *magnetic-charge* current density. (Magnetic currents are a convenient computational fiction in some situations.) **B** is the magnetic flux density (often called the magnetic field), μ is the magnetic permeability, and **H** is the magnetic field. The $\sigma_B$ and $\sigma_D$ terms correspond to (frequency-independent) magnetic and electric conductivities, respectively. The divergence equations are implicitly:
+Where **D** is the displacement field, $\varepsilon$ is the dielectric constant, **J** is the current density (of electric charge), and **J**<sub>*B*</sub> is the *magnetic-charge* current density. Magnetic currents are a convenient computational fiction in some situations. **B** is the magnetic flux density (often called the magnetic field), $\mu$ is the magnetic permeability, and **H** is the magnetic field. The $\sigma_B$ and $\sigma_D$ terms correspond to (frequency-independent) magnetic and electric conductivities, respectively. The divergence equations are implicitly:
 
 <center>
 
@@ -34,17 +34,17 @@ Where **D** is the displacement field, ε is the dielectric constant, **J** is t
 
 </center>
 
-Most generally, ε depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
+Most generally, $\varepsilon$ depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
 
 Meep supports simulation in [cylindrical coordinates](Cylindrical_Coordinates.md).
 
 ### Units in Meep
 
-You may have noticed the lack of annoying constants like ε<sub>0</sub>, μ<sub>0</sub>, and [c](https://en.wikipedia.org/wiki/Speed_of_light) — that's because Meep uses **dimensionless** units where all these constants are unity. As a practical matter, almost everything you might want to compute (transmission spectra, frequencies, etcetera) is expressed as a ratio anyway, so the units end up cancelling.
+You may have noticed the lack of annoying constants like $\varepsilon$<sub>0</sub>, $\mu$<sub>0</sub>, and [c](https://en.wikipedia.org/wiki/Speed_of_light) &mdash; that's because Meep uses **dimensionless** units where all these constants are unity. As a practical matter, almost everything you might want to compute (transmission spectra, frequencies, etcetera) is expressed as a ratio anyway, so the units end up cancelling.
 
 In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units** (see this [online textbook](http://ab-initio.mit.edu/book), ch. 2). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
 
-Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently ω is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](http://mpb.readthedocs.io).
+Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently $\omega$ is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](http://mpb.readthedocs.io).
 
 For example, suppose we are describing some photonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a = 1 \mu\textrm{m}$. Then, if we want to specify a source corresponding to $\lambda = 1.55 \mu\textrm{m}$, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
 
@@ -61,9 +61,9 @@ With ordinary periodic boundaries in a cell of size $L$, the field components sa
 
 An even simpler boundary condition is a metallic wall, where the fields are simply forced to be zero on the boundaries, as if the cell were surrounded by a perfect metal (zero absorption, zero skin depth). More generally, you can place perfect metal materials anywhere you want in the computational cell, e.g. to simulate metallic cavities of an arbitrary shape.
 
-To simulate open boundary conditions, one would like the boundaries to absorb all waves incident on them, with no reflections. This is implemented with something called **perfectly matched layers** (PML). PML is, strictly speaking, not a boundary condition—rather, it is a special absorbing material placed adjacent to the boundaries. PML is actually a fictitious (non-physical) material, designed to have zero reflections at its interface. Although PML is reflectionless in the theoretical continuous system, in the actual discretized system it has some small reflections which make it imperfect. For this reason, one always gives the PML some finite thickness in which the absorption gradually turns on. For more information, see [perfectly matched layer](Perfectly_Matched_Layer.md).
+To simulate open boundary conditions, one would like the boundaries to absorb all waves incident on them, with no reflections. This is implemented with something called **perfectly matched layers** (PML). PML is, strictly speaking, not a boundary condition &mdash; rather, it is a special absorbing material placed adjacent to the boundaries. PML is actually a fictitious (non-physical) material, designed to have zero reflections at its interface. Although PML is reflectionless in the theoretical continuous system, in the actual discretized system it has some small reflections which make it imperfect. For this reason, one always gives the PML some finite thickness in which the absorption gradually turns on. For more information, see [Perfectly Matched Layer](Perfectly_Matched_Layer.md).
 
-Another way in which the computational cell is reduced in size is by **symmetry**. For example, if you know that your system has a mirror symmetry plane (both in the structure and in the current sources), then you can save a factor of two by only simulating half of the structure and obtaining the other half by mirror reflection. Meep can exploit several kinds of mirror and rotational symmetries — it is designed so that the symmetry is purely an optimization, and other than specifying the symmetry your computation is set up in exactly the same way. See: [Exploiting Symmetry](Exploiting_Symmetry.md).
+Another way in which the computational cell is reduced in size is by **symmetry**. For example, if you know that your system has a mirror symmetry plane (both in the structure and in the current sources), then you can save a factor of two by only simulating half of the structure and obtaining the other half by mirror reflection. Meep can exploit several kinds of mirror and rotational symmetries — it is designed so that the symmetry is purely an optimization, and other than specifying the symmetry your computation is set up in exactly the same way. See [Exploiting Symmetry](Exploiting_Symmetry.md).
 
 Finite-Difference Time-Domain Methods
 -------------------------------------
@@ -82,7 +82,7 @@ Many references are available on FDTD methods for computational electromagnetics
 
 Although FDTD inherently uses discretized space and time, as much as possible Meep attempts to maintain the illusion that you are using a continuous system. At the beginning of the simulation, you specify the spatial resolution, but from that point onwards you generally work in continuous coordinates in your chosen units. See [units in Meep](Introduction.md#units-in-meep), above.
 
-For example, you specify the dielectric function as a function ε(**x**) of continuous **x**, or as a set of solid objects like spheres, cylinders, etcetera, and Meep is responsible for figuring out how they are to be represented on a discrete grid. Or if you want to specify a point source, you simply specify the point **x** where you want the source to reside—Meep will figure out the closest grid points to **x** and add currents to those points, weighted according to their distance from **x**. If you change **x** continuously, the current in Meep will also change continuously by changing the weights. If you ask for the flux through a certain rectangle, then Meep will linearly interpolate the field values from the grid onto that rectangle.
+For example, you specify the dielectric function as a function $\varepsilon$(**x**) of continuous **x**, or as a set of solid objects like spheres, cylinders, etcetera, and Meep is responsible for figuring out how they are to be represented on a discrete grid. Or if you want to specify a point source, you simply specify the point **x** where you want the source to reside &mdash; Meep will figure out the closest grid points to **x** and add currents to those points, weighted according to their distance from **x**. If you change **x** continuously, the current in Meep will also change continuously by changing the weights. If you ask for the flux through a certain rectangle, then Meep will linearly interpolate the field values from the grid onto that rectangle.
 
 In general, the philosophy of the Meep interface is **pervasive interpolation**, so that if you change any input continuously then the response of the Meep simulation will change continuously as well, so that it will converge as rapidly and as smoothly as possible to the continuous solution as you increase the spatial resolution.
 

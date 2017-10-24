@@ -1557,6 +1557,9 @@ void set_materials_from_geometry(meep::structure *s,
                       size.z = gv.nz()/resolution;
                       break;
    };
+
+  set_dimensions(dimensions);
+
   geometry_lattice.size = size;
   geometry_edge = vector3_to_vec(size) * 0.5;
 
