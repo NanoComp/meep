@@ -1187,6 +1187,14 @@ typedef double (*field_rfunction)(const std::complex<double> *fields,
 field_rfunction derived_component_func(derived_component c, const grid_volume &gv,
 				       int &nfields, component cs[12]);
 
+/***************************************************************/
+/* prototype for optional user-supplied function to provide an */
+/* initial estimate of the wavevector of band #band at         */
+/* frequency freq for eigenmode calculations                   */
+/***************************************************************/
+typedef vec (*kpoint_func)(void *user_data, double freq, int band);
+
+
 class fields {
  public:
   int num_chunks;
@@ -1381,10 +1389,18 @@ class fields {
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
 
-  std::complex<double> get_eigenmode_coefficient(dft_flux *flux,
-                                                 direction d,
-                                                 const volume &where,
-                                                 int band_num);
+  std::complex<double> 
+   get_eigenmode_coefficient(dft_flux *flux, int num_freq,
+                             direction d, const volume &where,
+                             int band_num, kpoint_func k_func=0,
+                             void *k_func_data=0);
+
+  std::vector< std::complex<double> >
+   get_eigenmode_coefficients(dft_flux *flux, direction d,
+                              const volume &where,
+                              std::vector<int> bands,
+                              kpoint_func k_func=0, 
+                              void *k_func_data=0);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
