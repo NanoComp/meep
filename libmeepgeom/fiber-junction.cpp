@@ -94,11 +94,6 @@ int main(int argc, char *argv[])
   /* set up geometry: cylinder of radius r in a 2D computational */
   /* cell of size LxL (z-invariant)                              */
   /***************************************************************/
-
-  /***************************************************************/
-  /* set up geometry: cylinder of radius r in a 2D computational */
-  /* cell of size LxL (z-invariant)                              */
-
   double n=3.0;     // index of waveguide
   double r=1.0;     // cylinder radius
   double L=5.0;     // size of computational cell
@@ -140,15 +135,6 @@ int main(int argc, char *argv[])
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
   int nfreq   = 10;
-nfreq=1;
-  int nfreq   = 1;
-  gaussian_src_time src(fcen, df);
-  volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
-  if (point_source)
-   { 
-     f.add_point_source(Ez, src, vec(0.1, 0.2) ); }
-     f.add_point_source(Ez, src, vec(0.1, 0.2) );
-   }
   else
    {
      vec kpoint(0,0,0.303278);
@@ -165,7 +151,6 @@ nfreq=1;
   /* fields at nfreq frequencies                                 */
   /***************************************************************/
   dft_flux flux=f.add_dft_flux(Z, fv, fcen-0.5*df, fcen+0.5*df, nfreq);
-<<<<<<< HEAD
 
   // (run-sources+ 100 
   while( f.round_time() < (f.last_source_time() + 100.0) )

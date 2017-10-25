@@ -107,71 +107,44 @@ the $\{\alpha_n^\pm\}$ coefficients above for any
 resulting from a MEEP calculation. In calculations
 of this sort,
 
---the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
++   the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
     of equations (1a,b) above will be frequency-domain
     fields stored in a `dft_flux` object in a MEEP
     run, where you will have arranges this `dft_flux` object
     to live on a cross-sectional surface $S$ transverse
     to the waveguide;
 
---the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
++   the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
     and $\{\beta_n\}$ propagation constants are computed
     automatically under the hood by MPB as normal modes 
     of an infinitely extended waveguide with the same 
     cross-sectional material distribution that your structure
     has on the transverse slice $S$, and
 
---the $\alpha_n^\pm$ coefficients for as many bands 
-   as you like are computed by calling `get_eigenmode_coefficients(),`
-   as discussed below.
-=======
-$$
-where the expansion coefficients $\{\alpha^{\pm}_n\}$
-may be extracted from knowledge of the time-harmonic
-fields $\mathbf{E},\mathbf{H}$ on any surface $S$
-transverse to the waveguide.
-To recall how this works, remember that the normal modes
-satisfy an orthogonality relation of the form
-$$ \left\langle \mathbf{E}_m^{\sigma} \right|
-   \left.       \mathbf{H}^\tau_n     \right\rangle
-   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
-   \qquad \Big( \{\sigma,\tau\}\in\{+,-\}\Big)
-$$
-where the inner product involves an integration over
-transverse coordinates:
-$$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
-   \equiv
-   \int_{S} 
-    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
-    \cdot \hat{\mathbf{n}} \, dA
-$$
-where $S$ is any surface transverse to the direction of propagation
-and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
-just $\hat{\mathbf{z}}$ in the case considered above).
-
-$$ \alpha^+_n = $$
-
-<!--TeX: [ equationNumbers: { autoNumber: "AMS" } ]-->
++   the $\alpha_n^\pm$ coefficients for as many bands 
+    as you like are computed by calling `get_eigenmode_coefficients(),`
+    as discussed below.
 
 ## C++ function prototype
 
 The basic routine here is
 
 ```c++
-std::vec<cdouble> fields::get_mode_coefficients(dft_flux flux,
-                                                direction d,
-                                                const volume where,
-                                                std::vec<int> bands,
-                                                kpoint_func user_func=0,
-                                                void *user_data=0);
+std::vector<cdouble> 
+ fields::get_eigenmode_coefficients(dft_flux *flux,
+                                    direction d,
+                                    const volume &where,
+                                    std::vector<int> bands,
+                                    kpoint_func k_func=0,
+                                    void *user_data=0);
 ```
 where
 
-+ `flux` is a `dft_flux` object pre-populated with frequency-domain field data from a time-domain MEEP calculation you have run
++ `flux` is a `dft_flux` object pre-populated with frequency-domain field data resulting from a time-domain MEEP calculation you have run to tabulate fields on a cross-sectional slice perpendicular to your waveguide
 
 + `d` is the direction of power flow in the waveguide
 
-+ `where` is a `volume` corresponding to the cross-sectional area $\Gamma$ over which we integrate in equation (1) above to extract mode-expansion coefficients
++ `where` is a `volume` describing the cross-sectional surface $S$
 
 + `bands` is an array of integers that you populate with the indices of the modes for which you want expansion coefficients
 
@@ -193,6 +166,7 @@ is the number of frequencies stored in your `flux` object
 of your `bands` input array. 
 The expansion coefficient for the mode with frequency `nf`
 and band index `nb` is stored in the `nb*num_freqs + nf`
+slot of this array.
 
 ## First example: Junction of planar waveguides
 
@@ -376,7 +350,29 @@ in the larger waveguide.
 Again the code offers a command-line option `--ratio` that sets the
 ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
 while for `--ratio 1` we expect perfect transmission of power
-across $z=0$.
+$z=0$.
+ 
+## Under the hood: How mode expansion works
+
+The theoretical basis of the mode-expansion algorithm
+is the orthogonality relation satisfied by the normal
+modes 
+$$ \left\langle \mathbf{E}_m^{\sigma} \right|
+   \left.       \mathbf{H}^\tau_n     \right\rangle
+   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
+   \qquad \Big( \{\sigma,\tau\}\in\{+,-\}\Big)
+$$
+where the inner product involves an integration over
+transverse coordinates:
+$$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
+   \equiv
+   \int_{S} 
+    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
+    \cdot \hat{\mathbf{n}} \, dA
+$$
+where $S$ is any surface transverse to the direction of propagation
+and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
+just $\hat{\mathbf{z}}$ in the case considered above).
 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md
