@@ -98,7 +98,7 @@ frequency and band index; its prototype is
  vec (*kpoint_func)(void user_data, double freq, int band);
 ```
 
-and it should return a `vec` giving your best guess for the 
+which returns a `vec` giving your best guess for the 
 wavevector of the `band`th mode at frequency `freq`.
 
 The return value of `get_mode_coefficients` is an array
@@ -110,7 +110,6 @@ of your `bands` input array.
 The expansion coefficient for the mode with frequency `nf`
 and band index `nb` is stored in the `nb*num_freqs + nf`
 slot of this array.
-
 
 ## First example: Junction of planar waveguides
 
@@ -159,7 +158,6 @@ in the larger waveguide.
 Again the code offers a command-line option `--ratio` that sets the
 ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
 while for `--ratio 1` we expect perfect transmission of power
-<<<<<<< HEAD
 $z=0$.
  
 ## Under the hood: How mode expansion works
@@ -183,7 +181,6 @@ $$
 where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
-across $z=0$.
 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md

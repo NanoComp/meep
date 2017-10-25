@@ -33,10 +33,12 @@ vec k_guess(void *user_data, double freq, int band_num)
 } 
 vector3 v3(double x, double y=0.0, double z=0.0)
 {
-  vector3 v;
-  v.x=x; v.y=y; v.z=z;
-  return v;
-}
+  (void) user_data;
+  (void) freq;
+  (void) band_num;
+ 
+  return vec(0.0, 0.0, 0.303278);
+} 
 
 /***************************************************************/
 /* dummy material function needed to pass to structure( )      */
@@ -132,13 +134,12 @@ int main(int argc, char *argv[])
   //                (component Ez) (center (+ r 0.1) 0))))
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
-  int nfreq   = 1;
+  int nfreq   = 10;
   gaussian_src_time src(fcen, df);
   volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
   if (point_source)
    { 
-     f.add_point_source(Ez, src, vec(0.1, 0.2) );
-   }
+     f.add_point_source(Ez, src, vec(0.1, 0.2) ); }
   else
    {
      vec kpoint(0,0,0.303278);
@@ -191,22 +192,38 @@ int main(int argc, char *argv[])
   //dft_flux flux=f.add_dft_flux(Z, fv, fcen-0.5*df, fcen+0.5*df, nfreq);
   dft_flux flux=f.add_dft_flux(Z, fv, fcen, fcen, 1);
 
-  // (run-sources+ 300 
-  // 	(at-beginning output-epsilon)
-  // 	(after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
+  // (run-sources+ 100 
   while( f.round_time() < (f.last_source_time() + 100.0) )
    f.step();
              
-  for(int bn=1; bn<3; bn++)
-   { 
-     if (am_master())
-      { FILE *ff=fopen("/tmp/log.out","a");
-        fprintf(ff,"\n\n** Band %i: \n",bn);
-        fclose(ff);
-      };
-     cdouble coeff=f.get_eigenmode_coefficient(&flux, Z, fv, bn);
-     if (am_master())
-      printf("bn=%i: {%+.8e, %+.8e}\n",bn,real(coeff),imag(coeff));
+  /***************************************************************/
+  /* compute mode expansion coefficients *************************/
+  /***************************************************************/
+  std::vector<int> bands(2);
+  bands[0]=1;
+  bands[1]=2;
+
+  int num_bands = bands.size();
+  int num_freqs = flux.Nfreq;
+
+  std::vector<cdouble> coeffs =
+   f.get_eigenmode_coefficients(&flux, Z, fv, bands, k_guess, 0);
+   
+  if (am_master())
+   {
+     FILE *ff=fopen("fiber-junction.out","a");
+     fprintf(ff,"\n\n");
+     for(int nf=0; nf<num_freqs; nf++)
+      for(int nb=0; nb<num_bands; nb++)
+       { 
+         cdouble alpha = coeffs[nf*num_bands + nb];
+         double alphaMag = abs(alpha);
+         double alphaArg = atan2(imag(alpha),real(alpha))*180.0/M_PI;
+
+         printf("(nf,f,nb)=(%2i,%4f,%i): {%.2e,%.2e} (%.4f @ %3.0f)\n",
+                 nf,flux.freq_min + nf*flux.dfreq,bands[nb],
+                 real(alpha), imag(alpha), alphaMag, alphaArg);
+       };
    };
   
   return 0;
