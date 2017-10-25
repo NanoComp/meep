@@ -776,7 +776,6 @@ void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
 
 }
         double weight=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-        cdouble extra_weight = ( (c<=Ez) ? E->extra_weight : H->extra_weight );
 
         // get the E or H field component at this grid point
         cdouble flux_fval = (c<=Ez ? E->dft[chunk_idx*Nfreq + num_freq]
@@ -794,6 +793,7 @@ void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 cnum   += weight * conj(mode_fval) * flux_fval;
 cdenom += weight * conj(flux_fval) * flux_fval;
+#if 0
 if (LogFile)
 {
  fprintf(LogFile,"%e %e %e %i ",loc.x(), loc.y(), loc.z(),c);
@@ -801,6 +801,7 @@ if (LogFile)
  fprintf(LogFile,"%e %e ",real(mode_fval),imag(mode_fval));
  fprintf(LogFile,"\n");
 };
+#endif
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
       }; // LOOP_OVER_IVECS
@@ -812,8 +813,14 @@ if (LogFile)
   full_num_denom[1] += denom;
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-fprintf(LogFile,"\n\n");
-fclose(LogFile);
+#if 0
+if (LogFile)
+ { fprintf(LogFile,"\n\n");
+   fclose(LogFile);
+ };
+#endif
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
 cnum   = sum_to_all(cnum);
 cdenom = sum_to_all(cdenom);
 
@@ -825,6 +832,7 @@ tdenom+=denom;
 tcnum+=cnum;
 tcdenom+=cdenom;
 FILE *ff=fopen("/tmp/log.out","a");
+  fprintf(ff,"\n** nfreq=%i (%e) nband=%i \n",num_freq,edata->omega,edata->band_num);
   fprintf(ff,"uComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
                                 component_name(c),
                                 real(num), imag(num),
@@ -853,24 +861,28 @@ fclose(ff);
 /* call get_eigenmode() to solve for the specified eigenmode,  */
 /* then call add_overlap_integral_contribution() multiple times*/
 /* to sum all contributions to the numerator and denominator   */
-/* of the eigenmode expansion coefficients                     */
+/* of the eigenmode expansion coefficients.                    */
 /***************************************************************/
-std::complex<double> fields::get_eigenmode_coefficient(dft_flux *flux,
-                                                       direction d,
-                                                       const volume &where,
-                                                       int band_num)
+cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
+                                          int num_freq,
+                                          direction d,
+                                          const volume &where,
+                                          int band_num,
+                                          kpoint_func k_func, void *k_func_data)
 {
-  int num_freq=0;
-
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                   -*/
   /*--------------------------------------------------------------*/
-  vec kpoint(0.0,0.0,0.303278);
+  double omega = flux->freq_min + num_freq*flux->dfreq;
+  // call user's kpoint function if present
+  vec kpoint(0.0, 0.0, 0.5); // TODO better default? 
+  if (k_func) 
+   kpoint=k_func(k_func_data, omega, band_num);
+
   bool match_frequency=true;
   int parity=0; 
   double resolution=a;
   double eigensolver_tol=1.0e-7;
-  double omega = flux->freq_min + 0.5*(flux->Nfreq*flux->dfreq);
   eigenmode_data *edata
    =(eigenmode_data *)get_eigenmode(omega, d, where, where,
                                     band_num, kpoint, match_frequency,
@@ -933,6 +945,34 @@ std::complex<double> fields::get_eigenmode_coefficient(dft_flux *flux,
     return 0.0;
    };
   return num/denom;
+}
+
+/***************************************************************/
+/* get eigenmode coefficients for all frequencies in flux      */
+/* and all band indices in the caller-populated bands array.   */
+/*                                                             */
+/* the array returned has length num_freqs x num_bands, with   */
+/* the coefficient for frequency #nf, band #nb stored in slot  */ 
+/* [ nb*num_freqs + nf ]                                       */
+/***************************************************************/
+std::vector<cdouble>
+ fields::get_eigenmode_coefficients(dft_flux *flux, direction d,
+                                    const volume &where,
+                                    std::vector<int> bands,
+                                    kpoint_func k_func, 
+                                    void *k_func_data)
+{ 
+  int num_freqs = flux->Nfreq;
+  int num_bands = bands.size();
+  std::vector<cdouble> coeffs( num_freqs * num_bands );
+
+  for(int nb=0; nb<num_bands; nb++)
+   for(int nf=0; nf<num_freqs; nf++)
+    coeffs[ nb*num_freqs + nf ] 
+     = get_eigenmode_coefficient(flux, nf, d, where, bands[nb],
+                                 k_func, k_func_data);
+
+  return coeffs;
 }
 
 #endif // HAVE_MPB

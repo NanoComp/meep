@@ -29,6 +29,7 @@ $$
    \sum_{n} \left\{   \alpha^+_n \mathbf E^+_n(\vec \rho)e^{+i\beta_n z}
                     + \alpha^-_n \mathbf E^-_n(\vec \rho)e^{-i\beta_n z}
             \right\}
+
     \qquad (1\textbf{a})
 $$
 $$
@@ -94,13 +95,44 @@ and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
 
 $$ \alpha^+_n = $$
+=======
+    \qquad (1b)
+$$
+where the expansion coefficients $\{\alpha^{\pm}_n\}$
+may be extracted from knowledge of the time-harmonic
+fields $\mathbf{E},\mathbf{H}$ on any cross-sectional
+surface $S$ transverse to the waveguide.
+
+The idea of mode expansion in MEEP is to compute
+the $\{\alpha_n^\pm\}$ coefficients above for any
+*arbitrary* time-harmonic field distribution 
+resulting from a MEEP calculation. In calculations
+of this sort,
+
+--the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
+    of equations (1a,b) above will be frequency-domain
+    fields stored in a `dft_flux` object in a MEEP
+    run, where you will have arranges this `dft_flux` object
+    to live on a cross-sectional surface $S$ transverse
+    to the waveguide;
+
+--the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
+    and $\{\beta_n\}$ propagation constants are computed
+    automatically under the hood by MPB as normal modes 
+    of an infinitely extended waveguide with the same 
+    cross-sectional material distribution that your structure
+    has on the transverse slice $S$, and
+
+--the $\alpha_n^\pm$ coefficients for as many bands 
+   as you like are computed by calling `get_eigenmode_coefficients(),`
+   as discussed below.
 
 ## C++ function prototype
 
 The basic routine here is
 
 ```c++
-std::vector<cdouble>
+std::vector<cdouble> 
  fields::get_eigenmode_coefficients(dft_flux *flux,
                                     direction d,
                                     const volume &where,
@@ -184,16 +216,14 @@ in the smaller waveguide goes over to a multi-mode field
 in the larger waveguide.
 Again the code offers a command-line option `--ratio` that sets the
 ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
-while for `--ratio 1` we expect perfect transmission of power
-<<<<<<< HEAD
-$z=0$.
-
+while for `--ratio 1` we expect perfect transmission of power.
+ 
 <a name="UnderTheHood"></a> 
 ## Under the hood: How mode expansion works
 
 The theoretical basis of the mode-expansion algorithm
 is the orthogonality relation satisfied by the normal
-modes
+modes:
 $$ \left\langle \mathbf{E}_m^{\sigma} \right|
    \left.       \mathbf{H}^\tau_n     \right\rangle
    =C_{m}\delta_{mn}\delta_{\sigma\tau} 
