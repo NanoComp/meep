@@ -89,14 +89,7 @@ std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux *flux,
                                           k_func_data)
 { (void) flux; (void) d; (void) where; (void) bands,
   (void) k_func; (void) k_func_data;
-=======
-cdouble fields::get_eigenmode_coefficient(dft_flux flux,
-                                          direction d,
-                                          const volume &where,
-                                          int band_num)
-{ (void) flux; (void) d; (void) where; (void) band_num;
->>>>>>> updates
-  abort("Meep must be configured/compiled with MPB for get_eigenmode_soefficient");
+  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
 }
 
 
@@ -637,96 +630,6 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 
   delete src_mpb;
   destroy_eigenmode_data(global_eigenmode_data);
-}
-
-/***************************************************************/
-/* call get_eigenmode() to solve for the specified eigenmode,  */
-/* then call add_overlap_integral_contribution() multiple times*/
-/* to sum all contributions to the numerator and denominator   */
-/* of the eigenmode expansion coefficients.                    */
-/***************************************************************/
-cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
-                                          int num_freq,
-                                          direction d,
-                                          const volume &where,
-                                          int band_num,
-                                          kpoint_func k_func, void *k_func_data)
-{
-  /*--------------------------------------------------------------*/
-  /* step 1: call MPB to compute the eigenmode                   -*/
-  /*--------------------------------------------------------------*/
-  double omega = flux->freq_min + num_freq*flux->dfreq;
-  // call user's kpoint function if present
-  vec kpoint(0.0, 0.0, 0.5); // TODO better default? 
-  if (k_func) 
-   kpoint=k_func(k_func_data, omega, band_num);
-
-  bool match_frequency=true;
-  int parity=0; 
-  double resolution=a;
-  double eigensolver_tol=1.0e-7;
-  eigenmode_data *edata
-   =(eigenmode_data *)get_eigenmode(omega, d, where, where,
-                                    band_num, kpoint, match_frequency,
-                                    parity, resolution, 
-                                    eigensolver_tol);
-
-  /*--------------------------------------------------------------*/
-  /* step 2: sum contributions of all 4 surface-current cmpnents  */
-  /*         to numerator and denominator of overlap integral     */
-  /* num   = <caller's field | eigenmode>                         */
-  /* denom = <eigenmode      | eigenmode>                         */
-  /*--------------------------------------------------------------*/
-
-  // step 2a: electric-current components 
-  //            = nHat \times magnetic-field components
-  cdouble numdenom[2]={0.0,0.0};
-
-  FOR_ELECTRIC_COMPONENTS(c)
-   {  
-     if ( !(gv.has_field(c)) ) continue;
-     // TODO restore parity check
-
-     if ( (d+1)%3 == component_direction(c)%3 )
-      { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
-      }
-     else if ( (d+2)%3 == component_direction(c)%3 )
-      { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
-      }
-   };
-
-  // step 2b: post-processing step to replace H-field components
-  //          with E-field components in the internal data buffer
-  //          inside mdata; cf. Part 3 of get_eigenmode() above
-  switch_eigenmode_data_to_electric_field(edata);
-
-  // step 2c: magnetic-current components 
-  //            = -nHat \times electric-field components
-  FOR_MAGNETIC_COMPONENTS(c)
-   { 
-     if ( !(gv.has_field(c)) ) continue;
-     // TODO restore parity check
-
-     if ( (d+1)%3 == component_direction(c)%3 )
-      { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
-      }
-     else if ( (d+2)%3 == component_direction(c)%3 )
-      { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
-      }
-   };
-
-  destroy_eigenmode_data(edata);
-
-  cdouble num=numdenom[0], denom=numdenom[1];
-  if( denom==0.0 )
-   { master_printf("**warning: denominator in get_eigenmode_coefficient**");
-    return 0.0;
-   };
-  return num/denom;
 }
 
 /***************************************************************/
