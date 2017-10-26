@@ -161,8 +161,8 @@ Meep 0.20
 <small>19 July 2008</small>
 
 -   Support for user-specified permeability (mu). Renamed "`dielectric`" to "`medium`" in libctl interface, new "`mu`" property and new `output-bfield` and `output-mu` functions, and new "`Permeability`" and "`Bx`" etc. field types.
--   Support for user-specified electric and/or magnetic conductivities. These are especially useful to add a desired dissipation loss (an imaginary part of ε/μ) in a narrow bandwidth, without messing around with Lorentzian dispersive materials.
--   Add predefined `perfect-magnetic-conductor` (μ = −∞) material, along with `perfect-electric-conductor` (ε = −∞).
+-   Support for user-specified electric and/or magnetic conductivities. These are especially useful to add a desired dissipation loss (an imaginary part of $\varepsilon$/$\mu$) in a narrow bandwidth, without messing around with Lorentzian dispersive materials.
+-   Add predefined `perfect-magnetic-conductor` ($\mu$ = −$\infty$) material, along with `perfect-electric-conductor` ($\varepsilon$ = −$\infty$).
 -   Added `synchronized-magnetic` step function to allow step functions to run with the electric and magnetic fields synchronized in time to second-order accuracy. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 -   New PML implementation (UPML instead of split-field), should have lower reflection in many cases.
 -   User-specified PML profile and asymptotic reflection.
@@ -179,7 +179,7 @@ Meep 0.10.1
 <small>13 November 2007</small>
 
 -   Bug fix in `flux_in_box`, which accidentally returned the flux multiplied by the number of processors, instead of the flux.
--   Bug fix in epsilon averaging for structures including metals (ε &lt; 0), fixing an instability.
+-   Bug fix in epsilon averaging for structures including metals ($\varepsilon$ &lt; 0), fixing an instability.
 -   Bug fix in `output-png` when running in parallel (removing race condition).
 -   Fixed bug that disabled subpixel averaging for dimensions=1 (thanks to Mischa Megens for the bug report).
 -   Fixed bug that caused `output-tot-pwr` to stop Meep with an error message; thanks to Vyacheslav Sokolov for the bug report.

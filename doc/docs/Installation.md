@@ -270,7 +270,7 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 Python Meep
 -----------
 
-An alpha version of Python Meep is available, currently only for the serial (i.e., non-parallel) version. This can be installed on Ubuntu in two ways: [building from source](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html) or as a [pre-compiled package using Conda](https://gist.github.com/ChristopherHogan/c22bb7cc7248f7595c4b09d0e3b16735).
+An alpha version of Python Meep is available, currently only for the serial (i.e., non-MPI) version. This can be installed on Ubuntu in two ways: [building from source](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html) or as a [pre-compiled package using Conda](https://gist.github.com/ChristopherHogan/c22bb7cc7248f7595c4b09d0e3b16735).
 
 Meep for Developers
 -------------------

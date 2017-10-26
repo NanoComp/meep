@@ -14,7 +14,7 @@
 -   Arbitrary **anisotropic** electric permittivity $\varepsilon$ and magnetic permeability $\mu$, along with **dispersive** $\varepsilon(\omega)$ and $\mu(\omega)$ including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** $\sigma$.
 -   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
--   Complete **scriptability** &mdash; either via a [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) scripting front-end via [libctl](http://libctl.readthedocs.io), or callable as a [C++](https://en.wikipedia.org/wiki/C_plus_plus) library. An official [Python](https://en.wikipedia.org/wiki/Python_programming_language) interface is under development.
+-   Complete **scriptability** &mdash; either via a [Scheme](Scheme_Tutorials/Basics) scripting front-end via [libctl](https://libctl.readthedocs.io), or callable as a [C++](C++_Tutorial) library. An official [Python](Python_Tutorials/Basics) interface is under development.
 -   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
 -   Arbitrary material and source distributions.
 -   Field analyses including flux spectra, Maxwell stress tensor, frequency extraction, local density of states and energy integrals, near to far field transformations; completely programmable.

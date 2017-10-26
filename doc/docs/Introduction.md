@@ -17,10 +17,13 @@ Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equ
 
 <center>
 
-|                                                                                           |                                         |
-|-------------------------------------------------------------------------------------------|-----------------------------------------|
-| $\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$ | $\mathbf{B} = \mu \mathbf{H}$         |
-| $\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$    | $\mathbf{D} = \varepsilon \mathbf{E}$ |
+$\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$
+
+$\mathbf{B} = \mu \mathbf{H}$
+
+$\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$
+
+$\mathbf{D} = \varepsilon \mathbf{E}$
 
 </center>
 
@@ -28,9 +31,9 @@ Where **D** is the displacement field, $\varepsilon$ is the dielectric constant,
 
 <center>
 
-|                                                                                                  |                                                                                                           |
-|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| $\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$ | $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$ |
+$\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$
+
+$\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$
 
 </center>
 
@@ -76,7 +79,9 @@ The second most important thing you should know is that, in order to discretize 
 
 Many references are available on FDTD methods for computational electromagnetics. See, for example:
 
--   Allen Taflove and Susan C. Hagness, *Computational Electrodynamics: The Finite-Difference Time-Domain Method* (Artech: Norwood, MA, 2005).
+- A. Taflove and S.C. Hagness, [Computational Electrodynamics: The Finite-Difference Time-Domain Method](http://us.artechhouse.com/Computational-Electrodynamics-The-Finite-Difference-Time-Domain-Method-Third-Edition-P1634.aspx), Artech: Norwood, MA, (2005).
+
+- A. Taflove, A. Oskooi, and S.G. Johnson, [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](http://us.artechhouse.com/Advances-in-FDTD-Computational-Electrodynamics-P1567.aspx), Artech: Norwood, MA, (2013).
 
 ### The Illusion of Continuity
 
@@ -86,7 +91,7 @@ For example, you specify the dielectric function as a function $\varepsilon$(**x
 
 In general, the philosophy of the Meep interface is **pervasive interpolation**, so that if you change any input continuously then the response of the Meep simulation will change continuously as well, so that it will converge as rapidly and as smoothly as possible to the continuous solution as you increase the spatial resolution.
 
-For example, the ε function used internally by Meep is not simply a discretely sampled version of the ε(**x**) specified by the user. Rather, each grid point is a kind of average of the ε in the surrounding pixel. Our subpixel average is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD. See: [Referencing](Acknowledgements.md#referencing).
+For example, the $\varepsilon$ function used internally by Meep is not simply a discretely sampled version of the $\varepsilon$(**x**) specified by the user. Rather, each grid point is a kind of average of the $\varepsilon$ in the surrounding pixel. Our subpixel average is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD. See: [Referencing](Acknowledgements.md#referencing).
 
 Other Numerical Methods in Computational Electromagnetics
 ---------------------------------------------------------

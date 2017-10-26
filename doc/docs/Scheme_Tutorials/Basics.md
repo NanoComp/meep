@@ -54,7 +54,7 @@ Now, we can add the waveguide. Most commonly, the structure is specified by a `l
                       (material (make dielectric (epsilon 12))))))
 ```
 
-The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) (the center of the computational cell). By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
+The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with $\varepsilon$=12, centered at (0,0) (the center of the computational cell). By default, any place where there are no objects there is air ($\varepsilon$=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
 
 <center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 

@@ -2,11 +2,11 @@
 # Material Dispersion
 ---
 
-In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also the `material-dispersion.ctl` file included with Meep. From the dispersion relation $\omega(k)$, we will compute the numerical ε(ω) via the formula:
+In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also the `material-dispersion.ctl` file included with Meep. From the dispersion relation $\omega(k)$, we will compute the numerical $\varepsilon(\omega)$ via the formula:
 
 $$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
-We will then compare this with the analytical ε(ω) that we specified.
+We will then compare this with the analytical $\varepsilon(\omega)$ that we specified.
 
 Since this is a uniform medium, our computational cell can actually be of *zero* size (i.e. one pixel), where we will use Bloch-periodic boundary conditions to specify the wavevector *k*.
 
@@ -32,7 +32,7 @@ corresponding to the dielectric function:
 
 $$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^2 - f^2 -if \cdot 10^{-5}/2\pi} + \frac{0.5^2 \cdot 2\cdot 10^{-5}}{0.5^2 - f^2 -if \cdot 0.1 / 2\pi}$$
 
-The real and imaginary parts of this dielectric function ε(ω) are plotted below:
+The real and imaginary parts of this dielectric function $\varepsilon(\omega)$ are plotted below:
 
 <center>
 ![](../images/Material-dispersion-eps.png)
