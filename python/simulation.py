@@ -654,8 +654,7 @@ class Simulation(object):
 
     def get_array(self, center, size, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.int32)
-        # TODO(chogan): Account for cylindrical Volume after PR 106 is merged
-        vol = Volume(center, size=size, dims=self.dimensions)
+        vol = Volume(center, size=size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
         self.fields.get_array_slice_dimensions(vol.swigobj, dim_sizes)
 
         dims = [s for s in dim_sizes if s != 0]
