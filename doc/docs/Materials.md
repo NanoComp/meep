@@ -19,7 +19,7 @@ Physically, material dispersion arises because the polarization of the material 
 
 $$\mathbf{D} = \varepsilon_\infty \mathbf{E} + \mathbf{P}$$
 
-where $\varepsilon_\infty$, which [must be positive](FAQ/#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω). **Note:** Meep's definition of $\omega$ uses a sign convention $\exp(-i\omega t)$ for the time dependence &mdash; $\varepsilon$ formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of $\gamma$ and $\omega$ as-is for loss; don't be confused by the difference in $\omega$ sign convention and flip the sign of the parameters. In particular, Meep supports any material dispersion of the form of a sum of harmonic resonances, plus a term from the frequency-independent electric conductivity:
+where $\varepsilon_\infty$, which [must be positive](FAQ/#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence $\varepsilon$($\mu$). **Note:** Meep's definition of $\omega$ uses a sign convention $\exp(-i\omega t)$ for the time dependence &mdash; $\varepsilon$ formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of $\gamma$ and $\omega$ as-is for loss; don't be confused by the difference in $\omega$ sign convention and flip the sign of the parameters. In particular, Meep supports any material dispersion of the form of a sum of harmonic resonances, plus a term from the frequency-independent electric conductivity:
 
 <center>
 
@@ -37,7 +37,7 @@ $$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} +  \omega_n^2
 
 That is, we must store and evolve a set of auxiliary fields $\mathbf{P}_n$ along with the electric field in order to keep track of the polarization **P**. Essentially any $\varepsilon(\omega)$ could be modeled by including enough of these polarization fields &mdash; Meep allows you to specify any number of these, limited only by computer memory and time which increases with the number of polarization terms you require.
 
-Note that the conductivity $\sigma_D$ corresponds to an imaginary part of ε given by $i \varepsilon_\infty \sigma_D / \omega$. This does not include the harmonic-resonance terms. When you specify frequency in Meep units, however, you are specifying *f* without the 2$\pi$, so the imaginary part of $\varepsilon$ is $i \varepsilon_\infty \sigma_D / 2\pi f$.
+Note that the conductivity $\sigma_D$ corresponds to an imaginary part of $\varepsilon$ given by $i \varepsilon_\infty \sigma_D / \omega$. This does not include the harmonic-resonance terms. When you specify frequency in Meep units, however, you are specifying *f* without the 2$\pi$, so the imaginary part of $\varepsilon$ is $i \varepsilon_\infty \sigma_D / 2\pi f$.
 
 Meep also supports polarizations of the [Drude](https://en.wikipedia.org/wiki/Drude_model) form, typically used for metals:
 
@@ -73,12 +73,12 @@ absorption rate $\sim \frac{d\mathbf{P}}{dt} \cdot \mathbf{E}$
 
 Meep can keep track of this energy for the Lorentzian polarizability terms but not for the conductivity terms. For gain, this gives the amount of energy expended in amplifying the field.
 
-Conductivity and Complex ε
+Conductivity and Complex $\varepsilon$
 --------------------------
 
-Often, you only care about the absorption loss in a narrow bandwidth, where you just want to set the imaginary part of $\varepsilon$ (or $\mu$) to some known experimental value, in the same way that you often just care about setting a dispersionless real ε that is the correct value in your bandwidth of interest.
+Often, you only care about the absorption loss in a narrow bandwidth, where you just want to set the imaginary part of $\varepsilon$ (or $\mu$) to some known experimental value, in the same way that you often just care about setting a dispersionless real $\varepsilon$ that is the correct value in your bandwidth of interest.
 
-One approach to this problem would be allowing you to specify a constant, frequency-independent, imaginary part of ε, but this has the disadvantage of requiring the simulation to employ complex fields which double the memory and time requirements, and also tends to be numerically unstable. Instead, the approach in Meep is for you to set the conductivity $\sigma_D$ (or $\sigma_B$ for an imaginary part of $\mu$), chosen so that $\mathrm{Im}\, \varepsilon = \varepsilon_\infty \sigma_D / \omega$ is the correct value at your frequency $\omega$ of interest. Note that, in Meep, you specify $f = \omega/2\pi$ instead of $\mu$ for the frequency, however, so you need to include the factor of 2$\pi$ when computing the corresponding imaginary part of $\varepsilon$. Conductivities can be implemented with purely real fields, so they are not nearly as expensive as implementing a frequency-independent complex $\varepsilon$ or $\mu$.
+One approach to this problem would be allowing you to specify a constant, frequency-independent, imaginary part of $\varepsilon$, but this has the disadvantage of requiring the simulation to employ complex fields which double the memory and time requirements, and also tends to be numerically unstable. Instead, the approach in Meep is for you to set the conductivity $\sigma_D$ (or $\sigma_B$ for an imaginary part of $\mu$), chosen so that $\mathrm{Im}\, \varepsilon = \varepsilon_\infty \sigma_D / \omega$ is the correct value at your frequency $\omega$ of interest. Note that, in Meep, you specify $f = \omega/2\pi$ instead of $\mu$ for the frequency, however, so you need to include the factor of 2$\pi$ when computing the corresponding imaginary part of $\varepsilon$. Conductivities can be implemented with purely real fields, so they are not nearly as expensive as implementing a frequency-independent complex $\varepsilon$ or $\mu$.
 
 For example, suppose you want to simulate a medium with $\varepsilon = 3.4 + 0.101i$ at a frequency 0.42 (in your Meep units), and you only care about the material in a narrow bandwidth around this frequency (i.e. you don't need to simulate the full experimental frequency-dependent permittivity). Then, in Meep, you could use `(make medium (epsilon 3.4) (D-conductivity (/ (* 2 pi 0.42 0.101) 3.4))`; i.e. $\varepsilon_\infty = \mathrm{Re}\,\varepsilon = 3.4$ and $\sigma_D = \omega \mathrm{Im} \varepsilon / \varepsilon_\infty = (2\pi 0.42) 0.101 / 3.4$.
 
@@ -105,7 +105,7 @@ For complex fields in nonlinear systems, the physical interpretration of the abo
 
 For a discussion of how to relate $\chi^{(3)}$ in Meep to experimental Kerr coefficients, see [Units and Nonlinearity](Units_and_Nonlinearity.md).
 
-Magnetic Permeability $mu$
+Magnetic Permeability $\mu$
 -----------------------
 
 All of the above features that are supported for the electric permittivity $\varepsilon$ are also supported for the magnetic permeability $\mu$. That is, Meep supports $\mu$ with dispersion from magnetic conductivity and Lorentzian resonances, as well as magnetic $\chi^{(2)}$ and $\chi^{(3)}$ nonlinearities. The description of these is exactly the same as above, so we won't repeat it here &mdash; just take the above descriptions and replace $\varepsilon$, **E**, **D**, and $\sigma$<sub>D</sub> by $\mu$, **H**, **B**, and $\sigma$<sub>B</sub>, respectively.

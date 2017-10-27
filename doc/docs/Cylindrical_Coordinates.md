@@ -7,4 +7,5 @@ Meep supports the simulation of Maxwell's equations in cylindrical coordinates, 
 See:
 
 -   [Exploiting Symmetry](Exploiting_Symmetry.md)
--   [Tutorial/Ring_Resonator in Cylindrical Coordinates](Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md)
+-   [Python Tutorial/Ring Resonator in Cylindrical Coordinates](Python_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md)
+-   [Scheme Tutorial/Ring Resonator in Cylindrical Coordinates](Scheme_Tutorials/Ring_Resonator_in_Cylindrical_Coordinates.md)

@@ -7,6 +7,8 @@ Meep Design
 
 An overview of Meep's inner workings is summarized in [Computer Physics Communications, vol. 181, issue 3, pp. 687-702 (2010)](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
 
+[TOC]
+
 ### Data Structures and Chunks
 
 Meep employs several data structures declared in `meep.hpp`. The principal data structure element is the **chunk**. A chunk is a contiguous rectangular portion of the computational grid. For example, when Meep runs on a parallel system, each process gets one or more disjoint chunks of the grid. There are several different types of chunks:
@@ -25,7 +27,7 @@ Similarly for `structure` and `structure_chunks`, except that it is only for mat
 
 `dft_chunk` stores accumulated Fourier-transformed fields corresponding to a given chunk.
 
-### grid_volume and volume
+### `grid_volume` and `volume`
 
 The `volume` class declared in `meep/vec.hpp` represents a rectangular box-like region, parallel to the $XYZ$ axes, in "continuous space" &mdash; i.e. the corners can be at any points, not necessarily grid points. This is used, for example, whenever you want to specify the integral of some quantity (e.g., flux, energy) in a box-like region, and Meep interpolates from the grid as necessary to give an illusion of continuity.
 
@@ -72,4 +74,3 @@ In particular, you should probably avoid:
 
 -   The `monitor_point` class. Just declare an array to store the fields you want, get them with `fields::get_field`, and analyze them with `do_harminv`. Or, to accumulate the DFT as you run, use the `dft_chunk` class via `fields::add_dft`.
 -   Slice and EPS output. This has been superseded by HDF5 output, which is much more flexible and efficient.
--   [Grace](https://en.wikipedia.org/wiki/Grace_(plotting_tool))-based plotting in grace.cpp; a more Unix-like philosophy is to output data in a standard format (e.g. HDF5 or comma-separated values) and then import it however you like into the plotting program of your choice.

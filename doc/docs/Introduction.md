@@ -17,10 +17,13 @@ Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equ
 
 <center>
 
-|                                                                                           |                                         |
-|-------------------------------------------------------------------------------------------|-----------------------------------------|
-| $\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$ | $\mathbf{B} = \mu \mathbf{H}$         |
-| $\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$    | $\mathbf{D} = \varepsilon \mathbf{E}$ |
+$\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$
+
+$\mathbf{B} = \mu \mathbf{H}$
+
+$\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$
+
+$\mathbf{D} = \varepsilon \mathbf{E}$
 
 </center>
 
@@ -28,9 +31,9 @@ Where **D** is the displacement field, $\varepsilon$ is the dielectric constant,
 
 <center>
 
-|                                                                                                  |                                                                                                           |
-|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| $\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$ | $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$ |
+$\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$
+
+$\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$
 
 </center>
 
@@ -76,7 +79,9 @@ The second most important thing you should know is that, in order to discretize 
 
 Many references are available on FDTD methods for computational electromagnetics. See, for example:
 
--   Allen Taflove and Susan C. Hagness, *Computational Electrodynamics: The Finite-Difference Time-Domain Method* (Artech: Norwood, MA, 2005).
+- A. Taflove and S.C. Hagness, [Computational Electrodynamics: The Finite-Difference Time-Domain Method](http://us.artechhouse.com/Computational-Electrodynamics-The-Finite-Difference-Time-Domain-Method-Third-Edition-P1634.aspx), Artech: Norwood, MA, (2005).
+
+- A. Taflove, A. Oskooi, and S.G. Johnson, [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](http://us.artechhouse.com/Advances-in-FDTD-Computational-Electrodynamics-P1567.aspx), Artech: Norwood, MA, (2013).
 
 ### The Illusion of Continuity
 
@@ -86,7 +91,7 @@ For example, you specify the dielectric function as a function $\varepsilon$(**x
 
 In general, the philosophy of the Meep interface is **pervasive interpolation**, so that if you change any input continuously then the response of the Meep simulation will change continuously as well, so that it will converge as rapidly and as smoothly as possible to the continuous solution as you increase the spatial resolution.
 
-For example, the ε function used internally by Meep is not simply a discretely sampled version of the ε(**x**) specified by the user. Rather, each grid point is a kind of average of the ε in the surrounding pixel. Our subpixel average is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD. See: [Referencing](Acknowledgements.md#referencing).
+For example, the $\varepsilon$ function used internally by Meep is not simply a discretely sampled version of the $\varepsilon$(**x**) specified by the user. Rather, each grid point is a kind of average of the $\varepsilon$ in the surrounding pixel. Our subpixel average is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD. See: [Referencing](Acknowledgements.md#referencing).
 
 Other Numerical Methods in Computational Electromagnetics
 ---------------------------------------------------------
@@ -97,7 +102,7 @@ For example, although FDTD can be used to compute electromagnetic eigenmodes (be
 
 For computing the field pattern or response of a structure at a *single frequency*, it may be more efficient to directly solve the corresponding linear equation rather than iterating in time. Indeed, we have an experimental implementation of this method directly in Meep (i.e. a finite-difference frequency-domain solver) — see the [frequency-domain solver](Scheme_User_Interface.md#frequency-domain-solver). However, especially in cases where there are large differences in scale (e.g. with metals with a shallow skin depth), it may be better to use a method that allows a variable resolution in different spatial regions, such as a finite-element or boundary-element method. Boundary-element methods are especially powerful when you have a large volume-to-surface ratio, such as for scattering calculations over small objects in a large (∞) volume.
 
-A strength of time-domain methods is their ability to obtain the entire frequency spectrum of responses (or eigenfrequencies) in a single simulation, by Fourier-transforming the response to a short pulse or using more sophisticated signal-processing methods such as [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv). Finite-element methods can also be used for time-evolving fields, but they suffer a serious disadvantage compared to finite-difference methods: finite-element methods, for stability, must typically use some form of *implicit time-stepping*, where they must invert a matrix (solve a linear system) at every time step.
+A strength of time-domain methods is their ability to obtain the entire frequency spectrum of responses (or eigenfrequencies) in a single simulation, by Fourier-transforming the response to a short pulse or using more sophisticated signal-processing methods such as [Harminv](https://github.com/stevengj/harminv/blob/master/README.md). Finite-element methods can also be used for time-evolving fields, but they suffer a serious disadvantage compared to finite-difference methods: finite-element methods, for stability, must typically use some form of *implicit time-stepping*, where they must invert a matrix (solve a linear system) at every time step.
 
 Finally, in systems that are composed of a small number of easily-analyzed pieces, such as a sequence of constant-cross-section waveguides, a collection of cylinders, or a multi-layer film, transfer-matrix/scattering-matrix methods may be especially attractive. These methods treat the individual simple elements in some analytic or semi-analytic fashion, enabling the entire structure to be simulated with great speed and accuracy. There are too many such techniques to easily summarize here, but one useful free tool that can handle a wide variety of structures is [CAMFR](http://camfr.sf.net/).
 
@@ -106,7 +111,7 @@ Finally, in systems that are composed of a small number of easily-analyzed piece
 Applications of FDTD
 --------------------
 
-In this section, we sketch out a few of the basic ways in which FDTD can be used to analyze electromagnetic problems. Specific examples of how to use these techniques in Meep are described in the [tutorial](Scheme_Tutorial.md).
+In this section, we sketch out a few of the basic ways in which FDTD can be used to analyze electromagnetic problems. Specific examples of how to use these techniques in Meep are described in [Tutorial/Basics](Scheme_Tutorials/Basics).
 
 ### Field Patterns and Green's Functions
 
@@ -146,7 +151,7 @@ Another common task in FDTD is to compute resonant modes or eigenmodes of a give
 
 In order to extract the frequencies and lifetimes (which may be infinite in a lossless system) with FDTD, the basic strategy is simple. You set up the structure with Bloch-periodic and/or absorbing boundaries, depending on whether it is a periodic or open system. Then you excite the mode(s) with a short pulse (broad bandwidth) from a current placed directly inside the cavity/waveguide/whatever. Finally, once the current source is turned off, you have some fields bouncing around inside the system, and you analyze them to extract the frequencies and decay rates.
 
-The simplest form of harmonic analysis would be to compute the Fourier transform of the fields at some point — harmonic modes will yield sharp peaks in the spectrum. This method has serious drawbacks, however, in that high frequency resolution requires a very long running time, and moreover the problem of extracting the decay rates leads to a poorly-conditioned nonlinear fitting problem. Instead, Meep allows you to perform a more sophisticated signal processing algorithm borrowed from NMR spectroscopy — the algorithm is called *filter diagonalization* and is implemented by our [Harminv](http://ab-initio.mit.edu/wiki/index.php/harminv) package. Harminv extracts all of the frequencies and their decay rates (and amplitudes) within a short time to high accuracy; for example, we have used it to find lifetimes *Q* of 10<sup>9</sup> periods in a computational run of only a few hundred periods.
+The simplest form of harmonic analysis would be to compute the Fourier transform of the fields at some point — harmonic modes will yield sharp peaks in the spectrum. This method has serious drawbacks, however, in that high frequency resolution requires a very long running time, and moreover the problem of extracting the decay rates leads to a poorly-conditioned nonlinear fitting problem. Instead, Meep allows you to perform a more sophisticated signal processing algorithm borrowed from NMR spectroscopy — the algorithm is called *filter diagonalization* and is implemented by our [Harminv](https://github.com/stevengj/harminv/blob/master/README.md) package. Harminv extracts all of the frequencies and their decay rates (and amplitudes) within a short time to high accuracy; for example, we have used it to find lifetimes *Q* of 10<sup>9</sup> periods in a computational run of only a few hundred periods.
 
 Once you know the frequencies of the modes, if you want the field patterns you will need to run the simulation again with a *narrow*-bandwidth (long-time) pulse to excite only the mode in question. (Unless you want the longest-lifetime mode, in which case you can just run long enough for the other modes to decay away.) Given the field patterns, you can then perform other analyses (e.g. decomposing the *Q* into decay rates into different directions via flux computations, finding modal volumes, etcetera).
 

@@ -37,11 +37,11 @@ Specifies the size of the unit cell which is centered on the origin of the coord
 
 **`default-material` [`material-type` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` (ε of 1). See also `epsilon-input-file` below.
+Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon$ of 1). See also `epsilon-input-file` below.
 
 **`epsilon-input-file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the ε property of `default-material` (*i.e.* where there are no `geometry` objects). The grid of the epsilon file dataset need not match Meep's computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell (which warps the structure if the proportions of the grids do not match, however). **Note:** the file contents *only* override the ε property of the `default-material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
+If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the $\varepsilon$ property of `default-material` (*i.e.* where there are no `geometry` objects). The grid of the epsilon file dataset need not match Meep's computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell (which warps the structure if the proportions of the grids do not match, however). **Note:** the file contents *only* override the $\varepsilon$ property of the `default-material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
 
 **`dimensions` [`integer`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -192,20 +192,20 @@ This class is used to specify the materials that geometric objects are made of. 
 An electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). For backwards compatibility, a synonym for `medium` is `dielectric`. It has several properties:
 
 **`epsilon` [`number`]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `(index n)` as a synonym for `(epsilon (* n n))`; note that this is not really the refractive index if you also specify $\mu$, since the true index is $\sqrt{\mu\epsilon}$.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `(index n)` as a synonym for `(epsilon (* n n))`; note that this is not really the refractive index if you also specify $\mu$, since the true index is $\sqrt{\mu\varepsilon}$.
 
-Using `(epsilon ε)` is actually a synonym for `(epsilon-diag ε ε ε)`.
+Using `(epsilon $\varepsilon$)` is actually a synonym for `(epsilon-diag $\varepsilon$ $\varepsilon$ $\varepsilon$)`.
 
 **`epsilon-diag` and `epsilon-offdiag` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-These properties allow you to specify ε as an arbitrary real-symmetric tensor by giving the diagonal and offdiagonal parts. Specifying `(epsilon-diag` `a` `b` `c)` and/or `(epsilon-offdiag` `u` `v` `w)` corresponds to a relative permittivity $\varepsilon$ tensor
+These properties allow you to specify $\varepsilon$ as an arbitrary real-symmetric tensor by giving the diagonal and offdiagonal parts. Specifying `(epsilon-diag` `a` `b` `c)` and/or `(epsilon-offdiag` `u` `v` `w)` corresponds to a relative permittivity $\varepsilon$ tensor
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
 The default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
 
 **`mu` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency-independent isotropic relative permeability μ. Default is 1. Using `(mu μ)` is actually a synonym for `(mu-diag μ μ μ)`.
+The frequency-independent isotropic relative permeability $\mu$. Default is 1. Using `(mu $\mu$)` is actually a synonym for `(mu-diag $\mu$ $\mu$ $\mu$)`.
 
 **`mu-diag` and `mu-offdiag` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -249,25 +249,25 @@ A function of one argument, the position `vector3`, that returns the material at
 
 Instead of `material-func`, you can use `epsilon-func`: give it a function of position that returns the dielectric constant at that point.
 
-**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra-materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* γ<sub>*n*</sub> and ω<sub>*n*</sub> values, so you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary continuously if you want and a matching σ<sub>*n*</sub> need not be specified in `extra-materials`. For nonlinear or conductivity materials, your `extra-materials` list need not match the actual values of σ or χ returned by your material function, which can vary continuously if you want.
+**Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra-materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* $\gamma$<sub>*n*</sub> and $\mu$<sub>*n*</sub> values, so you can only have a finite number of these, whereas $\sigma$<sub>*n*</sub> can vary continuously if you want and a matching $\sigma$<sub>*n*</sub> need not be specified in `extra-materials`. For nonlinear or conductivity materials, your `extra-materials` list need not match the actual values of $\sigma$ or $\chi$ returned by your material function, which can vary continuously if you want.
 
-**Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep where the imaginary part is a frequency-independent loss but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the conductivity (see [Conductivity](Materials.md#conductivity)). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent complex ε and/or μ, and you need to specify that frequency dependence by fitting to Lorentzian and/or Drude resonances via the `lorentzian-susceptibility` or `drude-susceptibility` classes below.
+**Complex $\varepsilon$ and $\mu$**: you cannot specify a frequency-independent complex $\varepsilon$ or $\mu$ in Meep where the imaginary part is a frequency-independent loss but there is an alternative. That is because there are only two important physical situations. First, if you only care about the loss in a narrow bandwidth around some frequency, you can set the loss at that frequency via the conductivity (see [Conductivity](Materials.md#conductivity)). Second, if you care about a broad bandwidth, then all physical materials have a frequency-dependent complex $\varepsilon$ and/or $\mu$, and you need to specify that frequency dependence by fitting to Lorentzian and/or Drude resonances via the `lorentzian-susceptibility` or `drude-susceptibility` classes below.
 
 Dispersive dielectric and magnetic materials, above, are specified via a list of objects that are subclasses of type `susceptibility`.
 
 **`susceptibility`**  
 
-Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
+Parent class for various dispersive susceptibility terms, parameterized by an anisotropic amplitude $\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
 
 **`sigma` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The scale factor σ. You can also specify an anisotropic σ tensor by using the property `sigma-diag` [vector3], which takes three numbers or a [vector3] to give the $\sigma_n$ tensor diagonal, and `sigma-offdiag` [vector3] which specifies the offdiagonal elements (defaults to 0). That is, `(sigma-diag a b c)` and `(sigma-offdiag u v w)` corresponds to a σ tensor
+The scale factor $\sigma$. You can also specify an anisotropic $\sigma$ tensor by using the property `sigma-diag` [vector3], which takes three numbers or a [vector3] to give the $\sigma_n$ tensor diagonal, and `sigma-offdiag` [vector3] which specifies the offdiagonal elements (defaults to 0). That is, `(sigma-diag a b c)` and `(sigma-offdiag u v w)` corresponds to a σ tensor
 
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
 **`lorentzian-susceptibility`**  
 
-Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\sigma$):
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -279,7 +279,7 @@ The resonance loss rate $\gamma_n / 2\pi$.
 
 **`drude-susceptibility`**  
 
-Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+Specifies a single dispersive susceptibility of Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\sigma$):
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -376,7 +376,6 @@ Here are some examples of geometric objects created using the above classes, ass
                (radius infinity) (height 0.25) (axis 1 0 0))
 ```
 
-
 ```scm
 ; An ellipsoid with its long axis pointing along (1,1,1), centered on
 ; the origin (the other two axes are orthogonal and have equal
@@ -387,7 +386,6 @@ Here are some examples of geometric objects created using the above classes, ass
                 (e2 0 1 -1)
                 (e3 -2 1 1))
 ```
-
 
 ```scm
 ; A unit cube of material m with a spherical air hole of radius 0.2 at
@@ -537,9 +535,9 @@ Once the MPB modes are computed, equivalent electric and magnetic sources are cr
 
 **`eig-lattice-size` [`vector3`], `eig-lattice-center` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Normally, the MPB computational unit cell is the same as the source volume (given by the `size` and `center` parameters). However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium (photonic crystal), you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig-lattice-size` and `eig-lattice-center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function ε taken from the corresponding region in the Meep simulation.
+Normally, the MPB computational unit cell is the same as the source volume (given by the `size` and `center` parameters). However, occasionally you want the unit cell to be larger than the source volume. For example, to create an eigenmode source in a periodic medium (photonic crystal), you need to pass MPB the entire unit cell of the periodic medium, but once the mode is computed then the actual current sources need only lie on a cross section of that medium. To accomplish this, you can specify the optional `eig-lattice-size` and `eig-lattice-center`, which define a volume (which must enclose `size` and `center`) that is used for the unit cell in MPB with the dielectric function $\varepsilon$ taken from the corresponding region in the Meep simulation.
 
-Note that MPB only supports dispersionless non-magnetic materials but it does support anisotropic ε. Any nonlinearities, magnetic responses µ, conductivities σ, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
+Note that MPB only supports dispersionless non-magnetic materials but it does support anisotropic $\varepsilon$. Any nonlinearities, magnetic responses $\mu$, conductivities $\sigma$, or dispersive polarizations in your materials will be *ignored* when computing the eigenmode source. PML will also be ignored.
 
 The `src-time` object, which specifies the time dependence of the source, can be one of the following three classes.
 
@@ -549,7 +547,7 @@ A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smo
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency *f* in units of c/distance (or ω in units of 2πc/distance). See: [Units](Meep_Introduction#Units_in_Meep.md). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/ω in these units is the vacuum wavelength or the temporal period.
+The frequency *f* in units of c/distance (or $\omega$ in units of 2πc/distance). See: [Units](Meep_Introduction#Units_in_Meep.md). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/$\omega$ in these units is the vacuum wavelength or the temporal period.
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -581,7 +579,7 @@ The width $w$ used in the Gaussian. No default value. You can instead specify `(
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The starting time for the source; default is `0` (turn on at $t=0$). (Not the time of the peak! See below.)
+The starting time for the source; default is `0` (turn on at $t=0$). Not the time of the peak! See below.
 
 **`cutoff` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -857,7 +855,7 @@ The direction of the force that you wish to compute (e.g. `X`, `Y`, etcetera). U
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A weight factor to multiply the force by when it is computed; default is `1.0`.
 
-In most circumstances, you should define a set of `force-region`s whose union is a closed surface (lying in vacuum and enclosing the object that is experiencing the force).
+In most circumstances, you should define a set of `force-region`s whose union is a closed surface lying in vacuum and enclosing the object that is experiencing the force.
 
 **`(add-force fcen df nfreq force-regions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -939,7 +937,7 @@ Given a `vector3` point `x` (which can lie anywhere outside the near-field surfa
 
 **`(output-farfields near2far fname where resolution)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grids points / distance *a*), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed E and H fields on this grid. Each dataset is an nx×ny×nz×nfreq 4-dimensional array of space×frequency (although dimensions that =1 are omitted).
+Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grids points / distance *a*), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx×ny×nz×nfreq 4-dimensional array of space×frequency (although dimensions that =1 are omitted).
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
@@ -969,7 +967,7 @@ Meep contains a frequency-domain solver that directly computes the fields produc
 
 After the `fields` variable (a global variable pointing to the `meep::fields*` object initialized by `init-fields`, [see above](Scheme_User_Interface.md#input-variables)), the next two parameters to the frequency-domaine solver are the tolerance `tol` for the iterative solver (10<sup>−8</sup>, by default) and a maximum number of iterations `maxiters` (10<sup>4</sup>, by default). Finally, there is a parameter `L` that determines a tradeoff between memory and work per step and convergence rate of the iterative algorithm [biCGSTAB-(L)](http://www.math.uu.nl/people/sleijpen/CGSTAB_software/CGSTAB.html) that is used; larger values of `L` of will often lead to faster convergence at the expense of more memory and more work per iteration. The default is `L`=2, and normally a value ≥ 2 should be used.
 
-The frequency-domain solver supports arbitrary geometries, PML, boundary conditions, symmetries, parallelism, conductors, and arbitrary nondispersive materials. Lorentz–Drude dispersive materials are not currently supported in the frequency-domain solver, but since you are solving at a known fixed frequency rather than timestepping, you should be able to pick conductivities etcetera in order to obtain any desired complex ε and μ at that frequency.
+The frequency-domain solver supports arbitrary geometries, PML, boundary conditions, symmetries, parallelism, conductors, and arbitrary nondispersive materials. Lorentz–Drude dispersive materials are not currently supported in the frequency-domain solver, but since you are solving at a known fixed frequency rather than timestepping, you should be able to pick conductivities etcetera in order to obtain any desired complex $\varepsilon$ and $\mu$ at that frequency.
 
 The frequency-domain solver requires you to use complex-valued fields, via `(set! force-complex-fields? true)`.
 
@@ -1008,7 +1006,7 @@ Return a `cond?` function, suitable for passing to `run-until`/`run-sources+`, t
 
 Note that, if you make `decay-by` very small, you may need to increase the `cutoff` property of your source(s), to decrease the amplitude of the small high-frequency components that are excited when the source turns off. High frequencies near the [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
 
-Finally, another two run functions, useful for computing ω(**k**) band diagrams, are
+Finally, another two run functions, useful for computing $\omega$(**k**) band diagrams, are
 
 **`(run-k-point T k)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1032,11 +1030,11 @@ The predefined output functions are:
 
 **`output-epsilon`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the dielectric function (relative permittivity) ε. Note that this only outputs the frequency-independent part of ε (the $\omega\to\infty$ limit).
+Output the dielectric function (relative permittivity) $\varepsilon$. Note that this only outputs the frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
 
 **`output-mu`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the relative permeability function μ. Note that this only outputs the frequency-independent part of μ (the $\omega\to\infty$ limit).
+Output the relative permeability function $\mu$. Note that this only outputs the frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
 **`output-hpwr`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1098,15 +1096,15 @@ The results are stored in the list `harminv-results`, which is a list of tuples 
 
 **`(harminv-freq result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Return the complex frequency ω (in the usual Meep 2πc units).
+Return the complex frequency $\omega$ (in the usual Meep 2πc units).
 
 **`(harminv-freq-re result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Return the real part of the frequency ω.
+Return the real part of the frequency $\omega$.
 
 **`(harminv-freq-im result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Return the imaginary part of the frequency ω.
+Return the imaginary part of the frequency $\omega$.
 
 **`(harminv-Q result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1140,11 +1138,11 @@ Given zero or more step functions, return a new step function that (on each step
 
 **`(when-true cond? step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given zero or more step functions and a condition function `cond?` ( a function of no arguments), evaluate the step functions whenever `(cond?)` returns `true`.
+Given zero or more step functions and a condition function `cond?` (a function of no arguments), evaluate the step functions whenever `(cond?)` returns `true`.
 
 **`(when-false cond? step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given zero or more step functions and a condition function `cond?` ( a function of no arguments), evaluate the step functions whenever `(cond?)` returns `false`.
+Given zero or more step functions and a condition function `cond?` (a function of no arguments), evaluate the step functions whenever `(cond?)` returns `false`.
 
 **`(at-every dT step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

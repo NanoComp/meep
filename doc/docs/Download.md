@@ -24,7 +24,7 @@ The current stable version of Meep preinstalled on [Ubuntu](https://en.wikipedia
 Precompiled Meep packages for Ubuntu
 ------------------------------------
 
-Precompiled packages of Meep are available for [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) as **meep** via this [list](https://packages.ubuntu.com/search?keywords=meep). We highly recommend using Ubuntu as Meep and all of its dependencies can be installed using just one line:
+Precompiled packages of Meep are available for [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) as **meep** via this [list](https://packages.ubuntu.com/search?keywords=meep). We recommend using Ubuntu as Meep and all of its dependencies can be installed using just one line:
 
 ```sh
 sudo apt-get install meep h5utils
