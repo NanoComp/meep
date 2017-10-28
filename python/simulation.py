@@ -482,7 +482,7 @@ class Simulation(object):
         return all_freqs
 
     def set_epsilon(self, eps):
-        if self.structure is None:
+        if self.fields is None:
             self._init_fields()
 
         self.structure.set_epsilon(eps, self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
