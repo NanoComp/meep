@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2017 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -268,7 +268,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
         return 0;
     }
 
-    mt->data = (void *)md;
+    *mt = md;
 
     return 1;
 }
@@ -278,7 +278,7 @@ static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
     material_type material;
     vector3 center;
     double radius;
-    
+
     if (!get_attr_v3(py_sphere, &center, "center") ||
        !get_attr_dbl(py_sphere, &radius, "radius") ||
        !get_attr_material(py_sphere, &material)) {
@@ -318,7 +318,7 @@ static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *wedge) {
         return 0;
     }
 
-    double wedge_angle; 
+    double wedge_angle;
     vector3 wedge_start;
 
     if (!get_attr_dbl(py_wedge, &wedge_angle, "wedge_angle") ||
@@ -389,7 +389,7 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
         return 0;
     }
 
-    material_type material = blk.material;
+    material_type material = (material_type) blk.material;
     vector3 center = blk.center;
     vector3 e1 = blk.subclass.block_data->e1;
     vector3 e2 = blk.subclass.block_data->e2;
