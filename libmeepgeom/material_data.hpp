@@ -33,6 +33,10 @@
 
 namespace meep_geom {
 
+/* FIXME: we don't have to emulate the Scheme/libctl code here, which was
+  limited to C functionality.  These types, especially the material types,
+  should be proper C++ classes */
+
 typedef struct susceptibility_struct {
   vector3 sigma_offdiag;
   vector3 sigma_diag;
@@ -52,7 +56,7 @@ typedef struct {
 // TODO: this prototype only allows user-defined scalar dielectric permeabilities
 //       (which seems to be all that is possible via the libctl interface as well).
 //       extend to allow more complicated user-specified materials?
-//       
+//
 typedef std::complex<double> (*user_material_func)(vector3 x, void *user_data);
 
 typedef struct medium_struct {
@@ -70,11 +74,6 @@ typedef struct medium_struct {
   vector3 B_conductivity_diag;
 } medium_struct;
 
-typedef struct material_type_list
- { material_type *items;
-   int num_items;
- } material_type_list;
-
 typedef struct material_data_struct
  {
    enum { MATERIAL_TYPE_SELF, MATERIAL_FUNCTION, PERFECT_METAL, MEDIUM } which_subclass;
@@ -85,8 +84,14 @@ typedef struct material_data_struct
 
    // used only if which_subclass==MEDIUM
    medium_struct *medium;
-  
+
  } material_data;
+
+ typedef material_data *material_type;
+ typedef struct material_type_list
+  { material_type *items;
+    int num_items;
+  } material_type_list;
 
 // global variables and exported functions
 extern material_type vacuum;

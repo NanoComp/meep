@@ -30,7 +30,7 @@ bool compare_hdf5_datasets(const char *file1, const char *name1,
                            double rel_tol=1.0e-4, double abs_tol=1.0e-8)
 {
   h5file f1(file1, h5file::READONLY, false);
-  int rank1; 
+  int rank1;
   int *dims1=new int[expected_rank];
   double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
   if (!data1) return false;
@@ -75,13 +75,13 @@ int main(int argc, char *argv[])
 {
   initialize mpi(argc, argv);
 
-  // simple argument parsing 
+  // simple argument parsing
   meep::component src_cmpt=Ez;
   std::string eps_ref_file = "cyl-ellipsoid-eps-ref.h5";
   for(int narg=1; narg<argc; narg++)
-   { 
+   {
      if ( argv[narg] && !strcmp(argv[narg],"--polarization") )
-      { if (narg+1 == argc) 
+      { if (narg+1 == argc)
          meep::abort("no option specified for --polarization");
         else if (!strcasecmp(argv[narg+1],"S"))
          master_printf("Using S-polarization\n");
@@ -89,11 +89,11 @@ int main(int argc, char *argv[])
          { src_cmpt=Hz;
            master_printf("Using P-polarization\n");
          }
-        else 
+        else
          meep::abort("invalid --polarization %s",argv[narg+1]);
       }
      else if (argv[narg] && !strcmp(argv[narg],"--eps_ref_file"))
-      { if (narg+1 == argc) 
+      { if (narg+1 == argc)
          meep::abort("no option specified for --eps_ref_file");
         eps_ref_file=argv[++narg];
       }
@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
 
 
   //(set-param! resolution 100)
-  double resolution = 100.0; 
+  double resolution = 100.0;
 
   // (set! geometry-lattice (make lattice (size 10 10 no-size)))
   // (set! pml-layers (list (make pml (thickness 1))))
   // (if (= src-cmpt Ez)
   //  (set! symmetries (list (make mirror-sym (direction X))
   //                         (make mirror-sym (direction Y)))))
-  // (if (= src-cmpt Hz) 
+  // (if (= src-cmpt Hz)
   //  (set! symmetries (list (make mirror-sym (direction X) (phase -1))
   //  (set! symmetries (list (make mirror-sym (direction Y) (phase -1))
   geometry_lattice.size.x=10.0;
@@ -124,13 +124,13 @@ int main(int argc, char *argv[])
                                 : -mirror(X,gv) - mirror(Y,gv);
   structure the_structure(gv, dummy_eps, pml(1.0), sym);
 
-  // (set! geometry (list 
+  // (set! geometry (list
   //    (make cylinder (center 0 0 0) (radius 3) (height infinity)
   //                   (material (make medium (index 3.5))))
   //    (make ellipsoid (center 0 0 0) (size 1 2 infinity)
   //                   (material air))))
   double n=3.5; // index of refraction
-  material_type dielectric = meep_geom::make_dielectric(n*n);
+  meep_geom::material_type dielectric = meep_geom::make_dielectric(n*n);
   geometric_object objects[2];
   vector3 center = {0.0, 0.0, 0.0};
   double radius  = 3.0;
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
   // first test: write permittivity to HDF5 file and
   // compare with contents of reference file
   if ( am_really_master() )
-   { 
+   {
      f.output_hdf5(Dielectric, f.total_volume());
      bool status=compare_hdf5_datasets("eps-000000000.h5", "eps",
                                         eps_ref_path.c_str(), "eps");
@@ -177,11 +177,11 @@ int main(int argc, char *argv[])
   double stop_time = start_time + duration;
   while( f.round_time() < stop_time)
    f.step();
- 
+
   // second test: compare field component at specified evaluation
   // point to reference values
   if ( am_really_master() )
-   { 
+   {
      // ref values obtained by running `meep cyl-ellipsoid.ctl`
      #define REF_EZ -8.29555720049629e-5
      #define REF_HZ -4.5623185899766e-5
