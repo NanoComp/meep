@@ -858,6 +858,255 @@ fclose(ff);
 }
 
 /***************************************************************/
+/* add the contributions of a single component to the overlap  */
+/* integrals:                                                  */
+/*   num = <flux_field      | eigenmode_field>                 */
+/* denom = <eigenmode_field | eigenmode_field>                 */
+/***************************************************************/
+void add_overlap_integral_contribution(fields *f,
+                                       dft_flux *flux,
+                                       direction d,
+                                       int num_freq,
+                                       component c,
+                                       eigenmode_data *edata,
+                                       double mode_sign,
+                                       cdouble full_num_denom[2])
+{
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+#if 0
+char FileName[100];
+static int which=0;
+sprintf(FileName,"/tmp/Log%i_%s_%i",my_rank(),component_name(c),which++);
+FILE *LogFile = fopen(FileName,"a");
+#endif
+cdouble cnum=0.0, cdenom=0.0;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
+  cdouble num=0.0, denom=0.0;
+
+  /*--------------------------------------------------------------*/ 
+  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */ 
+  /*- should maybe be promoted to a standalone function?          */ 
+  /*--------------------------------------------------------------*/ 
+  int Nfreq          = flux->Nfreq;
+  for ( dft_chunk *E=flux->E, *H=flux->H; E && H;
+        E=E->next_in_dft, H=H->next_in_dft
+      ) 
+   { 
+     // extract info from the current dft_chunk
+     // that we will need to
+     fields_chunk *fc = E->fc;
+     ivec is          = E->is;
+     ivec ie          = E->ie;
+     vec s0           = E->s0;
+     vec s1           = E->s1;
+     vec e0           = E->e0;
+     vec e1           = E->e1;
+     double dV0       = E->dV0;
+     double dV1       = E->dV1;
+     ivec shift       = E->shift;
+     symmetry S       = E->S;
+     int sn           = E->sn;
+
+     if (    (c<=Ez && (c!=E->c) )
+          || (c>=Hx && (c!=H->c) )
+        ) continue;
+
+     vec rshift(shift * (0.5*fc->gv.inva));
+
+     // loop over all points in the current dft_chunk
+     int chunk_idx = 0;
+     LOOP_OVER_IVECS(fc->gv, is, ie, idx)
+      { 
+        // get the coordinates and integration weight for this grid point
+        IVEC_LOOP_LOC(fc->gv, loc);
+        loc = S.transform(loc, sn) + rshift;
+        double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+
+        // get the E or H field component at this grid point,
+        //  dividing out any extra weight factors it may already contain
+        dft_chunk *EH = (c<=Ez ? E : H);
+        cdouble flux_fval = EH->dft[ Nfreq*(chunk_idx++) + num_freq];
+        if (EH->include_dV_and_interp_weights)
+         flux_fval /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
+
+        // kinda byzantine: the second of the two E-field components
+        // is stored with a minus sign; and which component is the 
+        // second component depends on the direction 'd' that was  
+        // used to create the dft_flux
+        if (     (d==X && c==Ez)
+             ||  (d==Y && c==Ex)
+             ||  (d==R && c==Ez)
+             ||  (d==P && c==Er)
+             ||  (d==Z && f->gv.dim == Dcyl && c==Ep)
+             ||  (d==Z && f->gv.dim != Dcyl && c==Ey)
+           ) flux_fval *= -1.0;
+
+        // get the eigenmode current at this grid point
+        cdouble mode_fval = mode_sign*eigenmode_amplitude(loc,edata);
+
+        // add contributions to numerator and denominator integrals
+        num   += w * mode_fval * flux_fval;
+        denom += w * flux_fval * flux_fval;
+
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+cnum   += w * conj(mode_fval) * flux_fval;
+cdenom += w * conj(flux_fval) * flux_fval;
+#if 0
+if (LogFile)
+{
+ fprintf(LogFile,"%e %e %e %i ",loc.x(), loc.y(), loc.z(),c);
+ fprintf(LogFile,"%e %e ",real(flux_fval),imag(flux_fval));
+ fprintf(LogFile,"%e %e ",real(mode_fval),imag(mode_fval));
+ fprintf(LogFile,"\n");
+};
+#endif
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
+      }; // LOOP_OVER_IVECS
+   }; // for ( dft_chunk *E=Echunks, *H=Hchunks ...
+
+  num   = sum_to_all(num);
+  denom = sum_to_all(denom);
+  full_num_denom[0] += num;
+  full_num_denom[1] += denom;
+
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+#if 0
+if (LogFile)
+ { fprintf(LogFile,"\n\n");
+   fclose(LogFile);
+ };
+#endif
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+
+cnum   = sum_to_all(cnum);
+cdenom = sum_to_all(cdenom);
+
+if (am_master())
+{
+static cdouble tnum=0.0, tdenom=0.0, tcnum=0.0, tcdenom=0.0;
+tnum+=num;
+tdenom+=denom;
+tcnum+=cnum;
+tcdenom+=cdenom;
+FILE *ff=fopen("/tmp/log.out","a");
+  fprintf(ff,"\n** nfreq=%i (%e) nband=%i \n",num_freq,edata->omega,edata->band_num);
+  fprintf(ff,"uComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
+                                component_name(c),
+                                real(num), imag(num),
+                                real(denom), imag(denom));
+
+  fprintf(ff,"cComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
+                                component_name(c),
+                                real(cnum), imag(cnum),
+                                real(cdenom), imag(cdenom));
+
+  fprintf(ff,"uTotal       : (%+8e,%+8e)/(%+8e,%+8e)\n",
+                                real(tnum), imag(tnum),
+                                real(tdenom), imag(tdenom));
+
+  fprintf(ff,"cTotal       : (%+8e,%+8e)/(%+8e,%+8e)\n",
+                                real(tcnum), imag(tcnum),
+                                real(tcdenom), imag(tcdenom));
+fprintf(ff,"mode->vgrp = %e\n",edata->group_velocity);
+fclose(ff);
+}
+
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+}
+
+/***************************************************************/
+/* call get_eigenmode() to solve for the specified eigenmode,  */
+/* then call add_overlap_integral_contribution() multiple times*/
+/* to sum all contributions to the numerator and denominator   */
+/* of the eigenmode expansion coefficients.                    */
+/***************************************************************/
+cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
+                                          int num_freq,
+                                          direction d,
+                                          const volume &where,
+                                          int band_num,
+                                          kpoint_func k_func, void *k_func_data)
+{
+  /*--------------------------------------------------------------*/
+  /* step 1: call MPB to compute the eigenmode                   -*/
+  /*--------------------------------------------------------------*/
+  double omega = flux->freq_min + num_freq*flux->dfreq;
+  // call user's kpoint function if present
+  vec kpoint(0.0, 0.0, 0.5); // TODO better default? 
+  if (k_func) 
+   kpoint=k_func(k_func_data, omega, band_num);
+
+  bool match_frequency=true;
+  int parity=0; 
+  double resolution=a;
+  double eigensolver_tol=1.0e-7;
+  eigenmode_data *edata
+   =(eigenmode_data *)get_eigenmode(omega, d, where, where,
+                                    band_num, kpoint, match_frequency,
+                                    parity, resolution, 
+                                    eigensolver_tol);
+
+  /*--------------------------------------------------------------*/
+  /* step 2: sum contributions of all 4 surface-current cmpnents  */
+  /*         to numerator and denominator of overlap integral     */
+  /* num   = <caller's field | eigenmode>                         */
+  /* denom = <eigenmode      | eigenmode>                         */
+  /*--------------------------------------------------------------*/
+
+  // step 2a: electric-current components 
+  //            = nHat \times magnetic-field components
+  cdouble numdenom[2]={0.0,0.0};
+
+  FOR_ELECTRIC_COMPONENTS(c)
+   {  
+     if ( !(gv.has_field(c)) ) continue;
+     // TODO restore parity check
+
+     if ( (d+1)%3 == component_direction(c)%3 )
+      { edata->component = (d+2)%3;
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, -1.0, numdenom);
+      }
+     else if ( (d+2)%3 == component_direction(c)%3 )
+      { edata->component = (d+1)%3;
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, +1.0, numdenom);
+      }
+   };
+
+  // step 2b: post-processing step to replace H-field components
+  //          with E-field components in the internal data buffer
+  //          inside mdata; cf. Part 3 of get_eigenmode() above
+  switch_eigenmode_data_to_electric_field(edata);
+
+  // step 2c: magnetic-current components 
+  //            = -nHat \times electric-field components
+  FOR_MAGNETIC_COMPONENTS(c)
+   { 
+     if ( !(gv.has_field(c)) ) continue;
+     // TODO restore parity check
+
+     if ( (d+1)%3 == component_direction(c)%3 )
+      { edata->component = (d+2)%3;
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, +1.0, numdenom);
+      }
+     else if ( (d+2)%3 == component_direction(c)%3 )
+      { edata->component = (d+1)%3;
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, -1.0, numdenom);
+      }
+   };
+
+  destroy_eigenmode_data(edata);
+
+  cdouble num=numdenom[0], denom=numdenom[1];
+  if( denom==0.0 )
+   { master_printf("**warning: denominator in get_eigenmode_coefficient**");
+    return 0.0;
+   };
+  return num/denom;
+}
+
+/***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
 /*                                                             */
