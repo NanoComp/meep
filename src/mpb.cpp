@@ -128,7 +128,7 @@ static complex<double> default_amp_func(const vec &pt)
 typedef struct eigenmode_data
  { 
    maxwell_data *mdata;
-   evectmatrix *pH;
+   evectmatrix H;
    int n[3];
    int component;
    double s[3];
@@ -481,8 +481,7 @@ void *fields::get_eigenmode(double &omega_src,
   /*--------------------------------------------------------------*/
   eigenmode_data *edata = new eigenmode_data;
   edata->mdata          = mdata;
-  edata->pH             = (evectmatrix *)malloc(sizeof(evectmatrix));
-  memcpy(edata->pH, &H, sizeof(evectmatrix));
+  edata->H              = H;
   edata->n[0]           = n[0];
   edata->n[1]           = n[1];
   edata->n[2]           = n[2];
@@ -505,11 +504,11 @@ void switch_eigenmode_data_to_electric_field(eigenmode_data *edata)
 {
   maxwell_data *mdata      = edata->mdata;
   complex<mpb_real> *cdata = (complex<mpb_real> *)mdata->fft_data;
-  evectmatrix *pH          = edata->pH;
+  evectmatrix H            = edata->H;
   int band_num             = edata->band_num;
   double omega             = edata->omega;
 
-  maxwell_compute_d_from_H(mdata, *pH, (scalar_complex*)cdata, band_num - 1, 1);
+  maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
   // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
   double scale = -1.0 / omega;
   int N = mdata->fft_output_size * 3;
@@ -521,8 +520,7 @@ void switch_eigenmode_data_to_electric_field(eigenmode_data *edata)
 
 void destroy_eigenmode_data(eigenmode_data *edata)
 { 
-  destroy_evectmatrix( *(edata->pH)  );
-  free(edata->pH);
+  destroy_evectmatrix( edata->H  );
   destroy_maxwell_data( edata->mdata ); 
   delete edata;
 }
@@ -626,13 +624,13 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 /***************************************************************/
 void add_overlap_integral_contribution(fields *f,
                                        dft_flux *flux,
+                                       direction d,
                                        int num_freq,
                                        component c,
                                        eigenmode_data *edata,
                                        double mode_sign,
                                        cdouble full_num_denom[2])
 {
-(void) f;
 
   cdouble num=0.0, denom=0.0;
 
@@ -673,20 +671,33 @@ void add_overlap_integral_contribution(fields *f,
         // get the coordinates and integration weight for this grid point
         IVEC_LOOP_LOC(fc->gv, loc);
         loc = S.transform(loc, sn) + rshift;
-        double weight=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+        double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
 
-        // get the E or H field component at this grid point
-        cdouble flux_fval = (c<=Ez ? E->dft[chunk_idx*Nfreq + num_freq]
-                                   : H->dft[chunk_idx*Nfreq + num_freq]
-                            );
-        chunk_idx++;
+        // get the E or H field component at this grid point,
+        //  dividing out any extra weight factors it may already contain
+        dft_chunk *EH = (c<=Ez ? E : H);
+        cdouble flux_fval = EH->dft[ Nfreq*(chunk_idx++) + num_freq];
+        if (EH->include_dV_and_interp_weights)
+         flux_fval /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
+
+        // kinda byzantine: the second of the two E-field components
+        // is stored with a minus sign; and which component is the 
+        // second component depends on the direction 'd' that was  
+        // used to create the dft_flux
+        if (     (d==X && c==Ez)
+             ||  (d==Y && c==Ex)
+             ||  (d==R && c==Ez)
+             ||  (d==P && c==Er)
+             ||  (d==Z && f->gv.dim == Dcyl && c==Ep)
+             ||  (d==Z && f->gv.dim != Dcyl && c==Ey)
+           ) flux_fval *= -1.0;
 
         // get the eigenmode current at this grid point
         cdouble mode_fval = mode_sign*eigenmode_amplitude(loc,edata);
 
         // add contributions to numerator and denominator integrals
-        num   += weight * mode_fval * flux_fval;
-        denom += weight * flux_fval * flux_fval;
+        num   += w * mode_fval * flux_fval;
+        denom += w * flux_fval * flux_fval;
 
       }; // LOOP_OVER_IVECS
    }; // for ( dft_chunk *E=Echunks, *H=Hchunks ...
@@ -782,11 +793,11 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
 
      if ( (d+1)%3 == component_direction(c)%3 )
       { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, -1.0, numdenom);
       }
      else if ( (d+2)%3 == component_direction(c)%3 )
       { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, +1.0, numdenom);
       }
    };
 
@@ -804,11 +815,11 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
 
      if ( (d+1)%3 == component_direction(c)%3 )
       { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, +1.0, numdenom);
       }
      else if ( (d+2)%3 == component_direction(c)%3 )
       { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
+        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, -1.0, numdenom);
       }
    };
 
