@@ -45,5 +45,5 @@ npts = 100  # number of points in [0,2*pi) range of angles
 for n in range(npts):
     ff = sim.get_farfield(nearfield, mp.Vector3(r * math.cos(2 * math.pi * (n / npts)),
                                                 r * math.sin(2 * math.pi * (n / npts))))
-    print("farfield: {}, {}".format(n, 2 * math.pi * n / npts))
-    print(", ".join([str(f) for f in ff]))
+    print("farfield: {}, {}, ".format(n, 2 * math.pi * n / npts), end='')
+    print(", ".join([str(f).strip('()').replace('j', 'i') for f in ff]))
