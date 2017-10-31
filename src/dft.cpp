@@ -76,6 +76,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   }
   /* an alternative way to avoid multipling by interpolation weights twice:
      multiply by square root of the weights */
+  include_dV_and_interp_weights = data->include_dV_and_interp_weights;
   sqrt_dV_and_interp_weights = data->sqrt_dV_and_interp_weights;
   scale = scale_ * data->weight;
   extra_weight = extra_weight_;

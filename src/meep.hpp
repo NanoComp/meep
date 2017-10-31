@@ -863,6 +863,7 @@ public:
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
+  bool include_dV_and_interp_weights;
   bool sqrt_dV_and_interp_weights;
   std::complex<double> scale; // scale factor * phase from shift and symmetry
   ivec shift;
