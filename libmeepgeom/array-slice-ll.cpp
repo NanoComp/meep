@@ -65,6 +65,7 @@ double Compare(cdouble *d1, cdouble *d2, int N, const char *Name)
    { Norm1     += norm(d1[n]);
      Norm2     += norm(d2[n]);
      NormDelta += norm(d1[n]-d2[n]);
+master_printf("%i   %e   %e   %e  \n",n,real(d1[n]),real(d2[n]),NormDelta);
    };
   Norm1=sqrt(Norm1);
   Norm2=sqrt(Norm2);
