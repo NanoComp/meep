@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
      else
       { master_printf("unknown command-line option %s (aborting)",argv[narg]);
         usage(argv[0]);
-      }; 
+      };
    };
 
   /***************************************************************/
@@ -142,8 +142,8 @@ int main(int argc, char *argv[])
   gv.center_origin();
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
-  material_type vacuum     = meep_geom::vacuum;
-  material_type dielectric = meep_geom::make_dielectric(eps);
+  meep_geom::material_type vacuum     = meep_geom::vacuum;
+  meep_geom::material_type dielectric = meep_geom::make_dielectric(eps);
   geometric_object objects[7];
   vector3 origin = v3(0.0,   0.0,  0.0);
   vector3 xhat   = v3(1.0,   0.0,  0.0);
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 #define NX 126
 #define NY 38
   if (write_files)
-   { 
+   {
      h5file *file = f.open_h5file(H5FILENAME);
      f.output_hdf5(Hz, v1d, file);
      f.output_hdf5(Sy, v2d, file);
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
      exit(0);
    }
   else
-   { 
+   {
      //
      // read 1D and 2D array-slice data from HDF5 file
      //
@@ -219,14 +219,14 @@ int main(int argc, char *argv[])
       file_slice1d[n] = cdouble(rdata[n], idata[n]);
      delete[] rdata;
      delete[] idata;
-  
+
      file_slice2d = file->read("sy", &rank, dims2D, 2);
      if (rank!=2 || dims2D[0]!=NX || dims2D[1]!=NY)
       abort("failed to read 2D reference data from file %s.h5",H5FILENAME);
      delete file;
 
      //
-     // generate 1D and 2D array slices and compare to 
+     // generate 1D and 2D array slices and compare to
      // data read from file
      //
      rank=f.get_array_slice_dimensions(v1d, dims1D);

@@ -2,19 +2,21 @@
 # C++ Tutorial
 ---
 
-Instead of using the Scheme interface described in the [Scheme Tutorial](Scheme_Tutorial.md), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are numerous examples in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good additional reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
+Instead of using the [Scheme interface](Scheme_User_Interface/), Meep is also callable as a C++ library by writing a C++ program that links to it. The C++ interface provides the most flexibility in setting up simulations. There are numerous examples in the `tests/` directory of the Meep codebase which cover a wide range of Meep's functionality. These are a good additional reference. Finally, we should also note that, while Meep is nominally in C++, it is perhaps better described as "C+". That is, most of the coding style is C-like with a few C++ features.
+
+[TOC]
 
 Differences from libctl
 -----------------------
 
 The C++ interface has several differences from the libctl interface besides the obvious difference in syntax.
 
-The most notable difference is that, while the libctl interface puts the origin $(0,0,0)$ at the *center* of the computational cell, the C++ interface by default puts the origin at the *corner* of the computational cell. That is, an $L\times L\times L$ cell goes from $(-L/2,-L/2,-L/2)$ to $(L/2,L/2,L/2)$ in libctl, but from $(0,0,0)$ to $(L,L,L)$ in C++. This can be changed by calling `grid_volume::shift_origin`.
+The most notable difference is that, while the libctl interface puts the origin (0,0,0) at the *center* of the computational cell, the C++ interface by default puts the origin at the *corner* of the computational cell. That is, an $L\times L\times L$ cell goes from ($-L/2$,$-L/2$,$-L/2$) to ($L/2$,$L/2$,$L/2$) in libctl, but from (0,0,0) to ($L$,$L$,$L$) in C++. This can be changed by calling `grid_volume::shift_origin`.
 
 Overview
 --------
 
-We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below and the [C++ User Interface](C++_User_Interface.md). The C++ program should begin with:
+We begin with a brief outline of a Meep C++ program, with minimal explanations, leaving more details for the examples below and the [C++ interface](C++_User_Interface.md). The C++ program should begin with:
 
 ```c++
 #include <meep.hpp>
@@ -48,7 +50,7 @@ int main(int argc, char **argv) {
 }
 ```
 
-This example doesn't do much — it just runs a Gaussian source and outputs the $\mathbf{H}_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
+This example doesn't do much &mdash; it just runs a Gaussian source and outputs the $H_z$ field at the end. The dielectric structure is determined by the user-defined function `eps`, which has the form:
 
 ```c++
 double eps(const vec &p) {
@@ -58,21 +60,21 @@ double eps(const vec &p) {
 }
 ```
 
-which returns the dielectric function $\varepsilon(\mathbf{x})$ which is just a 2×3 rectangle of ε=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
+which returns the dielectric function $\varepsilon(\mathbf{x})$ which is just a 2$\times$3 rectangle of $\varepsilon$=12 in the upper-left corner. Unlike in the Scheme interface, by default the origin of the coordinate system is at the *corner* of the computational cell.
 
 Now that you have the basic flavor, we can proceed to some more specific examples.
 
 Computing the Quality Factor of a Resonator
 -------------------------------------------
 
-In this first tutorial, we will write the script to compute the quality factor of a 1D Fabry-Perot cavity. For a 1D system, Meep considers a computational cell along the *z* coordinate. The control file will be a C++ file having extension \*.cpp. In order to use all the classes and subroutines available in Meep, the first two lines of any control file must be the following:
+In this first tutorial, we will write the script to compute the quality factor of a 1d Fabry-Perot cavity. For a 1d system, Meep considers a computational cell along the $z$ coordinate. The control file will be a C++ file having extension \*.cpp. In order to use all the classes and subroutines available in Meep, the first two lines of any control file must be the following:
 
 ```c++
 #include <meep.hpp>
 usingnamespace meep;
 ```
 
-The particular Fabry-Perot cavity we will investigate consists of an air region bounded by two distributed Bragg reflectors which are quarter-wave stacks of epsilon 12 and 1. We choose the size of the defect to be twice as large as the air thickness in the quarter-wave stack, so that a defect mode is found near midgap. This structure will include N = 5 periods in the Bragg reflector on either side of the defect. We can use a larger N but the quality factor may then be too large to compute. The parameters are set up as follows:
+The particular Fabry-Perot cavity we will investigate consists of an air region bounded by two distributed Bragg reflectors which are quarter-wave stacks of $\varepsilon$ of 12 and 1. We choose the size of the defect to be twice as large as the air thickness in the quarter-wave stack, so that a defect mode is found near midgap. This structure will include $N$ = 5 periods in the Bragg reflector on either side of the defect. We can use a larger $N$ but the quality factor may then be too large to compute. The parameters are set up as follows:
 
 ```c++
 const double eps1 = 12.0; // epsilon of layer1
@@ -118,7 +120,7 @@ int main(int argc, char **argv) {
  fields f(&s);
 ```
 
-Note the constructor for the `grid_volume` class in 1D which takes as parameters the size of the cell and the resolution. The sources in Meep are excitations of the polarization vector in $\mathbf{D}=\epsilon\mathbf{E}+\mathbf{P}$. The polarization can be any one of the six cartesian or cylindrical fields. There are a variety of sources including dipole and current sources, gaussian pulses and a continuous wave sources. For now, we use a gaussian source centered at the midgap frequency with a narrow width, along with the start time and end time of the source.
+Note the constructor for the `grid_volume` class in 1d which takes as parameters the size of the cell and the resolution. The sources in Meep are excitations of the polarization vector in $\mathbf{D}=\varepsilon\mathbf{E}+\mathbf{P}$. The polarization can be any one of the six cartesian or cylindrical fields. There are a variety of sources including dipole and current sources, gaussian pulses and a continuous wave sources. For now, we use a gaussian source centered at the midgap frequency with a narrow width, along with the start time and end time of the source.
 
 ```c++
  const double w_midgap = (sqrt(eps1)+sqrt(eps2))/(4*sqrt(eps1)*sqrt(eps2));
@@ -165,7 +167,7 @@ The `get_field` function does exactly that, obtains the value of the field at a 
  int num = do_harminv(p, ttot, f.dt, 0.8*w_midgap, 1.2*w_midgap, maxbands, amps, freq_re, freq_im);
 ```
 
-The integer returned by `harminv` is the number of mode frequencies obtained from the input data `p`. The particular call to `harminv` included passing the arrays by value and telling `harminv` to look for frequencies within 20% of the mid gap frequency up to a maximum of 5 bands. At this point, the necessary information to compute the quality has been stored in the `freq_re` and `freq_im` arrays and we compute the quality factor using the formula, Q$=-\omega_r/2\omega_i$. All that is left to do, is to print these results with the quality factor:
+The integer returned by `harminv` is the number of mode frequencies obtained from the input data `p`. The particular call to `harminv` included passing the arrays by value and telling `harminv` to look for frequencies within 20% of the mid gap frequency up to a maximum of 5 bands. At this point, the necessary information to compute the quality has been stored in the `freq_re` and `freq_im` arrays and we compute the quality factor using the formula, $Q=-\omega_r/2\omega_i$. All that is left to do, is to print these results with the quality factor:
 
 ```c++
 master_printf("frequency,amplitude,quality factor\n");
@@ -175,7 +177,7 @@ return 0;
 }
 ```
 
-That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of bragg reflectors (N=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the Ex field for the computational cell at each time step:
+That's it, we are done. The output for this program is `3.26087e+06`. The large quality factor is to be expected since our system includes a relatively high number of bragg reflectors ($N$=5) in each direction and we are exciting the mode at mid gap. Suppose we want to see what the resonant mode looks like, say over one period. The following block of code time steps the field for exactly one period while outputting the $E_x$ field for the computational cell at each time step:
 
 ```c++
 double curr_time = f.time();
@@ -198,26 +200,26 @@ In order to compile your code and link against the Meep library, you must link i
 
 (1) After compiling the Meep package following the instructions elsewhere, place foo.cpp in the `tests/` subdirectory, cd to the same directory, and invoke:
 
-```
+```sh
 make foo.dac
 ```
 
 Run the resulting executable via:
 
-```
+```sh
 ./foo.dac
 ```
 
 (2) Use the [pkg-config](https://en.wikipedia.org/wiki/pkg-config) program which is installed by default on most Linux systems:
 
-```
-` g++ `pkg-config --cflags meep` foo.cpp -o foo `pkg-config --libs meep` `
+```sh
+g++ `pkg-config --cflags meep` foo.cpp -o foo `pkg-config --libs meep`
 ```
 
 Naturally, replace `g++` with the name of your C++ compiler if you are not using the GNU compilers.
 
 (3) Compile with g++, this time invoking each library separately:
 
-```
+```sh
 g++ -malign-double foo.cpp -o foo -lmeep -lhdf5 -lz -lgsl -lharminv -llapack -lcblas -latlas -lfftw3 -lm
 ```

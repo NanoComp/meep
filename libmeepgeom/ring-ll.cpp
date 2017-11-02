@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
   double dpml=2;    // thickness of PML
 
   double sxy        = 2.0*(r+w+pad+dpml);  // cell size
-  double resolution = 10.0; 
+  double resolution = 10.0;
 
   // (set-param! resolution 10)
   // (set! geometry-lattice (make lattice (size sxy sxy no-size)))
@@ -78,13 +78,13 @@ int main(int argc, char *argv[])
   //		(radius (+ r w)) (material (make dielectric (index n))))
   // 	(make cylinder (center 0 0) (height infinity)
   // 		(radius r) (material air))))
-  material_type dielectric = meep_geom::make_dielectric(n*n);
+  meep_geom::material_type dielectric = meep_geom::make_dielectric(n*n);
   geometric_object objects[2];
   vector3 v3zero = {0.0, 0.0, 0.0};
   vector3 zaxis  = {0.0, 0.0, 1.0};
   objects[0] = make_cylinder(dielectric, v3zero, r+w, ENORMOUS, zaxis);
   objects[1] = make_cylinder(meep_geom::vacuum,  v3zero, r, ENORMOUS, zaxis);
-  geometric_object_list g={ 2, objects }; 
+  geometric_object_list g={ 2, objects };
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
 
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
   volume v( vec(r+0.1,0.0), vec(0.0, 0.0) );
   f.add_volume_source(Ez, src, v);
 
-  // (run-sources+ 300 
+  // (run-sources+ 300
   // 	(at-beginning output-epsilon)
   // 	(after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
   while( f.round_time() < f.last_source_time() )
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
    { f.step();
      fieldData.push_back( f.get_field(Ez, eval_pt) );
    };
-  
+
   #define MAXBANDS 100
   cdouble amp[MAXBANDS];
   double freq_re[MAXBANDS];
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
   master_printf("--------------------------------------------------------------------------------------------\n");
   for(int nb=0; nb<bands; nb++)
    master_printf("harminv0: | %.4e | %+.4e | %.4e | %.4e | {%+.2e,%+.2e} | %.1e \n",
-                  freq_re[nb], freq_im[nb], 0.5*freq_re[nb]/freq_im[nb], 
+                  freq_re[nb], freq_im[nb], 0.5*freq_re[nb]/freq_im[nb],
                   abs(amp[nb]), real(amp[nb]), imag(amp[nb]), err[nb]);
 
   // test comparison with expected values
@@ -143,8 +143,8 @@ int main(int argc, char *argv[])
    if (    fabs(freq_re[nb]-ref_freq_re[nb]) > 1.0e-2*fabs(ref_freq_re[nb])
         || fabs(freq_im[nb]-ref_freq_im[nb]) > 1.0e-2*fabs(ref_freq_im[nb])
         ||  abs(    amp[nb]-    ref_amp[nb]) > 1.0e-2* abs(    ref_amp[nb])
- 
-      ) 
+
+      )
     abort("harminv band %i disagrees with ref: {re f, im f, re A, im A}={%e,%e,%e,%e}!= {%e,%e,%e,%e}\n",
            nb, freq_re[nb],     freq_im[nb],     real(amp[nb]),     imag(amp[nb]),
                ref_freq_re[nb], ref_freq_im[nb], real(ref_amp[nb]), imag(ref_amp[nb]));

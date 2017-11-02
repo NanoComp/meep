@@ -46,4 +46,4 @@ all_freqs = sim.run(kpts, k_points=200)  # a list of lists of frequencies
 
 for fs, kx in zip(all_freqs, [v.x for v in kpts]):
     for f in fs:
-        print("eps:, {}, {}, {}".format(f.real, f.imag, (kx / f)**2))
+        print("eps:, {.6f}, {.6f}, {.6f}".format(f.real, f.imag, (kx / f)**2))

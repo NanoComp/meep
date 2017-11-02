@@ -65,15 +65,15 @@ void bend_flux(bool no_bend)
    //      (if no-bend?
    //	  (list
    //	  (list
-   //	   (make block 
+   //	   (make block
    //	     (center wvg-xcen (* 0.5 pad))
    //	     (size w (- sy pad) infinity)
    //	     (material (make dielectric (epsilon 12)))))))
-   //	   (make block 
+   //	   (make block
    //	     (center 0 wvg-ycen)
    //	     (size infinity w infinity)
    //	     (material (make dielectric (epsilon 12)))))
-   //	   (make block 
+   //	   (make block
    //	     (center (* -0.5 pad) wvg-ycen)
    //	     (size (- sx pad) w infinity)
    //	     (material (make dielectric (epsilon 12))))
@@ -81,7 +81,7 @@ void bend_flux(bool no_bend)
    vector3 e2=v3(0.0, 1.0, 0.0);
    vector3 e3=v3(0.0, 0.0, 1.0);
 
-   material_type dielectric = meep_geom::make_dielectric(12.0);
+   meep_geom::material_type dielectric = meep_geom::make_dielectric(12.0);
    if (no_bend)
     {
       geometric_object objects[1];
@@ -101,13 +101,13 @@ void bend_flux(bool no_bend)
                               e1, e2, e3,
                               v3(sx-pad, w, ENORMOUS)
                              );
-   
+
       objects[1] = make_block(dielectric,
                               v3(wvg_xcen, 0.5*pad),
                               e1, e2, e3,
                               v3(w, sy-pad, ENORMOUS)
                              );
-   
+
       geometric_object_list g={ 2, objects };
       meep_geom::set_materials_from_geometry(&the_structure, g);
     };
@@ -115,7 +115,7 @@ void bend_flux(bool no_bend)
   fields f(&the_structure);
 
   //  (set! sources (list
-  //	       (make source 
+  //	       (make source
   //		 (src (make gaussian-src (frequency fcen) (fwidth df)))
   //		 (component Ez)
   //		 (center (+ 1 (* -0.5 sx)) wvg-ycen)
@@ -137,16 +137,16 @@ void bend_flux(bool no_bend)
   double f_start = fcen-0.5*df;
   double f_end   = fcen+0.5*df;
   int nfreq      = 100; //  number of frequencies at which to compute flux
- 
+
   volume *trans_volume=
    no_bend ? new volume(vec(0.5*sx-1.5, wvg_ycen), vec(0.0, 2.0*w))
            : new volume(vec(wvg_xcen, 0.5*sy-1.5), vec(2.0*w, 0.0));
   volume_list trans_vl = volume_list(*trans_volume, Sz);
   dft_flux trans=f.add_dft_flux(&trans_vl, f_start, f_end, nfreq);
-  
+
   //(define refl ; reflected flux
   //      (add-flux fcen df nfreq
-  //		(make flux-region 
+  //		(make flux-region
   //		  (center (+ (* -0.5 sx) 1.5) wvg-ycen) (size 0 (* w 2)))))
   //
   volume refl_volume( vec(-0.5*sx+1.5, wvg_ycen), vec(0.0,2.0*w));
@@ -161,7 +161,7 @@ void bend_flux(bool no_bend)
      refl.scale_dfts(-1.0);
    };
 
-  //(run-sources+ 
+  //(run-sources+
   // (stop-when-fields-decayed 50 Ez
   //			   (if no-bend?
   //			       (vector3 (- (/ sx 2) 1.5) wvg-ycen)
@@ -177,7 +177,7 @@ void bend_flux(bool no_bend)
   double max_abs=0.0, cur_max=0.0;
   bool Done=false;
   do
-   {  
+   {
      f.step();
 
      // manually check fields-decayed condition
@@ -197,7 +197,7 @@ void bend_flux(bool no_bend)
   //(if no-bend? (save-flux "refl-flux" refl))
   if (no_bend)
    refl.save_hdf5(f, dataname);
-  
+
   //(display-fluxes trans refl)
   printf("%11s | %12s | %12s\n", "   Time    ", " trans flux", "  refl flux");
   double f0=fcen-0.5*df, fstep=df/(nfreq-1);

@@ -24,14 +24,14 @@ The current stable version of Meep preinstalled on [Ubuntu](https://en.wikipedia
 Precompiled Meep packages for Ubuntu
 ------------------------------------
 
-Precompiled packages of Meep are available for [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) as **meep**. The Ubuntu 16.10 package is available in the [science](https://packages.ubuntu.com/yakkety/meep) repository. We highly recommend using Ubuntu as the Meep software and all of its dependencies can be installed using just one line:
+Precompiled packages of Meep are available for [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) as **meep** via this [list](https://packages.ubuntu.com/search?keywords=meep). We recommend using Ubuntu as Meep and all of its dependencies can be installed using just one line:
 
-```
+```sh
 sudo apt-get install meep h5utils
 ```
 
 You can also install the [parallel version of Meep](http://packages.debian.org/testing/science/meep-mpi-default) which is based on [Open MPI](https://www.open-mpi.org/) using:
 
-```
+```sh
 sudo apt-get install meep-mpi-default
 ```

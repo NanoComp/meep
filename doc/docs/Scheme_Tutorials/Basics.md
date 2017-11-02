@@ -13,7 +13,7 @@ The ctl File
 
 The use of Meep revolves around the control file, abbreviated "ctl" and typically called something like `foo.ctl`. The ctl file specifies the geometry you wish to study, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
 
-Don't worry, though—simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
+Don't worry, though &mdash; simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
 
 The ctl file is actually implemented on top of the [libctl](https://libctl.readthedocs.io) library, a set of utilities that are in turn built on top of the Scheme language. Thus, there are three sources of possible commands and syntax for a ctl file:
 
@@ -23,7 +23,7 @@ The ctl file is actually implemented on top of the [libctl](https://libctl.readt
 
 At this point, please take a moment to leaf through the libctl tutorial to get a feel for the basic style of the interface, before we get to the Meep-specific stuff below. [MPB](http://mpb.readthedocs.io) has a similar interface.
 
-Okay, let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command-line (herein denoted by the `unix%` prompt):
+Okay, let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command line:
 
 ```sh
  unix% meep foo.ctl >& foo.out
@@ -54,7 +54,7 @@ Now, we can add the waveguide. Most commonly, the structure is specified by a `l
                       (material (make dielectric (epsilon 12))))))
 ```
 
-The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) (the center of the computational cell). By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
+The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with $\varepsilon$=12, centered at (0,0) (the center of the computational cell). By default, any place where there are no objects there is air ($\varepsilon$=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
 
 <center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 
@@ -68,7 +68,7 @@ Now that we have the structure, we need to specify the current sources, which is
                  (center -7 0))))
 ```
 
-Here, we gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that (by default) is turned on at $t=0$. Recall that, in [Meep units](Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$, or a wavelength of about 2 in the $\varepsilon=12$ material—thus, our waveguide is half a wavelength wide, which should hopefully make it single-mode. (In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076.) Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+Here, we gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that (by default) is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$, or a wavelength of about 2 in the $\varepsilon=12$ material—thus, our waveguide is half a wavelength wide, which should hopefully make it single-mode. (In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076.) Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
 Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](Perfectly_Matched_Layer.md) (PML)— which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 around all sides of the cell, we do:
 
@@ -76,7 +76,7 @@ Speaking of boundary conditions, we want to add absorbing boundaries around our 
 (set! pml-layers (list (make pml (thickness 1.0))))
 ```
 
-`pml-layers` is a list of `pml` objects—you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make` `pml` `(thickness` `1.0)` `(direction` `X)` `(side` `High))` specifies a PML layer on only the $+x$ side. Now, we note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections; see [perfectly matched layers](Perfectly_Matched_Layer.md) for more information.
+`pml-layers` is a list of `pml` objects—you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make` `pml` `(thickness` `1.0)` `(direction` `X)` `(side` `High))` specifies a PML layer on only the $+x$ side. Now, we note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections; see [Perfectly Matched Layer](Perfectly_Matched_Layer.md) for more information.
 
 Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. (In general, at least 8 pixels/wavelength in the highest dielectric is a good idea.) This will give us a $160\times80$ cell.
 
@@ -137,7 +137,7 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 
  Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12×1 is centered at $(-2,-3.5)$. Also shown in green is the source plane at $x=-7$ (see below).
 
-We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in a separate [tutorial](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ (which excites many other frequencies because of the discontinuity), we will ramp it on slowly (technically, Meep uses a $\tanh$ turn-on function) over a time proportional to the `width` of 20 time units (a little over three periods). Finally, just for variety, we'll specify the (vacuum) `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ (which excites many other frequencies because of the discontinuity), we will ramp it on slowly (technically, Meep uses a $\tanh$ turn-on function) over a time proportional to the `width` of 20 time units (a little over three periods). Finally, just for variety, we'll specify the (vacuum) `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```scm
 (set! sources (list
@@ -521,12 +521,12 @@ Everything else about your simulation is the same: you can still get the fields 
 
 In general, the symmetry of the sources may require some phase. For example, if our source was in the $y$ direction instead of the $z$ direction, then the source would be *odd* under mirror flips through the $x$ axis. We would specify this by `(make mirror-sym (direction Y) (phase -1))`. See the [User Interface](../Scheme_User_Interface.md#symmetry) for more symmetry possibilities.
 
-In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
+In this case, we actually have a lot more symmetry that we could potentially exploit, if we are willing to restrict the symmetry of our source/fields to a particular angular momentum (i.e. angular dependence $e^{im\phi}$). See also [Tutorial/Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md) for how to solve for modes of this cylindrical geometry much more efficiently.
 
 More Examples
 -------------
 
-The examples above suffice to illustrate the most basic features of Meep. However, there are many more advanced features that have not been demonstrated here. So, we hope to add, over time, a sequence of examples that exhibit more complicated structures and computational techniques. The ones we have so far are listed below.
+The examples above suffice to illustrate the most basic features of Meep. However, there are many more advanced features that have not been demonstrated here:
 
 -   [Ring Resonator in Cylindrical Coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md)
 -   [Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)
@@ -536,7 +536,7 @@ The examples above suffice to illustrate the most basic features of Meep. Howeve
 -   [Local Density of States](Local_Density_of_States.md) (Purcell enhancement)
 -   [Optical Forces](Optical_Forces.md) (Maxwell stress tensor; also includes an `eigenmode-source` example)
 -   [Near to Far-Field Spectra](Near_to_Far_Field_Spectra.md) (radiation pattern of an antenna)
--   [Multilevel Atomic Susceptibility](Multilevel_Atomic_Susceptibility.md) (saturable absorption/gain)
+-   [Multilevel-Atomic Susceptibility](Multilevel_Atomic_Susceptibility.md) (saturable absorption/gain)
 
 Editors and ctl
 ---------------
