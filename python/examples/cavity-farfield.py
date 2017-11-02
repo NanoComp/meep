@@ -39,7 +39,7 @@ geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(1e20, w, 1e20),
 
 for i in range(N):
     geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
-    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / -2 + i)))
+    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)))
 
 pml_layers = mp.PML(dpml)
 resolution = 20
@@ -78,6 +78,6 @@ sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Hz, mp.Vector3(0.
 d2 = 20
 h = 4
 
-# output-farfields nearfield
-#   (string-append "spectra-" (number->string d1) "-" (number->string d2) "-" (number->string h))
-#   (volume (center 0 (+ (* 0.5 w) d2 (* 0.5 h))) (size (- sx (* 2 dpml)) h)) resolution)
+sim.output_farfields(nearfield, "spectra-{}-{}-{}".format(d1, d2, h),
+                     mp.Volume(mp.Vector3(0, (0.5 * w) + d2 + (0.5 * h)), size=mp.Vector3(sx - 2 * dpml, h)),
+                     resolution)
