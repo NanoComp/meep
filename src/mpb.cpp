@@ -681,9 +681,9 @@ void add_overlap_integral_contribution(fields *f,
          flux_fval /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
         // kinda byzantine: the second of the two E-field components
-        // is stored with a minus sign; and which component is the 
-        // second component depends on the direction 'd' that was  
-        // used to create the dft_flux
+        // is stored with a minus sign, which we want to remove for 
+        // our purposes; but *which* component is the second component 
+        // depends on the direction 'd' that was used to create the dft_flux
         if (     (d==X && c==Ez)
              ||  (d==Y && c==Ex)
              ||  (d==R && c==Ez)
