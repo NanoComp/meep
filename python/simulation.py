@@ -143,6 +143,15 @@ class FluxRegion(object):
         self.weight = complex(weight)
 
 
+class Near2FarRegion(object):
+
+    def __init__(self, center, size=mp.Vector3(), direction=AUTOMATIC, weight=1.0):
+        self.center = center
+        self.size = size
+        self.direction = direction
+        self.weight = complex(weight)
+
+
 Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 
@@ -481,6 +490,12 @@ class Simulation(object):
 
         return all_freqs
 
+    def set_epsilon(self, eps):
+        if self.fields is None:
+            self._init_fields()
+
+        self.structure.set_epsilon(eps, self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+
     def add_source(self, src):
         if self.fields is None:
             self._init_fields()
@@ -545,6 +560,19 @@ class Simulation(object):
                     src.amplitude * 1.0
                 )
 
+    def add_near2far(self, fcen, df, nfreq, *near2fars):
+        if self.fields is None:
+            self._init_fields()
+
+        return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
+
+    def get_farfield(self, f, v):
+        return mp._get_farfield(f, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
+
+    def output_farfields(self, near2far, fname, where, resolution):
+        vol = where.to_cylindrical() if self.is_cylindrical else where
+        near2far.save_farfields(fname, self._get_filename_prefix(), vol.swigobj, resolution)
+
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
             self._init_fields()
@@ -581,9 +609,10 @@ class Simulation(object):
             c = mp.direction_component(mp.Sx, d)
             v2 = Volume(center=s.center, size=s.size, dims=self.dimensions,
                         is_cylindrical=self.is_cylindrical).swigobj
-            vol_list = mp.volume_list(v2, c, s.weight, vol_list)
+            vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        vol_list = None
 
         return stuff
 
@@ -882,11 +911,19 @@ def display_progress(t0, t, dt):
     return _disp
 
 
+def data_to_str(d):
+    if type(d) is complex:
+        sign = '+' if d.imag >= 0 else ''
+        return "{}{}{}i".format(d.real, sign, d.imag)
+    else:
+        return str(d)
+
+
 def display_run_data(sim, data_name, data):
     if isinstance(data, Sequence):
-        data_str = [str(f) for f in data]
+        data_str = [data_to_str(f) for f in data]
     else:
-        data_str = [str(data)]
+        data_str = [data_to_str(data)]
     print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
 
 
