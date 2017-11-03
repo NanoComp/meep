@@ -1,6 +1,21 @@
-Near-field to far-field transformations.
+Add support for importing GDSII file format used in
+planar lithography.
+
+Output DFT array in readable format rather than as a dump
+of internal data structure.
+
+Discrete rotational symmetry in cylindrical coordinates.
+
+Near-field to far-field transformations for 2d cell with 1d periodicity
+and  3d cell with 2d periodicity.
 
 Gyromagnetic materials (via general anisotropic conductivities).
+
+Parallelize grid initialization for user-defined material
+function.
+
+Extend second-order accurate subpixel smoothing scheme to
+dispersive materials involving complex permittivity.
 
 Finish implementation of active materials (multilevel atoms and
 saturable absorption/gain).

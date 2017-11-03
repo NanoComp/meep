@@ -125,13 +125,11 @@ As discussed in Part I, the optimal value of $\sigma$ depends on the system unde
  (define-param T 20)  
 ```
 
-
 The only thing left to define is the function $g(-t)$. This is done with the Meep function `(make-casimir-g` `T` `dt` `Sigma` `ft)`:
 
 ```
  (define gt (make-casimir-g T (/ Courant resolution) Sigma Ex))
 ```
-
 
 Here we can pass in either field type Ex or Hx. Since the E/H fields are defined for integer/half-integer units of the time step dt, we technically require a different $g(t)$ for both polarizations, and this option is allowed. However, for this example we get sufficient accuracy by using the same function for all polarizations.
 
@@ -385,7 +383,7 @@ $\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2 - i\sigma \xi
 
 So the new dispersion is a Lorentzian, but with an additional loss term. This is the correct material to define in Meep.
 
-It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Scheme Tutorials/Material Dispersion](../Scheme_Tutorials/Material_Dispersion.md)). Here is how we go about it (further material examples are defined in [materials.scm](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm), and [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) demonstrates their use).
+It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Tutorial/Material Dispersion](Material_Dispersion). Here is how we go about it (further material examples are defined in [materials.scm](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm), and [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) demonstrates their use).
 
 ```scm
  (define length-scale 1e-6) ;length scale - units of 1 micron

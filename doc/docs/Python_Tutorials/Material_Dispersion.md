@@ -2,7 +2,7 @@
 # Material Dispersion
 ---
 
-In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also the `material-dispersion.ctl` file included with Meep. From the dispersion relation $\omega(k)$, we will compute the numerical $\varepsilon(\omega)$ via the formula:
+In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also the `material-dispersion.py` file in the `python/examples` subdirectory. From the dispersion relation $\omega(k)$, we will compute the numerical $\varepsilon(\omega)$ via the formula:
 
 $$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
@@ -10,22 +10,18 @@ We will then compare this with the analytical $\varepsilon(\omega)$ that we spec
 
 Since this is a uniform medium, our computational cell can actually be of *zero* size (i.e. one pixel), where we will use Bloch-periodic boundary conditions to specify the wavevector *k*.
 
-```scm
-(set! geometry-lattice (make lattice (size no-size no-size no-size)))
-(set-param! resolution 20)
+```py
+cell = mp.Vector3()
+resolution = 20
 ```
 
 We will then fill all space with a dispersive material:
 
-```scm
-(set! default-material
-      (make dielectric (epsilon 2.25)
-            (E-susceptibilities 
-             (make lorentzian-susceptibility
-               (frequency 1.1) (gamma 1e-5) (sigma 0.5))
-             (make lorentzian-susceptibility
-               (frequency 0.5) (gamma 0.1) (sigma 2e-5))
-             )))
+```py
+susceptibilities = [mp.LorentzianSusceptibility(frequency=1.1, gamma=1e-5, sigma=0.5),
+                    mp.LorentzianSusceptibility(frequency=0.5, gamma=0.1, sigma=2e-5)]
+
+default_material = mp.Medium(epsilon=2.25, E_susceptibilities=susceptibilities)
 ```
 
 corresponding to the dielectric function:
@@ -42,39 +38,40 @@ We can see that the f=1.1 resonance causes a large change in both the real and i
 
 On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of $\varepsilon$. Nevertheless, it generates a clear peak in the *imaginary* part of $\varepsilon$, corresponding to a resonant absorption peak.
 
-Now, we'll set up the rest of the simulation. We'll specify a broadband *S*-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $\omega(k)$ over, and compute the associated frequencies by using the `run-k-points` function:
+Now, we'll set up the rest of the simulation. We'll specify a broadband *S*-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $\omega(k)$ over, and compute the associated frequencies by using the `k_points` function:
 
-```scm
-(define-param fcen 1.0)
-(define-param df 2.0)
-(set! sources (list (make source
-                      (src (make gaussian-src (frequency fcen) (fwidth df)))
-                      (component Ez) (center 0 0 0))))
-(define-param kmin 0.3)
-(define-param kmax 2.2)
-(define-param k-interp 99)
-(define kpts (interpolate k-interp (list (vector3 kmin) (vector3 kmax))))
-(define all-freqs (run-k-points 200 kpts)) ; a list of lists of frequencies  
+```py
+fcen = 1.0
+df = 2.0
+
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3())]
+
+kmin = 0.3
+kmax = 2.2
+k_interp = 99
+
+kpts = mp.interpolate(k_interp, [mp.Vector3(kmin), mp.Vector3(kmax)])
+
+sim = mp.Simulation(cell_size=cell, geometry=[], sources=sources, default_material=default_material, resolution=resolution)
+
+all_freqs = sim.run(kpts, k_points=200)  # a list of lists of frequencies
 ```
 
-The `run-k-points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all-freqs` variable. Finally, we want to loop over this list and print out the corresponding $\varepsilon$ via the ratio $(ck/\omega)^2$ as described above. To do this, we will use the Scheme `map` function, which applies a given function to every element of a list (or lists), and since we have a list of lists we'll actually nest two `map` functions:
+The `k_points` function returns a *list of lists* of frequencies &mdash; one list of complex frequencies for each *k* point &mdash; which we store in the `all_freqs` variable. Finally, we want to loop over this list and print out the corresponding $\varepsilon$ via the ratio $(ck/\omega)^2$ as described above. To do this, we will use Python's `zip` function which combines multiple lists into one:
 
-```scm
-(map (lambda (kx fs)
-       (map (lambda (f)
-              (print "eps:, " (real-part f) ", " (imag-part f)
-                     ", " (sqr (/ kx f)) "\n"))
-            fs))
-     (map vector3-x kpts) all-freqs)
+```py
+for fs, kx in zip(all_freqs, [v.x for v in kpts]):
+    for f in fs:
+            print("eps:, {.6f}, {.6f}, {.6f}".format(f.real, f.imag, (kx / f)**2))
 ```
 
 Alternatively we could just read all of the frequencies into Octave/Matlab or a spreadsheet and compute the ratios there. After running the program with
 
 ```sh
-unix% meep material-dispersion.ctl | tee material-dispersion.out
+unix% python material-dispersion.py | tee material-dispersion.out
 ```
 
-we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation $\omega(k)$ for the real part of ω:
+we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation $\omega(k)$ for the real part of $\omega$:
 
 <center>
 ![](../images/Material-dispersion-bands.png)
