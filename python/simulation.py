@@ -911,21 +911,19 @@ def display_progress(t0, t, dt):
     return _disp
 
 
-def cmplx_to_str(c):
-    sign = '+' if c.imag >= 0 else '-'
-    return "{}{}{}i".format(c.real, sign, c.imag)
+def data_to_str(d):
+    if type(d) is complex:
+        sign = '+' if d.imag >= 0 else '-'
+        return "{}{}{}i".format(d.real, sign, d.imag)
+    else:
+        return str(d)
 
 
 def display_run_data(sim, data_name, data):
     if isinstance(data, Sequence):
-        for i in range(len(data)):
-            if type(data[i]) is complex:
-                data[i] = cmplx_to_str(data[i])
-        data_str = [str(f) for f in data]
+        data_str = [data_to_str(f) for f in data]
     else:
-        if type(data) is complex:
-            data = cmplx_to_str(data)
-        data_str = [str(data)]
+        data_str = [data_to_str(data)]
     print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
 
 
