@@ -62,8 +62,8 @@ material_type make_dielectric(double epsilon)
 
 static void material_type_destroy(material_type m)
 {
-  (void) m; // unused
-  // fixme: deallocate m->medium at least
+  if (m->medium)
+   delete m->medium;
 }
 
 static bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
@@ -121,8 +121,7 @@ material_type make_user_material(user_material_func user_func,
   md->user_func=user_func;
   md->user_data=user_data;
   md->medium=0;
-  material_type mt = { (void *)md };
-  return mt;
+  return md;
 }
 
 
@@ -294,7 +293,7 @@ static geom_box gv2box(const meep::volume &v)
 //      is_user_defined_material?
 static bool is_variable(material_type mt)
 {
-  return (md->which_subclass == material_data::MATERIAL_FUNCTION);
+  return (mt->which_subclass == material_data::MATERIAL_FUNCTION);
 }
 static bool is_variable(void* md) { return is_variable((material_type) md); }
 
@@ -632,7 +631,8 @@ static material_type eval_material_func(function material_func, vector3 p)
 
 static void material_epsmu(meep::field_type ft, material_type material,
 		    symmetric_matrix *epsmu, symmetric_matrix *epsmu_inv) {
-  material_data *md=(material_data *)material.data;
+
+  material_data *md=material;
   if (ft == meep::E_stuff)
     switch (md->which_subclass) {
 
@@ -711,15 +711,9 @@ bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
   }
   else if (md->which_subclass == material_data::MATERIAL_FUNCTION) { 
 
-    // is *THIS* what I want to do here? This can't be right...
-    material_data *new_material_data = (material_data *)malloc(sizeof(material_data));
-    new_material_data->which_subclass = material_data::MEDIUM;
-    new_material_data->user_func = 0;
-    new_material_data->user_data = 0;
-    new_material_data->medium = md->user_func(p, md->user_data);
-    material.data = (void *)new_material_data;
+    md->which_subclass = material_data::MEDIUM;
+    md->medium = md->user_func(p, md->user_data);
     destroy_material = true;
-
   }
   return destroy_material;
 } 

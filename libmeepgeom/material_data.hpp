@@ -73,11 +73,6 @@ typedef struct medium_struct {
 // at point x
 typedef medium_struct *(*user_material_func)(vector3 x, void *user_data);
 
-typedef struct material_type_list
- { material_type *items;
-   int num_items;
- } material_type_list;
-
 typedef struct material_data_struct
  {
    enum { MATERIAL_TYPE_SELF, MATERIAL_FUNCTION, PERFECT_METAL, MEDIUM } which_subclass;
