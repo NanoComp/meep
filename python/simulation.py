@@ -913,7 +913,7 @@ def display_progress(t0, t, dt):
 
 def data_to_str(d):
     if type(d) is complex:
-        sign = '+' if d.imag >= 0 else '-'
+        sign = '+' if d.imag >= 0 else ''
         return "{}{}{}i".format(d.real, sign, d.imag)
     else:
         return str(d)
