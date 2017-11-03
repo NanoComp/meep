@@ -68,18 +68,6 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 }
 
-cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
-                                          int num_freq,
-                                          direction d,
-                                          const volume &where,
-                                          int band_num,
-                                          kpoint_func k_func,
-                                          k_func_data)
-{ (void) flux; (void) num_freq; (void) d; (void) where;
-  (void) band_num; (void) k_func; (void) k_func_data;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode_soefficient");
-}
-
 std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux *flux,
                                           direction d,
                                           const volume &where,
@@ -90,7 +78,6 @@ std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux *flux,
   (void) k_func; (void) k_func_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_soefficient");
 }
-
 
 #else // HAVE_MPB
 
@@ -647,12 +634,6 @@ void add_overlap_integral_contribution(fields *f,
 {
 (void) f;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-#if 0
-char FileName[100];
-static int which=0;
-sprintf(FileName,"/tmp/Log%i_%s_%i",my_rank(),component_name(c),which++);
-FILE *LogFile = fopen(FileName,"a");
-#endif
 cdouble cnum=0.0, cdenom=0.0;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
@@ -686,11 +667,6 @@ cdouble cnum=0.0, cdenom=0.0;
           || (c>=Hx && (c!=H->c) )
         ) continue;
 
-     // what are the 'scale' and 'extra_weight' fields in
-     // dft_chunk used for?
-     // cdouble scale        = ( (c<=Ez) ? E->scale        : H->scale;
-     // cdouble extra_weight = ( (c<=Ez) ? E->extra_weight : H->extra_weight );
-
      vec rshift(shift * (0.5*fc->gv.inva));
 
      // loop over all points in the current dft_chunk
@@ -701,6 +677,7 @@ cdouble cnum=0.0, cdenom=0.0;
         IVEC_LOOP_LOC(fc->gv, loc);
         loc = S.transform(loc, sn) + rshift;
         double weight=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+        cdouble extra_weight = ( (c<=Ez) ? E->extra_weight : H->extra_weight );
 
         // get the E or H field component at this grid point
         cdouble flux_fval = (c<=Ez ? E->dft[chunk_idx*Nfreq + num_freq]
@@ -715,20 +692,6 @@ cdouble cnum=0.0, cdenom=0.0;
         num   += weight * mode_fval * flux_fval;
         denom += weight * flux_fval * flux_fval;
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-cnum   += weight * conj(mode_fval) * flux_fval;
-cdenom += weight * conj(flux_fval) * flux_fval;
-#if 0
-if (LogFile)
-{
- fprintf(LogFile,"%e %e %e %i ",loc.x(), loc.y(), loc.z(),c);
- fprintf(LogFile,"%e %e ",real(flux_fval),imag(flux_fval));
- fprintf(LogFile,"%e %e ",real(mode_fval),imag(mode_fval));
- fprintf(LogFile,"\n");
-};
-#endif
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-
       }; // LOOP_OVER_IVECS
    }; // for ( dft_chunk *E=Echunks, *H=Hchunks ...
 
@@ -737,27 +700,6 @@ if (LogFile)
   full_num_denom[0] += num;
   full_num_denom[1] += denom;
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-#if 0
-if (LogFile)
- { fprintf(LogFile,"\n\n");
-   fclose(LogFile);
- };
-#endif
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-
-cnum   = sum_to_all(cnum);
-cdenom = sum_to_all(cdenom);
-
-if (am_master())
-{
-static cdouble tnum=0.0, tdenom=0.0, tcnum=0.0, tcdenom=0.0;
-tnum+=num;
-tdenom+=denom;
-tcnum+=cnum;
-tcdenom+=cdenom;
-FILE *ff=fopen("/tmp/log.out","a");
-  fprintf(ff,"\n** nfreq=%i (%e) nband=%i \n",num_freq,edata->omega,edata->band_num);
   fprintf(ff,"uComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
                                 component_name(c),
                                 real(num), imag(num),
@@ -898,6 +840,98 @@ std::vector<cdouble>
                                  k_func, k_func_data);
 
   return coeffs;
+}
+
+=======
+}
+
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+}
+
+/***************************************************************/
+/* call get_eigenmode() to solve for the specified eigenmode,  */
+/* then call add_overlap_integral_contribution() multiple times*/
+/* to sum all contributions to the numerator and denominator   */
+/* of the eigenmode expansion coefficients                     */
+/***************************************************************/
+std::complex<double> fields::get_eigenmode_coefficient(dft_flux *flux,
+                                                       direction d,
+                                                       const volume &where,
+                                                       int band_num)
+{
+  int num_freq=0;
+
+  /*--------------------------------------------------------------*/
+  /* step 1: call MPB to compute the eigenmode                   -*/
+  /*--------------------------------------------------------------*/
+  vec kpoint(0.0,0.0,0.303278);
+  bool match_frequency=true;
+  int parity=0; 
+  double resolution=a;
+  double eigensolver_tol=1.0e-7;
+  double omega = flux->freq_min + 0.5*(flux->Nfreq*flux->dfreq);
+  eigenmode_data *edata
+   =(eigenmode_data *)get_eigenmode(omega, d, where, where,
+                                    band_num, kpoint, match_frequency,
+                                    parity, resolution, 
+                                    eigensolver_tol);
+
+  /*--------------------------------------------------------------*/
+  /* step 2: sum contributions of all 4 surface-current cmpnents  */
+  /*         to numerator and denominator of overlap integral     */
+  /* num   = <caller's field | eigenmode>                         */
+  /* denom = <eigenmode      | eigenmode>                         */
+  /*--------------------------------------------------------------*/
+
+  // step 2a: electric-current components 
+  //            = nHat \times magnetic-field components
+  cdouble numdenom[2]={0.0,0.0};
+
+  FOR_ELECTRIC_COMPONENTS(c)
+   {  
+     if ( !(gv.has_field(c)) ) continue;
+     // TODO restore parity check
+
+     if ( (d+1)%3 == component_direction(c)%3 )
+      { edata->component = (d+2)%3;
+        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
+      }
+     else if ( (d+2)%3 == component_direction(c)%3 )
+      { edata->component = (d+1)%3;
+        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
+      }
+   };
+
+  // step 2b: post-processing step to replace H-field components
+  //          with E-field components in the internal data buffer
+  //          inside mdata; cf. Part 3 of get_eigenmode() above
+  switch_eigenmode_data_to_electric_field(edata);
+
+  // step 2c: magnetic-current components 
+  //            = -nHat \times electric-field components
+  FOR_MAGNETIC_COMPONENTS(c)
+   { 
+     if ( !(gv.has_field(c)) ) continue;
+     // TODO restore parity check
+
+     if ( (d+1)%3 == component_direction(c)%3 )
+      { edata->component = (d+2)%3;
+        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
+      }
+     else if ( (d+2)%3 == component_direction(c)%3 )
+      { edata->component = (d+1)%3;
+        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
+      }
+   };
+
+  destroy_eigenmode_data(edata);
+
+  cdouble num=numdenom[0], denom=numdenom[1];
+  if( denom==0.0 )
+   { master_printf("**warning: denominator in get_eigenmode_coefficient**");
+    return 0.0;
+   };
+  return num/denom;
 }
 
 #endif // HAVE_MPB

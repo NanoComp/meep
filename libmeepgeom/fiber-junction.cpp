@@ -31,6 +31,12 @@ vec k_guess(void *user_data, double freq, int band_num)
  
   return vec(0.0, 0.0, 0.303278);
 } 
+vector3 v3(double x, double y=0.0, double z=0.0)
+{
+  vector3 v;
+  v.x=x; v.y=y; v.z=z;
+  return v;
+}
 
 /***************************************************************/
 /* dummy material function needed to pass to structure( )      */
@@ -82,7 +88,6 @@ int main(int argc, char *argv[])
       }; 
    };
 
-
   /***************************************************************/
   /* set up geometry: cylinder of radius r in a 2D computational */
   /* cell of size LxL (z-invariant)                              */
@@ -112,19 +117,28 @@ int main(int argc, char *argv[])
   geometric_object_list g={ 1, objects }; 
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
+  f.output_hdf5(Dielectric,f.total_volume());
 
   /***************************************************************/
   /* add sources: point source (if --point_source option present */
   /* or eigenmode source of band band_num                        */
   /***************************************************************/
+  // ; If we don't want to excite a specific mode symmetry, we can just
+  // ; put a single point source at some arbitrary place, pointing in some
+  // ; arbitrary direction.  We will only look for TM modes (E out of the plane).
+  // (set! sources (list
+  //              (make source
+  //                (src (make gaussian-src (frequency fcen) (fwidth df)))
+  //                (component Ez) (center (+ r 0.1) 0))))
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
-  int nfreq   = 10;
+  int nfreq   = 1;
   gaussian_src_time src(fcen, df);
   volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
   if (point_source)
    { 
-     f.add_point_source(Ez, src, vec(0.1, 0.2) ); }
+     f.add_point_source(Ez, src, vec(0.1, 0.2) );
+   }
   else
    {
      vec kpoint(0,0,0.303278);
@@ -174,6 +188,25 @@ int main(int argc, char *argv[])
                  nf,flux.freq_min + nf*flux.dfreq,bands[nb],
                  real(alpha), imag(alpha), alphaMag, alphaArg);
        };
+  //dft_flux flux=f.add_dft_flux(Z, fv, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux flux=f.add_dft_flux(Z, fv, fcen, fcen, 1);
+
+  // (run-sources+ 300 
+  // 	(at-beginning output-epsilon)
+  // 	(after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
+  while( f.round_time() < (f.last_source_time() + 100.0) )
+   f.step();
+             
+  for(int bn=1; bn<3; bn++)
+   { 
+     if (am_master())
+      { FILE *ff=fopen("/tmp/log.out","a");
+        fprintf(ff,"\n\n** Band %i: \n",bn);
+        fclose(ff);
+      };
+     cdouble coeff=f.get_eigenmode_coefficient(&flux, Z, fv, bn);
+     if (am_master())
+      printf("bn=%i: {%+.8e, %+.8e}\n",bn,real(coeff),imag(coeff));
    };
   
   return 0;

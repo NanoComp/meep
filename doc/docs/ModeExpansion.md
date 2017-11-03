@@ -91,27 +91,7 @@ where
 
 + `bands` is an array of integers that you populate with the indices of the modes for which you want expansion coefficients
 
-+ `user_func` is an *optional* function you supply to provide initial estimates of the wavevector of a mode with given frequency and band index; if nonzero, it should be a function pointer to a function of prototype
-=======
-std::vec<cdouble> fields::get_mode_coefficients(dft_flux flux,
-                                                direction d,
-                                                const volume where,
-                                                std::vec<int> bands,
-                                                kpoint_func user_func=0,
-                                                void *user_data=0);
-```
-where
-
-+ `flux` is a `dft_flux` object pre-populated with frequency-domain field data from a time-domain MEEP calculation you have run
-
-+ `d` is the direction of power flow in the waveguide
-
-+ `where` is a `volume` corresponding to the cross-sectional area $\Gamma$ over which we integrate in equation (1) above to extract mode-expansion coefficients
-
-+ `bands` is an array of integers that you populate with the indices of the modes for which you want expansion coefficients
-
-+ `user_func` is an *optional* function you supply to provide
-initial estimates of the wavevector of a mode with given
++ `user_func` is an *optional* function you supply to provide initial estimates of the wavevector of a mode with given
 frequency and band index; its prototype is
 
 ```c++
@@ -123,7 +103,6 @@ wavevector of the `band`th mode at frequency `freq`.
 
 The return value of `get_mode_coefficients` is an array
 of type `cdouble` (short for `std::complex<double>`),
-<<<<<<< HEAD
 of length `num_freqs * num_bands`, where `num_freqs`
 is the number of frequencies stored in your `flux` object
 (equal to `flux->Nfreq`) and `num_bands` is the length
@@ -156,7 +135,6 @@ $z=0$.
 The code for this problem is in `libmeepgeom/WaveguideJunction.cpp.`
 This code offers a command-line option `--ratio` that sets the
 ratio $h_2/h_1$ of the waveguide thicknesses; the default
-<<<<<<< HEAD
 value is `--ratio 2` (bigger slab is 2$\times$ thickness
 of smaller slab), while for `--ratio 1` the two waveguides
 are in fact identical and there should be no power
@@ -181,6 +159,7 @@ in the larger waveguide.
 Again the code offers a command-line option `--ratio` that sets the
 ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
 while for `--ratio 1` we expect perfect transmission of power
+<<<<<<< HEAD
 $z=0$.
  
 ## Under the hood: How mode expansion works
@@ -204,6 +183,7 @@ $$
 where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
+across $z=0$.
 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md
