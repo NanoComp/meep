@@ -143,6 +143,15 @@ class FluxRegion(object):
         self.weight = complex(weight)
 
 
+class Near2FarRegion(object):
+
+    def __init__(self, center, size=mp.Vector3(), direction=AUTOMATIC, weight=1.0):
+        self.center = center
+        self.size = size
+        self.direction = direction
+        self.weight = complex(weight)
+
+
 Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 
 
@@ -551,6 +560,19 @@ class Simulation(object):
                     src.amplitude * 1.0
                 )
 
+    def add_near2far(self, fcen, df, nfreq, *near2fars):
+        if self.fields is None:
+            self._init_fields()
+
+        return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
+
+    def get_farfield(self, f, v):
+        return mp._get_farfield(f, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
+
+    def output_farfields(self, near2far, fname, where, resolution):
+        vol = where.to_cylindrical() if self.is_cylindrical else where
+        near2far.save_farfields(fname, self._get_filename_prefix(), vol.swigobj, resolution)
+
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
             self._init_fields()
@@ -587,9 +609,10 @@ class Simulation(object):
             c = mp.direction_component(mp.Sx, d)
             v2 = Volume(center=s.center, size=s.size, dims=self.dimensions,
                         is_cylindrical=self.is_cylindrical).swigobj
-            vol_list = mp.volume_list(v2, c, s.weight, vol_list)
+            vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
+        vol_list = None
 
         return stuff
 
