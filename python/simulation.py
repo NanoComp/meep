@@ -911,11 +911,19 @@ def display_progress(t0, t, dt):
     return _disp
 
 
+def data_to_str(d):
+    if type(d) is complex:
+        sign = '+' if d.imag >= 0 else ''
+        return "{}{}{}i".format(d.real, sign, d.imag)
+    else:
+        return str(d)
+
+
 def display_run_data(sim, data_name, data):
     if isinstance(data, Sequence):
-        data_str = [str(f) for f in data]
+        data_str = [data_to_str(f) for f in data]
     else:
-        data_str = [str(data)]
+        data_str = [data_to_str(data)]
     print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
 
 
