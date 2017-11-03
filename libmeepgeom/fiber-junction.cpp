@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* set up geometry: cylinder of radius r in a 2D computational */
   /* cell of size LxL (z-invariant)                              */
-  /***************************************************************/
+
   double n=3.0;     // index of waveguide
   double r=1.0;     // cylinder radius
   double L=5.0;     // size of computational cell
@@ -130,6 +130,8 @@ int main(int argc, char *argv[])
   /* add sources: point source (if --point_source option present */
   /* or eigenmode source of band band_num                        */
   /***************************************************************/
+
+  f.output_hdf5(Dielectric,f.total_volume());
 
   /***************************************************************/
   /* add sources: point source (if --point_source option present */
