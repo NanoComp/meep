@@ -31,6 +31,12 @@ vec k_guess(void *user_data, double freq, int band_num)
  
   return vec(0.0, 0.0, 0.303278);
 } 
+vector3 v3(double x, double y=0.0, double z=0.0)
+{
+  vector3 v;
+  v.x=x; v.y=y; v.z=z;
+  return v;
+}
 
 /***************************************************************/
 /* dummy material function needed to pass to structure( )      */
@@ -82,11 +88,10 @@ int main(int argc, char *argv[])
       }; 
    };
 
-
   /***************************************************************/
   /* set up geometry: cylinder of radius r in a 2D computational */
   /* cell of size LxL (z-invariant)                              */
-  /***************************************************************/
+
   double n=3.0;     // index of waveguide
   double r=1.0;     // cylinder radius
   double L=5.0;     // size of computational cell
@@ -113,18 +118,21 @@ int main(int argc, char *argv[])
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
 
+  f.output_hdf5(Dielectric,f.total_volume());
+
   /***************************************************************/
   /* add sources: point source (if --point_source option present */
   /* or eigenmode source of band band_num                        */
   /***************************************************************/
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
-  int nfreq   = 10;
+  int nfreq   = 1;
   gaussian_src_time src(fcen, df);
   volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
   if (point_source)
    { 
-     f.add_point_source(Ez, src, vec(0.1, 0.2) ); }
+     f.add_point_source(Ez, src, vec(0.1, 0.2) );
+   }
   else
    {
      vec kpoint(0,0,0.303278);

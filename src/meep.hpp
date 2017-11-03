@@ -1389,12 +1389,6 @@ class fields {
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
 
-  std::complex<double> 
-   get_eigenmode_coefficient(dft_flux *flux, int num_freq,
-                             direction d, const volume &where,
-                             int band_num, kpoint_func k_func=0,
-                             void *k_func_data=0);
-
   std::vector< std::complex<double> >
    get_eigenmode_coefficients(dft_flux *flux, direction d,
                               const volume &where,
