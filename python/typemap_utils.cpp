@@ -81,10 +81,24 @@ static PyObject* vec2py(const meep::vec &v) {
         z = v.z();
         break;
       case meep::Dcyl:
-        return Py_BuildValue("(ddd)", v.r(), v.z(), 0);
+        x = v.r();
+        z = v.z();
+        break;
     }
 
-    return Py_BuildValue("(ddd)", x, y, z);
+    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+    PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+
+    PyObject *kwargs = Py_BuildValue("{s:d,s:d,s:d}", "x", x, "y", y, "z", z);
+    PyObject *args = PyTuple_New(0);
+    PyObject *pyv3 = PyObject_Call(v3_class, args, kwargs);
+
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+    Py_DECREF(geom_mod);
+    Py_DECREF(v3_class);
+
+    return pyv3;
 }
 
 static double py_callback_wrap(const meep::vec &v) {
@@ -95,7 +109,6 @@ static double py_callback_wrap(const meep::vec &v) {
     Py_XDECREF(pyret);
     return ret;
 }
-
 
 static int pyv3_to_v3(PyObject *po, vector3 *v) {
 

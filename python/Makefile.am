@@ -31,12 +31,13 @@ endif
 TEST_DIR = tests
 TESTS =                                 \
     $(TEST_DIR)/3rd_harm_1d.py          \
+    $(TEST_DIR)/antenna_radiation.py    \
     $(TEST_DIR)/bend_flux.py            \
     $(TEST_DIR)/cyl_ellipsoid.py        \
     $(TEST_DIR)/geom.py                 \
     $(TEST_DIR)/holey_wvg_bands.py      \
     $(TEST_DIR)/holey_wvg_cavity.py     \
-    $(MDPYTEST)				\
+    $(MDPYTEST)                         \
     $(TEST_DIR)/physical.py             \
     $(TEST_DIR)/ring.py                 \
     $(TEST_DIR)/ring_cyl.py             \

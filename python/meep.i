@@ -131,6 +131,34 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
     return res;
 }
+
+// Wrapper around meep::dft_near2far::farfield
+PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
+    Py_ssize_t len = f->Nfreq * 6;
+    PyObject *res = PyList_New(len);
+
+    std::complex<double> *ff_arr = f->farfield(v);
+
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyList_SetItem(res, i, PyComplex_FromDoubles(ff_arr[i].real(), ff_arr[i].imag()));
+    }
+
+    return res;
+}
+
+/* This is a wrapper function to fool SWIG...since our list constructor
+   takes ownership of the next pointer, we have to make sure that SWIG
+   does not garbage-collect volume_list objects.  We do
+   this by wrapping a "helper" function around the constructor which
+   does not have the %newobject SWIG attribute.   Note that we then
+   need to deallocate the list explicitly in Python. */
+meep::volume_list *make_volume_list(const meep::volume &v, int c,
+                                    std::complex<double> weight,
+                                    meep::volume_list *next) {
+
+    return new meep::volume_list(v, c, weight, next);
+}
+
 %}
 
 // This is necessary so that SWIG wraps py_pml_profile as a SWIG function
@@ -142,6 +170,12 @@ double py_pml_profile(double u, void *f);
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
                      double spectral_density, double Q_thresh, double rel_err_thresh,
                      double err_thresh, double rel_amp_thresh, double amp_thresh);
+
+PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
+
+meep::volume_list *make_volume_list(const meep::volume &v, int c,
+                                    std::complex<double> weight,
+                                    meep::volume_list *next);
 
 // Typemap suite for do_harminv
 
@@ -349,6 +383,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Harminv,
         Identity,
         Mirror,
+        Near2FarRegion,
         PML,
         Rotate2,
         Rotate4,
