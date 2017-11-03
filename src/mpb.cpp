@@ -607,12 +607,10 @@ void add_overlap_integral_contribution(fields *f,
                                        cdouble full_num_denom[2])
 {
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-#if 0
 char FileName[100];
 static int which=0;
 sprintf(FileName,"/tmp/Log%i_%s_%i",my_rank(),component_name(c),which++);
 FILE *LogFile = fopen(FileName,"a");
-#endif
 cdouble cnum=0.0, cdenom=0.0;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
@@ -665,9 +663,9 @@ cdouble cnum=0.0, cdenom=0.0;
          flux_fval /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
         // kinda byzantine: the second of the two E-field components
-        // is stored with a minus sign; and which component is the 
-        // second component depends on the direction 'd' that was  
-        // used to create the dft_flux
+        // is stored with a minus sign, which we want to remove for 
+        // our purposes; but *which* component is the second component 
+        // depends on the direction 'd' that was used to create the dft_flux
         if (     (d==X && c==Ez)
              ||  (d==Y && c==Ex)
              ||  (d==R && c==Ez)
@@ -686,10 +684,10 @@ cdouble cnum=0.0, cdenom=0.0;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 cnum   += w * conj(mode_fval) * flux_fval;
 cdenom += w * conj(flux_fval) * flux_fval;
-#if 0
+#if 1
 if (LogFile)
 {
- fprintf(LogFile,"%e %e %e %i ",loc.x(), loc.y(), loc.z(),c);
+ fprintf(LogFile,"%e %e %e %i %i ",loc.x(), loc.y(), loc.z(),c,edata->component);
  fprintf(LogFile,"%e %e ",real(flux_fval),imag(flux_fval));
  fprintf(LogFile,"%e %e ",real(mode_fval),imag(mode_fval));
  fprintf(LogFile,"\n");
@@ -706,7 +704,7 @@ if (LogFile)
   full_num_denom[1] += denom;
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-#if 0
+#if 1
 if (LogFile)
  { fprintf(LogFile,"\n\n");
    fclose(LogFile);
