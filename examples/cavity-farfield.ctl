@@ -27,8 +27,8 @@
 (set! pml-layers (list (make pml (thickness dpml))))
 (set-param! resolution 20)
 
-(define-param fcen 0.25) ; pulse center frequency                         
-(define-param df 0.2)  ; pulse width (in frequency) 
+(define-param fcen 0.25) ; pulse center frequency
+(define-param df 0.2)  ; pulse width (in frequency)
 
 (define-param nfreq 500) ; number of frequencies at which to compute flux
 

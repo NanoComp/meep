@@ -563,6 +563,10 @@ class Simulation(object):
     def get_farfield(self, f, v):
         return mp._get_farfield(f, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
+    def output_farfields(self, near2far, fname, where, resolution):
+        vol = where.to_cylindrical() if self.is_cylindrical else where
+        near2far.save_farfields(fname, self._get_filename_prefix(), vol.swigobj, resolution)
+
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
             self._init_fields()
