@@ -612,7 +612,7 @@ class Simulation(object):
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
 
         stuff = add_dft_stuff(vol_list, fcen - df / 2, fcen + df / 2, nfreq)
-        vol_list = None
+        vol_list.__swig_destroy__(vol_list)
 
         return stuff
 
