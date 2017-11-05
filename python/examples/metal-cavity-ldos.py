@@ -1,6 +1,7 @@
 from __future__ import division
 
 import math
+
 import meep as mp
 import argparse
 
