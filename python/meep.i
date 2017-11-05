@@ -144,6 +144,56 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(ff_arr[i].real(), ff_arr[i].imag()));
     }
 
+    delete ff_arr;
+
+    return res;
+}
+
+// Wrapper around meep::dft_ldos::ldos
+PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
+    Py_ssize_t len = f->Nomega;
+    PyObject *res = PyList_New(len);
+
+    double *tmp = f->ldos();
+
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyList_SetItem(res, i, PyFloat_FromDouble(tmp[i]));
+    }
+
+    delete tmp;
+
+    return res;
+}
+
+// Wrapper around meep::dft_ldos_F
+PyObject *_dft_ldos_F(meep::dft_ldos *f) {
+    Py_ssize_t len = f->Nomega;
+    PyObject *res = PyList_New(len);
+
+    std::complex<double> *tmp = f->F();
+
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyList_SetItem(res, i, PyComplex_FromDoubles(tmp[i].real(), tmp[i].imag()));
+    }
+
+    delete tmp;
+
+    return res;
+}
+
+// Wrapper arond meep::dft_ldos_J
+PyObject *_dft_ldos_J(meep::dft_ldos *f) {
+    Py_ssize_t len = f->Nomega;
+    PyObject *res = PyList_New(len);
+
+    std::complex<double> *tmp = f->J();
+
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyList_SetItem(res, i, PyComplex_FromDoubles(tmp[i].real(), tmp[i].imag()));
+    }
+
+    delete tmp;
+
     return res;
 }
 
@@ -173,7 +223,9 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
                      double err_thresh, double rel_amp_thresh, double amp_thresh);
 
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
-
+PyObject *_dft_ldos_ldos(meep::dft_ldos *f);
+PyObject *_dft_ldos_F(meep::dft_ldos *f);
+PyObject *_dft_ldos_J(meep::dft_ldos *f);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);

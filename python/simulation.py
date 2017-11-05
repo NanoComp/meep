@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import math
 import numbers
 import os
 import re
@@ -1038,6 +1039,32 @@ def output_poynting_r(sim):
 
 def output_poynting_p(sim):
     sim.output_component(mp.Sp)
+
+
+def get_ldos_freqs(f):
+    start = f.omega_min / (2 * math.pi)
+    stop = start + (f.domega / (2 * math.pi)) * f.Nomega
+    return np.linspace(start, stop, num=f.Nomega, endpoint=False).tolist()
+
+
+def dft_ldos(fcen, df, nfreq):
+    ldos = mp.dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
+
+    closure = {
+        'data': None,
+        'Fdata': None,
+        'Jdata': None
+    }
+
+    def _ldos(sim, todo):
+        if todo == 'step':
+            ldos.update(sim._fields)
+            closure['data'] = mp._dft_ldos_ldos(ldos)
+            closure['Fdata'] = mp._dft_ldos_F(ldos)
+            closure['Jdata'] = mp._dft_ldos_J(ldos)
+            display_csv(sim, 'ldos', get_ldos_freqs(ldos))
+            return closure['data']
+    return _ldos
 
 
 def get_flux_freqs(f):
