@@ -86,25 +86,35 @@ static PyObject* vec2py(const meep::vec &v) {
         break;
     }
 
-    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-    PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+    if (py_callback_v3 == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+        PyObject *args = PyTuple_New(0);
+        py_callback_v3 = PyObject_Call(v3_class, args, NULL);
 
-    PyObject *kwargs = Py_BuildValue("{s:d,s:d,s:d}", "x", x, "y", y, "z", z);
-    PyObject *args = PyTuple_New(0);
-    PyObject *pyv3 = PyObject_Call(v3_class, args, kwargs);
+        Py_DECREF(args);
+        Py_DECREF(geom_mod);
+        Py_DECREF(v3_class);
+    }
 
-    Py_DECREF(args);
-    Py_DECREF(kwargs);
-    Py_DECREF(geom_mod);
-    Py_DECREF(v3_class);
+    PyObject *pyx = PyFloat_FromDouble(x);
+    PyObject *pyy = PyFloat_FromDouble(y);
+    PyObject *pyz = PyFloat_FromDouble(z);
 
-    return pyv3;
+    PyObject_SetAttrString(py_callback_v3, "x", pyx);
+    PyObject_SetAttrString(py_callback_v3, "y", pyy);
+    PyObject_SetAttrString(py_callback_v3, "z", pyz);
+
+    Py_DECREF(pyx);
+    Py_DECREF(pyy);
+    Py_DECREF(pyz);
+
+    return py_callback_v3;
 }
 
 static double py_callback_wrap(const meep::vec &v) {
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
-    Py_XDECREF(pyv);
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
     return ret;
