@@ -1,36 +1,16 @@
 import meep as mp
 
 
-# Some parameters to describe the geometry:
+eps = 13                           # dielectric constant of waveguide
+w = 1.2                            # width of waveguide
+r = 0.36                           # radius of holes
+d = 1.4                            # defect spacing (ordinary spacing = 1)
+N = 3                              # number of holes on either side of defect
 
-# dielectric constant of waveguide
-eps = 13
-
-# width of waveguide
-w = 1.2
-
-# radius of holes
-r = 0.36
-
-# defect spacing (ordinary spacing = 1)
-d = 1.4
-
-# number of holes on either side of defect
-N = 3
-
-# The cell dimensions
-
-# size of cell in y direction (perpendicular to wvg.)
-sy = 6
-
-# padding between last hole and PML edge
-pad = 2
-
-# PML thickness
-dpml = 1
-
-# size of cell in x direction
-sx = 2 * (pad + dpml + N) + d - 1
+sy = 6                             # size of cell in y direction (perpendicular to wvg.)
+pad = 2                            # padding between last hole and PML edge
+dpml = 1                           # PML thickness
+sx = 2 * (pad + dpml + N) + d - 1  # size of cell in x direction
 
 cell = mp.Vector3(sx, sy, 0)
 
@@ -44,14 +24,8 @@ for i in range(N):
 pml_layers = mp.PML(dpml)
 resolution = 20
 
-# pulse center frequency
-fcen = 0.25
-
-# pulse width (in frequency)
-df = 0.2
-
-# number of frequencies at which to compute flux
-nfreq = 500
+fcen = 0.25                        # pulse center frequency
+df = 0.2                           # pulse width (in frequency)
 
 sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Hz, center=mp.Vector3())
 

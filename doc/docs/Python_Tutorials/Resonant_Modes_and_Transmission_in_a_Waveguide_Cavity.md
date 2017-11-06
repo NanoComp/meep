@@ -79,7 +79,7 @@ The absorbing boundaries surrounding the computational cell are:
 pml_layers = [mp.PML(1.0)]
 ```
 
-Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a $P$-polarized band gap for frequencies in the range 0.2 to 0.3, so we'll want to cover this interval.
+Now, we'll define a couple of parameters to determine the frequency range to investigate. We already know from our calculation below that this structure has a $H_z$-polarized band gap for frequencies in the range 0.2 to 0.3, so we'll want to cover this interval.
 
 ```py
 fcen = args.fcen   # pulse center frequency
@@ -213,7 +213,7 @@ Our new source is still a Gaussian, but is now a point source at the origin:
 src = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Hz, mp.Vector3(0))]
 ```
 
-Moreover, we are now using a *magnetic* current oriented in the $z$ direction ($H_z$). This source matches the symmetry of the $P$-polarized resonant mode that we are looking for. If we didn't know in advance what symmetry we were looking for, we would put the source off-center in a non-symmetric location, which would excite *all* modes regardless of symmetry. However, in many cases the symmetry is known, and placing a symmetric source allows us to limit the number of modes we excite and also to exploit the fact that we now have *two* mirror symmetry planes in this problem, saving us a factor of *four* in computation:
+Moreover, we are now using a *magnetic* current oriented in the $z$ direction ($H_z$). This source matches the symmetry of the $H_z$-polarized resonant mode that we are looking for. If we didn't know in advance what symmetry we were looking for, we would put the source off-center in a non-symmetric location, which would excite *all* modes regardless of symmetry. However, in many cases the symmetry is known, and placing a symmetric source allows us to limit the number of modes we excite and also to exploit the fact that we now have *two* mirror symmetry planes in this problem, saving us a factor of *four* in computation:
 
 ```py
 sym = [mp.Mirror(mp.Y, phase=-1), mp.Mirror(mp.X, phase=-1)]
@@ -343,7 +343,7 @@ s = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Hz,
               center=mp.Vector3(0.1234,0))
 ```
 
-Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is random, to help ensure that the source will couple to an arbitrary mode, but the $y$ coordinate is 0. This means that we will only be looking at *P*-polarized *odd*-symmetry modes (recalling the pseudovector subtlety discussed above). As usually, we will exploit this via:
+Notice that we put our source at $(0.1234,0)$. The $x$ coordinate is random, to help ensure that the source will couple to an arbitrary mode, but the $y$ coordinate is 0. This means that we will only be looking at $H_z$-polarized *odd*-symmetry modes (recalling the pseudovector subtlety discussed above). As usually, we will exploit this via:
 
 ```py
 sym = mp.Mirror(direction=mp.Y, phase=-1)

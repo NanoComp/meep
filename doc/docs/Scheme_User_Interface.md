@@ -289,7 +289,7 @@ The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a re
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The loss rate $\gamma_n / 2\pi$.
 
-Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be [computed more efficiently](http://math.mit.edu/~stevenj/papers/RodriguezRe13-heat.pdf) using frequency domain techniques, e.g. via our [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/) code.
+Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be [computed more efficiently](http://math.mit.edu/~stevenj/papers/RodriguezRe13-heat.pdf) using frequency domain techniques, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
 
 **`noisy-lorentzian-susceptibility` or `noisy-drude-susceptibility`**  
 
@@ -511,11 +511,11 @@ This is a subclass of `source` and has **all of the properties** of `source` abo
 
 **`eig-band` [`integer`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The index *n* (1,2,3,...) of the desired band ω<sub>*n*</sub>(**k**) to compute in MPB (1 denotes the lowest-frequency band at a given **k** point, and so on).
+The index *n* (1,2,3,...) of the desired band $\omega$<sub>*n*</sub>(**k**) to compute in MPB (1 denotes the lowest-frequency band at a given **k** point, and so on).
 
 **`direction` [`X`, `Y`, or `Z;` default `AUTOMATIC`], `eig-match-freq?` [`boolean;` default `true`], `eig-kpoint` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's find-k functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is *d*–1 dimensional in a *d*-dimensional simulation (e.g. a plane in 3d). Alternatively (if `eig-match-freq?` is `false`), you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2π/*a*).
+By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency $\omega$<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's find-k functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is *d*–1 dimensional in a *d*-dimensional simulation (e.g. a plane in 3d). Alternatively (if `eig-match-freq?` is `false`), you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2π/*a*).
 
 **`eig-parity` [`NO-PARITY` (= default), `EVEN-Z` (= `TE`), `ODD-Z` (= `TM`), `EVEN-Y`, `ODD-Y`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -547,7 +547,7 @@ A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smo
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency *f* in units of c/distance (or $\omega$ in units of 2πc/distance). See: [Units](Meep_Introduction#Units_in_Meep.md). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/$\omega$ in these units is the vacuum wavelength or the temporal period.
+The frequency *f* in units of c/distance (or $\omega$ in units of 2πc/distance). See [Units](Meep_Introduction#Units_in_Meep.md). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/$\omega$ in these units is the vacuum wavelength or the temporal period.
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

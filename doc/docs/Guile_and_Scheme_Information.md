@@ -68,9 +68,10 @@ In Scheme, we would then use
 
 The variable *foo* would then be a list of numbers '(1 3 12.2 14.5 16 18).
 
-### Tricks Specific to Libctl-Using Programs such as [Meep](index.md) or [MPB](http://mpb.readthedocs.io)
+Libctl Tricks Specific to [Meep](index.md) and [MPB](https://mpb.readthedocs.io)
+--------------------------------------------------------------------------------
 
-[libctl](http://libctl.readthedocs.io) has a couple of built-in functions `arith-sequence` and `interpolate` (see the [User Reference](https://libctl.readthedocs.io/en/latest/Libctl_User_Reference/)) to construct lists of a regular sequence of values, which you can use in conjunction with `map` as above:
+[libctl](https://libctl.readthedocs.io) has a couple of built-in functions `arith-sequence` and `interpolate` (see the [User Reference](https://libctl.readthedocs.io/en/latest/Libctl_User_Reference/)) to construct lists of a regular sequence of values, which you can use in conjunction with `map` as above:
 
 `(map (lambda (x) `*`...do` `stuff` `with` `x...`*`) (arith-sequence x-min dx num-x))`
 
@@ -78,6 +79,6 @@ or
 
 `(map (lambda (x) `*`...do` `stuff` `with` `x...`*`) (interpolate num-x (list a b)))`
 
-Finally, if you have an entire libctl input file *myfile.ctl* that you want to loop, varying over some parameter *x*, you can do so by writing a loop on the Unix command-line. Using the [bash](https://en.wikipedia.org/wiki/bash) shell, you could do:
+Finally, if you have an entire libctl input file `myfile.ctl` that you want to loop, varying over some parameter *x*, you can do so by writing a loop on the Unix command-line. Using the [bash](https://en.wikipedia.org/wiki/bash) shell, you could do:
 
 ``for x in `seq a dx b`; do meep x=$x myfile.ctl; done``
