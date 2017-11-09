@@ -341,7 +341,7 @@ Note that, regardless of the source, we don't have an $X$ symmetry plane because
 (run-sources+ 300 (after-sources (harminv Hz (vector3 0.1234) fcen df)))
 ```
 
-which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function `run-k-points`, which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
+which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2$\pi$/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function `run-k-points`, which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
 
 ```scm
 (define-param k-interp 19)

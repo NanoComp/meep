@@ -362,7 +362,7 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 ```
 
-which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `Harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2π/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
+which would give us the frequencies at a single $\mathbf{k} = 0.4 \cdot 2\pi \hat{\mathbf{x}}$. For visualization purposes, we also run for one cycle after the `Harminv` calculation and output the $H_z$ fields at 20 equally spaced time intervals. Note that, in Meep, $\mathbf{k}$ is specified as a vector in Cartesian coordinates, with units of 2$\pi$/distance. This is *different* from [MPB](https://mpb.readthedocs.io), which uses the basis of the reciprocal lattice vectors. However, this only gives us one $\mathbf{k}$. Instead, there is a built-in function which takes as input a time to run after the sources finish, like the 300 above, and a *list* of $\mathbf{k}$ points:
 
 ```py
 k_interp = 19

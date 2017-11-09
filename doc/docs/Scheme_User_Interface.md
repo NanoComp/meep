@@ -41,7 +41,7 @@ Holds the default material that is used for points not in any object of the geom
 
 **`epsilon-input-file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the $\varepsilon$ property of `default-material` (*i.e.* where there are no `geometry` objects). The grid of the epsilon file dataset need not match Meep's computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell (which warps the structure if the proportions of the grids do not match, however). **Note:** the file contents *only* override the $\varepsilon$ property of the `default-material`, whereas other properties (μ, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
+If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the $\varepsilon$ property of `default-material` (*i.e.* where there are no `geometry` objects). The grid of the epsilon file dataset need not match Meep's computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell (which warps the structure if the proportions of the grids do not match, however). **Note:** the file contents *only* override the $\varepsilon$ property of the `default-material`, whereas other properties ($\mu$, susceptibilities, nonlinearities, etc.) of `default-material` are still used.
 
 **`dimensions` [`integer`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -60,7 +60,7 @@ Specifies the computational grid resolution in pixels per distance unit. Default
 
 **`k-point` [`false` or `vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a vector, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. The `k-point` vector is specified in *Cartesian* coordinates in units of 2π/distance. Note: this is *different* from [MPB](http://mpb.readthedocs.io), equivalent to taking MPB's `k-points` through the function `reciprocal->cartesian`.
+If `false` (the default), then the boundaries are perfect metallic (zero electric field). If a vector, then the boundaries are Bloch-periodic: the fields at one side are $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated by the lattice vector $\mathbf{R}$. The `k-point` vector is specified in *Cartesian* coordinates in units of 2$\pi$/distance. Note: this is *different* from [MPB](https://mpb.readthedocs.io), equivalent to taking MPB's `k-points` through the function `reciprocal->cartesian`.
 
 **`ensure-periodicity` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -80,7 +80,7 @@ A string prepended to all output filenames. If empty (the default), then Meep us
 
 **`Courant` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Specify the Courant factor $S$ which relates the time step size to the spatial discretization: $c\Delta t = S\Delta x$. Default is `0.5`. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
+Specify the Courant factor $S$ which relates the time step size to the spatial discretization: $c\Delta t = S\Delta x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
 
 **`output-volume` [`meep::geometric_volume*`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -132,10 +132,10 @@ A predefined material type corresponding to a perfect magnetic conductor at the 
 A material that, effectively, punches a hole through other objects to the background (`default-material`).
 
 **`infinity` [`number`]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A big number (1.0e20) to use for "infinite" dimensions of objects.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A big number (10$^{20}$) to use for "infinite" dimensions of objects.
 
 **`pi` [`number`]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;π (3.14159...).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\pi$ (3.14159...).
 
 Constants (Enumerated Types)
 ----------------------------
@@ -169,11 +169,11 @@ Classes are complex datatypes with various "properties" which may have default v
 
 See also the [libctl manual](https://libctl.readthedocs.io).
 
-Meep defines several types of classes, the most numerous of which are the various geometric object classes which are the same as those used in [MPB](http://mpb.readthedocs.io). You can also get a list of the available classes, along with their property types and default values, at runtime with the `(help)` command.
+Meep defines several types of classes, the most numerous of which are the various geometric object classes which are the same as those used in [MPB](https://mpb.readthedocs.io). You can also get a list of the available classes, along with their property types and default values, at runtime with the `(help)` command.
 
 ### lattice
 
-The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the computational cell. In [MPB](http://mpb.readthedocs.io), you can use this to specify a variety of affine lattice structures. In [Meep](index.md), only rectangular Cartesian computational cells are supported, so the only property of lattice that you should normally use is its `size`.
+The `lattice` class is normally used only for the `geometry-lattice` variable, which sets the size of the computational cell. In [MPB](https://mpb.readthedocs.io), you can use this to specify a variety of affine lattice structures. In [Meep](index.md), only rectangular Cartesian computational cells are supported, so the only property of lattice that you should normally use is its `size`.
 
 **`size` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -194,7 +194,7 @@ An electromagnetic medium which is possibly nonlinear and/or dispersive. See als
 **`epsilon` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The frequency-independent isotropic relative permittivity or dielectric constant. Default is 1. You can also use `(index n)` as a synonym for `(epsilon (* n n))`; note that this is not really the refractive index if you also specify $\mu$, since the true index is $\sqrt{\mu\varepsilon}$.
 
-Using `(epsilon $\varepsilon$)` is actually a synonym for `(epsilon-diag $\varepsilon$ $\varepsilon$ $\varepsilon$)`.
+Using `(epsilon e)` is actually a synonym for `(epsilon-diag e e e)`.
 
 **`epsilon-diag` and `epsilon-offdiag` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -205,7 +205,7 @@ The default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
 
 **`mu` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency-independent isotropic relative permeability $\mu$. Default is 1. Using `(mu $\mu$)` is actually a synonym for `(mu-diag $\mu$ $\mu$ $\mu$)`.
+The frequency-independent isotropic relative permeability $\mu$. Default is 1. Using `(mu m)` is actually a synonym for `(mu-diag m m m)`.
 
 **`mu-diag` and `mu-offdiag` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -217,7 +217,7 @@ The frequency-independent electric conductivity $\sigma_D$. Default is 0. You ca
 
 **`B-conductivity` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The (frequency-independent) magnetic conductivity $\sigma_B$. Default is 0. You can also specify an diagonal anisotropic conductivity tensor by using the property `B-conductivity-diag` [vector3], which takes three numbers or a [vector3] to give the $\sigma_B$ tensor diagonal. See also [Conductivity](Materials.md#conductivity-and-complex).
+The (frequency-independent) magnetic conductivity $\sigma_B$. Default is 0. You can also specify an diagonal anisotropic conductivity tensor by using the property `B-conductivity-diag` [`vector3`], which takes three numbers or a [`vector3`] to give the $\sigma_B$ tensor diagonal. See also [Conductivity](Materials.md#conductivity-and-complex).
 
 **`chi2` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -233,7 +233,7 @@ List of dispersive susceptibilities (see below) added to the dielectric constant
 
 **`H-susceptibilities` [ list of `susceptibility` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-List of dispersive susceptibilities (see below) added to the permeability μ in order to model material dispersion. Defaults to none. See also [Material Dispersion](Materials.md#material-dispersion). For backwards compatibility, a synonym of `H-susceptibilities` is `perfect-metal`.
+List of dispersive susceptibilities (see below) added to the permeability $\mu$ in order to model material dispersion. Defaults to none. See also [Material Dispersion](Materials.md#material-dispersion). For backwards compatibility, a synonym of `H-susceptibilities` is `perfect-metal`.
 
 **`perfect-metal`**  
 
@@ -261,7 +261,7 @@ Parent class for various dispersive susceptibility terms, parameterized by an an
 
 **`sigma` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The scale factor $\sigma$. You can also specify an anisotropic $\sigma$ tensor by using the property `sigma-diag` [vector3], which takes three numbers or a [vector3] to give the $\sigma_n$ tensor diagonal, and `sigma-offdiag` [vector3] which specifies the offdiagonal elements (defaults to 0). That is, `(sigma-diag a b c)` and `(sigma-offdiag u v w)` corresponds to a σ tensor
+The scale factor $\sigma$. You can also specify an anisotropic $\sigma$ tensor by using the property `sigma-diag` [`vector3`], which takes three numbers or a [`vector3`] to give the $\sigma_n$ tensor diagonal, and `sigma-offdiag` [`vector3`] which specifies the offdiagonal elements (defaults to 0). That is, `(sigma-diag a b c)` and `(sigma-offdiag u v w)` corresponds to a $\sigma$ tensor
 
 \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
 
@@ -283,7 +283,7 @@ Specifies a single dispersive susceptibility of Drude form. See [Material Disper
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies σ (not a resonance frequency).
+The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies $\sigma$ (not a resonance frequency).
 
 **`gamma` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -293,11 +293,11 @@ Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptib
 
 **`noisy-lorentzian-susceptibility` or `noisy-drude-susceptibility`**  
 
-Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same σ, `frequency`, and `gamma`) parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
+Specifies a single dispersive susceptibility of Lorentzian (damped harmonic oscillator) or Drude form. See [Material Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency`, and `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in space and time, zero mean) added to the **P** damped-oscillator equation.
 
 **`noise-amp` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The noise has root-mean square amplitude σ⋅`noise-amp`.
+The noise has root-mean square amplitude $\sigma$ $\times$ `noise-amp`.
 
 ### geometric-object
 
@@ -315,9 +315,9 @@ The material that the object is made of (usually some sort of dielectric). No de
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Center point of the object. No default value.
 
-One normally does not create objects of type `geometric-object` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties (which must be specified, since they have no default values).
+One normally does not create objects of type `geometric-object` directly, however; instead, you use one of the following subclasses. Recall that subclasses inherit the properties of their superclass, so these subclasses automatically have the `material` and `center` properties which must be specified, since they have no default values.
 
-In a two-dimensional calculation, only the intersections of the objects with the x-y plane are considered.
+In a 2d calculation, only the intersections of the objects with the $xy$ plane are considered.
 
 **`sphere`**
 
@@ -451,15 +451,15 @@ A strength (default is `1.0`) to multiply the PML absorption coefficient by. A s
 
 **`R-asymptotic` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The asymptotic reflection in the limit of infinite resolution or infinite PML thickness, for refections from air (an upper bound for other media with index &gt; 1). (For a finite resolution or thickness, the reflection will be *much larger*, due to the discretization of Maxwell's equation.) The default value is 10<sup>−15</sup>, which should suffice for most purposes. (You want to set this to be small enough so that waves propagating within the PML are attenuated sufficiently, but making `R-asymptotic` too small will increase the numerical reflection due to discretization.)
+The asymptotic reflection in the limit of infinite resolution or infinite PML thickness, for refections from air (an upper bound for other media with index &gt; 1). For a finite resolution or thickness, the reflection will be *much larger*, due to the discretization of Maxwell's equation. The default value is 10<sup>−15</sup>, which should suffice for most purposes. You want to set this to be small enough so that waves propagating within the PML are attenuated sufficiently, but making `R-asymptotic` too small will increase the numerical reflection due to discretization.
 
 **`pml-profile` [`function`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-By default, Meep turns on the PML conductivity quadratically within the PML layer—one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml-profile` one can specify an arbitrary PML "profile" function *f*(*u*) that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is *f*(*u*)=*u*<sup>2</sup>. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly (see [Oskooi et al., 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376)). For example, one can use a cubic profile *f*(*u*)=*u*<sup>3</sup> by specifying `(pml-profile` `(lambda` `(u)` `(*` `u` `u` `u)))`.
+By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml-profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly (see [Oskooi et al., 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376)). For example, one can use a cubic profile $f(u) = u^3$ by specifying `(pml-profile (lambda (u) (* u u u)))`.
 
 #### `absorber`
 
-Instead of a `pml` layer, there is an alternative class called `absorber` which is a **drop-in** replacement for `pml`. For example, you can do `(set!` `pml-layers` `(list` `(make` `absorber` `(thickness` `2))))` instead of `(set!` `pml-layers` `(list` `(make` `pml` `(thickness` `2))))`. All the parameters are the same as for `pml`, above. You can have a mix of `pml` on some boundaries and `absorber` on others.
+Instead of a `pml` layer, there is an alternative class called `absorber` which is a **drop-in** replacement for `pml`. For example, you can do `(set! pml-layers (list (make absorber (thickness 2))))` instead of `(set! pml-layers (list (make pml (thickness 2))))`. All the parameters are the same as for `pml`, above. You can have a mix of `pml` on some boundaries and `absorber` on others.
 
 The `absorber` class does *not* implement a perfectly matched layer (PML), however (except in 1d). Instead, it is simply a scalar electric **and** magnetic conductivity that turns on gradually within the layer according to the `pml-profile` (defaulting to quadratic). Such a scalar conductivity gradient is only reflectionless in the limit as the layer becomes sufficiently thick.
 
@@ -471,7 +471,7 @@ The main reason to use `absorber` is if you have **a case in which PML fails:**
 
 ### source
 
-The `source` class is used to specify the current sources (via the `sources` input variable). Note that all sources in Meep are separable in time and space, i.e. of the form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions $\mathbf{A}$ and $f$. (Non-separable sources can be simulated, however, by modifying the sources after each time step.) When real fields are being used (which is the default in many cases...see the `force-complex-fields?` input variable), only the real part of the current source is used by Meep.
+The `source` class is used to specify the current sources (via the `sources` input variable). Note that all sources in Meep are separable in time and space, i.e. of the form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions $\mathbf{A}$ and $f$. (Non-separable sources can be simulated, however, by modifying the sources after each time step.) When real fields are being used (which is the default in many cases; see the `force-complex-fields?` input variable), only the real part of the current source is used.
 
 **Important note**: These are *current* sources (**J** terms in Maxwell's equations), even though they are labelled by electric/magnetic field components. They do *not* specify a particular electric/magnetic field (which would be what is called a "hard" source in the FDTD literature). There is no fixed relationship between the current source and the resulting field amplitudes; it depends on the surrounding geometry, as described in the [FAQ](FAQ#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude) and in this [book chapter](http://arxiv.org/abs/arXiv:1301.5366).
 
@@ -503,7 +503,7 @@ An overall (complex) amplitude multiplying the the current source. Default is `1
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Scheme function of a single argument, that takes a vector3 giving a position and returns a (complex) current amplitude for that point. The position argument is *relative* to the `center` of the current source, so that you can move your current around without changing your function. The default is `'()` (null), meaning that a constant amplitude of 1.0 is used. Note that your amplitude function (if any) is *multiplied* by the `amplitude` property, so both properties can be used simultaneously.
 
-As described in section 4.2 of this [book chapter](http://arxiv.org/abs/arXiv:1301.5366), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](http://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. (Note: this feature does *not* work in cylindrical coordinates.) To do this, instead of a `source` you should use an `eigenmode-source`:
+As described in section 4.2 of this [book chapter](http://arxiv.org/abs/arXiv:1301.5366), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. (Note: this feature does *not* work in cylindrical coordinates.) To do this, instead of a `source` you should use an `eigenmode-source`:
 
 **`eigenmode-source`**  
 
@@ -515,11 +515,11 @@ The index *n* (1,2,3,...) of the desired band $\omega$<sub>*n*</sub>(**k**) to c
 
 **`direction` [`X`, `Y`, or `Z;` default `AUTOMATIC`], `eig-match-freq?` [`boolean;` default `true`], `eig-kpoint` [`vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency $\omega$<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's find-k functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is *d*–1 dimensional in a *d*-dimensional simulation (e.g. a plane in 3d). Alternatively (if `eig-match-freq?` is `false`), you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2π/*a*).
+By default (if `eig-match-freq?` is `true`), Meep tries to find a mode with the same frequency $\omega$<sub>*n*</sub>(**k**) as the `src` property (above), by scanning **k** vectors in the given `direction` using MPB's `find-k` functionality. Alternatively, if `eig-kpoint` is supplied, it is used as an initial guess and direction for **k**. By default, `direction` is the direction normal to the source region, assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a plane in 3d). Alternatively (if `eig-match-freq?` is `false`), you can specify a particular **k** vector of the desired mode with `eig-kpoint` (in Meep units of 2$\pi$/$a$).
 
-**`eig-parity` [`NO-PARITY` (= default), `EVEN-Z` (= `TE`), `ODD-Z` (= `TM`), `EVEN-Y`, `ODD-Y`]**  
+**`eig-parity` [`NO-PARITY` (default), `EVEN-Z`, `ODD-Z`, `EVEN-Y`, `ODD-Y`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The parity (= polarization in 2d) of the mode to calculate, assuming the structure has *z* and/or *y* mirror symmetry *in the source region*. If the structure has both *y* and *z* mirror symmetry, you can combine more than one of these, e.g. `EVEN-Z` `+` `ODD-Y`. The default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
+The parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN-Z + ODD-Y`. The default is `NO-PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization.
 
 **`eig-resolution` [`integer`, defaults to same as Meep resolution ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -547,7 +547,7 @@ A continuous-wave source proportional to $\exp(-i\omega t)$, possibly with a smo
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The frequency *f* in units of c/distance (or $\omega$ in units of 2πc/distance). See [Units](Meep_Introduction#Units_in_Meep.md). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/$\omega$ in these units is the vacuum wavelength or the temporal period.
+The frequency *f* in units of $c$/distance (or $\omega$ in units of 2$\pic$/distance). See [Units](Meep_Introduction#Units_in_Meep.md). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/$\omega$ in these units is the vacuum wavelength or the temporal period.
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -571,7 +571,7 @@ A Gaussian-pulse source roughly proportional to $\exp(-i\omega t - (t-t_0)^2/2w^
 
 **`frequency` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The center frequency *f* in units of c/distance (or $\omega$ in units of 2$\pi$c/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength` `x)` or `(period` `x)`, which are both a synonym for `(frequency` `(/` `1` `x))`; i.e. 1/$\omega$ in these units is the vacuum wavelength or the temporal period.
+The center frequency $f$ in units of $c$/distance (or $\omega$ in units of 2$\pi$c/distance). See [Units](Introduction.md#units-in-meep). No default value. You can instead specify `(wavelength x)` or `(period x)`, which are both a synonym for `(frequency (/ 1 x))`; i.e. 1/$\omega$ in these units is the vacuum wavelength or the temporal period.
 
 **`width` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -579,15 +579,15 @@ The width $w$ used in the Gaussian. No default value. You can instead specify `(
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The starting time for the source; default is `0` (turn on at $t=0$). Not the time of the peak! See below.
+The starting time for the source; default is 0 (turn on at $t=0$). Not the time of the peak! See below.
 
 **`cutoff` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-How many `width`s the current decays for before we cut it off and set it to zero—this applies for both turn-on and turn-off of the pulse. The default is `5.0`. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the gaussian is reached at the time *t*<sub>0</sub>= `start-time` + `cutoff`\*`width`.
+How many `width`s the current decays for before we cut it off and set it to zero &mdash; this applies for both turn-on and turn-off of the pulse. The default is `5.0`. A larger value of `cutoff` will reduce the amount of high-frequency components that are introduced by the start/stop of the source, but will of course lead to longer simulation times. The peak of the gaussian is reached at the time $t_0$= `start-time + cutoff*width`.
 
 **`custom-src`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-A user-specified source function $f(t)$. You can also specify start/end times (at which point your current is set to zero whether or not your function is actually zero). These are optional, but you *must specify* an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
+A user-specified source function $f(t)$. You can also specify start/end times at which point your current is set to zero whether or not your function is actually zero. These are optional, but you *must specify* an `end-time` explicitly if you want functions like `run-sources` to work, since they need to know when your source turns off.
 
 **`src-func` [`function`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -595,7 +595,7 @@ The function $f(t)$ specifying the time-dependence of the source. It should take
 
 **`start-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The starting time for the source. Default is `(-infinity)`: turn on at $t=-\infty$). Note, however, that the simulation normally starts at $t=0$ with zero fields as the initial condition, so there is implicitly a sharp turn-on at $t=0$ whether you specify it or not.
+The starting time for the source. Default is `(-infinity)`: turn on at $t=-\infty$. Note, however, that the simulation normally starts at $t=0$ with zero fields as the initial condition, so there is implicitly a sharp turn-on at $t=0$ whether you specify it or not.
 
 **`end-time` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -678,11 +678,13 @@ In addition to the filename prefix, you can also specify that all the output fil
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Put output in a subdirectory, which is created if necessary. If the optional argument dirname is specified, that is the name of the directory. Otherwise, the directory name is the current ctl file name with `".ctl"` replaced by `"-out"`: e.g. `tst.ctl` implies a directory of `"tst-out"`.
 
-### Misc.
+### Output Volume
 
 **`(volume (center ...) (size ...))`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::geometric_volume`. This function creates such a volume object, given the `center` and `size` properties (just like e.g. a `block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point.
+
+### Simulation Time
 
 **`(meep-time)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -728,13 +730,13 @@ One powerful feature is that you can supply an arbitrary function $f(\mathbf{x},
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Returns the integral of the complex-valued function `func` over the `meep::geometric_volume` specified by `where` (defaults to entire computational cell) for the `meep::fields` specified by `fields-var` (defaults to `fields`). `func` is a function of position (a `vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
 
-If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify one-, two-, or three-dimensional integrals.
+If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
 
 **`(max-abs-field-function cs func [where] [fields-var])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `integrate-field-function`, but returns the maximum absolute value of `func` in the volume `where` instead of its integral.
 
-The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See also [Field Function Examples](Field_Function_Examples.md) for illustrations of how to call `integrate-field-function` and `max-abs-field-function`. See also [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See also [Field Function Examples](Field_Function_Examples.md) for illustrations of how to call `integrate-field-function` and `max-abs-field-function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* computational cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
 
@@ -793,7 +795,7 @@ Once you have called `add-flux`, the Fourier transforms of the fields are accumu
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a number of flux objects, this displays a comma-separated table of frequencies and flux spectra, prefixed by "flux1:" or similar (where the number is incremented after each run). All of the fluxes should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the flux spectra.
 
-You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `(display-fluxes` `f1` `f2` `f3)` is actually equivalent to `(display-csv` `"flux"` `(get-flux-freqs` `f1)` `(get-fluxes` `f1)` `(get-fluxes` `f2)` `(get-fluxes` `f3)`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `(display-fluxes f1 f2 f3)` is actually equivalent to `(display-csv "flux" (get-flux-freqs f1) (get-fluxes f1) (get-fluxes f2) (get-fluxes f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
 **`(get-flux-freqs flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -807,11 +809,11 @@ As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), for a reflection 
 
 **`(save-flux filename flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given name (without the ".h5" suffix) (the current filename-prefix is prepended automatically).
+Save the Fourier-transformed fields corresponding to the given flux object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
 **`(load-flux filename flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name (without the ".h5" suffix) (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-flux` in a simulation of *the same dimensions* (for both the computational cell and the flux regions) with the *same number of processors*.
+Load the Fourier-transformed fields into the given flux object (replacing any values currently there) from an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically). You must load from a file that was saved by `save-flux` in a simulation of *the same dimensions* (for both the computational cell and the flux regions) with the *same number of processors*.
 
 **`(load-minus-flux filename flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -827,11 +829,11 @@ Very similar to flux spectra, you can also compute **force spectra**: forces on 
 
 $$\sigma_{ij} = E_i^*E_j + H_i^*H_j - \frac{1}{2} \delta_{ij} \left( |\mathbf{E}|^2 + |\mathbf{H}|^2 \right)$$
 
-over a surface *S* via $\mathbf{F} = \int_S \sigma d\mathbf{A}$. We recommend that you normally **only evaluate the stress tensor over a surface lying in vacuum**, as the interpretation and definition of the stress tensor in arbitrary media is often problematic (the subject of extensive and controversial literature). It is fine if the surface *encloses* an object made of arbitrary materials, as long as the surface itself is in vacuum.
+over a surface $S$ via $\mathbf{F} = \int_S \sigma d\mathbf{A}$. We recommend that you normally **only evaluate the stress tensor over a surface lying in vacuum**, as the interpretation and definition of the stress tensor in arbitrary media is often problematic (the subject of extensive and controversial literature). It is fine if the surface *encloses* an object made of arbitrary materials, as long as the surface itself is in vacuum.
 
 See also [Tutorial/Optical Forces](Scheme_Tutorials/Optical_Forces.md).
 
-Most commonly, you will want to **normalize** the force spectrum in some way, just as for flux spectra. Most simply, you could divide two different force spectra to compute the ratio of forces on two objects. Often, you will divide a force spectrum by a flux spectrum, to divide the force *F* by the incident power *P* on an object, in order to compute the useful dimensionless ratio *Fc*/*P* where *c*=1 in Meep units. For example, it is a simple exercise to show that the force *F* on a perfectly reflecting mirror with normal-incident power *P* satisfies *Fc*/*P*=2, and for a perfectly absorbing (black) surface *Fc*/*P*=1.
+Most commonly, you will want to **normalize** the force spectrum in some way, just as for flux spectra. Most simply, you could divide two different force spectra to compute the ratio of forces on two objects. Often, you will divide a force spectrum by a flux spectrum, to divide the force $F$ by the incident power $P$ on an object, in order to compute the useful dimensionless ratio $Fc$/$P$ where $c=1$ in Meep units. For example, it is a simple exercise to show that the force $F$ on a perfectly reflecting mirror with normal-incident power $P$ satisfies $Fc$/$P=2$, and for a perfectly absorbing (black) surface $Fc$/$P=1$.
 
 The usage is similar to the flux spectra: you define a set of `force-region` objects telling Meep where it should compute the Fourier-transformed fields and stress tensors, and call `add-force` to add these regions to the current simulation over a specified frequency bandwidth, and then use `display-forces` to display the force spectra at the end. There are also `save-force`, `load-force`, and `load-minus-force` functions that you can use to subtract the fields from two simulation, e.g. in order to compute just the force from scattered fields, similar to the flux spectra. These types and functions are defined as follows:
 
@@ -875,7 +877,7 @@ Once you have called `add-force`, the Fourier transforms of the fields are accum
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Given a number of force objects, this displays a comma-separated table of frequencies and force spectra, prefixed by "force1:" or similar (where the number is incremented after each run). All of the forces should be for the same `fcen`/`df`/`nfreq`. The first column are the frequencies, and subsequent columns are the force spectra.
 
-You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `(display-forces` `f1` `f2` `f3)` is actually equivalent to `(display-csv` `"force"` `(get-force-freqs` `f1)` `(get-forces` `f1)` `(get-forces` `f2)` `(get-forces` `f3)`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
+You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `(display-forces f1 f2 f3)` is actually equivalent to `(display-csv "force" (get-force-freqs f1) (get-forces f1) (get-forces f2) (get-forces f3))`, where `display-csv` takes a bunch of lists of numbers and prints them as a comma-separated table, and we are calling two lower-level functions:
 
 **`(get-force-freqs flux)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -889,7 +891,7 @@ As described in [Tutorial/Basics](Scheme_Tutorials/Basics.md), to compute the fo
 
 **`(save-force filename force)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given name (without the ".h5" suffix) (the current filename-prefix is prepended automatically).
+Save the Fourier-transformed fields corresponding to the given force object in an HDF5 file of the given name without the ".h5" suffix (the current filename-prefix is prepended automatically).
 
 **`(load-force filename force)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -937,7 +939,7 @@ Given a `vector3` point `x` (which can lie anywhere outside the near-field surfa
 
 **`(output-farfields near2far fname where resolution)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grids points / distance *a*), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx×ny×nz×nfreq 4-dimensional array of space×frequency (although dimensions that =1 are omitted).
+Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `volume` given by `where` (may be 0d, 1d, 2d, or 3d), and a `resolution` (in grids points / distance *a*), outputs the far fields in `where` (which may lie *outside* the computational cell) in a grid with the given resolution (which may differ from the FDTD grid resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`, ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an nx×ny×nz×nfreq 4d array of space×frequency (although dimensions that =1 are omitted).
 
 Note that far fields have the same units and scaling as the *Fourier transforms* of the fields, and hence cannot be directly compared to time-domain fields. In practice, it is easiest to use the far fields in computations where overall scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the far fields in one region vs. another region.
 
@@ -1050,7 +1052,7 @@ Output the total electric and magnetic energy density. Note that you might want 
 
 **`output-Xfield-x, output-Xfield-y, output-Xfield-z, output-Xfield-r, output-Xfield-p`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting field, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting field, you might want to wrap the step function in `synchronized-magnetic` to compute it more accurately; see [Synchronizing the magnetic and electric fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
+Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting field, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting field, you might want to wrap the step function in `synchronized-magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 **`output-Xfield`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1096,7 +1098,7 @@ The results are stored in the list `harminv-results`, which is a list of tuples 
 
 **`(harminv-freq result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Return the complex frequency $\omega$ (in the usual Meep 2πc units).
+Return the complex frequency $\omega$ (in the usual Meep 2$\pic$ units).
 
 **`(harminv-freq-re result)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
