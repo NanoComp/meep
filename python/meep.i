@@ -44,6 +44,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 
 %{
 PyObject *py_callback = NULL;
+PyObject *py_callback_v3 = NULL;
 
 static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
