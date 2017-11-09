@@ -403,10 +403,21 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         in_volume,
         interpolate,
         output_epsilon,
+        output_mu,
+        output_hpwr,
+        output_dpwr,
+        output_tot_pwr,
         output_hfield_z,
         output_efield_z,
+        output_poynting,
+        output_poynting_x,
+        output_poynting_y,
+        output_poynting_z,
+        output_poynting_r,
+        output_poynting_p,
         py_v3_to_vec,
         stop_when_fields_decayed,
+        synchronized_magnetic,
         to_appended
     )
     from .source import (

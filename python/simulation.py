@@ -185,7 +185,7 @@ class Harminv(object):
             def _collect2(sim):
                 self.data_dt = sim.meep_time() - self.t0
                 self.t0 = sim.meep_time()
-                self.data.append(sim._get_field_point(c, pt))
+                self.data.append(sim.get_field_point(c, pt))
             return _collect2
         return _collect1
 
@@ -376,13 +376,13 @@ class Simulation(object):
             self._init_fields()
         return self.fields.time()
 
-    def _round_time(self):
+    def round_time(self):
         if self.fields is None:
             self._init_fields()
 
         return self.fields.round_time()
 
-    def _get_field_point(self, c, pt):
+    def get_field_point(self, c, pt):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
@@ -401,10 +401,10 @@ class Simulation(object):
 
         if isinstance(cond, numbers.Number):
             stop_time = cond
-            t0 = self._round_time()
+            t0 = self.round_time()
 
             def stop_cond(sim):
-                return sim._round_time() >= t0 + stop_time
+                return sim.round_time() >= t0 + stop_time
 
             cond = stop_cond
 
@@ -435,10 +435,10 @@ class Simulation(object):
         ts = self.fields.last_source_time()
 
         if isinstance(cond, numbers.Number):
-            new_cond = (ts - self._round_time()) + cond
+            new_cond = (ts - self.round_time()) + cond
         else:
             def f(sim):
-                return cond(sim) and sim._round_time() >= ts
+                return cond(sim) and sim.round_time() >= ts
             new_cond = f
 
         self._run_until(new_cond, step_funcs)
@@ -632,6 +632,26 @@ class Simulation(object):
                 self.last_eps_filename = nm
             self.output_h5_hook(nm)
 
+    def output_components(self, fname, *components):
+        if self.fields is None:
+            raise RuntimeError("Fields must be initialized before calling output_component")
+
+        if self.output_append_h5 is None:
+            f = self.fields.open_h5file(fname, mp.h5file.WRITE, self._get_filename_prefix(), True)
+        else:
+            f = None
+
+        for c in components:
+            self.output_component(c, h5file=f)
+            if self.output_append_h5 is None:
+                f.prevent_deadlock()
+
+        if self.output_append_h5 is None:
+            f = None
+
+        if self.output_append_h5 is None:
+            self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
+
     def change_k_point(self, k):
         self.k_point = k
 
@@ -753,7 +773,7 @@ def _when_true_funcs(cond, *step_funcs):
 def after_sources(*step_funcs):
     def _after_sources(sim, todo):
         time = sim.fields.last_source_time()
-        if sim._round_time() >= time:
+        if sim.round_time() >= time:
             for func in step_funcs:
                 _eval_step_func(sim, func, todo)
     return _after_sources
@@ -761,7 +781,7 @@ def after_sources(*step_funcs):
 
 def after_time(t, *step_funcs):
     def _after_t(sim):
-        return sim._round_time() >= t
+        return sim.round_time() >= t
     return _when_true_funcs(_after_t, *step_funcs)
 
 
@@ -790,7 +810,7 @@ def at_every(dt, *step_funcs):
     closure = {'tlast': 0.0}
 
     def _every(sim, todo):
-        t = sim._round_time()
+        t = sim.round_time()
         if todo == 'finish' or t >= closure['tlast'] + dt + (-0.5 * sim.fields.dt):
             for func in step_funcs:
                 _eval_step_func(sim, func, todo)
@@ -800,7 +820,7 @@ def at_every(dt, *step_funcs):
 
 def before_time(t, *step_funcs):
     def _before_t(sim):
-        return sim._round_time() < t
+        return sim.round_time() < t
     return _when_true_funcs(_before_t, *step_funcs)
 
 
@@ -809,7 +829,7 @@ def during_sources(*step_funcs):
 
     def _during_sources(sim, todo):
         time = sim.fields.last_source_time()
-        if sim._round_time() < time:
+        if sim.round_time() < time:
             for func in step_funcs:
                 _eval_step_func(sim, func, 'step')
         elif closure['finished'] is False:
@@ -871,21 +891,30 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
     }
 
     def _stop(sim):
-        fabs = abs(sim._get_field_point(c, pt)) * abs(sim._get_field_point(c, pt))
+        fabs = abs(sim.get_field_point(c, pt)) * abs(sim.get_field_point(c, pt))
         closure['cur_max'] = max(closure['cur_max'], fabs)
 
-        if sim._round_time() <= dt + closure['t0']:
+        if sim.round_time() <= dt + closure['t0']:
             return False
         else:
             old_cur = closure['cur_max']
             closure['cur_max'] = 0
-            closure['t0'] = sim._round_time()
+            closure['t0'] = sim.round_time()
             closure['max_abs'] = max(closure['max_abs'], old_cur)
             if closure['max_abs'] != 0:
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
     return _stop
+
+
+def synchronized_magnetic(*step_funcs):
+    def _sync(sim, todo):
+        sim.fields.synchronize_magnetic_fields()
+        for f in step_funcs:
+            _eval_step_func(sim, f, todo)
+        sim.fields.restore_magnetic_fields()
+    return _sync
 
 
 def display_csv(sim, name, data):
@@ -931,6 +960,22 @@ def output_epsilon(sim):
     sim.output_component(mp.Dielectric)
 
 
+def output_mu(sim):
+    sim.output_component(mp.Permeability)
+
+
+def output_hpwr(sim):
+    sim.output_component(mp.H_EnergyDensity)
+
+
+def output_dpwr(sim):
+    sim.output_component(mp.D_EnergyDensity)
+
+
+def output_tot_pwr(sim):
+    sim.output_component(mp.EnergyDensity)
+
+
 # TODO(chogan): Write rest of convenience functions generated in meep.scm:define-output-field
 def output_hfield_z(sim):
     sim.output_component(mp.Hz)
@@ -938,6 +983,30 @@ def output_hfield_z(sim):
 
 def output_efield_z(sim):
     sim.output_component(mp.Ez)
+
+
+def output_poynting(sim):
+    sim.output_components('s', mp.Sx, mp.Sy, mp.Sz, mp.Sr, mp.Sp)
+
+
+def output_poynting_x(sim):
+    sim.output_component(mp.Sx)
+
+
+def output_poynting_y(sim):
+    sim.output_component(mp.Sy)
+
+
+def output_poynting_z(sim):
+    sim.output_component(mp.Sz)
+
+
+def output_poynting_r(sim):
+    sim.output_component(mp.Sr)
+
+
+def output_poynting_p(sim):
+    sim.output_component(mp.Sp)
 
 
 def get_flux_freqs(f):
