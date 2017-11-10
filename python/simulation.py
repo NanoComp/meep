@@ -652,6 +652,18 @@ class Simulation(object):
         if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
 
+    def get_array(self, center, size, component=mp.Ez):
+        self.dim_sizes = np.zeros(3, dtype=np.int32)
+        vol = Volume(center, size=size, dims=self.dimensions)
+        rank = self.fields.get_array_slice_dimensions(vol.swigobj, self.dim_sizes)
+        sizes = self.dim_sizes.copy()
+        sizes[rank:] = 1
+        n = np.prod(sizes)
+        arr = np.zeros(n, dtype=np.double)
+        self.fields.get_array_slice(vol.swigobj, component, arr)
+
+        return arr
+
     def change_k_point(self, k):
         self.k_point = k
 
@@ -680,11 +692,11 @@ class Simulation(object):
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
-        if until_after_sources:
+        if until_after_sources is not None:
             self._run_sources_until(until_after_sources, step_funcs)
-        elif k_points:
+        elif k_points is not None:
             return self._run_k_points(k_points, *step_funcs)
-        elif until:
+        elif until is not None:
             self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")
