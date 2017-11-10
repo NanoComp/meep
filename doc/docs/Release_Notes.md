@@ -45,8 +45,8 @@ Meep 1.2
 
 -   Fixed to work with Guile version 2.x (older versions still work); requires libctl 3.2 or later.
 -   Added `epsilon-input-file` feature to read a scalar dielectric function from an HDF5 file (similar to MPB).
--   Support for anisotropic dispersive materials (tensor σ parameter).
--   Support for Drude dispersion model. New syntax is `make` `drude-susceptibility`, `make` `lorentzian-susceptibility`, etc. (old `make` `polarizability` is still supported for backwards compatibility).
+-   Support for anisotropic dispersive materials (tensor $\sigma$ parameter).
+-   Support for Drude dispersion model. New syntax is `make drude-susceptibility`, `make lorentzian-susceptibility`, etc. (old `make polarizability` is still supported for backwards compatibility).
 -   Support for "thermal" dispersive materials which include noise term in the polarization.
 -   Added `dft-ldos` feature for efficient LDOS-spectrum computation.
 -   Documented stress-tensor (force) spectrum computation feature.
@@ -90,11 +90,11 @@ Meep 1.0.2
 
 <small>2 June 2009</small>
 
--   Correct superficial `make` `check` failure on 32-bit x86 machines with gcc 4.3.x, due to slight impact on floating-point rounding by automatic SSE/SSE2 vectorization; thanks to Silviu Popescu for the bug report.
+-   Correct superficial `make check` failure on 32-bit x86 machines with gcc 4.3.x, due to slight impact on floating-point rounding by automatic SSE/SSE2 vectorization; thanks to Silviu Popescu for the bug report.
 
 <!-- -->
 
--   Correct superficial `make` `check` failure when compiling under icc.
+-   Correct superficial `make check` failure when compiling under icc.
 
 Meep 1.0.1
 ----------
@@ -102,7 +102,7 @@ Meep 1.0.1
 <small>28 May 2009</small>
 
 -   Enable correct operation and passed test suite when `MEEP_SINGLE` (single-precision) mode is enabled in `meep.hpp`; thanks to Seyoon Kim for the bug reports.
--   Use new automake features to have less-verbose build output by default (you can build in verbose mode by `make` `V=1`), and running all test programs then reporting which ones failed instead of stopping at the first failure.
+-   Use new automake features to have less-verbose build output by default (you can build in verbose mode by `make V=1`), and running all test programs then reporting which ones failed instead of stopping at the first failure.
 -   Fix superficial failure in `2D_convergence` test under gcc 3.4.6; thanks to Alex Prengel for the bug report.
 -   Fix failure in `flux` test under gcc 4.3.1 in some cases; thanks to Alex Prengel for the bug report.
 -   Fix compilation problem with gcc 4.4, correcting Debian bug \#505002.
@@ -152,7 +152,7 @@ Meep 0.20.1
 <small>20 July 2008</small>
 
 -   Improved handling of nested `synchronized-magnetic` calls.
--   Bug fix: parallel builds (`make` `-j`) should now work.
+-   Bug fix: parallel builds (`make -j`) should now work.
 -   Bug fix: [pkg-config](https://en.wikipedia.org/wiki/pkg-config) file was incorrectly installed for MPI version; thanks to Majid Sodagar for the bug report.
 
 Meep 0.20

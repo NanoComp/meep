@@ -28,5 +28,3 @@ Financial Support
 -----------------
 
 Meep's continued development has been supported by a Small Business Innovation Research (SBIR) Phase 1 award from the National Science Foundation (NSF) under award number [1647206](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1647206). Initial development was supported in part by the Materials Research Science and Engineering Center program of the NSF under award numbers DMR-9400334 and DMR-0819762, by the Army Research Office through the Institute for Soldier Nanotechnologies under DAAD-19-02-D0002, and DARPA under N00014-05-1-0700 administered by the Office of Naval Research.
-
-We are also grateful to the authors of earlier Fortran FDTD programs that were used in our research group at MIT, which were invaluable as benchmarks in testing our new code. This includes a 2d FDTD code by Jerry Chen, with later improvements by Shanhui Fan, Steven G. Johnson, and others. There was also a 3d code initially written by Shanhui Fan, with later improvements by Daniel Abrams, Doug Allan, Steven G. Johnson, Chiyan Luo, and Elefterios Lidorikis.

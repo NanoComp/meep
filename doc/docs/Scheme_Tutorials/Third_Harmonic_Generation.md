@@ -2,7 +2,7 @@
 # Third Harmonic Generation
 ---
 
-In this example, we consider wave propagation through a simple 1d *nonlinear* medium with a non-zero Kerr susceptibility $\chi^{(3)}$. See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency $\omega$, and because of the nonlinearity we also get a signal at a frequency $3\omega$. See also the `3rd-harm-1d.ctl` example file in the `examples/` subdirectory included with Meep.
+In this example, we consider wave propagation through a simple 1d *nonlinear* medium with a non-zero Kerr susceptibility $\chi^{(3)}$. See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency $\omega$, and because of the nonlinearity we also get a signal at a frequency $3\omega$. See also the `3rd-harm-1d.ctl` example file in the `examples/` subdirectory.
 
 Since this is a 1d calculation, we could implement it via a 2d cell of `(size S no-size no-size)`, specifying periodic boundary conditions in the $y$ direction. However, this is slightly inefficient since the $y$ periodic boundaries are implemented internally via extra "ghost pixels" in the $y$ direction. Instead, Meep has special support for 1d simulations in the $z$ direction. To use this, we must explicitly set `dimensions` to `1`, and in that case we can *only* use $E_x$ (and $D_x$) and $H_y$ field components. This involves no loss of generality because of the symmetry of the problem.
 
@@ -72,9 +72,9 @@ In a linear calculation, we normalize the transmission against some reference sp
 ![](../images/3rd-harm-1d-flux.png)
 </center>
 
-For small values of $\chi^{(3)}$, we see a peak from our source at ω=1/3 and another peak precisely at the third-harmonic frequency 3ω=1. As the $\chi^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for $\chi^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
+For small values of $\chi^{(3)}$, we see a peak from our source at $\omega$=1/3 and another peak precisely at the third-harmonic frequency 3$\omega$=1. As the $\chi^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for $\chi^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
 
-It is also interesting to have a more detailed look at the dependence of the power at ω and 3ω as a function of $\chi^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two more flux regions to Meep and request exactly the desired frequency components. That is, we'll add the following before `run-sources+`:
+It is also interesting to have a more detailed look at the dependence of the power at $\omega$ and 3$\omega$ as a function of $\chi^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two more flux regions to Meep and request exactly the desired frequency components. That is, we'll add the following before `run-sources+`:
 
 ```scm
 (define trans1 (add-flux fcen 0 1

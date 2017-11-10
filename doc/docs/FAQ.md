@@ -45,7 +45,7 @@ If you are worried about this, then you are probably setting up your calculation
 
 ### How do I set the imaginary part of ε?
 
-If you only care about the imaginary part of $\varepsilon$ in a narrow bandwidth around some frequency ω, you should set it by using the electric conductivity as described in [Materials](Materials/#conductivity-and-complex). If you care about the imaginary part of $\varepsilon$ over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit it to Meep's dispersive-$\varepsilon$ support. See [Materials](Materials#material-dispersion).
+If you only care about the imaginary part of $\varepsilon$ in a narrow bandwidth around some frequency $\omega$, you should set it by using the electric conductivity as described in [Materials](Materials/#conductivity-and-complex). If you care about the imaginary part of $\varepsilon$ over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit it to Meep's dispersive-$\varepsilon$ support. See [Materials](Materials#material-dispersion).
 
 Meep doesn't implement a frequency-independent complex $\varepsilon$. Not only is this not physical, but it also leads to both exponentially decaying and exponentially growing solutions in Maxwell's equations from positive- and negative-frequency Fourier components, respectively. Thus, it cannot be simulated in the time domain.
 

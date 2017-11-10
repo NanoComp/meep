@@ -30,8 +30,6 @@
 (define-param fcen 0.25) ; pulse center frequency
 (define-param df 0.2)  ; pulse width (in frequency)
 
-(define-param nfreq 500) ; number of frequencies at which to compute flux
-
 (set! sources (list
 	       (make source
 		 (src (make gaussian-src (frequency fcen) (fwidth df)))
