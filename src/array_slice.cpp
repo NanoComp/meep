@@ -128,7 +128,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   //-----------------------------------------------------------------------//
   // Find output chunk dimensions and strides, etc.
 
-  int count[3]={1,1,1}, offset[3]={0,0,0}, stride[3]={1,1,1};
+  int start[3]={0,0,0}, count[3]={1,1,1}, offset[3]={0,0,0};
 
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
@@ -146,17 +146,33 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
+    start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }
+
+  // slightly confusing: for array_slice, in contrast to
+  // h5fields, strides are computed using the dimensions of
+  // the full array slice, not the dimensions of the chunk.
+  int dims[3]={1,1,1};
+  for (int i = 0; i<data->rank; i++) {
+    direction d = data->ds[i];
+    dims[i]= (data->max_corner.in_direction(d)
+	     - data->min_corner.in_direction(d)) / 2 + 1;
+   };
+
+  int stride[3]={1,1,1};
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int j = permute.in_direction(d);
-    for (int k = i + 1; k < data->rank; ++k) stride[j] *= count[k];
+    for (int k = i + 1; k < data->rank; ++k) stride[j] *= dims[k];
     offset[j] *= stride[j];
     if (offset[j]) stride[j] *= -1;
-  }
-  
+  };
+
+  // sco="slice chunk offset"
+  int sco=start[0]*dims[1]*dims[2] + start[1]*dims[2] + start[2];
+
   //-----------------------------------------------------------------------//
   // Compute the function to output, exactly as in fields::integrate.
   int *off = data->offsets;
@@ -231,10 +247,10 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 	fields[i] = complex<double>(f[0], f[1]) * ph[i];
       }
     }
-    int idx2 = ((((offset[0] + offset[1] + offset[2])
-                   + loop_i1 * stride[0])
-                   + loop_i2 * stride[1])
-                   + loop_i3 * stride[2]);
+    int idx2 = sco + ((((offset[0] + offset[1] + offset[2])
+                         + loop_i1 * stride[0])
+                         + loop_i2 * stride[1])
+                         + loop_i3 * stride[2]);
 
     if (complex_data)
      zslice[idx2] = data->fun(fields, loc, data->fun_data);
