@@ -170,13 +170,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
     if (offset[j]) stride[j] *= -1;
   };
 
-  int sco=0; // "slice chunk offset"
-  if (data->rank==1)
-   sco = start[0];
-  else if (data->rank==2)
-   sco = start[0]*dims[1] + start[1];
-  else // (data->rank==3)
-   sco = start[0]*dims[1]*dims[2] + start[1]*dims[2] + start[2];
+  // sco="slice chunk offset"
+  int sco=start[0]*dims[1]*dims[2] + start[1]*dims[2] + start[2];
 
   //-----------------------------------------------------------------------//
   // Compute the function to output, exactly as in fields::integrate.
