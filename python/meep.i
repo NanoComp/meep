@@ -332,8 +332,39 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 // Typemap suite for array_slice
-// TODO: add (cdouble *, int) version
-%apply (double* INPLACE_ARRAY1, int DIM1) {(double *slice, int slice_length)};
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* slice {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* slice {
+    $1 = (double *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* slice {
+    $1 = is_array($input);
+}
+
+%typemap(in) std::complex<double>* slice {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) meep::component {
+    $1 = PyInteger_Check($input) && PyInteger_AsLong($input) < 100;
+}
+
+%typemap(in) meep::component {
+    $1 = static_cast<meep::component>(PyInteger_AsLong($input));
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) meep::derived_component {
+    $1 = PyInteger_Check($input) && PyInteger_AsLong($input) >= 100;
+}
+
+%typemap(in) meep::derived_component {
+    $1 = static_cast<meep::derived_component>(PyInteger_AsLong($input));
+}
+
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 
 // Rename python builtins

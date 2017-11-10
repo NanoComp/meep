@@ -652,13 +652,44 @@ class Simulation(object):
         if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
 
+    def get_array(self, center, size, component=mp.Ez, cmplx=None, arr=None):
+        dim_sizes = np.zeros(3, dtype=np.int32)
+        vol = Volume(center, size=size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
+        self.fields.get_array_slice_dimensions(vol.swigobj, dim_sizes)
+
+        dims = [s for s in dim_sizes if s != 0]
+
+        if cmplx is None:
+            cmplx = component < mp.Dielectric and not self.fields.is_real
+
+        if arr is not None:
+            if cmplx and not np.iscomplexobj(arr):
+                raise ValueError("Requested a complex slice, but provided array of type {}.".format(arr.dtype))
+
+            for a, b in zip(arr.shape, dims):
+                if a != b:
+                    fmt = "Expected dimensions {}, but got {}"
+                    raise ValueError(fmt.format(dims, arr.shape))
+
+            arr = np.require(arr, requirements=['C', 'W'])
+
+        else:
+            arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
+
+        if np.iscomplexobj(arr):
+            self.fields.get_complex_array_slice(vol.swigobj, component, arr)
+        else:
+            self.fields.get_array_slice(vol.swigobj, component, arr)
+
+        return arr
+
     def change_k_point(self, k):
         self.k_point = k
 
         if self.fields:
-            cond1 = not (not self.k_point or self.k_point == mp.Vector3())
+            needs_complex_fields = not (not self.k_point or self.k_point == mp.Vector3())
 
-            if cond1 and self.fields.is_real != 0:
+            if needs_complex_fields and self.fields.is_real:
                 self.fields = None
                 self._init_fields()
             else:
@@ -680,11 +711,11 @@ class Simulation(object):
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
-        if until_after_sources:
+        if until_after_sources is not None:
             self._run_sources_until(until_after_sources, step_funcs)
-        elif k_points:
+        elif k_points is not None:
             return self._run_k_points(k_points, *step_funcs)
-        elif until:
+        elif until is not None:
             self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")

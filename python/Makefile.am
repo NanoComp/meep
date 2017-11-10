@@ -33,6 +33,7 @@ TESTS =                                 \
     $(TEST_DIR)/3rd_harm_1d.py          \
     $(TEST_DIR)/antenna_radiation.py    \
     $(TEST_DIR)/bend_flux.py            \
+    $(TEST_DIR)/cavity_arrayslice.py    \
     $(TEST_DIR)/cyl_ellipsoid.py        \
     $(TEST_DIR)/geom.py                 \
     $(TEST_DIR)/holey_wvg_bands.py      \

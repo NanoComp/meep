@@ -19,8 +19,12 @@
 
 #if PY_MAJOR_VERSION >= 3
     #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
+    #define PyInteger_Check(n) PyLong_Check(n)
+    #define PyInteger_AsLong(n) PyLong_AsLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
+    #define PyInteger_Check(n) PyInt_Check(n)
+    #define PyInteger_AsLong(n) PyInt_AsLong(n)
 #endif
 
 static PyObject *py_geometric_object() {
