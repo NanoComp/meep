@@ -1178,7 +1178,6 @@ def dft_ldos(fcen, df, nfreq):
             sim.ldos_Fdata = mp._dft_ldos_F(ldos)
             sim.ldos_Jdata = mp._dft_ldos_J(ldos)
             display_csv(sim, 'ldos', zip(get_ldos_freqs(ldos), sim.ldos_data))
-
     return _ldos
 
 
