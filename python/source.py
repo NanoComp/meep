@@ -84,7 +84,7 @@ class EigenModeSource(Source):
                  eig_match_freq=True,
                  eig_parity=0,
                  eig_resolution=0,
-                 eig_tolerence=1e-7,
+                 eig_tolerance=1e-7,
                  **kwargs):
 
         super(EigenModeSource, self).__init__(src, component, center, **kwargs)
@@ -97,7 +97,7 @@ class EigenModeSource(Source):
         self.eig_match_freq = eig_match_freq
         self.eig_parity = eig_parity
         self.eig_resolution = eig_resolution
-        self.eig_tolerence = eig_tolerence
+        self.eig_tolerance = eig_tolerance
 
     @property
     def eig_lattice_size(self):
@@ -138,9 +138,9 @@ class EigenModeSource(Source):
         self._eig_resolution = check_nonnegative('EigenModeSource.eig_resolution', val)
 
     @property
-    def eig_tolerence(self):
-        return self._eig_tolerence
+    def eig_tolerance(self):
+        return self._eig_tolerance
 
-    @eig_tolerence.setter
-    def eig_tolerence(self, val):
-        self._eig_tolerence = check_positive('EigenModeSource.eig_tolerence', val)
+    @eig_tolerance.setter
+    def eig_tolerance(self, val):
+        self._eig_tolerance = check_positive('EigenModeSource.eig_tolerance', val)

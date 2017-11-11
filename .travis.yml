@@ -3,7 +3,7 @@ dist: trusty
 sudo: false
 
 ##################################################
-# required linux packages and python packages 
+# required linux packages and python packages
 ##################################################
 addons:
   apt:
@@ -22,7 +22,7 @@ install:
   - pip install numpy mpi4py
 
 ##################################################
-# environment variables applied to all build cases 
+# environment variables applied to all build cases
 ##################################################
 env:
   global:
@@ -54,7 +54,7 @@ matrix:
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}"
 
 ##################################################
-# build/test instructions    
+# build/test instructions
 ##################################################
 script:
   - set -e
@@ -68,7 +68,7 @@ script:
   - make check TESTS=${CORETESTS} VERBOSE=1
   - popd
 #
-  - pushd libmeepgeom 
+  - pushd libmeepgeom
   - make check
   - popd
 #

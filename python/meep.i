@@ -361,7 +361,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (void*)$input;
 }
 
-// Typemap suite for dtf_flux
+// Typemap suite for dft_flux
 
 %typemap(out) double* flux {
     int size = arg1->Nfreq;
@@ -370,7 +370,19 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
     }
 
-  delete $1;
+    delete $1;
+}
+
+// Typemap suite for dft_force
+
+%typemap(out) double* force {
+    int size = arg1->Nfreq;
+    $result = PyList_New(size);
+    for(int i = 0; i < size; i++) {
+        PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
+    }
+
+    delete $1;
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
@@ -419,6 +431,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 
+%rename(_dft_ldos) meep::dft_ldos::dft_ldos;
+
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
 %rename(_is) meep::dft_chunk::is;
@@ -462,8 +476,16 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         check_nonnegative,
     )
     from .simulation import (
+        NO_PARITY,
+        EVEN_Z,
+        ODD_Z,
+        EVEN_Y,
+        ODD_Y,
+        TE,
+        TM,
         Absorber,
         FluxRegion,
+        ForceRegion,
         Harminv,
         Identity,
         Mirror,
@@ -479,10 +501,14 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         at_beginning,
         at_end,
         at_every,
-        during_sources,
+        dft_ldos,
         display_progress,
+        during_sources,
         get_flux_freqs,
         get_fluxes,
+        get_force_freqs,
+        get_forces,
+        get_ldos_freqs,
         in_volume,
         interpolate,
         output_epsilon,
