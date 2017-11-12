@@ -3,6 +3,7 @@
 # with amplitude exp(ikx) corresponding to the desired planewave.
 from __future__ import division
 
+import cmath
 import math
 import meep as mp
 
@@ -13,7 +14,7 @@ dpml = 1  # thickness of PML layers
 sxy = s + 2 * dpml  # cell size, including PML
 cell = mp.Vector3(sxy, sxy, 0)
 
-pml_layers = [mp.Pml(dpml)]
+pml_layers = [mp.PML(dpml)]
 resolution = 10
 
 
@@ -24,13 +25,13 @@ resolution = 10
 # and x0 that returns a function of x ...
 def pw_amp(k, x0):
     def _pw_amp(x):
-        return math.exp(1j * k.dot(x + x0))
+        return cmath.exp(1j * k.dot(x + x0))
     return _pw_amp
 
 fcen = 0.8  # pulse center frequency
 df = 0.02  # turn-on bandwidth
 kdir = mp.Vector3(1, 1)  # direction of k (length is irrelevant)
-k = kdir.unit() * (2 * mp.PI * fcen)  # k with correct length
+k = kdir.unit().scale(2 * math.pi * fcen)  # k with correct length
 
 sources = [
     mp.Source(
@@ -38,20 +39,19 @@ sources = [
         component=mp.Ez,
         center=mp.Vector3(-0.5 * s, 0),
         size=mp.Vector3(0, s),
-        amp_func=pw_amp(k, mp.Vector3(-0.5 * s, 0))
+        amp_func=pw_amp(k, mp.Vector3(x=-0.5 * s))
     ),
     mp.Source(
         mp.ContinuousSource(fcen, fwidth=df),
         component=mp.Ez,
         center=mp.Vector3(0, -0.5 * s),
         size=mp.Vector3(s, 0),
-        amp_func=pw_amp(k, mp.Vector3(0, -0.5 * s))
+        amp_func=pw_amp(k, mp.Vector3(y=-0.5 * s))
     )
 ]
 
 sim = mp.Simulation(
     cell_size=cell,
-    geometry=[],
     sources=sources,
     boundary_layers=pml_layers,
     resolution=resolution
