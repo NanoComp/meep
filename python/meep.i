@@ -518,6 +518,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         output_tot_pwr,
         output_hfield_z,
         output_efield_z,
+        output_png,
         output_poynting,
         output_poynting_x,
         output_poynting_y,

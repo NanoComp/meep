@@ -38,6 +38,8 @@ before_script:
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - git clone https://github.com/stevengj/mpb
+  - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl && make && make install)
 
 ##################################################
 # build matrix:
