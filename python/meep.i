@@ -45,12 +45,15 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %{
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
+PyObject *py_amp_func = NULL;
+PyObject *py_amp_func_v3 = NULL;
 
 static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
-static PyObject* vec2py(const meep::vec &v);
+static PyObject* vec2py(const meep::vec &v, bool amp_func=false);
 static double py_callback_wrap(const meep::vec &v);
+static std::complex<double> py_amp_func_wrap(const meep::vec &v);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
@@ -248,6 +251,22 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
   $1 = PyCallable_Check($input);
+}
+
+// Typemap suite for amplitude function
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::complex<double> (*)(const meep::vec &) {
+  $1 = PyCallable_Check($input);
+}
+
+%typemap(in) std::complex<double> (*)(const meep::vec &) {
+    $1 = py_amp_func_wrap;
+    py_amp_func = $input;
+    Py_INCREF(py_amp_func);
+}
+
+%typemap(freearg) std::complex<double> (*)(const meep::vec &) {
+    Py_XDECREF(py_amp_func);
 }
 
 // Typemap suite for vector3

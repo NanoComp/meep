@@ -42,6 +42,7 @@ TESTS =                                 \
     $(TEST_DIR)/ldos.py                 \
     $(MDPYTEST)                         \
     $(TEST_DIR)/physical.py             \
+    $(TEST_DIR)/pw_source.py            \
     $(TEST_DIR)/ring.py                 \
     $(TEST_DIR)/ring_cyl.py             \
     $(TEST_DIR)/simulation.py           \
