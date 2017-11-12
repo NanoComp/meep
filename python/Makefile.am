@@ -45,7 +45,8 @@ TESTS =                                 \
     $(TEST_DIR)/ring.py                 \
     $(TEST_DIR)/ring_cyl.py             \
     $(TEST_DIR)/simulation.py           \
-    $(TEST_DIR)/source.py
+    $(TEST_DIR)/source.py               \
+    $(TEST_DIR)/wvg_src.py
 
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)

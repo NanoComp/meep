@@ -4,6 +4,7 @@ import math
 import numbers
 import os
 import re
+import subprocess
 import sys
 from collections import namedtuple
 from collections import Sequence
@@ -280,7 +281,7 @@ class Simulation(object):
         self.filename_prefix = ''
         self.output_append_h5 = None
         self.output_single_precision = False
-        self.output_volume = []
+        self.output_volume = None
         self.last_eps_filename = ''
         self.output_h5_hook = lambda fname: False
         self.interactive = False
@@ -626,6 +627,42 @@ class Simulation(object):
         self.load_flux(fname, flux)
         flux.scale_dfts(complex(-1.0))
 
+    def flux_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using flux_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.flux_in_box(d, box.swigobj)
+
+    def electric_energy_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.electric_energy_in_box(d, box.swigobj)
+
+    def magnetic_energy_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.magnetic_energy_in_box(d, box.swigobj)
+
+    def field_energy_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using field_energy_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.field_energy_in_box(d, box.swigobj)
+
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
         vol_list = None
 
@@ -648,7 +685,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
-        vol = self.fields.total_volume() if not self.output_volume else self.output_volume
+        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
@@ -679,6 +716,11 @@ class Simulation(object):
 
         if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
+
+    def h5topng(self, rm_h5, option, *step_funcs):
+        opts = "h5topng {}".format(option)
+        cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
+        return convert_h5(rm_h5, cmd, *step_funcs)
 
     def get_array(self, center, size, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.int32)
@@ -1024,6 +1066,46 @@ def display_run_data(sim, data_name, data):
     else:
         data_str = [data_to_str(data)]
     print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
+
+
+def convert_h5(rm_h5, convert_cmd, *step_funcs):
+
+    def convert(fname):
+        if mp.my_rank() == 0:
+            cmd = convert_cmd.split()
+            cmd.append(fname)
+            ret = subprocess.call(cmd)
+            if ret == 0 and rm_h5:
+                os.remove(fname)
+
+    def _convert_h5(sim, todo):
+        hooksave = sim.output_h5_hook
+        sim.output_h5_hook = convert
+
+        for f in step_funcs:
+            _eval_step_func(sim, f, todo)
+
+        sim.output_h5_hook = hooksave
+
+    return _convert_h5
+
+
+def output_png(compnt, options, rm_h5=True):
+    closure = {'maxabs': 0.0}
+
+    def _output_png(sim, todo):
+        if todo == 'step':
+            if sim.output_volume is None:
+                ov = sim.fields.total_volume()
+            else:
+                ov = sim.output_volume
+
+            closure['maxabs'] = max(closure['maxabs'],
+                                    sim.fields.max_abs(compnt, ov))
+            convert = sim.h5topng(rm_h5, "-M {} {}".format(closure['maxabs'], options),
+                                  lambda sim: sim.output_component(compnt))
+            convert(sim, todo)
+    return _output_png
 
 
 def output_epsilon(sim):
