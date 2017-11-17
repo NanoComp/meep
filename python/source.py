@@ -30,7 +30,9 @@ class SourceTime(object):
 
 class ContinuousSource(SourceTime):
 
-    def __init__(self, frequency=None, start_time=0, end_time=1.0e20, width=0, cutoff=3.0, wavelength=None):
+    def __init__(self, frequency=None, start_time=0, end_time=1.0e20, width=0,
+                 fwidth=float('inf'), cutoff=3.0, wavelength=None):
+
         if frequency is None and wavelength is None:
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
 
@@ -38,7 +40,7 @@ class ContinuousSource(SourceTime):
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.start_time = start_time
         self.end_time = end_time
-        self.width = width
+        self.width = max(width, 1 / fwidth)
         self.cutoff = cutoff
         self.swigobj = mp.continuous_src_time(self.frequency, self.width, self.start_time,
                                               self.end_time, self.cutoff)
@@ -84,7 +86,7 @@ class EigenModeSource(Source):
                  eig_match_freq=True,
                  eig_parity=0,
                  eig_resolution=0,
-                 eig_tolerence=1e-7,
+                 eig_tolerance=1e-7,
                  **kwargs):
 
         super(EigenModeSource, self).__init__(src, component, center, **kwargs)
@@ -97,7 +99,7 @@ class EigenModeSource(Source):
         self.eig_match_freq = eig_match_freq
         self.eig_parity = eig_parity
         self.eig_resolution = eig_resolution
-        self.eig_tolerence = eig_tolerence
+        self.eig_tolerance = eig_tolerance
 
     @property
     def eig_lattice_size(self):
@@ -138,9 +140,9 @@ class EigenModeSource(Source):
         self._eig_resolution = check_nonnegative('EigenModeSource.eig_resolution', val)
 
     @property
-    def eig_tolerence(self):
-        return self._eig_tolerence
+    def eig_tolerance(self):
+        return self._eig_tolerance
 
-    @eig_tolerence.setter
-    def eig_tolerence(self, val):
-        self._eig_tolerence = check_positive('EigenModeSource.eig_tolerence', val)
+    @eig_tolerance.setter
+    def eig_tolerance(self, val):
+        self._eig_tolerance = check_positive('EigenModeSource.eig_tolerance', val)

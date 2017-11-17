@@ -1,8 +1,10 @@
 from __future__ import division, print_function
 
+import math
 import numbers
 import os
 import re
+import subprocess
 import sys
 from collections import namedtuple
 from collections import Sequence
@@ -22,6 +24,15 @@ except NameError:
 
 CYLINDRICAL = -2
 AUTOMATIC = -1
+
+# MPB definitions
+NO_PARITY = 0
+EVEN_Z = 1
+ODD_Z = 2
+EVEN_Y = 4
+ODD_Y = 8
+TE = EVEN_Z
+TM = ODD_Z
 
 
 def get_num_args(func):
@@ -143,6 +154,15 @@ class FluxRegion(object):
         self.weight = complex(weight)
 
 
+class ForceRegion(object):
+
+    def __init__(self, center, direction, size=mp.Vector3(), weight=1.0):
+        self.center = center
+        self.direction = direction
+        self.size = size
+        self.weight = complex(weight)
+
+
 class Near2FarRegion(object):
 
     def __init__(self, center, size=mp.Vector3(), direction=AUTOMATIC, weight=1.0):
@@ -226,7 +246,7 @@ class Simulation(object):
 
     def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
-                 force_complex_fields=False, default_material=mp.Medium(), m=0):
+                 force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False):
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
@@ -247,7 +267,7 @@ class Simulation(object):
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
         self.special_kz = False
-        self.k_point = False
+        self.k_point = k_point
         self.fields = None
         self.structure = None
         self.accurate_fields_near_cylorigin = False
@@ -261,7 +281,7 @@ class Simulation(object):
         self.filename_prefix = ''
         self.output_append_h5 = None
         self.output_single_precision = False
-        self.output_volume = []
+        self.output_volume = None
         self.last_eps_filename = ''
         self.output_h5_hook = lambda fname: False
         self.interactive = False
@@ -513,14 +533,14 @@ class Simulation(object):
                              is_cylindrical=self.is_cylindrical).swigobj
 
             if src.amp_func is None:
-                self.fields.add_eigenmode_src(
+                self.fields.add_eigenmode_source(
                     src.component,
                     src.src.swigobj,
                     direction,
                     where,
                     eig_vol,
                     src.eig_band,
-                    src.eig_kpoint,
+                    py_v3_to_vec(self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical),
                     src.eig_match_freq,
                     src.eig_parity,
                     src.eig_resolution,
@@ -528,20 +548,19 @@ class Simulation(object):
                     src.amplitude
                 )
             else:
-                self.fields.add_eigenmode_src(
+                self.fields.add_eigenmode_source(
                     src.component,
                     src.src.swigobj,
                     direction,
                     where,
                     eig_vol,
                     src.eig_band,
-                    src.eig_kpoint,
+                    py_v3_to_vec(self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical),
                     src.eig_parity,
                     src.eig_resolution,
                     src.eig_tolerance,
                     src.amplitude,
                     src.amp_func
-
                 )
         else:
             if src.amp_func is None:
@@ -573,6 +592,16 @@ class Simulation(object):
         vol = where.to_cylindrical() if self.is_cylindrical else where
         near2far.save_farfields(fname, self._get_filename_prefix(), vol.swigobj, resolution)
 
+    def add_force(self, fcen, df, nfreq, *forces):
+        if self.fields is None:
+            self._init_fields()
+
+        return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
+
+    def display_forces(self, *forces):
+        force_freqs = get_force_freqs(forces[0])
+        display_csv(self, 'force', zip(force_freqs, *[get_forces(f) for f in forces]))
+
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
             self._init_fields()
@@ -598,6 +627,42 @@ class Simulation(object):
         self.load_flux(fname, flux)
         flux.scale_dfts(complex(-1.0))
 
+    def flux_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using flux_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.flux_in_box(d, box.swigobj)
+
+    def electric_energy_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.electric_energy_in_box(d, box.swigobj)
+
+    def magnetic_energy_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.magnetic_energy_in_box(d, box.swigobj)
+
+    def field_energy_in_box(self, d, box):
+        if self.fields is None:
+            raise RuntimeError('Fields must be initialized before using field_energy_in_box')
+
+        if self.is_cylindrical:
+            box = box.to_cylindrical()
+
+        return self.fields.field_energy_in_box(d, box.swigobj)
+
     def _add_fluxish_stuff(self, add_dft_stuff, fcen, df, nfreq, stufflist):
         vol_list = None
 
@@ -620,7 +685,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
-        vol = self.fields.total_volume() if not self.output_volume else self.output_volume
+        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
@@ -651,6 +716,11 @@ class Simulation(object):
 
         if self.output_append_h5 is None:
             self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
+
+    def h5topng(self, rm_h5, option, *step_funcs):
+        opts = "h5topng {}".format(option)
+        cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
+        return convert_h5(rm_h5, cmd, *step_funcs)
 
     def get_array(self, center, size, component=mp.Ez, cmplx=None, arr=None):
         dim_sizes = np.zeros(3, dtype=np.int32)
@@ -695,6 +765,17 @@ class Simulation(object):
             else:
                 if self.k_point:
                     self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical))
+
+    def change_sources(self, new_sources):
+        self.sources = new_sources if type(new_sources) is list else [new_sources]
+        if self.fields:
+            self.fields.remove_sources()
+            for s in new_sources:
+                self.add_source(s)
+
+    def reset_meep(self):
+        self.fields = None
+        self.structure = None
 
     def restart_fields(self):
         if self.fields is not None:
@@ -987,6 +1068,46 @@ def display_run_data(sim, data_name, data):
     print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
 
 
+def convert_h5(rm_h5, convert_cmd, *step_funcs):
+
+    def convert(fname):
+        if mp.my_rank() == 0:
+            cmd = convert_cmd.split()
+            cmd.append(fname)
+            ret = subprocess.call(cmd)
+            if ret == 0 and rm_h5:
+                os.remove(fname)
+
+    def _convert_h5(sim, todo):
+        hooksave = sim.output_h5_hook
+        sim.output_h5_hook = convert
+
+        for f in step_funcs:
+            _eval_step_func(sim, f, todo)
+
+        sim.output_h5_hook = hooksave
+
+    return _convert_h5
+
+
+def output_png(compnt, options, rm_h5=True):
+    closure = {'maxabs': 0.0}
+
+    def _output_png(sim, todo):
+        if todo == 'step':
+            if sim.output_volume is None:
+                ov = sim.fields.total_volume()
+            else:
+                ov = sim.output_volume
+
+            closure['maxabs'] = max(closure['maxabs'],
+                                    sim.fields.max_abs(compnt, ov))
+            convert = sim.h5topng(rm_h5, "-M {} {}".format(closure['maxabs'], options),
+                                  lambda sim: sim.output_component(compnt))
+            convert(sim, todo)
+    return _output_png
+
+
 def output_epsilon(sim):
     sim.output_component(mp.Dielectric)
 
@@ -1040,12 +1161,40 @@ def output_poynting_p(sim):
     sim.output_component(mp.Sp)
 
 
+def get_ldos_freqs(f):
+    start = f.omega_min / (2 * math.pi)
+    stop = start + (f.domega / (2 * math.pi)) * f.Nomega
+    return np.linspace(start, stop, num=f.Nomega, endpoint=False).tolist()
+
+
+def dft_ldos(fcen, df, nfreq):
+    ldos = mp._dft_ldos(fcen - df / 2, fcen + df / 2, nfreq)
+
+    def _ldos(sim, todo):
+        if todo == 'step':
+            ldos.update(sim.fields)
+        else:
+            sim.ldos_data = mp._dft_ldos_ldos(ldos)
+            sim.ldos_Fdata = mp._dft_ldos_F(ldos)
+            sim.ldos_Jdata = mp._dft_ldos_J(ldos)
+            display_csv(sim, 'ldos', zip(get_ldos_freqs(ldos), sim.ldos_data))
+    return _ldos
+
+
 def get_flux_freqs(f):
     return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
 
 
 def get_fluxes(f):
     return f.flux()
+
+
+def get_force_freqs(f):
+    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
+
+
+def get_forces(f):
+    return f.force()
 
 
 def interpolate(n, nums):

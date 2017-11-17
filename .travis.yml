@@ -3,7 +3,7 @@ dist: trusty
 sudo: false
 
 ##################################################
-# required linux packages and python packages 
+# required linux packages and python packages
 ##################################################
 addons:
   apt:
@@ -22,7 +22,7 @@ install:
   - pip install numpy mpi4py
 
 ##################################################
-# environment variables applied to all build cases 
+# environment variables applied to all build cases
 ##################################################
 env:
   global:
@@ -38,6 +38,8 @@ before_script:
   - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
   - git clone https://github.com/stevengj/harminv
   - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - git clone https://github.com/stevengj/mpb
+  - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl && make && make install)
 
 ##################################################
 # build matrix:
@@ -54,7 +56,7 @@ matrix:
     env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}"
 
 ##################################################
-# build/test instructions    
+# build/test instructions
 ##################################################
 script:
   - set -e
@@ -68,7 +70,7 @@ script:
   - make check TESTS=${CORETESTS} VERBOSE=1
   - popd
 #
-  - pushd libmeepgeom 
+  - pushd libmeepgeom
   - make check
   - popd
 #

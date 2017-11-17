@@ -6,7 +6,7 @@ HPPFILES=                                    \
  $(top_srcdir)/src/meep/vec.hpp              \
  $(top_srcdir)/src/meep/mympi.hpp            \
  $(top_srcdir)/libmeepgeom/meepgeom.hpp      \
- $(top_srcdir)/libmeepgeom/material_data.hpp 
+ $(top_srcdir)/libmeepgeom/material_data.hpp
 
 BUILT_SOURCES = meep-python.cpp meep.py __init__.py
 
@@ -35,15 +35,19 @@ TESTS =                                 \
     $(TEST_DIR)/bend_flux.py            \
     $(TEST_DIR)/cavity_arrayslice.py    \
     $(TEST_DIR)/cyl_ellipsoid.py        \
+    $(TEST_DIR)/force.py                \
     $(TEST_DIR)/geom.py                 \
     $(TEST_DIR)/holey_wvg_bands.py      \
     $(TEST_DIR)/holey_wvg_cavity.py     \
+    $(TEST_DIR)/ldos.py                 \
     $(MDPYTEST)                         \
     $(TEST_DIR)/physical.py             \
+    $(TEST_DIR)/pw_source.py            \
     $(TEST_DIR)/ring.py                 \
     $(TEST_DIR)/ring_cyl.py             \
     $(TEST_DIR)/simulation.py           \
-    $(TEST_DIR)/source.py
+    $(TEST_DIR)/source.py               \
+    $(TEST_DIR)/wvg_src.py
 
 TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)

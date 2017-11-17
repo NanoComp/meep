@@ -45,12 +45,15 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %{
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
+PyObject *py_amp_func = NULL;
+PyObject *py_amp_func_v3 = NULL;
 
 static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
-static PyObject* vec2py(const meep::vec &v);
+static PyObject* vec2py(const meep::vec &v, bool amp_func=false);
 static double py_callback_wrap(const meep::vec &v);
+static std::complex<double> py_amp_func_wrap(const meep::vec &v);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
@@ -144,6 +147,56 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(ff_arr[i].real(), ff_arr[i].imag()));
     }
 
+    delete ff_arr;
+
+    return res;
+}
+
+// Wrapper around meep::dft_ldos::ldos
+PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
+    Py_ssize_t len = f->Nomega;
+    PyObject *res = PyList_New(len);
+
+    double *tmp = f->ldos();
+
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyList_SetItem(res, i, PyFloat_FromDouble(tmp[i]));
+    }
+
+    delete tmp;
+
+    return res;
+}
+
+// Wrapper around meep::dft_ldos_F
+PyObject *_dft_ldos_F(meep::dft_ldos *f) {
+    Py_ssize_t len = f->Nomega;
+    PyObject *res = PyList_New(len);
+
+    std::complex<double> *tmp = f->F();
+
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyList_SetItem(res, i, PyComplex_FromDoubles(tmp[i].real(), tmp[i].imag()));
+    }
+
+    delete tmp;
+
+    return res;
+}
+
+// Wrapper arond meep::dft_ldos_J
+PyObject *_dft_ldos_J(meep::dft_ldos *f) {
+    Py_ssize_t len = f->Nomega;
+    PyObject *res = PyList_New(len);
+
+    std::complex<double> *tmp = f->J();
+
+    for (Py_ssize_t i = 0; i < len; i++) {
+        PyList_SetItem(res, i, PyComplex_FromDoubles(tmp[i].real(), tmp[i].imag()));
+    }
+
+    delete tmp;
+
     return res;
 }
 
@@ -173,7 +226,9 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
                      double err_thresh, double rel_amp_thresh, double amp_thresh);
 
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
-
+PyObject *_dft_ldos_ldos(meep::dft_ldos *f);
+PyObject *_dft_ldos_F(meep::dft_ldos *f);
+PyObject *_dft_ldos_J(meep::dft_ldos *f);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
@@ -196,6 +251,22 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
   $1 = PyCallable_Check($input);
+}
+
+// Typemap suite for amplitude function
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::complex<double> (*)(const meep::vec &) {
+  $1 = PyCallable_Check($input);
+}
+
+%typemap(in) std::complex<double> (*)(const meep::vec &) {
+    $1 = py_amp_func_wrap;
+    py_amp_func = $input;
+    Py_INCREF(py_amp_func);
+}
+
+%typemap(freearg) std::complex<double> (*)(const meep::vec &) {
+    Py_XDECREF(py_amp_func);
 }
 
 // Typemap suite for vector3
@@ -309,7 +380,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = (void*)$input;
 }
 
-// Typemap suite for dtf_flux
+// Typemap suite for dft_flux
 
 %typemap(out) double* flux {
     int size = arg1->Nfreq;
@@ -318,7 +389,19 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
     }
 
-  delete $1;
+    delete $1;
+}
+
+// Typemap suite for dft_force
+
+%typemap(out) double* force {
+    int size = arg1->Nfreq;
+    $result = PyList_New(size);
+    for(int i = 0; i < size; i++) {
+        PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
+    }
+
+    delete $1;
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
@@ -367,6 +450,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 
+%rename(_dft_ldos) meep::dft_ldos::dft_ldos;
+
 // Rename python builtins
 %rename(br_apply) meep::boundary_region::apply;
 %rename(_is) meep::dft_chunk::is;
@@ -410,8 +495,16 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         check_nonnegative,
     )
     from .simulation import (
+        NO_PARITY,
+        EVEN_Z,
+        ODD_Z,
+        EVEN_Y,
+        ODD_Y,
+        TE,
+        TM,
         Absorber,
         FluxRegion,
+        ForceRegion,
         Harminv,
         Identity,
         Mirror,
@@ -427,10 +520,14 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         at_beginning,
         at_end,
         at_every,
-        during_sources,
+        dft_ldos,
         display_progress,
+        during_sources,
         get_flux_freqs,
         get_fluxes,
+        get_force_freqs,
+        get_forces,
+        get_ldos_freqs,
         in_volume,
         interpolate,
         output_epsilon,
@@ -440,6 +537,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         output_tot_pwr,
         output_hfield_z,
         output_efield_z,
+        output_png,
         output_poynting,
         output_poynting_x,
         output_poynting_y,
