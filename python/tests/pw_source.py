@@ -27,7 +27,7 @@ class TestPwSource(unittest.TestCase):
         fcen = 0.8
         df = 0.02
         kdir = mp.Vector3(1, 1)
-        k = kdir.unit().scale(2 * math.pi * fcen)
+        self.k = kdir.unit().scale(2 * math.pi * fcen)
 
         sources = [
             mp.Source(
@@ -35,14 +35,14 @@ class TestPwSource(unittest.TestCase):
                 component=mp.Ez,
                 center=mp.Vector3(-0.5 * s, 0),
                 size=mp.Vector3(0, s),
-                amp_func=pw_amp(k, mp.Vector3(x=-0.5 * s))
+                amp_func=pw_amp(self.k, mp.Vector3(x=-0.5 * s))
             ),
             mp.Source(
                 mp.ContinuousSource(fcen, fwidth=df),
                 component=mp.Ez,
                 center=mp.Vector3(0, -0.5 * s),
                 size=mp.Vector3(s, 0),
-                amp_func=pw_amp(k, mp.Vector3(y=-0.5 * s))
+                amp_func=pw_amp(self.k, mp.Vector3(y=-0.5 * s))
             )
         ]
 
@@ -50,11 +50,22 @@ class TestPwSource(unittest.TestCase):
             cell_size=cell,
             sources=sources,
             boundary_layers=pml_layers,
-            resolution=resolution
+            resolution=resolution,
+            force_complex_fields=True
         )
+        self.s = s
 
     def test_pw_source(self):
         self.sim.run(mp.at_end(mp.output_efield_z), until=400)
+
+        v1 = mp.Vector3(0.5 * self.s, 0)
+        v2 = mp.Vector3(0.5 * self.s, 0.5 * self.s)
+
+        pt1 = self.sim.get_field_point(mp.Ez, v1)
+        pt2 = self.sim.get_field_point(mp.Ez, v2)
+
+        self.assertAlmostEqual(pt1 / pt2, cmath.exp(1j * self.k.dot(v1 + v2)))
+
 
 if __name__ == '__main__':
     unittest.main()
