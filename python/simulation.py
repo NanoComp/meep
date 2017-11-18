@@ -764,19 +764,29 @@ class Simulation(object):
         self.fields.output_hdf5(name, cs + func, ov, h5, append, self.output_single_precision,
                                 self._get_filename_prefix(), real_only)
         if h5file is None:
-            self.output_h5_hook(self.fields.h5file_name(name, self._get_filename_prefix(), True)
+            self.output_h5_hook(self.fields.h5file_name(name, self._get_filename_prefix(), True))
 
     def get_where_and_fields(self, waf):
-        pass
+        f = waf[1] if len(waf) == 2 else self.fields
+
+        if f is None:
+            raise RuntimeError("Fields must be initialized before calling get_where_and_fields")
+
+        where = f.total_volume() if not waf else waf[0]
+
+        return where, f
 
     def integrate_field_function(self, cs, func, *where_and_fields):
-        pass
+        waf = self.get_where_and_fields(where_and_fields)
+        return waf[1].integrate([cs, func], waf[0])
 
     def integrate2_field_function(self, fields2, cs1, cs2, func, *where_and_fields):
-        pass
+        waf = self.get_where_and_fields(where_and_fields)
+        return waf[1].integrate(fields2, [cs1, cs2, func], waf[0])
 
     def max_abs_field_function(self, cs, func, *where_and_fields):
-        pass
+        waf = self.get_where_and_fields(where_and_fields)
+        return waf[1].max_abs([cs, func], waf[0])
 
     def change_k_point(self, k):
         self.k_point = k
