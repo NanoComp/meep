@@ -237,7 +237,7 @@ List of dispersive susceptibilities (see below) added to the permeability $\mu$ 
 
 **`perfect-metal`**  
 
-A perfectly conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [predefined variables](#Predefined_Variables) `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor` above.
+A perfectly conducting metal. This class has no properties and you normally just use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [predefined variables](#predefined-variables) `metal`, `perfect-electric-conductor`, and `perfect-magnetic-conductor` above.
 
 **`material-function`**  
 
@@ -1072,7 +1072,7 @@ More generally, it is possible to output an arbitrary function of position and z
 
 **`(output-field-function name cs func)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Output the field function `func` to an HDF5 file in the datasets named *`name`*`.r` and *`name`*`.i` (for the real and imaginary parts). Similar to `integrate-field-function`, `func` is a function of position (a `vector3`) and the field components corresponding to `cs`: a list of `component` constants.
+Output the field function `func` to an HDF5 file in the datasets named *`name`*`.r` and *`name`*`.i` for the real and imaginary parts. Similar to `integrate-field-function`, `func` is a function of position (a `vector3`) and the field components corresponding to `cs`: a list of `component` constants.
 
 **`(output-real-field-function name cs func)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
