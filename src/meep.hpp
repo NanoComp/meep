@@ -1314,14 +1314,12 @@ class fields {
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or 
-  // derived component.) (The slice_length parameter is only
-  // present to facilitate SWIG-generated python wrappers;
-  // it is ignored by the C code).
-  double *get_array_slice(const volume &where, component c, double *slice=0, int slice_length=0);
-  double *get_array_slice(const volume &where, derived_component c, double *slice=0, int slice_length=0);
+  // derived component.)
+  double *get_array_slice(const volume &where, component c, double *slice=0);
+  double *get_array_slice(const volume &where, derived_component c, double *slice=0);
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 component c,
-                                                std::complex<double> *slice=0, int slice_length=0);
+                                                std::complex<double> *slice=0);
 
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where,

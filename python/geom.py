@@ -44,7 +44,7 @@ class Vector3(object):
             raise IndexError("No value at index {}".format(i))
 
     def __repr__(self):
-        return "<{}, {}, {}>".format(self.x, self.y, self.z)
+        return "Vector3<{}, {}, {}>".format(self.x, self.y, self.z)
 
     def scale(self, s):
         x = self.x * s
@@ -52,6 +52,15 @@ class Vector3(object):
         z = self.z * s
 
         return Vector3(x, y, z)
+
+    def dot(self, v):
+        return self.x * v.x + self.y * v.y + self.z * v.z
+
+    def norm(self):
+        return math.sqrt(abs(self.dot(self)))
+
+    def unit(self):
+        return self.scale(1 / self.norm())
 
 
 class Medium(object):
