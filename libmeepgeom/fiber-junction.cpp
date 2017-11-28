@@ -82,7 +82,6 @@ int main(int argc, char *argv[])
       }; 
    };
 
-
   /***************************************************************/
   /* set up geometry: cylinder of radius r in a 2D computational */
   /* cell of size LxL (z-invariant)                              */
@@ -104,7 +103,7 @@ int main(int argc, char *argv[])
 
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
 
-  material_type dielectric = meep_geom::make_dielectric(n*n);
+  meep_geom::material_type dielectric = meep_geom::make_dielectric(n*n);
   geometric_object objects[1];
   vector3 v3zero = {0.0,0.0,0.0};
   vector3 zaxis  = {0.0,0.0,1.0};
@@ -120,6 +119,7 @@ int main(int argc, char *argv[])
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
   int nfreq   = 10;
+nfreq=1;
   gaussian_src_time src(fcen, df);
   volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
   if (point_source)

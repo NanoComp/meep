@@ -34,10 +34,13 @@ TESTS           = cyl-ellipsoid-ll array-slice-ll
 
 #LOG_COMPILER = $(RUNCODE)
 
-noinst_PROGRAMS = bend-flux-ll fiber-junction
+noinst_PROGRAMS = bend-flux-ll fiber-junction duct-junction
 
 fiber_junction_SOURCES = fiber-junction.cpp
 fiber_junction_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+duct_junction_SOURCES = duct-junction.cpp
+duct_junction_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
