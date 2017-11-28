@@ -66,7 +66,6 @@ int main(int argc, char *argv[])
   bool use_symmetry = false;
   bool point_source = false;
   int  band_num     = 1;
-  double ratio      = 2.0;
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
