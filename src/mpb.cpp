@@ -15,6 +15,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include "meep.hpp"
@@ -144,6 +145,7 @@ typedef struct eigenmode_data
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */
 /*******************************************************************/
+static FILE *ESFieldFile=0; // "eigenmode-source log file"
 complex<double> eigenmode_amplitude(const vec &p,
                                     eigenmode_data *edata) {
   
@@ -202,6 +204,11 @@ complex<double> eigenmode_amplitude(const vec &p,
 	 ((D(x,y,z2)*(1.0-dx) + D(x2,y,z2)*dx) * (1.0-dy) +
 	  (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
 #undef D
+
+
+  cdouble amp = amp_func(p);
+  if (ESFieldFile)
+   fprintf(ESFieldFile,"%e %e %e %e %e %e %e\n",p.x(),p.y(),p.z(),real(ret),imag(ret),real(amp),imag(amp));
 
   return (complex<double>(double(real(ret)), double(imag(ret)))
 	  * amp_func(p));
@@ -527,6 +534,21 @@ void destroy_eigenmode_data(eigenmode_data *edata)
 }
 
 /***************************************************************/
+/***************************************************************/
+/***************************************************************/
+FILE *vfopen(const char *format, const char *mode, ...)
+{
+  va_list ap;
+  char buffer[1000];
+  va_start(ap,mode);
+  vsnprintf(buffer,1000,format,ap);
+  va_end(ap);
+
+  FILE *f=fopen(buffer,mode);
+  return f;
+}
+
+/***************************************************************/
 /* call get_eigenmode() to solve for the specified eigenmode,  */
 /* then call add_volume_source() to add current sources whose  */
 /* radiated fields reproduce the eigenmode fields              */
@@ -540,6 +562,10 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
+
+
+  char *s=getenv("MEEP_PLOT_EIGENMODE_SOURCE_FIELDS");
+  bool PlotESFields = (s && s[0]=='1');
 
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
@@ -579,11 +605,15 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
       // E current source = d x (eigenmode H)
       if ((d + 1) % 3 == component_direction(c) % 3) {
 	global_eigenmode_data->component = (d + 2) % 3;
+	if (PlotESFields) ESFieldFile=vfopen("/tmp/ESLog%i_%i_h%c_%g","w",my_rank(),band_num,'x' + global_eigenmode_data->component, omega_src);
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
+	if (ESFieldFile) fclose(ESFieldFile);
       }
       else {
 	global_eigenmode_data->component= (d + 1) % 3;
+	if (PlotESFields) ESFieldFile=vfopen("/tmp/ESLog%i_%i_h%c_%g","w",my_rank(),band_num,'x' + global_eigenmode_data->component, omega_src);
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
+	if (ESFieldFile) fclose(ESFieldFile);
       }
       }
 
@@ -605,11 +635,15 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
       // H current source = - d x (eigenmode E)
       if ((d + 1) % 3 == component_direction(c) % 3) {
 	global_eigenmode_data->component= (d + 2) % 3;
+	if (PlotESFields) ESFieldFile=vfopen("/tmp/ESLog%i_%i_e%c_%g","w",my_rank(),band_num,'x' + global_eigenmode_data->component, omega_src);
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
+	if (ESFieldFile) fclose(ESFieldFile);
 	}
       else {
 	global_eigenmode_data->component = (d + 1) % 3;
+	if (PlotESFields) ESFieldFile=vfopen("/tmp/ESLog%i_%i_e%c_%g","w",my_rank(),band_num,'x' + global_eigenmode_data->component, omega_src);
 	add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
+	if (ESFieldFile) fclose(ESFieldFile);
       }
     }
 
@@ -632,11 +666,15 @@ void add_overlap_integral_contribution(fields *f,
                                        double mode_sign,
                                        cdouble full_num_denom[2])
 {
+  FILE *MDIFile=0;
+  char *s=getenv("MEEP_PLOT_MODE_DECOMPOSITION_INTEGRAND");
+  if (s && s[0]=='1')
+   { char FileName[100];
+     double omega = flux->freq_min + num_freq*flux->dfreq;
+     snprintf(FileName,100,"/tmp/MDI%i_%i_%s_%g",my_rank(),edata->band_num,component_name(c),omega);
+     MDIFile = fopen(FileName,"w");
+   };
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-char FileName[100];
-static int which=0;
-sprintf(FileName,"/tmp/Log%i_%s_%i",my_rank(),component_name(c),which++);
-FILE *LogFile = fopen(FileName,"a");
 cdouble cnum=0.0, cdenom=0.0;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
@@ -710,15 +748,13 @@ cdouble cnum=0.0, cdenom=0.0;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 cnum   += w * conj(mode_fval) * flux_fval;
 cdenom += w * conj(flux_fval) * flux_fval;
-#if 1
-if (LogFile)
+if (MDIFile)
 {
- fprintf(LogFile,"%e %e %e %i %i ",loc.x(), loc.y(), loc.z(),c,edata->component);
- fprintf(LogFile,"%e %e ",real(flux_fval),imag(flux_fval));
- fprintf(LogFile,"%e %e ",real(mode_fval),imag(mode_fval));
- fprintf(LogFile,"\n");
+ fprintf(MDIFile,"%e %e %e %i %i ",loc.x(), loc.y(), loc.z(),c,edata->component);
+ fprintf(MDIFile,"%e %e ",real(flux_fval),imag(flux_fval));
+ fprintf(MDIFile,"%e %e ",real(mode_fval),imag(mode_fval));
+ fprintf(MDIFile,"\n");
 };
-#endif
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
       }; // LOOP_OVER_IVECS
@@ -730,12 +766,11 @@ if (LogFile)
   full_num_denom[1] += denom;
 
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-#if 1
-if (LogFile)
- { fprintf(LogFile,"\n\n");
-   fclose(LogFile);
+if (MDIFile)
+ { fprintf(MDIFile,"\n\n");
+   fclose(MDIFile);
+   MDIFile=0;
  };
-#endif
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
 cnum   = sum_to_all(cnum);
@@ -787,6 +822,7 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
                                           int band_num,
                                           kpoint_func k_func, void *k_func_data)
 {
+  master_printf("Getting eigenmode coefficient (%i,%i)\n",num_freq, band_num);
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                   -*/
   /*--------------------------------------------------------------*/
@@ -812,7 +848,6 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
   /* num   = <caller's field | eigenmode>                         */
   /* denom = <eigenmode      | eigenmode>                         */
   /*--------------------------------------------------------------*/
-
   // step 2a: electric-current components 
   //            = nHat \times magnetic-field components
   cdouble numdenom[2]={0.0,0.0};
