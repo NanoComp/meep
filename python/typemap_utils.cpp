@@ -19,8 +19,12 @@
 
 #if PY_MAJOR_VERSION >= 3
     #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
+    #define PyInteger_Check(n) PyLong_Check(n)
+    #define PyInteger_AsLong(n) PyLong_AsLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
+    #define PyInteger_Check(n) PyInt_Check(n)
+    #define PyInteger_AsLong(n) PyInt_AsLong(n)
 #endif
 
 static PyObject *py_geometric_object() {
@@ -63,7 +67,36 @@ static PyObject *py_material_object() {
     return material_object;
 }
 
-static PyObject* vec2py(const meep::vec &v) {
+// v3 is a global python Vector3 object. We currently need one for the material
+// function and one for the amplitude function, so we pass it in from vec2py
+static void set_py_v3(double x, double y, double z, PyObject **v3) {
+    if (*v3 == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+        PyObject *args = PyTuple_New(0);
+        *v3 = PyObject_Call(v3_class, args, NULL);
+
+        Py_DECREF(args);
+        Py_DECREF(geom_mod);
+        Py_DECREF(v3_class);
+    }
+
+    PyObject *pyx = PyFloat_FromDouble(x);
+    PyObject *pyy = PyFloat_FromDouble(y);
+    PyObject *pyz = PyFloat_FromDouble(z);
+
+    PyObject_SetAttrString(*v3, "x", pyx);
+    PyObject_SetAttrString(*v3, "y", pyy);
+    PyObject_SetAttrString(*v3, "z", pyz);
+
+    Py_DECREF(pyx);
+    Py_DECREF(pyy);
+    Py_DECREF(pyz);
+
+    return;
+}
+
+static PyObject* vec2py(const meep::vec &v, bool amp_func) {
 
     double x = 0, y = 0, z = 0;
 
@@ -86,27 +119,30 @@ static PyObject* vec2py(const meep::vec &v) {
         break;
     }
 
-    PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-    PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
-
-    PyObject *kwargs = Py_BuildValue("{s:d,s:d,s:d}", "x", x, "y", y, "z", z);
-    PyObject *args = PyTuple_New(0);
-    PyObject *pyv3 = PyObject_Call(v3_class, args, kwargs);
-
-    Py_DECREF(args);
-    Py_DECREF(kwargs);
-    Py_DECREF(geom_mod);
-    Py_DECREF(v3_class);
-
-    return pyv3;
+    if (!amp_func) {
+        set_py_v3(x, y, z, &py_callback_v3);
+        return py_callback_v3;
+    } else {
+        set_py_v3(x, y, z, &py_amp_func_v3);
+        return py_amp_func_v3;
+    }
 }
 
 static double py_callback_wrap(const meep::vec &v) {
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
-    Py_XDECREF(pyv);
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
+    return ret;
+}
+
+static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
+    PyObject *pyv = vec2py(v, true);
+    PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
+    double real = PyComplex_RealAsDouble(pyret);
+    double imag = PyComplex_ImagAsDouble(pyret);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(pyret);
     return ret;
 }
 

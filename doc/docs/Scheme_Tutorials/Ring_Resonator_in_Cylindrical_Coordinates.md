@@ -49,7 +49,7 @@ The geometry is now specified by a single `block` object &mdash; remember that t
 
 We have added PML layers on "all" sides. Meep, however, notices that the $z$ direction has no thickness and automatically makes it periodic with no PML. Meep also omits PML from the boundary at $r$=0 which is handled by the analytical reflection symmetry.
 
-Now, the remaining inputs are almost exactly the same as in the previous 2d simulation. We'll add a single Gaussian point source in the $z$ direction to excite $S$-polarized modes, with some center frequency and width:
+Now, the remaining inputs are almost exactly the same as in the previous 2d simulation. We'll add a single Gaussian point source in the $z$ direction to excite $E_z$-polarized modes, with some center frequency and width:
 
 ```scm
 (define-param fcen 0.15) ; pulse center frequency                            

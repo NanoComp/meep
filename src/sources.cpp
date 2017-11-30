@@ -124,7 +124,7 @@ complex<double> continuous_src_time::dipole(double time) const
   else {
     double ts = (time - start_time) / width - slowness;
     double te = (end_time - time) / width - slowness;
-    
+
     return exp(complex<double>(0,-1.0) * (2*pi)*freq*time) * amp
       * (1.0 + tanh(ts))  // goes from 0 to 2
       * (1.0 + tanh(te))  // goes from 2 to 0
@@ -134,7 +134,7 @@ complex<double> continuous_src_time::dipole(double time) const
 
 bool continuous_src_time::is_equal(const src_time &t) const
 {
-     const continuous_src_time *tp = 
+     const continuous_src_time *tp =
 	  dynamic_cast<const continuous_src_time*>(&t);
      if (tp)
 	  return(tp->freq == freq && tp->width == width &&
@@ -223,10 +223,10 @@ void fields::add_point_source(component c, double freq,
     cutoff = gv.inva + cutoff * width;
     if (peaktime <= 0.0)
       peaktime = time() + cutoff;
-    
+
     // backward compatibility (slight phase shift in old Meep version)
     peaktime += is_magnetic(c) ? -dt*0.5 : dt;
-  
+
     gaussian_src_time src(freq, width,
 			     peaktime - cutoff, peaktime + cutoff);
     if (is_magnetic(c)) src.is_integrated = false;
@@ -265,12 +265,12 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
 			      ivec is, ivec ie,
 			      vec s0, vec s1, vec e0, vec e1,
 			      double dV0, double dV1,
-			      ivec shift, complex<double> shift_phase, 
+			      ivec shift, complex<double> shift_phase,
 			      const symmetry &S, int sn,
 			      void *data_)
 {
   src_vol_chunkloop_data *data = (src_vol_chunkloop_data *) data_;
-  
+
   (void) S; (void) sn; // these should be the identity
   (void) dV0; (void) dV1; // grid_volume weighting is included in data->amp
   (void) ichunk;
@@ -288,33 +288,36 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c,
   double inva = fc->gv.inva;
   int idx_vol = 0;
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    IVEC_LOOP_ILOC(fc->gv, iloc);
+    if (!fc->gv.owns(iloc)) continue;
+
     IVEC_LOOP_LOC(fc->gv, loc);
     loc += shift * (0.5*inva) - data->center;
 
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0,s1,e0,e1,1) * amp * data->A(loc);
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
-       right because it doesn't handle non-diagonal chi1inv! 
+       right because it doesn't handle non-diagonal chi1inv!
        similarly, for "B" sources, multiply by mu. */
-    if (is_D(c) && fc->s->chi1inv[c-Dx+Ex][cd]) 
+    if (is_D(c) && fc->s->chi1inv[c-Dx+Ex][cd])
       amps_array[idx_vol] /= fc->s->chi1inv[c-Dx+Ex][cd][idx];
-    if (is_B(c) && fc->s->chi1inv[c-Bx+Hx][cd]) 
+    if (is_B(c) && fc->s->chi1inv[c-Bx+Hx][cd])
       amps_array[idx_vol] /= fc->s->chi1inv[c-Bx+Hx][cd][idx];
 
     index_array[idx_vol++] = idx;
   }
 
-  if (idx_vol != npts)
+  if (idx_vol > npts)
     abort("add_volume_source: computed wrong npts (%d vs. %d)", npts, idx_vol);
 
-  src_vol *tmp = new src_vol(c, data->src, npts, index_array, amps_array);
+  src_vol *tmp = new src_vol(c, data->src, idx_vol, index_array, amps_array);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
 }
 
 void fields::add_volume_source(component c, const src_time &src,
                                const volume &where_,
-                               complex<double> A(const vec &), 
+                               complex<double> A(const vec &),
 			       complex<double> amp) {
   volume where(where_); // make a copy to adjust size if necessary
   if (gv.dim != where.dim)

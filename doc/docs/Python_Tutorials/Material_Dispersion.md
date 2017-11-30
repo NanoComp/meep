@@ -38,7 +38,7 @@ We can see that the f=1.1 resonance causes a large change in both the real and i
 
 On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of $\varepsilon$. Nevertheless, it generates a clear peak in the *imaginary* part of $\varepsilon$, corresponding to a resonant absorption peak.
 
-Now, we'll set up the rest of the simulation. We'll specify a broadband *S*-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $\omega(k)$ over, and compute the associated frequencies by using the `k_points` function:
+Now, we'll set up the rest of the simulation. We'll specify a broadband $E_z$-polarized Gaussian source, create a list of *k* wavevectors that we want to compute $\omega(k)$ over, and compute the associated frequencies by using the `k_points` function:
 
 ```py
 fcen = 1.0

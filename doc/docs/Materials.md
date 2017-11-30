@@ -73,7 +73,7 @@ absorption rate $\sim \frac{d\mathbf{P}}{dt} \cdot \mathbf{E}$
 
 Meep can keep track of this energy for the Lorentzian polarizability terms but not for the conductivity terms. For gain, this gives the amount of energy expended in amplifying the field.
 
-Conductivity and Complex $\varepsilon$
+Conductivity and Complex ε
 --------------------------
 
 Often, you only care about the absorption loss in a narrow bandwidth, where you just want to set the imaginary part of $\varepsilon$ (or $\mu$) to some known experimental value, in the same way that you often just care about setting a dispersionless real $\varepsilon$ that is the correct value in your bandwidth of interest.
@@ -89,7 +89,7 @@ Nonlinearity
 
 In general, $\varepsilon$ can be changed anisotropically by the **E** field itself, with:
 
-$$\Delta\varepsilon_{ij} = \sum_{k} \chi_{ijk}^{(2)} E_k + \sum_{k\ell} \chi_{ijk\ell}^{(3)} E_k E_\ell  + \cdots$$
+$$\Delta\varepsilon_{ij} = \sum_{k} \chi_{ijk}^{(2)} E_k + \sum_{k\ell} \chi_{ijk\ell}^{(3)} E_k E_\ell + \cdots$$
 
 where the *ij* is the index of the change in the 3$\times$3 $\varepsilon$ tensor and the $\chi$ terms are the nonlinear susceptibilities. The $\chi^{(2)}$ sum is the [Pockels effect](https://en.wikipedia.org/wiki/Pockels_effect) and the $\chi^{(3)}$ sum is the [Kerr effect](https://en.wikipedia.org/wiki/Kerr_effect). If the above expansion is frequency-independent, then the nonlinearity is *instantaneous*; more generally, $\Delta\varepsilon$ would depend on some average of the fields at previous times.
 
@@ -105,7 +105,7 @@ For complex fields in nonlinear systems, the physical interpretration of the abo
 
 For a discussion of how to relate $\chi^{(3)}$ in Meep to experimental Kerr coefficients, see [Units and Nonlinearity](Units_and_Nonlinearity.md).
 
-Magnetic Permeability $\mu$
+Magnetic Permeability μ
 -----------------------
 
 All of the above features that are supported for the electric permittivity $\varepsilon$ are also supported for the magnetic permeability $\mu$. That is, Meep supports $\mu$ with dispersion from magnetic conductivity and Lorentzian resonances, as well as magnetic $\chi^{(2)}$ and $\chi^{(3)}$ nonlinearities. The description of these is exactly the same as above, so we won't repeat it here &mdash; just take the above descriptions and replace $\varepsilon$, **E**, **D**, and $\sigma$<sub>D</sub> by $\mu$, **H**, **B**, and $\sigma$<sub>B</sub>, respectively.
