@@ -52,13 +52,6 @@ typedef struct {
   susceptibility *items;
 } susceptibility_list;
 
-// prototype for user-supplied material function
-// TODO: this prototype only allows user-defined scalar dielectric permeabilities
-//       (which seems to be all that is possible via the libctl interface as well).
-//       extend to allow more complicated user-specified materials?
-//
-typedef std::complex<double> (*user_material_func)(vector3 x, void *user_data);
-
 typedef struct medium_struct {
   vector3 epsilon_diag;
   vector3 epsilon_offdiag;
@@ -73,6 +66,12 @@ typedef struct medium_struct {
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
 } medium_struct;
+
+// prototype for user-defined material function,
+// which should allocate, initialize, and return a
+// new medium_struct describing the material properties
+// at point x
+typedef medium_struct *(*user_material_func)(vector3 x, void *user_data);
 
 typedef struct material_data_struct
  {

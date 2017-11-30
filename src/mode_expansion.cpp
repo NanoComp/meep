@@ -15,9 +15,9 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* create and return arrays of field components on user-specified
-   spatial slices. Uses fields::loop_in_chunks analogous to 
-   h5fields.cpp
+/* given an arbitrary field configuration, compute the coefficients
+   in an expansion of F as a linear combination of normal modes
+   of the geometry as computed by mpb.
 */
 
 
@@ -70,42 +70,28 @@ typedef struct {
   component invmu_cs[3];
   direction invmu_ds[3];
 
-} array_slice_data;
+} mode_projection_data;
 
 #define UNUSED(x) (void) x // silence compiler warnings
 
-/* passthrough field function equivalent to component_fun in h5fields.cpp */
-static cdouble default_field_func(const cdouble *fields,
-				  const vec &loc, void *data_)
-{
-  (void) loc; // unused
-  (void) data_; // unused
-  return fields[0];
-}
-
-static double default_field_rfunc(const cdouble *fields,
-				  const vec &loc, void *data_)
-{
-  (void) loc; // unused
-  (void) data_; // unused
-  return real(fields[0]);
-}
-
 /***************************************************************/
-/* callback function passed to loop_in_chunks to compute       */
-/* dimensions of array slice                                   */
+/* callback function passed to loop_in_chunks to evaluate the  */
+/* projection of the user-specified fields onto one or more    */
+/* normal modes as computed by mpb                             */
 /***************************************************************/
-static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
-				  ivec is, ivec ie,
-				  vec s0, vec s1, vec e0, vec e1,
-				  double dV0, double dV1,
-				  ivec shift, complex<double> shift_phase,
-				  const symmetry &S, int sn,
-				  void *data_)
+static void mode_projection_chunkloop(fields_chunk *fc, 
+                                      int ichnk, component cgrid,
+				      ivec is, ivec ie,
+				      vec s0, vec s1, vec e0, vec e1,
+				      double dV0, double dV1,
+				      ivec shift, complex<double> shift_phase,
+				      const symmetry &S, int sn,
+				      void *data_)
 {
   UNUSED(ichnk);UNUSED(cgrid);UNUSED(s0);UNUSED(s1);UNUSED(e0);UNUSED(e1);
   UNUSED(dV0);UNUSED(dV1);UNUSED(shift_phase); UNUSED(fc);
-  array_slice_data *data = (array_slice_data *) data_;
+  mode_projection_data *data = (mode_projection_data *) data_;
+
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
   data->min_corner = min(data->min_corner, min(isS, ieS));
@@ -130,7 +116,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   //-----------------------------------------------------------------------//
   // Find output chunk dimensions and strides, etc.
 
-  int start[3]={0,0,0}, count[3]={1,1,1}, offset[3]={0,0,0};
+  int count[3]={1,1,1}, offset[3]={0,0,0}, stride[3]={1,1,1};
 
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
@@ -148,33 +134,17 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
-    start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }
-
-  // slightly confusing: for array_slice, in contrast to
-  // h5fields, strides are computed using the dimensions of
-  // the full array slice, not the dimensions of the chunk.
-  int dims[3]={1,1,1};
-  for (int i = 0; i<data->rank; i++) {
-    direction d = data->ds[i];
-    dims[i]= (data->max_corner.in_direction(d)
-	     - data->min_corner.in_direction(d)) / 2 + 1;
-   };
-
-  int stride[3]={1,1,1};
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int j = permute.in_direction(d);
-    for (int k = i + 1; k < data->rank; ++k) stride[j] *= dims[k];
+    for (int k = i + 1; k < data->rank; ++k) stride[j] *= count[k];
     offset[j] *= stride[j];
     if (offset[j]) stride[j] *= -1;
-  };
-
-  // sco="slice chunk offset"
-  int sco=start[0]*dims[1]*dims[2] + start[1]*dims[2] + start[2];
-
+  }
+  
   //-----------------------------------------------------------------------//
   // Compute the function to output, exactly as in fields::integrate.
   int *off = data->offsets;
@@ -249,10 +219,10 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 	fields[i] = complex<double>(f[0], f[1]) * ph[i];
       }
     }
-    int idx2 = sco + ((((offset[0] + offset[1] + offset[2])
-                         + loop_i1 * stride[0])
-                         + loop_i2 * stride[1])
-                         + loop_i3 * stride[2]);
+    int idx2 = ((((offset[0] + offset[1] + offset[2])
+                   + loop_i1 * stride[0])
+                   + loop_i2 * stride[1])
+                   + loop_i3 * stride[2]);
 
     if (complex_data)
      zslice[idx2] = data->fun(fields, loc, data->fun_data);
@@ -275,7 +245,8 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 /* initialized appopriately for subsequent use in              */
 /* get_array_slice.                                            */
 /***************************************************************/
-int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *caller_data)
+int fields::get_mode_expansion_coefficients(dft_flux flux,
+                                            int
 {
   am_now_working_on(FieldOutput);
 
@@ -463,8 +434,9 @@ cdouble *fields::get_complex_array_slice(const volume &where,
 }
 
 double *fields::get_array_slice(const volume &where, component c,
-                                double *slice)
+                                double *slice, int slice_length)
 {
+  (void) slice_length;
   std::vector<component> components(1);
   components[0]=c;
   return (double *)do_get_array_slice(where, components,
@@ -474,8 +446,9 @@ double *fields::get_array_slice(const volume &where, component c,
 
 double *fields::get_array_slice(const volume &where,
                                 derived_component c,
-                                double *slice)
+                                double *slice, int slice_length)
 {
+  (void) slice_length;
   int nfields;
   component carray[12];
   field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
@@ -486,8 +459,9 @@ double *fields::get_array_slice(const volume &where,
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, component c,
-                                         cdouble *slice)
+                                         cdouble *slice, int slice_length)
 {
+  (void) slice_length;
   std::vector<component> components(1);
   components[0]=c;
   return (cdouble *)do_get_array_slice(where, components,

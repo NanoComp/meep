@@ -31,6 +31,10 @@
 
 namespace meep_geom {
 
+#ifndef cdouble
+typedef std::complex<double> cdouble;
+#endif
+
 // constants from meep-ctl-const.hpp
 #define CYLINDRICAL -2
 
@@ -93,6 +97,8 @@ void set_materials_from_geometry(meep::structure *s,
                                  absorber_list alist=0);
 
 material_type make_dielectric(double epsilon);
+material_type make_user_material(user_material_func user_func,
+                                 void *user_data);
 
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
