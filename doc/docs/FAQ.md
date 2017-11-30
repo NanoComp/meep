@@ -17,6 +17,10 @@ Meep is a free-software package for finite-difference time-domain (FDTD) simulat
 
 Meep was originally developed as part of graduate research at MIT. The project is now being maintained by [Simpetus](http://www.simpetus.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
 
+### Where can I ask questions regarding Meep-related issues?
+
+There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss all issues related to installation, setting up simulations, post-processing output, etc. A good place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings since 2006 spanning a large number and variety of discussion topics. [Simpetus](http://www.simpetus.com), a company started by Meep's developers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
+
 Installation
 ------------
 
@@ -24,7 +28,7 @@ Installation
 
 Meep runs on any Unix-like operating system, such as Linux and MacOS, from notebooks to desktops to high-performance computing (HPC) clusters. Precompiled packages are available for Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
 
-Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Step-by-step instructions are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html) and [MacOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
+Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Step-by-step instructions including shell scripts to automate the installation are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
 Meep is also available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
@@ -39,7 +43,7 @@ Physics
 
 There is no simple formula relating the input current amplitude (**J** in Maxwell's equations) to the resulting fields (**E**) etcetera, even at the same point as the current. The exact same current will produce a different field and radiate a different total power depending upon the surrounding materials/geometry, and depending on the frequency. This is a physical consequence of the geometry's effect on the local density of states; it can also be thought of as feedback from reflections on the source. As a simple example, if you put a current source inside a perfect electric conductor, the resulting field will be zero. As another example, the frequency-dependence of the radiated power in vacuum is part of the reason why the sky is blue.
 
-See also this online book chapter on [Wave Source Conditions](http://arxiv.org/abs/arXiv:1301.5366).
+See also this book chapter on [Wave Source Conditions](http://arxiv.org/abs/arXiv:1301.5366).
 
 If you are worried about this, then you are probably setting up your calculation in the wrong way. Especially in linear materials, the absolute magnitude of the field is useless; the only meaningful quantities are dimensionless ratios like the fractional transmission: the transmitted power relative to the transmitted power in some reference calculation. Almost always, you want to perform two calculations, one of which is a reference, and compute the ratio of a result in one calculation to the result in the reference. For nonlinear calculations, see [Units and Nonlinearity](Units_and_Nonlinearity.md).
 
@@ -72,7 +76,7 @@ An official Python interface is currently under development and will likely be r
 
 ### Why doesn't turning off subpixel averaging work?
 
-By default, when Meep assigns a dielectric constant $\varepsilon$ or $\mu$ to each pixel, it uses a carefully designed average of the $\varepsilon$ values within that pixel. This subpixel averaging generally improves the accuracy of the simulation—perhaps counter-intuitively, for geometries with discontinous $\varepsilon$ it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) $\varepsilon$, as long as the averaging is done properly. For details, see the [reference publication](Acknowledgements/#referencing).
+By default, when Meep assigns a dielectric constant $\varepsilon$ or $\mu$ to each pixel, it uses a carefully designed average of the $\varepsilon$ values within that pixel. This subpixel averaging generally improves the accuracy of the simulation &mdash; perhaps counter-intuitively, for geometries with discontinous $\varepsilon$ it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) $\varepsilon$, as long as the averaging is done properly. For details, see the [reference publication](Acknowledgements/#referencing).
 
 Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by doing `(set! eps-averaging? false)` in your control file. See the [User Interface](Scheme_User_Interface.md).
 
