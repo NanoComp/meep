@@ -68,21 +68,43 @@ typedef struct medium_struct {
 } medium_struct;
 
 // prototype for user-defined material function,
-// which should allocate, initialize, and return a
-// new medium_struct describing the material properties
-// at point x
-typedef medium_struct *(*user_material_func)(vector3 x, void *user_data);
+// which should fill in medium as appropriate to
+// describe the material properties at point x
+typedef void (*user_material_func)(vector3 x, void *user_data,
+                                   medium_struct *medium);
 
+// the various types of materials are as follows:
+//  MEDIUM:        material properties independent of position. In
+//                 this case the 'medium' field below is
+//                 initialized once and doesn't change. 
+//  MATERIAL_FILE: material properties position-dependent, described
+//                 by user-supplied data file. In this case the 
+//                 'medium' field is filled in appropriately at 
+//                 each evaluation point by interpolating file data.
+//  MATERIAL_USER: material properties position-dependent, described
+//                 by user-supplied function. In this case the 
+//                 'medium' field is filled in appropriately at 
+//                 each evaluation point by calling the user's  
+//                 routine.
+//  PERFECT_METAL: the 'medium' field is never referenced in this case.
 typedef struct material_data_struct
  {
-   enum { MATERIAL_TYPE_SELF, MATERIAL_FUNCTION, PERFECT_METAL, MEDIUM } which_subclass;
+   enum { MEDIUM,
+          MATERIAL_FILE,      // formerly MATERIAL_TYPE_SELF
+          MATERIAL_USER,      // formerly MATERIAL_FUNCTION
+          PERFECT_METAL 
+        } which_subclass;
 
-   // these fields used only if which_subclass==MATERIAL_FUNCTION
+   // this field is used for all material types except PERFECT_METAL
+   medium_struct medium;
+
+   // these fields used only if which_subclass==MATERIAL_USER
    user_material_func user_func;
    void *             user_data;
 
-   // used only if which_subclass==MEDIUM
-   medium_struct *medium;
+   // these fields used only if which_subclass==MATERIAL_FILE
+   meep::realnum *epsilon_data;
+   int epsilon_dims[3];
 
  } material_data;
 
@@ -92,9 +114,14 @@ typedef struct material_data_struct
     int num_items;
   } material_type_list;
 
-// global variables and exported functions
+// global variables 
 extern material_type vacuum;
+
+// exported functions for creating particular material types
 material_type make_dielectric(double epsilon);
+material_type make_user_material(user_material_func user_func,
+                                 void *user_data);
+material_type make_file_material(char *epsilon_input_file);
 
 void read_epsilon_file(const char *eps_input_file);
 
