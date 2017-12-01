@@ -676,9 +676,17 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
      // the user's function only needs to fill in whatever is
      // different from vacuum.
      case material_data::MATERIAL_USER:
-      memcpy( &(md->medium), &(vacuum_medium), sizeof(medium_struct));
+      md->medium = vacuum_medium;
       md->user_func(p, md->user_data, &(md->medium));
-      return;
+      // TODO: update this to allow user's function to set
+      //       position-dependent susceptibilities. For now
+      //       it's an error if the user's function creates
+      //       any.
+      if (    (md->medium.E_susceptibilities.num_items>0)
+           || (md->medium.H_susceptibilities.num_items>0)
+         )
+       meep::abort("susceptibilities in user-defined-materials not yet supported");
+       return;
 
      // position-independent material or metal: there is nothing to do
      case material_data::MEDIUM:
@@ -1616,7 +1624,7 @@ material_type make_user_material(user_material_func user_func,
 
 // this routine subsumes the content of the old
 // 'read_epsilon_file' routine
-material_type make_file_material(char *eps_input_file)
+material_type make_file_material(const char *eps_input_file)
 {
   material_data *md = (material_data *)malloc(sizeof(*md));
   md->which_subclass=material_data::MATERIAL_FILE;
