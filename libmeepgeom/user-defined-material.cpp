@@ -25,43 +25,6 @@ using namespace meep;
 typedef std::complex<double> cdouble;
 
 /***************************************************************/
-/* return true if the datasets match, false if not             */
-/***************************************************************/
-bool compare_hdf5_datasets(const char *file1, const char *name1,
-                           const char *file2, const char *name2,
-                           int expected_rank=2,
-                           double rel_tol=1.0e-4, double abs_tol=1.0e-8)
-{
-  h5file f1(file1, h5file::READONLY, false);
-  int rank1;
-  int *dims1=new int[expected_rank];
-  double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
-  if (!data1) return false;
-
-  h5file f2(file2, h5file::READONLY, false);
-  int rank2;
-  int *dims2=new int[expected_rank];
-  double *data2 = f2.read(name2, &rank2, dims2, expected_rank);
-  if (!data2) return false;
-
-  if ( rank1!=expected_rank || rank2!=expected_rank ) return false;
-
-  size_t size = 1;
-  for(int r=0; r<expected_rank; r++)
-   { if (dims1[r]!=dims2[r])
-      return false;
-     size *= dims1[r];
-   };
-
-  for(size_t n=0; n<size; n++)
-   { double d1=data1[n], d2=data2[n], diff = fabs(d1-d2), max = fmax(abs(d1),abs(d2));
-     if ( diff>abs_tol || diff>max*rel_tol ) return false;
-   };
-
-  return true;
-}
-
-/***************************************************************/
 /* dummy material function needed to pass to structure( )      */
 /* constructor as a placeholder before we can call             */
 /* set_materials_from_geometry                                 */
@@ -143,14 +106,19 @@ int main(int argc, char *argv[])
                                          my_material);
 
   fields f(&the_structure);
-  f.output_hdf5(Dielectric, f.total_volume());
 
-  bool status=compare_hdf5_datasets("eps-000000000.h5", "eps",
-                                    eps_ref_path.c_str(), "eps");
-  if (status)
-   master_printf("user-defined-material output test successful.\n");
-  else
-   abort("output error in user-defined-material");
+  // extract dielectric constant on a line of points
+  // lying on the x-axis from the origin to the right cell wall
+  volume v1d( vec(0.0, 0.0), vec(10.0, 0.0) );
+  int dims1D[1];
+  int rank=f.get_array_slice_dimensions(v1d, dims1D);
+  double *slice1d=f.get_array_slice(v1d,Dielectric);
+
+  FILE *ff=fopen("/tmp/doom.out","w");
+  for(int n=0; n<dims1D[0]; n++)
+   fprintf(ff,"%i %e\n",n,slice1d[n]);
+  fclose(ff);
+
   return 0;
 
 }
