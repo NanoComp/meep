@@ -39,7 +39,7 @@ $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mat
 
 Most generally, $\varepsilon$ depends not only on position but also on frequency (material dispersion) and on the field **E** itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
 
-Meep supports simulation in [cylindrical coordinates](Cylindrical_Coordinates.md).
+Meep supports simulation in [Cylindrical Coordinates](Cylindrical_Coordinates.md).
 
 ### Units in Meep
 
@@ -47,7 +47,7 @@ You may have noticed the lack of annoying constants like $\varepsilon$<sub>0</su
 
 In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units** (see this [online textbook](http://ab-initio.mit.edu/book), ch. 2). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
 
-Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently $\omega$ is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](http://mpb.readthedocs.io).
+Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently $\omega$ is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](https://mpb.readthedocs.io).
 
 For example, suppose we are describing some photonic structure at infrared frequencies, where it is convenient to specify distances in microns. Thus, we let $a$ = 1 &#956;m. Then, if we want to specify a source corresponding to $\lambda$ = 1.55 &#956;m, we specify the frequency *f* as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100 / *f*).
 
@@ -85,7 +85,7 @@ Many references are available on FDTD methods for computational electromagnetics
 
 ### The Illusion of Continuity
 
-Although FDTD inherently uses discretized space and time, as much as possible Meep attempts to maintain the illusion that you are using a continuous system. At the beginning of the simulation, you specify the spatial resolution, but from that point onwards you generally work in continuous coordinates in your chosen units. See [units in Meep](Introduction.md#units-in-meep), above.
+Although FDTD inherently uses discretized space and time, as much as possible Meep attempts to maintain the illusion that you are using a continuous system. At the beginning of the simulation, you specify the spatial resolution, but from that point onwards you generally work in continuous coordinates in your chosen units. See [Units in Meep](Introduction.md#units-in-meep), above.
 
 For example, you specify the dielectric function as a function $\varepsilon$(**x**) of continuous **x**, or as a set of solid objects like spheres, cylinders, etcetera, and Meep is responsible for figuring out how they are to be represented on a discrete grid. Or if you want to specify a point source, you simply specify the point **x** where you want the source to reside &mdash; Meep will figure out the closest grid points to **x** and add currents to those points, weighted according to their distance from **x**. If you change **x** continuously, the current in Meep will also change continuously by changing the weights. If you ask for the flux through a certain rectangle, then Meep will linearly interpolate the field values from the grid onto that rectangle.
 

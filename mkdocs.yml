@@ -52,6 +52,8 @@ pages:
     - Tutorial/Material Dispersion: 'Python_Tutorials/Material_Dispersion.md'
     - Tutorial/Third Harmonic Generation: 'Python_Tutorials/Third_Harmonic_Generation.md'
     - Tutorial/Near-to-Far Field Spectra: 'Python_Tutorials/Near_to_Far_Field_Spectra.md'
+    - Tutorial/Local Density of States: 'Python_Tutorials/Local_Density_of_States.md'
+    - Tutorial/Optical Forces: 'Python_Tutorials/Optical_Forces.md'
 - Scheme Interface:
     - User Interface: 'Scheme_User_Interface.md'
     - Tutorial/Basics: 'Scheme_Tutorials/Basics.md'
