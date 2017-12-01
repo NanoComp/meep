@@ -25,6 +25,53 @@ using namespace meep;
 typedef std::complex<double> cdouble;
 
 /***************************************************************/
+/* return true if the datasets match, false if not             */
+/***************************************************************/
+bool compare_hdf5_datasets(const char *file1, const char *name1,
+                           const char *file2, const char *name2,
+                           int expected_rank=2,
+                           double rel_tol=1.0e-2)
+{
+  h5file f1(file1, h5file::READONLY, false);
+  int rank1;
+  int *dims1=new int[expected_rank];
+  double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
+  if (!data1) return false;
+
+  h5file f2(file2, h5file::READONLY, false);
+  int rank2;
+  int *dims2=new int[expected_rank];
+  double *data2 = f2.read(name2, &rank2, dims2, expected_rank);
+  if (!data2) return false;
+
+  if ( rank1!=expected_rank || rank2!=expected_rank ) return false;
+
+  size_t size = 1;
+  for(int r=0; r<expected_rank; r++)
+   { if (dims1[r]!=dims2[r])
+      return false;
+     size *= dims1[r];
+   };
+
+  double norm1=0.0, norm2=0.0, normDelta=0.0;
+  for(size_t n=0; n<size; n++)
+   { double d1=data1[n], d2=data2[n], delta=d1-d2; 
+     norm1     += d1*d1;
+     norm2     += d2*d2;
+     normDelta += delta*delta;
+   };
+  norm1     = sqrt(norm1)/ size;
+  norm2     = sqrt(norm2) / size;
+  normDelta = sqrt(normDelta) / size;
+
+  double norm12 = fmax( sqrt(norm1), sqrt(norm2) );
+printf("Norm{1,2,d} = {%e,%e,%e} (%e)\n",norm1,norm2,normDelta,normDelta/norm12);
+  if (normDelta > rel_tol*norm12)
+   return false;
+  return true;
+}
+
+/***************************************************************/
 /* dummy material function needed to pass to structure( )      */
 /* constructor as a placeholder before we can call             */
 /* set_materials_from_geometry                                 */
@@ -49,12 +96,11 @@ void my_material_func(vector3 p, void *user_data, meep_geom::medium_struct *m)
   if ( (x*x/(R1X*R1X) + y*y/(R1Y*R1Y)) < 1.0 )
    nn=1.0;
   else if ( ( x*x/(R2*R2) + y*y/(R2*R2) ) < 1.0 )
-   nn=3.5*3.5;
+   nn=3.5;
   else 
    nn=1.0;
 
   m->epsilon_diag.x = m->epsilon_diag.y = m->epsilon_diag.z = nn*nn;
-
 }
 
 /***************************************************************/
@@ -71,11 +117,11 @@ int main(int argc, char *argv[])
    {
      if (argv[narg] && !strcmp(argv[narg],"--eps_ref_file"))
       { if (narg+1 == argc)
-         meep::abort("no option specified for --eps_ref_file");
+         abort("no option specified for --eps_ref_file");
         eps_ref_file=argv[++narg];
       }
      else
-      meep::abort("unrecognized command-line option %s",argv[narg]);
+      abort("unrecognized command-line option %s",argv[narg]);
    };
    std::string eps_ref_path = DATADIR + eps_ref_file;
 
@@ -107,18 +153,13 @@ int main(int argc, char *argv[])
 
   fields f(&the_structure);
 
-  // extract dielectric constant on a line of points
-  // lying on the x-axis from the origin to the right cell wall
-  volume v1d( vec(0.0, 0.0), vec(10.0, 0.0) );
-  int dims1D[1];
-  int rank=f.get_array_slice_dimensions(v1d, dims1D);
-  double *slice1d=f.get_array_slice(v1d,Dielectric);
-
-  FILE *ff=fopen("/tmp/doom.out","w");
-  for(int n=0; n<dims1D[0]; n++)
-   fprintf(ff,"%i %e\n",n,slice1d[n]);
-  fclose(ff);
-
+  f.output_hdf5(Dielectric, f.total_volume());
+  bool status=compare_hdf5_datasets("eps-000000000.h5", "eps",
+                                     eps_ref_path.c_str(), "eps");
+  if (status)
+   master_printf("user-defined-material test successful.\n");
+  else
+   abort("user-defined-material test failed.\n");
   return 0;
 
 }
