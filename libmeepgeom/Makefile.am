@@ -13,7 +13,7 @@ libmeepgeom_la_SOURCES = \
 
 libmeepgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
-check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll
+check_PROGRAMS      = pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material
 
 absorber_1d_ll_SOURCES = absorber-1d-ll.cpp
 absorber_1d_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
@@ -38,5 +38,8 @@ noinst_PROGRAMS = bend-flux-ll
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
+user_defined_material_SOURCES = user-defined-material.cpp
+user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
