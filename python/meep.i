@@ -462,6 +462,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %rename(get_field_from_comp) meep::fields::get_field(component, const vec &) const;
 
+%feature("python:cdefaultargs") meep::fields::add_eigenmode_source;
+
 // TODO:  Fix these with a typemap when necessary
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;
