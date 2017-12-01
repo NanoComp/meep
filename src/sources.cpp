@@ -23,6 +23,13 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
+// For sine-integral function used in the band-source
+#define HAVE_LIBGSL_EXPINT
+
+#ifdef HAVE_LIBGSL_EXPINT
+#  include <gsl/gsl_sf_expint.h>
+#endif
+
 using namespace std;
 
 namespace meep {
@@ -103,6 +110,70 @@ complex<double> gaussian_src_time::dipole(double time) const
 bool gaussian_src_time::is_equal(const src_time &t) const
 {
      const gaussian_src_time *tp = dynamic_cast<const gaussian_src_time*>(&t);
+     if (tp)
+	  return(tp->freq == freq && tp->width == width &&
+		 tp->peak_time == peak_time && tp->cutoff == cutoff);
+     else
+	  return 0;
+}
+/// Band source
+band_src_time::band_src_time(double f, double fwidth, double user_cutoff)
+{
+  freq = f;
+  width = 1.0 / fwidth;
+  peak_time = user_cutoff/2;
+  cutoff = user_cutoff;
+#ifdef HAVE_LIBGSL_EXPINT
+  master_printf("Initializing band source for time_domain (peak_time = %g, cutoff = %g)\n", peak_time, cutoff);
+  master_printf("\tExperimental: using GSL si() function for  flat-top spectrum\n");
+#else
+  master_printf("Initializing band source for time_domain (peak_time = %g, cutoff = %g)\n", peak_time, cutoff);
+  master_printf("\tWarning: not compiled with GSL, the source spectrum will not be flat-top\n", peak_time, cutoff);
+#endif
+  cutoff = float(cutoff); // don't make cutoff sensitive to roundoff error
+}
+
+complex<double> band_src_time::dipole(double time) const
+{
+  double tt = time - peak_time;
+
+  // The function that introduces a rectangular band in the spectrum (centered around zero frequency)
+#ifdef HAVE_LIBGSL_EXPINT
+  // The emitted field is the derivative of the dipole, so if possible, we use the sine integral: 
+  // Si(x) = \int_0^x dt sin(t)/t
+  complex<double> func        = gsl_sf_Si(tt*2*pi*(freq-.5/width)) - gsl_sf_Si(tt*2*pi*(freq+.5/width));
+#else
+  // If GSL not available, a reasonable approximation is the sinc(t) function (but has not flat top)
+  complex<double> func        = sin(tt*2*pi / width/2)/(tt*2*pi * width) * polar(1.0, -2*pi*freq*tt); 
+#endif
+
+  // The envelope that suppresses ringing and side lobes of the rectangle
+  double wnd_BlackmanN= (0.3635819 + 0.4891775*cos(tt/(cutoff)*pi*2) + 
+		  0.1365995*cos(tt/(cutoff)*pi*4)+ 0.0106411*cos(tt/(cutoff)*pi*6));
+  //double wnd_Hann     = (.5 + .5*cos(tt/(cutoff)*pi*2));
+  //double wnd_Hamming  = (0.53836+0.46164*cos(tt/(cutoff)*pi*2))     ;
+  //double wnd_Blackman = (0.42659 + 0.49656*cos(tt/(cutoff)*pi*2) + 0.076849*cos(tt/(cutoff)*pi*4))     ;
+  //double wnd_Gauss    = exp(-((tt)/(cutoff)*3)**2)       // Gaussian window, char. width = 1/3;
+  //double wnd_ContRect = // should crop sinc when passing zero: rect(tt, 0, (trunc((cutoff)/8/width))*8*width) ;
+  
+  // correction factor so that current amplitude (= d(dipole)/dt) is
+  // ~ 1 near the peak of the band.
+  complex<double> amp = 1.0 / complex<double>(0,-2*pi*freq);  // TODO
+
+  // The needed time-domain source amplitude is the sinc function constrained by window and shifted
+  // in frequency by complex exponential
+  if (abs(tt) < cutoff/2) 
+	  //return sinc;
+	  return func * wnd_BlackmanN; 
+	  //return func * wnd_BlackmanN  * amp; 
+  else
+	  return 0;
+
+}
+
+bool band_src_time::is_equal(const src_time &t) const
+{
+     const band_src_time *tp = dynamic_cast<const band_src_time*>(&t);
      if (tp)
 	  return(tp->freq == freq && tp->width == width &&
 		 tp->peak_time == peak_time && tp->cutoff == cutoff);

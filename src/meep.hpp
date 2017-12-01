@@ -737,6 +737,24 @@ class gaussian_src_time : public src_time {
   double freq, width, peak_time, cutoff;
 };
 
+
+// band source with given minimum and maximum frequency and duration
+class band_src_time : public src_time {
+ public:
+  band_src_time(double f, double fwidth, double user_cutoff);
+  virtual ~band_src_time() {}
+
+  virtual std::complex<double> dipole(double time) const;
+  virtual double last_time() const { return float(peak_time + cutoff); };
+  virtual src_time *clone() const { return new band_src_time(*this); }
+  virtual bool is_equal(const src_time &t) const;
+  virtual std::complex<double> frequency() const { return freq; }
+  virtual void set_frequency(std::complex<double> f) { freq = real(f); }
+
+ private:
+  double freq, width, peak_time, cutoff;
+  //complex<double> test;
+};
 // Continuous (CW) source with (optional) slow turn-on and/or turn-off.
 class continuous_src_time : public src_time {
  public:
