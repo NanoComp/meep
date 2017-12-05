@@ -44,7 +44,7 @@ typedef struct susceptibility_struct {
   double gamma;
   double noise_amp;
   bool drude;
-  bool is_self;
+  bool is_file;
 } susceptibility;
 
 typedef struct {

@@ -243,7 +243,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
         s->drude = false;
     }
 
-    s->is_self = false;
+    s->is_file = false;
 
     return 1;
 }
@@ -269,7 +269,7 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
         sl->items[i].gamma = s.gamma;
         sl->items[i].noise_amp = s.noise_amp;
         sl->items[i].drude = s.drude;
-        sl->items[i].is_self = s.is_self;
+        sl->items[i].is_file = s.is_file;
     }
 
     return 1;
