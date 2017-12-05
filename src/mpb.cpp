@@ -651,34 +651,37 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 }
 
 /***************************************************************/
-/* add the contributions of a single component to the overlap  */
-/* integrals:                                                  */
-/*   num = <flux_field      | eigenmode_field>                 */
-/* denom = <eigenmode_field | eigenmode_field>                 */
 /***************************************************************/
-void add_overlap_integral_contribution(fields *f,
-                                       dft_flux *flux,
-                                       direction d,
-                                       int num_freq,
-                                       component c,
-                                       eigenmode_data *edata,
-                                       double mode_sign,
-                                       cdouble full_num_denom[2])
+/***************************************************************/
+#if 0
+void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
+                      int num_freq, char *file_base)
 {
+  //double omega = flux->freq_min + num_freq*flux->dfreq;
 
-  cdouble num=0.0, denom=0.0;
+  h5file *file = open_h5file(dataname, h5file::WRITE, prefix, true);
+  file->create_or_extend_data(dataname, rank, dims,
+                              append_data, single_precision);
 
-  /*--------------------------------------------------------------*/ 
-  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */ 
-  /*- should maybe be promoted to a standalone function?          */ 
-  /*--------------------------------------------------------------*/ 
+  /*--------------------------------------------------------------*/
+  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */
+  /*- should maybe be promoted to a standalone function?          */
+  /*--------------------------------------------------------------*/
   int Nfreq          = flux->Nfreq;
   for ( dft_chunk *E=flux->E, *H=flux->H; E && H;
         E=E->next_in_dft, H=H->next_in_dft
-      ) 
+      )
    { 
+     // create output files for E and H components
+     char E_file_name[100];
+     snprintf(E_file_name,100,"%s_%s.dat",file_base,component_name(E->c));
+     FILE *E_file=fopen(E_file_name,"a");
+
+     char H_file_name[100];
+     snprintf(H_file_name,100,"%s_%s.dat",file_base,component_name(H->c));
+     FILE *H_file=fopen(H_file_name,"a");
+
      // extract info from the current dft_chunk
-     // that we will need to
      fields_chunk *fc = E->fc;
      ivec is          = E->is;
      ivec ie          = E->ie;
@@ -692,9 +695,63 @@ void add_overlap_integral_contribution(fields *f,
      symmetry S       = E->S;
      int sn           = E->sn;
 
-     if (    (c<=Ez && (c!=E->c) )
-          || (c>=Hx && (c!=H->c) )
-        ) continue;
+     vec rshift(shift * (0.5*fc->gv.inva));
+
+     // loop over all points in the current dft_chunk
+     int chunk_idx = 0;
+     LOOP_OVER_IVECS(fc->gv, is, ie, idx)
+      { 
+        // get the coordinates and integration weight for this grid point
+        IVEC_LOOP_LOC(fc->gv, loc);
+        loc = S.transform(loc, sn) + rshift;
+        double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+
+        // get the E and H field components at this grid point,
+        //  dividing out any extra weight factors it may already contain
+        cdouble E_flux = E->dft[ Nfreq*(chunk_idx++) + num_freq];
+        if (E->include_dV_and_interp_weights)
+         E_flux /= (E->sqrt_dV_and_interp_weights ? sqrt(w) : w);
+
+        cdouble H_flux = H->dft[ Nfreq*(chunk_idx++) + num_freq];
+        if (H->include_dV_and_interp_weights)
+         H_flux /= (H->sqrt_dV_and_interp_weights ? sqrt(w) : w);
+
+        // kinda byzantine: the second of the two E-field components
+        // is stored with a minus sign, which we want to remove for 
+        // our purposes; but *which* component is the second component 
+        // depends on the direction 'd' that was used to create the dft_flux
+{
+  //double omega = flux->freq_min + num_freq*flux->dfreq;
+
+  /*--------------------------------------------------------------*/
+  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */
+  /*- should maybe be promoted to a standalone function?          */
+  /*--------------------------------------------------------------*/
+  int Nfreq = flux->Nfreq;
+  dft_chunk *EHList[2];
+  EHList[0] = flux->E;
+  EHList[1] = flux->H;
+  for (int eh=0; eh<2; eh++)
+   for (dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
+    { 
+     // create output files for E and H components
+     char file_name[100];
+     snprintf(file_name,100,"%s_%s_%i.dat",file_base,component_name(EH->c),eh);
+     FILE *file=fopen(file_name,"a");
+
+     // extract info from the current dft_chunk
+     fields_chunk *fc = EH->fc;
+     ivec is          = EH->is;
+     ivec ie          = EH->ie;
+     vec s0           = EH->s0;
+     vec s1           = EH->s1;
+     vec e0           = EH->e0;
+     vec e1           = EH->e1;
+     double dV0       = EH->dV0;
+     double dV1       = EH->dV1;
+     ivec shift       = EH->shift;
+     symmetry S       = EH->S;
+     int sn           = EH->sn;
 
      vec rshift(shift * (0.5*fc->gv.inva));
 
@@ -707,63 +764,30 @@ void add_overlap_integral_contribution(fields *f,
         loc = S.transform(loc, sn) + rshift;
         double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
 
-        // get the E or H field component at this grid point,
+        // get the E and H field components at this grid point,
         //  dividing out any extra weight factors it may already contain
-        dft_chunk *EH = (c<=Ez ? E : H);
-        cdouble flux_fval = EH->dft[ Nfreq*(chunk_idx++) + num_freq];
+        cdouble flux = EH->dft[ Nfreq*(chunk_idx++) + num_freq];
         if (EH->include_dV_and_interp_weights)
-         flux_fval /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
+         flux /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
         // kinda byzantine: the second of the two E-field components
         // is stored with a minus sign, which we want to remove for 
         // our purposes; but *which* component is the second component 
         // depends on the direction 'd' that was used to create the dft_flux
-        if (     (d==X && c==Ez)
-             ||  (d==Y && c==Ex)
-             ||  (d==R && c==Ez)
-             ||  (d==P && c==Er)
-             ||  (d==Z && f->gv.dim == Dcyl && c==Ep)
-             ||  (d==Z && f->gv.dim != Dcyl && c==Ey)
-           ) flux_fval *= -1.0;
+        if (     (d==X && EH->c==Ez)
+             ||  (d==Y && EH->c==Ex)
+             ||  (d==R && EH->c==Ez)
+             ||  (d==P && EH->c==Er)
+             ||  (d==Z && f->gv.dim == Dcyl && EH->c==Ep)
+             ||  (d==Z && f->gv.dim != Dcyl && EH->c==Ey)
+           ) flux*= -1.0;
+   
+        fprintf(file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(flux), imag(flux));
 
-        // get the eigenmode current at this grid point
-        cdouble mode_fval = mode_sign*eigenmode_amplitude(loc,edata);
+      }; // LOOP_OVER_IVECS
 
-        // add contributions to numerator and denominator integrals
-        num   += w * mode_fval * flux_fval;
-        denom += w * flux_fval * flux_fval;
+   }; // for (eh=0..1) for(dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
 
-if (am_master())
-{
-static cdouble tnum=0.0, tdenom=0.0, tcnum=0.0, tcdenom=0.0;
-tnum+=num;
-tdenom+=denom;
-tcnum+=cnum;
-tcdenom+=cdenom;
-FILE *ff=fopen("/tmp/log.out","a");
-  fprintf(ff,"\n** nfreq=%i (%e) nband=%i \n",num_freq,edata->omega,edata->band_num);
-  fprintf(ff,"uComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                component_name(c),
-                                real(num), imag(num),
-                                real(denom), imag(denom));
-
-  fprintf(ff,"cComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                component_name(c),
-                                real(cnum), imag(cnum),
-                                real(cdenom), imag(cdenom));
-
-  fprintf(ff,"uTotal       : (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                real(tnum), imag(tnum),
-                                real(tdenom), imag(tdenom));
-
-  fprintf(ff,"cTotal       : (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                real(tcnum), imag(tcnum),
-                                real(tcdenom), imag(tcdenom));
-fprintf(ff,"mode->vgrp = %e\n",edata->group_velocity);
-fclose(ff);
-}
-
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 }
 
 /***************************************************************/
@@ -779,7 +803,12 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
                                           int band_num,
                                           kpoint_func k_func, void *k_func_data)
 {
+  char file_base[100];
+  snprintf(file_base,100,"np%i_nb%i_nf%i",my_rank(),band_num,num_freq);
+  output_flux(this, flux, d, num_freq, file_base);
+
   master_printf("Getting eigenmode coefficient (%i,%i)\n",num_freq, band_num);
+#if 0
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                   -*/
   /*--------------------------------------------------------------*/
@@ -854,6 +883,8 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
     return 0.0;
    };
   return num/denom;
+#endif
+return 0.0;
 }
 
 /***************************************************************/
