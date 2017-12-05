@@ -67,7 +67,6 @@ typedef struct medium_struct {
   vector3 B_conductivity_diag;
 } medium_struct;
 
-<<<<<<< HEAD
 // prototype for user-defined material function,
 // which should fill in medium as appropriate to
 // describe the material properties at point x
