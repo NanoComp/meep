@@ -48,7 +48,8 @@ static bool susceptibility_equal(const susceptibility &s1, const susceptibility 
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
             vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) &&
             s1.frequency == s2.frequency && s1.gamma == s2.gamma &&
-            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude && s1.is_self == s2.is_self);
+            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude && 
+            s1.is_file == s2.is_file);
 }
 
 static bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2)
@@ -256,11 +257,11 @@ static bool is_variable(material_type mt)
 }
 static bool is_variable(void* md) { return is_variable((material_type) md); }
 
-static bool is_self(material_type md)
+static bool is_file(material_type md)
 {
   return (md->which_subclass == material_data::MATERIAL_FILE);
 }
-static bool is_self(void* md) { return is_self((material_type) md); }
+static bool is_file(void* md) { return is_file((material_type) md); }
 
 static bool is_medium(material_type md, medium_struct **m)
 {
@@ -807,9 +808,9 @@ static bool get_front_object(const meep::volume &v,
 
   if (    (o1 && is_variable(o1->material))
        || (o2 && is_variable(o2->material))
-       || ( (is_variable(default_material) || is_self(default_material))
-            && (    !o1 || is_self(o1->material)
-                 || !o2 || is_self(o2->material)
+       || ( (is_variable(default_material) || is_file(default_material))
+            && (    !o1 || is_file(o1->material)
+                 || !o2 || is_file(o2->material)
                )
           )
      )
@@ -1326,7 +1327,7 @@ static bool susceptibility_equiv(const susceptibility *o0,
   if (o0->gamma     != o->gamma)     return 0;
   if (o0->noise_amp != o->noise_amp) return 0;
   if (o0->drude     != o->drude)     return 0;
-  if (o0->is_self   != o->is_self)   return 0;
+  if (o0->is_file   != o->is_file)   return 0;
 
   return 1;
 }
@@ -1422,7 +1423,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
   for (struct pol *p = pols; p; p = p->next) {
 
     susceptibility *ss=&(p->user_s);
-    if (ss->is_self)
+    if (ss->is_file)
      meep::abort("unknown susceptibility");
     bool noisy = (ss->noise_amp!=0.0);
 
@@ -1619,6 +1620,8 @@ material_type make_user_material(user_material_func user_func,
   md->which_subclass=material_data::MATERIAL_USER;
   md->user_func=user_func;
   md->user_data=user_data;
+  vector3 origin={0.0, 0.0, 0.0};
+  user_func( origin, user_data, &(md->medium));
   return md;
 }
 
