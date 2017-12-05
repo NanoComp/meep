@@ -1,17 +1,17 @@
 # Eigenmode decomposition of arbitrary field configurations
 
 *Eigenmode decomposition* exploits MEEP's interconnectivity
-with the [MPB][MPB] mode solver to represent an arbitrary
-time-harmonic field configuration as a superposition of 
-the normal harmonic modes of your structure.
+with the [MPB][MPB] mode solver to express an arbitrary
+time-harmonic field configuration as a superposition of
+the normal harmonic modes of your structure. In this 
 
 ## Theoretical background
 
 Consider a waveguide structure of infinite extent in the $z$
 direction with constant cross section in the transverse
-$[\vec\rho=(x,y)]$ directions. Then for any given
-angular frequency $\omega$ we may solve Maxwell's
-equations to obtain the *normal modes* of the
+$[\vec\rho=(x,y)]$ directions. For any given
+angular frequency $\omega$ we may solve the time-harmonic
+Maxwell equations to obtain the *normal modes* of the
 structure---an infinite set of vector-valued
 functions of the transverse coordinates
 $\{\mathbf{E}^\pm_n(\vec{\rho}), \mathbf{H}^\pm_n(\vec{\rho})\}$,
@@ -29,7 +29,7 @@ $$
    \sum_{n} \left\{   \alpha^+_n \mathbf E^+_n(\vec \rho)e^{+i\beta_n z}
                     + \alpha^-_n \mathbf E^-_n(\vec \rho)e^{-i\beta_n z}
             \right\}
-    \qquad (1a)
+    \qquad (1\textbf{a})
 $$
 $$
    \mathbf{H}(\mathbf{x}) = 
@@ -37,9 +37,10 @@ $$
    \sum_{n} \left\{   \alpha^+_n \mathbf H^+_n(\vec \rho)e^{+i\beta_n z}
                     + \alpha^-_n \mathbf H^-_n(\vec \rho)e^{-i\beta_n z}
             \right\}
-    \qquad (1b)
+    \qquad (1\textbf{b})
 $$
-where the expansion coefficients $\{\alpha^{\pm}_n\}$
+where (as discussed further [below](ModeExpansion.md#UnderTheHood))
+the expansion coefficients $\{\alpha^{\pm}_n\}$
 may be extracted from knowledge of the time-harmonic
 fields $\mathbf{E},\mathbf{H}$ on any cross-sectional
 surface $S$ transverse to the waveguide.
@@ -53,13 +54,13 @@ of this sort,
 +   the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
     of equations (1a,b) above will be frequency-domain
     fields stored in a `dft_flux` object in a MEEP
-    run, where you will have arranges this `dft_flux` object
+    run, where you will have arranged this `dft_flux` object
     to live on a cross-sectional surface $S$ transverse
     to the waveguide;
 
 +   the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
     and $\{\beta_n\}$ propagation constants are computed
-    automatically under the hood by MPB as normal modes 
+    automatically under the hood by [MPB][MPB] as normal modes 
     of an infinitely extended waveguide with the same 
     cross-sectional material distribution that your structure
     has on the transverse slice $S$, and
@@ -73,7 +74,7 @@ of this sort,
 The basic routine here is
 
 ```c++
-std::vector<cdouble> 
+std::vector<cdouble>
  fields::get_eigenmode_coefficients(dft_flux *flux,
                                     direction d,
                                     const volume &where,
@@ -97,8 +98,8 @@ where
  vec (*kpoint_func)(void user_data, double freq, int band);
 ```
 
-which returns a `vec` giving your best guess for the 
-wavevector of the `band`th mode at frequency `freq`.
+which returns a `vec` giving your best guess for the
+wavevector of the `band`th mode at frequency `freq`. 
 
 The return value of `get_mode_coefficients` is an array
 of type `cdouble` (short for `std::complex<double>`),
@@ -137,7 +138,6 @@ value is `--ratio 2` (bigger slab is 2$\times$ thickness
 of smaller slab), while for `--ratio 1` the two waveguides
 are in fact identical and there should be no power
 reflected at $z=0$.
-<<<<<<< HEAD
 
 ## Second example: Junction of cylindrical waveguides
 
@@ -202,12 +202,13 @@ Again the code offers a command-line option `--ratio` that sets the
 ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
 while for `--ratio 1` we expect perfect transmission of power
 $z=0$.
- 
+
+<a name="UnderTheHood"></a> 
 ## Under the hood: How mode expansion works
 
 The theoretical basis of the mode-expansion algorithm
 is the orthogonality relation satisfied by the normal
-modes 
+modes
 $$ \left\langle \mathbf{E}_m^{\sigma} \right|
    \left.       \mathbf{H}^\tau_n     \right\rangle
    =C_{m}\delta_{mn}\delta_{\sigma\tau} 
