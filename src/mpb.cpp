@@ -950,12 +950,14 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 }
 
-std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux *flux,
+cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
+                                          int num_freq,
                                           direction d,
                                           const volume &where,
-                                          std::vector<int> bands,
+                                          int band_num,
                                           kpoint_func k_func,
                                           void *k_func_data)
+<<<<<<< HEAD
 { (void) flux; (void) d; (void) where; (void) bands,
   (void) k_func; (void) k_func_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
