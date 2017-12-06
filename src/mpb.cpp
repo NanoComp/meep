@@ -243,8 +243,9 @@ static complex<double> meep_mpb_A(const vec &p)
 /* magnetic field components at arbitrary points.               */
 /*                                                              */
 /* if want to compute *electric* field components of the        */
-/* eigenmode, you can do that do, but you must first call       */
-/* get_electric_field()                                         */
+/* eigenmode, you can do that too, but you must first call      */
+/* switch_eigenmode_data_to_electric_field() on the             */
+/* eigenmode_data structure.                                    */
 /****************************************************************/
 void *fields::get_eigenmode(double &omega_src,
 	     		    direction d, const volume &where,
@@ -762,7 +763,7 @@ void output_flux(fields *f, dft_flux *flux, direction d,
     { 
      // create output files for E and H components
      char file_name[100];
-     snprintf(file_name,100,"%s_%s_%i.dat",file_base,component_name(EH->c),eh);
+     snprintf(file_name,100,"%s_%s.dat",file_base,component_name(EH->c));
      FILE *file=fopen(file_name,"a");
 
      // extract info from the current dft_chunk
@@ -811,6 +812,7 @@ void output_flux(fields *f, dft_flux *flux, direction d,
         fprintf(file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(flux), imag(flux));
 
       }; // LOOP_OVER_IVECS
+     fclose(file);
 
    }; // for (eh=0..1) for(dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
 
