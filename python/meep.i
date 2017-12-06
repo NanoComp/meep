@@ -571,4 +571,12 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
             # this variable reference is needed for lazy initialization of MPI
             comm = MPI.COMM_WORLD
             master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
+
+            if comm.Get_rank() != 0:
+                import sys
+                saved_stdout = sys.stdout
+                saved_stderr = sys.stderr
+                sys.stdout = None
+                sys.stderr = None
+                del sys
 %}
