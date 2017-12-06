@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2017 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,17 +43,26 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %}
 
 %{
+typedef struct {
+    PyObject *func;
+    int num_components;
+} py_field_func_data;
+
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 PyObject *py_amp_func_v3 = NULL;
+PyObject *py_field_func_v3 = NULL;
 
 static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
-static PyObject* vec2py(const meep::vec &v, bool amp_func=false);
+static PyObject* vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static std::complex<double> py_amp_func_wrap(const meep::vec &v);
+static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
+                                               const meep::vec &loc,
+                                               void *data_);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
@@ -448,7 +457,62 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = static_cast<meep::derived_component>(PyInteger_AsLong($input));
 }
 
+
+%typemap(freearg) std::complex<double> (*)(const meep::vec &) {
+    Py_XDECREF(py_amp_func);
+}
+
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
+
+// typemap suite for field functions
+
+%typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components,
+                                    meep::field_function fun, void *fun_data_) {
+    $1 = PySequence_Check($input) &&
+         PySequence_Check(PyList_GetItem($input, 0)) &&
+         PyCallable_Check(PyList_GetItem($input, 1));
+}
+%typemap(in) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_)
+    (py_field_func_data tmp_data) {
+
+    if (!PySequence_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs = PyList_GetItem($input, 0);
+
+    if (!PySequence_Check(cs)) {
+        PyErr_SetString(PyExc_ValueError, "Expected first item in list to be a list");
+        SWIG_fail;
+    }
+
+    PyObject *func = PyList_GetItem($input, 1);
+
+    if (!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a function");
+        SWIG_fail;
+    }
+
+    $1 = PyList_Size(cs);
+    $2 = new meep::component[$1];
+
+    for (Py_ssize_t i = 0; i < $1; i++) {
+        $2[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs, i));
+    }
+
+    $3 = py_field_func_wrap;
+
+    tmp_data.num_components = $1;
+    tmp_data.func = func;
+    Py_INCREF(tmp_data.func);
+    $4 = &tmp_data;
+}
+
+%typemap(freearg) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) {
+    delete[] $2;
+    Py_XDECREF(tmp_data$argnum.func);
+}
 
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
@@ -464,7 +528,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %feature("python:cdefaultargs") meep::fields::add_eigenmode_source;
 
-// TODO:  Fix these with a typemap when necessary
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;
 

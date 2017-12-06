@@ -3,7 +3,14 @@ import unittest
 import meep as mp
 
 
+def f(r, ex, hz, eps):
+    return (r.x * r.norm() + ex) - (eps * hz)
+
+
 class TestFieldFunctions(unittest.TestCase):
+
+    cs = [mp.Ex, mp.Hz, mp.Dielectric]
+    vol = mp.Volume(size=mp.Vector3(1), center=mp.Vector3())
 
     def setUp(self):
         resolution = 20
@@ -12,10 +19,10 @@ class TestFieldFunctions(unittest.TestCase):
 
         pml_layers = mp.PML(1.0)
 
-        self.fcen = 1.0
+        fcen = 1.0
         df = 1.0
 
-        sources = mp.Source(src=mp.GaussianSource(self.fcen, fwidth=df), center=mp.Vector3(),
+        sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(),
                             component=mp.Ez)
 
         symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
@@ -26,22 +33,21 @@ class TestFieldFunctions(unittest.TestCase):
                                  sources=[sources],
                                  symmetries=symmetries)
 
-    def test_field_functions(self):
+    def test_integrate_field_function(self):
         self.sim.run(until=200)
 
-        def f(r, ex, hz, eps):
-            return (r.x * r.norm() + ex) - (eps * hz)
-
-        cs = [mp.Ex, mp.Hz, mp.Dielectric]
-        res1 = self.sim.integrate_field_function(cs, f)
-        vol = mp.Volume(size=mp.Vector3(1), center=mp.Vector3())
-        res2 = self.sim.integrate_field_function(cs, f, vol)
-        res3 = self.sim.max_abs_field_function(cs, f, vol)
+        res1 = self.sim.integrate_field_function(self.cs, f)
+        res2 = self.sim.integrate_field_function(self.cs, f, self.vol)
 
         self.assertAlmostEqual(res1, complex(-6.938893903907228e-18, 0))
         self.assertAlmostEqual(res2, complex(0, 0))
-        self.assertAlmostEqual(res3, 0.27593732304637586)
 
+    def test_max_abs_field_function(self):
+        self.sim.run(until=200)
+
+        self.cs = [mp.Ex, mp.Hz, mp.Dielectric]
+        res = self.sim.max_abs_field_function(self.cs, f, self.vol)
+        self.assertAlmostEqual(res, 0.27593732304637586)
 
 if __name__ == '__main__':
     unittest.main()

@@ -774,6 +774,12 @@ class Simulation(object):
 
         where = f.total_volume() if not waf else waf[0]
 
+        if type(where) is Volume:
+            if self.is_cylindrical:
+                where = where.to_cylindrical().swigobj
+            else:
+                where = where.swigobj
+
         return where, f
 
     def integrate_field_function(self, cs, func, *where_and_fields):
