@@ -79,6 +79,7 @@ class Medium(object):
                  B_conductivity_diag=Vector3(),
                  epsilon=None,
                  index=None,
+                 mu=None,
                  chi3=None):
 
         if epsilon:
@@ -86,6 +87,9 @@ class Medium(object):
         elif index:
             i2 = index * index
             epsilon_diag = Vector3(i2, i2, i2)
+
+        if mu:
+            mu_diag = Vector3(mu, mu, mu)
 
         self.epsilon_diag = epsilon_diag
         self.epsilon_offdiag = epsilon_offdiag
