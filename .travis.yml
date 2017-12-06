@@ -67,23 +67,15 @@ script:
   - make
 #
   - pushd tests
-  - make check TESTS=${CORETESTS} VERBOSE=1
+  - make check TESTS=${CORETESTS} VERBOSE=1 || cat ../../tests/test-suite.log
   - popd
 #
   - pushd libmeepgeom
-  - make check
+  - make check || cat ../../libmeepgeom/test-suite.log
   - popd
 #
   - pushd python
-  - make check
+  - make check || cat ../../python/tests/test-suite.log
   - popd
 #
   - popd
-
-##################################################
-##################################################
-##################################################
-after_failure:
-  - if [ -r test-suite.log ]; then cat test-suite.log; fi
-  - if [ -r tests/test-suite.log ]; then cat tests/test-suite.log; fi
-  - if [ -r python/test-suite.log ]; then cat python/test-suite.log; fi
