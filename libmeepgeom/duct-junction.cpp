@@ -20,6 +20,22 @@ using namespace meep;
 typedef std::complex<double> cdouble;
 
 /***************************************************************/
+/***************************************************************/
+/***************************************************************/
+void nudge_onto_dielectric_grid(grid_volume gv, vec &v)
+{ 
+  ivec iv = gv.round_vec(v);
+  if ( (iv.x() % 2) == 0 )
+   iv += ivec(1,0,0);
+  if ( (iv.y() % 2) == 0 )
+   iv += ivec(0,1,0);
+  if ( (iv.z() % 2) == 0 )
+   iv += ivec(0,0,1);
+
+  v=gv[iv];
+}
+
+/***************************************************************/
 /* function to provide initial guess for the wavevector of the */
 /* eigenmode with frequency freq and band index band           */
 /***************************************************************/
@@ -139,6 +155,7 @@ int main(int argc, char *argv[])
   double df   = 0.25;  // ; df
   int nfreq   = 1;
   gaussian_src_time src(fcen, df);
+
   vec minA(-0.5*WXY, -0.5*WXY, -1.0*zcenter);
   vec maxA(+0.5*WXY, +0.5*WXY, -1.0*zcenter);
   vec minB(-0.5*WXY, -0.5*WXY, +1.0*zcenter);
@@ -152,10 +169,10 @@ printf("before: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
         minB.x(), minB.y(), minB.z(),
         maxB.x(), maxB.y(), maxB.z());
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  minA = gv[ gv.round_vec(minA) ];
-  maxA = gv[ gv.round_vec(maxA) ];
-  minB = gv[ gv.round_vec(minB) ];
-  maxB = gv[ gv.round_vec(maxB) ];
+  nudge_onto_dielectric_grid(gv, minA);
+  nudge_onto_dielectric_grid(gv, maxA);
+  nudge_onto_dielectric_grid(gv, minB);
+  nudge_onto_dielectric_grid(gv, maxB);
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 printf("after: min,max A={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
         minA.x(), minA.y(), minA.z(),
@@ -185,11 +202,14 @@ printf("after: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
   /* add flux plane and timestep to accumulate frequency-domain  */
   /* fields at nfreq frequencies                                 */
   /***************************************************************/
-  dft_flux flux=f.add_dft_flux(Z, fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
+  //dft_flux flux=f.add_dft_flux_plane(fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux flux=f.add_dft_flux_plane(fvB, fcen, fcen, nfreq);
 
-  // (run-sources+ 100 
-  while( f.round_time() < (f.last_source_time() + 100.0) )
+  // (run-sources+ 100
+  while( f.round_time() < (f.last_source_time() + 10.0) )
    f.step();
+
+  flux.save_hdf5(f,"flux");
              
   /***************************************************************/
   /* compute mode expansion coefficients *************************/
@@ -225,6 +245,7 @@ printf("after: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
                      nf,flux.freq_min + nf*flux.dfreq,bands[nb],
                      real(alpha), imag(alpha), alphaMag, alphaArg);
        };
+     fclose(ff);
    };
   
   return 0;
