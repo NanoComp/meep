@@ -761,7 +761,7 @@ class Simulation(object):
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
-        self.fields.output_hdf5(name, cs + func, ov, h5, append, self.output_single_precision,
+        self.fields.output_hdf5(name, [cs, func], ov, h5, append, self.output_single_precision,
                                 self._get_filename_prefix(), real_only)
         if h5file is None:
             self.output_h5_hook(self.fields.h5file_name(name, self._get_filename_prefix(), True))

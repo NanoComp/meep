@@ -51,8 +51,6 @@ typedef struct {
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
-PyObject *py_amp_func_v3 = NULL;
-PyObject *py_field_func_v3 = NULL;
 
 static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();

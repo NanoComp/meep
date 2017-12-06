@@ -42,6 +42,8 @@ class TestFieldFunctions(unittest.TestCase):
         self.assertAlmostEqual(res1, complex(-6.938893903907228e-18, 0))
         self.assertAlmostEqual(res2, complex(0, 0))
 
+        self.sim.output_field_function("weird-function", self.cs, f)
+
     def test_max_abs_field_function(self):
         self.sim.run(until=200)
 
