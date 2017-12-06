@@ -75,7 +75,7 @@ script:
   - popd
 #
   - pushd python
-  - make check || cat ../../python/tests/test-suite.log
+  - make check || cat ../../python/test-suite.log
   - popd
 #
   - popd
