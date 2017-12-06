@@ -1,9 +1,13 @@
+import os
+import shutil
 import unittest
 import numpy as np
 import meep as mp
 
 
 class TestSimulation(unittest.TestCase):
+
+    fname = 'simulation-ez-000200.00.h5'
 
     def test_interpolate_numbers(self):
 
@@ -77,6 +81,44 @@ class TestSimulation(unittest.TestCase):
         self.assertEqual(len(expected), len(res))
         np.testing.assert_allclose(expected, res)
 
+    def init_simple_simulation(self):
+        resolution = 20
+
+        cell = mp.Vector3(10, 10)
+
+        pml_layers = mp.PML(1.0)
+
+        fcen = 1.0
+        df = 1.0
+
+        sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(),
+                            component=mp.Ez)
+
+        symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
+
+        return mp.Simulation(resolution=resolution,
+                             cell_size=cell,
+                             boundary_layers=[pml_layers],
+                             sources=[sources],
+                             symmetries=symmetries)
+
+    def test_use_output_directory_default(self):
+        sim = self.init_simple_simulation()
+        sim.use_output_directory()
+        sim.run(mp.at_end(mp.output_efield_z), until=200)
+
+        output_dir = 'simulation-out'
+        self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
+        shutil.rmtree(output_dir)
+
+    def test_use_output_directory_custom(self):
+        sim = self.init_simple_simulation()
+        sim.use_output_directory('custom_dir')
+        sim.run(mp.at_end(mp.output_efield_z), until=200)
+
+        output_dir = 'custom_dir'
+        self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
+        shutil.rmtree(output_dir)
 
 if __name__ == '__main__':
     unittest.main()
