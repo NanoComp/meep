@@ -102,6 +102,7 @@ class TestSimulation(unittest.TestCase):
                              sources=[sources],
                              symmetries=symmetries)
 
+    @unittest.skipIf(mp.with_mpi(), "Don't run this in MPI mode")
     def test_use_output_directory_default(self):
         sim = self.init_simple_simulation()
         sim.use_output_directory()
@@ -111,6 +112,7 @@ class TestSimulation(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
         shutil.rmtree(output_dir)
 
+    @unittest.skipIf(mp.with_mpi(), "Don't run this in MPI mode")
     def test_use_output_directory_custom(self):
         sim = self.init_simple_simulation()
         sim.use_output_directory('custom_dir')
