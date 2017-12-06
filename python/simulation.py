@@ -414,6 +414,27 @@ class Simulation(object):
         else:
             return re.sub(r'\.py$', '', filename)
 
+    def use_output_directory(self, dname=''):
+        if not dname:
+            dname = self._get_filename_prefix() + '-out'
+
+        closure = {'trashed': False}
+
+        def hook():
+            print("Meep: using output directory '{}'".format(dname))
+            self.fields.set_output_directory(dname)
+            if not closure['trashed']:
+                mp.trash_output_directory(dname)
+            closure['trashed'] = True
+
+        self.init_fields_hooks.append(hook)
+
+        if self.fields is not None:
+            hook()
+        self.filename_prefix = ''
+
+        return dname
+
     def _run_until(self, cond, step_funcs):
         self.interactive = False
         if self.fields is None:
