@@ -19,6 +19,12 @@ using namespace meep;
 
 typedef std::complex<double> cdouble;
 
+namespace meep{
+void output_hdf5_flux(fields *f, dft_flux *flux, const volume where,
+                      const char *HDF5FileName,
+                      bool retain_integration_weight=false);
+}
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
@@ -202,14 +208,13 @@ printf("after: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
   /* add flux plane and timestep to accumulate frequency-domain  */
   /* fields at nfreq frequencies                                 */
   /***************************************************************/
-  //dft_flux flux=f.add_dft_flux_plane(fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
   dft_flux flux=f.add_dft_flux_plane(fvB, fcen, fcen, nfreq);
 
   // (run-sources+ 100
   while( f.round_time() < (f.last_source_time() + 10.0) )
    f.step();
 
-  flux.save_hdf5(f,"flux");
+  f.output_hdf5_flux(&flux, fvB, "flux");
              
   /***************************************************************/
   /* compute mode expansion coefficients *************************/

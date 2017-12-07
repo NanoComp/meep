@@ -835,6 +835,10 @@ public:
 
   void scale_dft(std::complex<double> scale);
 
+  void write_hdf5(h5file *file, int nf, int reim, double sign,
+                  int rank, direction *ds, ivec min_corner,
+                  realnum *buffer, bool retain_integration_weight);
+
   void operator-=(const dft_chunk &chunk);
 
   // the frequencies to loop_in_chunks
@@ -1479,6 +1483,8 @@ class fields {
 			      double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
+  void output_hdf5_flux(dft_flux *flux, const volume where,
+                        const char *HDF5FileName, bool retain_integration_weight=false);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,
