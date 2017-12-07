@@ -577,11 +577,4 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
                 import sys
                 saved_stdout = sys.stdout
                 sys.stdout = open(os.devnull, 'w')
-
-            import atexit
-
-            @atexit.register
-            def close_dev_null():
-                if comm.Get_rank() != 0:
-                    sys.stdout.close()
 %}
