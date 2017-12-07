@@ -221,7 +221,7 @@ RUNCODE=""
 if test "x$with_mpi" = "xyes"; then
    AC_CHECK_PROG(MPIRUN, mpirun, mpirun)
    # always use 2 processes for 'make check'
-   RUNCODE="$MPIRUN -np 2 --verbose -output-filename mpirun.out --timestamp-output" 
+   RUNCODE="$MPIRUN -np 2"
 fi
 AC_SUBST(RUNCODE)
 AM_CONDITIONAL(WITH_MPI, test "x$with_mpi" = "xyes")
