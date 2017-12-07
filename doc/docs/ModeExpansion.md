@@ -1,9 +1,9 @@
 # Eigenmode decomposition of arbitrary field configurations
 
 *Eigenmode decomposition* exploits MEEP's interconnectivity
-with the [MPB][MPB] mode solver to express an arbitrary
-time-harmonic field configuration as a superposition of
-the normal harmonic modes of your structure. In this 
+with the [MPB][MPB] mode solver to represent an arbitrary
+time-harmonic field configuration as a superposition of 
+the normal harmonic modes of your structure.
 
 ## Theoretical background
 
@@ -12,6 +12,10 @@ direction with constant cross section in the transverse
 $[\vec\rho=(x,y)]$ directions. For any given
 angular frequency $\omega$ we may solve the time-harmonic
 Maxwell equations to obtain the *normal modes* of the
+=======
+$[\vec\rho=(x,y)]$ directions. Then for any given
+angular frequency $\omega$ we may solve Maxwell's
+equations to obtain the *normal modes* of the
 structure---an infinite set of vector-valued
 functions of the transverse coordinates
 $\{\mathbf{E}^\pm_n(\vec{\rho}), \mathbf{H}^\pm_n(\vec{\rho})\}$,
@@ -39,8 +43,7 @@ $$
             \right\}
     \qquad (1\textbf{b})
 $$
-where (as discussed further [below](ModeExpansion.md#UnderTheHood))
-the expansion coefficients $\{\alpha^{\pm}_n\}$
+where the expansion coefficients $\{\alpha^{\pm}_n\}$
 may be extracted from knowledge of the time-harmonic
 fields $\mathbf{E},\mathbf{H}$ on any cross-sectional
 surface $S$ transverse to the waveguide.
@@ -51,6 +54,7 @@ the $\{\alpha_n^\pm\}$ coefficients above for any
 resulting from a MEEP calculation. In calculations
 of this sort,
 
+<<<<<<< HEAD
 -  the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
     of equations (1a,b) above will be frequency-domain
     fields stored in a `dft_flux` object in a MEEP
@@ -61,11 +65,22 @@ of this sort,
 -  the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
     and $\{\beta_n\}$ propagation constants are computed
     automatically under the hood by [MPB][MPB] as normal modes 
+=======
+--the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
+    of equations (1a,b) above will be frequency-domain
+    fields stored in a `dft_flux` object in a MEEP
+    run, where you will have arranges this `dft_flux` object
+    to live on a cross-sectional surface $S$ transverse
+    to the waveguide;
+
+--the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
+    and $\{\beta_n\}$ propagation constants are computed
+    automatically under the hood by MPB as normal modes 
     of an infinitely extended waveguide with the same 
     cross-sectional material distribution that your structure
     has on the transverse slice $S$, and
 
--  the $\alpha_n^\pm$ coefficients for as many bands 
+-  the $\alpha_n^\pm$ coefficients for as many bands
    as you like are computed by calling `get_eigenmode_coefficients(),`
    as discussed below.
 
@@ -165,7 +180,7 @@ $z=0$.
 
 The theoretical basis of the mode-expansion algorithm
 is the orthogonality relation satisfied by the normal
-modes
+modes:
 $$ \left\langle \mathbf{E}_m^{\sigma} \right|
    \left.       \mathbf{H}^\tau_n     \right\rangle
    =C_{m}\delta_{mn}\delta_{\sigma\tau} 

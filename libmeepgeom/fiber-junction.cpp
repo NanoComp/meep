@@ -118,8 +118,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
-  int nfreq   = 10;
-nfreq=1;
+  int nfreq   = 1;
   gaussian_src_time src(fcen, df);
   volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
   if (point_source)
