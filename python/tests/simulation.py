@@ -135,9 +135,17 @@ class TestSimulation(unittest.TestCase):
         self.assertTrue(os.path.exists(fname))
         os.remove(fname)
 
-    # def test_after_sources_and_time(self):
-    #     sim = self.init_simple_simulation()
-    #     sim.run(mp.after_sources_and_time(1, mp.output_efield_z), until_after_sources=2)
+    def test_after_sources_and_time(self):
+        sim = self.init_simple_simulation()
+
+        done = [False]
+
+        def _done(sim, todo):
+            done[0] = True
+
+        sim.run(mp.after_sources_and_time(1, _done), until_after_sources=2)
+
+        self.assertTrue(done[0])
 
     @unittest.skipIf(mp.with_mpi(), "MPI complicates test cleanup when run on a single node")
     def test_with_prefix(self):

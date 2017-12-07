@@ -979,10 +979,11 @@ def after_sources(*step_funcs):
 
 
 def after_sources_and_time(t, *step_funcs):
-    def _after_s_and_t(sim):
-        if sim.fields is None:
-            sim._init_fields()
-        return after_time((sim.fields.last_source_time() + t) - sim.round_time(), *step_funcs)
+    def _after_s_and_t(sim, todo):
+        time = sim.fields.last_source_time() + t - sim.round_time()
+        if sim.round_time() >= time:
+            for func in step_funcs:
+                _eval_step_func(sim, func, todo)
     return _after_s_and_t
 
 
