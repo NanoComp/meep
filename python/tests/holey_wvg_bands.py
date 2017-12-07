@@ -6,7 +6,7 @@ class TestHoleyWvgBands(unittest.TestCase):
 
     def setUp(self):
         cell = mp.Vector3(1, 12)
-        b = mp.Block(size=mp.Vector3(1e20, 1.2, 1e20), material=mp.Medium(epsilon=13))
+        b = mp.Block(size=mp.Vector3(mp.inf, 1.2, mp.inf), material=mp.Medium(epsilon=13))
         c = mp.Cylinder(0.36)
 
         self.fcen = 0.25

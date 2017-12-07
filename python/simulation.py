@@ -24,6 +24,7 @@ except NameError:
 
 CYLINDRICAL = -2
 AUTOMATIC = -1
+ALL = -1
 
 # MPB definitions
 NO_PARITY = 0
@@ -33,6 +34,8 @@ EVEN_Y = 4
 ODD_Y = 8
 TE = EVEN_Z
 TM = ODD_Z
+
+inf = 1.0e20
 
 
 def get_num_args(func):
@@ -58,8 +61,8 @@ def py_v3_to_vec(dims, v3, is_cylindrical=False):
 class PML(object):
 
     def __init__(self, thickness,
-                 direction=-1,
-                 side=-1,
+                 direction=ALL,
+                 side=ALL,
                  r_asymptotic=1e-15,
                  mean_stretch=1.0,
                  pml_profile=lambda u: u * u):
@@ -71,9 +74,9 @@ class PML(object):
         self.mean_stretch = mean_stretch
         self.pml_profile = pml_profile
 
-        if direction == -1 and side == -1:
+        if direction == ALL and side == ALL:
             self.swigobj = mp.pml(thickness, r_asymptotic, mean_stretch)
-        elif direction == -1:
+        elif direction == ALL:
             self.swigobj = mp.pml(thickness, side, r_asymptotic, mean_stretch)
         else:
             self.swigobj = mp.pml(thickness, direction, side, r_asymptotic, mean_stretch)
@@ -188,7 +191,7 @@ class Harminv(object):
         self.modes = []
         self.spectral_density = 1.1
         self.Q_thresh = 50.0
-        self.rel_err_thresh = 1e20
+        self.rel_err_thresh = inf
         self.err_thresh = 0.01
         self.rel_amp_thresh = -1.0
         self.amp_thresh = -1.0
@@ -406,6 +409,10 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
+    def get_epsilon_point(self, pt):
+        v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
+        return self.fields.get_eps(v3)
+
     def _get_filename_prefix(self):
         _, filename = os.path.split(sys.argv[0])
 
@@ -491,7 +498,7 @@ class Simulation(object):
         components = [s.component for s in self.sources]
         pts = [s.center for s in self.sources]
 
-        src_freqs_min = min([s.src.frequency - 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else 1e20
+        src_freqs_min = min([s.src.frequency - 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else inf
                              for s in self.sources])
         fmin = max(0, src_freqs_min)
 
@@ -613,6 +620,20 @@ class Simulation(object):
         vol = where.to_cylindrical() if self.is_cylindrical else where
         near2far.save_farfields(fname, self._get_filename_prefix(), vol.swigobj, resolution)
 
+    def load_near2far(self, fname, n2f):
+        if self.fields is None:
+            self._init_fields()
+        n2f.load_hdf5(self.fields, fname, '', self._get_filename_prefix())
+
+    def save_near2far(self, fname, n2f):
+        if self.fields is None:
+            self._init_fields()
+        n2f.save_hdf5(self.fields, fname, '', self._get_filename_prefix())
+
+    def load_minus_near2far(self, fname, n2f):
+        self.load_near2far(fname, n2f)
+        n2f.scale_dfts(-1.0)
+
     def add_force(self, fcen, df, nfreq, *forces):
         if self.fields is None:
             self._init_fields()
@@ -622,6 +643,20 @@ class Simulation(object):
     def display_forces(self, *forces):
         force_freqs = get_force_freqs(forces[0])
         display_csv(self, 'force', zip(force_freqs, *[get_forces(f) for f in forces]))
+
+    def load_force(self, fname, force):
+        if self.fields is None:
+            self._init_fields()
+        force.load_hdf5(self.fields, fname, '', self._get_filename_prefix())
+
+    def save_force(self, fname, force):
+        if self.fields is None:
+            self._init_fields()
+        force.save_hdf5(self.fields, fname, '', self._get_filename_prefix())
+
+    def load_minus_force(self, fname, force):
+        self.load_force(fname, force)
+        force.scale_dfts(-1.0)
 
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
@@ -870,12 +905,12 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
             1 / 4,  # TODO(chogan): Call adaptive_integration instead of hard-coding integral
         ]
 
-        if layer.direction == -1:
+        if layer.direction == ALL:
             d = mp.start_at_direction(gv.dim)
             loop_stop_directi = mp.stop_at_direction(gv.dim)
 
             while d < loop_stop_directi:
-                if layer.side == -1:
+                if layer.side == ALL:
                     b = mp.High
                     loop_stop_bi = mp.Low
 
@@ -887,7 +922,7 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
                     br += mp.boundary_region(*(boundary_region_args + [d, layer.side]))
                 d += 1
         else:
-            if layer.side == -1:
+            if layer.side == ALL:
                 b = mp.High
                 loop_stop_bi = mp.Low
 
@@ -940,6 +975,14 @@ def after_sources(*step_funcs):
     return _after_sources
 
 
+def after_sources_and_time(t, *step_funcs):
+    def _after_s_and_t(sim):
+        if sim.fields is None:
+            sim._init_fields()
+        return after_time((sim.fields.last_source_time() + t) - sim.round_time(), *step_funcs)
+    return _after_s_and_t
+
+
 def after_time(t, *step_funcs):
     def _after_t(sim):
         return sim.round_time() >= t
@@ -977,6 +1020,17 @@ def at_every(dt, *step_funcs):
                 _eval_step_func(sim, func, todo)
             closure['tlast'] = t
     return _every
+
+
+def at_time(t, *step_funcs):
+    closure = {'done': False}
+
+    def _at_time(sim, todo):
+        if not closure['done'] or todo == 'finish':
+            for f in step_funcs:
+                _eval_step_func(sim, f, todo)
+        closure['done'] = closure['done'] or todo == 'step'
+    return after_time(t, _at_time)
 
 
 def before_time(t, *step_funcs):
@@ -1022,6 +1076,13 @@ def in_volume(v, *step_funcs):
         if eps_save:
             sim.last_eps_filename = eps_save
     return _in_volume
+
+
+def in_point(pt, *step_funcs):
+    def _in_point(sim):
+        v = Volume(pt, dims=sim.dimensions, is_cylindrical=sim.is_cylindrical)
+        return in_volume(v, *step_funcs)
+    return _in_point
 
 
 def to_appended(fname, *step_funcs):
@@ -1076,6 +1137,25 @@ def synchronized_magnetic(*step_funcs):
             _eval_step_func(sim, f, todo)
         sim.fields.restore_magnetic_fields()
     return _sync
+
+
+def when_true(cond, *step_funcs):
+    return _when_true_funcs(cond, *step_funcs)
+
+
+def when_false(cond, *step_funcs):
+    return _when_true_funcs(lambda: not cond, *step_funcs)
+
+
+def with_prefix(pre, *step_funcs):
+    def _with_prefix(sim, todo):
+        saved_pre = sim.filename_prefix
+        sim.filename_prefix = pre + sim._get_filename_prefix()
+
+        for f in step_funcs:
+            _eval_step_func(sim, f, todo)
+        sim.filename_prefix = saved_pre
+    return _with_prefix
 
 
 def display_csv(sim, name, data):
@@ -1342,6 +1422,10 @@ def dft_ldos(fcen, df, nfreq):
     return _ldos
 
 
+def scale_flux_fields(s, flux):
+    flux.scale_dfts(s)
+
+
 def get_flux_freqs(f):
     return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
 
@@ -1350,12 +1434,24 @@ def get_fluxes(f):
     return f.flux()
 
 
+def scale_force_fields(s, force):
+    force.scale_dfts(s)
+
+
 def get_force_freqs(f):
     return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
 
 
 def get_forces(f):
     return f.force()
+
+
+def scale_near2far_fields(s, n2f):
+    n2f.scale_dfts(s)
+
+
+def get_near2far_freqs(f):
+    return np.linspace(f.freq_min, f.freq_min + f.dfreq * f.Nfreq, num=f.Nfreq, endpoint=False).tolist()
 
 
 def interpolate(n, nums):

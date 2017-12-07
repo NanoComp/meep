@@ -1,5 +1,5 @@
 import unittest
-
+import numpy as np
 import meep.geom as gm
 
 
@@ -127,6 +127,54 @@ class TestEllipsoid(unittest.TestCase):
         e = gm.Ellipsoid(size=ones(), center=zeros())
         self.assertIn(zeros(), e)
 
+
+class TestMedium(unittest.TestCase):
+
+    def test_D_conductivity(self):
+        m = gm.Medium(D_conductivity=2)
+        self.assertEqual(m.D_conductivity_diag.x, 2)
+        self.assertEqual(m.D_conductivity_diag.y, 2)
+        self.assertEqual(m.D_conductivity_diag.z, 2)
+
+    def test_B_conductivity(self):
+        m = gm.Medium(B_conductivity=2)
+        self.assertEqual(m.B_conductivity_diag.x, 2)
+        self.assertEqual(m.B_conductivity_diag.y, 2)
+        self.assertEqual(m.B_conductivity_diag.z, 2)
+
+    def test_E_chi2(self):
+        m = gm.Medium(E_chi2=2)
+        self.assertEqual(m.E_chi2_diag.x, 2)
+        self.assertEqual(m.E_chi2_diag.y, 2)
+        self.assertEqual(m.E_chi2_diag.z, 2)
+
+    def test_E_chi3(self):
+        m = gm.Medium(E_chi3=2)
+        self.assertEqual(m.E_chi3_diag.x, 2)
+        self.assertEqual(m.E_chi3_diag.y, 2)
+        self.assertEqual(m.E_chi3_diag.z, 2)
+
+    def test_H_chi2(self):
+        m = gm.Medium(H_chi2=2)
+        self.assertEqual(m.H_chi2_diag.x, 2)
+        self.assertEqual(m.H_chi2_diag.y, 2)
+        self.assertEqual(m.H_chi2_diag.z, 2)
+
+    def test_H_chi3(self):
+        m = gm.Medium(H_chi3=2)
+        self.assertEqual(m.H_chi3_diag.x, 2)
+        self.assertEqual(m.H_chi3_diag.y, 2)
+        self.assertEqual(m.H_chi3_diag.z, 2)
+
+
+class TestVector3(unittest.TestCase):
+
+    def test_use_as_numpy_array(self):
+        v = gm.Vector3(10, 10, 10)
+        res = np.add(v, np.array([10, 10, 10]))
+
+        self.assertTrue(type(res) is np.ndarray)
+        np.testing.assert_array_equal(np.array([20, 20, 20]), res)
 
 if __name__ == '__main__':
     unittest.main()

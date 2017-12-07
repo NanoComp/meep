@@ -411,6 +411,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete $1;
 }
 
+// Typemap suite for material_type
+
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
     $1 = PyObject_IsInstance($input, py_material_object());
 }
@@ -579,10 +581,12 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Symmetry,
         Volume,
         after_sources,
+        after_sources_and_time,
         after_time,
         at_beginning,
         at_end,
         at_every,
+        at_time,
         dft_ldos,
         display_progress,
         during_sources,
@@ -590,8 +594,11 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         get_fluxes,
         get_force_freqs,
         get_forces,
+        get_near2far_freqs,
         get_ldos_freqs,
+        in_point,
         in_volume,
+        inf,
         interpolate,
         output_epsilon,
         output_mu,
@@ -636,9 +643,15 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         output_sfield_r,
         output_sfield_p,
         py_v3_to_vec,
+        scale_flux_fields,
+        scale_force_fields,
+        scale_near2far_fields,
         stop_when_fields_decayed,
         synchronized_magnetic,
-        to_appended
+        to_appended,
+        when_true,
+        when_false,
+        with_prefix
     )
     from .source import (
         ContinuousSource,

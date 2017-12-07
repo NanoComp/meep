@@ -26,8 +26,8 @@
 ; put a single point source at some arbitrary place, pointing in some
 ; arbitrary direction.  We will only look for TM modes (E out of the plane).
 
-(define-param fcen 0.15) ; pulse center frequency                            
-(define-param df 0.1)  ; pulse width (in frequency) 
+(define-param fcen 0.15) ; pulse center frequency
+(define-param df 0.1)  ; pulse width (in frequency)
 (set! sources (list
                (make source
                  (src (make gaussian-src (frequency fcen) (fwidth df)))
@@ -36,7 +36,7 @@
 ; exploit the mirror symmetry in structure+source:
 (set! symmetries (list (make mirror-sym (direction Y))))
 
-(run-sources+ 300 
+(run-sources+ 300
 	      (at-beginning output-epsilon)
 	      (after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
 

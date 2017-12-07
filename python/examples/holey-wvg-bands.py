@@ -24,7 +24,7 @@ def main():
 
     cell = mp.Vector3(1, sy)
 
-    b = mp.Block(size=mp.Vector3(1e20, w, 1e20), material=mp.Medium(epsilon=eps))
+    b = mp.Block(size=mp.Vector3(mp.inf, w, mp.inf), material=mp.Medium(epsilon=eps))
     c = mp.Cylinder(radius=r)
 
     fcen = 0.25  # pulse center frequency

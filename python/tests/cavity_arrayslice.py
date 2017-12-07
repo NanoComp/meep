@@ -24,7 +24,7 @@ class TestCavityArraySlice(unittest.TestCase):
 
         cell = mp.Vector3(sx, sy, 0)
 
-        blk = mp.Block(size=mp.Vector3(1e20, 1.2, 1e20),
+        blk = mp.Block(size=mp.Vector3(mp.inf, 1.2, mp.inf),
                        material=mp.Medium(epsilon=13))
 
         geometry = [blk]

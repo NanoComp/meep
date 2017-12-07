@@ -17,12 +17,12 @@ def main(args):
     wvg_xcen = 0.5 * (sx - w - (2 * pad))  # x center of vert. wvg
 
     if args.no_bend:
-        geometry = [mp.Block(mp.Vector3(1e20, w, 1e20), center=mp.Vector3(0, wvg_ycen),
+        geometry = [mp.Block(mp.Vector3(mp.inf, w, mp.inf), center=mp.Vector3(0, wvg_ycen),
                              material=mp.Medium(epsilon=12))]
     else:
-        geometry = [mp.Block(mp.Vector3(sx - pad, w, 1e20), center=mp.Vector3(-0.5 * pad, wvg_ycen),
+        geometry = [mp.Block(mp.Vector3(sx - pad, w, mp.inf), center=mp.Vector3(-0.5 * pad, wvg_ycen),
                              material=mp.Medium(epsilon=12)),
-                    mp.Block(mp.Vector3(w, sy - pad, 1e20), center=mp.Vector3(wvg_xcen, 0.5 * pad),
+                    mp.Block(mp.Vector3(w, sy - pad, mp.inf), center=mp.Vector3(wvg_xcen, 0.5 * pad),
                              material=mp.Medium(epsilon=12))]
 
     fcen = 0.15  # pulse center frequency

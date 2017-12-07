@@ -6,10 +6,6 @@ import unittest
 import meep as mp
 
 
-def dummy_eps(vec):
-    return 1.0
-
-
 class TestRing(unittest.TestCase):
 
     def init(self):
@@ -56,7 +52,11 @@ class TestRing(unittest.TestCase):
         self.assertAlmostEqual(m1.amp.real, -0.00304951667301, places=4)
         self.assertAlmostEqual(m1.amp.imag, -0.00153192946717, places=4)
 
-        fp = self.sim.get_field_point(mp.Ez, mp.Vector3(1, 1))
+        v = mp.Vector3(1, 1)
+        fp = self.sim.get_field_point(mp.Ez, v)
+        ep = self.sim.get_epsilon_point(v)
+
+        self.assertAlmostEqual(ep, 11.559999999999999)
         self.assertAlmostEqual(fp, -0.08185972142450348)
 
 if __name__ == '__main__':

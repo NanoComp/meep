@@ -17,10 +17,10 @@ def main(args):
     s = args.s  # waveguide separation distance
 
     geometry = [mp.Block(center=mp.Vector3(-0.5 * (s + a)),
-                         size=mp.Vector3(a, a, 1e20),
+                         size=mp.Vector3(a, a, mp.inf),
                          material=Si),
                 mp.Block(center=mp.Vector3(0.5 * (s + a)),
-                         size=mp.Vector3(a, a, 1e20),
+                         size=mp.Vector3(a, a, mp.inf),
                          material=Si)]
 
     xodd = args.xodd
@@ -50,10 +50,10 @@ def main(args):
     h = mp.Harminv(mp.Ey, mp.Vector3(0.5 * (s + a)), fcen, df)
 
     sim.run(mp.after_sources(h), until_after_sources=200)
-    
+
     f = h.modes[0].freq
     print("freq:, {}, {}".format(s, f))
-    
+
     sim.reset_meep()
 
     new_sources = [
@@ -67,7 +67,7 @@ def main(args):
     ]
 
     sim.change_sources(new_sources)
-    
+
     flx_reg = mp.FluxRegion(direction=mp.Z, center=mp.Vector3(), size=mp.Vector3(1.2 * (2 * a + s), 1.2 * a))
     wvg_pwr = sim.add_flux(f, 0, 1, flx_reg)
 
