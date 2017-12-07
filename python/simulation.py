@@ -414,12 +414,15 @@ class Simulation(object):
         return self.fields.get_eps(v3)
 
     def _get_filename_prefix(self):
-        _, filename = os.path.split(sys.argv[0])
-
-        if filename == 'ipykernel_launcher.py' or filename == '__main__.py':
-            return ''
+        if self.filename_prefix:
+            return self.filename_prefix
         else:
-            return re.sub(r'\.py$', '', filename)
+            _, filename = os.path.split(sys.argv[0])
+
+            if filename == 'ipykernel_launcher.py' or filename == '__main__.py':
+                return ''
+            else:
+                return re.sub(r'\.py$', '', filename)
 
     def use_output_directory(self, dname=''):
         if not dname:
