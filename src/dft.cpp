@@ -24,6 +24,8 @@
 
 using namespace std;
 
+typedef complex<double> cdouble;
+
 namespace meep {
 
 struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
@@ -488,6 +490,166 @@ dft_flux fields::add_dft_flux_box(const volume &where,
 dft_flux fields::add_dft_flux_plane(const volume &where,
 			      double freq_min, double freq_max, int Nfreq) {
   return add_dft_flux(NO_DIRECTION, where, freq_min, freq_max, Nfreq);
+}
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+void dft_chunk::write_hdf5(h5file *file, int nf, int reim, double sign,
+                           int rank, direction *ds, ivec min_corner,
+                           realnum *buffer, bool retain_integration_weight)
+{
+   // compute the size of the chunk to output, and its strides etc.
+   int start[3]={0,0,0}, count[3]={1,1,1};
+   int offset[3]={0,0,0}, stride[3]={1,1,1};
+   ivec isS = S.transform(is, sn) + shift;
+   ivec ieS = S.transform(ie, sn) + shift;
+
+   ivec permute(zero_ivec(fc->gv.dim));
+   for (int i = 0; i < 3; ++i) 
+    permute.set_direction(fc->gv.yucky_direction(i), i);
+   permute = S.transform_unshifted(permute, sn);
+   LOOP_OVER_DIRECTIONS(permute.dim, d)
+    permute.set_direction(d, abs(permute.in_direction(d)));
+
+   for (int i = 0; i < rank; ++i)
+    { direction d = ds[i];
+      int isd = isS.in_direction(d), ied = ieS.in_direction(d);
+      start[i] = (min(isd, ied) - min_corner.in_direction(d)) / 2;
+      count[i] = abs(ied - isd) / 2 + 1;
+      if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
+    };
+
+   for (int i = 0; i < rank; ++i)
+    { direction d = ds[i];
+      int j = permute.in_direction(d);
+      for (int k = i + 1; k < rank; ++k)
+      stride[j] *= count[k];
+      offset[j] *= stride[j];
+      if (offset[j]) stride[j] *= -1;
+    };
+
+   // loop over all grid points in our piece of the volume
+   vec rshift(shift * (0.5*fc->gv.inva));
+   int chunk_idx = 0;
+   LOOP_OVER_IVECS(fc->gv, is, ie, idx)
+    {
+      IVEC_LOOP_LOC(fc->gv, loc);
+      loc = S.transform(loc, sn) + rshift;
+      double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+
+      cdouble fluxval = sign*dft[ Nomega*(chunk_idx++) + nf];
+      if (include_dV_and_interp_weights && !retain_integration_weight)
+       fluxval /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
+
+      int idx2 = ((((offset[0] + offset[1] + offset[2])
+                               + loop_i1 * stride[0])
+                               + loop_i2 * stride[1])
+                               + loop_i3 * stride[2]);
+      buffer[idx2] = reim ? imag(fluxval) : real(fluxval);
+
+    }; // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
+
+  file->write_chunk(rank, start, count, buffer);
+}
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+void fields::output_hdf5_flux(dft_flux *flux, const volume where,
+                              const char *HDF5FileName, bool retain_integration_weight)
+{
+  /***************************************************************/
+  /* first pass to get the dimensions of our piece of the volume */
+  /***************************************************************/
+  int bufsz=0;
+  int num_chunks=0;
+  ivec min_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
+  ivec max_corner = gv.round_vec(where.get_min_corner()) - one_ivec(gv.dim);
+  for (dft_chunk *E=flux->E; E; E=E->next_in_dft)
+   {
+     ivec isS = E->S.transform(E->is, E->sn) + E->shift;
+     ivec ieS = E->S.transform(E->ie, E->sn) + E->shift;
+     min_corner = min(min_corner, min(isS, ieS));
+     max_corner = max(max_corner, max(isS, ieS));
+     int this_bufsz=1;
+     LOOP_OVER_DIRECTIONS(E->fc->gv.dim, d)
+      this_bufsz *= (E->ie.in_direction(d) - E->is.in_direction(d)) / 2 + 1;
+     bufsz = max(bufsz, this_bufsz);
+   };
+  max_corner = max_to_all(max_corner);
+  min_corner = -max_to_all(-min_corner); // i.e., min_to_all
+  num_chunks = sum_to_all(num_chunks);
+
+  realnum *buffer = new realnum[bufsz];
+
+  /***************************************************************/
+  /* create file *************************************************/
+  /***************************************************************/
+  int rank = 0, dims[3];
+  direction ds[3];
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    if (rank >= 3) abort("too many dimensions in output_hdf5_flux");
+    int n = (max_corner.in_direction(d)
+	     - min_corner.in_direction(d)) / 2 + 1;
+    if (n > 1) {
+      ds[rank] = d;
+      dims[rank++] = n;
+    }
+  };
+  h5file *file = open_h5file(HDF5FileName, h5file::WRITE, 0, true);
+
+  /***************************************************************/
+  /* figure out which components of the E and H fields are       */
+  /* present in the flux object                                  */
+  /***************************************************************/
+  component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
+  switch (normal_direction(where))
+   { case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
+     case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
+     case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
+     case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
+     case Z:
+      if (gv.dim == Dcyl)
+	cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
+      else
+	cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
+     break;
+     default: abort("invalid flux component!");
+   };
+
+  /***************************************************************/
+  /* write separate dataset for re/im parts of each component at */
+  /* each frequency.                                             */
+  /* in the loop below, "nc" stands for "number of component" and*/
+  /* is 0,1,2,3 for E_{cE[0]}, E_{cE[1]}, H_{cE[0]}, H_{cE[1]}   */
+  /***************************************************************/
+  bool append_data      = false;
+  bool single_precision = false;
+  for(int nf=0; nf<flux->Nfreq; nf++)
+   for(int eh=0; eh<2; eh++)
+    for(int nc=0; nc<2; nc++)
+     for(int reim=0; reim<2; reim++)
+      { 
+        component c = (eh ? cH[nc] : cE[nc]);
+        char dataname[100];
+        snprintf(dataname,100,"%s_%i.%c",component_name(c),nf,reim ? 'i' : 'r');
+        file->create_or_extend_data(dataname, rank, dims,
+                                    append_data, single_precision);
+
+        // the second component of the E field is stored with a 
+        // minus sign in the flux object, which we need to remove
+        double sign = (eh==0 && nc==1) ? -1.0 : 1.0;
+ 
+        for (dft_chunk *EH = (eh ? flux->H : flux->E); EH; EH=EH->next_in_dft)
+         if (EH->c == c)
+          EH->write_hdf5(file, nf, reim, sign, rank, ds, min_corner,
+                         buffer, retain_integration_weight);
+      };
+
+  file->done_writing_chunks();
+  delete file;
+  delete[] buffer;
 }
 
 } // namespace meep
