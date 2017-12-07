@@ -275,20 +275,6 @@ static bool is_medium(material_type md, medium_struct **m)
 static bool is_medium(void* md, medium_struct **m) 
  { return is_medium((material_type) md, m); }
 
-static bool is_medium_or_user(material_type md, medium_struct **m)
-{ 
-  if (    md->which_subclass == material_data::MEDIUM
-       || md->which_subclass == material_data::MATERIAL_USER
-     )
-   { *m = &(md->medium);
-     return true;
-   };
-  return false;
-}
-
-static bool is_medium_or_user(void *md, medium_struct **m)
- { return is_medium_or_user( (material_type)md, m); }
-
 static bool is_metal(meep::field_type ft, const material_type *material) {
   material_data *md = *material;
   if (ft == meep::E_stuff)
@@ -1152,16 +1138,16 @@ bool geom_epsilon::has_chi(meep::component c, int p)
   medium_struct *mm;
 
   for (int i = 0; i < geometry.num_items; ++i)
-   if ( is_medium_or_user(geometry.items[i].material, &mm) )
+   if (is_medium(geometry.items[i].material, &mm) )
     if (get_chi(c, mm, p)!=0)
      return true;
 
   for (int i = 0; i < extra_materials.num_items; ++i)
-   if ( is_medium_or_user(extra_materials.items[i], &mm ))
+   if (is_medium(extra_materials.items[i], &mm ))
     if (get_chi(c, mm, p )!=0)
      return true;
 
-  return (    is_medium_or_user(default_material, &mm)
+  return (    is_medium(default_material, &mm)
            && get_chi(c, mm, p) != 0
          );
 }
@@ -1203,7 +1189,7 @@ static bool mu_not_1(material_type m)
 {
   medium_struct *mm;
 
-  return (    is_medium_or_user(m, &mm)
+  return (    is_medium(m, &mm)
            && (     mm->mu_diag.x!=1
                 ||  mm->mu_diag.y!=1
                 ||  mm->mu_diag.z!=1
@@ -1339,7 +1325,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
   material_type mat;
   get_material_pt(mat, r);
   medium_struct *m;
-  if ( !is_medium_or_user(mat, &m) )
+  if ( !is_medium(mat, &m) )
    return;
 
   susceptibility_list slist =
@@ -1620,8 +1606,6 @@ material_type make_user_material(user_material_func user_func,
   md->which_subclass=material_data::MATERIAL_USER;
   md->user_func=user_func;
   md->user_data=user_data;
-  vector3 origin={0.0, 0.0, 0.0};
-  user_func( origin, user_data, &(md->medium));
   return md;
 }
 
