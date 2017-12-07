@@ -144,7 +144,9 @@ typedef struct eigenmode_data
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */
 /*******************************************************************/
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 static FILE *ESFieldFile=0; // "eigenmode-source log file"
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 complex<double> eigenmode_amplitude(const vec &p,
                                     eigenmode_data *edata) {
   
@@ -793,6 +795,83 @@ void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
 }
 
 /***************************************************************/
+/* write eigenmode fields to HDF5. assumes that the edata      */
+/* structure is storing H-field data on entry.                 */
+/***************************************************************/
+void output_hdf5_eigenmodes(fields *f, eigenmode_data *edata,
+                            const volume where,
+                            const char *HDF5FileName)
+{
+  if (!am_master()) return;
+
+  grid_volume gv=f->gv;
+  ivec is = gv.round_vec(where.get_min_corner());
+  ivec ie = gv.round_vec(where.get_max_corner());
+
+  int bufsz=1, rank = 0, dims[3];
+  LOOP_OVER_DIRECTIONS(gv.dim, d) 
+   {
+    if (rank >= 3) abort("too many dimensions in output_hdf5_eigenmodes");
+    int n = (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+    if (n > 1) 
+     { dims[rank++] = n;
+       bufsz *= n;
+     };
+   };
+printf("rank=%i, dims={%i,%i,%i}\n",rank,dims[0],dims[1],dims[2]);
+
+  realnum *real_part = new double[bufsz]; 
+  realnum *imag_part = new double[bufsz]; 
+  //h5file *file = f->open_h5file(HDF5FileName, h5file::WRITE);
+
+  const char *EH="EH";
+  const char *xyz="xyz";
+  for(int eh=1; eh>=0; eh--)
+   for(int nc=0; nc<3; nc++)
+    {
+      if (eh==0 && nc==0)
+       switch_eigenmode_data_to_electric_field(edata);
+
+printf(" eh, nc=%i,%i\n",eh,nc);
+      edata->component = nc;
+      int n=0;
+      FILE *f2=vfopen("%s_%c%c","w",HDF5FileName,EH[eh],xyz[nc]);
+      LOOP_OVER_IVECS(gv, is, ie, idx)
+       { IVEC_LOOP_LOC(gv, loc);
+         cdouble modeval=eigenmode_amplitude(loc, edata);
+         real_part[n]=real(modeval);
+         imag_part[n]=imag(modeval);
+         fprintf(f2,"%e %e %e %e %e\n",loc.x(),loc.y(),loc.z(),real(modeval),imag(modeval));
+         n++;
+       };
+      fclose(f2);
+/*
+      char dataname[100];
+      snprintf(dataname,100,"%c%c.r",EH[eh],xyz[nc]);
+printf(" creating 1...\n");
+      file->create_data(dataname, rank, dims);
+printf(" writing 1...\n");
+      file->write(dataname, rank, dims, real_part);
+printf(" howdage 1...\n");
+file->prevent_deadlock(); // hackery
+
+printf(" writing 2...\n");
+      snprintf(dataname,100,"%c%c.i",EH[eh],xyz[nc]);
+      file->create_data(dataname, rank, dims);
+file->prevent_deadlock(); // hackery
+      file->write(dataname, rank, dims, imag_part);
+file->prevent_deadlock(); // hackery
+*/
+    };
+
+  delete[] real_part;
+  delete[] imag_part;
+  //file->done_writing_chunks();
+  //delete file;
+
+}
+
+/***************************************************************/
 /* call get_eigenmode() to solve for the specified eigenmode,  */
 /* then call add_overlap_integral_contribution() multiple times*/
 /* to sum all contributions to the numerator and denominator   */
@@ -810,7 +889,7 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
   output_flux(this, flux, d, num_freq, file_base);
 
   master_printf("Getting eigenmode coefficient (%i,%i)\n",num_freq, band_num);
-#if 0
+
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                   -*/
   /*--------------------------------------------------------------*/
@@ -830,6 +909,11 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
                                     parity, resolution, 
                                     eigensolver_tol);
 
+char HDF5FileName[100];
+snprintf(HDF5FileName,100,"mode%i_nf%i",band_num,num_freq);
+output_hdf5_eigenmodes(this, edata, where, HDF5FileName);
+
+#if 0
   /*--------------------------------------------------------------*/
   /* step 2: sum contributions of all 4 surface-current cmpnents  */
   /*         to numerator and denominator of overlap integral     */
@@ -886,22 +970,22 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
    };
   return num/denom;
 #endif
-return 0.0;
+return 0;
 }
-
+  
 /***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
 /*                                                             */
 /* the array returned has length num_freqs x num_bands, with   */
-/* the coefficient for frequency #nf, band #nb stored in slot  */ 
+/* the coefficient for frequency #nf, band #nb stored in slot  */
 /* [ nb*num_freqs + nf ]                                       */
 /***************************************************************/
 std::vector<cdouble>
  fields::get_eigenmode_coefficients(dft_flux *flux, direction d,
                                     const volume &where,
                                     std::vector<int> bands,
-                                    kpoint_func k_func, 
+                                    kpoint_func k_func,
                                     void *k_func_data)
 { 
   int num_freqs = flux->Nfreq;
