@@ -106,7 +106,6 @@ class TestSimulation(unittest.TestCase):
     def test_mpi(self):
         self.assertGreater(mp.comm.Get_size(), 1)
 
-    @unittest.skipIf(mp.with_mpi(), "MPI complicates test cleanup when run on a single node")
     def test_use_output_directory_default(self):
         sim = self.init_simple_simulation()
         sim.use_output_directory()
@@ -114,9 +113,14 @@ class TestSimulation(unittest.TestCase):
 
         output_dir = 'simulation-out'
         self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
-        shutil.rmtree(output_dir)
 
-    @unittest.skipIf(mp.with_mpi(), "MPI complicates test cleanup when run on a single node")
+        if mp.with_mpi():
+            mp.comm.barrier()
+            if mp.am_master():
+                shutil.rmtree(output_dir)
+        else:
+            shutil.rmtree(output_dir)
+
     def test_use_output_directory_custom(self):
         sim = self.init_simple_simulation()
         sim.use_output_directory('custom_dir')
@@ -124,16 +128,27 @@ class TestSimulation(unittest.TestCase):
 
         output_dir = 'custom_dir'
         self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
-        shutil.rmtree(output_dir)
 
-    @unittest.skipIf(mp.with_mpi(), "MPI complicates test cleanup when run on a single node")
+        if mp.with_mpi():
+            mp.comm.barrier()
+            if mp.am_master():
+                shutil.rmtree(output_dir)
+        else:
+            shutil.rmtree(output_dir)
+
     def test_at_time(self):
         sim = self.init_simple_simulation()
         sim.run(mp.at_time(100, mp.output_efield_z), until=200)
 
         fname = 'simulation-ez-000100.00.h5'
         self.assertTrue(os.path.exists(fname))
-        os.remove(fname)
+
+        if mp.with_mpi():
+            mp.comm.barrier()
+            if mp.am_master():
+                os.remove(fname)
+        else:
+            os.remove(fname)
 
     def test_after_sources_and_time(self):
         sim = self.init_simple_simulation()
@@ -147,14 +162,19 @@ class TestSimulation(unittest.TestCase):
 
         self.assertTrue(done[0])
 
-    @unittest.skipIf(mp.with_mpi(), "MPI complicates test cleanup when run on a single node")
     def test_with_prefix(self):
         sim = self.init_simple_simulation()
         sim.run(mp.with_prefix('test_prefix-', mp.at_end(mp.output_efield_z)), until=200)
 
         fname = 'test_prefix-simulation-ez-000200.00.h5'
         self.assertTrue(os.path.exists(fname))
-        os.remove(fname)
+
+        if mp.with_mpi():
+            mp.comm.barrier()
+            if mp.am_master():
+                os.remove(fname)
+        else:
+            os.remove(fname)
 
 if __name__ == '__main__':
     unittest.main()
