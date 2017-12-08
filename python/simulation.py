@@ -753,6 +753,34 @@ class Simulation(object):
 
         return arr
 
+    def output_field_function(self, name, cs, func, real_only=False, h5file=None):
+        if self.fields is None:
+            raise RuntimeError("Fields must be initialized before calling output_field_function")
+
+        ov = self.output_volume if self.output_volume else self.fields.total_volume()
+        h5 = self.output_append_h5 if h5file is None else h5file
+        append = h5file is None and self.output_append_h5 is not None
+
+        self.fields.output_hdf5(name, [cs, func], ov, h5, append, self.output_single_precision,
+                                self._get_filename_prefix(), real_only)
+        if h5file is None:
+            self.output_h5_hook(self.fields.h5file_name(name, self._get_filename_prefix(), True))
+
+    def integrate_field_function(self, cs, func, where=None):
+        if where is None: where = self.fields.total_volume()
+        if self.is_cylindrical: where = where.to_cylindrical()
+        return self.fields.integrate([cs, func], where.swigobj)
+
+    def integrate2_field_function(self, fields2, cs1, cs2, func, *where_and_fields):
+        if where is None: where = self.fields.total_volume()
+        if self.is_cylindrical: where = where.to_cylindrical()
+        return self.fields.integrate(fields2, [cs1, cs2, func], where.swigobj)
+
+    def max_abs_field_function(self, cs, func, *where_and_fields):
+        if where is None: where = self.fields.total_volume()
+        if self.is_cylindrical: where = where.to_cylindrical()
+        return self.fields.max_abs([cs, func], where.swigobj)
+
     def change_k_point(self, k):
         self.k_point = k
 
