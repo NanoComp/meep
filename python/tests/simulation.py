@@ -114,11 +114,8 @@ class TestSimulation(unittest.TestCase):
         output_dir = 'simulation-out'
         self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
 
-        if mp.with_mpi():
-            mp.comm.barrier()
-            if mp.am_master():
-                shutil.rmtree(output_dir)
-        else:
+        mp.all_wait()
+        if mp.am_master():
             shutil.rmtree(output_dir)
 
     def test_use_output_directory_custom(self):
@@ -129,11 +126,8 @@ class TestSimulation(unittest.TestCase):
         output_dir = 'custom_dir'
         self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
 
-        if mp.with_mpi():
-            mp.comm.barrier()
-            if mp.am_master():
-                shutil.rmtree(output_dir)
-        else:
+        mp.all_wait()
+        if mp.am_master():
             shutil.rmtree(output_dir)
 
     def test_at_time(self):
@@ -143,11 +137,8 @@ class TestSimulation(unittest.TestCase):
         fname = 'simulation-ez-000100.00.h5'
         self.assertTrue(os.path.exists(fname))
 
-        if mp.with_mpi():
-            mp.comm.barrier()
-            if mp.am_master():
-                os.remove(fname)
-        else:
+        mp.all_wait()
+        if mp.am_master():
             os.remove(fname)
 
     def test_after_sources_and_time(self):
@@ -169,11 +160,8 @@ class TestSimulation(unittest.TestCase):
         fname = 'test_prefix-simulation-ez-000200.00.h5'
         self.assertTrue(os.path.exists(fname))
 
-        if mp.with_mpi():
-            mp.comm.barrier()
-            if mp.am_master():
-                os.remove(fname)
-        else:
+        mp.all_wait()
+        if mp.am_master():
             os.remove(fname)
 
 if __name__ == '__main__':
