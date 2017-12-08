@@ -654,6 +654,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         with_prefix
     )
     from .source import (
+        ALL_COMPONENTS,
         ContinuousSource,
         CustomSource,
         EigenModeSource,
@@ -674,15 +675,15 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
             comm = MPI.COMM_WORLD
             master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
 
-            if comm.Get_rank() != 0:
+            if not mp.am_master():
                 import os
                 import sys
                 saved_stdout = sys.stdout
                 sys.stdout = open(os.devnull, 'w')
-                
+
     vacuum = Medium(epsilon=1)
     air = Medium(epsilon=1)
-    metal = Medium(epsilon=-1e20)
-    perfect_electric_conductor = Medium(epsilon=-1e20)
-    perfect_magnetic_conductor = Medium(mu=-1e20)
+    metal = Medium(epsilon=-inf)
+    perfect_electric_conductor = Medium(epsilon=-inf)
+    perfect_magnetic_conductor = Medium(mu=-inf)
 %}
