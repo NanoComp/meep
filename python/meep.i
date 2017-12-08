@@ -537,8 +537,30 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         output_hpwr,
         output_dpwr,
         output_tot_pwr,
-        output_hfield_z,
+        output_bfield,
+        output_bfield_x,
+        output_bfield_y,
+        output_bfield_z,
+        output_bfield_r,
+        output_bfield_p,
+        output_dfield,
+        output_dfield_x,
+        output_dfield_y,
+        output_dfield_z,
+        output_dfield_r,
+        output_dfield_p,
+        output_efield,
+        output_efield_x,
+        output_efield_y,
         output_efield_z,
+        output_efield_r,
+        output_efield_p,
+        output_hfield,
+        output_hfield_x,
+        output_hfield_y,
+        output_hfield_z,
+        output_hfield_r,
+        output_hfield_p,
         output_png,
         output_poynting,
         output_poynting_x,
@@ -546,6 +568,12 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         output_poynting_z,
         output_poynting_r,
         output_poynting_p,
+        output_sfield,
+        output_sfield_x,
+        output_sfield_y,
+        output_sfield_z,
+        output_sfield_r,
+        output_sfield_p,
         py_v3_to_vec,
         stop_when_fields_decayed,
         synchronized_magnetic,
@@ -577,4 +605,10 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
                 import sys
                 saved_stdout = sys.stdout
                 sys.stdout = open(os.devnull, 'w')
+                
+    vacuum = Medium(epsilon=1)
+    air = Medium(epsilon=1)
+    metal = Medium(epsilon=-1e20)
+    perfect_electric_conductor = Medium(epsilon=-1e20)
+    perfect_magnetic_conductor = Medium(mu=-1e20)
 %}

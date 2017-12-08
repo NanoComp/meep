@@ -1128,15 +1128,103 @@ def output_tot_pwr(sim):
     sim.output_component(mp.EnergyDensity)
 
 
-# TODO(chogan): Write rest of convenience functions generated in meep.scm:define-output-field
+def output_hfield(sim):
+    sim.output_components('h', mp.Hx, mp.Hy, mp.Hz, mp.Hr, mp.Hp)
+
+
+def output_hfield_x(sim):
+    sim.output_component(mp.Hx)
+
+
+def output_hfield_y(sim):
+    sim.output_component(mp.Hy)
+
+
 def output_hfield_z(sim):
     sim.output_component(mp.Hz)
+
+
+def output_hfield_r(sim):
+    sim.output_component(mp.Hr)
+
+
+def output_hfield_p(sim):
+    sim.output_component(mp.Hp)
+
+
+def output_bfield(sim):
+    sim.output_components('b', mp.Bx, mp.By, mp.Bz, mp.Br, mp.Bp)
+
+
+def output_bfield_x(sim):
+    sim.output_component(mp.Bx)
+
+
+def output_bfield_y(sim):
+    sim.output_component(mp.By)
+
+
+def output_bfield_z(sim):
+    sim.output_component(mp.Bz)
+
+
+def output_bfield_r(sim):
+    sim.output_component(mp.Br)
+
+
+def output_bfield_p(sim):
+    sim.output_component(mp.Bp)
+
+
+def output_efield(sim):
+    sim.output_components('e', mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep)
+
+
+def output_efield_x(sim):
+    sim.output_component(mp.Ex)
+
+
+def output_efield_y(sim):
+    sim.output_component(mp.Ey)
 
 
 def output_efield_z(sim):
     sim.output_component(mp.Ez)
 
 
+def output_efield_r(sim):
+    sim.output_component(mp.Er)
+
+
+def output_efield_p(sim):
+    sim.output_component(mp.Ep)
+
+
+def output_dfield(sim):
+    sim.output_components('d', mp.Dx, mp.Dy, mp.Dz, mp.Dr, mp.Dp)
+
+
+def output_dfield_x(sim):
+    sim.output_component(mp.Dx)
+
+
+def output_dfield_y(sim):
+    sim.output_component(mp.Dy)
+
+
+def output_dfield_z(sim):
+    sim.output_component(mp.Dz)
+
+
+def output_dfield_r(sim):
+    sim.output_component(mp.Dr)
+
+
+def output_dfield_p(sim):
+    sim.output_component(mp.Dp)
+
+
+# MPB compatibility
 def output_poynting(sim):
     sim.output_components('s', mp.Sx, mp.Sy, mp.Sz, mp.Sr, mp.Sp)
 
@@ -1158,6 +1246,30 @@ def output_poynting_r(sim):
 
 
 def output_poynting_p(sim):
+    sim.output_component(mp.Sp)
+
+
+def output_sfield(sim):
+    sim.output_components('s', mp.Sx, mp.Sy, mp.Sz, mp.Sr, mp.Sp)
+
+
+def output_sfield_x(sim):
+    sim.output_component(mp.Sx)
+
+
+def output_sfield_y(sim):
+    sim.output_component(mp.Sy)
+
+
+def output_sfield_z(sim):
+    sim.output_component(mp.Sz)
+
+
+def output_sfield_r(sim):
+    sim.output_component(mp.Sr)
+
+
+def output_sfield_p(sim):
     sim.output_component(mp.Sp)
 
 
