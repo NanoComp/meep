@@ -825,20 +825,27 @@ class Simulation(object):
         if h5file is None:
             self.output_h5_hook(self.fields.h5file_name(name, self._get_filename_prefix(), True))
 
+    def _get_field_function_volume(self, where):
+        if where is None:
+            where = self.fields.total_volume()
+        else:
+            if self.is_cylindrical:
+                where = where.to_cylindrical().swigobj
+            else:
+                where = where.swigobj
+        return where
+
     def integrate_field_function(self, cs, func, where=None):
-        if where is None: where = self.fields.total_volume()
-        if self.is_cylindrical: where = where.to_cylindrical()
-        return self.fields.integrate([cs, func], where.swigobj)
+        where = self._get_field_function_volume(where)
+        return self.fields.integrate([cs, func], where)
 
-    def integrate2_field_function(self, fields2, cs1, cs2, func, *where_and_fields):
-        if where is None: where = self.fields.total_volume()
-        if self.is_cylindrical: where = where.to_cylindrical()
-        return self.fields.integrate(fields2, [cs1, cs2, func], where.swigobj)
+    def integrate2_field_function(self, fields2, cs1, cs2, func, where=None):
+        where = self._get_field_function_volume(where)
+        return self.fields.integrate(fields2, [cs1, cs2, func], where)
 
-    def max_abs_field_function(self, cs, func, *where_and_fields):
-        if where is None: where = self.fields.total_volume()
-        if self.is_cylindrical: where = where.to_cylindrical()
-        return self.fields.max_abs([cs, func], where.swigobj)
+    def max_abs_field_function(self, cs, func, where=None):
+        where = self._get_field_function_volume(where)
+        return self.fields.max_abs([cs, func], where)
 
     def change_k_point(self, k):
         self.k_point = k
