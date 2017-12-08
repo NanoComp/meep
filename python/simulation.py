@@ -841,7 +841,7 @@ class Simulation(object):
 
     def integrate2_field_function(self, fields2, cs1, cs2, func, where=None):
         where = self._get_field_function_volume(where)
-        return self.fields.integrate(fields2, [cs1, cs2, func], where)
+        return self.fields.integrate2(fields2, [cs1, cs2, func], where)
 
     def max_abs_field_function(self, cs, func, where=None):
         where = self._get_field_function_volume(where)

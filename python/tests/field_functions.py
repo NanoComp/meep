@@ -7,6 +7,10 @@ def f(r, ex, hz, eps):
     return (r.x * r.norm() + ex) - (eps * hz)
 
 
+def f2(r, ex1, hz1, eps1, ex2, hz2, eps2):
+    return (r.x * r.norm() + ex1) - (eps1 * hz1)
+
+
 class TestFieldFunctions(unittest.TestCase):
 
     cs = [mp.Ex, mp.Hz, mp.Dielectric]
@@ -43,6 +47,15 @@ class TestFieldFunctions(unittest.TestCase):
         self.assertAlmostEqual(res2, complex(0, 0))
 
         self.sim.output_field_function("weird-function", self.cs, f)
+
+    def test_integrate2_field_function(self):
+        self.sim.run(until=200)
+
+        res1 = self.sim.integrate2_field_function(self.sim.fields, self.cs, self.cs, f2)
+        res2 = self.sim.integrate2_field_function(self.sim.fields, self.cs, self.cs, f2, self.vol)
+
+        self.assertAlmostEqual(res1, complex(-6.938893903907228e-18, 0))
+        self.assertAlmostEqual(res2, 0j)
 
     def test_max_abs_field_function(self):
         self.sim.run(until=200)
