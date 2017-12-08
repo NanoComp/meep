@@ -766,33 +766,20 @@ class Simulation(object):
         if h5file is None:
             self.output_h5_hook(self.fields.h5file_name(name, self._get_filename_prefix(), True))
 
-    def get_where_and_fields(self, waf):
-        f = waf[1] if len(waf) == 2 else self.fields
-
-        if f is None:
-            raise RuntimeError("Fields must be initialized before calling get_where_and_fields")
-
-        where = f.total_volume() if not waf else waf[0]
-
-        if type(where) is Volume:
-            if self.is_cylindrical:
-                where = where.to_cylindrical().swigobj
-            else:
-                where = where.swigobj
-
-        return where, f
-
-    def integrate_field_function(self, cs, func, *where_and_fields):
-        waf = self.get_where_and_fields(where_and_fields)
-        return waf[1].integrate([cs, func], waf[0])
+    def integrate_field_function(self, cs, func, where=None):
+        if where is None: where = self.fields.total_volume()
+        if self.is_cylindrical: where = where.to_cylindrical()
+        return self.fields.integrate([cs, func], where.swigobj)
 
     def integrate2_field_function(self, fields2, cs1, cs2, func, *where_and_fields):
-        waf = self.get_where_and_fields(where_and_fields)
-        return waf[1].integrate(fields2, [cs1, cs2, func], waf[0])
+        if where is None: where = self.fields.total_volume()
+        if self.is_cylindrical: where = where.to_cylindrical()
+        return self.fields.integrate(fields2, [cs1, cs2, func], where.swigobj)
 
     def max_abs_field_function(self, cs, func, *where_and_fields):
-        waf = self.get_where_and_fields(where_and_fields)
-        return waf[1].max_abs([cs, func], waf[0])
+        if where is None: where = self.fields.total_volume()
+        if self.is_cylindrical: where = where.to_cylindrical()
+        return self.fields.max_abs([cs, func], where.swigobj)
 
     def change_k_point(self, k):
         self.k_point = k
