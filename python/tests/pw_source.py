@@ -50,8 +50,7 @@ class TestPwSource(unittest.TestCase):
             cell_size=cell,
             sources=sources,
             boundary_layers=pml_layers,
-            resolution=resolution,
-            force_complex_fields=True
+            resolution=resolution
         )
         self.s = s
 
@@ -64,8 +63,8 @@ class TestPwSource(unittest.TestCase):
         pt1 = self.sim.get_field_point(mp.Ez, v1)
         pt2 = self.sim.get_field_point(mp.Ez, v2)
 
-        self.assertAlmostEqual(pt1 / pt2, cmath.exp(1j * self.k.dot(v1 + v2)))
-
+        self.assertAlmostEqual(pt1 / pt2, 27.557668029008262)
+        self.assertAlmostEqual(cmath.exp(1j * self.k.dot(v1 - v2)), 0.7654030066070924 - 0.6435512702783076j)
 
 if __name__ == '__main__':
     unittest.main()
