@@ -52,7 +52,6 @@ PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
-static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
 static PyObject* vec2py(const meep::vec &v);
@@ -88,13 +87,13 @@ double py_pml_profile(double u, void *f) {
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(u);
 
-    if(!PyCallable_Check(func)) {
-        PyErr_SetString(PyExc_TypeError, "py_pml_profile: Object is not callable");
-        // TODO(chogan): Fix this error handling.
-        throw;
+    if (!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_TypeError, "py_pml_profile: Expected a callable");
+        PyErr_Print();
     }
 
     PyObject *pyret = PyObject_CallFunctionObjArgs(func, d, NULL);
+
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
     Py_XDECREF(d);
@@ -285,10 +284,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 // Typemap suite for GEOMETRIC_OBJECT
-
-%typecheck(SWIG_TYPECHECK_POINTER) GEOMETRIC_OBJECT {
-    $1 = PyObject_IsInstance($input, py_geometric_object());
-}
 
 %typemap(in) GEOMETRIC_OBJECT {
     if(!py_gobj_to_gobj($input, &$1)) {
