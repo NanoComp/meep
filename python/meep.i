@@ -690,7 +690,7 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
             comm = MPI.COMM_WORLD
             master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
 
-            if not mp.am_master():
+            if not am_master():
                 import os
                 import sys
                 saved_stdout = sys.stdout

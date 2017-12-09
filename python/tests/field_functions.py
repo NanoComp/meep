@@ -39,8 +39,8 @@ class TestFieldFunctions(unittest.TestCase):
         res1 = self.sim.integrate_field_function(self.cs, f)
         res2 = self.sim.integrate_field_function(self.cs, f, self.vol)
 
-        self.assertAlmostEqual(res1, complex(-6.938893903907228e-18, 0))
-        self.assertAlmostEqual(res2, complex(0, 0))
+        self.assertAlmostEqual(res1, complex(-6.938893903907228e-18, 0.0))
+        self.assertAlmostEqual(res2, 0.0j)
 
         self.sim.output_field_function("weird-function", self.cs, f)
 
