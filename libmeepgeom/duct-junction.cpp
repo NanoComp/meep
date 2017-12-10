@@ -23,6 +23,14 @@ namespace meep{
 void output_hdf5_flux(fields *f, dft_flux *flux, const volume where,
                       const char *HDF5FileName,
                       bool retain_integration_weight=false);
+
+cdouble get_mode_mode_overlap(fields *f, dft_flux *flux,
+                              const volume where, double omega,
+                              int band_num_1, int band_num_2,
+                              kpoint_func k_func, void *k_func_data,
+                              cdouble overlap_components[4]);
+
+extern cdouble global_flux_dot_mode_components[4];
 }
 
 /***************************************************************/
@@ -78,7 +86,7 @@ int main(int argc, char *argv[])
   bool use_symmetry = false;
   bool point_source = false;
   int  band_num     = 1;
-  double ratio      = 2.0;
+  double ratio      = 1.0;
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
@@ -167,27 +175,6 @@ int main(int argc, char *argv[])
   vec minB(-0.5*WXY, -0.5*WXY, +1.0*zcenter);
   vec maxB(+0.5*WXY, +0.5*WXY, +1.0*zcenter);
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-printf("before: min,max A={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
-        minA.x(), minA.y(), minA.z(),
-        maxA.x(), maxA.y(), maxA.z());
-printf("before: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
-        minB.x(), minB.y(), minB.z(),
-        maxB.x(), maxB.y(), maxB.z());
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  nudge_onto_dielectric_grid(gv, minA);
-  nudge_onto_dielectric_grid(gv, maxA);
-  nudge_onto_dielectric_grid(gv, minB);
-  nudge_onto_dielectric_grid(gv, maxB);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-printf("after: min,max A={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
-        minA.x(), minA.y(), minA.z(),
-        maxA.x(), maxA.y(), maxA.z());
-printf("after: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
-        minB.x(), minB.y(), minB.z(),
-        maxB.x(), maxB.y(), maxB.z());
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-
   volume fvA(minA, maxA), fvB(minB, maxB);
   if (point_source)
    { 
@@ -214,7 +201,7 @@ printf("after: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
   while( f.round_time() < (f.last_source_time() + 10.0) )
    f.step();
 
-  f.output_hdf5_flux(&flux, fvB, "flux");
+ // f.output_hdf5_flux(&flux, fvB, "flux");
              
   /***************************************************************/
   /* compute mode expansion coefficients *************************/
@@ -228,9 +215,44 @@ printf("after: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
   int num_bands = bands.size();
   int num_freqs = flux.Nfreq;
 
-  std::vector<cdouble> coeffs =
-   f.get_eigenmode_coefficients(&flux, Z, fvB, bands, k_guess, 0);
-   
+ // std::vector<cdouble> coeffs =
+ //  f.get_eigenmode_coefficients(&flux, Z, fvB, bands, k_guess, 0);
+
+  for(int nb=0; nb<num_bands; nb++)
+   { 
+     int band_num=bands[nb];
+     cdouble components1[4], components2[4];
+
+     cdouble flux_mode = f.get_eigenmode_coefficient(&flux, 0, Z, fvB, band_num, k_guess, 0);
+//global_flux_dot_mode_components[4];
+
+     printf("Howdage foryaf!\n");
+     cdouble mode_mode_components[4];
+     cdouble mode_mode=get_mode_mode_overlap(&f, &flux, fvB, fcen, 1, band_num,
+                                             k_guess, 0, mode_mode_components);
+
+     if (am_master())                          
+      { FILE *ff=fopen("duct-junction.log",nb==0 ? "w" : "a");
+        fprintf(ff,"mode %i: \n",band_num);
+        fprintf(ff," flux-mode {%+e,%+e}\n", real(global_flux_dot_mode_components[0]), imag(global_flux_dot_mode_components[0]));
+        fprintf(ff,"           {%+e,%+e}\n", real(global_flux_dot_mode_components[1]), imag(global_flux_dot_mode_components[1]));
+        fprintf(ff,"           {%+e,%+e}\n", real(global_flux_dot_mode_components[2]), imag(global_flux_dot_mode_components[2]));
+        fprintf(ff,"           {%+e,%+e}\n", real(global_flux_dot_mode_components[3]), imag(global_flux_dot_mode_components[3]));
+        fprintf(ff,"-----------------------------------------\n");
+        fprintf(ff,"           {%+e,%+e}\n", real(flux_mode), imag(flux_mode));
+        fprintf(ff,"\n");
+        fprintf(ff," mode-mode {%+e,%+e}\n", real(mode_mode_components[0]), imag(mode_mode_components[0]));
+        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[1]), imag(mode_mode_components[1]));
+        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[2]), imag(mode_mode_components[2]));
+        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[3]), imag(mode_mode_components[3]));
+        fprintf(ff,"-----------------------------------------\n");
+        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode), imag(mode_mode));
+        fprintf(ff,"\n");
+        fclose(ff);
+      };
+   };
+
+#if 0   
   if (am_master())
    {
      FILE *ff=fopen("duct-junction.out","a");
@@ -252,7 +274,8 @@ printf("after: min,max B={%+f, %+f, %+f} {%+f, %+f, %+f}\n",
        };
      fclose(ff);
    };
-  
+#endif
+
   return 0;
 
 }
