@@ -565,10 +565,6 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
 
-
-  char *s=getenv("MEEP_PLOT_EIGENMODE_SOURCE_FIELDS");
-  bool PlotESFields = (s && s[0]=='1');
-
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
   /*--------------------------------------------------------------*/
@@ -793,6 +789,27 @@ void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
    }; // for (eh=0..1) for(dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
 
 }
+=======
+        if (     (d==X && E->c==Ez)
+             ||  (d==Y && E->c==Ex)
+             ||  (d==R && E->c==Ez)
+             ||  (d==P && E->c==Er)
+             ||  (d==Z && f->gv.dim == Dcyl && E->c==Ep)
+             ||  (d==Z && f->gv.dim != Dcyl && E->c==Ey)
+           ) E_flux*= -1.0;
+   
+        fprintf(E_file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(E_flux), imag(E_flux));
+        fprintf(H_file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(H_flux), imag(H_flux));
+
+      }; // LOOP_OVER_IVECS
+
+     fclose(E_file);
+     fclose(H_file);
+
+   }; // for ( dft_chunk *E=Echunks, *H=Hchunks ...
+
+}
+#endif
 
 /***************************************************************/
 /* write eigenmode fields to HDF5. assumes that the edata      */
@@ -808,17 +825,13 @@ void output_hdf5_eigenmodes(fields *f, eigenmode_data *edata,
   ivec is = gv.round_vec(where.get_min_corner());
   ivec ie = gv.round_vec(where.get_max_corner());
 
-  int bufsz=1, rank = 0, dims[3];
+  int bufsz=1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) 
    {
-    if (rank >= 3) abort("too many dimensions in output_hdf5_eigenmodes");
     int n = (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
     if (n > 1) 
-     { dims[rank++] = n;
-       bufsz *= n;
-     };
+     bufsz *= n;
    };
-printf("rank=%i, dims={%i,%i,%i}\n",rank,dims[0],dims[1],dims[2]);
 
   realnum *real_part = new double[bufsz]; 
   realnum *imag_part = new double[bufsz]; 
@@ -832,7 +845,6 @@ printf("rank=%i, dims={%i,%i,%i}\n",rank,dims[0],dims[1],dims[2]);
       if (eh==0 && nc==0)
        switch_eigenmode_data_to_electric_field(edata);
 
-printf(" eh, nc=%i,%i\n",eh,nc);
       edata->component = nc;
       int n=0;
       FILE *f2=vfopen("%s_%c%c","w",HDF5FileName,EH[eh],xyz[nc]);
@@ -872,11 +884,214 @@ file->prevent_deadlock(); // hackery
 }
 
 /***************************************************************/
-/* call get_eigenmode() to solve for the specified eigenmode,  */
-/* then call add_overlap_integral_contribution() multiple times*/
-/* to sum all contributions to the numerator and denominator   */
-/* of the eigenmode expansion coefficients.                    */
+/* add the contribution of a single DFT chunk to the overlap   */
+/* integral between the fields on a flux region and an         */
+/* eigenmode field                                             */
 /***************************************************************/
+
+// hack for debugging purposes only
+static eigenmode_data *aux_edata=0, *aux_edata_E=0, *aux_edata_H=0;
+
+cdouble dft_chunk::get_mode_chunk_overlap(void *vedata, int nf)
+{
+   eigenmode_data *edata=(eigenmode_data *)vedata;
+
+   // loop over all grid points in our piece of the volume
+   vec rshift(shift * (0.5*fc->gv.inva));
+   int chunk_idx = 0;
+   cdouble Integral=0.0;
+   LOOP_OVER_IVECS(fc->gv, is, ie, idx)
+    {
+      IVEC_LOOP_LOC(fc->gv, loc);
+      loc = S.transform(loc, sn) + rshift;
+      double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+   
+      cdouble fluxval = dft[ Nomega*(chunk_idx++) + nf];
+      if (include_dV_and_interp_weights)
+       fluxval /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
+
+      if (aux_edata)
+       fluxval = eigenmode_amplitude(loc, aux_edata);
+
+      cdouble modeval = eigenmode_amplitude(loc, edata);
+
+      Integral += w * conj(fluxval) * modeval;
+
+    }; // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
+
+  return Integral;
+}
+
+/***************************************************************/
+/* compute the overlap integral between the fields in the given*/   
+/* flux object (for frequency #nf) and the fields of the given */
+/* eigenmode source. Assumes that edata is currently storing   */
+/* H-field (i.e. not E-field) data on entry.                   */
+/* if flux_dot_mode_components is non-null, it should point to */
+/* a cdouble array of length 4, which is filled in on return   */
+/***************************************************************/
+cdouble global_flux_dot_mode_components[4];
+cdouble fields::get_mode_flux_overlap(dft_flux *flux, int nf,
+                                      const volume where,
+                                      void *vedata,
+                                      cdouble *flux_dot_mode_components)
+{
+  eigenmode_data *edata=(eigenmode_data *)vedata;
+
+  /***************************************************************/
+  /* first pass through DFT chunks to get the full extent of our */
+  /* our piece of the flux region                                */
+  /***************************************************************/
+#if 0
+  int num_chunks=0;
+  ivec min_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
+  ivec max_corner = gv.round_vec(where.get_min_corner()) - one_ivec(gv.dim);
+  for (dft_chunk *E=flux->E; E; E=E->next_in_dft)
+   {
+     ivec isS = E->S.transform(E->is, E->sn) + E->shift;
+     ivec ieS = E->S.transform(E->ie, E->sn) + E->shift;
+     min_corner = min(min_corner, min(isS, ieS));
+     max_corner = max(max_corner, max(isS, ieS));
+   };
+  max_corner = max_to_all(max_corner);
+  min_corner = -max_to_all(-min_corner); // i.e., min_to_all
+  num_chunks = sum_to_all(num_chunks);
+
+  int rank = 0, dims[3];
+  direction ds[3];
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    if (rank >= 3) abort("too many dimensions in output_hdf5_flux");
+    int n = (max_corner.in_direction(d)
+	     - min_corner.in_direction(d)) / 2 + 1;
+    if (n > 1) {
+      ds[rank] = d;
+      dims[rank++] = n;
+    }
+  };
+#endif
+
+  /***************************************************************/
+  /* figure out which components of the E and H fields are       */
+  /* present in the flux object                                  */
+  /***************************************************************/
+  component cE[2] = {Ex,Ey}, cH[2] = {Hy,Hx};
+  switch (normal_direction(where))
+   { case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
+     case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
+     case R: cE[0] = Ep, cE[1] = Ez, cH[0] = Hz, cH[1] = Hp; break;
+     case P: cE[0] = Ez, cE[1] = Er, cH[0] = Hr, cH[1] = Hz; break;
+     case Z:
+      if (gv.dim == Dcyl)
+	cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
+      else
+	cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
+     break;
+     default: abort("invalid flux component!");
+   };
+
+  /***************************************************************/
+  /* loop over both components (ncFlux=0,1) of both the E and H  */
+  /* fields (ehFlux=0,1) of the eigenmode. For each component,   */
+  /* identify the "conjugate" component of the eigenmode field   */
+  /* (for example, Ex is conjugate to Hy). Then compute the      */
+  /* integral of the product of the flux field component and its */
+  /* conjugate mode field component.                             */
+  /***************************************************************/
+  cdouble flux_dot_mode[4]={0.0, 0.0, 0.0, 0.0}; // { <ExFlux, HyMode>, <EyFlux, HxMode>, etc.}
+  master_printf(" Getting <flux,mode> innerproduct...\n");
+  for(int ehFlux=0; ehFlux<2; ehFlux++)
+   for(int ncFlux=0; ncFlux<2; ncFlux++)
+    { 
+      master_printf(" component (%i,%i)...\n",ehFlux,ncFlux);
+      component cFlux = (ehFlux ? cH[ncFlux] : cE[ncFlux]);
+
+      if(ehFlux==1 && ncFlux==0)
+       switch_eigenmode_data_to_electric_field(edata);
+
+      int ehMode = 1-ehFlux;
+      int ncMode = 1-ncFlux;
+      component cMode = (ehMode ? cH[ncMode] : cE[ncMode]);
+      edata->component = cMode;
+
+      if (aux_edata_E && aux_edata_H)
+       { aux_edata = (ehFlux ? aux_edata_H : aux_edata_E);
+         aux_edata->component = cFlux;
+       };
+
+      for (dft_chunk *EH = (ehFlux ? flux->H : flux->E); EH; EH=EH->next_in_dft)
+       if (EH->c == cFlux)
+        flux_dot_mode[2*ehFlux + ncFlux]
+         += EH->get_mode_chunk_overlap((void *)edata, nf);
+
+      master_printf(" component (%i,%i)={%+e,%+e}\n",ehFlux,ncFlux,real(flux_dot_mode[2*ehFlux+ncFlux]),imag(flux_dot_mode[2*ehFlux+ncFlux]));
+    };
+
+  if (flux_dot_mode_components)
+   memcpy(flux_dot_mode_components, flux_dot_mode, 4*sizeof(cdouble));
+
+  double sign = ((aux_edata_E && aux_edata_H) ? -1.0 : 1.0);
+  return (        flux_dot_mode_components[0] // <Ex, Hy>
+           + sign*flux_dot_mode_components[1] // <Ey, Hx>
+           +      flux_dot_mode_components[2] // <Hy, Ex>
+           -      flux_dot_mode_components[2] // <Hx, Ey>
+         );
+}
+
+/***************************************************************/
+/* compute the overlap integral between two eigenmodes.        */
+/***************************************************************/
+cdouble get_mode_mode_overlap(fields *f, dft_flux *flux,
+                              const volume where, double omega,
+                              int band_num_1, int band_num_2,
+                              kpoint_func k_func, void *k_func_data,
+                              cdouble overlap_components[4])
+{
+  /*--------------------------------------------------------------*/
+  /* call MPB to compute the eigenmodes                          -*/
+  /*--------------------------------------------------------------*/
+  bool match_frequency=true;
+  int parity=0;
+  double resolution=f->a;
+  double eigensolver_tol=1.0e-7;
+  vec kpoint1(0.0, 0.0, 1.0), kpoint2(0.0, 0.0, 1.0);
+  if (k_func)
+   { kpoint1 = k_func(k_func_data, omega, band_num_1);
+     kpoint2 = k_func(k_func_data, omega, band_num_2);
+   };
+  eigenmode_data *edata1
+   =(eigenmode_data *)f->get_eigenmode(omega, f->normal_direction(where),
+                                    where, where, band_num_1,
+                                    kpoint1, match_frequency,
+                                    parity, resolution,
+                                    eigensolver_tol);
+
+  // solve for second mode
+  eigenmode_data *edata2_H
+   =(eigenmode_data *)f->get_eigenmode(omega, f->normal_direction(where),
+                                    where, where, band_num_2,
+                                    kpoint2, match_frequency,
+                                    parity, resolution,
+                                    eigensolver_tol);
+
+  kpoint2.set_direction(X,edata2_H->mdata->current_k[0]);
+  kpoint2.set_direction(Y,edata2_H->mdata->current_k[1]);
+  kpoint2.set_direction(Z,edata2_H->mdata->current_k[2]);
+  eigenmode_data *edata2_E
+   =(eigenmode_data *)f->get_eigenmode(omega, f->normal_direction(where),
+                                       where, where, band_num_2,
+                                       kpoint2, match_frequency,
+                                       parity, resolution,
+                                       eigensolver_tol);
+  switch_eigenmode_data_to_electric_field(edata2_E); 
+
+  aux_edata_E = edata2_E;
+  aux_edata_H = edata2_H;
+  cdouble overlap = f->get_mode_flux_overlap(flux, 0, where, (void *)edata1, overlap_components);
+  aux_edata_E = 0;
+  aux_edata_H = 0;
+  return overlap;
+}
+
 cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
                                           int num_freq,
                                           direction d,
@@ -884,9 +1099,8 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
                                           int band_num,
                                           kpoint_func k_func, void *k_func_data)
 {
-  char file_base[100];
-  snprintf(file_base,100,"np%i_nb%i_nf%i",my_rank(),band_num,num_freq);
-  output_flux(this, flux, d, num_freq, file_base);
+  //char file_base[100];
+  //snprintf(file_base,100,"np%i_nb%i_nf%i",my_rank(),band_num,num_freq);
 
   master_printf("Getting eigenmode coefficient (%i,%i)\n",num_freq, band_num);
 
@@ -895,23 +1109,28 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
   /*--------------------------------------------------------------*/
   double omega = flux->freq_min + num_freq*flux->dfreq;
   // call user's kpoint function if present
-  vec kpoint(0.0, 0.0, 0.5); // TODO better default? 
-  if (k_func) 
+  vec kpoint(0.0, 0.0, 0.5); // TODO better default?
+  if (k_func)
    kpoint=k_func(k_func_data, omega, band_num);
 
   bool match_frequency=true;
-  int parity=0; 
+  int parity=0;
   double resolution=a;
   double eigensolver_tol=1.0e-7;
   eigenmode_data *edata
    =(eigenmode_data *)get_eigenmode(omega, d, where, where,
                                     band_num, kpoint, match_frequency,
-                                    parity, resolution, 
+                                    parity, resolution,
                                     eigensolver_tol);
+   printf("Got it! k=\n);
+ 
+  cdouble overlap=get_mode_flux_overlap(flux, num_freq, where,
+                                        &edata, global_flux_dot_mode_components);
+  return overlap;
 
-char HDF5FileName[100];
-snprintf(HDF5FileName,100,"mode%i_nf%i",band_num,num_freq);
-output_hdf5_eigenmodes(this, edata, where, HDF5FileName);
+//char HDF5FileName[100];
+//snprintf(HDF5FileName,100,"mode%i_nf%i",band_num,num_freq);
+//output_hdf5_eigenmodes(this, edata, where, HDF5FileName);
 
 #if 0
   /*--------------------------------------------------------------*/
@@ -971,121 +1190,6 @@ output_hdf5_eigenmodes(this, edata, where, HDF5FileName);
   return num/denom;
 #endif
 return 0;
-}
-  
-/***************************************************************/
-/* get eigenmode coefficients for all frequencies in flux      */
-/* and all band indices in the caller-populated bands array.   */
-/*                                                             */
-/* the array returned has length num_freqs x num_bands, with   */
-/* the coefficient for frequency #nf, band #nb stored in slot  */
-/* [ nb*num_freqs + nf ]                                       */
-/***************************************************************/
-std::vector<cdouble>
- fields::get_eigenmode_coefficients(dft_flux *flux, direction d,
-                                    const volume &where,
-                                    std::vector<int> bands,
-                                    kpoint_func k_func,
-                                    void *k_func_data)
-{ 
-  int num_freqs = flux->Nfreq;
-  int num_bands = bands.size();
-  std::vector<cdouble> coeffs( num_freqs * num_bands );
-
-  for(int nb=0; nb<num_bands; nb++)
-   for(int nf=0; nf<num_freqs; nf++)
-    coeffs[ nb*num_freqs + nf ] 
-     = get_eigenmode_coefficient(flux, nf, d, where, bands[nb],
-                                 k_func, k_func_data);
-
-  return coeffs;
-}
-
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-}
-
-cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
-                                          int num_freq,
-                                          direction d,
-                                          const volume &where,
-                                          int band_num,
-                                          kpoint_func k_func, void *k_func_data)
-{
-  /*--------------------------------------------------------------*/
-  /* step 1: call MPB to compute the eigenmode                   -*/
-  /*--------------------------------------------------------------*/
-  double omega = flux->freq_min + num_freq*flux->dfreq;
-  // call user's kpoint function if present
-  vec kpoint(0.0, 0.0, 0.5); // TODO better default? 
-  if (k_func) 
-   kpoint=k_func(k_func_data, omega, band_num);
-
-  bool match_frequency=true;
-  int parity=0; 
-  double resolution=a;
-  double eigensolver_tol=1.0e-7;
-  eigenmode_data *edata
-   =(eigenmode_data *)get_eigenmode(omega, d, where, where,
-                                    band_num, kpoint, match_frequency,
-                                    parity, resolution, 
-                                    eigensolver_tol);
-
-  /*--------------------------------------------------------------*/
-  /* step 2: sum contributions of all 4 surface-current cmpnents  */
-  /*         to numerator and denominator of overlap integral     */
-  /* num   = <caller's field | eigenmode>                         */
-  /* denom = <eigenmode      | eigenmode>                         */
-  /*--------------------------------------------------------------*/
-
-  // step 2a: electric-current components 
-  //            = nHat \times magnetic-field components
-  cdouble numdenom[2]={0.0,0.0};
-
-  FOR_ELECTRIC_COMPONENTS(c)
-   {  
-     if ( !(gv.has_field(c)) ) continue;
-     // TODO restore parity check
-
-     if ( (d+1)%3 == component_direction(c)%3 )
-      { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
-      }
-     else if ( (d+2)%3 == component_direction(c)%3 )
-      { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
-      }
-   };
-
-  // step 2b: post-processing step to replace H-field components
-  //          with E-field components in the internal data buffer
-  //          inside mdata; cf. Part 3 of get_eigenmode() above
-  switch_eigenmode_data_to_electric_field(edata);
-
-  // step 2c: magnetic-current components 
-  //            = -nHat \times electric-field components
-  FOR_MAGNETIC_COMPONENTS(c)
-   { 
-     if ( !(gv.has_field(c)) ) continue;
-     // TODO restore parity check
-
-     if ( (d+1)%3 == component_direction(c)%3 )
-      { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, +1.0, numdenom);
-      }
-     else if ( (d+2)%3 == component_direction(c)%3 )
-      { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, num_freq, c, edata, -1.0, numdenom);
-      }
-   };
-
-  destroy_eigenmode_data(edata);
-
-  cdouble num=numdenom[0], denom=numdenom[1];
-  if( denom==0.0 )
-   { master_printf("**warning: denominator in get_eigenmode_coefficient**");
-    return 0.0;
-   };
-  return num/denom;
 }
 
 /***************************************************************/
