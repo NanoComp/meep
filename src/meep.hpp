@@ -838,6 +838,7 @@ public:
   void write_hdf5(h5file *file, int nf, int reim, double sign,
                   int rank, direction *ds, ivec min_corner,
                   realnum *buffer, bool retain_integration_weight);
+  std::complex<realnum> get_mode_chunk_overlap(void *vedata, int nf);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -1393,6 +1394,8 @@ class fields {
 			    double eig_resolution, double eigensolver_tol,
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
+
+  std::complex<realnum> get_mode_flux_overlap(dft_flux *flux, int nf, const volume where, void *vedata, std::complex<realnum> *flux_dot_mode_components=0);
 
   std::complex<double> 
    get_eigenmode_coefficient(dft_flux *flux, int num_freq,
