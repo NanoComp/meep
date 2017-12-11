@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import meep as mp
 import meep.geom as gm
 
 
@@ -55,8 +56,26 @@ class TestSphere(unittest.TestCase):
         s = gm.Sphere(center=zeros(), radius=2.0)
         point = ones()
         self.assertTrue(point in s)
+        self.assertTrue(mp.point_in_periodic_objectp(mp.Vector3(), s))
         self.assertIn(point, s)
         self.assertFalse(gm.Vector3(10, 10, 10) in s)
+
+    def test_shift(self):
+        s = gm.Sphere(center=zeros(), radius=2.0)
+        self.assertEqual(s.center, gm.Vector3())
+
+        s.shift(gm.Vector3(10))
+        self.assertEqual(s.center, gm.Vector3(10, 0, 0))
+
+        s = gm.Sphere(center=gm.Vector3(10, 10), radius=2.0)
+        s.shift(gm.Vector3(-10, -10))
+        self.assertEqual(s.center, gm.Vector3())
+
+    def test_info(self):
+        # Sanity test to ensure that display_geometric_object_info is callable
+        s = gm.Sphere(2)
+        s.info()
+        s.info(2)
 
 
 class TestCylinder(unittest.TestCase):

@@ -86,6 +86,7 @@ void add_absorbing_layer(absorber_list alist,
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
+void set_dimensions(int dims);
 void set_materials_from_geometry(meep::structure *s,
                                  geometric_object_list g,
                                  bool use_anisotropic_averaging=true,

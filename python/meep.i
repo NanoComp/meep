@@ -34,6 +34,9 @@ using namespace meep;
 using namespace meep_geom;
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
+extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
+void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
+
 %}
 
 %include "numpy.i"
@@ -689,6 +692,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %include "meepgeom.hpp"
 
 extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
+extern boolean point_in_periodic_objectp(vector3 p, GEOMETRIC_OBJECT o);
+void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
 
 %ignore eps_func;
 %ignore inveps_func;

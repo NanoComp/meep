@@ -177,6 +177,12 @@ class GeometricObject(object):
     def __contains__(self, point):
         return mp.point_in_objectp(point, self)
 
+    def shift(self, vec):
+        self.center += vec
+
+    def info(self, indent_by=0):
+        mp.display_geometric_object_info(indent_by, self)
+
 
 class Sphere(GeometricObject):
 
