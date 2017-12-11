@@ -529,6 +529,78 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     Py_XDECREF(tmp_data$argnum.func);
 }
 
+// integrate2
+%typecheck(SWIG_TYPECHECK_POINTER) (int num_fields1, const meep::component *components1, int num_fields2,
+                                    const meep::component *components2, meep::field_function integrand,
+                                    void *integrand_data_) {
+    $1 = PySequence_Check($input) &&
+         PySequence_Check(PyList_GetItem($input, 0)) &&
+         PySequence_Check(PyList_GetItem($input, 1)) &&
+         PyCallable_Check(PyList_GetItem($input, 2));
+}
+
+%typemap(in) (int num_fields1, const meep::component *components1, int num_fields2,
+              const meep::component *components2, meep::field_function integrand,
+              void *integrand_data_) (py_field_func_data data) {
+
+    if (!PySequence_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs1 = PyList_GetItem($input, 0);
+
+    if (!PySequence_Check(cs1)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 1st item in list to be a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs2 = PyList_GetItem($input, 1);
+
+    if (!PySequence_Check(cs2)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 2nd item in list to be a sequence");
+    }
+
+    PyObject *func = PyList_GetItem($input, 2);
+
+    if (!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 3rd item in list to be a function");
+        SWIG_fail;
+    }
+
+    $1 = PyList_Size(cs1);
+    $3 = PyList_Size(cs2);
+
+    $2 = new meep::component[$1];
+    $4 = new meep::component[$3];
+
+    for (Py_ssize_t i = 0; i < $1; i++) {
+        $2[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs1, i));
+    }
+
+    for (Py_ssize_t i = 0; i < $3; i++) {
+        $4[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs2, i));
+    }
+
+    $5 = py_field_func_wrap;
+
+    data.num_components = $1 + $3;
+    data.func = func;
+    Py_INCREF(func);
+    $6 = &data;
+}
+
+%typemap(freearg) (int num_fields1, const meep::component *components1, int num_fields2,
+                   const meep::component *components2, meep::field_function integrand, void *integrand_data_) {
+    if ($2) {
+        delete[] $2;
+    }
+    if ($4) {
+        delete[] $4;
+    }
+    Py_XDECREF(data$argnum.func);
+}
+
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
 // Rename python builtins

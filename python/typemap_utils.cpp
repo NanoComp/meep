@@ -150,7 +150,7 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     PyTuple_SetItem(py_args, 0, pyv);
 
     for (Py_ssize_t i = 1; i < len + 1; i++) {
-        PyObject *cmplx = PyComplex_FromDoubles(fields[i].real(), fields[i].imag());
+        PyObject *cmplx = PyComplex_FromDoubles(fields[i - 1].real(), fields[i - 1].imag());
         PyTuple_SetItem(py_args, i, cmplx);
     }
 
