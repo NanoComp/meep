@@ -251,6 +251,7 @@ class Simulation(object):
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
                  force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False,
                  extra_materials=[]):
+
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
@@ -526,7 +527,7 @@ class Simulation(object):
 
         return [complex(m.freq, m.decay) for m in h.modes]
 
-    def _run_k_points(self, t, k_points):
+    def run_k_points(self, t, k_points):
         k_index = 0
         all_freqs = []
 
@@ -888,15 +889,12 @@ class Simulation(object):
     def run(self, *step_funcs, **kwargs):
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
-        k_points = kwargs.pop('k_points', None)
 
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
         if until_after_sources is not None:
             self._run_sources_until(until_after_sources, step_funcs)
-        elif k_points is not None:
-            return self._run_k_points(k_points, *step_funcs)
         elif until is not None:
             self._run_until(until, step_funcs)
         else:

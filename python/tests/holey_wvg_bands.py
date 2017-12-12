@@ -30,7 +30,7 @@ class TestHoleyWvgBands(unittest.TestCase):
         )
 
     def test_run_k_points(self):
-        all_freqs = self.sim.run(mp.interpolate(19, [mp.Vector3(), mp.Vector3(0.5)]), k_points=5)
+        all_freqs = self.sim.run_k_points(5, mp.interpolate(19, [mp.Vector3(), mp.Vector3(0.5)]))
 
         expected = [
             (0.1942497850393511, 0.001381460274205755),

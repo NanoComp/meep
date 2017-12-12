@@ -35,11 +35,11 @@ env:
 ##################################################
 before_script:
   - git clone https://github.com/stevengj/libctl libctl-src
-  - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
   - git clone https://github.com/stevengj/harminv
-  - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make && make install)
+  - (cd harminv && git checkout c221b2bcbaaa761f683aa5e2c6fa7efbbecdca1f && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
   - git clone https://github.com/stevengj/mpb
-  - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl && make && make install)
+  - (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=$HOME/local/share/libctl && make -j 2 && make install)
 
 ##################################################
 # build matrix:
@@ -47,13 +47,13 @@ before_script:
 matrix:
   include:
   - python: "2.7"
-    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS1}"
+    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS1}" MKCHECKFLAGS="-j 2"
   - python: "2.7"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}"
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS1}" MKCHECKFLAGS=""
   - python: "3.4"
-    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}"
+    env: MPICONF="--without-mpi" CORETESTS="${CORETESTS2}" MKCHECKFLAGS="-j 2"
   - python: "3.4"
-    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}"
+    env: MPICONF="--with-mpi"    CORETESTS="${CORETESTS2}" MKCHECKFLAGS=""
 
 ##################################################
 # build/test instructions
@@ -64,18 +64,18 @@ script:
   - mkdir -p build && pushd build
 #
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python ${MPICONF}
-  - make
+  - make -j 2
 #
   - pushd tests
-  - make check TESTS=${CORETESTS} VERBOSE=1 || (cat test-suite.log && exit 1)
+  - make ${MKCHECKFLAGS} check TESTS=${CORETESTS} VERBOSE=1 || (cat test-suite.log && exit 1)
   - popd
 #
   - pushd libmeepgeom
-  - make check || (cat test-suite.log && exit 1)
+  - make ${MKCHECKFLAGS} check || (cat test-suite.log && exit 1)
   - popd
 #
   - pushd python
-  - make check || (cat test-suite.log && exit 1)
+  - make ${MKCHECKFLAGS} check || (cat test-suite.log && exit 1)
   - popd
 #
   - popd

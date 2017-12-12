@@ -77,7 +77,7 @@ meep.py: meep-python.cpp
 __init__.py: meep.py
 	cp $< $@
 
-pymeep: .libs/_meep.so __init__.py
+pymeep: _meep.la __init__.py
 	test -d meep || mkdir meep
 	cp $(PY_PKG_FILES) meep
 
