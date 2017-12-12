@@ -349,11 +349,17 @@ class Simulation(object):
 
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
 
+        if type(self.boundary_layers[0]) is Absorber:
+            absorbers = self.boundary_layers
+        else:
+            absorbers = None
+
         self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
-                                       self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material)
+                                       self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
+                                       absorbers)
 
     def _init_fields(self):
         is_cylindrical = self.dimensions == CYLINDRICAL
