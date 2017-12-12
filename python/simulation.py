@@ -349,7 +349,7 @@ class Simulation(object):
 
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
 
-        if type(self.boundary_layers[0]) is Absorber:
+        if self.boundary_layers and type(self.boundary_layers[0]) is Absorber:
             absorbers = self.boundary_layers
         else:
             absorbers = None
