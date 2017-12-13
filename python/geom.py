@@ -1,6 +1,8 @@
 from __future__ import division
 
 import math
+from copy import deepcopy
+
 import numpy as np
 import meep as mp
 
@@ -253,3 +255,14 @@ class Ellipsoid(Block):
 
     def __init__(self, **kwargs):
         super(Ellipsoid, self).__init__(**kwargs)
+
+
+def geometric_object_duplicates(shift_vector, min, max, *objs):
+    dups = []
+    for obj in objs:
+        for i in range(min, max + 1):
+            o = deepcopy(obj)
+            o.shift(shift_vector.scale(i))
+            dups.append(o)
+
+    return dups

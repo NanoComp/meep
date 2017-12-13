@@ -12,6 +12,64 @@ def ones():
     return gm.Vector3(1, 1, 1)
 
 
+class TestGeom(unittest.TestCase):
+
+    def test_geometric_object_duplicates_x(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        res = mp.geometric_object_duplicates(mp.Vector3(x=1), 1, 5, s)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(x=1)),
+            mp.Sphere(rad, center=mp.Vector3(x=2)),
+            mp.Sphere(rad, center=mp.Vector3(x=3)),
+            mp.Sphere(rad, center=mp.Vector3(x=4)),
+            mp.Sphere(rad, center=mp.Vector3(x=5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
+
+    def test_geometric_object_duplicates_xyz(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Sphere(rad, center=mp.Vector3(5, 5, 5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
+
+    def test_geometric_object_duplicates_multiple_objs(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        c = mp.Cylinder(rad)
+
+        res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s, c)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Sphere(rad, center=mp.Vector3(5, 5, 5)),
+            mp.Cylinder(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Cylinder(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Cylinder(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Cylinder(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Cylinder(rad, center=mp.Vector3(5, 5, 5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
+
+
 class TestSphere(unittest.TestCase):
 
     def test_kwargs_passed_to_parent(self):
