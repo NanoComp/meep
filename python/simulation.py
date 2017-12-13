@@ -249,7 +249,8 @@ class Simulation(object):
 
     def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
-                 force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False):
+                 force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False,
+                 extra_materials=[]):
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
@@ -262,7 +263,7 @@ class Simulation(object):
         self.subpixel_tol = 1e-4
         self.subpixel_maxeval = 100000
         self.ensure_periodicity = False
-        self.extra_materials = []
+        self.extra_materials = extra_materials
         self.default_material = default_material
         self.epsion_input_file = ''
         self.num_chunks = 0
@@ -359,7 +360,7 @@ class Simulation(object):
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
                                        self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
-                                       absorbers)
+                                       absorbers, self.extra_materials)
 
     def _init_fields(self):
         is_cylindrical = self.dimensions == CYLINDRICAL

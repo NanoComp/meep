@@ -639,6 +639,42 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+// Typemap suite for material_type_list
+
+%typecheck(SWIG_TYPECHECK_POINTER) material_type_list {
+    $1 = PySequence_Check($input);
+}
+
+%typemap(in) material_type_list {
+    Py_ssize_t len = PyList_Size($input);
+
+    if (len == 0) {
+        $1 = material_type_list();
+    } else {
+        material_type_list mtl;
+        mtl.num_items = len;
+        mtl.items = new material_type[len];
+        for (Py_ssize_t i = 0; i < len; i++) {
+            PyObject *py_material = PyList_GetItem($input, i);
+            if (!pymaterial_to_material(py_material, &mtl.items[i])) {
+                SWIG_fail;
+            }
+        }
+    }
+}
+
+%typemap(freearg) material_type_list {
+    if ($1.num_items != 0) {
+        for (int i = 0; i < $1.num_items; i++) {
+            delete[] $1.items[i]->medium->E_susceptibilities.items;
+            delete[] $1.items[i]->medium->H_susceptibilities.items;
+            delete $1.items[i]->medium;
+            delete $1.items[i];
+        }
+        delete[] $1.items;
+    }
+}
+
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
 // Rename python builtins

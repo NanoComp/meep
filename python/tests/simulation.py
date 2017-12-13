@@ -164,5 +164,11 @@ class TestSimulation(unittest.TestCase):
         if mp.am_master():
             os.remove(fname)
 
+    def test_extra_materials(self):
+        sim = self.init_simple_simulation()
+        sim.extra_materials = [mp.Medium(epsilon=5), mp.Medium(epsilon=10)]
+        sim.run(mp.at_end(lambda sim: None), until=5)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -87,11 +87,14 @@ typedef struct material_data_struct
 
  } material_data;
 
- typedef material_data *material_type;
- typedef struct material_type_list
-  { material_type *items;
-    int num_items;
-  } material_type_list;
+typedef material_data *material_type;
+
+struct material_type_list {
+  material_type *items;
+  int num_items;
+
+  material_type_list(): items(NULL), num_items(0) {}
+};
 
 // global variables and exported functions
 extern material_type vacuum;
