@@ -35,7 +35,7 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The latest development sources are available on [GitHub](https://github.com/stevengj/meep). The source tarballs are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). The installation instructions can be found in the [Installation](Installation.md) page.
+The development sources are available on [GitHub](https://github.com/stevengj/meep). Source tarballs with version numbers are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). Installation instructions can be found in the [Installation](Installation.md) page.
 
 Documentation
 -------------

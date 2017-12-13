@@ -27,7 +27,7 @@ Specifies the spatial symmetries (mirror or rotation) to exploit in the simulati
 
 **`pml-layers` [ list of `pml` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Specifies the absorbing [PML](Perfectly_Matched_Layer.md) boundary layers to use. Defaults to none.
+Specifies the [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to none.
 
 **`geometry-lattice` [`lattice` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -54,7 +54,7 @@ For `CYLINDRICAL` simulations, specifies that the angular $\phi$ dependence of t
 
 **`resolution` [`number`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Specifies the computational grid resolution in pixels per distance unit. Defaults to 10.
+Specifies the computational grid resolution in pixels per distance unit. Default is 10.
 
 **`k-point` [`false` or `vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -80,9 +80,9 @@ A string prepended to all output filenames. If empty (the default), then Meep us
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specify the Courant factor $S$ which relates the time step size to the spatial discretization: $c\Delta t = S\Delta x$. Default is 0.5. For numerical stability, the Courant factor must be *at most* $n_\textrm{min}/\sqrt{\textrm{# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), and in practice $S$ should be slightly smaller.
 
-**`output-volume` [`meep::geometric_volume*`]**  
+**`output-volume` [`meep::volume*`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Specifies the default region of space that is output by the HDF5 output functions (below); see also the `(volume ...)` function to create `meep::geometric_volume*` objects. Default is `'()` (null), which means that the whole computational cell is output. Normally, you should use the `(in-volume ...)` function to modify the output volume instead of setting `output-volume` directly.
+Specifies the default region of space that is output by the HDF5 output functions (below); see also the `(volume ...)` function to create `meep::volume*` objects. Default is `'()` (null), which means that the whole computational cell is output. Normally, you should use the `(in-volume ...)` function to modify the output volume instead of setting `output-volume` directly.
 
 **`output-single-precision?` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -159,7 +159,7 @@ These are additional components which are not actually stored by Meep but are co
 Classes
 -------
 
-Classes are complex datatypes with various "properties" which may have default values. Classes can be "subclasses" of other classes. Subclasses inherit all the properties of their superclass and can be used in any place the superclass is expected. An object of a class is constructed with:
+Classes are complex datatypes with various properties which may have default values. Classes can be "subclasses" of other classes. Subclasses inherit all the properties of their superclass and can be used in any place the superclass is expected. An object of a class is constructed with:
 
 ```scm
 (make class (prop1 val1) (prop2 val2) ...)
@@ -678,7 +678,7 @@ Put output in a subdirectory, which is created if necessary. If the optional arg
 
 **`(volume (center ...) (size ...))`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::geometric_volume`. This function creates such a volume object, given the `center` and `size` properties (just like e.g. a `block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point.
+Many Meep functions require you to specify a volume in space, corresponding to the C++ type `meep::volume`. This function creates such a volume object, given the `center` and `size` properties (just like e.g. a `block` object). If the `size` is not specified, it defaults to (0,0,0), i.e. a single point.
 
 ### Simulation Time
 
@@ -724,7 +724,7 @@ One powerful feature is that you can supply an arbitrary function $f(\mathbf{x},
 
 **`(integrate-field-function cs func [where] [fields-var])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Returns the integral of the complex-valued function `func` over the `meep::geometric_volume` specified by `where` (defaults to entire computational cell) for the `meep::fields` specified by `fields-var` (defaults to `fields`). `func` is a function of position (a `vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
+Returns the integral of the complex-valued function `func` over the `meep::volume` specified by `where` (defaults to entire computational cell) for the `meep::fields` specified by `fields-var` (defaults to `fields`). `func` is a function of position (a `vector3`, its first argument) and zero or more field components specified by `cs`: a list of `component` constants. `func` can be real- or complex-valued.
 
 If any dimension of `where` is zero, that dimension is not integrated over. In this way you can specify 1d, 2d, or 3d integrals.
 
@@ -915,7 +915,7 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 
 ### Near-to-Far-Field Spectra
 
-Meep can compute a "near-to-far-field transformation" in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the computational cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the computational cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
+Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Scheme_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the computational cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the computational cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
 This is based on the [principle of equivalence](http://arxiv.org/abs/1301.5366) &mdash; given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region.
 
@@ -927,7 +927,7 @@ Add a bunch of `near2far-region`s to the current simulation (initializing the fi
 
 Each `near2far-region` is identical to `flux-region` except for the name: in 3d, these give a set of planes (**important:** all these "near surfaces" must lie in a single *homogeneous* material with *isotropic* $\varepsilon$ and $\mu$ &mdash; and they should *not* lie in the PML regions) surrounding the source(s) of outgoing radiation that you want to capture and convert to a far field. Ideally, these should form a closed surface, but in practice it is sufficient for the `near2far-region`s to capture all of the radiation in the direction of the far-field points. **Important:** as for flux computations, each `near2far-region` should be assigned a `weight` of &#177;1 indicating the direction of the outward normal relative to the +coordinate direction. So, for example, if you have six regions defining the six faces of a cube, i.e. the faces in the +x, -x, +y, -y, +z, and -z directions, then they should have weights +1, -1, +1, -1, +1, and -1 respectively. Note that, neglecting discretization errors, all near-field surfaces that enclose the same outgoing fields are equivalent and will yield the same far fields with a discretization-induced difference that vanishes with increasing resolution etc.
 
-After the simulation `run` is complete, you can compute the far fields. This is usually for a pulsed source so that the fields have decayed away and the Fourier transforms have finished accumulating.
+After the simulation run is complete, you can compute the far fields. This is usually for a pulsed source so that the fields have decayed away and the Fourier transforms have finished accumulating.
 
 **`(get_farfield near2far x)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -959,13 +959,13 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 ### Frequency-Domain Solver
 
-Meep contains a frequency-domain solver that directly computes the fields produced in a geometry in response to a constant-frequency source, using an [iterative linear solver](http://www.netlib.org/linalg/html_templates/Templates.html) instead of timestepping. Preliminary tests have shown that in many instances, this solver converges much faster than simply running an equivalent time domain simulation with a continuous wave source, timestepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `continuous-src` with the desired frequency, [initialize the fields and geometry](#initializing-the-structure-and-fields) via `(init-fields)`, and then:
+Meep contains a frequency-domain solver that directly computes the fields produced in a geometry in response to a constant-frequency source, using an [iterative linear solver](http://www.netlib.org/linalg/html_templates/Templates.html) instead of time-stepping. Preliminary tests have shown that in many instances, this solver converges much faster than simply running an equivalent time-domain simulation with a continuous-wave source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `continuous-src` with the desired frequency, [initialize the fields and geometry](#initializing-the-structure-and-fields) via `(init-fields)`, and then:
 
 **`(meep-fields-solve-cw fields tol maxiters L)`**
 
-After the `fields` variable (a global variable pointing to the `meep::fields*` object initialized by `init-fields`, [see above](Scheme_User_Interface.md#input-variables)), the next two parameters to the frequency-domaine solver are the tolerance `tol` for the iterative solver (10<sup>−8</sup>, by default) and a maximum number of iterations `maxiters` (10<sup>4</sup>, by default). Finally, there is a parameter $L$ that determines a tradeoff between memory and work per step and convergence rate of the iterative algorithm [biCGSTAB-(L)](http://www.math.uu.nl/people/sleijpen/CGSTAB_software/CGSTAB.html) that is used; larger values of $L$ of will often lead to faster convergence at the expense of more memory and more work per iteration. Default is $L=2$, and normally a value ≥ 2 should be used.
+After the `fields` variable (a global variable pointing to the `meep::fields*` object initialized by `init-fields`, [see above](Scheme_User_Interface.md#input-variables)), the next two parameters to the frequency-domain solver are the tolerance `tol` for the iterative solver (10<sup>−8</sup>, by default) and a maximum number of iterations `maxiters` (10<sup>4</sup>, by default). Finally, there is a parameter $L$ that determines a tradeoff between memory and work per step and convergence rate of the iterative algorithm [biCGSTAB-(L)](http://www.math.uu.nl/people/sleijpen/CGSTAB_software/CGSTAB.html) that is used; larger values of $L$ will often lead to faster convergence at the expense of more memory and more work per iteration. Default is $L=2$, and normally a value ≥ 2 should be used.
 
-The frequency-domain solver supports arbitrary geometries, PML, boundary conditions, symmetries, parallelism, conductors, and arbitrary nondispersive materials. Lorentz–Drude dispersive materials are not currently supported in the frequency-domain solver, but since you are solving at a known fixed frequency rather than timestepping, you should be able to pick conductivities etcetera in order to obtain any desired complex $\varepsilon$ and $\mu$ at that frequency.
+The frequency-domain solver supports arbitrary geometries, PML, boundary conditions, symmetries, parallelism, conductors, and arbitrary nondispersive materials. Lorentz-Drude dispersive materials are not currently supported in the frequency-domain solver, but since you are solving at a known fixed frequency rather than timestepping, you should be able to pick conductivities etcetera in order to obtain any desired complex $\varepsilon$ and $\mu$ at that frequency.
 
 The frequency-domain solver requires you to use complex-valued fields, via `(set! force-complex-fields? true)`.
 
@@ -1008,7 +1008,7 @@ Finally, another two run functions, useful for computing $\omega$(**k**) band di
 
 **`(run-k-point T k)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given a `vector3 k`, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the (complex) frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $T$ time units. It will run `harminv` (see below) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources.
+Given a `vector3 k`, runs a simulation for each *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the eigen-frequencies, and returns a list of the complex frequencies. In particular, you should have specified one or more Gaussian sources. It will run the simulation until the sources are turned off plus an additional $T$ time units. It will run [`harminv`](#harminv) at the same point/component as the first Gaussian source and look for modes in the union of the frequency ranges for all sources.
 
 **`(run-k-points T k-points)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1016,7 +1016,7 @@ Given a list `k-points` of *k* vectors, runs `run-k-point` for each one, and ret
 
 ### Predefined Step Functions
 
-Several useful step functions are predefined for you by Meep.
+Several useful step functions are predefined by Meep.
 
 #### Output Functions
 
@@ -1082,7 +1082,7 @@ The following step function collects field data from a given point and runs [Har
 
 **`(harminv c pt fcen df [maxbands])`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Returns a step function that collects data from the field component `c` (e.g. `Ex`, etc.) at the given point `pt` (a `vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `harminv-results`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
+Returns a step function that collects data from the field component `c` (e.g. $E_x$, etc.) at the given point `pt` (a `vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `harminv-results`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
 
 **Important:** normally, you should only use `harminv` to analyze data *after the sources are off*. Wrapping it in `(after-sources (harminv ...))` is sufficient.
 
@@ -1182,7 +1182,7 @@ Given zero or more step functions, evaluates them only once, at the end of the r
 
 **`(in-volume v step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Given zero or more step functions, modifies any output functions among them to only output a subset (or a superset) of the computational cell, corresponding to the `meep::geometric_volume* v` (created by the `volume` function).
+Given zero or more step functions, modifies any output functions among them to only output a subset (or a superset) of the computational cell, corresponding to the `meep::volume* v` (created by the `volume` function).
 
 **`(in-point pt step-functions...)`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
