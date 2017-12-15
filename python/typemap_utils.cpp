@@ -29,16 +29,6 @@
     #define PyInteger_FromLong(n) PyInt_FromLong(n)
 #endif
 
-static PyObject *py_geometric_object() {
-    static PyObject *geometric_object = NULL;
-    if (geometric_object == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        geometric_object = PyObject_GetAttrString(geom_mod, "GeometricObject");
-        Py_XDECREF(geom_mod);
-    }
-    return geometric_object;
-}
-
 static PyObject *py_source_time_object() {
     static PyObject *source_time_object = NULL;
     if (source_time_object == NULL) {
