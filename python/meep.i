@@ -658,9 +658,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            delete[] $1.items[i]->medium->E_susceptibilities.items;
-            delete[] $1.items[i]->medium->H_susceptibilities.items;
-            delete $1.items[i]->medium;
+            delete[] $1.items[i]->medium.E_susceptibilities.items;
+            delete[] $1.items[i]->medium.H_susceptibilities.items;
             delete $1.items[i];
         }
         delete[] $1.items;
