@@ -21,10 +21,12 @@
     #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
     #define PyInteger_Check(n) PyLong_Check(n)
     #define PyInteger_AsLong(n) PyLong_AsLong(n)
+    #define PyInteger_FromLong(n) PyLong_FromLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
     #define PyInteger_Check(n) PyInt_Check(n)
     #define PyInteger_AsLong(n) PyInt_AsLong(n)
+    #define PyInteger_FromLong(n) PyInt_FromLong(n)
 #endif
 
 static PyObject *py_geometric_object() {
@@ -67,36 +69,7 @@ static PyObject *py_material_object() {
     return material_object;
 }
 
-// v3 is a global python Vector3 object. We currently need one for the material
-// function and one for the amplitude function, so we pass it in from vec2py
-static void set_py_v3(double x, double y, double z, PyObject **v3) {
-    if (*v3 == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
-        PyObject *args = PyTuple_New(0);
-        *v3 = PyObject_Call(v3_class, args, NULL);
-
-        Py_DECREF(args);
-        Py_DECREF(geom_mod);
-        Py_DECREF(v3_class);
-    }
-
-    PyObject *pyx = PyFloat_FromDouble(x);
-    PyObject *pyy = PyFloat_FromDouble(y);
-    PyObject *pyz = PyFloat_FromDouble(z);
-
-    PyObject_SetAttrString(*v3, "x", pyx);
-    PyObject_SetAttrString(*v3, "y", pyy);
-    PyObject_SetAttrString(*v3, "z", pyz);
-
-    Py_DECREF(pyx);
-    Py_DECREF(pyy);
-    Py_DECREF(pyz);
-
-    return;
-}
-
-static PyObject* vec2py(const meep::vec &v, bool amp_func) {
+static PyObject* vec2py(const meep::vec &v) {
 
     double x = 0, y = 0, z = 0;
 
@@ -119,13 +92,30 @@ static PyObject* vec2py(const meep::vec &v, bool amp_func) {
         break;
     }
 
-    if (!amp_func) {
-        set_py_v3(x, y, z, &py_callback_v3);
-        return py_callback_v3;
-    } else {
-        set_py_v3(x, y, z, &py_amp_func_v3);
-        return py_amp_func_v3;
+    if (py_callback_v3 == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+        PyObject *args = PyTuple_New(0);
+        py_callback_v3 = PyObject_Call(v3_class, args, NULL);
+
+        Py_DECREF(args);
+        Py_DECREF(geom_mod);
+        Py_DECREF(v3_class);
     }
+
+    PyObject *pyx = PyFloat_FromDouble(x);
+    PyObject *pyy = PyFloat_FromDouble(y);
+    PyObject *pyz = PyFloat_FromDouble(z);
+
+    PyObject_SetAttrString(py_callback_v3, "x", pyx);
+    PyObject_SetAttrString(py_callback_v3, "y", pyy);
+    PyObject_SetAttrString(py_callback_v3, "z", pyz);
+
+    Py_DECREF(pyx);
+    Py_DECREF(pyy);
+    Py_DECREF(pyz);
+
+    return py_callback_v3;
 }
 
 static double py_callback_wrap(const meep::vec &v) {
@@ -137,12 +127,44 @@ static double py_callback_wrap(const meep::vec &v) {
 }
 
 static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
-    PyObject *pyv = vec2py(v, true);
+    PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
     std::complex<double> ret(real, imag);
     Py_DECREF(pyret);
+    return ret;
+}
+
+static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
+                                               const meep::vec &loc,
+                                               void *data_) {
+    PyObject *pyv = vec2py(loc);
+
+    py_field_func_data *data = (py_field_func_data *)data_;
+    int len = data->num_components;
+
+    PyObject *py_args = PyTuple_New(len + 1);
+    // Increment here because PyTuple_SetItem steals a reference
+    Py_INCREF(pyv);
+    PyTuple_SetItem(py_args, 0, pyv);
+
+    for (Py_ssize_t i = 1; i < len + 1; i++) {
+        PyObject *cmplx = PyComplex_FromDoubles(fields[i - 1].real(), fields[i - 1].imag());
+        PyTuple_SetItem(py_args, i, cmplx);
+    }
+
+    PyObject *pyret = PyObject_CallObject(data->func, py_args);
+
+    if (!pyret) {
+        PyErr_PrintEx(0);
+    }
+
+    double real = PyComplex_RealAsDouble(pyret);
+    double imag = PyComplex_ImagAsDouble(pyret);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(pyret);
+    Py_DECREF(py_args);
     return ret;
 }
 

@@ -25,14 +25,14 @@ The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(op
 apt-get install meep h5utils
 ```
 
-Zipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases).
+Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases).
 
-To build the latest version of Meep from source on Ubuntu, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html).
+To build the latest version of Meep from source on Ubuntu using an automated shell script, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html).
 
-Installation on MacOS 
+Installation on macOS 
 -----------------------
 
-Since [MacOS](https://en.wikipedia.org/wiki/MacOS) is, at its heart, a Unix system, one can, in principle compile and install Meep and all its prerequisites just as on any other Unix system. However, this process is much easier using the [Homebrew](https://en.wikipedia.org/wiki/Homebrew_(package_management_software)) package to install most of the prerequisites, since it will handle dependencies and other details for you. You will need [administrator privileges](http://support.apple.com/kb/PH3920) on your Mac.
+Since [macOS](https://en.wikipedia.org/wiki/macOS) is, at its heart, a Unix system, one can, in principle compile and install Meep and all its prerequisites just as on any other Unix system. However, this process is much easier using the [Homebrew](https://en.wikipedia.org/wiki/Homebrew_(package_management_software)) package to install most of the prerequisites, since it will handle dependencies and other details for you. You will need [administrator privileges](http://support.apple.com/kb/PH3920) on your Mac.
 
 The first steps are:
 
@@ -55,7 +55,7 @@ Use the same commands for [libctl](https://libctl.readthedocs.io), then [MPB](ht
 
 You are done, and can now run Meep just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
 
-To build the latest version of Meep from source on MacOS Sierra, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
+To build the latest version of Meep from source on macOS Sierra, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
 Unix Installation Basics
 ------------------------

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2017 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,17 +43,24 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
 %}
 
 %{
+typedef struct {
+    PyObject *func;
+    int num_components;
+} py_field_func_data;
+
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
-PyObject *py_amp_func_v3 = NULL;
 
 static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
-static PyObject* vec2py(const meep::vec &v, bool amp_func=false);
+static PyObject* vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static std::complex<double> py_amp_func_wrap(const meep::vec &v);
+static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
+                                               const meep::vec &loc,
+                                               void *data_);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
@@ -291,6 +298,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
+        delete[] ((material_data *)$1.material)->medium->E_susceptibilities.items;
+        delete[] ((material_data *)$1.material)->medium->H_susceptibilities.items;
+        delete ((material_data *)$1.material)->medium;
+        delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
 }
@@ -315,6 +326,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
+        delete[] ((material_data *)$1.items[i].material)->medium->E_susceptibilities.items;
+        delete[] ((material_data *)$1.items[i].material)->medium->H_susceptibilities.items;
+        delete ((material_data *)$1.items[i].material)->medium;
+        delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
     delete[] $1.items;
@@ -404,6 +419,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete $1;
 }
 
+// Typemap suite for material_type
+
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
     $1 = PyObject_IsInstance($input, py_material_object());
 }
@@ -412,6 +429,13 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if(!pymaterial_to_material($input, &$1)) {
         SWIG_fail;
     }
+}
+
+%typemap(freearg) material_type {
+    delete[] $1->medium->E_susceptibilities.items;
+    delete[] $1->medium->H_susceptibilities.items;
+    delete $1->medium;
+    delete $1;
 }
 
 // Typemap suite for array_slice
@@ -448,7 +472,134 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = static_cast<meep::derived_component>(PyInteger_AsLong($input));
 }
 
+
+%typemap(freearg) std::complex<double> (*)(const meep::vec &) {
+    Py_XDECREF(py_amp_func);
+}
+
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
+
+// typemap suite for field functions
+
+%typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components,
+                                    meep::field_function fun, void *fun_data_) {
+    $1 = PySequence_Check($input) &&
+         PySequence_Check(PyList_GetItem($input, 0)) &&
+         PyCallable_Check(PyList_GetItem($input, 1));
+}
+%typemap(in) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_)
+    (py_field_func_data tmp_data) {
+
+    if (!PySequence_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs = PyList_GetItem($input, 0);
+
+    if (!PySequence_Check(cs)) {
+        PyErr_SetString(PyExc_ValueError, "Expected first item in list to be a list");
+        SWIG_fail;
+    }
+
+    PyObject *func = PyList_GetItem($input, 1);
+
+    if (!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a function");
+        SWIG_fail;
+    }
+
+    $1 = PyList_Size(cs);
+    $2 = new meep::component[$1];
+
+    for (Py_ssize_t i = 0; i < $1; i++) {
+        $2[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs, i));
+    }
+
+    $3 = py_field_func_wrap;
+
+    tmp_data.num_components = $1;
+    tmp_data.func = func;
+    Py_INCREF(tmp_data.func);
+    $4 = &tmp_data;
+}
+
+%typemap(freearg) (int num_fields, const meep::component *components, meep::field_function fun, void *fun_data_) {
+    delete[] $2;
+    Py_XDECREF(tmp_data$argnum.func);
+}
+
+// integrate2
+%typecheck(SWIG_TYPECHECK_POINTER) (int num_fields1, const meep::component *components1, int num_fields2,
+                                    const meep::component *components2, meep::field_function integrand,
+                                    void *integrand_data_) {
+    $1 = PySequence_Check($input) &&
+         PySequence_Check(PyList_GetItem($input, 0)) &&
+         PySequence_Check(PyList_GetItem($input, 1)) &&
+         PyCallable_Check(PyList_GetItem($input, 2));
+}
+
+%typemap(in) (int num_fields1, const meep::component *components1, int num_fields2,
+              const meep::component *components2, meep::field_function integrand,
+              void *integrand_data_) (py_field_func_data data) {
+
+    if (!PySequence_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs1 = PyList_GetItem($input, 0);
+
+    if (!PySequence_Check(cs1)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 1st item in list to be a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs2 = PyList_GetItem($input, 1);
+
+    if (!PySequence_Check(cs2)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 2nd item in list to be a sequence");
+    }
+
+    PyObject *func = PyList_GetItem($input, 2);
+
+    if (!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 3rd item in list to be a function");
+        SWIG_fail;
+    }
+
+    $1 = PyList_Size(cs1);
+    $3 = PyList_Size(cs2);
+
+    $2 = new meep::component[$1];
+    $4 = new meep::component[$3];
+
+    for (Py_ssize_t i = 0; i < $1; i++) {
+        $2[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs1, i));
+    }
+
+    for (Py_ssize_t i = 0; i < $3; i++) {
+        $4[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs2, i));
+    }
+
+    $5 = py_field_func_wrap;
+
+    data.num_components = $1 + $3;
+    data.func = func;
+    Py_INCREF(func);
+    $6 = &data;
+}
+
+%typemap(freearg) (int num_fields1, const meep::component *components1, int num_fields2,
+                   const meep::component *components2, meep::field_function integrand, void *integrand_data_) {
+    if ($2) {
+        delete[] $2;
+    }
+    if ($4) {
+        delete[] $4;
+    }
+    Py_XDECREF(data$argnum.func);
+}
 
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
@@ -462,7 +613,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %rename(get_field_from_comp) meep::fields::get_field(component, const vec &) const;
 
-// TODO:  Fix these with a typemap when necessary
+%feature("python:cdefaultargs") meep::fields::add_eigenmode_source;
+
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;
 
@@ -516,10 +668,12 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Symmetry,
         Volume,
         after_sources,
+        after_sources_and_time,
         after_time,
         at_beginning,
         at_end,
         at_every,
+        at_time,
         dft_ldos,
         display_progress,
         during_sources,
@@ -527,16 +681,41 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         get_fluxes,
         get_force_freqs,
         get_forces,
+        get_near2far_freqs,
         get_ldos_freqs,
+        in_point,
         in_volume,
+        inf,
         interpolate,
         output_epsilon,
         output_mu,
         output_hpwr,
         output_dpwr,
         output_tot_pwr,
-        output_hfield_z,
+        output_bfield,
+        output_bfield_x,
+        output_bfield_y,
+        output_bfield_z,
+        output_bfield_r,
+        output_bfield_p,
+        output_dfield,
+        output_dfield_x,
+        output_dfield_y,
+        output_dfield_z,
+        output_dfield_r,
+        output_dfield_p,
+        output_efield,
+        output_efield_x,
+        output_efield_y,
         output_efield_z,
+        output_efield_r,
+        output_efield_p,
+        output_hfield,
+        output_hfield_x,
+        output_hfield_y,
+        output_hfield_z,
+        output_hfield_r,
+        output_hfield_p,
         output_png,
         output_poynting,
         output_poynting_x,
@@ -544,12 +723,25 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         output_poynting_z,
         output_poynting_r,
         output_poynting_p,
+        output_sfield,
+        output_sfield_x,
+        output_sfield_y,
+        output_sfield_z,
+        output_sfield_r,
+        output_sfield_p,
         py_v3_to_vec,
+        scale_flux_fields,
+        scale_force_fields,
+        scale_near2far_fields,
         stop_when_fields_decayed,
         synchronized_magnetic,
-        to_appended
+        to_appended,
+        when_true,
+        when_false,
+        with_prefix
     )
     from .source import (
+        ALL_COMPONENTS,
         ContinuousSource,
         CustomSource,
         EigenModeSource,
@@ -569,4 +761,16 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
             # this variable reference is needed for lazy initialization of MPI
             comm = MPI.COMM_WORLD
             master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
+
+            if not am_master():
+                import os
+                import sys
+                saved_stdout = sys.stdout
+                sys.stdout = open(os.devnull, 'w')
+
+    vacuum = Medium(epsilon=1)
+    air = Medium(epsilon=1)
+    metal = Medium(epsilon=-inf)
+    perfect_electric_conductor = Medium(epsilon=-inf)
+    perfect_magnetic_conductor = Medium(mu=-inf)
 %}

@@ -24,7 +24,7 @@ Now, suppose we want to compute the integral of this function, over the whole co
        (integrate-field-function (list Ex Hz Dielectric) f) "\n")
 ```
 
-Note that the first argument to `integrate-field-function` is a `list` (a standard Scheme type) of `component` constants, specifying in order the list of field components our function `f` expects to be passed. Meep will then call `f` for every point in the computational cell in parallel on a parallel machine, and return the integral approximated by a [trapezoidal rule](https://en.wikipedia.org/wiki/trapezoidal_rule.
+Note that the first argument to `integrate-field-function` is a `list` (a standard Scheme type) of `component` constants, specifying in order the list of field components our function `f` expects to be passed. Meep will then call `f` for every point in the computational cell in parallel on a parallel machine, and return the integral approximated by a [trapezoidal rule](https://en.wikipedia.org/wiki/trapezoidal_rule).
 
 You can also specify an optional third argument to `integrate-field-function`, specifying an integration volume in case you don't want the integral over the whole computational cell. For example, the following code computes the integral of `f` along a line from (-1,0,0) to (1,0,0):
 
@@ -54,7 +54,7 @@ The above example calls the integration, maximum, and output routines only once,
 (run-until 200 (at-every 1 (output-field-function "weird-function" (list Ex Hz Dielectric) f)))
 ```
 
-This is **wrong**, and will cause Meep to exit with a strange error message. The reason is that the step functions you pass to `run-until` must be *functions*. For example, if you call `(run-until` `200` `output-hfield)`, `output-hfield` is the name of a *function* which `run-until` will call to output the field. The incorrect code above, however, first *calls* the function `output-field-function` to output an HDF5 file, and then passes the *result* of this function to `run-until`. Instead, you must write a new function which you can pass to `run-until`, like the following:
+This is **wrong**, and will cause Meep to exit with a strange error message. The reason is that the step functions you pass to `run-until` must be *functions*. For example, if you call `(run-until 200 output-hfield)`, `output-hfield` is the name of a *function* which `run-until` will call to output the field. The incorrect code above, however, first *calls* the function `output-field-function` to output an HDF5 file, and then passes the *result* of this function to `run-until`. Instead, you must write a new function which you can pass to `run-until`, like the following:
 
 ```scm
 (define (my-weird-output) (output-field-function "weird-function" (list Ex Hz Dielectric) f))

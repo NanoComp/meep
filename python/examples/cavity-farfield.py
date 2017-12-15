@@ -14,7 +14,7 @@ sx = 2 * (pad + dpml + N) + d - 1  # size of cell in x direction
 
 cell = mp.Vector3(sx, sy, 0)
 
-geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(1e20, w, 1e20),
+geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(mp.inf, w, mp.inf),
                      material=mp.Medium(epsilon=eps))]
 
 for i in range(N):

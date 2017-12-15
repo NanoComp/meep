@@ -22,7 +22,7 @@ def main(args):
     m = args.m
 
     geometry = [mp.Block(center=mp.Vector3(r + (w / 2)),
-                         size=mp.Vector3(w, 1e20, 1e20),
+                         size=mp.Vector3(w, mp.inf, mp.inf),
                          material=mp.Medium(index=n))]
 
     pml_layers = [mp.PML(dpml)]
