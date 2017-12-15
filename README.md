@@ -1,4 +1,4 @@
-<p align="center">![](doc/docs/images/Meep-banner.png)</p>
+![](doc/docs/images/Meep-banner.png)
 
 [![Latest Docs](https://readthedocs.org/projects/meep/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
 [![Build Status](https://travis-ci.org/stevengj/meep.svg?branch=master)](https://travis-ci.org/stevengj/meep)
