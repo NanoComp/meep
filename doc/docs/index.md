@@ -11,7 +11,7 @@
 -   **Free software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial).
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
--   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [MacOS](https://en.wikipedia.org/wiki/MacOS).
+-   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [macOS](https://en.wikipedia.org/wiki/macOS).
 -   Arbitrary **anisotropic** electric permittivity $\varepsilon$ and magnetic permeability $\mu$, along with **dispersive** $\varepsilon(\omega)$ and $\mu(\omega)$ including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** $\sigma$.
 -   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
 -   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
@@ -35,7 +35,7 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The latest development sources are available on [GitHub](https://github.com/stevengj/meep). The source tarballs are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). The installation instructions can be found in the [Installation](Installation.md) page.
+The development sources are available on [GitHub](https://github.com/stevengj/meep). Source tarballs with version numbers are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). Installation instructions can be found in the [Installation](Installation.md) page.
 
 Documentation
 -------------
