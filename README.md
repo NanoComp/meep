@@ -1,12 +1,34 @@
+![](doc/docs/images/Meep-banner.png)
+
 [![Latest Docs](https://readthedocs.org/projects/meep/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
 [![Build Status](https://travis-ci.org/stevengj/meep.svg?branch=master)](https://travis-ci.org/stevengj/meep)
 
-Meep (or MEEP) is a free finite-difference time-domain (FDTD)
-simulation software package to model electromagnetic systems.
+# Meep
 
-The latest documentation is available on [readthedocs](http://meep.readthedocs.io/en/latest).
+**Meep** is a free finite-difference time-domain (FDTD) simulation software package to model electromagnetic systems. Meep is an acronym which officially stands for *MIT Electromagnetic Equation Propagation*. Its features include:
 
-To compile directly from the git repository, you need to run
+-   **Free software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
+-   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial).
+-   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
+-   Distributed memory **parallelism** on any system supporting the [MPI](https://en.wikipedia.org/wiki/MPI) standard. Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux) and [macOS](https://en.wikipedia.org/wiki/macOS).
+-   Arbitrary **anisotropic** electric permittivity $\varepsilon$ and magnetic permeability $\mu$, along with **dispersive** $\varepsilon(\omega)$ and $\mu(\omega)$ including loss/gain and **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, and electric/magnetic **conductivities** $\sigma$.
+-   **PML** absorbing boundaries and/or perfect conductor and/or **Bloch-periodic** boundary conditions.
+-   Exploitation of **symmetries** to reduce the computation size &mdash; even/odd mirror symmetries and 90°/180° rotations.
+-   Field output in the [HDF5](https://en.wikipedia.org/wiki/HDF5) standard scientific data format, supported by many visualization tools.
+-   Arbitrary material and source distributions.
+-   Field analyses including flux spectra, Maxwell stress tensor, frequency extraction, local density of states, arbitrary functions, near to far field transformations; completely programmable.
+
+# Documentation
+
+See the [Meep manual on readthedocs](http://meep.readthedocs.io/en/latest) for the latest documentation.
+
+# Download
+
+The latest official release can be found at the [Meep download page](http://meep.readthedocs.io/en/latest/Download/).
+
+# Git Source
+
+To compile directly from a clone of the [Meep git repository](https://github.com/stevengj/meep), you need to run
 ```
 sh autogen.sh
 make
