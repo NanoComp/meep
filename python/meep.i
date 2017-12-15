@@ -294,9 +294,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
-        delete[] ((material_data *)$1.material)->medium->E_susceptibilities.items;
-        delete[] ((material_data *)$1.material)->medium->H_susceptibilities.items;
-        delete ((material_data *)$1.material)->medium;
+        delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
+        delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
@@ -322,9 +321,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
-        delete[] ((material_data *)$1.items[i].material)->medium->E_susceptibilities.items;
-        delete[] ((material_data *)$1.items[i].material)->medium->H_susceptibilities.items;
-        delete ((material_data *)$1.items[i].material)->medium;
+        delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
@@ -428,9 +426,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %typemap(freearg) material_type {
-    delete[] $1->medium->E_susceptibilities.items;
-    delete[] $1->medium->H_susceptibilities.items;
-    delete $1->medium;
+    delete[] $1->medium.E_susceptibilities.items;
+    delete[] $1->medium.H_susceptibilities.items;
     delete $1;
 }
 
@@ -661,9 +658,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            delete[] $1.items[i]->medium->E_susceptibilities.items;
-            delete[] $1.items[i]->medium->H_susceptibilities.items;
-            delete $1.items[i]->medium;
+            delete[] $1.items[i]->medium.E_susceptibilities.items;
+            delete[] $1.items[i]->medium.H_susceptibilities.items;
             delete $1.items[i];
         }
         delete[] $1.items;

@@ -39,39 +39,17 @@ medium_struct vacuum_medium =
    {0.0, 0.0, 0.0}  /* B_conductivity_diag  */
  };
 material_data vacuum_material_data =
- { material_data::MEDIUM, 0, 0, &vacuum_medium };
+ { material_data::MEDIUM, vacuum_medium, 0, 0, 0, {0,0,0} };
 
 material_type vacuum = &vacuum_material_data;
-
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-material_type make_dielectric(double epsilon)
-{
-  material_data *md = (material_data *)malloc(sizeof(*md));
-  md->which_subclass=material_data::MEDIUM;
-  md->user_func=0;
-  md->user_data=0;
-  md->medium=(medium_struct *)malloc(sizeof(medium_struct));
-  memcpy(md->medium, &vacuum_medium, sizeof(medium_struct));
-  md->medium->epsilon_diag.x=epsilon;
-  md->medium->epsilon_diag.y=epsilon;
-  md->medium->epsilon_diag.z=epsilon;
-  return md;
-}
-
-static void material_type_destroy(material_type m)
-{
-  (void) m; // unused
-  // fixme: deallocate m->medium at least
-}
 
 static bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
 {
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
             vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) &&
             s1.frequency == s2.frequency && s1.gamma == s2.gamma &&
-            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude && s1.is_self == s2.is_self);
+            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude && 
+            s1.is_file == s2.is_file);
 }
 
 static bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2)
@@ -103,9 +81,9 @@ static bool material_type_equal(const material_type m1, const material_type m2)
     if (m1 == m2) return true;
     if (m1->which_subclass != m2->which_subclass) return false;
     switch (m1->which_subclass) {
-      case material_data::MATERIAL_TYPE_SELF: case material_data::PERFECT_METAL: return true;
-      case material_data::MATERIAL_FUNCTION: return m1->user_func == m2->user_func && m1->user_data == m2->user_data;
-      case material_data::MEDIUM: return m1->medium == m2->medium || medium_struct_equal(m1->medium, m2->medium);
+      case material_data::MATERIAL_FILE: case material_data::PERFECT_METAL: return true;
+      case material_data::MATERIAL_USER: return m1->user_func == m2->user_func && m1->user_data == m2->user_data;
+      case material_data::MEDIUM: return medium_struct_equal( &(m1->medium), &(m2->medium));
       default: return false;
     }
 }
@@ -113,7 +91,6 @@ static bool material_type_equal(const material_type m1, const material_type m2)
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-
 typedef struct {
   double m00, m01, m02,
               m11, m12,
@@ -274,36 +251,38 @@ static geom_box gv2box(const meep::volume &v)
   return box;
 }
 
-static bool is_variable(material_type md)
+static bool is_variable(material_type mt)
 {
-  return (md->which_subclass == material_data::MATERIAL_FUNCTION);
+  return (mt->which_subclass == material_data::MATERIAL_USER);
 }
 static bool is_variable(void* md) { return is_variable((material_type) md); }
 
-static bool is_self(material_type md)
+static bool is_file(material_type md)
 {
-  return (md->which_subclass == material_data::MATERIAL_TYPE_SELF);
+  return (md->which_subclass == material_data::MATERIAL_FILE);
 }
-static bool is_self(void* md) { return is_self((material_type) md); }
+static bool is_file(void* md) { return is_file((material_type) md); }
 
 static bool is_medium(material_type md, medium_struct **m)
 {
   if (md->which_subclass == material_data::MEDIUM)
-   { *m = md->medium;
+   { *m = &(md->medium);
      return true;
    };
   return false;
 }
-static bool is_medium(void* md, medium_struct **m) { return is_medium((material_type) md, m); }
+
+static bool is_medium(void* md, medium_struct **m) 
+ { return is_medium((material_type) md, m); }
 
 static bool is_metal(meep::field_type ft, const material_type *material) {
   material_data *md = *material;
   if (ft == meep::E_stuff)
     switch (md->which_subclass) {
     case material_data::MEDIUM:
-      return (md->medium->epsilon_diag.x < 0 ||
-              md->medium->epsilon_diag.y < 0 ||
-              md->medium->epsilon_diag.z < 0);
+      return (md->medium.epsilon_diag.x < 0 ||
+              md->medium.epsilon_diag.y < 0 ||
+              md->medium.epsilon_diag.z < 0);
     case material_data::PERFECT_METAL:
       return true;
     default:
@@ -312,35 +291,13 @@ static bool is_metal(meep::field_type ft, const material_type *material) {
   else
     switch (md->which_subclass) {
     case material_data::MEDIUM:
-      return (md->medium->mu_diag.x < 0 ||
-              md->medium->mu_diag.y < 0 ||
-              md->medium->mu_diag.z < 0);
+      return (md->medium.mu_diag.x < 0 ||
+              md->medium.mu_diag.y < 0 ||
+              md->medium.mu_diag.z < 0);
     case material_data::PERFECT_METAL:
       return false; // is an electric conductor, but not a magnetic conductor
     default:
       meep::abort("unknown material type");
-  }
-}
-
-static meep::realnum *epsilon_data = NULL;
-static int epsilon_dims[3] = {0,0,0};
-
-void read_epsilon_file(const char *eps_input_file)
-{
-  delete[] epsilon_data; epsilon_data = NULL;
-  epsilon_dims[0] = epsilon_dims[1] = epsilon_dims[2] = 1;
-  if (eps_input_file && eps_input_file[0]) { // file specified
-    char *fname = new char[strlen(eps_input_file)+1];
-    strcpy(fname, eps_input_file);
-    // parse epsilon-input-file as "fname.h5:dataname"
-    char *dataname = strrchr(fname, ':');
-    if (dataname) *(dataname++) = 0;
-    meep::h5file eps_file(fname, meep::h5file::READONLY, false);
-    int rank; // ignored since rank < 3 is equivalent to singleton dims
-    epsilon_data = eps_file.read(dataname, &rank, epsilon_dims, 3);
-    master_printf("read in %dx%dx%d epsilon-input-file \"%s\"\n",
-		  epsilon_dims[0], epsilon_dims[1], epsilon_dims[2],
-		  eps_input_file);
   }
 }
 
@@ -399,10 +356,12 @@ static meep::realnum linear_interpolate(
 static void epsilon_file_material(material_data *md, vector3 p)
 {
   default_material = (void*) md;
-  if (!epsilon_data) return;
-  if (md->which_subclass != material_data::MEDIUM)
-    meep::abort("epsilon-input-file only works with a type=medium default-material");
-  medium_struct *mm=md->medium;
+  
+  if (md->which_subclass != material_data::MATERIAL_FILE)
+    meep::abort("epsilon-input-file only works with a type=file default-material");
+
+  if (!(md->epsilon_data)) return;
+  medium_struct *mm=&(md->medium);
   double rx = geometry_lattice.size.x == 0
     ? 0 : 0.5 + (p.x-geometry_center.x) / geometry_lattice.size.x;
   double ry = geometry_lattice.size.y == 0
@@ -410,8 +369,10 @@ static void epsilon_file_material(material_data *md, vector3 p)
   double rz = geometry_lattice.size.z == 0
     ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
   mm->epsilon_diag.x = mm->epsilon_diag.y = mm->epsilon_diag.z =
-    linear_interpolate(rx, ry, rz, epsilon_data,
-		       epsilon_dims[0], epsilon_dims[1], epsilon_dims[2], 1);
+    linear_interpolate(rx, ry, rz, md->epsilon_data,
+		       md->epsilon_dims[0], 
+                       md->epsilon_dims[1], 
+                       md->epsilon_dims[2], 1);
   mm->epsilon_offdiag.x = mm->epsilon_offdiag.y = mm->epsilon_offdiag.z = 0;
 }
 
@@ -448,9 +409,12 @@ public:
   virtual void set_volume(const meep::volume &v);
   virtual void unset_volume(void);
 
+  bool has_chi(meep::component c, int p);
   virtual bool has_chi3(meep::component c);
-  virtual double chi3(meep::component c, const meep::vec &r);
   virtual bool has_chi2(meep::component c);
+
+  double chi(meep::component c, const meep::vec &r, int p);
+  virtual double chi3(meep::component c, const meep::vec &r);
   virtual double chi2(meep::component c, const meep::vec &r);
 
   virtual bool has_mu();
@@ -474,11 +438,8 @@ public:
 
   static bool verbose;
 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-// FIXME
-//private:
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  bool get_material_pt(material_type &material, const meep::vec &r);
+private:
+  void get_material_pt(material_type &material, const meep::vec &r);
 
   material_type_list extra_materials;
   pol *current_pol;
@@ -591,7 +552,7 @@ static material_type eval_material_func(function material_func, vector3 p)
   mo = gh_call1(material_func, pscm);
   material_type_input(mo, &material);
 
-  while (material.which_subclass == MTS::MATERIAL_FUNCTION) {
+  while (material.which_subclass == MTS::MATERIAL_USER) {
     material_type m;
 
     mo = gh_call1(material.subclass.
@@ -602,10 +563,10 @@ static material_type eval_material_func(function material_func, vector3 p)
     material = m;
   }
 
-  if (material.which_subclass == MTS::MATERIAL_TYPE_SELF) {
+  if (material.which_subclass == MTS::MATERIAL_FILE) {
     epsilon_file_material(material, p);
   }
-  CK(material.which_subclass != MTS::MATERIAL_FUNCTION,
+  CK(material.which_subclass != MTS::MATERIAL_USER,
      "infinite loop in material functions");
 
   return material;
@@ -614,22 +575,24 @@ static material_type eval_material_func(function material_func, vector3 p)
 
 static void material_epsmu(meep::field_type ft, material_type material,
 		    symmetric_matrix *epsmu, symmetric_matrix *epsmu_inv) {
-  material_data *md = material;
+
+  material_data *md=material;
   if (ft == meep::E_stuff)
     switch (md->which_subclass) {
+
     case material_data::MEDIUM:
-      {
-      epsmu->m00 = md->medium->epsilon_diag.x;
-      epsmu->m11 = md->medium->epsilon_diag.y;
-      epsmu->m22 = md->medium->epsilon_diag.z;
-      epsmu->m01 = md->medium->epsilon_offdiag.x;
-      epsmu->m02 = md->medium->epsilon_offdiag.y;
-      epsmu->m12 = md->medium->epsilon_offdiag.z;
+    case material_data::MATERIAL_FILE:
+    case material_data::MATERIAL_USER:
+      epsmu->m00 = md->medium.epsilon_diag.x;
+      epsmu->m11 = md->medium.epsilon_diag.y;
+      epsmu->m22 = md->medium.epsilon_diag.z;
+      epsmu->m01 = md->medium.epsilon_offdiag.x;
+      epsmu->m02 = md->medium.epsilon_offdiag.y;
+      epsmu->m12 = md->medium.epsilon_offdiag.z;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
-      }
+
     case material_data::PERFECT_METAL:
-      {
       epsmu->m00 = -meep::infinity;
       epsmu->m11 = -meep::infinity;
       epsmu->m22 = -meep::infinity;
@@ -639,25 +602,25 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
-      }
+      
     default:
       meep::abort("unknown material type");
   }
   else
     switch (md->which_subclass) {
     case material_data::MEDIUM:
-      {
-      epsmu->m00 = md->medium->mu_diag.x;
-      epsmu->m11 = md->medium->mu_diag.y;
-      epsmu->m22 = md->medium->mu_diag.z;
-      epsmu->m01 = md->medium->mu_offdiag.x;
-      epsmu->m02 = md->medium->mu_offdiag.y;
-      epsmu->m12 = md->medium->mu_offdiag.z;
+    case material_data::MATERIAL_FILE:
+    case material_data::MATERIAL_USER:
+      epsmu->m00 = md->medium.mu_diag.x;
+      epsmu->m11 = md->medium.mu_diag.y;
+      epsmu->m22 = md->medium.mu_diag.z;
+      epsmu->m01 = md->medium.mu_offdiag.x;
+      epsmu->m02 = md->medium.mu_offdiag.y;
+      epsmu->m12 = md->medium.mu_offdiag.z;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
-      }
+      
     case material_data::PERFECT_METAL:
-      {
       epsmu->m00 = 1.0;
       epsmu->m11 = 1.0;
       epsmu->m22 = 1.0;
@@ -667,40 +630,60 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
-      }
+
     default:
       meep::abort("unknown material type");
   }
 }
 
-bool geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
+// the goal of this routine is to fill in the 'medium' field
+// within the material structure as appropriate for the 
+// material properties at r. 
+void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
 {
   vector3 p = vec_to_vector3(r);
   boolean inobject;
   material = (material_type)
-    material_of_unshifted_point_in_tree_inobject(p, restricted_tree,&inobject);
+   material_of_unshifted_point_in_tree_inobject(p, restricted_tree,&inobject);
   material_data *md = material;
 
-  bool destroy_material = false;
-  if (!inobject && epsilon_data) {
-      epsilon_file_material(md, p);
-      destroy_material = true;
-  }
-  else if (md->which_subclass == material_data::MATERIAL_TYPE_SELF) {
-    if (epsilon_data) {
-      epsilon_file_material(md, p);
-      destroy_material = true;
-    }
-    else
-      material = (material_type) default_material;
-  }
-  else if (md->which_subclass == material_data::MATERIAL_FUNCTION) {
-    // TODO figure this out
-    // material = eval_material_func(md->user_material_func,md->user_data,p);
-    destroy_material = true;
-  }
-  return destroy_material;
-}
+  switch(md->which_subclass)
+   {
+     // material read from file: interpolate to get properties at r
+     case material_data::MATERIAL_FILE:
+      if (md->epsilon_data)
+       epsilon_file_material(md, p);
+      else
+       material = (material_type) default_material;
+      return; 
+
+     // material specified by user-supplied function: call user
+     // function to get properties at r.
+     // Note that we initialize the medium to vacuum, so that
+     // the user's function only needs to fill in whatever is
+     // different from vacuum.
+     case material_data::MATERIAL_USER:
+      md->medium = vacuum_medium;
+      md->user_func(p, md->user_data, &(md->medium));
+      // TODO: update this to allow user's function to set
+      //       position-dependent susceptibilities. For now
+      //       it's an error if the user's function creates
+      //       any.
+      if (    (md->medium.E_susceptibilities.num_items>0)
+           || (md->medium.H_susceptibilities.num_items>0)
+         )
+       meep::abort("susceptibilities in user-defined-materials not yet supported");
+       return;
+
+     // position-independent material or metal: there is nothing to do
+     case material_data::MEDIUM:
+     case material_data::PERFECT_METAL:
+      return; 
+
+     default:
+      meep::abort("unknown material type");
+   };
+} 
 
 // returns trace of the tensor diagonal
 double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
@@ -719,12 +702,8 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
 #endif
 
   material_type material;
-  bool destroy_material = get_material_pt(material, r);
-
+  get_material_pt(material, r);
   material_epsmu(ft, material, &chi1p1, &chi1p1_inv);
-
-  if (destroy_material)
-    material_type_destroy(material);
 
   return (chi1p1.m00 + chi1p1.m11 + chi1p1.m22)/3;
 }
@@ -780,7 +759,7 @@ static bool get_front_object(const meep::volume &v,
     mat = (material_type) default_material;
     if (o)
      { material_data *md = (material_data *)o->material;
-       if (md->which_subclass != material_data::MATERIAL_TYPE_SELF)
+       if (md->which_subclass != material_data::MATERIAL_FILE)
         mat = md;
      }
     if (id1 == -1) {
@@ -815,9 +794,9 @@ static bool get_front_object(const meep::volume &v,
 
   if (    (o1 && is_variable(o1->material))
        || (o2 && is_variable(o2->material))
-       || ( (is_variable(default_material) || epsilon_data)
-            && (    !o1 || is_self(o1->material)
-                 || !o2 || is_self(o2->material)
+       || ( (is_variable(default_material) || is_file(default_material))
+            && (    !o1 || is_file(o1->material)
+                 || !o2 || is_file(o2->material)
                )
           )
      )
@@ -845,12 +824,11 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
   material_type mat, mat_behind;
   symmetric_matrix meps, meps_inv;
   vector3 p, shiftby, normal;
-  bool destroy_material = false;
 
   if (maxeval == 0 || !get_front_object(v, geometry_tree,
 					p, &o, shiftby, mat, mat_behind)) {
   noavg:
-    destroy_material = get_material_pt(mat, v.center());
+    get_material_pt(mat, v.center());
   trivial:
     material_epsmu(meep::type(c), mat, &meps, &meps_inv);
     switch (component_direction(c)) {
@@ -871,7 +849,6 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
       break;
     case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
     }
-    if (destroy_material) material_type_destroy(mat);
     return;
   }
 
@@ -1053,10 +1030,8 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c,
 
   symmetric_matrix chi1p1, chi1p1_inv;
   material_type material;
-  bool destroy_material = get_material_pt(material, v.center());
+  get_material_pt(material, v.center());
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
-  if (destroy_material)
-    material_type_destroy(material);
   if (chi1p1.m01 != 0 || chi1p1.m02 != 0 || chi1p1.m12 != 0
       || chi1p1.m00 != chi1p1.m11 || chi1p1.m11 != chi1p1.m22 ||
       chi1p1.m00 != chi1p1.m22) {
@@ -1141,46 +1116,6 @@ static double get_chi3(meep::component c, const medium_struct *m) {
   }
 }
 
-bool geom_epsilon::has_chi3(meep::component c)
-{
-  medium_struct *mm;
-
-  for (int i = 0; i < geometry.num_items; ++i)
-   if ( is_medium(geometry.items[i].material, &mm) )
-    if (get_chi3(c, mm)!=0)
-     return true;
-
-  for (int i = 0; i < extra_materials.num_items; ++i)
-   if ( is_medium(extra_materials.items[i], &mm ))
-    if (get_chi3(c, mm)!=0)
-     return true;
-
-  return (    is_medium(default_material, &mm)
-           && get_chi3(c, mm) != 0
-         );
-}
-
-double geom_epsilon::chi3(meep::component c, const meep::vec &r) {
-  material_type material;
-  bool destroy_material = get_material_pt(material, r);
-
-  double chi3_val;
-
-  material_data *md = material;
-  switch (md->which_subclass) {
-  case material_data::MEDIUM:
-    chi3_val = get_chi3(c, md->medium);
-    break;
-  default:
-    chi3_val = 0;
-  }
-
-  if (destroy_material)
-    material_type_destroy(material);
-
-  return chi3_val;
-}
-
 static double get_chi2(meep::component c, const medium_struct *m) {
   switch (c) {
   case meep::Er: case meep::Ex: return m->E_chi2_diag.x;
@@ -1193,44 +1128,62 @@ static double get_chi2(meep::component c, const medium_struct *m) {
   }
 }
 
-bool geom_epsilon::has_chi2(meep::component c)
+static double get_chi(meep::component c, const medium_struct *m, int p)
+ { return ((p==2) ? get_chi2(c,m) : get_chi3(c,m)); }
+
+// the following routines consolidate the former has_chi2, has_chi3 and chi2, chi3
+// p=2,3 for chi2,chi3
+bool geom_epsilon::has_chi(meep::component c, int p)
 {
   medium_struct *mm;
 
   for (int i = 0; i < geometry.num_items; ++i)
-   if (    is_medium(geometry.items[i].material, &mm)
-        && get_chi2(c, mm) != 0
-      ) return true;
+   if (is_medium(geometry.items[i].material, &mm) )
+    if (get_chi(c, mm, p)!=0)
+     return true;
 
   for (int i = 0; i < extra_materials.num_items; ++i)
-   if (     is_medium(extra_materials.items[i], &mm)
-        && get_chi2(c, mm) != 0
-      ) return true;
+   if (is_medium(extra_materials.items[i], &mm ))
+    if (get_chi(c, mm, p )!=0)
+     return true;
 
   return (    is_medium(default_material, &mm)
-	   && get_chi2(c, mm) != 0
+           && get_chi(c, mm, p) != 0
          );
 }
 
-double geom_epsilon::chi2(meep::component c, const meep::vec &r) {
+bool geom_epsilon::has_chi3(meep::component c)
+{ return has_chi(c, 3); }
+
+bool geom_epsilon::has_chi2(meep::component c)
+{ return has_chi(c, 2); }
+
+double geom_epsilon::chi(meep::component c, const meep::vec &r, int p) {
   material_type material;
-  bool destroy_material = get_material_pt(material, r);
+  get_material_pt(material, r);
 
-  double chi2_val;
+  double chi_val;
+
   material_data *md = material;
-  switch (md->which_subclass) {
-  case material_data::MEDIUM:
-    chi2_val = get_chi2(c, md->medium);
-    break;
-  default:
-    chi2_val = 0;
-  }
+  switch (md->which_subclass)
+   {
+     case material_data::MEDIUM:
+     case material_data::MATERIAL_USER:
+       chi_val = get_chi(c, &(md->medium), p );
+       break;
 
-  if (destroy_material)
-    material_type_destroy(material);
+     default:
+       chi_val = 0;
+   };
 
-  return chi2_val;
+  return chi_val;
 }
+
+double geom_epsilon::chi3(meep::component c, const meep::vec &r) 
+ { return chi(c, r, 3); }
+
+double geom_epsilon::chi2(meep::component c, const meep::vec &r) 
+ { return chi(c, r, 2); }
 
 static bool mu_not_1(material_type m)
 {
@@ -1303,20 +1256,17 @@ bool geom_epsilon::has_conductivity(meep::component c)
 static meep::vec geometry_edge; // geometry_lattice.size / 2
 double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   material_type material;
-  bool destroy_material = get_material_pt(material, r);
+  get_material_pt(material, r);
 
   double cond_val;
   material_data *md = material;
   switch (md->which_subclass) {
   case material_data::MEDIUM:
-    cond_val = get_cnd(c, md->medium);
+    cond_val = get_cnd(c, &(md->medium));
     break;
   default:
     cond_val = 0;
   }
-
-  if (destroy_material)
-    material_type_destroy(material);
 
   // if the user specified scalar absorbing layers, add their conductivities
   // to cond_val (isotropically, for both magnetic and electric conductivity).
@@ -1363,41 +1313,26 @@ static bool susceptibility_equiv(const susceptibility *o0,
   if (o0->gamma     != o->gamma)     return 0;
   if (o0->noise_amp != o->noise_amp) return 0;
   if (o0->drude     != o->drude)     return 0;
-  if (o0->is_self   != o->is_self)   return 0;
+  if (o0->is_file   != o->is_file)   return 0;
 
   return 1;
 }
 
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
 			     const meep::vec &r) {
-  vector3 p = vec_to_vector3(r);
-
-  boolean inobject;
-  material_type material = (material_type)
-    material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
-
-  material_data *md = material;
-
-  int destroy_material = 0;
-  if (md->which_subclass == material_data::MATERIAL_TYPE_SELF) {
-    material = (material_type) default_material;
-  }
-  if (md->which_subclass == material_data::MATERIAL_FUNCTION) {
-    // TODO figure this out
-    //material = eval_material_func(material.subclass.
-	//			  material_function_data->material_func,
-	//			  p);
-    destroy_material = 1;
-  }
 
   sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
-  if (md->which_subclass == material_data::MEDIUM) {
-    susceptibility_list slist =
-      type(c) == meep::E_stuff
-      ? md->medium->E_susceptibilities
-      : md->medium->H_susceptibilities;
-    for (int j = 0; j < slist.num_items; ++j)
-      if (susceptibility_equiv(&slist.items[j], &current_pol->user_s)) {
+  material_type mat;
+  get_material_pt(mat, r);
+  medium_struct *m;
+  if ( !is_medium(mat, &m) )
+   return;
+
+  susceptibility_list slist =
+   type(c) == meep::E_stuff ? m->E_susceptibilities
+                            : m->H_susceptibilities;
+  for (int j = 0; j < slist.num_items; ++j)
+   if (susceptibility_equiv(&slist.items[j], &current_pol->user_s)) {
 	int ic = meep::component_index(c);
 	switch (ic) { // which row of the sigma tensor to return
 	case 0:
@@ -1418,10 +1353,6 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3],
 	}
 	break;
       }
-  }
-
-  if (destroy_material)
-    material_type_destroy(material);
 }
 
 // add a polarization to the list if it is not already there
@@ -1478,7 +1409,7 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft,
   for (struct pol *p = pols; p; p = p->next) {
 
     susceptibility *ss=&(p->user_s);
-    if (ss->is_self)
+    if (ss->is_file)
      meep::abort("unknown susceptibility");
     bool noisy = (ss->noise_amp!=0.0);
 
@@ -1648,6 +1579,58 @@ void set_materials_from_geometry(meep::structure *s,
   geps.add_susceptibilities(s);
 
   master_printf("-----------\n");
+}
+
+/***************************************************************/
+/* convenience routines for creating materials of various types*/
+/***************************************************************/
+material_type make_dielectric(double epsilon)
+{
+  material_data *md = (material_data *)malloc(sizeof(*md));
+  md->which_subclass=material_data::MEDIUM;
+  md->user_func=0;
+  md->user_data=0;
+  memcpy( &(md->medium), &vacuum_medium, sizeof(medium_struct));
+  md->medium.epsilon_diag.x=epsilon;
+  md->medium.epsilon_diag.y=epsilon;
+  md->medium.epsilon_diag.z=epsilon;
+  return md;
+}
+
+material_type make_user_material(user_material_func user_func,
+                                 void *user_data)
+{
+  material_data *md = (material_data *)malloc(sizeof(*md));
+  md->which_subclass=material_data::MATERIAL_USER;
+  md->user_func=user_func;
+  md->user_data=user_data;
+  return md;
+}
+
+// this routine subsumes the content of the old
+// 'read_epsilon_file' routine
+material_type make_file_material(const char *eps_input_file)
+{
+  material_data *md = (material_data *)malloc(sizeof(*md));
+  md->which_subclass=material_data::MATERIAL_FILE;
+
+  md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
+  if (eps_input_file && eps_input_file[0]) { // file specified
+    char *fname = new char[strlen(eps_input_file)+1];
+    strcpy(fname, eps_input_file);
+    // parse epsilon-input-file as "fname.h5:dataname"
+    char *dataname = strrchr(fname, ':');
+    if (dataname) *(dataname++) = 0;
+    meep::h5file eps_file(fname, meep::h5file::READONLY, false);
+    int rank; // ignored since rank < 3 is equivalent to singleton dims
+    md->epsilon_data = eps_file.read(dataname, &rank, md->epsilon_dims, 3);
+    master_printf("read in %dx%dx%d epsilon-input-file \"%s\"\n",
+		  md->epsilon_dims[0],
+                  md->epsilon_dims[1],
+                  md->epsilon_dims[2],
+		  eps_input_file);
+  }
+  return md;
 }
 
 } // namespace meep_geom

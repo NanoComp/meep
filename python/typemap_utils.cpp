@@ -268,7 +268,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
         s->drude = false;
     }
 
-    s->is_self = false;
+    s->is_file = false;
 
     return 1;
 }
@@ -294,7 +294,7 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
         sl->items[i].gamma = s.gamma;
         sl->items[i].noise_amp = s.noise_amp;
         sl->items[i].drude = s.drude;
-        sl->items[i].is_self = s.is_self;
+        sl->items[i].is_file = s.is_file;
     }
 
     return 1;
@@ -306,12 +306,13 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     md->which_subclass = material_data::MEDIUM;
     md->user_func = 0;
     md->user_data = 0;
-    md->medium = new medium_struct();
+    md->epsilon_data = 0;
+    md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 0;
 
-    if (!get_attr_v3(po, &md->medium->epsilon_diag, "epsilon_diag") ||
-       !get_attr_v3(po, &md->medium->epsilon_offdiag, "epsilon_offdiag") ||
-       !get_attr_v3(po, &md->medium->mu_diag, "mu_diag") ||
-       !get_attr_v3(po, &md->medium->mu_offdiag, "mu_offdiag")) {
+    if (!get_attr_v3(po, &md->medium.epsilon_diag, "epsilon_diag") ||
+        !get_attr_v3(po, &md->medium.epsilon_offdiag, "epsilon_offdiag") ||
+        !get_attr_v3(po, &md->medium.mu_diag, "mu_diag") ||
+        !get_attr_v3(po, &md->medium.mu_offdiag, "mu_offdiag")) {
 
         return 0;
     }
@@ -323,8 +324,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
         return 0;
     }
 
-    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium->E_susceptibilities) ||
-       !py_list_to_susceptibility_list(py_h_susceptibilities, &md->medium->H_susceptibilities)) {
+    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium.E_susceptibilities) ||
+       !py_list_to_susceptibility_list(py_h_susceptibilities, &md->medium.H_susceptibilities)) {
 
         return 0;
     }
@@ -332,12 +333,12 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     Py_XDECREF(py_e_susceptibilities);
     Py_XDECREF(py_h_susceptibilities);
 
-    if (!get_attr_v3(po, &md->medium->E_chi2_diag, "E_chi2_diag") ||
-       !get_attr_v3(po, &md->medium->E_chi3_diag, "E_chi3_diag") ||
-       !get_attr_v3(po, &md->medium->H_chi2_diag, "H_chi2_diag") ||
-       !get_attr_v3(po, &md->medium->H_chi3_diag, "H_chi3_diag") ||
-       !get_attr_v3(po, &md->medium->D_conductivity_diag, "D_conductivity_diag") ||
-       !get_attr_v3(po, &md->medium->B_conductivity_diag, "B_conductivity_diag")) {
+    if (!get_attr_v3(po, &md->medium.E_chi2_diag, "E_chi2_diag") ||
+        !get_attr_v3(po, &md->medium.E_chi3_diag, "E_chi3_diag") ||
+        !get_attr_v3(po, &md->medium.H_chi2_diag, "H_chi2_diag") ||
+        !get_attr_v3(po, &md->medium.H_chi3_diag, "H_chi3_diag") ||
+        !get_attr_v3(po, &md->medium.D_conductivity_diag, "D_conductivity_diag") ||
+       !get_attr_v3(po, &md->medium.B_conductivity_diag, "B_conductivity_diag")) {
 
         return 0;
     }
