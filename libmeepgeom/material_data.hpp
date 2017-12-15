@@ -126,6 +126,8 @@ material_type make_file_material(char *epsilon_input_file);
 void read_epsilon_file(const char *eps_input_file);
 
 
+
+
 }; // namespace meep_geom
 
 #endif // #ifndef MATERIAL_DATA_H
