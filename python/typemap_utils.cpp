@@ -29,16 +29,6 @@
     #define PyInteger_FromLong(n) PyInt_FromLong(n)
 #endif
 
-static PyObject *py_geometric_object() {
-    static PyObject *geometric_object = NULL;
-    if (geometric_object == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        geometric_object = PyObject_GetAttrString(geom_mod, "GeometricObject");
-        Py_XDECREF(geom_mod);
-    }
-    return geometric_object;
-}
-
 static PyObject *py_source_time_object() {
     static PyObject *source_time_object = NULL;
     if (source_time_object == NULL) {
@@ -222,6 +212,19 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
+static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    *result = PyInteger_AsLong(py_attr);
+    Py_DECREF(py_attr);
+    return 1;
+}
+
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -341,6 +344,29 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     }
 
     *mt = md;
+
+    return 1;
+}
+
+static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
+
+    if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
+        !get_attr_int(py_absorber, &a->direction, "direction") ||
+        !get_attr_int(py_absorber, &a->side, "side") ||
+        !get_attr_dbl(py_absorber, &a->R_asymptotic, "r_asymptotic") ||
+        !get_attr_dbl(py_absorber, &a->mean_stretch, "mean_stretch")) {
+
+        return 0;
+    }
+
+    PyObject *py_pml_profile_func = PyObject_GetAttrString(py_absorber, "pml_profile");
+
+    if (!py_pml_profile_func) {
+        PyErr_Format(PyExc_ValueError, "Class attribute 'pml_profile' is None\n");
+        return 0;
+    }
+
+    a->pml_profile_data = py_pml_profile_func;
 
     return 1;
 }

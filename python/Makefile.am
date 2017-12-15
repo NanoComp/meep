@@ -31,6 +31,7 @@ endif
 TEST_DIR = tests
 TESTS =                                 \
     $(TEST_DIR)/3rd_harm_1d.py          \
+    $(TEST_DIR)/absorber_1d.py          \
     $(TEST_DIR)/antenna_radiation.py    \
     $(TEST_DIR)/bend_flux.py            \
     $(TEST_DIR)/cavity_arrayslice.py    \

@@ -52,7 +52,6 @@ PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
 
-static PyObject *py_geometric_object();
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
 static PyObject* vec2py(const meep::vec &v);
@@ -65,9 +64,10 @@ static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
+static int get_attr_int(PyObject *py_obj, int *result, const char *name);
 static int get_attr_material(PyObject *po, material_type *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
-
+static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a);
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
 
@@ -88,13 +88,13 @@ double py_pml_profile(double u, void *f) {
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(u);
 
-    if(!PyCallable_Check(func)) {
-        PyErr_SetString(PyExc_TypeError, "py_pml_profile: Object is not callable");
-        // TODO(chogan): Fix this error handling.
-        throw;
+    if (!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_TypeError, "py_pml_profile: Expected a callable");
+        PyErr_Print();
     }
 
     PyObject *pyret = PyObject_CallFunctionObjArgs(func, d, NULL);
+
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
     Py_XDECREF(d);
@@ -285,10 +285,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 // Typemap suite for GEOMETRIC_OBJECT
-
-%typecheck(SWIG_TYPECHECK_POINTER) GEOMETRIC_OBJECT {
-    $1 = PyObject_IsInstance($input, py_geometric_object());
-}
 
 %typemap(in) GEOMETRIC_OBJECT {
     if(!py_gobj_to_gobj($input, &$1)) {
@@ -596,6 +592,79 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         delete[] $4;
     }
     Py_XDECREF(data$argnum.func);
+}
+
+// Typemap suite for absorber_list
+
+%typecheck(SWIG_TYPECHECK_POINTER) meep_geom::absorber_list {
+    $1 = PySequence_Check($input) || $input == Py_None;
+}
+
+%typemap(in) meep_geom::absorber_list {
+
+    if ($input == Py_None) {
+        $1 = 0;
+    } else {
+        $1 = create_absorber_list();
+
+        Py_ssize_t len = PyList_Size($input);
+
+        for (Py_ssize_t i = 0; i < len; i++) {
+            absorber a;
+            PyObject *py_absorber = PyList_GetItem($input, i);
+
+            if (!pyabsorber_to_absorber(py_absorber, &a)) {
+                SWIG_fail;
+            }
+
+            add_absorbing_layer($1, a.thickness, a.direction, a.side, a.strength,
+                                a.R_asymptotic, a.mean_stretch, py_pml_profile,
+                                a.pml_profile_data);
+            Py_DECREF((PyObject *)a.pml_profile_data);
+        }
+    }
+}
+
+%typemap(freearg) meep_geom::absorber_list {
+    if ($1) {
+        destroy_absorber_list($1);
+    }
+}
+
+// Typemap suite for material_type_list
+
+%typecheck(SWIG_TYPECHECK_POINTER) material_type_list {
+    $1 = PySequence_Check($input);
+}
+
+%typemap(in) material_type_list {
+    Py_ssize_t len = PyList_Size($input);
+
+    if (len == 0) {
+        $1 = material_type_list();
+    } else {
+        material_type_list mtl;
+        mtl.num_items = len;
+        mtl.items = new material_type[len];
+        for (Py_ssize_t i = 0; i < len; i++) {
+            PyObject *py_material = PyList_GetItem($input, i);
+            if (!pymaterial_to_material(py_material, &mtl.items[i])) {
+                SWIG_fail;
+            }
+        }
+    }
+}
+
+%typemap(freearg) material_type_list {
+    if ($1.num_items != 0) {
+        for (int i = 0; i < $1.num_items; i++) {
+            delete[] $1.items[i]->medium->E_susceptibilities.items;
+            delete[] $1.items[i]->medium->H_susceptibilities.items;
+            delete $1.items[i]->medium;
+            delete $1.items[i];
+        }
+        delete[] $1.items;
+    }
 }
 
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;

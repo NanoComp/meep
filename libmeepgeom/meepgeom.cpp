@@ -1504,7 +1504,8 @@ void set_materials_from_geometry(meep::structure *s,
                                  bool _ensure_periodicity,
                                  bool verbose,
                                  material_type _default_material,
-                                 absorber_list alist)
+                                 absorber_list alist,
+                                 material_type_list extra_materials)
 {
   geom_epsilon::verbose=verbose;
 
@@ -1549,9 +1550,6 @@ void set_materials_from_geometry(meep::structure *s,
   master_printf("Computational cell is %g x %g x %g with resolution %g\n",
                 size.x, size.y, size.z, resolution);
 
-  material_type_list extra_materials;
-  extra_materials.items=0;
-  extra_materials.num_items=0;
   geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
 
   /***************************************************************/
