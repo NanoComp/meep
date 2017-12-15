@@ -298,6 +298,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
+        delete[] ((material_data *)$1.material)->medium->E_susceptibilities.items;
+        delete[] ((material_data *)$1.material)->medium->H_susceptibilities.items;
+        delete ((material_data *)$1.material)->medium;
+        delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
 }
@@ -322,6 +326,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
+        delete[] ((material_data *)$1.items[i].material)->medium->E_susceptibilities.items;
+        delete[] ((material_data *)$1.items[i].material)->medium->H_susceptibilities.items;
+        delete ((material_data *)$1.items[i].material)->medium;
+        delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
     delete[] $1.items;
@@ -411,6 +419,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     delete $1;
 }
 
+// Typemap suite for material_type
+
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
     $1 = PyObject_IsInstance($input, py_material_object());
 }
@@ -419,6 +429,13 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if(!pymaterial_to_material($input, &$1)) {
         SWIG_fail;
     }
+}
+
+%typemap(freearg) material_type {
+    delete[] $1->medium->E_susceptibilities.items;
+    delete[] $1->medium->H_susceptibilities.items;
+    delete $1->medium;
+    delete $1;
 }
 
 // Typemap suite for array_slice
@@ -512,6 +529,78 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     Py_XDECREF(tmp_data$argnum.func);
 }
 
+// integrate2
+%typecheck(SWIG_TYPECHECK_POINTER) (int num_fields1, const meep::component *components1, int num_fields2,
+                                    const meep::component *components2, meep::field_function integrand,
+                                    void *integrand_data_) {
+    $1 = PySequence_Check($input) &&
+         PySequence_Check(PyList_GetItem($input, 0)) &&
+         PySequence_Check(PyList_GetItem($input, 1)) &&
+         PyCallable_Check(PyList_GetItem($input, 2));
+}
+
+%typemap(in) (int num_fields1, const meep::component *components1, int num_fields2,
+              const meep::component *components2, meep::field_function integrand,
+              void *integrand_data_) (py_field_func_data data) {
+
+    if (!PySequence_Check($input)) {
+        PyErr_SetString(PyExc_ValueError, "Expected a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs1 = PyList_GetItem($input, 0);
+
+    if (!PySequence_Check(cs1)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 1st item in list to be a sequence");
+        SWIG_fail;
+    }
+
+    PyObject *cs2 = PyList_GetItem($input, 1);
+
+    if (!PySequence_Check(cs2)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 2nd item in list to be a sequence");
+    }
+
+    PyObject *func = PyList_GetItem($input, 2);
+
+    if (!PyCallable_Check(func)) {
+        PyErr_SetString(PyExc_ValueError, "Expected 3rd item in list to be a function");
+        SWIG_fail;
+    }
+
+    $1 = PyList_Size(cs1);
+    $3 = PyList_Size(cs2);
+
+    $2 = new meep::component[$1];
+    $4 = new meep::component[$3];
+
+    for (Py_ssize_t i = 0; i < $1; i++) {
+        $2[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs1, i));
+    }
+
+    for (Py_ssize_t i = 0; i < $3; i++) {
+        $4[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs2, i));
+    }
+
+    $5 = py_field_func_wrap;
+
+    data.num_components = $1 + $3;
+    data.func = func;
+    Py_INCREF(func);
+    $6 = &data;
+}
+
+%typemap(freearg) (int num_fields1, const meep::component *components1, int num_fields2,
+                   const meep::component *components2, meep::field_function integrand, void *integrand_data_) {
+    if ($2) {
+        delete[] $2;
+    }
+    if ($4) {
+        delete[] $4;
+    }
+    Py_XDECREF(data$argnum.func);
+}
+
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
 // Rename python builtins
@@ -579,10 +668,12 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         Symmetry,
         Volume,
         after_sources,
+        after_sources_and_time,
         after_time,
         at_beginning,
         at_end,
         at_every,
+        at_time,
         dft_ldos,
         display_progress,
         during_sources,
@@ -590,8 +681,11 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         get_fluxes,
         get_force_freqs,
         get_forces,
+        get_near2far_freqs,
         get_ldos_freqs,
+        in_point,
         in_volume,
+        inf,
         interpolate,
         output_epsilon,
         output_mu,
@@ -636,11 +730,18 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
         output_sfield_r,
         output_sfield_p,
         py_v3_to_vec,
+        scale_flux_fields,
+        scale_force_fields,
+        scale_near2far_fields,
         stop_when_fields_decayed,
         synchronized_magnetic,
-        to_appended
+        to_appended,
+        when_true,
+        when_false,
+        with_prefix
     )
     from .source import (
+        ALL_COMPONENTS,
         ContinuousSource,
         CustomSource,
         EigenModeSource,
@@ -661,15 +762,15 @@ extern boolean point_in_objectp(vector3 p, GEOMETRIC_OBJECT o);
             comm = MPI.COMM_WORLD
             master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
 
-            if comm.Get_rank() != 0:
+            if not am_master():
                 import os
                 import sys
                 saved_stdout = sys.stdout
                 sys.stdout = open(os.devnull, 'w')
-                
+
     vacuum = Medium(epsilon=1)
     air = Medium(epsilon=1)
-    metal = Medium(epsilon=-1e20)
-    perfect_electric_conductor = Medium(epsilon=-1e20)
-    perfect_magnetic_conductor = Medium(mu=-1e20)
+    metal = Medium(epsilon=-inf)
+    perfect_electric_conductor = Medium(epsilon=-inf)
+    perfect_magnetic_conductor = Medium(mu=-inf)
 %}

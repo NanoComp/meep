@@ -67,15 +67,15 @@ script:
   - make
 #
   - pushd tests
-  - make check TESTS=${CORETESTS} VERBOSE=1 || cat test-suite.log
+  - make check TESTS=${CORETESTS} VERBOSE=1 || (cat test-suite.log && exit 1)
   - popd
 #
   - pushd libmeepgeom
-  - make check || cat test-suite.log
+  - make check || (cat test-suite.log && exit 1)
   - popd
 #
   - pushd python
-  - make check || cat test-suite.log
+  - make check || (cat test-suite.log && exit 1)
   - popd
 #
   - popd

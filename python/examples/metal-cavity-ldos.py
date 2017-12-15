@@ -14,12 +14,12 @@ def main(args):
     pml_layers = [mp.PML(dpml)]
     a = 1
     t = 0.1
-    geometry = [mp.Block(mp.Vector3(a + 2 * t, a + 2 * t, 1e20), material=mp.metal),
-                mp.Block(mp.Vector3(a, a, 1e20), material=mp.air)]
+    geometry = [mp.Block(mp.Vector3(a + 2 * t, a + 2 * t, mp.inf), material=mp.metal),
+                mp.Block(mp.Vector3(a, a, mp.inf), material=mp.air)]
 
     w = args.w
     if w > 0:
-        geometry.append(mp.Block(center=mp.Vector3(a / 2), size=mp.Vector3(2 * t, w, 1e20),
+        geometry.append(mp.Block(center=mp.Vector3(a / 2), size=mp.Vector3(2 * t, w, mp.inf),
                                  material=mp.air))
 
         fcen = math.sqrt(0.5) / a

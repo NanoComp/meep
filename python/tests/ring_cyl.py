@@ -21,7 +21,7 @@ class TestRingCyl(unittest.TestCase):
         geometry = [
             mp.Block(
                 center=mp.Vector3(self.r + (w / 2)),
-                size=mp.Vector3(w, 1e20, 1e20),
+                size=mp.Vector3(w, mp.inf, mp.inf),
                 material=mp.Medium(index=n)
             )
         ]

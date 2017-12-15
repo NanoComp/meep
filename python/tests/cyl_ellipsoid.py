@@ -16,7 +16,7 @@ class TestCylEllipsoid(unittest.TestCase):
     def init(self):
 
         c = mp.Cylinder(radius=3, material=mp.Medium(index=3.5))
-        e = mp.Ellipsoid(size=mp.Vector3(1, 2, 1e20))
+        e = mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf))
 
         sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.1),
                             component=self.src_cmpt,

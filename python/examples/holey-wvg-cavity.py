@@ -29,7 +29,7 @@ def main(args):
 
     cell = mp.Vector3(sx, sy, 0)
 
-    blk = mp.Block(size=mp.Vector3(1e20, w, 1e20),
+    blk = mp.Block(size=mp.Vector3(mp.inf, w, mp.inf),
                    material=mp.Medium(epsilon=eps))
 
     geometry = [blk]

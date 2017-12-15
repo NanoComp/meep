@@ -4,6 +4,9 @@ import meep as mp
 from meep.geom import Vector3, check_nonnegative
 
 
+ALL_COMPONENTS = mp.Dielectric
+
+
 def check_positive(prop, val):
     if val > 0:
         return val
@@ -79,7 +82,7 @@ class EigenModeSource(Source):
     def __init__(self, src, center,
                  eig_lattice_size=None,
                  eig_lattice_center=None,
-                 component=mp.Dielectric,
+                 component=ALL_COMPONENTS,
                  direction=-1,
                  eig_band=1,
                  eig_kpoint=Vector3(),

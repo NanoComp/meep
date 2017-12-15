@@ -10,9 +10,9 @@ cell = mp.Vector3(16, 8)
 
 # an asymmetrical dielectric waveguide:
 geometry = [
-    mp.Block(center=mp.Vector3(), size=mp.Vector3(1e20, 1, 1e20),
+    mp.Block(center=mp.Vector3(), size=mp.Vector3(mp.inf, 1, mp.inf),
              material=mp.Medium(epsilon=12)),
-    mp.Block(center=mp.Vector3(y=0.3), size=mp.Vector3(1e20, 0.1, 1e20),
+    mp.Block(center=mp.Vector3(y=0.3), size=mp.Vector3(mp.inf, 0.1, mp.inf),
              material=mp.Medium())
 ]
 

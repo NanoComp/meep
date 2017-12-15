@@ -1,9 +1,13 @@
+import os
+import shutil
 import unittest
 import numpy as np
 import meep as mp
 
 
 class TestSimulation(unittest.TestCase):
+
+    fname = 'simulation-ez-000200.00.h5'
 
     def test_interpolate_numbers(self):
 
@@ -77,6 +81,88 @@ class TestSimulation(unittest.TestCase):
         self.assertEqual(len(expected), len(res))
         np.testing.assert_allclose(expected, res)
 
+    def init_simple_simulation(self):
+        resolution = 20
+
+        cell = mp.Vector3(10, 10)
+
+        pml_layers = mp.PML(1.0)
+
+        fcen = 1.0
+        df = 1.0
+
+        sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(),
+                            component=mp.Ez)
+
+        symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
+
+        return mp.Simulation(resolution=resolution,
+                             cell_size=cell,
+                             boundary_layers=[pml_layers],
+                             sources=[sources],
+                             symmetries=symmetries)
+
+    @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
+    def test_mpi(self):
+        self.assertGreater(mp.comm.Get_size(), 1)
+
+    def test_use_output_directory_default(self):
+        sim = self.init_simple_simulation()
+        sim.use_output_directory()
+        sim.run(mp.at_end(mp.output_efield_z), until=200)
+
+        output_dir = 'simulation-out'
+        self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
+
+        mp.all_wait()
+        if mp.am_master():
+            shutil.rmtree(output_dir)
+
+    def test_use_output_directory_custom(self):
+        sim = self.init_simple_simulation()
+        sim.use_output_directory('custom_dir')
+        sim.run(mp.at_end(mp.output_efield_z), until=200)
+
+        output_dir = 'custom_dir'
+        self.assertTrue(os.path.exists(os.path.join(output_dir, self.fname)))
+
+        mp.all_wait()
+        if mp.am_master():
+            shutil.rmtree(output_dir)
+
+    def test_at_time(self):
+        sim = self.init_simple_simulation()
+        sim.run(mp.at_time(100, mp.output_efield_z), until=200)
+
+        fname = 'simulation-ez-000100.00.h5'
+        self.assertTrue(os.path.exists(fname))
+
+        mp.all_wait()
+        if mp.am_master():
+            os.remove(fname)
+
+    def test_after_sources_and_time(self):
+        sim = self.init_simple_simulation()
+
+        done = [False]
+
+        def _done(sim, todo):
+            done[0] = True
+
+        sim.run(mp.after_sources_and_time(1, _done), until_after_sources=2)
+
+        self.assertTrue(done[0])
+
+    def test_with_prefix(self):
+        sim = self.init_simple_simulation()
+        sim.run(mp.with_prefix('test_prefix-', mp.at_end(mp.output_efield_z)), until=200)
+
+        fname = 'test_prefix-simulation-ez-000200.00.h5'
+        self.assertTrue(os.path.exists(fname))
+
+        mp.all_wait()
+        if mp.am_master():
+            os.remove(fname)
 
 if __name__ == '__main__':
     unittest.main()
