@@ -177,7 +177,7 @@ class GeometricObject(object):
         self.center = center
 
     def __contains__(self, point):
-        return mp.point_in_objectp(point, self)
+        return mp.is_point_in_object(point, self)
 
     def shift(self, vec):
         self.center += vec

@@ -114,7 +114,7 @@ class TestSphere(unittest.TestCase):
         s = gm.Sphere(center=zeros(), radius=2.0)
         point = ones()
         self.assertTrue(point in s)
-        self.assertTrue(mp.point_in_periodic_objectp(mp.Vector3(), s))
+        self.assertTrue(mp.is_point_in_periodic_object(mp.Vector3(), s))
         self.assertIn(point, s)
         self.assertFalse(gm.Vector3(10, 10, 10) in s)
 
