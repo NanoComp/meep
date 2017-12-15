@@ -12,6 +12,7 @@
 
 #include "ctl-math.h"
 #include "ctlgeom.h"
+#include "mpb.h"
 
 #include "meepgeom.hpp"
 
@@ -20,39 +21,17 @@ using namespace meep;
 typedef std::complex<double> cdouble;
 
 namespace meep{
-void output_hdf5_flux(fields *f, dft_flux *flux, const volume where,
-                      const char *HDF5FileName,
-                      bool retain_integration_weight=false);
-
-cdouble get_mode_mode_overlap(fields *f, dft_flux *flux,
-                              const volume where, double omega,
-                              int band_num_1, int band_num_2,
-                              kpoint_func k_func, void *k_func_data,
-                              cdouble overlap_components[4]);
-
-extern cdouble global_flux_dot_mode_components[4];
-}
-
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-void nudge_onto_dielectric_grid(grid_volume gv, vec &v)
-{ 
-  ivec iv = gv.round_vec(v);
-  if ( (iv.x() % 2) == 0 )
-   iv += ivec(1,0,0);
-  if ( (iv.y() % 2) == 0 )
-   iv += ivec(0,1,0);
-  if ( (iv.z() % 2) == 0 )
-   iv += ivec(0,0,1);
-
-  v=gv[iv];
+void output_mode_fields(void *vedata, grid_volume gv, volume where,
+                        const char *HDF5FileName);
+void destroy_eigenmode_data(void *vedata);
 }
 
 /***************************************************************/
 /* function to provide initial guess for the wavevector of the */
 /* eigenmode with frequency freq and band index band           */
 /***************************************************************/
+bool equal_float(double x, double y) { return (float)x == (float)y; }
+
 vec k_guess(void *user_data, double freq, int band_num)
 {
   (void) user_data;
@@ -60,10 +39,13 @@ vec k_guess(void *user_data, double freq, int band_num)
   (void) band_num;
 
 // hard-coded dispersion relations
-  if (band_num==0)
-   return vec(0.0, 0.0, 3.8978*freq - 0.273203);
-  else 
-   return vec(0.0, 0.0, 4.23559*freq - 0.44189);
+  if ( equal_float(freq,0.25) )
+   { if (band_num==1) return vec(0.0, 0.0, 0.736917);
+     if (band_num==2) return vec(0.0, 0.0, 0.736917);
+     if (band_num==3) return vec(0.0, 0.0, 0.736917);
+   };
+
+  return vec(0.0, 0.0, 0.736917);
 } 
 
 /***************************************************************/
@@ -201,16 +183,49 @@ int main(int argc, char *argv[])
   while( f.round_time() < (f.last_source_time() + 10.0) )
    f.step();
 
- // f.output_hdf5_flux(&flux, fvB, "flux");
+  f.output_flux_fields(&flux, fvB, "flux", true);
+
+  ivec min_corner, max_corner;
+  f.get_flux_extents(&flux, fvB, min_corner, max_corner);
+
+  double eigensolver_tol=1.0e-4;
+  void *vedata;
+  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
+                         1, k_guess(0,fcen,1),
+                         true, 0, resolution,
+                         eigensolver_tol);
+  output_mode_fields(vedata, gv, fvB, "mode1.h5");
+  destroy_eigenmode_data(vedata);
+
+  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
+                         2, k_guess(0,fcen,2),
+                         true, 0, resolution,
+                         eigensolver_tol);
+  output_mode_fields(vedata, gv, fvB, "mode2.h5");
+  destroy_eigenmode_data(vedata);
+
+  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
+                         3, k_guess(0,fcen,3),
+                         true, 0, resolution,
+                         eigensolver_tol);
+  output_mode_fields(vedata, gv, fvB, "mode3.h5");
+  destroy_eigenmode_data(vedata);
+
+  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
+                         4, k_guess(0,fcen,4),
+                         true, 0, resolution,
+                         eigensolver_tol);
+  output_mode_fields(vedata, gv, fvB, "mode4.h5");
+  destroy_eigenmode_data(vedata);
              
   /***************************************************************/
   /* compute mode expansion coefficients *************************/
   /***************************************************************/
-  std::vector<int> bands(4);
+  std::vector<int> bands(3);
   bands[0]=1;
   bands[1]=2;
   bands[2]=3;
-  bands[3]=4;
+  //bands[3]=4;
 
   int num_bands = bands.size();
   int num_freqs = flux.Nfreq;
@@ -218,22 +233,17 @@ int main(int argc, char *argv[])
  // std::vector<cdouble> coeffs =
  //  f.get_eigenmode_coefficients(&flux, Z, fvB, bands, k_guess, 0);
 
+#if 0
   for(int nb=0; nb<num_bands; nb++)
    { 
      int band_num=bands[nb];
      cdouble components1[4], components2[4];
+     double vgrp;
+     //cdouble flux_mode = f.get_eigenmode_coefficient(&flux, 0, Z, fvB, band_num, k_guess, 0, &vgrp);
 
-     cdouble flux_mode = f.get_eigenmode_coefficient(&flux, 0, Z, fvB, band_num, k_guess, 0);
-//global_flux_dot_mode_components[4];
-
-     printf("Howdage foryaf!\n");
-     cdouble mode_mode_components[4];
-     cdouble mode_mode=get_mode_mode_overlap(&f, &flux, fvB, fcen, 1, band_num,
-                                             k_guess, 0, mode_mode_components);
-
-     if (am_master())                          
+     if (am_master())
       { FILE *ff=fopen("duct-junction.log",nb==0 ? "w" : "a");
-        fprintf(ff,"mode %i: \n",band_num);
+        fprintf(ff,"mode %i (vgrp=%e): \n",band_num,vgrp);
         fprintf(ff," flux-mode {%+e,%+e}\n", real(global_flux_dot_mode_components[0]), imag(global_flux_dot_mode_components[0]));
         fprintf(ff,"           {%+e,%+e}\n", real(global_flux_dot_mode_components[1]), imag(global_flux_dot_mode_components[1]));
         fprintf(ff,"           {%+e,%+e}\n", real(global_flux_dot_mode_components[2]), imag(global_flux_dot_mode_components[2]));
@@ -241,16 +251,27 @@ int main(int argc, char *argv[])
         fprintf(ff,"-----------------------------------------\n");
         fprintf(ff,"           {%+e,%+e}\n", real(flux_mode), imag(flux_mode));
         fprintf(ff,"\n");
-        fprintf(ff," mode-mode {%+e,%+e}\n", real(mode_mode_components[0]), imag(mode_mode_components[0]));
-        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[1]), imag(mode_mode_components[1]));
-        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[2]), imag(mode_mode_components[2]));
-        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[3]), imag(mode_mode_components[3]));
-        fprintf(ff,"-----------------------------------------\n");
-        fprintf(ff,"           {%+e,%+e}\n", real(mode_mode), imag(mode_mode));
-        fprintf(ff,"\n");
+        fflush(ff);
+
+        for(int nbp=nb; nbp<num_bands; nbp++)
+         { int band_nump=bands[nbp]; 
+           cdouble mode_mode_components[4];
+           printf("Getting mode_mode overlap(%i,%i)\n",band_nump,band_num);
+           cdouble mode_mode=get_mode_mode_overlap(&f, &flux, fvB, fcen, band_nump, band_num, k_guess, 0, mode_mode_components);
+   
+           fprintf(ff,"mm%i-%i:   {%+e,%+e}\n", band_nump, band_num, real(mode_mode_components[0]), imag(mode_mode_components[0]));
+           fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[1]), imag(mode_mode_components[1]));
+           fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[2]), imag(mode_mode_components[2]));
+           fprintf(ff,"           {%+e,%+e}\n", real(mode_mode_components[3]), imag(mode_mode_components[3]));
+           fprintf(ff,"-----------------------------------------\n");
+           fprintf(ff,"           {%+e,%+e}\n", real(mode_mode), imag(mode_mode));
+           fprintf(ff,"\n");
+           fflush(ff);
+         };
         fclose(ff);
       };
    };
+#endif
 
 #if 0   
   if (am_master())
