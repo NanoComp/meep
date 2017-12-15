@@ -837,8 +837,7 @@ public:
 
   void write_hdf5(h5file *file, int nf, int reim, double sign,
                   int rank, direction *ds, ivec min_corner,
-                  realnum *buffer, bool retain_integration_weight);
-  std::complex<realnum> get_mode_chunk_overlap(void *vedata, int nf);
+                  realnum *buffer, bool write_integration_weight);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -1386,7 +1385,7 @@ class fields {
                       double eigensolver_tol);
 
   void add_eigenmode_source(component c, const src_time &src,
-			    direction d, const volume &where,
+	  		    direction d, const volume &where,
 			    const volume &eig_vol,
 			    int band_num,
 			    const vec &kpoint, bool match_frequency,
@@ -1478,8 +1477,11 @@ class fields {
 			      double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
-  void output_hdf5_flux(dft_flux *flux, const volume where,
-                        const char *HDF5FileName, bool retain_integration_weight=false);
+
+  void get_flux_extents(dft_flux *flux, const volume where,
+                        ivec &min_corner, ivec &max_corner);
+  void output_flux_fields(dft_flux *flux, const volume where,
+                          const char *HDF5FileName, bool write_integration_weights=false);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,
