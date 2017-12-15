@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import meep as mp
 import meep.geom as gm
 
 
@@ -9,6 +10,64 @@ def zeros():
 
 def ones():
     return gm.Vector3(1, 1, 1)
+
+
+class TestGeom(unittest.TestCase):
+
+    def test_geometric_object_duplicates_x(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        res = mp.geometric_object_duplicates(mp.Vector3(x=1), 1, 5, s)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(x=1)),
+            mp.Sphere(rad, center=mp.Vector3(x=2)),
+            mp.Sphere(rad, center=mp.Vector3(x=3)),
+            mp.Sphere(rad, center=mp.Vector3(x=4)),
+            mp.Sphere(rad, center=mp.Vector3(x=5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
+
+    def test_geometric_object_duplicates_xyz(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Sphere(rad, center=mp.Vector3(5, 5, 5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
+
+    def test_geometric_object_duplicates_multiple_objs(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        c = mp.Cylinder(rad)
+
+        res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s, c)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Sphere(rad, center=mp.Vector3(5, 5, 5)),
+            mp.Cylinder(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Cylinder(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Cylinder(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Cylinder(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Cylinder(rad, center=mp.Vector3(5, 5, 5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
 
 
 class TestSphere(unittest.TestCase):
@@ -55,8 +114,26 @@ class TestSphere(unittest.TestCase):
         s = gm.Sphere(center=zeros(), radius=2.0)
         point = ones()
         self.assertTrue(point in s)
+        self.assertTrue(mp.is_point_in_periodic_object(mp.Vector3(), s))
         self.assertIn(point, s)
         self.assertFalse(gm.Vector3(10, 10, 10) in s)
+
+    def test_shift(self):
+        s = gm.Sphere(center=zeros(), radius=2.0)
+        self.assertEqual(s.center, gm.Vector3())
+
+        s.shift(gm.Vector3(10))
+        self.assertEqual(s.center, gm.Vector3(10, 0, 0))
+
+        s = gm.Sphere(center=gm.Vector3(10, 10), radius=2.0)
+        s.shift(gm.Vector3(-10, -10))
+        self.assertEqual(s.center, gm.Vector3())
+
+    def test_info(self):
+        # Sanity test to ensure that display_geometric_object_info is callable
+        s = gm.Sphere(2)
+        s.info()
+        s.info(2)
 
 
 class TestCylinder(unittest.TestCase):

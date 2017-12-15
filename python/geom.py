@@ -1,6 +1,8 @@
 from __future__ import division
 
 import math
+from copy import deepcopy
+
 import numpy as np
 import meep as mp
 
@@ -175,7 +177,13 @@ class GeometricObject(object):
         self.center = center
 
     def __contains__(self, point):
-        return mp.point_in_objectp(point, self)
+        return mp.is_point_in_object(point, self)
+
+    def shift(self, vec):
+        self.center += vec
+
+    def info(self, indent_by=0):
+        mp.display_geometric_object_info(indent_by, self)
 
 
 class Sphere(GeometricObject):
@@ -247,3 +255,14 @@ class Ellipsoid(Block):
 
     def __init__(self, **kwargs):
         super(Ellipsoid, self).__init__(**kwargs)
+
+
+def geometric_object_duplicates(shift_vector, min, max, *objs):
+    dups = []
+    for obj in objs:
+        for i in range(min, max + 1):
+            o = deepcopy(obj)
+            o.shift(shift_vector.scale(i))
+            dups.append(o)
+
+    return dups
