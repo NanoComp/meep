@@ -497,41 +497,19 @@ dft_flux fields::add_dft_flux_plane(const volume &where,
 /***************************************************************/
 typedef enum { OUTPUT_FLUX, OUTPUT_MODE, MODE_FLUX, MODE_MODE, NO_OP } flux_operation;
 
-typedef struct flux_op_data
- { 
-   int rank;
-   direction *ds;
-   ivec min_corner;
-   h5file *file;
-   double *buffer;
-   int reim;
-   void *mode1_data;
-   component mode1_c;
-   void *mode2_data;
-   component mode2_c;
-   int num_freq;
-   double flux_sign; 
-   
- } flux_op_data;
-
-cdouble dft_chunk::do_flux_operation(flux_op_data *fop_data)
+cdouble dft_chunk::do_flux_operation(int rank,
+                                     direction *ds,
+                                     ivec min_corner,
+                                     h5file *file,
+                                     double *buffer,
+                                     int reim,
+                                     void *mode1_data,
+                                     component mode1_c,
+                                     void *mode2_data,
+                                     component mode2_c,
+                                     int num_freq,
+                                     double flux_sign)
 {
-   /***************************************************************/
-   /* unpack fields from data structure ***************************/
-   /***************************************************************/
-   int rank          = fop_data->rank;
-   direction *ds     = fop_data->ds;
-   ivec min_corner   = fop_data->min_corner;
-   h5file *file      = fop_data->file;
-   double *buffer    = fop_data->buffer;
-   int reim          = fop_data->reim;
-   void *mode1_data  = fop_data->mode1_data;
-   component mode1_c = fop_data->mode1_c;
-   void *mode2_data  = fop_data->mode2_data;
-   component mode2_c = fop_data->mode2_c;
-   int num_freq      = fop_data->num_freq;
-   double flux_sign  = fop_data->flux_sign;
-
    /*****************************************************************/
    /* compute the size of the chunk we own and its strides etc.     */
    /*****************************************************************/
@@ -575,7 +553,7 @@ cdouble dft_chunk::do_flux_operation(flux_op_data *fop_data)
       IVEC_LOOP_LOC(fc->gv, loc);
       loc = S.transform(loc, sn) + rshift;
       double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-      cdouble fluxval = sign*dft[ Nomega*(chunk_idx++) + num_freq];
+      cdouble fluxval = flux_sign*dft[ Nomega*(chunk_idx++) + num_freq];
       if (include_dV_and_interp_weights)
        fluxval /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
@@ -583,13 +561,13 @@ cdouble dft_chunk::do_flux_operation(flux_op_data *fop_data)
       if (mode1_data)
        mode1val=eigenmode_amplitude(loc,mode1_data,mode1_c);
       if (mode2_data)
-       mode2_val=eigenmode_amplitude(loc,mode2_data,mode2_c);
+       mode2val=eigenmode_amplitude(loc,mode2_data,mode2_c);
 
       if (file)
-       { idx2 = ((((offset[0] + offset[1] + offset[2])
-                              + loop_i1 * stride[0])
-                              + loop_i2 * stride[1])
-                              + loop_i3 * stride[2]);
+       { int idx2 = ((((offset[0] + offset[1] + offset[2])
+                                  + loop_i1 * stride[0])
+                                  + loop_i2 * stride[1])
+                                  + loop_i3 * stride[2]);
          cdouble val = (mode1_data ? mode1val : fluxval);
          buffer[idx2] = reim ? imag(val) : real(val);
        }
@@ -603,11 +581,9 @@ cdouble dft_chunk::do_flux_operation(flux_op_data *fop_data)
     }; // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
 
   if (file)
-   { file->write_chunk(rank, start, count, buffer);
-     return 0.0;
-   }
-  else
-   return integral;
+   file->write_chunk(rank, start, count, buffer);
+
+  return integral;
 
 }
 
@@ -643,26 +619,31 @@ cdouble dft_chunk::do_flux_operation(flux_op_data *fop_data)
 /*          integral between the eigenmode fields described    */ 
 /*          by mode1_data and mode2_data.                      */
 /***************************************************************/
-void fields::do_flux_operation(dft_flux *flux, const volume where, const char *HDF5FileName, void *mode1_data, void *mode2_data, int num_freq)
+cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
+                                  const char *HDF5FileName, void *mode1_data, void *mode2_data, int num_freq)
 { 
-  flux_operation flux_ops[4], num_ops=0;
-
+  /***************************************************************/
+  /* look at input arguments to figure out what to do  ***********/
+  /***************************************************************/
+  flux_operation flux_ops[4];
+  int num_ops=0;
   if (HDF5FileName!=0 && mode1_data==0)
-   flux_op[num_ops++] = OUTPUT_FLUX;
+   flux_ops[num_ops++] = OUTPUT_FLUX;
   if (HDF5FileName!=0 && mode1_data!=0)
-   flux_op[num_ops++] = OUTPUT_MODE;
-  if (HDF5FileName==0 && mode1_data!=0)
-   flux_op[num_ops++] = MODE_FLUX;
+   flux_ops[num_ops++] = OUTPUT_MODE;
+  if (HDF5FileName==0 && mode1_data!=0 && mode2_data==0)
+   flux_ops[num_ops++] = MODE_FLUX;
   if (HDF5FileName==0 && mode1_data!=0 && mode2_data!=0)
-   flux_op[num_ops++] = MODE_MODE;
-
+   flux_ops[num_ops++] = MODE_MODE;
   if (num_ops==0)
    abort("no operation specified for do_flux_operation");
   if (num_ops>1)
    abort("more than one operation specified for do_flux_operation");
+
+  flux_operation flux_op=flux_ops[0];
   
   /***************************************************************/
-  /***************************************************************/
+  /* get statistics on the volume slice **************************/
   /***************************************************************/
   int bufsz=0;
   ivec min_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
@@ -697,15 +678,17 @@ void fields::do_flux_operation(dft_flux *flux, const volume where, const char *H
   };
 
   /***************************************************************/
-  /* figure out which components of the E and H fields are       */
-  /* present in the flux object                                  */
+  /* buffer for process-local contributions to HDF5 output files,*/
+  /* like h5_output_data::buf in h5fields.cpp                    */
   /***************************************************************/
-  component cE1[3]={Ex, Ey, Ez},  cH_flux[3]={Hx, Hy, Hz};
-  component cE_mode1[3]={Ex, Ey, Ez}, cH_flux[3]={Hx, Hy, Hz};
-  component cE_mode2[3]={Ex, Ey, Ez}, cH_flux[3]={Hx, Hy, Hz};
+  realnum *buffer = 0;
+  if (HDF5FileName)
+   buffer = new realnum[bufsz];
 
-  if (flux_op==OUTPUT_FLUX || flux_op==MODE_FLUX)
-
+  /***************************************************************/
+  /***************************************************************/
+  /***************************************************************/
+  component cE[2]={Ex, Ey}, cH[2]={Hy, Hx};
   switch (normal_direction(where))
    { case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
      case Y: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
@@ -720,73 +703,139 @@ void fields::do_flux_operation(dft_flux *flux, const volume where, const char *H
      default: abort("invalid flux component!");
    };
 
-  realnum *buffer = 0;
-  if (HDF5FileName)
-   buffer = new realnum[bufsz];
+  component all_components[6] = {Ex, Ey, Ez, Hx, Hy, Hz};
+  component tang_components[4], conj_components[4];
+  tang_components[0] = cE[0]; conj_components[0] = cH[0];
+  tang_components[1] = cE[1]; conj_components[1] = cH[1];
+  tang_components[2] = cH[0]; conj_components[2] = cE[0];
+  tang_components[3] = cH[1]; conj_components[3] = cE[1];
 
-  flux_op_data fop_data;
-  fop_data.rank       = rank;
-  fop_data.ds         = ds;
-  fop_data.min_corner = min_corner;
-  fop_data.buffer     = buffer;
-  fop_data.mode1_data = mode1_data;
-  fop_data.mode2_data = mode2_data;
-  fop_data.num_freq   = num_freq;
-
-  cdouble Overlap=0.0;
+  int ncOverlap=2;
+  if (flux_op==MODE_FLUX || flux_op==MODE_MODE)
+   { // default ExHy - EyHx;
+     // 0,1,2,3 ExHy, EyHx, HyEx, HxEy
+     // 4       ExHy - EyHx + HyEx - HxEy
+     // 5       HyEx - HxEy
+     char *s=getenv("MEEP_OVERLAP_ALGORITHM");
+     if (s && (s[0]>='0' && s[0]<='3') )
+      { ncOverlap=1;
+        int ic=s[0] - '0';
+        tang_components[0] = tang_components[ic];
+        conj_components[0] = conj_components[ic];
+      }
+     else if (s && s[0]=='4')
+      ncOverlap=4;
+     else if (s && s[0]=='5')
+      { tang_components[0]=tang_components[2]; conj_components[0]=conj_components[2];
+        tang_components[1]=tang_components[3]; conj_components[1]=conj_components[3];
+      };
+     if (s) printf("using overlap algorithm %c",s[0]);
+   };
 
   /***************************************************************/
-  /* write separate datasets for the re/im parts of each field   */
-  /* component at each frequency, plus (optionally) the          */
-  /* integration weights (only at the first frequency).          */
-  /* in the loop below, "nc" stands for "number of component"    */
-  /* and is 0,1,2,3,4 for E_{cE[0]}, E_{cE[1]}, H_{cE[0]},       */
-  /* H_{cE[1]}, and integration_weight.                          */
+  /* set up limits for loops over frequencies, components, etc.  */
+  /*                                                             */
+  /* which of the frequencies in the flux object will we use?    */
+  /*  -- if writing flux fields to HDF5:   all frequencies       */
+  /*  -- if computing <mode|flux> overlap: only freq #num_freq   */
+  /*  -- otherwise:                        flux fields not used  */
+  /*                                                             */
+  /* which field components will we consider?                    */
+  /*  -- if writing flux fields to HDF5: tangential cmpts only   */
+  /*  -- if writing mode fields to HDF5: all components          */
+  /*  -- if computing an overlap integral:                       */
+  /*                                                             */
+  /* loop over real/imaginary parts of field components? yes for */
+  /*  -- if writing flux or mode fields to HDF5: yes             */
+  /*  -- if computing overlap integral: no                       */
+  /***************************************************************/
+  int nf_min, nf_max, num_components, reim_max;
+  switch(flux_op)
+   { case OUTPUT_FLUX:
+       nf_min=0; nf_max=flux->Nfreq-1; num_components=4; reim_max=1;
+       break;
+     case OUTPUT_MODE:
+       nf_min=0; nf_max=0;             num_components=6; reim_max=1;
+       break;
+     case MODE_FLUX:  
+       nf_min=nf_max=num_freq;         num_components=ncOverlap; reim_max=0;
+       break;
+     case MODE_MODE:  
+       nf_min=nf_max=0;                num_components=ncOverlap; reim_max=0;
+       break;
+     case NO_OP:
+       abort("%s:%i: internal error",__FILE__,__LINE__);
+   };
+
+  /***************************************************************/
+  /***************************************************************/
   /***************************************************************/
   bool append_data      = false;
   bool single_precision = false;
   bool First            = true;
-  int NumComponents     = (flux_op==OUTPUT_MODE) ? 6     : 4;
-  int NumFreqs          = (flux_op==OUTPUT_FLUX) ? nfreq : 1;
-  for(int nf=0; nf<NumFreqs; nf++)
-   for(int nc=0; nc<NumComponents; nc++)
-    for(int reim=0; reim<2; reim++)
+  cdouble integral      = 0.0;
+  for(int nf=nf_min; nf<=nf_max; nf++)
+   for(int nc=0; nc<num_components; nc++)
+    for(int reim=0; reim<=reim_max; reim++)
      { 
-       if (flux_op==OUTPUT_FLUX)
-        fop_data.num_freq = nf;
-
        char dataname[100];
-       component c;
-       c = (nc<2 ? cE[nc] : cH[nc-2]);
-       snprintf(dataname,100,"%s_%i.%c",component_name(c),nf,reim ? 'i' : 'r');
+       component c_flux=Ex, c_mode=Ex, c_mode2=Ex;
+       if (flux_op==OUTPUT_FLUX)
+        { 
+          c_flux=tang_components[nc];
+          snprintf(dataname,100,"%s_%i.%c",component_name(c_flux),nf,reim ? 'i' : 'r');
+        }
+       else if (flux_op==OUTPUT_MODE)
+        { c_flux = tang_components[0];
+          c_mode = all_components[nc];
+          snprintf(dataname,100,"%s.%c",component_name(c_mode),reim ? 'i' : 'r');
+        }
+       else if (flux_op==MODE_FLUX)
+        { c_mode=tang_components[nc];
+          c_flux=conj_components[nc];
+        }
+       else if (flux_op==MODE_MODE)
+        { c_mode =tang_components[nc];
+          c_mode2=conj_components[nc];
+        };
 
        h5file *file=0;
        if (HDF5FileName)
-        { 
-          file = open_h5file(HDF5FileName, First ? h5file::WRITE : h5file::READWRITE, 0, false);
+        { file = open_h5file(HDF5FileName, First ? h5file::WRITE : h5file::READWRITE, 0, false);
           First=false;
           file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
         };
 
-       // the second component of the E field is stored with a 
+       // the second component of the E field is stored with a
        // minus sign in the flux object, which we need to remove
-       double sign = (nc==1) ? -1.0 : 1.0;
+       double flux_sign = 1.0;
+       if ( (flux_op==OUTPUT_FLUX || flux_op==MODE_FLUX) && (c_flux==cE[1]) )
+        flux_sign = -1.0;
 
-       for (dft_chunk *EH = (nc<2 ? flux->E : flux->H); EH; EH=EH->next_in_dft)
-        if (EH->c == c)
-         EH->do_flux_operation(file, nf, reim, sign, rank, ds, min_corner, buffer, (nc==4) );
-       file->done_writing_chunks();
-       delete file;
+       // 
+       double integral_sign = ( ((nc%2)==1) ? -1.0 : 1.0);
+
+       for (dft_chunk *EH = (c_flux>=Hx ? flux->H : flux->E); EH; EH=EH->next_in_dft)
+        if (EH->c == c_flux)
+         integral += integral_sign * EH->do_flux_operation(rank, ds, min_corner, file, buffer, reim,
+                                                           mode1_data, c_mode, mode2_data, c_mode2, nf, flux_sign);
+
+       if (file)
+        { file->done_writing_chunks();
+          delete file;
+        };
      };
 
-  if (HDF5FileName)
+  if (buffer)
    delete[] buffer;
 
+  return sum_to_all(integral);
   /***************************************************************/
   /* write the lower-left grid corner and grid spacing           */
   /* to the hdf5 file so that it contains enough information     */
   /* to recreate the coordinates of the grid points              */
   /***************************************************************/
+#if 0
   if (am_master())
    { bool parallel=false, single_precision=false;
      char filename[100];
@@ -802,22 +851,24 @@ void fields::do_flux_operation(dft_flux *flux, const volume where, const char *H
      dims[0]=1;
      file.write("inva",1,dims,&(gv.inva),single_precision);
    };
+#endif
 
 }
 
 /***************************************************************/
-/* entry points to flux_operation ******************************/
+/* entry points to flux_operation for various specific         */
+/* calculations                                                */
 /***************************************************************/
 void fields::output_flux_fields(dft_flux *flux, const volume where, const char *HDF5FileName)
-{ flux_operation(flux, where, HDF5FileName, 0, 0); }
+{ do_flux_operation(flux, where, HDF5FileName); }
 
 void fields::output_mode_fields(void *mode_data, dft_flux *flux, const volume where, const char *HDF5FileName)
-{ flux_operation(flux, where, HDF5FileName, mode_data, 0); }
+{ do_flux_operation(flux, where, HDF5FileName, mode_data); }
  
-cdouble fields::get_mode_flux_overlap(void *mode_data, dft_flux *flux, const volume where)
-{ return flux_operation(flux, where, 0, mode_data); }
+cdouble fields::get_mode_flux_overlap(void *mode_data, dft_flux *flux, int num_freq, const volume where)
+{ return do_flux_operation(flux, where, 0, mode_data, 0, num_freq); }
 
 cdouble fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux *flux, const volume where)
-{ return flux_operation(flux, where, 0, mode1_data, mode2_data); }
+{ return do_flux_operation(flux, where, 0, mode1_data, mode2_data); }
 
 } // namespace meep

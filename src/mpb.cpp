@@ -219,21 +219,6 @@ complex<double> eigenmode_amplitude(const vec &p,
 	  * amp_func(p));
 }
 
-/*******************************************************************/
-/* compute position-dependent amplitude for eigenmode source       */
-/*  (similar to the routine formerly called meep_mpb_A)            */
-/*******************************************************************/
-void get_eigenmode_fields(const vec &p, void *vedata, cdouble EH[6])
-{
-  EH[0]=eigenmode_amplitude(p, vedata, Ex);
-  EH[1]=eigenmode_amplitude(p, vedata, Ey);
-  EH[2]=eigenmode_amplitude(p, vedata, Ez);
-  EH[3]=eigenmode_amplitude(p, vedata, Hx);
-  EH[4]=eigenmode_amplitude(p, vedata, Hy);
-  EH[5]=eigenmode_amplitude(p, vedata, Hz);
-  
-}
-
 /***************************************************************/
 /* entry point to eigenmode_amplitude with the right prototype */
 /* for passage as the A parameter to add_volume_source         */
@@ -260,8 +245,9 @@ static complex<double> meep_mpb_A(const vec &p)
 /* structure (needs to be opaque to allow compilation without   */
 /* MPB, in which case maxwell_data and other types aren't       */
 /* defined). this structure may then be passed to               */
-/* get_eigenmode_fields (above) to compute eigenmode E and H    */
+/* eigenmode_amplitude (above) to compute eigenmode E and H     */
 /* field components at arbitrary points in space.               */
+/* call destroy_eigenmode_data() to deallocate when finished.   */
 /****************************************************************/
 void *fields::get_eigenmode(double &omega_src,
 	     		    direction d, const volume &where,
@@ -503,10 +489,10 @@ void *fields::get_eigenmode(double &omega_src,
 
   /*--------------------------------------------------------------*/
   /* do a second round of post-processing to tabulate E-fields   -*/
-  /* on a (separate) internal storage buffer within. (Previously -*/
+  /* on a (separate) internal storage buffer.  (Previously       -*/
   /* there was only one internal buffer which held either E-field */
   /* or H-field data, but this is inconvenient for cases in which */
-  /* you want the E and H fields of an eigenmode simultaneously.  */
+  /* you want the E and H fields of an eigenmode simultaneously.) */
   /*--------------------------------------------------------------*/
   int NFFT = 3*mdata->fft_output_size;
   scalar_complex *fft_data_E=(scalar_complex *)malloc(NFFT*sizeof(scalar_complex));
@@ -541,29 +527,6 @@ void *fields::get_eigenmode(double &omega_src,
   return (void *)edata;
 }
 
-// the eigenmode_data structure returned by get_eigenmode 
-// initially stores H-field data on its internal real-space grid;
-// this routine switches that to E-field data.
-#if 0
-void switch_eigenmode_data_to_electric_field(eigenmode_data *edata)
-{
-  maxwell_data *mdata      = edata->mdata;
-  complex<mpb_real> *cdata = (complex<mpb_real> *)mdata->fft_data;
-  evectmatrix H            = edata->H;
-  int band_num             = edata->band_num;
-  double omega             = edata->omega;
-
-  maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, band_num - 1, 1);
-  // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
-  double scale = -1.0 / omega;
-  int N = mdata->fft_output_size * 3;
-  for (int i = 0; i < N; ++i) 
-   cdata[i] *= scale;
-
-  maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
-}
-#endif
-
 void destroy_eigenmode_data(void *vedata)
 { 
   eigenmode_data *edata = (eigenmode_data *)vedata;
@@ -573,19 +536,9 @@ void destroy_eigenmode_data(void *vedata)
   delete edata;
 }
 
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-FILE *vfopen(const char *format, const char *mode, ...)
-{
-  va_list ap;
-  char buffer[1000];
-  va_start(ap,mode);
-  vsnprintf(buffer,1000,format,ap);
-  va_end(ap);
-
-  FILE *f=fopen(buffer,mode);
-  return f;
+double get_group_velocity(void *vedata)
+{ eigenmode_data *edata = (eigenmode_data *)vedata;
+  return edata->group_velocity;
 }
 
 /***************************************************************/
@@ -688,11 +641,6 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   destroy_eigenmode_data( (void *)global_eigenmode_data);
 }
 
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-#if 0
-<<<<<<< HEAD
 void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
                       int num_freq, char *file_base)
 {
@@ -1142,20 +1090,39 @@ std::vector<cdouble>
                                     kpoint_func k_func,
                                     void *k_func_data)
 { 
-  // write the fields in the dft_flux object to a temporary HDF5 file
-  bool write_integration_weights=true;
-  output_flux_fields(flux, where, HDF5FluxFile, write_integration_weights);
-  
-  // get mode-expansion coefficients for all modes
-  int num_freqs = flux->Nfreq;
-  int num_bands = bands.size();
+  double freq_min      = flux->freq_min;
+  double dfreq         = flux->dfreq;
+  int num_freqs        = flux->Nfreq;
+  int num_bands        = bands.size();
+  bool match_frequency = true;
+  int parity           = 0; // NO_PARITY
+  double resolution    = a;
+  double eig_tol       = 1.0e-4;
   std::vector<cdouble> coeffs( num_freqs * num_bands );
+
+  // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
    for(int nf=0; nf<num_freqs; nf++)
-    coeffs[ nb*num_freqs + nf ]
-     = get_eigenmode_coefficient(flux, nf, d, where, bands[nb],
-                                 k_func, k_func_data);
+    {
+      /*--------------------------------------------------------------*/
+      /*- call mpb to compute the eigenmode --------------------------*/
+      /*--------------------------------------------------------------*/
+      int band_num = bands[nb];
+      double freq  = freq_min + nf*dfreq;
+      vec kpoint(0,0,freq);
+      if (k_func)
+       kpoint = k_func(k_func_data, freq, band_num);
+      void *mode_data 
+       = get_eigenmode(freq, d, where, where, band_num, kpoint, 
+                       match_frequency, parity, resolution, eig_tol);
+      /*--------------------------------------------------------------*/ 
+      /*--------------------------------------------------------------*/ 
+      /*--------------------------------------------------------------*/ 
+      cdouble num=get_mode_flux_overlap(mode_data, flux, nf, where);
+      cdouble denom=get_mode_mode_overlap(mode_data, mode_data, flux, where);
 
+      coeffs[ nb*num_freqs + nf ] = num/denom;
+    };
   return coeffs;
 }
 
