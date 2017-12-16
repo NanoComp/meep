@@ -21,8 +21,7 @@ using namespace meep;
 typedef std::complex<double> cdouble;
 
 namespace meep{
-void output_mode_fields(void *vedata, grid_volume gv, volume where,
-                        const char *HDF5FileName);
+double get_group_velocity(void *vedata);
 void destroy_eigenmode_data(void *vedata);
 }
 
@@ -41,8 +40,9 @@ vec k_guess(void *user_data, double freq, int band_num)
 // hard-coded dispersion relations
   if ( equal_float(freq,0.25) )
    { if (band_num==1) return vec(0.0, 0.0, 0.736917);
-     if (band_num==2) return vec(0.0, 0.0, 0.736917);
-     if (band_num==3) return vec(0.0, 0.0, 0.736917);
+     if (band_num==2) return vec(0.0, 0.0, 0.622793);
+     if (band_num==3) return vec(0.0, 0.0, 0.591875);
+     if (band_num==4) return vec(0.0, 0.0, 0.521444);
    };
 
   return vec(0.0, 0.0, 0.736917);
@@ -69,12 +69,17 @@ int main(int argc, char *argv[])
   bool point_source = false;
   int  band_num     = 1;
   double ratio      = 1.0;
+  bool CW           = false;
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
      if (!strcasecmp(argv[narg],"--use-symmetry") )
       { use_symmetry=true;
         master_printf("Using symmetry.\n");
+      }
+     if (!strcasecmp(argv[narg],"--CW") )
+      { CW=true;
+        master_printf("Using CW source.\n");
       }
      else if (!strcasecmp(argv[narg],"--point-source") )
       { point_source=true;
@@ -111,7 +116,7 @@ int main(int argc, char *argv[])
   double WXY = 10.0;     // size of computational cell in transverse (XY) directions
   double WZ  = 20.0;     // size of computational cell in propagation direction
 
-  double dpml=0.5;       // thickness of PML
+  double dpml = 1.0;     // thickness of PML
 
   double resolution = 5.0;
 
@@ -150,7 +155,8 @@ int main(int argc, char *argv[])
   double fcen = 0.25;  // ; pulse center frequency
   double df   = 0.25;  // ; df
   int nfreq   = 1;
-  gaussian_src_time src(fcen, df);
+  gaussian_src_time gsrc(fcen, df);
+  continuous_src_time csrc(fcen);
 
   vec minA(-0.5*WXY, -0.5*WXY, -1.0*zcenter);
   vec maxA(+0.5*WXY, +0.5*WXY, -1.0*zcenter);
@@ -160,17 +166,36 @@ int main(int argc, char *argv[])
   volume fvA(minA, maxA), fvB(minB, maxB);
   if (point_source)
    { 
-     f.add_point_source(Ez, src, vec(0.1, 0.2, -1.0*zcenter) ); 
+     f.add_point_source(Ez, csrc, vec(0.1, 0.2, -1.0*zcenter) ); 
    }
   else
    {
      vec kpoint=k_guess(0, fcen, band_num);
      bool match_frequency = true;
      int parity = 0; // NO_PARITY
-     double eigensolver_tol=1.0e-4;
-     f.add_eigenmode_source(Dielectric, src, Z, fvA, fvA, band_num,
-                            kpoint, match_frequency, parity, 
+     double eigensolver_tol=1.0e-3;
+     f.add_eigenmode_source(Dielectric, csrc,
+                            Z, fvA, fvA, band_num,
+                            kpoint, match_frequency, parity,
                             resolution, eigensolver_tol, 1.0);
+   };
+
+  /***************************************************************/
+  /* if the --CW option was specified, just export the           */
+  /* instantaneous fields on the upper and lower flux planes     */
+  /***************************************************************/
+  if (CW)
+   { while(f.round_time() < 10.0)
+      f.step();
+     f.output_hdf5(Ex, fvA, 0, false, false, "A");
+     f.output_hdf5(Ey, fvA, 0, false, false, "A");
+     f.output_hdf5(Hx, fvA, 0, false, false, "A");
+     f.output_hdf5(Hy, fvA, 0, false, false, "A");
+     f.output_hdf5(Ex, fvB, 0, false, false, "B");
+     f.output_hdf5(Ey, fvB, 0, false, false, "B");
+     f.output_hdf5(Hx, fvB, 0, false, false, "B");
+     f.output_hdf5(Hy, fvB, 0, false, false, "B");
+     return 0;
    };
 
   /***************************************************************/
@@ -179,45 +204,88 @@ int main(int argc, char *argv[])
   /***************************************************************/
   dft_flux flux=f.add_dft_flux_plane(fvB, fcen, fcen, nfreq);
 
-  // (run-sources+ 100
+  // (run-sources+ 10
   while( f.round_time() < (f.last_source_time() + 10.0) )
    f.step();
 
-  f.output_flux_fields(&flux, fvB, "flux", true);
+  f.output_flux_fields(&flux, fvB, "flux");
 
-  ivec min_corner, max_corner;
-  f.get_flux_extents(&flux, fvB, min_corner, max_corner);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+  FILE *ff=fopen("duct-junction.dat","w");
+  cdouble mode_flux[4];
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
-  double eigensolver_tol=1.0e-4;
-  void *vedata;
-  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
-                         1, k_guess(0,fcen,1),
-                         true, 0, resolution,
-                         eigensolver_tol);
-  output_mode_fields(vedata, gv, fvB, "mode1.h5");
-  destroy_eigenmode_data(vedata);
+  double eigensolver_tol=1.0e-3;
+  void *vedata[4];
+  double vgrp[4];
+  for(int nb=0; nb<4; nb++)
+   { int band_num=nb+1;
+     vedata[nb]=f.get_eigenmode(fcen, Z, fvB, fvB,
+                                band_num, k_guess(0,fcen,band_num),
+                                true, 0, resolution,
+                                eigensolver_tol);
+     vgrp[nb]=get_group_velocity(vedata[nb]);
+     char filename[100];
+     snprintf(filename,100,"mode%i",band_num);
+     f.output_mode_fields(vedata[nb], &flux, fvB, filename);
+     
+     cdouble mm[8], mf[8];
 
-  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
-                         2, k_guess(0,fcen,2),
-                         true, 0, resolution,
-                         eigensolver_tol);
-  output_mode_fields(vedata, gv, fvB, "mode2.h5");
-  destroy_eigenmode_data(vedata);
+     setenv("MEEP_OVERLAP_ALGORITHM","x",1);
+     mm[0]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+     mf[0]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
+     setenv("MEEP_OVERLAP_ALGORITHM","5",1);
+     mm[1]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+     mf[1]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
+     setenv("MEEP_OVERLAP_ALGORITHM","4",1);
+     mm[2]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+     mf[2]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
+     setenv("MEEP_OVERLAP_ALGORITHM","0",1);
+     mm[3]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+     mf[3]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
+     setenv("MEEP_OVERLAP_ALGORITHM","1",1);
+     mm[4]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+     mf[4]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
+     setenv("MEEP_OVERLAP_ALGORITHM","2",1);
+     mm[5]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+     mf[5]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
+     setenv("MEEP_OVERLAP_ALGORITHM","3",1);
+     mm[6]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+     mf[6]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
 
-  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
-                         3, k_guess(0,fcen,3),
-                         true, 0, resolution,
-                         eigensolver_tol);
-  output_mode_fields(vedata, gv, fvB, "mode3.h5");
-  destroy_eigenmode_data(vedata);
+#if 0
+     char s[3]="0";
+     int ns=1;
+     for(s[0]='0'; s[0]<='6'; s[0]++)
+      { setenv("MEEP_OVERLAP_ALGORITHM",s,1);
+        mm[ns]=f.get_mode_mode_overlap(vedata[nb],vedata[nb], &flux, fvB);
+        mf[ns]=f.get_mode_flux_overlap(vedata[nb],&flux,0,fvB);
+        ns++;
+      };
+#endif
 
-  vedata=f.get_eigenmode(fcen, Z, fvB, fvB,
-                         4, k_guess(0,fcen,4),
-                         true, 0, resolution,
-                         eigensolver_tol);
-  output_mode_fields(vedata, gv, fvB, "mode4.h5");
-  destroy_eigenmode_data(vedata);
-             
+     setenv("MEEP_OVERLAP_ALGORITHM","x",1);
+     fprintf(ff,"mode %i, gv=%e\n",band_num,get_group_velocity(vedata[nb]));
+     for(int n=0; n<7; n++)
+      fprintf(ff,"%i    mm={%+.4e,%+.4e}  mf={%+.4e,%+.4e}\n",n,real(mm[n]),imag(mm[n]),real(mf[n]),imag(mf[n]));
+     fprintf(ff,"\n\n");
+     fflush(ff);
+   };
+
+  cdouble mode_mode[4][4];
+  for(int nb=0; nb<4; nb++)
+   for(int nbb=0; nbb<4; nbb++)
+    mode_mode[nb][nbb]=f.get_mode_mode_overlap(vedata[nb],vedata[nbb], &flux, fvB);
+
+  fprintf(ff,"\n\n");
+  for(int nb=0; nb<4; nb++)
+   fprintf(ff,"  %.2f   %.2f   %.2f   %.2f\n",
+            abs(mode_mode[nb][0]/vgrp[nb]),
+            abs(mode_mode[nb][1]/vgrp[nb]),  
+            abs(mode_mode[nb][2]/vgrp[nb]),  
+            abs(mode_mode[nb][3]/vgrp[nb]));
+  fclose(ff);
+
   /***************************************************************/
   /* compute mode expansion coefficients *************************/
   /***************************************************************/

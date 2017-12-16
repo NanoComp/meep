@@ -12,10 +12,6 @@ direction with constant cross section in the transverse
 $[\vec\rho=(x,y)]$ directions. For any given
 angular frequency $\omega$ we may solve the time-harmonic
 Maxwell equations to obtain the *normal modes* of the
-=======
-$[\vec\rho=(x,y)]$ directions. Then for any given
-angular frequency $\omega$ we may solve Maxwell's
-equations to obtain the *normal modes* of the
 structure---an infinite set of vector-valued
 functions of the transverse coordinates
 $\{\mathbf{E}^\pm_n(\vec{\rho}), \mathbf{H}^\pm_n(\vec{\rho})\}$,
@@ -54,33 +50,21 @@ the $\{\alpha_n^\pm\}$ coefficients above for any
 resulting from a MEEP calculation. In calculations
 of this sort,
 
-<<<<<<< HEAD
--  the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
++  the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
     of equations (1a,b) above will be frequency-domain
     fields stored in a `dft_flux` object in a MEEP
     run, where you will have arranged this `dft_flux` object
     to live on a cross-sectional surface $S$ transverse
     to the waveguide;
 
--  the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
-    and $\{\beta_n\}$ propagation constants are computed
-    automatically under the hood by [MPB][MPB] as normal modes 
-=======
---the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
-    of equations (1a,b) above will be frequency-domain
-    fields stored in a `dft_flux` object in a MEEP
-    run, where you will have arranges this `dft_flux` object
-    to live on a cross-sectional surface $S$ transverse
-    to the waveguide;
-
---the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
++  the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
     and $\{\beta_n\}$ propagation constants are computed
     automatically under the hood by MPB as normal modes 
     of an infinitely extended waveguide with the same 
     cross-sectional material distribution that your structure
     has on the transverse slice $S$, and
 
--  the $\alpha_n^\pm$ coefficients for as many bands
++  the $\alpha_n^\pm$ coefficients for as many bands
    as you like are computed by calling `get_eigenmode_coefficients(),`
    as discussed below.
 
@@ -156,7 +140,7 @@ reflected at $z=0$.
 
 ## Second example: Junction of cylindrical waveguides
 
-Next we consider a geometry similar to the one we 
+Next we consider a geometry similar to the one we
 just studied, but now involving a junction of *cylindrical*
 waveguides.
 
@@ -188,15 +172,106 @@ $$ \left\langle \mathbf{E}_m^{\sigma} \right|
 $$
 where the inner product involves an integration over
 transverse coordinates:
+<a name="OverlapEquation"></a>
 $$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
    \equiv
    \int_{S} 
     \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
     \cdot \hat{\mathbf{n}} \, dA
+  \qquad (*)
 $$
 where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
+
+<a name="Other routines"></a>
+## Related computational routines
+
+Besides `get_eigenmode_coefficients,` there are a few
+computational routines in `libmeep` that you may find useful
+for problems like those considered above.
+
+### Routine for computing MPB eigenmodes (in `mpb.cpp`)
+````
+  void *fields::get_eigenmode(double &omega,
+                              direction d, const volume &where,
+                              const volume &eig_vol,
+                              int band_num,
+                              const vec &kpoint, bool match_frequency,
+                              int parity,
+                              double resolution,
+                              double eigensolver_tol);
+````
+
+Calls MPB to compute the `band_num`th eigenmode at frequency `omega`
+for the portion of your geometry lying in `where` (typically
+a cross-sectional slice of a waveguide). `kpoint` is an initial
+starting guess for what the propagation vector of the waveguide
+mode will be.
+
+### Routines for working with MPB eigenmodes (in `mpb.cpp`)
+
+The return value of `get_eigenmode` is an opaque pointer to
+a data structure storing information about the computed eigenmode,
+which may be passed to the following routines:
+
+````
+// get a single component of the eigenmode field at a given point in space
+std::complex<double> eigenmode_amplitude(const vec &p, void *vedata, component c);
+
+// get the group velocity of the eigenmode 
+double get_group_velocity(void *vedata);
+
+// free all memory associated with the eigenmode
+void destroy_eigenmode_data(void *vedata);
+````
+
+### Routines for exporting frequency-domain fields (in `dft.cpp`)
+
+````
+  void output_flux_fields(dft_flux *flux, const volume where,
+                          const char *HDF5FileName);
+
+  void output_mode_fields(void *mode_data, dft_flux *flux,
+                          const volume where, 
+                          const char *HDF5FileName);
+````
+
+`output_flux_fields` exports the components of the (frequency-domain) fields
+stored in `flux` to an HDF5 file with the given file name. `where` is the
+`volume` passed to the `flux` constructor. In general, `flux` will store
+data for fields at multiple frequencies, each of which will
+
+`output_mode_fields` is similar, but instead exports the components of the eigenmode
+described by `mode_data` (which should be the return value of a call to `get_eigenmode`).
+
+### Routines for computing overlap integrals (in `dft.cpp`)
+
+````
+  std::complex<double> get_mode_flux_overlap(void *mode_data, 
+                                             dft_flux *flux, 
+                                             int num_freq, 
+                                             const volume where);
+
+  std::complex<double> get_mode_mode_overlap(void *mode1_data,
+                                             void *mode2_data,
+                                             dft_flux *flux,
+                                             const volume where);
+````
+
+`get_mode_flux_overlap` computes the overlap integral
+(defined by [equation (*) above](#OverlapEquation))
+between the eigenmode described by `mode_data`
+and the fields stored in `flux` (for the `num_freq`th stored
+frequency, where `num_freq` ranges from 0 to `flux->Nfreq-1`.)
+`mode_data` should be the return value of a previous call to 
+`get_eigenmode.`
+
+`get_mode_mode_overlap` is similar, but computes the overlap
+integral between two eigenmodes. (`mode1_data` and `mode2_data` may be
+identical, in which case you get the inner product of the 
+mode with itself; by the normalization convention used in MPB,
+this should equal the group velocity of the mode.)
 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md

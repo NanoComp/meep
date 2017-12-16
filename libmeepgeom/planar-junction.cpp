@@ -66,13 +66,18 @@ int main(int argc, char *argv[])
   bool use_symmetry = false;
   bool point_source = false;
   int  band_num     = 1;
-  double ratio      = 2.0;
+  double ratio      = 1.0;
+  bool CW           = false;
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
      if (!strcasecmp(argv[narg],"--use-symmetry") )
       { use_symmetry=true;
         master_printf("Using symmetry.\n");
+      }
+     if (!strcasecmp(argv[narg],"--CW") )
+      { CW=true;
+        master_printf("Using CW source.\n");
       }
      else if (!strcasecmp(argv[narg],"--point-source") )
       { point_source=true;
@@ -138,53 +143,54 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* add source                                                  */
   /***************************************************************/
-  double fcen = 0.15;  // center frequency
-  double df   = 0.1;   // bandwidth
-  int nfreq   = 10;    // number of frequency points
-  gaussian_src_time src(fcen, df);
+  double fcen = 0.25;  // center frequency
+  double df   = 0.05;  // bandwidth
+  int nfreq   = 1;     // number of frequency points
+  gaussian_src_time gsrc(fcen, df);
+  continuous_src_time csrc(fcen);
   component src_cmpt = Ex;
 
   if (point_source)
    { 
-     f.add_point_source(src_cmpt, src, vec(0.0, 0.0, -0.5*L));
+     if (CW)
+      f.add_point_source(src_cmpt, csrc, vec(0.0, 0.0, -0.5*L));
+     else
+      f.add_point_source(src_cmpt, gsrc, vec(0.0, 0.0, -0.5*L));
    }
   else
    { 
-     volume eigenslice( vec(0,-h1,-0.5*L), vec(0,h1,-0.5*L) );
+     volume fvA( vec(0,-h1,-0.5*L), vec(0,h1,-0.5*L) );
+     volume fvB( vec(0,-h1,+0.5*L), vec(0,h1,+0.5*L) );
+     volume cs(  vec(0,-h1,-L),     vec(0,h1,+L) );
      src_cmpt=Dielectric;
-     f.add_eigenmode_source(src_cmpt,   // component c
-                            src,        // src_time src
-                            Z,          // direction d
-                            eigenslice, // const volume &where
-                            eigenslice, // const volume &eig_vol
-                            band_num,   // int band_num
-                            vec(0,0,0.25), // const vec &kpoint,
-                            true,       // match_frequency
-                            2,          // no-parity,
-                            a,          // resolution
-                            1.e-7,      // eigensolver_tol 
-                            1.0        // amp
-                            //DefaultAmplitude   //A
-                           );
+     vec kpoint(0,0,fcen);
+     bool match_frequency = true;
+     int parity = 0; // NO_PARITY
+     double resolution=f.a;
+     double eigensolver_tol=1.0e-4;
+     if (CW)
+      f.add_eigenmode_source(Dielectric, csrc,
+                             Z, fvA, fvA, band_num,
+                             kpoint, match_frequency, parity,
+                             resolution, eigensolver_tol, 1.0);
+     else
+      f.add_eigenmode_source(Dielectric, gsrc,
+                             Z, fvA, fvA, band_num,
+                             kpoint, match_frequency, parity,
+                             resolution, eigensolver_tol, 1.0);
    };
 
   /***************************************************************/
   /* add flux planes                                             */
   /***************************************************************/
-  volume fv1 = volume( vec(0,-0.5*H,-0.25*L), vec(0,+0.5*H,-0.25*L) );
-  volume fv2 = volume( vec(0,-0.5*H, 0.00*L), vec(0,+0.5*H, 0.00*L) );
-  volume fv3 = volume( vec(0,-0.5*H,+0.25*L), vec(0,+0.5*H,+0.25*L) );
-  volume fv4 = volume( vec(0,-0.5*H,+0.50*L), vec(0,+0.5*H,+0.50*L) );
-  dft_flux flux1=f.add_dft_flux_plane(fv1, fcen-0.5*df, fcen+0.5*df, nfreq);
-  dft_flux flux2=f.add_dft_flux_plane(fv2, fcen-0.5*df, fcen+0.5*df, nfreq);
-  dft_flux flux3=f.add_dft_flux_plane(fv3, fcen-0.5*df, fcen+0.5*df, nfreq);
-  dft_flux flux4=f.add_dft_flux_plane(fv4, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux fluxA=f.add_dft_flux_plane(fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux fluxB=f.add_dft_flux_plane(fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
   /* timestep until fields decayed + 50 time unit ****************/
   /***************************************************************/
   vec eval_point(0.0, 0.0, 0.0);
-  double DeltaT=500.0, NextCheckTime = f.round_time() + DeltaT;
+  double DeltaT=50.0, NextCheckTime = f.round_time() + DeltaT;
   double max_abs=0.0, cur_max=0.0;
   double Tol=1.0e-3;
   bool Done=false;
@@ -205,10 +211,8 @@ int main(int argc, char *argv[])
    } while(!Done);
   printf("Done timestepping at t=%e.\n",f.round_time());
  
-  flux1.save_hdf5( f, "flux1" );
-  flux2.save_hdf5( f, "flux2" );
-  flux3.save_hdf5( f, "flux3" );
-  flux4.save_hdf5( f, "flux4" );
+  fluxA.save_hdf5( f, "fluxA" );
+  fluxB.save_hdf5( f, "fluxB" );
 
   f.output_hdf5(Ex,f.total_volume());
   f.output_hdf5(Hy,f.total_volume());
@@ -216,6 +220,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
+#if 0
   volume vSlice( vec(0, -H, -L), vec(0, H, L) );
 
   int dims[2];
@@ -250,6 +255,7 @@ int main(int argc, char *argv[])
                real(Hy_slice[ny*NZ+nz]), imag(Hy_slice[ny*NZ+nz])
            );
   fclose(ff);
+#endif
 
   return 0;
 }
