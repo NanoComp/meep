@@ -835,9 +835,16 @@ public:
 
   void scale_dft(std::complex<double> scale);
 
-  void write_hdf5(h5file *file, int nf, int reim, double sign,
-                  int rank, direction *ds, ivec min_corner,
-                  realnum *buffer, bool write_integration_weight);
+  // chunk-by-chunk helper routine called by
+  // fields::do_flux_operation
+  std::complex<double> do_flux_operation(int rank, direction *ds,
+                            ivec min_corner, h5file *file,
+                            double *buffer, int reim,
+                            void *mode1_data,
+                            component mode1_c,
+                            void *mode2_data,
+                            component mode2_c,
+                            int num_freq, double flux_sign);
 
   void operator-=(const dft_chunk &chunk);
 
@@ -1375,6 +1382,11 @@ class fields {
   void require_component(component c);
 
   // mpb.cpp
+  
+  // the return value of get_eigenmode is an opaque pointer
+  // that can be passed to eigenmode_amplitude() to get
+  // values of field components at arbitrary points in space.
+  // call destroy_eigenmode_data() to deallocate it when finished.
   void *get_eigenmode(double &omega_src,
 	     	      direction d, const volume &where,
 	              const volume &eig_vol,
@@ -1478,10 +1490,33 @@ class fields {
   dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
 
-  void get_flux_extents(dft_flux *flux, const volume where,
-                        ivec &min_corner, ivec &max_corner);
+  /********************************************************/
+  /* "flux operations" include things like                */
+  /*   (1) exporting dft_flux fields to HDF5 files        */
+  /*   (2) computing eigenmode decomposition coefficients */
+  /*       of dft_flux fields                             */
+  /* these are calculations that involve similar loops    */
+  /* over chunks, etc, so we consolidate them into a      */
+  /* single omnibus routine (do_flux_operation) with      */
+  /* multiple entry points for particular calculations.   */
+  /********************************************************/
+  std::complex<double> do_flux_operation(dft_flux *flux, const volume where,
+                                         const char *HDF5FileName,
+                                         void *mode1_data=0, void *mode2_data=0,
+                                         int num_freq=0);
   void output_flux_fields(dft_flux *flux, const volume where,
-                          const char *HDF5FileName, bool write_integration_weights=false);
+                          const char *HDF5FileName);
+  void output_mode_fields(void *mode_data, dft_flux *flux,
+                          const volume where, 
+                          const char *HDF5FileName);
+  std::complex<double> get_mode_flux_overlap(void *mode_data, 
+                                             dft_flux *flux, 
+                                             int num_freq, 
+                                             const volume where);
+  std::complex<double> get_mode_mode_overlap(void *mode1_data,
+                                             void *mode2_data,
+                                             dft_flux *flux,
+                                             const volume where);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,
@@ -1666,6 +1701,14 @@ void green2d(std::complex<double> *EH, const vec &x,
 void green3d(std::complex<double> *EH, const vec &x,
              double freq, double eps, double mu,
              const vec &x0, component c0, std::complex<double> f0);
+
+// non-class methods for working with mpb eigenmode data
+// 
+void destroy_eigenmode_data(void *vedata);
+std::complex<double> eigenmode_amplitude(const vec &p,
+                                         void *vedata,
+                                         component c);
+double get_group_velocity(void *vedata);
 
 } /* namespace meep */
 
