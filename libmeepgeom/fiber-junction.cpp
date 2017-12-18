@@ -112,16 +112,23 @@ int main(int argc, char *argv[])
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
 
+<<<<<<< HEAD
   f.output_hdf5(Dielectric,f.total_volume());
 
+=======
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
   /***************************************************************/
   /* add sources: point source (if --point_source option present */
   /* or eigenmode source of band band_num                        */
   /***************************************************************/
   double fcen = 0.15;  // ; pulse center frequency
   double df   = 0.1;   // ; df
+<<<<<<< HEAD
   int nfreq   = 10;
 nfreq=1;
+=======
+  int nfreq   = 1;
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
   gaussian_src_time src(fcen, df);
   volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
   if (point_source)

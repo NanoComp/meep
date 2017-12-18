@@ -1,9 +1,15 @@
 # Eigenmode decomposition of arbitrary field configurations
 
 *Eigenmode decomposition* exploits MEEP's interconnectivity
+<<<<<<< HEAD
 with the [MPB][MPB] mode solver to express an arbitrary
 time-harmonic field configuration as a superposition of
 the normal harmonic modes of your structure. In this 
+=======
+with the [MPB][MPB] mode solver to represent an arbitrary
+time-harmonic field configuration as a superposition of 
+the normal harmonic modes of your structure.
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 
 ## Theoretical background
 
@@ -39,8 +45,12 @@ $$
             \right\}
     \qquad (1\textbf{b})
 $$
+<<<<<<< HEAD
 where (as discussed further [below](ModeExpansion.md#UnderTheHood))
 the expansion coefficients $\{\alpha^{\pm}_n\}$
+=======
+where the expansion coefficients $\{\alpha^{\pm}_n\}$
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 may be extracted from knowledge of the time-harmonic
 fields $\mathbf{E},\mathbf{H}$ on any cross-sectional
 surface $S$ transverse to the waveguide.
@@ -51,23 +61,39 @@ the $\{\alpha_n^\pm\}$ coefficients above for any
 resulting from a MEEP calculation. In calculations
 of this sort,
 
+<<<<<<< HEAD
 +   the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
+=======
++  the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
     of equations (1a,b) above will be frequency-domain
     fields stored in a `dft_flux` object in a MEEP
     run, where you will have arranged this `dft_flux` object
     to live on a cross-sectional surface $S$ transverse
     to the waveguide;
 
+<<<<<<< HEAD
 +   the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
     and $\{\beta_n\}$ propagation constants are computed
     automatically under the hood by [MPB][MPB] as normal modes 
+=======
++  the $\{\mathbf{E}^\pm_n,\mathbf{H}^\pm_n\}$ eigenmodes
+    and $\{\beta_n\}$ propagation constants are computed
+    automatically under the hood by MPB as normal modes 
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
     of an infinitely extended waveguide with the same 
     cross-sectional material distribution that your structure
     has on the transverse slice $S$, and
 
+<<<<<<< HEAD
 +   the $\alpha_n^\pm$ coefficients for as many bands 
     as you like are computed by calling `get_eigenmode_coefficients(),`
     as discussed below.
+=======
++  the $\alpha_n^\pm$ coefficients for as many bands
+   as you like are computed by calling `get_eigenmode_coefficients(),`
+   as discussed below.
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 
 ## C++ function prototype
 
@@ -128,6 +154,7 @@ The waveguide in region $z<0$ has thickness $h_1$,
 while that for $z>0$ has thickness $h_2\le h_1$; we place
 a source inside the smaller waveguide and observe the
 imperfect channeling of power flow into the large
+<<<<<<< HEAD
 waveguide due to the ``impedance'' mismatch at
 $z=0$. 
 
@@ -142,6 +169,12 @@ by placing a [flux region](Python_User_Interface.md#FluxRegions) there.
 
 The code for this problem is [`libmeepgeom/planar-junction.cpp`](planar-junction.cpp),
 packaged with the MEEP source distribution.
+=======
+waveguide due to the ``impedance'' mismatch at 
+$z=0$.
+
+The code for this problem is in `libmeepgeom/WaveguideJunction.cpp.`
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 This code offers a command-line option `--ratio` that sets the
 ratio $h_2/h_1$ of the waveguide thicknesses; the default
 value is `--ratio 2` (bigger slab is 2$\times$ thickness
@@ -149,6 +182,7 @@ of smaller slab), while for `--ratio 1` the two waveguides
 are in fact identical and there should be no power
 reflected at $z=0$.
 
+<<<<<<< HEAD
 ### Warmup sanity check: Constant-cross-section waveguide 
 
 As a warmup, let's first ask what happens for `--ratio 1,`
@@ -264,6 +298,11 @@ just $\hat{\mathbf{z}}$ in the case considered above).
 ## Second example: Junction of cylindrical waveguides
 
 Next we consider a geometry similar to the one we 
+=======
+## Second example: Junction of cylindrical waveguides
+
+Next we consider a geometry similar to the one we
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 just studied, but now involving a junction of *cylindrical*
 waveguides.
 
@@ -287,7 +326,11 @@ $z=0$.
 
 The theoretical basis of the mode-expansion algorithm
 is the orthogonality relation satisfied by the normal
+<<<<<<< HEAD
 modes
+=======
+modes:
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 $$ \left\langle \mathbf{E}_m^{\sigma} \right|
    \left.       \mathbf{H}^\tau_n     \right\rangle
    =C_{m}\delta_{mn}\delta_{\sigma\tau} 
@@ -307,9 +350,13 @@ where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
 
+<<<<<<< HEAD
 **COMPLETE THIS SECTION**
 
 <a name="OtherRoutines"></a>
+=======
+<a name="Other routines"></a>
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 ## Related computational routines
 
 Besides `get_eigenmode_coefficients,` there are a few

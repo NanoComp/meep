@@ -53,6 +53,7 @@ cdouble DefaultAmplitude(const vec &v)
   return 1.0;
 }
 
+<<<<<<< HEAD
 bool equal_float(double x, double y) { return (float)x == (float)y; }
 
 vec k_guess(void *user_data, double freq, int band_num)
@@ -176,6 +177,7 @@ int main(int argc, char *argv[])
   /* add source                                                  */
   /***************************************************************/
   double fcen = 0.25;  // center frequency
+<<<<<<< HEAD
   double df   = 0.25;  // bandwidth
   int nfreq   = 1;     // number of frequency points
   gaussian_src_time gsrc(fcen, df);
@@ -197,6 +199,10 @@ int main(int argc, char *argv[])
    }
   else
    { 
+     volume fvA( vec(0,-h1,-0.5*L), vec(0,h1,-0.5*L) );
+     volume fvB( vec(0,-h1,+0.5*L), vec(0,h1,+0.5*L) );
+     volume cs(  vec(0,-h1,-L),     vec(0,h1,+L) );
+     src_cmpt=Dielectric;
      bool match_frequency = true;
      int parity = 0; // NO_PARITY
      double resolution=f.a;
@@ -354,4 +360,5 @@ int main(int argc, char *argv[])
      printf("%2i   %6f (@ %2e degrees)\n",n,cmag,cang);
    };
 
+  return 0;
 }

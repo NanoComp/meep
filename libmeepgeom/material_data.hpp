@@ -86,7 +86,6 @@ typedef struct medium_struct {
 // a medium_struct for the material at point x
 typedef void (*user_material_func)(vector3 x, void *user_data, medium_struct *m);
 
-
 typedef struct material_data_struct
  {
    enum { MEDIUM,

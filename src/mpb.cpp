@@ -81,6 +81,21 @@ cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 
+<<<<<<< HEAD
+=======
+std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux *flux,
+                                          direction d,
+                                          const volume &where,
+                                          std::vector<int> bands,
+                                          kpoint_func k_func,
+                                          void *k_func_data)
+{ (void) flux; (void) d; (void) where; (void) bands,
+  (void) k_func; (void) k_func_data;
+  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
+}
+
+
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 #else // HAVE_MPB
 
 typedef struct {
@@ -303,7 +318,11 @@ void *fields::get_eigenmode(double &omega_src,
     // the following line was missing from the original mpb.cpp,
     // but I think it's needed! Consider a waveguide of 
     // constant (x,y) cross section with power flow in the z direction.
+<<<<<<< HEAD
     //k[2] = kpoint.in_direction(Z); 
+=======
+    k[2] = kpoint.in_direction(Z); 
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
     break;
   case D1:
     o[2] = eig_vol.in_direction_min(Z);
@@ -501,9 +520,14 @@ void *fields::get_eigenmode(double &omega_src,
   maxwell_compute_d_from_H(mdata, H, fft_data_E, band_num - 1, 1);
   // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
   double scale = -1.0 / omega_src;
+<<<<<<< HEAD
   cdouble *efield=(cdouble *)fft_data_E;
   for (int n = 0; n < NFFT; ++n) 
    efield[n] *= scale;
+=======
+  for (int n = 0; n < NFFT; ++n) 
+   cdata[n] *= scale;
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 
   maxwell_compute_e_from_d(mdata, fft_data_E, 1);
 
@@ -557,7 +581,10 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
+<<<<<<< HEAD
   (void) c0; // unused
+=======
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
@@ -576,12 +603,26 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   if (!match_frequency)
     src_mpb->set_frequency(omega_src);
 
+<<<<<<< HEAD
 #if 0
 // Disabling the following code as I don't understand it
 
   //if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
   //if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
 
+=======
+  if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
+  if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
+
+  /*--------------------------------------------------------------*/
+  // step 2: add sources whose radiated field reproduces the      */
+  //         the eigenmode                                        */
+  /*--------------------------------------------------------------*/
+
+  // step 2a: electric-current sources
+  //           = nHat \times magnetic-field components
+  // use principle of equivalence to obtain equivalent currents
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
   FOR_ELECTRIC_COMPONENTS(c)
     if (gv.has_field(c) && (c0 == Centered || c0 == c)
 	&& component_direction(c) != d
@@ -590,6 +631,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 	                 || ((parity & ODD_Z_PARITY) && is_tm(c))
            )
        )
+<<<<<<< HEAD
 #endif
 
   /*--------------------------------------------------------------*/
@@ -612,6 +654,52 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   add_volume_source(cH[np2], *src_mpb, where, meep_mpb_A, -1.0*amp);
   global_eigenmode_component = cE[np2];
   add_volume_source(cH[np1], *src_mpb, where, meep_mpb_A, +1.0*amp);
+=======
+     {
+       component cH[2] = {Hx, Hy};
+       switch(d)
+        { case X:  cH[0]=Hz; cH[1]=Hy; break;
+          case Y:  cH[0]=Hx; cH[1]=Hz; break;
+          case Z:
+          default: cH[0]=Hy; cH[1]=Hx; break;
+        };
+       
+       // E current source = d x (eigenmode H)
+       if ((d + 1) % 3 == component_direction(c) % 3)
+       global_eigenmode_component = cH[0];
+       add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
+       global_eigenmode_component = cH[1];
+       add_volume_source(c, *src_mpb, where, meep_mpb_A,  amp);
+     };
+
+  // step 2b: magnetic-current sources
+  //           = - nHat \times electric-field components
+
+  // use principle of equivalence to obtain equivalent currents
+  FOR_MAGNETIC_COMPONENTS(c)
+    if (gv.has_field(c) && (c0 == Centered || c0 == c)
+	&& component_direction(c) != d
+	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
+	                 || ((parity & EVEN_Z_PARITY) && !is_tm(c))
+	                 || ((parity & ODD_Z_PARITY) && is_tm(c))
+           )
+       ) 
+     {
+       component cE[2] = {Ex, Ey};
+       switch(d)
+        { case X:  cE[0]=Ez; cE[1]=Ey; break;
+          case Y:  cE[0]=Ex; cE[1]=Ez; break;
+          case Z:
+          default: cE[0]=Ey; cE[1]=Ex; break;
+        };
+       
+       // H current source = - d x (eigenmode E)
+       global_eigenmode_component = cE[0];
+       add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
+       global_eigenmode_component = cE[1];
+       add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
+     };
+>>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
 
   delete src_mpb;
   destroy_eigenmode_data( (void *)global_eigenmode_data);
