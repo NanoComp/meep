@@ -704,6 +704,7 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
    };
 
   component all_components[6] = {Ex, Ey, Ez, Hx, Hy, Hz};
+  // tangential components and their 'conjugates'
   component tang_components[4], conj_components[4];
   tang_components[0] = cE[0]; conj_components[0] = cH[0];
   tang_components[1] = cE[1]; conj_components[1] = cH[1];
@@ -729,7 +730,6 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
       { tang_components[0]=tang_components[2]; conj_components[0]=conj_components[2];
         tang_components[1]=tang_components[3]; conj_components[1]=conj_components[3];
       };
-     if (s) printf("using overlap algorithm %c",s[0]);
    };
 
   /***************************************************************/
@@ -801,7 +801,8 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
 
        h5file *file=0;
        if (HDF5FileName)
-        { file = open_h5file(HDF5FileName, First ? h5file::WRITE : h5file::READWRITE, 0, false);
+        { file->prevent_deadlock(); // hackery
+          file = open_h5file(HDF5FileName, First ? h5file::WRITE : h5file::READWRITE, 0, false);
           First=false;
           file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
         };
@@ -822,6 +823,7 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
 
        if (file)
         { file->done_writing_chunks();
+          file->prevent_deadlock(); // hackery
           delete file;
         };
      };

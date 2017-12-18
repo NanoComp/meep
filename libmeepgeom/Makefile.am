@@ -32,7 +32,7 @@ array_slice_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 TESTS           = cyl-ellipsoid-ll array-slice-ll
 
-noinst_PROGRAMS = bend-flux-ll fiber-junction duct-junction single-duct
+noinst_PROGRAMS = bend-flux-ll fiber-junction duct-junction planar-junction single-duct
 
 fiber_junction_SOURCES = fiber-junction.cpp
 fiber_junction_LDADD   = libmeepgeom.la $(MEEPLIBS)

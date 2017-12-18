@@ -128,10 +128,20 @@ The waveguide in region $z<0$ has thickness $h_1$,
 while that for $z>0$ has thickness $h_2\le h_1$; we place
 a source inside the smaller waveguide and observe the
 imperfect channeling of power flow into the large
-waveguide due to the ``impedance'' mismatch at 
-$z=0$.
+waveguide due to the ``impedance'' mismatch at
+$z=0$. 
 
-The code for this problem is in `libmeepgeom/WaveguideJunction.cpp.`
+More specifically, in our meep calculation we will place
+an [eigenmode source](Python_User_Interface.md#EigenmodeSource)
+on a cross-sectional
+plane at $z=z_{A}$ to simulate an incoming wave arriving 
+in one of the natural guided modes of the smaller waveguide,
+then ask for the frequency-domain fields
+on a cross-sectional plane at $z=z_{B}$
+by placing a [flux region](Python_User_Interface.md#FluxRegions) there.
+
+The code for this problem is [`libmeepgeom/planar-junction.cpp`](planar-junction.cpp),
+packaged with the MEEP source distribution.
 This code offers a command-line option `--ratio` that sets the
 ratio $h_2/h_1$ of the waveguide thicknesses; the default
 value is `--ratio 2` (bigger slab is 2$\times$ thickness
@@ -139,7 +149,76 @@ of smaller slab), while for `--ratio 1` the two waveguides
 are in fact identical and there should be no power
 reflected at $z=0$.
 
-## Second example: Junction of cylindrical waveguides
+### Warmup sanity check: Constant-cross-section waveguide 
+
+As a warmup, let's first ask what happens for `--ratio 1,`
+i.e. when the waveguide for $z>0$ is identical to that
+for $z<0$, so we expect no power reflection.
+We'll do a MEEP simulation with sources placed at $z=z_{A}$
+to reproduce the lowest $(n=1)$ eigenmode of the smaller
+waveguide, then look at the fields at $z=z_{B}$.
+
+The following plot shows **(a)** the (frequency-domain,
+i.e. Fourier-transformed) tangential fields
+at $z=z_{A}$ (top), **(b)** the tangential fields 
+at $z=z_{B}$ (second from top), and then **(c)** the
+tangential-field distributions of the first 4
+eigenmodes (lower 4 rows).
+
+![images/pj1fields.png](images/pj1fields.png)
+
++ [Click here for larger image](images/pj1fields.png)
+
+These images were produced by [this julia script](pj.jl)
+using HDF5 files produced by the `libmeep` routines
+`output_flux_fields()` and `output_mode_fields()`;
+[see below for more details](#OtherRoutines).
+
+**Insert further discussion and results of mode decomposition here**
+
+### Non-constant cross-section
+
+Next let's do the run again with `--ratio 3`, so that the 
+waveguide for $z>0$ is 3x larger than the incoming waveguide.
+This yields the following version of the above plot (only the 
+second row is different):
+
+![images/pj3fields.png](images/pj3fields.png)
+
++ [Click here for larger image](images/pj3fields.png)
+
+
+**Insert further discussion and results of mode decomposition here**
+
+## Second example: Junction of rectangular waveguides
+
+Next we consider a geometry similar to the one we
+just studied, but now involving a junction of *rectangular*
+waveguides. This is similar to what we considered above,
+but now with the waveguide having finite extent
+in the $x$ direction. 
+The code for this problem is [`libmeepgeom/duct-junction.cpp`](duct-junction.cpp),
+packaged with the MEEP source distribution.
+
+Here's the version of the above plot for the case `--ratio 1,`
+i.e. constant cross-section waveguide.
+
+![images/dj1fields.png](images/dj1fields.png)
+
++ [Click here for larger image](images/dj1fields.png)
+
+These images were produced by [this julia script](dj.jl)
+using HDF5 files produced by the `libmeep` routines
+`output_flux_fields()` and `output_mode_fields()`;
+[see below for more details](#OtherRoutines).
+
+
+And here are the results of the mode decomposition for the 
+first 4 eigenmodes:
+
+**Insert further discussion and results of mode decomposition here**
+
+## Third example: Junction of cylindrical waveguides
 
 Next we consider a geometry similar to the one we
 just studied, but now involving a junction of *cylindrical*
@@ -228,7 +307,9 @@ where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
 
-<a name="Other routines"></a>
+**COMPLETE THIS SECTION**
+
+<a name="OtherRoutines"></a>
 ## Related computational routines
 
 Besides `get_eigenmode_coefficients,` there are a few
