@@ -68,6 +68,32 @@ of this sort,
 -  the $\alpha_n^\pm$ coefficients for as many bands 
    as you like are computed by calling `get_eigenmode_coefficients(),`
    as discussed below.
+=======
+$$
+where the expansion coefficients $\{\alpha^{\pm}_n\}$
+may be extracted from knowledge of the time-harmonic
+fields $\mathbf{E},\mathbf{H}$ on any surface $S$
+transverse to the waveguide.
+To recall how this works, remember that the normal modes
+satisfy an orthogonality relation of the form
+$$ \left\langle \mathbf{E}_m^{\sigma} \right|
+   \left.       \mathbf{H}^\tau_n     \right\rangle
+   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
+   \qquad \Big( \{\sigma,\tau\}\in\{+,-\}\Big)
+$$
+where the inner product involves an integration over
+transverse coordinates:
+$$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
+   \equiv
+   \int_{S} 
+    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
+    \cdot \hat{\mathbf{n}} \, dA
+$$
+where $S$ is any surface transverse to the direction of propagation
+and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
+just $\hat{\mathbf{z}}$ in the case considered above).
+
+$$ \alpha^+_n = $$
 
 ## C++ function prototype
 
@@ -159,6 +185,7 @@ in the larger waveguide.
 Again the code offers a command-line option `--ratio` that sets the
 ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
 while for `--ratio 1` we expect perfect transmission of power
+<<<<<<< HEAD
 $z=0$.
 
 <a name="UnderTheHood"></a> 
@@ -276,5 +303,6 @@ mode with itself; by the normalization convention used in MPB,
 this should equal the group velocity of the mode.)
 
 ## Second example: Junction of cylindrical waveguides
+
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md
