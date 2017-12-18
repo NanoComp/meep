@@ -1166,8 +1166,9 @@ class fields_chunk {
 };
 
 enum boundary_condition { Periodic=0, Metallic, Magnetic, None };
-enum time_sink { Connecting, Stepping, Boundaries, ModeExpansion,
-                 MpiTime, FieldOutput, FourierTransforming, Other };
+enum time_sink { Connecting, Stepping, Boundaries,
+                 MpiTime, FieldOutput, FourierTransforming, 
+                 ArraySlicing, ModeExpansion, Other };
 
 typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid,
 				ivec is, ivec ie,
@@ -1361,6 +1362,15 @@ class fields {
   void require_component(component c);
 
   // mpb.cpp
+  void *get_eigenmode(double &omega_src,
+	     	      direction d, const volume &where,
+	              const volume &eig_vol,
+	    	      int band_num,
+		      const vec &kpoint, bool match_frequency,
+                      int parity,
+                      double resolution, 
+                      double eigensolver_tol);
+
   void add_eigenmode_source(component c, const src_time &src,
 			    direction d, const volume &where,
 			    const volume &eig_vol,
@@ -1370,6 +1380,11 @@ class fields {
 			    double eig_resolution, double eigensolver_tol,
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
+
+  std::complex<double> get_eigenmode_coefficient(dft_flux *flux,
+                                                 direction d,
+                                                 const volume &where,
+                                                 int band_num);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
