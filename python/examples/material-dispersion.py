@@ -42,7 +42,7 @@ sim = mp.Simulation(
     resolution=resolution
 )
 
-all_freqs = sim.run(kpts, k_points=200)  # a list of lists of frequencies
+all_freqs = sim.run_k_points(200, kpts)  # a list of lists of frequencies
 
 for fs, kx in zip(all_freqs, [v.x for v in kpts]):
     for f in fs:

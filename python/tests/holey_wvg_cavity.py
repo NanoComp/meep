@@ -21,7 +21,7 @@ class TestHoleyWvgCavity(unittest.TestCase):
 
         cell = mp.Vector3(self.sx, sy, 0)
 
-        blk = mp.Block(size=mp.Vector3(1e20, self.w, 1e20),
+        blk = mp.Block(size=mp.Vector3(mp.inf, self.w, mp.inf),
                        material=mp.Medium(epsilon=eps))
 
         geometry = [blk]

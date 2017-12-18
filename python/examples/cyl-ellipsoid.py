@@ -6,7 +6,7 @@ import meep as mp
 def main():
 
     c = mp.Cylinder(radius=3, material=mp.Medium(index=3.5))
-    e = mp.Ellipsoid(size=mp.Vector3(1, 2, 1e20))
+    e = mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf))
 
     src_cmpt = mp.Hz
     sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.1), component=src_cmpt, center=mp.Vector3())

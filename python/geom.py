@@ -1,4 +1,9 @@
+from __future__ import division
+
 import math
+from copy import deepcopy
+
+import numpy as np
 import meep as mp
 
 
@@ -46,6 +51,9 @@ class Vector3(object):
     def __repr__(self):
         return "Vector3<{}, {}, {}>".format(self.x, self.y, self.z)
 
+    def __array__(self):
+        return np.array([self.x, self.y, self.z])
+
     def scale(self, s):
         x = self.x * s
         y = self.y * s
@@ -79,13 +87,37 @@ class Medium(object):
                  B_conductivity_diag=Vector3(),
                  epsilon=None,
                  index=None,
-                 chi3=None):
+                 mu=None,
+                 chi3=None,
+                 D_conductivity=None,
+                 B_conductivity=None,
+                 E_chi2=None,
+                 E_chi3=None,
+                 H_chi2=None,
+                 H_chi3=None):
 
         if epsilon:
             epsilon_diag = Vector3(epsilon, epsilon, epsilon)
         elif index:
             i2 = index * index
             epsilon_diag = Vector3(i2, i2, i2)
+
+        if mu:
+            mu_diag = Vector3(mu, mu, mu)
+
+        if D_conductivity:
+            D_conductivity_diag = Vector3(D_conductivity, D_conductivity, D_conductivity)
+        if B_conductivity:
+            B_conductivity_diag = Vector3(B_conductivity, B_conductivity, B_conductivity)
+
+        if E_chi2:
+            E_chi2_diag = Vector3(E_chi2, E_chi2, E_chi2)
+        if E_chi3:
+            E_chi3_diag = Vector3(E_chi3, E_chi3, E_chi3)
+        if H_chi2:
+            H_chi2_diag = Vector3(H_chi2, H_chi2, H_chi2)
+        if H_chi3:
+            H_chi3_diag = Vector3(H_chi3, H_chi3, H_chi3)
 
         self.epsilon_diag = epsilon_diag
         self.epsilon_offdiag = epsilon_offdiag
@@ -145,7 +177,13 @@ class GeometricObject(object):
         self.center = center
 
     def __contains__(self, point):
-        return mp.point_in_objectp(point, self)
+        return mp.is_point_in_object(point, self)
+
+    def shift(self, vec):
+        self.center += vec
+
+    def info(self, indent_by=0):
+        mp.display_geometric_object_info(indent_by, self)
 
 
 class Sphere(GeometricObject):
@@ -217,3 +255,14 @@ class Ellipsoid(Block):
 
     def __init__(self, **kwargs):
         super(Ellipsoid, self).__init__(**kwargs)
+
+
+def geometric_object_duplicates(shift_vector, min, max, *objs):
+    dups = []
+    for obj in objs:
+        for i in range(min, max + 1):
+            o = deepcopy(obj)
+            o.shift(shift_vector.scale(i))
+            dups.append(o)
+
+    return dups

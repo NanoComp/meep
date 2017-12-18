@@ -21,21 +21,13 @@
     #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
     #define PyInteger_Check(n) PyLong_Check(n)
     #define PyInteger_AsLong(n) PyLong_AsLong(n)
+    #define PyInteger_FromLong(n) PyLong_FromLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
     #define PyInteger_Check(n) PyInt_Check(n)
     #define PyInteger_AsLong(n) PyInt_AsLong(n)
+    #define PyInteger_FromLong(n) PyInt_FromLong(n)
 #endif
-
-static PyObject *py_geometric_object() {
-    static PyObject *geometric_object = NULL;
-    if (geometric_object == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        geometric_object = PyObject_GetAttrString(geom_mod, "GeometricObject");
-        Py_XDECREF(geom_mod);
-    }
-    return geometric_object;
-}
 
 static PyObject *py_source_time_object() {
     static PyObject *source_time_object = NULL;
@@ -67,36 +59,7 @@ static PyObject *py_material_object() {
     return material_object;
 }
 
-// v3 is a global python Vector3 object. We currently need one for the material
-// function and one for the amplitude function, so we pass it in from vec2py
-static void set_py_v3(double x, double y, double z, PyObject **v3) {
-    if (*v3 == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
-        PyObject *args = PyTuple_New(0);
-        *v3 = PyObject_Call(v3_class, args, NULL);
-
-        Py_DECREF(args);
-        Py_DECREF(geom_mod);
-        Py_DECREF(v3_class);
-    }
-
-    PyObject *pyx = PyFloat_FromDouble(x);
-    PyObject *pyy = PyFloat_FromDouble(y);
-    PyObject *pyz = PyFloat_FromDouble(z);
-
-    PyObject_SetAttrString(*v3, "x", pyx);
-    PyObject_SetAttrString(*v3, "y", pyy);
-    PyObject_SetAttrString(*v3, "z", pyz);
-
-    Py_DECREF(pyx);
-    Py_DECREF(pyy);
-    Py_DECREF(pyz);
-
-    return;
-}
-
-static PyObject* vec2py(const meep::vec &v, bool amp_func) {
+static PyObject* vec2py(const meep::vec &v) {
 
     double x = 0, y = 0, z = 0;
 
@@ -119,13 +82,30 @@ static PyObject* vec2py(const meep::vec &v, bool amp_func) {
         break;
     }
 
-    if (!amp_func) {
-        set_py_v3(x, y, z, &py_callback_v3);
-        return py_callback_v3;
-    } else {
-        set_py_v3(x, y, z, &py_amp_func_v3);
-        return py_amp_func_v3;
+    if (py_callback_v3 == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        PyObject *v3_class = PyObject_GetAttrString(geom_mod, "Vector3");
+        PyObject *args = PyTuple_New(0);
+        py_callback_v3 = PyObject_Call(v3_class, args, NULL);
+
+        Py_DECREF(args);
+        Py_DECREF(geom_mod);
+        Py_DECREF(v3_class);
     }
+
+    PyObject *pyx = PyFloat_FromDouble(x);
+    PyObject *pyy = PyFloat_FromDouble(y);
+    PyObject *pyz = PyFloat_FromDouble(z);
+
+    PyObject_SetAttrString(py_callback_v3, "x", pyx);
+    PyObject_SetAttrString(py_callback_v3, "y", pyy);
+    PyObject_SetAttrString(py_callback_v3, "z", pyz);
+
+    Py_DECREF(pyx);
+    Py_DECREF(pyy);
+    Py_DECREF(pyz);
+
+    return py_callback_v3;
 }
 
 static double py_callback_wrap(const meep::vec &v) {
@@ -137,12 +117,44 @@ static double py_callback_wrap(const meep::vec &v) {
 }
 
 static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
-    PyObject *pyv = vec2py(v, true);
+    PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
     std::complex<double> ret(real, imag);
     Py_DECREF(pyret);
+    return ret;
+}
+
+static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
+                                               const meep::vec &loc,
+                                               void *data_) {
+    PyObject *pyv = vec2py(loc);
+
+    py_field_func_data *data = (py_field_func_data *)data_;
+    int len = data->num_components;
+
+    PyObject *py_args = PyTuple_New(len + 1);
+    // Increment here because PyTuple_SetItem steals a reference
+    Py_INCREF(pyv);
+    PyTuple_SetItem(py_args, 0, pyv);
+
+    for (Py_ssize_t i = 1; i < len + 1; i++) {
+        PyObject *cmplx = PyComplex_FromDoubles(fields[i - 1].real(), fields[i - 1].imag());
+        PyTuple_SetItem(py_args, i, cmplx);
+    }
+
+    PyObject *pyret = PyObject_CallObject(data->func, py_args);
+
+    if (!pyret) {
+        PyErr_PrintEx(0);
+    }
+
+    double real = PyComplex_RealAsDouble(pyret);
+    double imag = PyComplex_ImagAsDouble(pyret);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(pyret);
+    Py_DECREF(py_args);
     return ret;
 }
 
@@ -200,6 +212,19 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
+static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    *result = PyInteger_AsLong(py_attr);
+    Py_DECREF(py_attr);
+    return 1;
+}
+
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -243,7 +268,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
         s->drude = false;
     }
 
-    s->is_self = false;
+    s->is_file = false;
 
     return 1;
 }
@@ -269,7 +294,7 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
         sl->items[i].gamma = s.gamma;
         sl->items[i].noise_amp = s.noise_amp;
         sl->items[i].drude = s.drude;
-        sl->items[i].is_self = s.is_self;
+        sl->items[i].is_file = s.is_file;
     }
 
     return 1;
@@ -281,12 +306,13 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     md->which_subclass = material_data::MEDIUM;
     md->user_func = 0;
     md->user_data = 0;
-    md->medium = new medium_struct();
+    md->epsilon_data = 0;
+    md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 0;
 
-    if (!get_attr_v3(po, &md->medium->epsilon_diag, "epsilon_diag") ||
-       !get_attr_v3(po, &md->medium->epsilon_offdiag, "epsilon_offdiag") ||
-       !get_attr_v3(po, &md->medium->mu_diag, "mu_diag") ||
-       !get_attr_v3(po, &md->medium->mu_offdiag, "mu_offdiag")) {
+    if (!get_attr_v3(po, &md->medium.epsilon_diag, "epsilon_diag") ||
+        !get_attr_v3(po, &md->medium.epsilon_offdiag, "epsilon_offdiag") ||
+        !get_attr_v3(po, &md->medium.mu_diag, "mu_diag") ||
+        !get_attr_v3(po, &md->medium.mu_offdiag, "mu_offdiag")) {
 
         return 0;
     }
@@ -298,8 +324,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
         return 0;
     }
 
-    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium->E_susceptibilities) ||
-       !py_list_to_susceptibility_list(py_h_susceptibilities, &md->medium->H_susceptibilities)) {
+    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium.E_susceptibilities) ||
+       !py_list_to_susceptibility_list(py_h_susceptibilities, &md->medium.H_susceptibilities)) {
 
         return 0;
     }
@@ -307,17 +333,40 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     Py_XDECREF(py_e_susceptibilities);
     Py_XDECREF(py_h_susceptibilities);
 
-    if (!get_attr_v3(po, &md->medium->E_chi2_diag, "E_chi2_diag") ||
-       !get_attr_v3(po, &md->medium->E_chi3_diag, "E_chi3_diag") ||
-       !get_attr_v3(po, &md->medium->H_chi2_diag, "H_chi2_diag") ||
-       !get_attr_v3(po, &md->medium->H_chi3_diag, "H_chi3_diag") ||
-       !get_attr_v3(po, &md->medium->D_conductivity_diag, "D_conductivity_diag") ||
-       !get_attr_v3(po, &md->medium->B_conductivity_diag, "B_conductivity_diag")) {
+    if (!get_attr_v3(po, &md->medium.E_chi2_diag, "E_chi2_diag") ||
+        !get_attr_v3(po, &md->medium.E_chi3_diag, "E_chi3_diag") ||
+        !get_attr_v3(po, &md->medium.H_chi2_diag, "H_chi2_diag") ||
+        !get_attr_v3(po, &md->medium.H_chi3_diag, "H_chi3_diag") ||
+        !get_attr_v3(po, &md->medium.D_conductivity_diag, "D_conductivity_diag") ||
+       !get_attr_v3(po, &md->medium.B_conductivity_diag, "B_conductivity_diag")) {
 
         return 0;
     }
 
     *mt = md;
+
+    return 1;
+}
+
+static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
+
+    if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
+        !get_attr_int(py_absorber, &a->direction, "direction") ||
+        !get_attr_int(py_absorber, &a->side, "side") ||
+        !get_attr_dbl(py_absorber, &a->R_asymptotic, "r_asymptotic") ||
+        !get_attr_dbl(py_absorber, &a->mean_stretch, "mean_stretch")) {
+
+        return 0;
+    }
+
+    PyObject *py_pml_profile_func = PyObject_GetAttrString(py_absorber, "pml_profile");
+
+    if (!py_pml_profile_func) {
+        PyErr_Format(PyExc_ValueError, "Class attribute 'pml_profile' is None\n");
+        return 0;
+    }
+
+    a->pml_profile_data = py_pml_profile_func;
 
     return 1;
 }

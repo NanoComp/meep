@@ -1,5 +1,6 @@
 import unittest
-
+import numpy as np
+import meep as mp
 import meep.geom as gm
 
 
@@ -9,6 +10,64 @@ def zeros():
 
 def ones():
     return gm.Vector3(1, 1, 1)
+
+
+class TestGeom(unittest.TestCase):
+
+    def test_geometric_object_duplicates_x(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        res = mp.geometric_object_duplicates(mp.Vector3(x=1), 1, 5, s)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(x=1)),
+            mp.Sphere(rad, center=mp.Vector3(x=2)),
+            mp.Sphere(rad, center=mp.Vector3(x=3)),
+            mp.Sphere(rad, center=mp.Vector3(x=4)),
+            mp.Sphere(rad, center=mp.Vector3(x=5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
+
+    def test_geometric_object_duplicates_xyz(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Sphere(rad, center=mp.Vector3(5, 5, 5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
+
+    def test_geometric_object_duplicates_multiple_objs(self):
+        rad = 1
+        s = mp.Sphere(rad)
+        c = mp.Cylinder(rad)
+
+        res = mp.geometric_object_duplicates(mp.Vector3(1, 1, 1), 1, 5, s, c)
+
+        expected = [
+            mp.Sphere(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Sphere(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Sphere(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Sphere(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Sphere(rad, center=mp.Vector3(5, 5, 5)),
+            mp.Cylinder(rad, center=mp.Vector3(1, 1, 1)),
+            mp.Cylinder(rad, center=mp.Vector3(2, 2, 2)),
+            mp.Cylinder(rad, center=mp.Vector3(3, 3, 3)),
+            mp.Cylinder(rad, center=mp.Vector3(4, 4, 4)),
+            mp.Cylinder(rad, center=mp.Vector3(5, 5, 5))
+        ]
+
+        for r, e in zip(res, expected):
+            self.assertEqual(r.center, e.center)
 
 
 class TestSphere(unittest.TestCase):
@@ -55,8 +114,26 @@ class TestSphere(unittest.TestCase):
         s = gm.Sphere(center=zeros(), radius=2.0)
         point = ones()
         self.assertTrue(point in s)
+        self.assertTrue(mp.is_point_in_periodic_object(mp.Vector3(), s))
         self.assertIn(point, s)
         self.assertFalse(gm.Vector3(10, 10, 10) in s)
+
+    def test_shift(self):
+        s = gm.Sphere(center=zeros(), radius=2.0)
+        self.assertEqual(s.center, gm.Vector3())
+
+        s.shift(gm.Vector3(10))
+        self.assertEqual(s.center, gm.Vector3(10, 0, 0))
+
+        s = gm.Sphere(center=gm.Vector3(10, 10), radius=2.0)
+        s.shift(gm.Vector3(-10, -10))
+        self.assertEqual(s.center, gm.Vector3())
+
+    def test_info(self):
+        # Sanity test to ensure that display_geometric_object_info is callable
+        s = gm.Sphere(2)
+        s.info()
+        s.info(2)
 
 
 class TestCylinder(unittest.TestCase):
@@ -127,6 +204,54 @@ class TestEllipsoid(unittest.TestCase):
         e = gm.Ellipsoid(size=ones(), center=zeros())
         self.assertIn(zeros(), e)
 
+
+class TestMedium(unittest.TestCase):
+
+    def test_D_conductivity(self):
+        m = gm.Medium(D_conductivity=2)
+        self.assertEqual(m.D_conductivity_diag.x, 2)
+        self.assertEqual(m.D_conductivity_diag.y, 2)
+        self.assertEqual(m.D_conductivity_diag.z, 2)
+
+    def test_B_conductivity(self):
+        m = gm.Medium(B_conductivity=2)
+        self.assertEqual(m.B_conductivity_diag.x, 2)
+        self.assertEqual(m.B_conductivity_diag.y, 2)
+        self.assertEqual(m.B_conductivity_diag.z, 2)
+
+    def test_E_chi2(self):
+        m = gm.Medium(E_chi2=2)
+        self.assertEqual(m.E_chi2_diag.x, 2)
+        self.assertEqual(m.E_chi2_diag.y, 2)
+        self.assertEqual(m.E_chi2_diag.z, 2)
+
+    def test_E_chi3(self):
+        m = gm.Medium(E_chi3=2)
+        self.assertEqual(m.E_chi3_diag.x, 2)
+        self.assertEqual(m.E_chi3_diag.y, 2)
+        self.assertEqual(m.E_chi3_diag.z, 2)
+
+    def test_H_chi2(self):
+        m = gm.Medium(H_chi2=2)
+        self.assertEqual(m.H_chi2_diag.x, 2)
+        self.assertEqual(m.H_chi2_diag.y, 2)
+        self.assertEqual(m.H_chi2_diag.z, 2)
+
+    def test_H_chi3(self):
+        m = gm.Medium(H_chi3=2)
+        self.assertEqual(m.H_chi3_diag.x, 2)
+        self.assertEqual(m.H_chi3_diag.y, 2)
+        self.assertEqual(m.H_chi3_diag.z, 2)
+
+
+class TestVector3(unittest.TestCase):
+
+    def test_use_as_numpy_array(self):
+        v = gm.Vector3(10, 10, 10)
+        res = np.add(v, np.array([10, 10, 10]))
+
+        self.assertTrue(type(res) is np.ndarray)
+        np.testing.assert_array_equal(np.array([20, 20, 20]), res)
 
 if __name__ == '__main__':
     unittest.main()

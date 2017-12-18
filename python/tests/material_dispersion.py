@@ -39,7 +39,7 @@ class TestMaterialDispersion(unittest.TestCase):
         )
 
     def test_material_dispersion(self):
-        all_freqs = self.sim.run(self.kpts, k_points=200)
+        all_freqs = self.sim.run_k_points(200, self.kpts)
 
         expected = [
             (0.18039256903351222, -9.43254394797079e-8),

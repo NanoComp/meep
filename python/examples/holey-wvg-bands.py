@@ -24,7 +24,7 @@ def main():
 
     cell = mp.Vector3(1, sy)
 
-    b = mp.Block(size=mp.Vector3(1e20, w, 1e20), material=mp.Medium(epsilon=eps))
+    b = mp.Block(size=mp.Vector3(mp.inf, w, mp.inf), material=mp.Medium(epsilon=eps))
     c = mp.Cylinder(radius=r)
 
     fcen = 0.25  # pulse center frequency
@@ -53,7 +53,7 @@ def main():
         sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 
     else:
-        sim.run(mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]), k_points=300)
+        sim.run_k_points(300, mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]))
 
 
 if __name__ == '__main__':

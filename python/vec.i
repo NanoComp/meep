@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2017 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,9 +18,6 @@
 
 // 322:  Redundant declarations are ok. The wrappers are created correctly.
 // 503:  We don't need to create class-specific wrappers for friend functions
-// TODO: Check all 509's individually.
-// TODO: Move warnfilters to separate 'warnings.i' file.
-%warnfilter(509);
 %warnfilter(322,509) meep::component_direction;
 %warnfilter(322,509) meep::direction_component;
 %warnfilter(322,503) meep::zero_vec;
@@ -28,6 +25,7 @@
 %warnfilter(322,503) meep::zero_ivec;
 %warnfilter(322,503) meep::one_ivec;
 %warnfilter(322,503) meep::iveccyl;
+%warnfilter(322) meep::abort;
 %warnfilter(503) meep::one_vec;
 %warnfilter(503) meep::volcyl;
 %warnfilter(503) meep::volone;
@@ -45,7 +43,9 @@
 %warnfilter(509) meep::ivec::ivec;
 %warnfilter(509) meep::symmetry::transform;
 %warnfilter(509) meep::symmetry::phase_shift;
-
+%warnfilter(509) meep::structure::structure;
+%warnfilter(451) meep::structure::outdir;
+%warnfilter(451) meep::fields_chunk::outdir;
 
 // Renaming python builtins
 %rename(meep_type) meep::type;
@@ -56,9 +56,8 @@
 %rename(symmetry_reduce) meep::symmetry::reduce;
 
 // Operator renaming
-// TODO: Test these
-%rename(volume_and) meep::volume::operator&&;
-%rename(grid_volume_getitem) meep::grid_volume::operator[];
+%rename(__contains__) meep::volume::operator&&;
+%rename(__getitem__) meep::grid_volume::operator[];
 %rename(symmetry_assign) meep::symmetry::operator=;
 
 %rename(vec_from_dim) meep::vec::vec(ndim, double);

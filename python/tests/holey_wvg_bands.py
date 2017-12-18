@@ -6,7 +6,7 @@ class TestHoleyWvgBands(unittest.TestCase):
 
     def setUp(self):
         cell = mp.Vector3(1, 12)
-        b = mp.Block(size=mp.Vector3(1e20, 1.2, 1e20), material=mp.Medium(epsilon=13))
+        b = mp.Block(size=mp.Vector3(mp.inf, 1.2, mp.inf), material=mp.Medium(epsilon=13))
         c = mp.Cylinder(0.36)
 
         self.fcen = 0.25
@@ -30,7 +30,7 @@ class TestHoleyWvgBands(unittest.TestCase):
         )
 
     def test_run_k_points(self):
-        all_freqs = self.sim.run(mp.interpolate(19, [mp.Vector3(), mp.Vector3(0.5)]), k_points=5)
+        all_freqs = self.sim.run_k_points(5, mp.interpolate(19, [mp.Vector3(), mp.Vector3(0.5)]))
 
         expected = [
             (0.1942497850393511, 0.001381460274205755),
