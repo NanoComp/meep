@@ -731,10 +731,6 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
       { tang_components[0]=tang_components[2]; conj_components[0]=conj_components[2];
         tang_components[1]=tang_components[3]; conj_components[1]=conj_components[3];
       };
-<<<<<<< HEAD
-=======
-     if (s) printf("using overlap algorithm %c",s[0]);
->>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
    };
 
   /***************************************************************/
@@ -806,12 +802,7 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
 
        h5file *file=0;
        if (HDF5FileName)
-<<<<<<< HEAD
-        { file->prevent_deadlock(); // hackery
-          file = open_h5file(HDF5FileName, First ? h5file::WRITE : h5file::READWRITE, 0, false);
-=======
         { file = open_h5file(HDF5FileName, First ? h5file::WRITE : h5file::READWRITE, 0, false);
->>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
           First=false;
           file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
         };
@@ -832,10 +823,7 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
 
        if (file)
         { file->done_writing_chunks();
-<<<<<<< HEAD
           file->prevent_deadlock(); // hackery
-=======
->>>>>>> d4e4f19749b54f9e7670c72bf98114778e00635c
           delete file;
         };
      };
