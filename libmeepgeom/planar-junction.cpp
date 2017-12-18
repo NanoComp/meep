@@ -53,6 +53,25 @@ cdouble DefaultAmplitude(const vec &v)
   return 1.0;
 }
 
+bool equal_float(double x, double y) { return (float)x == (float)y; }
+
+vec k_guess(void *user_data, double freq, int band_num)
+{
+  (void) user_data;
+  (void) freq;
+  (void) band_num;
+
+// hard-coded dispersion relations
+  if ( equal_float(freq,0.25) )
+   { if (band_num==1) return vec(0.0, 0.0, 0.621777);
+     if (band_num==2) return vec(0.0, 0.0, 0.622793);
+     if (band_num==3) return vec(0.0, 0.0, 0.591875);
+     if (band_num==4) return vec(0.0, 0.0, 0.521444);
+   };
+
+  return vec(0.0, 0.0, 0.736917);
+} 
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
@@ -120,7 +139,7 @@ int main(int argc, char *argv[])
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
   structure the_structure(gv, dummy_eps); //, pml(dpml)); //, pml(dpml), sym);
 
-  material_type dielectric = meep_geom::make_dielectric(ncore*ncore);
+  meep_geom::material_type dielectric = meep_geom::make_dielectric(ncore*ncore);
   vector3 xhat    = v3(1.0,   0.0,  0.0);
   vector3 yhat    = v3(0.0,   1.0,  0.0);
   vector3 zhat    = v3(0.0,   0.0,  1.0);
@@ -144,11 +163,15 @@ int main(int argc, char *argv[])
   /* add source                                                  */
   /***************************************************************/
   double fcen = 0.25;  // center frequency
-  double df   = 0.05;  // bandwidth
+  double df   = 0.25;  // bandwidth
   int nfreq   = 1;     // number of frequency points
   gaussian_src_time gsrc(fcen, df);
   continuous_src_time csrc(fcen);
   component src_cmpt = Ex;
+
+  volume fvA( vec(0,-h1,-0.5*L), vec(0,h1,-0.5*L) );
+  volume fvB( vec(0,-h1,+0.5*L), vec(0,h1,+0.5*L) );
+  volume fvC( vec(0,-h1,-L), vec(0,h1,L) );
 
   if (point_source)
    { 
@@ -159,15 +182,12 @@ int main(int argc, char *argv[])
    }
   else
    { 
-     volume fvA( vec(0,-h1,-0.5*L), vec(0,h1,-0.5*L) );
-     volume fvB( vec(0,-h1,+0.5*L), vec(0,h1,+0.5*L) );
-     volume cs(  vec(0,-h1,-L),     vec(0,h1,+L) );
      src_cmpt=Dielectric;
-     vec kpoint(0,0,fcen);
      bool match_frequency = true;
      int parity = 0; // NO_PARITY
      double resolution=f.a;
      double eigensolver_tol=1.0e-4;
+     vec kpoint=k_guess(0, fcen, band_num);
      if (CW)
       f.add_eigenmode_source(Dielectric, csrc,
                              Z, fvA, fvA, band_num,
@@ -185,6 +205,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   dft_flux fluxA=f.add_dft_flux_plane(fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
   dft_flux fluxB=f.add_dft_flux_plane(fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux fluxC=f.add_dft_flux_plane(fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
   /* timestep until fields decayed + 50 time unit ****************/
@@ -194,6 +215,9 @@ int main(int argc, char *argv[])
   double max_abs=0.0, cur_max=0.0;
   double Tol=1.0e-3;
   bool Done=false;
+  while( f.round_time() < (f.last_source_time() + 10.0) )
+   f.step();
+#if 0
   do
    {  
      f.step();
@@ -209,12 +233,18 @@ int main(int argc, char *argv[])
         cur_max=0.0;
       };
    } while(!Done);
+#endif
   printf("Done timestepping at t=%e.\n",f.round_time());
  
-  fluxA.save_hdf5( f, "fluxA" );
-  fluxB.save_hdf5( f, "fluxB" );
+  //fluxA.save_hdf5( f, "fluxA" );
+  //fluxB.save_hdf5( f, "fluxB" );
+  f.output_flux_fields(&fluxA, fvA, "pjA");
+  f.output_flux_fields(&fluxB, fvB, "pjB");
+  f.output_flux_fields(&fluxC, fvC, "pjC");
 
   f.output_hdf5(Ex,f.total_volume());
+  f.output_hdf5(Ey,f.total_volume());
+  f.output_hdf5(Hx,f.total_volume());
   f.output_hdf5(Hy,f.total_volume());
 
   /***************************************************************/

@@ -43,6 +43,9 @@ duct_junction_LDADD   = libmeepgeom.la $(MEEPLIBS)
 single_duct_SOURCES = single-duct.cpp
 single_duct_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
+planar_junction_SOURCES = planar-junction.cpp
+planar_junction_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
