@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
   int  band_num     = 1;
   double ratio      = 1.0;
   bool CW           = false;
-  char *filebase    = "dj";
+  char *filebase    = const_cast<char *>("dj");
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;

@@ -542,6 +542,12 @@ cdouble dft_chunk::do_flux_operation(int rank,
       if (offset[j]) stride[j] *= -1;
     };
 
+   /*****************************************************************/
+   /*****************************************************************/
+   /*****************************************************************/
+   char *s=getenv("MEEP_UNCONJUGATED_INNER_PRODUCT");
+   bool unconjugated_inner_product = (s && s[0]=='1');
+
    /***************************************************************/
    /* loop over all grid points in our piece of the volume        */
    /***************************************************************/
@@ -559,9 +565,9 @@ cdouble dft_chunk::do_flux_operation(int rank,
 
       cdouble mode1val=0.0, mode2val=0.0;
       if (mode1_data)
-       mode1val=eigenmode_amplitude(loc,mode1_data,mode1_c);
+       mode1val=eigenmode_amplitude(mode1_data,loc,mode1_c);
       if (mode2_data)
-       mode2val=eigenmode_amplitude(loc,mode2_data,mode2_c);
+       mode2val=eigenmode_amplitude(mode2_data,loc,mode2_c);
 
       if (file)
        { int idx2 = ((((offset[0] + offset[1] + offset[2])
@@ -572,10 +578,12 @@ cdouble dft_chunk::do_flux_operation(int rank,
          buffer[idx2] = reim ? imag(val) : real(val);
        }
       else
-       { if (mode2_data)
-          integral += w*conj(mode1val)*mode2val;
+       { if (!unconjugated_inner_product)
+          mode1val = conj(mode1val);
+         if (mode2_data)
+          integral += w*mode1val*mode2val;
          else
-          integral += w*conj(mode1val)*fluxval;
+          integral += w*mode1val*fluxval;
        };
 
     }; // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
@@ -609,18 +617,25 @@ cdouble dft_chunk::do_flux_operation(int rank,
 /* (B) Computation of overlap integrals.                       */
 /*                                                             */
 /*     (B1) If mode1_data is non-NULL and mode2_data is NULL,  */
-/*          compute and return the overlap integral between    */
-/*          the fields described by flux (at the #num_freqth   */
-/*          of the frequencies for which flux contains data)   */
-/*          and the eigenmode field described by mode1_data.   */
+/*          compute overlap integrals between the eigenmode    */
+/*          field described by mode1_data and the fields in    */
+/*          the flux object at the #num_freqth of the          */
+/*          frequencies for which flux contains data.          */
 /*                                                             */
-/*     (B2) If flux is NULL and mode1_data, mode2_data are     */ 
-/*          both non-NULL, compute and return the overlap      */ 
-/*          integral between the eigenmode fields described    */ 
-/*          by mode1_data and mode2_data.                      */
+/*     (B2) If flux is NULL and mode1_data, mode2_data are     */
+/*          both non-NULL, compute overlap integrals between   */
+/*          the eigenmode fields described by mode1_data and   */
+/*          mode2_data.                                        */
+/*                                                             */
+/* overlap integral 1:                                         */
+/*  0.5*( E^\dagger \times H + H^\dagger \times E)             */
+/* overlap integral 2:                                         */
+/*  0.5*( E^\dagger \times H - H^\dagger \times E)             */
 /***************************************************************/
-cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
-                                  const char *HDF5FileName, void *mode1_data, void *mode2_data, int num_freq)
+void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
+                               const char *HDF5FileName,
+                               void *mode1_data, void *mode2_data,
+                               cdouble *overlaps)
 { 
   /***************************************************************/
   /* look at input arguments to figure out what to do  ***********/
@@ -686,8 +701,47 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
    buffer = new realnum[bufsz];
 
   /***************************************************************/
+  /* if we are writing an hdf5 file, open the file and write the */
+  /* lower-left grid corner and grid spacing to the hdf5 file so */
+  /* that it contains enough information to recreate the         */
+  /* coordinates of the grid points                              */
   /***************************************************************/
+#if 0
+  if (HDF5FileName)
+   { char *prefix=0;
+     bool timestamp=false;
+     bool single_precision=false;
+     //char filename[100];
+     //snprintf(filename,100,"%s.h5",HDF5FileName);
+     h5file *file = open_h5file(HDF5FileName, h5file::WRITE, prefix, timestamp);
+     double xmin[3];
+     for(int nd=0; nd<rank; nd++)
+      xmin[nd] = where.in_direction_min( ds[nd] );
+     dims[0]=rank;
+     if (am_master())
+      file->write("min_corner",1,dims,xmin,single_precision);
+     dims[0]=1;
+     if (am_master())
+      file->write("inva",1,dims,&(gv.inva),single_precision);
+     delete file;
+     //file.prevent_deadlock(); // hackery
+   };
+#endif
+
   /***************************************************************/
+  /* set up some lists of components over which we will loop.    */
+  /*  (a) for OUTPUT_MODE, we use all 6 components of E/H fields */
+  /*  (b) for OUTPUT_FLUX, we use only the 4 tangential cmpts    */
+  /*       stored in the flux object                             */
+  /*  (c) for computing overlap integrals (MODE_FLUX / MODE_MODE)*/
+  /*       by default we use only 2 tangential components of the */
+  /*       mode field (Ex, Ey) together with the 'conjugates' of */
+  /*       those components (Hy, Hx) from the flux/mode field;   */
+  /*       but this may be overridden by setting the             */
+  /*       MEEP_OVERLAP_ALGORITHM environment variable to choose */
+  /*       a different form of the overlap integrand             */
+  /***************************************************************/
+  component all_components[6]  = {Ex, Ey, Ez, Hx, Hy, Hz};
   component cE[2]={Ex, Ey}, cH[2]={Hy, Hx};
   switch (normal_direction(where))
    { case X: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
@@ -703,35 +757,13 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
      default: abort("invalid flux component!");
    };
 
-  component all_components[6] = {Ex, Ey, Ez, Hx, Hy, Hz};
-
   // tangential components and their 'conjugates'
-  component tang_components[4], conj_components[4];
+  component tang_components[4];
+  component conj_components[4];
   tang_components[0] = cE[0]; conj_components[0] = cH[0];
   tang_components[1] = cE[1]; conj_components[1] = cH[1];
   tang_components[2] = cH[0]; conj_components[2] = cE[0];
   tang_components[3] = cH[1]; conj_components[3] = cE[1];
-
-  int ncOverlap=2;
-  if (flux_op==MODE_FLUX || flux_op==MODE_MODE)
-   { // default ExHy - EyHx;
-     // 0,1,2,3 ExHy, EyHx, HyEx, HxEy
-     // 4       ExHy - EyHx + HyEx - HxEy
-     // 5       HyEx - HxEy
-     char *s=getenv("MEEP_OVERLAP_ALGORITHM");
-     if (s && (s[0]>='0' && s[0]<='3') )
-      { ncOverlap=1;
-        int ic=s[0] - '0';
-        tang_components[0] = tang_components[ic];
-        conj_components[0] = conj_components[ic];
-      }
-     else if (s && s[0]=='4')
-      ncOverlap=4;
-     else if (s && s[0]=='5')
-      { tang_components[0]=tang_components[2]; conj_components[0]=conj_components[2];
-        tang_components[1]=tang_components[3]; conj_components[1]=conj_components[3];
-      };
-   };
 
   /***************************************************************/
   /* set up limits for loops over frequencies, components, etc.  */
@@ -741,16 +773,16 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
   /*  -- if computing <mode|flux> overlap: only freq #num_freq   */
   /*  -- otherwise:                        flux fields not used  */
   /*                                                             */
-  /* which field components will we consider?                    */
-  /*  -- if writing flux fields to HDF5: tangential cmpts only   */
+  /* which field components will we consider? (see above)        */
   /*  -- if writing mode fields to HDF5: all components          */
-  /*  -- if computing an overlap integral:                       */
+  /*  -- if writing flux fields to HDF5: tangential cmpts only   */
+  /*  -- if computing an overlap integral: tangential cmpts only */
   /*                                                             */
-  /* loop over real/imaginary parts of field components? yes for */
+  /* loop over real/imaginary parts of field components?         */
   /*  -- if writing flux or mode fields to HDF5: yes             */
   /*  -- if computing overlap integral: no                       */
   /***************************************************************/
-  int nf_min, nf_max, num_components, reim_max;
+  int nf_min=0, nf_max=0, num_components=0, reim_max=0;
   switch(flux_op)
    { case OUTPUT_FLUX:
        nf_min=0; nf_max=flux->Nfreq-1; num_components=4; reim_max=1;
@@ -759,10 +791,10 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
        nf_min=0; nf_max=0;             num_components=6; reim_max=1;
        break;
      case MODE_FLUX:  
-       nf_min=nf_max=num_freq;         num_components=ncOverlap; reim_max=0;
+       nf_min=nf_max=num_freq;         num_components=4; reim_max=0;
        break;
      case MODE_MODE:  
-       nf_min=nf_max=0;                num_components=ncOverlap; reim_max=0;
+       nf_min=nf_max=0;                num_components=4; reim_max=0;
        break;
      case NO_OP:
        abort("%s:%i: internal error",__FILE__,__LINE__);
@@ -774,7 +806,7 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
   bool append_data      = false;
   bool single_precision = false;
   bool First            = true;
-  cdouble integral      = 0.0;
+  cdouble integrals[2]  = {0.0, 0.0};
   for(int nf=nf_min; nf<=nf_max; nf++)
    for(int nc=0; nc<num_components; nc++)
     for(int reim=0; reim<=reim_max; reim++)
@@ -813,13 +845,14 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
        if ( (flux_op==OUTPUT_FLUX || flux_op==MODE_FLUX) && (c_flux==cE[1]) )
         flux_sign = -1.0;
 
-       // 
-       double integral_sign = ( ((nc%2)==1) ? -1.0 : 1.0);
+       int which_integral= nc/2;
+       double integral_sign = ( nc%2 ? -1.0 : 1.0 );
 
        for (dft_chunk *EH = (c_flux>=Hx ? flux->H : flux->E); EH; EH=EH->next_in_dft)
         if (EH->c == c_flux)
-         integral += integral_sign * EH->do_flux_operation(rank, ds, min_corner, file, buffer, reim,
-                                                           mode1_data, c_mode, mode2_data, c_mode2, nf, flux_sign);
+         integrals[which_integral]
+          += integral_sign * EH->do_flux_operation(rank, ds, min_corner, file, buffer, reim,
+                                                   mode1_data, c_mode, mode2_data, c_mode2, nf, flux_sign);
 
        if (file)
         { file->done_writing_chunks();
@@ -830,31 +863,11 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
 
   if (buffer)
    delete[] buffer;
-
-  return sum_to_all(integral);
-  /***************************************************************/
-  /* write the lower-left grid corner and grid spacing           */
-  /* to the hdf5 file so that it contains enough information     */
-  /* to recreate the coordinates of the grid points              */
-  /***************************************************************/
-#if 0
-  if (am_master())
-   { bool parallel=false, single_precision=false;
-     char filename[100];
-     snprintf(filename,100,"%s.h5",HDF5FileName);
-     h5file file(filename, h5file::READWRITE, parallel);
-     double xmin[3];
-     for(int nd=0; nd<rank; nd++)
-      xmin[nd] = where.in_direction_min( ds[nd] );
-
-     dims[0]=rank;
-     file.write("min_corner",1,dims,xmin,single_precision);
-
-     dims[0]=1;
-     file.write("inva",1,dims,&(gv.inva),single_precision);
+ 
+  if (overlaps)
+   { overlaps[0] = sum_to_all(integrals[0]);
+     overlaps[1] = sum_to_all(integrals[1]);
    };
-#endif
-
 }
 
 /***************************************************************/
@@ -862,15 +875,15 @@ cdouble fields::do_flux_operation(dft_flux *flux, const volume where,
 /* calculations                                                */
 /***************************************************************/
 void fields::output_flux_fields(dft_flux *flux, const volume where, const char *HDF5FileName)
-{ do_flux_operation(flux, where, HDF5FileName); }
+{ do_flux_operation(flux, 0, where, HDF5FileName); }
 
 void fields::output_mode_fields(void *mode_data, dft_flux *flux, const volume where, const char *HDF5FileName)
-{ do_flux_operation(flux, where, HDF5FileName, mode_data); }
+{ do_flux_operation(flux, 0, where, HDF5FileName, mode_data); }
  
-cdouble fields::get_mode_flux_overlap(void *mode_data, dft_flux *flux, int num_freq, const volume where)
-{ return do_flux_operation(flux, where, 0, mode_data, 0, num_freq); }
+void fields::get_mode_flux_overlap(void *mode_data, dft_flux *flux, int num_freq, const volume where, cdouble overlaps[2])
+{ return do_flux_operation(flux, num_freq, where, 0, mode_data, 0, overlaps); }
 
-cdouble fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux *flux, const volume where)
-{ return do_flux_operation(flux, where, 0, mode1_data, mode2_data); }
+void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux *flux, const volume where, cdouble overlaps[2])
+{ return do_flux_operation(flux, 0, where, 0, mode1_data, mode2_data, overlaps); }
 
 } // namespace meep

@@ -103,13 +103,25 @@ wavevector of the `band`th mode at frequency `freq`.
 
 The return value of `get_mode_coefficients` is an array
 of type `cdouble` (short for `std::complex<double>`),
-of length `num_freqs * num_bands`, where `num_freqs`
+of length `2*num_freqs * num_bands`, where `num_freqs`
 is the number of frequencies stored in your `flux` object
 (equal to `flux->Nfreq`) and `num_bands` is the length
 of your `bands` input array. 
-The expansion coefficient for the mode with frequency `nf`
-and band index `nb` is stored in the `nb*num_freqs + nf`
-slot of this array.
+The expansion coefficients $\alpha_n^\pm$
+for the mode with frequency `nf`
+and band index `nb` are stored sequentially
+in this array starting at index `2*nb*num_freq+2*nf;`
+
+````c++
+  meep::fields f; 
+  ...
+  std::vector<cdouble> coeffs = f.get_eigenmode_coefficients(...) 
+  ...
+
+  // extract coefficients for mode #nb, frequency #nf
+  cdouble alphaPlus  = coeffs[ 2*nb*num_freqs + 2*nf + 0];
+  cdouble alphaMinus = coeffs[ 2*nb*num_freqs + 2*nf + 1];
+````
 
 ## First example: Junction of planar waveguides
 
@@ -165,10 +177,10 @@ at $z=z_{A}$ (top), **(b)** the tangential fields
 at $z=z_{B}$ (second from top), and then **(c)** the
 tangential-field distributions of the first 4
 eigenmodes (lower 4 rows).
+[Click here for larger image](images/pj1fields.png)
 
 ![images/pj1fields.png](images/pj1fields.png)
 
-+ [Click here for larger image](images/pj1fields.png)
 
 These images were produced by [this julia script](pj.jl)
 using HDF5 files produced by the `libmeep` routines
