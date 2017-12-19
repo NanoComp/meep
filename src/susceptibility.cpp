@@ -157,7 +157,7 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
   double w = 2*pi*omega_0, g = 2*pi*gamma;
   double g2 = g*dt/2, w2 = (w*dt)*(w*dt);
   double b = (1 - w2/2) / (1 + g2), c = (1 - g2) / (1 + g2);
-  return b*b > c && 2*b*b - c + 2*fabs(b)*sqrt(b*b - c) > 1;
+  return b*b > c && float(2*b*b - c + 2*fabs(b)*sqrt(b*b - c)) > 1;
 }
 
 #define SWAP(t,a,b) { t SWAP_temp = a; a = b; b = SWAP_temp; }
