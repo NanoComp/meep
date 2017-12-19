@@ -22,22 +22,6 @@ except NameError:
     basestring = str
 
 
-CYLINDRICAL = -2
-AUTOMATIC = -1
-ALL = -1
-
-# MPB definitions
-NO_PARITY = 0
-EVEN_Z = 1
-ODD_Z = 2
-EVEN_Y = 4
-ODD_Y = 8
-TE = EVEN_Z
-TM = ODD_Z
-
-inf = 1.0e20
-
-
 def get_num_args(func):
     if isinstance(func, Harminv):
         return 2
@@ -61,33 +45,33 @@ def py_v3_to_vec(dims, v3, is_cylindrical=False):
 class PML(object):
 
     def __init__(self, thickness,
-                 direction=ALL,
-                 side=ALL,
-                 r_asymptotic=1e-15,
+                 direction=mp.ALL,
+                 side=mp.ALL,
+                 R_asymptotic=1e-15,
                  mean_stretch=1.0,
                  pml_profile=lambda u: u * u):
 
         self.thickness = thickness
         self.direction = direction
         self.side = side
-        self.r_asymptotic = r_asymptotic
+        self.R_asymptotic = R_asymptotic
         self.mean_stretch = mean_stretch
         self.pml_profile = pml_profile
 
-        if direction == ALL and side == ALL:
-            self.swigobj = mp.pml(thickness, r_asymptotic, mean_stretch)
-        elif direction == ALL:
-            self.swigobj = mp.pml(thickness, side, r_asymptotic, mean_stretch)
+        if direction == mp.ALL and side == mp.ALL:
+            self.swigobj = mp.pml(thickness, R_asymptotic, mean_stretch)
+        elif direction == mp.ALL:
+            self.swigobj = mp.pml(thickness, side, R_asymptotic, mean_stretch)
         else:
-            self.swigobj = mp.pml(thickness, direction, side, r_asymptotic, mean_stretch)
+            self.swigobj = mp.pml(thickness, direction, side, R_asymptotic, mean_stretch)
 
     @property
-    def r_asymptotic(self):
-        return self._r_asymptotic
+    def R_asymptotic(self):
+        return self._R_asymptotic
 
-    @r_asymptotic.setter
-    def r_asymptotic(self, val):
-        self._r_asymptotic = check_positive('PML.r_asymptotic', val)
+    @R_asymptotic.setter
+    def R_asymptotic(self, val):
+        self._R_asymptotic = check_positive('PML.R_asymptotic', val)
 
     @property
     def mean_stretch(self):
@@ -150,7 +134,7 @@ class Volume(object):
 
 class FluxRegion(object):
 
-    def __init__(self, center, size=Vector3(), direction=AUTOMATIC, weight=1.0):
+    def __init__(self, center, size=Vector3(), direction=mp.AUTOMATIC, weight=1.0):
         self.center = center
         self.size = size
         self.direction = direction
@@ -168,7 +152,7 @@ class ForceRegion(object):
 
 class Near2FarRegion(object):
 
-    def __init__(self, center, size=mp.Vector3(), direction=AUTOMATIC, weight=1.0):
+    def __init__(self, center, size=mp.Vector3(), direction=mp.AUTOMATIC, weight=1.0):
         self.center = center
         self.size = size
         self.direction = direction
@@ -191,7 +175,7 @@ class Harminv(object):
         self.modes = []
         self.spectral_density = 1.1
         self.Q_thresh = 50.0
-        self.rel_err_thresh = inf
+        self.rel_err_thresh = mp.inf
         self.err_thresh = 0.01
         self.rel_amp_thresh = -1.0
         self.amp_thresh = -1.0
@@ -319,7 +303,7 @@ class Simulation(object):
             gv = mp.vol2d(self.cell_size.x, self.cell_size.y, self.resolution)
         elif dims == 3:
             gv = mp.vol3d(self.cell_size.x, self.cell_size.y, self.cell_size.z, self.resolution)
-        elif dims == CYLINDRICAL:
+        elif dims == mp.CYLINDRICAL:
             gv = mp.volcyl(self.cell_size.x, self.cell_size.z, self.resolution)
             self.dimensions = 2
             self.is_cylindrical = True
@@ -364,7 +348,7 @@ class Simulation(object):
                                        absorbers, self.extra_materials)
 
     def init_fields(self):
-        is_cylindrical = self.dimensions == CYLINDRICAL
+        is_cylindrical = self.dimensions == mp.CYLINDRICAL
 
         if self.structure is None:
             self._init_structure(self.k_point)
@@ -513,7 +497,7 @@ class Simulation(object):
         components = [s.component for s in self.sources]
         pts = [s.center for s in self.sources]
 
-        src_freqs_min = min([s.src.frequency - 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else inf
+        src_freqs_min = min([s.src.frequency - 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else mp.inf
                              for s in self.sources])
         fmin = max(0, src_freqs_min)
 
@@ -916,20 +900,20 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
         boundary_region_args = [
             mp.boundary_region.PML,
             layer.thickness,
-            layer.r_asymptotic,
+            layer.R_asymptotic,
             layer.mean_stretch,
             mp.py_pml_profile,
             layer.pml_profile,
-            1 / 3,  # TODO(chogan): Call adaptive_integration instead of hard-coding integral
-            1 / 4,  # TODO(chogan): Call adaptive_integration instead of hard-coding integral
+            1 / 3,
+            1 / 4,
         ]
 
-        if layer.direction == ALL:
+        if layer.direction == mp.ALL:
             d = mp.start_at_direction(gv.dim)
             loop_stop_directi = mp.stop_at_direction(gv.dim)
 
             while d < loop_stop_directi:
-                if layer.side == ALL:
+                if layer.side == mp.ALL:
                     b = mp.High
                     loop_stop_bi = mp.Low
 
@@ -941,7 +925,7 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
                     br += mp.boundary_region(*(boundary_region_args + [d, layer.side]))
                 d += 1
         else:
-            if layer.side == ALL:
+            if layer.side == mp.ALL:
                 b = mp.High
                 loop_stop_bi = mp.Low
 

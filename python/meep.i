@@ -702,6 +702,22 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
 %ignore inveps_func;
 
 %pythoncode %{
+    AUTOMATIC = -1
+    CYLINDRICAL = -2
+    ALL = -1
+    ALL_COMPONENTS = Dielectric
+
+    # MPB definitions
+    NO_PARITY = 0
+    EVEN_Z = 1
+    ODD_Z = 2
+    EVEN_Y = 4
+    ODD_Y = 8
+    TE = EVEN_Z
+    TM = ODD_Z
+
+    inf = 1.0e20
+
     from .geom import (
         Block,
         Cone,
@@ -721,13 +737,6 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         geometric_object_duplicates
     )
     from .simulation import (
-        NO_PARITY,
-        EVEN_Z,
-        ODD_Z,
-        EVEN_Y,
-        ODD_Y,
-        TE,
-        TM,
         Absorber,
         FluxRegion,
         ForceRegion,
@@ -759,7 +768,6 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         get_ldos_freqs,
         in_point,
         in_volume,
-        inf,
         interpolate,
         output_epsilon,
         output_mu,
@@ -815,7 +823,6 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         with_prefix
     )
     from .source import (
-        ALL_COMPONENTS,
         ContinuousSource,
         CustomSource,
         EigenModeSource,
