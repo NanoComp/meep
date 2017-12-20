@@ -157,7 +157,7 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
   double w = 2*pi*omega_0, g = 2*pi*gamma;
   double g2 = g*dt/2, w2 = (w*dt)*(w*dt);
   double b = (1 - w2/2) / (1 + g2), c = (1 - g2) / (1 + g2);
-  return b*b > c && float(2*b*b - c + 2*fabs(b)*sqrt(b*b - c)) > 1;
+  return b*b > c && 2*b*b - c + 2*fabs(b)*sqrt(b*b - c) > 1;
 }
 
 #define SWAP(t,a,b) { t SWAP_temp = a; a = b; b = SWAP_temp; }
@@ -179,7 +179,7 @@ void lorentzian_susceptibility::update_P
 
   if (!no_omega_0_denominator && gamma >= 0
       && lorentzian_unstable(omega_0, gamma, dt))
-    abort("Lorentzian pole at too high a frequency %g for stability with dt = %g: reduce the Courant factor, increase the resolution, or use a different dielectric model\n", omega_0, dt);
+    master_printf("WARNING: simulation is potentially unstable as the Lorentzian pole is at too high a frequency %g for stability with dt = %g. In the event the fields diverge: reduce the Courant factor, increase the resolution, or use a different dielectric model\n", omega_0, dt);
 
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
