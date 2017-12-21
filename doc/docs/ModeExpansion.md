@@ -274,6 +274,15 @@ where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
 
+To use these results to extract the $\alpha_n^\pm$ coefficients
+from equation (1), we first invoke the following relations
+between the tangential portions of the forward- and backward-traveling
+eigenmode fields:
+$$ \mathbf{E}^+_{n\parallel} = \mathbf{E}^-_{n\parallel},
+   \qquad
+   \mathbf{H}^+_{n\parallel} = -\mathbf{H}^-_{n\parallel}
+$$
+
 **COMPLETE THIS SECTION**
 
 <a name="OtherRoutines"></a>
@@ -283,7 +292,7 @@ Besides `get_eigenmode_coefficients,` there are a few
 computational routines in `libmeep` that you may find useful
 for problems like those considered above.
 
-### Routine for computing MPB eigenmodes (in `mpb.cpp`)
+### Routine for working with MPB eigenmodes (in `mpb.cpp`)
 ````
   void *fields::get_eigenmode(double &omega,
                               direction d, const volume &where,
@@ -301,18 +310,19 @@ a cross-sectional slice of a waveguide). `kpoint` is an initial
 starting guess for what the propagation vector of the waveguide
 mode will be.
 
-### Routines for working with MPB eigenmodes (in `mpb.cpp`)
-
 The return value of `get_eigenmode` is an opaque pointer to
 a data structure storing information about the computed eigenmode,
 which may be passed to the following routines:
 
 ````
 // get a single component of the eigenmode field at a given point in space
-std::complex<double> eigenmode_amplitude(const vec &p, void *vedata, component c);
+std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c);
 
 // get the group velocity of the eigenmode 
 double get_group_velocity(void *vedata);
+
+// get the wavevector of the eigenmode
+vec get_k(void *vedata);
 
 // free all memory associated with the eigenmode
 void destroy_eigenmode_data(void *vedata);
@@ -340,18 +350,15 @@ described by `mode_data` (which should be the return value of a call to `get_eig
 ### Routines for computing overlap integrals (in `dft.cpp`)
 
 ````
-  std::complex<double> get_mode_flux_overlap(void *mode_data, 
-                                             dft_flux *flux, 
-                                             int num_freq, 
-                                             const volume where);
+  void get_mode_flux_overlap(void *mode_data, dft_flux *flux, int num_freq,
+                             const volume where, cdouble integrals[2]);
 
-  std::complex<double> get_mode_mode_overlap(void *mode1_data,
-                                             void *mode2_data,
-                                             dft_flux *flux,
-                                             const volume where);
+  void get_mode_mode_overlap(void *mode1_data, void *mode2_data,
+                             dft_flux *flux, const volume where,
+                             cdouble integrals[2]);
 ````
 
-`get_mode_flux_overlap` computes the overlap integral
+`get_mode_flux_overlap` computes the overlap integrals
 (defined by [equation (*) above](#OverlapEquation))
 between the eigenmode described by `mode_data`
 and the fields stored in `flux` (for the `num_freq`th stored
@@ -360,10 +367,23 @@ frequency, where `num_freq` ranges from 0 to `flux->Nfreq-1`.)
 `get_eigenmode.`
 
 `get_mode_mode_overlap` is similar, but computes the overlap
-integral between two eigenmodes. (`mode1_data` and `mode2_data` may be
+integrals between two eigenmodes. (`mode1_data` and `mode2_data` may be
 identical, in which case you get the inner product of the 
 mode with itself; by the normalization convention used in MPB,
 this should equal the group velocity of the mode.)
+
+In both cases, on return the `integrals` vector contains the
+two overlap integrals:
+$$ \texttt{integrals[0]} 
+    = \int_{S}
+    \Big[ \mathbf{E}_1^* \times \mathbf{H}_2\Big]
+    \cdot \hat{\mathbf{n}} \, dA
+$$
+$$ \texttt{integrals[1]} 
+    = \int_{S}
+    \Big[ \mathbf{H}_1^* \times \mathbf{E}_2\Big]
+    \cdot \hat{\mathbf{n}} \, dA
+$$
 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md

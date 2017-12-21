@@ -477,9 +477,9 @@ void *fields::get_eigenmode(double &omega_src,
   edata->s[0]           = s[0];
   edata->s[1]           = s[1];
   edata->s[2]           = s[2];
-  edata->k[0]           = k[0];
-  edata->k[1]           = k[1];
-  edata->k[2]           = k[2];
+  edata->k[0]           = knew[0];
+  edata->k[1]           = knew[1];
+  edata->k[2]           = knew[2];
   edata->center         = eig_vol.center() - where.center();
   edata->amp_func       = default_amp_func;
   edata->band_num       = band_num;

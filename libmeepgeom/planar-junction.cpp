@@ -48,13 +48,12 @@ void usage(char *progname, const char *msg=0)
   abort();
 }
 
-cdouble DefaultAmplitude(const vec &v) 
-{ (void) v; // unused
-  return 1.0;
-}
-
 bool equal_float(double x, double y) { return (float)x == (float)y; }
 
+/***************************************************************/
+/* function to provide initial guess for the wavevector of the */
+/* eigenmode with frequency freq and band index band           */
+/***************************************************************/
 vec k_guess(void *user_data, double freq, int band_num)
 {
   (void) freq;
@@ -78,18 +77,29 @@ vec k_guess(void *user_data, double freq, int band_num)
      if (band_num>=12) return vec(0.0, 0.0, 0.0297807);
    }
   else if ( equal_float(h,1.0) && equal_float(freq,0.15) )
-   { if (band_num==1) return vec(0.0, 0.0, 0.425568);
-     if (band_num==2) return vec(0.0, 0.0, 0.263221);
-     if (band_num==3) return vec(0.0, 0.0, 0.133216);
-     if (band_num==4) return vec(0.0, 0.0, 0.131931);
-     if (band_num>=5) return vec(0.0, 0.0, 0.050000);
+   { if (band_num==1)  return vec(0.0, 0.0, 0.425568);
+     if (band_num==2)  return vec(0.0, 0.0, 0.263221);
+     if (band_num==3)  return vec(0.0, 0.0, 0.133216);
+     if (band_num==4)  return vec(0.0, 0.0, 0.131931);
+     if (band_num>=5)  return vec(0.0, 0.0, 0.100000);
+     if (band_num==6)  return vec(0.0, 0.0, 0.213681);
+     if (band_num==7)  return vec(0.0, 0.0, 0.139897);
+     if (band_num==8)  return vec(0.0, 0.0, 0.139368);
+     if (band_num==9)  return vec(0.0, 0.0, 0.139407);
+     if (band_num==10) return vec(0.0, 0.0, 0.139322);
+     if (band_num==11) return vec(0.0, 0.0, 0.0316779);
+     if (band_num>=12) return vec(0.0, 0.0, 0.0297807);
    }
   else // if ( equal_float(h,0.5) && equal_float(freq,0.15) )
-   { if (band_num==1) return vec(0.0, 0.0, 0.425568);
-     if (band_num==2) return vec(0.0, 0.0, 0.263221);
-     if (band_num==3) return vec(0.0, 0.0, 0.133216);
-     if (band_num==4) return vec(0.0, 0.0, 0.131931);
-   }
+   { if (band_num==1)  return vec(0.0, 0.0, 0.425568);
+     if (band_num==2)  return vec(0.0, 0.0, 0.263354);
+     if (band_num==3)  return vec(0.0, 0.0, 0.143212);
+     if (band_num==4)  return vec(0.0, 0.0, 0.142938);
+     if (band_num==5)  return vec(0.0, 0.0, 0.142935);
+     if (band_num==6)  return vec(0.0, 0.0, 0.142860);
+     if (band_num==7)  return vec(0.0, 0.0, 0.0725943);
+     if (band_num>=8)  return vec(0.0, 0.0, 0.0710456);
+   };
 
   return vec(0.0, 0.0, 0.425568);
 } 
@@ -177,11 +187,11 @@ int main(int argc, char *argv[])
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
 
   meep_geom::material_type dielectric = meep_geom::make_dielectric(epsilon);
-  vector3 xhat    = v3(1.0,   0.0,  0.0);
-  vector3 yhat    = v3(0.0,   1.0,  0.0);
-  vector3 zhat    = v3(0.0,   0.0,  1.0);
+  vector3 xhat  = {1.0, 0.0, 0.0};
+  vector3 yhat  = {0.0, 1.0, 0.0};
+  vector3 zhat  = {0.0, 0.0, 1.0};
   geometric_object objects[2];
-  objects[0] = make_block( dielectric,
+  objects[0] = make_block( dielectric, 
                            v3(0.0, 0.0, -0.5*L),     // center
                            xhat, yhat, zhat,
                            v3(ENORMOUS, 2.0*hA, L)   // size;
@@ -285,7 +295,7 @@ int main(int argc, char *argv[])
         f.output_mode_fields(vedata[nb], &fluxB, fvB, filename);
       };
    
-     FILE *ff1=0, *ff2=0, *ff3=0, *ff4=0;
+     FILE *ff1=0, *ff2=0, *ff3=0, *ff4=0, *ff5=0;
      if (am_master()) 
       { snprintf(filename,100,"%s_exh_mag.dat",filebase);
         ff1=fopen(filename,"w");
@@ -295,6 +305,8 @@ int main(int argc, char *argv[])
         ff3=fopen(filename,"w");
         snprintf(filename,100,"%s_hxe_reim.dat",filebase);
         ff4=fopen(filename,"w");
+        snprintf(filename,100,"%s.modeData",filebase);
+        ff5=fopen(filename,"w");
       };
      double vol=2.0*H; // 1-dimensional "volume" of flux plane
      for(int nb=0; nb<num_bands; nb++)
@@ -310,6 +322,12 @@ int main(int argc, char *argv[])
             fprintf(ff2,"{%+.4f,%+.4f}   %c",real(mm[0]),imag(mm[0]),c);
             fprintf(ff3,"%.4f  %c",abs(mm[1]),c);
             fprintf(ff4,"{%+.4f,%+.4f}   %c",real(mm[1]),imag(mm[1]),c);
+            if(nbb==0)
+             { double vgrp=get_group_velocity(vedata[nb]);
+               vec k=get_k(vedata[nb]);
+               fprintf(ff5,"nb=%2i   vgrp=%e   ",nb,vgrp);
+               fprintf(ff5,"kpoint={%e,%e,%e}\n",k.x(),k.y(),k.z());
+             };
           };
        }; 
      if (am_master()) 
@@ -317,6 +335,7 @@ int main(int argc, char *argv[])
         fclose(ff2);
         fclose(ff3);
         fclose(ff4);
+        fclose(ff5);
       };
    };
 
