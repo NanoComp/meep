@@ -130,7 +130,7 @@ a 2D problem involving an impedance mismatch
 between two planar waveguides, as cartooned in
 this figure:
 
-![PlanarWaveguideJunction](images/PlanarWaveguideJunction.png)
+![PlanarWaveguideJunction](modeExpansionFiles/PlanarWaveguideJunction.png)
 
 In this case the geometry is invariant in the $x$
 direction and the waveguides are simply planar
@@ -180,9 +180,9 @@ at $z=z_{A}$ (top), **(b)** the tangential fields
 at $z=z_{B}$ (second from top), and then **(c)** the
 tangential-field distributions of the first 5
 eigenmodes (lower 4 rows).
-[(Click here for larger image.)](images/pj1fields.png)
+[(Click here for larger image.)](modeExpansionFiles/pj1fields.png)
 
-![images/pj1fields.png](images/pj1fields.png)
+![modeExpansionFiles/pj1fields.png](modeExpansionFiles/pj1fields.png)
 
 As expected, the mode profiles at $z=z_A$ and $z=z_B$
 are identical to each other and look like the $n=1$ eigenmode
@@ -219,9 +219,9 @@ waveguide for $z>0$ is 3x larger than the incoming waveguide.
 #### Fourier-domain results
 
 This yields the following version of the above plot
-[(click here for larger image)](images/pj3fields.png):
+[(click here for larger image)](modeExpansionFiles/pj3fields.png):
 
-![images/pj3fields.png](images/pj3fields.png)
+![modeExpansionFiles/pj3fields.png](modeExpansionFiles/pj3fields.png)
 
 Now the fields at $z_B$ do not agree with the fields
 at $z_A$, nor are they simply a scaled version
@@ -250,7 +250,7 @@ but now with the waveguide having finite extent
 in both transverse directions, as depicted in the following
 cartoon:
 
-![CylindricalWaveguideJunction](images/CylindricalWaveguideJunction.png)
+![CylindricalWaveguideJunction](modeExpansionFiles/CylindricalWaveguideJunction.png)
 
 The code for this problem is [`libmeepgeom/fiber-junction.cpp`](fiber-junction.cpp),
 packaged with the MEEP source distribution.
