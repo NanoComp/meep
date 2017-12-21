@@ -273,7 +273,7 @@ Here are examples of the material geometry obtained
 for various values of the parameters: 
 
 +`--taper-length 0`
-![R3L0Cylinder.png](modeExpansionFiles/R3L0Cylinder.png)
+![R3L0Cylinder2D.png](modeExpansionFiles/R3L0Cylinder2D.png)
 
 +`--taper-length 6 --taper-power 1`
 ![R3L6P1Cylinder.png](modeExpansionFiles/R3L6P1Cylinder2D.png)
