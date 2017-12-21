@@ -294,13 +294,13 @@ showing the Fourier-transformed MEEP fields at $z=z_A$ and $z=z_B$
 together with the first few eigenmodes of the waveguide.
 [(Click here for larger image.)](modeExpansionFiles/fj1fields.png)
 
-![modeExpansionFiles/fj1fields.png](modeExpansionFiles/dj1fields.png)
+![modeExpansionFiles/fj1fields.png](modeExpansionFiles/fj1fields.png)
 
 Here's the version of the above Fourier-domain plots for 
 `--ratio 3.`
 [(Click here for larger image.)](modeExpansionFiles/fj3fields.png)
 
-![modeExpansionFiles/fj3fields.png](modeExpansionFiles/dj3fields.png)
+![modeExpansionFiles/fj3fields.png](modeExpansionFiles/fj3fields.png)
 
 These images were produced by [this julia script](fj.jl)
 using HDF5 files produced by the `libmeep` routines
