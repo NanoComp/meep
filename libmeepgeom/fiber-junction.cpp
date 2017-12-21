@@ -76,7 +76,7 @@ vec k_guess(void *user_data, double freq, int band_num)
      if (band_num==3)  return vec(0.0, 0.0, 0.07314682);
      if (band_num==4)  return vec(0.0, 0.0, 0.06401944);
      if (band_num==5)  return vec(0.0, 0.0, 0.05746393);
-     if (band_num>=6)  return vec(0.0, 0.0, 0.05691595);
+     if (band_num>=6)  return vec(0.0, 0.0, 0.02400000);
    };
 
   return vec(0.0, 0.0, 0.425568);
@@ -125,16 +125,18 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* parse command-line options **********************************/
   /***************************************************************/
-  bool use_symmetry   = false;
-  bool point_source   = false;
-  int  band_num       = 1;
-  int  num_bands      = 6;
-  double ratio        = 1.0;
-  bool CW             = false;
-  char *filebase      = const_cast<char *>("fj");
-  bool plot_modes     = false;
-  double taper_length = ENORMOUS;
-  double taper_power  = 1.0;
+  bool use_symmetry     = false;
+  bool point_source     = false;
+  int  band_num         = 1;
+  int  num_bands        = 6;
+  double ratio          = 1.0;
+  char *filebase        = const_cast<char *>("fj");
+  bool plot_modes       = false;
+  bool plot_flux        = false;
+  double frame_interval = 1.0;
+  double taper_length   = ENORMOUS;
+  double taper_power    = 1.0;
+  double resolution     = 10.0; // resolution
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
@@ -144,10 +146,8 @@ int main(int argc, char *argv[])
       }
      else if (!strcasecmp(argv[narg],"--plot-modes") )
       plot_modes=true;
-     else if (!strcasecmp(argv[narg],"--CW") )
-      { CW=true;
-        master_printf("Using CW source.\n");
-      }
+     else if (!strcasecmp(argv[narg],"--plot-flux") )
+      plot_flux=true;
      else if (!strcasecmp(argv[narg],"--point-source") )
       { point_source=true;
         master_printf("using point-source excitation\n");
@@ -182,6 +182,18 @@ int main(int argc, char *argv[])
         sscanf(argv[narg], "%le", &taper_power);
         master_printf("setting taper_length=%e\n",taper_power);
       }
+     else if (!strcasecmp(argv[narg],"--frame-interval"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --frame-interval");
+        sscanf(argv[narg], "%le", &frame_interval);
+        master_printf("setting frame-interval=%e\n",frame_interval);
+      }
+     else if (!strcasecmp(argv[narg],"--resolution"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --resolution");
+        sscanf(argv[narg], "%le", &resolution);
+        master_printf("setting resolution=%e\n",resolution);
+      }
      else if (!strcasecmp(argv[narg],"--filebase"))
       { if ( ++narg >= argc )
          usage(argv[0], "error: no argument given for --filebase");
@@ -202,11 +214,10 @@ int main(int argc, char *argv[])
   double rA=1.0;       // radius of narrow waveguide
   double rB=rA*ratio;  // radius of wider waveguide
   double dpml=1.0;     // PML thickness
-  double a= 10.0;      // resolution
   geometry_lattice.size.x=2.0*H;
   geometry_lattice.size.y=2.0*H;
   geometry_lattice.size.z=2.0*L;
-  grid_volume gv=vol3d(2.0*H, 2.0*H, 2.0*L, a);
+  grid_volume gv=vol3d(2.0*H, 2.0*H, 2.0*L, resolution);
   gv.center_origin();
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
@@ -234,7 +245,7 @@ int main(int argc, char *argv[])
      double tol  = DEFAULT_SUBPIXEL_TOL;
      int maxeval = DEFAULT_SUBPIXEL_MAXEVAL;
      bool ensure_periodicity = false;
-     bool verbose           = false;
+     bool verbose            = false;
      geometric_object_list g={0,0};
      meep_geom::set_materials_from_geometry(&the_structure, g,
                                             use_anisotropic_averaging,
@@ -244,7 +255,7 @@ int main(int argc, char *argv[])
    };
 
    fields f(&the_structure);
-   f.output_hdf5(Dielectric,f.total_volume());
+   f.output_hdf5(Dielectric,f.total_volume(),0,false,false,filebase);
 
   /***************************************************************/
   /* add source                                                  */
@@ -253,7 +264,6 @@ int main(int argc, char *argv[])
   double df   = 0.11;  // bandwidth
   int nfreq   = 1;     // number of frequency points
   gaussian_src_time gsrc(fcen, df);
-  continuous_src_time csrc(fcen);
 
   double HP=H-dpml;
   volume fvA( vec(-HP,-HP,-0.5*L), vec(HP,HP,-0.5*L) );
@@ -263,10 +273,7 @@ int main(int argc, char *argv[])
 
   if (point_source)
    { 
-     if (CW)
-      f.add_point_source(Ex, csrc, vec(0.0, 0.0, -0.5*L));
-     else
-      f.add_point_source(Ex, gsrc, vec(0.0, 0.0, -0.5*L));
+     f.add_point_source(Ex, gsrc, vec(0.0, 0.0, -0.5*L));
    }
   else
    { 
@@ -275,16 +282,9 @@ int main(int argc, char *argv[])
      double resolution=f.a;
      double eigensolver_tol=1.0e-4;
      vec kpoint=k_guess((void *)&rA, fcen, band_num);
-     if (CW)
-      f.add_eigenmode_source(Dielectric, csrc,
-                             Z, fvA, fvA, band_num,
-                             kpoint, match_frequency, parity,
-                             resolution, eigensolver_tol, 1.0);
-     else
-      f.add_eigenmode_source(Dielectric, gsrc,
-                             Z, fvA, fvA, band_num,
-                             kpoint, match_frequency, parity,
-                             resolution, eigensolver_tol, 1.0);
+     f.add_eigenmode_source(Dielectric, gsrc, Z, fvA, fvA, band_num,
+                            kpoint, match_frequency, parity,
+                            resolution, eigensolver_tol, 1.0);
    };
 
   /***************************************************************/
@@ -295,26 +295,30 @@ int main(int argc, char *argv[])
   dft_flux fluxC=f.add_dft_flux_plane(fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
-  /* timestep until fields decayed + 50 time unit ****************/
+  /* timestep                                                    */
   /***************************************************************/
-  while( f.round_time() < (f.last_source_time() + 2.0/df) )
-   f.step();
+  double NextFileTime=f.round_time();
+  while( f.round_time() < (f.last_source_time() + 5.0/df) )
+   { f.step();
+     if (frame_interval>0.0 && f.round_time()>NextFileTime)
+      { NextFileTime += frame_interval;
+        f.output_hdf5(Ez,f.total_volume(),0,false,false,filebase);
+        f.output_hdf5(Hz,f.total_volume(),0,false,false,filebase);
+      };
+   };
  
   /***************************************************************/
   /* write output files ******************************************/
   /***************************************************************/
-  char filename[100];
-  snprintf(filename,100,"%s_fluxA",filebase);
-  f.output_flux_fields(&fluxA, fvA, filename);
-  snprintf(filename,100,"%s_fluxB",filebase);
-  f.output_flux_fields(&fluxB, fvB, filename);
-  snprintf(filename,100,"%s_fluxC",filebase);
-  f.output_flux_fields(&fluxC, fvC, filename);
-
-  f.output_hdf5(Ex,f.total_volume());
-  f.output_hdf5(Ey,f.total_volume());
-  f.output_hdf5(Hx,f.total_volume());
-  f.output_hdf5(Hy,f.total_volume());
+  if (plot_flux)
+   { char filename[100];
+     snprintf(filename,100,"%s_fluxA",filebase);
+     f.output_flux_fields(&fluxA, fvA, filename);
+     snprintf(filename,100,"%s_fluxB",filebase);
+     f.output_flux_fields(&fluxB, fvB, filename);
+     snprintf(filename,100,"%s_fluxC",filebase);
+     f.output_flux_fields(&fluxC, fvC, filename);
+   };
 
   /***************************************************************/
   /***************************************************************/
@@ -323,6 +327,7 @@ int main(int argc, char *argv[])
    { 
      void **vedata = (void **)malloc(num_bands * sizeof(void *));
      double *vgrp  = new double[num_bands];
+     char filename[100];
      for(int nb=0; nb<num_bands; nb++)
       { int band_num=nb+1;
         vedata[nb]=f.get_eigenmode(fcen, Z, fvB, fvB,
@@ -390,6 +395,7 @@ int main(int argc, char *argv[])
 
   if (am_master())
    { 
+     char filename[100];
      snprintf(filename,100,"%s.coefficients",filebase);
      FILE *ff=fopen(filename,"w");
      printf("freq | band | alpha^+ | alpha^-\n");

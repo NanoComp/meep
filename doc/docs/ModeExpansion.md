@@ -127,7 +127,7 @@ in this array starting at index `2*nb*num_freq+2*nf;`
 
 As a simple first problem, we'll consider
 a 2D problem involving an impedance mismatch
-between two planar waveguides, as shown in 
+between two planar waveguides, as cartooned in
 this figure:
 
 ![PlanarWaveguideJunction](images/PlanarWaveguideJunction.png)
@@ -155,8 +155,8 @@ by placing a [flux region](Python_User_Interface.md#FluxRegions) there.
 The code for this problem is [`libmeepgeom/planar-junction.cpp`](planar-junction.cpp),
 packaged with the MEEP source distribution.
 $z=0$.
-This code offers a command-line option `--ratio` that sets the
-ratio $h_2/h_1$ of the waveguide thicknesses; the default
+This code offers (among other options) a command-line option `--ratio`
+that sets the ratio $h_2/h_1$ of the waveguide thicknesses; the default
 value is `--ratio 2` (bigger slab is 2$\times$ thickness
 of smaller slab), while for `--ratio 1` the two waveguides
 are in fact identical and there should be no power
@@ -166,92 +166,149 @@ reflected at $z=0$.
 
 As a warmup, let's first ask what happens for `--ratio 1,`
 i.e. when the waveguide for $z>0$ is identical to that
-for $z<0$, so we expect no power reflection.
+for $z<0$, so we expect no power reflection.$
 We'll do a MEEP simulation with sources placed at $z=z_{A}$
 to reproduce the lowest $(n=1)$ eigenmode of the smaller
-waveguide, then look at the fields at $z=z_{B}$.
+waveguide, then look at the Fourier-transformed
+fields at $z=z_{B}$.
+
+#### Fourier-domain results
 
 The following plot shows **(a)** the (frequency-domain,
 i.e. Fourier-transformed) tangential fields
 at $z=z_{A}$ (top), **(b)** the tangential fields 
 at $z=z_{B}$ (second from top), and then **(c)** the
-tangential-field distributions of the first 4
+tangential-field distributions of the first 5
 eigenmodes (lower 4 rows).
-[Click here for larger image](images/pj1fields.png)
+[(Click here for larger image.)](images/pj1fields.png)
 
 ![images/pj1fields.png](images/pj1fields.png)
 
+As expected, the mode profiles at $z=z_A$ and $z=z_B$
+are identical to each other and look like the $n=1$ eigenmode
+fields.
 
-These images were produced by [this julia script](pj.jl)
-using HDF5 files produced by the `libmeep` routines
-`output_flux_fields()` and `output_mode_fields()`;
+Note: These images were produced by [this julia script](modeExpansionFiles/pj.jl)
+after running `planar-junction`
+with the command-line options `--ratio 1 --plot-flux --plot-modes;`
+this makes use of the `output_flux_fields()` and `output_mode_fields()`
+to write flux and mode data to HDF5 files
 [see below for more details](#OtherRoutines).
 
-**Insert further discussion and results of mode decomposition here**
+#### Time-domain results
+
+To get another look at what's going on,
+here's a [movie](modeExpansionFiles/r1hz.mp4)
+showing the time evolution of the $H_z$ component
+of the $H$ field, imaged on a portion of the $yz$ plane.
+
+<video width="800" height="600" controls>
+  <source src="modeExpansionFiles/r1hz.mp4" type="video/mp4">
+   Your browser does not support the video tag.
+</video>
+
+Note: These images were produced by [this julia script](modeExpansionFiles/makeMovie.jl)
+
+#### Mode-expansion coefficients
 
 ### Non-constant cross-section
 
 Next let's do the run again with `--ratio 3`, so that the 
 waveguide for $z>0$ is 3x larger than the incoming waveguide.
-This yields the following version of the above plot (only the 
-second row is different):
+
+#### Fourier-domain results
+
+This yields the following version of the above plot
+[(click here for larger image)](images/pj3fields.png):
 
 ![images/pj3fields.png](images/pj3fields.png)
 
-+ [Click here for larger image](images/pj3fields.png)
+Now the fields at $z_B$ do not agree with the fields
+at $z_A$, nor are they simply a scaled version
+of the $n=1$ eigenmode; instead, they are linear combination
+of several eigenmodes, with coefficients that can be 
+computed by calling `get_eigenmode_coefficients().`
 
+#### Time-domain results
 
-**Insert further discussion and results of mode decomposition here**
+[Here's the version of the movie shown above](modeExpansionFiles/r3hz.mp4)
+for the case of `--ratio=3`:
 
-## Second example: Junction of rectangular waveguides
+<video width="800" height="600" controls>
+  <source src="modeExpansionFiles/r3hz.mp4" type="video/mp4">
+   Your browser does not support the video tag.
+</video>
+
+#### Mode-expansion coefficients
+
+## Second example: Junction of cylindrical fibers
 
 Next we consider a geometry similar to the one we
-just studied, but now involving a junction of *rectangular*
+just studied, but now involving a junction of *cylindrical*
 waveguides. This is similar to what we considered above,
 but now with the waveguide having finite extent
-in the $x$ direction. 
-The code for this problem is [`libmeepgeom/duct-junction.cpp`](duct-junction.cpp),
+in both transverse directions, as depicted in the following
+cartoon:
+
+![CylindricalWaveguideJunction](images/CylindricalWaveguideJunction.png)
+
+The code for this problem is [`libmeepgeom/fiber-junction.cpp`](fiber-junction.cpp),
 packaged with the MEEP source distribution.
 
-Here's the version of the above plot for the case `--ratio 1,`
-i.e. constant cross-section waveguide.
+Again the code offers a command-line option `--ratio` that sets the
+ratio $R_2/R_1$ of the waveguide radii; for `--ratio 1` we expect
+perfect transmission of power.
 
-![images/dj1fields.png](images/dj1fields.png)
+In addition, this code offers command-line options `--taper-length`
+and `--taper-power` that you may use to establish a finite-length
+*taper* between the incoming and outgoing waveguides with
+power-law scaling determined by `--taper-power` (the default is 
+`--taper-power 1` for a linear taper, while `--taper-power 2` 
+gives a quadratic taper, etc.).
 
-+ [Click here for larger image](images/dj1fields.png)
+The default is `--taper-length 0,` in which case the smaller and 
+larger waveguides are butt-coupled as in the 2D example above.
 
-These images were produced by [this julia script](dj.jl)
+Here are examples of the material geometry obtained
+for various values of the parameters: 
+
++`--taper-length 0`
+![R3L0Cylinder.png](modeExpansionFiles/R3L0Cylinder.png)
+
++`--taper-length 6 --taper-power 1`
+![R3L6P1Cylinder.png](modeExpansionFiles/R3L6P1Cylinder2D.png)
+
++`--taper-length 6 --taper-power 2`
+![R3L6P2Cylinder.png](modeExpansionFiles/R3L6P2Cylinder2D.png)
+
+Here's a 3D view of the previous case, produced using
+[this Julia script](modeExpansionFiles/PlotEps.jl):
+
+![R3L6P2Cylinder3D.png](modeExpansionFiles/R3L6P2Cylinder3D.png)
+
+#### Fourier-domain results
+
+Here's the version of the above Fourier-domain plots for 
+`--ratio 1,`
+showing the Fourier-transformed MEEP fields at $z=z_A$ and $z=z_B$
+together with the first few eigenmodes of the waveguide.
+[(Click here for larger image.)](modeExpansionFiles/fj1fields.png)
+
+![modeExpansionFiles/fj1fields.png](modeExpansionFiles/dj1fields.png)
+
+Here's the version of the above Fourier-domain plots for 
+`--ratio 3.`
+[(Click here for larger image.)](modeExpansionFiles/fj3fields.png)
+
+![modeExpansionFiles/fj3fields.png](modeExpansionFiles/dj3fields.png)
+
+These images were produced by [this julia script](fj.jl)
 using HDF5 files produced by the `libmeep` routines
 `output_flux_fields()` and `output_mode_fields()`;
 [see below for more details](#OtherRoutines).
 
+## Finite-length taper between cylindrical waveguides
 
-And here are the results of the mode decomposition for the 
-first 4 eigenmodes:
-
-**Insert further discussion and results of mode decomposition here**
-
-## Third example: Junction of cylindrical waveguides
-
-Next we consider a geometry similar to the one we
-just studied, but now involving a junction of *cylindrical*
-waveguides.
-
-![CylindricalWaveguideJunction](images/CylindricalWaveguideJunction.png)
-
-Now the waveguides are confining in both $x$ and $y$
-directions, with radii $R_1$ for $z<0$ and $R_2$ for $z>0$.
-
-The code for this problem is in `libmeepgeom/fiber-junction.cpp;`
-as before, it excites the structure using a single eigenmode of the
-smaller waveguide and observes how the single-mode field
-in the smaller waveguide goes over to a multi-mode field
-in the larger waveguide.
-Again the code offers a command-line option `--ratio` that sets the
-ratio $R_2/R_1$ of the waveguide radii; the default is `--ratio 2`, 
-while for `--ratio 1` we expect perfect transmission of power
-$z=0$.
- 
 ## Under the hood: How mode expansion works
 
 The theoretical basis of the mode-expansion algorithm

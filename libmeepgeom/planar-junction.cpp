@@ -48,12 +48,12 @@ void usage(char *progname, const char *msg=0)
   abort();
 }
 
-bool equal_float(double x, double y) { return (float)x == (float)y; }
-
 /***************************************************************/
 /* function to provide initial guess for the wavevector of the */
 /* eigenmode with frequency freq and band index band           */
 /***************************************************************/
+bool equal_float(double x, double y) { return (float)x == (float)y; }
+
 vec k_guess(void *user_data, double freq, int band_num)
 {
   (void) freq;
@@ -114,14 +114,15 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* parse command-line options **********************************/
   /***************************************************************/
-  bool use_symmetry = false;
-  bool point_source = false;
-  int  band_num     = 1;
-  int  num_bands    = 4;
-  double ratio      = 1.0;
-  bool CW           = false;
-  char *filebase    = const_cast<char *>("pj");
-  bool plot_modes   = false;
+  bool use_symmetry     = false;
+  bool point_source     = false;
+  int  band_num         = 1;
+  int  num_bands        = 4;
+  double ratio          = 1.0;
+  char *filebase        = const_cast<char *>("pj");
+  bool plot_modes       = false;
+  bool plot_flux        = false;
+  double frame_interval = 0.0;
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
@@ -131,10 +132,8 @@ int main(int argc, char *argv[])
       }
      else if (!strcasecmp(argv[narg],"--plot-modes") )
       plot_modes=true;
-     else if (!strcasecmp(argv[narg],"--CW") )
-      { CW=true;
-        master_printf("Using CW source.\n");
-      }
+     else if (!strcasecmp(argv[narg],"--plot-flux") )
+      plot_flux=true;
      else if (!strcasecmp(argv[narg],"--point-source") )
       { point_source=true;
         master_printf("using point-source excitation\n");
@@ -156,6 +155,12 @@ int main(int argc, char *argv[])
          usage(argv[0], "error: no argument given for --ratio");
         sscanf(argv[narg], "%le", &ratio);
         master_printf("setting ratio=%e\n",ratio);
+      }
+     else if (!strcasecmp(argv[narg],"--frame-interval"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --frame-interval");
+        sscanf(argv[narg], "%le", &frame_interval);
+        master_printf("setting frame-interval=%e\n",frame_interval);
       }
      else if (!strcasecmp(argv[narg],"--filebase"))
       { if ( ++narg >= argc )
@@ -204,7 +209,7 @@ int main(int argc, char *argv[])
   geometric_object_list g={ 2, objects };
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
-  f.output_hdf5(Dielectric,f.total_volume());
+  f.output_hdf5(Dielectric,f.total_volume(),0,false,true,filebase);
 
   /***************************************************************/
   /* add source                                                  */
@@ -213,18 +218,13 @@ int main(int argc, char *argv[])
   double df   = 0.15;  // bandwidth
   int nfreq   = 1;     // number of frequency points
   gaussian_src_time gsrc(fcen, df);
-  continuous_src_time csrc(fcen);
 
   volume fvA( vec(0,-H,-0.5*L), vec(0,H,-0.5*L) );
   volume fvB( vec(0,-H,+0.5*L), vec(0,H,+0.5*L) );
-
   volume fvC( vec(0,-H,-L),     vec(0,H,L) );
 
   if (point_source)
    { 
-     if (CW)
-      f.add_point_source(Ex, csrc, vec(0.0, 0.0, -0.5*L));
-     else
       f.add_point_source(Ex, gsrc, vec(0.0, 0.0, -0.5*L));
    }
   else
@@ -237,16 +237,10 @@ int main(int argc, char *argv[])
      double resolution=f.a;
      double eigensolver_tol=1.0e-4;
      vec kpoint=k_guess((void *)&hA, fcen, band_num);
-     if (CW)
-      f.add_eigenmode_source(Dielectric, csrc,
-                             Z, fvA, fvA, band_num,
-                             kpoint, match_frequency, parity,
-                             resolution, eigensolver_tol, 1.0);
-     else
-      f.add_eigenmode_source(Dielectric, gsrc,
-                             Z, fvA, fvA, band_num,
-                             kpoint, match_frequency, parity,
-                             resolution, eigensolver_tol, 1.0);
+     f.add_eigenmode_source(Dielectric, gsrc,
+                            Z, fvA, fvA, band_num,
+                            kpoint, match_frequency, parity,
+                            resolution, eigensolver_tol, 1.0);
    };
 
   /***************************************************************/
@@ -259,32 +253,34 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* timestep until fields decayed + 50 time unit ****************/
   /***************************************************************/
-  while( f.round_time() < (f.last_source_time() + 1.0/df) )
-   f.step();
+  double NextFileTime=f.round_time();
+  while( f.round_time() < (f.last_source_time() + 5.0/df) )
+   { f.step();
+     if (frame_interval>0.0 && f.round_time()>NextFileTime)
+      { NextFileTime += frame_interval;
+        f.output_hdf5(Hz,f.total_volume(),0,false,false,filebase);
+      };
+   };
  
   /***************************************************************/
   /* write output files ******************************************/
   /***************************************************************/
-  char filename[100];
-  snprintf(filename,100,"%s_fluxA",filebase);
-  f.output_flux_fields(&fluxA, fvA, filename);
-  snprintf(filename,100,"%s_fluxB",filebase);
-  f.output_flux_fields(&fluxB, fvB, filename);
-  snprintf(filename,100,"%s_fluxC",filebase);
-  f.output_flux_fields(&fluxC, fvC, filename);
+  if (plot_flux)
+   { 
+     char filename[100];
+     snprintf(filename,100,"%s_fluxA",filebase);
+     f.output_flux_fields(&fluxA, fvA, filename);
+     snprintf(filename,100,"%s_fluxB",filebase);
+     f.output_flux_fields(&fluxB, fvB, filename);
+     snprintf(filename,100,"%s_fluxC",filebase);
+     f.output_flux_fields(&fluxC, fvC, filename);
+   };
 
-  f.output_hdf5(Ex,f.total_volume());
-  f.output_hdf5(Ey,f.total_volume());
-  f.output_hdf5(Hx,f.total_volume());
-  f.output_hdf5(Hy,f.total_volume());
-
-  /***************************************************************/
-  /***************************************************************/
-  /***************************************************************/
   if (plot_modes)
    { 
      void **vedata = (void **)malloc(num_bands * sizeof(void *));
      double *vgrp  = new double[num_bands];
+     char filename[100];
      for(int nb=0; nb<num_bands; nb++)
       { int band_num=nb+1;
         vedata[nb]=f.get_eigenmode(fcen, Z, fvB, fvB,
@@ -352,6 +348,7 @@ int main(int argc, char *argv[])
 
   if (am_master())
    { 
+     char filename[100];
      snprintf(filename,100,"%s.coefficients",filebase);
      FILE *ff=fopen(filename,"w");
      printf("freq | band | alpha^+ | alpha^-\n");
