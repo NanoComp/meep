@@ -1,13 +1,13 @@
-if WITH_LIBCTL
-LIBCTL = libctl
-else
-LIBCTL =
-endif
-
 ACLOCAL_AMFLAGS=-I m4
 
-SUBDIRS = src $(LIBCTL) tests examples libmeepgeom
+SUBDIRS = src tests examples
 
+if WITH_LIBCTL
+  SUBDIRS += libctl
+endif
+if WITH_LIBCTLGEOM
+  SUBDIRS += libmeepgeom
+endif
 if WITH_PYTHON
   SUBDIRS += python
 endif
