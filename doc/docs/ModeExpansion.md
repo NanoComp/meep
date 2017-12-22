@@ -211,6 +211,26 @@ Note: These images were produced by [this julia script](modeExpansionFiles/makeM
 
 #### Mode-expansion coefficients
 
+Here are the mode-expansion coefficients for the first 8
+modes as computed by `get_eigenmode_coefficients().`
+
+<span>
+<p align="center">
+<table border="1"> 
+<tr> <th> Mode </th> <th> |&alpha;| </th> <th> re, im &alpha; </th> <th> % total</th> </tr>
+<tr><td>1</td><td>2.590+02 </td> <td> {-2.266+02,+1.255+02}</td> <td>(9.999e-01 %)</td> </tr>
+<tr><td>2</td><td>1.022</td> <td>{+3.163-01,-9.726-01}</td> <td> (3.947e-03 %)</td> </tr>
+<tr><td>3</td><td>2.180-01 </td> <td>{-1.984-01,-9.029-02}</td> <td> (8.416e-04 %)</td> </tr>
+<tr><td>4</td><td>2.281-01 </td> <td>{-2.176-01,-6.844-02}</td> <td> (8.805e-04 %)</td> </tr>
+<tr><td>5</td><td>6.353-02 </td> <td>{-5.726-02,+2.750-02}</td> <td> (2.452e-04 %)</td> </tr>
+<tr><td>6</td><td>1.390-01 </td> <td>{+2.478-02,+1.367-01}</td> <td> (5.364e-04 %)</td> </tr>
+<tr><td>7</td><td>4.064-01 </td> <td>{-7.381-02,-3.997-01}</td> <td> (1.568e-03 %)</td> </tr>
+<tr> <td>8</td> <td>5.117-02 </td> <td>{-1.142-02,+4.988-02}</td> <td> (1.97e-04 %)</td> </tr>
+</table>
+</span>
+
+Notice that mode 1 accounts for 99.99% of the power carried by the MEEP DFT fields.
+
 ### Non-constant cross-section
 
 Next let's do the run again with `--ratio 3`, so that the 
@@ -240,6 +260,31 @@ for the case of `--ratio=3`:
 </video>
 
 #### Mode-expansion coefficients
+
+And here are the results of mode expansion for this case.
+
+<span>
+<p align="center">
+<table border="1">
+<tr>
+ <th> Mode </th>
+ <th> |&alpha;| </th>
+ <th> re, im &alpha; </th>
+ <th> % total</th>
+</tr>
+<tr><td>0</td><td> 2.344e+02 </td><td>{-3.529e+01,-2.317e+02}</td><td> (8.969e-01 %)</td></tr>
+<tr><td>1</td><td> 7.671e-01 </td><td>{-3.302e-01,-6.923e-01}</td><td> (2.935e-03 %)</td></tr>
+<tr><td>2</td><td> 8.809e-01 </td><td>{+8.686e-01,-1.464e-01}</td><td> (3.370e-03 %)</td></tr>
+<tr><td>3</td><td> 8.794e-01 </td><td>{-1.092e-01,-8.725e-01}</td><td> (3.365e-03 %)</td></tr>
+<tr><td>4</td><td> 1.155e+02 </td><td>{-1.550e+01,+1.144e+02}</td><td> (4.420e-01 %)</td></tr>
+<tr><td>5</td><td> 2.623e-01 </td><td>{-1.719e-01,+1.980e-01}</td><td> (1.003e-03 %)</td></tr>
+<tr><td>6</td><td> 1.013e+00 </td><td>{-6.806e-01,+7.496e-01}</td><td> (3.874e-03 %)</td></tr>
+<tr><td>7</td><td> 1.940e+00 </td><td>{-1.890e+00,+4.358e-01}</td><td> (7.423e-03 %)</td></tr>
+</table>
+</span>
+
+Now mode 1 accounts for only 89.69% of the power carried by the MEEP DFT fields,
+with mode 5 now accounting for a significant share.
 
 ## Second example: Junction of cylindrical fibers
 
