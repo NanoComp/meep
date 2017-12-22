@@ -166,7 +166,7 @@ reflected at $z=0$.
 
 As a warmup, let's first ask what happens for `--ratio 1,`
 i.e. when the waveguide for $z>0$ is identical to that
-for $z<0$, so we expect no power reflection.$
+for $z<0$, so we expect no power reflection.
 We'll do a MEEP simulation with sources placed at $z=z_{A}$
 to reproduce the lowest $(n=1)$ eigenmode of the smaller
 waveguide, then look at the Fourier-transformed
@@ -489,3 +489,5 @@ $$
 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md
+
+
