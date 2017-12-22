@@ -267,10 +267,55 @@ By default, Meep's `configure` script picks compiler flags to optimize Meep as m
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
 
-Python Meep
------------
+Python Bindings
+---------------
 
-An alpha version of Python Meep is available, currently only for the serial (i.e., non-MPI) version. This can be installed on Ubuntu in two ways: [building from source](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html) or as a [pre-compiled package using Conda](https://gist.github.com/ChristopherHogan/c22bb7cc7248f7595c4b09d0e3b16735).
+A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep.
+
+### Building From Source
+
+You can find instructions for building from source on Ubuntu for serial PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html), and parallel PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html).
+
+### Conda Packages
+
+The recommended way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. Binary packages for serial and parallel PyMeep on *Linux* and *MacOS* are currently available (64 bit architectures only), and Windows packages will be available soon. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
+
+```bash
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -b -p <desired_prefix>
+export PATH=<desired_prefix>/bin:$PATH
+```
+
+Next, we create a Conda environment for PyMeep to isolate it from other Python libraries that may be installed.
+
+```bash
+conda create -n mp -c chogan -c defaults -c conda-forge pymeep
+```
+
+This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command. We hope to move everything to conda-forge to simplify the channel selection, but currently we need to pull dependencies from three different channels (the -c arguments), and the order they are specified in is very important.
+
+Next, we need to activate the environment before we can start using it.
+
+```bash
+source activate mp
+```
+
+Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
+
+Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`.
+
+```bash
+conda create -n pmp -c chogan -c defaults -c conda-forge pymeep-parallel
+source activate pmp
+```
+
+The environment includes `mpi4py`, so you can run an MPI job with 4 processes like this:
+
+```bash
+mpiexec -n 4 python <script_name>.py
+```
+
+If you run into issues, make sure your `PYTHONPATH` environment variable is unset.
 
 Meep for Developers
 -------------------
