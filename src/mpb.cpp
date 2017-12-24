@@ -626,7 +626,8 @@ std::vector<cdouble>
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
       vec kpoint(0,0,freq);
-      if (k_func) kpoint = k_func(k_func_data, freq, band_num); void *mode_data 
+      if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
+      void *mode_data 
        = get_eigenmode(freq, d, where, where, band_num, kpoint, 
                        match_frequency, parity, resolution, eig_tol);
 

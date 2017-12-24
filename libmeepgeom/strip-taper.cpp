@@ -1,5 +1,5 @@
 /***************************************************************/
-/* demonstration of mode expansion in a cylindrical waveguide  */
+/* demonstration of mode expansion in a strip-waveguide taper  */
 /***************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,60 +59,79 @@ vec k_guess(void *user_data, double freq, int band_num)
   (void) freq;
   (void) band_num;
  
-  double r=*((double *) user_data);
+  double w=*((double *) user_data);
 
-  // hard-coded dispersion relations for r=2
-  if ( equal_float(r,2.0) && equal_float(freq,0.11) )
-   { if (band_num==1)  return vec(0.0, 0.0, 0.3382468);
-     if (band_num==2)  return vec(0.0, 0.0, 0.3383255);
-     if (band_num==3)  return vec(0.0, 0.0, 0.2905401);
-     if (band_num==4)  return vec(0.0, 0.0, 0.2535265);
-     if (band_num==5)  return vec(0.0, 0.0, 0.2525117);
-     if (band_num>=6)  return vec(0.0, 0.0, 0.2404046);
+  // hard-coded dispersion relations for w=0.5, 1
+  if ( equal_float(w,0.5) && equal_float(freq,0.41) )
+   { if (band_num==1)  return vec(0.9892331, 0.0, 0.0);
+     if (band_num==2)  return vec(0.6175083, 0.0, 0.0);
+     if (band_num==3)  return vec(0.5469879, 0.0, 0.0);
+     if (band_num==4)  return vec(0.5245156, 0.0, 0.0);
+     if (band_num==5)  return vec(0.4267270, 0.0, 0.0);
+     if (band_num>=6)  return vec(0.4245740, 0.0, 0.0);
    }
-  else // if ( equal_float(r,1) && equal_float(freq,0.11) )
-   { if (band_num==1)  return vec(0.0, 0.0, 0.201066);
-     if (band_num==2)  return vec(0.0, 0.0, 0.201066);
-     if (band_num==3)  return vec(0.0, 0.0, 0.07314682);
-     if (band_num==4)  return vec(0.0, 0.0, 0.06401944);
-     if (band_num==5)  return vec(0.0, 0.0, 0.05746393);
-     if (band_num>=6)  return vec(0.0, 0.0, 0.02400000);
-   };
+  else // if ( equal_float(w,1.0) && equal_float(freq,0.41) )
+   { if (band_num==1)  return vec(1.073627,  0.0, 0.0);
+     if (band_num==2)  return vec(0.9856316, 0.0, 0.0);
+     if (band_num==3)  return vec(0.8233921, 0.0, 0.0);
+     if (band_num==4)  return vec(0.5844210, 0.0, 0.0);
+     if (band_num==5)  return vec(0.5497692, 0.0, 0.0);
+     if (band_num>=6)  return vec(0.5116020, 0.0, 0.0);
+   }
 
-  return vec(0.0, 0.0, 0.425568);
+  return vec(0.2, 0.0, 0.0);
 } 
 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
 typedef struct material_func_data
- { double rA, rB, taper_length, p, eps;
+ { double wA;            // width of smaller waveguide
+   double wB;            // width of larger waveguide
+   double z_substrate;   // z-coordinate of substrate-oxide interface
+   double z_oxide;       // z-coordinate of oxide-strip interface
+   double z_strip;       // z-coordinate of strip-air interface
+   double taper_length;  // taper length (=0 for no taper)
+   double taper_power;   // taper exponent (1,2 for linear,quadratic taper)
+   double eps_substrate; // dielectric constant of substrate
+   double eps_oxide;     // dielectric constant of oxide layer
+   double eps_strip;     // dielectric constant of waveguide (strip)
+   double eps_ambient;   // dielectric constant of ambient medium
  } material_func_data;
 
 void material_func(vector3 loc, void *user_data, meep_geom::medium_struct *m)
 {
   material_func_data *mfdata=(material_func_data *)user_data;
-  double rA   = mfdata->rA;
-  double rB   = mfdata->rB;
-  double zMin = -0.5*mfdata->taper_length;
-  double zMax = +0.5*mfdata->taper_length;
-  double p    = mfdata->p;
+
+  double z = loc.z;
+  double eps = mfdata->eps_ambient; // assume we are in air above waveguide
+  if (z<mfdata->z_substrate)
+   { 
+     eps = mfdata->eps_substrate;
+   }
+  else if (z<mfdata->z_oxide)
+   {
+     eps = mfdata->eps_oxide;
+   }
+  else if (z<mfdata->z_strip) // in waveguide
+   {
+     double x = loc.x; 
+     double y = loc.y;
+     double x_min = -0.5*mfdata->taper_length;
+     double x_max = +0.5*mfdata->taper_length;
+     double wA = mfdata->wA, wB = mfdata->wB, w;
+     if (x <= x_min)
+      w = wA;
+     else if (x>=x_max)
+      w = wB;
+     else
+      w = wA + (wB-wA)*pow( (x-x_min)/(x_max-x_min), mfdata->taper_power);
+
+     eps = ( fabs(y)<=w ) ? mfdata->eps_strip : mfdata->eps_ambient;
+   };
+
+  m->epsilon_diag.x=m->epsilon_diag.y=m->epsilon_diag.z=eps;
  
-  double rho = sqrt( (loc.x)*(loc.x) + (loc.y)*(loc.y) );
-  double z   = loc.z;
-
-  // compute z-dependent radius of waveguide
-  double r;
-  if ( z <= zMin )
-   r=rA;
-  else if ( z > zMax )
-   r=rB;
-  else
-   r = rA + (rB-rA)*pow( (z-zMin)/(zMax-zMin), p);
-
-  double epsilon = (rho<r) ? mfdata->eps : 1.0;
-  m->epsilon_diag.x=m->epsilon_diag.y=m->epsilon_diag.z=epsilon;
-
 }
 
 /***************************************************************/ 
@@ -133,8 +152,8 @@ int main(int argc, char *argv[])
   char *filebase        = const_cast<char *>("fj");
   bool plot_modes       = false;
   bool plot_flux        = false;
-  double frame_interval = 1.0;
-  double taper_length   = ENORMOUS;
+  double frame_interval = 0.0;
+  double taper_length   = 0.0;
   double taper_power    = 1.0;
   double resolution     = 10.0; // resolution
   for(int narg=1; narg<argc; narg++)
@@ -206,83 +225,90 @@ int main(int argc, char *argv[])
    };
 
   /***************************************************************/
-  /* initialize geometry, similar to holey_wvg_cavity   **********/
+  /* initialize computational cell                               */
   /****************** ********************************************/
-  double epsilon=12.0; // permeability of waveguide core
-  double H=4.0;        // half-width of computational cell (X, Y directions)
-  double L=8.0;        // half-length of computational cell (Z direction)
-  double rA=1.0;       // radius of narrow waveguide
-  double rB=rA*ratio;  // radius of wider waveguide
-  double dpml=1.0;     // PML thickness
-  geometry_lattice.size.x=2.0*H;
-  geometry_lattice.size.y=2.0*H;
-  geometry_lattice.size.z=2.0*L;
-  grid_volume gv=vol3d(2.0*H, 2.0*H, 2.0*L, resolution);
+  double LX=3.0;       // half-length (in X) of computational cell
+  double LY=2.0;       // half-width (in Y)
+  double LZ=1.5;       // half-width (in Z)
+  double dpml=0.50;    // PML thickness
+  geometry_lattice.size.x=0;
+  geometry_lattice.size.y=2*LY;
+  geometry_lattice.size.z=2*LZ;
+  grid_volume gv=vol3d(2.0*LX, 2.0*LY, 2.0*LZ, resolution);
   gv.center_origin();
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
 
-  if (taper_length==ENORMOUS)
-   { 
-     meep_geom::material_type dielectric = meep_geom::make_dielectric(epsilon);
-     vector3 xaxis  = {1.0, 0.0, 0.0};
-     vector3 yaxis  = {0.0, 1.0, 0.0};
-     vector3 zaxis  = {0.0, 0.0, 1.0};
-     vector3 zA     = {0.0, 0.0, 0.0}; zA.z=-0.5*L;
-     vector3 zB     = {0.0, 0.0, 0.0}; zB.z=+0.5*L;
-     geometric_object objects[2];
-     objects[0] = make_cylinder(dielectric, zA, rA, L, zaxis);
-     objects[1] = make_cylinder(dielectric, zB, rB, L, zaxis);
-     geometric_object_list g={ 2, objects };
-     meep_geom::set_materials_from_geometry(&the_structure, g);
-   }
-  else
-   {
-     material_func_data mfdata={rA, rB, taper_length, taper_power, epsilon};
-     meep_geom::material_type my_material
-      = meep_geom::make_user_material(material_func, (void *)&mfdata);
-     bool use_anisotropic_averaging=true;
-     double tol  = DEFAULT_SUBPIXEL_TOL;
-     int maxeval = DEFAULT_SUBPIXEL_MAXEVAL;
-     bool ensure_periodicity = false;
-     bool verbose            = false;
-     geometric_object_list g={0,0};
-     meep_geom::set_materials_from_geometry(&the_structure, g,
-                                            use_anisotropic_averaging,
-                                            tol, maxeval, 
-                                            ensure_periodicity,
-                                            verbose, my_material);
-   };
+  /***************************************************************/
+  /* specify user-defined material function             **********/
+  /***************************************************************/
+  double wA            = 0.5;
+  double wB            = wA*ratio;
+  double h_substrate   = 0.0;    // no substrate by default
+  double h_oxide       = 1.5;    // oxide layer thickness
+  double h_strip       = 0.22;   // strip thickness
+  double eps_Si        = 11.7;   // dielectric constant of silicon
+  double eps_SiO2      = 2.1;    // dielectric constant of SiO2
 
-   fields f(&the_structure);
-   f.output_hdf5(Dielectric,f.total_volume(),0,false,false,filebase);
+  material_func_data mfdata;
+  mfdata.wA            = wA;
+  mfdata.wB            = wB;
+  mfdata.z_substrate   = -LZ + h_substrate;
+  mfdata.z_oxide       = -LZ + h_substrate + h_oxide;
+  mfdata.z_strip       = -LZ + h_substrate + h_oxide + h_strip;
+  mfdata.taper_length  = taper_length;
+  mfdata.taper_power   = taper_power;
+  mfdata.eps_substrate = eps_Si;
+  mfdata.eps_oxide     = eps_SiO2;
+  mfdata.eps_strip     = eps_Si;
+  mfdata.eps_ambient   = 1.0;  // ambient medium is vacuum
+  meep_geom::material_type my_material
+   = meep_geom::make_user_material(material_func, (void *)&mfdata);
+  bool use_anisotropic_averaging=true;
+  double tol  = DEFAULT_SUBPIXEL_TOL;
+  int maxeval = DEFAULT_SUBPIXEL_MAXEVAL;
+  bool ensure_periodicity = false;
+  bool verbose            = false;
+  geometric_object_list g={0,0};
+  meep_geom::set_materials_from_geometry(&the_structure, g,
+                                         use_anisotropic_averaging,
+                                         tol, maxeval, ensure_periodicity,
+                                         verbose, my_material);
+
+  fields f(&the_structure);
+  f.output_hdf5(Dielectric,f.total_volume(),0,false,false,filebase);
 
   /***************************************************************/
   /* add source                                                  */
   /***************************************************************/
-  double fcen = 0.11;  // center frequency
-  double df   = 0.11;  // bandwidth
-  int nfreq   = 1;     // number of frequency points
+  double fcen = 0.41;      // center frequency
+  double df   = 0.5*fcen;  // bandwidth
+  int nfreq   = 1;         // number of frequency points
   gaussian_src_time gsrc(fcen, df);
 
-  double HP=H-dpml;
-  volume fvA( vec(-HP,-HP,-0.5*L), vec(HP,HP,-0.5*L) );
-  volume fvB( vec(-HP,-HP,+0.5*L), vec(HP,HP,+0.5*L) );
+  double LXP=LX-dpml;
+  double LYP=LY-dpml;
+  double LZP=LZ-dpml;
+  volume fvA( vec(-0.5*LX, -LYP, -LZP), vec(-0.5*LX, +LYP, +LZP) );
+  volume fvB( vec(+0.5*LX, -LYP, -LZP), vec(+0.5*LX, +LYP, +LZP) );
+  volume fvC( vec(-LXP,0,-LZP),     vec(LXP,0,LZP) );
 
-  volume fvC( vec(0,-HP,-L),     vec(0,HP,L) );
+  direction dA = f.normal_direction(fvA);
+  direction dB = f.normal_direction(fvB);
 
   if (point_source)
    { 
-     f.add_point_source(Ex, gsrc, vec(0.0, 0.0, -0.5*L));
+     double z_source = -LZ + h_substrate + h_oxide + 0.5*h_strip;
+     f.add_point_source(Ex, gsrc, vec(-0.5*LX, 0.0, z_source));
    }
   else
-   { 
+   {
      bool match_frequency = true;
      int parity = 0; // NO_PARITY
      double resolution=f.a;
      double eigensolver_tol=1.0e-4;
-     vec kpoint=k_guess((void *)&rA, fcen, band_num);
-     f.add_eigenmode_source(Dielectric, gsrc, Z, fvA, fvA, band_num,
+     vec kpoint=k_guess((void *)&wA, fcen, band_num);
+     f.add_eigenmode_source(Dielectric, gsrc, dA, fvA, fvA, band_num,
                             kpoint, match_frequency, parity,
                             resolution, eigensolver_tol, 1.0);
    };
@@ -302,8 +328,9 @@ int main(int argc, char *argv[])
    { f.step();
      if (frame_interval>0.0 && f.round_time()>NextFileTime)
       { NextFileTime += frame_interval;
-        f.output_hdf5(Ez,f.total_volume(),0,false,false,filebase);
-        f.output_hdf5(Hz,f.total_volume(),0,false,false,filebase);
+        f.output_hdf5(Ex,f.total_volume(),0,false,false,filebase);
+        f.output_hdf5(Hx,f.total_volume(),0,false,false,filebase);
+        f.output_hdf5(Sx,f.total_volume(),0,false,false,filebase);
       };
    };
  
@@ -330,8 +357,9 @@ int main(int argc, char *argv[])
      char filename[100];
      for(int nb=0; nb<num_bands; nb++)
       { int band_num=nb+1;
-        vedata[nb]=f.get_eigenmode(fcen, Z, fvB, fvB,
-                                   band_num, k_guess((void *)&rB,fcen,band_num),
+        vedata[nb]=f.get_eigenmode(fcen, dB, fvB, fvB,
+                                   band_num, k_guess((void *)&wB,
+                                   fcen,band_num),
                                    true, 0, f.a, 1.0e-4);
         vgrp[nb]=get_group_velocity(vedata[nb]);
         snprintf(filename,100,"%s_mode%i",filebase,band_num);
@@ -351,7 +379,7 @@ int main(int argc, char *argv[])
         snprintf(filename,100,"%s.modeData",filebase);
         ff5=fopen(filename,"w");
       };
-     double vol=4.0*HP*HP; // 2-dimensional "volume" of flux plane
+     double vol=4.0*LYP*LZP; // 2-dimensional "volume" of flux plane
      for(int nb=0; nb<num_bands; nb++)
       for(int nbb=0; nbb<num_bands; nbb++)
        { cdouble mm[2];
@@ -391,10 +419,10 @@ int main(int argc, char *argv[])
 
   int num_freqs = fluxB.Nfreq;
   std::vector<cdouble> coeffs =
-   f.get_eigenmode_coefficients(&fluxB, Z, fvB, bands, k_guess, (void *)&rB);
+   f.get_eigenmode_coefficients(&fluxB, dB, fvB, bands, k_guess, (void *)&wB);
 
   if (am_master())
-   { 
+   {
      char filename[100];
      snprintf(filename,100,"%s.coefficients",filebase);
      FILE *ff=fopen(filename,"w");
@@ -403,19 +431,17 @@ int main(int argc, char *argv[])
      for(int nf=0; nf<num_freqs; nf++)
       for(unsigned nb=0; nb<bands.size(); nb++)
        { 
-         double anorm=0.0;
+         double atot=0.0;
          for(int nbb=0; nbb<num_bands; nbb++)
           for(int pm=0; pm<2; pm++)
-           anorm += norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
-         anorm=sqrt(anorm);
+           atot += norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
    
          cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
-         printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*abs(aP/anorm));
-         printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*abs(aM/anorm));
+         printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*norm(aP)/atot);
+         printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*norm(aM)/atot);
          fprintf(ff,"%2i  %2i   %e {%+e,%+e} (%e %%)  %e  {%+e, %+e} (%e %%)\n",nf,nb,
-                     abs(aP),real(aP),imag(aP),abs(aP/anorm),
-                     abs(aM),real(aM),imag(aM),abs(aM/anorm));
+                     abs(aP),real(aP),imag(aP),norm(aP)/atot, abs(aM),real(aM),imag(aM),norm(aM)/atot);
       };
      fclose(ff);
    };

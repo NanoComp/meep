@@ -801,7 +801,16 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
    };
 
   /***************************************************************/
-  /***************************************************************/
+  /* Note: for flux_op = OUTPUT_MODE or MODE_MODE, we do not     */
+  /*       actually use the fields stored in the flux_object.    */
+  /*       We still need to loop over dft_chunks to visit all    */
+  /*       points in the flux region, just as is done for        */
+  /*       OUTPUT_FLUX or FLUX_MODE; but we only need to do this */
+  /*       once, not 4 times (once for both tangential components*/
+  /*       of E and H). So in this case we set c_flux = the first*/
+  /*       tangential component of the E field stored in the     */
+  /*       flux object and call do_flux_operation only for       */
+  /*       dft_chunks storing that component.                    */
   /***************************************************************/
   bool append_data      = false;
   bool single_precision = false;
@@ -819,7 +828,7 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
           snprintf(dataname,100,"%s_%i.%c",component_name(c_flux),nf,reim ? 'i' : 'r');
         }
        else if (flux_op==OUTPUT_MODE)
-        { c_flux = tang_components[0];
+        { c_flux = tang_components[0]; // see note above
           c_mode = all_components[nc];
           snprintf(dataname,100,"%s.%c",component_name(c_mode),reim ? 'i' : 'r');
         }
@@ -828,8 +837,9 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
           c_flux=conj_components[nc];
         }
        else if (flux_op==MODE_MODE)
-        { c_mode =tang_components[nc];
-          c_mode2=conj_components[nc];
+        { c_flux  = tang_components[0]; // see note above
+          c_mode  = tang_components[nc];
+          c_mode2 = conj_components[nc];
         };
 
        h5file *file=0;
