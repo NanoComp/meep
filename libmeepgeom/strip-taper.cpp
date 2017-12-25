@@ -291,7 +291,12 @@ int main(int argc, char *argv[])
   double LZP=LZ-dpml;
   volume fvA( vec(-0.5*LX, -LYP, -LZP), vec(-0.5*LX, +LYP, +LZP) );
   volume fvB( vec(+0.5*LX, -LYP, -LZP), vec(+0.5*LX, +LYP, +LZP) );
+
   volume fvC( vec(-LXP,0,-LZP),     vec(LXP,0,LZP) );
+
+  // z_middle = z-coordinate of the (vertical) midpoint of the strip
+  double z_middle= mfdata.z_oxide + 0.5*h_strip;
+  volume fvD( vec(-LXP,-LYP,z_middle), vec(LXP,LYP,z_middle) );
 
   direction dA = f.normal_direction(fvA);
   direction dB = f.normal_direction(fvB);
@@ -319,12 +324,13 @@ int main(int argc, char *argv[])
   dft_flux fluxA=f.add_dft_flux_plane(fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
   dft_flux fluxB=f.add_dft_flux_plane(fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
   dft_flux fluxC=f.add_dft_flux_plane(fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
+  //dft_flux fluxD=f.add_dft_flux_plane(fvD, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
   /* timestep                                                    */
   /***************************************************************/
   double NextFileTime=f.round_time();
-  while( f.round_time() < (f.last_source_time() + 5.0/df) )
+  while( f.round_time() < (f.last_source_time() + 4.0/df) )
    { f.step();
      if (frame_interval>0.0 && f.round_time()>NextFileTime)
       { NextFileTime += frame_interval;
@@ -345,6 +351,8 @@ int main(int argc, char *argv[])
      f.output_flux_fields(&fluxB, fvB, filename);
      snprintf(filename,100,"%s_fluxC",filebase);
      f.output_flux_fields(&fluxC, fvC, filename);
+     snprintf(filename,100,"%s_fluxD",filebase);
+     f.output_flux_fields(&fluxC, fvD, filename);
    };
 
   /***************************************************************/
@@ -424,8 +432,8 @@ int main(int argc, char *argv[])
   if (am_master())
    {
      char filename[100];
-     snprintf(filename,100,"%s.coefficients",filebase);
-     FILE *ff=fopen(filename,"w");
+     snprintf(filename,100,"%s_P%g.coefficients",filebase,taper_power);
+     FILE *ff=fopen(filename,"a");
      printf("freq | band | alpha^+ | alpha^-\n");
      printf("------------------------------------------------\n");
      for(int nf=0; nf<num_freqs; nf++)
@@ -440,8 +448,9 @@ int main(int argc, char *argv[])
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
          printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*norm(aP)/atot);
          printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*norm(aM)/atot);
-         fprintf(ff,"%2i  %2i   %e {%+e,%+e} (%e %%)  %e  {%+e, %+e} (%e %%)\n",nf,nb,
-                     abs(aP),real(aP),imag(aP),norm(aP)/atot, abs(aM),real(aM),imag(aM),norm(aM)/atot);
+         fprintf(ff,"%e %e %2i %2i  %e %e %e  %e %e %e \n",ratio,taper_length,nb,nf,
+                     norm(aP), arg(aP), norm(aP)/atot,
+                     norm(aM), arg(aM), norm(aM)/atot);
       };
      fclose(ff);
    };
