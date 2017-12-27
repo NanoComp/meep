@@ -317,6 +317,17 @@ mpiexec -n 4 python <script_name>.py
 
 If you run into issues, make sure your `PYTHONPATH` environment variable is unset.
 
+*Note:* For pymeep-parallel on Mac, a [bug](https://github.com/open-mpi/ompi/issues/2956) in openmpi requires that the environment variable `TMPDIR` be set to a short path like `/tmp`. Without this workaround, you may see errors similar to this:
+
+```bash
+[laptop:68818] [[53415,0],0] ORTE_ERROR_LOG: Bad
+parameter in file ../../orte/orted/pmix/pmix_server.c at line 264
+
+[laptop:68818] [[53415,0],0] ORTE_ERROR_LOG: Bad
+parameter in file ../../../../../orte/mca/ess/hnp/ess_hnp_module.c at line
+666
+```
+
 Meep for Developers
 -------------------
 
