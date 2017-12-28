@@ -158,6 +158,91 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     return ret;
 }
 
+static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
+    PyObject *py_vec = vec2py(vector3_to_vec(x));
+
+    if (py_medium == NULL) {
+        // Keep a global Medium instance for performance.
+        PyObject *args = PyTuple_New(0);
+        py_medium = PyObject_Call(py_material_object(), args, NULL);
+        Py_DECREF(args);
+    }
+
+    PyObject *pyv3 = PyObject_GetAttrString(py_medium, "epsilon_diag");
+    set_attr_v3(pyv3, &medium->epsilon_diag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "epsilon_offdiag");
+    set_attr_v3(pyv3, &medium->epsilon_offdiag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "mu_diag");
+    set_attr_v3(pyv3, &medium->mu_diag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "mu_offdiag");
+    set_attr_v3(pyv3, &medium->mu_offdiag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "E_chi2_diag");
+    set_attr_v3(pyv3, &medium->E_chi2_diag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "E_chi3_diag");
+    set_attr_v3(pyv3, &medium->E_chi3_diag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "H_chi2_diag");
+    set_attr_v3(pyv3, &medium->H_chi2_diag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "H_chi3_diag");
+    set_attr_v3(pyv3, &medium->H_chi3_diag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "D_conductivity_diag");
+    set_attr_v3(pyv3, &medium->D_conductivity_diag);
+    Py_DECREF(pyv3);
+
+    pyv3 = PyObject_GetAttrString(py_medium, "B_conductivity_diag");
+    set_attr_v3(pyv3, &medium->B_conductivity_diag);
+    Py_DECREF(pyv3);
+
+    PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, Py_None, py_medium, NULL);
+
+    if (!pyret) {
+        PyErr_PrintEx(0);
+    }
+
+    Py_DECREF(pyret);
+
+    if (!get_attr_v3(py_medium, &medium->epsilon_diag, "epsilon_diag") ||
+        !get_attr_v3(py_medium, &medium->epsilon_offdiag, "epsilon_offdiag") ||
+        !get_attr_v3(py_medium, &medium->mu_diag, "mu_diag") ||
+        !get_attr_v3(py_medium, &medium->mu_offdiag, "mu_offdiag") ||
+        !get_attr_v3(py_medium, &medium->E_chi2_diag, "E_chi2_diag") ||
+        !get_attr_v3(py_medium, &medium->E_chi3_diag, "E_chi3_diag") ||
+        !get_attr_v3(py_medium, &medium->H_chi2_diag, "H_chi2_diag") ||
+        !get_attr_v3(py_medium, &medium->H_chi3_diag, "H_chi3_diag") ||
+        !get_attr_v3(py_medium, &medium->D_conductivity_diag, "D_conductivity_diag") ||
+        !get_attr_v3(py_medium, &medium->B_conductivity_diag, "B_conductivity_diag")) {
+
+        PyErr_PrintEx(0);
+    }
+
+    PyObject *e_sus = PyObject_GetAttrString(py_medium, "E_susceptibilities");
+    PyObject *h_sus = PyObject_GetAttrString(py_medium, "H_susceptibilities");
+
+    if (PyList_Size(e_sus) > 0 || PyList_Size(h_sus) > 0) {
+        // TODO: Allow user function to set susceptibilities. For now, sending
+        // num_items > 0 back to libmeepgeom will cause it to abort.
+        medium->E_susceptibilities.num_items = 10;
+    }
+
+    Py_DECREF(e_sus);
+    Py_DECREF(h_sus);
+}
+
 static int pyv3_to_v3(PyObject *po, vector3 *v) {
 
     PyObject *py_x = PyObject_GetAttrString(po, "x");
@@ -197,6 +282,20 @@ static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
 
     Py_XDECREF(py_attr);
     return 1;
+}
+
+static void set_attr_v3(PyObject *py_obj, vector3 *v) {
+    PyObject *pyx = PyFloat_FromDouble(v->x);
+    PyObject *pyy = PyFloat_FromDouble(v->y);
+    PyObject *pyz = PyFloat_FromDouble(v->z);
+
+    PyObject_SetAttrString(py_obj, "x", pyx);
+    PyObject_SetAttrString(py_obj, "y", pyy);
+    PyObject_SetAttrString(py_obj, "z", pyz);
+
+    Py_DECREF(pyx);
+    Py_DECREF(pyy);
+    Py_DECREF(pyz);
 }
 
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {

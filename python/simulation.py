@@ -234,7 +234,7 @@ class Simulation(object):
     def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
                  force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False,
-                 extra_materials=[]):
+                 extra_materials=[], material_function=None):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -275,6 +275,7 @@ class Simulation(object):
         self.output_h5_hook = lambda fname: False
         self.interactive = False
         self.is_cylindrical = False
+        self.material_function = material_function
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -342,6 +343,8 @@ class Simulation(object):
 
         self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+        if self.material_function:
+            self.default_material = self.material_function
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
                                        self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,

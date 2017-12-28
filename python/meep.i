@@ -54,18 +54,21 @@ typedef struct {
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
+PyObject *py_medium = NULL;
 
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
-static PyObject* vec2py(const meep::vec &v);
+static PyObject *vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static std::complex<double> py_amp_func_wrap(const meep::vec &v);
 static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
                                                const meep::vec &loc,
                                                void *data_);
+static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
+static void set_attr_v3(PyObject *py_obj, vector3 *v);
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
 static int get_attr_int(PyObject *py_obj, int *result, const char *name);
 static int get_attr_material(PyObject *po, material_type *m);
@@ -419,18 +422,31 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for material_type
 
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
-    $1 = PyObject_IsInstance($input, py_material_object());
+    int py_material = PyObject_IsInstance($input, py_material_object());
+    int user_material = PyFunction_Check($input);
+
+    $1 = py_material || user_material;
 }
 
 %typemap(in) material_type {
-    if(!pymaterial_to_material($input, &$1)) {
-        SWIG_fail;
+    if (PyObject_IsInstance($input, py_material_object())) {
+        if(!pymaterial_to_material($input, &$1)) {
+            SWIG_fail;
+        }
+    } else if (PyFunction_Check($input)) {
+        $1 = make_user_material(py_user_material_func_wrap, (void *)$input);
+    } else {
+        SWIG_exception_fail(SWIG_ERROR, "Expected a Medium or user material function");
     }
 }
 
 %typemap(freearg) material_type {
-    delete[] $1->medium.E_susceptibilities.items;
-    delete[] $1->medium.H_susceptibilities.items;
+    if ($1->medium.E_susceptibilities.items) {
+        delete[] $1->medium.E_susceptibilities.items;
+    }
+    if ($1->medium.H_susceptibilities.items) {
+        delete[] $1->medium.H_susceptibilities.items;
+    }
     delete $1;
 }
 
