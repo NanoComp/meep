@@ -7,7 +7,7 @@ For linear calculations in electromagnetism, most quantities of interest are nat
 Kerr Nonlinearities
 -------------------
 
-The refractive index often depends on the intensity of the electric fields. There are two conventions, reviewed below, commonly used to define these third-order or Kerr nonlinearities. Since Meep implements only one of the two conventions, some care is required when using values from the literature.
+The refractive index often depends on the intensity of the electric fields. There are two conventions, briefly summarized below, which are commonly used to define these third-order (or Kerr) nonlinearities. Since Meep implements only one of these two conventions, some care is required when inputting values from the literature.
 
 The first convention defines the effective refractive index in terms of the time-averaged (and not the instantaneous) electric fields within vacuum:
 
@@ -17,7 +17,7 @@ where $n_0$ is the zeroth-order refractive index and $n_2$ is the second-order r
 
 $$n_2 = \frac{3\chi^{(3)}}{4n_0}.$$
 
-Meep supports the second convention which defines the effective index in terms of the time-averaged electric fields **within the Kerr medium**:
+Meep, however, supports the second convention which defines the effective index in terms of the time-averaged electric fields **within the Kerr medium**:
 
 $$n =n _0 + n_2 I$$
 
