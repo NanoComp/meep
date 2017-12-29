@@ -30,7 +30,9 @@ class Simulation(object):
                  default_material=mp.Medium(),
                  m=0,
                  k_point=False,
-                 extra_materials=[]):
+                 extra_materials=[],
+                 material_function=None,
+                 epsilon_func=None):
 ```
 
 All `Simulation` attributes are described in further detail here. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -55,7 +57,7 @@ Specifies the [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the size of the computational cell which is centered on the origin of the coordinate system. Any sizes of 0 imply a reduced-dimensionality calculation. Strictly speaking, the dielectric function is taken to be uniform along that dimension. A 2d calculation is especially optimized. See `dimensions` below. **Note:** because Maxwell's equations are scale invariant, you can use any units of distance you want to specify the cell size: nanometers, microns, centimeters, whatever. However, it is usually convenient to pick some characteristic lengthscale of your problem and set that length to 1. See also [Units](Introduction.md#units-in-meep). Required argument (no default).
 
-**`default_material` [`Medium` class ]**  
+**`default_material` [`Medium` class or function (see "material_functions" below)]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon=1$). See also `epsilon_input_file` below.
 
@@ -245,9 +247,9 @@ List of dispersive susceptibilities (see below) added to the permeability $\mu$ 
 
 **material functions**
 
-Any function that accepts a `Medium` instance can also accept a user defined Python funtion. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point. Note that the function you supply can return *any* material. It's even possible to return another function  which would then be invoked in turn.
+Any function that accepts a `Medium` instance can also accept a user defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
 
-Instead of `material_func`, you can use `epsilon_func`: give it a function of position that returns the dielectric constant at that point.
+Instead of the `material` or `material_function` arguments, you can also use the `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a function of position that returns the dielectric constant at that point.
 
 **Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra_materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* $\gamma$<sub>*n*</sub> and $\mu$<sub>*n*</sub> values, so you can only have a finite number of these, whereas $\sigma$<sub>*n*</sub> can vary continuously and a matching $\sigma$<sub>*n*</sub> need not be specified in `extra_materials`. For nonlinear or conductivity materials, your `extra_materials` list need not match the actual values of $\sigma$ or $\chi$ returned by your material function, which can vary continuously.
 
@@ -307,9 +309,13 @@ This class, and its descendants, are used to specify the solid geometric objects
 
 Properties:
 
-**`material` [`Medium` class ]**  
+**`material` [`Medium` class or function]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The material that the object is made of (usually some sort of dielectric). Uses default `Medium`.
+The material that the object is made of (usually some sort of dielectric). Uses default `Medium`. If a function is supplied, it must take one argument and return a Python `Medium`.
+
+**`epsilon_func` [function]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+A function that takes one argument (a `Vector3`) and returns the dielectric constant at that point. Can be used instead of `material`. Default is `None`.
 
 **`center` [`Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -317,11 +323,11 @@ Center point of the object. Defaults to (0, 0, 0).
 
 Methods:
 
-**`shift`(vec [`Vector3`])**
+**`shift`(vec [`Vector3`])**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Shifts the objects `center` by `vec`. This can also be accomplished via the `+` operator: `geomtric_obj + Vector3(10, 10, 10)`.
 
-**`info`(indent_by [integer])**
+**`info`(indent_by [integer])**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces(0 by default).
 
