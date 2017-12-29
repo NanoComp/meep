@@ -11,7 +11,29 @@ See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines
 The Simulation Class
 ---------------------
 
-The [`Simulation` class](#classes) contains all the attributes that you can set to control various parameters of the Meep computation. These attributes are listed here. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
+The [`Simulation` class](#classes) contains all the attributes that you can set to control various parameters of the Meep computation. The function signature of the `Simulation` constructor with its default values is listed here for convenience:
+
+```python
+class Simulation(object):
+
+    def __init__(self,
+                 cell_size,
+                 resolution,
+                 geometry=[],
+                 sources=[],
+                 eps_averaging=True,
+                 dimensions=2,
+                 boundary_layers=[],
+                 symmetries=[],
+                 verbose=False,
+                 force_complex_fields=False,
+                 default_material=mp.Medium(),
+                 m=0,
+                 k_point=False,
+                 extra_materials=[]):
+```
+
+All `Simulation` attributes are described in further detail here. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
 
 **`geometry` [ list of `GeometricObject` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
