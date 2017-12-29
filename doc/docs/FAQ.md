@@ -11,7 +11,7 @@ General
 
 ### What is Meep?
 
-Meep is an open-source software package for finite-difference time-domain (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
+Meep is an free/open-source software package for finite-difference time-domain (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
 
 ### Who are the developers of Meep?
 
