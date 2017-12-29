@@ -16,7 +16,7 @@ We kindly request that you cite the following reference in any publication for w
 
 If you want a one-sentence description of the algorithm for inclusion in a publication, we recommend something like:
 
-- Simulations were performed with the finite-difference time-domain (FDTD) method [ref FDTD], using a freely available software package [ref Meep].
+- Simulations were performed with the finite-difference time-domain (FDTD) method [ref FDTD], using an open-source software package [ref Meep].
 
 General references on the FDTD method include, for example:
 

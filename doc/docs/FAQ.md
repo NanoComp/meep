@@ -11,7 +11,7 @@ General
 
 ### What is Meep?
 
-Meep is a free-software package for finite-difference time-domain (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
+Meep is an open-source software package for finite-difference time-domain (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
 
 ### Who are the developers of Meep?
 
@@ -19,7 +19,7 @@ Meep was originally developed as part of graduate research at MIT. The project i
 
 ### Where can I ask questions regarding Meep?
 
-There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss issues pertaining to setting up simulations, post-processing output, installation, etc. A good place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings since 2006 spanning a large number and variety of discussion topics. Bug reports and new feature requests can be filed as a [GitHub issue](https://github.com/stevengj/meep/issues).
+There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss issues pertaining to setting up simulations, post-processing output, installation, etc. A good place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings since 2006 spanning a large number and variety of discussion topics. Bug reports and new feature requests should be filed as a [GitHub issue](https://github.com/stevengj/meep/issues).
 
 [Simpetus](http://www.simpetus.com), a company started by Meep's developers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
 
@@ -28,9 +28,9 @@ Installation
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to high-performance computing (HPC) clusters. Precompiled packages are available for Ubuntu. Meep can also be installed on Windows using the free [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment.
+Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to high-performance computing (HPC) clusters. Conda packages are available for Linux and macOS. Meep can also be installed on Windows using the open-source [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. See [Installation](Installation) for details.
 
-Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Step-by-step instructions including shell scripts to automate the installation are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
+Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Installation shell scripts are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
 Meep is also available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
@@ -83,3 +83,7 @@ By default, when Meep assigns a dielectric constant $\varepsilon$ or $\mu$ to ea
 Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by setting `eps_averaging = False` via the `Simulation` instance (Python) or `(set! eps-averaging? false)` (Scheme) in your script file. See the [User Interface](Python_User_Interface.md).
 
 Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and plot it, you may notice that there are some pixels with intermediate $\varepsilon$ values, right at the boundary between two materials. This has a completely different source. Internally, Meep's simulation is performed on a [Yee grid](Yee_Lattice.md), in which every field component is stored on a slightly different grid which are offset from one another by half-pixels, and the $\varepsilon$ values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid at the center of each pixel, so all quantities are interpolated onto this grid for output. Therefore, even though the internal $\varepsilon$ values are indeed discontinuous when you disable subpixel averaging, the *output* file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.
+
+### Does Meep support importing GDSII files?
+
+Not currently, but work is underway to add support for this feature (expected release: 2018). This will facilitate the fabrication of simulated, [planar 2d designs](https://en.wikipedia.org/wiki/GDSII) using semiconductor foundries. Also, this feature will enable plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
