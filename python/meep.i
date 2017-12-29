@@ -692,6 +692,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+// Typemap suite for custom_src_time
+
+%typecheck(SWIG_TYPECHECK_POINTER) (std::complex<double> (*func)(double t, void *), void *data) {
+    $1 = PyFunction_Check($input);
+}
+
+%typemap(in) (std::complex<double> (*func)(double t, void *), void *data) {
+  $1 = py_src_func_wrap;
+  $2 = (void *)$input;
+}
+
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
 
 // Rename python builtins

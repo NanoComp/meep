@@ -1,3 +1,6 @@
+from __future__ import division
+
+import math
 import unittest
 
 import meep as mp
@@ -88,6 +91,49 @@ class TestSourceTypemaps(unittest.TestCase):
             src.swigobj.is_equal(Vector3())
             self.assertEqual(error.exception.message, self.expected_msg)
 
+    def test_custom_source(self):
+        n = 3.4
+        w = 1
+        r = 1
+        pad = 4
+        dpml = 2
+        sxy = 2 * (r + w + pad + dpml)
+
+        cell = mp.Vector3(sxy, sxy)
+
+        geometry = [
+            mp.Cylinder(r + w, material=mp.Medium(index=n)),
+            mp.Cylinder(r, material=mp.air)
+        ]
+
+        boundary_layers = [mp.PML(dpml)]
+        resolution = 10
+        fcen = 0.15
+        df = 0.1
+
+        # Bump function
+        def my_src_func(t):
+            if t > -1 and t < 1:
+                return math.exp(-1 / (1 - (t * t)))
+            return 0j
+
+        sources = [mp.Source(src=mp.CustomSource(src_func=my_src_func, end_time=100),
+                             component=mp.Ez, center=mp.Vector3(r + 0.1))]
+
+        symmetries = [mp.Mirror(mp.Y)]
+
+        sim = mp.Simulation(cell_size=cell,
+                            resolution=resolution,
+                            geometry=geometry,
+                            boundary_layers=boundary_layers,
+                            sources=sources,
+                            symmetries=symmetries)
+
+        h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
+        sim.run(mp.after_sources(h), until_after_sources=200)
+        fp = sim.get_field_point(mp.Ez, mp.Vector3(1))
+
+        self.assertAlmostEqual(fp, 0.01855600828213207 + 0j)
 
 if __name__ == '__main__':
     unittest.main()
