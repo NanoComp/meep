@@ -173,7 +173,13 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
 
 class GeometricObject(object):
 
-    def __init__(self, material=Medium(), center=Vector3()):
+    def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):
+        if type(material) is not Medium and callable(material):
+            material.eps = False
+        elif epsilon_func:
+            epsilon_func.eps = True
+            material = epsilon_func
+
         self.material = material
         self.center = center
 

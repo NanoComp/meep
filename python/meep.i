@@ -54,7 +54,6 @@ typedef struct {
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
-PyObject *py_medium = NULL;
 
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
@@ -65,14 +64,15 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
                                                const meep::vec &loc,
                                                void *data_);
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium);
+static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
-static void set_attr_v3(PyObject *py_obj, vector3 *v);
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
 static int get_attr_int(PyObject *py_obj, int *result, const char *name);
 static int get_attr_material(PyObject *po, material_type *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
+static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a);
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
@@ -434,7 +434,20 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             SWIG_fail;
         }
     } else if (PyFunction_Check($input)) {
-        $1 = make_user_material(py_user_material_func_wrap, (void *)$input);
+        PyObject *eps = PyObject_GetAttrString($input, "eps");
+
+        if (!eps) {
+            PyErr_PrintEx(0);
+            SWIG_fail;
+        }
+
+        if (eps == Py_True) {
+            $1 = make_user_material(py_epsilon_func_wrap, (void *)$input);
+        } else {
+            $1 = make_user_material(py_user_material_func_wrap, (void *)$input);
+        }
+
+        Py_DECREF(eps);
     } else {
         SWIG_exception_fail(SWIG_ERROR, "Expected a Medium or user material function");
     }
