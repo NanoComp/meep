@@ -75,10 +75,32 @@ class TestUserMaterials(unittest.TestCase):
         self.assertAlmostEqual(fp, -7.895783750440999e-4 + 0j)
 
     def test_geometric_obj_with_user_material(self):
-        pass
+        geometry = [mp.Cylinder(5, material=my_material_func)]
+
+        sim = mp.Simulation(cell_size=self.cell,
+                            resolution=self.resolution,
+                            symmetries=self.symmetries,
+                            geometry=geometry,
+                            boundary_layers=self.boundary_layers,
+                            sources=self.sources)
+        sim.run(until=200)
+        fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
+
+        self.assertAlmostEqual(fp, 4.816403627871773e-4 + 0j)
 
     def test_geometric_obj_with_epsilon_func(self):
-        pass
+        geometry = [mp.Cylinder(5, epsilon_func=my_epsilon_func)]
+
+        sim = mp.Simulation(cell_size=self.cell,
+                            resolution=self.resolution,
+                            symmetries=self.symmetries,
+                            geometry=geometry,
+                            boundary_layers=self.boundary_layers,
+                            sources=self.sources)
+        sim.run(until=100)
+        fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
+
+        self.assertAlmostEqual(fp, -7.895783750440999e-4 + 0j)
 
 if __name__ == '__main__':
     unittest.main()

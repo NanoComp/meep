@@ -19,11 +19,13 @@
 
 #if PY_MAJOR_VERSION >= 3
     #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
+    #define IsPyString(n) PyUnicode_Check(n)
     #define PyInteger_Check(n) PyLong_Check(n)
     #define PyInteger_AsLong(n) PyLong_AsLong(n)
     #define PyInteger_FromLong(n) PyLong_FromLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
+    #define IsPyString(n) PyString_Check(n)
     #define PyInteger_Check(n) PyInt_Check(n)
     #define PyInteger_AsLong(n) PyInt_AsLong(n)
     #define PyInteger_FromLong(n) PyInt_FromLong(n)
@@ -335,15 +337,29 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 }
 
 static int pymaterial_to_material(PyObject *po, material_type *mt) {
+    material_data *md;
 
-    material_data *md = new material_data();
-    md->which_subclass = material_data::MEDIUM;
-    md->user_func = 0;
-    md->user_data = 0;
-    md->epsilon_data = 0;
-    md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 0;
-
-    if (!pymedium_to_medium(po, &md->medium)) {
+    if (PyObject_IsInstance(po, py_material_object())) {
+        md = make_dielectric(1);
+        if (!pymedium_to_medium(po, &md->medium)) {
+            return 0;
+        }
+    } else if (PyFunction_Check(po)) {
+        PyObject *eps = PyObject_GetAttrString(po, "eps");
+        if (!eps) {
+            return 0;
+        }
+        if (eps == Py_True) {
+            md = make_user_material(py_epsilon_func_wrap, po);
+        } else {
+            md = make_user_material(py_user_material_func_wrap, po);
+        }
+        Py_DECREF(eps);
+    } else if (IsPyString(po)) {
+        const char *eps_input_file = PyObject_ToCharPtr(po);
+        md = make_file_material(eps_input_file);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Expected a Medium, a function, or a filename");
         return 0;
     }
 

@@ -300,8 +300,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
-        delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
-        delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
+        if (((material_data *)$1.material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
+        }
+        if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
+        }
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
@@ -327,8 +331,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
-        delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        if (((material_data *)$1.items[i].material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        }
+        if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
         delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
+        }
         delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
@@ -424,32 +432,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
     int py_material = PyObject_IsInstance($input, py_material_object());
     int user_material = PyFunction_Check($input);
+    int file_material = IsPyString($input);
 
-    $1 = py_material || user_material;
+    $1 = py_material || user_material || file_material;
 }
 
 %typemap(in) material_type {
-    if (PyObject_IsInstance($input, py_material_object())) {
-        if(!pymaterial_to_material($input, &$1)) {
-            SWIG_fail;
-        }
-    } else if (PyFunction_Check($input)) {
-        PyObject *eps = PyObject_GetAttrString($input, "eps");
-
-        if (!eps) {
-            PyErr_PrintEx(0);
-            SWIG_fail;
-        }
-
-        if (eps == Py_True) {
-            $1 = make_user_material(py_epsilon_func_wrap, (void *)$input);
-        } else {
-            $1 = make_user_material(py_user_material_func_wrap, (void *)$input);
-        }
-
-        Py_DECREF(eps);
-    } else {
-        SWIG_exception_fail(SWIG_ERROR, "Expected a Medium or user material function");
+    if(!pymaterial_to_material($input, &$1)) {
+        SWIG_fail;
     }
 }
 
@@ -690,8 +680,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            delete[] $1.items[i]->medium.E_susceptibilities.items;
-            delete[] $1.items[i]->medium.H_susceptibilities.items;
+            if ($1.items[i]->medium.E_susceptibilities.items) {
+                delete[] $1.items[i]->medium.E_susceptibilities.items;
+            }
+            if ($1.items[i]->medium.H_susceptibilities.items) {
+                delete[] $1.items[i]->medium.H_susceptibilities.items;
+            }
             delete $1.items[i];
         }
         delete[] $1.items;
