@@ -19,11 +19,13 @@
 
 #if PY_MAJOR_VERSION >= 3
     #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
+    #define IsPyString(n) PyUnicode_Check(n)
     #define PyInteger_Check(n) PyLong_Check(n)
     #define PyInteger_AsLong(n) PyLong_AsLong(n)
     #define PyInteger_FromLong(n) PyLong_FromLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
+    #define IsPyString(n) PyString_Check(n)
     #define PyInteger_Check(n) PyInt_Check(n)
     #define PyInteger_AsLong(n) PyInt_AsLong(n)
     #define PyInteger_FromLong(n) PyInt_FromLong(n)
@@ -161,86 +163,35 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
     PyObject *py_vec = vec2py(vector3_to_vec(x));
 
-    if (py_medium == NULL) {
-        // Keep a global Medium instance for performance.
-        PyObject *args = PyTuple_New(0);
-        py_medium = PyObject_Call(py_material_object(), args, NULL);
-        Py_DECREF(args);
-    }
-
-    PyObject *pyv3 = PyObject_GetAttrString(py_medium, "epsilon_diag");
-    set_attr_v3(pyv3, &medium->epsilon_diag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "epsilon_offdiag");
-    set_attr_v3(pyv3, &medium->epsilon_offdiag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "mu_diag");
-    set_attr_v3(pyv3, &medium->mu_diag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "mu_offdiag");
-    set_attr_v3(pyv3, &medium->mu_offdiag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "E_chi2_diag");
-    set_attr_v3(pyv3, &medium->E_chi2_diag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "E_chi3_diag");
-    set_attr_v3(pyv3, &medium->E_chi3_diag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "H_chi2_diag");
-    set_attr_v3(pyv3, &medium->H_chi2_diag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "H_chi3_diag");
-    set_attr_v3(pyv3, &medium->H_chi3_diag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "D_conductivity_diag");
-    set_attr_v3(pyv3, &medium->D_conductivity_diag);
-    Py_DECREF(pyv3);
-
-    pyv3 = PyObject_GetAttrString(py_medium, "B_conductivity_diag");
-    set_attr_v3(pyv3, &medium->B_conductivity_diag);
-    Py_DECREF(pyv3);
-
-    PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, Py_None, py_medium, NULL);
+    PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
 
     if (!pyret) {
         PyErr_PrintEx(0);
     }
 
-    Py_DECREF(pyret);
-
-    if (!get_attr_v3(py_medium, &medium->epsilon_diag, "epsilon_diag") ||
-        !get_attr_v3(py_medium, &medium->epsilon_offdiag, "epsilon_offdiag") ||
-        !get_attr_v3(py_medium, &medium->mu_diag, "mu_diag") ||
-        !get_attr_v3(py_medium, &medium->mu_offdiag, "mu_offdiag") ||
-        !get_attr_v3(py_medium, &medium->E_chi2_diag, "E_chi2_diag") ||
-        !get_attr_v3(py_medium, &medium->E_chi3_diag, "E_chi3_diag") ||
-        !get_attr_v3(py_medium, &medium->H_chi2_diag, "H_chi2_diag") ||
-        !get_attr_v3(py_medium, &medium->H_chi3_diag, "H_chi3_diag") ||
-        !get_attr_v3(py_medium, &medium->D_conductivity_diag, "D_conductivity_diag") ||
-        !get_attr_v3(py_medium, &medium->B_conductivity_diag, "B_conductivity_diag")) {
-
+    if (!pymedium_to_medium(pyret, medium)) {
         PyErr_PrintEx(0);
     }
 
-    PyObject *e_sus = PyObject_GetAttrString(py_medium, "E_susceptibilities");
-    PyObject *h_sus = PyObject_GetAttrString(py_medium, "H_susceptibilities");
+    Py_DECREF(pyret);
+}
 
-    if (PyList_Size(e_sus) > 0 || PyList_Size(h_sus) > 0) {
-        // TODO: Allow user function to set susceptibilities. For now, sending
-        // num_items > 0 back to libmeepgeom will cause it to abort.
-        medium->E_susceptibilities.num_items = 10;
+static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
+    PyObject *py_vec = vec2py(vector3_to_vec(x));
+
+    PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
+
+    if (!pyret) {
+        PyErr_PrintEx(0);
     }
 
-    Py_DECREF(e_sus);
-    Py_DECREF(h_sus);
+    double eps = PyFloat_AsDouble(pyret);
+
+    medium->epsilon_diag.x = eps;
+    medium->epsilon_diag.y = eps;
+    medium->epsilon_diag.z = eps;
+
+    Py_DECREF(pyret);
 }
 
 static int pyv3_to_v3(PyObject *po, vector3 *v) {
@@ -282,20 +233,6 @@ static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
 
     Py_XDECREF(py_attr);
     return 1;
-}
-
-static void set_attr_v3(PyObject *py_obj, vector3 *v) {
-    PyObject *pyx = PyFloat_FromDouble(v->x);
-    PyObject *pyy = PyFloat_FromDouble(v->y);
-    PyObject *pyz = PyFloat_FromDouble(v->z);
-
-    PyObject_SetAttrString(py_obj, "x", pyx);
-    PyObject_SetAttrString(py_obj, "y", pyy);
-    PyObject_SetAttrString(py_obj, "z", pyz);
-
-    Py_DECREF(pyx);
-    Py_DECREF(pyy);
-    Py_DECREF(pyz);
 }
 
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
@@ -400,18 +337,42 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 }
 
 static int pymaterial_to_material(PyObject *po, material_type *mt) {
+    material_data *md;
 
-    material_data *md = new material_data();
-    md->which_subclass = material_data::MEDIUM;
-    md->user_func = 0;
-    md->user_data = 0;
-    md->epsilon_data = 0;
-    md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 0;
+    if (PyObject_IsInstance(po, py_material_object())) {
+        md = make_dielectric(1);
+        if (!pymedium_to_medium(po, &md->medium)) {
+            return 0;
+        }
+    } else if (PyFunction_Check(po)) {
+        PyObject *eps = PyObject_GetAttrString(po, "eps");
+        if (!eps) {
+            return 0;
+        }
+        if (eps == Py_True) {
+            md = make_user_material(py_epsilon_func_wrap, po);
+        } else {
+            md = make_user_material(py_user_material_func_wrap, po);
+        }
+        Py_DECREF(eps);
+    } else if (IsPyString(po)) {
+        const char *eps_input_file = PyObject_ToCharPtr(po);
+        md = make_file_material(eps_input_file);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Expected a Medium, a function, or a filename");
+        return 0;
+    }
 
-    if (!get_attr_v3(po, &md->medium.epsilon_diag, "epsilon_diag") ||
-        !get_attr_v3(po, &md->medium.epsilon_offdiag, "epsilon_offdiag") ||
-        !get_attr_v3(po, &md->medium.mu_diag, "mu_diag") ||
-        !get_attr_v3(po, &md->medium.mu_offdiag, "mu_offdiag")) {
+    *mt = md;
+
+    return 1;
+}
+
+static int pymedium_to_medium(PyObject *po, medium_struct *m) {
+    if (!get_attr_v3(po, &m->epsilon_diag, "epsilon_diag") ||
+        !get_attr_v3(po, &m->epsilon_offdiag, "epsilon_offdiag") ||
+        !get_attr_v3(po, &m->mu_diag, "mu_diag") ||
+        !get_attr_v3(po, &m->mu_offdiag, "mu_offdiag")) {
 
         return 0;
     }
@@ -423,8 +384,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
         return 0;
     }
 
-    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium.E_susceptibilities) ||
-       !py_list_to_susceptibility_list(py_h_susceptibilities, &md->medium.H_susceptibilities)) {
+    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &m->E_susceptibilities) ||
+       !py_list_to_susceptibility_list(py_h_susceptibilities, &m->H_susceptibilities)) {
 
         return 0;
     }
@@ -432,17 +393,15 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     Py_XDECREF(py_e_susceptibilities);
     Py_XDECREF(py_h_susceptibilities);
 
-    if (!get_attr_v3(po, &md->medium.E_chi2_diag, "E_chi2_diag") ||
-        !get_attr_v3(po, &md->medium.E_chi3_diag, "E_chi3_diag") ||
-        !get_attr_v3(po, &md->medium.H_chi2_diag, "H_chi2_diag") ||
-        !get_attr_v3(po, &md->medium.H_chi3_diag, "H_chi3_diag") ||
-        !get_attr_v3(po, &md->medium.D_conductivity_diag, "D_conductivity_diag") ||
-       !get_attr_v3(po, &md->medium.B_conductivity_diag, "B_conductivity_diag")) {
+    if (!get_attr_v3(po, &m->E_chi2_diag, "E_chi2_diag") ||
+        !get_attr_v3(po, &m->E_chi3_diag, "E_chi3_diag") ||
+        !get_attr_v3(po, &m->H_chi2_diag, "H_chi2_diag") ||
+        !get_attr_v3(po, &m->H_chi3_diag, "H_chi3_diag") ||
+        !get_attr_v3(po, &m->D_conductivity_diag, "D_conductivity_diag") ||
+        !get_attr_v3(po, &m->B_conductivity_diag, "B_conductivity_diag")) {
 
         return 0;
     }
-
-    *mt = md;
 
     return 1;
 }

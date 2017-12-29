@@ -54,7 +54,6 @@ typedef struct {
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
-PyObject *py_medium = NULL;
 
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
@@ -65,14 +64,15 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
                                                const meep::vec &loc,
                                                void *data_);
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium);
+static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
-static void set_attr_v3(PyObject *py_obj, vector3 *v);
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
 static int get_attr_int(PyObject *py_obj, int *result, const char *name);
 static int get_attr_material(PyObject *po, material_type *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
+static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a);
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
@@ -300,8 +300,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
-        delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
-        delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
+        if (((material_data *)$1.material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
+        }
+        if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
+        }
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
@@ -327,8 +331,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
-        delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        if (((material_data *)$1.items[i].material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        }
+        if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
         delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
+        }
         delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
@@ -424,19 +432,14 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
     int py_material = PyObject_IsInstance($input, py_material_object());
     int user_material = PyFunction_Check($input);
+    int file_material = IsPyString($input);
 
-    $1 = py_material || user_material;
+    $1 = py_material || user_material || file_material;
 }
 
 %typemap(in) material_type {
-    if (PyObject_IsInstance($input, py_material_object())) {
-        if(!pymaterial_to_material($input, &$1)) {
-            SWIG_fail;
-        }
-    } else if (PyFunction_Check($input)) {
-        $1 = make_user_material(py_user_material_func_wrap, (void *)$input);
-    } else {
-        SWIG_exception_fail(SWIG_ERROR, "Expected a Medium or user material function");
+    if(!pymaterial_to_material($input, &$1)) {
+        SWIG_fail;
     }
 }
 
@@ -677,8 +680,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            delete[] $1.items[i]->medium.E_susceptibilities.items;
-            delete[] $1.items[i]->medium.H_susceptibilities.items;
+            if ($1.items[i]->medium.E_susceptibilities.items) {
+                delete[] $1.items[i]->medium.E_susceptibilities.items;
+            }
+            if ($1.items[i]->medium.H_susceptibilities.items) {
+                delete[] $1.items[i]->medium.H_susceptibilities.items;
+            }
             delete $1.items[i];
         }
         delete[] $1.items;
