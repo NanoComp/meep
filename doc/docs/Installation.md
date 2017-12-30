@@ -272,11 +272,146 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 Python Bindings
 ---------------
 
-A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep.
+A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep &mdash; building from source or installing binary Conda packages.
 
 ### Building From Source
 
-You can find instructions for building from source on Ubuntu for serial PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html), and parallel PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html).
+Here are instructions for building from source on Ubuntu 16.04 for serial and parallel PyMeep.
+
+#### Serial
+
+```bash
+#!/bin/bash
+
+export LD_LIBRARY_PATH="/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/serial"
+export LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/serial"
+export CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/serial"
+export PYTHONPATH="$HOME/install/meep/python"
+export GUILE_WARN_DEPRECATED="no"
+
+sudo apt-get update
+sudo apt-get -y dist-upgrade
+sudo apt-get -y install libblas-dev liblapack-dev libgmp-dev libunistring-dev libmatheval-dev swig libgsl-dev libatomic-ops-dev libgc-dev libffi-dev libltdl-dev autoconf pkg-config libpng16-dev git guile-2.0-dev libhdf5-dev libfftw3-dev libpython3.5-dev python3-numpy python3-h5py
+
+mkdir ~/install
+
+cd ~/install
+git clone https://github.com/stevengj/harminv.git
+cd harminv/
+sh autogen.sh --with-pic
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/libctl.git
+cd libctl/
+sh autogen.sh --with-pic
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/h5utils.git
+cd h5utils/
+sh autogen.sh
+make distclean
+./configure LIBS=-ldl
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/mpb.git
+cd mpb/
+sh autogen.sh --with-pic LIBS=-ldl
+make && make check && sudo make install
+make distclean
+sh autogen.sh --with-pic LIBS=-ldl --with-inv-symmetry
+make && make check && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/meep.git
+cd meep/
+sh autogen.sh
+make distclean
+./configure --with-pic LIBS=-ldl --enable-maintainer-mode --with-python
+make && make check && sudo make install
+```
+
+#### Parallel
+
+```bash
+#!/bin/bash
+
+export LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/openmpi:${HOME}/install/lib"
+export LDFLAGS="-L/usr/local/lib -L/usr/local/lib/openmpi -L${HOME}/install/lib"
+export CPPFLAGS="-I/usr/local/include -I/usr/local/include/openmpi -I${HOME}/install/include"
+export PATH="${PATH}:${HOME}/install/bin"
+export PYTHONPATH="${HOME}/install/meep/python"
+export GUILE_WARN_DEPRECATED="no"
+
+sudo apt-get update
+sudo apt-get -y dist-upgrade
+sudo apt-get -y install libblas-dev liblapack-dev libgmp-dev libunistring-dev libmatheval-dev swig libgsl-dev libatomic-ops-dev libgc-dev libffi-dev libltdl-dev autoconf pkg-config libpng16-dev git guile-2.0-dev libpython3.5-dev python3-numpy python3-pip
+
+mkdir ~/install
+
+cd ~/install
+git clone https://github.com/stevengj/harminv.git
+cd harminv/
+sh autogen.sh --with-pic
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/libctl.git
+cd libctl/
+sh autogen.sh --with-pic
+make && sudo make install
+
+cd ~/install
+wget --no-check-certificate https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.4.tar.gz
+tar xvzf openmpi-2.0.4.tar.gz
+cd openmpi-2.0.4/
+./configure --with-pic
+make && make check && sudo make install
+
+export CC=mpicc
+export CXX=mpic++
+
+cd ~/install
+wget --no-check-certificate https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.1/src/hdf5-1.10.1.tar.gz
+tar xvzf hdf5-1.10.1.tar.gz
+cd hdf5-1.10.1/
+./configure --prefix=${HOME}/install --with-pic --enable-parallel --enable-shared --disable-static
+make && make install
+
+cd ~/install
+git clone https://github.com/stevengj/h5utils.git
+cd h5utils/
+sh autogen.sh LIBS=-ldl
+make && sudo make install
+
+cd ~/install
+wget http://www.fftw.org/fftw-3.3.4.tar.gz
+tar xvzf fftw-3.3.4.tar.gz
+cd fftw-3.3.4/
+./configure --with-pic --enable-mpi
+make && make check && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/mpb.git
+cd mpb/
+sh autogen.sh --with-pic LIBS=-ldl
+make && make check && sudo make install
+
+pip3 install --upgrade pip
+pip3 install --user --no-cache-dir mpi4py
+export HDF5_MPI="ON"
+pip3 install --user --no-binary=h5py h5py
+
+cd ~/install
+git clone https://github.com/stevengj/meep.git
+cd meep/
+sh autogen.sh
+make distclean
+./configure --with-pic LIBS=-ldl --enable-maintainer-mode --with-python --with-mpi
+make && make check && sudo make install
+```
 
 ### Conda Packages
 
