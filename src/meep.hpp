@@ -1387,14 +1387,11 @@ class fields {
   // that can be passed to eigenmode_amplitude() to get
   // values of field components at arbitrary points in space.
   // call destroy_eigenmode_data() to deallocate it when finished.
-  void *get_eigenmode(double &omega_src,
-	     	      direction d, const volume &where,
-	              const volume &eig_vol,
-	    	      int band_num,
+  void *get_eigenmode(double &omega_src, direction d, const volume &where,
+	              const volume &eig_vol, int band_num,
 		      const vec &kpoint, bool match_frequency,
-                      int parity,
-                      double resolution, 
-                      double eigensolver_tol);
+                      int parity, double resolution, 
+                      double eigensolver_tol, bool verbose=false);
 
   void add_eigenmode_source(component c, const src_time &src,
 	  		    direction d, const volume &where,
@@ -1500,23 +1497,21 @@ class fields {
   /* single omnibus routine (do_flux_operation) with      */
   /* multiple entry points for particular calculations.   */
   /********************************************************/
-  std::complex<double> do_flux_operation(dft_flux *flux, const volume where,
-                                         const char *HDF5FileName,
-                                         void *mode1_data=0, void *mode2_data=0,
-                                         int num_freq=0);
+  void do_flux_operation(dft_flux *flux, int num_freq, const volume where,
+                         const char *HDF5FileName,
+                         void *mode1_data=0, void *mode2_data=0,
+                         std::complex<double> *integrals=0);
   void output_flux_fields(dft_flux *flux, const volume where,
                           const char *HDF5FileName);
   void output_mode_fields(void *mode_data, dft_flux *flux,
                           const volume where, 
                           const char *HDF5FileName);
-  std::complex<double> get_mode_flux_overlap(void *mode_data, 
-                                             dft_flux *flux, 
-                                             int num_freq, 
-                                             const volume where);
-  std::complex<double> get_mode_mode_overlap(void *mode1_data,
-                                             void *mode2_data,
-                                             dft_flux *flux,
-                                             const volume where);
+  void get_mode_flux_overlap(void *mode_data, dft_flux *flux, int num_freq,
+                             const volume where, 
+                             std::complex<double>overlaps[2]);
+  void get_mode_mode_overlap(void *mode_data, void *mode2_data, dft_flux *flux,
+                             const volume where,
+                             std::complex<double>overlaps[2]);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,
@@ -1705,10 +1700,11 @@ void green3d(std::complex<double> *EH, const vec &x,
 // non-class methods for working with mpb eigenmode data
 // 
 void destroy_eigenmode_data(void *vedata);
-std::complex<double> eigenmode_amplitude(const vec &p,
-                                         void *vedata,
+std::complex<double> eigenmode_amplitude(void *vedata,
+                                         const vec &p,
                                          component c);
 double get_group_velocity(void *vedata);
+vec get_k(void *vedata);
 
 } /* namespace meep */
 

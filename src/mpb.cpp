@@ -34,53 +34,7 @@ typedef complex<double> cdouble;
 
 namespace meep {
 
-/**************************************************************/
-/* dummy versions of class methods for compiling without MPB  */
-/**************************************************************/
-#ifndef HAVE_MPB
-void *fields::get_eigenmode(double &omega_src,
-	     		    direction d, const volume &where,
-			    const volume &eig_vol,
-	    	            int band_num,
-		            const vec &kpoint, bool match_frequency,
-                            int parity,
-                            double resolution,
-                            double eigensolver_tol) {
-  (void) omega_src; (void) d; (void) where; (void) eig_vol; 
-  (void) band_num;  (void) kpoint; (void) match_frequency; 
-  (void) parity; (void) resolution; (void) eigensolver_tol;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode");
-}
-
-void fields::add_eigenmode_source(component c0, const src_time &src,
-				  direction d, const volume &where,
-				  const volume &eig_vol,
-				  int band_num,
-				  const vec &kpoint, bool match_frequency,
-				  int parity,
-				  double resolution, double eigensolver_tol,
-				  complex<double> amp,
-				  complex<double> A(const vec &)) {
-  (void) c0; (void) src; (void) d; (void) where; (void) eig_vol; 
-  (void) band_num;  (void) kpoint; (void) match_frequency; 
-  (void) parity; (void) resolution; (void) eigensolver_tol;
-  (void) amp; (void) A;
-  abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
-}
-
-cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
-                                          int num_freq,
-                                          direction d,
-                                          const volume &where,
-                                          int band_num,
-                                          kpoint_func k_func,
-                                          void *k_func_data)
-<<<<<<< HEAD
-{ (void) flux; (void) d; (void) where; (void) bands,
-  (void) k_func; (void) k_func_data;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
-}
-#else // HAVE_MPB
+#ifdef HAVE_MPB
 
 typedef struct {
   const double *s, *o;
@@ -133,6 +87,7 @@ typedef struct eigenmode_data
    evectmatrix H;
    int n[3];
    double s[3];
+   double k[3];
    vec center;
    amplitude_function amp_func;
    int band_num;
@@ -144,9 +99,7 @@ typedef struct eigenmode_data
 /* compute position-dependent amplitude for eigenmode source       */
 /*  (similar to the routine formerly called meep_mpb_A)            */
 /*******************************************************************/
-static FILE *ESFieldFile=0; // "eigenmode-source log file"
-complex<double> eigenmode_amplitude(const vec &p,
-                                    void *vedata,
+complex<double> eigenmode_amplitude(void *vedata, const vec &p,
                                     component c)
 {
   eigenmode_data *edata = (eigenmode_data *)vedata;
@@ -216,11 +169,6 @@ complex<double> eigenmode_amplitude(const vec &p,
 	  (D(x,y2,z2)*(1.0-dx) + D(x2,y2,z2)*dx) * dy) * dz);
 #undef D
 
-
-  cdouble amp = amp_func(p);
-  if (ESFieldFile)
-   fprintf(ESFieldFile,"%e %e %e %e %e %e %e\n",p.x(),p.y(),p.z(),real(ret),imag(ret),real(amp),imag(amp));
-
   return (complex<double>(double(real(ret)), double(imag(ret)))
 	  * amp_func(p));
 }
@@ -232,8 +180,7 @@ complex<double> eigenmode_amplitude(const vec &p,
 static eigenmode_data *global_eigenmode_data=0;
 static component global_eigenmode_component;
 static complex<double> meep_mpb_A(const vec &p)
-{ return eigenmode_amplitude(p,
-                             (void *)global_eigenmode_data,
+{ return eigenmode_amplitude((void *)global_eigenmode_data, p,
                              global_eigenmode_component);
 }
 
@@ -262,7 +209,8 @@ void *fields::get_eigenmode(double &omega_src,
 		            const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution, 
-                            double eigensolver_tol) {
+                            double eigensolver_tol,
+                            bool verbose) {
 
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
@@ -308,7 +256,7 @@ void *fields::get_eigenmode(double &omega_src,
     // the following line was missing from the original mpb.cpp,
     // but I think it's needed! Consider a waveguide of 
     // constant (x,y) cross section with power flow in the z direction.
-    k[2] = kpoint.in_direction(Z); 
+    //k[2] = kpoint.in_direction(Z); 
     break;
   case D1:
     o[2] = eig_vol.in_direction_min(Z);
@@ -319,17 +267,20 @@ void *fields::get_eigenmode(double &omega_src,
     abort("unsupported dimensionality in add_eigenmode_source");
   }
 
-  master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+  if (!quiet && verbose)
+   master_printf("KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
 
   // if match_frequency is true, all we need is a direction for k
   // and a crude guess for its value; we must supply this if k==0.
   if (match_frequency && k[0] == 0 && k[1] == 0 && k[2] == 0) {
     k[d-X] = omega_src * sqrt(get_eps(eig_vol.center()));
-    master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
+    if(!quiet && verbose)
+     master_printf("NEW KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
     if (s[d-X] > 0) {
       k[d-X] *= s[d-X]; // put k in G basis (inverted when we compute kcart)
       if (fabs(k[d-X]) > 0.4)  // ensure k is well inside the Brillouin zone
 	k[d-X] = k[d-X] > 0 ? 0.4 : -0.4;
+    if(!quiet && verbose)
       master_printf("NEWER KPOINT: %g, %g, %g\n", k[0], k[1], k[2]);
     }
   }
@@ -416,7 +367,7 @@ void *fields::get_eigenmode(double &omega_src,
 		W, 3,
 		eigensolver_tol, &num_iters,
 		EIGS_DEFAULT_FLAGS |
-		(am_master() && !quiet ? EIGS_VERBOSE : 0));
+		(am_master() && verbose && !quiet ? EIGS_VERBOSE : 0));
     if (!quiet)
       master_printf("MPB solved for omega_%d(%g,%g,%g) = %g after %d iters\n",
 		    band_num, knew[0],knew[1],knew[2],
@@ -441,7 +392,7 @@ void *fields::get_eigenmode(double &omega_src,
 
       // update k via Newton step
       kscale = kscale - (sqrt(eigvals[band_num - 1]) - omega_src) / (vgrp*klen0);
-      if (!quiet)
+      if (!quiet && verbose)
 	master_printf("Newton step: group velocity v=%g, kscale=%g\n", vgrp, kscale);
       if (kscale < 0 || kscale > 100)
 	abort("Newton solver not converging -- need a better starting kpoint");
@@ -506,8 +457,9 @@ void *fields::get_eigenmode(double &omega_src,
   maxwell_compute_d_from_H(mdata, H, fft_data_E, band_num - 1, 1);
   // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
   double scale = -1.0 / omega_src;
+  cdouble *efield=(cdouble *)fft_data_E;
   for (int n = 0; n < NFFT; ++n) 
-   cdata[n] *= scale;
+   efield[n] *= scale;
 
   maxwell_compute_e_from_d(mdata, fft_data_E, 1);
 
@@ -525,6 +477,9 @@ void *fields::get_eigenmode(double &omega_src,
   edata->s[0]           = s[0];
   edata->s[1]           = s[1];
   edata->s[2]           = s[2];
+  edata->k[0]           = knew[0];
+  edata->k[1]           = knew[1];
+  edata->k[2]           = knew[2];
   edata->center         = eig_vol.center() - where.center();
   edata->amp_func       = default_amp_func;
   edata->band_num       = band_num;
@@ -547,19 +502,9 @@ double get_group_velocity(void *vedata)
   return edata->group_velocity;
 }
 
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-FILE *vfopen(const char *format, const char *mode, ...)
-{
-  va_list ap;
-  char buffer[1000];
-  va_start(ap,mode);
-  vsnprintf(buffer,1000,format,ap);
-  va_end(ap);
-
-  FILE *f=fopen(buffer,mode);
-  return f;
+vec get_k(void *vedata)
+{ eigenmode_data *edata = (eigenmode_data *)vedata;
+  return vec(edata->k[0], edata->k[1], edata->k[2]);
 }
 
 /***************************************************************/
@@ -576,10 +521,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
-
-
-  char *s=getenv("MEEP_PLOT_EIGENMODE_SOURCE_FIELDS");
-  bool PlotESFields = (s && s[0]=='1');
+  (void) c0; // unused
 
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
@@ -597,6 +539,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   src_time *src_mpb = src.clone();
   if (!match_frequency)
     src_mpb->set_frequency(omega_src);
+
+#if 0
+// Disabling the following code as I don't understand it
 
   if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
@@ -617,537 +562,31 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 	                 || ((parity & ODD_Z_PARITY) && is_tm(c))
            )
        )
-     {
-       component cH[2] = {Hx, Hy};
-       switch(d)
-        { case X:  cH[0]=Hz; cH[1]=Hy; break;
-          case Y:  cH[0]=Hx; cH[1]=Hz; break;
-          case Z:
-          default: cH[0]=Hy; cH[1]=Hx; break;
-        };
-       
-       // E current source = d x (eigenmode H)
-       if ((d + 1) % 3 == component_direction(c) % 3)
-       global_eigenmode_component = cH[0];
-       add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
-       global_eigenmode_component = cH[1];
-       add_volume_source(c, *src_mpb, where, meep_mpb_A,  amp);
-     };
+#endif
 
-  // step 2b: magnetic-current sources
-  //           = - nHat \times electric-field components
-
-  // use principle of equivalence to obtain equivalent currents
-  FOR_MAGNETIC_COMPONENTS(c)
-    if (gv.has_field(c) && (c0 == Centered || c0 == c)
-	&& component_direction(c) != d
-	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
-	                 || ((parity & EVEN_Z_PARITY) && !is_tm(c))
-	                 || ((parity & ODD_Z_PARITY) && is_tm(c))
-           )
-       ) 
-     {
-       component cE[2] = {Ex, Ey};
-       switch(d)
-        { case X:  cE[0]=Ez; cE[1]=Ey; break;
-          case Y:  cE[0]=Ex; cE[1]=Ez; break;
-          case Z:
-          default: cE[0]=Ey; cE[1]=Ex; break;
-        };
-       
-       // H current source = - d x (eigenmode E)
-       global_eigenmode_component = cE[0];
-       add_volume_source(c, *src_mpb, where, meep_mpb_A, amp);
-       global_eigenmode_component = cE[1];
-       add_volume_source(c, *src_mpb, where, meep_mpb_A, -amp);
-     };
+  /*--------------------------------------------------------------*/
+  // step 2: add sources whose radiated field reproduces the      */
+  //         the eigenmode                                        */
+  //         electric current K = nHat \times H                   */
+  //         magnetic current N = -nHat \times E                  */
+  /*--------------------------------------------------------------*/
+  component cE[3]={Ex, Ey, Ez}, cH[3]={Hx, Hy, Hz};
+  int n   = (d==X ? 0 : (d==Y ? 1 : 2));
+  int np1 = (n+1)%3;
+  int np2 = (n+2)%3;
+  // Kx = -Hy, Ky = Hx   (for d==Z)
+  global_eigenmode_component = cH[np1];
+  add_volume_source(cE[np2], *src_mpb, where, meep_mpb_A, +1.0*amp);
+  global_eigenmode_component = cH[np2];
+  add_volume_source(cE[np1], *src_mpb, where, meep_mpb_A, -1.0*amp);
+  // Nx = +Ey, Ny = -Ex  (for d==Z)
+  global_eigenmode_component = cE[np1];
+  add_volume_source(cH[np2], *src_mpb, where, meep_mpb_A, -1.0*amp);
+  global_eigenmode_component = cE[np2];
+  add_volume_source(cH[np1], *src_mpb, where, meep_mpb_A, +1.0*amp);
 
   delete src_mpb;
   destroy_eigenmode_data( (void *)global_eigenmode_data);
-}
-
-void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
-                      int num_freq, char *file_base)
-{
-  //double omega = flux->freq_min + num_freq*flux->dfreq;
-
-  h5file *file = open_h5file(dataname, h5file::WRITE, prefix, true);
-  file->create_or_extend_data(dataname, rank, dims,
-                              append_data, single_precision);
-
-  /*--------------------------------------------------------------*/
-  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */
-  /*- should maybe be promoted to a standalone function?          */
-  /*--------------------------------------------------------------*/
-  int Nfreq          = flux->Nfreq;
-  for ( dft_chunk *E=flux->E, *H=flux->H; E && H;
-        E=E->next_in_dft, H=H->next_in_dft
-      )
-   { 
-     // create output files for E and H components
-     char E_file_name[100];
-     snprintf(E_file_name,100,"%s_%s.dat",file_base,component_name(E->c));
-     FILE *E_file=fopen(E_file_name,"a");
-
-     char H_file_name[100];
-     snprintf(H_file_name,100,"%s_%s.dat",file_base,component_name(H->c));
-     FILE *H_file=fopen(H_file_name,"a");
-
-     // extract info from the current dft_chunk
-     fields_chunk *fc = E->fc;
-     ivec is          = E->is;
-     ivec ie          = E->ie;
-     vec s0           = E->s0;
-     vec s1           = E->s1;
-     vec e0           = E->e0;
-     vec e1           = E->e1;
-     double dV0       = E->dV0;
-     double dV1       = E->dV1;
-     ivec shift       = E->shift;
-     symmetry S       = E->S;
-     int sn           = E->sn;
-
-     vec rshift(shift * (0.5*fc->gv.inva));
-
-     // loop over all points in the current dft_chunk
-     int chunk_idx = 0;
-     LOOP_OVER_IVECS(fc->gv, is, ie, idx)
-      { 
-        // get the coordinates and integration weight for this grid point
-        IVEC_LOOP_LOC(fc->gv, loc);
-        loc = S.transform(loc, sn) + rshift;
-        double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-
-        // get the E and H field components at this grid point,
-        //  dividing out any extra weight factors it may already contain
-        cdouble E_flux = E->dft[ Nfreq*(chunk_idx++) + num_freq];
-        if (E->include_dV_and_interp_weights)
-         E_flux /= (E->sqrt_dV_and_interp_weights ? sqrt(w) : w);
-
-        cdouble H_flux = H->dft[ Nfreq*(chunk_idx++) + num_freq];
-        if (H->include_dV_and_interp_weights)
-         H_flux /= (H->sqrt_dV_and_interp_weights ? sqrt(w) : w);
-
-        // kinda byzantine: the second of the two E-field components
-        // is stored with a minus sign, which we want to remove for 
-        // our purposes; but *which* component is the second component 
-        // depends on the direction 'd' that was used to create the dft_flux
-{
-  //double omega = flux->freq_min + num_freq*flux->dfreq;
-
-  /*--------------------------------------------------------------*/
-  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */
-  /*- should maybe be promoted to a standalone function?          */
-  /*--------------------------------------------------------------*/
-  int Nfreq = flux->Nfreq;
-  dft_chunk *EHList[2];
-  EHList[0] = flux->E;
-  EHList[1] = flux->H;
-  for (int eh=0; eh<2; eh++)
-   for (dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
-    { 
-     // create output files for E and H components
-     char file_name[100];
-     snprintf(file_name,100,"%s_%s.dat",file_base,component_name(EH->c));
-     FILE *file=fopen(file_name,"a");
-
-     // extract info from the current dft_chunk
-     fields_chunk *fc = EH->fc;
-     ivec is          = EH->is;
-     ivec ie          = EH->ie;
-     vec s0           = EH->s0;
-     vec s1           = EH->s1;
-     vec e0           = EH->e0;
-     vec e1           = EH->e1;
-     double dV0       = EH->dV0;
-     double dV1       = EH->dV1;
-     ivec shift       = EH->shift;
-     symmetry S       = EH->S;
-     int sn           = EH->sn;
-
-     vec rshift(shift * (0.5*fc->gv.inva));
-
-     // loop over all points in the current dft_chunk
-     int chunk_idx = 0;
-     LOOP_OVER_IVECS(fc->gv, is, ie, idx)
-      { 
-        // get the coordinates and integration weight for this grid point
-        IVEC_LOOP_LOC(fc->gv, loc);
-        loc = S.transform(loc, sn) + rshift;
-        double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-
-        // get the E and H field components at this grid point,
-        //  dividing out any extra weight factors it may already contain
-        cdouble flux = EH->dft[ Nfreq*(chunk_idx++) + num_freq];
-        if (EH->include_dV_and_interp_weights)
-         flux /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
-
-        // kinda byzantine: the second of the two E-field components
-        // is stored with a minus sign, which we want to remove for 
-        // our purposes; but *which* component is the second component 
-        // depends on the direction 'd' that was used to create the dft_flux
-        if (     (d==X && EH->c==Ez)
-             ||  (d==Y && EH->c==Ex)
-             ||  (d==R && EH->c==Ez)
-             ||  (d==P && EH->c==Er)
-             ||  (d==Z && f->gv.dim == Dcyl && EH->c==Ep)
-             ||  (d==Z && f->gv.dim != Dcyl && EH->c==Ey)
-           ) flux*= -1.0;
-   
-        fprintf(file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(flux), imag(flux));
-
-      }; // LOOP_OVER_IVECS
-     fclose(file);
-
-   }; // for (eh=0..1) for(dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
-
-}
-        double weight=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-
-        // get the E or H field component at this grid point
-        cdouble flux_fval = (c<=Ez ? E->dft[chunk_idx*Nfreq + num_freq]
-                                   : H->dft[chunk_idx*Nfreq + num_freq]
-                            );
-        chunk_idx++;
-
-        // get the eigenmode current at this grid point
-        cdouble mode_fval = mode_sign*eigenmode_amplitude(loc,edata);
-
-        // add contributions to numerator and denominator integrals
-        num   += weight * mode_fval * flux_fval;
-        denom += weight * flux_fval * flux_fval;
-
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-cnum   += weight * conj(mode_fval) * flux_fval;
-cdenom += weight * conj(flux_fval) * flux_fval;
-#if 0
-if (LogFile)
-{
- fprintf(LogFile,"%e %e %e %i ",loc.x(), loc.y(), loc.z(),c);
- fprintf(LogFile,"%e %e ",real(flux_fval),imag(flux_fval));
- fprintf(LogFile,"%e %e ",real(mode_fval),imag(mode_fval));
- fprintf(LogFile,"\n");
-};
-#endif
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-
-      }; // LOOP_OVER_IVECS
-   }; // for ( dft_chunk *E=Echunks, *H=Hchunks ...
-
-  num   = sum_to_all(num);
-  denom = sum_to_all(denom);
-  full_num_denom[0] += num;
-  full_num_denom[1] += denom;
-
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-#if 1
-if (LogFile)
- { fprintf(LogFile,"\n\n");
-   fclose(LogFile);
- };
-#endif
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-
-cnum   = sum_to_all(cnum);
-cdenom = sum_to_all(cdenom);
-
-if (am_master())
-{
-static cdouble tnum=0.0, tdenom=0.0, tcnum=0.0, tcdenom=0.0;
-tnum+=num;
-tdenom+=denom;
-tcnum+=cnum;
-tcdenom+=cdenom;
-FILE *ff=fopen("/tmp/log.out","a");
-  fprintf(ff,"\n** nfreq=%i (%e) nband=%i \n",num_freq,edata->omega,edata->band_num);
-  fprintf(ff,"uComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                component_name(c),
-                                real(num), imag(num),
-                                real(denom), imag(denom));
-
-  fprintf(ff,"cComponent %s: (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                component_name(c),
-                                real(cnum), imag(cnum),
-                                real(cdenom), imag(cdenom));
-
-  fprintf(ff,"uTotal       : (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                real(tnum), imag(tnum),
-                                real(tdenom), imag(tdenom));
-
-  fprintf(ff,"cTotal       : (%+8e,%+8e)/(%+8e,%+8e)\n",
-                                real(tcnum), imag(tcnum),
-                                real(tcdenom), imag(tcdenom));
-fprintf(ff,"mode->vgrp = %e\n",edata->group_velocity);
-fclose(ff);
-}
-
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-}
-
-/***************************************************************/
-/***************************************************************/
-/***************************************************************/
-#if 0
-void flux_output_hdf5(fields *f, dft_flux *flux, direction d,
-                      int num_freq, char *file_base)
-{
-  //double omega = flux->freq_min + num_freq*flux->dfreq;
-
-  h5file *file = open_h5file(dataname, h5file::WRITE, prefix, true);
-  file->create_or_extend_data(dataname, rank, dims,
-                              append_data, single_precision);
-
-  /*--------------------------------------------------------------*/
-  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */
-  /*- should maybe be promoted to a standalone function?          */
-  /*--------------------------------------------------------------*/
-  int Nfreq          = flux->Nfreq;
-  for ( dft_chunk *E=flux->E, *H=flux->H; E && H;
-        E=E->next_in_dft, H=H->next_in_dft
-      )
-   { 
-     // create output files for E and H components
-     char E_file_name[100];
-     snprintf(E_file_name,100,"%s_%s.dat",file_base,component_name(E->c));
-     FILE *E_file=fopen(E_file_name,"a");
-
-     char H_file_name[100];
-     snprintf(H_file_name,100,"%s_%s.dat",file_base,component_name(H->c));
-     FILE *H_file=fopen(H_file_name,"a");
-
-     // extract info from the current dft_chunk
-     fields_chunk *fc = E->fc;
-     ivec is          = E->is;
-     ivec ie          = E->ie;
-     vec s0           = E->s0;
-     vec s1           = E->s1;
-     vec e0           = E->e0;
-     vec e1           = E->e1;
-     double dV0       = E->dV0;
-     double dV1       = E->dV1;
-     ivec shift       = E->shift;
-     symmetry S       = E->S;
-     int sn           = E->sn;
-
-     vec rshift(shift * (0.5*fc->gv.inva));
-
-     // loop over all points in the current dft_chunk
-     int chunk_idx = 0;
-     LOOP_OVER_IVECS(fc->gv, is, ie, idx)
-      { 
-        // get the coordinates and integration weight for this grid point
-        IVEC_LOOP_LOC(fc->gv, loc);
-        loc = S.transform(loc, sn) + rshift;
-        double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-
-        // get the E and H field components at this grid point,
-        //  dividing out any extra weight factors it may already contain
-        cdouble E_flux = E->dft[ Nfreq*(chunk_idx++) + num_freq];
-        if (E->include_dV_and_interp_weights)
-         E_flux /= (E->sqrt_dV_and_interp_weights ? sqrt(w) : w);
-
-        cdouble H_flux = H->dft[ Nfreq*(chunk_idx++) + num_freq];
-        if (H->include_dV_and_interp_weights)
-         H_flux /= (H->sqrt_dV_and_interp_weights ? sqrt(w) : w);
-
-        // kinda byzantine: the second of the two E-field components
-        // is stored with a minus sign, which we want to remove for 
-        // our purposes; but *which* component is the second component 
-        // depends on the direction 'd' that was used to create the dft_flux
-        if (     (d==X && E->c==Ez)
-             ||  (d==Y && E->c==Ex)
-             ||  (d==R && E->c==Ez)
-             ||  (d==P && E->c==Er)
-             ||  (d==Z && f->gv.dim == Dcyl && E->c==Ep)
-             ||  (d==Z && f->gv.dim != Dcyl && E->c==Ey)
-           ) E_flux*= -1.0;
-   
-        fprintf(E_file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(E_flux), imag(E_flux));
-        fprintf(H_file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(H_flux), imag(H_flux));
-
-      }; // LOOP_OVER_IVECS
-
-     fclose(E_file);
-     fclose(H_file);
-
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-#if 0
-if (LogFile)
- { fprintf(LogFile,"\n\n");
-   fclose(LogFile);
- };
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-
-}
-#endif
-
-void output_flux(fields *f, dft_flux *flux, direction d,
-                 int num_freq, char *file_base)
-{
-  //double omega = flux->freq_min + num_freq*flux->dfreq;
-
-  /*--------------------------------------------------------------*/
-  /*- this loop amounts to a "loop_in_dft_chunks()" function and  */
-  /*- should maybe be promoted to a standalone function?          */
-  /*--------------------------------------------------------------*/
-  int Nfreq = flux->Nfreq;
-  dft_chunk *EHList[2];
-  EHList[0] = flux->E;
-  EHList[1] = flux->H;
-  for (int eh=0; eh<2; eh++)
-   for (dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
-    { 
-     // create output files for E and H components
-     char file_name[100];
-     snprintf(file_name,100,"%s_%s_%i.dat",file_base,component_name(EH->c),eh);
-     FILE *file=fopen(file_name,"a");
-
-     // extract info from the current dft_chunk
-     fields_chunk *fc = EH->fc;
-     ivec is          = EH->is;
-     ivec ie          = EH->ie;
-     vec s0           = EH->s0;
-     vec s1           = EH->s1;
-     vec e0           = EH->e0;
-     vec e1           = EH->e1;
-     double dV0       = EH->dV0;
-     double dV1       = EH->dV1;
-     ivec shift       = EH->shift;
-     symmetry S       = EH->S;
-     int sn           = EH->sn;
-
-     vec rshift(shift * (0.5*fc->gv.inva));
-
-     // loop over all points in the current dft_chunk
-     int chunk_idx = 0;
-     LOOP_OVER_IVECS(fc->gv, is, ie, idx)
-      { 
-        // get the coordinates and integration weight for this grid point
-        IVEC_LOOP_LOC(fc->gv, loc);
-        loc = S.transform(loc, sn) + rshift;
-        double w=IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-
-        // get the E and H field components at this grid point,
-        //  dividing out any extra weight factors it may already contain
-        cdouble flux = EH->dft[ Nfreq*(chunk_idx++) + num_freq];
-        if (EH->include_dV_and_interp_weights)
-         flux /= (EH->sqrt_dV_and_interp_weights ? sqrt(w) : w);
-
-        // kinda byzantine: the second of the two E-field components
-        // is stored with a minus sign, which we want to remove for 
-        // our purposes; but *which* component is the second component 
-        // depends on the direction 'd' that was used to create the dft_flux
-        if (     (d==X && EH->c==Ez)
-             ||  (d==Y && EH->c==Ex)
-             ||  (d==R && EH->c==Ez)
-             ||  (d==P && EH->c==Er)
-             ||  (d==Z && f->gv.dim == Dcyl && EH->c==Ep)
-             ||  (d==Z && f->gv.dim != Dcyl && EH->c==Ey)
-           ) flux*= -1.0;
-   
-        fprintf(file,"%e %e %e %e %e\n",loc.x(), loc.y(), loc.z(), real(flux), imag(flux));
-
-      }; // LOOP_OVER_IVECS
-
-   }; // for (eh=0..1) for(dft_chunk *EH=EHList[eh]; EH; EH=EH->next_in_dft)
-
-}
-
-/***************************************************************/
-/* call get_eigenmode() to solve for the specified eigenmode,  */
-/* then call add_overlap_integral_contribution() multiple times*/
-/* to sum all contributions to the numerator and denominator   */
-/* of the eigenmode expansion coefficients.                    */
-/***************************************************************/
-cdouble fields::get_eigenmode_coefficient(dft_flux *flux,
-                                          int num_freq,
-                                          direction d,
-                                          const volume &where,
-                                          int band_num,
-                                          kpoint_func k_func, void *k_func_data)
-{
-  char file_base[100];
-  snprintf(file_base,100,"np%i_nb%i_nf%i",my_rank(),band_num,num_freq);
-  output_flux(this, flux, d, num_freq, file_base);
-
-  master_printf("Getting eigenmode coefficient (%i,%i)\n",num_freq, band_num);
-#if 0
-  /*--------------------------------------------------------------*/
-  /* step 1: call MPB to compute the eigenmode                   -*/
-  /*--------------------------------------------------------------*/
-  double omega = flux->freq_min + num_freq*flux->dfreq;
-  // call user's kpoint function if present
-  vec kpoint(0.0, 0.0, 0.5); // TODO better default? 
-  if (k_func) 
-   kpoint=k_func(k_func_data, omega, band_num);
-
-  bool match_frequency=true;
-  int parity=0; 
-  double resolution=a;
-  double eigensolver_tol=1.0e-7;
-  eigenmode_data *edata
-   =(eigenmode_data *)get_eigenmode(omega, d, where, where,
-                                    band_num, kpoint, match_frequency,
-                                    parity, resolution, 
-                                    eigensolver_tol);
-
-  /*--------------------------------------------------------------*/
-  /* step 2: sum contributions of all 4 surface-current cmpnents  */
-  /*         to numerator and denominator of overlap integral     */
-  /* num   = <caller's field | eigenmode>                         */
-  /* denom = <eigenmode      | eigenmode>                         */
-  /*--------------------------------------------------------------*/
-  // step 2a: electric-current components 
-  //            = nHat \times magnetic-field components
-  cdouble numdenom[2]={0.0,0.0};
-
-  FOR_ELECTRIC_COMPONENTS(c)
-   {  
-     if ( !(gv.has_field(c)) ) continue;
-     // TODO restore parity check
-
-     if ( (d+1)%3 == component_direction(c)%3 )
-      { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, -1.0, numdenom);
-      }
-     else if ( (d+2)%3 == component_direction(c)%3 )
-      { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, +1.0, numdenom);
-      }
-   };
-
-  // step 2b: post-processing step to replace H-field components
-  //          with E-field components in the internal data buffer
-  //          inside mdata; cf. Part 3 of get_eigenmode() above
-  switch_eigenmode_data_to_electric_field(edata);
-
-  // step 2c: magnetic-current components 
-  //            = -nHat \times electric-field components
-  FOR_MAGNETIC_COMPONENTS(c)
-   { 
-     if ( !(gv.has_field(c)) ) continue;
-     // TODO restore parity check
-
-     if ( (d+1)%3 == component_direction(c)%3 )
-      { edata->component = (d+2)%3;
-        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, +1.0, numdenom);
-      }
-     else if ( (d+2)%3 == component_direction(c)%3 )
-      { edata->component = (d+1)%3;
-        add_overlap_integral_contribution(this, flux, d, num_freq, c, edata, -1.0, numdenom);
-      }
-   };
-
-  destroy_eigenmode_data(edata);
-
-  cdouble num=numdenom[0], denom=numdenom[1];
-  if( denom==0.0 )
-   { master_printf("**warning: denominator in get_eigenmode_coefficient**");
-    return 0.0;
-   };
-  return num/denom;
-#endif
-return 0.0;
 }
 
 /***************************************************************/
@@ -1155,28 +594,133 @@ return 0.0;
 /* and all band indices in the caller-populated bands array.   */
 /*                                                             */
 /* the array returned has length num_freqs x num_bands, with   */
-/* the coefficient for frequency #nf, band #nb stored in slot  */ 
-/* [ nb*num_freqs + nf ]                                       */
+/* the positive/ negative coefficients for frequency #nf,      */
+/* band #nb stored in slot [ 2*nb*num_freqs + 2*nf + 0/1 ]     */
 /***************************************************************/
 std::vector<cdouble>
  fields::get_eigenmode_coefficients(dft_flux *flux, direction d,
                                     const volume &where,
                                     std::vector<int> bands,
-                                    kpoint_func k_func, 
+                                    kpoint_func k_func,
                                     void *k_func_data)
 { 
-  int num_freqs = flux->Nfreq;
-  int num_bands = bands.size();
-  std::vector<cdouble> coeffs( num_freqs * num_bands );
+  double freq_min      = flux->freq_min;
+  double dfreq         = flux->dfreq;
+  int num_freqs        = flux->Nfreq;
+  int num_bands        = bands.size();
+  bool match_frequency = true;
+  int parity           = 0; // NO_PARITY
+  double resolution    = a;
+  double eig_tol       = 1.0e-4;
+  std::vector<cdouble> coeffs( 2 * num_freqs * num_bands );
 
+  char *LogFile=getenv("MEEP_EIGENMODE_LOGFILE");
+
+  // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
    for(int nf=0; nf<num_freqs; nf++)
-    coeffs[ nb*num_freqs + nf ] 
-     = get_eigenmode_coefficient(flux, nf, d, where, bands[nb],
-                                 k_func, k_func_data);
+    {
+      /*--------------------------------------------------------------*/
+      /*- call mpb to compute the eigenmode --------------------------*/
+      /*--------------------------------------------------------------*/
+      int band_num = bands[nb];
+      double freq  = freq_min + nf*dfreq;
+      vec kpoint(0,0,freq);
+      if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
+      void *mode_data 
+       = get_eigenmode(freq, d, where, where, band_num, kpoint, 
+                       match_frequency, parity, resolution, eig_tol);
 
+      /*--------------------------------------------------------------*/
+      /*--------------------------------------------------------------*/
+      /*--------------------------------------------------------------*/
+      cdouble mode_flux[2], mode_mode[2];
+      get_mode_flux_overlap(mode_data, flux, nf, where, mode_flux);
+      get_mode_mode_overlap(mode_data, mode_data, flux, where, mode_mode);
+      cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]);
+      coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
+       = (mode_flux[0] + mode_flux[1]) / normfac;
+      coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
+       = (mode_flux[0] - mode_flux[1]) / normfac;
+
+      if (LogFile && am_master())
+       { double vgrp=get_group_velocity(mode_data);
+         FILE *ff=fopen(LogFile,( (nb==0 && nf==0) ? "w" : "a") );
+         fprintf(ff,"(nb,nf)=(%i,%i) vgrp=%e\n",nb,nf,vgrp);
+         fprintf(ff," mf = %+f,%+f {%+.2e,%+.2e},{%+.2e,%+.2e}\n",
+                     abs(mode_flux[0]),abs(mode_flux[1]),
+                     real(mode_flux[0]),imag(mode_flux[0]),
+                     real(mode_flux[1]),imag(mode_flux[1]));
+         fprintf(ff," mm = %+f,%+f {%+.2e,%+.2e},{%+.2e,%+.2e}\n",
+                     abs(mode_mode[0]),abs(mode_mode[1]),
+                     real(mode_mode[0]),imag(mode_mode[0]),
+                     real(mode_mode[1]),imag(mode_mode[1]));
+         fclose(ff);
+       };
+       
+    };
   return coeffs;
 }
+/**************************************************************/
+/* dummy versions of class methods for compiling without MPB  */
+/**************************************************************/
+#else // #ifdef HAVE_MPB
+void *fields::get_eigenmode(double &omega_src,
+	     		    direction d, const volume &where,
+			    const volume &eig_vol,
+	    	            int band_num,
+		            const vec &kpoint, bool match_frequency,
+                            int parity,
+                            double resolution,
+                            double eigensolver_tol, bool verbose) {
+
+  (void) omega_src; (void) d; (void) where; (void) eig_vol;
+  (void) band_num;  (void) kpoint; (void) match_frequency; 
+  (void) parity; (void) resolution; (void) eigensolver_tol;
+  (void) verbose;
+  abort("Meep must be configured/compiled with MPB for get_eigenmode");
+}
+
+void fields::add_eigenmode_source(component c0, const src_time &src,
+				  direction d, const volume &where,
+				  const volume &eig_vol,
+				  int band_num,
+				  const vec &kpoint, bool match_frequency,
+				  int parity,
+				  double resolution, double eigensolver_tol,
+				  complex<double> amp,
+				  complex<double> A(const vec &)) {
+  (void) c0; (void) src; (void) d; (void) where; (void) eig_vol; 
+  (void) band_num;  (void) kpoint; (void) match_frequency; 
+  (void) parity; (void) resolution; (void) eigensolver_tol;
+  (void) amp; (void) A;
+  abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
+}
+
+std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux *flux,
+                                          direction d,
+                                          const volume &where,
+                                          std::vector<int> bands,
+                                          kpoint_func k_func,
+                                          void *k_func_data)
+{ (void) flux; (void) d; (void) where; (void) bands,
+  (void) k_func; (void) k_func_data;
+  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
+}
+
+void destroy_eigenmode_data(void *vedata)
+{ (void) vedata; }
+
+std::complex<double> eigenmode_amplitude(void *vedata,
+                                         const vec &p,
+                                         component c)
+{ (void) vedata; (void) p; (void) c; return 0.0; }
+
+double get_group_velocity(void *vedata)
+{ (void) vedata; return 0.0; }
+
+vec get_k(void *vedata)
+{ (void) vedata; return vec(0.0,0.0,0.0); }
 
 #endif // HAVE_MPB
 
