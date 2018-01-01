@@ -88,6 +88,7 @@ class Medium(object):
                  epsilon=None,
                  index=None,
                  mu=None,
+                 chi2=None,
                  chi3=None,
                  D_conductivity=None,
                  B_conductivity=None,
@@ -125,7 +126,7 @@ class Medium(object):
         self.mu_offdiag = mu_offdiag
         self.E_susceptibilities = E_susceptibilities
         self.H_susceptibilities = H_susceptibilities
-        self.E_chi2_diag = E_chi2_diag
+        self.E_chi2_diag = Vector3(chi2, chi2, chi2) if chi2 else E_chi2_diag
         self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else E_chi3_diag
         self.H_chi2_diag = H_chi2_diag
         self.H_chi3_diag = H_chi3_diag
@@ -178,6 +179,9 @@ class GeometricObject(object):
 
     def __contains__(self, point):
         return mp.is_point_in_object(point, self)
+
+    def __add__(self, vec):
+        self.center += vec
 
     def shift(self, vec):
         self.center += vec

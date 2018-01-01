@@ -353,7 +353,7 @@ static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a)
     if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
         !get_attr_int(py_absorber, &a->direction, "direction") ||
         !get_attr_int(py_absorber, &a->side, "side") ||
-        !get_attr_dbl(py_absorber, &a->R_asymptotic, "r_asymptotic") ||
+        !get_attr_dbl(py_absorber, &a->R_asymptotic, "R_asymptotic") ||
         !get_attr_dbl(py_absorber, &a->mean_stretch, "mean_stretch")) {
 
         return 0;

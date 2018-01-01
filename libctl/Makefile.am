@@ -64,7 +64,7 @@ nodist_pkgdata_DATA = $(SPECIFICATION_FILE) meep-enums.scm casimir.scm
 
 ##############################################################################
 
-AM_CPPFLAGS = -I$(top_srcdir)/src $(MY_DEFS) $(CTL_DEFS) $(CTL_H_CPPFLAG)
+AM_CPPFLAGS = $(MY_DEFS) $(CTL_DEFS) $(CTL_H_CPPFLAG) @LIBCTL_CPPFLAGS@ -I$(top_srcdir)/src
 
 # libctl install. dir., e.g. /usr/local/share/libctl
 LIBCTL_DIR = @LIBCTL_DIR@

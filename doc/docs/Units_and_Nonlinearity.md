@@ -19,9 +19,11 @@ This equation itself is somewhat subtle: it is not the actual instantaneous chan
 
 The relationship between $n_2$ and $\chi^{(3)}$, in Meep's units, is:
 
-$$n_2 = \frac{3\chi^{(3)}}{4n^2}$$
+$$n_2 = \frac{3\chi^{(3)}}{4n_0^2}$$
 
-where *n* is the linear refractive index $n=\sqrt{\varepsilon}$.
+where $n_0$ is the linear refractive index $n_0=\sqrt{\varepsilon}$.   (See, for example, section 4.1 of [Nonlinear Optics (3rd edition)](https://www.amazon.com/Nonlinear-Optics-Third-Robert-Boyd/dp/0123694701) by R. W. Boyd.)
+
+**Warning:** The optics literature uses a variety of conflicting conventions for defining the dimensionful quantities $\chi^{(3)}$ and $n_2$, which may differ from the ones used here by scale factors of $n_0$ etcetera.  For example, the Boyd book mentioned above also describes a different definition of $n_2$ in which $\Delta n = n_2 |\mathbf{E}|^2$ instead of $I$, which changes the relationship between $n_2$ and $\chi^{(3)}$ by a factor of $n_0$.  If you are transcribing experimental values of $n_2$ into Meep, you may need to convert from one convention to another!
 
 ### Using Experimental Kerr Coefficients
 
