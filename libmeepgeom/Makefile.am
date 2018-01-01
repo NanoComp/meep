@@ -32,8 +32,6 @@ array_slice_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 TESTS           = cyl-ellipsoid-ll array-slice-ll
 
-#LOG_COMPILER = $(RUNCODE)
-
 noinst_PROGRAMS = bend-flux-ll
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp

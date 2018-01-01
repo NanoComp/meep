@@ -1,0 +1,158 @@
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <complex>
+#include <vector>
+
+#include "meep.hpp"
+
+#include "ctl-math.h"
+#include "ctlgeom.h"
+
+#include "meepgeom.hpp"
+
+using namespace meep;
+
+typedef std::complex<double> cdouble;
+
+vector3 v3(double x, double y=0.0, double z=0.0)
+{
+  vector3 v;
+  v.x=x; v.y=y; v.z=z;
+  return v;
+}
+
+/***************************************************************/
+/* dummy material function needed to pass to structure( )      */
+/* constructor as a placeholder before we can call             */
+/* set_materials_from_geometry                                 */
+/***************************************************************/
+double dummy_eps(const vec &) { return 1.0; }
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+int main(int argc, char *argv[])
+{
+  initialize mpi(argc, argv);
+
+  /***************************************************************/
+  /* parse command-line options **********************************/
+  /***************************************************************/
+  bool use_symmetry = false;
+  bool point_source = false;
+  int  band_num     = 1;
+  double ratio      = 2.0;
+  for(int narg=1; narg<argc; narg++)
+   { if ( argv[narg]==0 )
+      continue;
+     if (!strcasecmp(argv[narg],"--use-symmetry") )
+      { use_symmetry=true;
+        master_printf("Using symmetry.\n");
+      }
+     else if (!strcasecmp(argv[narg],"--point-source") )
+      { point_source=true;
+        master_printf("using point-source excitation\n");
+      }
+     else if (!strcasecmp(argv[narg],"--band-num"))
+      { //if ( ++narg >= argc )
+        // usage(argv[0], "error: no argument given for --band-num");
+        sscanf(argv[narg], "%i", &band_num);
+        master_printf("setting band-num=%i\n",band_num);
+      }
+     else if (!strcasecmp(argv[narg],"--ratio"))
+      { // if ( ++narg >= argc )
+        // usage(argv[0], "error: no argument given for --ratio");
+        sscanf(argv[narg], "%le", &ratio);
+        master_printf("setting ratio=%e\n",ratio);
+      }
+     else
+      { master_printf("unknown command-line option %s (aborting)",argv[narg]);
+        //usage(argv[0]);
+      }; 
+   };
+
+  
+
+  double n=3.0;     // index of waveguide
+  double r=1.0;     // cylinder radius
+  double L=5.0;     // size of computational cell
+  double dpml=1;    // thickness of PML
+
+  double resolution = 10.0; 
+
+  geometry_lattice.size.x=L;
+  geometry_lattice.size.y=L;
+  geometry_lattice.size.z=0.0;
+  grid_volume gv = voltwo(L, L, resolution);
+  gv.center_origin();
+
+  symmetry sym=identity();
+
+  structure the_structure(gv, dummy_eps, pml(dpml), sym);
+
+  material_type dielectric = meep_geom::make_dielectric(n*n);
+  geometric_object objects[1];
+  vector3 v3zero = {0.0,0.0,0.0};
+  vector3 zaxis  = {0.0,0.0,1.0};
+  objects[0] = make_cylinder(dielectric, v3zero, r, ENORMOUS, zaxis);
+  geometric_object_list g={ 1, objects }; 
+  meep_geom::set_materials_from_geometry(&the_structure, g);
+  fields f(&the_structure);
+
+  f.output_hdf5(Dielectric,f.total_volume());
+
+  // ; If we don't want to excite a specific mode symmetry, we can just
+  // ; put a single point source at some arbitrary place, pointing in some
+  // ; arbitrary direction.  We will only look for TM modes (E out of the plane).
+  // (set! sources (list
+  //              (make source
+  //                (src (make gaussian-src (frequency fcen) (fwidth df)))
+  //                (component Ez) (center (+ r 0.1) 0))))
+  double fcen = 0.15;  // ; pulse center frequency
+  double df   = 0.1;   // ; df
+  int nfreq   = 1;
+  gaussian_src_time src(fcen, df);
+  volume fv = volume( vec(-0.5*L, -0.5*L), vec(+0.5*L, +0.5*L));
+  if (point_source)
+   { 
+     f.add_point_source(Ez, src, vec(0.1, 0.2) );
+   }
+  else
+   {
+     vec kpoint(0,0,0.303278);
+     bool match_frequency = true;
+     int parity = 0; // NO_PARITY
+     double eigensolver_tol=1.0e-7;
+     f.add_eigenmode_source(Dielectric, src, Z, fv, fv, band_num,
+                            kpoint, match_frequency, parity, 
+                            resolution, eigensolver_tol, 1.0);
+   };
+
+  //dft_flux flux=f.add_dft_flux(Z, fv, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux flux=f.add_dft_flux(Z, fv, fcen, fcen, 1);
+
+  // (run-sources+ 300 
+  // 	(at-beginning output-epsilon)
+  // 	(after-sources (harminv Ez (vector3 (+ r 0.1)) fcen df)))
+  while( f.round_time() < (f.last_source_time() + 100.0) )
+   f.step();
+             
+  for(int bn=1; bn<3; bn++)
+   { 
+     if (am_master())
+      { FILE *ff=fopen("/tmp/log.out","a");
+        fprintf(ff,"\n\n** Band %i: \n",bn);
+        fclose(ff);
+      };
+     cdouble coeff=f.get_eigenmode_coefficient(&flux, Z, fv, bn);
+     if (am_master())
+      printf("bn=%i: {%+.8e, %+.8e}\n",bn,real(coeff),imag(coeff));
+   };
+  
+  return 0;
+
+}
