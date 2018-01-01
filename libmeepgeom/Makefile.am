@@ -35,16 +35,13 @@ user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
 TESTS           = cyl-ellipsoid-ll array-slice-ll
 
-noinst_PROGRAMS = bend-flux-ll planar-junction strip-taper
+noinst_PROGRAMS = bend-flux-ll wvg-taper
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS) 
 
-planar_junction_SOURCES = planar-junction.cpp
-planar_junction_LDADD   = libmeepgeom.la $(MEEPLIBS)
-
-strip_taper_SOURCES    = strip-taper.cpp
-strip_taper_LDADD      = libmeepgeom.la $(MEEPLIBS)
+wvg_taper_SOURCES    = wvg-taper.cpp
+wvg_taper_LDADD      = libmeepgeom.la $(MEEPLIBS)
 
 #file_material_SOURCES = file-material.cpp
 #file_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
