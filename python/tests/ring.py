@@ -44,7 +44,8 @@ class TestRing(unittest.TestCase):
             mp.after_sources(self.h),
             until_after_sources=300
         )
-        m1, m2, m3 = self.h.modes
+
+        m1 = self.h.modes[0]
 
         self.assertAlmostEqual(m1.freq, 0.118101315147, places=4)
         self.assertAlmostEqual(m1.decay, -0.000731513241623, places=4)
