@@ -48,7 +48,7 @@ static bool susceptibility_equal(const susceptibility &s1, const susceptibility 
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
             vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) &&
             s1.frequency == s2.frequency && s1.gamma == s2.gamma &&
-            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude && 
+            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude &&
             s1.is_file == s2.is_file);
 }
 
@@ -272,7 +272,7 @@ static bool is_medium(material_type md, medium_struct **m)
   return false;
 }
 
-static bool is_medium(void* md, medium_struct **m) 
+static bool is_medium(void* md, medium_struct **m)
  { return is_medium((material_type) md, m); }
 
 static bool is_metal(meep::field_type ft, const material_type *material) {
@@ -356,7 +356,7 @@ static meep::realnum linear_interpolate(
 static void epsilon_file_material(material_data *md, vector3 p)
 {
   default_material = (void*) md;
-  
+
   if (md->which_subclass != material_data::MATERIAL_FILE)
     meep::abort("epsilon-input-file only works with a type=file default-material");
 
@@ -370,8 +370,8 @@ static void epsilon_file_material(material_data *md, vector3 p)
     ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
   mm->epsilon_diag.x = mm->epsilon_diag.y = mm->epsilon_diag.z =
     linear_interpolate(rx, ry, rz, md->epsilon_data,
-		       md->epsilon_dims[0], 
-                       md->epsilon_dims[1], 
+		       md->epsilon_dims[0],
+                       md->epsilon_dims[1],
                        md->epsilon_dims[2], 1);
   mm->epsilon_offdiag.x = mm->epsilon_offdiag.y = mm->epsilon_offdiag.z = 0;
 }
@@ -541,38 +541,6 @@ void geom_epsilon::set_volume(const meep::volume &v)
   restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
-#if 0
-#TODO figure this out
-static material_type eval_material_func(function material_func, vector3 p)
-{
-  SCM pscm = ctl_convert_vector3_to_scm(p);
-  material_type material;
-  SCM mo;
-
-  mo = gh_call1(material_func, pscm);
-  material_type_input(mo, &material);
-
-  while (material.which_subclass == MTS::MATERIAL_USER) {
-    material_type m;
-
-    mo = gh_call1(material.subclass.
-		  material_function_data->material_func,
-		  pscm);
-    material_type_input(mo, &m);
-    material_type_destroy(material);
-    material = m;
-  }
-
-  if (material.which_subclass == MTS::MATERIAL_FILE) {
-    epsilon_file_material(material, p);
-  }
-  CK(material.which_subclass != MTS::MATERIAL_USER,
-     "infinite loop in material functions");
-
-  return material;
-}
-#endif
-
 static void material_epsmu(meep::field_type ft, material_type material,
 		    symmetric_matrix *epsmu, symmetric_matrix *epsmu_inv) {
 
@@ -602,7 +570,7 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
-      
+
     default:
       meep::abort("unknown material type");
   }
@@ -619,7 +587,7 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m12 = md->medium.mu_offdiag.z;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
-      
+
     case material_data::PERFECT_METAL:
       epsmu->m00 = 1.0;
       epsmu->m11 = 1.0;
@@ -637,8 +605,8 @@ static void material_epsmu(meep::field_type ft, material_type material,
 }
 
 // the goal of this routine is to fill in the 'medium' field
-// within the material structure as appropriate for the 
-// material properties at r. 
+// within the material structure as appropriate for the
+// material properties at r.
 void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
 {
   vector3 p = vec_to_vector3(r);
@@ -655,7 +623,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
        epsilon_file_material(md, p);
       else
        material = (material_type) default_material;
-      return; 
+      return;
 
      // material specified by user-supplied function: call user
      // function to get properties at r.
@@ -678,12 +646,12 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
      // position-independent material or metal: there is nothing to do
      case material_data::MEDIUM:
      case material_data::PERFECT_METAL:
-      return; 
+      return;
 
      default:
       meep::abort("unknown material type");
    };
-} 
+}
 
 // returns trace of the tensor diagonal
 double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
@@ -1179,10 +1147,10 @@ double geom_epsilon::chi(meep::component c, const meep::vec &r, int p) {
   return chi_val;
 }
 
-double geom_epsilon::chi3(meep::component c, const meep::vec &r) 
+double geom_epsilon::chi3(meep::component c, const meep::vec &r)
  { return chi(c, r, 3); }
 
-double geom_epsilon::chi2(meep::component c, const meep::vec &r) 
+double geom_epsilon::chi2(meep::component c, const meep::vec &r)
  { return chi(c, r, 2); }
 
 static bool mu_not_1(material_type m)
