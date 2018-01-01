@@ -51,7 +51,7 @@ class TestRing(unittest.TestCase):
         self.assertAlmostEqual(m1.decay, -0.000731513241623, places=4)
         self.assertAlmostEqual(abs(m1.amp), 0.00341267634436, places=4)
         self.assertAlmostEqual(m1.amp.real, -0.00304951667301, places=4)
-        self.assertAlmostEqual(m1.amp.imag, -0.00153192946717, places=4)
+        self.assertAlmostEqual(m1.amp.imag, -0.00153192946717, places=3)
 
         v = mp.Vector3(1, 1)
         fp = self.sim.get_field_point(mp.Ez, v)
