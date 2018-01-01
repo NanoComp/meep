@@ -113,8 +113,8 @@ class TestSourceTypemaps(unittest.TestCase):
 
         # Bump function
         def my_src_func(t):
-            if t > -1 and t < 1:
-                return math.exp(-1 / (1 - (t * t)))
+            if t > 0 and t < 2:
+                return math.exp(-1 / (1 - ((t - 1)**2)))
             return 0j
 
         sources = [mp.Source(src=mp.CustomSource(src_func=my_src_func, end_time=100),
@@ -133,7 +133,7 @@ class TestSourceTypemaps(unittest.TestCase):
         sim.run(mp.after_sources(h), until_after_sources=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(1))
 
-        self.assertAlmostEqual(fp, 0.01855600828213207 + 0j)
+        self.assertAlmostEqual(fp, -0.021997617628500023 + 0j)
 
 if __name__ == '__main__':
     unittest.main()
