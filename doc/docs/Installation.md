@@ -298,13 +298,13 @@ mkdir ~/install
 cd ~/install
 git clone https://github.com/stevengj/harminv.git
 cd harminv/
-sh autogen.sh --with-pic
+sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/libctl.git
 cd libctl/
-sh autogen.sh --with-pic
+sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
@@ -312,16 +312,16 @@ git clone https://github.com/stevengj/h5utils.git
 cd h5utils/
 sh autogen.sh
 make distclean
-./configure LIBS=-ldl
+./configure --enable-shared
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/mpb.git
 cd mpb/
-sh autogen.sh --with-pic LIBS=-ldl
+sh autogen.sh --enable-shared
 make && make check && sudo make install
 make distclean
-sh autogen.sh --with-pic LIBS=-ldl --with-inv-symmetry
+sh autogen.sh --enable-shared --with-inv-symmetry
 make && make check && sudo make install
 
 cd ~/install
@@ -329,7 +329,7 @@ git clone https://github.com/stevengj/meep.git
 cd meep/
 sh autogen.sh
 make distclean
-./configure --with-pic LIBS=-ldl --enable-maintainer-mode --with-python
+./configure --enable-shared --enable-maintainer-mode --with-python
 make && make check && sudo make install
 ```
 
@@ -354,20 +354,20 @@ mkdir ~/install
 cd ~/install
 git clone https://github.com/stevengj/harminv.git
 cd harminv/
-sh autogen.sh --with-pic
+sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/libctl.git
 cd libctl/
-sh autogen.sh --with-pic
+sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
 wget --no-check-certificate https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.4.tar.gz
 tar xvzf openmpi-2.0.4.tar.gz
 cd openmpi-2.0.4/
-./configure --with-pic
+./configure --enable-shared
 make && make check && sudo make install
 
 export CC=mpicc
@@ -377,26 +377,26 @@ cd ~/install
 wget --no-check-certificate https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.1/src/hdf5-1.10.1.tar.gz
 tar xvzf hdf5-1.10.1.tar.gz
 cd hdf5-1.10.1/
-./configure --prefix=${HOME}/install --with-pic --enable-parallel --enable-shared --disable-static
+./configure --prefix=${HOME}/install --enable-parallel --enable-shared --disable-static
 make && make install
 
 cd ~/install
 git clone https://github.com/stevengj/h5utils.git
 cd h5utils/
-sh autogen.sh LIBS=-ldl
+sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
 wget http://www.fftw.org/fftw-3.3.4.tar.gz
 tar xvzf fftw-3.3.4.tar.gz
 cd fftw-3.3.4/
-./configure --with-pic --enable-mpi
+./configure --enable-shared
 make && make check && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/mpb.git
 cd mpb/
-sh autogen.sh --with-pic LIBS=-ldl
+sh autogen.sh --enable-shared
 make && make check && sudo make install
 
 pip3 install --upgrade pip
@@ -409,7 +409,7 @@ git clone https://github.com/stevengj/meep.git
 cd meep/
 sh autogen.sh
 make distclean
-./configure --with-pic LIBS=-ldl --enable-maintainer-mode --with-python --with-mpi
+./configure --enable-shared --enable-maintainer-mode --with-python --with-mpi
 make && make check && sudo make install
 ```
 
