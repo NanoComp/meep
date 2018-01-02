@@ -60,7 +60,7 @@ class TestMaterialDispersion(unittest.TestCase):
 
         res = [(f.real, f.imag) for fs in all_freqs[:10] for f in fs]
 
-        np.testing.assert_allclose(expected, res)
+        np.testing.assert_allclose(expected, res, rtol=1e-6)
 
 
 if __name__ == '__main__':

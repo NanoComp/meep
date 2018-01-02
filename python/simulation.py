@@ -234,7 +234,7 @@ class Simulation(object):
     def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
                  force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False,
-                 extra_materials=[]):
+                 extra_materials=[], material_function=None, epsilon_func=None, epsilon_input_file=''):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -250,7 +250,7 @@ class Simulation(object):
         self.ensure_periodicity = False
         self.extra_materials = extra_materials
         self.default_material = default_material
-        self.epsion_input_file = ''
+        self.epsilon_input_file = epsilon_input_file
         self.num_chunks = 0
         self.courant = 0.5
         self.global_d_conductivity = 0
@@ -275,6 +275,8 @@ class Simulation(object):
         self.output_h5_hook = lambda fname: False
         self.interactive = False
         self.is_cylindrical = False
+        self.material_function = material_function
+        self.epsilon_func = epsilon_func
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -342,6 +344,14 @@ class Simulation(object):
 
         self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+        if self.material_function:
+            self.material_function.eps = False
+            self.default_material = self.material_function
+        elif self.epsilon_func:
+            self.epsilon_func.eps = True
+            self.default_material = self.epsilon_func
+        elif self.epsilon_input_file:
+            self.default_material = self.epsilon_input_file
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
                                        self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
