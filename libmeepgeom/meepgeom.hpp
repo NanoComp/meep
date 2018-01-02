@@ -87,7 +87,8 @@ void add_absorbing_layer(absorber_list alist,
 /***************************************************************/
 /***************************************************************/
 void set_dimensions(int dims);
-void set_materials_from_geometry(meep::structure *s,
+void set_materials_from_geometry(vector3 size,
+                                 meep::structure *s,
                                  geometric_object_list g,
                                  bool use_anisotropic_averaging=true,
                                  double tol=DEFAULT_SUBPIXEL_TOL,

@@ -185,5 +185,18 @@ class TestSimulation(unittest.TestCase):
         vol = mp.Volume(mp.Vector3(), size=mp.Vector3(x=2))
         sim.run(mp.at_end(mp.in_volume(vol, mp.output_efield_z)), until=200)
 
+    def test_epsilon_input_file(self):
+        sim = self.init_simple_simulation()
+        eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
+        eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
+                                     '..', '..', 'libmeepgeom')
+        eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
+        sim.epsilon_input_file = eps_input_path
+
+        sim.run(until=200)
+        fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
+
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+
 if __name__ == '__main__':
     unittest.main()

@@ -61,6 +61,16 @@ static PyObject *py_material_object() {
     return material_object;
 }
 
+static PyObject *py_vector3_object() {
+    static PyObject *vector3_object = NULL;
+    if (vector3_object == NULL) {
+        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
+        vector3_object = PyObject_GetAttrString(geom_mod, "Vector3");
+        Py_XDECREF(geom_mod);
+    }
+    return vector3_object;
+}
+
 static PyObject* vec2py(const meep::vec &v) {
 
     double x = 0, y = 0, z = 0;

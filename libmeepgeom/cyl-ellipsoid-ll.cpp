@@ -115,9 +115,7 @@ int main(int argc, char *argv[])
   // (if (= src-cmpt Hz)
   //  (set! symmetries (list (make mirror-sym (direction X) (phase -1))
   //  (set! symmetries (list (make mirror-sym (direction Y) (phase -1))
-  geometry_lattice.size.x=10.0;
-  geometry_lattice.size.y=10.0;
-  geometry_lattice.size.z=0.0;
+  vector3 lattice_size = {10.0, 10.0, 0.0};
   grid_volume gv = voltwo(10.0, 10.0, resolution);
   gv.center_origin();
   symmetry sym = (src_cmpt==Ez) ?  mirror(X,gv) + mirror(Y,gv)
@@ -142,7 +140,7 @@ int main(int argc, char *argv[])
   objects[0] = make_cylinder(dielectric, center, radius, height, zhat);
   objects[1] = make_ellipsoid(meep_geom::vacuum, center, xhat, yhat, zhat, size);
   geometric_object_list g={ 2, objects };
-  meep_geom::set_materials_from_geometry(&the_structure, g);
+  meep_geom::set_materials_from_geometry(lattice_size, &the_structure, g);
 
   // (set! sources (list (make source (src (make gaussian-src (frequency 1) (fwidth 0.1)))
                      //  (center 0 0 0) (component src-cmpt))))

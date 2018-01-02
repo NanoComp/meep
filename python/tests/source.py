@@ -63,7 +63,7 @@ class TestSourceTypemaps(unittest.TestCase):
         the_structure = mp.structure(gv, dummy_eps, mp.pml(2), sym)
         objects = []
         objects.append(Cylinder(1))
-        mp.set_materials_from_geometry(the_structure, objects)
+        mp.set_materials_from_geometry(mp.Vector3(16, 16, 0), the_structure, objects)
         self.f = mp.fields(the_structure)
         self.v = mp.volume(mp.vec(1.1, 0.0), mp.vec(0.0, 0.0))
 

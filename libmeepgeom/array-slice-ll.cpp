@@ -135,9 +135,7 @@ int main(int argc, char *argv[])
   double dpml=1.0;   // PML thickness
   double sx = 2.0*(pad + dpml + N) + d -1.0; // size of cell in x dir
   double resolution=20.0;
-  geometry_lattice.size.x=sx;
-  geometry_lattice.size.y=sy;
-  geometry_lattice.size.z=0.0;
+  vector3 lattice_size = {sx, sy, 0.0};
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
@@ -164,7 +162,7 @@ int main(int argc, char *argv[])
      objects[no++] = make_cylinder(vacuum, center, r, height, zhat);
    };
   geometric_object_list g={ no, objects };
-  meep_geom::set_materials_from_geometry(&the_structure, g);
+  meep_geom::set_materials_from_geometry(lattice_size, &the_structure, g);
   fields f(&the_structure);
 
   /***************************************************************/
