@@ -194,6 +194,18 @@ static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medi
     Py_DECREF(pyret);
 }
 
+static std::complex<double> py_src_func_wrap(double t, void *f) {
+    PyObject *py_t = PyFloat_FromDouble(t);
+    PyObject *pyres = PyObject_CallFunctionObjArgs((PyObject *)f, py_t, NULL);
+    double real = PyComplex_RealAsDouble(pyres);
+    double imag = PyComplex_ImagAsDouble(pyres);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(py_t);
+    Py_DECREF(pyres);
+
+    return ret;
+}
+
 static int pyv3_to_v3(PyObject *po, vector3 *v) {
 
     PyObject *py_x = PyObject_GetAttrString(po, "x");
