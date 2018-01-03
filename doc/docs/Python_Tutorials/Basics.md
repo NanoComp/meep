@@ -108,9 +108,9 @@ We will first create an image of the dielectric function $\varepsilon$. This inv
 ```py
 eps_h5file = h5py.File('eps-000000.00.h5','r')
 eps_data = np.array(eps_h5file['eps'])
-plt.figure(dpi=100);
-plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary');
-plt.axis('off');
+plt.figure(dpi=100)
+plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
+plt.axis('off')
 plt.show()
 ```
 
@@ -119,10 +119,10 @@ Next we create an image of the scalar electric field $E_z$ by overlaying the die
 ```py
 ez_h5file = h5py.File('ez-000200.00.h5','r')
 ez_data = np.array(ez_h5file['ez'])
-plt.figure(dpi=100);
-plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary');
-plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='seismic', alpha=0.9);
-plt.axis('off');
+plt.figure(dpi=100)
+plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
+plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='seismic', alpha=0.9)
+plt.axis('off')
 plt.show()
 ```
 
@@ -179,24 +179,41 @@ sim.run(mp.at_beginning(mp.output_epsilon),
         until=200)
 ```
 
-Here, `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
+Here, `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we load this file with h5py interactively, we can see the shape of the data:
 
-```sh
-unix% h5ls ez.h5 
-ez                       Dataset {161, 161, 330/Inf}
+```python
+>>> ez_h5file = h5py.File('tutorial-ez.h5', 'r')
+>>> ez_h5file['ez'].shape
+(160, 160, 333)
 ```
 
-That is, the file contains a 162×162×330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
+That is, the file contains a 160×160×333 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can slice the array on the last dimension: e.g. `ez_h5file['ez'][:, :, 332]` will output the last time slice, and we can create an image with matplotlib similar to before. Instead, let's create an animation of the fields as a function of time.
 
-```sh
-unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
+```python
+fig = plt.figure()
+
+def init():
+    return [plt.imshow(np.array(eps_data).T, interpolation='spline36', cmap='binary')]
+
+def update(frame):
+    return [plt.imshow(np.array(ez_file['ez'][:, :, frame].T), interpolation='spline36',
+                       cmap='seismic', alpha=0.9)]
+
+anim = FuncAnimation(fig, update, frames=ez_file['ez'].shape[2], init_func=init,
+                     blit=True)
+
+plt.axis('off')
+plt.show()
 ```
 
-This is similar to the command before with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program (although there is other software that will do the trick as well).
+This creates images for *all* time indices from 0 to 329, and shows them in an animation, which we can save to disk with the command:
 
-```sh
-unix% convert ez.t*.png ez.gif
+```python
+anim.save('tutorial-ez.gif', writer='imagemagick')
 ```
+
+Note that this requires the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program (although there is other software that will do the trick as well).
+
 Here, we are using an animated GIF format for the output. This results in the following animation:
 
 <center>![](../images/Tutorial-wvg-ez.gif)</center>
@@ -208,9 +225,13 @@ It is clear that the transmission around the bend is rather low for this frequen
 Instead of doing an animation, another interesting possibility is to make an image from a $x \times t$ slice. Here is the $y=-3.5$ slice, which gives us an image of the fields in the first waveguide branch as a function of time.
 
 ```sh
-unix% h5topng -0y -35 -Zc dkbluered ez.h5
+plt.figure(dpi=100)
+plt.imshow(ez_data[:, 47, :].T, interpolation='spline36', cmap='seismic', alpha=0.9)
+plt.axis('off')
+plt.show()
 ```
-Here, the `-0y -35` specifies the $y=-3.5$ slice, where we have multiplied by 10 (our resolution) to get the pixel coordinate.
+
+TODO: Figure out how to map the h5topng `-0y -35` options to the y index of `ez_data`. 47 was acquired by trial and error.
 
 <center>![](../images/Tutorial-wvg-bent-ez-tslice.png)</center>
 
