@@ -57,7 +57,6 @@ PyObject *py_amp_func = NULL;
 
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
-static PyObject *py_vector3_object();
 static PyObject *vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static std::complex<double> py_amp_func_wrap(const meep::vec &v);
@@ -290,10 +289,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 // Typemap suite for vector3
-
-%typecheck(SWIG_TYPECHECK_POINTER) vector3 {
-    $1 = PyObject_IsInstance($input, py_vector3_object());
-}
 
 %typemap(in) vector3 {
     if(!pyv3_to_v3($input, &$1)) {
