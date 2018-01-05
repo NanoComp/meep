@@ -283,54 +283,78 @@ Here are instructions for building from source on Ubuntu 16.04 for serial and pa
 ```bash
 #!/bin/bash
 
-export LD_LIBRARY_PATH="/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/serial"
-export LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/serial"
-export CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/serial"
-export PYTHONPATH="$HOME/install/meep/python"
+set -ex
+
 export GUILE_WARN_DEPRECATED="no"
 
+RPATH_ARGS="-rpath,/usr/local/lib,-rpath,/usr/lib/x86_64-linux-gnu/hdf5/serial"
+MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/serial -Wl,${RPATH_ARGS}"
+MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/serial"
+
 sudo apt-get update
-sudo apt-get -y dist-upgrade
-sudo apt-get -y install libblas-dev liblapack-dev libgmp-dev libunistring-dev libmatheval-dev swig libgsl-dev libatomic-ops-dev libgc-dev libffi-dev libltdl-dev autoconf pkg-config libpng16-dev git guile-2.0-dev libhdf5-dev libfftw3-dev libpython3.5-dev python3-numpy python3-h5py
+sudo apt-get -y install    \
+    libblas-dev            \
+    liblapack-dev          \
+    libgmp-dev             \
+    libunistring-dev       \
+    libmatheval-dev        \
+    swig                   \
+    libgsl-dev             \
+    libatomic-ops-dev      \
+    libgc-dev              \
+    libffi-dev             \
+    libltdl-dev            \
+    autoconf               \
+    pkg-config             \
+    libpng16-dev           \
+    git                    \
+    guile-2.0-dev          \
+    libhdf5-dev            \
+    libfftw3-dev           \
+    libpython3.5-dev       \
+    python3-numpy          \
+    python3-h5py
 
 mkdir ~/install
 
 cd ~/install
 git clone https://github.com/stevengj/harminv.git
 cd harminv/
-sh autogen.sh --enable-shared
+sh autogen.sh --enable-shared CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/libctl.git
 cd libctl/
-sh autogen.sh --enable-shared
+CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}" sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/h5utils.git
 cd h5utils/
-sh autogen.sh
-make distclean
-./configure --enable-shared
+sh autogen.sh --enable-shared CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/mpb.git
 cd mpb/
-sh autogen.sh --enable-shared
-make && make check && sudo make install
+sh autogen.sh --enable-shared CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
+make && sudo make install
 make distclean
-sh autogen.sh --enable-shared --with-inv-symmetry
-make && make check && sudo make install
+sh autogen.sh --enable-shared --with-inv-symmetry CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
+make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/meep.git
 cd meep/
-sh autogen.sh
-make distclean
-./configure --enable-shared --enable-maintainer-mode --with-python
-make && make check && sudo make install
+CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}" sh autogen.sh --enable-shared --with-python
+make && sudo make install
+```
+
+You may want to add the following line to your `.profile` so Python can always find the meep package:
+
+```bash
+export PYTHONPATH=/usr/local/lib/python3.5/site-packages
 ```
 
 #### Parallel
