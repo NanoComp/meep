@@ -1480,7 +1480,7 @@ void set_materials_from_geometry(meep::structure *s,
 
   dimensions=3;
   vector3 size = {0.0,0.0,0.0};
-  switch (s->gv.dim)
+  switch (s->user_volume.dim)
    { case meep::D1:   dimensions=1;
                       size.z = s->user_volume.nz()/resolution;
                       break;
