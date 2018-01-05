@@ -15,18 +15,30 @@ All of this process is handled for you in Meep by a single step function: `synch
 
 For example, if you do:
 
+*Python*
+```py
+meep.Simulation.run(meep.output_poynting,meep.output_tot_pwr,until=200)
+```
+
+*Scheme*
 ```scm
 (run-until 200 output-poynting output-tot-pwr)
 ```
 
 it outputs the Poynting vector and the total energy density in the electric and magnetic fields at each timestep, but it only does so to first-order accuracy because those computations combine unsynchronized electric and magnetic fields. Instead, if you do
 
+*Python*
+```py
+meep.Simulation.run(meep.synchronized_magnetic(meep.output_poynting,meep.output_tot_pwr,until=200))
+```
+
+*Scheme*
 ```scm
 (run-until 200 (synchronized-magnetic output-poynting output-tot-pwr))
 ```
 
 it will output the same quantities, but more accurately because the fields will be synchronized. Of course, **there is a price**: synchronizing the fields takes time, and also increases the memory usage in order to backup the unsynchronized fields.
 
-Alternatively, if you want to synchronize the magnetic and electric fields in some context other than that of a step function, e.g. you are doing some computation like `integrate-field-function` outside of the timestepping, you can instead call two lower-level functions. Before doing your computations, you should call `(meep-fields-synchronize-magnetic-fields fields)` to synchronize the magnetic fields with the electric fields, and after your computation you should call `(meep-fields-restore-magnetic-fields fields)` to restore the fields to their unsynchronized state for timestepping. In the C++ interface, these correspond to `fields::synchronize_magnetic_fields` and `fields::restore_magnetic_fields`. If you *don't* call `meep-fields-restore-magnetic-fields` before timestepping, then the fields will be re-synchronized after *every* timestep, which will greatly increase the cost of timestepping.
+Alternatively, if you want to synchronize the magnetic and electric fields in some context other than that of a step function, e.g. you are doing some computation like `integrate_field_function` (Python) or `integrate-field-function` (Scheme) outside of the timestepping, you can instead call two lower-level functions. Before doing your computations, you should call `meep.Simulation.fields.synchronize_magnetic_fields()` (Python) or `(meep-fields-synchronize-magnetic-fields fields)` (Scheme) to synchronize the magnetic fields with the electric fields, and after your computation you should call `meep.Simulation.fields.restore_magnetic_fields()` (Python) or `(meep-fields-restore-magnetic-fields fields)` (Scheme) to restore the fields to their unsynchronized state for timestepping. In the C++ interface, these correspond to `fields::synchronize_magnetic_fields` and `fields::restore_magnetic_fields`. If you *don't* call `meep.Simulation.fields.restore_magnetic_fields` or `meep-fields-restore-magnetic-fields` before timestepping, then the fields will be re-synchronized after *every* timestep, which will greatly increase the cost of timestepping.
 
-In future versions, we may decide to synchronize the fields automatically whenever you output something like the Poynting vector or do another field computation that involves both magnetic and electric fields, but currently you must do this manually. In any case, Meep does no additional work when you nest synchronization calls, so it is harmless to insert redundant field synchronizations. The `flux-in-box` and `field-energy-in-box` routines are already automatically synchronized, however.
+In future versions, we may decide to synchronize the fields automatically whenever you output something like the Poynting vector or do another field computation that involves both magnetic and electric fields, but currently you must do this manually. In any case, Meep does no additional work when you nest synchronization calls, so it is harmless to insert redundant field synchronizations. The `flux_in_box` (Python) or `flux-in-box` (Scheme) and `field_energy_in_box` (Python) or `field-energy-in-box` (Scheme) routines are already automatically synchronized, however.

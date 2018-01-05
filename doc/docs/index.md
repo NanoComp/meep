@@ -42,7 +42,7 @@ Documentation
 
 See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial/Basics](Python_Tutorials/Basics.md) are the most important things to read. There is also an [FAQ](FAQ.md).
 
-Please [cite Meep](Acknowledgements.md#referencing) in any publication for which you found it useful.
+Please [cite the reference publication](Acknowledgements.md#referencing) in any work for which you found Meep useful.
 
 ### Mailing Lists
 
