@@ -336,10 +336,6 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
-
-        def dummy_eps(v):
-            return 1
-
         sym = mp.symmetry()
 
         # Initialize swig objects for each symmetry and combine them into one
@@ -365,7 +361,7 @@ class Simulation(object):
         else:
             absorbers = None
 
-        self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
+        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
         if self.material_function:
             self.material_function.eps = False
