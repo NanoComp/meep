@@ -13,7 +13,7 @@ We also *strongly* recommend installing the HDF5 with parallel I/O support if yo
 
 If you don't install HDF5 with parallel I/O support, you can still do I/O from MPI &mdash; Meep has some hacks to let it write HDF5 files using serial I/O from multiple processes, one at a time. However, this does not scale very well to many processors. We've also observed some MPI implementations to freeze under the strain of trying to write from many processes at once. YMMV.
 
-Then you just `configure` Meep `--with-mpi`. The `meep` executable is installed as `meep-mpi`, so that you can have both the serial and parallel versions installed at the same time.
+Then you just `configure` Meep `--with-mpi`. If you run the resulting `meep` executable as usual, it runs on a single process; to run with multiple processors you should use `mpirun` as described below.  (Because you can run the parallel Meep in a single process like this, there is no need to separately compile and install the serial version of Meep.)
 
 Using Parallel Meep
 -------------------
@@ -23,7 +23,7 @@ The parallel version of Meep is designed to operate completely transparently: yo
 In order to run MPI programs, you typically have to use a command like `mpirun` with an argument to say how many processes you want to use. Consult your MPI documentation. For example, with many popular MPI implementations, to run with 4 processes you would use something like:
 
 ```sh
-mpirun -np 4 meep-mpi foo.ctl > foo.out
+mpirun -np 4 meep foo.ctl > foo.out
 ```
 
 There is one important requirement: every MPI process must be able to read the `foo.ctl` input file or whatever your control file is called. On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something.

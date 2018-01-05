@@ -192,7 +192,7 @@ In order for the MPI version of the Scheme interface to run successfully, we hav
 
 If you use Meep with MPI, you should compile HDF5 with MPI support as well (see below).
 
-As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as **meep-mpi**.
+As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep`, so it overwrites any serial installation.  There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun meep`).
 
 HDF5 (recommended)
 ------------------
@@ -235,7 +235,7 @@ Install into `dir/bin`, etcetera, as described above.
 
 **`--with-mpi`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep-mpi.` Requires MPI to be installed, as described above. Does **not** compile the serial Meep. If you want that, you will have to `make distclean` and install the serial version separately. Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
+Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep` and can be run in either serial or parallel mode (the latter via `mpirun`). Requires MPI to be installed, as described above.  (You should install this *instead* of the serial Meep.) Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
 
 **`--with-libctl=dir`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
