@@ -22,11 +22,17 @@ The parallel version of Meep is designed to operate completely transparently: yo
 
 In order to run MPI programs, you typically have to use a command like `mpirun` with an argument to say how many processes you want to use. Consult your MPI documentation. For example, with many popular MPI implementations, to run with 4 processes you would use something like:
 
+*Python*
+```sh
+mpirun -np 4 python foo.py > foo.out
+```
+
+*Scheme*
 ```sh
 mpirun -np 4 meep foo.ctl > foo.out
 ```
 
-There is one important requirement: every MPI process must be able to read the `foo.ctl` input file or whatever your control file is called. On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something.
+There is one important requirement: every MPI process must be able to read the `foo.py` or `foo.ctl` input file or whatever your control file is called. On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something.
 
 You cannot run Meep interactively on multiple processors.
 
@@ -39,15 +45,15 @@ However, there is an alternative strategy for parallelization. If you have many 
 Technical Details
 -----------------
 
-When you run Meep under MPI, the following is a brief description of what is happening behind the scenes. For the most part, you shouldn't *need* to know this stuff. Just use the same `.ctl` exactly as you would for a uniprocessor simulation.
+When you run Meep under MPI, the following is a brief description of what is happening behind the scenes. For the most part, you shouldn't *need* to know this stuff. Just use the same `.py` or `.ctl` file exactly as you would for a uniprocessor simulation.
 
-First, every MPI process executes the `.ctl` file in parallel. The processes communicate however, to only perform one simulation in sync with one another. In particular, the computational cell is divided into "chunks", one per process, to roughly equally divide the work and the memory.
+First, every MPI process executes the `.py` or `.ctl` file in parallel. The processes communicate however, to only perform one simulation in sync with one another. In particular, the computational cell is divided into "chunks", one per process, to roughly equally divide the work and the memory.
 
-When you time-step (via `run-until` or whatever), the chunks are time-stepped in parallel, communicating the values of the pixels on their boundaries with one another. In general, any Meep function that performs some collective operation over the whole computational cell or a large portion thereof is parallelized, including: time-stepping, HDF5 I/O, accumulation of flux spectra, and field integration via `integrate-field-function`, although the *results* are communicated to all processes.
+When you time-step [via `meep.Simulation.run(until=...)` or `run-until` or whatever], the chunks are time-stepped in parallel, communicating the values of the pixels on their boundaries with one another. In general, any Meep function that performs some collective operation over the whole computational cell or a large portion thereof is parallelized, including: time-stepping, HDF5 I/O, accumulation of flux spectra, and field integration via `integrate_field_function` (Python) or `integrate-field-function` (Scheme), although the *results* are communicated to all processes.
 
-Computations that only involve isolated points, such as `get-field-point` or `harminv` analyses, are performed by all processes redundantly. In the case of `get-field-point`, Meep figures out which process "knows" the field at the given field, and then sends the field value from that process to all other processes. This is harmless because such computations are rarely performance bottlenecks.
+Computations that only involve isolated points, such as `get_field_point` (Python) or `get-field-point` (Scheme), or `Harminv` (Python) or `harminv` (Scheme) analyses, are performed by all processes redundantly. In the case of `get_field_point` or `get-field-point`, Meep figures out which process "knows" the field at the given field, and then sends the field value from that process to all other processes. This is harmless because such computations are rarely performance bottlenecks.
 
-Although all processes execute the `.ctl` in parallel, `print` statements are ignored for all process but one (process \#0). In this way, you only get one copy of the output.
+Although all processes execute the `.py` or `.ctl` file in parallel, `print` statements are ignored for all process but one (process \#0). In this way, you only get one copy of the output.
 
 If for some reason you need to distinguish different MPI processes in your `.ctl` file, you can use the following two functions:
 
