@@ -423,13 +423,13 @@ public:
   virtual double conductivity(meep::component c, const meep::vec &r);
 
   virtual double chi1p1(meep::field_type ft, const meep::vec &r);
-  void eff_chi1inv(meep::component c, double chi1inv_row[3], const meep::volume &v,
-                   double tol, int maxeval, symmetric_matrix *chi1inv_matrix);
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3],
                                const meep::volume &v,
                                double tol, int maxeval);
+
   void eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
                           const meep::volume &v, double tol, int maxeval);
+
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3],
 			      const meep::volume &v,
 			      double tol, int maxeval);
@@ -788,46 +788,47 @@ static bool get_front_object(const meep::volume &v,
   return true;
 }
 
-void geom_epsilon::eff_chi1inv(meep::component c, double chi1inv_row[3], const meep::volume &v,
-                               double tol, int maxeval, symmetric_matrix *chi1inv_matrix) {
+void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
+                                   const meep::volume &v, double tol, int maxeval) {
+  symmetric_matrix meps_inv;
+  eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval);
+
+  switch (component_direction(c)) {
+    case meep::X:
+    case meep::R:
+      chi1inv_row[0] = meps_inv.m00;
+      chi1inv_row[1] = meps_inv.m01;
+      chi1inv_row[2] = meps_inv.m02;
+      break;
+    case meep::Y:
+    case meep::P:
+      chi1inv_row[0] = meps_inv.m01;
+      chi1inv_row[1] = meps_inv.m11;
+      chi1inv_row[2] = meps_inv.m12;
+      break;
+    case meep::Z:
+      chi1inv_row[0] = meps_inv.m02;
+      chi1inv_row[1] = meps_inv.m12;
+      chi1inv_row[2] = meps_inv.m22;
+      break;
+    case meep::NO_DIRECTION:
+      chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
+      break;
+  }
+}
+
+void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
+                                      const meep::volume &v, double tol, int maxeval) {
   const geometric_object *o;
   material_type mat, mat_behind;
-  symmetric_matrix meps, meps_inv;
+  symmetric_matrix meps;
   vector3 p, shiftby, normal;
 
-  if (maxeval == 0 || !get_front_object(v, geometry_tree,
-                                       p, &o, shiftby, mat, mat_behind)) {
+  if (maxeval == 0 || !get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
   noavg:
     get_material_pt(mat, v.center());
   trivial:
-    material_epsmu(meep::type(c), mat, &meps, &meps_inv);
-    if (chi1inv_row) {
-      switch (component_direction(c)) {
-      case meep::X: case meep::R:
-        chi1inv_row[0] = meps_inv.m00;
-        chi1inv_row[1] = meps_inv.m01;
-        chi1inv_row[2] = meps_inv.m02;
-        break;
-      case meep::Y: case meep::P:
-        chi1inv_row[0] = meps_inv.m01;
-        chi1inv_row[1] = meps_inv.m11;
-        chi1inv_row[2] = meps_inv.m12;
-        break;
-      case meep::Z:
-        chi1inv_row[0] = meps_inv.m02;
-        chi1inv_row[1] = meps_inv.m12;
-        chi1inv_row[2] = meps_inv.m22;
-        break;
-      case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
-      }
-    } else if (chi1inv_matrix) {
-      chi1inv_matrix->m00 = meps_inv.m00;
-      chi1inv_matrix->m01 = meps_inv.m01;
-      chi1inv_matrix->m02 = meps_inv.m02;
-      chi1inv_matrix->m11 = meps_inv.m11;
-      chi1inv_matrix->m12 = meps_inv.m12;
-      chi1inv_matrix->m22 = meps_inv.m22;
-    }
+    material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
     return;
   }
 
@@ -855,7 +856,7 @@ void geom_epsilon::eff_chi1inv(meep::component c, double chi1inv_row[3], const m
 
   double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
 
-  material_epsmu(meep::type(c), mat, &meps, &meps_inv);
+  material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
   symmetric_matrix eps2, epsinv2;
   symmetric_matrix eps1, delta;
   double Rot[3][3];
@@ -936,45 +937,7 @@ void geom_epsilon::eff_chi1inv(meep::component c, double chi1inv_row[3], const m
     meep::abort("negative mean epsilon from Kottke algorithm");
 #endif
 
-  sym_matrix_invert(&meps_inv, &meps);
-
-  if (chi1inv_row) {
-    switch (component_direction(c)) {
-    case meep::X: case meep::R:
-      chi1inv_row[0] = meps_inv.m00;
-      chi1inv_row[1] = meps_inv.m01;
-      chi1inv_row[2] = meps_inv.m02;
-      break;
-    case meep::Y: case meep::P:
-      chi1inv_row[0] = meps_inv.m01;
-      chi1inv_row[1] = meps_inv.m11;
-      chi1inv_row[2] = meps_inv.m12;
-      break;
-    case meep::Z:
-      chi1inv_row[0] = meps_inv.m02;
-      chi1inv_row[1] = meps_inv.m12;
-      chi1inv_row[2] = meps_inv.m22;
-      break;
-    case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
-    }
-  } else if (chi1inv_matrix) {
-    chi1inv_matrix->m00 = meps_inv.m00;
-    chi1inv_matrix->m01 = meps_inv.m01;
-    chi1inv_matrix->m02 = meps_inv.m02;
-    chi1inv_matrix->m11 = meps_inv.m11;
-    chi1inv_matrix->m12 = meps_inv.m12;
-    chi1inv_matrix->m22 = meps_inv.m22;
-  }
-}
-
-void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
-                                   const meep::volume &v, double tol, int maxeval) {
-  eff_chi1inv(c, chi1inv_row, v, tol, maxeval, NULL);
-}
-
-void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
-                                      const meep::volume &v, double tol, int maxeval) {
-  eff_chi1inv(c, NULL, v, tol, maxeval, chi1inv_matrix);
+  sym_matrix_invert(chi1inv_matrix, &meps);
 }
 
 static int eps_ever_negative = 0;
