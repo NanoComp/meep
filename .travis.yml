@@ -67,7 +67,7 @@ script:
   - make -j 2
 #
   - pushd tests
-  - make ${MKCHECKFLAGS} check TESTS=${CORETESTS} VERBOSE=1 || (cat test-suite.log && exit 1)
+  - make ${MKCHECKFLAGS} check TESTS="${CORETESTS}" VERBOSE=1 || (cat test-suite.log && exit 1)
   - popd
 #
   - pushd libmeepgeom
