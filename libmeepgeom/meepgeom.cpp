@@ -1458,8 +1458,7 @@ void add_absorbing_layer(absorber_list alist,
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-void set_materials_from_geometry(vector3 size,
-                                 meep::structure *s,
+void set_materials_from_geometry(meep::structure *s,
                                  geometric_object_list g,
                                  bool use_anisotropic_averaging,
                                  double tol,
@@ -1480,14 +1479,23 @@ void set_materials_from_geometry(vector3 size,
   double resolution    = gv.a;
 
   dimensions=3;
+  vector3 size = {0.0, 0.0, 0.0};
   switch (s->gv.dim)
    { case meep::D1:   dimensions=1;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
      case meep::D2:   dimensions=2;
+                      size.x = s->user_volume.nx()/resolution;
+                      size.y = s->user_volume.ny()/resolution;
                       break;
      case meep::D3:   dimensions=3;
+                      size.x = s->user_volume.nx()/resolution;
+                      size.y = s->user_volume.ny()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
      case meep::Dcyl: dimensions= CYLINDRICAL;
+                      size.x = s->user_volume.nr()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
    };
 

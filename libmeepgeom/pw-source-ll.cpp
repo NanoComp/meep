@@ -80,18 +80,20 @@ int main(int argc, char **argv)
 
   int s=11;           // size of computational cell, excluding PML
   int dpml=1;         // thickness of PML layers
-  double sxy = s+2*dpml; // cell size, including PML
+  int sxy = s+2*dpml; // cell size, including PML
   int resolution=10;  // pixel spacing
 
   // (set! geometry-lattice (make lattice (size sxy sxy no-size)))
   // (set! pml-layers (list (make pml (thickness dpml))))
-  vector3 lattice_size = {sxy, sxy, 0.0};
+  geometry_lattice.size.x=sxy;
+  geometry_lattice.size.y=sxy;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sxy, sxy, resolution);
   gv.center_origin();
   structure the_structure(gv, dummy_eps, pml(dpml));
 
   geometric_object_list g={0,0};
-  meep_geom::set_materials_from_geometry(lattice_size, &the_structure, g);
+  meep_geom::set_materials_from_geometry(&the_structure, g);
 
   fields f(&the_structure);
 

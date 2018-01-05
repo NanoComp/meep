@@ -51,7 +51,9 @@ void bend_flux(bool no_bend)
 
   // (set! geometry-lattice (make lattice (size sx sy no-size)))
   // (set! pml-layers (list (make pml (thickness 1.0))))
-  vector3 lattice_size = {16.0, 32.0, 0.0};
+  geometry_lattice.size.x=16.0;
+  geometry_lattice.size.y=32.0;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
   structure the_structure(gv, dummy_eps, pml(1.0));
@@ -89,7 +91,7 @@ void bend_flux(bool no_bend)
                               v3(ENORMOUS, w, ENORMOUS)
                              );
       geometric_object_list g={ 1, objects };
-      meep_geom::set_materials_from_geometry(lattice_size, &the_structure, g);
+      meep_geom::set_materials_from_geometry(&the_structure, g);
     }
    else
     {
@@ -107,7 +109,7 @@ void bend_flux(bool no_bend)
                              );
 
       geometric_object_list g={ 2, objects };
-      meep_geom::set_materials_from_geometry(lattice_size, &the_structure, g);
+      meep_geom::set_materials_from_geometry(&the_structure, g);
     };
 
   fields f(&the_structure);

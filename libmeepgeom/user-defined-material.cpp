@@ -127,7 +127,9 @@ int main(int argc, char *argv[])
 
   double resolution = 100.0;
 
-  vector3 lattice_size = {10.0, 10.0, 0.0};
+  geometry_lattice.size.x=10.0;
+  geometry_lattice.size.y=10.0;
+  geometry_lattice.size.z=0.0;
   grid_volume gv = voltwo(10.0, 10.0, resolution);
   gv.center_origin();
   symmetry sym = (src_cmpt==Ez) ?  mirror(X,gv) + mirror(Y,gv)
@@ -141,8 +143,7 @@ int main(int argc, char *argv[])
   bool use_anisotropic_averaging=true;
   bool ensure_periodicity=true;
   bool verbose=false;
-  meep_geom::set_materials_from_geometry(lattice_size,
-                                         &the_structure, g,
+  meep_geom::set_materials_from_geometry(&the_structure, g,
                                          use_anisotropic_averaging,
                                          DEFAULT_SUBPIXEL_TOL,
                                          DEFAULT_SUBPIXEL_MAXEVAL,

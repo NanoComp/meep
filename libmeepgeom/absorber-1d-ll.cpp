@@ -52,7 +52,9 @@ int main(int argc, char *argv[])
    master_printf("Using %s.\n",use_pml ? "pml" : "absorber");
 
   double resolution = 20.0; 
-  vector3 lattice_size = {TINY, TINY, 10.0};
+  geometry_lattice.size.x=TINY;
+  geometry_lattice.size.y=TINY;
+  geometry_lattice.size.z=10.0;
   grid_volume gv = volone(10.0, resolution);
   gv.center_origin();
   boundary_region br = use_pml ? pml(1.0) : boundary_region();
@@ -65,8 +67,7 @@ int main(int argc, char *argv[])
    };
 
   geometric_object_list g={ 0, 0};
-  meep_geom::set_materials_from_geometry(lattice_size,
-                                         &the_structure, g,
+  meep_geom::set_materials_from_geometry(&the_structure, g,
                                          true,                     // use_anisotropic_averaging,
 		                         DEFAULT_SUBPIXEL_TOL,     // tol
 	  	                         DEFAULT_SUBPIXEL_MAXEVAL, // maxeval
