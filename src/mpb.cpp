@@ -32,6 +32,8 @@ using namespace std;
 
 typedef complex<double> cdouble;
 
+std::vector<double> mode_group_velocities;
+
 namespace meep {
 
 #ifdef HAVE_MPB
@@ -616,6 +618,8 @@ std::vector<cdouble>
 
   char *LogFile=getenv("MEEP_EIGENMODE_LOGFILE");
 
+  mode_group_velocities.resize(num_bands*num_freqs);
+
   // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
    for(int nf=0; nf<num_freqs; nf++)
@@ -630,6 +634,8 @@ std::vector<cdouble>
       void *mode_data 
        = get_eigenmode(freq, d, where, where, band_num, kpoint, 
                        match_frequency, parity, resolution, eig_tol);
+
+      mode_group_velocities[nb*num_freqs + nf]=get_group_velocity(mode_data);
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
