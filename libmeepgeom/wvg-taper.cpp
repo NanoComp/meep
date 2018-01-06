@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
   geometry_lattice.size.x = 2*LX;
   geometry_lattice.size.y = 2*LY;
   geometry_lattice.size.z = ( (three_d) ? 2*LZ : 0.0 );
-  grid_volume gv = three_d ? vol3d(2*LX, 2*LY, 2*LZ, res) : voltwo(2*LX, 2*LX, res);
+  grid_volume gv = three_d ? vol3d(2*LX, 2*LY, 2*LZ, res) : voltwo(2*LX, 2*LY, res);
   gv.center_origin();
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
