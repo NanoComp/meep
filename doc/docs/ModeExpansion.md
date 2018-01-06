@@ -170,10 +170,11 @@ The expansion coefficient for the mode with frequency `nf`
 and band index `nb` is stored in the `nb*num_freqs + nf`
 slot of this array.
 
-## First example: Junction of planar waveguides
+## First example: Taper of planar waveguides
 
 As a simple first problem, we'll consider
-a 2D problem involving an impedance mismatch
+a 2D geometry in which 
+involving
 between two planar waveguides, as shown in 
 this figure:
 
