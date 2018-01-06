@@ -398,14 +398,6 @@ int main(int argc, char *argv[])
          MaxPV = ThisPV;
         else if ( ThisPV < PVTol*MaxPV )
          FieldsDecayed=true;
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-if (am_master())
-{
-FILE *ff=fopen("/tmp/FluxVsTime.dat","a");
-fprintf(ff,"%e %e %e\n",f.round_time(),ThisPV,MaxPV);
-fclose(ff);
-}
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
       }
 
      // output HDF5 data at regular intervals if user requested that
@@ -471,8 +463,14 @@ fclose(ff);
   std::vector<cdouble> coeffs =
    f.get_eigenmode_coefficients(&fluxB, dB, *fvB, bands, k_guess, (void *)&wB);
 
+
   if (am_master())
    {
+     double *bflux=fluxB.flux();
+     double bvol1=fvB->computational_volume();
+     double bvol2=fvB->integral_volume();
+     double bvol3=fvB->full_volume();
+
      char filename[100];
      snprintf(filename,100,"%s.coefficients",filebase);
      FILE *ff=fopen(filename,"a");
@@ -490,7 +488,7 @@ fclose(ff);
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
          printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*norm(aP)/atot);
          printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*norm(aM)/atot);
-         fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e \n",ratio,taper_length,taper_order,res,nb,nf,norm(aP), arg(aP), norm(aP)/atot, norm(aM), arg(aM), norm(aM)/atot);
+         fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e \n",ratio,taper_length,taper_order,res,nb,nf,norm(aP), arg(aP), norm(aP)/atot, bflux[nf], bvol1, bvol2, bvol3);
       };
      fclose(ff);
    };
