@@ -182,6 +182,10 @@ int main(int argc, char *argv[])
   double frame_interval = 0.0;
   double res            = 10.0; // resolution
   char *filebase        = const_cast<char *>("wt");
+  double LX=3.0;       // half-length of cell in propagation direction
+  double LY=2.0;       // half-width of cell in transverse direction
+  double LZ=1.5;       // half-width of cell in transverse direction
+  double dpml=0.50;    // PML thickness
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
@@ -239,6 +243,30 @@ int main(int argc, char *argv[])
         sscanf(argv[narg], "%le", &res);
         master_printf("setting resolution=%e\n",res);
       }
+     else if (!strcasecmp(argv[narg],"--LX"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --LX");
+        sscanf(argv[narg], "%le", &LX);
+        master_printf("setting LX=%e\n",LX);
+      }
+     else if (!strcasecmp(argv[narg],"--LY"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --LY");
+        sscanf(argv[narg], "%le", &LY);
+        master_printf("setting LY=%e\n",LY);
+      }
+     else if (!strcasecmp(argv[narg],"--LZ"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --LZ");
+        sscanf(argv[narg], "%le", &LZ);
+        master_printf("setting LZ=%e\n",LZ);
+      }
+     else if (!strcasecmp(argv[narg],"--dpml"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --dpml");
+        sscanf(argv[narg], "%le", &dpml);
+        master_printf("setting dpml=%e\n",dpml);
+      }
      else if (!strcasecmp(argv[narg],"--filebase"))
       { if ( ++narg >= argc )
          usage(argv[0], "error: no argument given for --filebase");
@@ -256,10 +284,6 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* initialize computational cell                               */
   /****************** ********************************************/
-  double LX=3.0;       // half-length of cell in propagation direction
-  double LY=2.0;       // half-width of cell in transverse direction
-  double LZ=1.5;       // half-width of cell in transverse direction
-  double dpml=0.50;    // PML thickness
   geometry_lattice.size.x = 2*LX;
   geometry_lattice.size.y = 2*LY;
   geometry_lattice.size.z = ( (three_d) ? 2*LZ : 0.0 );
@@ -375,9 +399,12 @@ int main(int argc, char *argv[])
         else if ( ThisPV < PVTol*MaxPV )
          FieldsDecayed=true;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+if (am_master())
+{
 FILE *ff=fopen("/tmp/FluxVsTime.dat","a");
 fprintf(ff,"%e %e %e\n",f.round_time(),ThisPV,MaxPV);
 fclose(ff);
+}
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
       }
 
