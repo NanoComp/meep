@@ -21,6 +21,8 @@ using namespace meep;
 
 typedef std::complex<double> cdouble;
 
+extern std::vector<double> mode_group_velocities;
+
 vector3 v3(double x, double y=0.0, double z=0.0)
 {
   vector3 v;
@@ -488,7 +490,7 @@ int main(int argc, char *argv[])
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
          printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*norm(aP)/atot);
          printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*norm(aM)/atot);
-         fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e \n",ratio,taper_length,taper_order,res,nb,nf,norm(aP), arg(aP), norm(aP)/atot, bflux[nf], bvol1, bvol2, bvol3);
+         fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e %e \n",ratio,taper_length,taper_order,res,nb,nf,norm(aP), arg(aP), norm(aP)/atot, bflux[nf], bvol1, bvol2, bvol3, mode_group_velocities[nb*num_freqs + nf]);
       };
      fclose(ff);
    };
