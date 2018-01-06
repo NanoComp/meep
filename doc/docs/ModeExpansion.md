@@ -5,6 +5,8 @@ with the [MPB][MPB] mode solver to express an arbitrary
 time-harmonic field configuration as a superposition of
 the normal harmonic modes of your structure.
 
+[TOC]
+
 ## Theoretical background
 
 Consider a waveguide structure of infinite extent in the $z$
@@ -121,9 +123,9 @@ of this sort,
     cross-sectional material distribution that your structure
     has on the transverse slice $S$, and
 
-+   the $\alpha_n^\pm$ coefficients for as many bands 
-    as you like are computed by calling `get_eigenmode_coefficients(),`
-    as discussed below.
++   the $\alpha_n^\pm$ coefficients for as many bands
+    as you like are computed by calling `get_eigenmode_coefficients()`
+    in python or C++, as discussed below.
 
 ## C++ function prototype
 
