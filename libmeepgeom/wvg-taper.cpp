@@ -184,8 +184,8 @@ int main(int argc, char *argv[])
   double frame_interval = 0.0;
   double res            = 10.0; // resolution
   char *filebase        = const_cast<char *>("wt");
-  double LX=3.0;       // half-length of cell in propagation direction
-  double LY=2.0;       // half-width of cell in transverse direction
+  double LX=5.0;       // half-length of cell in propagation direction
+  double LY=4.0;       // half-width of cell in transverse direction
   double LZ=1.5;       // half-width of cell in transverse direction
   double dpml=0.50;    // PML thickness
   for(int narg=1; narg<argc; narg++)
