@@ -222,6 +222,8 @@ int main(int argc, char *argv[])
       plot_modes=true;
      else if (!strcasecmp(argv[narg],"--plot-flux") )
       plot_flux=true;
+     else if (!strcasecmp(argv[narg],"--plot-structure") )
+      plot_structure=true;
      else if (!strcasecmp(argv[narg],"--band-num"))
       { if ( ++narg >= argc )
          usage(argv[0], "error: no argument given for --band-num");
