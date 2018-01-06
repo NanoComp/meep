@@ -75,12 +75,12 @@ vec k_guess(void *user_data, double freq, int band_num)
      if (band_num>=6)  return vec(0.5116020, 0.0, 0.0);
    }
   else if ( equal_float(freq,0.15) && equal_float(w,1.5))
-   { if (band_num==1)  return vec(0.513077, 0.0, 0.0);
-     if (band_num==2)  return vec(0.494765, 0.0, 0.0);
-     if (band_num==3)  return vec(0.390328, 0.0, 0.0);
-     if (band_num==4)  return vec(0.390306, 0.0, 0.0);
-     if (band_num==5)  return vec(0.390273, 0.0, 0.0);
-     if (band_num==6)  return vec(0.340132, 0.0, 0.0);
+   { if (band_num==1)  return vec(0.494476, 0.0, 0.0);
+     if (band_num==2)  return vec(0.486399, 0.0, 0.0);
+     if (band_num==3)  return vec(0.435861, 0.0, 0.0);
+     if (band_num==4)  return vec(0.397068, 0.0, 0.0);
+     if (band_num==5)  return vec(0.322812, 0.0, 0.0);
+     if (band_num>=6)  return vec(0.211186, 0.0, 0.0);
    }
   else if ( equal_float(freq,0.15) && equal_float(w,1.0))
    { if (band_num==1)  return vec(0.426302,  0.0, 0.0);
