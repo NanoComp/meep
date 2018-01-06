@@ -463,13 +463,13 @@ int main(int argc, char *argv[])
   std::vector<cdouble> coeffs =
    f.get_eigenmode_coefficients(&fluxB, dB, *fvB, bands, k_guess, (void *)&wB);
 
+  double *bflux=fluxB.flux();
+  double bvol1=fvB->computational_volume();
+  double bvol2=fvB->integral_volume();
+  double bvol3=fvB->full_volume();
 
   if (am_master())
    {
-     double *bflux=fluxB.flux();
-     double bvol1=fvB->computational_volume();
-     double bvol2=fvB->integral_volume();
-     double bvol3=fvB->full_volume();
 
      char filename[100];
      snprintf(filename,100,"%s.coefficients",filebase);
