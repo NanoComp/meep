@@ -345,6 +345,7 @@ int main(int argc, char *argv[])
      snprintf(filename,100,"%s_L%g_p%i",filebase,taper_length,taper_order);
      h5file *eps_file=f.open_h5file("eps", h5file::WRITE, filename, false);
      f.output_hdf5(Dielectric,f.total_volume(),eps_file,false,false,0);
+     delete eps_file;
    }
 
   /***************************************************************/
