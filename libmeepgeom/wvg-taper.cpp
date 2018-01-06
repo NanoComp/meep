@@ -181,6 +181,7 @@ int main(int argc, char *argv[])
   bool use_symmetry     = false;
   bool plot_modes       = false;
   bool plot_flux        = false;
+  bool plot_structure   = false;
   double frame_interval = 0.0;
   double res            = 10.0; // resolution
   char *filebase        = const_cast<char *>("wt");
@@ -333,7 +334,16 @@ int main(int argc, char *argv[])
                                          sbtol, maxeval, ensure_periodicity,
                                          verbose, my_material);
   fields f(&the_structure);
-  f.output_hdf5(Dielectric,f.total_volume(),0,false,false,filebase);
+  
+  /***************************************************************/
+  /* plot structure if requested *********************************/
+  /***************************************************************/
+  if (plot_structure)
+   { char filename[100];
+     snprintf(filename,100,"%s_L%g_p%i",filebase,taper_length,taper_order);
+     h5file *eps_file=f.open_h5file("eps", h5file::WRITE, filename, false);
+     f.output_hdf5(Dielectric,f.total_volume(),eps_file,false,false,0);
+   }
 
   /***************************************************************/
   /* add source                                                  */
