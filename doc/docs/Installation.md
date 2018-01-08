@@ -276,7 +276,7 @@ A beta version of the Python bindings for Meep (PyMeep) is available in serial (
 
 ### Building From Source
 
-Here we provide instructions for building parallel PyMeep from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -n 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`.
+Here we provide instructions for building parallel PyMeep from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -n 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you ant to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep.
 
 ```bash
 #!/bin/bash
@@ -334,7 +334,7 @@ cd mpb/
 sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 
-pip3 install --upgrade pip
+sudo pip3 install --upgrade pip
 pip3 install --user --no-cache-dir mpi4py
 export HDF5_MPI="ON"
 pip3 install --user --no-binary=h5py h5py
@@ -342,7 +342,7 @@ pip3 install --user --no-binary=h5py h5py
 cd ~/install
 git clone https://github.com/stevengj/meep.git
 cd meep/
-sh autogen.sh --enable-shared --with-python --with-mpi \
+sh autogen.sh --enable-shared --with-python --with-mpi PYTHON=python3 \
     CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```
