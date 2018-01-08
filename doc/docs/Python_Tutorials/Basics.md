@@ -121,7 +121,7 @@ ez_h5file = h5py.File('ez-000200.00.h5','r')
 ez_data = np.array(ez_h5file['ez'])
 plt.figure(dpi=100)
 plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
-plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='seismic', alpha=0.9)
+plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9)
 plt.axis('off')
 plt.show()
 ```
