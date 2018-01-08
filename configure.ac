@@ -179,6 +179,8 @@ if test $have_mpb = maybe; then
   fi
 fi
 
+AM_CONDITIONAL(WITH_MPB, test "x$have_mpb" = "xyes")
+
 ##############################################################################
 # GNU Scientific Library
 
@@ -533,6 +535,7 @@ AC_CONFIG_FILES([
 	libctl/Makefile
 	libctl/meep.scm
 	libmeepgeom/Makefile
+        mpb/Makefile
 	python/Makefile
 ])
 

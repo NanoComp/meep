@@ -11,6 +11,11 @@ endif
 if WITH_PYTHON
   SUBDIRS += python
 endif
+if WITH_MPB
+if WITH_LIBCTLGEOM
+  SUBDIRS += mpb
+endif
+endif
 
 EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in
 
