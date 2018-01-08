@@ -276,102 +276,33 @@ A beta version of the Python bindings for Meep (PyMeep) is available in serial (
 
 ### Building From Source
 
-Here are instructions for building from source on Ubuntu 16.04 for serial and parallel PyMeep.
-
-#### Serial
+Here we provide instructions for building parallel PyMeep from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -n 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`.
 
 ```bash
 #!/bin/bash
 
-set -ex
-
-export GUILE_WARN_DEPRECATED="no"
-
-RPATH_ARGS="-rpath,/usr/local/lib,-rpath,/usr/lib/x86_64-linux-gnu/hdf5/serial"
-MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/serial -Wl,${RPATH_ARGS}"
-MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/serial"
+set -e
 
 sudo apt-get update
-sudo apt-get -y install    \
-    libblas-dev            \
-    liblapack-dev          \
-    libgmp-dev             \
-    libunistring-dev       \
-    libmatheval-dev        \
-    swig                   \
-    libgsl-dev             \
-    libatomic-ops-dev      \
-    libgc-dev              \
-    libffi-dev             \
-    libltdl-dev            \
-    autoconf               \
-    pkg-config             \
-    libpng16-dev           \
-    git                    \
-    guile-2.0-dev          \
-    libhdf5-dev            \
-    libfftw3-dev           \
-    libpython3.5-dev       \
-    python3-numpy          \
-    python3-h5py
-
-mkdir ~/install
-
-cd ~/install
-git clone https://github.com/stevengj/harminv.git
-cd harminv/
-sh autogen.sh --enable-shared CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/stevengj/libctl.git
-cd libctl/
-CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}" sh autogen.sh --enable-shared
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/stevengj/h5utils.git
-cd h5utils/
-sh autogen.sh --enable-shared CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/stevengj/mpb.git
-cd mpb/
-sh autogen.sh --enable-shared CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
-make && sudo make install
-make distclean
-sh autogen.sh --enable-shared --with-inv-symmetry CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}"
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/stevengj/meep.git
-cd meep/
-CPPFLAGS="${MY_CPPFLAGS}" LDFLAGS="${MY_LDFLAGS}" sh autogen.sh --enable-shared --with-python
-make && sudo make install
-```
-
-You may want to add the following line to your `.profile` so Python can always find the meep package:
-
-```bash
-export PYTHONPATH=/usr/local/lib/python3.5/site-packages
-```
-
-#### Parallel
-
-```bash
-#!/bin/bash
-
-export LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/openmpi:${HOME}/install/lib"
-export LDFLAGS="-L/usr/local/lib -L/usr/local/lib/openmpi -L${HOME}/install/lib"
-export CPPFLAGS="-I/usr/local/include -I/usr/local/include/openmpi -I${HOME}/install/include"
-export PATH="${PATH}:${HOME}/install/bin"
-export PYTHONPATH="${HOME}/install/meep/python"
-export GUILE_WARN_DEPRECATED="no"
-
-sudo apt-get update
-sudo apt-get -y dist-upgrade
-sudo apt-get -y install libblas-dev liblapack-dev libgmp-dev libunistring-dev libmatheval-dev swig libgsl-dev libatomic-ops-dev libgc-dev libffi-dev libltdl-dev autoconf pkg-config libpng16-dev git guile-2.0-dev libpython3.5-dev python3-numpy python3-pip
+sudo apt-get -y install     \
+    libblas-dev             \
+    liblapack-dev           \
+    libgmp-dev              \
+    libunistring-dev        \
+    libmatheval-dev         \
+    swig                    \
+    libgsl-dev              \
+    autoconf                \
+    pkg-config              \
+    libpng16-dev            \
+    git                     \
+    guile-2.0-dev           \
+    libfftw3-dev            \
+    libhdf5-openmpi-dev     \
+    hdf5-tools              \
+    libpython3.5-dev        \
+    python3-numpy           \
+    python3-pip
 
 mkdir ~/install
 
@@ -388,40 +319,16 @@ sh autogen.sh --enable-shared
 make && sudo make install
 
 cd ~/install
-wget --no-check-certificate https://www.open-mpi.org/software/ompi/v2.0/downloads/openmpi-2.0.4.tar.gz
-tar xvzf openmpi-2.0.4.tar.gz
-cd openmpi-2.0.4/
-./configure --enable-shared
-make && make check && sudo make install
-
-export CC=mpicc
-export CXX=mpic++
-
-cd ~/install
-wget --no-check-certificate https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.1/src/hdf5-1.10.1.tar.gz
-tar xvzf hdf5-1.10.1.tar.gz
-cd hdf5-1.10.1/
-./configure --prefix=${HOME}/install --enable-parallel --enable-shared --disable-static
-make && make install
-
-cd ~/install
 git clone https://github.com/stevengj/h5utils.git
 cd h5utils/
-sh autogen.sh --enable-shared
+CC=mpicc LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi" CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi" sh autogen.sh
 make && sudo make install
-
-cd ~/install
-wget http://www.fftw.org/fftw-3.3.4.tar.gz
-tar xvzf fftw-3.3.4.tar.gz
-cd fftw-3.3.4/
-./configure --enable-shared
-make && make check && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/mpb.git
 cd mpb/
-sh autogen.sh --enable-shared
-make && make check && sudo make install
+CC=mpicc LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi" CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi" sh autogen.sh --enable-shared
+make && sudo make install
 
 pip3 install --upgrade pip
 pip3 install --user --no-cache-dir mpi4py
@@ -431,10 +338,14 @@ pip3 install --user --no-binary=h5py h5py
 cd ~/install
 git clone https://github.com/stevengj/meep.git
 cd meep/
-sh autogen.sh
-make distclean
-./configure --enable-shared --enable-maintainer-mode --with-python --with-mpi
-make && make check && sudo make install
+CC=mpicc CXX=mpic++ LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi" CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi" sh autogen.sh --enable-shared --with-python --with-mpi
+make && sudo make install
+```
+
+You may want to add the following line to your `.profile` so Python can always find the meep package:
+
+```bash
+export PYTHONPATH=/usr/local/lib/python3.5/site-packages
 ```
 
 ### Conda Packages
