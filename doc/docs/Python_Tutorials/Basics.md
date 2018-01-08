@@ -192,12 +192,14 @@ That is, the file contains a 160×160×333 array, where the last dimension is ti
 ```python
 fig = plt.figure()
 
+vmin = ez_data.min()
+vmax = ez_data.max()
+
 def init():
     return [plt.imshow(np.array(eps_data).T, interpolation='spline36', cmap='binary')]
 
 def update(frame):
-    return [plt.imshow(np.array(ez_file['ez'][:, :, frame].T), interpolation='spline36',
-                       cmap='seismic', alpha=0.9)]
+    return [plt.imshow(np.array(ez_file['ez'][:, :, frame].T), alpha=0.9, interpolation='spline36', cmap='RdBu', vmin=vmin, vmax=vmax)]
 
 anim = FuncAnimation(fig, update, frames=ez_file['ez'].shape[2], init_func=init,
                      blit=True)
