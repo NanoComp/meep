@@ -179,5 +179,11 @@ class TestSimulation(unittest.TestCase):
         sim._init_structure(k=mp.Vector3())
         self.assertEqual(sim.structure.gv.dim, mp.D2)
 
+    def test_in_volume(self):
+        sim = self.init_simple_simulation()
+        sim.filename_prefix = 'test_in_volume'
+        vol = mp.Volume(mp.Vector3(), size=mp.Vector3(x=2))
+        sim.run(mp.at_end(mp.in_volume(vol, mp.output_efield_z)), until=200)
+
 if __name__ == '__main__':
     unittest.main()

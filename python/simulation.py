@@ -750,7 +750,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
-        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume.swigobj
+        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
@@ -822,7 +822,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_field_function")
 
-        ov = self.output_volume.swigobj if self.output_volume else self.fields.total_volume()
+        ov = self.output_volume if self.output_volume else self.fields.total_volume()
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
