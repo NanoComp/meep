@@ -325,13 +325,13 @@ make && sudo make install
 cd ~/install
 git clone https://github.com/stevengj/h5utils.git
 cd h5utils/
-CC=mpicc LDFLAGS=${MY_LDFLAGS} CPPFLAGS=${MY_CPPFLAGS} sh autogen.sh
+sh autogen.sh CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/mpb.git
 cd mpb/
-CC=mpicc LDFLAGS=${MY_LDFLAGS} CPPFLAGS=${MY_CPPFLAGS} sh autogen.sh --enable-shared
+sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 
 pip3 install --upgrade pip
@@ -342,7 +342,8 @@ pip3 install --user --no-binary=h5py h5py
 cd ~/install
 git clone https://github.com/stevengj/meep.git
 cd meep/
-CC=mpicc CXX=mpic++ LDFLAGS=${MY_LDFLAGS} CPPFLAGS=${MY_CPPFLAGS} sh autogen.sh --enable-shared --with-python --with-mpi
+sh autogen.sh --enable-shared --with-python --with-mpi \
+    CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```
 
