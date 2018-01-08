@@ -308,7 +308,7 @@ sudo apt-get -y install     \
     python3-numpy           \
     python3-pip
 
-mkdir ~/install
+[ ! -d ~/install ] && mkdir ~/install
 
 cd ~/install
 git clone https://github.com/stevengj/harminv.git
