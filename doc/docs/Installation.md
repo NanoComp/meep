@@ -283,6 +283,10 @@ Here we provide instructions for building parallel PyMeep from source on Ubuntu 
 
 set -e
 
+RPATH_FLAGS="-Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi"
+
 sudo apt-get update
 sudo apt-get -y install     \
     libblas-dev             \
@@ -321,13 +325,13 @@ make && sudo make install
 cd ~/install
 git clone https://github.com/stevengj/h5utils.git
 cd h5utils/
-CC=mpicc LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi" CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi" sh autogen.sh
+CC=mpicc LDFLAGS=${MY_LDFLAGS} CPPFLAGS=${MY_CPPFLAGS} sh autogen.sh
 make && sudo make install
 
 cd ~/install
 git clone https://github.com/stevengj/mpb.git
 cd mpb/
-CC=mpicc LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi" CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi" sh autogen.sh --enable-shared
+CC=mpicc LDFLAGS=${MY_LDFLAGS} CPPFLAGS=${MY_CPPFLAGS} sh autogen.sh --enable-shared
 make && sudo make install
 
 pip3 install --upgrade pip
@@ -338,7 +342,7 @@ pip3 install --user --no-binary=h5py h5py
 cd ~/install
 git clone https://github.com/stevengj/meep.git
 cd meep/
-CC=mpicc CXX=mpic++ LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi" CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi" sh autogen.sh --enable-shared --with-python --with-mpi
+CC=mpicc CXX=mpic++ LDFLAGS=${MY_LDFLAGS} CPPFLAGS=${MY_CPPFLAGS} sh autogen.sh --enable-shared --with-python --with-mpi
 make && sudo make install
 ```
 
