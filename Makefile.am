@@ -13,7 +13,7 @@ if WITH_PYTHON
 endif
 if WITH_MPB
 if WITH_LIBCTLGEOM
-  SUBDIRS += mpb
+  SUBDIRS += libpympb
 endif
 endif
 

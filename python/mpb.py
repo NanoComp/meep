@@ -1,71 +1,21 @@
 from __future__ import division
 
-import numpy as np
+import time
+
+# import numpy as np
 
 import meep as mp
 from meep.simulation import get_num_args
-from meep.source import check_positive
+# from meep.source import check_positive
+
+try:
+    basestring
+except NameError:
+    basestring = str
 
 U_MIN = 0
 U_PROD = 1
 U_SUM = 2
-
-
-class MaterialGrid(object):
-
-    def __init__(self,
-                 epsilon_min,
-                 epsilon_max,
-                 size,
-                 mu_min=1.0,
-                 mu_max=1.0,
-                 material_grid_kind=U_MIN,
-                 matgrid_init=lambda x, y, z: 0.5):
-
-        self.epsilon_min = epsilon_min
-        self.epsilon_max = epsilon_max
-        self.size = size
-        self.mu_min = mu_min
-        self.mu_max = mu_max
-        self.material_grid_kind = material_grid_kind
-        self.matgrid_init = matgrid_init
-
-        # TODO: inexact->exact?
-        g = np.array([0.333] + self.size)
-
-    @property
-    def material_grid_kind(self):
-        return self._material_grid_kind
-
-    @material_grid_kind.setter
-    def material_grid_kind(self, val):
-        if val < U_MIN or val > U_SUM:
-            fmt = "material_grid_kind must be >= {} and <= {}: Got {}"
-            raise ValueError(fmt.format(U_MIN, U_SUM, val))
-        self._material_grid_kind = val
-
-    @property
-    def size(self):
-        return self._size
-
-    @size.setter
-    def size(self, val):
-        for v in [val.x, val.y, val.z]:
-            check_positive("MaterialGrid.size", v)
-            if v % 1 != 0:
-                raise ValueError("MaterialGrid.size must be a Vector3 of integers")
-        self._size = val
-
-    @property
-    def matgrid_init(self):
-        return self._matgrid_init
-
-    @matgrid_init.setter
-    def matgrid_init(self, val):
-        num_args = get_num_args(val)
-        if num_args != 3:
-            raise ValueError("Expected a function that takes 3 arguments. Got {}".format(num_args))
-        self._matgrid_init = val
 
 
 class Lattice(object):
@@ -84,71 +34,6 @@ class Lattice(object):
         self.basis_size = basis_size
 
 
-# Class ellipsoid:
-#     Class block:
-#         Class geometric-object:
-#             material-type material = ((material-type))
-#             vector3 center
-#         vector3 e1 = #(1.0 0.0 0.0)
-#         vector3 e2 = #(0.0 1.0 0.0)
-#         vector3 e3 = #(0.0 0.0 1.0)
-#         vector3 size
-# Class block:
-#     Class geometric-object:
-#         material-type material = ((material-type))
-#         vector3 center
-#     vector3 e1 = #(1.0 0.0 0.0)
-#     vector3 e2 = #(0.0 1.0 0.0)
-#     vector3 e3 = #(0.0 0.0 1.0)
-#     vector3 size
-# Class sphere:
-#     Class geometric-object:
-#         material-type material = ((material-type))
-#         vector3 center
-#     number radius
-# Class wedge:
-#     Class cylinder:
-#         Class geometric-object:
-#             material-type material = ((material-type))
-#             vector3 center
-#         vector3 axis = #(0.0 0.0 1.0)
-#         number radius
-#         number height
-#     number wedge-angle = 6.283185307179586
-#     vector3 wedge-start = #(1.0 0.0 0.0)
-# Class cone:
-#     Class cylinder:
-#         Class geometric-object:
-#             material-type material = ((material-type))
-#             vector3 center
-#         vector3 axis = #(0.0 0.0 1.0)
-#         number radius
-#         number height
-#     number radius2 = 0
-# Class cylinder:
-#     Class geometric-object:
-#         material-type material = ((material-type))
-#         vector3 center
-#     vector3 axis = #(0.0 0.0 1.0)
-#     number radius
-#     number height
-# Class compound-geometric-object:
-#     Class geometric-object:
-#         material-type material = ((material-type))
-#         vector3 center
-#     geometric-object list component-objects = ()
-# Class geometric-object:
-#     material-type material = ((material-type))
-#     vector3 center
-# Class material-grid:
-#     Class material-type:
-#     integer material-grid-kind = 0
-#     number epsilon-min
-#     number epsilon-max
-#     number mu-min = 1.0
-#     number mu-max = 1.0
-#     vector3 size
-#     function matgrid-init = #<procedure 28b3c00 at ice-9/eval.scm:416:20 (a b c)>
 # Class material-function:
 #     Class material-type:
 #     function material-func
@@ -166,10 +51,48 @@ class Lattice(object):
 #     number mu = 1.0
 # Class material-type:
 
+
 class Matrix(object):
 
     def __init__(self):
         pass
+
+
+# TODO: Placeholders
+def init_params(p, reset_fields):
+    pass
+
+
+def load_eigenvectors(fields):
+    pass
+
+
+def randomize_fields():
+    pass
+
+
+def list_split(l, num, index):
+    pass
+
+
+def set_kpoint_index(index):
+    pass
+
+
+def output_epsilon():
+    pass
+
+
+def using_mu():
+    pass
+
+
+def output_mu():
+    pass
+
+
+def solve_kpoint(k):
+    pass
 
 
 class ModeSolver(object):
@@ -227,48 +150,80 @@ class ModeSolver(object):
         self.parity = None
         self.iterations = 0
         self.freqs = []
+        self.all_freqs = []
+        self.band_range_data = []
         self.eigensolver_flops = 0
+        self.total_run_time
+        self.current_k = mp.Vector3()
+        self.k_split_num = 1
+        self.k_split_index = 0
+        self.eigensolver_iters = []
+        self.iterations = 0
+
+    def update_band_range_data(self, brd, freqs, kpoint):
+        pass
+
+    def output_band_range_data(self):
+        pass
+
+    def output_gaps(self):
+        pass
 
     def run_parity(self, p, reset_fields, *band_functions):
-        if self.randomize_fields and mpb.randomize_fields not in band_functions:
-            band_functions.append(mpb.randomize_fields)
+        if self.randomize_fields and randomize_fields not in band_functions:
+            band_functions.append(randomize_fields)
 
-        #  (set! total-run-time (+ total-run-time
-        #   (begin-time "total elapsed time for run: "
-        #    (set! all-freqs '())
-        #    (set! band-range-data '())
-        #    (set! interactive? false)  ; don't be interactive if we call (run)
-        #    (begin-time "elapsed time for initialization: "
-        #            (init-params p (if reset-fields true false))
-        #            (if (string? reset-fields) (load-eigenvectors reset-fields)))
-        #    (let ((k-split (list-split k-points k-split-num k-split-index)))
-        #      (set-kpoint-index (car k-split))
-        #      (if (zero? (car k-split))
-        #      (begin
-        #            (output-epsilon) ; output epsilon immediately for 1st k block
-        #            (if (using-mu?) (output-mu)))) ; and mu too, if we have it
-        #      (if (> num-bands 0)
-        #      (begin
-        #        (map (lambda (k)
-        #           (set! current-k k)
-        #           (begin-time "elapsed time for k point: " (solve-kpoint k))
-        #           (set! all-freqs (cons freqs all-freqs))
-        #           (set! band-range-data
-        #             (update-band-range-data band-range-data freqs k))
-        #           (set! eigensolver-iters
-        #             (append eigensolver-iters
-        #                 (list (/ iterations num-bands))))
-        #           (map (lambda (f)
-        #              (if (zero? (procedure-num-args f))
-        #                  (f) ; f is a thunk: evaluate once per k-point
-        #                  (do ((band 1 (+ band 1))) ((> band num-bands))
-        #                    (f band))))
-        #                band-functions))
-        #         (cdr k-split))
-        #        (if (> (length (cdr k-split)) 1)
-        #            (begin
-        #          (output-band-range-data band-range-data)
-        #          (set! gap-list (output-gaps band-range-data)))
-        #            (set! gap-list '()))))))))
-        #  (set! all-freqs (reverse all-freqs)) ; put them in the right order
+        start = time.time()
+
+        self.all_freqs = []
+        self.band_range_data = []
+
+        init_time = time.time()
+
+        init_params(p, True if reset_fields else False)
+        if isinstance(reset_fields, basestring):
+            load_eigenvectors(reset_fields)
+
+        print("elapsed time for initialization: {}".format(time.time() - init_time))
+
+        # TODO: Split over multiple processes
+        k_split = list_split(self.k_points, self.k_split_num, self.k_split_index)
+        set_kpoint_index(k_split[0])
+
+        if k_split[0] == 0:
+            output_epsilon()  # output epsilon immediately for 1st k block
+            if using_mu():
+                output_mu()  # and mu too, if we have it
+
+        if self.num_bands > 0:
+            for k in k_split[1]:
+                self.current_k = k
+                solve_kpoint_time = time.time()
+                solve_kpoint(k)
+                print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
+
+                # TODO: Make freqs an output var
+                self.all_freqs.append(self.freqs)
+                self.band_range_data = self.update_band_range_data(self.band_range_data,
+                                                                   self.freqs, k)
+                self.eigensolver_iters += [self.iterations / self.num_bands]
+
+                for f in band_functions:
+                    if get_num_args(f) == 0:
+                        f()
+                    else:
+                        band = 1
+                        while band < self.num_bands:
+                            f(band)
+                            band += 1
+
+            if len(k_split[1]) > 1:
+                self.output_band_range_data()
+                self.gap_list = self.output_gaps()
+            else:
+                self.gap_list = []
+
+        end = time.time() - start
+        print("total elapsed time for run: {}".format(end))
+        self.total_run_time += end
         print("done")

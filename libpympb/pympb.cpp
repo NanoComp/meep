@@ -4,22 +4,123 @@
 #include "mpb.h"
 #include "meepgeom.hpp"
 
-namespace meep_mpb {
+namespace py_mpb {
 
-// typedef struct {
-//      double eps_high;
-//      double eps_low;
-//      double eps_high_x;
-// } epsilon_data;
+const double inf = 1.0e20;
 
-// typedef void (*maxwell_dielectric_function) (symmetric_matrix *eps,
-//                                              symmetric_matrix *eps_inv,
-//                                              const real r[3],
-//                                              void *epsilon_data);
+static void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
+                           symmetric_matrix *epsmu_inv) {
+
+  material_data *md = material;
+
+  switch (md->which_subclass) {
+    case material_data::MEDIUM:
+    case material_data::MATERIAL_FILE:
+    case material_data::MATERIAL_USER:
+      epsmu->m00 = md->medium.epsilon_diag.x;
+      epsmu->m11 = md->medium.epsilon_diag.y;
+      epsmu->m22 = md->medium.epsilon_diag.z;
+      epsmu->m01 = md->medium.epsilon_offdiag.x;
+      epsmu->m02 = md->medium.epsilon_offdiag.y;
+      epsmu->m12 = md->medium.epsilon_offdiag.z;
+      sym_matrix_invert(epsmu_inv, epsmu);
+      break;
+    case material_data::PERFECT_METAL:
+      epsmu->m00 = -inf;
+      epsmu->m11 = -inf;
+      epsmu->m22 = -inf;
+      epsmu->m01 = 0.0;
+      epsmu->m02 = 0.0;
+      epsmu->m12 = 0.0;
+      epsmu_inv->m00 = -0.0;
+      epsmu_inv->m11 = -0.0;
+      epsmu_inv->m22 = -0.0;
+      epsmu_inv->m01 = 0.0;
+      epsmu_inv->m02 = 0.0;
+      epsmu_inv->m12 = 0.0;
+      break;
+    default:
+      std::cerr << "Unknown material type" << std::endl;
+      abort();
+
+  // TODO: Support mu
+  // switch (md->which_subclass) {
+  // case material_data::MEDIUM:
+  // case material_data::MATERIAL_FILE:
+  // case material_data::MATERIAL_USER:
+  //   epsmu->m00 = md->medium.mu_diag.x;
+  //   epsmu->m11 = md->medium.mu_diag.y;
+  //   epsmu->m22 = md->medium.mu_diag.z;
+  //   epsmu->m01 = md->medium.mu_offdiag.x;
+  //   epsmu->m02 = md->medium.mu_offdiag.y;
+  //   epsmu->m12 = md->medium.mu_offdiag.z;
+  //   sym_matrix_invert(epsmu_inv,epsmu);
+  //   break;
+
+  // case material_data::PERFECT_METAL:
+  //   epsmu->m00 = 1.0;
+  //   epsmu->m11 = 1.0;
+  //   epsmu->m22 = 1.0;
+  //   epsmu_inv->m00 = 1.0;
+  //   epsmu_inv->m11 = 1.0;
+  //   epsmu_inv->m22 = 1.0;
+  //   epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+  //   epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+  //   break;
+  // default:
+  //   meep::abort("unknown material type");
+  }
+}
+
+void get_material_pt(meep_geom::material_type &material, vector3 r) {
+  boolean inobject;
+  material = (material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree,&inobject);
+  material_data *md = material;
+
+  switch(md->which_subclass) {
+    // material read from file: interpolate to get properties at r
+    case material_data::MATERIAL_FILE:
+      if (md->epsilon_data) {
+        epsilon_file_material(md, p);
+      }
+      else {
+        material = (material_type) default_material;
+      }
+      return;
+
+    // material specified by user-supplied function: call user
+    // function to get properties at r.
+    // Note that we initialize the medium to vacuum, so that
+    // the user's function only needs to fill in whatever is
+    // different from vacuum.
+    case material_data::MATERIAL_USER:
+      md->medium = vacuum_medium;
+      md->user_func(p, md->user_data, &(md->medium));
+      // TODO: update this to allow user's function to set
+      //       position-dependent susceptibilities. For now
+      //       it's an error if the user's function creates
+      //       any.
+      if ((md->medium.E_susceptibilities.num_items>0) ||
+          (md->medium.H_susceptibilities.num_items>0)) {
+        abort();
+      }
+      return;
+
+    // position-independent material or metal: there is nothing to do
+    case material_data::MEDIUM:
+    case material_data::PERFECT_METAL:
+      return;
+    default:
+      abort();
+   }
+}
 
 // Argument to set_maxwell_dielectric
 void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv, const real r[3], void *epsilon_data) {
-
+  material_type mat;
+  vector3 p = {r[0], r[1], r[2]};
+  get_material_pt(mat, p);
+  material_epsmu(mat, eps, eps_inv);
 }
 
 // TODO: Name?
