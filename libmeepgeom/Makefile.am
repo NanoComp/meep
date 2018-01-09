@@ -1,5 +1,5 @@
 LIBCTLGEOM   = -lctlgeom
-LIBMEEP      = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
+LIBMEEP      = $(top_builddir)/src/libmeep.la
 MEEPLIBS     = $(LIBCTLGEOM) $(LIBMEEP)
 
 lib_LTLIBRARIES = libmeepgeom.la

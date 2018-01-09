@@ -17,8 +17,6 @@ AC_SUBST(SHARED_VERSION_INFO)
 # need shared libraries for python interfaces
 AC_ENABLE_SHARED
 
-MEEP_SUFFIX=""
-
 ##############################################################################
 
 # Check for mpiCC immediately after getting C++ compiler...
@@ -33,8 +31,6 @@ AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
 if test "x$with_mpi" = "xyes"; then
   ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
   CXX=$MPICXX
-  MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
-  MBP_SUFFIX="${MPB_SUFFIX}_mpi"
 
   # Detect stupid MPICH problem with SEEK_SET conflicting between
   # the mpi.h header file and the stdio.h header file in C++
@@ -476,10 +472,6 @@ AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to no
 
 ##############################################################################
 
-AC_SUBST(MEEP_SUFFIX)
-program_transform_name="s,_,-,g;$program_transform_name"
-
-##############################################################################
 # checks for python
 ##############################################################################
 AC_ARG_WITH(python,
