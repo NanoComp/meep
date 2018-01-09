@@ -11,12 +11,21 @@ EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp examples tests
 
 CLEANFILES = $(BUILT_SOURCES) meep.py
 
+if WITH_MPB
+  MPBINCLUDE=-I$(top_srcdir)/libpympb
+  MPBLIB=$(top_builddir)/libpympb/libpympb.la
+endif
+
+LIBMEEPGEOM = $(top_builddir)/libmeepgeom/libmeepgeom.la
+LIBMEEP = $(top_builddir)/src/libmeep.la
+
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_srcdir)/libmeepgeom           \
+              $(MPBINCLUDE)                         \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
-_meep_la_LIBADD = $(top_builddir)/src/libmeep.la $(top_builddir)/libmeepgeom/libmeepgeom.la $(PYTHON_LIBS) -lctlgeom
+_meep_la_LIBADD = $(LIBMEEP) $(LIBMEEPGEOM) $(PYTHON_LIBS) @LIBCTLGEOM_LIBS@
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
