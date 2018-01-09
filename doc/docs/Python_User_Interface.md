@@ -62,6 +62,7 @@ Specifies the size of the computational cell which is centered on the origin of 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon=1$). See also `epsilon_input_file` below.
 
+<a name="material_function"></a>
 **`material_function` [function]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function that takes a `Vector3` and returns a `Medium`. See the section on "material functions." Defaults to `None`.
@@ -310,6 +311,7 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The noise has root-mean square amplitude $\sigma$ $\times$ `noise_amp`.
 
+<a name="GeometricObject"></a>
 ### GeometricObject
 
 This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:
