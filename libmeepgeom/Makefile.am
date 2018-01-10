@@ -30,17 +30,17 @@ ring_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 array_slice_ll_SOURCES = array-slice-ll.cpp
 array_slice_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
+user_defined_material_SOURCES = user-defined-material.cpp
+user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
+
 TESTS           = cyl-ellipsoid-ll array-slice-ll
 
-noinst_PROGRAMS = bend-flux-ll
+noinst_PROGRAMS = bend-flux-ll wvg-taper
 
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
-user_defined_material_SOURCES = user-defined-material.cpp
-user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
-
-file_material_SOURCES = file-material.cpp
-file_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
+wvg_taper_SOURCES = wvg-taper.cpp
+wvg_taper_LDADD = libmeepgeom.la $(MEEPLIBS)
 
 noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5

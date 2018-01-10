@@ -8,6 +8,7 @@ See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines
 
 [TOC]
 
+<a name="SimulationClass"></a>
 The Simulation Class
 ---------------------
 
@@ -47,7 +48,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 Specifies the current sources to be present in the simulation. Defaults to none (empty list).
 
 **`symmetries` [ list of `Symmetry` class ]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&;nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the spatial symmetries (mirror or rotation) to exploit in the simulation. Defaults to none (empty list). The symmetries must be obeyed by *both* the structure and the sources. See also [Exploiting Symmetry](Exploiting_Symmetry.md).
 
 **`boundary_layers` [ list of `PML` class ]**  
@@ -67,6 +68,7 @@ Holds the default material that is used for points not in any object of the geom
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function that takes a `Vector3` and returns a `Medium`. See the section on "material functions." Defaults to `None`.
 
+<a name="epsilon_function"></a>
 **`epsilon_func` [function]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function that takes a `Vector3` and returns the dielectric constant at that point. See the section on "material functions." Defaults to `None`.
@@ -207,6 +209,7 @@ More information, including their property types and default values, is availabl
 
 The following are available directly via the `meep` package.
 
+<a name="medium"></a>
 ### Medium
 
 This class is used to specify the materials that geometric objects are made of. It represents an electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). To model a perfectly-conducting metal, use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [predefined variables](#predefined-variables) `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor` above.
