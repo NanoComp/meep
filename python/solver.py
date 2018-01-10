@@ -1,13 +1,12 @@
 from __future__ import division
 
+import functools
+import operator
 import time
-
-# import numpy as np
 
 import meep as mp
 from meep import mpb
 from meep.simulation import get_num_args
-# from meep.source import check_positive
 
 try:
     basestring
@@ -19,51 +18,119 @@ U_PROD = 1
 U_SUM = 2
 
 
+# TODO: Add tests
+class Matrix(object):
+
+    def __init__(self, c1=mp.Vector3(), c2=mp.Vector3(), c3=mp.Vector3()):
+        self.c1 = c1
+        self.c2 = c2
+        self.c3 = c3
+
+    def __getitem__(self, i):
+        if i == 0:
+            return self.c1
+        elif i == 1:
+            return self.c2
+        elif i == 2:
+            return self.c3
+        else:
+            raise IndexError("No value at index {}".format(i))
+
+    def __mul__(self, m):
+        # TODO: Matrix multiplication
+        pass
+
+    def __repr__(self):
+        return "<{}\n {}\n {}>".format(self.row(0), self.row(1), self.row(2))
+
+    def row(self, i):
+        return mp.Vector3(self.c1[i], self.c2[i], self.c3[i])
+
+    def determinant(self):
+        sum1 = sum([
+            functools.reduce(operator.mul, [self[x][x] for x in range(3)]),
+            functools.reduce(operator.mul, [self[0][1], self[1][2], self[2][0]]),
+            functools.reduce(operator.mul, [self[1][0], self[2][1], self[0][2]])
+        ])
+        sum2 = sum([
+            functools.reduce(operator.mul, [self[0][2], self[1][1], self[2][0]]),
+            functools.reduce(operator.mul, [self[0][1], self[1][0], self[2][2]]),
+            functools.reduce(operator.mul, [self[1][2], self[2][1], self[0][0]])
+        ])
+        return sum1 - sum2
+
+    def transpose(self):
+        return Matrix(self.row(0), self.row(1), self.row(2))
+
+
+# TODO: Add tests
 class Lattice(object):
 
     def __init__(self,
+                 size=mp.Vector3(1, 1, 1),
+                 basis_size=mp.Vector3(1, 1, 1),
                  basis1=mp.Vector3(1, 0, 0),
                  basis2=mp.Vector3(0, 1, 0),
-                 basis3=mp.Vector3(0, 0, 1),
-                 size=mp.Vector3(1, 1, 1),
-                 basis_size=mp.Vector3(1, 1, 1)):
+                 basis3=mp.Vector3(0, 0, 1)):
 
+        self.size = size
+        self.basis_size = basis_size
         self.basis1 = basis1
         self.basis2 = basis2
         self.basis3 = basis3
-        self.size = size
-        self.basis_size = basis_size
 
+        @property
+        def basis1(self):
+            return self._basis1
 
-# Class material-function:
-#     Class material-type:
-#     function material-func
-# Class medium-anisotropic:
-#     Class material-type:
-#     vector3 epsilon-diag = #(1.0 1.0 1.0)
-#     cvector3 epsilon-offdiag = #(0.0 0.0 0.0)
-#     vector3 epsilon-offdiag-imag = #(0.0 0.0 0.0)
-#     vector3 mu-diag = #(1.0 1.0 1.0)
-#     cvector3 mu-offdiag = #(0.0 0.0 0.0)
-#     vector3 mu-offdiag-imag = #(0.0 0.0 0.0)
-# Class medium:
-#     Class material-type:
-#     number epsilon = 1.0
-#     number mu = 1.0
-# Class material-type:
+        @basis1.setter
+        def basis1(self, val):
+            self._basis1 = val.unit()
 
+        @property
+        def basis2(self):
+            return self._basis2
 
-class Matrix(object):
+        @basis2.setter
+        def basis2(self, val):
+            self._basis2 = val.unit()
 
-    def __init__(self):
-        pass
+        @property
+        def basis3(self):
+            return self._basis3
+
+        @basis3.setter
+        def basis3(self, val):
+            self._basis3 = val.unit()
+
+        @property
+        def b1(self):
+            return self.basis1.scale(self.basis_size.x)
+
+        @property
+        def b2(self):
+            return self.basis2.scale(self.basis_size.y)
+
+        @property
+        def b3(self):
+            return self.basis3.scale(self.basis_size.z)
+
+        @property
+        def basis(self):
+            B = Matrix(self.b1, self.b2, self.b3)
+
+            if B.determinant() == 0:
+                raise ValueError("Lattice basis vectors must be linearly independent.")
+
+            return B
+
+        @property
+        def metric(self):
+            B = self.basis
+            return B.transpose() * B
 
 
 # TODO: Placeholders
-def init_params(p, reset_fields):
-    pass
-
-
 def load_eigenvectors(fields):
     pass
 
@@ -163,8 +230,7 @@ class ModeSolver(object):
         self.match_frequency = False
 
         self.mode_solver = mpb.mode_solver(self.num_bands, self.match_frequency, self.parity,
-                                           self.resolution, self.geometry_lattice.size,
-                                           self.tolerance)
+                                           self.resolution, self.geometry_lattice, self.tolerance)
 
     def update_band_range_data(self, brd, freqs, kpoint):
         pass
@@ -185,6 +251,9 @@ class ModeSolver(object):
         self.band_range_data = []
 
         init_time = time.time()
+
+        print("Initializing eigensolver data")
+        print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
 
         self.mode_solver.init(p, True if reset_fields else False)
         if isinstance(reset_fields, basestring):
@@ -221,7 +290,7 @@ class ModeSolver(object):
                         f()
                     else:
                         band = 1
-                        while band < self.num_bands:
+                        while band <= self.num_bands:
                             f(band)
                             band += 1
 

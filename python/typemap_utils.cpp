@@ -231,6 +231,31 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
     return 1;
 }
 
+static int pymatrix_to_matrix(PyObject *po, matrix3x3 *m) {
+    vector3 c1, c2, c3;
+
+    PyObject *py_c1 = PyObject_GetAttrString(po, "c1");
+    PyObject *py_c2 = PyObject_GetAttrString(po, "c2");
+    PyObject *py_c3 = PyObject_GetAttrString(po, "c3");
+
+    if (!pyv3_to_v3(po, &c1) ||
+        !pyv3_to_v3(po, &c2) ||
+        !pyv3_to_v3(po, &c3)) {
+
+        return 0;
+    }
+
+    m->c0 = c1;
+    m->c1 = c2;
+    m->c2 = c3;
+
+    Py_DECREF(py_c1);
+    Py_DECREF(py_c2);
+    Py_DECREF(py_c3);
+
+    return 1;
+}
+
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
     PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
@@ -287,6 +312,22 @@ static int get_attr_material(PyObject *po, material_type *m) {
 
     Py_XDECREF(py_material);
 
+    return 1;
+}
+
+static int get_attr_matrix(PyObject *py_obj, matrix3x3 *m, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    if (!pymatrix_to_matrix(py_attr, m)) {
+        return 0;
+    }
+
+    Py_XDECREF(py_attr);
     return 1;
 }
 
@@ -636,4 +677,36 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     }
 
     return success;
+}
+
+static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
+    vector3 basis1, basis2, basis3, size, basis_size, b1, b2, b3;
+    matrix3x3 basis, metric;
+
+    if (!get_attr_v3(py_lat, &basis1, "basis1") ||
+        !get_attr_v3(py_lat, &basis2, "basis2") ||
+        !get_attr_v3(py_lat, &basis3, "basis3") ||
+        !get_attr_v3(py_lat, &size, "size") ||
+        !get_attr_v3(py_lat, &basis_size, "basis_size") ||
+        !get_attr_v3(py_lat, &b1, "b1") ||
+        !get_attr_v3(py_lat, &b2, "b2") ||
+        !get_attr_v3(py_lat, &b3, "b3") ||
+        !get_attr_matrix(py_lat, &basis, "basis") ||
+        !get_attr_matrix(py_lat, &metric, "metric")) {
+
+        return 0;
+    }
+
+    l->basis1 = basis1;
+    l->basis2 = basis2;
+    l->basis3 = basis3;
+    l->size = size;
+    l->basis_size = basis_size;
+    l->b1 = b1;
+    l->b2 = b2;
+    l->b3 = b3;
+    l->basis = basis;
+    l->metric = metric;
+
+    return 1;
 }

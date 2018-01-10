@@ -6,13 +6,13 @@ void test_create_maxwell_data() {
   bool match_frequency = false;
   int parity = 0;
   double resolution = 32;
-  double eigensolver_tol = 1.0e-7;
+  double tolerance = 1.0e-7;
   vector3 lattice_size = {1, 1, 0};
 
   bool reset_fields = true;
 
   py_mpb::mode_solver ms(num_bands, match_frequency, parity, resolution,
-                         lattice_size, eigensolver_tol);
+                         lattice_size, tolerance);
 
   ms.init(parity, reset_fields);
 

@@ -5,9 +5,9 @@ import meep as mp
 from meep import mpb
 
 
-class TestMPB(unittest.TestCase):
+class TestMPBWrappers(unittest.TestCase):
 
-    def test_initialization(self):
+    def setUp(self):
         num_bands = 8
         k_points = [mp.Vector3(),
                     mp.Vector3(0.5),
@@ -19,13 +19,23 @@ class TestMPB(unittest.TestCase):
         geometry_lattice = mpb.Lattice(size=mp.Vector3(1, 1))
         resolution = 32
 
-        ms = mpb.ModeSolver(num_bands=num_bands,
-                            k_points=k_points,
-                            geometry=geometry,
-                            geometry_lattice=geometry_lattice,
-                            resolution=resolution)
+        self.ms = mpb.ModeSolver(
+            num_bands=num_bands,
+            k_points=k_points,
+            geometry=geometry,
+            geometry_lattice=geometry_lattice,
+            resolution=resolution
+        )
 
-        ms.mode_solver.init(0, True)
+    def test_init(self):
+        self.ms.mode_solver.init(0, True)
+
+
+class TestLattice(unittest.TestCase):
+
+    def test_lattice(self):
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

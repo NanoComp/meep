@@ -86,6 +86,7 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
 static std::string py_class_name_as_string(PyObject *po);
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
+static int pylattice_to_lattice(PyObject *py_lat, lattice *l);
 
 #include "typemap_utils.cpp"
 

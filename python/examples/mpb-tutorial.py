@@ -1,6 +1,5 @@
 import meep as mp
-# import meep.mpb as mpb
-import mpb
+from meep import mpb
 
 
 def print_heading(h):
@@ -29,11 +28,11 @@ ms = mpb.ModeSolver(num_bands=num_bands,
 print_heading("Square lattice of rods: TE bands")
 ms.run_te()
 
-print_heading("Square lattice of rods: TM bands")
-ms.run_tm()
+# print_heading("Square lattice of rods: TM bands")
+# ms.run_tm()
 
-print_heading("Square lattice of rods: TM, w/efield")
-ms.run_tm(mpb.output_efield_z)
+# print_heading("Square lattice of rods: TM, w/efield")
+# ms.run_tm(mpb.output_efield_z)
 
-print_heading("Square lattice of rods: TE, w/hfield & dpwr")
-ms.run_te(mpb.output_at_kpoint(mp.Vector3(0.5), mpb.output_hfield_z, mpb.output_dpwr))
+# print_heading("Square lattice of rods: TE, w/hfield & dpwr")
+# ms.run_te(mpb.output_at_kpoint(mp.Vector3(0.5), mpb.output_hfield_z, mpb.output_dpwr))

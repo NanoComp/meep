@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "pympb.hpp"
+#include "meep/mympi.hpp"
 
 namespace py_mpb {
 
@@ -230,6 +231,7 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
                          const mpb_real r[3], void *epsilon_data) {
 
   // TODO: What needs to happen with epsilon_data?
+  (void)epsilon_data;
   meep_geom::material_type mat;
   vector3 p = {r[0], r[1], r[2]};
   get_material_pt(mat, p);
@@ -237,17 +239,17 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
 }
 
 mode_solver::mode_solver(int num_bands, bool match_frequency, int parity, double resolution,
-                     vector3 lattice_size, double eigensolver_tol):
+                         lattice lat, double tolerance):
   num_bands(num_bands),
   match_frequency(match_frequency),
   parity(parity),
   resolution(resolution),
-  eigensolver_tol(eigensolver_tol),
+  tolerance(tolerance),
   mdata(NULL) {
 
-  geometry_lattice.size.x = lattice_size.x;
-  geometry_lattice.size.y = lattice_size.y;
-  geometry_lattice.size.z = lattice_size.z;
+  geometry_lattice.size.x = lat.size.x;
+  geometry_lattice.size.y = lat.size.y;
+  geometry_lattice.size.z = lat.size.z;
 }
 
 mode_solver::~mode_solver() {
@@ -260,17 +262,40 @@ void mode_solver::init(int p, bool reset_fields) {
   n[1] = std::max(resolution * std::ceil(geometry_lattice.size.y), 1.0);
   n[2] = std::max(resolution * std::ceil(geometry_lattice.size.z), 1.0);
 
+  int true_rank = n[2] > 1 ? 3 : (n[1] > 1 ? 2 : 1);
+  if (true_rank < dimensions) {
+    dimensions = true_rank;
+  } else if (true_rank > dimensions) {
+    meep::master_printf("WARNING: rank of grid is > dimensions.\n"
+                        "         setting extra grid dims. to 1.\n");
+    // force extra dims to be 1
+    if (dimensions <= 2) {
+      n[2] = 1;
+    }
+    if (dimensions <= 1) {
+      n[1] = 1;
+    }
+  }
+
+  meep::master_printf("Working in %d dimensions.\n", dimensions);
+  meep::master_printf("Grid size is %d x %d x %d.\n", n[0], n[1], n[2]);
+
   if (mdata) {
     // TODO: Clean up if mdata is not NULL
   }
 
+  meep::master_printf("Creating Maxwell data\n");
   mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, num_bands, num_bands);
 
+  set_maxwell_data_parity(mdata, parity);
+  // update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+
+  // eps_data ed;
+  // set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, &ed);
 }
 
-// TODO: Name?
 // void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_frequency,
-//                      int parity, double resolution, double eigensolver_tol) {
+//                      int parity, double resolution, double tolerance) {
 //                      // std::complex<double> amp, std::complex<double> A(const vec &)) {
 
 //   // if (resolution <= 0) {
@@ -294,7 +319,7 @@ void mode_solver::init(int p, bool reset_fields) {
 //   mpb_real kdir[3] = {0,0,0};
 
 //   // double omega_src = real(src.frequency()), kscale = 1.0;
-//   double match_tol = eigensolver_tol * 10;
+//   double match_tol = tolerance * 10;
 
   // if (d == NO_DIRECTION || coordinate_mismatch(gv.dim, d))
   //   abort("invalid direction in add_eigenmode_source");
@@ -432,7 +457,7 @@ void mode_solver::init(int p, bool reset_fields) {
 //         evectconstraint_chain_func,
 //         (void *) constraints,
 //         W, 3,
-//         eigensolver_tol, &num_iters,
+//         tolerance, &num_iters,
 //         EIGS_DEFAULT_FLAGS |
 //         (am_master() && !quiet ? EIGS_VERBOSE : 0));
 

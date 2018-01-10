@@ -76,11 +76,19 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %include "numpy.i"
 %import "meep.i"
 
+%typemap(in) lattice {
+    if (!pylattice_to_lattice($input, &$1)) {
+        PyErr_PrintEx(0);
+        SWIG_fail;
+    }
+}
+
 %include "pympb.hpp"
 
 %pythoncode %{
     from .solver import (
         Lattice,
+        Matrix,
         ModeSolver,
     )
 %}
