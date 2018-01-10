@@ -190,7 +190,7 @@ namespace meep {
    component of equal_shift (which should be either -2, 0, or +2).
    (equal_shift is there to prevent us from counting edge points twice.) */
    
-static ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift) {
+ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift) {
   ivec ipt(pt.dim);
   LOOP_OVER_DIRECTIONS(pt.dim, d) {
     ipt.set_direction(d, 1+2*int(floor(pt.in_direction(d)*a-.5)));
@@ -199,7 +199,7 @@ static ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift) {
   }
   return ipt;
 }
-static ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift) {
+ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift) {
   ivec ipt(pt.dim);
   LOOP_OVER_DIRECTIONS(pt.dim, d) {
     ipt.set_direction(d, 1+2*int(ceil(pt.in_direction(d)*a-.5)));

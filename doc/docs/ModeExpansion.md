@@ -70,6 +70,7 @@ of this sort,
 -  the $\alpha_n^\pm$ coefficients for as many bands 
    as you like are computed by calling `get_eigenmode_coefficients(),`
    as discussed below.
+$$
 
 ## C++ function prototype
 
@@ -466,8 +467,6 @@ $$
 where $S$ is any surface transverse to the direction of propagation
 and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
 just $\hat{\mathbf{z}}$ in the case considered above).
-
-**FINISH THIS SECTION**
 
 <a name="Other routines"></a>
 ## Related computational routines
