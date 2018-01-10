@@ -21,7 +21,7 @@ LIBMEEP = $(top_builddir)/src/libmeep.la
 
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_srcdir)/libmeepgeom           \
-              $(PYMPBINCLUDE)                         \
+              $(PYMPBINCLUDE)                       \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
