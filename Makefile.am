@@ -8,14 +8,14 @@ endif
 if WITH_LIBCTLGEOM
   SUBDIRS += libmeepgeom
 endif
-if WITH_PYTHON
-  SUBDIRS += python
-endif
 if WITH_MPB
 if WITH_LIBCTLGEOM
   SUBDIRS += libpympb
   SUBDIRS += libpympb/tests
 endif
+endif
+if WITH_PYTHON
+  SUBDIRS += python
 endif
 
 EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in

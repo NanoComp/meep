@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <complex>
 #include <cstdlib>
 #include <iostream>
@@ -224,7 +225,7 @@ void get_material_pt(meep_geom::material_type &material, vector3 p) {
    }
 }
 
-// Argument to set_maxwell_dielectric
+// Pass this to `set_maxwell_dielectric`
 void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
                          const mpb_real r[3], void *epsilon_data) {
 
@@ -235,33 +236,65 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
   material_epsmu(mat, eps, eps_inv);
 }
 
+mode_solver::mode_solver(int num_bands, bool match_frequency, int parity, double resolution,
+                     vector3 lattice_size, double eigensolver_tol):
+  num_bands(num_bands),
+  match_frequency(match_frequency),
+  parity(parity),
+  resolution(resolution),
+  eigensolver_tol(eigensolver_tol),
+  mdata(NULL) {
+
+  geometry_lattice.size.x = lattice_size.x;
+  geometry_lattice.size.y = lattice_size.y;
+  geometry_lattice.size.z = lattice_size.z;
+}
+
+mode_solver::~mode_solver() {
+
+  destroy_maxwell_data(mdata);
+}
+
+void mode_solver::init(int p, bool reset_fields) {
+  n[0] = std::max(resolution * std::ceil(geometry_lattice.size.x), 1.0);
+  n[1] = std::max(resolution * std::ceil(geometry_lattice.size.y), 1.0);
+  n[2] = std::max(resolution * std::ceil(geometry_lattice.size.z), 1.0);
+
+  if (mdata) {
+    // TODO: Clean up if mdata is not NULL
+  }
+
+  mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, num_bands, num_bands);
+
+}
+
 // TODO: Name?
-void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_frequency,
-                     int parity, double resolution, double eigensolver_tol) {
-                     // std::complex<double> amp, std::complex<double> A(const vec &)) {
+// void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_frequency,
+//                      int parity, double resolution, double eigensolver_tol) {
+//                      // std::complex<double> amp, std::complex<double> A(const vec &)) {
 
-  // if (resolution <= 0) {
-  //   resolution = 2 * gv.a; // default to twice resolution
-  // }
+//   // if (resolution <= 0) {
+//   //   resolution = 2 * gv.a; // default to twice resolution
+//   // }
 
-  int n[3];
-  int local_N;
-  int N_start;
-  int alloc_N;
-  int mesh_size[3] = {1,1,1};
+//   int n[3];
+//   int local_N;
+//   int N_start;
+//   int alloc_N;
+//   int mesh_size[3] = {1,1,1};
 
-  mpb_real k[3] = {0,0,0};
-  mpb_real kcart[3] = {0,0,0};
+//   mpb_real k[3] = {0,0,0};
+//   mpb_real kcart[3] = {0,0,0};
 
-  double s[3] = {0,0,0};
-  double o[3] = {0,0,0};
+//   double s[3] = {0,0,0};
+//   double o[3] = {0,0,0};
 
-  mpb_real R[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
-  mpb_real G[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
-  mpb_real kdir[3] = {0,0,0};
+//   mpb_real R[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
+//   mpb_real G[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
+//   mpb_real kdir[3] = {0,0,0};
 
-  // double omega_src = real(src.frequency()), kscale = 1.0;
-  double match_tol = eigensolver_tol * 10;
+//   // double omega_src = real(src.frequency()), kscale = 1.0;
+//   double match_tol = eigensolver_tol * 10;
 
   // if (d == NO_DIRECTION || coordinate_mismatch(gv.dim, d))
   //   abort("invalid direction in add_eigenmode_source");
@@ -315,44 +348,44 @@ void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_freque
   //   }
   // }
 
-  for (int i = 0; i < 3; ++i) {
-    n[i] = int(resolution * s[i] + 0.5);
+  // for (int i = 0; i < 3; ++i) {
+  //   n[i] = int(resolution * s[i] + 0.5);
 
-    if (n[i] == 0) {
-      n[i] = 1;
-    }
+  //   if (n[i] == 0) {
+  //     n[i] = 1;
+  //   }
 
-    R[i][i] = s[i] = s[i] == 0 ? 1 : s[i];
-    G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
-  }
+  //   R[i][i] = s[i] = s[i] == 0 ? 1 : s[i];
+  //   G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
+  // }
 
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-      kcart[i] += G[j][i] * k[j];
+  // for (int i = 0; i < 3; ++i)
+  //   for (int j = 0; j < 3; ++j)
+  //     kcart[i] += G[j][i] * k[j];
 
-  double klen0 = sqrt(k[0]*k[0]+k[1]*k[1]+k[2]*k[2]);
-  double klen = sqrt(kcart[0]*kcart[0]+kcart[1]*kcart[1]+kcart[2]*kcart[2]);
+  // double klen0 = sqrt(k[0]*k[0]+k[1]*k[1]+k[2]*k[2]);
+  // double klen = sqrt(kcart[0]*kcart[0]+kcart[1]*kcart[1]+kcart[2]*kcart[2]);
 
-  if (klen == 0.0) {
-    if (match_frequency) {
-      // abort("need nonzero kpoint guess to match frequency");
-      abort();
-    }
-    klen = 1;
-  }
+  // if (klen == 0.0) {
+  //   if (match_frequency) {
+  //     // abort("need nonzero kpoint guess to match frequency");
+  //     abort();
+  //   }
+  //   klen = 1;
+  // }
 
-  kdir[0] = kcart[0] / klen;
-  kdir[1] = kcart[1] / klen;
-  kdir[2] = kcart[2] / klen;
+  // kdir[0] = kcart[0] / klen;
+  // kdir[1] = kcart[1] / klen;
+  // kdir[2] = kcart[2] / klen;
 
-  maxwell_data *mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start,
-                                            &alloc_N, band_num, band_num);
+  // maxwell_data *mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start,
+  //                                           &alloc_N, band_num, band_num);
 
   // if (local_N != n[0] * n[1] * n[2])
   //   abort("MPI version of MPB library not supported");
 
-  set_maxwell_data_parity(mdata, parity);
-  update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+  // set_maxwell_data_parity(mdata, parity);
+  // update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 
   // if (k[0] == 0 && k[1] == 0 && k[2] == 0) {
   //   evectmatrix H; H.p = band_num; H.c = 2;
@@ -361,8 +394,8 @@ void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_freque
   //     abort("zero-frequency bands at k=0 are ill-defined");
   // }
 
-  eps_data ed;
-  set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, &ed);
+  // eps_data ed;
+  // set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, &ed);
 
 //   if (check_maxwell_dielectric(mdata, 0))
 //     abort("invalid dielectric function for MPB");
@@ -571,5 +604,5 @@ void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_freque
 //   delete[] eigvals;
 //   destroy_maxwell_data(mdata);
 
-}
+// }
 } // namespace meep_mpb

@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2017 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2018 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -756,6 +756,7 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
     ODD_Y = 8
     TE = EVEN_Z
     TM = ODD_Z
+    PREV_PARITY = -1
 
     inf = 1.0e20
 

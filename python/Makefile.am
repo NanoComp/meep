@@ -12,8 +12,8 @@ EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp examples tests
 CLEANFILES = $(BUILT_SOURCES) meep.py
 
 if WITH_MPB
-  MPBINCLUDE=-I$(top_srcdir)/libpympb
-  MPBLIB=$(top_builddir)/libpympb/libpympb.la
+  PYMPBINCLUDE=-I$(top_srcdir)/libpympb
+  LIBPYMPB=$(top_builddir)/libpympb/libpympb.la
 endif
 
 LIBMEEPGEOM = $(top_builddir)/libmeepgeom/libmeepgeom.la
@@ -21,13 +21,18 @@ LIBMEEP = $(top_builddir)/src/libmeep.la
 
 AM_CPPFLAGS = -I$(top_srcdir)/src                   \
               -I$(top_srcdir)/libmeepgeom           \
-              $(MPBINCLUDE)                         \
+              $(PYMPBINCLUDE)                         \
               -I$(top_builddir) # for config.h
 
 _meep_la_SOURCES = meep-python.cpp
 _meep_la_LIBADD = $(LIBMEEP) $(LIBMEEPGEOM) $(PYTHON_LIBS) @LIBCTLGEOM_LIBS@
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+
+_mpb_la_SOURCES = mpb-python.cpp
+_mpb_la_LIBADD = $(LIBMEEPGEOM) $(PYTHON_LIBS) $(LIBPYMPB) @LIBCTLGEOM_LIBS@
+_mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
+_mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
 
 # material_dispersion.py test must be excluded from test suite for MPI build
 if WITH_MPI
@@ -64,9 +69,10 @@ TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
+# TODO: Add mpb to package
 if WITH_PYTHON
   pkgpython_PYTHON = geom.py __init__.py source.py simulation.py
-  pkgpyexec_LTLIBRARIES = _meep.la
+  pkgpyexec_LTLIBRARIES = _meep.la _mpb.la
 endif
 
 if MAINTAINER_MODE
@@ -77,6 +83,9 @@ SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
 
 meep-python.cpp: $(SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
+
+mpb-python.cpp: mpb.i $(top_srcdir)/libpympb/pympb.hpp
+	swig -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
 
 meep.py: meep-python.cpp
 
@@ -103,9 +112,12 @@ PY_PKG_FILES =               \
     $(srcdir)/source.py      \
     .libs/_meep.so
 
-meep: _meep.la __init__.py
-	mkdir -p meep
+meep: _meep.la _mpb.la __init__.py
+	mkdir -p meep/mpb
 	cp $(PY_PKG_FILES) meep
+	cp .libs/_mpb.so meep/mpb
+	cp mpb.py meep/mpb/__init__.py
+	cp $(top_srcdir)/python/solver.py meep/mpb
 
 all-local: meep
 

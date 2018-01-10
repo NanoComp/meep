@@ -5,6 +5,7 @@ import time
 # import numpy as np
 
 import meep as mp
+from meep import mpb
 from meep.simulation import get_num_args
 # from meep.source import check_positive
 
@@ -147,18 +148,23 @@ class ModeSolver(object):
         self.default_material = default_material
         self.dimensions = dimensions
         self.randomize_fields = randomize_fields
-        self.parity = None
+        self.parity = 0
         self.iterations = 0
         self.freqs = []
         self.all_freqs = []
         self.band_range_data = []
         self.eigensolver_flops = 0
-        self.total_run_time
+        self.total_run_time = 0
         self.current_k = mp.Vector3()
         self.k_split_num = 1
         self.k_split_index = 0
         self.eigensolver_iters = []
         self.iterations = 0
+        self.match_frequency = False
+
+        self.mode_solver = mpb.mode_solver(self.num_bands, self.match_frequency, self.parity,
+                                           self.resolution, self.geometry_lattice.size,
+                                           self.tolerance)
 
     def update_band_range_data(self, brd, freqs, kpoint):
         pass
@@ -180,11 +186,13 @@ class ModeSolver(object):
 
         init_time = time.time()
 
-        init_params(p, True if reset_fields else False)
+        self.mode_solver.init(p, True if reset_fields else False)
         if isinstance(reset_fields, basestring):
             load_eigenvectors(reset_fields)
 
         print("elapsed time for initialization: {}".format(time.time() - init_time))
+        ###### !!!!!!!!! #####
+        return
 
         # TODO: Split over multiple processes
         k_split = list_split(self.k_points, self.k_split_num, self.k_split_index)
@@ -225,5 +233,40 @@ class ModeSolver(object):
 
         end = time.time() - start
         print("total elapsed time for run: {}".format(end))
+        # TODO: Does this keep track of all runs? When should it be reset?
         self.total_run_time += end
         print("done")
+
+    def run(self, *band_functions):
+        self.run_parity(mp.NO_PARITY, True, band_functions)
+
+    def run_zeven(self, *band_functions):
+        self.run_parity(mp.EVEN_Z, True, band_functions)
+
+    def run_zodd(self, *band_functions):
+        self.run_parity(mp.ODD_Z, True, band_functions)
+
+    def run_yeven(self, *band_functions):
+        self.run_parity(mp.EVEN_Y, True, band_functions)
+
+    def run_yodd(self, *band_functions):
+        self.run_parity(mp.ODD_Y, True, band_functions)
+
+    def run_yeven_zeven(self, *band_functions):
+        self.run_parity(mp.EVEN_Y + mp.EVEN_Z, True, band_functions)
+
+    def run_yeven_zodd(self, *band_functions):
+        self.run_parity(mp.EVEN_Y + mp.ODD_Z, True, band_functions)
+
+    def run_yodd_zeven(self, *band_functions):
+        self.run_parity(mp.ODD_Y + mp.EVEN_Z, True, band_functions)
+
+    def run_yodd_zodd(self, *band_functions):
+        self.run_parity(mp.ODD_Y + mp.ODD_Z, True, band_functions)
+
+    run_te = run_zeven
+    run_tm = run_zodd
+    run_te_yeven = run_yeven_zeven
+    run_te_yodd = run_yodd_zeven
+    run_tm_yeven = run_yeven_zodd
+    run_tm_yodd = run_yodd_zodd

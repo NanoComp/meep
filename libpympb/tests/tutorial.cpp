@@ -1,58 +1,61 @@
+#include <cassert>
 #include "pympb.hpp"
 
-bool test_create_maxwell_data() {
-  int band_num = 8;
-  vector3 kpoint = {0.0, 0.0, 0.0};
+void test_create_maxwell_data() {
+  int num_bands = 8;
   bool match_frequency = false;
   int parity = 0;
   double resolution = 32;
   double eigensolver_tol = 1.0e-7;
+  vector3 lattice_size = {1, 1, 0};
 
-  py_mpb::add_eigenmode_source(band_num, kpoint, match_frequency, parity, resolution, eigensolver_tol);
+  bool reset_fields = true;
 
-  // Expected values of maxwell_data
-  //  nx = 32,
-  //  ny = 32,
-  //  nz = 1,
-  //  local_nx = 32,
-  //  local_ny = 32,
-  //  local_x_start = 0,
-  //  local_y_start = 0,
-  //  last_dim = 32,
-  //  last_dim_size = 32,
-  //  other_dims = 32,
-  //  num_bands = 8,
-  //  N = 1024,
-  //  local_N = 1024,
-  //  N_start = 0,
-  //  alloc_N = 1024,
-  //  fft_output_size = 1024,
-  //  max_fft_bands = 8,
-  //  num_fft_bands = 8,
-  //  current_k = {0, 0, 0},
-  //  parity = 0,
-  //  plans = {0x0 <repeats 32 times>},
-  //  iplans = {0x0 <repeats 32 times>},
-  //  nplans = 0,
-  //  plans_howmany = {0 <repeats 32 times>},
-  //  plans_stride = {0 <repeats 32 times>},
-  //  plans_dist = {0 <repeats 32 times>},
-  //  fft_data = 0x7ffff7e25040,
-  //  fft_data2 = 0x7ffff7e25040,
-  //  zero_k = 0,
-  //  k_plus_G = 0x808020,
-  //  k_plus_G_normsqr = 0x655280,
-  //  eps_inv = 0x7fc010,
-  //  eps_inv_mean = 1,
-  //  mu_inv = 0x0,
-  //  mu_inv_mean = 1
+  py_mpb::mode_solver ms(num_bands, match_frequency, parity, resolution,
+                         lattice_size, eigensolver_tol);
 
-  return false;
+  ms.init(parity, reset_fields);
+
+  maxwell_data *md = ms.mdata;
+
+  assert(md->nx == 32);
+  assert(md->ny == 32);
+  assert(md->nz == 1);
+  assert(md->local_nx == 32);
+  assert(md->local_ny == 32);
+  assert(md->local_x_start == 0);
+  assert(md->local_y_start == 0);
+  assert(md->last_dim == 32);
+  assert(md->last_dim_size == 32);
+  assert(md->other_dims == 32);
+  assert(md->num_bands == 8);
+  assert(md->N == 1024);
+  assert(md->local_N == 1024);
+  assert(md->N_start == 0);
+  assert(md->alloc_N == 1024);
+  assert(md->fft_output_size == 1024);
+  assert(md->max_fft_bands == 8);
+  assert(md->num_fft_bands == 8);
+  assert(current_k[0] == 0);
+  assert(current_k[1] == 0);
+  assert(current_k[2] == 0);
+  assert(md->parity == 0);
+  assert(md->nplans == 0);
+  assert(md->zero_k == 0);
+  assert(md->eps_inv->m00 == 0);
+  assert(md->eps_inv->m01 == 0);
+  assert(md->eps_inv->m02 == 0);
+  assert(md->eps_inv->m11 == 0);
+  assert(md->eps_inv->m12 == 0);
+  assert(md->eps_inv->m22 == 0);
+  assert(md->eps_inv_mean == 1);
+  assert(md->mu_inv == NULL);
+  assert(md->mu_inv_mean == 1);
 }
 
 int main() {
 
-  assert(test_create_maxwell_data());
+  test_create_maxwell_data();
 
   return 0;
 }
