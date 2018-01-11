@@ -11,6 +11,7 @@ namespace py_mpb {
 const double inf = 1.0e20;
 
 // TODO: Remove globals
+geom_box_tree geometry_tree;
 geom_box_tree restricted_tree;
 
 // TODO: medium_struct should have these values by default. Create constructor.
@@ -114,8 +115,7 @@ static void material_epsmu(meep_geom::material_type material, symmetric_matrix *
       epsmu_inv->m12 = 0.0;
       break;
     default:
-      std::cerr << "Unknown material type" << std::endl;
-      abort();
+      meep::abort("Unknown material type");
 
   // TODO: Support mu
   // switch (md->which_subclass) {
@@ -152,8 +152,7 @@ static void epsilon_file_material(meep_geom::material_data *md, vector3 p)
   default_material = (void*) md;
 
   if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) {
-    std::cerr << "epsilon-input-file only works with a type=file default-material" << std::endl;
-    abort();
+    meep::abort("epsilon-input-file only works with a type=file default-material");
   }
 
   if (!(md->epsilon_data)) {
@@ -213,7 +212,7 @@ void get_material_pt(meep_geom::material_type &material, vector3 p) {
       //       any.
       if ((md->medium.E_susceptibilities.num_items>0) ||
           (md->medium.H_susceptibilities.num_items>0)) {
-        abort();
+        meep::abort("susceptibilities in user-defined-materials not yet supported");
       }
       return;
 
@@ -222,7 +221,7 @@ void get_material_pt(meep_geom::material_type &material, vector3 p) {
     case meep_geom::material_data::PERFECT_METAL:
       return;
     default:
-      abort();
+      meep::abort("unknown material type");
    }
 }
 
@@ -230,7 +229,7 @@ void get_material_pt(meep_geom::material_type &material, vector3 p) {
 void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
                          const mpb_real r[3], void *epsilon_data) {
 
-  // TODO: What needs to happen with epsilon_data?
+  // TODO: What should epsilon_data contain?
   (void)epsilon_data;
   meep_geom::material_type mat;
   vector3 p = {r[0], r[1], r[2]};
@@ -238,23 +237,39 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
   material_epsmu(mat, eps, eps_inv);
 }
 
-mode_solver::mode_solver(int num_bands, bool match_frequency, int parity, double resolution,
-                         lattice lat, double tolerance):
+mode_solver::mode_solver(int num_bands, int parity, double resolution,
+                         lattice lat, double tolerance, meep_geom::material_type _default_material,
+                         geometric_object_list geom):
   num_bands(num_bands),
-  match_frequency(match_frequency),
   parity(parity),
   resolution(resolution),
   tolerance(tolerance),
   mdata(NULL) {
 
+  this->lat = lat;
+
   geometry_lattice.size.x = lat.size.x;
   geometry_lattice.size.y = lat.size.y;
   geometry_lattice.size.z = lat.size.z;
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      R[i][j] = 0.0;
+      G[i][j] = 0.0;
+    }
+  }
+
+  default_material = _default_material;
+  geometry.num_items = geom.num_items;
+  // TODO: free this, or refactor so SWIG can free it.
+  geometry.items = new geometric_object[geom.num_items];
+  memcpy(geometry.items, geom.items, geom.num_items * sizeof(geometric_object));
 }
 
 mode_solver::~mode_solver() {
 
   destroy_maxwell_data(mdata);
+  destroy_geom_box_tree(geometry_tree);
 }
 
 void mode_solver::init(int p, bool reset_fields) {
@@ -287,12 +302,100 @@ void mode_solver::init(int p, bool reset_fields) {
   meep::master_printf("Creating Maxwell data\n");
   mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, num_bands, num_bands);
 
-  set_maxwell_data_parity(mdata, parity);
-  // update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+  int s[] = {
+    lat.size.x == 0 ? 1 : lat.size.x,
+    lat.size.y == 0 ? 1 : lat.size.y,
+    lat.size.z == 0 ? 1 : lat.size.z
+  };
 
-  // eps_data ed;
-  // set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, &ed);
+  // TODO: Currently getting R and G twice.
+  for (int i = 0; i < 3; ++i) {
+    R[i][i] = s[i];
+    G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
+  }
+
+  set_maxwell_data_parity(mdata, parity);
+
+  eps_data ed;
+  int mesh_size[] = {3, 3, 3};
+
+  // init_epsilon
+  meep::master_printf("Mesh size is %d.\n", mesh_size[0]);
+
+  // matrix3x3 version of R.
+  matrix3x3 Rm;
+
+  Rm.c0 = vector3_scale(s[0], geometry_lattice.basis.c0);
+  Rm.c1 = vector3_scale(s[1], geometry_lattice.basis.c1);
+  Rm.c2 = vector3_scale(s[2], geometry_lattice.basis.c2);
+
+  meep::master_printf("Lattice vectors:\n");
+  meep::master_printf("     (%g, %g, %g)\n", Rm.c0.x, Rm.c0.y, Rm.c0.z);
+  meep::master_printf("     (%g, %g, %g)\n", Rm.c1.x, Rm.c1.y, Rm.c1.z);
+  meep::master_printf("     (%g, %g, %g)\n", Rm.c2.x, Rm.c2.y, Rm.c1.z);
+
+  mpb_real vol = fabs(matrix3x3_determinant(Rm));
+  meep::master_printf("Cell volume = %g\n", vol);
+
+  matrix3x3 Gm = matrix3x3_inverse(matrix3x3_transpose(Rm));
+
+  geom_fix_objects0(geometry);
+
+  meep::master_printf("Geometric objects:\n");
+  if (meep::am_master()) {
+    for (int i = 0; i < geometry.num_items; ++i) {
+      display_geometric_object_info(5, geometry.items[i]);
+
+      meep_geom::material_type m = (meep_geom::material_type)geometry.items[i].material;
+      if (m->which_subclass == meep_geom::material_data::MEDIUM) {
+        printf("%*sepsilon = %g, mu = %g\n", 5 + 5, "", m->medium.epsilon_diag.x,
+               m->medium.mu_diag.x);
+      }
+    }
+  }
+
+  destroy_geom_box_tree(geometry_tree);
+
+  {
+    geom_box b0;
+    b0.low = vector3_plus(geometry_center, vector3_scale(-0.5, geometry_lattice.size));
+    b0.high = vector3_plus(geometry_center, vector3_scale(0.5, geometry_lattice.size));
+    /* pad tree boundaries to allow for sub-pixel averaging */
+    b0.low.x -= geometry_lattice.size.x / mdata->nx;
+    b0.low.y -= geometry_lattice.size.y / mdata->ny;
+    b0.low.z -= geometry_lattice.size.z / mdata->nz;
+    b0.high.x += geometry_lattice.size.x / mdata->nx;
+    b0.high.y += geometry_lattice.size.y / mdata->ny;
+    b0.high.z += geometry_lattice.size.z / mdata->nz;
+    geometry_tree = create_geom_box_tree0(geometry, b0);
+  }
+
+  int tree_depth;
+  int tree_nobjects;
+  geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
+  meep::master_printf("Geometric object tree has depth %d and %d object nodes"
+                      " (vs. %d actual objects)\n", tree_depth, tree_nobjects, geometry.num_items);
+
+  // TODO
+  // reset_epsilon();
+
+  set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, &ed);
+
+  if (check_maxwell_dielectric(mdata, 0)) {
+    meep::abort("invalid dielectric function for MPB");
+  }
 }
+
+void mode_solver::solve_kpoint(vector3 kpoint) {
+  mpb_real k[] = {
+    kpoint.x,
+    kpoint.y,
+    kpoint.z
+  };
+
+  update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+}
+
 
 // void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_frequency,
 //                      int parity, double resolution, double tolerance) {

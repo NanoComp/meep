@@ -227,10 +227,10 @@ class ModeSolver(object):
         self.k_split_index = 0
         self.eigensolver_iters = []
         self.iterations = 0
-        self.match_frequency = False
 
-        self.mode_solver = mpb.mode_solver(self.num_bands, self.match_frequency, self.parity,
-                                           self.resolution, self.geometry_lattice, self.tolerance)
+        self.mode_solver = mpb.mode_solver(self.num_bands, self.parity, self.resolution,
+                                           self.geometry_lattice, self.tolerance,
+                                           self.default_material, self.geometry)
 
     def update_band_range_data(self, brd, freqs, kpoint):
         pass
@@ -260,8 +260,6 @@ class ModeSolver(object):
             load_eigenvectors(reset_fields)
 
         print("elapsed time for initialization: {}".format(time.time() - init_time))
-        ###### !!!!!!!!! #####
-        return
 
         # TODO: Split over multiple processes
         k_split = list_split(self.k_points, self.k_split_num, self.k_split_index)

@@ -11,7 +11,6 @@ namespace py_mpb {
 
 struct mode_solver {
   int num_bands;
-  bool match_frequency;
   int parity;
   double resolution;
   lattice lat;
@@ -22,14 +21,18 @@ struct mode_solver {
   int N_start;
   int alloc_N;
 
+  geometric_object_list geometry;
+
+  mpb_real R[3][3];
+  mpb_real G[3][3];
+
   maxwell_data *mdata;
 
-  mode_solver(int num_bands, bool match_frequency, int parity, double resolution,
-              lattice lat, double tolerance);
+  mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
+              meep_geom::material_type _default_material, geometric_object_list geom);
   ~mode_solver();
   void init(int p, bool reset_fields);
-  // void add_eigenmode_source(int band_num, const vector3 &kpoint, bool match_frequency, int parity,
-  //                           double resolution, vector3 lattice_size, double tolerance);
+  void solve_kpoint(vector3 kpoint);
 };
 } // namespace py_mpb
 #endif
