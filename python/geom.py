@@ -1,6 +1,8 @@
 from __future__ import division
 
 import math
+from copy import deepcopy
+
 import numpy as np
 import meep as mp
 
@@ -86,6 +88,7 @@ class Medium(object):
                  epsilon=None,
                  index=None,
                  mu=None,
+                 chi2=None,
                  chi3=None,
                  D_conductivity=None,
                  B_conductivity=None,
@@ -123,7 +126,7 @@ class Medium(object):
         self.mu_offdiag = mu_offdiag
         self.E_susceptibilities = E_susceptibilities
         self.H_susceptibilities = H_susceptibilities
-        self.E_chi2_diag = E_chi2_diag
+        self.E_chi2_diag = Vector3(chi2, chi2, chi2) if chi2 else E_chi2_diag
         self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else E_chi3_diag
         self.H_chi2_diag = H_chi2_diag
         self.H_chi3_diag = H_chi3_diag
@@ -170,12 +173,27 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
 
 class GeometricObject(object):
 
-    def __init__(self, material=Medium(), center=Vector3()):
+    def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):
+        if type(material) is not Medium and callable(material):
+            material.eps = False
+        elif epsilon_func:
+            epsilon_func.eps = True
+            material = epsilon_func
+
         self.material = material
         self.center = center
 
     def __contains__(self, point):
-        return mp.point_in_objectp(point, self)
+        return mp.is_point_in_object(point, self)
+
+    def __add__(self, vec):
+        self.center += vec
+
+    def shift(self, vec):
+        self.center += vec
+
+    def info(self, indent_by=0):
+        mp.display_geometric_object_info(indent_by, self)
 
 
 class Sphere(GeometricObject):
@@ -247,3 +265,14 @@ class Ellipsoid(Block):
 
     def __init__(self, **kwargs):
         super(Ellipsoid, self).__init__(**kwargs)
+
+
+def geometric_object_duplicates(shift_vector, min, max, *objs):
+    dups = []
+    for obj in objs:
+        for i in range(min, max + 1):
+            o = deepcopy(obj)
+            o.shift(shift_vector.scale(i))
+            dups.append(o)
+
+    return dups

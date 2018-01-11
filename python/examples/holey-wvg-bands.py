@@ -53,7 +53,7 @@ def main():
         sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 
     else:
-        sim.run(mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]), k_points=300)
+        sim.run_k_points(300, mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]))
 
 
 if __name__ == '__main__':

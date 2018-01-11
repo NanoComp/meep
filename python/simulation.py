@@ -22,22 +22,6 @@ except NameError:
     basestring = str
 
 
-CYLINDRICAL = -2
-AUTOMATIC = -1
-ALL = -1
-
-# MPB definitions
-NO_PARITY = 0
-EVEN_Z = 1
-ODD_Z = 2
-EVEN_Y = 4
-ODD_Y = 8
-TE = EVEN_Z
-TM = ODD_Z
-
-inf = 1.0e20
-
-
 def get_num_args(func):
     if isinstance(func, Harminv):
         return 2
@@ -61,33 +45,33 @@ def py_v3_to_vec(dims, v3, is_cylindrical=False):
 class PML(object):
 
     def __init__(self, thickness,
-                 direction=ALL,
-                 side=ALL,
-                 r_asymptotic=1e-15,
+                 direction=mp.ALL,
+                 side=mp.ALL,
+                 R_asymptotic=1e-15,
                  mean_stretch=1.0,
                  pml_profile=lambda u: u * u):
 
         self.thickness = thickness
         self.direction = direction
         self.side = side
-        self.r_asymptotic = r_asymptotic
+        self.R_asymptotic = R_asymptotic
         self.mean_stretch = mean_stretch
         self.pml_profile = pml_profile
 
-        if direction == ALL and side == ALL:
-            self.swigobj = mp.pml(thickness, r_asymptotic, mean_stretch)
-        elif direction == ALL:
-            self.swigobj = mp.pml(thickness, side, r_asymptotic, mean_stretch)
+        if direction == mp.ALL and side == mp.ALL:
+            self.swigobj = mp.pml(thickness, R_asymptotic, mean_stretch)
+        elif direction == mp.ALL:
+            self.swigobj = mp.pml(thickness, side, R_asymptotic, mean_stretch)
         else:
-            self.swigobj = mp.pml(thickness, direction, side, r_asymptotic, mean_stretch)
+            self.swigobj = mp.pml(thickness, direction, side, R_asymptotic, mean_stretch)
 
     @property
-    def r_asymptotic(self):
-        return self._r_asymptotic
+    def R_asymptotic(self):
+        return self._R_asymptotic
 
-    @r_asymptotic.setter
-    def r_asymptotic(self, val):
-        self._r_asymptotic = check_positive('PML.r_asymptotic', val)
+    @R_asymptotic.setter
+    def R_asymptotic(self, val):
+        self._R_asymptotic = check_positive('PML.R_asymptotic', val)
 
     @property
     def mean_stretch(self):
@@ -150,7 +134,7 @@ class Volume(object):
 
 class FluxRegion(object):
 
-    def __init__(self, center, size=Vector3(), direction=AUTOMATIC, weight=1.0):
+    def __init__(self, center, size=Vector3(), direction=mp.AUTOMATIC, weight=1.0):
         self.center = center
         self.size = size
         self.direction = direction
@@ -168,7 +152,7 @@ class ForceRegion(object):
 
 class Near2FarRegion(object):
 
-    def __init__(self, center, size=mp.Vector3(), direction=AUTOMATIC, weight=1.0):
+    def __init__(self, center, size=mp.Vector3(), direction=mp.AUTOMATIC, weight=1.0):
         self.center = center
         self.size = size
         self.direction = direction
@@ -191,7 +175,7 @@ class Harminv(object):
         self.modes = []
         self.spectral_density = 1.1
         self.Q_thresh = 50.0
-        self.rel_err_thresh = inf
+        self.rel_err_thresh = mp.inf
         self.err_thresh = 0.01
         self.rel_amp_thresh = -1.0
         self.amp_thresh = -1.0
@@ -249,7 +233,9 @@ class Simulation(object):
 
     def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
                  dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
-                 force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False):
+                 force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False,
+                 extra_materials=[], material_function=None, epsilon_func=None, epsilon_input_file=''):
+
         self.cell_size = cell_size
         self.geometry = geometry
         self.sources = sources
@@ -262,9 +248,9 @@ class Simulation(object):
         self.subpixel_tol = 1e-4
         self.subpixel_maxeval = 100000
         self.ensure_periodicity = False
-        self.extra_materials = []
+        self.extra_materials = extra_materials
         self.default_material = default_material
-        self.epsion_input_file = ''
+        self.epsilon_input_file = epsilon_input_file
         self.num_chunks = 0
         self.courant = 0.5
         self.global_d_conductivity = 0
@@ -289,6 +275,8 @@ class Simulation(object):
         self.output_h5_hook = lambda fname: False
         self.interactive = False
         self.is_cylindrical = False
+        self.material_function = material_function
+        self.epsilon_func = epsilon_func
 
     def _infer_dimensions(self, k):
         if k and self.dimensions == 3:
@@ -317,7 +305,7 @@ class Simulation(object):
             gv = mp.vol2d(self.cell_size.x, self.cell_size.y, self.resolution)
         elif dims == 3:
             gv = mp.vol3d(self.cell_size.x, self.cell_size.y, self.cell_size.z, self.resolution)
-        elif dims == CYLINDRICAL:
+        elif dims == mp.CYLINDRICAL:
             gv = mp.volcyl(self.cell_size.x, self.cell_size.z, self.resolution)
             self.dimensions = 2
             self.is_cylindrical = True
@@ -349,14 +337,28 @@ class Simulation(object):
 
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
 
+        if self.boundary_layers and type(self.boundary_layers[0]) is Absorber:
+            absorbers = self.boundary_layers
+        else:
+            absorbers = None
+
         self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+        if self.material_function:
+            self.material_function.eps = False
+            self.default_material = self.material_function
+        elif self.epsilon_func:
+            self.epsilon_func.eps = True
+            self.default_material = self.epsilon_func
+        elif self.epsilon_input_file:
+            self.default_material = self.epsilon_input_file
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
-                                       self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material)
+                                       self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
+                                       absorbers, self.extra_materials)
 
-    def _init_fields(self):
-        is_cylindrical = self.dimensions == CYLINDRICAL
+    def init_fields(self):
+        is_cylindrical = self.dimensions == mp.CYLINDRICAL
 
         if self.structure is None:
             self._init_structure(self.k_point)
@@ -394,14 +396,18 @@ class Simulation(object):
         for hook in self.init_fields_hooks:
             hook()
 
+    def require_dimensions(self):
+        if self.structure is None:
+            mp.set_dimensions(self._infer_dimensions(self.k_point))
+
     def meep_time(self):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
         return self.fields.time()
 
     def round_time(self):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         return self.fields.round_time()
 
@@ -413,7 +419,7 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_eps(v3)
 
-    def _get_filename_prefix(self):
+    def get_filename_prefix(self):
         if self.filename_prefix:
             return self.filename_prefix
         else:
@@ -426,7 +432,7 @@ class Simulation(object):
 
     def use_output_directory(self, dname=''):
         if not dname:
-            dname = self._get_filename_prefix() + '-out'
+            dname = self.get_filename_prefix() + '-out'
 
         closure = {'trashed': False}
 
@@ -448,7 +454,7 @@ class Simulation(object):
     def _run_until(self, cond, step_funcs):
         self.interactive = False
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         if isinstance(cond, numbers.Number):
             stop_time = cond
@@ -481,7 +487,7 @@ class Simulation(object):
 
     def _run_sources_until(self, cond, step_funcs):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         ts = self.fields.last_source_time()
 
@@ -501,7 +507,7 @@ class Simulation(object):
         components = [s.component for s in self.sources]
         pts = [s.center for s in self.sources]
 
-        src_freqs_min = min([s.src.frequency - 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else inf
+        src_freqs_min = min([s.src.frequency - 1 / s.src.width / 2 if isinstance(s.src, mp.GaussianSource) else mp.inf
                              for s in self.sources])
         fmin = max(0, src_freqs_min)
 
@@ -519,7 +525,7 @@ class Simulation(object):
 
         return [complex(m.freq, m.decay) for m in h.modes]
 
-    def _run_k_points(self, t, k_points):
+    def run_k_points(self, t, k_points):
         k_index = 0
         all_freqs = []
 
@@ -527,7 +533,7 @@ class Simulation(object):
             k_index += 1
 
             if k_index == 1:
-                self._init_fields()
+                self.init_fields()
                 output_epsilon(self)
 
             freqs = self._run_k_point(t, k)
@@ -543,13 +549,13 @@ class Simulation(object):
 
     def set_epsilon(self, eps):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         self.structure.set_epsilon(eps, self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
 
     def add_source(self, src):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         where = Volume(src.center, src.size, dims=self.dimensions,
                        is_cylindrical=self.is_cylindrical).swigobj
@@ -612,7 +618,7 @@ class Simulation(object):
 
     def add_near2far(self, fcen, df, nfreq, *near2fars):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         return self._add_fluxish_stuff(self.fields.add_dft_near2far, fcen, df, nfreq, near2fars)
 
@@ -621,17 +627,17 @@ class Simulation(object):
 
     def output_farfields(self, near2far, fname, where, resolution):
         vol = where.to_cylindrical() if self.is_cylindrical else where
-        near2far.save_farfields(fname, self._get_filename_prefix(), vol.swigobj, resolution)
+        near2far.save_farfields(fname, self.get_filename_prefix(), vol.swigobj, resolution)
 
     def load_near2far(self, fname, n2f):
         if self.fields is None:
-            self._init_fields()
-        n2f.load_hdf5(self.fields, fname, '', self._get_filename_prefix())
+            self.init_fields()
+        n2f.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_near2far(self, fname, n2f):
         if self.fields is None:
-            self._init_fields()
-        n2f.save_hdf5(self.fields, fname, '', self._get_filename_prefix())
+            self.init_fields()
+        n2f.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def load_minus_near2far(self, fname, n2f):
         self.load_near2far(fname, n2f)
@@ -639,7 +645,7 @@ class Simulation(object):
 
     def add_force(self, fcen, df, nfreq, *forces):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         return self._add_fluxish_stuff(self.fields.add_dft_force, fcen, df, nfreq, forces)
 
@@ -649,13 +655,13 @@ class Simulation(object):
 
     def load_force(self, fname, force):
         if self.fields is None:
-            self._init_fields()
-        force.load_hdf5(self.fields, fname, '', self._get_filename_prefix())
+            self.init_fields()
+        force.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_force(self, fname, force):
         if self.fields is None:
-            self._init_fields()
-        force.save_hdf5(self.fields, fname, '', self._get_filename_prefix())
+            self.init_fields()
+        force.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def load_minus_force(self, fname, force):
         self.load_force(fname, force)
@@ -663,7 +669,7 @@ class Simulation(object):
 
     def add_flux(self, fcen, df, nfreq, *fluxes):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
         return self._add_fluxish_stuff(self.fields.add_dft_flux, fcen, df, nfreq, fluxes)
 
@@ -672,15 +678,15 @@ class Simulation(object):
 
     def load_flux(self, fname, flux):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
-        flux.load_hdf5(self.fields, fname, '', self._get_filename_prefix())
+        flux.load_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def save_flux(self, fname, flux):
         if self.fields is None:
-            self._init_fields()
+            self.init_fields()
 
-        flux.save_hdf5(self.fields, fname, '', self._get_filename_prefix())
+        flux.save_hdf5(self.fields, fname, '', self.get_filename_prefix())
 
     def load_minus_flux(self, fname, flux):
         self.load_flux(fname, flux)
@@ -744,14 +750,14 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
-        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
+        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume.swigobj
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
-        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision, self._get_filename_prefix())
+        self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision, self.get_filename_prefix())
 
         if h5file is None:
-            nm = self.fields.h5file_name(mp.component_name(c), self._get_filename_prefix(), True)
+            nm = self.fields.h5file_name(mp.component_name(c), self.get_filename_prefix(), True)
             if c == mp.Dielectric:
                 self.last_eps_filename = nm
             self.output_h5_hook(nm)
@@ -761,7 +767,7 @@ class Simulation(object):
             raise RuntimeError("Fields must be initialized before calling output_component")
 
         if self.output_append_h5 is None:
-            f = self.fields.open_h5file(fname, mp.h5file.WRITE, self._get_filename_prefix(), True)
+            f = self.fields.open_h5file(fname, mp.h5file.WRITE, self.get_filename_prefix(), True)
         else:
             f = None
 
@@ -774,7 +780,7 @@ class Simulation(object):
             f = None
 
         if self.output_append_h5 is None:
-            self.output_h5_hook(self.fields.h5file_name(fname, self._get_filename_prefix(), True))
+            self.output_h5_hook(self.fields.h5file_name(fname, self.get_filename_prefix(), True))
 
     def h5topng(self, rm_h5, option, *step_funcs):
         opts = "h5topng {}".format(option)
@@ -816,14 +822,14 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_field_function")
 
-        ov = self.output_volume if self.output_volume else self.fields.total_volume()
+        ov = self.output_volume.swigobj if self.output_volume else self.fields.total_volume()
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
         self.fields.output_hdf5(name, [cs, func], ov, h5, append, self.output_single_precision,
-                                self._get_filename_prefix(), real_only)
+                                self.get_filename_prefix(), real_only)
         if h5file is None:
-            self.output_h5_hook(self.fields.h5file_name(name, self._get_filename_prefix(), True))
+            self.output_h5_hook(self.fields.h5file_name(name, self.get_filename_prefix(), True))
 
     def _get_field_function_volume(self, where):
         if where is None:
@@ -855,7 +861,7 @@ class Simulation(object):
 
             if needs_complex_fields and self.fields.is_real:
                 self.fields = None
-                self._init_fields()
+                self.init_fields()
             else:
                 if self.k_point:
                     self.fields.use_bloch(py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical))
@@ -876,20 +882,17 @@ class Simulation(object):
             self.fields.t = 0
             self.fields.zero_fields()
         else:
-            self._init_fields()
+            self.init_fields()
 
     def run(self, *step_funcs, **kwargs):
         until = kwargs.pop('until', None)
         until_after_sources = kwargs.pop('until_after_sources', None)
-        k_points = kwargs.pop('k_points', None)
 
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
         if until_after_sources is not None:
             self._run_sources_until(until_after_sources, step_funcs)
-        elif k_points is not None:
-            return self._run_k_points(k_points, *step_funcs)
         elif until is not None:
             self._run_until(until, step_funcs)
         else:
@@ -907,20 +910,20 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
         boundary_region_args = [
             mp.boundary_region.PML,
             layer.thickness,
-            layer.r_asymptotic,
+            layer.R_asymptotic,
             layer.mean_stretch,
             mp.py_pml_profile,
             layer.pml_profile,
-            1 / 3,  # TODO(chogan): Call adaptive_integration instead of hard-coding integral
-            1 / 4,  # TODO(chogan): Call adaptive_integration instead of hard-coding integral
+            1 / 3,
+            1 / 4,
         ]
 
-        if layer.direction == ALL:
+        if layer.direction == mp.ALL:
             d = mp.start_at_direction(gv.dim)
             loop_stop_directi = mp.stop_at_direction(gv.dim)
 
             while d < loop_stop_directi:
-                if layer.side == ALL:
+                if layer.side == mp.ALL:
                     b = mp.High
                     loop_stop_bi = mp.Low
 
@@ -932,7 +935,7 @@ def _create_boundary_region_from_boundary_layers(boundary_layers, gv):
                     br += mp.boundary_region(*(boundary_region_args + [d, layer.side]))
                 d += 1
         else:
-            if layer.side == ALL:
+            if layer.side == mp.ALL:
                 b = mp.High
                 loop_stop_bi = mp.Low
 
@@ -1101,7 +1104,7 @@ def to_appended(fname, *step_funcs):
 
     def _to_appended(sim, todo):
         if closure['h5'] is None:
-            closure['h5'] = sim.fields.open_h5file(fname, mp.h5file.WRITE, sim._get_filename_prefix())
+            closure['h5'] = sim.fields.open_h5file(fname, mp.h5file.WRITE, sim.get_filename_prefix())
         h5save = sim.output_append_h5
         sim.output_append_h5 = closure['h5']
 
@@ -1110,7 +1113,7 @@ def to_appended(fname, *step_funcs):
 
         if todo == 'finish':
             closure['h5'] = None
-            sim.output_h5_hook(sim.fields.h5file_name(fname, sim._get_filename_prefix()))
+            sim.output_h5_hook(sim.fields.h5file_name(fname, sim.get_filename_prefix()))
         sim.output_append_h5 = h5save
     return _to_appended
 
@@ -1161,7 +1164,7 @@ def when_false(cond, *step_funcs):
 def with_prefix(pre, *step_funcs):
     def _with_prefix(sim, todo):
         saved_pre = sim.filename_prefix
-        sim.filename_prefix = pre + sim._get_filename_prefix()
+        sim.filename_prefix = pre + sim.get_filename_prefix()
 
         for f in step_funcs:
             _eval_step_func(sim, f, todo)
@@ -1238,7 +1241,7 @@ def output_png(compnt, options, rm_h5=True):
             if sim.output_volume is None:
                 ov = sim.fields.total_volume()
             else:
-                ov = sim.output_volume
+                ov = sim.output_volume.swigobj
 
             closure['maxabs'] = max(closure['maxabs'],
                                     sim.fields.max_abs(compnt, ov))

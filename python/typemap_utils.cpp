@@ -19,25 +19,17 @@
 
 #if PY_MAJOR_VERSION >= 3
     #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
+    #define IsPyString(n) PyUnicode_Check(n)
     #define PyInteger_Check(n) PyLong_Check(n)
     #define PyInteger_AsLong(n) PyLong_AsLong(n)
     #define PyInteger_FromLong(n) PyLong_FromLong(n)
 #else
     #define PyObject_ToCharPtr(n) PyString_AsString(n)
+    #define IsPyString(n) PyString_Check(n)
     #define PyInteger_Check(n) PyInt_Check(n)
     #define PyInteger_AsLong(n) PyInt_AsLong(n)
     #define PyInteger_FromLong(n) PyInt_FromLong(n)
 #endif
-
-static PyObject *py_geometric_object() {
-    static PyObject *geometric_object = NULL;
-    if (geometric_object == NULL) {
-        PyObject *geom_mod = PyImport_ImportModule("meep.geom");
-        geometric_object = PyObject_GetAttrString(geom_mod, "GeometricObject");
-        Py_XDECREF(geom_mod);
-    }
-    return geometric_object;
-}
 
 static PyObject *py_source_time_object() {
     static PyObject *source_time_object = NULL;
@@ -168,6 +160,52 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     return ret;
 }
 
+static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
+    PyObject *py_vec = vec2py(vector3_to_vec(x));
+
+    PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
+
+    if (!pyret) {
+        PyErr_PrintEx(0);
+    }
+
+    if (!pymedium_to_medium(pyret, medium)) {
+        PyErr_PrintEx(0);
+    }
+
+    Py_DECREF(pyret);
+}
+
+static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
+    PyObject *py_vec = vec2py(vector3_to_vec(x));
+
+    PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
+
+    if (!pyret) {
+        PyErr_PrintEx(0);
+    }
+
+    double eps = PyFloat_AsDouble(pyret);
+
+    medium->epsilon_diag.x = eps;
+    medium->epsilon_diag.y = eps;
+    medium->epsilon_diag.z = eps;
+
+    Py_DECREF(pyret);
+}
+
+static std::complex<double> py_src_func_wrap(double t, void *f) {
+    PyObject *py_t = PyFloat_FromDouble(t);
+    PyObject *pyres = PyObject_CallFunctionObjArgs((PyObject *)f, py_t, NULL);
+    double real = PyComplex_RealAsDouble(pyres);
+    double imag = PyComplex_ImagAsDouble(pyres);
+    std::complex<double> ret(real, imag);
+    Py_DECREF(py_t);
+    Py_DECREF(pyres);
+
+    return ret;
+}
+
 static int pyv3_to_v3(PyObject *po, vector3 *v) {
 
     PyObject *py_x = PyObject_GetAttrString(po, "x");
@@ -222,6 +260,19 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
+static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    *result = PyInteger_AsLong(py_attr);
+    Py_DECREF(py_attr);
+    return 1;
+}
+
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -265,7 +316,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
         s->drude = false;
     }
 
-    s->is_self = false;
+    s->is_file = false;
 
     return 1;
 }
@@ -291,24 +342,49 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
         sl->items[i].gamma = s.gamma;
         sl->items[i].noise_amp = s.noise_amp;
         sl->items[i].drude = s.drude;
-        sl->items[i].is_self = s.is_self;
+        sl->items[i].is_file = s.is_file;
     }
 
     return 1;
 }
 
 static int pymaterial_to_material(PyObject *po, material_type *mt) {
+    material_data *md;
 
-    material_data *md = new material_data();
-    md->which_subclass = material_data::MEDIUM;
-    md->user_func = 0;
-    md->user_data = 0;
-    md->medium = new medium_struct();
+    if (PyObject_IsInstance(po, py_material_object())) {
+        md = make_dielectric(1);
+        if (!pymedium_to_medium(po, &md->medium)) {
+            return 0;
+        }
+    } else if (PyFunction_Check(po)) {
+        PyObject *eps = PyObject_GetAttrString(po, "eps");
+        if (!eps) {
+            return 0;
+        }
+        if (eps == Py_True) {
+            md = make_user_material(py_epsilon_func_wrap, po);
+        } else {
+            md = make_user_material(py_user_material_func_wrap, po);
+        }
+        Py_DECREF(eps);
+    } else if (IsPyString(po)) {
+        const char *eps_input_file = PyObject_ToCharPtr(po);
+        md = make_file_material(eps_input_file);
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Expected a Medium, a function, or a filename");
+        return 0;
+    }
 
-    if (!get_attr_v3(po, &md->medium->epsilon_diag, "epsilon_diag") ||
-       !get_attr_v3(po, &md->medium->epsilon_offdiag, "epsilon_offdiag") ||
-       !get_attr_v3(po, &md->medium->mu_diag, "mu_diag") ||
-       !get_attr_v3(po, &md->medium->mu_offdiag, "mu_offdiag")) {
+    *mt = md;
+
+    return 1;
+}
+
+static int pymedium_to_medium(PyObject *po, medium_struct *m) {
+    if (!get_attr_v3(po, &m->epsilon_diag, "epsilon_diag") ||
+        !get_attr_v3(po, &m->epsilon_offdiag, "epsilon_offdiag") ||
+        !get_attr_v3(po, &m->mu_diag, "mu_diag") ||
+        !get_attr_v3(po, &m->mu_offdiag, "mu_offdiag")) {
 
         return 0;
     }
@@ -320,8 +396,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
         return 0;
     }
 
-    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &md->medium->E_susceptibilities) ||
-       !py_list_to_susceptibility_list(py_h_susceptibilities, &md->medium->H_susceptibilities)) {
+    if (!py_list_to_susceptibility_list(py_e_susceptibilities, &m->E_susceptibilities) ||
+       !py_list_to_susceptibility_list(py_h_susceptibilities, &m->H_susceptibilities)) {
 
         return 0;
     }
@@ -329,17 +405,38 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     Py_XDECREF(py_e_susceptibilities);
     Py_XDECREF(py_h_susceptibilities);
 
-    if (!get_attr_v3(po, &md->medium->E_chi2_diag, "E_chi2_diag") ||
-       !get_attr_v3(po, &md->medium->E_chi3_diag, "E_chi3_diag") ||
-       !get_attr_v3(po, &md->medium->H_chi2_diag, "H_chi2_diag") ||
-       !get_attr_v3(po, &md->medium->H_chi3_diag, "H_chi3_diag") ||
-       !get_attr_v3(po, &md->medium->D_conductivity_diag, "D_conductivity_diag") ||
-       !get_attr_v3(po, &md->medium->B_conductivity_diag, "B_conductivity_diag")) {
+    if (!get_attr_v3(po, &m->E_chi2_diag, "E_chi2_diag") ||
+        !get_attr_v3(po, &m->E_chi3_diag, "E_chi3_diag") ||
+        !get_attr_v3(po, &m->H_chi2_diag, "H_chi2_diag") ||
+        !get_attr_v3(po, &m->H_chi3_diag, "H_chi3_diag") ||
+        !get_attr_v3(po, &m->D_conductivity_diag, "D_conductivity_diag") ||
+        !get_attr_v3(po, &m->B_conductivity_diag, "B_conductivity_diag")) {
 
         return 0;
     }
 
-    *mt = md;
+    return 1;
+}
+
+static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
+
+    if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
+        !get_attr_int(py_absorber, &a->direction, "direction") ||
+        !get_attr_int(py_absorber, &a->side, "side") ||
+        !get_attr_dbl(py_absorber, &a->R_asymptotic, "R_asymptotic") ||
+        !get_attr_dbl(py_absorber, &a->mean_stretch, "mean_stretch")) {
+
+        return 0;
+    }
+
+    PyObject *py_pml_profile_func = PyObject_GetAttrString(py_absorber, "pml_profile");
+
+    if (!py_pml_profile_func) {
+        PyErr_Format(PyExc_ValueError, "Class attribute 'pml_profile' is None\n");
+        return 0;
+    }
+
+    a->pml_profile_data = py_pml_profile_func;
 
     return 1;
 }

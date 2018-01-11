@@ -74,32 +74,34 @@ when configuring the program. The directories `$HOME/install/lib` etc. are creat
 
 #### Paths for Configuring
 
-There are two further complications. First, if you install in a non-standard location and `/usr/local` is considered non-standard by some proprietary compilers, you will need to tell the compilers where to find the libraries and header files that you installed. You do this by setting two environment variables:
+There are two further complications. First, if you install dependencies in a non-standard location like `$HOME/install/lib`, you will need to tell the compilers where to find the libraries and header files that you installed. You do this by passing two variables to `./configure`:
 
 ```bash
- export LDFLAGS="-L/usr/local/lib"
- export CPPFLAGS="-I/usr/local/include"
+./configure LDFLAGS="-L$HOME/install/lib" CPPFLAGS="-I$HOME/install/include"   ...other flags...
 ```
 
-Of course, substitute whatever installation directory you used. Do this **before** you run the `configure` scripts, etcetera. You may need to include multiple `-L` and `-I` flags separated by spaces if your machine has stuff installed in several non-standard locations. Bourne shell users (e.g. `bash` or `ksh`) should use the `export FOO=bar` syntax instead of `csh`'s `setenv FOO bar`, of course.
+Of course, substitute whatever installation directory you used. You may need to include multiple `-L` and `-I` flags separated by spaces if your machine has stuff installed in several non-standard locations.
 
-You might also need to update your `PATH` so that you can run the executables you installed although `/usr/local/bin/` is in the default `PATH` on many systems. e.g. if we installed in our home directory as described above, we would do:
+You might also need to update your `PATH` so that you can run the executables; e.g. if we installed in our home directory as described above, we would do:
 
 ```bash
- export PATH="$HOME/install/bin:$PATH"
+export PATH="$HOME/install/bin:$PATH"
 ```
 
 #### Paths for Running (Shared Libraries)
 
-Second, many of the packages installed below (e.g. Guile) are installed as shared libraries. You need to make sure that your runtime linker knows where to find these shared libraries. The bad news is that every operating system does this in a slightly different way. The good news is that, when you run `make install` for the packages involving shared libraries, the output includes the necessary instructions specific to your system, so pay close attention! It will say something like `add LIBDIR to the <foobar> environment variable`, where `LIBDIR` will be your library installation directory (e.g. `/usr/local/lib`) and `<foobar>` is some environment variable specific to your system (e.g. `LD_LIBRARY_PATH` on some systems, including Linux). For example, you might do:
+Second, many of the packages installed below (e.g. Guile) are installed as shared libraries. You need to make sure that your runtime linker knows where to find these shared libraries. The bad news is that every operating system does this in a slightly different way.
+If you installed all of your libraries in a standard location on your operating system (e.g. `/usr/lib`), then the runtime linker will look there already and you don't need to do anything.  Otherwise, if you compile things like `libctl` and install them into a "nonstandard" location (e.g. in your home directory), you will need to tell the runtime linker where to find them.
+
+There are several ways to do this.  Suppose that you installed libraries into the directory `/foo/lib`.   The most robust option is probably to include this path in the linker flags (`LD_LIBRARY_FLAGS` above):
 
 ```bash
- export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+./configure LDFLAGS="-L$HOME/install/lib -Wl,-rpath,$HOME/install/lib"   ...other flags...
 ```
 
-Note that we just add to the library path variable, and don't replace it in case it contains stuff already. If you use Linux and have `root` privileges, you can instead simply run `/sbin/ldconfig`, first making sure that a line `/usr/local/lib` (or whatever) is in `/etc/ld.so.conf`.
+There are also some other ways.  If you use Linux, have superuser privileges, and are installing in a system-wide location (not your home directory!), you can add the library directory to `/etc/ld.so.conf` and run `/sbin/ldconfig`.
 
-If you don't want to type these commands every time you log in, you can put them in your `~/.cshrc` file or `~/.profile`, or `~/.bash_profile`, depending on your shell.
+On many systems, you can also specify directories to the runtime linker via the `LD_LIBRARY_PATH` environment variable.   In particular, by `export LD_LIBRARY_PATH="$HOME/install/lib:$LD_LIBRARY_PATH"`; you can add this to your `.profile` file (depending on your shell) to make it run every time you run your shell.   (On MacOS, a security feature called [System Integrity Protection](https://en.wikipedia.org/wiki/System_Integrity_Protection) causes the value of `LD_LIBRARY_PATH` to be ignored, so using environment variables won't work there.)
 
 ### Fun with Fortran
 
@@ -190,7 +192,7 @@ In order for the MPI version of the Scheme interface to run successfully, we hav
 
 If you use Meep with MPI, you should compile HDF5 with MPI support as well (see below).
 
-As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as **meep-mpi**.
+As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep`, so it overwrites any serial installation.  There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun meep`).
 
 HDF5 (recommended)
 ------------------
@@ -233,7 +235,7 @@ Install into `dir/bin`, etcetera, as described above.
 
 **`--with-mpi`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep-mpi.` Requires MPI to be installed, as described above. Does **not** compile the serial Meep. If you want that, you will have to `make distclean` and install the serial version separately. Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
+Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep` and can be run in either serial or parallel mode (the latter via `mpirun`). Requires MPI to be installed, as described above.  (You should install this *instead* of the serial Meep.) Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
 
 **`--with-libctl=dir`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -267,10 +269,66 @@ By default, Meep's `configure` script picks compiler flags to optimize Meep as m
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
 
-Python Meep
------------
+Python Bindings
+---------------
 
-An alpha version of Python Meep is available, currently only for the serial (i.e., non-MPI) version. This can be installed on Ubuntu in two ways: [building from source](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html) or as a [pre-compiled package using Conda](https://gist.github.com/ChristopherHogan/c22bb7cc7248f7595c4b09d0e3b16735).
+A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep.
+
+### Building From Source
+
+You can find instructions for building from source on Ubuntu for serial PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html), and parallel PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html).
+
+### Conda Packages
+
+The recommended way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. Binary packages for serial and parallel PyMeep on *Linux* and *MacOS* are currently available (64 bit architectures only), and Windows packages will be available soon. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
+
+```bash
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -b -p <desired_prefix>
+export PATH=<desired_prefix>/bin:$PATH
+```
+
+Next, we create a Conda environment for PyMeep to isolate it from other Python libraries that may be installed.
+
+```bash
+conda create -n mp -c chogan -c defaults -c conda-forge pymeep
+```
+
+This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command. We hope to move everything to conda-forge to simplify the channel selection, but currently we need to pull dependencies from three different channels (the -c arguments), and the order they are specified in is very important.
+
+Next, we need to activate the environment before we can start using it.
+
+```bash
+source activate mp
+```
+
+Now, `python -c 'import meep'` should work, and you can try running some of the examples in the `meep/python/examples` directory.
+
+Installing parallel PyMeep follows the same pattern, but the package is called `pymeep-parallel`.
+
+```bash
+conda create -n pmp -c chogan -c defaults -c conda-forge pymeep-parallel
+source activate pmp
+```
+
+The environment includes `mpi4py`, so you can run an MPI job with 4 processes like this:
+
+```bash
+mpiexec -n 4 python <script_name>.py
+```
+
+If you run into issues, make sure your `PYTHONPATH` environment variable is unset.
+
+*Note:* For pymeep-parallel on Mac, a [bug](https://github.com/open-mpi/ompi/issues/2956) in openmpi requires that the environment variable `TMPDIR` be set to a short path like `/tmp`. Without this workaround, you may see errors similar to this:
+
+```bash
+[laptop:68818] [[53415,0],0] ORTE_ERROR_LOG: Bad
+parameter in file ../../orte/orted/pmix/pmix_server.c at line 264
+
+[laptop:68818] [[53415,0],0] ORTE_ERROR_LOG: Bad
+parameter in file ../../../../../orte/mca/ess/hnp/ess_hnp_module.c at line
+666
+```
 
 Meep for Developers
 -------------------

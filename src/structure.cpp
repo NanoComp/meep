@@ -64,8 +64,10 @@ structure::structure(const grid_volume &thegv, double eps(const vec &),
   outdir = ".";
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   choose_chunkdivision(thegv, num, br, s);
-  simple_material_function epsilon(eps);
-  set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
+  if (eps) {
+    simple_material_function epsilon(eps);
+    set_materials(epsilon, use_anisotropic_averaging, tol, maxeval);
+  }
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, 

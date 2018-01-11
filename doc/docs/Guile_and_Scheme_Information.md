@@ -26,7 +26,7 @@ Scheme is a simplified derivative of [Lisp](https://en.wikipedia.org/wiki/Lisp),
 Guile
 ------
 
-Guile is a free implementation of Scheme, designed to be plugged in to other programs as a scripting language.
+Guile is a free/open-source implementation of Scheme, designed to be plugged in to other programs as a scripting language.
 
 -   The [homepage](http://www.gnu.org/software/guile/) for the GNU Guile project.
 -   See parts IV and V of the [Guile Reference Manual](http://www.gnu.org/software/guile/manual/html_node/index.html) for additional Scheme functions and types defined within the Guile environment.

@@ -81,7 +81,7 @@ class TestSimulation(unittest.TestCase):
         self.assertEqual(len(expected), len(res))
         np.testing.assert_allclose(expected, res)
 
-    def init_simple_simulation(self):
+    def init_simple_simulation(self, **kwargs):
         resolution = 20
 
         cell = mp.Vector3(10, 10)
@@ -100,7 +100,8 @@ class TestSimulation(unittest.TestCase):
                              cell_size=cell,
                              boundary_layers=[pml_layers],
                              sources=[sources],
-                             symmetries=symmetries)
+                             symmetries=symmetries,
+                             **kwargs)
 
     @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
     def test_mpi(self):
@@ -163,6 +164,20 @@ class TestSimulation(unittest.TestCase):
         mp.all_wait()
         if mp.am_master():
             os.remove(fname)
+
+    def test_extra_materials(self):
+        sim = self.init_simple_simulation()
+        sim.extra_materials = [mp.Medium(epsilon=5), mp.Medium(epsilon=10)]
+        sim.run(mp.at_end(lambda sim: None), until=5)
+
+    def test_require_dimensions(self):
+        sim = self.init_simple_simulation(dimensions=3)
+        self.assertIsNone(sim.structure)
+        self.assertEqual(sim.dimensions, 3)
+
+        sim.require_dimensions()
+        sim._init_structure(k=mp.Vector3())
+        self.assertEqual(sim.structure.gv.dim, mp.D2)
 
 if __name__ == '__main__':
     unittest.main()
