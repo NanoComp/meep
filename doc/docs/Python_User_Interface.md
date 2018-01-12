@@ -1043,6 +1043,50 @@ As `output_field_function`, but only outputs the real part of `func` to the data
 
 See also [Field Function Examples](Field_Function_Examples.md). See also [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
+#### Array slices
+
+The output functions described above write field data for the full
+computational grid to binary HDF5 disk files, which is useful for 
+subsequent off-line post-processing; for example, in a python 
+session you could later read in the HDF5 files to get field data
+in the form of `numpy` arrays.
+However, in some cases it is convenient to bypass the disk
+altogether, obtaining field data *directly* in the form of
+`numpy` arrays without ever writing or reading HDF5 files; moreover,
+you may want field data on just a subregion (or `slice`) of the full
+volume, not the full grid.
+This functionality is furnished by the `get_array()` method
+of `Simulation,`
+which inputs **(a)** a specification of a subregion of the
+computational volume **(b)** a field component,
+and which returns a `numpy` array containing values of the
+field component you requested (at the current simulation time)
+at grid points in the volume you requested. The syntax is
+
+```python
+ get_array(center, size, component, cmplx=None, arr=None)
+```
+
+where
+
++ `center` and `size` are `Vector3` quantities specifying the center point
+  $(x_0,y_0,z_0)$ and extents $(\Delta_x, \Delta_y, \Delta_z)$
+  of the subregion over which you want field data;
+
++ `component` is the field component you want
+  (i.e. `mp.Ex,` `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc.)
+
++ `cmplx` is an optional field that you may set to `True` to get
+  complex-valued data (otherwise, the default is to return a real-valued
+  array)
+
++ `arr` is an optional field that you may use to pass a pre-allocated
+  `numpy` array of the correct size, which will be overwritten with
+  the field data instead of allocating a new array.
+
+The return value of `get_array` is a `numpy` array of dimension 1, 2, or 3
+depending on the number of nonzero entries in your `size` vector.
+
 #### Harminv
 
 The following step function collects field data from a given point and runs [Harminv](https://github.com/stevengj/harminv) on that data to extract the frequencies, decay rates, and other information.
@@ -1094,7 +1138,8 @@ sim.run(meep.after_sources(h))
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
+Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. 
+See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 #### Miscellaneous Step-Function Modifiers
 
