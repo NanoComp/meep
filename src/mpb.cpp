@@ -211,13 +211,13 @@ void *fields::get_eigenmode(double &omega_src,
 		            const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution, 
-                            double eigensolver_tol,
-                            bool verbose) {
+                            double eigensolver_tol){
 
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
 
+  bool verbose=true;
   if (resolution <= 0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
   mpb_real k[3] = {0,0,0}, kcart[3] = {0,0,0};

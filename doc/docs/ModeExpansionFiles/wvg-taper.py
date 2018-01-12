@@ -95,14 +95,12 @@ class wvg_taper:
        tol=1.0e-4;
 # FIXME why does python complain about this function call
 # having incorrect arguments?
-#       vedata = self.sim.fields.get_eigenmode(omega, mp.X, vA, vA,
-#                                              band_num, kpoint,
-#                                              match_frequency,
-#                                              parity, res, tol);
-#       self.sim.fields.get_eigenmode2(omega, mp.X, vA);
-       self.sim.fields.get_eigenmode2();
-#       vgrp = get_group_velocity(vedata);
-#       print("vgrp: {}".format(vgrp))
+       vedata = self.sim.fields.get_eigenmode(omega, mp.X, vA, vA,
+                                              band_num, kpoint,
+                                              match_frequency,
+                                              parity, res, tol);
+       vgrp = get_group_velocity(vedata);
+       print("vgrp: {}".format(vgrp))
 
     ##################################################
     # add an eigenmode-source excitation for the #band_numth mode
