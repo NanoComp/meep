@@ -24,9 +24,15 @@ struct mode_solver {
   int alloc_N;
   int nwork_alloc;
 
-  // TODO: Passed in from python
+  // TODO: Get from python ?
   int eigensolver_nwork;
   int eigensolver_block_size;
+
+  int kpoint_index;
+  int last_parity;
+
+  // Output variable
+  bool negative_epsilon_ok;
 
   geometric_object_list geometry;
 
@@ -34,6 +40,8 @@ struct mode_solver {
   mpb_real G[3][3];
 
   maxwell_data *mdata;
+
+  matrix3x3 Gm;
 
   evectmatrix H;
   evectmatrix Hblock;
@@ -45,6 +53,7 @@ struct mode_solver {
   ~mode_solver();
   bool using_mup();
   void init(int p, bool reset_fields);
+  void set_parity(int p);
   void randomize_fields();
   void solve_kpoint(vector3 kpoint);
 };

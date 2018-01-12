@@ -250,11 +250,32 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
   material_epsmu(mat, eps, eps_inv);
 }
 
+/* return a string describing the current parity, used for frequency
+   and filename prefixes */
+const char *parity_string(maxwell_data *d) {
+  static char s[128];
+  strcpy(s, "");
+  if (d->parity & EVEN_Z_PARITY) {
+    strcat(s, (d->nz == 1) ? "te" : "zeven");
+  } else if (d->parity & ODD_Z_PARITY) {
+    strcat(s, (d->nz == 1) ? "tm" : "zodd");
+  }
+  if (d->parity & EVEN_Y_PARITY) {
+    strcat(s, "yeven");
+  } else if (d->parity & ODD_Y_PARITY) {
+    strcat(s, "yodd");
+  }
+  return s;
+}
+
 mode_solver::mode_solver(int num_bands, int parity, double resolution,
                          lattice lat, double tolerance, meep_geom::material_data *_default_material,
                          geometric_object_list geom):
   num_bands(num_bands),
   parity(parity),
+  last_parity(-2),
+  kpoint_index(0),
+  negative_epsilon_ok(false),
   resolution(resolution),
   tolerance(tolerance),
   eigensolver_nwork(3),
@@ -378,8 +399,6 @@ void mode_solver::init(int p, bool reset_fields) {
     G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
   }
 
-  set_maxwell_data_parity(mdata, parity);
-
   eps_data ed;
   int mesh_size[] = {3, 3, 3};
 
@@ -401,7 +420,7 @@ void mode_solver::init(int p, bool reset_fields) {
   mpb_real vol = fabs(matrix3x3_determinant(Rm));
   meep::master_printf("Cell volume = %g\n", vol);
 
-  matrix3x3 Gm = matrix3x3_inverse(matrix3x3_transpose(Rm));
+  Gm = matrix3x3_inverse(matrix3x3_transpose(Rm));
   meep::master_printf("Reciprocal lattice vectors (/ 2 pi):\n");
   meep::master_printf("     (%g, %g, %g)\n", Gm.c0.x, Gm.c0.y, Gm.c0.z);
   meep::master_printf("     (%g, %g, %g)\n", Gm.c1.x, Gm.c1.y, Gm.c1.z);
@@ -474,13 +493,34 @@ void mode_solver::init(int p, bool reset_fields) {
   }
   // }
 
-  // TODO
-  // set_parity(p);
+  set_parity(p);
 
   // if (!have_old_fields || reset_fields) {
   randomize_fields();
   // }
 
+}
+
+void mode_solver::set_parity(integer p) {
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "init must be called before set-parity!\n");
+    return;
+  }
+
+  if (p == -1) {
+    p = last_parity < 0 ? NO_PARITY : last_parity;
+  }
+
+  set_maxwell_data_parity(mdata, p);
+  if (mdata->parity != p) {
+    meep::master_fprintf(stderr, "k vector incompatible with parity\n");
+    exit(EXIT_FAILURE);
+  }
+  meep::master_printf("Solving for band polarization: %s.\n", parity_string(mdata));
+
+  last_parity = p;
+  kpoint_index = 0;  /* reset index */
 }
 
 void mode_solver::randomize_fields() {
@@ -504,6 +544,16 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
   };
 
   meep::master_printf("solve_kpoint (%g,%g,%g):\n", k[0], k[1], k[2]);
+
+  if (!kpoint_index && meep::am_master()) {
+    printf("%sfreqs:, k index, k1, k2, k3, kmag/2pi", parity_string(mdata));
+
+    for (int i = 0; i < num_bands; ++i) {
+      printf(", %s%sband %d", parity_string(mdata), mdata->parity == NO_PARITY ? "" : " ", i + 1);
+    }
+    printf("\n");
+  }
+
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 
   // TODO
@@ -577,6 +627,21 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
                 0); // EIGS_DEFAULT_FLAGS | (meep::am_master() && !quiet ? EIGS_VERBOSE : 0));
   }
 
+  // TODO: Get this to python
+  mpb_real *freqs = new mpb_real[num_bands];
+
+  kpoint_index += 1;
+
+  meep::master_printf("%sfreqs:, %d, %g, %g, %g, %g", parity, kpoint_index, (double)k[0],
+                      (double)k[1], (double)k[2], vector3_norm(matrix3x3_vector3_mult(Gm, kpoint)));
+
+  for (int i = 0; i < num_bands; ++i) {
+    freqs[i] = negative_epsilon_ok ? eigvals[i] : sqrt(eigvals[i]);
+    meep::master_printf(", %g", freqs[i]);
+  }
+  meep::master_printf("\n");
+
+  delete eigvals;
 }
 
 
