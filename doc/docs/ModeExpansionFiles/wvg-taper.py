@@ -95,12 +95,14 @@ class wvg_taper:
        tol=1.0e-4;
 # FIXME why does python complain about this function call
 # having incorrect arguments?
-       vedata = self.sim.fields.get_eigenmode(omega, mp.X, vA, vA,
-                                              band_num, kpoint,
-                                              match_frequency,
-                                              parity, res, tol);
-       vgrp = get_group_velocity(vedata);
-       print("vgrp: {}".format(vgrp))
+#       vedata = self.sim.fields.get_eigenmode(omega, mp.X, vA, vA,
+#                                              band_num, kpoint,
+#                                              match_frequency,
+#                                              parity, res, tol);
+#       self.sim.fields.get_eigenmode2(omega, mp.X, vA);
+       self.sim.fields.get_eigenmode2();
+#       vgrp = get_group_velocity(vedata);
+#       print("vgrp: {}".format(vgrp))
 
     ##################################################
     # add an eigenmode-source excitation for the #band_numth mode
@@ -200,11 +202,11 @@ class wvg_taper:
 ##################################################
 wt=wvg_taper();
 wt.plot_eps();
-#wt.plot_modes();
-fluxB = wt.get_flux();
+wt.plot_modes();
+#fluxB = wt.get_flux();
 
-LX=0.5*wt.sim.cell_size.x;
-LY=0.5*wt.sim.cell_size.y;
-xB=+0.5*LX;
-vB=mp.volume( mp.vec(xB, -LY), mp.vec(xB,+LY) )
-wt.flux2hdf5(fluxB, vB, "vBFields")
+#LX=0.5*wt.sim.cell_size.x;
+#LY=0.5*wt.sim.cell_size.y;
+#xB=+0.5*LX;
+#vB=mp.volume( mp.vec(xB, -LY), mp.vec(xB,+LY) )
+#wt.flux2hdf5(fluxB, vB, "vBFields")

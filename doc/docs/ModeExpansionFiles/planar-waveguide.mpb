@@ -1,0 +1,22 @@
+(define-param w           2.0)
+(define-param LY          2.0)
+
+(define silicon (make dielectric (epsilon 11.7)))
+
+(set! geometry-lattice (make lattice (size no-size LY no-size)))
+
+(set! geometry (list 
+                (make block (material silicon)
+                            (center 0 0 0)
+                            (size infinity w infinity))
+               ))
+                
+(set! resolution 32)
+
+(set-param! num-bands 8)
+(define-param num-k 20)
+(define-param k-min 0.1)
+(define-param k-max 2.0)
+(set! k-points (interpolate num-k (list (vector3 k-min) (vector3 k-max))))
+
+(run)
