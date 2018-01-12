@@ -2,6 +2,8 @@
 #include "pympb.hpp"
 
 void test_create_maxwell_data() {
+  static const int NUM_KPOINTS = 16;
+
   int num_bands = 8;
   int parity = 0;
   double resolution = 32;
@@ -19,6 +21,25 @@ void test_create_maxwell_data() {
   lat.basis.c1 = lat.basis2;
   lat.basis.c2 = lat.basis3;
 
+  vector3 k_points[NUM_KPOINTS] = {
+     {0, 0, 0},
+     {0.1, 0, 0},
+     {0.2, 0, 0},
+     {0.3, 0, 0},
+     {0.4, 0, 0},
+     {0.5, 0, 0},
+     {0.5, 0.1, 0},
+     {0.5, 0.2, 0},
+     {0.5, 0.3, 0},
+     {0.5, 0.4, 0},
+     {0.5, 0.5, 0},
+     {0.4, 0.4, 0},
+     {0.3, 0.3, 0},
+     {0.2, 0.2, 0},
+     {0.1, 0.1, 0},
+     {0, 0, 0},
+  };
+
   meep_geom::material_type mat = meep_geom::make_dielectric(1);
   geometric_object_list g;
   g.num_items = 0;
@@ -29,6 +50,10 @@ void test_create_maxwell_data() {
   py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, mat, g);
 
   ms.init(parity, reset_fields);
+
+  for (int i = 0; i < NUM_KPOINTS; ++i) {
+    ms.solve_kpoint(k_points[i]);
+  }
 
   // maxwell_data *md = ms.mdata;
 

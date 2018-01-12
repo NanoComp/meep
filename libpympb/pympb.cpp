@@ -35,6 +35,19 @@ struct eps_data {
   void *placeholder;
 };
 
+// /* When we are solving for a few bands at a time, we solve for the
+//    upper bands by "deflation"--by continually orthogonalizing them
+//    against the already-computed lower bands.  (This constraint
+//    commutes with the eigen-operator, of course, so all is well.) */
+
+// typedef struct {
+//   evectmatrix Y;   the vectors to orthogonalize against; Y must itself be normalized (Yt B Y = 1) 
+//   evectmatrix BY;  /* B * Y */
+//   int p;  /* the number of columns of Y to orthogonalize against */
+//   scalar *S;  /* a matrix for storing the dot products; should have at least p * X.p elements (see below for X) */
+//   scalar *S2; /* a scratch matrix the same size as S */
+// } deflation_data;
+
 /* Linearly interpolate a given point in a 3d grid of data.  The point
    coordinates should be in the range [0,1], or at the very least [-1,2]
    ... anything outside [0,1] is *mirror* reflected into [0,1] */
@@ -238,12 +251,14 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
 }
 
 mode_solver::mode_solver(int num_bands, int parity, double resolution,
-                         lattice lat, double tolerance, meep_geom::material_type _default_material,
+                         lattice lat, double tolerance, meep_geom::material_data *_default_material,
                          geometric_object_list geom):
   num_bands(num_bands),
   parity(parity),
   resolution(resolution),
   tolerance(tolerance),
+  eigensolver_nwork(3),
+  eigensolver_block_size(-11),
   mdata(NULL) {
 
   this->lat = lat;
@@ -261,15 +276,50 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution,
 
   default_material = _default_material;
   geometry.num_items = geom.num_items;
-  // TODO: free this, or refactor so SWIG can free it.
-  geometry.items = new geometric_object[geom.num_items];
-  memcpy(geometry.items, geom.items, geom.num_items * sizeof(geometric_object));
+  geometry.items = new geometric_object[geometry.num_items];
+
+  // TODO: Avoid the need to copy the geometric objects, or write classes with copy constructors
+  for (int i = 0; i < geometry.num_items; ++i) {
+    geometric_object_copy(&geom.items[i], &geometry.items[i]);
+
+    geometry.items[i].material = new meep_geom::material_data();
+    memcpy(geometry.items[i].material, geom.items[i].material, sizeof(meep_geom::material_data));
+
+    meep_geom::material_type m1 = (meep_geom::material_type)geometry.items[i].material;
+    meep_geom::material_type m2 = (meep_geom::material_type)geom.items[i].material;
+
+    int num_E_suceptibilites = m1->medium.E_susceptibilities.num_items;
+    if (num_E_suceptibilites > 0) {
+      m1->medium.E_susceptibilities.items = new meep_geom::susceptibility_struct[num_E_suceptibilites];
+      memcpy(m1->medium.E_susceptibilities.items, m2->medium.E_susceptibilities.items,
+             num_E_suceptibilites * sizeof(meep_geom::susceptibility_struct));
+    }
+
+    int num_H_suceptibilites = m1->medium.H_susceptibilities.num_items;
+    if (num_H_suceptibilites > 0) {
+      m1->medium.H_susceptibilities.items = new meep_geom::susceptibility_struct[num_H_suceptibilites];
+      memcpy(m1->medium.H_susceptibilities.items, m2->medium.H_susceptibilities.items,
+             num_H_suceptibilites * sizeof(meep_geom::susceptibility_struct));
+    }
+  }
 }
 
 mode_solver::~mode_solver() {
 
   destroy_maxwell_data(mdata);
   destroy_geom_box_tree(geometry_tree);
+
+  for (int i = 0; i < geometry.num_items; ++i) {
+    geometric_object_destroy(geometry.items[i]);
+    delete[] ((meep_geom::material_type)geometry.items[i].material)->medium.E_susceptibilities.items;
+    delete[] ((meep_geom::material_type)geometry.items[i].material)->medium.H_susceptibilities.items;
+    delete geometry.items[i].material;
+  }
+  delete[] geometry.items;
+}
+
+bool mode_solver::using_mup() {
+  return mdata && mdata->mu_inv != NULL;
 }
 
 void mode_solver::init(int p, bool reset_fields) {
@@ -294,6 +344,20 @@ void mode_solver::init(int p, bool reset_fields) {
 
   meep::master_printf("Working in %d dimensions.\n", dimensions);
   meep::master_printf("Grid size is %d x %d x %d.\n", n[0], n[1], n[2]);
+
+  int block_size;
+
+  if (eigensolver_block_size != 0 && eigensolver_block_size < num_bands) {
+    block_size = eigensolver_block_size;
+    if (block_size < 0) {
+      // Guess a block_size near -block_size, chosen so that all blocks are nearly equal in size
+      block_size = (num_bands - block_size - 1) / (-block_size);
+      block_size = (num_bands + block_size - 1) / block_size;
+    }
+    meep::master_printf("Solving for %d bands at a time.\n", block_size);
+  } else {
+    block_size = num_bands;
+  }
 
   if (mdata) {
     // TODO: Clean up if mdata is not NULL
@@ -338,6 +402,10 @@ void mode_solver::init(int p, bool reset_fields) {
   meep::master_printf("Cell volume = %g\n", vol);
 
   matrix3x3 Gm = matrix3x3_inverse(matrix3x3_transpose(Rm));
+  meep::master_printf("Reciprocal lattice vectors (/ 2 pi):\n");
+  meep::master_printf("     (%g, %g, %g)\n", Gm.c0.x, Gm.c0.y, Gm.c0.z);
+  meep::master_printf("     (%g, %g, %g)\n", Gm.c1.x, Gm.c1.y, Gm.c1.z);
+  meep::master_printf("     (%g, %g, %g)\n", Gm.c2.x, Gm.c2.y, Gm.c2.z);
 
   geom_fix_objects0(geometry);
 
@@ -346,11 +414,11 @@ void mode_solver::init(int p, bool reset_fields) {
     for (int i = 0; i < geometry.num_items; ++i) {
       display_geometric_object_info(5, geometry.items[i]);
 
-      meep_geom::material_type m = (meep_geom::material_type)geometry.items[i].material;
-      if (m->which_subclass == meep_geom::material_data::MEDIUM) {
-        printf("%*sepsilon = %g, mu = %g\n", 5 + 5, "", m->medium.epsilon_diag.x,
-               m->medium.mu_diag.x);
-      }
+      // meep_geom::material_type m = (meep_geom::material_type)geometry.items[i].material;
+      // if (m->which_subclass == meep_geom::material_data::MEDIUM) {
+      //   printf("%*sepsilon = %g, mu = %g\n", 5 + 5, "", m->medium.epsilon_diag.x,
+      //          m->medium.mu_diag.x);
+      // }
     }
   }
 
@@ -384,6 +452,48 @@ void mode_solver::init(int p, bool reset_fields) {
   if (check_maxwell_dielectric(mdata, 0)) {
     meep::abort("invalid dielectric function for MPB");
   }
+
+  // if (!have_old_fields) {
+  meep::master_printf("Allocating fields...\n");
+  H = create_evectmatrix(n[0] * n[1] * n[2], 2, num_bands, local_N, N_start, alloc_N);
+  nwork_alloc = eigensolver_nwork + (mdata->mu_inv != NULL);
+
+  for (int i = 0; i < nwork_alloc; ++i) {
+    W[i] = create_evectmatrix(n[0] * n[1] * n[2], 2, block_size, local_N, N_start, alloc_N);
+  }
+
+  if (block_size < num_bands) {
+    Hblock = create_evectmatrix(n[0] * n[1] * n[2], 2, block_size, local_N, N_start, alloc_N);
+  } else {
+    Hblock = H;
+    if (using_mup() && block_size < num_bands) {
+      muinvH = create_evectmatrix(n[0] * n[1] * n[2], 2, num_bands, local_N, N_start, alloc_N);
+    } else {
+      muinvH = H;
+    }
+  }
+  // }
+
+  // TODO
+  // set_parity(p);
+
+  // if (!have_old_fields || reset_fields) {
+  randomize_fields();
+  // }
+
+}
+
+void mode_solver::randomize_fields() {
+  int i;
+
+  if (!mdata) {
+    return;
+  }
+  meep::master_printf("Initializing fields to random numbers...\n");
+
+  for (i = 0; i < H.n * H.p; ++i) {
+    ASSIGN_SCALAR(H.data[i], rand() * 1.0 / RAND_MAX, rand() * 1.0 / RAND_MAX);
+  }
 }
 
 void mode_solver::solve_kpoint(vector3 kpoint) {
@@ -393,7 +503,80 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
     kpoint.z
   };
 
+  meep::master_printf("solve_kpoint (%g,%g,%g):\n", k[0], k[1], k[2]);
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+
+  // TODO
+  // if (mtdata) {  /* solving for bands near a target frequency */
+  // }
+
+  // TODO
+  // if (eigensolver_davidsonp) {
+  // }
+
+  // TODO
+  int ib0 = 0;
+
+  mpb_real *eigvals = new mpb_real[num_bands];
+
+  // deflation_data deflation;
+
+  // /* Set up deflation data: */
+  // if (muinvH.data != Hblock.data) {
+  //   deflation.Y = H;
+  //   deflation.BY = muinvH.data != H.data ? muinvH : H;
+  //   deflation.p = 0;
+  //   deflation.S = new scalar[H.p * Hblock.p];
+  //   deflation.S2 = new scalar[H.p * Hblock.p];
+  // }
+
+  for (int ib = ib0; ib < num_bands; ib += Hblock.alloc_p) {
+    evectconstraint_chain *constraints;
+    int num_iters;
+
+    /* don't solve for too many bands if the block size doesn't divide
+       the number of bands: */
+    if (ib + mdata->num_bands > num_bands) {
+      maxwell_set_num_bands(mdata, num_bands - ib);
+
+      for (int i = 0; i < nwork_alloc; ++i) {
+        evectmatrix_resize(&W[i], num_bands - ib, 0);
+      }
+      evectmatrix_resize(&Hblock, num_bands - ib, 0);
+    }
+
+    meep::master_printf("Solving for bands %d to %d...\n", ib + 1, ib + Hblock.p);
+
+    constraints = NULL;
+    constraints = evect_add_constraint(constraints, maxwell_parity_constraint, (void *) mdata);
+
+    if (mdata->zero_k) {
+      constraints = evect_add_constraint(constraints, maxwell_zero_k_constraint, (void *) mdata);
+    }
+
+    if (Hblock.data != H.data) {  /* initialize fields of block from H */
+      int in, ip;
+      for (in = 0; in < Hblock.n; ++in) {
+        for (ip = 0; ip < Hblock.p; ++ip) {
+          Hblock.data[in * Hblock.p + ip] = H.data[in * H.p + ip + (ib-ib0)];
+        }
+      }
+
+      // deflation.p = ib-ib0;
+      // if (deflation.p > 0) {
+      //   if (deflation.BY.data != H.data) {
+      //     evectmatrix_resize(&deflation.BY, deflation.p, 0);
+      //     maxwell_muinv_operator(H, deflation.BY, (void *) mdata, 1, deflation.BY);
+      //   }
+      //   constraints = evect_add_constraint(constraints, deflation_constraint, &deflation);
+      // }
+    }
+
+    eigensolver(Hblock, eigvals + ib, maxwell_operator, (void *) mdata, NULL, NULL, maxwell_preconditioner2,
+                (void *) mdata, evectconstraint_chain_func, (void *) constraints, W, 3, tolerance, &num_iters,
+                0); // EIGS_DEFAULT_FLAGS | (meep::am_master() && !quiet ? EIGS_VERBOSE : 0));
+  }
+
 }
 
 

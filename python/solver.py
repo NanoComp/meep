@@ -259,6 +259,11 @@ class ModeSolver(object):
         if isinstance(reset_fields, basestring):
             load_eigenvectors(reset_fields)
 
+        print("{} k-points".format(len(self.k_points)))
+
+        for kp in self.k_points:
+            print("  {}".format(kp))
+
         print("elapsed time for initialization: {}".format(time.time() - init_time))
 
         # TODO: Split over multiple processes

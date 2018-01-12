@@ -76,6 +76,8 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %include "numpy.i"
 %import "meep.i"
 
+%apply material_type { meep_geom::material_data *};
+
 %typemap(in) lattice {
     if (!pylattice_to_lattice($input, &$1)) {
         PyErr_PrintEx(0);
