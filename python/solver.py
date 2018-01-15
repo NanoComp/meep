@@ -147,10 +147,6 @@ def set_kpoint_index(index):
     pass
 
 
-def output_epsilon():
-    pass
-
-
 def using_mu():
     pass
 
@@ -189,7 +185,8 @@ class ModeSolver(object):
                  geometry_center=mp.Vector3(0, 0, 0),
                  default_material=mp.Medium(epsilon=1),
                  dimensions=3,
-                 randomize_fields=False):
+                 randomize_fields=False,
+                 filename_prefix=''):
 
         self.resolution = resolution
         self.is_negative_epsilon_ok = is_negative_epsilon_ok
@@ -215,6 +212,7 @@ class ModeSolver(object):
         self.default_material = default_material
         self.dimensions = dimensions
         self.randomize_fields = randomize_fields
+        self.filename_prefix = filename_prefix
         self.parity = 0
         self.iterations = 0
         self.freqs = []
@@ -240,6 +238,10 @@ class ModeSolver(object):
 
     def output_gaps(self):
         pass
+
+    def output_epsilon(self):
+        self.mode_solver.get_epsilon()
+        self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
 
     def run_parity(self, p, reset_fields, *band_functions):
         if self.randomize_fields and randomize_fields not in band_functions:
@@ -271,7 +273,7 @@ class ModeSolver(object):
         set_kpoint_index(k_split[0])
 
         if k_split[0] == 0:
-            output_epsilon()  # output epsilon immediately for 1st k block
+            self.output_epsilon()  # output epsilon immediately for 1st k block
             if using_mu():
                 output_mu()  # and mu too, if we have it
 

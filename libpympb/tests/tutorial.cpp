@@ -51,6 +51,8 @@ void test_create_maxwell_data() {
 
   ms.init(parity, reset_fields);
 
+  // get_epsilon();
+
   for (int i = 0; i < NUM_KPOINTS; ++i) {
     ms.solve_kpoint(k_points[i]);
   }
