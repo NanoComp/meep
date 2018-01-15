@@ -135,27 +135,11 @@ def load_eigenvectors(fields):
     pass
 
 
-def randomize_fields():
-    pass
-
-
-def list_split(l, num, index):
-    pass
-
-
-def set_kpoint_index(index):
-    pass
-
-
 def using_mu():
     pass
 
 
 def output_mu():
-    pass
-
-
-def solve_kpoint(k):
     pass
 
 
@@ -230,22 +214,62 @@ class ModeSolver(object):
                                            self.geometry_lattice, self.tolerance,
                                            self.default_material, self.geometry)
 
+    # The band-range-data is a list of tuples, each consisting of a (min, k-point)
+    # tuple and a (max, k-point) tuple, with each min/max pair describing the
+    # frequency range of a band and the k-points where it achieves its minimum/maximum.
+    # Here, we update this data with a new list of band frequencies, and return the new
+    # data.  If band-range-data is null or too short, the needed entries will be created.
     def update_band_range_data(self, brd, freqs, kpoint):
-        pass
 
-    def output_band_range_data(self):
-        pass
+        def update_brd(brd, freqs, br_start):
+            if not freqs:
+                return br_start + brd
+            else:
+                br = [(mp.inf, -1), (-mp.inf, -1)] if not brd else brd[0]
+                br_rest = [] if not brd else brd[1:]
+                newmin = (freqs[0], kpoint) if freqs[0] < br[0][0] else br[0]
+                newmax = (freqs[0], kpoint) if freqs[0] > br[0][1] else br[1]
+                return update_brd(br_rest, freqs[1:], [(newmin, newmax)] + br_start)
 
-    def output_gaps(self):
-        pass
+        return update_brd(brd, freqs, [])
+
+    def output_band_range_data(self, br_data):
+        for tup, band in zip(br_data, range(len(br_data))):
+            fmt = "Band {} range: {} at {} to {} at {}"
+            min_freq, min_kpoint, max_freq, max_kpoint = tup
+            print(fmt.format(band, min_freq, min_kpoint, max_freq, max_kpoint))
+
+    # Output any gaps in the given band ranges, and return a list of the gaps as
+    # a list of (percent, freq-min, freq-max) tuples.
+    def output_gaps(self, br_data):
+
+        def ogaps(br_cur, br_rest, i, gaps):
+            if not br_rest:
+                return gaps
+            else:
+                if br_cur[0][1] >= br_rest[0][0][0]:
+                    return ogaps(br_rest[0], br_rest[1:], i + 1, gaps)
+                else:
+                    gap_size = 5
+                    fmt = "Gap from band {} ({}) to band {} ({}), {}%"
+                    print(fmt.format(i, br_cur[0][1], i + 1, br_rest[0][0][0], gap_size))
+                    return ogaps(br_rest[0], br_rest[1:], i + 1, [gap_size, br_cur[0][1], br_rest[0][0][0]] + gaps)
+        if not br_data:
+            return []
+        else:
+            return ogaps(br_data[0], br_data[1:], 1, [])
 
     def output_epsilon(self):
         self.mode_solver.get_epsilon()
-        self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
+        # TODO
+        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
+
+    def randomize_fields(self):
+        self.mode_solver.randomize_fields()
 
     def run_parity(self, p, reset_fields, *band_functions):
-        if self.randomize_fields and randomize_fields not in band_functions:
-            band_functions.append(randomize_fields)
+        if self.randomize_fields and self.randomize_fields not in band_functions:
+            band_functions.append(self.randomize_fields)
 
         start = time.time()
 
@@ -269,8 +293,9 @@ class ModeSolver(object):
         print("elapsed time for initialization: {}".format(time.time() - init_time))
 
         # TODO: Split over multiple processes
-        k_split = list_split(self.k_points, self.k_split_num, self.k_split_index)
-        set_kpoint_index(k_split[0])
+        # k_split = list_split(self.k_points, self.k_split_num, self.k_split_index)
+        k_split = (0, self.k_points)
+        self.mode_solver.set_kpoint_index(k_split[0])
 
         if k_split[0] == 0:
             self.output_epsilon()  # output epsilon immediately for 1st k block
@@ -281,7 +306,7 @@ class ModeSolver(object):
             for k in k_split[1]:
                 self.current_k = k
                 solve_kpoint_time = time.time()
-                solve_kpoint(k)
+                self.mode_solver.solve_kpoint(k)
                 print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
 
                 # TODO: Make freqs an output var
@@ -300,8 +325,8 @@ class ModeSolver(object):
                             band += 1
 
             if len(k_split[1]) > 1:
-                self.output_band_range_data()
-                self.gap_list = self.output_gaps()
+                self.output_band_range_data(self.band_range_data)
+                self.gap_list = self.output_gaps(self.band_range_data)
             else:
                 self.gap_list = []
 
@@ -311,31 +336,31 @@ class ModeSolver(object):
         print("done")
 
     def run(self, *band_functions):
-        self.run_parity(mp.NO_PARITY, True, band_functions)
+        self.run_parity(mp.NO_PARITY, True, *band_functions)
 
     def run_zeven(self, *band_functions):
-        self.run_parity(mp.EVEN_Z, True, band_functions)
+        self.run_parity(mp.EVEN_Z, True, *band_functions)
 
     def run_zodd(self, *band_functions):
-        self.run_parity(mp.ODD_Z, True, band_functions)
+        self.run_parity(mp.ODD_Z, True, *band_functions)
 
     def run_yeven(self, *band_functions):
-        self.run_parity(mp.EVEN_Y, True, band_functions)
+        self.run_parity(mp.EVEN_Y, True, *band_functions)
 
     def run_yodd(self, *band_functions):
-        self.run_parity(mp.ODD_Y, True, band_functions)
+        self.run_parity(mp.ODD_Y, True, *band_functions)
 
     def run_yeven_zeven(self, *band_functions):
-        self.run_parity(mp.EVEN_Y + mp.EVEN_Z, True, band_functions)
+        self.run_parity(mp.EVEN_Y + mp.EVEN_Z, True, *band_functions)
 
     def run_yeven_zodd(self, *band_functions):
-        self.run_parity(mp.EVEN_Y + mp.ODD_Z, True, band_functions)
+        self.run_parity(mp.EVEN_Y + mp.ODD_Z, True, *band_functions)
 
     def run_yodd_zeven(self, *band_functions):
-        self.run_parity(mp.ODD_Y + mp.EVEN_Z, True, band_functions)
+        self.run_parity(mp.ODD_Y + mp.EVEN_Z, True, *band_functions)
 
     def run_yodd_zodd(self, *band_functions):
-        self.run_parity(mp.ODD_Y + mp.ODD_Z, True, band_functions)
+        self.run_parity(mp.ODD_Y + mp.ODD_Z, True, *band_functions)
 
     run_te = run_zeven
     run_tm = run_zodd

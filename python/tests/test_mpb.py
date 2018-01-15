@@ -50,5 +50,45 @@ class TestMPBWrappers(unittest.TestCase):
 #         pass
 
 
+class TestModeSolver(unittest.TestCase):
+
+    def test_list_split(self):
+        k_points = [
+            mp.Vector3(),
+            mp.Vector3(0.5),
+            mp.Vector3(0.5, 0.5),
+            mp.Vector3()
+        ]
+
+        k_points = mp.interpolate(4, k_points)
+
+        k_split = mp.list_split(k_points, 1, 0)
+
+        expected = [
+            (0, [mp.Vector3(),
+                 mp.Vector3(0.10000000000000003),
+                 mp.Vector3(0.20000000000000004),
+                 mp.Vector3(0.30000000000000004),
+                 mp.Vector3(0.4),
+                 mp.Vector3(0.5),
+                 mp.Vector3(0.5, 0.10000000000000003),
+                 mp.Vector3(0.5, 0.20000000000000004),
+                 mp.Vector3(0.5, 0.30000000000000004),
+                 mp.Vector3(0.5, 0.4),
+                 mp.Vector3(0.5, 0.5),
+                 mp.Vector3(0.4, 0.4),
+                 mp.Vector3(0.30000000000000004, 0.30000000000000004),
+                 mp.Vector3(0.2, 0.2),
+                 mp.Vector3(0.1, 0.1),
+                 mp.Vector3(0.0, 0.0)]),
+        ]
+
+        indx = k_split[0][0]
+        split_list = k_split[0][1]
+        self.assertEqual(indx, 0)
+        for res, exp in zip(split_list, expected[0][1]):
+            self.assertEqual(res, exp)
+
+
 if __name__ == '__main__':
     unittest.main()
