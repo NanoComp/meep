@@ -35,19 +35,6 @@ struct eps_data {
   void *placeholder;
 };
 
-// /* When we are solving for a few bands at a time, we solve for the
-//    upper bands by "deflation"--by continually orthogonalizing them
-//    against the already-computed lower bands.  (This constraint
-//    commutes with the eigen-operator, of course, so all is well.) */
-
-// typedef struct {
-//   evectmatrix Y;   the vectors to orthogonalize against; Y must itself be normalized (Yt B Y = 1) 
-//   evectmatrix BY;  /* B * Y */
-//   int p;  /* the number of columns of Y to orthogonalize against */
-//   scalar *S;  /* a matrix for storing the dot products; should have at least p * X.p elements (see below for X) */
-//   scalar *S2; /* a scratch matrix the same size as S */
-// } deflation_data;
-
 /* Linearly interpolate a given point in a 3d grid of data.  The point
    coordinates should be in the range [0,1], or at the very least [-1,2]
    ... anything outside [0,1] is *mirror* reflected into [0,1] */

@@ -5,7 +5,7 @@ void test_create_maxwell_data() {
   static const int NUM_KPOINTS = 16;
 
   int num_bands = 8;
-  int parity = 0;
+  int parity = 1;
   double resolution = 32;
   double tolerance = 1.0e-7;
   lattice lat = {};

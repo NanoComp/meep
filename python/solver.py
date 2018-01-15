@@ -305,7 +305,6 @@ class ModeSolver(object):
 
         end = time.time() - start
         print("total elapsed time for run: {}".format(end))
-        # TODO: Does this keep track of all runs? When should it be reset?
         self.total_run_time += end
         print("done")
 
