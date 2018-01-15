@@ -11,6 +11,7 @@ namespace py_mpb {
 
 struct mode_solver {
   static const int MAX_NWORK = 10;
+  static const char epsilon_CURFIELD_TYPE = 'n';
 
   int num_bands;
   int parity;
@@ -28,7 +29,6 @@ struct mode_solver {
   int eigensolver_nwork;
   int eigensolver_block_size;
 
-  int kpoint_index;
   int last_parity;
 
   // Output variable
@@ -40,6 +40,11 @@ struct mode_solver {
   mpb_real G[3][3];
 
   maxwell_data *mdata;
+  maxwell_target_data *mtdata;
+
+  scalar_complex *curfield;
+  int curfield_band;
+  char curfield_type;
 
   matrix3x3 Gm;
 
@@ -48,14 +53,21 @@ struct mode_solver {
   evectmatrix muinvH;
   evectmatrix W[MAX_NWORK];
 
+  meep_geom::material_data *default_md;
+
   mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
               meep_geom::material_data *_default_material, geometric_object_list geom);
   ~mode_solver();
   bool using_mup();
   void init(int p, bool reset_fields);
   void set_parity(int p);
+  void set_kpoint_index(int i);
+  void get_epsilon();
   void randomize_fields();
   void solve_kpoint(vector3 kpoint);
+
+private:
+  int kpoint_index;
 };
 } // namespace py_mpb
 #endif

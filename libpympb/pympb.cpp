@@ -255,8 +255,21 @@ const char *parity_string(maxwell_data *d) {
   return s;
 }
 
-mode_solver::mode_solver(int num_bands, int parity, double resolution,
-                         lattice lat, double tolerance, meep_geom::material_data *_default_material,
+/* Extract the mean epsilon from the effective inverse dielectric tensor,
+   which contains two eigenvalues that correspond to the mean epsilon,
+   and one which corresponds to the harmonic mean. */
+mpb_real mean_medium_from_matrix(const symmetric_matrix *eps_inv) {
+  mpb_real eps_eigs[3];
+  maxwell_sym_matrix_eigs(eps_eigs, eps_inv);
+  /* the harmonic mean should be the largest eigenvalue (smallest
+     epsilon), so we'll ignore it and average the other two: */
+  return 2.0 / (eps_eigs[0] + eps_eigs[1]);
+}
+
+/******* mode_solver *******/
+
+mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice lat,
+                         double tolerance, meep_geom::material_data *_default_material,
                          geometric_object_list geom):
   num_bands(num_bands),
   parity(parity),
@@ -264,10 +277,14 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution,
   tolerance(tolerance),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
-  kpoint_index(0),
   last_parity(-2),
   negative_epsilon_ok(false),
-  mdata(NULL) {
+  mdata(NULL),
+  mtdata(NULL),
+  curfield(NULL),
+  curfield_band(0),
+  curfield_type('-'),
+  kpoint_index(0) {
 
   this->lat = lat;
 
@@ -282,7 +299,16 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution,
     }
   }
 
-  default_material = _default_material;
+  // TODO: Write class with copy constructor or eliminate the need to copy this
+  default_md = new meep_geom::material_data_struct();
+  default_md->which_subclass = _default_material->which_subclass;
+  // TODO: Assuming the suscebtibility lists are empty
+  memcpy( &(default_md->medium), &_default_material->medium, sizeof(meep_geom::medium_struct));
+  // TODO: user_func, user_data
+  // TODO: epsilon_data, epsilon_dims
+
+  default_material = (void*)default_md;
+
   geometry.num_items = geom.num_items;
   geometry.items = new geometric_object[geometry.num_items];
 
@@ -324,6 +350,8 @@ mode_solver::~mode_solver() {
     delete (meep_geom::material_type)geometry.items[i].material;
   }
   delete[] geometry.items;
+  // TODO: susceptibilites in default_md->medium
+  delete default_md;
 }
 
 bool mode_solver::using_mup() {
@@ -331,6 +359,8 @@ bool mode_solver::using_mup() {
 }
 
 void mode_solver::init(int p, bool reset_fields) {
+  int have_old_fields = 0;
+
   n[0] = std::max(resolution * std::ceil(geometry_lattice.size.x), 1.0);
   n[1] = std::max(resolution * std::ceil(geometry_lattice.size.y), 1.0);
   n[2] = std::max(resolution * std::ceil(geometry_lattice.size.z), 1.0);
@@ -459,34 +489,36 @@ void mode_solver::init(int p, bool reset_fields) {
     meep::abort("invalid dielectric function for MPB");
   }
 
-  // if (!have_old_fields) {
-  meep::master_printf("Allocating fields...\n");
-  H = create_evectmatrix(n[0] * n[1] * n[2], 2, num_bands, local_N, N_start, alloc_N);
-  nwork_alloc = eigensolver_nwork + (mdata->mu_inv != NULL);
+  if (!have_old_fields) {
+    meep::master_printf("Allocating fields...\n");
 
-  for (int i = 0; i < nwork_alloc; ++i) {
-    W[i] = create_evectmatrix(n[0] * n[1] * n[2], 2, block_size, local_N, N_start, alloc_N);
-  }
+    int N = n[0] * n[1] * n[2];
+    int c = 2;
 
-  if (block_size < num_bands) {
-    Hblock = create_evectmatrix(n[0] * n[1] * n[2], 2, block_size, local_N, N_start, alloc_N);
-  } else {
-    Hblock = H;
-    if (using_mup() && block_size < num_bands) {
-      muinvH = create_evectmatrix(n[0] * n[1] * n[2], 2, num_bands, local_N, N_start, alloc_N);
+    H = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
+    nwork_alloc = eigensolver_nwork + (mdata->mu_inv != NULL);
+
+    for (int i = 0; i < nwork_alloc; ++i) {
+      W[i] = create_evectmatrix(N, c, block_size, local_N, N_start, alloc_N);
+    }
+
+    if (block_size < num_bands) {
+      Hblock = create_evectmatrix(N, c, block_size, local_N, N_start, alloc_N);
     } else {
-      muinvH = H;
+      Hblock = H;
+      if (using_mup() && block_size < num_bands) {
+        muinvH = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
+      } else {
+        muinvH = H;
+      }
     }
   }
-  // }
 
   set_parity(p);
 
-  // if (!have_old_fields || reset_fields) {
-  if (reset_fields) {
+  if (!have_old_fields || reset_fields) {
     randomize_fields();
   }
-  // }
 
 }
 
@@ -509,7 +541,11 @@ void mode_solver::set_parity(integer p) {
   meep::master_printf("Solving for band polarization: %s.\n", parity_string(mdata));
 
   last_parity = p;
-  kpoint_index = 0;  /* reset index */
+  set_kpoint_index(0);  /* reset index */
+}
+
+void mode_solver::set_kpoint_index(int i) {
+  kpoint_index = i;
 }
 
 void mode_solver::randomize_fields() {
@@ -553,7 +589,20 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
   // if (eigensolver_davidsonp) {
   // }
 
-  int ib0 = 0;
+  int ib0;
+  if (mdata->zero_k && !mtdata) {
+    ib0 = maxwell_zero_k_num_const_bands(H, mdata);
+    for (int in = 0; in < H.n; ++in) {
+      for (int ip = 0; ip < H.p - ib0; ++ip) {
+        H.data[in * H.p + ip] = H.data[in * H.p + ip + ib0];
+      }
+    }
+    evectmatrix_resize(&H, H.p - ib0, 1);
+  }
+  else {
+    ib0 = 0;
+  }
+
   mpb_real *eigvals = new mpb_real[num_bands];
   int total_iters = 0;
 
@@ -638,5 +687,91 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
   meep::master_printf("\n");
 
   delete eigvals;
+}
+
+/* get the epsilon function, and compute some statistics */
+void mode_solver::get_epsilon() {
+  mpb_real eps_mean = 0;
+  mpb_real eps_inv_mean = 0;
+  mpb_real eps_high = -1e20;
+  mpb_real eps_low = 1e20;
+
+  int fill_count = 0;
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "init-params must be called before get-epsilon!\n");
+    return;
+  }
+
+  curfield = (scalar_complex *) mdata->fft_data;
+  mpb_real *epsilon = (mpb_real *) curfield;
+  curfield_band = 0;
+  curfield_type = epsilon_CURFIELD_TYPE;
+
+  /* get epsilon.  Recall that we actually have an inverse
+     dielectric tensor at each point; define an average index by
+     the inverse of the average eigenvalue of the 1/eps tensor.
+     i.e. 3/(trace 1/eps). */
+
+  int N = mdata->fft_output_size;
+
+  for (int i = 0; i < N; ++i) {
+    if (mdata->eps_inv == NULL) {
+      epsilon[i] = 1.0;
+    }
+    else {
+      epsilon[i] = mean_medium_from_matrix(mdata->eps_inv + i);
+    }
+    if (epsilon[i] < eps_low) {
+      eps_low = epsilon[i];
+    }
+    if (epsilon[i] > eps_high) {
+      eps_high = epsilon[i];
+    }
+    eps_mean += epsilon[i];
+    eps_inv_mean += 1/epsilon[i];
+    if (epsilon[i] > 1.0001) {
+      ++fill_count;
+    }
+
+#ifndef SCALAR_COMPLEX
+  /* most points need to be counted twice, by rfftw output symmetry: */
+    {
+      int last_index;
+      int last_dim_stored = mdata->last_dim_size / (sizeof(scalar_complex)/sizeof(scalar));
+#ifdef HAVE_MPI
+      if (mdata->nz == 1) { /* 2d calculation: 1st dim. is truncated one */
+        last_index = i / mdata->nx + mdata->local_y_start;
+      }
+      else {
+        last_index = i % last_dim_stored;
+      }
+#else
+      last_index = i % last_dim_stored;
+#endif
+      if (last_index != 0 && 2*last_index != mdata->last_dim) {
+        eps_mean += epsilon[i];
+        eps_inv_mean += 1/epsilon[i];
+        if (epsilon[i] > 1.0001) {
+           ++fill_count;
+        }
+      }
+    }
+#endif
+  }
+
+  // TODO
+  // mpi_allreduce_1(&eps_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  // mpi_allreduce_1(&eps_inv_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  // mpi_allreduce_1(&eps_low, mpb_real, SCALAR_MPI_TYPE, MPI_MIN, mpb_comm);
+  // mpi_allreduce_1(&eps_high, mpb_real, SCALAR_MPI_TYPE, MPI_MAX, mpb_comm);
+  // mpi_allreduce_1(&fill_count, int, MPI_INT, MPI_SUM, mpb_comm);
+  N = mdata->nx * mdata->ny * mdata->nz;
+  eps_mean /= N;
+  eps_inv_mean = N/eps_inv_mean;
+
+  meep::master_printf("epsilon: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n",
+                      eps_low, eps_high, eps_mean, eps_inv_mean, (100.0 * fill_count) / N,
+                      eps_high == eps_low ? 100.0 : 100.0 * (eps_mean-eps_low) / (eps_high-eps_low));
 }
 } // namespace meep_mpb
