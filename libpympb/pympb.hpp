@@ -4,7 +4,6 @@
 #include "ctlgeom.h"
 #include "mpb.h"
 #include "mpb/maxwell.h"
-// #include "mpb/scalar.h"
 #include "meepgeom.hpp"
 
 namespace py_mpb {
@@ -73,6 +72,7 @@ struct mode_solver {
   void epsilon_file_material(meep_geom::material_data *md, vector3 p);
   void randomize_fields();
   void solve_kpoint(vector3 kpoint);
+  void output_field_to_file(int which_component, string filename_prefix);
 
 private:
   int kpoint_index;

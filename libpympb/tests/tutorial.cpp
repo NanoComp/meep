@@ -47,9 +47,8 @@ void test_create_maxwell_data() {
 
   bool reset_fields = true;
 
-  py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, mat, g);
-
-  ms.init(parity, reset_fields);
+  py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, mat, g,
+                         reset_fields);
 
   // get_epsilon();
 
