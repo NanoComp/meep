@@ -96,7 +96,7 @@ vec k_guess(void *user_data, double freq, int band_num)
      if (band_num>=2)  return vec(0.426302, 0.0, 0.0);
    };
 
-  return vec(0.419984, 0.0, 0.0);
+  return vec(0.0, 0.0, 0.0);
 } 
 
 /***************************************************************/
@@ -171,6 +171,7 @@ int main(int argc, char *argv[])
   double taper_length   = 0.0;
   double wvg_length     = 3.0;
   double ratio          = 3.0;
+  double freq           = 0.25;
   int taper_order       = 0;
   int  band_num         = 1;
   int  num_bands        = 6;
@@ -236,6 +237,12 @@ int main(int argc, char *argv[])
          usage(argv[0], "error: no argument given for --frame-interval");
         sscanf(argv[narg], "%le", &frame_interval);
         master_printf("setting frame-interval=%e\n",frame_interval);
+      }
+     else if (!strcasecmp(argv[narg],"--freq"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --freq");
+        sscanf(argv[narg], "%le", &freq);
+        master_printf("setting freq=%e\n",freq);
       }
      else if (!strcasecmp(argv[narg],"--resolution"))
       { if ( ++narg >= argc )
@@ -341,7 +348,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* add source                                                  */
   /***************************************************************/
-  double fcen = three_d ? 0.41 : 0.15;  // center frequency
+  double fcen = freq;
   double df   = 0.5*fcen;  // bandwidth
   int nfreq   = 1;         // number of frequency points
   gaussian_src_time gsrc(fcen, df);
