@@ -108,9 +108,9 @@ We will first create an image of the dielectric function $\varepsilon$. This inv
 ```py
 eps_h5file = h5py.File('eps-000000.00.h5','r')
 eps_data = np.array(eps_h5file['eps'])
-plt.figure(dpi=100);
-plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary');
-plt.axis('off');
+plt.figure(dpi=100)
+plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
+plt.axis('off')
 plt.show()
 ```
 
@@ -119,10 +119,10 @@ Next we create an image of the scalar electric field $E_z$ by overlaying the die
 ```py
 ez_h5file = h5py.File('ez-000200.00.h5','r')
 ez_data = np.array(ez_h5file['ez'])
-plt.figure(dpi=100);
-plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary');
-plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='seismic', alpha=0.9);
-plt.axis('off');
+plt.figure(dpi=100)
+plt.imshow(eps_data.transpose(), interpolation='spline36', cmap='binary')
+plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9)
+plt.axis('off')
 plt.show()
 ```
 
@@ -182,21 +182,18 @@ sim.run(mp.at_beginning(mp.output_epsilon),
 Here, `"ez"` determines the name of the output file, which will be called `ez.h5` if you are running interactively or will be prefixed with the name of the file name for a Python file (e.g. `tutorial-ez.h5` for `tutorial.py`). If we run `h5ls` on this file (a standard utility, included with HDF5, that lists the contents of the HDF5 file), we get:
 
 ```sh
-unix% h5ls ez.h5 
-ez                       Dataset {161, 161, 330/Inf}
+unix% h5ls ez.h5
+ez                       Dataset {161, 161, 330/Inf}
 ```
 
 That is, the file contains a 162×162×330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
 ```sh
-unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
+unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
 ```
 
 This is similar to the command before with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program (although there is other software that will do the trick as well).
 
-```sh
-unix% convert ez.t*.png ez.gif
-```
 Here, we are using an animated GIF format for the output. This results in the following animation:
 
 <center>![](../images/Tutorial-wvg-ez.gif)</center>
@@ -205,14 +202,29 @@ It is clear that the transmission around the bend is rather low for this frequen
 
 <center>![](../images/Tutorial-wvg-bent2-ez-000300.00.png)</center>
 
-Instead of doing an animation, another interesting possibility is to make an image from a $x \times t$ slice. Here is the $y=-3.5$ slice, which gives us an image of the fields in the first waveguide branch as a function of time.
+Instead of doing an animation, another interesting possibility is to make an image from a $x \times t$ slice. To get the $y=-3.5$ slice, which gives us an image of the fields in the first waveguide branch as a function of time, we can use `get_array` in a step function to collect a slice for each time step:
 
-```sh
-unix% h5topng -0y -35 -Zc dkbluered ez.h5
+```python
+vals = []
+
+def get_slice(sim):
+    center = mp.Vector3(0, -3.5)
+    size = mp.Vector3(16, 0)
+    vals.append(sim.get_array(center=center, size=size, component=mp.Ez))
+
+sim.run(
+    mp.at_beginning(mp.output_epsilon),
+    mp.at_every(0.6, get_slice),
+    until=200
+)
+
+plt.figure(dpi=100)
+plt.imshow(vals, interpolation='spline36', cmap='RdBu')
+plt.axis('off')
+plt.show()
 ```
-Here, the `-0y -35` specifies the $y=-3.5$ slice, where we have multiplied by 10 (our resolution) to get the pixel coordinate.
 
-<center>![](../images/Tutorial-wvg-bent-ez-tslice.png)</center>
+<center>![](../images/Python-Tutorial-wvg-bent-ez-tslice.png)</center>
 
 #### Output Tips and Tricks
 
