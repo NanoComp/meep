@@ -1082,7 +1082,10 @@ where
 
 + `arr` is an optional field that you may use to pass a pre-allocated
   `numpy` array of the correct size, which will be overwritten with
-  the field data instead of allocating a new array.
+  the field data instead of allocating a new array.  Normally, this will
+  be the array returned from a previous call to `get_array` for a
+  a similar slice, allowing one to re-use `arr` e.g. when fetching the
+  same slice repeatedly at different times.
 
 The return value of `get_array` is a `numpy` array of dimension 1, 2, or 3
 depending on the number of nonzero entries in your `size` vector.
