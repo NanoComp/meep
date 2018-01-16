@@ -304,7 +304,7 @@ static bool is_metal(meep::field_type ft, const material_type *material) {
 /* Linearly interpolate a given point in a 3d grid of data.  The point
    coordinates should be in the range [0,1], or at the very least [-1,2]
    ... anything outside [0,1] is *mirror* reflected into [0,1] */
-static meep::realnum linear_interpolate(
+meep::realnum linear_interpolate(
 		     meep::realnum rx, meep::realnum ry, meep::realnum rz,
 		     meep::realnum *data, int nx, int ny, int nz, int stride)
 {
