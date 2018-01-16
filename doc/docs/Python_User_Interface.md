@@ -33,7 +33,17 @@ class Simulation(object):
                  extra_materials=[],
                  material_function=None,
                  epsilon_func=None,
-                 epsilon_input_file=''):
+                 epsilon_input_file='',
+                 progress_interval=4,
+                 subpixel_tol=1e-4,
+                 subpixel_maxeval=100000,
+                 ensure_periodicity=False,
+                 num_chunks=0,
+                 courant=0.5,
+                 accurate_fields_near_cylorigin=False,
+                 filename_prefix='',
+                 output_volume=None,
+                 output_single_precision=False):
 ```
 
 All `Simulation` attributes are described in further detail here. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
