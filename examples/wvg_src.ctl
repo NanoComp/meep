@@ -18,6 +18,7 @@
                  (center -5 0)
 		 (component ALL-COMPONENTS)
 		 (eig-parity TM)
+		 (eig-kpoint 0.1 0.1 1)
 		 )))
 (set! pml-layers (list (make pml (thickness 1.0))))
 

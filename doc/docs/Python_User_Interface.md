@@ -8,6 +8,7 @@ See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines
 
 [TOC]
 
+<a name="SimulationClass"></a>
 The Simulation Class
 ---------------------
 
@@ -47,7 +48,7 @@ Specifies the geometric objects making up the structure being simulated. When ob
 Specifies the current sources to be present in the simulation. Defaults to none (empty list).
 
 **`symmetries` [ list of `Symmetry` class ]**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&;nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Specifies the spatial symmetries (mirror or rotation) to exploit in the simulation. Defaults to none (empty list). The symmetries must be obeyed by *both* the structure and the sources. See also [Exploiting Symmetry](Exploiting_Symmetry.md).
 
 **`boundary_layers` [ list of `PML` class ]**  
@@ -62,10 +63,12 @@ Specifies the size of the computational cell which is centered on the origin of 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon=1$). See also `epsilon_input_file` below.
 
+<a name="material_function"></a>
 **`material_function` [function]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function that takes a `Vector3` and returns a `Medium`. See the section on "material functions." Defaults to `None`.
 
+<a name="epsilon_function"></a>
 **`epsilon_func` [function]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function that takes a `Vector3` and returns the dielectric constant at that point. See the section on "material functions." Defaults to `None`.
@@ -206,6 +209,7 @@ More information, including their property types and default values, is availabl
 
 The following are available directly via the `meep` package.
 
+<a name="medium"></a>
 ### Medium
 
 This class is used to specify the materials that geometric objects are made of. It represents an electromagnetic medium which is possibly nonlinear and/or dispersive. See also [Materials](Materials.md). To model a perfectly-conducting metal, use the predefined `metal` object, above. To model imperfect conductors, use a dispersive dielectric material. See also the [predefined variables](#predefined-variables) `metal`, `perfect_electric_conductor`, and `perfect_magnetic_conductor` above.
@@ -310,6 +314,7 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The noise has root-mean square amplitude $\sigma$ $\times$ `noise_amp`.
 
+<a name="GeometricObject"></a>
 ### GeometricObject
 
 This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:
@@ -517,7 +522,8 @@ A Python function of a single argument, that takes a `Vector3` giving a position
 
 As described in Section 4.2 of this [book chapter](http://arxiv.org/abs/arXiv:1301.5366), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
 
-### EigenModeSource
+<a name="EigenmodeSource"></a>
+**`EigenModeSource`**  
 
 This is a subclass of `Source` and has **all of the properties** of `Source` above. However, you normally do not specify a `component`. Instead of `component`, the current source components and amplitude profile are computed by calling MPB to compute the modes of the dielectric profile in the region given by the `size` and `center` of the source, with the modes computed as if the *source region were repeated periodically in all directions*. If an `amplitude` and/or `amp_func` are supplied, they are *multiplied* by this current profile. The desired eigenmode and other features are specified by the following properties:
 
@@ -613,6 +619,7 @@ The starting time for the source. Default is -10<sup>20</sup>: turn on at $t=-\i
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The end time for the source. Default is 10<sup>20</sup> (never turn off).
 
+<a name="FluxRegions"></a>
 ### FluxRegion
 
 A `FluxRegion` object is used with [`add_flux`](#flux-spectra) to specify a region in which Meep should accumulate the appropriate Fourier-transformed fields in order to compute a flux spectrum. It represents a region (volume, plane, line, or point) in which to compute the integral of the Poynting vector of the Fourier-transformed fields.
