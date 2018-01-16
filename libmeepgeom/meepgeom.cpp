@@ -21,28 +21,6 @@ namespace meep_geom {
 
 #define master_printf meep::master_printf
 
-/***************************************************************/
-/* global variables for default material                       */
-/***************************************************************/
-medium_struct vacuum_medium =
- { {1.0, 1.0, 1.0}, /* epsilon_diag    */
-   {0.0, 0.0, 0.0}, /* epsilon_offdiag */
-   {1.0, 1.0, 1.0}, /* mu_diag         */
-   {0.0, 0.0, 0.0}, /* mu_offdiag      */
-   {0, 0},          /* E_susceptibilities */
-   {0, 0},          /* H_susceptibilities */
-   {0.0, 0.0, 0.0}, /* E_chi2_diag     */
-   {0.0, 0.0, 0.0}, /* E_chi3_diag     */
-   {0.0, 0.0, 0.0}, /* H_chi2_diag     */
-   {0.0, 0.0, 0.0}, /* H_chi3_diag     */
-   {0.0, 0.0, 0.0}, /* D_conductivity_diag  */
-   {0.0, 0.0, 0.0}  /* B_conductivity_diag  */
- };
-material_data vacuum_material_data =
- { material_data::MEDIUM, vacuum_medium, 0, 0, 0, {0,0,0} };
-
-material_type vacuum = &vacuum_material_data;
-
 static bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
 {
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
@@ -634,7 +612,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
      // the user's function only needs to fill in whatever is
      // different from vacuum.
      case material_data::MATERIAL_USER:
-      md->medium = vacuum_medium;
+      md->medium = medium_struct();
       md->user_func(p, md->user_data, &(md->medium));
       // TODO: update this to allow user's function to set
       //       position-dependent susceptibilities. For now
@@ -1548,7 +1526,7 @@ material_type make_dielectric(double epsilon)
   md->which_subclass=material_data::MEDIUM;
   md->user_func=0;
   md->user_data=0;
-  memcpy( &(md->medium), &vacuum_medium, sizeof(medium_struct));
+  md->medium = medium_struct();
   md->medium.epsilon_diag.x=epsilon;
   md->medium.epsilon_diag.y=epsilon;
   md->medium.epsilon_diag.z=epsilon;
@@ -1589,7 +1567,7 @@ material_type make_file_material(const char *eps_input_file)
 		  eps_input_file);
   }
 
-  md->medium = vacuum_medium;
+  md->medium = medium_struct();
 
   return md;
 }
