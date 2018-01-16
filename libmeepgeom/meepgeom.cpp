@@ -1480,25 +1480,22 @@ void set_materials_from_geometry(meep::structure *s,
 
   dimensions=3;
   vector3 size = {0.0,0.0,0.0};
-  switch (s->gv.dim)
+  switch (s->user_volume.dim)
    { case meep::D1:   dimensions=1;
-                      size.z = gv.nz()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
-
      case meep::D2:   dimensions=2;
-                      size.x = gv.nx()/resolution;
-                      size.y = gv.ny()/resolution;
+                      size.x = s->user_volume.nx()/resolution;
+                      size.y = s->user_volume.ny()/resolution;
                       break;
-
      case meep::D3:   dimensions=3;
-                      size.x = gv.nx()/resolution;
-                      size.y = gv.ny()/resolution;
-                      size.z = gv.nz()/resolution;
+                      size.x = s->user_volume.nx()/resolution;
+                      size.y = s->user_volume.ny()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
-
      case meep::Dcyl: dimensions= CYLINDRICAL;
-                      size.x = gv.nr()/resolution;
-                      size.z = gv.nz()/resolution;
+                      size.x = s->user_volume.nr()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
    };
 
@@ -1592,6 +1589,9 @@ material_type make_file_material(const char *eps_input_file)
                   md->epsilon_dims[2],
 		  eps_input_file);
   }
+
+  md->medium = vacuum_medium;
+
   return md;
 }
 

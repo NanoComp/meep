@@ -255,15 +255,22 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for double func(meep::vec &)
 
 %typemap(in) double (*)(const meep::vec &) {
-  $1 = py_callback_wrap;
-  py_callback = $input;
-  Py_INCREF(py_callback);
+  if ($input == Py_None) {
+    $1 = NULL;
+    py_callback = NULL;
+  } else {
+    $1 = py_callback_wrap;
+    py_callback = $input;
+    Py_INCREF(py_callback);
+  }
 }
+
 %typemap(freearg) double (*)(const meep::vec &) {
   Py_XDECREF(py_callback);
 }
+
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
-  $1 = PyCallable_Check($input);
+  $1 = PyCallable_Check($input) || $input == Py_None;
 }
 
 // Typemap suite for amplitude function
