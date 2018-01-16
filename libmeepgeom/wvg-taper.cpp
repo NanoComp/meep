@@ -76,7 +76,7 @@ vec k_guess(void *user_data, double freq, int band_num)
      if (band_num==5)  return vec(0.5497692, 0.0, 0.0);
      if (band_num>=6)  return vec(0.5116020, 0.0, 0.0);
    }
-  else if ( equal_float(freq,0.15) && equal_float(w,1.5))
+  else if ( equal_float(freq,0.15) && equal_float(w,3.0))
    { if (band_num==1)  return vec(0.494476, 0.0, 0.0);
      if (band_num==2)  return vec(0.486399, 0.0, 0.0);
      if (band_num==3)  return vec(0.435861, 0.0, 0.0);
@@ -84,19 +84,19 @@ vec k_guess(void *user_data, double freq, int band_num)
      if (band_num==5)  return vec(0.322812, 0.0, 0.0);
      if (band_num>=6)  return vec(0.211186, 0.0, 0.0);
    }
-  else if ( equal_float(freq,0.15) && equal_float(w,1.0))
+  else if ( equal_float(freq,0.15) && equal_float(w,2.0))
    { if (band_num==1)  return vec(0.426302,  0.0, 0.0);
      if (band_num==2)  return vec(0.4534589, 0.0, 0.0);
      if (band_num==3)  return vec(0.3446421, 0.0, 0.0);
      if (band_num==4)  return vec(0.1860106, 0.0, 0.0);
      if (band_num>=5)  return vec(0.1475703, 0.0, 0.0);
    }
-  else // if ( equal_float(freq,0.15) && equal_float(w,0.5))
-   { if (band_num==1)  return vec(0.426302, 0.0, 0.0);
+  else // if ( equal_float(freq,0.15) && equal_float(w,1.0))
+   { if (band_num==1)  return vec(0.419984, 0.0, 0.0);
      if (band_num>=2)  return vec(0.426302, 0.0, 0.0);
    };
 
-  return vec(0.2, 0.0, 0.0);
+  return vec(0.419984, 0.0, 0.0);
 } 
 
 /***************************************************************/
@@ -139,23 +139,18 @@ void wvg_material(vector3 loc, void *user_data, meep_geom::medium_struct *m)
    }
   else // 2D or 3D, inside waveguide
    {
-     double xol = loc.x / wdata->taper_length;
+     double x0 = loc.x / wdata->taper_length;
      double wA  = wdata->wA, wB = wdata->wB, w;
-     if (xol <= -0.5 )
+     if (x0 <= -0.5 )
       w = wA;
-     else if ( xol >= 0.5)
+     else if ( x0 >= 0.5)
       w = wB;
-     else if (wdata->taper_order==1)   // linear taper
-      w = wA + (wB-wA)*(xol + 0.5);
-     else // (wdata->taper_order==2)   // second-order taper
-      { double C0  = 0.5*(wB+wA);
-        double C1  = 1.5*(wB-wA);
-        double C2  = 0.0;
-        double C3  = 2.0*(wA-wB);
-        w = C0 + xol*(C1 + xol*(C2 + xol*C3));
-      };
+     else if (wdata->taper_order==0)   // linear taper
+      w = 0.5*(wA+wB) + (wB-wA)*x0;
+     else // (wdata->taper_order==1)   // second-order taper
+      w = 0.5*(wA+wB) + (wB-wA)*x0*(1.5 - 2.0*x0*x0);
 
-     eps = ( fabs(loc.y)<=w ) ? wdata->eps_wvg : wdata->eps_ambient;
+     eps = ( fabs(loc.y)<=0.5*w ) ? wdata->eps_wvg : wdata->eps_ambient;
    };
 
   m->epsilon_diag.x=m->epsilon_diag.y=m->epsilon_diag.z=eps;
@@ -174,8 +169,8 @@ int main(int argc, char *argv[])
   /***************************************************************/
   bool three_d          = false;
   double taper_length   = 0.0;
-  double ratio          = 1.0;
-  int taper_order       = 1;
+  double ratio          = 3.0;
+  int taper_order       = 0;
   int  band_num         = 1;
   int  num_bands        = 6;
   bool use_symmetry     = false;
@@ -183,12 +178,11 @@ int main(int argc, char *argv[])
   bool plot_flux        = false;
   bool plot_structure   = false;
   double frame_interval = 0.0;
-  double res            = 25.0; // resolution
   char *filebase        = const_cast<char *>("wt");
-  double LX=5.0;       // half-length of cell in propagation direction
-  double LY=3.0;       // half-width of cell in transverse direction
-  double LZ=1.5;       // half-width of cell in transverse direction
-  double dpml=0.50;    // PML thickness
+  double LY             = 3.0;  // half-width of cell in transverse direction double LZ=1.5;
+  double LZ             = 2.0;  // half-width of cell in transverse direction double LZ=1.5;
+  double dpml           = 0.50; // PML thickness
+  double res            = 25.0; // resolution
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
@@ -248,12 +242,6 @@ int main(int argc, char *argv[])
         sscanf(argv[narg], "%le", &res);
         master_printf("setting resolution=%e\n",res);
       }
-     else if (!strcasecmp(argv[narg],"--LX"))
-      { if ( ++narg >= argc )
-         usage(argv[0], "error: no argument given for --LX");
-        sscanf(argv[narg], "%le", &LX);
-        master_printf("setting LX=%e\n",LX);
-      }
      else if (!strcasecmp(argv[narg],"--LY"))
       { if ( ++narg >= argc )
          usage(argv[0], "error: no argument given for --LY");
@@ -289,6 +277,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* initialize computational cell                               */
   /****************** ********************************************/
+  double LX = dpml + 1.0 + 0.5*taper_length;
   geometry_lattice.size.x = 2*LX;
   geometry_lattice.size.y = 2*LY;
   geometry_lattice.size.z = ( (three_d) ? 2*LZ : 0.0 );
@@ -300,7 +289,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* specify user-defined material function                      */
   /***************************************************************/
-  double wA            = 0.5;
+  double wA            = 1.0;
   double wB            = wA*ratio;
   double h_substrate   = 0.0;    // no substrate by default
   double h_oxide       = 1.5;    // oxide layer thickness (3D case)
@@ -370,7 +359,6 @@ int main(int argc, char *argv[])
      fvB = new volume( vec(+0.5*LX, -LYP), vec(+0.5*LX, +LYP) );
      fvC = new volume( vec(   -LXP,    0), vec(    LXP,    0) );
    };
-
   direction dA = f.normal_direction(*fvA);
   direction dB = f.normal_direction(*fvB);
 
@@ -387,6 +375,34 @@ int main(int argc, char *argv[])
   dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
   dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
   dft_flux fluxC=f.add_dft_flux_plane(*fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
+
+  /***************************************************************/
+  /* plot eigenmode field patterns if requested ******************/
+  /***************************************************************/
+  if (plot_modes)
+   { for(int nb=0; nb<num_bands; nb++)
+      { int band_num=nb+1;
+        void *vedata=f.get_eigenmode(fcen, dB, *fvB, *fvB,
+                                     band_num, k_guess((void *)&wB,
+                                     fcen,band_num),
+                                     true, 0, f.a, 1.0e-4);
+        char filename[100];
+        snprintf(filename,100,"%s_mode%i",filebase,band_num);
+        f.output_mode_fields(vedata, fluxB, *fvB, filename);
+        double vgrp=get_group_velocity(vedata);
+        vec k=get_k(vedata);
+        if (am_master()) 
+         { 
+           snprintf(filename,100,"%s.modeData",filebase);
+           static char mode[2]="w";
+           FILE *ff = fopen(filename,mode);
+           mode[0]='a';
+           fprintf(ff,"nb=%2i vgrp=%e k=%e \n",nb,vgrp,k.x());
+           fclose(ff);
+         };
+        destroy_eigenmode_data(vedata);
+      };
+   };
 
   /***************************************************************/
   /* timestep until all conditions for stopping are met.         */
@@ -432,39 +448,11 @@ int main(int argc, char *argv[])
   if (plot_flux)
    { char filename[100];
      snprintf(filename,100,"%s_fluxA",filebase);
-     f.output_flux_fields(&fluxA, *fvA, filename);
+     f.output_flux_fields(fluxA, *fvA, filename);
      snprintf(filename,100,"%s_fluxB",filebase);
-     f.output_flux_fields(&fluxB, *fvB, filename);
+     f.output_flux_fields(fluxB, *fvB, filename);
      snprintf(filename,100,"%s_fluxC",filebase);
-     f.output_flux_fields(&fluxC, *fvC, filename);
-   };
-
-  /***************************************************************/
-  /***************************************************************/
-  /***************************************************************/
-  if (plot_modes)
-   { for(int nb=0; nb<num_bands; nb++)
-      { int band_num=nb+1;
-        void *vedata=f.get_eigenmode(fcen, dB, *fvB, *fvB,
-                                     band_num, k_guess((void *)&wB,
-                                     fcen,band_num),
-                                     true, 0, f.a, 1.0e-4);
-        char filename[100];
-        snprintf(filename,100,"%s_mode%i",filebase,band_num);
-        f.output_mode_fields(vedata, &fluxB, *fvB, filename);
-        double vgrp=get_group_velocity(vedata);
-        vec k=get_k(vedata);
-        if (am_master()) 
-         { 
-           snprintf(filename,100,"%s.modeData",filebase);
-           static char mode[2]="w";
-           FILE *ff = fopen(filename,mode);
-           mode[0]='a';
-           fprintf(ff,"nb=%2i vgrp=%e k=%e \n",nb,vgrp,k.x());
-           fclose(ff);
-         };
-        destroy_eigenmode_data(vedata);
-      };
+     f.output_flux_fields(fluxC, *fvC, filename);
    };
 
   /***************************************************************/
@@ -476,7 +464,7 @@ int main(int argc, char *argv[])
 
   int num_freqs = fluxB.Nfreq;
   std::vector<cdouble> coeffs =
-   f.get_eigenmode_coefficients(&fluxB, dB, *fvB, bands, k_guess, (void *)&wB);
+   f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, k_guess, (void *)&wB);
 
   double *bflux=fluxB.flux();
   double bvol1=fvB->computational_volume();

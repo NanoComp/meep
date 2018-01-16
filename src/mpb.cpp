@@ -204,20 +204,21 @@ static complex<double> meep_mpb_A(const vec &p)
 /* field components at arbitrary points in space.               */
 /* call destroy_eigenmode_data() to deallocate when finished.   */
 /****************************************************************/
-void *fields::get_eigenmode(double &omega_src,
-	     		    direction d, const volume &where,
-			    const volume &eig_vol,
+void *fields::get_eigenmode(double omega_src,
+	     		    direction d, const volume where,
+			    const volume eig_vol,
 	    	            int band_num,
 		            const vec &kpoint, bool match_frequency,
                             int parity,
                             double resolution, 
-                            double eigensolver_tol){
-
+                            double eigensolver_tol,
+                            bool verbose)
+{
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
 
-  bool verbose=true;
+  //bool verbose=true;
   if (resolution <= 0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
   mpb_real k[3] = {0,0,0}, kcart[3] = {0,0,0};
@@ -600,15 +601,15 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 /* band #nb stored in slot [ 2*nb*num_freqs + 2*nf + 0/1 ]     */
 /***************************************************************/
 std::vector<cdouble>
- fields::get_eigenmode_coefficients(dft_flux *flux, direction d,
+ fields::get_eigenmode_coefficients(dft_flux flux, direction d,
                                     const volume &where,
                                     std::vector<int> bands,
                                     kpoint_func k_func,
                                     void *k_func_data)
 { 
-  double freq_min      = flux->freq_min;
-  double dfreq         = flux->dfreq;
-  int num_freqs        = flux->Nfreq;
+  double freq_min      = flux.freq_min;
+  double dfreq         = flux.dfreq;
+  int num_freqs        = flux.Nfreq;
   int num_bands        = bands.size();
   bool match_frequency = true;
   int parity           = 0; // NO_PARITY
@@ -671,9 +672,9 @@ std::vector<cdouble>
 /* dummy versions of class methods for compiling without MPB  */
 /**************************************************************/
 #else // #ifdef HAVE_MPB
-void *fields::get_eigenmode(double &omega_src,
-	     		    direction d, const volume &where,
-			    const volume &eig_vol,
+void *fields::get_eigenmode(double omega_src,
+	     		    direction d, const volume where,
+			    const volume eig_vol,
 	    	            int band_num,
 		            const vec &kpoint, bool match_frequency,
                             int parity,
@@ -703,7 +704,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 }
 
-std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux *flux,
+std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux flux,
                                           direction d,
                                           const volume &where,
                                           std::vector<int> bands,

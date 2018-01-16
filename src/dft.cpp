@@ -152,6 +152,9 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   (void) ichunk; // unused
 
   component c = S.transform(data->c, -sn);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("%i %s %i (%i,%i) (%i,%i) (%i,%i) %i \n",my_rank(), component_name(c), (fc->f[c][0]==0 ? 0 : 1), is.x(), is.y(), ie.x(), ie.y(), shift.x(), shift.y(), sn);
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   if (c >= NUM_FIELD_COMPONENTS || !fc->f[c][0])
        return; // this chunk doesn't have component c
 
@@ -186,6 +189,15 @@ dft_chunk *fields::add_dft(component c, const volume &where,
   data.dft_chunks = chunk_next;
   data.weight = weight * (dt/sqrt(2*pi));
   data.extra_weight = extra_weight;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+printf("Hi %i %s %s %s (%e,%e) (%e,%e) \n",my_rank(),component_name(c),
+       component_name(c),
+       component_name(use_centered_grid ? Centered : c),
+       where.get_min_corner().x(),
+       where.get_min_corner().y(),
+       where.get_max_corner().x(),
+       where.get_max_corner().y());
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   loop_in_chunks(add_dft_chunkloop, (void *) &data, where,
 		 use_centered_grid ? Centered : c);
 
@@ -632,11 +644,25 @@ cdouble dft_chunk::do_flux_operation(int rank,
 /* overlap integral 2:                                         */
 /*  0.5*( E^\dagger \times H - H^\dagger \times E)             */
 /***************************************************************/
-void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
+void fields::do_flux_operation(dft_flux flux, int num_freq, const volume where,
                                const char *HDF5FileName,
                                void *mode1_data, void *mode2_data,
                                cdouble *overlaps)
 { 
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+  printf("p%i (%i chunks)\n",my_rank(), num_chunks);
+  for (int nfc=0; nfc<num_chunks; nfc++)
+{
+   printf("  %i %i (%e,%e) (%e,%e) ",my_rank(),nfc,
+chunks[nfc]->v.get_min_corner().x(),
+chunks[nfc]->v.get_min_corner().y(),
+chunks[nfc]->v.get_max_corner().x(),
+chunks[nfc]->v.get_max_corner().y());
+FOR_ELECTRIC_COMPONENTS(cc) { if (chunks[nfc]->f[cc][0]) printf("%s0 ",component_name(cc)); if (chunks[nfc]->f[cc][1]) printf("%s1 ",component_name(cc));}
+FOR_MAGNETIC_COMPONENTS(cc) { if (chunks[nfc]->f[cc][0]) printf("%s0 ",component_name(cc)); if (chunks[nfc]->f[cc][1]) printf("%s1 ",component_name(cc));}
+printf("\n");
+}
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   /***************************************************************/
   /* look at input arguments to figure out what to do  ***********/
   /***************************************************************/
@@ -663,7 +689,7 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
   int bufsz=0;
   ivec min_corner = gv.round_vec(where.get_max_corner()) + one_ivec(gv.dim);
   ivec max_corner = gv.round_vec(where.get_min_corner()) - one_ivec(gv.dim);
-  for (dft_chunk *E=flux->E; E; E=E->next_in_dft)
+  for (dft_chunk *E=flux.E; E; E=E->next_in_dft)
    {
      ivec isS = E->S.transform(E->is, E->sn) + E->shift;
      ivec ieS = E->S.transform(E->ie, E->sn) + E->shift;
@@ -676,6 +702,7 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
    };
   max_corner = max_to_all(max_corner);
   min_corner = -max_to_all(-min_corner); // i.e., min_to_all
+
 
   /***************************************************************/
   /***************************************************************/
@@ -785,7 +812,7 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
   int nf_min=0, nf_max=0, num_components=0, reim_max=0;
   switch(flux_op)
    { case OUTPUT_FLUX:
-       nf_min=0; nf_max=flux->Nfreq-1; num_components=4; reim_max=1;
+       nf_min=0; nf_max=flux.Nfreq-1;  num_components=4; reim_max=1;
        break;
      case OUTPUT_MODE:
        nf_min=0; nf_max=0;             num_components=6; reim_max=1;
@@ -858,7 +885,7 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
        int which_integral= nc/2;
        double integral_sign = ( nc%2 ? -1.0 : 1.0 );
 
-       for (dft_chunk *EH = (c_flux>=Hx ? flux->H : flux->E); EH; EH=EH->next_in_dft)
+       for (dft_chunk *EH = (c_flux>=Hx ? flux.H : flux.E); EH; EH=EH->next_in_dft)
         if (EH->c == c_flux)
          integrals[which_integral]
           += integral_sign * EH->do_flux_operation(rank, ds, min_corner, file, buffer, reim,
@@ -884,16 +911,16 @@ void fields::do_flux_operation(dft_flux *flux, int num_freq, const volume where,
 /* entry points to flux_operation for various specific         */
 /* calculations                                                */
 /***************************************************************/
-void fields::output_flux_fields(dft_flux *flux, const volume where, const char *HDF5FileName)
+void fields::output_flux_fields(dft_flux flux, const volume where, const char *HDF5FileName)
 { do_flux_operation(flux, 0, where, HDF5FileName); }
 
-void fields::output_mode_fields(void *mode_data, dft_flux *flux, const volume where, const char *HDF5FileName)
+void fields::output_mode_fields(void *mode_data, dft_flux flux, const volume where, const char *HDF5FileName)
 { do_flux_operation(flux, 0, where, HDF5FileName, mode_data); }
  
-void fields::get_mode_flux_overlap(void *mode_data, dft_flux *flux, int num_freq, const volume where, cdouble overlaps[2])
+void fields::get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq, const volume where, cdouble overlaps[2])
 { return do_flux_operation(flux, num_freq, where, 0, mode_data, 0, overlaps); }
 
-void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux *flux, const volume where, cdouble overlaps[2])
+void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux, const volume where, cdouble overlaps[2])
 { return do_flux_operation(flux, 0, where, 0, mode1_data, mode2_data, overlaps); }
 
 } // namespace meep

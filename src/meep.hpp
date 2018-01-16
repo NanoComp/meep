@@ -1387,11 +1387,11 @@ class fields {
   // that can be passed to eigenmode_amplitude() to get
   // values of field components at arbitrary points in space.
   // call destroy_eigenmode_data() to deallocate it when finished.
-  void *get_eigenmode(double &omega_src, direction d, const volume &where,
-	              const volume &eig_vol, int band_num,
+  void *get_eigenmode(double omega_src, direction d, const volume where,
+	              const volume eig_vol, int band_num,
 		      const vec &kpoint, bool match_frequency,
-                      int parity, double resolution, 
-                      double eigensolver_tol);
+                      int parity, double resolution,
+                      double eigensolver_tol, bool verbose=false);
 
   void add_eigenmode_source(component c, const src_time &src,
 	  		    direction d, const volume &where,
@@ -1404,10 +1404,10 @@ class fields {
 			    std::complex<double> A(const vec &) = 0);
 
   std::vector< std::complex<double> >
-   get_eigenmode_coefficients(dft_flux *flux, direction d,
+   get_eigenmode_coefficients(dft_flux flux, direction d,
                               const volume &where,
                               std::vector<int> bands,
-                              kpoint_func k_func=0, 
+                              kpoint_func k_func=0,
                               void *k_func_data=0);
 
   // initialize.cpp:
@@ -1497,19 +1497,19 @@ class fields {
   /* single omnibus routine (do_flux_operation) with      */
   /* multiple entry points for particular calculations.   */
   /********************************************************/
-  void do_flux_operation(dft_flux *flux, int num_freq, const volume where,
+  void do_flux_operation(dft_flux flux, int num_freq, const volume where,
                          const char *HDF5FileName,
                          void *mode1_data=0, void *mode2_data=0,
                          std::complex<double> *integrals=0);
-  void output_flux_fields(dft_flux *flux, const volume where,
+  void output_flux_fields(dft_flux flux, const volume where,
                           const char *HDF5FileName);
-  void output_mode_fields(void *mode_data, dft_flux *flux,
-                          const volume where, 
+  void output_mode_fields(void *mode_data, dft_flux flux,
+                          const volume where,
                           const char *HDF5FileName);
-  void get_mode_flux_overlap(void *mode_data, dft_flux *flux, int num_freq,
+  void get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
                              const volume where, 
                              std::complex<double>overlaps[2]);
-  void get_mode_mode_overlap(void *mode_data, void *mode2_data, dft_flux *flux,
+  void get_mode_mode_overlap(void *mode_data, void *mode2_data, dft_flux flux,
                              const volume where,
                              std::complex<double>overlaps[2]);
 
