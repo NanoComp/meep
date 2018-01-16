@@ -292,8 +292,6 @@ sudo apt-get -y install     \
     libblas-dev             \
     liblapack-dev           \
     libgmp-dev              \
-    libunistring-dev        \
-    libmatheval-dev         \
     swig                    \
     libgsl-dev              \
     autoconf                \
