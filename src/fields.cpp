@@ -32,6 +32,7 @@ fields::fields(structure *s, double m, double beta,
   S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta)
 {
   verbosity = 0;
+  components_allocated = false;
   synchronized_magnetic_fields = 0;
   outdir = new char[strlen(s->outdir) + 1]; strcpy(outdir, s->outdir);
   if (gv.dim == Dcyl)
@@ -83,6 +84,7 @@ fields::fields(const fields &thef) :
   S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v)
 {
   verbosity = 0;
+  components_allocated = thef.components_allocated;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
   outdir = new char[strlen(thef.outdir) + 1]; strcpy(outdir, thef.outdir);
   m = thef.m;
@@ -456,6 +458,8 @@ void fields::require_component(component c) {
 
   if (beta != 0 && gv.dim != D2)
     abort("Nonzero beta unsupported in dimensions other than 2.");
+
+  components_allocated = true;
 
   // check if we are in 2d but anisotropy couples xy with z
   bool aniso2d = false;
