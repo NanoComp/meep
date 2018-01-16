@@ -36,6 +36,9 @@ struct mode_solver {
 
   geometric_object_list geometry;
 
+  geom_box_tree geometry_tree;
+  geom_box_tree restricted_tree;
+
   mpb_real R[3][3];
   mpb_real G[3][3];
 
@@ -56,13 +59,18 @@ struct mode_solver {
   meep_geom::material_data *default_md;
 
   mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
-              meep_geom::material_data *_default_material, geometric_object_list geom);
+              meep_geom::material_data *_default_material, geometric_object_list geom, bool reset_fields);
   ~mode_solver();
-  bool using_mup();
+
+  bool using_mu();
   void init(int p, bool reset_fields);
   void set_parity(int p);
   void set_kpoint_index(int i);
   void get_epsilon();
+  void get_material_pt(meep_geom::material_type &material, vector3 p);
+  void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
+                      symmetric_matrix *epsmu_inv);
+  void epsilon_file_material(meep_geom::material_data *md, vector3 p);
   void randomize_fields();
   void solve_kpoint(vector3 kpoint);
 

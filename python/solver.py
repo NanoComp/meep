@@ -135,10 +135,6 @@ def load_eigenvectors(fields):
     pass
 
 
-def using_mu():
-    pass
-
-
 def output_mu():
     pass
 
@@ -209,10 +205,7 @@ class ModeSolver(object):
         self.k_split_index = 0
         self.eigensolver_iters = []
         self.iterations = 0
-
-        self.mode_solver = mpb.mode_solver(self.num_bands, self.parity, self.resolution,
-                                           self.geometry_lattice, self.tolerance,
-                                           self.default_material, self.geometry)
+        self.mode_solver = None
 
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
@@ -264,6 +257,13 @@ class ModeSolver(object):
         # TODO
         # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
 
+    def output_mu(self):
+        pass
+        # TODO
+        # self.mode_solver.get_mu()
+        # TODO
+        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
+
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
 
@@ -281,7 +281,13 @@ class ModeSolver(object):
         print("Initializing eigensolver data")
         print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
 
-        self.mode_solver.init(p, True if reset_fields else False)
+        # TODO: Can we keep the mode_solver around between runs, or does it need
+        # to get created clean for each run?
+        self.mode_solver = mpb.mode_solver(self.num_bands, p, self.resolution,
+                                           self.geometry_lattice, self.tolerance,
+                                           self.default_material, self.geometry,
+                                           True if reset_fields else False)
+
         if isinstance(reset_fields, basestring):
             load_eigenvectors(reset_fields)
 
@@ -299,8 +305,8 @@ class ModeSolver(object):
 
         if k_split[0] == 0:
             self.output_epsilon()  # output epsilon immediately for 1st k block
-            if using_mu():
-                output_mu()  # and mu too, if we have it
+            if self.mode_solver.using_mu():
+                self.output_mu()  # and mu too, if we have it
 
         if self.num_bands > 0:
             for k in k_split[1]:

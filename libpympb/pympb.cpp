@@ -10,28 +10,93 @@ namespace py_mpb {
 
 const double inf = 1.0e20;
 
-// TODO: Remove globals
-geom_box_tree geometry_tree;
-geom_box_tree restricted_tree;
+// This is the function passed to `set_maxwell_dielectric`
+void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
+                         const mpb_real r[3], void *epsilon_data) {
 
-// TODO: medium_struct should have these values by default. Create constructor.
-meep_geom::medium_struct vacuum_medium = {
-  {1.0, 1.0, 1.0}, /* epsilon_diag    */
-  {0.0, 0.0, 0.0}, /* epsilon_offdiag */
-  {1.0, 1.0, 1.0}, /* mu_diag         */
-  {0.0, 0.0, 0.0}, /* mu_offdiag      */
-  {0, 0},          /* E_susceptibilities */
-  {0, 0},          /* H_susceptibilities */
-  {0.0, 0.0, 0.0}, /* E_chi2_diag     */
-  {0.0, 0.0, 0.0}, /* E_chi3_diag     */
-  {0.0, 0.0, 0.0}, /* H_chi2_diag     */
-  {0.0, 0.0, 0.0}, /* H_chi3_diag     */
-  {0.0, 0.0, 0.0}, /* D_conductivity_diag  */
-  {0.0, 0.0, 0.0}  /* B_conductivity_diag  */
-};
+  mode_solver *ms = static_cast<mode_solver *>(epsilon_data);
+  meep_geom::material_type mat;
+  vector3 p = {r[0], r[1], r[2]};
+  ms->get_material_pt(mat, p);
+  ms->material_epsmu(mat, eps, eps_inv);
+}
 
-static void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
-                           symmetric_matrix *epsmu_inv) {
+// TODO: Store as class member
+/* return a string describing the current parity, used for frequency
+   and filename prefixes */
+const char *parity_string(maxwell_data *d) {
+  static char s[128];
+  strcpy(s, "");
+  if (d->parity & EVEN_Z_PARITY) {
+    strcat(s, (d->nz == 1) ? "te" : "zeven");
+  } else if (d->parity & ODD_Z_PARITY) {
+    strcat(s, (d->nz == 1) ? "tm" : "zodd");
+  }
+  if (d->parity & EVEN_Y_PARITY) {
+    strcat(s, "yeven");
+  } else if (d->parity & ODD_Y_PARITY) {
+    strcat(s, "yodd");
+  }
+  return s;
+}
+
+/* Extract the mean epsilon from the effective inverse dielectric tensor,
+   which contains two eigenvalues that correspond to the mean epsilon,
+   and one which corresponds to the harmonic mean. */
+mpb_real mean_medium_from_matrix(const symmetric_matrix *eps_inv) {
+  mpb_real eps_eigs[3];
+  maxwell_sym_matrix_eigs(eps_eigs, eps_inv);
+  /* the harmonic mean should be the largest eigenvalue (smallest
+     epsilon), so we'll ignore it and average the other two: */
+  return 2.0 / (eps_eigs[0] + eps_eigs[1]);
+}
+
+/******* mode_solver *******/
+
+mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice lat,
+                         double tolerance, meep_geom::material_data *_default_material,
+                         geometric_object_list geom, bool reset_fields):
+  num_bands(num_bands),
+  parity(parity),
+  resolution(resolution),
+  tolerance(tolerance),
+  eigensolver_nwork(3),
+  eigensolver_block_size(-11),
+  last_parity(-2),
+  negative_epsilon_ok(false),
+  mdata(NULL),
+  mtdata(NULL),
+  curfield(NULL),
+  curfield_band(0),
+  curfield_type('-'),
+  kpoint_index(0) {
+
+  this->lat = lat;
+
+  geometry_lattice.size.x = lat.size.x;
+  geometry_lattice.size.y = lat.size.y;
+  geometry_lattice.size.z = lat.size.z;
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      R[i][j] = 0.0;
+      G[i][j] = 0.0;
+    }
+  }
+
+  default_material = _default_material;
+  geometry = geom;
+
+  init(parity, reset_fields);
+}
+
+mode_solver::~mode_solver() {
+  destroy_maxwell_data(mdata);
+  destroy_geom_box_tree(geometry_tree);
+}
+
+void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
+                                 symmetric_matrix *epsmu_inv) {
 
   meep_geom::material_data *md = material;
 
@@ -94,7 +159,7 @@ static void material_epsmu(meep_geom::material_type material, symmetric_matrix *
 }
 
 // return material of the point p from the file (assumed already read)
-static void epsilon_file_material(meep_geom::material_data *md, vector3 p)
+void mode_solver::epsilon_file_material(meep_geom::material_data *md, vector3 p)
 {
   default_material = (void*) md;
 
@@ -129,7 +194,7 @@ static void epsilon_file_material(meep_geom::material_data *md, vector3 p)
   mm->epsilon_offdiag.z = 0;
 }
 
-void get_material_pt(meep_geom::material_type &material, vector3 p) {
+void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p) {
   boolean inobject;
   material = (meep_geom::material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
   meep_geom::material_data *md = material;
@@ -151,7 +216,7 @@ void get_material_pt(meep_geom::material_type &material, vector3 p) {
     // the user's function only needs to fill in whatever is
     // different from vacuum.
     case meep_geom::material_data::MATERIAL_USER:
-      md->medium = vacuum_medium;
+      md->medium = meep_geom::medium_struct();
       md->user_func(p, md->user_data, &(md->medium));
       // TODO: update this to allow user's function to set
       //       position-dependent susceptibilities. For now
@@ -172,136 +237,7 @@ void get_material_pt(meep_geom::material_type &material, vector3 p) {
    }
 }
 
-// Pass this to `set_maxwell_dielectric`
-void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
-                         const mpb_real r[3], void *epsilon_data) {
-
-  // TODO: What should epsilon_data contain?
-  (void)epsilon_data;
-  meep_geom::material_type mat;
-  vector3 p = {r[0], r[1], r[2]};
-  get_material_pt(mat, p);
-  material_epsmu(mat, eps, eps_inv);
-}
-
-/* return a string describing the current parity, used for frequency
-   and filename prefixes */
-const char *parity_string(maxwell_data *d) {
-  static char s[128];
-  strcpy(s, "");
-  if (d->parity & EVEN_Z_PARITY) {
-    strcat(s, (d->nz == 1) ? "te" : "zeven");
-  } else if (d->parity & ODD_Z_PARITY) {
-    strcat(s, (d->nz == 1) ? "tm" : "zodd");
-  }
-  if (d->parity & EVEN_Y_PARITY) {
-    strcat(s, "yeven");
-  } else if (d->parity & ODD_Y_PARITY) {
-    strcat(s, "yodd");
-  }
-  return s;
-}
-
-/* Extract the mean epsilon from the effective inverse dielectric tensor,
-   which contains two eigenvalues that correspond to the mean epsilon,
-   and one which corresponds to the harmonic mean. */
-mpb_real mean_medium_from_matrix(const symmetric_matrix *eps_inv) {
-  mpb_real eps_eigs[3];
-  maxwell_sym_matrix_eigs(eps_eigs, eps_inv);
-  /* the harmonic mean should be the largest eigenvalue (smallest
-     epsilon), so we'll ignore it and average the other two: */
-  return 2.0 / (eps_eigs[0] + eps_eigs[1]);
-}
-
-/******* mode_solver *******/
-
-mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice lat,
-                         double tolerance, meep_geom::material_data *_default_material,
-                         geometric_object_list geom):
-  num_bands(num_bands),
-  parity(parity),
-  resolution(resolution),
-  tolerance(tolerance),
-  eigensolver_nwork(3),
-  eigensolver_block_size(-11),
-  last_parity(-2),
-  negative_epsilon_ok(false),
-  mdata(NULL),
-  mtdata(NULL),
-  curfield(NULL),
-  curfield_band(0),
-  curfield_type('-'),
-  kpoint_index(0) {
-
-  this->lat = lat;
-
-  geometry_lattice.size.x = lat.size.x;
-  geometry_lattice.size.y = lat.size.y;
-  geometry_lattice.size.z = lat.size.z;
-
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      R[i][j] = 0.0;
-      G[i][j] = 0.0;
-    }
-  }
-
-  // TODO: Write class with copy constructor or eliminate the need to copy this
-  default_md = new meep_geom::material_data_struct();
-  default_md->which_subclass = _default_material->which_subclass;
-  // TODO: Assuming the suscebtibility lists are empty
-  memcpy( &(default_md->medium), &_default_material->medium, sizeof(meep_geom::medium_struct));
-  // TODO: user_func, user_data
-  // TODO: epsilon_data, epsilon_dims
-
-  default_material = (void*)default_md;
-
-  geometry.num_items = geom.num_items;
-  geometry.items = new geometric_object[geometry.num_items];
-
-  // TODO: Avoid the need to copy the geometric objects, or write classes with copy constructors
-  for (int i = 0; i < geometry.num_items; ++i) {
-    geometric_object_copy(&geom.items[i], &geometry.items[i]);
-
-    geometry.items[i].material = new meep_geom::material_data();
-    memcpy(geometry.items[i].material, geom.items[i].material, sizeof(meep_geom::material_data));
-
-    meep_geom::material_type m1 = (meep_geom::material_type)geometry.items[i].material;
-    meep_geom::material_type m2 = (meep_geom::material_type)geom.items[i].material;
-
-    int num_E_suceptibilites = m1->medium.E_susceptibilities.num_items;
-    if (num_E_suceptibilites > 0) {
-      m1->medium.E_susceptibilities.items = new meep_geom::susceptibility_struct[num_E_suceptibilites];
-      memcpy(m1->medium.E_susceptibilities.items, m2->medium.E_susceptibilities.items,
-             num_E_suceptibilites * sizeof(meep_geom::susceptibility_struct));
-    }
-
-    int num_H_suceptibilites = m1->medium.H_susceptibilities.num_items;
-    if (num_H_suceptibilites > 0) {
-      m1->medium.H_susceptibilities.items = new meep_geom::susceptibility_struct[num_H_suceptibilites];
-      memcpy(m1->medium.H_susceptibilities.items, m2->medium.H_susceptibilities.items,
-             num_H_suceptibilites * sizeof(meep_geom::susceptibility_struct));
-    }
-  }
-}
-
-mode_solver::~mode_solver() {
-
-  destroy_maxwell_data(mdata);
-  destroy_geom_box_tree(geometry_tree);
-
-  for (int i = 0; i < geometry.num_items; ++i) {
-    geometric_object_destroy(geometry.items[i]);
-    delete[] ((meep_geom::material_type)geometry.items[i].material)->medium.E_susceptibilities.items;
-    delete[] ((meep_geom::material_type)geometry.items[i].material)->medium.H_susceptibilities.items;
-    delete (meep_geom::material_type)geometry.items[i].material;
-  }
-  delete[] geometry.items;
-  // TODO: susceptibilites in default_md->medium
-  delete default_md;
-}
-
-bool mode_solver::using_mup() {
+bool mode_solver::using_mu() {
   return mdata && mdata->mu_inv != NULL;
 }
 
@@ -363,7 +299,6 @@ void mode_solver::init(int p, bool reset_fields) {
     G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
   }
 
-  eps_data ed;
   int mesh_size[] = {3, 3, 3};
 
   // init_epsilon
@@ -405,7 +340,8 @@ void mode_solver::init(int p, bool reset_fields) {
     }
   }
 
-  destroy_geom_box_tree(geometry_tree);
+  // TODO: Need to destroy tree from previous runs?
+  // destroy_geom_box_tree(geometry_tree);
 
   {
     geom_box b0;
@@ -430,7 +366,7 @@ void mode_solver::init(int p, bool reset_fields) {
   // TODO
   // reset_epsilon();
 
-  set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, &ed);
+  set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, static_cast<void *>(this));
 
   if (check_maxwell_dielectric(mdata, 0)) {
     meep::abort("invalid dielectric function for MPB");
@@ -453,7 +389,7 @@ void mode_solver::init(int p, bool reset_fields) {
       Hblock = create_evectmatrix(N, c, block_size, local_N, N_start, alloc_N);
     } else {
       Hblock = H;
-      if (using_mup() && block_size < num_bands) {
+      if (using_mu() && block_size < num_bands) {
         muinvH = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
       } else {
         muinvH = H;
