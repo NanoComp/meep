@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   bool three_d          = false;
   double taper_length   = 0.0;
+  double wvg_length     = 3.0;
   double ratio          = 3.0;
   int taper_order       = 0;
   int  band_num         = 1;
@@ -277,7 +278,7 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* initialize computational cell                               */
   /****************** ********************************************/
-  double LX = dpml + 1.0 + 0.5*taper_length;
+  double LX = dpml + wvg_length + 0.5*taper_length;
   geometry_lattice.size.x = 2*LX;
   geometry_lattice.size.y = 2*LY;
   geometry_lattice.size.z = ( (three_d) ? 2*LZ : 0.0 );
@@ -345,19 +346,20 @@ int main(int argc, char *argv[])
   int nfreq   = 1;         // number of frequency points
   gaussian_src_time gsrc(fcen, df);
 
-  double LXP = LX-dpml;
+  double xA  = -LX + dpml + 1.0;
+  double xB  = +LX - dpml - 1.0;
   double LYP = LY-dpml;
   double LZP = three_d ? LZ-dpml : 0.0;
   volume *fvA, *fvB, *fvC;
   if (three_d)
-   { fvA = new volume( vec(-0.5*LX, -LYP, -LZP), vec(-0.5*LX, +LYP, +LZP) );
-     fvB = new volume( vec(+0.5*LX, -LYP, -LZP), vec(+0.5*LX, +LYP, +LZP) );
-     fvC = new volume( vec(   -LXP,    0, -LZP), vec(    LXP,    0,  LZP) );
+   { fvA = new volume( vec(xA, -LYP, -LZP), vec(xA, +LYP, +LZP) );
+     fvB = new volume( vec(xB, -LYP, -LZP), vec(xB, +LYP, +LZP) );
+     fvC = new volume( vec(-LX,   0, -LZP), vec(+LX,   0,  LZP) );
    }
   else
-   { fvA = new volume( vec(-0.5*LX, -LYP), vec(-0.5*LX, +LYP) );
-     fvB = new volume( vec(+0.5*LX, -LYP), vec(+0.5*LX, +LYP) );
-     fvC = new volume( vec(   -LXP,    0), vec(    LXP,    0) );
+   { fvA = new volume( vec(xA, -LYP), vec(xA, +LYP) );
+     fvB = new volume( vec(xB, -LYP), vec(xB, +LYP) );
+     fvC = new volume( vec(-LX,   0), vec(LX,    0) );
    };
   direction dA = f.normal_direction(*fvA);
   direction dB = f.normal_direction(*fvB);

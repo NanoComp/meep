@@ -152,9 +152,6 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
   (void) ichunk; // unused
 
   component c = S.transform(data->c, -sn);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-printf("%i %s %i (%i,%i) (%i,%i) (%i,%i) %i \n",my_rank(), component_name(c), (fc->f[c][0]==0 ? 0 : 1), is.x(), is.y(), ie.x(), ie.y(), shift.x(), shift.y(), sn);
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   if (c >= NUM_FIELD_COMPONENTS || !fc->f[c][0])
        return; // this chunk doesn't have component c
 
@@ -189,15 +186,6 @@ dft_chunk *fields::add_dft(component c, const volume &where,
   data.dft_chunks = chunk_next;
   data.weight = weight * (dt/sqrt(2*pi));
   data.extra_weight = extra_weight;
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-printf("Hi %i %s %s %s (%e,%e) (%e,%e) \n",my_rank(),component_name(c),
-       component_name(c),
-       component_name(use_centered_grid ? Centered : c),
-       where.get_min_corner().x(),
-       where.get_min_corner().y(),
-       where.get_max_corner().x(),
-       where.get_max_corner().y());
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   loop_in_chunks(add_dft_chunkloop, (void *) &data, where,
 		 use_centered_grid ? Centered : c);
 
@@ -649,20 +637,6 @@ void fields::do_flux_operation(dft_flux flux, int num_freq, const volume where,
                                void *mode1_data, void *mode2_data,
                                cdouble *overlaps)
 { 
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  printf("p%i (%i chunks)\n",my_rank(), num_chunks);
-  for (int nfc=0; nfc<num_chunks; nfc++)
-{
-   printf("  %i %i (%e,%e) (%e,%e) ",my_rank(),nfc,
-chunks[nfc]->v.get_min_corner().x(),
-chunks[nfc]->v.get_min_corner().y(),
-chunks[nfc]->v.get_max_corner().x(),
-chunks[nfc]->v.get_max_corner().y());
-FOR_ELECTRIC_COMPONENTS(cc) { if (chunks[nfc]->f[cc][0]) printf("%s0 ",component_name(cc)); if (chunks[nfc]->f[cc][1]) printf("%s1 ",component_name(cc));}
-FOR_MAGNETIC_COMPONENTS(cc) { if (chunks[nfc]->f[cc][0]) printf("%s0 ",component_name(cc)); if (chunks[nfc]->f[cc][1]) printf("%s1 ",component_name(cc));}
-printf("\n");
-}
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
   /***************************************************************/
   /* look at input arguments to figure out what to do  ***********/
   /***************************************************************/

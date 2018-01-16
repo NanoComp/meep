@@ -72,45 +72,52 @@ class wvg_taper:
                  eps_ambient=1.0,     # permittivity of medium
                  LX=5.0, LY=3.0,      # half-lengths of computational cell
                  DPML=0.5,            # PML thickness
+                 fcen=0.15, df=0.075, # center frequency / width
                  resolution=25.0,     # grid points per unit length
                ): 
 
         self.force_complex_fields = True;
 
         #--------------------------------------------------------------------
-        #- initialize structure and fields with user-defined epsilon function
+        #- user-defined epsilon function
         #--------------------------------------------------------------------
-   
         eps_func = lambda loc: my_eps_func(loc, L, p, wA, wB,
                                            eps_ambient, eps_waveguide)
+
+        #--------------------------------------------------------------------
+        #- eigenmode source at midpoint of smaller waveguide
+        #--------------------------------------------------------------------
+        xA=-0.5*LX;
+        xB=+0.5*LX;
+        sources = [ mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=df),
+                                       center=mp.Vector3(xA,0.0),size=mp.Vector3(0.0,2.0*LY)
+                                      )
+                  ]
                                           
         self.sim=mp.Simulation( cell_size=mp.Vector3(2*LX, 2*LY),
                                 resolution=resolution,
                                 boundary_layers=[mp.PML(DPML)],
                                 force_complex_fields=True,
-                                epsilon_func = eps_func
+                                epsilon_func = eps_func,
+                                sources=sources
                               )
-
+       
         self.sim.run(mp.at_beginning(mp.output_epsilon), until=1.0);
         f=self.sim.fields;
 
         #--------------------------------------------------
         # add DFT flux regions at midpoints of smaller and larger waveguides
         #--------------------------------------------------
-        xA=-0.5*LX;
-        xB=+0.5*LX;
         #LYP=LY-DPML;
         LYP=LY;
         self.wA=wA;
         self.wB=wB;
         self.vA=mp.volume( mp.vec(xA, -LYP), mp.vec(xA,+LYP) )
         self.vB=mp.volume( mp.vec(xB, -LYP), mp.vec(xB,+LYP) )
-        fcen=0.15;
-        df=0.5*fcen;
+        self.fcen=fcen;
+        self.df=df;
         nf=1;
-        print("Adding flux region A...");
         self.fluxA=f.add_dft_flux_plane(self.vA, fcen-0.5*df, fcen+0.5*df, nf);
-        print("Adding flux region B...");
         self.fluxB=f.add_dft_flux_plane(self.vB, fcen-0.5*df, fcen+0.5*df, nf);
 
     ##################################################
@@ -121,7 +128,6 @@ class wvg_taper:
      eps=self.sim.get_array(center    = mp.Vector3(0,0),
                             size      = self.sim.cell_size,
                             component = mp.Dielectric)
-     print("eps shape={}".format(eps.shape))
 
      interp='gaussian'
      cmap='coolwarm'
@@ -198,31 +204,22 @@ class wvg_taper:
     # the fields on the xy plane with one frame
     # every frame_interval time units (in meep time)
     ##################################################
-    def get_flux(self, fcen=0.15, df=0.075, nfreq=1, band_num=1,
-                 frame_interval=0):
-       
-       #--------------------------------------------------
-       # add eigenmode source at midpoint of smaller waveguide
-       #--------------------------------------------------
-       f=self.sim.fields;
-       vA=self.vA;
-       vB=self.vB;
-       res=1.0*self.sim.resolution;
-       src=mp.GaussianSource(fcen, fwidth=df);
-       kpoint=k_guess(fcen,band_num,self.wA)
-       parity=0;
-       match_freq=True;
-       tol=1.0e-4;
-       amp=1.0;
-       f.add_eigenmode_source(mp.Dielectric, src, mp.X, vA, vA, band_num,
-                              kpoint, match_freq, parity, res, tol, amp);
+    def get_flux(self, frame_interval=0):
 
        #--------------------------------------------------
        # add DFT flux region for moviemaking if requested
        #--------------------------------------------------
+       f=self.sim.fields;
+       vA=self.vA;
+       vB=self.vB;
        fluxC=0
        if frame_interval>0:
-         fluxC=f.add_dft_flux_plane(vC, fcen-0.5*df, fcen+0.5*df, nfreq);
+         LX=0.5*self.sim.cell_size.x;
+         LY=0.5*self.sim.cell_size.y;
+         vC=mp.volume( mp.vec(-LX, -LY), mp.vec(LX,LY) )
+         fcen=self.fcen
+         df=self.df
+         fluxC=f.add_dft_flux_plane(vC, fcen-0.5*df, fcen+0.5*df, 1);
 
        #--------------------------------------------------
        # timestep until Poynting flux through larger waveguide has 
@@ -250,30 +247,23 @@ class wvg_taper:
          # output movie frames at regular intervals if requested
          # TODO implement me
 ##################################################
-         frameInterval=5.0;
-         if f.round_time() > nextFrameTime:
-             nextFrameTime += frameInterval;
-             eps=self.sim.get_array(center    = mp.Vector3(0,0),
-                                    size      = self.sim.cell_size,
-                                    component = mp.Sx)
-             print("Sx shape={}".format(eps.shape))
-             plt.clf()
-             plt.imshow(eps.transpose(), interpolation='gaussian', cmap='coolwarm')
-             plt.show()
-##################################################
+#         frameInterval=5.0;
+#         if f.round_time() > nextFrameTime:
+#             nextFrameTime += frameInterval;
+#             eps=self.sim.get_array(center    = mp.Vector3(0,0),
+#                                    size      = self.sim.cell_size,
+#                                    component = mp.Sx)
+#             print("Sx shape={}".format(eps.shape))
+#             plt.clf()
+#             plt.imshow(eps.transpose(), interpolation='gaussian', cmap='coolwarm')
+#             plt.show()
+###################################################
 
          SourcesFinished = f.round_time() > f.last_source_time();
          Stop = (SourcesFinished and FieldsDecayed);
          
        print("finished timestepping at {}".format(f.round_time()))
-       f.output_flux_fields(wt.fluxA, wt.vA, "fluxA");
        f.output_flux_fields(wt.fluxB, wt.vB, "fluxB");
-
-    ##################################################
-    # postprocessing: write DFT fields in larger waveguide to HDF5
-    ##################################################
-    def flux2hdf5(self, flux, vol, filename):
-      self.sim.fields.output_flux_fields(flux, vol, filename);
 
     ##################################################
     # postprocessing: compute coefficients in normal-mode
@@ -284,12 +274,11 @@ class wvg_taper:
       f=self.sim.fields
       return f.get_eigenmode_coefficients(flux, d, vol, bands,
                                           k_guess, k_guess_data)
-#
+
 ##################################################
 ##################################################
 ##################################################
 wt=wvg_taper();
 wt.plot_eps();
-
 wt.get_flux();
-#wt.plot_modes();
+wt.plot_modes();
