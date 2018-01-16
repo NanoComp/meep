@@ -170,6 +170,12 @@ dft_chunk *fields::add_dft(component c, const volume &where,
   if (coordinate_mismatch(gv.dim, c))
     return NULL;
 
+  /* If you call add_dft before adding sources, it will do nothing
+     since no fields will be found.   This is almost certainly not
+     what the user wants. */
+  if (!components_allocated)
+    abort("allocate field components (by adding sources) before adding dft objects");
+
   dft_chunk_data data;  
   data.c = c;
   data.vc = vc;
