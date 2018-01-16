@@ -257,6 +257,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(in) double (*)(const meep::vec &) {
   if ($input == Py_None) {
     $1 = NULL;
+    py_callback = NULL;
   } else {
     $1 = py_callback_wrap;
     py_callback = $input;
