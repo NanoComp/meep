@@ -272,11 +272,84 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 Python Bindings
 ---------------
 
-A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep.
+A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep &mdash; building from source or installing binary Conda packages.
 
 ### Building From Source
 
-You can find instructions for building from source on Ubuntu for serial PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html), and parallel PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html).
+Here we provide instructions for building parallel PyMeep from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -n 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+
+```bash
+#!/bin/bash
+
+set -e
+
+RPATH_FLAGS="-Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi"
+
+sudo apt-get update
+sudo apt-get -y install     \
+    libblas-dev             \
+    liblapack-dev           \
+    libgmp-dev              \
+    swig                    \
+    libgsl-dev              \
+    autoconf                \
+    pkg-config              \
+    libpng16-dev            \
+    git                     \
+    guile-2.0-dev           \
+    libfftw3-dev            \
+    libhdf5-openmpi-dev     \
+    hdf5-tools              \
+    libpython3.5-dev        \
+    python3-numpy           \
+    python3-pip
+
+mkdir -p ~/install
+
+cd ~/install
+git clone https://github.com/stevengj/harminv.git
+cd harminv/
+sh autogen.sh --enable-shared
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/libctl.git
+cd libctl/
+sh autogen.sh --enable-shared
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/h5utils.git
+cd h5utils/
+sh autogen.sh CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/mpb.git
+cd mpb/
+sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+make && sudo make install
+
+sudo pip3 install --upgrade pip
+pip3 install --user --no-cache-dir mpi4py
+export HDF5_MPI="ON"
+pip3 install --user --no-binary=h5py h5py
+
+cd ~/install
+git clone https://github.com/stevengj/meep.git
+cd meep/
+sh autogen.sh --enable-shared --with-python --with-mpi PYTHON=python3 \
+    CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+make && sudo make install
+```
+
+You may want to add the following line to your `.profile` so Python can always find the meep package:
+
+```bash
+export PYTHONPATH=/usr/local/lib/python3.5/site-packages
+```
 
 ### Conda Packages
 
