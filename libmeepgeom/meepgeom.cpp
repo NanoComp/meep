@@ -21,6 +21,12 @@ namespace meep_geom {
 
 #define master_printf meep::master_printf
 
+/***************************************************************/
+/* global variables for default material                       */
+/***************************************************************/
+material_data vacuum_material_data;
+material_type vacuum = &vacuum_material_data;
+
 static bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
 {
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
