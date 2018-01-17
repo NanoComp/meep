@@ -1,6 +1,8 @@
 from __future__ import division
 
+import functools
 import math
+import operator
 from copy import deepcopy
 from numbers import Number
 

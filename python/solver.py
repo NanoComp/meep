@@ -1,9 +1,6 @@
 from __future__ import division
 
-import functools
-import operator
 import time
-from numbers import Number
 import meep as mp
 from meep import mpb
 from meep.simulation import get_num_args
