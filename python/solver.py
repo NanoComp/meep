@@ -3,7 +3,7 @@ from __future__ import division
 import functools
 import operator
 import time
-
+from numbers import Number
 import meep as mp
 from meep import mpb
 from meep.simulation import get_num_args
@@ -37,14 +37,40 @@ class Matrix(object):
             raise IndexError("No value at index {}".format(i))
 
     def __mul__(self, m):
-        # TODO: Matrix multiplication
-        pass
+        if type(m) is Matrix:
+            return self.mm_mult(m)
+        elif type(m) is mp.Vector3:
+            return self.mv_mult(m)
+        elif isinstance(m, Number):
+            return self.scale(m)
+        else:
+            raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
 
     def __repr__(self):
         return "<{}\n {}\n {}>".format(self.row(0), self.row(1), self.row(2))
 
     def row(self, i):
         return mp.Vector3(self.c1[i], self.c2[i], self.c3[i])
+
+    def mm_mult(self, m):
+        # c1 = mp.Vector3(*[self.row(i).dot(m.c1) for i in range(3)])
+        c1 = mp.Vector3(self.row(0).dot(m.c1),
+                        self.row(1).dot(m.c1),
+                        self.row(2).dot(m.c1))
+        c2 = mp.Vector3(self.row(0).dot(m.c2),
+                        self.row(1).dot(m.c2),
+                        self.row(2).dot(m.c2))
+        c3 = mp.Vector3(self.row(0).dot(m.c3),
+                        self.row(1).dot(m.c3),
+                        self.row(2).dot(m.c3))
+
+        return Matrix(c1, c2, c3)
+
+    def mv_mult(self, v):
+        return mp.Vector3(*[self.row(i).dot(v) for i in range(3)])
+
+    def scale(self, s):
+        return Matrix(self.c1.scale(s), self.c2.scale(s), self.c3.scale(s))
 
     def determinant(self):
         sum1 = sum([
@@ -128,15 +154,6 @@ class Lattice(object):
         def metric(self):
             B = self.basis
             return B.transpose() * B
-
-
-# TODO: Placeholders
-def load_eigenvectors(fields):
-    pass
-
-
-def output_mu():
-    pass
 
 
 class ModeSolver(object):
@@ -289,7 +306,7 @@ class ModeSolver(object):
                                            True if reset_fields else False)
 
         if isinstance(reset_fields, basestring):
-            load_eigenvectors(reset_fields)
+            self.mode_solver.load_eigenvectors(reset_fields)
 
         print("{} k-points".format(len(self.k_points)))
 
