@@ -74,7 +74,6 @@ class ModeSolver(object):
         self.filename_prefix = filename_prefix
         self.parity = 0
         self.iterations = 0
-        self.freqs = []
         self.all_freqs = []
         self.band_range_data = []
         self.eigensolver_flops = 0
@@ -97,6 +96,9 @@ class ModeSolver(object):
             else:
                 return re.sub(r'\.py$', '', filename) + '-'
 
+    def get_freqs(self):
+        return self.mode_solver.get_freqs()
+
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
     # frequency range of a band and the k-points where it achieves its minimum/maximum.
@@ -108,18 +110,21 @@ class ModeSolver(object):
             if not freqs:
                 return br_start + brd
             else:
-                br = [(mp.inf, -1), (-mp.inf, -1)] if not brd else brd[0]
+                br = ((mp.inf, -1), (-mp.inf, -1)) if not brd else brd[0]
                 br_rest = [] if not brd else brd[1:]
                 newmin = (freqs[0], kpoint) if freqs[0] < br[0][0] else br[0]
-                newmax = (freqs[0], kpoint) if freqs[0] > br[0][1] else br[1]
-                return update_brd(br_rest, freqs[1:], [(newmin, newmax)] + br_start)
+                newmax = (freqs[0], kpoint) if freqs[0] > br[1][0] else br[1]
+                new_start = [((newmin, newmax))] + br_start
+                return update_brd(br_rest, freqs[1:], new_start)
 
         return update_brd(brd, freqs, [])
 
     def output_band_range_data(self, br_data):
         for tup, band in zip(br_data, range(len(br_data))):
             fmt = "Band {} range: {} at {} to {} at {}"
-            min_freq, min_kpoint, max_freq, max_kpoint = tup
+            min_band, max_band = tup
+            min_freq, min_kpoint = min_band
+            max_freq, max_kpoint = max_band
             print(fmt.format(band, min_freq, min_kpoint, max_freq, max_kpoint))
 
     # Output any gaps in the given band ranges, and return a list of the gaps as
@@ -130,7 +135,7 @@ class ModeSolver(object):
             if not br_rest:
                 return gaps
             else:
-                if br_cur[0][1] >= br_rest[0][0][0]:
+                if br_cur[0][0] >= br_rest[0][0][0]:
                     return ogaps(br_rest[0], br_rest[1:], i + 1, gaps)
                 else:
                     gap_size = 5
@@ -147,7 +152,7 @@ class ModeSolver(object):
         self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
 
     def output_mu(self):
-        pass
+        print("output_mu: Not implemented yet")
         # TODO
         # self.mode_solver.get_mu()
         # TODO
@@ -205,9 +210,9 @@ class ModeSolver(object):
                 print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
 
                 # TODO: Make freqs an output var
-                self.all_freqs.append(self.freqs)
+                self.all_freqs.append(self.get_freqs())
                 self.band_range_data = self.update_band_range_data(self.band_range_data,
-                                                                   self.freqs, k)
+                                                                   self.get_freqs(), k)
                 self.eigensolver_iters += [self.iterations / self.num_bands]
 
                 for f in band_functions:

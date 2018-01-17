@@ -1852,4 +1852,8 @@ void mode_solver::load_eigenvectors(char *filename) {
   evectmatrixio_readall_raw(filename, H);
   curfield_reset();
 }
+
+std::vector<mpb_real> mode_solver::get_freqs() {
+  return freqs;
+}
 } // namespace meep_mpb

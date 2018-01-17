@@ -119,6 +119,7 @@ struct mode_solver {
   void get_epsilon_tensor(int c1, int c2, int imag, int inv);
   char *fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix);
   void load_eigenvectors(char *filename);
+  std::vector<mpb_real> get_freqs();
 
 private:
   int kpoint_index;

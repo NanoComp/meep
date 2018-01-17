@@ -85,6 +85,17 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
     }
 }
 
+%typemap(out) std::vector<mpb_real> py_mpb::mode_solver::get_freqs {
+    Py_ssize_t n = $1.size();
+
+    $result = PyList_New(n);
+
+    for (Py_ssize_t i = 0; i < n; ++i) {
+        PyObject *freq = PyFloat_FromDouble($1[i]);
+        PyList_SetItem($result, i, freq);
+    }
+}
+
 %include "pympb.hpp"
 
 %pythoncode %{
