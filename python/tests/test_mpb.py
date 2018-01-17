@@ -38,18 +38,6 @@ class TestMPBWrappers(unittest.TestCase):
         ms.init(0, True)
 
 
-# class TestLattice(unittest.TestCase):
-
-#     def test_lattice(self):
-#         pass
-
-
-# class TestMatrix(unittest.TestCase):
-
-#     def test_matrix(self):
-#         pass
-
-
 class TestModeSolver(unittest.TestCase):
 
     def test_list_split(self):

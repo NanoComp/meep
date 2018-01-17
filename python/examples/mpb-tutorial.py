@@ -16,7 +16,7 @@ k_points = [mp.Vector3(),          # Gamma
 
 k_points = mp.interpolate(4, k_points)
 geometry = []  # [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
-geometry_lattice = mpb.Lattice(size=mp.Vector3(1, 1))
+geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1))
 resolution = 32
 
 ms = mpb.ModeSolver(num_bands=num_bands,
