@@ -1,5 +1,8 @@
 from __future__ import division
 
+import os
+import re
+import sys
 import time
 import meep as mp
 from meep import mpb
@@ -83,6 +86,17 @@ class ModeSolver(object):
         self.iterations = 0
         self.mode_solver = None
 
+    def get_filename_prefix(self):
+        if self.filename_prefix:
+            return self.filename_prefix
+        else:
+            _, filename = os.path.split(sys.argv[0])
+
+            if filename == 'ipykernel_launcher.py' or filename == '__main__.py':
+                return ''
+            else:
+                return re.sub(r'\.py$', '', filename) + '-'
+
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
     # frequency range of a band and the k-points where it achieves its minimum/maximum.
@@ -130,8 +144,7 @@ class ModeSolver(object):
 
     def output_epsilon(self):
         self.mode_solver.get_epsilon()
-        # TODO
-        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
+        self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
 
     def output_mu(self):
         pass

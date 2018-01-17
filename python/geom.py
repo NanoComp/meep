@@ -179,7 +179,7 @@ class Medium(object):
 class Susceptibility(object):
 
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
-        self.sigma_diag = mp.Vector3(sigma, sigma, sigma) if sigma else sigma_diag
+        self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
 
@@ -312,7 +312,7 @@ class Ellipsoid(Block):
 # TODO: Add tests
 class Matrix(object):
 
-    def __init__(self, c1=mp.Vector3(), c2=mp.Vector3(), c3=mp.Vector3()):
+    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
@@ -330,7 +330,7 @@ class Matrix(object):
     def __mul__(self, m):
         if type(m) is Matrix:
             return self.mm_mult(m)
-        elif type(m) is mp.Vector3:
+        elif type(m) is Vector3:
             return self.mv_mult(m)
         elif isinstance(m, Number):
             return self.scale(m)
@@ -341,24 +341,24 @@ class Matrix(object):
         return "<{}\n {}\n {}>".format(self.row(0), self.row(1), self.row(2))
 
     def row(self, i):
-        return mp.Vector3(self.c1[i], self.c2[i], self.c3[i])
+        return Vector3(self.c1[i], self.c2[i], self.c3[i])
 
     def mm_mult(self, m):
-        # c1 = mp.Vector3(*[self.row(i).dot(m.c1) for i in range(3)])
-        c1 = mp.Vector3(self.row(0).dot(m.c1),
-                        self.row(1).dot(m.c1),
-                        self.row(2).dot(m.c1))
-        c2 = mp.Vector3(self.row(0).dot(m.c2),
-                        self.row(1).dot(m.c2),
-                        self.row(2).dot(m.c2))
-        c3 = mp.Vector3(self.row(0).dot(m.c3),
-                        self.row(1).dot(m.c3),
-                        self.row(2).dot(m.c3))
+        # c1 = Vector3(*[self.row(i).dot(m.c1) for i in range(3)])
+        c1 = Vector3(self.row(0).dot(m.c1),
+                     self.row(1).dot(m.c1),
+                     self.row(2).dot(m.c1))
+        c2 = Vector3(self.row(0).dot(m.c2),
+                     self.row(1).dot(m.c2),
+                     self.row(2).dot(m.c2))
+        c3 = Vector3(self.row(0).dot(m.c3),
+                     self.row(1).dot(m.c3),
+                     self.row(2).dot(m.c3))
 
         return Matrix(c1, c2, c3)
 
     def mv_mult(self, v):
-        return mp.Vector3(*[self.row(i).dot(v) for i in range(3)])
+        return Vector3(*[self.row(i).dot(v) for i in range(3)])
 
     def scale(self, s):
         return Matrix(self.c1.scale(s), self.c2.scale(s), self.c3.scale(s))
@@ -384,11 +384,11 @@ class Matrix(object):
 class Lattice(object):
 
     def __init__(self,
-                 size=mp.Vector3(1, 1, 1),
-                 basis_size=mp.Vector3(1, 1, 1),
-                 basis1=mp.Vector3(1, 0, 0),
-                 basis2=mp.Vector3(0, 1, 0),
-                 basis3=mp.Vector3(0, 0, 1)):
+                 size=Vector3(1, 1, 1),
+                 basis_size=Vector3(1, 1, 1),
+                 basis1=Vector3(1, 0, 0),
+                 basis2=Vector3(0, 1, 0),
+                 basis3=Vector3(0, 0, 1)):
 
         self.size = size
         self.basis_size = basis_size

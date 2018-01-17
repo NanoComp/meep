@@ -89,8 +89,6 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 %pythoncode %{
     from .solver import (
-        Lattice,
-        Matrix,
         ModeSolver,
     )
 %}

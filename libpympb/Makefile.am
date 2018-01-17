@@ -11,4 +11,5 @@ pkginclude_HEADERS = pympb.hpp
 libpympb_la_SOURCES = pympb.cpp
 libpympb_la_LIBADD = $(LIBMEEP)
 libpympb_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
-libpympb_la_CPPFLAGS = $(AM_CPPFLAGS)
+# TODO: Don't hardcode the HDF5 defines
+libpympb_la_CPPFLAGS = $(AM_CPPFLAGS) -DHAVE_HDF5 -DHAVE_H5PSET_FAPL_MPIO

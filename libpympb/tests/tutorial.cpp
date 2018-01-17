@@ -1,7 +1,7 @@
 #include <cassert>
 #include "pympb.hpp"
 
-void test_create_maxwell_data() {
+void test_mode_solver() {
   static const int NUM_KPOINTS = 16;
 
   int num_bands = 8;
@@ -50,54 +50,15 @@ void test_create_maxwell_data() {
   py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, mat, g,
                          reset_fields);
 
-  // get_epsilon();
-
   for (int i = 0; i < NUM_KPOINTS; ++i) {
     ms.solve_kpoint(k_points[i]);
   }
-
-  // maxwell_data *md = ms.mdata;
-
-  // assert(md->nx == 32);
-  // assert(md->ny == 32);
-  // assert(md->nz == 1);
-  // assert(md->local_nx == 32);
-  // assert(md->local_ny == 32);
-  // assert(md->local_x_start == 0);
-  // assert(md->local_y_start == 0);
-  // assert(md->last_dim == 32);
-  // assert(md->last_dim_size == 32);
-  // assert(md->other_dims == 32);
-  // assert(md->num_bands == 8);
-  // assert(md->N == 1024);
-  // assert(md->local_N == 1024);
-  // assert(md->N_start == 0);
-  // assert(md->alloc_N == 1024);
-  // assert(md->fft_output_size == 1024);
-  // assert(md->max_fft_bands == 8);
-  // assert(md->num_fft_bands == 8);
-  // assert(md->current_k[0] == 0);
-  // assert(md->current_k[1] == 0);
-  // assert(md->current_k[2] == 0);
-  // assert(md->parity == 0);
-  // assert(md->nplans == 0);
-  // assert(md->zero_k == 0);
-  // assert(md->eps_inv->m00 == 0);
-  // assert(md->eps_inv->m01 == 0);
-  // assert(md->eps_inv->m02 == 0);
-  // assert(md->eps_inv->m11 == 0);
-  // assert(md->eps_inv->m12 == 0);
-  // assert(md->eps_inv->m22 == 0);
-  // assert(md->eps_inv_mean == 1);
-  // assert(md->mu_inv == NULL);
-  // assert(md->mu_inv_mean == 1);
 
   free(mat);
 }
 
 int main() {
 
-  test_create_maxwell_data();
-
+  test_mode_solver();
   return 0;
 }
