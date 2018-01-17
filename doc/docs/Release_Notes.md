@@ -2,30 +2,31 @@
 # Release Notes
 ---
 
-Here, we describe what has changed between releases of the [Meep](index.md) package. You can also refer to the `NEWS` file in the Meep package or the `ChangeLog` file for a more detailed listing.
+These are the changes between the stable releases. You can also refer to the [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md) file in the repository for a more detailed listing.
+
+Meep 1.4
+--------
+
+<small> 19 January 2018</small>
+
+-      Full-featured Python interface.
+-      Migrated documentation to github/markdown/readthedocs ([#55](https://github.com/stevengj/meep/pull/55)).
+-      New feature to get slice as array in C++ and Python APIs ([#96](https://github.com/stevengj/meep/pull/96), [#105](https://github.com/stevengj/meep/pull/105)).
+-      libmeepgeom library to allow C++ users to access geometric-object API ([#56](https://github.com/stevengj/meep/pull/56)).
+-      Removed overly conservative stability check for Lorentzian susceptibilities ([#150](https://github.com/stevengj/meep/pull/150)).
+-      Corrected small error in frequency interval for dft-ldos ([#40](https://github.com/stevengj/meep/pull/40)).
+-      Bug fixes in near-to-farfield spectra ([#21](https://github.com/stevengj/meep/pull/21)), eigenmode source ([#20](https://github.com/stevengj/meep/issues/20)), and LDOS ([#40](https://github.com/stevengj/meep/pull/40)).
 
 Meep 1.3
 --------
 
 <small>31 March 2015</small>
 
--   New near-to-far-field functionality: given a bounding surface, automatically computes the Fourier-transformed field in any desired grid of "far-field" points arbitrarily far away ([pull \#18](https://github.com/stevengj/meep/pull/18)).
-
-<!-- -->
-
--   Compatibility with Harminv 1.4 (fixes [issue \#13](https://github.com/stevengj/meep/issues/13): ppc64 portability).
-
-<!-- -->
-
+-   New near-to-far-field functionality: given a bounding surface, automatically computes the Fourier-transformed field in any desired grid of "far-field" points arbitrarily far away ([\#18](https://github.com/stevengj/meep/pull/18)).
+-   Compatibility with Harminv 1.4 (fixes [\#13](https://github.com/stevengj/meep/issues/13): ppc64 portability).
 -   Fix compilation with latest C++ standard (e.g. on OS X 10.9).
-
-<!-- -->
-
 -   Bug fix in CW solver convergence test; thanks to Wu Chuanren and [Filip Dominec](https://github.com/FilipDominec/) for the bug report.
-
-<!-- -->
-
--   Build fix for Fedora 21 (thanks to Dean Brettle) ([issue \#14](https://github.com/stevengj/meep/pull/14)).
+-   Build fix for Fedora 21 (thanks to Dean Brettle) ([\#14](https://github.com/stevengj/meep/pull/14)).
 
 Meep 1.2.1
 ----------

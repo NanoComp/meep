@@ -50,7 +50,7 @@ Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu
 
 ### Bug Reports and Feature Requests
 
-For bug reports and feature requests, please [file a Meep GitHub issue](https://github.com/stevengj/meep/issues).
+For bug reports and feature requests, please file a [GitHub issue](https://github.com/stevengj/meep/issues).
 
 Acknowledgements
 ----------------
