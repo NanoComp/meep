@@ -4,7 +4,9 @@
 #include <cstddef>
 #include <iostream>
 
+#include "config.h"
 #include "pympb.hpp"
+#include "mpb/scalar.h"
 #include "meep/mympi.hpp"
 
 namespace py_mpb {
@@ -649,6 +651,96 @@ mpb_real mean_medium_from_matrix(const symmetric_matrix *eps_inv) {
   return 2.0 / (eps_eigs[0] + eps_eigs[1]);
 }
 
+/* Define a macro F(x,X) that works similarly to the F77_FUNC
+   macro except that it appends an appropriate BLAS prefix (c,z,s,d)
+   to the routine name depending upon the type defined in scalar.h */
+
+#ifdef SCALAR_COMPLEX
+#  ifdef SCALAR_SINGLE_PREC
+#    define F(x,X) F77_FUNC(c##x, C##X)
+#  else
+#    define F(x,X) F77_FUNC(z##x, Z##X)
+#  endif
+#else
+#  ifdef SCALAR_SINGLE_PREC
+#    define F(x,X) F77_FUNC(s##x, S##X)
+#  else
+#    define F(x,X) F77_FUNC(d##x, D##X)
+#  endif
+#endif
+
+/* When we are solving for a few bands at a time, we solve for the
+   upper bands by "deflation"--by continually orthogonalizing them
+   against the already-computed lower bands.  (This constraint
+   commutes with the eigen-operator, of course, so all is well.) */
+
+typedef struct {
+  evectmatrix Y;  /* the vectors to orthogonalize against; Y must
+                     itself be normalized (Yt B Y = 1) */
+  evectmatrix BY;  /* B * Y */
+  int p;  /* the number of columns of Y to orthogonalize against */
+  scalar *S;  /* a matrix for storing the dot products; should have
+                 at least p * X.p elements (see below for X) */
+  scalar *S2; /* a scratch matrix the same size as S */
+} deflation_data;
+
+extern "C" {
+
+extern void F(gemm,GEMM) (char *, char *, int *, int *, int *, scalar *, scalar *,
+                   int *, scalar *, int *, scalar *, scalar *, int *);
+
+
+static void blasglue_gemm(char transa, char transb, int m, int n, int k, mpb_real a,
+                          scalar *A, int fdA, scalar *B, int fdB, mpb_real b, scalar *C,
+                          int fdC) {
+
+  scalar alpha, beta;
+
+  if (m*n == 0)
+    return;
+
+  if (k == 0) {
+    for (int i = 0; i < m; ++i)
+      for (int j = 0; j < n; ++j)
+        ASSIGN_ZERO(C[i*fdC + j]);
+    return;
+  }
+
+  CHECK(A != C && B != C, "gemm output array must be distinct");
+
+  ASSIGN_REAL(alpha, a);
+  ASSIGN_REAL(beta, b);
+
+  F(gemm,GEMM) (&transb, &transa, &n, &m, &k, &alpha, B, &fdB, A, &fdA, &beta, C, &fdC);
+}
+} // extern "C"
+
+static void deflation_constraint(evectmatrix X, void *data) {
+  deflation_data *d = (deflation_data *) data;
+
+  CHECK(X.n == d->BY.n && d->BY.p >= d->p && d->Y.p >= d->p,
+        "invalid dimensions");
+
+  /* compute (1 - Y (BY)t) X = (1 - Y Yt B) X
+      = projection of X so that Yt B X = 0 */
+
+  /* (Sigh...call the BLAS functions directly since we are not
+     using all the columns of BY...evectmatrix is not set up for
+     this case.) */
+
+  /* compute S = Xt BY (i.e. all the dot products): */
+  blasglue_gemm('C', 'N', X.p, d->p, X.n, 1.0, X.data, X.p, d->BY.data, d->BY.p,
+                0.0, d->S2, d->p);
+#if HAVE_MPI
+  mpi_allreduce(d->S2, d->S, d->p * X.p * SCALAR_NUMVALS, real, SCALAR_MPI_TYPE,
+                MPI_SUM, mpb_comm);
+#endif
+
+  /* compute X = X - Y*St = (1 - BY Yt B) X */
+  blasglue_gemm('N', 'C', X.n, X.p, d->p, -1.0, d->Y.data, d->Y.p, d->S, d->p,
+                1.0, X.data, X.p);
+}
+
 /******* mode_solver *******/
 
 mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice lat,
@@ -662,6 +754,7 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice l
   eigensolver_block_size(-11),
   last_parity(-2),
   negative_epsilon_ok(false),
+  iterations(0),
   mdata(NULL),
   mtdata(NULL),
   curfield(NULL),
@@ -886,7 +979,7 @@ void mode_solver::init(int p, bool reset_fields) {
     // TODO: Clean up if mdata is not NULL
   }
 
-  meep::master_printf("Creating Maxwell data\n");
+  meep::master_printf("Creating Maxwell data...\n");
   mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, num_bands, num_bands);
 
   double s[] = {
@@ -1046,15 +1139,30 @@ void mode_solver::randomize_fields() {
   }
 }
 
-void mode_solver::solve_kpoint(vector3 kpoint) {
-  mpb_real k[] = {
-    kpoint.x,
-    kpoint.y,
-    kpoint.z
-  };
+void mode_solver::solve_kpoint(vector3 kvector) {
 
-  meep::master_printf("solve_kpoint (%g,%g,%g):\n", k[0], k[1], k[2]);
+  // if we get too close to singular k==0 point, just set k=0 exploit our
+  // special handling of this k
+  if (vector3_norm(kvector) < 1e-10) {
+    kvector.x = kvector.y = kvector.z = 0;
+  }
 
+  meep::master_printf("solve_kpoint (%g,%g,%g):\n", kvector.x, kvector.y, kvector.z);
+
+  curfield_reset();
+
+  if (num_bands == 0) {
+    meep::master_printf("  num-bands is zero, not solving for any bands\n");
+    return;
+  }
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "init must be called before solve_kpoint!\n");
+    return;
+  }
+
+  // If this is the first k point, print out a header line for the frequency
+  // grep data.
   if (!kpoint_index && meep::am_master()) {
     printf("%sfreqs:, k index, k1, k2, k3, kmag/2pi", parity_string(mdata));
 
@@ -1064,16 +1172,23 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
     printf("\n");
   }
 
+  cur_kvector = kvector;
+  mpb_real k[] = {kvector.x, kvector.y, kvector.z};
+
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 
-  // TODO
-  // if (mtdata) {  /* solving for bands near a target frequency */
-  // }
+  mpb_real *eigvals = new mpb_real[num_bands];
 
   // TODO
-  // if (eigensolver_davidsonp) {
+  // flags = eigensolver_flags;
+  // if (verbose) {
+  //  flags |= EIGS_VERBOSE;
   // }
 
+
+
+  // Constant (zero frequency) bands at k=0 are handled specially, so remove
+  // them from the solutions for the eigensolver.
   int ib0;
   if (mdata->zero_k && !mtdata) {
     ib0 = maxwell_zero_k_num_const_bands(H, mdata);
@@ -1085,18 +1200,27 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
     evectmatrix_resize(&H, H.p - ib0, 1);
   }
   else {
-    ib0 = 0;
+    ib0 = 0; /* solve for all bands */
   }
 
-  mpb_real *eigvals = new mpb_real[num_bands];
+  // Set up deflation data.
+  deflation_data deflation;
+  if (muinvH.data != Hblock.data) {
+    deflation.Y = H;
+    deflation.BY = muinvH.data != H.data ? muinvH : H;
+    deflation.p = 0;
+    deflation.S = (scalar *)malloc(sizeof(scalar) * H.p * Hblock.p);
+    deflation.S2 = (scalar *)malloc(sizeof(scalar) * H.p * Hblock.p);
+  }
+
   int total_iters = 0;
 
   for (int ib = ib0; ib < num_bands; ib += Hblock.alloc_p) {
     evectconstraint_chain *constraints;
     int num_iters;
 
-    /* don't solve for too many bands if the block size doesn't divide
-       the number of bands: */
+    // Don't solve for too many bands if the block size doesn't divide the number
+    // of bands.
     if (ib + mdata->num_bands > num_bands) {
       maxwell_set_num_bands(mdata, num_bands - ib);
 
@@ -1122,19 +1246,29 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
         }
       }
 
-      // deflation.p = ib-ib0;
-      // if (deflation.p > 0) {
-      //   if (deflation.BY.data != H.data) {
-      //     evectmatrix_resize(&deflation.BY, deflation.p, 0);
-      //     maxwell_muinv_operator(H, deflation.BY, (void *) mdata, 1, deflation.BY);
-      //   }
-      //   constraints = evect_add_constraint(constraints, deflation_constraint, &deflation);
-      // }
+      deflation.p = ib-ib0;
+      if (deflation.p > 0) {
+        if (deflation.BY.data != H.data) {
+          evectmatrix_resize(&deflation.BY, deflation.p, 0);
+          maxwell_muinv_operator(H, deflation.BY, (void *) mdata, 1, deflation.BY);
+        }
+        constraints = evect_add_constraint(constraints, deflation_constraint, &deflation);
+      }
     }
 
-    eigensolver(Hblock, eigvals + ib, maxwell_operator, (void *) mdata, NULL, NULL, maxwell_preconditioner2,
-                (void *) mdata, evectconstraint_chain_func, (void *) constraints, W, 3, tolerance, &num_iters,
-                0); // EIGS_DEFAULT_FLAGS | (meep::am_master() && !quiet ? EIGS_VERBOSE : 0));
+    // TODO
+    // if (mtdata) {  /* solving for bands near a target frequency */
+    // }
+
+    // TODO
+    // if (eigensolver_davidsonp) {
+    // }
+
+    eigensolver(Hblock, eigvals + ib, maxwell_operator, (void *) mdata,
+                mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
+                maxwell_preconditioner2, (void *) mdata, evectconstraint_chain_func,
+                (void *) constraints, W, nwork_alloc, tolerance, &num_iters,
+                EIGS_DEFAULT_FLAGS);
 
     if (Hblock.data != H.data) {  /* save solutions of current block */
       for (int in = 0; in < Hblock.n; ++in) {
@@ -1147,7 +1281,7 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
     evect_destroy_constraints(constraints);
 
     meep::master_printf("Finished solving for bands %d to %d after %d iterations.\n",
-                      ib + 1, ib + Hblock.p, num_iters);
+                        ib + 1, ib + Hblock.p, num_iters);
 
     total_iters += num_iters * Hblock.p;
   }
@@ -1157,16 +1291,55 @@ void mode_solver::solve_kpoint(vector3 kpoint) {
                         total_iters * 1.0 / num_bands);
   }
 
-  kpoint_index += 1;
+  // Manually put in constant (zero-frequency) solutions for k=0.
+  if (mdata->zero_k && !mtdata) {
+    evectmatrix_resize(&H, H.alloc_p, 1);
+    for (int in = 0; in < H.n; ++in) {
+      for (int ip = H.p - ib0 - 1; ip >= 0; --ip) {
+        H.data[in * H.p + ip + ib0] = H.data[in * H.p + ip];
+      }
+    }
+    maxwell_zero_k_set_const_bands(H, mdata);
+    for (int ib = 0; ib < ib0; ++ib) {
+      eigvals[ib] = 0;
+    }
+  }
+
+  /* Reset scratch matrix sizes: */
+  evectmatrix_resize(&Hblock, Hblock.alloc_p, 0);
+  for (int i = 0; i < nwork_alloc; ++i) {
+    evectmatrix_resize(&W[i], W[i].alloc_p, 0);
+  }
+
+  maxwell_set_num_bands(mdata, Hblock.alloc_p);
+
+  /* Destroy deflation data: */
+  if (H.data != Hblock.data) {
+    free(deflation.S2);
+    free(deflation.S);
+  }
+
+  // TODO
+  // if (num_write_output_vars > 0) {
+  //   //  clean up from prev. call
+  //   destroy_output_vars();
+  // }
+
+  iterations = total_iters; /* iterations output variable */
+
+  set_kpoint_index(kpoint_index + 1);
 
   meep::master_printf("%sfreqs:, %d, %g, %g, %g, %g", parity_string(mdata), kpoint_index, (double)k[0],
-                      (double)k[1], (double)k[2], vector3_norm(matrix3x3_vector3_mult(Gm, kpoint)));
+                      (double)k[1], (double)k[2], vector3_norm(matrix3x3_vector3_mult(Gm, kvector)));
 
   for (int i = 0; i < num_bands; ++i) {
     freqs[i] = negative_epsilon_ok ? eigvals[i] : sqrt(eigvals[i]);
     meep::master_printf(", %g", freqs[i]);
   }
   meep::master_printf("\n");
+
+  // TODO
+  // eigensolver_flops = evectmatrix_flops
 
   delete eigvals;
 }

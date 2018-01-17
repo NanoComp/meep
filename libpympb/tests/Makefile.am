@@ -14,3 +14,6 @@ tutorial_SOURCES = tutorial.cpp
 tutorial_LDADD = $(LIBPYMPB) $(LIBMEEPGEOM) $(LIBCTLGEOM)
 
 TESTS = tutorial
+
+clean-local:
+	rm -f *.h5

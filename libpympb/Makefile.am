@@ -3,7 +3,8 @@ LIBMEEP = $(top_builddir)/src/libmeep.la
 AM_CPPFLAGS =                   \
     -Wfatal-errors              \
     -I$(top_srcdir)/libmeepgeom \
-    -I$(top_srcdir)/src
+    -I$(top_srcdir)/src         \
+    -I$(top_builddir)
 
 lib_LTLIBRARIES = libpympb.la
 pkginclude_HEADERS = pympb.hpp

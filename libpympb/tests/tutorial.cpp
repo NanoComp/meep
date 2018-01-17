@@ -50,6 +50,9 @@ void test_mode_solver() {
   py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, mat, g,
                          reset_fields);
 
+  ms.get_epsilon();
+  ms.output_field_to_file(-1, (char *)"tutorial-");
+
   for (int i = 0; i < NUM_KPOINTS; ++i) {
     ms.solve_kpoint(k_points[i]);
   }

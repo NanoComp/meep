@@ -60,6 +60,7 @@ struct mode_solver {
 
   // Output variable
   bool negative_epsilon_ok;
+  int iterations;
 
   geometric_object_list geometry;
 
@@ -74,6 +75,7 @@ struct mode_solver {
 
   int curfield_band;
 
+  vector3 cur_kvector;
   matrix3x3 Gm;
 
   evectmatrix H;
