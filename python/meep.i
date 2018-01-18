@@ -882,7 +882,9 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         else:
             # this variable reference is needed for lazy initialization of MPI
             comm = MPI.COMM_WORLD
-            master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
+            Procs=comm.Get_size()
+            (Major,Minor)=MPI.Get_version();
+            print('Using MPI version {}.{}, {} processes'.format(Major, Minor, Procs));
 
             if not am_master():
                 import os
