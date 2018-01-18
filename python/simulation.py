@@ -231,10 +231,34 @@ class Harminv(object):
 
 class Simulation(object):
 
-    def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
-                 dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
-                 force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False,
-                 extra_materials=[], material_function=None, epsilon_func=None, epsilon_input_file=''):
+    def __init__(self,
+                 cell_size,
+                 resolution,
+                 geometry=[],
+                 sources=[],
+                 eps_averaging=True,
+                 dimensions=2,
+                 boundary_layers=[],
+                 symmetries=[],
+                 verbose=False,
+                 force_complex_fields=False,
+                 default_material=mp.Medium(),
+                 m=0,
+                 k_point=False,
+                 extra_materials=[],
+                 material_function=None,
+                 epsilon_func=None,
+                 epsilon_input_file='',
+                 progress_interval=4,
+                 subpixel_tol=1e-4,
+                 subpixel_maxeval=100000,
+                 ensure_periodicity=False,
+                 num_chunks=0,
+                 courant=0.5,
+                 accurate_fields_near_cylorigin=False,
+                 filename_prefix='',
+                 output_volume=None,
+                 output_single_precision=False):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -245,32 +269,31 @@ class Simulation(object):
         self.symmetries = symmetries
         self.geometry_center = Vector3()
         self.eps_averaging = eps_averaging
-        self.subpixel_tol = 1e-4
-        self.subpixel_maxeval = 100000
-        self.ensure_periodicity = False
+        self.subpixel_tol = subpixel_tol
+        self.subpixel_maxeval = subpixel_maxeval
+        self.ensure_periodicity = ensure_periodicity
         self.extra_materials = extra_materials
         self.default_material = default_material
         self.epsilon_input_file = epsilon_input_file
-        self.num_chunks = 0
-        self.courant = 0.5
+        self.num_chunks = num_chunks
+        self.courant = courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
         self.special_kz = False
         self.k_point = k_point
         self.fields = None
         self.structure = None
-        self.accurate_fields_near_cylorigin = False
+        self.accurate_fields_near_cylorigin = accurate_fields_near_cylorigin
         self.m = m
         self.force_complex_fields = force_complex_fields
         self.verbose = verbose
-        self.progress_interval = 4
+        self.progress_interval = progress_interval
         self.init_fields_hooks = []
-        self.progress_interval = 4
         self.run_index = 0
         self.filename_prefix = ''
         self.output_append_h5 = None
-        self.output_single_precision = False
-        self.output_volume = None
+        self.output_single_precision = output_single_precision
+        self.output_volume = output_volume
         self.last_eps_filename = ''
         self.output_h5_hook = lambda fname: False
         self.interactive = False
@@ -313,10 +336,6 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
-
-        def dummy_eps(v):
-            return 1
-
         sym = mp.symmetry()
 
         # Initialize swig objects for each symmetry and combine them into one
@@ -342,7 +361,7 @@ class Simulation(object):
         else:
             absorbers = None
 
-        self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
+        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
         if self.material_function:
             self.material_function.eps = False
@@ -750,7 +769,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
-        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume.swigobj
+        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
@@ -822,7 +841,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_field_function")
 
-        ov = self.output_volume.swigobj if self.output_volume else self.fields.total_volume()
+        ov = self.output_volume if self.output_volume else self.fields.total_volume()
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 

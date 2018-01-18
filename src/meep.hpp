@@ -1215,6 +1215,7 @@ class fields {
   double coskna[5], sinkna[5];
   boundary_condition boundaries[2][5];
   char *outdir;
+  bool components_allocated;
 
   // fields.cpp methods:
   fields(structure *, double m=0, double beta=0,
