@@ -114,13 +114,13 @@ class ModeSolver(object):
                 br_rest = [] if not brd else brd[1:]
                 newmin = (freqs[0], kpoint) if freqs[0] < br[0][0] else br[0]
                 newmax = (freqs[0], kpoint) if freqs[0] > br[1][0] else br[1]
-                new_start = [((newmin, newmax))] + br_start
+                new_start = br_start + [(newmin, newmax)]
                 return update_brd(br_rest, freqs[1:], new_start)
 
         return update_brd(brd, freqs, [])
 
     def output_band_range_data(self, br_data):
-        for tup, band in zip(br_data, range(len(br_data))):
+        for tup, band in zip(br_data, range(1, len(br_data) + 1)):
             fmt = "Band {} range: {} at {} to {} at {}"
             min_band, max_band = tup
             min_freq, min_kpoint = min_band
@@ -135,7 +135,7 @@ class ModeSolver(object):
             if not br_rest:
                 return gaps
             else:
-                if br_cur[0][0] >= br_rest[0][0][0]:
+                if br_cur[1][0] >= br_rest[0][0][0]:
                     return ogaps(br_rest[0], br_rest[1:], i + 1, gaps)
                 else:
                     gap_size = 5

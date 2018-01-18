@@ -404,6 +404,8 @@ void mode_solver::init(int p, bool reset_fields) {
     randomize_fields();
   }
 
+  // TODO
+  // evectmatrix_flops = eigensolver_flops;
 }
 
 void mode_solver::init_epsilon() {
@@ -575,7 +577,8 @@ void mode_solver::solve_kpoint(vector3 kvector) {
   }
 
   cur_kvector = kvector;
-  mpb_real k[] = {kvector.x, kvector.y, kvector.z};
+  mpb_real k[3];
+  vector3_to_arr(k, kvector);
 
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 

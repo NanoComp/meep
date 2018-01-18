@@ -27,7 +27,6 @@ ms = mpb.ModeSolver(num_bands=num_bands,
 
 print_heading("Square lattice of rods: TE bands")
 ms.run_te()
-
 # print_heading("Square lattice of rods: TM bands")
 # ms.run_tm()
 
