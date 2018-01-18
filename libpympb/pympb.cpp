@@ -13,602 +13,8 @@ namespace py_mpb {
 
 const double inf = 1.0e20;
 
-/****** matrixio ******/
-
-// For now this is copied from mpb/matrixio. It's currently linked statically with
-// the mpb binary, but maybe we can add it to libmpb.so.
-
-#define CHECK(condition, message) /* do nothing */
-#define FNAME_SUFFIX ".h5"
-
-#ifndef HAVE_H5PSET_FAPL_MPIO
-static int matrixio_critical_section_tag = 0;
-#endif
-
-#ifdef HAVE_H5PSET_FAPL_MPIO
-#  define IF_EXCLUSIVE(yes,no) no
-#else
-#  define IF_EXCLUSIVE(yes,no) yes
-#endif
-
-/* Normally, HDF5 prints out all sorts of error messages, e.g. if a dataset
-   can't be found, in addition to returning an error code.  The following
-   macro can be wrapped around code to temporarily suppress error messages. */
-
-#define SUPPRESS_HDF5_ERRORS(statements) { \
-     H5E_auto_t xxxxx_err_func; \
-     void *xxxxx_err_func_data; \
-     H5Eget_auto(&xxxxx_err_func, &xxxxx_err_func_data); \
-     H5Eset_auto(NULL, NULL); \
-     { statements; } \
-     H5Eset_auto(xxxxx_err_func, xxxxx_err_func_data); \
-}
-
-matrixio_id matrixio_create(const char *fname);
-void fieldio_write_complex_field(scalar_complex *field,
-                                 int rank,
-                                 const int dims[3],
-                                 const int local_dims[3],
-                                 const int start[3],
-                                 int which_component,
-                                 int num_components,
-                                 const mpb_real *kvector,
-                                 matrixio_id file_id,
-                                 int append,
-                                 matrixio_id data_id[]);
-void fieldio_write_real_vals(mpb_real *vals,
-                             int rank,
-                             const int dims[3],
-                             const int local_dims[3],
-                             const int start[3],
-                             matrixio_id file_id,
-                             int append,
-                             const char *dataname,
-                             matrixio_id *data_id);
-matrixio_id matrixio_create_dataset(matrixio_id id, const char *name, const char *description,
-                                    int rank, const int *dims);
-void matrixio_write_real_data(matrixio_id data_id, const int *local_dims, const int *local_start,
-                              int stride, mpb_real *data);
-void matrixio_close_dataset(matrixio_id data_id);
-void matrixio_write_data_attr(matrixio_id id, const char *name, const mpb_real *val,
-                              int rank, const int *dims);
-void matrixio_write_string_attr(matrixio_id id, const char *name, const char *val);
-matrixio_id matrixio_open(const char *fname, int read_only);
-void matrixio_close(matrixio_id id);
-void evectmatrixio_readall_raw(const char *filename, evectmatrix a);
-char *add_fname_suffix(const char *fname);
-int matrixio_dataset_exists(matrixio_id id, const char *name);
-void matrixio_dataset_delete(matrixio_id id, const char *name);
-void write_attr(matrixio_id id, matrixio_id_ type_id, matrixio_id_ space_id,
-                const char *name, const void *val);
-
-static matrixio_id matrixio_create_(const char *fname, int parallel)
-{
-#if defined(HAVE_HDF5)
-  char *new_fname;
-  matrixio_id id;
-  hid_t access_props;
-
-  access_props = H5Pcreate (H5P_FILE_ACCESS);
-
-#if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
-  if (parallel) {
-    CHECK(H5Pset_fapl_mpio(access_props, mpb_comm, MPI_INFO_NULL)
-          >= 0, "error initializing MPI file access");
-  }
-#endif
-
-  new_fname = add_fname_suffix(fname);
-
-#ifdef HAVE_H5PSET_FAPL_MPIO
-  id.id = H5Fcreate(new_fname, H5F_ACC_TRUNC, H5P_DEFAULT, access_props);
-#else
-  if (parallel) mpi_begin_critical_section(matrixio_critical_section_tag);
-  if (mpi_is_master() || !parallel)
-    id.id = H5Fcreate(new_fname, H5F_ACC_TRUNC,H5P_DEFAULT,access_props);
-  else
-    id.id = H5Fopen(new_fname, H5F_ACC_RDWR, access_props);
-#endif
-  id.parallel = parallel;
-
-  CHECK(id.id >= 0, "error creating HDF output file");
-
-  free(new_fname);
-
-  H5Pclose(access_props);
-
-  return id;
-#else
-  meep::master_fprintf(stderr, "matrixio: cannot output \"%s\" (compiled without HDF)\n", fname);
-  {
-    matrixio_id id = {0,0};
-    return id;
-  }
-#endif
-}
-
-matrixio_id matrixio_create(const char *fname) {
-  return matrixio_create_(fname, 1);
-}
-
-/* note that kvector here is given in the reciprocal basis
-   ...data_id should be of length at 2*num_components */
-void fieldio_write_complex_field(scalar_complex *field,
-                                 int rank,
-                                 const int dims[3],
-                                 const int local_dims[3],
-                                 const int start[3],
-                                 int which_component, int num_components,
-                                 const mpb_real *kvector,
-                                 matrixio_id file_id,
-                                 int append,
-                                 matrixio_id data_id[]) {
-
-  int i, j, k, component, ri_part;
-
-  rank = dims[2] == 1 ? (dims[1] == 1 ? 1 : 2) : 3;
-
-  if (kvector) {
-    mpb_real s[3]; /* the step size between grid points dotted with k */
-
-    for (i = 0; i < 3; ++i)
-      s[i] = TWOPI * kvector[i] / dims[i];
-
-    /* cache exp(ikx) along each of the directions, for speed */
-    scalar_complex *phasex = (scalar_complex*)malloc(sizeof(scalar_complex) * local_dims[0]);
-    scalar_complex *phasey = (scalar_complex*)malloc(sizeof(scalar_complex) * local_dims[1]);
-    scalar_complex *phasez = (scalar_complex*)malloc(sizeof(scalar_complex) * local_dims[2]);
-
-    for (i = 0; i < local_dims[0]; ++i) {
-      mpb_real phase = s[0] * (i + start[0]);
-      phasex[i].re = cos(phase);
-      phasex[i].im = sin(phase);
-    }
-    for (j = 0; j < local_dims[1]; ++j) {
-      mpb_real phase = s[1] * (j + start[1]);
-      phasey[j].re = cos(phase);
-      phasey[j].im = sin(phase);
-    }
-    for (k = 0; k < local_dims[2]; ++k) {
-      mpb_real phase = s[2] * (k + start[2]);
-      phasez[k].re = cos(phase);
-      phasez[k].im = sin(phase);
-    }
-
-    /* Now, multiply field by exp(i k*r): */
-    for (i = 0; i < local_dims[0]; ++i) {
-      scalar_complex px = phasex[i];
-
-      for (j = 0; j < local_dims[1]; ++j) {
-        scalar_complex py;
-        mpb_real re = phasey[j].re, im = phasey[j].im;
-        py.re = px.re * re - px.im * im;
-        py.im = px.re * im + px.im * re;
-
-        for (k = 0; k < local_dims[2]; ++k) {
-          int ijk = ((i*local_dims[1] + j)*local_dims[2] + k)*3;
-          mpb_real p_re, p_im;
-          mpb_real re = phasez[k].re, im = phasez[k].im;
-
-          p_re = py.re * re - py.im * im;
-          p_im = py.re * im + py.im * re;
-
-          for (component = 0; component < 3; ++component) {
-            int ijkc = ijk + component;
-            re = field[ijkc].re; im = field[ijkc].im;
-            field[ijkc].re = re * p_re - im * p_im;
-            field[ijkc].im = im * p_re + re * p_im;
-          }
-        }
-      }
-    }
-
-    free(phasez);
-    free(phasey);
-    free(phasex);
-  }
-
-  /* write hyperslabs for each field component: */
-  for (component = 0; component < num_components; ++component) {
-    if (component == which_component || which_component < 0) {
-      for (ri_part = 0; ri_part < 2; ++ri_part) {
-        char name[] = "x.i";
-        name[0] = (num_components == 1 ? 'c' : 'x') + component;
-        name[2] = ri_part ? 'i' : 'r';
-
-        if (!append)
-          data_id[component*2 + ri_part] = matrixio_create_dataset(file_id, name, NULL,
-                                                                      rank, dims);
-
-        matrixio_write_real_data(data_id[component*2 + ri_part], local_dims, start, 2 * num_components,
-                                 ri_part ? &field[component].im : &field[component].re);
-      }
-    }
-  }
-}
-
-void fieldio_write_real_vals(mpb_real *vals, int rank, const int dims[3], const int local_dims[3],
-                             const int start[3], matrixio_id file_id, int append, const char *dataname,
-                             matrixio_id *data_id) {
-
-  rank = dims[2] == 1 ? (dims[1] == 1 ? 1 : 2) : 3;
-
-  if (!append || data_id->id < 0)
-    *data_id = matrixio_create_dataset(file_id, dataname, NULL, rank,dims);
-
-  matrixio_write_real_data(*data_id,local_dims,start,1,vals);
-}
-
-matrixio_id matrixio_create_dataset(matrixio_id id, const char *name, const char *description,
-                                    int rank, const int *dims) {
-
-  matrixio_id data_id;
-  data_id.id = 0;
-  data_id.parallel = id.parallel;
-#if defined(HAVE_HDF5)
-  {
-    int i;
-    hid_t space_id, type_id;
-    hsize_t *dims_copy;
-
-    /* delete pre-existing datasets, or we'll have an error; I think
-       we can only do this on the master process. (?) */
-    if (matrixio_dataset_exists(id, name)) {
-#ifdef HAVE_H5PSET_FAPL_MPIO /* H5Gunlink is collective */
-      matrixio_dataset_delete(id, name);
-#else
-      if (mpi_is_master() || !id.parallel) {
-        matrixio_dataset_delete(id, name);
-        H5Fflush(id.id, H5F_SCOPE_GLOBAL);
-      }
-      IF_EXCLUSIVE(0,if (id.parallel) MPI_Barrier(mpb_comm));
-#endif
-    }
-
-    CHECK(rank > 0, "non-positive rank");
-
-    dims_copy = (hsize_t *)malloc(sizeof(hsize_t) * rank);
-    for (i = 0; i < rank; ++i)
-      dims_copy[i] = dims[i];
-
-    space_id = H5Screate_simple(rank, dims_copy, NULL);
-
-    free(dims_copy);
-
-#if defined(SCALAR_SINGLE_PREC)
-    type_id = H5T_NATIVE_FLOAT;
-#elif defined(SCALAR_LONG_DOUBLE_PREC)
-    type_id = H5T_NATIVE_LDOUBLE;
-#else
-    type_id = H5T_NATIVE_DOUBLE;
-#endif
-
-    /* Create the dataset.  Note that, on parallel machines, H5Dcreate
-       should do the right thing; it is supposedly a collective operation. */
-    IF_EXCLUSIVE(
-    if (mpi_is_master() || !id.parallel)
-      data_id.id = H5Dcreate(id.id,name,type_id,space_id,H5P_DEFAULT);
-    else
-      data_id.id = H5Dopen(id.id, name), data_id.id = H5Dcreate(id.id, name, type_id, space_id, H5P_DEFAULT));
-
-    H5Sclose(space_id);  /* the dataset should have its own copy now */
-
-    matrixio_write_string_attr(data_id, "description", description);
-  }
-#endif
-  return data_id;
-}
-
-void matrixio_write_real_data(matrixio_id data_id, const int *local_dims, const int *local_start,
-                              int stride, mpb_real *data) {
-#if defined(HAVE_HDF5)
-  int rank;
-  hid_t space_id, type_id, mem_space_id;
-  start_t *start;
-  hsize_t *strides, *count, count_prod;
-  int i;
-  mpb_real *data_copy;
-  int data_copy_stride = 1, free_data_copy = 0, do_write = 1;
-
-  /*******************************************************************/
-  /* Get dimensions of dataset */
-
-  space_id = H5Dget_space(data_id.id);
-
-  rank = H5Sget_simple_extent_ndims(space_id);
-
-  hsize_t *dims = (hsize_t *)malloc(sizeof(hsize_t) * rank);
-  hsize_t *maxdims = (hsize_t *)malloc(sizeof(hsize_t) * rank);
-
-  H5Sget_simple_extent_dims(space_id, dims, maxdims);
-
-  free(maxdims);
-
-#if defined(SCALAR_SINGLE_PREC)
-  type_id = H5T_NATIVE_FLOAT;
-#elif defined(SCALAR_LONG_DOUBLE_PREC)
-  type_id = H5T_NATIVE_LDOUBLE;
-#else
-  type_id = H5T_NATIVE_DOUBLE;
-#endif
-
-  /*******************************************************************/
-  /* if stride > 1, make a contiguous copy; hdf5 is much faster
-     in this case. */
-
-  if (stride > 1) {
-    int N = 1;
-    for (i = 0; i < rank; ++i)
-      N *= local_dims[i];
-    data_copy = (mpb_real *)malloc(sizeof(mpb_real) * N);
-    if (data_copy) {
-      free_data_copy = 1;
-      for (i = 0; i < (N & 3); ++i)
-        data_copy[i] = data[i * stride];
-      for (; i < N; i += 4) {
-        mpb_real d0 = data[i * stride];
-        mpb_real d1 = data[(i + 1) * stride];
-        mpb_real d2 = data[(i + 2) * stride];
-        mpb_real d3 = data[(i + 3) * stride];
-        data_copy[i] = d0;
-        data_copy[i+1] = d1;
-        data_copy[i+2] = d2;
-        data_copy[i+3] = d3;
-      }
-      CHECK(i == N, "bug in matrixio copy routine");
-    }
-    else {
-      data_copy = data;
-      data_copy_stride = stride;
-    }
-  }
-  else
-    data_copy = data;
-
-  /*******************************************************************/
-  /* Before we can write the data to the data set, we must define
-     the dimensions and "selections" of the arrays to be read & written: */
-
-  start = (start_t *)malloc(sizeof(start_t) * rank);
-  strides = (hsize_t *)malloc(sizeof(hsize_t) * rank);
-  count = (hsize_t *)malloc(sizeof(hsize_t) * rank);
-
-  count_prod = 1;
-  for (i = 0; i < rank; ++i) {
-    start[i] = local_start[i];
-    count[i] = local_dims[i];
-    strides[i] = 1;
-    count_prod *= count[i];
-  }
-
-  if (count_prod > 0) {
-    H5Sselect_hyperslab(space_id, H5S_SELECT_SET, start, NULL, count, NULL);
-
-    for (i = 0; i < rank; ++i)
-         start[i] = 0;
-    strides[rank - 1] = data_copy_stride;
-    count[rank - 1] *= data_copy_stride;
-    mem_space_id = H5Screate_simple(rank, count, NULL);
-    count[rank - 1] = local_dims[rank - 1];
-    H5Sselect_hyperslab(mem_space_id, H5S_SELECT_SET, start, data_copy_stride <= 1 ? NULL : strides, count, NULL);
-  }
-  else { /* this can happen on leftover processes in MPI */
-    H5Sselect_none(space_id);
-    mem_space_id = H5Scopy(space_id); /* can't create an empty space */
-    H5Sselect_none(mem_space_id);
-    do_write = 0;  /* HDF5 complains about empty dataspaces otherwise */
-  }
-
-  /*******************************************************************/
-  /* Write the data, then free all the stuff we've allocated. */
-
-  if (do_write)
-    H5Dwrite(data_id.id, type_id, mem_space_id, space_id, H5P_DEFAULT, data_copy);
-
-  if (free_data_copy)
-    free(data_copy);
-  H5Sclose(mem_space_id);
-  free(count);
-  free(strides);
-  free(start);
-  free(dims);
-  H5Sclose(space_id);
-#endif
-}
-
-void matrixio_close_dataset(matrixio_id data_id) {
-#if defined(HAVE_HDF5)
-  CHECK(H5Dclose(data_id.id) >= 0, "error closing HDF dataset");
-#endif
-}
-
-void matrixio_write_data_attr(matrixio_id id, const char *name, const mpb_real *val,
-                              int rank, const int *dims) {
-#if defined(HAVE_HDF5)
-  hid_t type_id;
-  hid_t space_id;
-  hsize_t *space_dims;
-  int i;
-
-  if (!val || !name || !name[0] || rank < 0 || !dims)
-    return; /* don't try to create empty attributes */
-
-#if defined(SCALAR_SINGLE_PREC)
-  type_id = H5T_NATIVE_FLOAT;
-#elif defined(SCALAR_LONG_DOUBLE_PREC)
-  type_id = H5T_NATIVE_LDOUBLE;
-#else
-  type_id = H5T_NATIVE_DOUBLE;
-#endif
-
-  if (rank > 0) {
-    space_dims = (hsize_t *)malloc(sizeof(hsize_t) * rank);
-    for (i = 0; i < rank; ++i)
-      space_dims[i] = dims[i];
-    space_id = H5Screate_simple(rank, space_dims, NULL);
-    free(space_dims);
-  }
-  else {
-    space_id = H5Screate(H5S_SCALAR);
-  }
-
-  write_attr(id, type_id, space_id, name, val);
-  H5Sclose(space_id);
-#endif
-}
-
-void matrixio_write_string_attr(matrixio_id id, const char *name, const char *val) {
-
-#if defined(HAVE_HDF5)
-  hid_t type_id;
-  hid_t space_id;
-
-  if (!val || !name || !name[0] || !val[0])
-    return; /* don't try to create empty attributes */
-
-  type_id = H5Tcopy(H5T_C_S1);
-  H5Tset_size(type_id, strlen(val) + 1);
-  space_id = H5Screate(H5S_SCALAR);
-  write_attr(id, type_id, space_id, name, val);
-  H5Sclose(space_id);
-  H5Tclose(type_id);
-#endif
-}
-
-matrixio_id matrixio_open_(const char *fname, int read_only, int parallel) {
-#if defined(HAVE_HDF5)
-  char *new_fname;
-  matrixio_id id;
-  hid_t access_props;
-
-  access_props = H5Pcreate (H5P_FILE_ACCESS);
-
-#if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
-  if (parallel)
-    H5Pset_fapl_mpio(access_props, mpb_comm, MPI_INFO_NULL);
-#endif
-
-  new_fname = add_fname_suffix(fname);
-
-  IF_EXCLUSIVE(if (parallel) mpi_begin_critical_section(matrixio_critical_section_tag),0);
-
-  if (read_only)
-    id.id = H5Fopen(new_fname, H5F_ACC_RDONLY, access_props);
-  else
-    id.id = H5Fopen(new_fname, H5F_ACC_RDWR, access_props);
-  id.parallel = parallel;
-  CHECK(id.id >= 0, "error opening HDF input file");
-
-  free(new_fname);
-
-  H5Pclose(access_props);
-
-  return id;
-#else
-  CHECK(0, "no matrixio implementation is linked");
-  {
-    matrixio_id id = {0,0};
-    return id;
-  }
-#endif
-}
-
-matrixio_id matrixio_open(const char *fname, int read_only) {
-  return matrixio_open_(fname, read_only, 1);
-}
-
-void matrixio_close(matrixio_id id) {
-#if defined(HAVE_HDF5)
-  CHECK(H5Fclose(id.id) >= 0, "error closing HDF file");
-  IF_EXCLUSIVE(if (id.parallel) mpi_end_critical_section(matrixio_critical_section_tag++),0);
-#endif
-}
-
-void evectmatrixio_readall_raw(const char *filename, evectmatrix a) {
-  int rank = 4, dims[4];
-  matrixio_id file_id;
-
-  dims[0] = a.N;
-  dims[1] = a.c;
-  dims[2] = a.p;
-  dims[3] = SCALAR_NUMVALS;
-
-  file_id = matrixio_open(filename, 1);
-
-  CHECK(matrixio_read_real_data(file_id, "rawdata", &rank, dims, a.localN, a.Nstart, 1,
-                                (mpb_real *) a.data), "error reading data set in file");
-
-  matrixio_close(file_id);
-}
-
-char *add_fname_suffix(const char *fname) {
-  int oldlen = strlen(fname);
-  int suflen = strlen(FNAME_SUFFIX);
-
-  CHECK(fname, "null filename!");
-
-  char *new_fname = (char *)malloc(sizeof(char) * (oldlen + suflen + 1));
-
-  strcpy(new_fname, fname);
-
-  /* only add suffix if it is not already there: */
-  if (strstr(new_fname, FNAME_SUFFIX) != new_fname + oldlen - suflen)
-    strcat(new_fname, FNAME_SUFFIX);
-
-  return new_fname;
-}
-
-int matrixio_dataset_exists(matrixio_id id, const char *name) {
-#if defined(HAVE_HDF5)
-  hid_t data_id;
-  SUPPRESS_HDF5_ERRORS(data_id = H5Dopen(id.id, name));
-  if (data_id >= 0)
-    H5Dclose(data_id);
-  return (data_id >= 0);
-#else
-  return 0;
-#endif
-}
-
-void matrixio_dataset_delete(matrixio_id id, const char *name) {
-#if defined(HAVE_HDF5)
-  H5Gunlink(id.id, name);
-#endif
-}
-
-/* Wrappers to write/read an attribute attached to id.  HDF5 attributes
-   can *not* be attached to files, in which case we'll write/read it
-   as an ordinary dataset.  Ugh. */
-
-void write_attr(matrixio_id id, matrixio_id_ type_id, matrixio_id_ space_id,
-                const char *name, const void *val) {
-
-#if defined(HAVE_HDF5)
-  hid_t attr_id;
-
-#ifndef HAVE_H5PSET_FAPL_MPIO
-  if (!mpi_is_master() && id.parallel)
-    return; /* only one process should add attributes */
-#else
-  /* otherwise, the operations must be performed collectively */
-#endif
-
-  if (H5I_FILE == H5Iget_type(id.id)) {
-    attr_id = H5Dcreate(id.id, name, type_id, space_id, H5P_DEFAULT);
-    CHECK(attr_id >= 0, "error creating HDF attr");
-    H5Dwrite(attr_id, type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, val);
-    H5Dclose(attr_id);
-  }
-  else {
-    attr_id = H5Acreate(id.id, name, type_id, space_id, H5P_DEFAULT);
-    CHECK(attr_id >= 0, "error creating HDF attr");
-    H5Awrite(attr_id, type_id, val);
-    H5Aclose(attr_id);
-  }
-#endif
-}
-
-/****** end matrixio ******/
+// TODO: Use this from mpb instead of copying it here.
+#include "matrixio.cpp"
 
 // This is the function passed to `set_maxwell_dielectric`
 void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
@@ -619,6 +25,25 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
   vector3 p = {r[0], r[1], r[2]};
   ms->get_material_pt(mat, p);
   ms->material_epsmu(mat, eps, eps_inv);
+}
+
+/****** utils ******/
+
+/* a couple of utilities to convert libctl data types to the data
+   types of the eigensolver & maxwell routines: */
+
+void vector3_to_arr(mpb_real arr[3], vector3 v)
+{
+     arr[0] = v.x;
+     arr[1] = v.y;
+     arr[2] = v.z;
+}
+
+void matrix3x3_to_arr(mpb_real arr[3][3], matrix3x3 m)
+{
+     vector3_to_arr(arr[0], m.c0);
+     vector3_to_arr(arr[1], m.c1);
+     vector3_to_arr(arr[2], m.c2);
 }
 
 // TODO: Store as class member?
@@ -651,24 +76,6 @@ mpb_real mean_medium_from_matrix(const symmetric_matrix *eps_inv) {
   return 2.0 / (eps_eigs[0] + eps_eigs[1]);
 }
 
-/* Define a macro F(x,X) that works similarly to the F77_FUNC
-   macro except that it appends an appropriate BLAS prefix (c,z,s,d)
-   to the routine name depending upon the type defined in scalar.h */
-
-#ifdef SCALAR_COMPLEX
-#  ifdef SCALAR_SINGLE_PREC
-#    define F(x,X) F77_FUNC(c##x, C##X)
-#  else
-#    define F(x,X) F77_FUNC(z##x, Z##X)
-#  endif
-#else
-#  ifdef SCALAR_SINGLE_PREC
-#    define F(x,X) F77_FUNC(s##x, S##X)
-#  else
-#    define F(x,X) F77_FUNC(d##x, D##X)
-#  endif
-#endif
-
 /* When we are solving for a few bands at a time, we solve for the
    upper bands by "deflation"--by continually orthogonalizing them
    against the already-computed lower bands.  (This constraint
@@ -685,41 +92,14 @@ typedef struct {
 } deflation_data;
 
 extern "C" {
-
-extern void F(gemm,GEMM) (char *, char *, int *, int *, int *, scalar *, scalar *,
-                   int *, scalar *, int *, scalar *, scalar *, int *);
-
-
-static void blasglue_gemm(char transa, char transb, int m, int n, int k, mpb_real a,
-                          scalar *A, int fdA, scalar *B, int fdB, mpb_real b, scalar *C,
-                          int fdC) {
-
-  scalar alpha, beta;
-
-  if (m*n == 0)
-    return;
-
-  if (k == 0) {
-    for (int i = 0; i < m; ++i)
-      for (int j = 0; j < n; ++j)
-        ASSIGN_ZERO(C[i*fdC + j]);
-    return;
-  }
-
-  CHECK(A != C && B != C, "gemm output array must be distinct");
-
-  ASSIGN_REAL(alpha, a);
-  ASSIGN_REAL(beta, b);
-
-  F(gemm,GEMM) (&transb, &transa, &n, &m, &k, &alpha, B, &fdB, A, &fdA, &beta, C, &fdC);
+void blasglue_gemm(char transa, char transb, int m, int n, int k, mpb_real a, scalar *A,
+                   int fdA, scalar *B, int fdB, mpb_real b, scalar *C, int fdC);
 }
-} // extern "C"
 
 static void deflation_constraint(evectmatrix X, void *data) {
   deflation_data *d = (deflation_data *) data;
 
-  CHECK(X.n == d->BY.n && d->BY.p >= d->p && d->Y.p >= d->p,
-        "invalid dimensions");
+  CHECK(X.n == d->BY.n && d->BY.p >= d->p && d->Y.p >= d->p, "invalid dimensions");
 
   /* compute (1 - Y (BY)t) X = (1 - Y Yt B) X
       = projection of X so that Yt B X = 0 */
@@ -732,8 +112,10 @@ static void deflation_constraint(evectmatrix X, void *data) {
   blasglue_gemm('C', 'N', X.p, d->p, X.n, 1.0, X.data, X.p, d->BY.data, d->BY.p,
                 0.0, d->S2, d->p);
 #if HAVE_MPI
-  mpi_allreduce(d->S2, d->S, d->p * X.p * SCALAR_NUMVALS, real, SCALAR_MPI_TYPE,
+  MPI_Allreduce(d->S2, d->S, d->p * X.p * SCALAR_NUMVALS, SCALAR_MPI_TYPE,
                 MPI_SUM, mpb_comm);
+#else
+  memcpy(d->S, d->S2, sizeof(mpb_real) * d->p * X.p * SCALAR_NUMVALS);
 #endif
 
   /* compute X = X - Y*St = (1 - BY Yt B) X */
@@ -752,16 +134,19 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice l
   tolerance(tolerance),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
+  mesh_size(3),
   last_parity(-2),
   negative_epsilon_ok(false),
   iterations(0),
+  vol(0),
   mdata(NULL),
   mtdata(NULL),
   curfield(NULL),
   curfield_band(0),
   curfield_type('-'),
   kpoint_index(0),
-  freqs(num_bands) {
+  freqs(num_bands),
+  verbose(false) {
 
   this->lat = lat;
 
@@ -781,7 +166,7 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice l
 
   // `init` is called in the constructor to avoid the need to copy the
   // geometric objects and default material. They can then be safely freed by
-  // typemaps once this call returns to python.
+  // typemaps once the mode_solver constructor call returns to python.
   init(parity, reset_fields);
 }
 
@@ -982,86 +367,7 @@ void mode_solver::init(int p, bool reset_fields) {
   meep::master_printf("Creating Maxwell data...\n");
   mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, num_bands, num_bands);
 
-  double s[] = {
-    lat.size.x == 0 ? 1 : lat.size.x,
-    lat.size.y == 0 ? 1 : lat.size.y,
-    lat.size.z == 0 ? 1 : lat.size.z
-  };
-
-  // TODO: Currently getting R and G twice.
-  for (int i = 0; i < 3; ++i) {
-    R[i][i] = s[i];
-    G[i][i] = 1 / R[i][i]; // recip. latt. vectors / 2 pi
-  }
-
-  int mesh_size[] = {3, 3, 3};
-
-  // init_epsilon
-  meep::master_printf("Mesh size is %d.\n", mesh_size[0]);
-
-  // matrix3x3 version of R.
-  matrix3x3 Rm;
-
-  Rm.c0 = vector3_scale(s[0], geometry_lattice.basis.c0);
-  Rm.c1 = vector3_scale(s[1], geometry_lattice.basis.c1);
-  Rm.c2 = vector3_scale(s[2], geometry_lattice.basis.c2);
-
-  meep::master_printf("Lattice vectors:\n");
-  meep::master_printf("     (%g, %g, %g)\n", Rm.c0.x, Rm.c0.y, Rm.c0.z);
-  meep::master_printf("     (%g, %g, %g)\n", Rm.c1.x, Rm.c1.y, Rm.c1.z);
-  meep::master_printf("     (%g, %g, %g)\n", Rm.c2.x, Rm.c2.y, Rm.c1.z);
-
-  mpb_real vol = fabs(matrix3x3_determinant(Rm));
-  meep::master_printf("Cell volume = %g\n", vol);
-
-  Gm = matrix3x3_inverse(matrix3x3_transpose(Rm));
-  meep::master_printf("Reciprocal lattice vectors (/ 2 pi):\n");
-  meep::master_printf("     (%g, %g, %g)\n", Gm.c0.x, Gm.c0.y, Gm.c0.z);
-  meep::master_printf("     (%g, %g, %g)\n", Gm.c1.x, Gm.c1.y, Gm.c1.z);
-  meep::master_printf("     (%g, %g, %g)\n", Gm.c2.x, Gm.c2.y, Gm.c2.z);
-
-  geom_fix_objects0(geometry);
-
-  meep::master_printf("Geometric objects:\n");
-  if (meep::am_master()) {
-    for (int i = 0; i < geometry.num_items; ++i) {
-      display_geometric_object_info(5, geometry.items[i]);
-
-      // meep_geom::material_type m = (meep_geom::material_type)geometry.items[i].material;
-      // if (m->which_subclass == meep_geom::material_data::MEDIUM) {
-      //   printf("%*sepsilon = %g, mu = %g\n", 5 + 5, "", m->medium.epsilon_diag.x,
-      //          m->medium.mu_diag.x);
-      // }
-    }
-  }
-
-  // TODO: Need to destroy tree from previous runs?
-  // destroy_geom_box_tree(geometry_tree);
-
-  {
-    geom_box b0;
-    b0.low = vector3_plus(geometry_center, vector3_scale(-0.5, geometry_lattice.size));
-    b0.high = vector3_plus(geometry_center, vector3_scale(0.5, geometry_lattice.size));
-    /* pad tree boundaries to allow for sub-pixel averaging */
-    b0.low.x -= geometry_lattice.size.x / mdata->nx;
-    b0.low.y -= geometry_lattice.size.y / mdata->ny;
-    b0.low.z -= geometry_lattice.size.z / mdata->nz;
-    b0.high.x += geometry_lattice.size.x / mdata->nx;
-    b0.high.y += geometry_lattice.size.y / mdata->ny;
-    b0.high.z += geometry_lattice.size.z / mdata->nz;
-    geometry_tree = create_geom_box_tree0(geometry, b0);
-  }
-
-  int tree_depth;
-  int tree_nobjects;
-  geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
-  meep::master_printf("Geometric object tree has depth %d and %d object nodes"
-                      " (vs. %d actual objects)\n", tree_depth, tree_nobjects, geometry.num_items);
-
-  // TODO
-  // reset_epsilon();
-  meep::master_printf("Initializing epsilon function...\n");
-  set_maxwell_dielectric(mdata, mesh_size, R, G, dielectric_function, NULL, static_cast<void *>(this));
+  init_epsilon();
 
   if (check_maxwell_dielectric(mdata, 0)) {
     meep::abort("invalid dielectric function for MPB");
@@ -1098,6 +404,102 @@ void mode_solver::init(int p, bool reset_fields) {
     randomize_fields();
   }
 
+}
+
+void mode_solver::init_epsilon() {
+  geometry_lattice.size.x = geometry_lattice.size.x == 0 ? 1 : geometry_lattice.size.x;
+  geometry_lattice.size.y = geometry_lattice.size.y == 0 ? 1 : geometry_lattice.size.y;
+  geometry_lattice.size.z = geometry_lattice.size.z == 0 ? 1 : geometry_lattice.size.z;
+
+  meep::master_printf("Mesh size is %d.\n", mesh_size);
+
+  Rm.c0 = vector3_scale(geometry_lattice.size.x, geometry_lattice.basis.c0);
+  Rm.c1 = vector3_scale(geometry_lattice.size.y, geometry_lattice.basis.c1);
+  Rm.c2 = vector3_scale(geometry_lattice.size.z, geometry_lattice.basis.c2);
+
+  meep::master_printf("Lattice vectors:\n");
+  meep::master_printf("     (%g, %g, %g)\n", Rm.c0.x, Rm.c0.y, Rm.c0.z);
+  meep::master_printf("     (%g, %g, %g)\n", Rm.c1.x, Rm.c1.y, Rm.c1.z);
+  meep::master_printf("     (%g, %g, %g)\n", Rm.c2.x, Rm.c2.y, Rm.c2.z);
+
+  vol = fabs(matrix3x3_determinant(Rm));
+  meep::master_printf("Cell volume = %g\n", vol);
+
+  Gm = matrix3x3_inverse(matrix3x3_transpose(Rm));
+  meep::master_printf("Reciprocal lattice vectors (/ 2 pi):\n");
+  meep::master_printf("     (%g, %g, %g)\n", Gm.c0.x, Gm.c0.y, Gm.c0.z);
+  meep::master_printf("     (%g, %g, %g)\n", Gm.c1.x, Gm.c1.y, Gm.c1.z);
+  meep::master_printf("     (%g, %g, %g)\n", Gm.c2.x, Gm.c2.y, Gm.c2.z);
+
+  matrix3x3_to_arr(R, Rm);
+  matrix3x3_to_arr(G, Gm);
+
+  geom_fix_objects0(geometry);
+
+  meep::master_printf("Geometric objects:\n");
+  if (meep::am_master()) {
+    for (int i = 0; i < geometry.num_items; ++i) {
+      display_geometric_object_info(5, geometry.items[i]);
+
+      // meep_geom::medium_struct *mm;
+      // if (meep_geom::is_medium(geometry.items[i].material, &mm)) {
+      //   printf("%*sdielectric constant epsilon diagonal = (%g,%g,%g)\n", 5 + 5, "",
+      //          mm->epsilon_diag.x, mm->epsilon_diag.y, mm->epsilon_diag.z);
+      // }
+    }
+  }
+
+  {
+    geom_box b0;
+    b0.low = vector3_plus(geometry_center, vector3_scale(-0.5, geometry_lattice.size));
+    b0.high = vector3_plus(geometry_center, vector3_scale(0.5, geometry_lattice.size));
+    /* pad tree boundaries to allow for sub-pixel averaging */
+    b0.low.x -= geometry_lattice.size.x / mdata->nx;
+    b0.low.y -= geometry_lattice.size.y / mdata->ny;
+    b0.low.z -= geometry_lattice.size.z / mdata->nz;
+    b0.high.x += geometry_lattice.size.x / mdata->nx;
+    b0.high.y += geometry_lattice.size.y / mdata->ny;
+    b0.high.z += geometry_lattice.size.z / mdata->nz;
+    geometry_tree = create_geom_box_tree0(geometry, b0);
+  }
+
+  if (verbose && meep::am_master()) {
+    printf("Geometry object bounding box tree:\n");
+    display_geom_box_tree(5, geometry_tree);
+  }
+
+  int tree_depth;
+  int tree_nobjects;
+  geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
+  meep::master_printf("Geometric object tree has depth %d and %d object nodes"
+                      " (vs. %d actual objects)\n", tree_depth, tree_nobjects, geometry.num_items);
+
+  restricted_tree = geometry_tree;
+
+  reset_epsilon();
+}
+
+void mode_solver::reset_epsilon() {
+  int mesh[3] = {
+    mesh_size,
+    (dimensions > 1) ? mesh_size : 1,
+    (dimensions > 2) ? mesh_size : 1,
+  };
+
+  // TODO: Support epsilon_input_file
+  // get_epsilon_file_func(epsilon_input_file, &d.epsilon_file_func, &d.epsilon_file_func_data);
+  // get_epsilon_file_func(mu_input_file, &d.mu_file_func, &d.mu_file_func_data);
+  meep::master_printf("Initializing epsilon function...\n");
+  set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, NULL, static_cast<void *>(this));
+
+  // TODO
+  // if (has_mu(&d)) {
+  //   mpi_one_printf("Initializing mu function...\n");
+  //   set_maxwell_mu(mdata, mesh, R, G, mu_func, mean_mu_func, &d);
+  // }
+
+  // destroy_epsilon_file_func_data(d.epsilon_file_func_data);
+  // destroy_epsilon_file_func_data(d.mu_file_func_data);
 }
 
 void mode_solver::set_parity(integer p) {

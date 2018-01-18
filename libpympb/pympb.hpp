@@ -55,6 +55,7 @@ struct mode_solver {
   // TODO: Get from python ?
   int eigensolver_nwork;
   int eigensolver_block_size;
+  int mesh_size;
 
   int last_parity;
 
@@ -67,6 +68,8 @@ struct mode_solver {
   geom_box_tree geometry_tree;
   geom_box_tree restricted_tree;
 
+  mpb_real vol;
+
   mpb_real R[3][3];
   mpb_real G[3][3];
 
@@ -76,6 +79,7 @@ struct mode_solver {
   int curfield_band;
 
   vector3 cur_kvector;
+  matrix3x3 Rm;
   matrix3x3 Gm;
 
   evectmatrix H;
@@ -86,6 +90,8 @@ struct mode_solver {
   meep_geom::material_data *default_md;
 
   std::vector<mpb_real> freqs;
+
+  bool verbose;
 
   mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
               meep_geom::material_data *_default_material, geometric_object_list geom, bool reset_fields);
@@ -102,6 +108,8 @@ struct mode_solver {
   void epsilon_file_material(meep_geom::material_data *md, vector3 p);
   void randomize_fields();
   void solve_kpoint(vector3 kpoint);
+  void init_epsilon();
+  void reset_epsilon();
   void curfield_reset();
   void output_field_to_file(int which_component, char *filename_prefix);
   void output_scalarfield(mpb_real *vals,
