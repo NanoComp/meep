@@ -7,15 +7,15 @@ These are the changes between the stable releases. You can also refer to the [NE
 Meep 1.4
 --------
 
-<small> 19 January 2018</small>
+<small>19 January 2018</small>
 
--      Full-featured Python interface.
--      Migrated documentation to github/markdown/readthedocs ([#55](https://github.com/stevengj/meep/pull/55)).
--      New feature to get slice as array in C++ and Python APIs ([#96](https://github.com/stevengj/meep/pull/96), [#105](https://github.com/stevengj/meep/pull/105)).
--      libmeepgeom library to allow C++ users to access geometric-object API ([#56](https://github.com/stevengj/meep/pull/56)).
--      Removed overly conservative stability check for Lorentzian susceptibilities ([#150](https://github.com/stevengj/meep/pull/150)).
--      Corrected small error in frequency interval for dft-ldos ([#40](https://github.com/stevengj/meep/pull/40)).
--      Bug fixes in near-to-farfield spectra ([#21](https://github.com/stevengj/meep/pull/21)), eigenmode source ([#20](https://github.com/stevengj/meep/issues/20)), and LDOS ([#40](https://github.com/stevengj/meep/pull/40)).
+-   Full-featured Python interface.
+-   Migrated documentation to github/markdown/readthedocs ([#55](https://github.com/stevengj/meep/pull/55)).
+-   New feature to get slice as array in C++ and Python APIs ([#96](https://github.com/stevengj/meep/pull/96), [#105](https://github.com/stevengj/meep/pull/105)).
+-   libmeepgeom library to allow C++ users to access geometric-object API ([#56](https://github.com/stevengj/meep/pull/56)).
+-   Removed overly conservative stability check for Lorentzian susceptibilities ([#150](https://github.com/stevengj/meep/pull/150)).
+-   Corrected small error in frequency interval for dft-ldos ([#40](https://github.com/stevengj/meep/pull/40)).
+-   Bug fixes in near-to-farfield spectra ([#21](https://github.com/stevengj/meep/pull/21)), eigenmode source ([#20](https://github.com/stevengj/meep/issues/20)), and LDOS ([#40](https://github.com/stevengj/meep/pull/40)).
 
 Meep 1.3
 --------

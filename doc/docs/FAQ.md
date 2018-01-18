@@ -2,7 +2,7 @@
 # FAQ
 ---
 
-The following are frequently asked questions about Meep.
+The following are frequently asked questions.
 
 [TOC]
 
@@ -11,11 +11,11 @@ General
 
 ### What is Meep?
 
-Meep is a free/open-source software package for finite-difference time-domain (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
+Meep is a free/open-source software package for [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
 
 ### Who are the developers of Meep?
 
-Meep was originally developed as part of graduate research at MIT. The project is now being maintained by [Simpetus](http://www.simpetus.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
+Meep was originally developed as part of graduate research at MIT. The project is now being maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep).
 
 ### Where can I ask questions regarding Meep?
 
@@ -90,7 +90,7 @@ Even if you disable the subpixel averaging, however, when you output the dielect
 
 ### Does Meep support importing GDSII files?
 
-Not currently, but work is underway to add support for this feature with expected release in mid 2018. This will facilitate the simulation of [planar 2d structures](https://en.wikipedia.org/wiki/GDSII) which are fabricated using semiconductor foundries. Also, this feature will enable Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
+Not currently, but work is underway to add support for this feature with expected release in mid 2018. This will facilitate the simulation of [2d/planar structures](https://en.wikipedia.org/wiki/GDSII) which are fabricated using semiconductor foundries. Also, this feature will enable Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
 
 ### How to set up an oblique planewave source?
 
