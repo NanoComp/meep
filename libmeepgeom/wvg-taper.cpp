@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
   else
    { fvA = new volume( vec(xA,  -LYP), vec(xA, +LYP) );
      fvB = new volume( vec(xB,  -LYP), vec(xB, +LYP) );
-     fvC = new volume( vec(-LX, -LYP), vec(LX, +LYP) );
+     fvC = new volume( vec(-LX, -LYP), vec(+LX, +LYP) );
    };
   direction dA = X; // f.normal_direction(*fvA);
   direction dB = X; // f.normal_direction(*fvB);
@@ -381,8 +381,11 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* add flux planes                                             */
   /***************************************************************/
+master_printf("Adding fluxA...");
   dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
+master_printf("Adding fluxB...");
   dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
+master_printf("Adding fluxC...");
   dft_flux fluxC=f.add_dft_flux_plane(*fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
@@ -391,12 +394,14 @@ int main(int argc, char *argv[])
   if (plot_modes)
    { for(int nb=0; nb<num_bands; nb++)
       { int band_num=nb+1;
+master_printf("getting modeB %i...",nb);
         void *vedata=f.get_eigenmode(fcen, dB, *fvB, *fvB,
                                      band_num, k_guess((void *)&wB,
                                      fcen,band_num),
                                      true, 0, f.a, 1.0e-4);
         char filename[100];
         snprintf(filename,100,"%s_mode%i",filebase,band_num);
+master_printf("outting modeB %i...",nb);
         f.output_mode_fields(vedata, fluxB, *fvB, filename);
         double vgrp=get_group_velocity(vedata);
         vec k=get_k(vedata);
