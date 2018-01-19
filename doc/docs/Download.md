@@ -10,7 +10,7 @@ The current stable release is **version 1.4** which can be downloaded from:
 
 Meep is open-source software under the [GNU GPL](License_and_Copyright.md).
 
-Refer to the [Release Notes](Release_Notes.md) to see what's new in this version, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
+Refer to the [NEWS file](https://github.com/stevengj/meep/blob/master/NEWS.md) to see what's new in this version, and be sure to read the [Installation](Installation.md) section for how to compile and install it.
 
 Please subscribe to the **meep-announce** mailing list to receive notifications when new versions are released:
 

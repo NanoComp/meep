@@ -30,7 +30,6 @@ pages:
 - Manual: 'index.md'
 - Introduction: 'Introduction.md'
 - Download: 'Download.md'
-- Release Notes: 'Release_Notes.md'
 - FAQ: 'FAQ.md'
 - Installation: 'Installation.md'
 - Acknowledgements: 'Acknowledgements.md'
