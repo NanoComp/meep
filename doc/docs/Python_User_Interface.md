@@ -320,6 +320,81 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The noise has root-mean square amplitude $\sigma$ $\times$ `noise_amp`.
 
+### Vector3  
+
+Properties:
+
+**`x`, `y`, `z` [`float` or `complex`]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+The `x`, `y`, and `z` components of the vector.
+
+**`Vector3(x=0.0, y=0.0, z=0.0)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Create a new Vector3 with the given components. All three components default to zero.
+
+
+```python
+v3 = v1 + v2
+v3 = v1 - v2
+v3 = v1.cross(v2)
+```
+
+Return the sum, difference, or cross product of the two vectors.
+
+```python
+c = v1 * b
+```
+
+If `b` is a `Vector3`, returns the dot product `v1` and `b`. If `b` is a number, then `v1` is scaled by the number.
+
+```python
+v3 = v1.dot(v2)
+```
+
+Returns the dot product of *`v1`* and *`v2`*.
+
+```python
+v3 = v1.cross(v2)
+```
+
+Returns the cross product of *`v1`* and *`v2`*.
+
+```python
+v3 = v1.cdot(v2)
+```
+
+Returns the conjugated dot product: *v1*\* dot *v2*.
+
+```python
+v2 = v1.norm()
+```
+
+Returns the length `math.sqrt(abs(v1.dot(v1)))` of the given vector.
+
+```python
+v2 = v1.unit()
+```
+
+Returns a unit vector in the direction of v1.
+
+```python
+v1.close(v2, [tol])
+```
+
+Returns whether or not the corresponding components of the two vectors are within *`tol`* of each other. Defaults to 1e-7.
+
+```python
+v1 == v2
+```
+
+Returns whether or not the two vectors are numerically equal. Beware of using this function after operations that may have some error due to the finite precision of floating-point numbers; use `close` instead.
+
+```python
+v2 = v1.rotate(axis, theta)
+```
+
+Returns the vector *`v1`* rotated by an angle *`theta`* (in radians) in the right-hand direction around the *`axis`* vector (whose length is ignored). You may find the python functions `math.degrees` and `math.radians` useful to convert angles between degrees and radians.
+
 ### GeometricObject
 
 This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:
