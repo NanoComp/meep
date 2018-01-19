@@ -24,3 +24,7 @@ libmeep:
 	cd src && $(MAKE)
 
 DISTCLEANFILES = meep.pc
+
+# needed by make dist
+NEWS: NEWS.md
+	cp NEWS.md $@
