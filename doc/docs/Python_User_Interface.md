@@ -6,7 +6,7 @@ This page is a listing of the functions exposed by the Python interface. For a g
 
 See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines.
 
-The Python API functions and classes can be found in the `meep` module, which should be installed in your Python system by Meep's `make install` script.  If you installed into a nonstandard location (e.g. your home directory), you may need to set the `PYTHONPATH` environment variable as documented in the [Installation](Installation.md) section.   You typically mport the `meep` module in Python with:
+The Python API functions and classes can be found in the `meep` module, which should be installed in your Python system by Meep's `make install` script.  If you installed into a nonstandard location (e.g. your home directory), you may need to set the `PYTHONPATH` environment variable as documented in the [Installation](Installation.md) section.   You typically import the `meep` module in Python with:
 
 ```py
 import meep as mp
