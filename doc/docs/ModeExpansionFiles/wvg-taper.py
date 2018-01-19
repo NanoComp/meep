@@ -1,6 +1,8 @@
 import meep as mp
 import numpy as np
+import h5py as h5
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 ##################################################
 # x-dependent width of waveguide
@@ -55,7 +57,7 @@ def k_guess(freq, band_num, w):
         if (band_num>=6):
             return mp.vec(0.211186,0)
 
-    return mp.vec(0.419987,0)
+    return mp.vec(0.0,0.0)
 
 ##################################################
 ##################################################
@@ -66,35 +68,36 @@ class wvg_taper:
     # constructor
     ##################################################
     def __init__(self,
-                 wA=1.0, wB=3.0,      # smaller, larger waveguide thickness
-                 L=2.0, p=0,          # taper length and smoothness index
-                 eps_waveguide=11.7,  # permittivity inside waveguide
-                 eps_ambient=1.0,     # permittivity of medium
-                 LX=5.0, LY=3.0,      # half-lengths of computational cell
-                 DPML=0.5,            # PML thickness
-                 fcen=0.15, df=0.075, # center frequency / width
-                 resolution=25.0,     # grid points per unit length
+                 wA=1.0, wB=3.0,        # smaller, larger waveguide thickness
+                 LWaveguide=3.0,        # length of each waveguide section
+                 LTaper=3.0, pTaper=0,  # taper length and smoothness index
+                 eps_waveguide=11.7,    # permittivity inside waveguide
+                 eps_ambient=1.0,       # permittivity of medium
+                 LY=6.0,                # width of computational cell
+                 DPML=0.5,              # PML thickness
+                 fcen=0.15, df=0.075,   # center frequency / width
+                 resolution=50.0,       # grid points per unit length
                ): 
-
-        self.force_complex_fields = True;
 
         #--------------------------------------------------------------------
         #- user-defined epsilon function
         #--------------------------------------------------------------------
-        eps_func = lambda loc: my_eps_func(loc, L, p, wA, wB,
+        eps_func = lambda loc: my_eps_func(loc, LTaper, pTaper, wA, wB,
                                            eps_ambient, eps_waveguide)
 
         #--------------------------------------------------------------------
         #- eigenmode source at midpoint of smaller waveguide
         #--------------------------------------------------------------------
-        xA=-0.5*LX;
-        xB=+0.5*LX;
+        LX = 2.0*(DPML + LWaveguide) + LTaper;
+        xA = -0.5*LX + DPML + 0.5*LWaveguide;
+        xB = +0.5*LX - DPML - 0.5*LWaveguide;
         sources = [ mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=df),
-                                       center=mp.Vector3(xA,0.0),size=mp.Vector3(0.0,2.0*LY)
+                                       center=mp.Vector3(xA,0.0),
+                                       size=mp.Vector3(0.0,LY)
                                       )
                   ]
                                           
-        self.sim=mp.Simulation( cell_size=mp.Vector3(2*LX, 2*LY),
+        self.sim=mp.Simulation( cell_size=mp.Vector3(LX, LY),
                                 resolution=resolution,
                                 boundary_layers=[mp.PML(DPML)],
                                 force_complex_fields=True,
@@ -102,18 +105,17 @@ class wvg_taper:
                                 sources=sources
                               )
        
-        self.sim.run(mp.at_beginning(mp.output_epsilon), until=1.0);
+        self.sim.run(mp.at_beginning(mp.output_epsilon), until=1.0)
         f=self.sim.fields;
 
         #--------------------------------------------------
         # add DFT flux regions at midpoints of smaller and larger waveguides
         #--------------------------------------------------
-        #LYP=LY-DPML;
-        LYP=LY;
+        YP=0.5*LY - DPML;
         self.wA=wA;
         self.wB=wB;
-        self.vA=mp.volume( mp.vec(xA, -LYP), mp.vec(xA,+LYP) )
-        self.vB=mp.volume( mp.vec(xB, -LYP), mp.vec(xB,+LYP) )
+        self.vA=mp.volume( mp.vec(xA, -YP), mp.vec(xA,+YP) )
+        self.vB=mp.volume( mp.vec(xB, -YP), mp.vec(xB,+YP) )
         self.fcen=fcen;
         self.df=df;
         nf=1;
@@ -131,9 +133,9 @@ class wvg_taper:
 
      interp='gaussian'
      cmap='coolwarm'
-     LX=0.5*self.sim.cell_size.x;
-     LY=0.5*self.sim.cell_size.y;
-     extent=[-LX,LX,-LY,LY];
+     LX=self.sim.cell_size.x;
+     LY=self.sim.cell_size.y;
+     extent=[-0.5*LX,0.5*LX,-0.5*LY,0.5*LY];
      plt.figure()
      plt.imshow(eps.transpose(), interpolation=interp, cmap=cmap, extent=extent)
      plt.xlabel("x")
@@ -146,6 +148,10 @@ class wvg_taper:
     ##################################################
     def plot_modes(self):
        
+       ##################################################
+       # calculate the eigenmodes and write field components
+       # on cross-sectional planes to HDF5 files
+       ##################################################
        f=self.sim.fields;
        vA=self.vA;
        vB=self.vB;
@@ -153,48 +159,47 @@ class wvg_taper:
        wB=self.wB;
        fluxA=self.fluxA;
        fluxB=self.fluxB;
+       freq=self.fcen;
        res=1.0*self.sim.resolution;
-       freq=0.15;
        parity=0;
        match_freq=True;
-       tol=1.0e-4;
+       tol=1.0e-7;
 
        # eigenmode #1 in narrower waveguide
        modeA1 = f.get_eigenmode(freq, mp.X, vA, vA,
                                 1, k_guess(freq, 1, wA),
                                 match_freq, parity, res, tol);
        f.output_mode_fields(modeA1, fluxA, vA, "modeA1");
-       if mp.am_master():
-           print("vgrp(A1)={}".format(mp.get_group_velocity(modeA1)));
 
        # eigenmodes #1-4 in wider waveguide
        modeB1 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 1, k_guess(freq,1,wB),
                                 match_freq, parity, res, tol);
        f.output_mode_fields(modeB1, fluxB, vB, "modeB1");
-       if mp.am_master():
-           print("vgrp(B1)={}".format(mp.get_group_velocity(modeB1)));
 
        modeB2 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 2, k_guess(freq,2,wB),
                                 match_freq, parity, res, tol);
        f.output_mode_fields(modeB2, fluxB, vB, "modeB2");
-       if mp.am_master():
-           print("vgrp(B2)={}".format(mp.get_group_velocity(modeB1)));
 
        modeB3 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 3, k_guess(freq,3,wB),
                                 match_freq, parity, res, tol);
        f.output_mode_fields(modeB3, fluxB, vB, "modeB3");
-       if mp.am_master():
-           print("vgrp(B3)={}".format(mp.get_group_velocity(modeB3)));
 
        modeB4 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 4, k_guess(freq,4,wB),
                                 match_freq, parity, res, tol);
        f.output_mode_fields(modeB4, fluxB, vB, "modeB4");
-       if mp.am_master():
-           print("vgrp(B4)={}".format(mp.get_group_velocity(modeB4)));
+
+       ##################################################
+       # read the field data back 
+       ##################################################
+       h5file = h5.File('modeA1.h5','r')
+       exA = h5file['ex.r'][:] + 1.0j*h5file['ex.i'][:];
+       eyA = h5file['ey.r'][:] + 1.0j*h5file['ey.i'][:];
+       ezA = h5file['ez.r'][:] + 1.0j*h5file['ez.i'][:];
+       
 
     ##################################################
     # add an eigenmode-source excitation for the #band_numth mode
@@ -278,7 +283,10 @@ class wvg_taper:
 ##################################################
 ##################################################
 ##################################################
-wt=wvg_taper();
-wt.plot_eps();
-wt.get_flux();
-wt.plot_modes();
+from mpi4py import MPI
+(Major,Minor)=MPI.Get_version();
+Procs=MPI.Comm.Get_size(MPI.COMM_WORLD)
+#wt=wvg_taper();
+#wt.plot_eps();
+#wt.get_flux();
+#wt.plot_modes();

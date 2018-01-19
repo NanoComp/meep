@@ -181,10 +181,10 @@ int main(int argc, char *argv[])
   bool plot_structure   = false;
   double frame_interval = 0.0;
   char *filebase        = const_cast<char *>("wt");
-  double LY             = 3.0;  // half-width of cell in transverse direction double LZ=1.5;
+  double LY             = 3.5;  // half-width of cell in transverse direction double LZ=1.5;
   double LZ             = 2.0;  // half-width of cell in transverse direction double LZ=1.5;
   double dpml           = 0.50; // PML thickness
-  double res            = 25.0; // resolution
+  double res            = 50.0; // resolution
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
@@ -353,8 +353,8 @@ int main(int argc, char *argv[])
   int nfreq   = 1;         // number of frequency points
   gaussian_src_time gsrc(fcen, df);
 
-  double xA  = -LX + dpml + 1.0;
-  double xB  = +LX - dpml - 1.0;
+  double xA  = -LX + dpml + 0.5*wvg_length;
+  double xB  = +LX - dpml - 0.5*wvg_length;
   double LYP = LY-dpml;
   double LZP = three_d ? LZ-dpml : 0.0;
   volume *fvA, *fvB, *fvC;
@@ -364,12 +364,12 @@ int main(int argc, char *argv[])
      fvC = new volume( vec(-LX,   0, -LZP), vec(+LX,   0,  LZP) );
    }
   else
-   { fvA = new volume( vec(xA, -LYP), vec(xA, +LYP) );
-     fvB = new volume( vec(xB, -LYP), vec(xB, +LYP) );
-     fvC = new volume( vec(-LX,   0), vec(LX,    0) );
+   { fvA = new volume( vec(xA,  -LYP), vec(xA, +LYP) );
+     fvB = new volume( vec(xB,  -LYP), vec(xB, +LYP) );
+     fvC = new volume( vec(-LX, -LYP), vec(LX, +LYP) );
    };
-  direction dA = f.normal_direction(*fvA);
-  direction dB = f.normal_direction(*fvB);
+  direction dA = X; // f.normal_direction(*fvA);
+  direction dB = X; // f.normal_direction(*fvB);
 
   bool match_frequency = true;
   int parity = 0; // NO_PARITY
