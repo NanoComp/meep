@@ -1,8 +1,8 @@
 # Meep Release Notes
 
-## Meep 1.4-alpha
+## Meep 1.4
 
-To be released January 2018.
+1/18/2018
 
   * Full-featured Python interface.
 
