@@ -27,4 +27,4 @@ DISTCLEANFILES = meep.pc
 
 # needed by make dist
 NEWS: NEWS.md
-	cp NEWS.md $@
+	cp $< $@
