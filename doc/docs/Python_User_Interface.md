@@ -343,6 +343,7 @@ Return the sum, difference, or cross product of the two vectors.
 
 ```python
 c = v1 * b
+c = b * v1
 ```
 
 If `b` is a `Vector3`, returns the dot product `v1` and `b`. If `b` is a number, then `v1` is scaled by the number.

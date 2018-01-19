@@ -47,6 +47,12 @@ class Vector3(object):
         else:
             raise TypeError("No operation known for 'Vector3 * {}'".format(type(other)))
 
+    def __rmul__(self, other):
+        if isinstance(other, Number):
+            return self.scale(other)
+        else:
+            raise TypeError("No operation known for '{} * Vector3'".format(type(other)))
+
     def __getitem__(self, i):
         if i == 0:
             return self.x

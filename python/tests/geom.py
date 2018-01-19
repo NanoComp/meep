@@ -292,6 +292,7 @@ class TestVector3(unittest.TestCase):
 
         self.assertEqual(mp.Vector3(2, 2, 2) * 0.5, mp.Vector3(1, 1, 1))
         self.assertEqual(mp.Vector3(1, 1, 1) * mp.Vector3(1, 1, 1), 3)
+        self.assertEqual(0.5 * mp.Vector3(2, 2, 2), mp.Vector3(1, 1, 1))
 
 if __name__ == '__main__':
     unittest.main()
