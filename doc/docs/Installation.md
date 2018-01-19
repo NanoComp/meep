@@ -163,10 +163,23 @@ To use Meep to extract resonant frequencies and decay rates, you must install [H
 
 See the [Harminv installation](https://github.com/stevengj/harminv/blob/master/doc/installation.md) instructions.
 
+Python (recommended)
+--------------------
+
+If you have Python on your system, then the Meep compilation scripts
+automatically build and install the `meep` Python module, which works
+with both the serial and parallel (MPI) versions of Meep.
+
+By default, Meep's Python module is installed for the program `python`
+on your system.  If you want to install using a different Python
+program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the
+Meep `configure` script.   An Anaconda (`conda`) package for Meep
+is also available on some systems.
+
 Guile (recommended)
 -----------------------
 
-Guile is required in order to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface.
+Guile is required in order to use the Scheme interface. If you don't install it, you can only use the C++ and/or Python interfaces.
 
 Guile is an extension/scripting language implementation based on Scheme, and we use it to provide a rich, fully-programmable user interface with minimal effort. It's free, of course, and you can download it from the [Guile homepage](http://www.gnu.org/software/guile/). Guile is typically included with Linux systems.
 
@@ -237,6 +250,10 @@ Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If libctl was installed in a nonstandard location (i.e. neither `/usr` nor `/usr/local`), you need to specify the location of the libctl directory, *`dir`*. This is either `prefix/share/libctl`, where `prefix` is the installation prefix of libctl, or the original libctl source code directory. To configure *without* the libctl/Guile interface, use `--without-libctl`.
 
+**`--without-python`**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Disable building the Python API for Meep.
+
 **`--with-blas=lib`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The `configure` script automatically attempts to detect accelerated BLAS libraries, like DXML (DEC/Alpha), SCSL and SGIMATH (SGI/MIPS), ESSL (IBM/PowerPC), ATLAS, and PHiPACK. You can, however, force a specific library name to try via `--with-blas=lib`.
@@ -264,11 +281,6 @@ By default, Meep's `configure` script picks compiler flags to optimize Meep as m
 **`--with-gcc-arch=arch`, `--without-gcc-arch`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
-
-Python Bindings
----------------
-
-A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep &mdash; building from source or installing binary Conda packages.
 
 ### Building From Source
 
@@ -336,7 +348,7 @@ pip3 install --user --no-binary=h5py h5py
 cd ~/install
 git clone https://github.com/stevengj/meep.git
 cd meep/
-sh autogen.sh --enable-shared --with-python --with-mpi PYTHON=python3 \
+sh autogen.sh --enable-shared --with-mpi PYTHON=python3 \
     CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
 make && sudo make install
 ```

@@ -475,8 +475,8 @@ AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to no
 # checks for python
 ##############################################################################
 AC_ARG_WITH(python,
-	[AC_HELP_STRING([--with-python], [compile Python interface])],
-        with_python=$withval,with_python=no)
+	[AC_HELP_STRING([--without-python], [compile without Python interface])],
+        with_python=$withval,with_python=yes)
 
 if test "x$with_python" = xno; then
   have_python=no

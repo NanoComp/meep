@@ -63,7 +63,7 @@ script:
   - autoreconf --verbose --install --symlink --force
   - mkdir -p build && pushd build
 #
-  - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl --with-python ${MPICONF}
+  - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
   - make -j 2
 #
   - pushd tests
