@@ -385,8 +385,8 @@ master_printf("Adding fluxA...");
   dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
 master_printf("Adding fluxB...");
   dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
-master_printf("Adding fluxC...");
-  dft_flux fluxC=f.add_dft_flux_plane(*fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
+//master_printf("Adding fluxC...");
+  //dft_flux fluxC=f.add_dft_flux_plane(*fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
   /* plot eigenmode field patterns if requested ******************/
@@ -394,14 +394,12 @@ master_printf("Adding fluxC...");
   if (plot_modes)
    { for(int nb=0; nb<num_bands; nb++)
       { int band_num=nb+1;
-master_printf("getting modeB %i...",nb);
         void *vedata=f.get_eigenmode(fcen, dB, *fvB, *fvB,
                                      band_num, k_guess((void *)&wB,
                                      fcen,band_num),
                                      true, 0, f.a, 1.0e-4);
         char filename[100];
         snprintf(filename,100,"%s_mode%i",filebase,band_num);
-master_printf("outting modeB %i...",nb);
         f.output_mode_fields(vedata, fluxB, *fvB, filename);
         double vgrp=get_group_velocity(vedata);
         vec k=get_k(vedata);
@@ -465,8 +463,8 @@ master_printf("outting modeB %i...",nb);
      f.output_flux_fields(fluxA, *fvA, filename);
      snprintf(filename,100,"%s_fluxB",filebase);
      f.output_flux_fields(fluxB, *fvB, filename);
-     snprintf(filename,100,"%s_fluxC",filebase);
-     f.output_flux_fields(fluxC, *fvC, filename);
+ //    snprintf(filename,100,"%s_fluxC",filebase);
+ //    f.output_flux_fields(fluxC, *fvC, filename);
    };
 
   /***************************************************************/
