@@ -3,9 +3,9 @@
 ---
 
 Authors
----------------
+-------
 
-Meep originated as part of graduate research at MIT with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
+Meep originated as part of graduate research at MIT with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep).
 
 Referencing
 -----------
