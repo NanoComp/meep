@@ -42,4 +42,4 @@ bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 user_defined_material_SOURCES = user-defined-material.cpp
 user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
-noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
+dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
