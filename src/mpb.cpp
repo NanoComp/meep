@@ -32,8 +32,6 @@ using namespace std;
 
 typedef complex<double> cdouble;
 
-std::vector<double> mode_group_velocities;
-
 namespace meep {
 
 #ifdef HAVE_MPB
@@ -604,6 +602,7 @@ std::vector<cdouble>
  fields::get_eigenmode_coefficients(dft_flux flux, direction d,
                                     const volume &where,
                                     std::vector<int> bands,
+                                    std::vector<double> &vgrp,
                                     kpoint_func k_func,
                                     void *k_func_data)
 { 
@@ -619,7 +618,7 @@ std::vector<cdouble>
 
   char *LogFile=getenv("MEEP_EIGENMODE_LOGFILE");
 
-  mode_group_velocities.resize(num_bands*num_freqs);
+  vgrp.resize(num_bands*num_freqs);
 
   // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
@@ -630,13 +629,13 @@ std::vector<cdouble>
       /*--------------------------------------------------------------*/
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
-      vec kpoint(0,0,freq);
+      vec kpoint(0.0,0.0,0.0);
       if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
       void *mode_data 
        = get_eigenmode(freq, d, where, where, band_num, kpoint, 
                        match_frequency, parity, resolution, eig_tol);
 
-      mode_group_velocities[nb*num_freqs + nf]=get_group_velocity(mode_data);
+      vgrp[nb*num_freqs + nf]=get_group_velocity(mode_data);
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -651,9 +650,9 @@ std::vector<cdouble>
        = (mode_flux[0] - mode_flux[1]) / normfac;
 
       if (LogFile && am_master())
-       { double vgrp=get_group_velocity(mode_data);
-         FILE *ff=fopen(LogFile,( (nb==0 && nf==0) ? "w" : "a") );
-         fprintf(ff,"(nb,nf)=(%i,%i) vgrp=%e\n",nb,nf,vgrp);
+       { FILE *ff=fopen(LogFile,( (nb==0 && nf==0) ? "w" : "a") );
+         fprintf(ff,"(nb,nf)=(%i,%i) ",nb,nf);
+         fprintf(ff,"vgrp=%e\n",vgrp[nb*num_freqs+nf]);
          fprintf(ff," mf = %+f,%+f {%+.2e,%+.2e},{%+.2e,%+.2e}\n",
                      abs(mode_flux[0]),abs(mode_flux[1]),
                      real(mode_flux[0]),imag(mode_flux[0]),
@@ -708,10 +707,11 @@ std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux flux,
                                           direction d,
                                           const volume &where,
                                           std::vector<int> bands,
+                                          std::vector<double> vgrp,
                                           kpoint_func k_func,
                                           void *k_func_data)
 { (void) flux; (void) d; (void) where; (void) bands,
-  (void) k_func; (void) k_func_data;
+  (void) vgrp; (void) k_func; (void) k_func_data;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 

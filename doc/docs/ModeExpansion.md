@@ -7,7 +7,7 @@ the normal harmonic modes of your structure.
 
 [TOC]
 
-## Theoretical background
+## Theoretical background[^1]
 
 Consider a waveguide structure of infinite extent in the $x$
 direction with constant cross section in the transverse
@@ -25,13 +25,14 @@ configuration of the form
 $$ \mathbf{E}(\mathbf{r},t) = \mathbf{E}(\mathbf{r}) e^{-i\omega t} $$
 $$ \mathbf{H}(\mathbf{r},t) = \mathbf{H}(\mathbf{r}) e^{-i\omega t} $$
 we have the *exact* expansions
+<a name="EigenmodeExpansions"></a>
 $$
    \mathbf{E}(\mathbf{r}) = 
    \mathbf{E}(x,\vec{\rho}) =
    \sum_{n} \left\{   \alpha^+_n \mathbf E^+_n(\vec \rho)e^{+i\beta_n x}
                     + \alpha^-_n \mathbf E^-_n(\vec \rho)e^{-i\beta_n x}
             \right\}
-    \qquad (1\textbf{a})
+    \tag{1}
 $$
 $$
    \mathbf{H}(\mathbf{r}) = 
@@ -39,7 +40,7 @@ $$
    \sum_{n} \left\{   \alpha^+_n \mathbf H^+_n(\vec \rho)e^{+i\beta_n x}
                     + \alpha^-_n \mathbf H^-_n(\vec \rho)e^{-i\beta_n x}
             \right\}
-    \qquad (1\textbf{b})
+    \tag{2}
 $$
 where (as discussed further [below](ModeExpansion.md#UnderTheHood))
 the expansion coefficients $\{\alpha^{\pm}_n\}$
@@ -152,31 +153,31 @@ in vacuum.
 More specifically, power travels in the *x* direction
 with the fields confined by the dielectric
 in the *y* direction; the smaller and larger
-waveguides have thicknesses $h_A$ and $h_B\ge h_A$ and are
+waveguides have thicknesses $w_A$ and $w_B\ge w_A$ and are
 connected by a taper region of length $L$, so the
 slab thickness as a function of $x$ reads
 <a name="Equation1"></a>
-$$ h(x) =
+$$ w(x) =
    \begin{cases} 
-     h_A,    \qquad &x < -\frac{L}{2} \\[5pt]
+     w_A,    \qquad &x < -\frac{L}{2} \\[5pt]
      T_p(x), \qquad &x \in \left[ -\frac{L}{2}, +\frac{L}{2}\right] \\[5pt]
-     h_B,    \qquad &x > +\frac{L}{2} \\
+     w_B,    \qquad &x > +\frac{L}{2} \\
    \end{cases}
-   \tag{1}
+   \tag{3}
 $$
 where the taper function $T_p(x)$ is a $C^{p}$ function,
 i.e. $p$ is the index of its first discontinuous derivative.
-For the cases $p=0$ (simple linear taper) and $p=1$,
+For the cases $p=0$ (linear taper) and $p=1$ (quadric taper),
 the taper functions are
 $$ T_p(x)=\begin{cases}
-   h_0 + \Delta \left(\frac{x}{L}\right), \qquad &p=0 \\[5pt]
-   h_0 + \Delta \Big[ \frac{3}{2}\left(\frac{x}{L}\right)
+   w_0 + \Delta \left(\frac{x}{L}\right), \qquad &p=0 \\[5pt]
+   w_0 + \Delta \Big[ \frac{3}{2}\left(\frac{x}{L}\right)
                        -2\left(\frac{x}{L}\right)^3
                  \Big],\qquad&p=1
    \end{cases}
 $$
 where
-$$ h_0\equiv \frac{h_A+h_B}{2}, \qquad \Delta = h_B - h_A$$
+$$ w_0\equiv \frac{w_A+w_B}{2}, \qquad \Delta = w_B - w_A$$
 are the average and difference of the smaller and larger waveguide
 thicknesses.
 
@@ -205,29 +206,30 @@ dielectric function, we can get away with the slightly simpler
 for which we need only furnish a function of position that
 returns a scalar relative permittivity. This is implemented
 by the `my_eps_func()` routine in `wvg-taper.py;` note that
-it invokes a subroutine `h_func` that evaluates [equation (1) above](ModeExpansion.md#Equation1) to compute the $x$-dependent waveguide width $h(x)$.
+it invokes a subroutine `w_func` that evaluates [equation (3) above](ModeExpansion.md#Equation1) 
+to compute the $x$-dependent waveguide width $w(x)$.
 
 ```python
 ##################################################
 # x-dependent width of waveguide
 ##################################################
-def h_func(x, L, p, hA, hB):
+def w_func(x, L, p, wA, wB):
   x0=x/L
   if (x0 < -0.5):
-    return hA;
+    return wA;
   if (x0 > +0.5):
-    return hB;
+    return wB;
   if (p==0):
-    return 0.5*(hA+hB) + (hB-hA)*x0;
+    return 0.5*(wA+wB) + (wB-wA)*x0;
   else: # if (p==1):
-    return 0.5*(hA+hB) + (hB-hA)*x0*(1.5 - 2.0*x0*x0);
+    return 0.5*(wA+wB) + (wB-wA)*x0*(1.5 - 2.0*x0*x0);
 
 ##################################################
 # user-defined function for position-dependent material properties
 ##################################################
-def my_eps_func(loc, L, p, hA, hB, eps_out, eps_in):
+def my_eps_func(loc, L, p, wA, wB, eps_out, eps_in):
 
-    if ( abs(loc.y) > 0.5*h_func(loc.x, L, p, hA, hB) ):
+    if ( abs(loc.y) > 0.5*w_func(loc.x, L, p, wA, wB) ):
      return eps_out;    # outside waveguide
     else:
      return eps_in;     # inside waveguide
@@ -241,7 +243,7 @@ argument (the spatial point), we use a `lambda` construction
 to package the remaining arguments, i.e. something like
 
 ```python
-eps_func = lambda loc: my_eps_func(loc, L, p, hA, hB,
+eps_func = lambda loc: my_eps_func(loc, L, p, wA, wB,
                                    eps_ambient, eps_waveguide)
                                           
 sim=mp.Simulation( cell_size=mp.Vector3(2*LX, 2*LY),
@@ -260,7 +262,7 @@ various geometries:
 
 ```python
 >>> execfile("wvg-taper.py");
->>> wt=wvg_taper(hA=1, hB=3, L=3, p=0);
+>>> wt=wvg_taper(wA=1, wB=3, L=3, p=0);
 Initializing structure...
 ...
 time for set_epsilon = 0.242381 s
@@ -271,7 +273,7 @@ time for set_epsilon = 0.242381 s
 
 
 ```python
->>> wt=wvg_taper(hA=1, hB=4, L=5, p=1);
+>>> wt=wvg_taper(wA=1, wB=4, L=5, p=1);
 Initializing structure...
 ...
 time for set_epsilon = 0.242381 s
@@ -313,17 +315,14 @@ method of the `wvg_taper` class:
 
 ### Adding an eigenmode source and timestepping
 
-The next step is to add an eigenmode source inside the
-smaller waveguide (i.e. a collection of MEEP point sources
-on a cross-sectional surface whose radiated fields
-reproduce the fields of a waveguide eigenmode carrying
-power in the positive X direction), then
+The next step is to add an *eigenmode source* inside the
+smaller waveguide---that is, a collection of MEEP point
+sources, lying on a cross-sectional surface, whose radiated
+fields reproduce the fields of a waveguide eigenmode---then
 timestep to accumulate Fourier-domain fields
 on a cross-sectional plane within the larger waveguide.
 This entire procedure is carried out by the `get_flux()`
-method in the `wvg_taper` class, which accepts some
-optional arguments to fine-tune the source configuration
-you want.
+method in the `wvg_taper` class:
 
 ````python
     ##################################################
@@ -443,31 +442,6 @@ above.
 
 **FINISH THIS SECTION**
 
-<a name="UnderTheHood"></a>
-## Under the hood: How mode expansion works
-
-The theoretical basis of the mode-expansion algorithm
-is the orthogonality relation satisfied by the normal
-modes:
-$$ \left\langle \mathbf{E}_m^{\sigma} \right|
-   \left.       \mathbf{H}^\tau_n     \right\rangle
-   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
-   \qquad \Big( \{\sigma,\tau\}\in\{+,-\}\Big)
-$$
-where the inner product involves an integration over
-transverse coordinates:
-<a name="OverlapEquation"></a>
-$$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
-   \equiv
-   \int_{S} 
-    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
-    \cdot \hat{\mathbf{n}} \, dA
-  \qquad (*)
-$$
-where $S$ is any surface transverse to the direction of propagation
-and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
-just $\hat{\mathbf{z}}$ in the case considered above).
-
 <a name="Other routines"></a>
 ## Related computational routines
 
@@ -529,8 +503,8 @@ data for fields at multiple frequencies, each of which will
 `output_mode_fields` is similar, but instead exports the components of the eigenmode
 described by `mode_data` (which should be the return value of a call to `get_eigenmode`).
 
+<a name="OverlapRoutines"></a>
 ### Routines for computing overlap integrals (in `dft.cpp`)
-
 ````
   std::complex<double> get_mode_flux_overlap(void *mode_data, 
                                              dft_flux *flux, 
@@ -557,5 +531,102 @@ identical, in which case you get the inner product of the
 mode with itself; by the normalization convention used in MPB,
 this should equal the group velocity of the mode.)
 
+<a name="UnderTheHood"></a>
+## Under the hood: How mode expansion works
+
+The theoretical basis of the mode-expansion algorithm
+is the orthogonality relation satisfied by the normal
+modes:
+$$ \left\langle \mathbf{E}_m^{\sigma} \right|
+   \left.       \mathbf{H}^\tau_n     \right\rangle
+   =C_{m}\delta_{mn}\delta_{\sigma\tau} 
+   \qquad \Big( \{\sigma,\tau\}\in\{+,-\}\Big)
+   \tag{4}
+$$
+where the inner product involves an integration over
+transverse coordinates:
+<a name="OverlapEquation"></a>
+$$ \left\langle \mathbf{f} \right| \left. \mathbf{g} \right\rangle 
+   \equiv
+   \int_{S}
+    \Big[ \mathbf{f}^*(\vec \rho) \times \mathbf{g}(\vec \rho)\Big]
+    \cdot \hat{\mathbf{n}} \, dA
+  \tag{5}
+$$
+where $S$ is any surface transverse to the direction of propagation
+and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e.
+just $\hat{\mathbf{z}}$ in the case considered above).
+The normalization constant $C_{m}$ is a matter of convention,
+but in [MPB][MPB] it is taken to be the group velocity of the
+mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$:
+$$ C_m = v_m A_S. \tag{6} $$
+
+Now consider a MEEP calculation in which we have accumulated
+frequency-domain $\mathbf E^{\text{meep}}$ and $\mathbf H^{\text{meep}}$ 
+fields on a `dft-flux`
+object located on a cross-sectional surface $S$. Invoking the
+eigenmode expansion [(1)](ModeExpansion.md#EigenmodeExpansions)
+and choosing (without loss of generality) the origin 
+of the $x$ axis to be the position of the cross-sectional plane,
+the tangential components of the frequency-domain MEEP fields
+take the form
+$$ \mathbf E^{\text{meep}}_\parallel
+   = \sum_{n} (\alpha_n^+ + \alpha_n^-)\mathbf{E}_{n\parallel}^+,
+   \tag{7}
+$$
+$$ \mathbf H^{\text{meep}}_\parallel
+   = \sum_{n} (\alpha_n^+ - \alpha_n^-)\mathbf{H}_{n\parallel}^+,
+   \tag{8}
+$$
+where we used the well-known relations between the tangential
+components of the forward-traveling and backward-traveling field
+modes: 
+$$ \mathbf{E}^+_{n\parallel} =+\mathbf{E}^-_{n\parallel},
+   \qquad
+   \mathbf{H}^+_{n\parallel} =-\mathbf{H}^-_{n\parallel}.
+$$
+Taking the inner product (5) of both sides of equations (7) and (8)
+with the $\mathbf{H}$ and $\mathbf{E}$ fields of each eigenmode
+and using equations (4) and (6), we find
+$$ \left\langle \mathbf{H}_m
+   \right|\left. \mathbf{E}^{\text{meep}} \right\rangle
+   =+(\alpha_n^+ + \alpha_n^-) v_m A_S
+$$
+$$ \left\langle \mathbf{E}_m
+   \right|\left. \mathbf{H}^{\text{meep}} \right\rangle
+   =-(\alpha_n^+ - \alpha_n^+) v_m A_S
+$$
+Thus, by evaluating the integrals on the LHS of these equations---numerically,
+using the MPB-computed eigenmode fields $\{\mathbf{E}, \mathbf{H}\}_m$
+and the MEEP-computed fields $\{\mathbf{E}, \mathbf{H}\}^{\text{meep}}\}$
+as tabulated on the computational grid---and combining the results 
+appropriately, we can extract the coefficients $\{\alpha^\pm_m\}$
+in the expansion (1). This calculation is carried out by the
+routine [`get_mode_flux_overlap`](ModeExpansion.md#OverlapRoutines).
+(Although simple in principle, the implementation is complicated by
+the fact that, in multi-processor calculations, the MEEP fields
+needed to evaluate the integrals are generally not all present 
+on any one processor, but are instead distributed over multiple
+processors, requiring some interprocess communication to evaluate
+the full integral.)
+
+The Poynting flux carried by the MEEP fields (7,8) may be expressed
+in the form
+$$ S_x = \frac{1}{2}\text{Re }
+         \left\langle \mathbf{E}^{\text{meep}}\right|
+         \left.       \mathbf{H}^{\text{meep}}\right\rangle
+       = \frac{1}{2}\sum_n \left\{ |\alpha_n^+|^2 - |\alpha_n^-|^2) \right\} v_n A_S
+$$
+and thus the fractional power carried by any one (forward- or backward-traveling)
+eigenmode is given by
+$$ \text{fractional power carried by }\pm\text{-traveling mode }n=
+   \frac{|\alpha_n^\pm|^2 v_n A_S}{2S_x}
+$$
+
+[^1]:
+    The theory of waveguide modes is covered in many references;
+    one that we have found useful is [Snyder and Love, *Optical Waveguide Theory* (Springer, 1983)](http://www.springer.com/us/book/9780412099502).
+    
+ 
 [MPB]:	   https://mpb.readthedocs.io/en/latest/
 [DFTFlux]: https://meep.readthedocs.io/en/latest/Scheme_User_Interface/#Flux_spectra.md

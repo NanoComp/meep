@@ -677,7 +677,6 @@ void fields::do_flux_operation(dft_flux flux, int num_freq, const volume where,
   max_corner = max_to_all(max_corner);
   min_corner = -max_to_all(-min_corner); // i.e., min_to_all
 
-
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/

@@ -76,7 +76,7 @@ class wvg_taper:
                  LY=6.0,                # width of computational cell
                  DPML=0.5,              # PML thickness
                  fcen=0.15, df=0.075,   # center frequency / width
-                 resolution=50.0,       # grid points per unit length
+                 resolution=25.0,       # grid points per unit length
                ): 
 
         #--------------------------------------------------------------------
@@ -169,31 +169,42 @@ class wvg_taper:
        modeA1 = f.get_eigenmode(freq, mp.X, vA, vA,
                                 1, k_guess(freq, 1, wA),
                                 match_freq, parity, res, tol);
+       print("vg(A1)={}".format(mp.get_group_velocity(modeA1)));
        f.output_mode_fields(modeA1, fluxA, vA, "modeA1");
 
        # eigenmodes #1-4 in wider waveguide
        modeB1 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 1, k_guess(freq,1,wB),
                                 match_freq, parity, res, tol);
+       print("vg(B1)={}".format(mp.get_group_velocity(modeB1)));
        f.output_mode_fields(modeB1, fluxB, vB, "modeB1");
 
        modeB2 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 2, k_guess(freq,2,wB),
                                 match_freq, parity, res, tol);
+       print("vg(B2)={}".format(mp.get_group_velocity(modeB2)));
        f.output_mode_fields(modeB2, fluxB, vB, "modeB2");
 
        modeB3 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 3, k_guess(freq,3,wB),
                                 match_freq, parity, res, tol);
+       print("vg(B3)={}".format(mp.get_group_velocity(modeB3)));
        f.output_mode_fields(modeB3, fluxB, vB, "modeB3");
 
        modeB4 = f.get_eigenmode(freq, mp.X, vB, vB,
                                 4, k_guess(freq,4,wB),
                                 match_freq, parity, res, tol);
+       print("vg(B4)={}".format(mp.get_group_velocity(modeB4)));
        f.output_mode_fields(modeB4, fluxB, vB, "modeB4");
 
+       self.modeA1=modeA1;
+       self.modeB1=modeB1;
+       self.modeB2=modeB2;
+       self.modeB3=modeB3;
+       self.modeB4=modeB4;
+
        ##################################################
-       # read the field data back 
+       # read the field data back in from the HDF5 file
        ##################################################
        h5file = h5.File('modeA1.h5','r')
        exA = h5file['ex.r'][:] + 1.0j*h5file['ex.i'][:];
@@ -284,9 +295,9 @@ class wvg_taper:
 ##################################################
 ##################################################
 from mpi4py import MPI
-(Major,Minor)=MPI.Get_version();
-Procs=MPI.Comm.Get_size(MPI.COMM_WORLD)
-#wt=wvg_taper();
-#wt.plot_eps();
+#(Major,Minor)=MPI.Get_version();
+#Procs=MPI.Comm.Get_size(MPI.COMM_WORLD)
+wt=wvg_taper();
+wt.plot_eps();
 #wt.get_flux();
-#wt.plot_modes();
+wt.plot_modes();
