@@ -418,9 +418,10 @@ int main(int argc, char *argv[])
       snprintf(filename,100,"%s_mode%c%i",filebase,AB,band_num);
       f.output_mode_fields(mode_data, *flux, *fv, filename);
 
-      cdouble mmOverlap[2];
-      f.get_mode_mode_overlap(mode_data, mode_data,
-                              *flux, *fv, mmOverlap);
+      cdouble mfOverlap[2], mmOverlap[2];
+      f.get_mode_flux_overlap(mode_data, *flux, 0, *fv, mfOverlap);
+      f.get_mode_mode_overlap(mode_data, mode_data, *flux, *fv, mmOverlap);
+      static double Power2=0.0;
       if (am_master()) 
        { 
          double vgrp=get_group_velocity(mode_data);
@@ -428,12 +429,22 @@ int main(int argc, char *argv[])
          snprintf(filename,100,"%s.modeData",filebase);
          FILE *ff = fopen(filename,"a");
          fprintf(ff,"nb=%c%2i vgrp=%e k=%e ",AB,band_num,vgrp,k.x());
-         fprintf(ff," <>={%e,%e} {%e,%e} vgrp*area=%e\n",
-                      real(mmOverlap[0]),imag(mmOverlap[0]),
-                      real(mmOverlap[1]),imag(mmOverlap[1]),vgrp*vol);
+         fprintf(ff,"vgrp*area=%e ",vgrp*vol);
+         fprintf(ff,"mf={%e,%e}, {%e,%e}\n",real(mfOverlap[0]),imag(mfOverlap[0]),
+                                            real(mfOverlap[1]),imag(mfOverlap[1]));
+         cdouble alpha[2];
+         alpha[0]=0.5*(mfOverlap[0]+mfOverlap[1])/(vgrp*vol);
+         alpha[1]=0.5*(mfOverlap[0]-mfOverlap[1])/(vgrp*vol);
+         fprintf(ff,"alphaP={%e,%e}, alphaM={%e,%e}\n",
+                     real(alpha[0]),imag(alpha[0]),
+                     real(alpha[1]),imag(alpha[1]));
+         Power2 += norm(alpha[0])*vgrp*vol;
+         fprintf(ff,"\n Power2 = %e [+= (%e*%e*%e)]\n",Power2,norm(alpha[0]),vgrp,vol);
          fclose(ff);
        };
     }; // if (plot_modes...) ... for(int nb=...)
+
+  
 
   /***************************************************************/
   /* timestep until all conditions for stopping are met.         */
@@ -484,8 +495,8 @@ int main(int argc, char *argv[])
      f.output_flux_fields(fluxB, *fvB, filename);
      snprintf(filename,100,"%s.fluxData",filebase);
      FILE *ff=fopen(filename,"a");
-     fprintf(ff,"flux A = %e",fluxA.flux()[0]);
-     fprintf(ff,"flux B = %e",fluxB.flux()[0]);
+     fprintf(ff,"flux A = %e\n",fluxA.flux()[0]);
+     fprintf(ff,"flux B = %e\n",fluxB.flux()[0]);
      fclose(ff);
  //    snprintf(filename,100,"%s_fluxC",filebase);
  //    f.output_flux_fields(fluxC, *fvC, filename);
