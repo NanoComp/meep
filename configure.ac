@@ -1,12 +1,12 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.4, meep@ab-initio.mit.edu)
+AC_INIT(meep, 1.4.1, meep@ab-initio.mit.edu)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="9:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="9:1:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign check-news color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)

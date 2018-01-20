@@ -1,5 +1,11 @@
 # Meep Release Notes
 
+## Meep 1.4.1
+
+1/19/2018
+
+  * Minor packaging fixes.
+
 ## Meep 1.4
 
 1/18/2018
