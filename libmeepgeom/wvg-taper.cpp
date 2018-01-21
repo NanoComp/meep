@@ -386,8 +386,13 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* add flux planes                                             */
   /***************************************************************/
-  dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
-  dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
+  volume_list vlA(*fvA, Sx), vlB(*fvB, Sx);
+  dft_flux fluxA=f.add_dft_flux(&vlA, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux fluxB=f.add_dft_flux(&vlB, fcen-0.5*df, fcen+0.5*df, nfreq);
+  // dft_flux fluxA=f.add_dft_flux(X, *fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
+  // dft_flux fluxB=f.add_dft_flux(X, *fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
+  //dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
+  //dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
 //master_printf("Adding fluxC...");
   //dft_flux fluxC=f.add_dft_flux_plane(*fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
 
