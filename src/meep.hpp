@@ -856,13 +856,14 @@ public:
      any additional negative or complex weight factor to be used
      in computations involving the fourier-transformed fields.  Because
      it is used in computations involving dft[...], it needs to be public. */
-     std::complex<double> extra_weight;
+  std::complex<double> extra_weight;
 
   // parameters passed from field_integrate:
   fields_chunk *fc;
   ivec is, ie;
   vec s0, s1, e0, e1;
   double dV0, dV1;
+  bool include_dV_and_interp_weights;
   bool sqrt_dV_and_interp_weights;
   std::complex<double> scale; // scale factor * phase from shift and symmetry
   ivec shift;
@@ -1314,7 +1315,7 @@ class fields {
                                    std::complex<double> *slice=0);
 
   // alternative entry points for when you have no field
-  // function, i.e. you want just a single component or 
+  // function, i.e. you want just a single component or
   // derived component.)
   double *get_array_slice(const volume &where, component c, double *slice=0);
   double *get_array_slice(const volume &where, derived_component c, double *slice=0);
