@@ -157,7 +157,54 @@ void wvg_material(vector3 loc, void *user_data, meep_geom::medium_struct *m)
  
 }
 
-/***************************************************************/ 
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/
+#if 0
+void analyze_mode(
+fields f, dft_flux flux, double fcen, direction d, volume v,
+char *filebase, char *suffix,
+
+{
+  void *mode_data=f.get_eigenmode(fcen, d, v, v, band_num, 
+                                  k_guess((void *)&ww,fcen,band_num),
+                                  true, 0, f.a, 1.0e-4);
+  char filename[100];
+  sprintf(filename,"%s.%s",filebase,suffix);
+  f.output_mode_fields(mode_data, flux, v, filename);
+
+  cdouble mfOverlap[2], mmOverlap[2];
+  f.get_mode_flux_overlap(mode_data, flux, 0, v, mfOverlap);
+  f.get_mode_mode_overlap(mode_data, mode_data, flux, v, mmOverlap);
+
+  if (am_master()) 
+       { 
+         double vgrp=get_group_velocity(mode_data);
+         vec k=get_k(mode_data);
+         snprintf(filename,100,"%s.modeData",filebase);
+         FILE *ff = fopen(filename,"a");
+         fprintf(ff,"nb=%c%i: \n",AB,band_num);
+         fprintf(ff,"  vgrp=%e, k=%e\n",vgrp,k.x());
+         fprintf(ff,"  vgrp*area=%e\n",vgrp*vol);
+         fprintf(ff,"  mf0={%e,%e}\n",real(mfOverlap[0]),imag(mfOverlap[0]));
+         fprintf(ff,"  mf1={%e,%e}\n",real(mfOverlap[1]),imag(mfOverlap[1]));
+
+         cdouble alpha[2];
+         alpha[0]=0.5*(mfOverlap[0]+mfOverlap[1])/(vgrp*vol);
+         alpha[1]=0.5*(mfOverlap[0]-mfOverlap[1])/(vgrp*vol);
+
+         fprintf(ff,"   aP={%e,%e}\n",real(alpha[0]),imag(alpha[0]));
+         fprintf(ff,"   aM={%e,%e}\n",real(alpha[1]),imag(alpha[1]));
+
+         Power2 += norm(alpha[0])*vgrp*vol;
+         fprintf(ff,"\n Power2 = %e [+= (%e*%e*%e)]\n",Power2,norm(alpha[0]),vgrp,vol);
+         if (nb==-1) Power2=0.0;
+         fclose(ff);
+       };
+    }; // if (plot_modes...) ... for(int nb=...)
+#endif
+
+/***************************************************************/
 /***************************************************************/
 /***************************************************************/
 int main(int argc, char *argv[])
@@ -367,9 +414,9 @@ int main(int argc, char *argv[])
      volB = 4.0*LYP*LZP;
    }
   else
-   { fvA = new volume( vec(xA,  -LYP), vec(xA, +LYP) );
-     fvB = new volume( vec(xB,  -LYP), vec(xB, +LYP) );
-     fvC = new volume( vec(-LX, -LYP), vec(+LX, +LYP) );
+   { fvA = new volume( vec(xA, -LYP), vec(xA, +LYP) );
+     fvB = new volume( vec(xB, -LYP), vec(xB, +LYP) );
+ //    fvC = new volume( vec(-LX, -LYP), vec(+LX, +LYP) );
      volA = 2.0*LYP;
      volB = 2.0*LYP;
    };
@@ -386,15 +433,14 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* add flux planes                                             */
   /***************************************************************/
-  volume_list vlA(*fvA, Sx), vlB(*fvB, Sx);
-  dft_flux fluxA=f.add_dft_flux(&vlA, fcen-0.5*df, fcen+0.5*df, nfreq);
-  dft_flux fluxB=f.add_dft_flux(&vlB, fcen-0.5*df, fcen+0.5*df, nfreq);
-  // dft_flux fluxA=f.add_dft_flux(X, *fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
-  // dft_flux fluxB=f.add_dft_flux(X, *fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
-  //dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
-  //dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
-//master_printf("Adding fluxC...");
+  dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
   //dft_flux fluxC=f.add_dft_flux_plane(*fvC, fcen-0.5*df, fcen+0.5*df, nfreq);
+
+volume fvA1( vec(xA + 0.25*wvg_length, -LYP), vec(xA+0.25*wvg_length, +LYP) );
+dft_flux fluxA1=f.add_dft_flux_plane(fvA1, fcen-0.5*df, fcen+0.5*df, nfreq);
+volume fvB1( vec(xB - 0.25*wvg_length, -LYP), vec(xB-0.25*wvg_length, +LYP) );
+dft_flux fluxB1=f.add_dft_flux_plane(fvB1, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
   /* timestep until all conditions for stopping are met.         */
@@ -435,38 +481,19 @@ int main(int argc, char *argv[])
    }
 
   /***************************************************************/
-  /* write output files ******************************************/
-  /***************************************************************/
-  if (plot_flux)
-   { char filename[100];
-     snprintf(filename,100,"%s_fluxA",filebase);
-     f.output_flux_fields(fluxA, *fvA, filename);
-     snprintf(filename,100,"%s_fluxB",filebase);
-     f.output_flux_fields(fluxB, *fvB, filename);
-     snprintf(filename,100,"%s.fluxData",filebase);
-     if (am_master)
-      { FILE *ff=fopen(filename,"a");
-        fprintf(ff,"flux A = %e\n",fluxA.flux()[0]);
-        fprintf(ff,"flux B = %e\n",fluxB.flux()[0]);
-        fclose(ff);
-      };
- //    snprintf(filename,100,"%s_fluxC",filebase);
- //    f.output_flux_fields(fluxC, *fvC, filename);
-   };
-
-  /***************************************************************/
   /* plot eigenmode field patterns if requested ******************/
   /***************************************************************/
   void *mode_data_A, **mode_data_B = new void*[num_bands];
+  double fmPowerA=0.0, fmPowerB=0.0;
   if (plot_modes)
    for(int nb=-1; nb<num_bands; nb++)
     { 
-      int band_num   = (nb==-1) ? 1      : nb+1;
-      volume *fv     = (nb==-1) ? fvA    : fvB;
-      double ww      = (nb==-1) ? wA     : wB;
-      char AB        = (nb==-1) ? 'A'    : 'B';
-      dft_flux *flux = (nb==-1) ? &fluxA : &fluxB;
-      double vol     = (nb==-1) ? volA  : volB;
+      int band_num   = (nb==-1) ? 1       : nb+1;
+      volume *fv     = (nb==-1) ? &fvA1   : fvB;
+      double ww      = (nb==-1) ? wA      : wB;
+      char AB        = (nb==-1) ? 'A'     : 'B';
+      dft_flux *flux = (nb==-1) ? &fluxA1 : &fluxB;
+      double vol     = (nb==-1) ? volA    : volB;
     
       void *mode_data=f.get_eigenmode(fcen, dB, *fv, *fv,
                                       band_num, k_guess((void *)&ww,
@@ -477,14 +504,53 @@ int main(int argc, char *argv[])
       else
        mode_data_B[nb]=mode_data;
 
+      double vgrp=get_group_velocity(mode_data);
+
       char filename[100];
       snprintf(filename,100,"%s_mode%c%i",filebase,AB,band_num);
       f.output_mode_fields(mode_data, *flux, *fv, filename);
-
       cdouble mfOverlap[2], mmOverlap[2];
-      f.get_mode_flux_overlap(mode_data, *flux, 0, *fv, mfOverlap);
+/*
       f.get_mode_mode_overlap(mode_data, mode_data, *flux, *fv, mmOverlap);
-      static double Power2=0.0;
+*/
+mmOverlap[0]=mmOverlap[1]=0.0;
+printf("Computing <mode|mode> %c%i...\n",AB,band_num);
+for(int nc=0; nc<4; nc++)
+ { char *s=strdup("0"); s[0]+=nc;
+   const char *Term[4]={"EyHz","EzHy","HzEy","HyEz"};
+   setenv("MEEP_MODE_FLUX_TERM",s,1);
+   cdouble dmf[2];
+   f.get_mode_mode_overlap(mode_data, mode_data, fluxA1, *fv, dmf);
+   master_printf(" %s={%e,%e} {%e,%e}\n",Term[nc],
+                   real(dmf[0]),imag(dmf[0]),real(dmf[1]),imag(dmf[1])
+                );
+   mmOverlap[0]+=dmf[0];
+   mmOverlap[1]+=dmf[1];
+ };
+      master_printf("...is {%e,%e} {%e,%e}, should be %e\n",
+                    real(mmOverlap[0]),imag(mmOverlap[0]),
+                    real(mmOverlap[1]),imag(mmOverlap[1]),
+                    vgrp*vol);
+
+      master_printf("Computing <mode|flux> %c%i...\n",AB,band_num);
+mfOverlap[0]=mfOverlap[1]=0.0;
+for(int nc=0; nc<4; nc++)
+ { char *s=strdup("0"); s[0]+=nc;
+   const char *Term[4]={"EyHz","EzHy","HzEy","HyEz"};
+   setenv("MEEP_MODE_FLUX_TERM",s,1);
+   cdouble dmf[2];
+   f.get_mode_flux_overlap(mode_data, *flux, 0, *fv, dmf);
+   master_printf(" %s={%e,%e} {%e,%e}\n",Term[nc],
+                   abs(dmf[0]),arg(dmf[0]),abs(dmf[1]),arg(dmf[1])
+                );
+   mfOverlap[0]+=dmf[0];
+   mfOverlap[1]+=dmf[1];
+ };
+if (AB=='A') 
+ fmPowerA += norm(mfOverlap[0])*vgrp;
+else
+ fmPowerB += norm(mfOverlap[0])*vgrp;
+/*
       if (am_master()) 
        { 
          double vgrp=get_group_velocity(mode_data);
@@ -504,34 +570,54 @@ int main(int argc, char *argv[])
          fprintf(ff,"   aP={%e,%e}\n",real(alpha[0]),imag(alpha[0]));
          fprintf(ff,"   aM={%e,%e}\n",real(alpha[1]),imag(alpha[1]));
 
-         Power2 += norm(alpha[0])*vgrp*vol;
+         if (AB=='A')
+          Power2 += norm(alpha[0])*vgrp*vol;
          fprintf(ff,"\n Power2 = %e [+= (%e*%e*%e)]\n",Power2,norm(alpha[0]),vgrp,vol);
          if (nb==-1) Power2=0.0;
          fclose(ff);
        };
+*/
     }; // if (plot_modes...) ... for(int nb=...)
+master_printf("fluxA = %e (%e) ratio %e\n",
+fluxA1.flux()[0],fmPowerA,fluxA1.flux()[0] / fmPowerA);
+master_printf("fluxB = %e (%e) ratio %e\n",
+fluxB1.flux()[0],fmPowerB,fluxB1.flux()[0] / fmPowerB);
 
+  /***************************************************************/
+  /* write output files ******************************************/
+  /***************************************************************/
+  if (plot_flux)
+   { char filename[100];
+     snprintf(filename,100,"%s_fluxA",filebase);
+     f.output_flux_fields(fluxA, *fvA, filename);
+     snprintf(filename,100,"%s_fluxB",filebase);
+     f.output_flux_fields(fluxB, *fvB, filename);
+     snprintf(filename,100,"%s.fluxData",filebase);
+     if (am_master)
+      { FILE *ff=fopen(filename,"a");
+        fprintf(ff,"flux A  = %e\n",fluxA.flux()[0]);
+        fprintf(ff,"flux A1 = %e\n",fluxA1.flux()[0]);
+        fprintf(ff,"flux B  = %e\n",fluxB.flux()[0]);
+        fprintf(ff,"flux B1 = %e\n",fluxB1.flux()[0]);
+        fclose(ff);
+      };
+ //    snprintf(filename,100,"%s_fluxC",filebase);
+ //    f.output_flux_fields(fluxC, *fvC, filename);
+   };
   
-
-
   /***************************************************************/
   /* compute mode-expansion coefficients *************************/
   /***************************************************************/
-#if 0
   std::vector<int> bands(num_bands);
   for(int n=0; n<num_bands; n++)
    bands[n] = n+1;
 
   int num_freqs = fluxB.Nfreq;
-  std::vector<cdouble> vgrp(0);
+  std::vector<double> vgrp(0);
   std::vector<cdouble> coeffs =
-   f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, &vgrp, k_guess, (void *)&wB);
+   f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
 
   double *bflux=fluxB.flux();
-  double bvol1=fvB->computational_volume();
-  double bvol2=fvB->integral_volume();
-  double bvol3=fvB->full_volume();
-
   if (am_master())
    {
      char filename[100];
@@ -546,18 +632,21 @@ int main(int argc, char *argv[])
        { 
          double atot=0.0;
          for(int nbb=0; nbb<num_bands; nbb++)
-          for(int pm=0; pm<2; pm++)
-           atot += norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
+          for(int pm=0, sign=1; pm<2; pm++, sign-=2)
+           atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
    
          cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
          printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*norm(aP)/atot);
          printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*norm(aM)/atot);
-         fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e %e \n",ratio,taper_length,taper_order,res,nb,nf,norm(aP), arg(aP), norm(aP)/atot, bflux[nf], bvol1, bvol2, bvol3, mode_group_velocities[nb*num_freqs + nf]);
+         fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e %e \n",ratio,taper_length,
+                     taper_order,res,nb,nf,
+                     norm(aP), arg(aP), norm(aP)/atot,
+                     norm(aM), arg(aM), norm(aM)/atot,
+                     bflux[nf], vgrp[nb*num_freqs + nf]);
       };
      fclose(ff);
    };
-#endif
    
   return 0;
 }

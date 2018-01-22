@@ -816,7 +816,6 @@ void fields::do_flux_operation(dft_flux flux, int num_freq, const volume where,
   bool single_precision = false;
   bool First            = true;
   cdouble integrals[2]  = {0.0, 0.0};
-cdouble partialintegrals[2];
   for(int nf=nf_min; nf<=nf_max; nf++)
    for(int nc=0; nc<num_components; nc++)
     for(int reim=0; reim<=reim_max; reim++)
@@ -858,31 +857,17 @@ cdouble partialintegrals[2];
 
        int which_integral= nc/2;
        double integral_sign = ( nc%2 ? -1.0 : 1.0 );
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+       { char *s=getenv("MEEP_MODE_FLUX_TERM");
+         if (s && ( nc != (s[0]-'0'))) integral_sign=0.0;
+       }
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
-#if 0
        for (dft_chunk *EH = (c_flux>=Hx ? flux.H : flux.E); EH; EH=EH->next_in_dft)
         if (EH->c == c_flux)
          integrals[which_integral]
           += integral_sign * EH->do_flux_operation(rank, ds, min_corner, file, buffer, reim,
                                                    mode1_data, c_mode, mode2_data, c_mode2, nf, flux_sign);
-#endif
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-if (flux_op==MODE_FLUX)
-{
-int nc=0;
-       for (dft_chunk *EH = (c_flux>=Hx ? flux.H : flux.E); EH; EH=EH->next_in_dft)
-        if (EH->c == c_flux)
-         {  partialintegrals[which_integral] 
-             = integral_sign * EH->do_flux_operation(rank, ds, min_corner, file, buffer, reim,
-                                                     mode1_data, c_mode, mode2_data, c_mode2, nf, flux_sign);
-            integrals[which_integral]+=partialintegrals[which_integral];
-            partialintegrals[which_integral]=sum_to_all(partialintegrals[which_integral]);
-master_printf("nc=%i (%s.%s): I[%i]={%e,%e}\n",nc++,component_name(c_mode),component_name(c_flux),
-which_integral,
-real(partialintegrals[which_integral]), imag(partialintegrals[which_integral]));
-         };
-};
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
        if (file)
         { file->done_writing_chunks();
@@ -897,6 +882,9 @@ real(partialintegrals[which_integral]), imag(partialintegrals[which_integral]));
   if (overlaps)
    { overlaps[0] = sum_to_all(integrals[0]);
      overlaps[1] = sum_to_all(integrals[1]);
+// EXPLAIN ME
+     if (flux_op==MODE_FLUX)
+      overlaps[1] *= 2.0*a;
    };
 }
 

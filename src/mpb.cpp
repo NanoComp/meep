@@ -646,7 +646,7 @@ std::vector<cdouble>
       cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]);
       coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
        = (mode_flux[0] + mode_flux[1]) / normfac;
-      coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
+      coeffs[ 2*nb*num_freqs + 2*nf + 1 ]
        = (mode_flux[0] - mode_flux[1]) / normfac;
 
       if (LogFile && am_master())
