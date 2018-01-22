@@ -617,30 +617,28 @@ fluxB1.flux()[0],fmPowerB,fluxB1.flux()[0] / fmPowerB);
   std::vector<cdouble> coeffs =
    f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
 
-  double *bflux=fluxB.flux();
+  double *Aflux=fluxA1.flux();
+  double *Bflux=fluxB.flux();
+  double *B2flux=fluxB1.flux();
   if (am_master())
    {
      char filename[100];
      snprintf(filename,100,"%s.coefficients",filebase);
      FILE *ff=fopen(filename,"a");
-     fprintf(ff,"fluxA = %e\n",fluxA.flux()[0]);
-     fprintf(ff,"fluxB = %e\n",fluxB.flux()[0]);
+     fprintf(ff,"# fluxA  = %e\n",Aflux[0]);
+     fprintf(ff,"# fluxB1 = %e\n",Bflux[0]);
+     fprintf(ff,"# fluxB2 = %e\n",B2flux[0]);
      printf("freq | band | alpha^+ | alpha^-\n");
      printf("------------------------------------------------\n");
-printf("Oofatage foryaf\n");
      for(int nf=0; nf<num_freqs; nf++)
       for(unsigned nb=0; nb<bands.size(); nb++)
        { 
-printf(" Hello %i\n",nb);
          double atot=0.0;
-         for(int nbb=0; nbb<num_bands; nbb++)
+         for(int nbb=0; nbb<bands.size(); nbb++)
           for(int pm=0, sign=1; pm<2; pm++, sign-=2)
-{
-printf(" Hello Hello %i %i \n",nbb,pm);
            atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
-};
+         if (nb==0) fprintf(ff,"# atot  = %e (%e)\n",atot,atot/Bflux[0]);
    
-printf(" Goodbye \n");
          cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
          double vg=vgrp[nb*num_freqs + nf];
@@ -648,11 +646,10 @@ printf(" Goodbye \n");
          printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*vg*norm(aM)/atot);
          fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e %e \n",ratio,taper_length,
                      taper_order,res,nb,nf, norm(aP), arg(aP), vg*norm(aP)/atot, norm(aM), arg(aM), vg*norm(aM)/atot,
-                     bflux[nf], vgrp[nb*num_freqs + nf]);
+                     Bflux[nf], vgrp[nb*num_freqs + nf]);
       };
      fclose(ff);
    };
-printf(" Ahhyeah.\n");
    
   return 0;
 }
