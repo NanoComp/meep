@@ -99,3 +99,6 @@ dac: $(DAC)
 
 clean-local::
 	rm -f *.o *.dac debug_out_* *.done
+
+distclean-local:
+	rm -f *.h5

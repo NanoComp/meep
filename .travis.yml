@@ -78,4 +78,8 @@ script:
   - make ${MKCHECKFLAGS} check || (cat test-suite.log && exit 1)
   - popd
 #
+  # Only run distcheck in nightly builds because it doubles the build time
+  # - if [ "${TRAVIS_EVENT_TYPE}" == cron ]; then make distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl"; fi
+
+  - make distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl"
   - popd
