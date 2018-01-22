@@ -128,8 +128,12 @@ class Volume(object):
 
         self.swigobj = mp.volume(vec1, vec2)
 
-    def to_cylindrical(self):
-        return Volume(self.center, self.size, self.dims, is_cylindrical=True)
+    # To prevent the user from having to specify `dims` and `is_cylindrical`
+    # to Volumes they create, the library will adjust them appropriately based
+    # on the settings in the Simulation instance. This method must be called on
+    # any user-defined Volume before passing it to meep via its `swigobj`.
+    def _fit_to_simulation(self, dims, is_cylindrical):
+        return Volume(self.center, self.size, dims=dims, is_cylindrical=is_cylindrical)
 
 
 class FluxRegion(object):
@@ -645,7 +649,7 @@ class Simulation(object):
         return mp._get_farfield(f, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
     def output_farfields(self, near2far, fname, where, resolution):
-        vol = where.to_cylindrical() if self.is_cylindrical else where
+        vol = where._fit_to_simulation(self.dimensions, self.is_cylindrical)
         near2far.save_farfields(fname, self.get_filename_prefix(), vol.swigobj, resolution)
 
     def load_near2far(self, fname, n2f):
@@ -715,8 +719,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using flux_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = box._fit_to_simulation(self.dimensions, self.is_cylindrical)
 
         return self.fields.flux_in_box(d, box.swigobj)
 
@@ -724,8 +727,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = box._fit_to_simulation(self.dimensions, self.is_cylindrical)
 
         return self.fields.electric_energy_in_box(d, box.swigobj)
 
@@ -733,8 +735,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = box._fit_to_simulation(self.dimensions, self.is_cylindrical)
 
         return self.fields.magnetic_energy_in_box(d, box.swigobj)
 
@@ -742,8 +743,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using field_energy_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = box._fit_to_simulation(self.dimensions, self.is_cylindrical)
 
         return self.fields.field_energy_in_box(d, box.swigobj)
 
@@ -854,10 +854,7 @@ class Simulation(object):
         if where is None:
             where = self.fields.total_volume()
         else:
-            if self.is_cylindrical:
-                where = where.to_cylindrical().swigobj
-            else:
-                where = where.swigobj
+            where = where._fit_to_simulation(self.dimensions, self.is_cylindrical).swigobj
         return where
 
     def integrate_field_function(self, cs, func, where=None):
@@ -1094,10 +1091,7 @@ def in_volume(v, *step_funcs):
         v_save = sim.output_volume
         eps_save = sim.last_eps_filename
 
-        if sim.is_cylindrical:
-            sim.output_volume = v.to_cylindrical().swigobj
-        else:
-            sim.output_volume = v.swigobj
+        sim.output_volume = v._fit_to_simulation(sim.dimensions, sim.is_cylindrical).swigobj
 
         if closure['cur_eps']:
             sim.last_eps_filename = closure['cur_eps']
