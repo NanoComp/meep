@@ -614,10 +614,8 @@ fluxB1.flux()[0],fmPowerB,fluxB1.flux()[0] / fmPowerB);
 
   int num_freqs = fluxB.Nfreq;
   std::vector<double> vgrp(0);
-printf("Howdage foryaf\n");
   std::vector<cdouble> coeffs =
    f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
-printf("Doomatage foryaf\n");
 
   double *bflux=fluxB.flux();
   if (am_master())
@@ -629,14 +627,20 @@ printf("Doomatage foryaf\n");
      fprintf(ff,"fluxB = %e\n",fluxB.flux()[0]);
      printf("freq | band | alpha^+ | alpha^-\n");
      printf("------------------------------------------------\n");
+printf("Oofatage foryaf\n");
      for(int nf=0; nf<num_freqs; nf++)
       for(unsigned nb=0; nb<bands.size(); nb++)
        { 
+printf(" Hello %i\n",nb);
          double atot=0.0;
          for(int nbb=0; nbb<num_bands; nbb++)
           for(int pm=0, sign=1; pm<2; pm++, sign-=2)
+{
+printf(" Hello Hello %i %i \n",nbb,pm);
            atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
+};
    
+printf(" Goodbye \n");
          cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
          double vg=vgrp[nb*num_freqs + nf];
@@ -648,6 +652,7 @@ printf("Doomatage foryaf\n");
       };
      fclose(ff);
    };
+printf(" Ahhyeah.\n");
    
   return 0;
 }
