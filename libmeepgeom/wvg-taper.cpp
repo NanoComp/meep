@@ -614,8 +614,10 @@ fluxB1.flux()[0],fmPowerB,fluxB1.flux()[0] / fmPowerB);
 
   int num_freqs = fluxB.Nfreq;
   std::vector<double> vgrp(0);
+printf("Howdage foryaf\n");
   std::vector<cdouble> coeffs =
    f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
+printf("Doomatage foryaf\n");
 
   double *bflux=fluxB.flux();
   if (am_master())
@@ -637,12 +639,11 @@ fluxB1.flux()[0],fmPowerB,fluxB1.flux()[0] / fmPowerB);
    
          cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
-         printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*norm(aP)/atot);
-         printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*norm(aM)/atot);
+         double vg=vgrp[nb*num_freqs + nf];
+         printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*vg*norm(aP)/atot);
+         printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*vg*norm(aM)/atot);
          fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e %e \n",ratio,taper_length,
-                     taper_order,res,nb,nf,
-                     norm(aP), arg(aP), norm(aP)/atot,
-                     norm(aM), arg(aM), norm(aM)/atot,
+                     taper_order,res,nb,nf, norm(aP), arg(aP), vg*norm(aP)/atot, norm(aM), arg(aM), vg*norm(aM)/atot,
                      bflux[nf], vgrp[nb*num_freqs + nf]);
       };
      fclose(ff);

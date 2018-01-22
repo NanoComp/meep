@@ -636,6 +636,7 @@ std::vector<cdouble>
                        match_frequency, parity, resolution, eig_tol);
 
       vgrp[nb*num_freqs + nf]=get_group_velocity(mode_data);
+printf("Goofatage %i \n",nb);
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
