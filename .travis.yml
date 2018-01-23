@@ -80,7 +80,7 @@ script:
   - popd
 #
   # Only run distcheck in nightly builds because it doubles the build time
-  # - if [ "${TRAVIS_EVENT_TYPE}" == cron ]; then make distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl"; fi
+  # - if [ "${TRAVIS_EVENT_TYPE}" == cron ]; then make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"; fi
 
   - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
   - popd
