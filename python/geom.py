@@ -2,6 +2,7 @@ from __future__ import division
 
 import math
 from copy import deepcopy
+from numbers import Number
 
 import numpy as np
 import meep as mp
@@ -37,6 +38,20 @@ class Vector3(object):
         z = self.z - other.z
 
         return Vector3(x, y, z)
+
+    def __mul__(self, other):
+        if type(other) is Vector3:
+            return self.dot(other)
+        elif isinstance(other, Number):
+            return self.scale(other)
+        else:
+            raise TypeError("No operation known for 'Vector3 * {}'".format(type(other)))
+
+    def __rmul__(self, other):
+        if isinstance(other, Number):
+            return self.scale(other)
+        else:
+            raise TypeError("No operation known for '{} * Vector3'".format(type(other)))
 
     def __getitem__(self, i):
         if i == 0:

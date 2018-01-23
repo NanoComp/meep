@@ -288,5 +288,11 @@ class TestVector3(unittest.TestCase):
         v2 = mp.Vector3(1e-11)
         self.assertTrue(v1.close(v2, tol=1e-10))
 
+    def test_mul_operator(self):
+
+        self.assertEqual(mp.Vector3(2, 2, 2) * 0.5, mp.Vector3(1, 1, 1))
+        self.assertEqual(mp.Vector3(1, 1, 1) * mp.Vector3(1, 1, 1), 3)
+        self.assertEqual(0.5 * mp.Vector3(2, 2, 2), mp.Vector3(1, 1, 1))
+
 if __name__ == '__main__':
     unittest.main()
