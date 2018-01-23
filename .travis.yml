@@ -76,10 +76,11 @@ script:
 #
   - pushd python
   - make ${MKCHECKFLAGS} check || (cat test-suite.log && exit 1)
+  - make clean
   - popd
 #
   # Only run distcheck in nightly builds because it doubles the build time
   # - if [ "${TRAVIS_EVENT_TYPE}" == cron ]; then make distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl"; fi
 
-  - make distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl"
+  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
   - popd
