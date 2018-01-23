@@ -92,9 +92,11 @@ struct mode_solver {
   std::vector<mpb_real> freqs;
 
   bool verbose;
+  bool deterministic;
 
   mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
-              meep_geom::material_data *_default_material, geometric_object_list geom, bool reset_fields);
+              meep_geom::material_data *_default_material, geometric_object_list geom,
+              bool reset_fields, bool deterministic);
   ~mode_solver();
 
   bool using_mu();

@@ -127,7 +127,7 @@ static void deflation_constraint(evectmatrix X, void *data) {
 
 mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice lat,
                          double tolerance, meep_geom::material_data *_default_material,
-                         geometric_object_list geom, bool reset_fields):
+                         geometric_object_list geom, bool reset_fields, bool deterministic):
   num_bands(num_bands),
   parity(parity),
   resolution(resolution),
@@ -146,7 +146,8 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice l
   curfield_type('-'),
   kpoint_index(0),
   freqs(num_bands),
-  verbose(false) {
+  verbose(false),
+  deterministic(deterministic) {
 
   this->lat = lat;
 
@@ -537,6 +538,15 @@ void mode_solver::randomize_fields() {
     return;
   }
   meep::master_printf("Initializing fields to random numbers...\n");
+
+  if (deterministic) {
+    // seed should be the same for each run, although
+    // it should be different for each process.
+    // TODO: MPI
+    // int rank;
+    // MPI_Comm_rank(mpb_comm, &rank);
+    srand(314159); // * (rank + 1));
+  }
 
   for (i = 0; i < H.n * H.p; ++i) {
     ASSIGN_SCALAR(H.data[i], rand() * 1.0 / RAND_MAX, rand() * 1.0 / RAND_MAX);

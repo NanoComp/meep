@@ -45,7 +45,8 @@ class ModeSolver(object):
                  default_material=mp.Medium(epsilon=1),
                  dimensions=3,
                  randomize_fields=False,
-                 filename_prefix=''):
+                 filename_prefix='',
+                 deterministic=False):
 
         self.resolution = resolution
         self.is_negative_epsilon_ok = is_negative_epsilon_ok
@@ -83,6 +84,7 @@ class ModeSolver(object):
         self.k_split_index = 0
         self.eigensolver_iters = []
         self.iterations = 0
+        self.deterministic = deterministic
         self.mode_solver = None
 
     def get_filename_prefix(self):
@@ -177,10 +179,17 @@ class ModeSolver(object):
 
         # TODO: Can we keep the mode_solver around between runs, or does it need
         # to get created clean for each run?
-        self.mode_solver = mpb.mode_solver(self.num_bands, p, self.resolution,
-                                           self.geometry_lattice, self.tolerance,
-                                           self.default_material, self.geometry,
-                                           True if reset_fields else False)
+        self.mode_solver = mpb.mode_solver(
+            self.num_bands,
+            p,
+            self.resolution,
+            self.geometry_lattice,
+            self.tolerance,
+            self.default_material,
+            self.geometry,
+            True if reset_fields else False,
+            self.deterministic
+        )
 
         if isinstance(reset_fields, basestring):
             self.mode_solver.load_eigenvectors(reset_fields)
