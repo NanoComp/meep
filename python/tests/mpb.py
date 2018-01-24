@@ -109,6 +109,22 @@ class TestModeSolver(unittest.TestCase):
             deterministic=True
         )
 
+    def check_band_range_data(self, expected_brd, ms):
+        for exp, res in zip(expected_brd, ms.band_range_data):
+            # Compare min freqs
+            self.assertAlmostEqual(exp[0][0], res[0][0])
+            # Compare min k
+            self.assertTrue(exp[0][1].close(res[0][1]))
+            # Compare max freqs
+            self.assertAlmostEqual(exp[1][0], res[1][0])
+            # Compare max k
+            self.assertTrue(exp[1][1].close(res[1][1]))
+
+    def check_freqs(self, expected_freqs, ms):
+        for res, exp in zip(ms.all_freqs, expected_freqs):
+            for r, e in zip(res, exp):
+                self.assertAlmostEqual(r, e)
+
     def test_run_te_no_geometry(self):
 
         expected_freqs = [
@@ -266,19 +282,8 @@ class TestModeSolver(unittest.TestCase):
         ms.filename_prefix = 'test_run_te_no_geometry'
         ms.run_te()
 
-        for exp, res in zip(expected_brd, ms.band_range_data):
-            # Compare min freqs
-            self.assertAlmostEqual(exp[0][0], res[0][0])
-            # Compare min k
-            self.assertTrue(exp[0][1].close(res[0][1]))
-            # Compare max freqs
-            self.assertAlmostEqual(exp[1][0], res[1][0])
-            # Compare max k
-            self.assertTrue(exp[1][1].close(res[1][1]))
-
-        for res, exp in zip(ms.all_freqs, expected_freqs):
-            for r, e in zip(res, exp):
-                self.assertAlmostEqual(r, e)
+        self.check_band_range_data(expected_brd, ms)
+        self.check_freqs(expected_freqs, ms)
 
         gaps = ms.output_gaps(ms.band_range_data)
         self.assertEqual(len(gaps), 0)
@@ -442,19 +447,8 @@ class TestModeSolver(unittest.TestCase):
              1.0937421550082655),
         ]
 
-        for res, exp in zip(ms.all_freqs, expected_freqs):
-            for r, e in zip(res, exp):
-                self.assertAlmostEqual(r, e)
-
-        for exp, res in zip(expected_brd, ms.band_range_data):
-            # Compare min freqs
-            self.assertAlmostEqual(exp[0][0], res[0][0])
-            # Compare min k
-            self.assertTrue(exp[0][1].close(res[0][1]))
-            # Compare max freqs
-            self.assertAlmostEqual(exp[1][0], res[1][0])
-            # Compare max k
-            self.assertTrue(exp[1][1].close(res[1][1]))
+        self.check_band_range_data(expected_brd, ms)
+        self.check_freqs(expected_freqs, ms)
 
 if __name__ == '__main__':
     unittest.main()
