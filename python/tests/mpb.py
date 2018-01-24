@@ -284,9 +284,7 @@ class TestModeSolver(unittest.TestCase):
 
         self.check_band_range_data(expected_brd, ms)
         self.check_freqs(expected_freqs, ms)
-
-        gaps = ms.output_gaps(ms.band_range_data)
-        self.assertEqual(len(gaps), 0)
+        self.assertEqual(len(ms.gap_list), 0)
 
     def test_run_te(self):
 
@@ -449,6 +447,7 @@ class TestModeSolver(unittest.TestCase):
 
         self.check_band_range_data(expected_brd, ms)
         self.check_freqs(expected_freqs, ms)
+        self.assertEqual(len(ms.gap_list), 9)
 
 if __name__ == '__main__':
     unittest.main()

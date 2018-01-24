@@ -135,7 +135,7 @@ class ModeSolver(object):
 
         def ogaps(br_cur, br_rest, i, gaps):
             if not br_rest:
-                return gaps
+                return list(reversed(gaps))
             else:
                 br_rest_min_f = br_rest[0][0][0]
                 br_cur_max_f = br_cur[1][0]
