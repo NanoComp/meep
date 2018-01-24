@@ -28,65 +28,6 @@ class TestMPBWrappers(unittest.TestCase):
 
 class TestModeSolver(unittest.TestCase):
 
-    # def test_list_split(self):
-    #     k_points = [
-    #         mp.Vector3(),
-    #         mp.Vector3(0.5),
-    #         mp.Vector3(0.5, 0.5),
-    #         mp.Vector3()
-    #     ]
-
-    #     k_points = mp.interpolate(4, k_points)
-
-    #     k_split = mp.list_split(k_points, 1, 0)
-
-    #     expected = [
-    #         (0, [mp.Vector3(),
-    #              mp.Vector3(0.10000000000000003),
-    #              mp.Vector3(0.20000000000000004),
-    #              mp.Vector3(0.30000000000000004),
-    #              mp.Vector3(0.4),
-    #              mp.Vector3(0.5),
-    #              mp.Vector3(0.5, 0.10000000000000003),
-    #              mp.Vector3(0.5, 0.20000000000000004),
-    #              mp.Vector3(0.5, 0.30000000000000004),
-    #              mp.Vector3(0.5, 0.4),
-    #              mp.Vector3(0.5, 0.5),
-    #              mp.Vector3(0.4, 0.4),
-    #              mp.Vector3(0.30000000000000004, 0.30000000000000004),
-    #              mp.Vector3(0.2, 0.2),
-    #              mp.Vector3(0.1, 0.1),
-    #              mp.Vector3(0.0, 0.0)]),
-    #     ]
-
-    #     indx = k_split[0][0]
-    #     split_list = k_split[0][1]
-    #     self.assertEqual(indx, 0)
-    #     for res, exp in zip(split_list, expected[0][1]):
-    #         self.assertEqual(res, exp)
-
-    # def test_update_band_range_data(self):
-    #     brd = []
-    #     freqs = [0.0, 1.0000000001231053, 1.0000000001577114, 1.000000000183077,
-    #              1.0000000003647922, 1.4142135627385737, 1.4142135630373556,
-    #              1.4142135634172286]
-    #     kpoint = mp.Vector3()
-
-    #     expected = [
-    #         ((0.0, mp.Vector3()), (0.0, mp.Vector3())),
-    #         ((1.0000000001231053, mp.Vector3()), (1.0000000001231053, mp.Vector3())),
-    #         ((1.0000000001577114, mp.Vector3()), (1.0000000001577114, mp.Vector3())),
-    #         ((1.000000000183077, mp.Vector3()), (1.000000000183077, mp.Vector3())),
-    #         ((1.0000000003647922, mp.Vector3()), (1.0000000003647922, mp.Vector3())),
-    #         ((1.4142135627385737, mp.Vector3()), (1.4142135627385737, mp.Vector3())),
-    #         ((1.4142135630373556, mp.Vector3()), (1.4142135630373556, mp.Vector3())),
-    #         ((1.4142135634172286, mp.Vector3()), (1.4142135634172286, mp.Vector3())),
-    #     ]
-
-    #     ms = mpb.ModeSolver()
-    #     res = ms.update_band_range_data(brd, freqs, kpoint)
-    #     self.assertEqual(expected, res)
-
     def init_solver(self):
         num_bands = 8
         k_points = [
@@ -109,8 +50,44 @@ class TestModeSolver(unittest.TestCase):
             deterministic=True
         )
 
-    def check_band_range_data(self, expected_brd, ms):
-        for exp, res in zip(expected_brd, ms.band_range_data):
+    def test_list_split(self):
+        k_points = [
+            mp.Vector3(),
+            mp.Vector3(0.5),
+            mp.Vector3(0.5, 0.5),
+            mp.Vector3()
+        ]
+
+        k_points = mp.interpolate(4, k_points)
+        ms = mpb.ModeSolver()
+        k_split = ms.list_split(k_points, 1, 0)
+
+        expected_list = [
+            mp.Vector3(),
+            mp.Vector3(0.10000000000000003),
+            mp.Vector3(0.20000000000000004),
+            mp.Vector3(0.30000000000000004),
+            mp.Vector3(0.4),
+            mp.Vector3(0.5),
+            mp.Vector3(0.5, 0.10000000000000003),
+            mp.Vector3(0.5, 0.20000000000000004),
+            mp.Vector3(0.5, 0.30000000000000004),
+            mp.Vector3(0.5, 0.4),
+            mp.Vector3(0.5, 0.5),
+            mp.Vector3(0.4, 0.4),
+            mp.Vector3(0.30000000000000004, 0.30000000000000004),
+            mp.Vector3(0.2, 0.2),
+            mp.Vector3(0.1, 0.1),
+            mp.Vector3(0.0, 0.0),
+        ]
+
+        self.assertEqual(k_split[0], 0)
+
+        for res, exp in zip(k_split[1], expected_list):
+            self.assertTrue(res.close(exp))
+
+    def check_band_range_data(self, expected_brd, result):
+        for exp, res in zip(expected_brd, result):
             # Compare min freqs
             self.assertAlmostEqual(exp[0][0], res[0][0])
             # Compare min k
@@ -120,10 +97,35 @@ class TestModeSolver(unittest.TestCase):
             # Compare max k
             self.assertTrue(exp[1][1].close(res[1][1]))
 
-    def check_freqs(self, expected_freqs, ms):
-        for res, exp in zip(ms.all_freqs, expected_freqs):
+    def check_freqs(self, expected_freqs, result):
+        for exp, res in zip(expected_freqs, result):
             for r, e in zip(res, exp):
                 self.assertAlmostEqual(r, e)
+
+    def check_gap_list(self, expected_gap_list, result):
+        self.check_freqs(expected_gap_list, result)
+
+    def test_update_band_range_data(self):
+        brd = []
+        freqs = [0.0, 1.0000000001231053, 1.0000000001577114, 1.000000000183077,
+                 1.0000000003647922, 1.4142135627385737, 1.4142135630373556,
+                 1.4142135634172286]
+        kpoint = mp.Vector3()
+
+        expected = [
+            ((0.0, mp.Vector3()), (0.0, mp.Vector3())),
+            ((1.0000000001231053, mp.Vector3()), (1.0000000001231053, mp.Vector3())),
+            ((1.0000000001577114, mp.Vector3()), (1.0000000001577114, mp.Vector3())),
+            ((1.000000000183077, mp.Vector3()), (1.000000000183077, mp.Vector3())),
+            ((1.0000000003647922, mp.Vector3()), (1.0000000003647922, mp.Vector3())),
+            ((1.4142135627385737, mp.Vector3()), (1.4142135627385737, mp.Vector3())),
+            ((1.4142135630373556, mp.Vector3()), (1.4142135630373556, mp.Vector3())),
+            ((1.4142135634172286, mp.Vector3()), (1.4142135634172286, mp.Vector3())),
+        ]
+
+        ms = mpb.ModeSolver()
+        res = ms.update_band_range_data(brd, freqs, kpoint)
+        self.check_band_range_data(expected, res)
 
     def test_run_te_no_geometry(self):
 
@@ -282,37 +284,11 @@ class TestModeSolver(unittest.TestCase):
         ms.filename_prefix = 'test_run_te_no_geometry'
         ms.run_te()
 
-        self.check_band_range_data(expected_brd, ms)
-        self.check_freqs(expected_freqs, ms)
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+        self.check_freqs(expected_freqs, ms.all_freqs)
         self.assertEqual(len(ms.gap_list), 0)
 
     def test_run_te(self):
-
-        ms = self.init_solver()
-        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
-        ms.filename_prefix = 'test_run_te'
-        ms.run_te()
-
-        # Obtained by passing NULL to set_maxwell_dielectric for epsilon_mean_func
-        # in mpb/mpb/medium.c.
-        expected_brd = [
-            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
-             (0.49832784140942327, mp.Vector3(0.5, 0.5, 0.0))),
-            ((0.4424096429060285, mp.Vector3(0.5, 0.0, 0.0)),
-             (0.5932903636375229, mp.Vector3(0.5, 0.5, 0.0))),
-            ((0.5933300432825276, mp.Vector3(0.5, 0.5, 0.0)),
-             (0.7744332085266307, mp.Vector3(0.0, 0.0, 0.0))),
-            ((0.6789328334547384, mp.Vector3(0.5, 0.5, 0.0)),
-             (0.8107898648188872, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
-            ((0.8255441878500366, mp.Vector3(0.5, 0.30000000000000004, 0.0)),
-             (0.9235813819246859, mp.Vector3(0.0, 0.0, 0.0))),
-            ((0.8843176495094911, mp.Vector3(0.5, 0.5, 0.0)),
-             (1.028981766498537, mp.Vector3(0.5, 0.0, 0.0))),
-            ((0.8843467579864347, mp.Vector3(0.5, 0.5, 0.0)),
-             (1.0865991750573356, mp.Vector3(0.5, 0.0, 0.0))),
-            ((1.088248151258527, mp.Vector3(0.5, 0.0, 0.0)),
-             (1.1371240270581144, mp.Vector3(0.20000000000000004, 0.0, 0.0))),
-        ]
 
         expected_freqs = [
             (0.0,
@@ -445,9 +421,41 @@ class TestModeSolver(unittest.TestCase):
              1.0937421550082655),
         ]
 
-        self.check_band_range_data(expected_brd, ms)
-        self.check_freqs(expected_freqs, ms)
-        self.assertEqual(len(ms.gap_list), 9)
+        # Obtained by passing NULL to set_maxwell_dielectric for epsilon_mean_func
+        # in mpb/mpb/medium.c.
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.49832784140942327, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.4424096429060285, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.5932903636375229, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.5933300432825276, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.7744332085266307, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6789328334547384, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.8107898648188872, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
+            ((0.8255441878500366, mp.Vector3(0.5, 0.30000000000000004, 0.0)),
+             (0.9235813819246859, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8843176495094911, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.028981766498537, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.8843467579864347, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.0865991750573356, mp.Vector3(0.5, 0.0, 0.0))),
+            ((1.088248151258527, mp.Vector3(0.5, 0.0, 0.0)),
+             (1.1371240270581144, mp.Vector3(0.20000000000000004, 0.0, 0.0))),
+        ]
+
+        expected_gap_list = [
+            (0.006687841330442318, 0.5932903636375229, 0.5933300432825276),
+            (1.8033387506768026, 0.8107898648188872, 0.8255441878500366),
+            (0.15164063989582524, 1.0865991750573356, 1.088248151258527),
+        ]
+
+        ms = self.init_solver()
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+        ms.filename_prefix = 'test_run_te'
+        ms.run_te()
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+        self.check_freqs(expected_freqs, ms.all_freqs)
+        self.check_gap_list(expected_gap_list, ms.gap_list)
 
 if __name__ == '__main__':
     unittest.main()

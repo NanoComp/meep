@@ -135,7 +135,11 @@ class ModeSolver(object):
 
         def ogaps(br_cur, br_rest, i, gaps):
             if not br_rest:
-                return list(reversed(gaps))
+                ordered_gaps = []
+                gaps = list(reversed(gaps))
+                for i in range(0, len(gaps), 3):
+                    ordered_gaps.append((gaps[i + 2], gaps[i + 1], gaps[i]))
+                return ordered_gaps
             else:
                 br_rest_min_f = br_rest[0][0][0]
                 br_cur_max_f = br_cur[1][0]
@@ -150,6 +154,27 @@ class ModeSolver(object):
             return []
         else:
             return ogaps(br_data[0], br_data[1:], 1, [])
+
+    # Split a list L into num more-or-less equal pieces, returning the piece
+    # given by index (in 0..num-1), along with the index in L of the first
+    # element of the piece, as a list: [first-index, piece-of-L]
+    def list_split(self, l, num, index):
+
+        def list_sub(l, start, length, index, rest):
+            if not l:
+                return list(reversed(rest))
+            if index >= start and index < (start + length):
+                return list_sub(l[1:], start, length, index + 1, [l[0]] + rest)
+            else:
+                return list_sub(l[1:], start, length, index + 1, rest)
+
+        if index >= num or index < 0:
+            return (len(l), [])
+        else:
+            block_size = (len(l) + num - 1) // num
+            start = index * block_size
+            length = min(block_size, (len(l) - index * block_size))
+            return (start, list_sub(l, start, length, 0, []))
 
     def output_epsilon(self):
         self.mode_solver.get_epsilon()
