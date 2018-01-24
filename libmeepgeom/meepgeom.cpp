@@ -337,7 +337,7 @@ meep::realnum linear_interpolate(
 }
 
 // return material of the point p from the file (assumed already read)
-static void epsilon_file_material(material_data *md, vector3 p)
+void epsilon_file_material(material_data *md, vector3 p)
 {
   default_material = (void*) md;
 

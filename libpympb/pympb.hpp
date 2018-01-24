@@ -107,7 +107,6 @@ struct mode_solver {
   void get_material_pt(meep_geom::material_type &material, vector3 p);
   void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
                       symmetric_matrix *epsmu_inv);
-  void epsilon_file_material(meep_geom::material_data *md, vector3 p);
   void randomize_fields();
   void solve_kpoint(vector3 kpoint);
   void init_epsilon();

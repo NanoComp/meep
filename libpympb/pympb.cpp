@@ -265,42 +265,6 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
   // }
 }
 
-// return material of the point p from the file (assumed already read)
-void mode_solver::epsilon_file_material(meep_geom::material_data *md, vector3 p)
-{
-  default_material = (void*) md;
-
-  if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) {
-    meep::abort("epsilon-input-file only works with a type=file default-material");
-  }
-
-  if (!(md->epsilon_data)) {
-    return;
-  }
-
-  meep_geom::medium_struct *mm = &(md->medium);
-
-  double rx = geometry_lattice.size.x == 0
-    ? 0 : 0.5 + (p.x-geometry_center.x) / geometry_lattice.size.x;
-  double ry = geometry_lattice.size.y == 0
-    ? 0 : 0.5 + (p.y-geometry_center.y) / geometry_lattice.size.y;
-  double rz = geometry_lattice.size.z == 0
-    ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
-
-  double interpolate_result = meep_geom::linear_interpolate(rx, ry, rz, md->epsilon_data,
-                                                            md->epsilon_dims[0],
-                                                            md->epsilon_dims[1],
-                                                            md->epsilon_dims[2], 1);
-
-  mm->epsilon_diag.x = interpolate_result;
-  mm->epsilon_diag.y = interpolate_result;
-  mm->epsilon_diag.z = interpolate_result;
-
-  mm->epsilon_offdiag.x = 0;
-  mm->epsilon_offdiag.y = 0;
-  mm->epsilon_offdiag.z = 0;
-}
-
 void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p) {
   boolean inobject;
   material = (meep_geom::material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
@@ -310,7 +274,7 @@ void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p)
     // material read from file: interpolate to get properties at r
     case meep_geom::material_data::MATERIAL_FILE:
       if (md->epsilon_data) {
-        epsilon_file_material(md, p);
+        meep_geom::epsilon_file_material(md, p);
       }
       else {
         material = (meep_geom::material_type) default_material;

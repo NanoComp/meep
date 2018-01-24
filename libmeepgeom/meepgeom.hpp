@@ -107,6 +107,7 @@ meep::vec vector3_to_vec(const vector3 v3);
 
 meep::realnum linear_interpolate(meep::realnum rx, meep::realnum ry, meep::realnum rz,
                                  meep::realnum *data, int nx, int ny, int nz, int stride);
+void epsilon_file_material(material_data *md, vector3 p);
 }; // namespace meep_geom
 
 #endif // #ifndef MEEP_GEOM_H
