@@ -89,7 +89,7 @@ class ModeSolver(object):
 
     def get_filename_prefix(self):
         if self.filename_prefix:
-            return self.filename_prefix
+            return self.filename_prefix + '-'
         else:
             _, filename = os.path.split(sys.argv[0])
 
@@ -137,13 +137,15 @@ class ModeSolver(object):
             if not br_rest:
                 return gaps
             else:
-                if br_cur[1][0] >= br_rest[0][0][0]:
+                br_rest_min_f = br_rest[0][0][0]
+                br_cur_max_f = br_cur[1][0]
+                if br_cur_max_f >= br_rest_min_f:
                     return ogaps(br_rest[0], br_rest[1:], i + 1, gaps)
                 else:
-                    gap_size = 5
+                    gap_size = (200 * (br_rest_min_f - br_cur_max_f)) / (br_rest_min_f + br_cur_max_f)
                     fmt = "Gap from band {} ({}) to band {} ({}), {}%"
-                    print(fmt.format(i, br_cur[0][1], i + 1, br_rest[0][0][0], gap_size))
-                    return ogaps(br_rest[0], br_rest[1:], i + 1, [gap_size, br_cur[0][1], br_rest[0][0][0]] + gaps)
+                    print(fmt.format(i, br_cur_max_f, i + 1, br_rest_min_f, gap_size))
+                    return ogaps(br_rest[0], br_rest[1:], i + 1, [gap_size, br_cur_max_f, br_rest_min_f] + gaps)
         if not br_data:
             return []
         else:
@@ -218,7 +220,6 @@ class ModeSolver(object):
                 self.mode_solver.solve_kpoint(k)
                 print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
 
-                # TODO: Make freqs an output var
                 self.all_freqs.append(self.get_freqs())
                 self.band_range_data = self.update_band_range_data(self.band_range_data,
                                                                    self.get_freqs(), k)

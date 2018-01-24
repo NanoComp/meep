@@ -1,6 +1,7 @@
 from __future__ import division
 
 import unittest
+# TODO: Importing numpy loads MKL which breaks zdotc_
 # import numpy as np
 import meep as mp
 from meep import mpb
@@ -16,7 +17,7 @@ class TestMPBWrappers(unittest.TestCase):
                          mp.Vector3()]
 
         self.k_points = mp.interpolate(4, self.k_points)
-        self.geometry = []  # [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+        self.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
         self.geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1))
         self.resolution = 32
 
@@ -86,7 +87,7 @@ class TestModeSolver(unittest.TestCase):
     #     res = ms.update_band_range_data(brd, freqs, kpoint)
     #     self.assertEqual(expected, res)
 
-    def test_no_geometry(self):
+    def init_solver(self):
         num_bands = 8
         k_points = [
             mp.Vector3(),
@@ -99,7 +100,7 @@ class TestModeSolver(unittest.TestCase):
         geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1))
         resolution = 32
 
-        ms = mpb.ModeSolver(
+        return mpb.ModeSolver(
             num_bands=num_bands,
             k_points=k_points,
             geometry=[],
@@ -108,7 +109,7 @@ class TestModeSolver(unittest.TestCase):
             deterministic=True
         )
 
-        ms.run_te()
+    def test_run_te_no_geometry(self):
 
         expected_freqs = [
             (0.0,
@@ -261,6 +262,10 @@ class TestModeSolver(unittest.TestCase):
 
         ]
 
+        ms = self.init_solver()
+        ms.filename_prefix = 'test_run_te_no_geometry'
+        ms.run_te()
+
         for exp, res in zip(expected_brd, ms.band_range_data):
             # Compare min freqs
             self.assertAlmostEqual(exp[0][0], res[0][0])
@@ -277,6 +282,179 @@ class TestModeSolver(unittest.TestCase):
 
         gaps = ms.output_gaps(ms.band_range_data)
         self.assertEqual(len(gaps), 0)
+
+    def test_run_te(self):
+
+        ms = self.init_solver()
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+        ms.filename_prefix = 'test_run_te'
+        ms.run_te()
+
+        # Obtained by passing NULL to set_maxwell_dielectric for epsilon_mean_func
+        # in mpb/mpb/medium.c.
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.49832784140942327, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.4424096429060285, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.5932903636375229, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.5933300432825276, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.7744332085266307, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6789328334547384, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.8107898648188872, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
+            ((0.8255441878500366, mp.Vector3(0.5, 0.30000000000000004, 0.0)),
+             (0.9235813819246859, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8843176495094911, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.028981766498537, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.8843467579864347, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.0865991750573356, mp.Vector3(0.5, 0.0, 0.0))),
+            ((1.088248151258527, mp.Vector3(0.5, 0.0, 0.0)),
+             (1.1371240270581144, mp.Vector3(0.20000000000000004, 0.0, 0.0))),
+        ]
+
+        expected_freqs = [
+            (0.0,
+             0.5543123040724638,
+             0.7744332061802593,
+             0.7744499175611301,
+             0.9235813808951666,
+             1.0008467617941965,
+             1.000853657978345,
+             1.0937421750914536),
+            (0.08975526912402747,
+             0.5527259748791986,
+             0.7625580252843803,
+             0.775927071773125,
+             0.9083025904214346,
+             1.0025041485479258,
+             1.0040131495259865,
+             1.1151425798690515),
+            (0.17874194256279652,
+             0.5464061721502865,
+             0.7290550665093838,
+             0.7798577251387895,
+             0.8820233099342442,
+             1.0074514510489234,
+             1.0172937305690262,
+             1.1371240270581144),
+            (0.265889317531334,
+             0.529456650246997,
+             0.6858506574662463,
+             0.7848207792703579,
+             0.8628144586715519,
+             1.015371497818431,
+             1.0388248806041873,
+             1.0978603871063697),
+            (0.3491098642318947,
+             0.491614128634062,
+             0.6534277127248703,
+             0.7889250441298363,
+             0.8521868291383247,
+             1.0243890854263964,
+             1.0648782507133647,
+             1.0918380516599975),
+            (0.41281930737977607,
+             0.4424096429060285,
+             0.6427858365432216,
+             0.7905166037050794,
+             0.8487837791081655,
+             1.028981766498537,
+             1.0865991750573356,
+             1.088248151258527),
+            (0.4237693545494147,
+             0.4466340166909042,
+             0.6389975571819423,
+             0.7946968579934286,
+             0.8449963934371933,
+             0.9865104944996825,
+             1.050849906850091,
+             1.1042021258981072),
+            (0.45480717337736154,
+             0.458384478782914,
+             0.6285854682590182,
+             0.8067270292869435,
+             0.8274711584785993,
+             0.928705439321874,
+             1.005398394501796,
+             1.10918073349481),
+            (0.4748865013922755,
+             0.50131006667719,
+             0.6141096017945592,
+             0.7818160269356271,
+             0.8255441878500366,
+             0.8967928418027945,
+             0.9600200633481636,
+             1.111104880065585),
+            (0.4909986510517719,
+             0.5561139188988492,
+             0.5998745448965,
+             0.7195409655301487,
+             0.850456196583463,
+             0.8866021931139869,
+             0.9182966027540888,
+             1.1120385722459878),
+            (0.49832784140942327,
+             0.5932903636375229,
+             0.5933300432825276,
+             0.6789328334547384,
+             0.8786729653444213,
+             0.8843176495094911,
+             0.8843467579864347,
+             1.112337628001184),
+            (0.4718692662905701,
+             0.5466449267509191,
+             0.6069228332255978,
+             0.7435877802945671,
+             0.8404058252567083,
+             0.8845903173166171,
+             0.9379844985289354,
+             1.1116214392114732),
+            (0.3726512334709978,
+             0.5374910186290283,
+             0.6448252155990313,
+             0.8107898648188872,
+             0.8261977806810092,
+             0.8858710104130919,
+             1.010853588402447,
+             1.1076219716334672),
+            (0.2521701793341113,
+             0.5443731521852448,
+             0.6985070869163165,
+             0.7905695248250529,
+             0.8904434436928694,
+             0.8983876721337736,
+             1.0797388604006626,
+             1.090638038627879),
+            (0.12687260757609428,
+             0.551484835775791,
+             0.7512227072577523,
+             0.778461951871455,
+             0.9043827134262497,
+             0.9626336794092828,
+             1.0422273104938644,
+             1.101944971644869),
+            (0.0,
+             0.5543122885042596,
+             0.7744332085266307,
+             0.7744499167032798,
+             0.9235813819246859,
+             1.0008467515107635,
+             1.0008536928499856,
+             1.0937421550082655),
+        ]
+
+        for res, exp in zip(ms.all_freqs, expected_freqs):
+            for r, e in zip(res, exp):
+                self.assertAlmostEqual(r, e)
+
+        for exp, res in zip(expected_brd, ms.band_range_data):
+            # Compare min freqs
+            self.assertAlmostEqual(exp[0][0], res[0][0])
+            # Compare min k
+            self.assertTrue(exp[0][1].close(res[0][1]))
+            # Compare max freqs
+            self.assertAlmostEqual(exp[1][0], res[1][0])
+            # Compare max k
+            self.assertTrue(exp[1][1].close(res[1][1]))
 
 if __name__ == '__main__':
     unittest.main()

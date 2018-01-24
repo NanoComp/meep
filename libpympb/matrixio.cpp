@@ -76,12 +76,12 @@ static matrixio_id matrixio_create_(const char *fname, int parallel)
 
   access_props = H5Pcreate (H5P_FILE_ACCESS);
 
-#if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
-  if (parallel) {
-    CHECK(H5Pset_fapl_mpio(access_props, mpb_comm, MPI_INFO_NULL)
-          >= 0, "error initializing MPI file access");
-  }
-#endif
+// #if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
+//   if (parallel) {
+//     CHECK(H5Pset_fapl_mpio(access_props, mpb_comm, MPI_INFO_NULL)
+//           >= 0, "error initializing MPI file access");
+//   }
+// #endif
 
   new_fname = add_fname_suffix(fname);
 
@@ -405,6 +405,7 @@ void matrixio_close_dataset(matrixio_id data_id) {
 #if defined(HAVE_HDF5)
   CHECK(H5Dclose(data_id.id) >= 0, "error closing HDF dataset");
 #endif
+  (void)data_id;
 }
 
 void matrixio_write_data_attr(matrixio_id id, const char *name, const mpb_real *val,
@@ -460,6 +461,8 @@ void matrixio_write_string_attr(matrixio_id id, const char *name, const char *va
 #endif
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
 matrixio_id matrixio_open_(const char *fname, int read_only, int parallel) {
 #if defined(HAVE_HDF5)
   char *new_fname;
@@ -468,10 +471,10 @@ matrixio_id matrixio_open_(const char *fname, int read_only, int parallel) {
 
   access_props = H5Pcreate (H5P_FILE_ACCESS);
 
-#if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
-  if (parallel)
-    H5Pset_fapl_mpio(access_props, mpb_comm, MPI_INFO_NULL);
-#endif
+// #if defined(HAVE_MPI) && defined(HAVE_H5PSET_FAPL_MPIO)
+//   if (parallel)
+//     H5Pset_fapl_mpio(access_props, mpb_comm, MPI_INFO_NULL);
+// #endif
 
   new_fname = add_fname_suffix(fname);
 
@@ -497,18 +500,26 @@ matrixio_id matrixio_open_(const char *fname, int read_only, int parallel) {
   }
 #endif
 }
+#pragma GCC diagnostic pop
 
 matrixio_id matrixio_open(const char *fname, int read_only) {
   return matrixio_open_(fname, read_only, 1);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-value"
 void matrixio_close(matrixio_id id) {
 #if defined(HAVE_HDF5)
   CHECK(H5Fclose(id.id) >= 0, "error closing HDF file");
   IF_EXCLUSIVE(if (id.parallel) mpi_end_critical_section(matrixio_critical_section_tag++),0);
 #endif
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 void evectmatrixio_readall_raw(const char *filename, evectmatrix a) {
   int rank = 4, dims[4];
   matrixio_id file_id;
@@ -525,6 +536,7 @@ void evectmatrixio_readall_raw(const char *filename, evectmatrix a) {
 
   matrixio_close(file_id);
 }
+#pragma GCC diagnostic pop
 
 char *add_fname_suffix(const char *fname) {
   int oldlen = strlen(fname);

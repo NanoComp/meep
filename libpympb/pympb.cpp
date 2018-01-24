@@ -9,11 +9,26 @@
 #include "mpb/scalar.h"
 #include "meep/mympi.hpp"
 
+// TODO: Support MPI
+#define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
+     CHECK((sb) != (rb), "MPI_Allreduce doesn't work for sendbuf == recvbuf");\
+     memcpy((rb), (sb), (n) * sizeof(ctype)); \
+}
+
+/* "in-place" Allreduce wrapper for reducing a single value */
+#define mpi_allreduce_1(b, ctype, t, op, comm) { \
+     ctype bbbb = *(b); \
+     mpi_allreduce(&bbbb, (b), 1, ctype, t, op, comm); \
+}
+
 namespace py_mpb {
+
+// TODO: Placeholder
+int mpb_comm;
 
 const double inf = 1.0e20;
 
-// TODO: Use this from mpb instead of copying it here.
+// TODO: Replace this functionality with h5py
 #include "matrixio.cpp"
 
 // This is the function passed to `set_maxwell_dielectric`
@@ -22,7 +37,16 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
 
   mode_solver *ms = static_cast<mode_solver *>(epsilon_data);
   meep_geom::material_type mat;
-  vector3 p = {r[0], r[1], r[2]};
+  vector3 p;
+
+  // p needs to be in the lattice *unit* vector basis, while r is in the lattice
+  // vector basis.  Also, shift origin to the center of the grid.
+  p.x = (r[0] - 0.5) * geometry_lattice.size.x;
+  p.y = (r[1] - 0.5) * geometry_lattice.size.y;
+  p.z = (r[2] - 0.5) * geometry_lattice.size.z;
+
+  // p = shift_to_unit_cell(p);
+
   ms->get_material_pt(mat, p);
   ms->material_epsmu(mat, eps, eps_inv);
 }
@@ -111,12 +135,13 @@ static void deflation_constraint(evectmatrix X, void *data) {
   /* compute S = Xt BY (i.e. all the dot products): */
   blasglue_gemm('C', 'N', X.p, d->p, X.n, 1.0, X.data, X.p, d->BY.data, d->BY.p,
                 0.0, d->S2, d->p);
-#if HAVE_MPI
-  MPI_Allreduce(d->S2, d->S, d->p * X.p * SCALAR_NUMVALS, SCALAR_MPI_TYPE,
-                MPI_SUM, mpb_comm);
-#else
+// TODO
+// #if HAVE_MPI
+//   MPI_Allreduce(d->S2, d->S, d->p * X.p * SCALAR_NUMVALS, SCALAR_MPI_TYPE,
+//                 MPI_SUM, mpb_comm);
+// #else
   memcpy(d->S, d->S2, sizeof(mpb_real) * d->p * X.p * SCALAR_NUMVALS);
-#endif
+// #endif
 
   /* compute X = X - Y*St = (1 - BY Yt B) X */
   blasglue_gemm('N', 'C', X.n, X.p, d->p, -1.0, d->Y.data, d->Y.p, d->S, d->p,
@@ -141,13 +166,13 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice l
   vol(0),
   mdata(NULL),
   mtdata(NULL),
-  curfield(NULL),
   curfield_band(0),
-  curfield_type('-'),
-  kpoint_index(0),
   freqs(num_bands),
-  verbose(false),
-  deterministic(deterministic) {
+  verbose(true),
+  deterministic(deterministic),
+  kpoint_index(0),
+  curfield(NULL),
+  curfield_type('-') {
 
   this->lat = lat;
 
@@ -209,34 +234,35 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
       break;
     default:
       meep::abort("Unknown material type");
-
-  // TODO: Support mu
-  // switch (md->which_subclass) {
-  // case material_data::MEDIUM:
-  // case material_data::MATERIAL_FILE:
-  // case material_data::MATERIAL_USER:
-  //   epsmu->m00 = md->medium.mu_diag.x;
-  //   epsmu->m11 = md->medium.mu_diag.y;
-  //   epsmu->m22 = md->medium.mu_diag.z;
-  //   epsmu->m01 = md->medium.mu_offdiag.x;
-  //   epsmu->m02 = md->medium.mu_offdiag.y;
-  //   epsmu->m12 = md->medium.mu_offdiag.z;
-  //   sym_matrix_invert(epsmu_inv,epsmu);
-  //   break;
-
-  // case material_data::PERFECT_METAL:
-  //   epsmu->m00 = 1.0;
-  //   epsmu->m11 = 1.0;
-  //   epsmu->m22 = 1.0;
-  //   epsmu_inv->m00 = 1.0;
-  //   epsmu_inv->m11 = 1.0;
-  //   epsmu_inv->m22 = 1.0;
-  //   epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-  //   epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
-  //   break;
-  // default:
-  //   meep::abort("unknown material type");
   }
+
+  // TODO: if (field_type != meep::E_stuff)
+
+  // switch (md->which_subclass) {
+  //   case meep_geom::material_data::MEDIUM:
+  //   case meep_geom::material_data::MATERIAL_FILE:
+  //   case meep_geom::material_data::MATERIAL_USER:
+  //     epsmu->m00 = md->medium.mu_diag.x;
+  //     epsmu->m11 = md->medium.mu_diag.y;
+  //     epsmu->m22 = md->medium.mu_diag.z;
+  //     epsmu->m01 = md->medium.mu_offdiag.x;
+  //     epsmu->m02 = md->medium.mu_offdiag.y;
+  //     epsmu->m12 = md->medium.mu_offdiag.z;
+  //     maxwell_sym_matrix_invert(epsmu_inv, epsmu);
+  //     break;
+  //   case meep_geom::material_data::PERFECT_METAL:
+  //     epsmu->m00 = 1.0;
+  //     epsmu->m11 = 1.0;
+  //     epsmu->m22 = 1.0;
+  //     epsmu_inv->m00 = 1.0;
+  //     epsmu_inv->m11 = 1.0;
+  //     epsmu_inv->m22 = 1.0;
+  //     epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+  //     epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+  //     break;
+  //   default:
+  //     meep::abort("unknown material type");
+  // }
 }
 
 // return material of the point p from the file (assumed already read)
@@ -410,15 +436,15 @@ void mode_solver::init(int p, bool reset_fields) {
 }
 
 void mode_solver::init_epsilon() {
-  geometry_lattice.size.x = geometry_lattice.size.x == 0 ? 1 : geometry_lattice.size.x;
-  geometry_lattice.size.y = geometry_lattice.size.y == 0 ? 1 : geometry_lattice.size.y;
-  geometry_lattice.size.z = geometry_lattice.size.z == 0 ? 1 : geometry_lattice.size.z;
+  int no_size_x = geometry_lattice.size.x == 0 ? 1 : geometry_lattice.size.x;
+  int no_size_y = geometry_lattice.size.y == 0 ? 1 : geometry_lattice.size.y;
+  int no_size_z = geometry_lattice.size.z == 0 ? 1 : geometry_lattice.size.z;
 
   meep::master_printf("Mesh size is %d.\n", mesh_size);
 
-  Rm.c0 = vector3_scale(geometry_lattice.size.x, geometry_lattice.basis.c0);
-  Rm.c1 = vector3_scale(geometry_lattice.size.y, geometry_lattice.basis.c1);
-  Rm.c2 = vector3_scale(geometry_lattice.size.z, geometry_lattice.basis.c2);
+  Rm.c0 = vector3_scale(no_size_x, geometry_lattice.basis.c0);
+  Rm.c1 = vector3_scale(no_size_y, geometry_lattice.basis.c1);
+  Rm.c2 = vector3_scale(no_size_z, geometry_lattice.basis.c2);
 
   meep::master_printf("Lattice vectors:\n");
   meep::master_printf("     (%g, %g, %g)\n", Rm.c0.x, Rm.c0.y, Rm.c0.z);
@@ -784,6 +810,11 @@ void mode_solver::get_epsilon() {
      i.e. 3/(trace 1/eps). */
 
   int N = mdata->fft_output_size;
+  int last_dim = mdata->last_dim;
+  int last_dim_stored = mdata->last_dim_size / (sizeof(scalar_complex) / sizeof(scalar));
+  int nx = mdata->nx;
+  int nz = mdata->nz;
+  int local_y_start = mdata->local_y_start;
 
   for (int i = 0; i < N; ++i) {
     if (mdata->eps_inv == NULL) {
@@ -808,18 +839,18 @@ void mode_solver::get_epsilon() {
   /* most points need to be counted twice, by rfftw output symmetry: */
     {
       int last_index;
-      int last_dim_stored = mdata->last_dim_size / (sizeof(scalar_complex)/sizeof(scalar));
-#ifdef HAVE_MPI
-      if (mdata->nz == 1) { /* 2d calculation: 1st dim. is truncated one */
-        last_index = i / mdata->nx + mdata->local_y_start;
-      }
-      else {
-        last_index = i % last_dim_stored;
-      }
-#else
+// TODO
+// #ifdef HAVE_MPI
+//       if (nz == 1) { /* 2d calculation: 1st dim. is truncated one */
+//         last_index = i / nx + local_y_start;
+//       }
+//       else {
+//         last_index = i % last_dim_stored;
+//       }
+// #else
       last_index = i % last_dim_stored;
-#endif
-      if (last_index != 0 && 2*last_index != mdata->last_dim) {
+// #endif
+      if (last_index != 0 && 2*last_index != last_dim) {
         eps_mean += epsilon[i];
         eps_inv_mean += 1/epsilon[i];
         if (epsilon[i] > 1.0001) {
@@ -830,12 +861,18 @@ void mode_solver::get_epsilon() {
 #endif
   }
 
-  // TODO
-  // mpi_allreduce_1(&eps_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
-  // mpi_allreduce_1(&eps_inv_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
-  // mpi_allreduce_1(&eps_low, mpb_real, SCALAR_MPI_TYPE, MPI_MIN, mpb_comm);
-  // mpi_allreduce_1(&eps_high, mpb_real, SCALAR_MPI_TYPE, MPI_MAX, mpb_comm);
-  // mpi_allreduce_1(&fill_count, int, MPI_INT, MPI_SUM, mpb_comm);
+  (void)last_dim;
+  (void)last_dim_stored;
+  (void)nx;
+  (void)nz;
+  (void)local_y_start;
+
+  mpi_allreduce_1(&eps_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  mpi_allreduce_1(&eps_inv_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  mpi_allreduce_1(&eps_low, mpb_real, SCALAR_MPI_TYPE, MPI_MIN, mpb_comm);
+  mpi_allreduce_1(&eps_high, mpb_real, SCALAR_MPI_TYPE, MPI_MAX, mpb_comm);
+  mpi_allreduce_1(&fill_count, int, MPI_INT, MPI_SUM, mpb_comm);
+
   N = mdata->nx * mdata->ny * mdata->nz;
   eps_mean /= N;
   eps_inv_mean = N/eps_inv_mean;
@@ -1175,6 +1212,13 @@ void mode_solver::output_scalarfield(mpb_real *vals,
     }
   }
 #endif
+
+  (void)last_dim_index;
+  (void)last_dim_start;
+  (void)last_dim_size;
+  (void)first_dim_start;
+  (void)first_dim_size;
+  (void)write_start0_special;
 
   if (data_id.id >= 0)
     matrixio_close_dataset(data_id);

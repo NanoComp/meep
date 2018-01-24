@@ -56,6 +56,7 @@ TESTS =                                   \
     $(TEST_DIR)/holey_wvg_cavity.py       \
     $(TEST_DIR)/ldos.py                   \
     $(MDPYTEST)                           \
+    $(TEST_DIR)/mpb.py                    \
     $(TEST_DIR)/physical.py               \
     $(TEST_DIR)/pw_source.py              \
     $(TEST_DIR)/ring.py                   \
