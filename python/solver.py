@@ -205,7 +205,8 @@ class ModeSolver(object):
 
     def output_epsilon(self):
         self.mode_solver.get_epsilon()
-        self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
+        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
+        self._output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_mu(self):
         print("output_mu: Not implemented yet")
@@ -213,6 +214,9 @@ class ModeSolver(object):
         # self.mode_solver.get_mu()
         # TODO
         # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
+
+    def _output_field_to_file(self, component, fname_prefix):
+        pass
 
     def randomize_fields(self):
         self.mode_solver.randomize_fields()

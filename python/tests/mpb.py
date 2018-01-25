@@ -1,6 +1,9 @@
 from __future__ import division
 
+import os
 import unittest
+
+import h5py
 # TODO: Importing numpy loads MKL which breaks zdotc_
 # import numpy as np
 import meep as mp
@@ -480,6 +483,12 @@ class TestModeSolver(unittest.TestCase):
 
         # TODO: Validate values
         ms.get_h_field()
+
+    def test_output_field_to_file(self):
+        fname = 'mpb-tutorial-epsilon.h5'
+        data_dir = os.path.abspath(os.path.realpath(os.path.join(os.path.dirname(__file__), 'data')))
+        data_path = os.path.join(data_dir, fname)
+        ref = h5py.File(data_path)
 
 
 if __name__ == '__main__':
