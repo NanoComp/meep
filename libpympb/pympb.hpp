@@ -132,8 +132,8 @@ struct mode_solver {
   size_t get_field_size();
 
   std::vector<mpb_real> get_freqs();
-  // std::complex<mpb_real>* get_e_field();
-  // std::complex<mpb_real>* get_d_field();
+  void get_e_field(std::complex<mpb_real> *cdata, int size);
+  void get_d_field(std::complex<mpb_real> *cdata, int size);
   void get_h_field(std::complex<mpb_real> *cdata, int size);
 
 private:

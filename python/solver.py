@@ -103,15 +103,30 @@ class ModeSolver(object):
     def get_freqs(self):
         return self.mode_solver.get_freqs()
 
+    def get_e_field(self):
+        return self._get_field('e')
+
+    def get_d_field(self):
+        return self._get_field('d')
+
     def get_h_field(self):
+        return self._get_field('h')
+
+    def _get_field(self, f):
         if self.mode_solver is None:
             raise ValueError("Must call a run function before attempting to get a field")
 
         size = self.mode_solver.get_field_size()
-        h_field = np.zeros(size, dtype=np.complex128)
-        self.mode_solver.get_h_field(h_field)
+        field = np.zeros(size, dtype=np.complex128)
 
-        return h_field
+        if f == 'e':
+            self.mode_solver.get_e_field(field)
+        elif f == 'd':
+            self.mode_solver.get_d_field(field)
+        elif f == 'h':
+            self.mode_solver.get_h_field(field)
+
+        return field
 
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the

@@ -1284,6 +1284,27 @@ size_t mode_solver::get_field_size() {
   return mdata ? mdata->fft_output_size * 3 : 0;
 }
 
+// TODO: Will these only be called once, or should we save the fields as members?
+void mode_solver::get_e_field(std::complex<mpb_real> *cdata, int size) {
+  (void)size; // needed for numpy typemap
+
+  // TODO: Save this result from get_h_field
+  maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, num_bands - 1, 1);
+  maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
+}
+
+void mode_solver::get_d_field(std::complex<mpb_real> *cdata, int size) {
+  maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, num_bands - 1, 1);
+
+  // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
+  // TODO: omega_src in meep/src/mpb.cpp is real(src.frequency()). What should
+  // it be here?
+  double scale = -1.0; // / omega_src;
+  for (int i = 0; i < size; ++i) {
+    cdata[i] *= scale;
+  }
+}
+
 void mode_solver::get_h_field(std::complex<mpb_real> *cdata, int size) {
   (void)size; // needed for numpy typemap
   maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, num_bands - 1, 1);
