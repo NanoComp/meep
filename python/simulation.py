@@ -234,7 +234,7 @@ class Simulation(object):
                  geometry=[],
                  sources=[],
                  eps_averaging=True,
-                 dimensions=2,
+                 dimensions=3,
                  boundary_layers=[],
                  symmetries=[],
                  verbose=False,
@@ -306,21 +306,19 @@ class Simulation(object):
         return Volume(vol.center, vol.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
 
     def _infer_dimensions(self, k):
-        if k and self.dimensions == 3:
+        if self.dimensions == 3:
 
-            def requires_2d(self, k):
-                cond1 = False if k is None else not k
-                cond2 = self.cell_size.z == 0
-                cond3 = cond1 or self.special_kz or k.z == 0
-                return cond2 and cond3
+            def use_2d(self, k):
+                zero_z = self.cell_size.z == 0
+                return zero_z and (not k or self.special_kz or k.z == 0)
 
-            if requires_2d(self, k):
+            if use_2d(self, k):
                 return 2
             else:
                 return 3
         return self.dimensions
 
-    def _init_structure(self, k=None):
+    def _init_structure(self, k=False):
         print('-' * 11)
         print('Initializing structure...')
 
@@ -329,6 +327,7 @@ class Simulation(object):
         if dims == 0 or dims == 1:
             gv = mp.vol1d(self.cell_size.z, self.resolution)
         elif dims == 2:
+            self.dimensions = 2
             gv = mp.vol2d(self.cell_size.x, self.cell_size.y, self.resolution)
         elif dims == 3:
             gv = mp.vol3d(self.cell_size.x, self.cell_size.y, self.cell_size.z, self.resolution)
@@ -381,14 +380,13 @@ class Simulation(object):
                                        absorbers, self.extra_materials)
 
     def init_fields(self):
-        is_cylindrical = self.dimensions == mp.CYLINDRICAL
 
         if self.structure is None:
             self._init_structure(self.k_point)
 
         self.fields = mp.fields(
             self.structure,
-            self.m if is_cylindrical else 0,
+            self.m if self.is_cylindrical else 0,
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin
         )
@@ -397,7 +395,7 @@ class Simulation(object):
             self.fields.verbose()
 
         def use_real(self):
-            cond1 = is_cylindrical and self.m != 0
+            cond1 = self.is_cylindrical and self.m != 0
             cond2 = any([s.phase.imag for s in self.symmetries])
             cond3 = not self.k_point
             cond4 = self.special_kz and self.k_point.x == 0 and self.k_point.y == 0
