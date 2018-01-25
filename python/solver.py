@@ -4,6 +4,8 @@ import os
 import re
 import sys
 import time
+
+import numpy as np
 import meep as mp
 from meep import mpb
 from meep.simulation import get_num_args
@@ -100,6 +102,16 @@ class ModeSolver(object):
 
     def get_freqs(self):
         return self.mode_solver.get_freqs()
+
+    def get_h_field(self):
+        if self.mode_solver is None:
+            raise ValueError("Must call a run function before attempting to get a field")
+
+        size = self.mode_solver.get_field_size()
+        h_field = np.zeros(size, dtype=np.complex128)
+        self.mode_solver.get_h_field(h_field)
+
+        return h_field
 
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the

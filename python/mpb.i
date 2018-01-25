@@ -18,6 +18,8 @@
 %module(package="meep.mpb") mpb
 
 %{
+#define SWIG_FILE_WITH_INIT
+
 #include "pympb.hpp"
 #include "meepgeom.hpp"
 
@@ -74,8 +76,15 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %}
 
 %include "numpy.i"
+%init %{
+    import_array();
+%}
+
 %import "meep.i"
 
+%numpy_typemaps(std::complex<mpb_real>, NPY_CDOUBLE, int)
+
+%apply (std::complex<mpb_real>* IN_ARRAY1, int DIM1) {(std::complex<mpb_real>* cdata, int size)};
 %apply material_type { meep_geom::material_data *};
 
 %typemap(in) lattice {

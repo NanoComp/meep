@@ -1279,4 +1279,13 @@ void mode_solver::load_eigenvectors(char *filename) {
 std::vector<mpb_real> mode_solver::get_freqs() {
   return freqs;
 }
+
+size_t mode_solver::get_field_size() {
+  return mdata ? mdata->fft_output_size * 3 : 0;
+}
+
+void mode_solver::get_h_field(std::complex<mpb_real> *cdata, int size) {
+  (void)size; // needed for numpy typemap
+  maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, num_bands - 1, 1);
+}
 } // namespace meep_mpb

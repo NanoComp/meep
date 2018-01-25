@@ -457,5 +457,47 @@ class TestModeSolver(unittest.TestCase):
         self.check_freqs(expected_freqs, ms.all_freqs)
         self.check_gap_list(expected_gap_list, ms.gap_list)
 
+    def test_get_h_field(self):
+        ms = self.init_solver()
+        ms.filename_prefix = 'test_get_h_field'
+        ms.run_te()
+
+        h_field = ms.get_h_field()
+
+        # first_12 = [
+        #     complex(0.000000, 0.000000),
+        #     complex(0.000000, 0.000000),
+        #     complex(-0.760515, -1.040903),
+        #     complex(0.000000, 0.000000),
+        #     complex(0.000000, 0.000000),
+        #     complex(-0.809561, -1.113177),
+        #     complex(0.000000, 0.000000),
+        #     complex(0.000000, 0.000000),
+        #     complex(-0.827496, -1.142672),
+        #     complex(0.000000, 0.000000),
+        #     complex(0.000000, 0.000000),
+        #     complex(-0.813630, -1.128255),
+        # ]
+
+        # last_10 = [
+        #     complex(-0.451053, -0.604717),
+        #     complex(0.000000, 0.000000),
+        #     complex(0.000000, 0.000000),
+        #     complex(-0.578139, -0.782641),
+        #     complex(0.000000, 0.000000),
+        #     complex(0.000000, 0.000000),
+        #     complex(-0.683007, -0.930489),
+        #     complex(0.000000, 0.000000),
+        #     complex(0.000000, 0.000000),
+        #     complex(-0.761628, -1.042579),
+        # ]
+
+        # for exp, res in zip(first_12, h_field[:12]):
+        #     self.assertAlmostEqual(exp, res)
+
+        # for exp, res in zip(last_10, h_field[-10:]):
+        #     self.assertAlmostEqual(exp, res)
+
+
 if __name__ == '__main__':
     unittest.main()

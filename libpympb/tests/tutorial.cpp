@@ -1,4 +1,5 @@
 #include <cassert>
+#include <complex>
 #include "pympb.hpp"
 
 void test_mode_solver() {
@@ -55,6 +56,14 @@ void test_mode_solver() {
 
   for (int i = 0; i < NUM_KPOINTS; ++i) {
     ms.solve_kpoint(k_points[i]);
+  }
+
+  int size = ms.mdata->fft_output_size * 3;
+  std::complex<mpb_real> *h_field = new std::complex<mpb_real>[size];
+  ms.get_h_field(h_field, size);
+
+  for (int i = 0; i < ms.mdata->fft_output_size * 3; ++i) {
+    printf("<%f, %fi>\n", real(h_field[i]), imag(h_field[i]));
   }
 
   free(mat);
