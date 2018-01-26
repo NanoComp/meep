@@ -223,19 +223,21 @@ class wvg_taper:
     def get_flux(self, frame_interval=0):
 
        #--------------------------------------------------
-       # add DFT flux region for moviemaking if requested
        #--------------------------------------------------
+       #--------------------------------------------------
+       nextFrameTime = 1e100;
        f=self.sim.fields;
        vA=self.vA;
        vB=self.vB;
-       fluxC=0
+       origin=mp.Vector3(0,0,0)
+       full_grid=mp.Vector3(self.sim.cell_size.x, self.sim.cell_size.y, 0)
+       frames=[]
+       fig=0
+       plt.ion()
+       num_frames=0
        if frame_interval>0:
-         LX=0.5*self.sim.cell_size.x;
-         LY=0.5*self.sim.cell_size.y;
-         vC=mp.volume( mp.vec(-LX, -LY), mp.vec(LX,LY) )
-         fcen=self.fcen
-         df=self.df
-         fluxC=f.add_dft_flux_plane(vC, fcen-0.5*df, fcen+0.5*df, 1);
+         fig=plt.figure();
+         nextFrameTime=f.round_time();
 
        #--------------------------------------------------
        # timestep until Poynting flux through larger waveguide has 
@@ -243,9 +245,9 @@ class wvg_taper:
        #--------------------------------------------------
        pvInterval=1.0; # check PV decay every 1.0 meep time units
        nextPVTime=f.round_time() + pvInterval;
-       nextFrameTime=f.round_time();
        MaxPV=0.0;
        Stop=False;
+       SMax=0.0; # max poynting flux at any point
        while Stop==False:
 
          f.step();
@@ -260,26 +262,37 @@ class wvg_taper:
              elif (ThisPV < 0.001*MaxPV):
                 FieldsDecayed=True;
 
-         # output movie frames at regular intervals if requested
-         # TODO implement me
-##################################################
-#         frameInterval=5.0;
-#         if f.round_time() > nextFrameTime:
-#             nextFrameTime += frameInterval;
-#             eps=self.sim.get_array(center    = mp.Vector3(0,0),
-#                                    size      = self.sim.cell_size,
-#                                    component = mp.Sx)
-#             print("Sx shape={}".format(eps.shape))
-#             plt.clf()
-#             plt.imshow(eps.transpose(), interpolation='gaussian', cmap='coolwarm')
-#             plt.show()
-###################################################
+         # write movie-frame files at regular intervals if requested
+         if f.round_time() > nextFrameTime:
+             print("howdage")
+             nextFrameTime += frame_interval;
+             #self.sim.output_component(mp.Sx)
+             eps=self.sim.get_array(center=origin,size=full_grid,component=mp.Dielectric)
+             Sx=self.sim.get_array(center=origin,size=full_grid,component=mp.Sx)
+             SMax = max( abs(Sx.max()), SMax )
+             plt.clf();
+             eps=-eps*SMax/11.7;
+             plt.imshow(eps.transpose(), interpolation='gaussian', cmap='coolwarm')
+             plt.imshow(Sx.transpose(), alpha=0.5, interpolation='gaussian', cmap='coolwarm')
+             plt.savefig( 'frame{}.png'.format(num_frames));
+             num_frames+=1;
+             
+             #frames.append([frame])
+             #plt.clf()
+             #plt.imshow(Sx.transpose(), interpolation='gaussian', cmap='coolwarm')
+             plt.draw()
+             plt.show(block=False)
 
          SourcesFinished = f.round_time() > f.last_source_time();
          Stop = (SourcesFinished and FieldsDecayed);
          
        print("finished timestepping at {}".format(f.round_time()))
        f.output_flux_fields(wt.fluxB, wt.vB, "fluxB");
+       
+       #
+       # postprocessing to generate movie
+       #
+       # ffmpeg -i frame%d.png output.mpg
 
     ##################################################
     # postprocessing: compute coefficients in normal-mode
@@ -297,7 +310,7 @@ class wvg_taper:
 from mpi4py import MPI
 #(Major,Minor)=MPI.Get_version();
 #Procs=MPI.Comm.Get_size(MPI.COMM_WORLD)
-wt=wvg_taper();
+wt=wvg_taper(LTaper=3.0,pTaper=1)
 wt.plot_eps();
 #wt.get_flux();
-wt.plot_modes();
+#wt.plot_modes();

@@ -145,10 +145,12 @@ void wvg_material(vector3 loc, void *user_data, meep_geom::medium_struct *m)
       w = wA;
      else if ( x0 >= 0.5)
       w = wB;
-     else if (wdata->taper_order==0)   // linear taper
-      w = 0.5*(wA+wB) + (wB-wA)*x0;
-     else // (wdata->taper_order==1)   // second-order taper
+     else if (wdata->taper_order==2)
+      w = 0.5*(wA+wB) + (wB-wA)*x0*(15.0 + x0*x0*(-40.0 + x0*x0*48.0))/8.0;
+     else if (wdata->taper_order==1)
       w = 0.5*(wA+wB) + (wB-wA)*x0*(1.5 - 2.0*x0*x0);
+     else // p=0, i.e. linear taper
+      w = 0.5*(wA+wB) + (wB-wA)*x0;
 
      eps = ( fabs(loc.y)<=0.5*w ) ? wdata->eps_wvg : wdata->eps_ambient;
    };
