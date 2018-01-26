@@ -130,4 +130,4 @@ In Scheme, the required lines are:
 (include "/path/to/materials-library.scm")
 ```
 
-Note: for narrowband calculations, some of the fitting parameters may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting the accuracy of the results) by removing from the material definitions those Lorentzian suspeptibility terms which are far outside the region of interest.
+Note: for narrowband calculations, some of the Lorentzian susceptibility terms may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting the accuracy of the results) by removing from the material definitions those Lorentzian suspeptibility terms which are far outside the spectral region of interest.

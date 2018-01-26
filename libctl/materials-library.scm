@@ -1,4 +1,4 @@
-; material library for metallic optoelectronic materials
+; materials library for metallic optoelectronic materials
 ; from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83 (1998)
 
 ; conversion factor for eV to 1/um [=1/hc]

@@ -203,7 +203,7 @@ In order for the MPI version of the Scheme interface to run successfully, we hav
 
 If you use Meep with MPI, you should compile HDF5 with MPI support as well (see below).
 
-As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep`, so it overwrites any serial installation.  There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun meep`).
+As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep`, so it overwrites any serial installation.  There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun -np 6 meep`).
 
 HDF5 (recommended)
 ------------------
@@ -395,7 +395,7 @@ source activate pmp
 The environment includes `mpi4py`, so you can run an MPI job with 4 processes like this:
 
 ```bash
-mpiexec -np 4 python <script_name>.py
+mpirun -np 4 python <script_name>.py
 ```
 
 If you run into issues, make sure your `PYTHONPATH` environment variable is unset.
