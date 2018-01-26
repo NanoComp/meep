@@ -1318,4 +1318,36 @@ std::string mode_solver::get_parity_string() {
   std::string s(parity_string(mdata));
   return s;
 }
+
+std::vector<int> mode_solver::get_dims() {
+  std::vector<int> dims;
+
+  if (mdata->nx > 1) {
+    dims.push_back(mdata->nx);
+  }
+  if (mdata->ny > 1) {
+    dims.push_back(mdata->ny);
+  }
+  if (mdata->nz > 1) {
+    dims.push_back(mdata->nz);
+  }
+
+  return dims;
+}
+
+void mode_solver::get_curfield(double *data, int size) {
+  mpb_real *p = (mpb_real *)curfield;
+
+  for (int i = 0; i < size; ++i) {
+    data[i] = p[i];
+  }
+}
+
+// void mode_solver::get_curfield(std::complex<mpb_real> *cdata, int size) {
+//   for (int i = 0; i < size; ++i) {
+//     cdata[i] = curfield[i];
+//   }
+// }
+
+
 } // namespace meep_mpb

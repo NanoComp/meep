@@ -135,8 +135,13 @@ struct mode_solver {
   void get_e_field(std::complex<mpb_real> *cdata, int size);
   void get_d_field(std::complex<mpb_real> *cdata, int size);
   void get_h_field(std::complex<mpb_real> *cdata, int size);
+
+  void get_curfield(double *data, int size);
+  // void get_curfield(std::complex<mpb_real> *cdata, int size);
+
   char get_curfield_type();
   std::string get_parity_string();
+  std::vector<int> get_dims();
 
 private:
   int kpoint_index;

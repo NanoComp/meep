@@ -219,7 +219,7 @@ class ModeSolver(object):
     def _output_field_to_file(self, component, fname_prefix):
         curfield_type = self.mode_solver.get_curfield_type()
 
-        if curfield_type in ['D', 'H', 'B', 'n', 'm', 'R']:
+        if curfield_type in 'DHBnmR':
             # scalar field
             if curfield_type == 'n':
                 fname = 'epsilon'
@@ -236,12 +236,33 @@ class ModeSolver(object):
             fname = self._create_fname(fname, fname_prefix, False)
             print("Outputting {}...".format(fname))
             f = h5py.File(fname, 'w')
+
+            f['description'] = description
+
+            self._create_h5_dataset(f, 'data')
+
             # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
             f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
                                              self.geometry_lattice.basis2,
                                              self.geometry_lattice.basis3))
-            f['description'] = description
+
+            components = ['x', 'y', 'z']
+
+            for inv in [True, False]:
+                for c1 in range(3):
+                    for c2 in range(3):
+                        self.mode_solver.get_epsilon_tensor(c1, c2, 0, inv)
+                        dataname = "{}.{}{}".format('epsilon_inverse' if inv else 'epsilon',
+                                                    components[c1], components[c2])
+                        self._create_h5_dataset(f, dataname)
             f.close()
+
+    def _create_h5_dataset(self, h5file, key):
+        dims = self.mode_solver.get_dims()
+        # TODO: dtype isn't always float64
+        arr = np.zeros(np.prod(dims))
+        self.mode_solver.get_curfield(arr)
+        h5file[key] = np.reshape(arr, dims)
 
     def _create_fname(self, fname, prefix, parity_suffix):
         suffix = '.' + self.mode_solver.get_parity_string() if parity_suffix else ''

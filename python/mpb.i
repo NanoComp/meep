@@ -82,10 +82,17 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 
 %import "meep.i"
 
-%numpy_typemaps(std::complex<mpb_real>, NPY_CDOUBLE, int)
+%numpy_typemaps(std::complex<mpb_real>, NPY_CDOUBLE, int);
 
-%apply (std::complex<mpb_real>* IN_ARRAY1, int DIM1) {(std::complex<mpb_real>* cdata, int size)};
-%apply material_type { meep_geom::material_data *};
+%apply (std::complex<mpb_real>* INPLACE_ARRAY1, int DIM1) {
+    (std::complex<mpb_real>* cdata, int size)
+};
+%apply (double* INPLACE_ARRAY1, int DIM1) {
+    (double* data, int size)
+};
+%apply material_type {
+    meep_geom::material_data*
+};
 
 %typemap(in) lattice {
     if (!pylattice_to_lattice($input, &$1)) {
@@ -102,6 +109,17 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
     for (Py_ssize_t i = 0; i < n; ++i) {
         PyObject *freq = PyFloat_FromDouble($1[i]);
         PyList_SetItem($result, i, freq);
+    }
+}
+
+%typemap(out) std::vector<int> py_mpb::mode_solver::get_dims {
+    Py_ssize_t n = $1.size();
+
+    $result = PyList_New(n);
+
+    for (Py_ssize_t i = 0; i < n; ++i) {
+        PyObject *dim = PyInteger_FromLong($1[i]);
+        PyList_SetItem($result, i, dim);
     }
 }
 
