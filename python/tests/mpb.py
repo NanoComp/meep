@@ -5,7 +5,7 @@ import unittest
 
 import h5py
 # TODO: Importing numpy loads MKL which breaks zdotc_
-# import numpy as np
+import numpy as np
 import meep as mp
 from meep import mpb
 
@@ -490,21 +490,35 @@ class TestModeSolver(unittest.TestCase):
         data_path = os.path.join(data_dir, fname)
         ref = h5py.File(data_path)
 
-        ref_data = ref['data'].value
+        # ref_data = ref['data'].value
         ref_descr = ref['description'].value
-        ref_epsilon.xx = ref['epsilon.xx'].value
-        ref_epsilon.xy = ref['epsilon.xy'].value
-        ref_epsilon.xz = ref['epsilon.xz'].value
-        ref_epsilon.yy = ref['epsilon.yy'].value
-        ref_epsilon.yz = ref['epsilon.yz'].value
-        ref_epsilon.zz = ref['epsilon.zz'].value
-        ref_epsilon_inverse.xx = ref['epsilon_inverse.xx'].value
-        ref_epsilon_inverse.xy = ref['epsilon_inverse.xy'].value
-        ref_epsilon_inverse.xz = ref['epsilon_inverse.xz'].value
-        ref_epsilon_inverse.yy = ref['epsilon_inverse.yy'].value
-        ref_epsilon_inverse.yz = ref['epsilon_inverse.yz'].value
-        ref_epsilon_inverse.zz = ref['epsilon_inverse.zz'].value
+        # ref_epsilon_xx = ref['epsilon.xx'].value
+        # ref_epsilon_xy = ref['epsilon.xy'].value
+        # ref_epsilon_xz = ref['epsilon.xz'].value
+        # ref_epsilon_yy = ref['epsilon.yy'].value
+        # ref_epsilon_yz = ref['epsilon.yz'].value
+        # ref_epsilon_zz = ref['epsilon.zz'].value
+        # ref_epsilon_inverse_xx = ref['epsilon_inverse.xx'].value
+        # ref_epsilon_inverse_xy = ref['epsilon_inverse.xy'].value
+        # ref_epsilon_inverse_xz = ref['epsilon_inverse.xz'].value
+        # ref_epsilon_inverse_yy = ref['epsilon_inverse.yy'].value
+        # ref_epsilon_inverse_yz = ref['epsilon_inverse.yz'].value
+        # ref_epsilon_inverse_zz = ref['epsilon_inverse.zz'].value
         ref_lattice_vectors = ref['lattice vectors'].value
+
+        ms = self.init_solver()
+        ms.filename_prefix = 'test_output_field_to_file'
+        ms.run_te()
+
+        with h5py.File('test_output_field_to_file-epsilon.h5', 'r') as f:
+            self.assertEqual(ref_descr, f['description'].value)
+            np.testing.assert_array_equal(ref_lattice_vectors, f['lattice vectors'].value)
+
+            # for k in ref.keys():
+            #     if k == 'description':
+            #         self.assertEqual(ref[k].value, f[k].value)
+            #     else:
+            #         np.testing.assert_array_equal(ref[k].value, f[k].value)
 
 if __name__ == '__main__':
     unittest.main()

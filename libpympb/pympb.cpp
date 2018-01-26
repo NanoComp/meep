@@ -1309,4 +1309,13 @@ void mode_solver::get_h_field(std::complex<mpb_real> *cdata, int size) {
   (void)size; // needed for numpy typemap
   maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, num_bands - 1, 1);
 }
+
+char mode_solver::get_curfield_type() {
+  return curfield_type;
+}
+
+std::string mode_solver::get_parity_string() {
+  std::string s(parity_string(mdata));
+  return s;
+}
 } // namespace meep_mpb

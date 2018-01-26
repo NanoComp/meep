@@ -5,6 +5,7 @@ import re
 import sys
 import time
 
+import h5py
 import numpy as np
 import meep as mp
 from meep import mpb
@@ -209,14 +210,42 @@ class ModeSolver(object):
         self._output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_mu(self):
-        print("output_mu: Not implemented yet")
+        print("output_mu: Not yet supported")
         # TODO
         # self.mode_solver.get_mu()
         # TODO
         # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
 
     def _output_field_to_file(self, component, fname_prefix):
-        pass
+        curfield_type = self.mode_solver.get_curfield_type()
+
+        if curfield_type in ['D', 'H', 'B', 'n', 'm', 'R']:
+            # scalar field
+            if curfield_type == 'n':
+                fname = 'epsilon'
+                description = b'dielectric function, epsilon'
+            # elif curfield_type == 'm':
+            #     fname = 'mu'
+            #     description = b'permeability mu'
+            # else:
+            #     fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
+            #                                            kpoint_index, curfield_band)
+            #     descr_fmt = b"{} field energy density, kpoint {}, band {}, freq={}"
+            #     description = descr_fmt.format(curfield_type, kpoint_index,
+            #                                    curfield_band, freqs[curfield_band - 1])
+            fname = self._create_fname(fname, fname_prefix, False)
+            print("Outputting {}...".format(fname))
+            f = h5py.File(fname, 'w')
+            # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
+            f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
+                                             self.geometry_lattice.basis2,
+                                             self.geometry_lattice.basis3))
+            f['description'] = description
+            f.close()
+
+    def _create_fname(self, fname, prefix, parity_suffix):
+        suffix = '.' + self.mode_solver.get_parity_string() if parity_suffix else ''
+        return prefix + fname + suffix + '.h5'
 
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
