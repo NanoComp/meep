@@ -19,7 +19,7 @@ addons:
     - mpi-default-bin
     - openmpi-bin
 install:
-  - pip install numpy mpi4py
+  - pip install numpy mpi4py h5py
 
 ##################################################
 # environment variables applied to all build cases
