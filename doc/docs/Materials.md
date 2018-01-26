@@ -109,3 +109,25 @@ Magnetic Permeability μ
 -----------------------
 
 All of the above features that are supported for the electric permittivity $\varepsilon$ are also supported for the magnetic permeability $\mu$. That is, Meep supports $\mu$ with dispersion from magnetic conductivity and Lorentzian resonances, as well as magnetic $\chi^{(2)}$ and $\chi^{(3)}$ nonlinearities. The description of these is exactly the same as above, so we won't repeat it here &mdash; just take the above descriptions and replace $\varepsilon$, **E**, **D**, and $\sigma$<sub>D</sub> by $\mu$, **H**, **B**, and $\sigma$<sub>B</sub>, respectively.
+
+Materials Library
+-----------------
+
+A materials library containing commonly used metals in optoelectronic devices is available for [Python](https://github.com/stevengj/meep/tree/master/python/materials_library.py) and [Scheme](https://github.com/stevengj/meep/tree/master/libctl/materials-library.scm). The data is based on results published in [A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83 (1998)](https://www.osapublishing.org/ao/abstract.cfm?uri=ao-37-22-5271) [[pdf](http://faculty.kfupm.edu.sa/EE/msunaidi/EE635%20stuff/project%202/p3.pdf)]. Experimental values of the complex refractive index of 11 metals &mdash; Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W &mdash; are fit to a [Drude-Lorentzian susceptibility profile](#material-dispersion) over the broadband spectrum of approximately 0.2 to 12.4 &#956;m. Fitting parameters for the materials are defined for a unit distance of 1 &#956;m. For simulation models which use a *different* value for the unit distance, the predefined variable `eV_um_scale` (Python) or `eV-um-scale` (Scheme) must be rescaled by *multiplying* by whatever the unit distance is, in units of &#956;m.
+
+To import the library into a Python script requires adding the following lines:
+
+```python
+import sys
+sys.path.insert(0, '/path/to/file/')
+from materials_library import *
+```
+Then, the materials can be simply used as `geometry = [ meep.Cylinder(material=Al, ... ]`.
+
+In Scheme, the required lines are:
+
+```scm
+(include "/path/to/materials-library.scm")
+```
+
+Note: for narrowband calculations, some of the fitting parameters may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting the accuracy of the results) by removing from the material definitions those Lorentzian suspeptibility terms which are far outside the region of interest.
