@@ -1,5 +1,11 @@
 # Meep Release Notes
 
+## Meep 1.4.2
+
+1/26/2018
+
+  * Build fix for Python due to missing file (#184).
+
 ## Meep 1.4.1
 
 1/19/2018
