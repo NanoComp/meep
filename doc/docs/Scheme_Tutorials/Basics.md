@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
+In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects_scheme.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses the free [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) programs. You could also use any other program, such as [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html), that supports reading HDF5 files.
 
@@ -175,7 +175,7 @@ This is similar to the command before, with two new options: `-t 0:329` outputs 
 unix% convert ez.t*.png ez.gif
 ```
 
-Here, we are using an animated GIF format for the output. This results in the following animation:
+We are using an animated GIF format for the output. This results in the following animation:
 
 <center>![](../images/Tutorial-wvg-ez.gif)</center>
 

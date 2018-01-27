@@ -186,15 +186,19 @@ unix% h5ls ez.h5
 ez                       Dataset {161, 161, 330/Inf}
 ```
 
-That is, the file contains a 162×162×330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
+That is, the file contains a single dataset `ez` that is a 162×162×330 array, where the last dimension is time. This is rather a large file, 69MB; later, we'll see ways to reduce this size if we only want images. Now, we have a number of choices of how to output the fields. To output a single time slice, we can use the same `h5topng` command as before, but with an additional `-t` option to specify the time index: e.g. `h5topng -t 229` will output the last time slice, similar to before. Instead, let's create an animation of the fields as a function of time. First, we have to create images for *all* of the time slices:
 
 ```sh
 unix% h5topng -t 0:329 -R -Zc dkbluered -a yarg -A eps-000000.00.h5 ez.h5
 ```
 
-This is similar to the command before with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program (although there is other software that will do the trick as well).
+This is similar to the command before with two new options: `-t 0:329` outputs images for *all* time indices from 0 to 329, i.e. all of the times, and the the `-R` flag tells h5topng to use a consistent color scale for every image (instead of scaling each image independently). Then, we have to convert these images into an animation in some format. For this, we'll use the free [ImageMagick](https://en.wikipedia.org/wiki/ImageMagick) `convert` program and there are other tools that work as well.
 
-Here, we are using an animated GIF format for the output. This results in the following animation:
+```sh
+unix% convert ez.t*.png ez.gif
+```
+
+We are using an animated GIF format for the output. This results in the following animation:
 
 <center>![](../images/Tutorial-wvg-ez.gif)</center>
 
