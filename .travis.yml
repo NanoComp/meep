@@ -59,23 +59,7 @@ matrix:
 # build/test instructions
 ##################################################
 script:
-  - set -e
   - autoreconf --verbose --install --symlink --force
   - mkdir -p build && pushd build
-#
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
-  - make -j 2
-#
-  - pushd tests
-  - make ${MKCHECKFLAGS} check TESTS="${CORETESTS}" VERBOSE=1 || (cat test-suite.log && exit 1)
-  - popd
-#
-  - pushd libmeepgeom
-  - make ${MKCHECKFLAGS} check || (cat test-suite.log && exit 1)
-  - popd
-#
-  - pushd python
-  - make ${MKCHECKFLAGS} check || (cat test-suite.log && exit 1)
-  - popd
-#
-  - popd
+  - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
