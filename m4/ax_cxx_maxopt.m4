@@ -110,7 +110,10 @@ if test "$ac_test_CXXFLAGS" != "set"; then
      CXXFLAGS="-O3"
 
      # -malign-double for x86 systems
-     AX_CHECK_COMPILER_FLAGS(-malign-double, CXXFLAGS="$CXXFLAGS -malign-double")
+     case $host_cpu in
+        i686*)
+            AX_CHECK_COMPILER_FLAGS(-malign-double, CXXFLAGS="$CXXFLAGS -malign-double")
+     esac
 
      AX_CHECK_COMPILER_FLAGS(-fstrict-aliasing, CXXFLAGS="$CXXFLAGS -fstrict-aliasing")
 
