@@ -229,7 +229,7 @@ realnum *multilevel_susceptibility::cinternal_notowned_ptr(
 					int n, 
 					void *P_internal_data) const {
   multilevel_data *d = (multilevel_data *) P_internal_data;
-  if (!d->P[c][cmp] || inotowned < 0 || inotowned >= T) // never true
+  if (!d || !d->P[c][cmp] || inotowned < 0 || inotowned >= T)
     return NULL;
   return d->P[c][cmp][inotowned] + n;
 }
@@ -256,12 +256,12 @@ void multilevel_susceptibility::update_P
   realnum *Ntmp = d->Ntmp;
   LOOP_OVER_VOL_OWNED(gv, Centered, i) {
     realnum *N = d->N + i*L; // N at current point, to update
-    
+
     // Ntmp = (I - Gamma * dt/2) * N
     for (int l1 = 0; l1 < L; ++l1) {
-      Ntmp[l1] = (1.0 - Gamma[l1*L + l1]*dt2) * N[l1]; // diagonal term
-      for (int l2 = 0; l2 < l1; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
-      for (int l2 = l1+1; l2 < L; ++l2) Ntmp[l1] -= Gamma[l1*L+l2]*dt2 * N[l2];
+      Ntmp[l1] = 0;
+      for (int l2 = 0; l2 < L; ++l2)
+	Ntmp[l1] += ((l1 == l2) - Gamma[l1*L+l2]*dt2) * N[l2];
     }
 
     // compute E*8 at point i
@@ -291,7 +291,7 @@ void multilevel_susceptibility::update_P
 	if (d->P[cdot[idot]][1]) {
 	  p = d->P[cdot[idot]][1][t]; pp = d->P_prev[cdot[idot]][1][t];
 	  dP = p[i]+p[i+o1[idot]]+p[i+o2[idot]]+p[i+o1[idot]+o2[idot]]
-	    + (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
+	    - (pp[i]+pp[i+o1[idot]]+pp[i+o2[idot]]+pp[i+o1[idot]+o2[idot]]);
 	  EdP32 += dP * E8[idot][1];
 	}
       }
@@ -308,9 +308,9 @@ void multilevel_susceptibility::update_P
 
   // each P is updated as a damped harmonic oscillator
   for (int t = 0; t < T; ++t) {
-    const double omega2pi = 2*pi*omega[t], g2pi = gamma[t]*2*pi;
-    const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
-    const double gamma1inv = 1 / (1 + g2pi*dt/2), gamma1 = (1 - g2pi*dt/2);
+    const double omega2pi = omega[t]*2*pi, g2pi = gamma[t]*2*pi;
+    const double omega0dtsqr = omega2pi*omega2pi*dt*dt;
+    const double gamma1inv = 1 / (1 + g2pi*dt2), gamma1 = (1 - g2pi*dt2);
 
     // figure out which levels this transition couples
     int lp = -1, lm = -1;
@@ -341,20 +341,19 @@ void multilevel_susceptibility::update_P
 	component c2 = direction_component(c, d2);
 	const realnum *w2 = W[c2][cmp];
 	const realnum *s2 = w2 ? sigma[c][d2] : NULL;
-	
-	if (s1 || s2) {
+
+	if (s1 || s2)
 	  abort("nondiagonal saturable gain is not yet supported");
-	}
 	else { // isotropic
 	  LOOP_OVER_VOL_OWNED(gv, c, i) {
 	    realnum pcur = p[i];
 	    const realnum *Ni = N + i*L;
 	    // dNi is population inversion for this transition
-	    double dNi = -0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
-				  -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
+	    double dNi = 0.25 * (Ni[lp]+Ni[lp+o1]+Ni[lp+o2]+Ni[lp+o1+o2]
+				 -Ni[lm]-Ni[lm+o1]-Ni[lm+o2]-Ni[lm+o1+o2]);
 	    p[i] = gamma1inv * (pcur * (2 - omega0dtsqr) 
-				- gamma1 * pp[i] 
-				+ omega0dtsqr * (st * s[i] * w[i])) * dNi;
+				- gamma1 * pp[i]
+				- omega0dtsqr * st * s[i] * w[i] * dNi);
 	    pp[i] = pcur;
 	  }
 	}
