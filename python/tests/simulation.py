@@ -171,13 +171,19 @@ class TestSimulation(unittest.TestCase):
         sim.run(mp.at_end(lambda sim: None), until=5)
 
     def test_require_dimensions(self):
-        sim = self.init_simple_simulation(dimensions=3)
+        sim = self.init_simple_simulation()
         self.assertIsNone(sim.structure)
         self.assertEqual(sim.dimensions, 3)
 
         sim.require_dimensions()
         sim._init_structure(k=mp.Vector3())
         self.assertEqual(sim.structure.gv.dim, mp.D2)
+
+    def test_infer_dimensions(self):
+        sim = self.init_simple_simulation()
+        self.assertEqual(sim.dimensions, 3)
+        sim._init_structure()
+        self.assertEqual(sim.dimensions, 2)
 
     def test_in_volume(self):
         sim = self.init_simple_simulation()
