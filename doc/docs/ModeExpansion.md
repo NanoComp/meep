@@ -417,6 +417,7 @@ The `plot_modes` routine in `wvg-taper.py` repeats this process for the
 lowest mode $x_A$ (`ModeA1`) and the first several modes at $x_B$
 (`ModeB1...B6`) and plots the results:
 
+<a name="ModeProfiles"></a>
 ![ModeProfiles2D.png](ModeExpansionFiles/ModeProfiles2D.png)
 
   
