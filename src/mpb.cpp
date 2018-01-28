@@ -217,7 +217,7 @@ void *fields::get_eigenmode(double omega_src,
   /*--------------------------------------------------------------*/
 
   //bool verbose=true;
-  if (resolution <= 0) resolution = 2 * gv.a; // default to twice resolution
+  if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1,1,1};
   mpb_real k[3] = {0,0,0}, kcart[3] = {0,0,0};
   double s[3] = {0,0,0}, o[3] = {0,0,0};

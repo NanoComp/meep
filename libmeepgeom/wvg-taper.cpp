@@ -497,10 +497,8 @@ dft_flux fluxB1=f.add_dft_flux_plane(fvB1, fcen-0.5*df, fcen+0.5*df, nfreq);
       dft_flux *flux = (nb==-1) ? &fluxA1 : &fluxB;
       double vol     = (nb==-1) ? volA    : volB;
     
-      void *mode_data=f.get_eigenmode(fcen, dB, *fv, *fv,
-                                      band_num, k_guess((void *)&ww,
-                                      fcen,band_num),
-                                      true, 0, f.a, 1.0e-4);
+      void *mode_data=f.get_eigenmode(fcen, dB, *fv, *fv, band_num, 
+                                      k_guess((void *)&ww,fcen,band_num));
       if (nb==-1) 
        mode_data_A=mode_data;
       else

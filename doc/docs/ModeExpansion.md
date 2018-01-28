@@ -1,6 +1,6 @@
 # Eigenmode decomposition of arbitrary field configurations
 
-*Eigenmode decomposition* exploits MEEP's interconnectivity
+*Eigenmode decomposition* exploits Meep's interconnectivity
 with the [MPB][MPB] mode solver to express an arbitrary
 time-harmonic field configuration as a superposition of
 the normal harmonic modes of your structure.
@@ -48,15 +48,15 @@ may be extracted from knowledge of the time-harmonic
 fields $\mathbf{E},\mathbf{H}$ on any cross-sectional
 surface $S$ transverse to the waveguide.
 
-The idea of mode expansion in MEEP is to compute
+The idea of mode expansion in Meep is to compute
 the $\{\alpha_n^\pm\}$ coefficients above for any
 *arbitrary* time-harmonic field distribution 
-resulting from a MEEP calculation. In calculations
+resulting from a Meep calculation. In calculations
 of this sort,
 
 +  the $\{\mathbf{E},\mathbf{H}\}$ fields on the RHS
     of equations (1a,b) above will be frequency-domain
-    fields stored in a `dft_flux` object in a MEEP
+    fields stored in a `dft_flux` object in a Meep
     run, where you will have arranged this `dft_flux` object
     to live on a cross-sectional surface $S$ transverse
     to the waveguide;
@@ -71,11 +71,19 @@ of this sort,
 -  the $\alpha_n^\pm$ coefficients for as many bands 
    as you like are computed by calling `get_eigenmode_coefficients(),`
    as discussed below.
-$$
 
-## C++ function prototype
+## Main function prototype
 
-The basic routine here is
+The highest-level interface to the mode-expansion implementation
+in Meep is the libmeep function `meep::fields::get_eigenmode_coefficients,`
+callable from C++ or python. This routine makes use
+of several [lower-level libmeep functions](ModeExpansion.md#OtherRoutines)
+that you may also find useful; 
+these are documented 
+[below](ModeExpansion.md#OtherRoutines)
+and their use is illustrated in the tutorial that follows.
+
+The C++ prototype for the top-level routine is 
 
 ```c++
 std::vector<cdouble>
@@ -88,7 +96,7 @@ std::vector<cdouble>
 ```
 where
 
-+ `flux` is a `dft_flux` object pre-populated with frequency-domain field data resulting from a time-domain MEEP calculation you have run to tabulate fields on a cross-sectional slice perpendicular to your waveguide
++ `flux` is a `dft_flux` object pre-populated with frequency-domain field data resulting from a time-domain Meep calculation you have run to tabulate fields on a cross-sectional slice perpendicular to your waveguide
 
 + `d` is the direction of power flow in the waveguide
 
@@ -108,13 +116,35 @@ wavevector of the `band`th mode at frequency `freq`.
 
 The return value of `get_mode_coefficients` is an array
 of type `cdouble` (short for `std::complex<double>`),
-of length `num_freqs * num_bands`, where `num_freqs`
+of length `2 * num_freqs * num_bands`, where `num_freqs`
 is the number of frequencies stored in your `flux` object
 (equal to `flux->Nfreq`) and `num_bands` is the length
-of your `bands` input array. 
-The expansion coefficient for the mode with frequency `nf`
-and band index `nb` is stored in the `nb*num_freqs + nf`
-slot of this array.
+of your `bands` input array.
+The expansion coefficients $\{\alpha^+,\alpha^-\}$
+for the mode with frequency `nf` and band index `nb` 
+are stored sequentially starting at slot
+`2*nb*num_freqs + nf` of this array:
+
+````c++
+ std::vector<cdouble> coeffs=f.get_eigenmode_coefficient(...)
+ fields::get_eigenmode_coefficients(dft_flux *flux,
+                                    direction d,
+                                    const volume &where,
+                                    std::vector<int> bands,
+                                    kpoint_func k_func=0,
+                                    void *user_data=0);
+
+ int num_bands = bands.size();
+ int num_freqs = Flux->Nfreq;
+ for(int nb=0; nb<num_bands; nb++)
+  for(int nf=0; nf<num_freqs++; nf++)
+   { 
+     // get coefficients of forward- and backward-traveling
+     // waves in eigenmode bands[nb] at frequency #nf
+     cdouble AlphaPlus  = coeffs[2*nb*num_freqs + nf + 0];
+     cdouble AlphaMinus = coeffs[2*nb*num_freqs + nf + 1];
+     ...
+````
 
 ## Sample application: tapering between waveguides
 
@@ -167,13 +197,16 @@ $$ w(x) =
 $$
 where the taper function $T_p(x)$ is a $C^{p}$ function,
 i.e. $p$ is the index of its first discontinuous derivative.
-For the cases $p=0$ (linear taper) and $p=1$ (quadric taper),
-the taper functions are
+For the cases $p=\{0,1,2\}$, the taper functions are
 $$ T_p(x)=\begin{cases}
    w_0 + \Delta \left(\frac{x}{L}\right), \qquad &p=0 \\[5pt]
    w_0 + \Delta \Big[ \frac{3}{2}\left(\frac{x}{L}\right)
                        -2\left(\frac{x}{L}\right)^3
-                 \Big],\qquad&p=1
+                 \Big],\qquad&p=1,\\[5pt]
+   w_0 + \Delta \Big[ \frac{15}{8}\left(\frac{x}{L}\right)
+                       -5\left(\frac{x}{L}\right)^3
+                       +6\left(\frac{x}{L}\right)^5
+                 \Big],\qquad&p=2
    \end{cases}
 $$
 where
@@ -181,7 +214,10 @@ $$ w_0\equiv \frac{w_A+w_B}{2}, \qquad \Delta = w_B - w_A$$
 are the average and difference of the smaller and larger waveguide
 thicknesses.
 
-Here are cartoons of the $p=0$ and $p=1$ taper geometries:
+Here are pictures of the $p=0,1,2$ taper geometries for the case of a
+taper of length $L=4$ between waveguides of thickness $w_A=1$
+and $w_B=3$. (See below for the python code that produces these
+plots.)
 
 <p align="center"> <b><i>p</i>=0 Taper</b></p>
 
@@ -191,7 +227,23 @@ Here are cartoons of the $p=0$ and $p=1$ taper geometries:
 
 ![Taper2D_p1.png](ModeExpansionFiles/Taper2D_p1.png)
 
-### Defining material functions
+<p align="center"> <b><i>p</i>=2 Taper</b> </p>
+
+![Taper2D_p2.png](ModeExpansionFiles/Taper2D_p2.png)
+
+In these figures, the dashed lines at $x=x_{A,B}$
+indicate the locations of cross-sectional planes
+that we will use in our calculation:
+the plane at $x=x_A$ is where we will place an
+eigenmode source in our Meep calculation to describe 
+incoming power entering from the smaller waveguide,
+while the plane at $x=x_B$ is where we will
+tabulate the Fourier-domain fields in our Meep
+calculation and determine their overlaps with 
+the eigenmodes of the larger waveguide to 
+compute mode-expansion coefficients.
+
+### User-defined material function
 
 Because the material geometries we will be studying here
 are too complicated to be described as assemblies of
@@ -214,15 +266,19 @@ to compute the $x$-dependent waveguide width $w(x)$.
 # x-dependent width of waveguide
 ##################################################
 def w_func(x, L, p, wA, wB):
+  if L==0:
+    return wA if x<0 else wB
   x0=x/L
   if (x0 < -0.5):
     return wA;
-  if (x0 > +0.5):
+  elif (x0 > +0.5):
     return wB;
-  if (p==0):
-    return 0.5*(wA+wB) + (wB-wA)*x0;
-  else: # if (p==1):
+  elif p==2:
+    return 0.5*(wA+wB) + (wB-wA)*x0*(15.0 + x0*x0*(-40.0 + x0*x0*48.0))/8.0;
+  elif p==1:
     return 0.5*(wA+wB) + (wB-wA)*x0*(1.5 - 2.0*x0*x0);
+  else: # default t p==0, simple linear taper
+    return 0.5*(wA+wB) + (wB-wA)*x0;
 
 ##################################################
 # user-defined function for position-dependent material properties
@@ -256,33 +312,18 @@ sim=mp.Simulation( cell_size=mp.Vector3(2*LX, 2*LY),
 The [`wvg-taper.py`](ModeExpansionFiles/wvg-taper.py) code defines
 a class called `wvg-taper` that accepts keyword arguments for
 various geometric parameters and instantiates a `Simulation` object
-as in the code snippet above. For example, here are
+as in the code snippet above. For example, here's how we
+made the pictures of the structures shown above:
 a couple of examples involving waveguides and tapers of
 various geometries:
 
 ```python
 >>> execfile("wvg-taper.py");
->>> wt=wvg_taper(wA=1, wB=3, L=3, p=0);
-Initializing structure...
-...
-time for set_epsilon = 0.242381 s
->>> wt.plot_eps();
+>>> wt=wvg_taper(wA=1, wB=3, L=4, p=0); wt.plot_eps();
+>>> wt=wvg_taper(wA=1, wB=3, L=4, p=1); wt.plot_eps();
+>>> wt=wvg_taper(wA=1, wB=3, L=4, p=2); wt.plot_eps();
 ```
-
-![p0Taper_eps.png](ModeExpansionFiles/p0Taper_eps.png)
-
-
-```python
->>> wt=wvg_taper(wA=1, wB=4, L=5, p=1);
-Initializing structure...
-...
-time for set_epsilon = 0.242381 s
->>> wt.plot_eps();
-```
-
-![p1Taper_eps.png](ModeExpansionFiles/p1Taper_eps.png)
-
-Incidentally, the `plot_eps()` class method that produces these plots
+The `plot_eps()` class method that produces these plots
 just calls [`Simulation.get_array`](Python_User_Interface.md)
 to get a `numpy` array of &epsilon; values at the grid 
 points, then plots it using the `imshow` routine in
@@ -301,123 +342,257 @@ matplotlib:
  
 ### Visualizing eigenmode profiles
 
-Next, before doing any timestepping let's take
-a look at the field profiles of some waveguide modes,
+Next, before doing any timestepping let's calculate
+and plot the field profiles of some waveguide modes,
 for both the smaller and larger waveguides.
-For this purpose we'll use the `get_eigenmode()`
-routine to solve for individual eigenmodes, then
-call `output_mode_fields()` to write the eigenmode field
-patterns to HDF5 files, after which we can make plots
-in matplotlib. This is done in the `plot_modes`
-method of the `wvg_taper` class:
+This calculation is done by the `plot_modes`
+function in the `wvg_taper` class; you can look
+at the [full Python code](ModeExpansionFiles/wvg-taper.py)
+to see how it's done in full detail, but
+here is a synopsys:
 
-**Insert python code and mode diagrams here**
++ For the lowest-frequency ($n=1$) eigenmode of the
+    smaller waveguide, and for the first several
+    eigenmodes of the larger waveguide, we call the `meep::fields::get_eigenmode`
+    routine in libmeep.
+    This routine inputs a frequency (`fcen`), an integer (`nb`), and a
+    `meep::volume` specifying a cross-sectional slice through our
+    geometry, then invokes [MPB][MPB] to determine the `nb`th
+    eigenmode at frequency `fcen` for an *infinitely extended*
+    waveguide with constant cross section matching that of 
+    our slice. For example, to compute the $n=1$ eigenmode
+    for an infinite waveguide whose cross section matches
+    that of our structure at $x=x_A$, we say
 
+````python
+nb    = 1; # want first eigenmode
+vA    = mp.volume( mp.vec(xA, -YP), mp.vec(xA,+YP) ) # cross section at x_A
+modeA = f.get_eigenmode(fcen, mp.X, vA, vA, nb, k0, True, 0, 0.0, 1.0e-4)
+````
+
+The return value of `get_eigenmode` is a data structure
+containing information on the computed eigenmode; for 
+example, to get the group velocity or propagation vector
+of the mode you could say
+
+````python
+vgrp     = get_group_velocity(modeA);
+k_vector = get_k(modeA)
+````
+
+Alternatively, you can call the `meep::fields::output_mode_fields`
+routine to export the $\mathbf{E}$ and $\mathbf{H}$
+components of the eigenmode (at grid points lying in the cross-sectional
+plane) to an HDF5 file, i.e. 
+
+````python
+f.output_mode_fields(modeA, fluxA, vA, "modeA");
+````
+
+where `fluxA` is a [`meep::dft_flux`][DFTFlux] structure
+created for the cross section described by `vA`. This will
+create a file called `modeA.h5` containing values of 
+field components at grid points in `vA`.
+
++ Having computed eigenmodes with `get_eigenmode` and written their
+    field profiles to HDF5 files with `output_mode_fields`, we 
+    can read the data back in for postprocessing, such as (for example)
+    plotting eigenmode field profiles. This is done by the `plot_fields`
+    routine in [`wvg-taper.py`](ModeExpansionFiles/wvg-taper.py);
+    the basic flow looks something like this:
+
+````python
+
+    # open HDF5 file
+    file = h5py.File("modeA.h5", 'r')
+
+    # read array of Ey values on grid points
+    ey = file["ey" + suffix + ".r"][()] + 1j*file["ey" + suffix + ".i"][()];
+
+    # plot real part
+    plt.plot(np.real(Ey))
+````
+
+The `plot_modes` routine in `wvg-taper.py` repeats this process for the
+lowest mode $x_A$ (`ModeA1`) and the first several modes at $x_B$
+(`ModeB1...B6`) and plots the results:
+
+![ModeProfiles2D.png](ModeExpansionFiles/ModeProfiles2D.png)
+
+  
 ### Adding an eigenmode source and timestepping
 
 The next step is to add an *eigenmode source* inside the
-smaller waveguide---that is, a collection of MEEP point
-sources, lying on a cross-sectional surface, whose radiated
-fields reproduce the fields of a waveguide eigenmode---then
-timestep to accumulate Fourier-domain fields
-on a cross-sectional plane within the larger waveguide.
-This entire procedure is carried out by the `get_flux()`
-method in the `wvg_taper` class:
+smaller waveguide---that is, a collection of Meep point
+sources, lying on the cross-sectional surface at $x_A$,
+whose radiated fields reproduce the fields of a 
+given waveguide eigenmode at a given frequency:
+
 
 ````python
-    ##################################################
-    # add an eigenmode-source excitation for the #band_numth mode
-    # of the smaller waveguide, then timestep to accumulate DFT
-    # flux in the larger waveguide.
-    # if frame_interval>0, a movie is created showing
-    # the fields on the xy plane with one frame
-    # every frame_interval time units (in meep time)
-    ##################################################
-    def get_flux(self, fcen=0.15, df=0.075, nfreq=1, band_num=1,
-                 frame_interval=0):
-       
-       #--------------------------------------------------
-       # add eigenmode source at midpoint of smaller waveguide
-       #--------------------------------------------------
-       f=self.sim.fields;
-       res=1.0*self.sim.resolution;
-       LX=0.5*self.sim.cell_size.x;
-       LY=0.5*self.sim.cell_size.y;
-       xA=-0.5*LX;
-       xB=+0.5*LX;
-       vA=mp.volume( mp.vec(xA, -LY), mp.vec(xA,+LY) )
-       vB=mp.volume( mp.vec(xB, -LY), mp.vec(xB,+LY) )
-       vC=mp.volume( mp.vec(-LX, -LY), mp.vec(LX,LY) )
-       src=mp.GaussianSource(fcen, fwidth=df);
-       kpoint=mp.vec(0.426302,0);
-       parity=0;
-       match_frequency=True;
-       tol=1.0e-4;
-       amp=1.0;
-       f.add_eigenmode_source(mp.Dielectric, src, mp.X, vA, vA, 
-                              band_num, kpoint, match_frequency,
-                              parity, res, tol, amp);
-
-       #--------------------------------------------------
-       # add DFT flux region at midpoint of larger waveguide
-       #--------------------------------------------------
-       fluxB=f.add_dft_flux_plane(vB, fcen-0.5*df, fcen+0.5*df, nfreq);
-
-       #--------------------------------------------------
-       # for DFT flux region for moviemaking if requested
-       #--------------------------------------------------
-       fluxC=0
-       if frame_interval>0:
-         fluxC=f.add_dft_flux_plane(vC, fcen-0.5*df, fcen+0.5*df, nfreq);
-
-       #--------------------------------------------------
-       # timestep until Poynting flux through larger waveguide has 
-       # decayed to 0.1% its max value
-       #--------------------------------------------------
-       pvInterval=1.0; # check PV decay every 1.0 meep time units
-       nextPVTime=f.round_time() + pvInterval;
-       nextFrameTime=f.round_time();
-       MaxPV=0.0;
-       Stop=False;
-       while Stop==False:
-
-         f.step();
-
-         # check for poynting-flux decay at regular intervals
-         FieldsDecayed=False;
-         if f.round_time() > nextPVTime:
-             nextPVTime += pvInterval;
-             ThisPV=f.flux_in_box(mp.X,vB)
-             if (ThisPV > MaxPV):
-                MaxPV = ThisPV;
-             elif (ThisPV < 0.001*MaxPV):
-                FieldsDecayed=True;
-
-         # output movie frames at regular intervals if requested
-         # TODO implement me
-
-         SourcesFinished = f.round_time() > f.last_source_time();
-         Stop = (SourcesFinished and FieldsDecayed);
-         
-       print("finished timestepping at {}".format(f.round_time()))
-       return fluxB
+sources = [ mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=df),
+                               center=mp.Vector3(xA,0.0),
+                               size=mp.Vector3(0.0,LY),
+                               eig_band=band_num
+                              )
+          ] 
+self.sim=mp.Simulation( cell_size=mp.Vector3(LX, LY),
+                        resolution=resolution,
+                        boundary_layers=[mp.PML(DPML)],
+                        force_complex_fields=True,
+                        epsilon_func = eps_func,
+                        sources=sources
+                      )
 ````
 
-The return value of `get_flux()` is a `flux` object
-that may be postprocessed to yield visualization
-files and/or extract eigenmode expansion coefficients.
+Next, we timestep to accumulate Fourier-domain fields
+on a cross-sectional plane within the larger waveguide.
+This is done by the `get_flux()` method in
+[`wvg_taper.py](ModeExpansionFiles/wvg_taper.py).
+
+The timestepping continues until the instantaneous 
+Poynting flux through the flux plane at $x_B$ 
+has decayed to 0.1% of its maximum value.
+When the timestepping is finished, the Fourier-domain
+fields on the plane at $x_B$ are stored
+in a [`dft_flux`](DFTFlux) object called `fluxB.`
+and we can call `meep::fields::output_flux_fields`
+to export the fields to an HDF5 file, similar to
+`output_mode_fields` which we used above:
+
+````python
+f.output_flux_fields(fluxB, vB, 'fluxB')
+````
+
+This produces a file called `fluxB.h5`. One slight
+difference from `output_mode_fields` is that `dft_flux`
+objects typically store field data for multiple
+frequencies, so the field-component datasets
+in the `HDF5` file have names like `ey_0.r`, `ey_1.i`.
 
 ### Visualizing DFT fields
+
+Having written Fourier-transform fields to HDF5
+files, we can read in the data and plot, as we
+did previously for mode profiles. In the `wvg_taper.py`
+code this is again handled by the `plot_fields`
+routine.
+Here are the results of this process for
+a few different values of the taper length $L$ and 
+smoothness index $p$:
+
+![FluxVsLP.png](ModeExpansionFiles/FluxVsLP.png)
+
+Take-home messages:
+
++ For $L=0$ (no taper, i.e. abrupt junction) the fields
+    at $x_B$ look nothing like the fields of the lowest
+    eigenmode for the larger structure (second row
+    of [this plot](ModeExpansion.md#ModeProfiles));
+    clearly there is significant contamination from 
+    higher modes.
++ As we increase the taper length and the smoothness index
+    the fields at $x_B$ more and more closely resemble the 
+    lowest eigenmode fields, indicating that the taper is 
+    working to transfer power adiabatically from lowest mode
+    to lowest mode.
+
+### Making movies
+
+The `get_flux()` routine in the 
+[`wvg_taper.py`](ModeExpansionFiles/wvg_taper.py)
+supports a keyword parameter
+`frame_interval` which, if nonzero, defines an
+interval (in meep time) at which images of the
+instantaneous Poynting flux over the entire geometry
+are to be written to `.h5` files. 
+The default is `frame_interval=0`, in which case 
+these images will not be written.
+
+If you specify (say) `frame_interval=1`
+to `get_flux()` for a geometry with (say) taper
+length $L=1.2$ and smoothness index $p=1$, you
+will get approximately 100 files with names like
+````bash
+ L1.2_p1_f1.png
+ L1.2_p1_f2.png
+ L1.2_p1_f3.png
+ ...
+ L1.2_p1_f105.png
+ ...
+````
+
+To assemble all these frame files into a movie 
+using [FFMPEG](https://www.ffmpeg.org/), go like this:
+
+````bash
+ # ffmpeg -i 'L1.2_p1_f%d.png' L1.2_p1.mpg
+````
+
+(Note that the string `%d` in the input filename
+is a wildcard that will match all integer values; it needs
+to be in single quotes to protect it from shell expansion.)
+
+Here are the movies for the various cases considered above:
+
+<p align="center">
+<table align="center" border="1" cellpadding="1">
+ <tr> <th><i>Taper</i></th>
+      <th><i>Movie</i></th>
+ </tr>
+ <tr> <td><i>L</i>=0</td>
+      <td> <a href="../ModeExpansionFiles/L0_p0.mpg">
+           <img width=400 height=300 src="../ModeExpansionFiles/L0.0_p0_f85.png"/>
+           </a>
+      </td>
+ </tr>
+ <tr> 
+      <td><i>L=1, p=0</i></td>
+      <td> <a href="../ModeExpansionFiles/L1_p0.mpg">
+           <img width=400 height=300 src="../ModeExpansionFiles/L1.0_p0_f85.png"/>
+           </a>
+      </td>
+ </tr>
+ <tr> 
+      <td><i>L=2, p=0</i></td>
+      <td> <a href="../ModeExpansionFiles/L2_p0.mpg">
+           <img width=400 height=300 src="../ModeExpansionFiles/L2.0_p0_f85.png"/>
+           </a>
+      </td>
+ </tr>
+ <tr> 
+      <td><i>L=3, p=0</i></td>
+      <td> <a href="../ModeExpansionFiles/L3_p0.mpg">
+           <img width=400 height=300 src="../ModeExpansionFiles/L3.0_p0_f85.png"/>
+           </a>
+      </td>
+ </tr>
+ <tr> 
+      <td><i>L=3, p=1</i></td>
+      <td> <a href="../ModeExpansionFiles/L3_p1.mpg">
+           <img width=400 height=300 src="../ModeExpansionFiles/L3.0_p1_f85.png"/>
+           </a>
+      </td>
+ </tr>
+ <tr>
+      <td><i>L=3, p=2</i></td>
+      <td> <a href="../ModeExpansionFiles/L3_p2.mpg">
+           <img width=400 height=300 src="../ModeExpansionFiles/L3.0_p2_f85.png"/>
+           </a>
+      </td>
+ </tr>
+</table>
+</p>
+
+
 
 ### Extracting mode-expansion coefficients
 
 Finally, we call `get_mode_coefficients` to compute
-the inner product of the MEEP DFT fields in the larger waveguide 
+the inner product of the Meep DFT fields in the larger waveguide 
 with each of a user-specified list of eigenmodes of the larger 
 waveguide to compute the fraction of the power carried by
 each mode.
-
-**Insert python code here**
 
 ### Intra-modal scattering losses vs. taper length and smoothness
 
@@ -428,21 +603,7 @@ as the taper length $L\to\infty.$
 
 ![TaperData.png](ModeExpansionFiles/TaperData.png)
 
-## Second calculation: Silicon-on-insulator strip waveguide (3D geometry)
-
-Next we consider a setup similar to the one we 
-just studied, but now involving a 3D geometry---a taper
-between *strip waveguides* defined by patterned silicon
-strips atop an oxide layer. The geometry is almost identical
-to that considered in [this MPB calculation](http://www.simpetuscloud.com/projects.html#mpb_waveguide),
-but with the distinction that the width $w$ of the silicon strip
-is no longer constant, but varies from a smaller to a larger 
-width via a length-$L$ taper just as in the 2D calculation we considered
-above.
-
-**FINISH THIS SECTION**
-
-<a name="Other routines"></a>
+<a name="OtherRoutines"></a>
 ## Related computational routines
 
 Besides `get_eigenmode_coefficients,` there are a few
@@ -561,14 +722,14 @@ but in [MPB][MPB] it is taken to be the group velocity of the
 mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$:
 $$ C_m = v_m A_S. \tag{6} $$
 
-Now consider a MEEP calculation in which we have accumulated
+Now consider a Meep calculation in which we have accumulated
 frequency-domain $\mathbf E^{\text{meep}}$ and $\mathbf H^{\text{meep}}$ 
 fields on a `dft-flux`
 object located on a cross-sectional surface $S$. Invoking the
 eigenmode expansion [(1)](ModeExpansion.md#EigenmodeExpansions)
 and choosing (without loss of generality) the origin 
 of the $x$ axis to be the position of the cross-sectional plane,
-the tangential components of the frequency-domain MEEP fields
+the tangential components of the frequency-domain Meep fields
 take the form
 $$ \mathbf E^{\text{meep}}_\parallel
    = \sum_{n} (\alpha_n^+ + \alpha_n^-)\mathbf{E}_{n\parallel}^+,
@@ -598,19 +759,19 @@ $$ \left\langle \mathbf{E}_m
 $$
 Thus, by evaluating the integrals on the LHS of these equations---numerically,
 using the MPB-computed eigenmode fields $\{\mathbf{E}, \mathbf{H}\}_m$
-and the MEEP-computed fields $\{\mathbf{E}, \mathbf{H}\}^{\text{meep}}\}$
+and the Meep-computed fields $\{\mathbf{E}, \mathbf{H}\}^{\text{meep}}\}$
 as tabulated on the computational grid---and combining the results 
 appropriately, we can extract the coefficients $\{\alpha^\pm_m\}$
 in the expansion (1). This calculation is carried out by the
-routine [`get_mode_flux_overlap`](ModeExpansion.md#OverlapRoutines).
+routine [`meep::fields::get_mode_flux_overlap`](ModeExpansion.md#OverlapRoutines).
 (Although simple in principle, the implementation is complicated by
-the fact that, in multi-processor calculations, the MEEP fields
+the fact that, in multi-processor calculations, the Meep fields
 needed to evaluate the integrals are generally not all present 
 on any one processor, but are instead distributed over multiple
 processors, requiring some interprocess communication to evaluate
 the full integral.)
 
-The Poynting flux carried by the MEEP fields (7,8) may be expressed
+The Poynting flux carried by the Meep fields (7,8) may be expressed
 in the form
 $$ S_x = \frac{1}{2}\text{Re }
          \left\langle \mathbf{E}^{\text{meep}}\right|
