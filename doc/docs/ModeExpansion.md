@@ -542,43 +542,43 @@ Here are the movies for the various cases considered above:
       <th><i>Movie</i></th>
  </tr>
  <tr> <td><i>L</i>=0</td>
-      <td> <a href="../ModeExpansionFiles/L0_p0.mpg">
-           <img width=400 height=300 src="../ModeExpansionFiles/L0.0_p0_f85.png"/>
+      <td> <a href="ModeExpansionFiles/L0_p0.mpg">
+           <img width=400 height=300 src="ModeExpansionFiles/L0.0_p0_f85.png"/>
            </a>
       </td>
  </tr>
  <tr> 
       <td><i>L=1, p=0</i></td>
-      <td> <a href="../ModeExpansionFiles/L1_p0.mpg">
-           <img width=400 height=300 src="../ModeExpansionFiles/L1.0_p0_f85.png"/>
+      <td> <a href="ModeExpansionFiles/L1_p0.mpg">
+           <img width=400 height=300 src="ModeExpansionFiles/L1.0_p0_f85.png"/>
            </a>
       </td>
  </tr>
  <tr> 
       <td><i>L=2, p=0</i></td>
-      <td> <a href="../ModeExpansionFiles/L2_p0.mpg">
-           <img width=400 height=300 src="../ModeExpansionFiles/L2.0_p0_f85.png"/>
+      <td> <a href="ModeExpansionFiles/L2_p0.mpg">
+           <img width=400 height=300 src="ModeExpansionFiles/L2.0_p0_f85.png"/>
            </a>
       </td>
  </tr>
  <tr> 
       <td><i>L=3, p=0</i></td>
-      <td> <a href="../ModeExpansionFiles/L3_p0.mpg">
-           <img width=400 height=300 src="../ModeExpansionFiles/L3.0_p0_f85.png"/>
+      <td> <a href="ModeExpansionFiles/L3_p0.mpg">
+           <img width=400 height=300 src="ModeExpansionFiles/L3.0_p0_f85.png"/>
            </a>
       </td>
  </tr>
  <tr> 
       <td><i>L=3, p=1</i></td>
-      <td> <a href="../ModeExpansionFiles/L3_p1.mpg">
-           <img width=400 height=300 src="../ModeExpansionFiles/L3.0_p1_f85.png"/>
+      <td> <a href="ModeExpansionFiles/L3_p1.mpg">
+           <img width=400 height=300 src="ModeExpansionFiles/L3.0_p1_f85.png"/>
            </a>
       </td>
  </tr>
  <tr>
       <td><i>L=3, p=2</i></td>
-      <td> <a href="../ModeExpansionFiles/L3_p2.mpg">
-           <img width=400 height=300 src="../ModeExpansionFiles/L3.0_p2_f85.png"/>
+      <td> <a href="ModeExpansionFiles/L3_p2.mpg">
+           <img width=400 height=300 src="ModeExpansionFiles/L3.0_p2_f85.png"/>
            </a>
       </td>
  </tr>
