@@ -8,7 +8,7 @@ import time
 import h5py
 import numpy as np
 import meep as mp
-from meep import mpb
+from . import mode_solver
 from meep.simulation import get_num_args
 
 try:
@@ -287,7 +287,7 @@ class ModeSolver(object):
 
         # TODO: Can we keep the mode_solver around between runs, or does it need
         # to get created clean for each run?
-        self.mode_solver = mpb.mode_solver(
+        self.mode_solver = mode_solver(
             self.num_bands,
             p,
             self.resolution,

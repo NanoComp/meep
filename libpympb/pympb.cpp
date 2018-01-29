@@ -799,30 +799,6 @@ void mode_solver::get_epsilon() {
       ++fill_count;
     }
 
-#ifndef SCALAR_COMPLEX
-  /* most points need to be counted twice, by rfftw output symmetry: */
-    {
-      int last_index;
-// TODO
-// #ifdef HAVE_MPI
-//       if (nz == 1) { /* 2d calculation: 1st dim. is truncated one */
-//         last_index = i / nx + local_y_start;
-//       }
-//       else {
-//         last_index = i % last_dim_stored;
-//       }
-// #else
-      last_index = i % last_dim_stored;
-// #endif
-      if (last_index != 0 && 2*last_index != last_dim) {
-        eps_mean += epsilon[i];
-        eps_inv_mean += 1/epsilon[i];
-        if (epsilon[i] > 1.0001) {
-           ++fill_count;
-        }
-      }
-    }
-#endif
   }
 
   (void)last_dim;
@@ -870,14 +846,6 @@ void mode_solver::output_field_to_file(int which_component, char *filename_prefi
   mpb_real output_k[3]; /* kvector in reciprocal lattice basis */
   mpb_real output_R[3][3];
 
-  /* where to put "otherhalf" block of output, only used for real scalars */
-  int last_dim_index = 0;
-  int last_dim_start = 0;
-  int last_dim_size = 0;
-  int first_dim_start = 0;
-  int first_dim_size = 0;
-  int write_start0_special = 0;
-
   if (!curfield) {
     meep::master_fprintf(stderr, "fields, energy dens., or epsilon must be loaded first.\n");
     return;
@@ -892,39 +860,7 @@ void mode_solver::output_field_to_file(int which_component, char *filename_prefi
 //   local_dims[2] = dims[2] = mdata->nz;
 //   local_dims[0] = mdata->local_ny;
 //   start[0] = mdata->local_y_start;
-// #ifndef SCALAR_COMPLEX
-//   /* Ugh, hairy.  See also maxwell_vectorfield_otherhalf. */
-//   if (dims[2] == 1) {
-//     last_dim_index = 0;
-//     first_dim_size = local_dims[0];
-//     first_dim_start = dims[0] - (start[0] + local_dims[0] - 1);
 
-//     if (start[0] == 0)
-//       --first_dim_size; /* DC frequency is not in other half */
-//     if (start[0] + local_dims[0] == mdata->last_dim_size / 2 && dims[0] % 2 == 0) {
-//       --first_dim_size; /* Nyquist frequency is not in other half */
-//       ++first_dim_start;
-//     }
-
-//     last_dim_start = first_dim_start;
-//     last_dim_size = first_dim_size;
-//   }
-//   else {
-//     last_dim_index = 2;
-//     local_dims[last_dim_index] = mdata->last_dim_size / 2;
-//     if (start[0] == 0) {
-//       first_dim_size = local_dims[0] - 1;
-//       first_dim_start = dims[0] - first_dim_size;
-//       write_start0_special = 1;
-//     }
-//     else {
-//       first_dim_start = dims[0] - (start[0] + local_dims[0] - 1);
-//       first_dim_size = local_dims[0];
-//     }
-//     last_dim_start = local_dims[last_dim_index];
-//     last_dim_size = dims[last_dim_index] - local_dims[last_dim_index];
-//   }
-// #endif /* ! SCALAR_COMPLEX */
 //   output_k[0] = R[1][0]*mdata->current_k[0] + R[1][1]*mdata->current_k[1]
 //                 + R[1][2]*mdata->current_k[2];
 //   output_k[1] = R[0][0]*mdata->current_k[0] + R[0][1]*mdata->current_k[1]
@@ -939,14 +875,6 @@ void mode_solver::output_field_to_file(int which_component, char *filename_prefi
   local_dims[1] = dims[1] = mdata->ny;
   local_dims[2] = dims[2] = mdata->nz;
   local_dims[0] = mdata->local_nx;
-#ifndef SCALAR_COMPLEX
-  last_dim_index = dims[2] == 1 ? (dims[1] == 1 ? 0 : 1) : 2;
-  local_dims[last_dim_index] = mdata->last_dim_size / 2;
-  last_dim_start = local_dims[last_dim_index];
-  last_dim_size = dims[last_dim_index] - local_dims[last_dim_index];
-  first_dim_start = last_dim_index ? 0 : last_dim_start;
-  first_dim_size = last_dim_index ? local_dims[0] : last_dim_size;
-#endif
   start[0] = mdata->local_x_start;
   output_k[0] = R[0][0]*mdata->current_k[0] + R[0][1]*mdata->current_k[1]
                 + R[0][2]*mdata->current_k[2];
@@ -981,31 +909,6 @@ void mode_solver::output_field_to_file(int which_component, char *filename_prefi
     fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 3,
                                 output_k, file_id, 0, data_id);
 
-#ifndef SCALAR_COMPLEX
-    /* Here's where it gets hairy. */
-    maxwell_vectorfield_otherhalf(mdata, curfield, output_k[0], output_k[1], output_k[2]);
-    start[last_dim_index] = last_dim_start;
-    local_dims[last_dim_index] = last_dim_size;
-    start[0] = first_dim_start;
-    local_dims[0] = first_dim_size;
-    if (write_start0_special) {
-      /* The conjugated array half may be discontiguous.
-         First, write the part not containing start[0], and
-         then write the start[0] slab. */
-      fieldio_write_complex_field(curfield + 3 * local_dims[1] * local_dims[2],
-                                  3, dims, local_dims, start, which_component, 3, NULL,
-                                  file_id, 1, data_id);
-      local_dims[0] = 1;
-      start[0] = 0;
-      fieldio_write_complex_field(curfield, 3, dims,local_dims,start, which_component, 3,
-                                  NULL, file_id, 1, data_id);
-    }
-    else {
-      fieldio_write_complex_field(curfield, 3, dims,local_dims,start, which_component, 3,
-                                  NULL, file_id, 1, data_id);
-    }
-#endif
-
     for (i = 0; i < 6; ++i) {
       if (data_id[i].id >= 0) {
         matrixio_close_dataset(data_id[i]);
@@ -1026,31 +929,6 @@ void mode_solver::output_field_to_file(int which_component, char *filename_prefi
     free(fname2);
     fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 1,
                                 output_k, file_id, 0, data_id);
-
-#ifndef SCALAR_COMPLEX
-    /* Here's where it gets hairy. */
-    maxwell_cscalarfield_otherhalf(mdata, curfield, output_k[0], output_k[1], output_k[2]);
-    start[last_dim_index] = last_dim_start;
-    local_dims[last_dim_index] = last_dim_size;
-    start[0] = first_dim_start;
-    local_dims[0] = first_dim_size;
-    if (write_start0_special) {
-      /* The conjugated array half may be discontiguous.
-         First, write the part not containing start[0], and
-         then write the start[0] slab. */
-      fieldio_write_complex_field(curfield + local_dims[1] * local_dims[2], 3, dims,
-                                  local_dims, start, which_component, 1, NULL, file_id,
-                                  1, data_id);
-      local_dims[0] = 1;
-      start[0] = 0;
-      fieldio_write_complex_field(curfield, 3, dims,local_dims,start, which_component, 1, NULL,
-                                  file_id, 1, data_id);
-    }
-    else {
-      fieldio_write_complex_field(curfield, 3, dims,local_dims,start, which_component, 1, NULL,
-                                  file_id, 1, data_id);
-    }
-#endif
 
     for (i = 0; i < 2; ++i) {
          if (data_id[i].id >= 0) {
@@ -1080,9 +958,7 @@ void mode_solver::output_field_to_file(int which_component, char *filename_prefi
     file_id = matrixio_create(fname2);
     free(fname2);
 
-    output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, "data",
-                       last_dim_index, last_dim_start, last_dim_size, first_dim_start,
-                       first_dim_size, write_start0_special);
+    output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, "data");
 
     if (curfield_type == 'n') {
       int c1, c2, inv;
@@ -1094,20 +970,13 @@ void mode_solver::output_field_to_file(int which_component, char *filename_prefi
             get_epsilon_tensor(c1,c2, 0, inv);
             sprintf(dataname, "%s.%c%c", inv ? "epsilon_inverse" : "epsilon",
                     c1 + 'x', c2 + 'x');
-            output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, dataname,
-                               last_dim_index, last_dim_start, last_dim_size, first_dim_start,
-                               first_dim_size, write_start0_special);
+            output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, dataname);
 
 #if defined(WITH_HERMITIAN_EPSILON)
             if (c1 != c2) {
               get_epsilon_tensor(c1,c2, 1, inv);
               strcat(dataname, ".i");
-#ifndef SCALAR_COMPLEX /* scalarfield_otherhalf isn't right */
-              strcat(dataname, ".screwy");
-#endif
-              output_scalarfield((mpt_real *) curfield, dims, local_dims, start, file_id,
-                                 dataname, last_dim_index, last_dim_start, last_dim_size,
-                                 first_dim_start, first_dim_size, write_start0_special);
+              output_scalarfield((mpt_real *) curfield, dims, local_dims, start, file_id, dataname);
             }
 #endif
           }
@@ -1133,56 +1002,11 @@ void mode_solver::output_scalarfield(mpb_real *vals,
                                      const int local_dims[3],
                                      const int start[3],
                                      matrixio_id file_id,
-                                     const char *dataname,
-                                     int last_dim_index,
-                                     int last_dim_start,
-                                     int last_dim_size,
-                                     int first_dim_start,
-                                     int first_dim_size,
-                                     int write_start0_special) {
+                                     const char *dataname) {
 
   matrixio_id data_id = {-1, 1};
 
   fieldio_write_real_vals(vals, 3, dims, local_dims, start, file_id, 0, dataname, &data_id);
-
-#ifndef SCALAR_COMPLEX
-  {
-    int start_new[3], local_dims_new[3];
-
-    start_new[0] = start[0];
-    start_new[1] = start[1];
-    start_new[2] = start[2];
-    local_dims_new[0] = local_dims[0];
-    local_dims_new[1] = local_dims[1];
-    local_dims_new[2] = local_dims[2];
-
-    maxwell_scalarfield_otherhalf(mdata, vals);
-    start_new[last_dim_index] = last_dim_start;
-    local_dims_new[last_dim_index] = last_dim_size;
-    start_new[0] = first_dim_start;
-    local_dims_new[0] = first_dim_size;
-    if (write_start0_special) {
-      /* The conjugated array half may be discontiguous.
-         First, write the part not containing start_new[0], and
-         then write the start_new[0] slab. */
-      fieldio_write_real_vals(vals + local_dims_new[1] * local_dims_new[2], 3, dims,
-                              local_dims_new, start_new, file_id, 1, dataname, &data_id);
-      local_dims_new[0] = 1;
-      start_new[0] = 0;
-      fieldio_write_real_vals(vals, 3, dims, local_dims_new, start_new, file_id, 1, dataname, &data_id);
-    }
-    else {
-      fieldio_write_real_vals(vals, 3, dims, local_dims_new, start_new, file_id, 1, dataname, &data_id);
-    }
-  }
-#endif
-
-  (void)last_dim_index;
-  (void)last_dim_start;
-  (void)last_dim_size;
-  (void)first_dim_start;
-  (void)first_dim_size;
-  (void)write_start0_special;
 
   if (data_id.id >= 0)
     matrixio_close_dataset(data_id);

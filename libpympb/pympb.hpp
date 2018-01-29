@@ -114,18 +114,9 @@ struct mode_solver {
   void reset_epsilon();
   void curfield_reset();
   void output_field_to_file(int which_component, char *filename_prefix);
-  void output_scalarfield(mpb_real *vals,
-                          const int dims[3],
-                          const int local_dims[3],
-                          const int start[3],
-                          matrixio_id file_id,
-                          const char *dataname,
-                          int last_dim_index,
-                          int last_dim_start,
-                          int last_dim_size,
-                          int first_dim_start,
-                          int first_dim_size,
-                          int write_start0_special);
+  void output_scalarfield(mpb_real *vals, const int dims[3], const int local_dims[3],
+                          const int start[3], matrixio_id file_id, const char *dataname);
+
   char *fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix);
   void load_eigenvectors(char *filename);
 

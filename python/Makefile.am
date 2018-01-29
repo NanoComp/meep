@@ -6,8 +6,8 @@ HPPFILES=                                    \
  $(top_srcdir)/libmeepgeom/meepgeom.hpp      \
  $(top_srcdir)/libmeepgeom/material_data.hpp
 
-BUILT_SOURCES = meep-python.cpp __init__.py
-EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp examples tests
+BUILT_SOURCES = meep-python.cpp mpb-python.cpp __init__.py mpb.py
+EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp solver.py examples tests
 
 CLEANFILES = $(BUILT_SOURCES) meep.py
 
@@ -79,16 +79,20 @@ endif
 if MAINTAINER_MODE
 
 SWIG ?= swig
-SWIG_SRC = meep.i numpy.i vec.i
 SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
+MEEP_SWIG_SRC = meep.i numpy.i vec.i
 
-meep-python.cpp: $(SWIG_SRC) $(HPPFILES)
+meep-python.cpp: $(MEEP_SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
-mpb-python.cpp: mpb.i $(top_srcdir)/libpympb/pympb.hpp
-	swig -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
+MPB_SWIG_SRC = mpb.i
+
+mpb-python.cpp: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp
+	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
 
 meep.py: meep-python.cpp
+
+mpb.py: mpb-python.cpp
 
 __init__.py: meep.py
 	cp $< $@
@@ -99,10 +103,11 @@ __init__.py: meep.py
 
 
 INIT_PY = __init__.py
-
+MPB_PY = $(builddir)/mpb.py
 else
 
 INIT_PY = $(srcdir)/__init__.py
+MPB_PY = $(srcdir)/mpb.py
 
 endif # MAINTAINER_MODE
 
@@ -117,8 +122,8 @@ meep: _meep.la _mpb.la __init__.py
 	mkdir -p meep/mpb
 	cp $(PY_PKG_FILES) meep
 	cp .libs/_mpb.so meep/mpb
-	cp mpb.py meep/mpb/__init__.py
-	cp $(top_srcdir)/python/solver.py meep/mpb
+	cp $(MPB_PY) meep/mpb/__init__.py
+	cp $(srcdir)/solver.py meep/mpb
 
 all-local: meep
 

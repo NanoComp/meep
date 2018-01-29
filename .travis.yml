@@ -75,4 +75,3 @@ after_script:
   - if [[ -e ${PYMPB_LOG} ]]; then cat ${PYMPB_LOG}; fi
   - PYTHON_LOG=${BUILD_PREFIX}/python/test-suite.log
   - if [[ -e ${PYTHON_LOG} ]]; then cat ${PYTHON_LOG}; fi
-
