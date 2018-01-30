@@ -89,7 +89,7 @@ static matrixio_id matrixio_create_(const char *fname, int parallel)
   id.id = H5Fcreate(new_fname, H5F_ACC_TRUNC, H5P_DEFAULT, access_props);
 #else
   if (parallel) mpi_begin_critical_section(matrixio_critical_section_tag);
-  if (mpi_is_master() || !parallel)
+  if (meep::am_master() || !parallel)
     id.id = H5Fcreate(new_fname, H5F_ACC_TRUNC,H5P_DEFAULT,access_props);
   else
     id.id = H5Fopen(new_fname, H5F_ACC_RDWR, access_props);
@@ -242,7 +242,7 @@ matrixio_id matrixio_create_dataset(matrixio_id id, const char *name, const char
 #ifdef HAVE_H5PSET_FAPL_MPIO /* H5Gunlink is collective */
       matrixio_dataset_delete(id, name);
 #else
-      if (mpi_is_master() || !id.parallel) {
+      if (meep::am_master() || !id.parallel) {
         matrixio_dataset_delete(id, name);
         H5Fflush(id.id, H5F_SCOPE_GLOBAL);
       }
@@ -271,7 +271,7 @@ matrixio_id matrixio_create_dataset(matrixio_id id, const char *name, const char
     /* Create the dataset.  Note that, on parallel machines, H5Dcreate
        should do the right thing; it is supposedly a collective operation. */
     IF_EXCLUSIVE(
-    if (mpi_is_master() || !id.parallel)
+    if (meep::am_master() || !id.parallel)
       data_id.id = H5Dcreate(id.id,name,type_id,space_id,H5P_DEFAULT);
     else
       data_id.id = H5Dopen(id.id, name), data_id.id = H5Dcreate(id.id, name, type_id, space_id, H5P_DEFAULT));
@@ -584,7 +584,7 @@ void write_attr(matrixio_id id, matrixio_id_ type_id, matrixio_id_ space_id,
   hid_t attr_id;
 
 #ifndef HAVE_H5PSET_FAPL_MPIO
-  if (!mpi_is_master() && id.parallel)
+  if (!meep::am_master() && id.parallel)
     return; /* only one process should add attributes */
 #else
   /* otherwise, the operations must be performed collectively */

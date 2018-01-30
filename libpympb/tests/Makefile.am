@@ -1,6 +1,7 @@
 LIBCTLGEOM = @LIBCTLGEOM_LIBS@
 LIBMEEPGEOM = $(top_builddir)/libmeepgeom/libmeepgeom.la
 LIBPYMPB = $(top_builddir)/libpympb/libpympb.la
+LIBMEEP = $(top_builddir)/src/libmeep.la
 
 AM_CPPFLAGS =                   \
     -Wfatal-errors              \
@@ -11,7 +12,8 @@ AM_CPPFLAGS =                   \
 bin_PROGRAMS = tutorial
 
 tutorial_SOURCES = tutorial.cpp
-tutorial_LDADD = $(LIBPYMPB) $(LIBMEEPGEOM) $(LIBCTLGEOM)
+tutorial_LDADD = $(LIBPYMPB) $(LIBMEEPGEOM) $(LIBCTLGEOM) $(LIBMEEP)
+tutorial_CPPFLAGS = $(AM_CPPFLAGS)
 
 TESTS = tutorial
 

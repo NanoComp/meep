@@ -69,8 +69,9 @@ void test_mode_solver() {
   free(mat);
 }
 
-int main() {
+int main(int argc, char** argv) {
 
+  meep::initialize mpi(argc, argv);
   test_mode_solver();
   return 0;
 }
