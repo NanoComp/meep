@@ -1108,30 +1108,88 @@ size_t mode_solver::get_field_size() {
   return mdata ? mdata->fft_output_size * 3 : 0;
 }
 
-// TODO: Will these only be called once, or should we save the fields as members?
-void mode_solver::get_e_field(std::complex<mpb_real> *cdata, int size) {
-  (void)size; // needed for numpy typemap
+void mode_solver::get_efield(std::complex<mpb_real> *cdata, int size, int band) {
 
-  // TODO: Save this result from get_h_field
-  maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, num_bands - 1, 1);
-  maxwell_compute_e_from_d(mdata, (scalar_complex*)cdata, 1);
-}
+  get_dfield(cdata, size, band);
+  get_efield_from_dfield();
 
-void mode_solver::get_d_field(std::complex<mpb_real> *cdata, int size) {
-  maxwell_compute_d_from_H(mdata, H, (scalar_complex*)cdata, num_bands - 1, 1);
-
-  // d_from_H actually computes -omega*D (see mpb/src/maxwell/maxwell_op.c)
-  // TODO: omega_src in meep/src/mpb.cpp is real(src.frequency()). What should
-  // it be here?
-  double scale = -1.0; // / omega_src;
   for (int i = 0; i < size; ++i) {
-    cdata[i] *= scale;
+    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
   }
 }
 
-void mode_solver::get_h_field(std::complex<mpb_real> *cdata, int size) {
+void mode_solver::get_efield_from_dfield() {
+
+  if (!curfield || curfield_type != 'd') {
+    meep::master_fprintf(stderr, "get_dfield must be called before get-efield-from-dfield!\n");
+    return;
+  }
+
+  maxwell_compute_e_from_d(mdata, curfield, 1);
+  curfield_type = 'e';
+}
+
+void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) {
+
+  if (!kpoint_index) {
+    meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
+    return;
+  }
+
+  if (band < 1 || band > H.p) {
+    meep::master_fprintf(stderr, "Must have 1 <= band index <= num_bands (%d)\n", H.p);
+    return;
+  }
+
+  curfield = (scalar_complex *)mdata->fft_data;
+  curfield_band = band;
+  curfield_type = 'd';
+
+  if (mdata->mu_inv == NULL) {
+    maxwell_compute_d_from_H(mdata, H, curfield, band - 1, 1);
+  }
+  else {
+    evectmatrix_resize(&W[0], 1, 0);
+    maxwell_compute_H_from_B(mdata, H, W[0], curfield, band - 1, 0, 1);
+    maxwell_compute_d_from_H(mdata, W[0], curfield, 0, 1);
+    evectmatrix_resize(&W[0], W[0].alloc_p, 0);
+  }
+
+  // Here, we correct for the fact that compute_d_from_H actually computes just
+  // (k+G) x H, whereas the actual D field is i/omega i(k+G) x H...so, there is
+  // an added factor of -1/omega.
+
+  // We also divide by the cell volume so that the integral of H*B or of D*E is
+  // unity.  (From the eigensolver + FFT, they are initially normalized to sum to
+  // nx*ny*nz.)
+
+  double scale;
+
+  if (freqs[band - 1] != 0.0) {
+    scale = -1.0 / freqs[band - 1];
+  }
+  else
+    scale = -1.0; /* arbitrary */
+
+  scale /= sqrt(vol);
+
+  for (int i = 0; i < size; ++i) {
+    curfield[i].re *= scale;
+    curfield[i].im *= scale;
+    // Copy curfield into our output array for numpy
+    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
+  }
+}
+
+void mode_solver::get_hfield(std::complex<mpb_real> *cdata, int size, int band) {
   (void)size; // needed for numpy typemap
-  maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, num_bands - 1, 1);
+  maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, band - 1, 1);
+}
+
+void mode_solver::get_bfield(std::complex<mpb_real> *cdata, int size, int band) {
+  (void)cdata;
+  (void)size;
+  (void)band;
 }
 
 char mode_solver::get_curfield_type() {

@@ -123,9 +123,10 @@ struct mode_solver {
   size_t get_field_size();
 
   std::vector<mpb_real> get_freqs();
-  void get_e_field(std::complex<mpb_real> *cdata, int size);
-  void get_d_field(std::complex<mpb_real> *cdata, int size);
-  void get_h_field(std::complex<mpb_real> *cdata, int size);
+  void get_efield(std::complex<mpb_real> *cdata, int size, int band);
+  void get_dfield(std::complex<mpb_real> *cdata, int size, int band);
+  void get_hfield(std::complex<mpb_real> *cdata, int size, int band);
+  void get_bfield(std::complex<mpb_real> *cdata, int size, int band);
 
   void get_curfield(double *data, int size);
   // void get_curfield(std::complex<mpb_real> *cdata, int size);
@@ -138,6 +139,8 @@ private:
   int kpoint_index;
   scalar_complex *curfield;
   char curfield_type;
+
+  void get_efield_from_dfield();
 };
 } // namespace py_mpb
 #endif

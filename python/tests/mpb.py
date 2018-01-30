@@ -31,6 +31,8 @@ class TestMPBWrappers(unittest.TestCase):
 
 class TestModeSolver(unittest.TestCase):
 
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+
     def init_solver(self):
         num_bands = 8
         k_points = [
@@ -107,6 +109,21 @@ class TestModeSolver(unittest.TestCase):
 
     def check_gap_list(self, expected_gap_list, result):
         self.check_freqs(expected_gap_list, result)
+
+    def check_fields_h5(self, ref_path, field):
+        with h5py.File(ref_path, 'r') as ref:
+            # Reshape the reference data into a component-wise 1d array like
+            # [x1,y1,z1,x2,y2,z2,etc.] to match the layout of dfield
+            ref_x = ref['x.r'].value + ref['x.i'].value * 1j
+            ref_y = ref['y.r'].value + ref['y.i'].value * 1j
+            ref_z = ref['z.r'].value + ref['z.i'].value * 1j
+
+            ref_arr = np.zeros(field.shape[0], dtype=np.complex128)
+            ref_arr[0::3] = ref_x.ravel()
+            ref_arr[1::3] = ref_y.ravel()
+            ref_arr[2::3] = ref_z.ravel()
+
+            np.testing.assert_allclose(ref_arr, field)
 
     def test_update_band_range_data(self):
         brd = []
@@ -460,34 +477,41 @@ class TestModeSolver(unittest.TestCase):
         self.check_freqs(expected_freqs, ms.all_freqs)
         self.check_gap_list(expected_gap_list, ms.gap_list)
 
-    def test_get_e_field(self):
+    def test_get_efield(self):
         ms = self.init_solver()
-        ms.filename_prefix = 'test_get_e_field'
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+        ms.filename_prefix = 'test_get_efield'
+        ms.run_te()
+        efield = ms.get_efield(ms.num_bands)
+
+        ref_fname = 'tutorial-e.k16.b08.te.h5'
+        ref_path = os.path.join(self.data_dir, ref_fname)
+
+        self.check_fields_h5(ref_path, efield)
+
+    def test_get_dfield(self):
+        ms = self.init_solver()
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+        ms.filename_prefix = 'test_get_dfield'
+        ms.run_te()
+        dfield = ms.get_dfield(ms.num_bands)
+
+        ref_fname = 'tutorial-d.k16.b08.te.h5'
+        ref_path = os.path.join(self.data_dir, ref_fname)
+
+        self.check_fields_h5(ref_path, dfield)
+
+    def test_get_hfield(self):
+        ms = self.init_solver()
+        ms.filename_prefix = 'test_get_hfield'
         ms.run_te()
 
         # TODO: Validate values
-        ms.get_e_field()
-
-    def test_get_d_field(self):
-        ms = self.init_solver()
-        ms.filename_prefix = 'test_get_d_field'
-        ms.run_te()
-
-        # TODO: Validate values
-        ms.get_d_field()
-
-    def test_get_h_field(self):
-        ms = self.init_solver()
-        ms.filename_prefix = 'test_get_h_field'
-        ms.run_te()
-
-        # TODO: Validate values
-        ms.get_h_field()
+        ms.get_hfield(ms.num_bands)
 
     def test_output_field_to_file(self):
         fname = 'mpb-tutorial-epsilon.h5'
-        data_dir = os.path.abspath(os.path.realpath(os.path.join(os.path.dirname(__file__), 'data')))
-        data_path = os.path.join(data_dir, fname)
+        data_path = os.path.join(self.data_dir, fname)
         ref = h5py.File(data_path)
 
         ms = self.init_solver()

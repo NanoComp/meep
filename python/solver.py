@@ -104,16 +104,16 @@ class ModeSolver(object):
     def get_freqs(self):
         return self.mode_solver.get_freqs()
 
-    def get_e_field(self):
-        return self._get_field('e')
+    def get_efield(self, which_band):
+        return self._get_field('e', which_band)
 
-    def get_d_field(self):
-        return self._get_field('d')
+    def get_dfield(self, which_band):
+        return self._get_field('d', which_band)
 
-    def get_h_field(self):
-        return self._get_field('h')
+    def get_hfield(self, which_band):
+        return self._get_field('h', which_band)
 
-    def _get_field(self, f):
+    def _get_field(self, f, band):
         if self.mode_solver is None:
             raise ValueError("Must call a run function before attempting to get a field")
 
@@ -121,11 +121,11 @@ class ModeSolver(object):
         field = np.zeros(size, dtype=np.complex128)
 
         if f == 'e':
-            self.mode_solver.get_e_field(field)
+            self.mode_solver.get_efield(field, band)
         elif f == 'd':
-            self.mode_solver.get_d_field(field)
+            self.mode_solver.get_dfield(field, band)
         elif f == 'h':
-            self.mode_solver.get_h_field(field)
+            self.mode_solver.get_hfield(field, band)
 
         return field
 

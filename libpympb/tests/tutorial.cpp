@@ -61,7 +61,7 @@ void test_mode_solver() {
 
   int size = ms.mdata->fft_output_size * 3;
   std::vector<std::complex<mpb_real> > h_field(size);
-  ms.get_h_field(h_field.data(), size);
+  ms.get_hfield(h_field.data(), size, num_bands);
 
   for (int i = 0; i < ms.mdata->fft_output_size * 3; ++i) {
     printf("<%f, %fi>\n", real(h_field[i]), imag(h_field[i]));
