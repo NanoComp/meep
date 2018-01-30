@@ -530,17 +530,17 @@ AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
 ##############################################################################
 
 AC_CONFIG_FILES([
-  Makefile
-  meep-pkgconfig
-  src/Makefile
-  tests/Makefile
-  examples/Makefile
-  libctl/Makefile
-  libctl/meep.scm
-  libmeepgeom/Makefile
-  libpympb/Makefile
-  libpympb/tests/Makefile
-  python/Makefile
+	Makefile
+	meep-pkgconfig
+	src/Makefile
+	tests/Makefile
+	examples/Makefile
+	libctl/Makefile
+	libctl/meep.scm
+	libmeepgeom/Makefile
+	libpympb/Makefile
+	libpympb/tests/Makefile
+	python/Makefile
 ])
 
 AC_OUTPUT
