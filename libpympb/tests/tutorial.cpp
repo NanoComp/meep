@@ -1,5 +1,6 @@
 #include <cassert>
 #include <complex>
+#include <vector>
 #include "pympb.hpp"
 
 void test_mode_solver() {
@@ -59,8 +60,8 @@ void test_mode_solver() {
   }
 
   int size = ms.mdata->fft_output_size * 3;
-  std::complex<mpb_real> *h_field = new std::complex<mpb_real>[size];
-  ms.get_h_field(h_field, size);
+  std::vector<std::complex<mpb_real> > h_field(size);
+  ms.get_h_field(h_field.data(), size);
 
   for (int i = 0; i < ms.mdata->fft_output_size * 3; ++i) {
     printf("<%f, %fi>\n", real(h_field[i]), imag(h_field[i]));
