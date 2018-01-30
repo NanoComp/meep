@@ -1182,14 +1182,72 @@ void mode_solver::get_dfield(std::complex<mpb_real> *cdata, int size, int band) 
 }
 
 void mode_solver::get_hfield(std::complex<mpb_real> *cdata, int size, int band) {
-  (void)size; // needed for numpy typemap
-  maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, band - 1, 1);
+  if (!kpoint_index) {
+    meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
+    return;
+  }
+
+  if (band < 1 || band > H.p) {
+    meep::master_fprintf(stderr, "Must have 1 <= band index <= num_bands (%d)\n", H.p);
+    return;
+  }
+
+  curfield = (scalar_complex *)mdata->fft_data;
+  curfield_band = band;
+  curfield_type = 'h';
+
+  if (mdata->mu_inv == NULL)
+    maxwell_compute_h_from_H(mdata, H, curfield, band - 1, 1);
+  else {
+    evectmatrix_resize(&W[0], 1, 0);
+    maxwell_compute_H_from_B(mdata, H, W[0], curfield, band - 1, 0, 1);
+    maxwell_compute_h_from_H(mdata, W[0], curfield, 0, 1);
+    evectmatrix_resize(&W[0], W[0].alloc_p, 0);
+  }
+
+  // Divide by the cell volume so that the integral of H*B or of D*E is unity.
+  // (From the eigensolver + FFT, they are initially normalized to sum to
+  // nx*ny*nz.)
+
+  double scale;
+  scale = 1.0 / sqrt(vol);
+
+  for (int i = 0; i < size; ++i) {
+    curfield[i].re *= scale;
+    curfield[i].im *= scale;
+    // Copy curfield to our output array for numpy
+    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
+  }
 }
 
 void mode_solver::get_bfield(std::complex<mpb_real> *cdata, int size, int band) {
-  (void)cdata;
-  (void)size;
-  (void)band;
+  if (!kpoint_index) {
+    meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
+    return;
+  }
+
+  if (band < 1 || band > H.p) {
+    meep::master_fprintf(stderr, "Must have 1 <= band index <= num_bands (%d)\n", H.p);
+    return;
+  }
+
+  curfield = (scalar_complex *)mdata->fft_data;
+  curfield_band = band;
+  curfield_type = 'b';
+  maxwell_compute_h_from_H(mdata, H, curfield, band - 1, 1);
+
+  // Divide by the cell volume so that the integral of H*B or of D*E is unity.
+  // (From the eigensolver + FFT, they are initially normalized to sum to nx*ny*nz.) */
+
+  double scale;
+  scale = 1.0 / sqrt(vol);
+
+  for (int i = 0; i < size; ++i) {
+    curfield[i].re *= scale;
+    curfield[i].im *= scale;
+    // Copy curfield to our output array for numpy
+    cdata[i] = std::complex<mpb_real>(curfield[i].re, curfield[i].im);
+  }
 }
 
 char mode_solver::get_curfield_type() {

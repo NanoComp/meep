@@ -104,6 +104,9 @@ class ModeSolver(object):
     def get_freqs(self):
         return self.mode_solver.get_freqs()
 
+    def get_bfield(self, which_band):
+        return self._get_field('b', which_band)
+
     def get_efield(self, which_band):
         return self._get_field('e', which_band)
 
@@ -120,10 +123,12 @@ class ModeSolver(object):
         size = self.mode_solver.get_field_size()
         field = np.zeros(size, dtype=np.complex128)
 
-        if f == 'e':
-            self.mode_solver.get_efield(field, band)
+        if f == 'b':
+            self.mode_solver.get_bfield(field, band)
         elif f == 'd':
             self.mode_solver.get_dfield(field, band)
+        elif f == 'e':
+            self.mode_solver.get_efield(field, band)
         elif f == 'h':
             self.mode_solver.get_hfield(field, band)
 
@@ -213,7 +218,6 @@ class ModeSolver(object):
         print("output_mu: Not yet supported")
         # TODO
         # self.mode_solver.get_mu()
-        # TODO
         # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
 
     def _output_field_to_file(self, component, fname_prefix):
@@ -224,15 +228,16 @@ class ModeSolver(object):
             if curfield_type == 'n':
                 fname = 'epsilon'
                 description = b'dielectric function, epsilon'
-            # elif curfield_type == 'm':
-            #     fname = 'mu'
-            #     description = b'permeability mu'
+            elif curfield_type == 'm':
+                fname = 'mu'
+                description = b'permeability mu'
             # else:
             #     fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
             #                                            kpoint_index, curfield_band)
             #     descr_fmt = b"{} field energy density, kpoint {}, band {}, freq={}"
             #     description = descr_fmt.format(curfield_type, kpoint_index,
             #                                    curfield_band, freqs[curfield_band - 1])
+
             fname = self._create_fname(fname, fname_prefix, False)
             print("Outputting {}...".format(fname))
             f = h5py.File(fname, 'w')
@@ -249,11 +254,11 @@ class ModeSolver(object):
             components = ['x', 'y', 'z']
 
             for inv in [True, False]:
+                inv_str = 'epsilon_inverse' if inv else 'epsilon'
                 for c1 in range(3):
                     for c2 in range(3):
                         self.mode_solver.get_epsilon_tensor(c1, c2, 0, inv)
-                        dataname = "{}.{}{}".format('epsilon_inverse' if inv else 'epsilon',
-                                                    components[c1], components[c2])
+                        dataname = "{}.{}{}".format(inv_str, components[c1], components[c2])
                         self._create_h5_dataset(f, dataname)
             f.close()
 
