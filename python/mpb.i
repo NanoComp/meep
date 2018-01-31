@@ -101,7 +101,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
     }
 }
 
-%typemap(out) std::vector<mpb_real> py_mpb::mode_solver::get_freqs {
+%typemap(out) std::vector<mpb_real> {
     Py_ssize_t n = $1.size();
 
     $result = PyList_New(n);
@@ -112,11 +112,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
     }
 }
 
-%apply (std::vector<mpb_real> py_mpb::mode_solver::get_freqs) {
-    py_mpb::mode_solver::compute_field_energy
-};
-
-%typemap(out) std::vector<int> py_mpb::mode_solver::get_dims {
+%typemap(out) std::vector<int> {
     Py_ssize_t n = $1.size();
 
     $result = PyList_New(n);

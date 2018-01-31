@@ -528,8 +528,9 @@ void mode_solver::randomize_fields() {
   if (deterministic) {
     // seed should be the same for each run, although
     // it should be different for each process.
-    int rank = meep::my_rank();
-    srand(314159 * (rank + 1));
+    // TODO: MPI
+    // int rank = meep::my_rank();
+    srand(314159); // * (rank + 1));
   }
 
   for (i = 0; i < H.n * H.p; ++i) {

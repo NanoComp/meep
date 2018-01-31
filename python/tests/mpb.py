@@ -358,5 +358,19 @@ class TestModeSolver(unittest.TestCase):
                 else:
                     np.testing.assert_array_equal(ref[k].value, f[k].value)
 
+    def test_compute_field_energy(self):
+        ms = self.init_solver()
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+        ms.filename_prefix = 'test_compute_field_energy'
+        ms.run_te()
+        ms.get_dfield(8)
+        res = ms.compute_field_energy()
+
+        expected = [1.0000000000000004, 1.725992366452563e-5, 0.49998273982991737,
+                    1.725992370353374e-5, 0.49998274032271406, 0.0, 0.0]
+
+        np.testing.assert_allclose(expected, res)
+
+
 if __name__ == '__main__':
     unittest.main()
