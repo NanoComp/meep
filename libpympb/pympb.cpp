@@ -513,6 +513,10 @@ void mode_solver::set_parity(integer p) {
   set_kpoint_index(0);  /* reset index */
 }
 
+int mode_solver::get_kpoint_index() {
+  return kpoint_index;
+}
+
 void mode_solver::set_kpoint_index(int i) {
   kpoint_index = i;
 }
@@ -1275,11 +1279,13 @@ void mode_solver::get_curfield(double *data, int size) {
   }
 }
 
-// void mode_solver::get_curfield(std::complex<mpb_real> *cdata, int size) {
-//   for (int i = 0; i < size; ++i) {
-//     cdata[i] = curfield[i];
-//   }
-// }
+void mode_solver::get_curfield(std::complex<mpb_real> *cdata, int size) {
+  scalar_complex *p = (scalar_complex *)curfield;
+
+  for (int i = 0; i < size; ++i) {
+    cdata[i] = std::complex<mpb_real>(p[i].re, p[i].im);
+  }
+}
 
 // internal function for compute_field_energy, below
 double mode_solver::compute_field_energy_internal(mpb_real comp_sum[6]) {
@@ -1369,5 +1375,22 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   }
 
   return retval;
+}
+
+std::vector<mpb_real> mode_solver::get_output_k() {
+  std::vector<mpb_real> output_k;
+
+  output_k.push_back(R[0][0]*mdata->current_k[0]
+                     + R[0][1]*mdata->current_k[1]
+                     + R[0][2]*mdata->current_k[2]);
+
+  output_k.push_back(R[1][0]*mdata->current_k[0]
+                     + R[1][1]*mdata->current_k[1]
+                     + R[1][2]*mdata->current_k[2]);
+
+  output_k.push_back(R[2][0]*mdata->current_k[0]
+                     + R[2][1]*mdata->current_k[1]
+                     + R[2][2]*mdata->current_k[2]);
+  return output_k;
 }
 } // namespace meep_mpb

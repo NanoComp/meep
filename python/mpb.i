@@ -75,6 +75,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 #include "typemap_utils.cpp"
 %}
 
+%include "std_string.i"
 %include "numpy.i"
 %init %{
     import_array();
@@ -87,9 +88,11 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %apply (std::complex<mpb_real>* INPLACE_ARRAY1, int DIM1) {
     (std::complex<mpb_real>* cdata, int size)
 };
+
 %apply (double* INPLACE_ARRAY1, int DIM1) {
     (double* data, int size)
 };
+
 %apply material_type {
     meep_geom::material_data*
 };

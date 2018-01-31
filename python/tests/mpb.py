@@ -371,6 +371,8 @@ class TestModeSolver(unittest.TestCase):
 
         np.testing.assert_allclose(expected, res)
 
+    def test_output_efield_z(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()

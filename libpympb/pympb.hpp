@@ -103,6 +103,7 @@ struct mode_solver {
   void solve_kpoint(vector3 kpoint);
   bool using_mu();
   void set_parity(int p);
+  int get_kpoint_index();
   void set_kpoint_index(int i);
   void get_epsilon();
   void get_epsilon_tensor(int c1, int c2, int imag, int inv);
@@ -129,13 +130,14 @@ struct mode_solver {
   void get_bfield(std::complex<mpb_real> *cdata, int size, int band);
 
   void get_curfield(double *data, int size);
-  // void get_curfield(std::complex<mpb_real> *cdata, int size);
+  void get_curfield(std::complex<mpb_real> *cdata, int size);
 
   std::vector<mpb_real> compute_field_energy();
 
   char get_curfield_type();
   std::string get_parity_string();
   std::vector<int> get_dims();
+  std::vector<mpb_real> get_output_k();
 
 private:
   int kpoint_index;
