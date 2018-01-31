@@ -6,6 +6,8 @@ def print_heading(h):
     stars = "*" * 10
     print("{0} {1} {0}".format(stars, h))
 
+# Our First Band Structure
+
 print_heading("Square lattice of rods in air")
 
 num_bands = 8
@@ -28,11 +30,11 @@ ms = mpb.ModeSolver(num_bands=num_bands,
 print_heading("Square lattice of rods: TE bands")
 ms.run_te()
 
-# print_heading("Square lattice of rods: TM bands")
-# ms.run_tm()
+print_heading("Square lattice of rods: TM bands")
+ms.run_tm()
 
-# print_heading("Square lattice of rods: TM, w/efield")
-# ms.run_tm(mpb.output_efield_z)
+print_heading("Square lattice of rods: TM, w/efield")
+ms.run_tm(mpb.output_efield_z)
 
-# print_heading("Square lattice of rods: TE, w/hfield & dpwr")
-# ms.run_te(mpb.output_at_kpoint(mp.Vector3(0.5), mpb.output_hfield_z, mpb.output_dpwr))
+print_heading("Square lattice of rods: TE, w/hfield & dpwr")
+ms.run_te(mpb.output_at_kpoint(mp.Vector3(0.5), mpb.output_hfield_z, mpb.output_dpwr))

@@ -33,6 +33,11 @@ class TestModeSolver(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
+    # TODO: Test cleanup. Don't want to delete any user h5 files
+    # def tearDown(self):
+    #     for h5file in glob.glob('*.h5'):
+    #         os.remove(h5file)
+
     def init_solver(self):
         num_bands = 8
         k_points = [
@@ -284,6 +289,33 @@ class TestModeSolver(unittest.TestCase):
         self.check_band_range_data(expected_brd, ms.band_range_data)
         self.check_freqs(expected_freqs, ms.all_freqs)
         self.check_gap_list(expected_gap_list, ms.gap_list)
+
+    def test_run_tm(self):
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.2812417875105901, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.41769014812162525, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.5460171106569119, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.49700744460873947, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.5585358608818134, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.5529886297870371, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.71347812930332, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.741761112489577, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.8593597943953297, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.8295123038043076, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0)),
+             (0.878308388274097, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.8627300031476208, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.9522930815607895, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8809282925679489, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.0840705439027458, mp.Vector3(0.0, 0.0, 0.0)))
+        ]
+
+        ms = self.init_solver()
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+        ms.filename_prefix = 'test_run_tm'
+        ms.run_tm()
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
 
     def _test_get_field(self, field):
         ms = self.init_solver()

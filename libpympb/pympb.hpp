@@ -131,6 +131,8 @@ struct mode_solver {
   void get_curfield(double *data, int size);
   // void get_curfield(std::complex<mpb_real> *cdata, int size);
 
+  std::vector<mpb_real> compute_field_energy();
+
   char get_curfield_type();
   std::string get_parity_string();
   std::vector<int> get_dims();
@@ -141,6 +143,7 @@ private:
   char curfield_type;
 
   void get_efield_from_dfield();
+  double compute_field_energy_internal(mpb_real comp_sum[6]);
 };
 } // namespace py_mpb
 #endif

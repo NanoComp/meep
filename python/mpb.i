@@ -112,6 +112,10 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
     }
 }
 
+%apply (std::vector<mpb_real> py_mpb::mode_solver::get_freqs) {
+    py_mpb::mode_solver::compute_field_energy
+};
+
 %typemap(out) std::vector<int> py_mpb::mode_solver::get_dims {
     Py_ssize_t n = $1.size();
 
@@ -128,5 +132,23 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
 %pythoncode %{
     from .solver import (
         ModeSolver,
+        output_hfield,
+        output_hfield_x,
+        output_hfield_y,
+        output_hfield_z,
+        output_bfield,
+        output_bfield_x,
+        output_bfield_y,
+        output_bfield_z,
+        output_dfield,
+        output_dfield_x,
+        output_dfield_y,
+        output_dfield_z,
+        output_efield,
+        output_efield_x,
+        output_efield_y,
+        output_efield_z,
+        output_dpwr,
+        output_at_kpoint
     )
 %}

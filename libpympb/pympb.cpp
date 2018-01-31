@@ -351,10 +351,6 @@ void mode_solver::init(int p, bool reset_fields) {
     block_size = num_bands;
   }
 
-  if (mdata) {
-    // TODO: Clean up if mdata is not NULL
-  }
-
   meep::master_printf("Creating Maxwell data...\n");
   mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, num_bands, num_bands);
 
@@ -532,10 +528,8 @@ void mode_solver::randomize_fields() {
   if (deterministic) {
     // seed should be the same for each run, although
     // it should be different for each process.
-    // TODO: MPI
-    // int rank;
-    // MPI_Comm_rank(mpb_comm, &rank);
-    srand(314159); // * (rank + 1));
+    int rank = meep::my_rank();
+    srand(314159 * (rank + 1));
   }
 
   for (i = 0; i < H.n * H.p; ++i) {
@@ -582,7 +576,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
 
-  mpb_real *eigvals = new mpb_real[num_bands];
+  std::vector<mpb_real> eigvals(num_bands);
 
   // TODO
   // flags = eigensolver_flags;
@@ -669,7 +663,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
     // if (eigensolver_davidsonp) {
     // }
 
-    eigensolver(Hblock, eigvals + ib, maxwell_operator, (void *) mdata,
+    eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
                 mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
                 maxwell_preconditioner2, (void *) mdata, evectconstraint_chain_func,
                 (void *) constraints, W, nwork_alloc, tolerance, &num_iters,
@@ -745,8 +739,6 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   // TODO
   // eigensolver_flops = evectmatrix_flops
-
-  delete eigvals;
 }
 
 /* get the epsilon function, and compute some statistics */
@@ -1077,8 +1069,7 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
    append a parity specifier (if any) (e.g. ".te"), returning a new
    string, which should be deallocated with free().  fname or prefix
    may be NULL, in which case they are treated as the empty string. */
-char *mode_solver::fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix)
-{
+char *mode_solver::fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix) {
   int fname_len = fname ? strlen(fname) : 0;
   int prefix_len = prefix ? strlen(prefix) : 0;
 
@@ -1289,5 +1280,93 @@ void mode_solver::get_curfield(double *data, int size) {
 //   }
 // }
 
+// internal function for compute_field_energy, below
+double mode_solver::compute_field_energy_internal(mpb_real comp_sum[6]) {
+  mpb_real comp_sum2[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  mpb_real energy_sum = 0.0;
+  mpb_real *energy_density = (mpb_real *) curfield;
 
+  int N = mdata->fft_output_size;
+
+  for (int i = 0; i < N; ++i) {
+    scalar_complex field[3];
+    mpb_real comp_sqr0, comp_sqr1, comp_sqr2, comp_sqr3, comp_sqr4, comp_sqr5;
+
+    /* energy is either |curfield|^2 / mu or |curfield|^2 / epsilon,
+       depending upon whether it is B or D. */
+    if (curfield_type == 'd') {
+      assign_symmatrix_vector(field, mdata->eps_inv[i], curfield+3*i);
+    }
+    else if (curfield_type == 'b' && mdata->mu_inv != NULL) {
+      assign_symmatrix_vector(field, mdata->mu_inv[i], curfield+3*i);
+    }
+    else {
+      field[0] = curfield[3*i];
+      field[1] = curfield[3*i+1];
+      field[2] = curfield[3*i+2];
+    }
+
+    comp_sum2[0] += comp_sqr0 = field[0].re *   curfield[3*i].re;
+    comp_sum2[1] += comp_sqr1 = field[0].im *   curfield[3*i].im;
+    comp_sum2[2] += comp_sqr2 = field[1].re * curfield[3*i+1].re;
+    comp_sum2[3] += comp_sqr3 = field[1].im * curfield[3*i+1].im;
+    comp_sum2[4] += comp_sqr4 = field[2].re * curfield[3*i+2].re;
+    comp_sum2[5] += comp_sqr5 = field[2].im * curfield[3*i+2].im;
+
+    /* Note: here, we write to energy_density[i]; this is
+       safe, even though energy_density is aliased to curfield,
+       since energy_density[i] is guaranteed to come at or before
+       curfield[i] (which we are now done with). */
+    energy_sum += energy_density[i] = comp_sqr0+comp_sqr1+comp_sqr2+comp_sqr3+comp_sqr4+comp_sqr5;
+  }
+
+  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  mpi_allreduce(comp_sum2, comp_sum, 6, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+
+  // remember that we now have energy density; denoted by capital D/H
+  curfield_type = toupper(curfield_type);
+
+  return energy_sum;
+}
+
+/* Replace curfield (either d or h) with the scalar energy density function,
+   normalized to one.  While we're at it, compute some statistics about
+   the relative strength of different field components.  Also return
+   the integral of the energy density, which should be unity. */
+std::vector<mpb_real> mode_solver::compute_field_energy() {
+  std::vector<mpb_real> retval;
+
+  if (!curfield || !strchr("dhb", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H field must be loaded first.\n");
+    return retval;
+  }
+  else if (curfield_type == 'h' && mdata->mu_inv != NULL) {
+    meep::master_fprintf(stderr, "B, not H, must be loaded if we have mu.\n");
+    return retval;
+  }
+
+  mpb_real comp_sum[6];
+  mpb_real energy_sum = compute_field_energy_internal(comp_sum);
+
+  meep::master_printf("%c-energy-components:, %d, %d", curfield_type, kpoint_index, curfield_band);
+  for (int i = 0; i < 6; ++i) {
+    comp_sum[i] /= (energy_sum == 0 ? 1 : energy_sum);
+    if (i % 2 == 1) {
+         meep::master_printf(", %g", comp_sum[i] + comp_sum[i-1]);
+    }
+  }
+  meep::master_printf("\n");
+
+  /* The return value is a list of 7 items: the total energy,
+     followed by the 6 elements of the comp_sum array (the fraction
+     of the energy in the real/imag. parts of each field component). */
+
+  retval.push_back(energy_sum * vol / H.N);
+
+  for (int i = 0; i < 6; ++i) {
+    retval.push_back(comp_sum[i]);
+  }
+
+  return retval;
+}
 } // namespace meep_mpb

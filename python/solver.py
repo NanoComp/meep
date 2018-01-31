@@ -209,10 +209,30 @@ class ModeSolver(object):
             length = min(block_size, (len(l) - index * block_size))
             return (start, list_sub(l, start, length, 0, []))
 
+    def output_field(self):
+        self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
+        # TODO: Implement in python
+        # self.output_field_to_file(mp.ALL, self.get_filename_prefix())
+
+    def output_field_x(self):
+        self.mode_sovler.output_field_to_file(0, self.get_filename_prefix())
+        # TODO: Implement in python
+        # self.output_field_to_file(0, self.get_filename_prefix())
+
+    def output_field_y(self):
+        self.mode_solver.output_field_to_file(1, self.get_filename_prefix())
+        # TODO: Implement in python
+        # self.output_field_to_file(1, self.get_filename_prefix())
+
+    def output_field_z(self):
+        self.mode_solver.output_field_to_file(2, self.get_filename_prefix())
+        # TODO: Implement in python
+        # self.output_field_to_file(2, self.get_filename_prefix())
+
     def output_epsilon(self):
         self.mode_solver.get_epsilon()
         # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
-        self._output_field_to_file(mp.ALL, self.get_filename_prefix())
+        self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_mu(self):
         print("output_mu: Not yet supported")
@@ -220,7 +240,7 @@ class ModeSolver(object):
         # self.mode_solver.get_mu()
         # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
 
-    def _output_field_to_file(self, component, fname_prefix):
+    def output_field_to_file(self, component, fname_prefix):
         curfield_type = self.mode_solver.get_curfield_type()
 
         if curfield_type in 'DHBnmR':
@@ -273,6 +293,9 @@ class ModeSolver(object):
         suffix = '.' + self.mode_solver.get_parity_string() if parity_suffix else ''
         return prefix + fname + suffix + '.h5'
 
+    def compute_field_energy(self):
+        return self.mode_solver.compute_field_energy()
+
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
 
@@ -290,8 +313,6 @@ class ModeSolver(object):
         print("Initializing eigensolver data")
         print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
 
-        # TODO: Can we keep the mode_solver around between runs, or does it need
-        # to get created clean for each run?
         self.mode_solver = mode_solver(
             self.num_bands,
             p,
@@ -337,13 +358,17 @@ class ModeSolver(object):
                 self.eigensolver_iters += [self.iterations / self.num_bands]
 
                 for f in band_functions:
-                    if get_num_args(f) == 0:
-                        f()
-                    else:
+                    num_args = get_num_args(f)
+                    if num_args == 1:
+                        f(self)
+                    elif num_args == 2:
                         band = 1
                         while band <= self.num_bands:
-                            f(band)
+                            f(self, band)
                             band += 1
+                    else:
+                        raise ValueError("Band function should take 1 or 2 arguments. "
+                                         "The first must be a ModeSolver instance")
 
             if len(k_split[1]) > 1:
                 self.output_band_range_data(self.band_range_data)
@@ -389,3 +414,140 @@ class ModeSolver(object):
     run_te_yodd = run_yodd_zeven
     run_tm_yeven = run_yeven_zodd
     run_tm_yodd = run_yodd_zodd
+
+
+# Predefined output functions (functions of the band index), for passing to `run`
+
+def output_hfield(ms, which_band):
+    ms.get_hfield(which_band)
+    ms.output_field()
+
+
+def output_hfield_x(ms, which_band):
+    ms.get_hfield(which_band)
+    ms.output_field_x()
+
+
+def output_hfield_y(ms, which_band):
+    ms.get_hfield(which_band)
+    ms.output_field_y()
+
+
+def output_hfield_z(ms, which_band):
+    ms.get_hfield(which_band)
+    ms.output_field_z()
+
+
+def output_bfield(ms, which_band):
+    ms.get_bfield(which_band)
+    ms.output_field()
+
+
+def output_bfield_x(ms, which_band):
+    ms.get_bfield(which_band)
+    ms.output_field_x()
+
+
+def output_bfield_y(ms, which_band):
+    ms.get_bfield(which_band)
+    ms.output_field_y()
+
+
+def output_bfield_z(ms, which_band):
+    ms.get_bfield(which_band)
+    ms.output_field_z()
+
+
+def output_dfield(ms, which_band):
+    ms.get_dfield(which_band)
+    ms.output_field()
+
+
+def output_dfield_x(ms, which_band):
+    ms.get_dfield(which_band)
+    ms.output_field_x()
+
+
+def output_dfield_y(ms, which_band):
+    ms.get_dfield(which_band)
+    ms.output_field_y()
+
+
+def output_dfield_z(ms, which_band):
+    ms.get_dfield(which_band)
+    ms.output_field_z()
+
+
+def output_efield(ms, which_band):
+    ms.get_efield(which_band)
+    ms.output_field()
+
+
+def output_efield_x(ms, which_band):
+    ms.get_efield(which_band)
+    ms.output_field_x()
+
+
+def output_efield_y(ms, which_band):
+    ms.get_efield(which_band)
+    ms.output_field_y()
+
+
+def output_efield_z(ms, which_band):
+    ms.get_efield(which_band)
+    ms.output_field_z()
+
+
+# def output_bpwr(ms, which_band):
+#     ms.get_bfield(which_band)
+#     ms.compute_field_energy()
+#     ms.output_field()
+
+
+def output_dpwr(ms, which_band):
+    ms.get_dfield(which_band)
+    ms.compute_field_energy()
+    ms.output_field()
+
+
+# def output_charge_density(ms, which_band):
+#     ms.get_charge_density(which_band)
+#     ms.output_field_to_file(-1, ms.get_filename_prefix())
+
+
+def apply_band_func_thunk(ms, band_func, which_band, eval_thunk):
+    """
+    We need a special function to evaluate band functions, since band functions
+    can either be a function of the band number or a thunk (function of no arguments,
+    evaluated once per k-point).
+    """
+    if get_num_args(band_func) == 1:
+        if eval_thunk:
+            band_func(ms)  # evaluate thunks once per k-point
+    else:
+        band_func(ms, which_band)
+
+
+def apply_band_func(ms, band_func, which_band):
+    apply_band_func_thunk(ms, band_func, which_band, which_band == 1)
+
+
+def combine_band_functions(*band_funcs):
+    """Combines zero or more band functions into one"""
+
+    def _combine(ms, which_band):
+        for f in band_funcs:
+            apply_band_func(ms, f, which_band)
+    return _combine
+
+
+def output_at_kpoint(kpoint, *band_funcs):
+    """Only invoke the given band functions for the specified k-point"""
+
+    band_func = combine_band_functions(*band_funcs)
+
+    def _output_at_kpoint(ms, which_band):
+        if ms.current_k.close(kpoint, tol=1e-8 * kpoint.norm()):
+            band_func(ms, which_band)
+
+    return _output_at_kpoint
