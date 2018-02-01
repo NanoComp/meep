@@ -238,9 +238,9 @@ static int pymatrix_to_matrix(PyObject *po, matrix3x3 *m) {
     PyObject *py_c2 = PyObject_GetAttrString(po, "c2");
     PyObject *py_c3 = PyObject_GetAttrString(po, "c3");
 
-    if (!pyv3_to_v3(po, &c1) ||
-        !pyv3_to_v3(po, &c2) ||
-        !pyv3_to_v3(po, &c3)) {
+    if (!pyv3_to_v3(py_c1, &c1) ||
+        !pyv3_to_v3(py_c2, &c2) ||
+        !pyv3_to_v3(py_c3, &c3)) {
 
         return 0;
     }
@@ -680,26 +680,19 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
 }
 
 static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
-    vector3 basis1, basis2, basis3, size, basis_size;
-
-    // TODO: Get these from py_lat.
-    vector3 b1 = {0, 0, 0};
-    vector3 b2 = {0, 0, 0};
-    vector3 b3 = {0, 0, 0};
-    matrix3x3 basis = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    matrix3x3 metric = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    vector3 basis1, basis2, basis3, size, basis_size, b1, b2, b3;
+    matrix3x3 basis, metric;
 
     if (!get_attr_v3(py_lat, &basis1, "basis1") ||
         !get_attr_v3(py_lat, &basis2, "basis2") ||
         !get_attr_v3(py_lat, &basis3, "basis3") ||
         !get_attr_v3(py_lat, &size, "size") ||
-        !get_attr_v3(py_lat, &basis_size, "basis_size")) {
-        // TODO: How to call property getter from C?
-        // !get_attr_v3(py_lat, &b1, "b1") ||
-        // !get_attr_v3(py_lat, &b2, "b2") ||
-        // !get_attr_v3(py_lat, &b3, "b3") ||
-        // !get_attr_matrix(py_lat, &basis, "basis") ||
-        // !get_attr_matrix(py_lat, &metric, "metric")) {
+        !get_attr_v3(py_lat, &basis_size, "basis_size") ||
+        !get_attr_v3(py_lat, &b1, "b1") ||
+        !get_attr_v3(py_lat, &b2, "b2") ||
+        !get_attr_v3(py_lat, &b3, "b3") ||
+        !get_attr_matrix(py_lat, &basis, "basis") ||
+        !get_attr_matrix(py_lat, &metric, "metric")) {
 
         return 0;
     }

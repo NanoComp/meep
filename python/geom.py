@@ -396,55 +396,55 @@ class Lattice(object):
         self.basis2 = basis2
         self.basis3 = basis3
 
-        @property
-        def basis1(self):
-            return self._basis1
+    @property
+    def basis1(self):
+        return self._basis1
 
-        @basis1.setter
-        def basis1(self, val):
-            self._basis1 = val.unit()
+    @basis1.setter
+    def basis1(self, val):
+        self._basis1 = val.unit()
 
-        @property
-        def basis2(self):
-            return self._basis2
+    @property
+    def basis2(self):
+        return self._basis2
 
-        @basis2.setter
-        def basis2(self, val):
-            self._basis2 = val.unit()
+    @basis2.setter
+    def basis2(self, val):
+        self._basis2 = val.unit()
 
-        @property
-        def basis3(self):
-            return self._basis3
+    @property
+    def basis3(self):
+        return self._basis3
 
-        @basis3.setter
-        def basis3(self, val):
-            self._basis3 = val.unit()
+    @basis3.setter
+    def basis3(self, val):
+        self._basis3 = val.unit()
 
-        @property
-        def b1(self):
-            return self.basis1.scale(self.basis_size.x)
+    @property
+    def b1(self):
+        return self.basis1.scale(self.basis_size.x)
 
-        @property
-        def b2(self):
-            return self.basis2.scale(self.basis_size.y)
+    @property
+    def b2(self):
+        return self.basis2.scale(self.basis_size.y)
 
-        @property
-        def b3(self):
-            return self.basis3.scale(self.basis_size.z)
+    @property
+    def b3(self):
+        return self.basis3.scale(self.basis_size.z)
 
-        @property
-        def basis(self):
-            B = Matrix(self.b1, self.b2, self.b3)
+    @property
+    def basis(self):
+        B = Matrix(self.b1, self.b2, self.b3)
 
-            if B.determinant() == 0:
-                raise ValueError("Lattice basis vectors must be linearly independent.")
+        if B.determinant() == 0:
+            raise ValueError("Lattice basis vectors must be linearly independent.")
 
-            return B
+        return B
 
-        @property
-        def metric(self):
-            B = self.basis
-            return B.transpose() * B
+    @property
+    def metric(self):
+        B = self.basis
+        return B.transpose() * B
 
 
 def geometric_object_duplicates(shift_vector, min, max, *objs):

@@ -1,3 +1,6 @@
+from __future__ import division
+
+import math
 import meep as mp
 from meep import mpb
 
@@ -38,3 +41,19 @@ ms.run_tm(mpb.output_efield_z)
 
 print_heading("Square lattice of rods: TE, w/hfield & dpwr")
 ms.run_te(mpb.output_at_kpoint(mp.Vector3(0.5), mpb.output_hfield_z, mpb.output_dpwr))
+
+# Bands of a Triangular Lattice
+
+print_heading("Triangular lattice of rods in air")
+
+ms.geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1),
+                                 basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+                                 basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+
+ms.k_points = [mp.Vector3(),               # Gamma
+               mp.Vector3(y=0.5),          # M
+               mp.Vector3(-1 / 3, 1 / 3),  # K
+               mp.Vector3()]               # Gamma
+
+ms.k_points = mp.interpolate(4, k_points)
+ms.run_tm()
