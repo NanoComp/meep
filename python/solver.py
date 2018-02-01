@@ -242,91 +242,133 @@ class ModeSolver(object):
 
     def output_field_to_file(self, component, fname_prefix):
         curfield_type = self.mode_solver.get_curfield_type()
-        components = ['x', 'y', 'z']
+        output_k = self.mode_solver.get_output_k()
+
+        if curfield_type in 'Rv':
+            # Generic scalar/vector field. Don't know k
+            output_k = [0, 0, 0]
 
         if curfield_type in 'dhbecv':
-            # vector field
+            self._output_vector_field(curfield_type, fname_prefix, output_k, component)
+        elif curfield_type == 'C':
+            self._output_complex_scalar_field(fname_prefix)
+        elif curfield_type in 'DHBnmR':
+            self._output_scalar_field(curfield_type, fname_prefix)
+        else:
+            raise ValueError("Unkown field type: {}".format(curfield_type))
+
+        self.mode_solver.curfield_reset()
+
+    def _output_complex_scalar_field(self, fname_prefix, output_k):
+        curfield_type = 'C'
+        kpoint_index = self.mode_solver.get_kpoint_index()
+        curfield_band = self.mode_solver.curfield_band
+        fname = "{}.k{:02d}.b{:02d}".format(curfield_type, kpoint_index, curfield_band)
+        description = "{} field, kpoint {}, band {}, freq={:.6g}".format(
+            curfield_type,
+            kpoint_index,
+            curfield_band,
+            self.get_freqs()[curfield_band - 1]
+        )
+        fname = self._create_fname(fname, fname_prefix, True)
+        print("Outputting complex scalar field to {}...".format(fname))
+
+        with h5py.File(fname, 'w') as f:
+            f['description'] = description.encode()
+            f['Bloch wavevector'] = np.array(output_k)
+            # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
+            f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
+                                             self.geometry_lattice.basis2,
+                                             self.geometry_lattice.basis3))
+            # TODO
+            # fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 1,
+            #                             output_k, file_id, 0, data_id);
+
+    def _output_vector_field(self, curfield_type, fname_prefix, output_k, component):
+        components = ['x', 'y', 'z']
+        kpoint_index = self.mode_solver.get_kpoint_index()
+        curfield_band = self.mode_solver.curfield_band
+        fname = "{}.k{:02d}.b{:02d}".format(curfield_type, kpoint_index, curfield_band)
+
+        if component >= 0:
+            fname += ".{}".format(components[component])
+
+        description = "{} field, kpoint {}, band {}, freq={:.6g}".format(
+            curfield_type,
+            kpoint_index,
+            curfield_band,
+            self.get_freqs()[curfield_band - 1]
+        )
+
+        fname = self._create_fname(fname, fname_prefix, True)
+        print("Outputting fields to {}...".format(fname))
+
+        with h5py.File(fname, 'w') as f:
+            f['description'] = description.encode()
+            f['Bloch wavevector'] = np.array(output_k)
+            # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
+            f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
+                                             self.geometry_lattice.basis2,
+                                             self.geometry_lattice.basis3))
+
+            self.mode_solver.update_before_output()
+
+            for c_idx, c in enumerate(components):
+                if component >= 0 and c_idx != component:
+                    continue
+
+                dims = self.mode_solver.get_dims()
+                field = np.empty(np.prod(dims) * 3, np.complex128)
+                self.mode_solver.get_curfield(field)
+
+                component_field = field[c_idx::3].reshape(dims)
+                component_field *= -1
+
+                name = "{}.r".format(c)
+                f[name] = np.real(component_field)
+                name = "{}.i".format(c)
+                f[name] = np.imag(component_field)
+
+    def _output_scalar_field(self, curfield_type, fname_prefix):
+        components = ['x', 'y', 'z']
+
+        if curfield_type == 'n':
+            fname = 'epsilon'
+            description = 'dielectric function, epsilon'
+        elif curfield_type == 'm':
+            fname = 'mu'
+            description = 'permeability mu'
+        else:
             kpoint_index = self.mode_solver.get_kpoint_index()
             curfield_band = self.mode_solver.curfield_band
-            fname = "{}.k{:02d}.b{:02d}".format(curfield_type, kpoint_index, curfield_band)
+            fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
+                                                   kpoint_index, curfield_band)
+            descr_fmt = "{} field energy density, kpoint {}, band {}, freq={}"
+            description = descr_fmt.format(curfield_type, kpoint_index, curfield_band,
+                                           self.get_freqs()[curfield_band - 1])
 
-            if component >= 0:
-                fname += ".{}".format(components[component])
+        parity_suffix = False if curfield_type in 'mn' else True
+        fname = self._create_fname(fname, fname_prefix, parity_suffix)
+        print("Outputting {}...".format(fname))
 
-            description = "{} field, kpoint {}, band {}, freq={:.6g}".format(
-                curfield_type,
-                kpoint_index,
-                curfield_band,
-                self.get_freqs()[curfield_band - 1]
-            )
+        with h5py.File(fname, 'w') as f:
+            f['description'] = description.encode()
+            self._create_h5_dataset(f, 'data')
 
-            fname = self._create_fname(fname, fname_prefix, True)
-            print("Outputting fields to {}...".format(fname))
+            # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
+            f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
+                                             self.geometry_lattice.basis2,
+                                             self.geometry_lattice.basis3))
 
-            with h5py.File(fname, 'w') as f:
-                f['description'] = description.encode()
-                f['Bloch wavevector'] = np.array(self.mode_solver.get_output_k())
-                # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
-                f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
-                                                 self.geometry_lattice.basis2,
-                                                 self.geometry_lattice.basis3))
-
-                self.mode_solver.update_before_output()
-
-                for c_idx, c in enumerate(components):
-                    if component >= 0 and c_idx != component:
-                        continue
-
-                    dims = self.mode_solver.get_dims()
-                    field = np.empty(np.prod(dims) * 3, np.complex128)
-                    self.mode_solver.get_curfield(field)
-
-                    component_field = field[c_idx::3].reshape(dims)
-                    component_field *= -1
-
-                    name = "{}.r".format(c)
-                    f[name] = np.real(component_field)
-                    name = "{}.i".format(c)
-                    f[name] = np.imag(component_field)
-
-        elif curfield_type in 'DHBnmR':
-            # scalar field
             if curfield_type == 'n':
-                fname = 'epsilon'
-                description = 'dielectric function, epsilon'
-            elif curfield_type == 'm':
-                fname = 'mu'
-                description = 'permeability mu'
-            else:
-                kpoint_index = self.mode_solver.get_kpoint_index()
-                curfield_band = self.mode_solver.curfield_band
-                fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
-                                                       kpoint_index, curfield_band)
-                descr_fmt = "{} field energy density, kpoint {}, band {}, freq={}"
-                description = descr_fmt.format(curfield_type, kpoint_index, curfield_band,
-                                               self.get_freqs()[curfield_band - 1])
-
-            fname = self._create_fname(fname, fname_prefix, False)
-            print("Outputting {}...".format(fname))
-
-            with h5py.File(fname, 'w') as f:
-                f['description'] = description.encode()
-                self._create_h5_dataset(f, 'data')
-
-                # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
-                f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
-                                                 self.geometry_lattice.basis2,
-                                                 self.geometry_lattice.basis3))
-
                 for inv in [True, False]:
                     inv_str = 'epsilon_inverse' if inv else 'epsilon'
                     for c1 in range(3):
                         for c2 in range(3):
                             self.mode_solver.get_epsilon_tensor(c1, c2, 0, inv)
-                            dataname = "{}.{}{}".format(inv_str, components[c1], components[c2])
+                            dataname = "{}.{}{}".format(inv_str, components[c1],
+                                                        components[c2])
                             self._create_h5_dataset(f, dataname)
-
-        self.mode_solver.curfield_reset()
 
     def _create_h5_dataset(self, h5file, key):
         dims = self.mode_solver.get_dims()
