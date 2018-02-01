@@ -139,6 +139,8 @@ struct mode_solver {
   std::vector<int> get_dims();
   std::vector<mpb_real> get_output_k();
 
+  void update_before_output();
+
 private:
   int kpoint_index;
   scalar_complex *curfield;

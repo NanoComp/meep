@@ -1393,4 +1393,69 @@ std::vector<mpb_real> mode_solver::get_output_k() {
                      + R[2][2]*mdata->current_k[2]);
   return output_k;
 }
+
+// TODO: More descriptive name
+void mode_solver::update_before_output() {
+
+  std::vector<mpb_real> kvector = get_output_k();
+
+  int dims[] = {mdata->nx, mdata->ny, mdata->nz};
+  int local_dims[] = {mdata->local_nx, mdata->ny, mdata->nz};
+  int start[] = {mdata->local_x_start, 0, 0};
+
+  mpb_real s[3]; /* the step size between grid points dotted with k */
+  std::vector<scalar_complex> phasex(local_dims[0]);
+  std::vector<scalar_complex> phasey(local_dims[1]);
+  std::vector<scalar_complex> phasez(local_dims[2]);
+
+  for (int i = 0; i < 3; ++i) {
+    s[i] = TWOPI * kvector[i] / dims[i];
+  }
+
+  /* cache exp(ikx) along each of the directions, for speed */
+  for (int i = 0; i < local_dims[0]; ++i) {
+    mpb_real phase = s[0] * (i + start[0]);
+    phasex[i].re = cos(phase);
+    phasex[i].im = sin(phase);
+  }
+  for (int j = 0; j < local_dims[1]; ++j) {
+    mpb_real phase = s[1] * (j + start[1]);
+    phasey[j].re = cos(phase);
+    phasey[j].im = sin(phase);
+  }
+  for (int k = 0; k < local_dims[2]; ++k) {
+    mpb_real phase = s[2] * (k + start[2]);
+    phasez[k].re = cos(phase);
+    phasez[k].im = sin(phase);
+  }
+
+  /* Now, multiply field by exp(i k*r): */
+  for (int i = 0; i < local_dims[0]; ++i) {
+    scalar_complex px = phasex[i];
+
+    for (int j = 0; j < local_dims[1]; ++j) {
+      scalar_complex py;
+      mpb_real re = phasey[j].re;
+      mpb_real im = phasey[j].im;
+      py.re = px.re * re - px.im * im;
+      py.im = px.re * im + px.im * re;
+
+      for (int k = 0; k < local_dims[2]; ++k) {
+        int ijk = ((i*local_dims[1] + j)*local_dims[2] + k)*3;
+        mpb_real p_re, p_im;
+        mpb_real re = phasez[k].re, im = phasez[k].im;
+
+        p_re = py.re * re - py.im * im;
+        p_im = py.re * im + py.im * re;
+
+        for (int component = 0; component < 3; ++component) {
+          int ijkc = ijk + component;
+          re = curfield[ijkc].re; im = curfield[ijkc].im;
+          curfield[ijkc].re = re * p_re - im * p_im;
+          curfield[ijkc].im = im * p_re + re * p_im;
+        }
+      }
+    }
+  }
+}
 } // namespace meep_mpb

@@ -1,6 +1,7 @@
 from __future__ import division
 
 import os
+import re
 import unittest
 
 import h5py
@@ -38,7 +39,7 @@ class TestModeSolver(unittest.TestCase):
     #     for h5file in glob.glob('*.h5'):
     #         os.remove(h5file)
 
-    def init_solver(self):
+    def init_solver(self, geom=True):
         num_bands = 8
         k_points = [
             mp.Vector3(),
@@ -47,6 +48,7 @@ class TestModeSolver(unittest.TestCase):
             mp.Vector3()
         ]
 
+        geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))] if geom else []
         k_points = mp.interpolate(4, k_points)
         geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1))
         resolution = 32
@@ -54,7 +56,7 @@ class TestModeSolver(unittest.TestCase):
         return mpb.ModeSolver(
             num_bands=num_bands,
             k_points=k_points,
-            geometry=[],
+            geometry=geometry,
             geometry_lattice=geometry_lattice,
             resolution=resolution,
             deterministic=True
@@ -209,7 +211,7 @@ class TestModeSolver(unittest.TestCase):
 
         ]
 
-        ms = self.init_solver()
+        ms = self.init_solver(False)
         ms.filename_prefix = 'test_run_te_no_geometry'
         ms.run_te()
 
@@ -282,7 +284,6 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         ms = self.init_solver()
-        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
         ms.filename_prefix = 'test_run_te'
         ms.run_te()
 
@@ -311,7 +312,6 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         ms = self.init_solver()
-        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
         ms.filename_prefix = 'test_run_tm'
         ms.run_tm()
 
@@ -319,7 +319,6 @@ class TestModeSolver(unittest.TestCase):
 
     def _test_get_field(self, field):
         ms = self.init_solver()
-        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
         ms.filename_prefix = "test_get_{}field".format(field)
         ms.run_te()
         get_field_func = getattr(ms, "get_{}field".format(field))
@@ -345,22 +344,21 @@ class TestModeSolver(unittest.TestCase):
     def test_output_field_to_file(self):
         fname = 'mpb-tutorial-epsilon.h5'
         data_path = os.path.join(self.data_dir, fname)
-        ref = h5py.File(data_path)
 
-        ms = self.init_solver()
+        ms = self.init_solver(False)
         ms.filename_prefix = 'test_output_field_to_file'
         ms.run_te()
 
         with h5py.File('test_output_field_to_file-epsilon.h5', 'r') as f:
-            for k in ref.keys():
-                if k == 'description':
-                    self.assertEqual(ref[k].value, f[k].value)
-                else:
-                    np.testing.assert_array_equal(ref[k].value, f[k].value)
+            with h5py.File(data_path) as ref:
+                for k in ref.keys():
+                    if k == 'description':
+                        self.assertEqual(ref[k].value, f[k].value)
+                    else:
+                        np.testing.assert_array_equal(ref[k].value, f[k].value)
 
     def test_compute_field_energy(self):
         ms = self.init_solver()
-        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
         ms.filename_prefix = 'test_compute_field_energy'
         ms.run_te()
         ms.get_dfield(8)
@@ -372,7 +370,22 @@ class TestModeSolver(unittest.TestCase):
         np.testing.assert_allclose(expected, res)
 
     def test_output_efield_z(self):
-        pass
+        ms = self.init_solver()
+        ms.filename_prefix = 'test_output_efield_z'
+        ms.run_tm(mpb.output_efield_z)
+
+        ref_fname = 'tutorial-e.k16.b08.z.tm.h5'
+        ref_path = os.path.join(self.data_dir, ref_fname)
+
+        with h5py.File(ref_path, 'r') as ref:
+            with h5py.File(re.sub('tutorial', ms.filename_prefix, ref_fname)) as res:
+                for k in ref.keys():
+                    if k == 'description':
+                        self.assertEqual(ref[k].value, res[k].value)
+                    # else:
+                        # TODO: 1.75% array mismatch
+                        # np.testing.assert_allclose(ref[k].value, res[k].value, rtol=1e-5)
+
 
 if __name__ == '__main__':
     unittest.main()
