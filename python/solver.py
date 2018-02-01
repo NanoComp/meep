@@ -370,6 +370,12 @@ class ModeSolver(object):
                                                         components[c2])
                             self._create_h5_dataset(f, dataname)
 
+                            if self.mode_solver.with_hermitian_epsilon():
+                                if c1 != c2:
+                                    self.mode_solver.get_epsilon_tensor(c1, c2, 1, inv)
+                                    dataname += '.i'
+                                    self._create_h5_dataset(f, dataname)
+
     def _create_h5_dataset(self, h5file, key):
         dims = self.mode_solver.get_dims()
         # TODO: dtype isn't always float64

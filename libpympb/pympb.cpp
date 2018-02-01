@@ -1458,4 +1458,12 @@ void mode_solver::update_before_output() {
     }
   }
 }
+
+bool mode_solver::with_hermitian_epsilon() {
+#ifdef WITH_HERMITIAN_EPSILON
+  return true;
+#else
+  return false;
+#endif
+}
 } // namespace meep_mpb

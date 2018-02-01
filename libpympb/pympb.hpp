@@ -140,6 +140,7 @@ struct mode_solver {
   std::vector<mpb_real> get_output_k();
 
   void update_before_output();
+  bool with_hermitian_epsilon();
 
 private:
   int kpoint_index;
