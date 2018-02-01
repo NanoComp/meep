@@ -42,8 +42,10 @@ class TestModeSolver(unittest.TestCase):
         self.filename_prefix = self.id().split('.')[-1]
 
         def rm_h5():
-            for f in glob.glob("{}*.h5".format(self.filename_prefix)):
-                os.remove(f)
+            mp.all_wait()
+            if mp.am_master():
+                for f in glob.glob("{}*.h5".format(self.filename_prefix)):
+                    os.remove(f)
 
         self.addCleanup(rm_h5)
 

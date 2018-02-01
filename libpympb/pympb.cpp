@@ -771,11 +771,6 @@ void mode_solver::get_epsilon() {
      i.e. 3/(trace 1/eps). */
 
   int N = mdata->fft_output_size;
-  int last_dim = mdata->last_dim;
-  int last_dim_stored = mdata->last_dim_size / (sizeof(scalar_complex) / sizeof(scalar));
-  int nx = mdata->nx;
-  int nz = mdata->nz;
-  int local_y_start = mdata->local_y_start;
 
   for (int i = 0; i < N; ++i) {
     if (mdata->eps_inv == NULL) {
@@ -797,12 +792,6 @@ void mode_solver::get_epsilon() {
     }
 
   }
-
-  (void)last_dim;
-  (void)last_dim_stored;
-  (void)nx;
-  (void)nz;
-  (void)local_y_start;
 
   mpi_allreduce_1(&eps_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
   mpi_allreduce_1(&eps_inv_mean, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
