@@ -147,6 +147,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
         output_efield_x,
         output_efield_y,
         output_efield_z,
+        output_bpwr,
         output_dpwr,
         output_at_kpoint
     )

@@ -76,6 +76,7 @@ class ModeSolver(object):
         self.dimensions = dimensions
         self.randomize_fields = randomize_fields
         self.filename_prefix = filename_prefix
+        self.deterministic = deterministic
         self.parity = 0
         self.iterations = 0
         self.all_freqs = []
@@ -87,7 +88,6 @@ class ModeSolver(object):
         self.k_split_index = 0
         self.eigensolver_iters = []
         self.iterations = 0
-        self.deterministic = deterministic
         self.mode_solver = None
 
     def get_filename_prefix(self):
@@ -182,7 +182,8 @@ class ModeSolver(object):
                     gap_size = (200 * (br_rest_min_f - br_cur_max_f)) / (br_rest_min_f + br_cur_max_f)
                     fmt = "Gap from band {} ({}) to band {} ({}), {}%"
                     print(fmt.format(i, br_cur_max_f, i + 1, br_rest_min_f, gap_size))
-                    return ogaps(br_rest[0], br_rest[1:], i + 1, [gap_size, br_cur_max_f, br_rest_min_f] + gaps)
+                    return ogaps(br_rest[0], br_rest[1:], i + 1,
+                                 [gap_size, br_cur_max_f, br_rest_min_f] + gaps)
         if not br_data:
             return []
         else:
@@ -210,23 +211,19 @@ class ModeSolver(object):
             return (start, list_sub(l, start, length, 0, []))
 
     def output_field(self):
-        self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
-        # TODO: Implement in python
-        # self.output_field_to_file(mp.ALL, self.get_filename_prefix())
+        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
+        self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_field_x(self):
-        self.mode_sovler.output_field_to_file(0, self.get_filename_prefix())
-        # TODO: Implement in python
-        # self.output_field_to_file(0, self.get_filename_prefix())
+        # self.mode_sovler.output_field_to_file(0, self.get_filename_prefix())
+        self.output_field_to_file(0, self.get_filename_prefix())
 
     def output_field_y(self):
-        self.mode_solver.output_field_to_file(1, self.get_filename_prefix())
-        # TODO: Implement in python
-        # self.output_field_to_file(1, self.get_filename_prefix())
+        # self.mode_solver.output_field_to_file(1, self.get_filename_prefix())
+        self.output_field_to_file(1, self.get_filename_prefix())
 
     def output_field_z(self):
         # self.mode_solver.output_field_to_file(2, self.get_filename_prefix())
-        # TODO: Implement in python
         self.output_field_to_file(2, self.get_filename_prefix())
 
     def output_epsilon(self):
@@ -276,10 +273,8 @@ class ModeSolver(object):
         with h5py.File(fname, 'w') as f:
             f['description'] = description.encode()
             f['Bloch wavevector'] = np.array(output_k)
-            # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
-            f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
-                                             self.geometry_lattice.basis2,
-                                             self.geometry_lattice.basis3))
+            self._write_lattice_vectors(f)
+
             # TODO
             # fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 1,
             #                             output_k, file_id, 0, data_id);
@@ -306,10 +301,7 @@ class ModeSolver(object):
         with h5py.File(fname, 'w') as f:
             f['description'] = description.encode()
             f['Bloch wavevector'] = np.array(output_k)
-            # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
-            f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
-                                             self.geometry_lattice.basis2,
-                                             self.geometry_lattice.basis3))
+            self._write_lattice_vectors(f)
 
             self.mode_solver.update_before_output()
 
@@ -319,7 +311,7 @@ class ModeSolver(object):
 
                 dims = self.mode_solver.get_dims()
                 field = np.empty(np.prod(dims) * 3, np.complex128)
-                self.mode_solver.get_curfield(field)
+                self.mode_solver.get_curfield_cmplx(field)
 
                 component_field = field[c_idx::3].reshape(dims)
                 component_field *= -1
@@ -354,11 +346,7 @@ class ModeSolver(object):
         with h5py.File(fname, 'w') as f:
             f['description'] = description.encode()
             self._create_h5_dataset(f, 'data')
-
-            # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
-            f['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
-                                             self.geometry_lattice.basis2,
-                                             self.geometry_lattice.basis3))
+            self._write_lattice_vectors(f)
 
             if curfield_type == 'n':
                 for inv in [True, False]:
@@ -370,11 +358,16 @@ class ModeSolver(object):
                                                         components[c2])
                             self._create_h5_dataset(f, dataname)
 
-                            if self.mode_solver.with_hermitian_epsilon():
-                                if c1 != c2:
-                                    self.mode_solver.get_epsilon_tensor(c1, c2, 1, inv)
-                                    dataname += '.i'
-                                    self._create_h5_dataset(f, dataname)
+                            if self.mode_solver.with_hermitian_epsilon() and c1 != c2:
+                                self.mode_solver.get_epsilon_tensor(c1, c2, 1, inv)
+                                dataname += '.i'
+                                self._create_h5_dataset(f, dataname)
+
+    def _write_lattice_vectors(self, h5file):
+        # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
+        h5file['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
+                                              self.geometry_lattice.basis2,
+                                              self.geometry_lattice.basis3))
 
     def _create_h5_dataset(self, h5file, key):
         dims = self.mode_solver.get_dims()
@@ -592,10 +585,10 @@ def output_efield_z(ms, which_band):
     ms.output_field_z()
 
 
-# def output_bpwr(ms, which_band):
-#     ms.get_bfield(which_band)
-#     ms.compute_field_energy()
-#     ms.output_field()
+def output_bpwr(ms, which_band):
+    ms.get_bfield(which_band)
+    ms.compute_field_energy()
+    ms.output_field()
 
 
 def output_dpwr(ms, which_band):

@@ -1,5 +1,6 @@
 from __future__ import division
 
+import glob
 import os
 import re
 import unittest
@@ -34,10 +35,17 @@ class TestModeSolver(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
-    # TODO: Test cleanup. Don't want to delete any user h5 files
-    # def tearDown(self):
-    #     for h5file in glob.glob('*.h5'):
-    #         os.remove(h5file)
+    def setUp(self):
+        """Store the test name and register a function to clean up all the
+        generated h5 files."""
+
+        self.filename_prefix = self.id().split('.')[-1]
+
+        def rm_h5():
+            for f in glob.glob("{}*.h5".format(self.filename_prefix)):
+                os.remove(f)
+
+        self.addCleanup(rm_h5)
 
     def init_solver(self, geom=True):
         num_bands = 8
@@ -59,6 +67,7 @@ class TestModeSolver(unittest.TestCase):
             geometry=geometry,
             geometry_lattice=geometry_lattice,
             resolution=resolution,
+            filename_prefix=self.filename_prefix,
             deterministic=True
         )
 
@@ -212,7 +221,6 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         ms = self.init_solver(False)
-        ms.filename_prefix = 'test_run_te_no_geometry'
         ms.run_te()
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
@@ -284,7 +292,6 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         ms = self.init_solver()
-        ms.filename_prefix = 'test_run_te'
         ms.run_te()
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
@@ -312,14 +319,12 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         ms = self.init_solver()
-        ms.filename_prefix = 'test_run_tm'
         ms.run_tm()
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
 
     def _test_get_field(self, field):
         ms = self.init_solver()
-        ms.filename_prefix = "test_get_{}field".format(field)
         ms.run_te()
         get_field_func = getattr(ms, "get_{}field".format(field))
         fields = get_field_func(ms.num_bands)
@@ -346,7 +351,6 @@ class TestModeSolver(unittest.TestCase):
         data_path = os.path.join(self.data_dir, fname)
 
         ms = self.init_solver(False)
-        ms.filename_prefix = 'test_output_field_to_file'
         ms.run_te()
 
         with h5py.File('test_output_field_to_file-epsilon.h5', 'r') as f:
@@ -359,7 +363,6 @@ class TestModeSolver(unittest.TestCase):
 
     def test_compute_field_energy(self):
         ms = self.init_solver()
-        ms.filename_prefix = 'test_compute_field_energy'
         ms.run_te()
         ms.get_dfield(8)
         res = ms.compute_field_energy()
@@ -371,7 +374,6 @@ class TestModeSolver(unittest.TestCase):
 
     def test_output_efield_z(self):
         ms = self.init_solver()
-        ms.filename_prefix = 'test_output_efield_z'
         ms.run_tm(mpb.output_efield_z)
 
         ref_fname = 'tutorial-e.k16.b08.z.tm.h5'

@@ -130,7 +130,7 @@ struct mode_solver {
   void get_bfield(std::complex<mpb_real> *cdata, int size, int band);
 
   void get_curfield(double *data, int size);
-  void get_curfield(std::complex<mpb_real> *cdata, int size);
+  void get_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
 
   std::vector<mpb_real> compute_field_energy();
 

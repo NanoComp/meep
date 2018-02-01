@@ -1279,7 +1279,7 @@ void mode_solver::get_curfield(double *data, int size) {
   }
 }
 
-void mode_solver::get_curfield(std::complex<mpb_real> *cdata, int size) {
+void mode_solver::get_curfield_cmplx(std::complex<mpb_real> *cdata, int size) {
   scalar_complex *p = (scalar_complex *)curfield;
 
   for (int i = 0; i < size; ++i) {
