@@ -1383,8 +1383,7 @@ std::vector<mpb_real> mode_solver::get_output_k() {
   return output_k;
 }
 
-// TODO: More descriptive name. Taken from fieldio.c:fieldio_write_complex_field
-void mode_solver::update_before_output() {
+void mode_solver::multiply_bloch_phase() {
 
   std::vector<mpb_real> kvector = get_output_k();
 

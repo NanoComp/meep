@@ -26,53 +26,84 @@
 using namespace py_mpb;
 %}
 
-// TODO: Don't repeat this code here and in meep.i
 %{
 using namespace meep;
 using namespace meep_geom;
 
-typedef struct {
-    PyObject *func;
-    int num_components;
-} py_field_func_data;
-
-PyObject *py_callback = NULL;
-PyObject *py_callback_v3 = NULL;
-PyObject *py_amp_func = NULL;
-
-static PyObject *py_source_time_object();
-static PyObject *py_material_object();
-static PyObject *vec2py(const meep::vec &v);
-static double py_callback_wrap(const meep::vec &v);
-static std::complex<double> py_amp_func_wrap(const meep::vec &v);
-static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
-                                               const meep::vec &loc,
-                                               void *data_);
-static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium);
-static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium);
-static int pyv3_to_v3(PyObject *po, vector3 *v);
-
-static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
-static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
-static int get_attr_int(PyObject *py_obj, int *result, const char *name);
-static int get_attr_material(PyObject *po, material_type *m);
-static int pymaterial_to_material(PyObject *po, material_type *mt);
-static int pymedium_to_medium(PyObject *po, medium_struct *m);
-static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a);
-static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
-static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
-
-static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go);
-static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *o);
-static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *w);
-static int pycone_to_cone(PyObject *py_cone, geometric_object *cone);
-static int pyblock_to_block(PyObject *py_blk, geometric_object *blk);
-static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e);
-static std::string py_class_name_as_string(PyObject *po);
-static int py_gobj_to_gobj(PyObject *po, geometric_object *o);
-static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l);
-
 #include "typemap_utils.cpp"
+
+static int pymatrix_to_matrix(PyObject *po, matrix3x3 *m) {
+    vector3 c1, c2, c3;
+
+    PyObject *py_c1 = PyObject_GetAttrString(po, "c1");
+    PyObject *py_c2 = PyObject_GetAttrString(po, "c2");
+    PyObject *py_c3 = PyObject_GetAttrString(po, "c3");
+
+    if (!pyv3_to_v3(py_c1, &c1) ||
+        !pyv3_to_v3(py_c2, &c2) ||
+        !pyv3_to_v3(py_c3, &c3)) {
+
+        return 0;
+    }
+
+    m->c0 = c1;
+    m->c1 = c2;
+    m->c2 = c3;
+
+    Py_DECREF(py_c1);
+    Py_DECREF(py_c2);
+    Py_DECREF(py_c3);
+
+    return 1;
+}
+
+static int get_attr_matrix(PyObject *py_obj, matrix3x3 *m, const char *name) {
+    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
+
+    if (!py_attr) {
+        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
+        return 0;
+    }
+
+    if (!pymatrix_to_matrix(py_attr, m)) {
+        return 0;
+    }
+
+    Py_XDECREF(py_attr);
+    return 1;
+}
+
+static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
+    vector3 basis1, basis2, basis3, size, basis_size, b1, b2, b3;
+    matrix3x3 basis, metric;
+
+    if (!get_attr_v3(py_lat, &basis1, "basis1") ||
+        !get_attr_v3(py_lat, &basis2, "basis2") ||
+        !get_attr_v3(py_lat, &basis3, "basis3") ||
+        !get_attr_v3(py_lat, &size, "size") ||
+        !get_attr_v3(py_lat, &basis_size, "basis_size") ||
+        !get_attr_v3(py_lat, &b1, "b1") ||
+        !get_attr_v3(py_lat, &b2, "b2") ||
+        !get_attr_v3(py_lat, &b3, "b3") ||
+        !get_attr_matrix(py_lat, &basis, "basis") ||
+        !get_attr_matrix(py_lat, &metric, "metric")) {
+
+        return 0;
+    }
+
+    l->basis1 = basis1;
+    l->basis2 = basis2;
+    l->basis3 = basis3;
+    l->size = size;
+    l->basis_size = basis_size;
+    l->b1 = b1;
+    l->b2 = b2;
+    l->b3 = b3;
+    l->basis = basis;
+    l->metric = metric;
+
+    return 1;
+}
 %}
 
 %include "std_string.i"

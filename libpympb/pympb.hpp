@@ -139,7 +139,7 @@ struct mode_solver {
   std::vector<int> get_dims();
   std::vector<mpb_real> get_output_k();
 
-  void update_before_output();
+  void multiply_bloch_phase();
   bool with_hermitian_epsilon();
 
 private:

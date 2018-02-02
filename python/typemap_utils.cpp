@@ -31,25 +31,12 @@
     #define PyInteger_FromLong(n) PyInt_FromLong(n)
 #endif
 
-static PyObject *py_source_time_object() {
-    static PyObject *source_time_object = NULL;
-    if (source_time_object == NULL) {
-        PyObject *source_mod = PyImport_ImportModule("meep.source");
-        source_time_object = PyObject_GetAttrString(source_mod, "SourceTime");
-        Py_XDECREF(source_mod);
-    }
-    return source_time_object;
-}
+PyObject *py_callback = NULL;
+PyObject *py_callback_v3 = NULL;
+PyObject *py_amp_func = NULL;
 
-static PyObject *py_meep_src_time_object() {
-    static PyObject *src_time = NULL;
-    if (src_time == NULL) {
-        PyObject *meep_mod = PyImport_ImportModule("meep");
-        src_time = PyObject_GetAttrString(meep_mod, "src_time");
-        Py_XDECREF(meep_mod);
-    }
-    return src_time;
-}
+static int pymedium_to_medium(PyObject *po, medium_struct *m);
+static int pymaterial_to_material(PyObject *po, material_type *mt);
 
 static PyObject *py_material_object() {
     static PyObject *material_object = NULL;
@@ -110,56 +97,6 @@ static PyObject* vec2py(const meep::vec &v) {
     return py_callback_v3;
 }
 
-static double py_callback_wrap(const meep::vec &v) {
-    PyObject *pyv = vec2py(v);
-    PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
-    double ret = PyFloat_AsDouble(pyret);
-    Py_XDECREF(pyret);
-    return ret;
-}
-
-static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
-    PyObject *pyv = vec2py(v);
-    PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
-    double real = PyComplex_RealAsDouble(pyret);
-    double imag = PyComplex_ImagAsDouble(pyret);
-    std::complex<double> ret(real, imag);
-    Py_DECREF(pyret);
-    return ret;
-}
-
-static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
-                                               const meep::vec &loc,
-                                               void *data_) {
-    PyObject *pyv = vec2py(loc);
-
-    py_field_func_data *data = (py_field_func_data *)data_;
-    int len = data->num_components;
-
-    PyObject *py_args = PyTuple_New(len + 1);
-    // Increment here because PyTuple_SetItem steals a reference
-    Py_INCREF(pyv);
-    PyTuple_SetItem(py_args, 0, pyv);
-
-    for (Py_ssize_t i = 1; i < len + 1; i++) {
-        PyObject *cmplx = PyComplex_FromDoubles(fields[i - 1].real(), fields[i - 1].imag());
-        PyTuple_SetItem(py_args, i, cmplx);
-    }
-
-    PyObject *pyret = PyObject_CallObject(data->func, py_args);
-
-    if (!pyret) {
-        PyErr_PrintEx(0);
-    }
-
-    double real = PyComplex_RealAsDouble(pyret);
-    double imag = PyComplex_ImagAsDouble(pyret);
-    std::complex<double> ret(real, imag);
-    Py_DECREF(pyret);
-    Py_DECREF(py_args);
-    return ret;
-}
-
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
     PyObject *py_vec = vec2py(vector3_to_vec(x));
 
@@ -194,16 +131,18 @@ static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medi
     Py_DECREF(pyret);
 }
 
-static std::complex<double> py_src_func_wrap(double t, void *f) {
-    PyObject *py_t = PyFloat_FromDouble(t);
-    PyObject *pyres = PyObject_CallFunctionObjArgs((PyObject *)f, py_t, NULL);
-    double real = PyComplex_RealAsDouble(pyres);
-    double imag = PyComplex_ImagAsDouble(pyres);
-    std::complex<double> ret(real, imag);
-    Py_DECREF(py_t);
-    Py_DECREF(pyres);
+static std::string py_class_name_as_string(PyObject *po) {
+    PyObject *py_type = PyObject_Type(po);
+    PyObject *name = PyObject_GetAttrString(py_type, "__name__");
 
-    return ret;
+    char *bytes = PyObject_ToCharPtr(name);
+
+    std::string class_name(bytes);
+
+    Py_XDECREF(py_type);
+    Py_XDECREF(name);
+
+    return class_name;
 }
 
 static int pyv3_to_v3(PyObject *po, vector3 *v) {
@@ -227,31 +166,6 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
     v->x = x;
     v->y = y;
     v->z = z;
-
-    return 1;
-}
-
-static int pymatrix_to_matrix(PyObject *po, matrix3x3 *m) {
-    vector3 c1, c2, c3;
-
-    PyObject *py_c1 = PyObject_GetAttrString(po, "c1");
-    PyObject *py_c2 = PyObject_GetAttrString(po, "c2");
-    PyObject *py_c3 = PyObject_GetAttrString(po, "c3");
-
-    if (!pyv3_to_v3(py_c1, &c1) ||
-        !pyv3_to_v3(py_c2, &c2) ||
-        !pyv3_to_v3(py_c3, &c3)) {
-
-        return 0;
-    }
-
-    m->c0 = c1;
-    m->c1 = c2;
-    m->c2 = c3;
-
-    Py_DECREF(py_c1);
-    Py_DECREF(py_c2);
-    Py_DECREF(py_c3);
 
     return 1;
 }
@@ -285,19 +199,6 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
     return 1;
 }
 
-static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
-    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
-
-    if (!py_attr) {
-        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-        return 0;
-    }
-
-    *result = PyInteger_AsLong(py_attr);
-    Py_DECREF(py_attr);
-    return 1;
-}
-
 static int get_attr_material(PyObject *po, material_type *m) {
     PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -312,22 +213,6 @@ static int get_attr_material(PyObject *po, material_type *m) {
 
     Py_XDECREF(py_material);
 
-    return 1;
-}
-
-static int get_attr_matrix(PyObject *py_obj, matrix3x3 *m, const char *name) {
-    PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
-
-    if (!py_attr) {
-        PyErr_Format(PyExc_ValueError, "Class attribute '%s' is None\n", name);
-        return 0;
-    }
-
-    if (!pymatrix_to_matrix(py_attr, m)) {
-        return 0;
-    }
-
-    Py_XDECREF(py_attr);
     return 1;
 }
 
@@ -455,29 +340,6 @@ static int pymedium_to_medium(PyObject *po, medium_struct *m) {
 
         return 0;
     }
-
-    return 1;
-}
-
-static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a) {
-
-    if (!get_attr_dbl(py_absorber, &a->thickness, "thickness") ||
-        !get_attr_int(py_absorber, &a->direction, "direction") ||
-        !get_attr_int(py_absorber, &a->side, "side") ||
-        !get_attr_dbl(py_absorber, &a->R_asymptotic, "R_asymptotic") ||
-        !get_attr_dbl(py_absorber, &a->mean_stretch, "mean_stretch")) {
-
-        return 0;
-    }
-
-    PyObject *py_pml_profile_func = PyObject_GetAttrString(py_absorber, "pml_profile");
-
-    if (!py_pml_profile_func) {
-        PyErr_Format(PyExc_ValueError, "Class attribute 'pml_profile' is None\n");
-        return 0;
-    }
-
-    a->pml_profile_data = py_pml_profile_func;
 
     return 1;
 }
@@ -612,43 +474,6 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
     return 1;
 }
 
-static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
-    if (!PyList_Check(po)) {
-        PyErr_SetString(PyExc_TypeError, "Expected a list");
-        return 0;
-    }
-
-    int length = PyList_Size(po);
-
-    l->num_items = length;
-    l->items = new geometric_object[length];
-
-    for(int i = 0; i < length; i++) {
-        PyObject *py_gobj = PyList_GetItem(po, i);
-        geometric_object go;
-        if (!py_gobj_to_gobj(py_gobj, &go)) {
-            return 0;
-        }
-        geometric_object_copy(&go, &l->items[i]);
-    }
-
-    return 1;
-}
-
-static std::string py_class_name_as_string(PyObject *po) {
-    PyObject *py_type = PyObject_Type(po);
-    PyObject *name = PyObject_GetAttrString(py_type, "__name__");
-
-    char *bytes = PyObject_ToCharPtr(name);
-
-    std::string class_name(bytes);
-
-    Py_XDECREF(py_type);
-    Py_XDECREF(name);
-
-    return class_name;
-}
-
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     int success = 0;
     std::string go_type = py_class_name_as_string(po);
@@ -679,34 +504,25 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
     return success;
 }
 
-static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
-    vector3 basis1, basis2, basis3, size, basis_size, b1, b2, b3;
-    matrix3x3 basis, metric;
-
-    if (!get_attr_v3(py_lat, &basis1, "basis1") ||
-        !get_attr_v3(py_lat, &basis2, "basis2") ||
-        !get_attr_v3(py_lat, &basis3, "basis3") ||
-        !get_attr_v3(py_lat, &size, "size") ||
-        !get_attr_v3(py_lat, &basis_size, "basis_size") ||
-        !get_attr_v3(py_lat, &b1, "b1") ||
-        !get_attr_v3(py_lat, &b2, "b2") ||
-        !get_attr_v3(py_lat, &b3, "b3") ||
-        !get_attr_matrix(py_lat, &basis, "basis") ||
-        !get_attr_matrix(py_lat, &metric, "metric")) {
-
+static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
+    if (!PyList_Check(po)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a list");
         return 0;
     }
 
-    l->basis1 = basis1;
-    l->basis2 = basis2;
-    l->basis3 = basis3;
-    l->size = size;
-    l->basis_size = basis_size;
-    l->b1 = b1;
-    l->b2 = b2;
-    l->b3 = b3;
-    l->basis = basis;
-    l->metric = metric;
+    int length = PyList_Size(po);
+
+    l->num_items = length;
+    l->items = new geometric_object[length];
+
+    for(int i = 0; i < length; i++) {
+        PyObject *py_gobj = PyList_GetItem(po, i);
+        geometric_object go;
+        if (!py_gobj_to_gobj(py_gobj, &go)) {
+            return 0;
+        }
+        geometric_object_copy(&go, &l->items[i]);
+    }
 
     return 1;
 }
