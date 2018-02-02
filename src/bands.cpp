@@ -105,10 +105,10 @@ int do_harminv(complex<double> *data, int n, double dt,
   for (int i = 0; i < nf; ++i) // sort in increasing order of error
     for (int j = i + 1; j < nf; ++j)
       if (harminv_get_freq_error(hd, fsort[i]) >
-	  harminv_get_freq_error(hd, fsort[j])) {
-	int k = fsort[i];
-	fsort[i] = fsort[j];
-	fsort[j] = k;
+      	  harminv_get_freq_error(hd, fsort[j])) {
+      	int k = fsort[i];
+      	fsort[i] = fsort[j];
+      	fsort[j] = k;
       }
 
   double min_err = harminv_get_freq_error(hd, fsort[0]);
@@ -129,12 +129,12 @@ int do_harminv(complex<double> *data, int n, double dt,
       harminv_get_amplitude(&aa, hd, fsort[i]);
       double amp = abs(aa);
       if (f >= fmin && f <= fmax
-	  && abs(harminv_get_Q(hd, fsort[i])) > Q_thresh
-	  && err < err_thresh
-	  && err < rel_err_thresh * min_err
-	  && amp > amp_thresh
-	  && amp > rel_amp_thresh * max_amp) {
-	fsort[j++] = fsort[i];
+      	  && abs(harminv_get_Q(hd, fsort[i])) > Q_thresh
+      	  && err < err_thresh
+      	  && err < rel_err_thresh * min_err
+      	  && amp > amp_thresh
+      	  && amp > rel_amp_thresh * max_amp) {
+      	fsort[j++] = fsort[i];
       }
     }
     nf = j;
@@ -143,16 +143,16 @@ int do_harminv(complex<double> *data, int n, double dt,
     // set indices to -1 for frequencies to be eliminated
     for (int i = 0; i < nf; ++i)
       if (fsort[i] != -1) { // i hasn't been eliminated yet
-	double f = harminv_get_freq(hd, fsort[i]);
-	if (f < 0.0) {
-	  double kdiff = -2 * f;
-	  int kpos = i;
-	  for (int k = 0; k < nf; ++k) // search for closest positive freq.
-	    if (fsort[k] != -1) { // k hasn't been eliminated yet
-	      double fdiff = abs(harminv_get_freq(hd, fsort[k]) + f);
-	      if (fdiff < kdiff) {
-		kpos = k;
-		kdiff = fdiff;
+      	double f = harminv_get_freq(hd, fsort[i]);
+      	if (f < 0.0) {
+      	  double kdiff = -2 * f;
+      	  int kpos = i;
+      	  for (int k = 0; k < nf; ++k) // search for closest positive freq.
+      	    if (fsort[k] != -1) { // k hasn't been eliminated yet
+      	      double fdiff = abs(harminv_get_freq(hd, fsort[k]) + f);
+      	      if (fdiff < kdiff) {
+      		kpos = k;
+      		kdiff = fdiff;
 	      }
 	    }
 	  if (kpos != i && kdiff < 2.0 / n) { // consider them the same
@@ -168,7 +168,7 @@ int do_harminv(complex<double> *data, int n, double dt,
     int j = 0;
     for (int i = 0; i < nf; ++i) // remove the eliminated indices
       if (fsort[i] != -1)
-	fsort[j++] = fsort[i];
+      	fsort[j++] = fsort[i];
     nf = j;
   }
 
@@ -179,10 +179,10 @@ int do_harminv(complex<double> *data, int n, double dt,
   for (int i = 0; i < nf; ++i) // simple O(nf^2) sort
     for (int j = i + 1; j < nf; ++j)
       if (abs(harminv_get_freq(hd, fsort[i])) >
-	  abs(harminv_get_freq(hd, fsort[j]))) {
-	int k = fsort[i];
-	fsort[i] = fsort[j];
-	fsort[j] = k;
+      	  abs(harminv_get_freq(hd, fsort[j]))) {
+      	int k = fsort[i];
+      	fsort[i] = fsort[j];
+      	fsort[j] = k;
       }
 
   for (int i = 0; i < nf; ++i) {

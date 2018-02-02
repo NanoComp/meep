@@ -39,7 +39,7 @@ static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
 	 case Dcyl:
 	 {
 	      weight = sphere_quad[1][n][3];
-	      return cent 
+	      return cent
 		+ veccyl(sphere_quad[1][n][0], sphere_quad[1][n][1]) * R;
 	 }
          default:
@@ -53,7 +53,7 @@ vec material_function::normal_vector(field_type ft, const volume &v)
 {
   vec gradient(zero_vec(v.dim));
   vec p(v.center());
-  double R = v.diameter();  
+  double R = v.diameter();
   for (int i = 0; i < num_sphere_quad[number_of_directions(v.dim)-1]; ++i) {
     double weight;
     vec pt = sphere_pt(p, R, i, weight);
@@ -82,7 +82,7 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
 
   double meps=1, minveps=1;
   vec d = v.get_max_corner() - v.get_min_corner();
-  int ms = 10; 
+  int ms = 10;
   double old_meps=0, old_minveps=0;
   int iter = 0;
   switch(v.dim) {
@@ -91,12 +91,12 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       old_meps=meps; old_minveps=minveps;
       meps = minveps = 0;
       for (int k=0; k < ms; k++)
-	for (int j=0; j < ms; j++)
-	  for (int i=0; i < ms; i++) {
-	    double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
-	    if (ep < 0) goto trivial;
-	    meps += ep; minveps += 1/ep;
-	  }
+      	for (int j=0; j < ms; j++)
+      	  for (int i=0; i < ms; i++) {
+      	    double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms, k*d.z()/ms));
+      	    if (ep < 0) goto trivial;
+      	    meps += ep; minveps += 1/ep;
+      	  }
       meps /= ms*ms*ms;
       minveps /= ms*ms*ms;
       ms *= 2;
@@ -108,14 +108,14 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       old_meps=meps; old_minveps=minveps;
       meps = minveps = 0;
       for (int j=0; j < ms; j++)
-	for (int i=0; i < ms; i++) {
-	  double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
-	  if (ep < 0) goto trivial;
-	  meps += ep; minveps += 1/ep;
-	}
+      	for (int i=0; i < ms; i++) {
+      	  double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.x()/ms, j*d.y()/ms));
+      	  if (ep < 0) goto trivial;
+      	  meps += ep; minveps += 1/ep;
+      	}
       meps /= ms*ms;
       minveps /= ms*ms;
-      ms *= 2; 
+      ms *= 2;
       if (maxeval && (iter += ms*ms) >= maxeval) goto done;
     }
     break;
@@ -125,16 +125,16 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       meps = minveps = 0;
       double sumvol = 0;
       for (int j=0; j < ms; j++)
-	for (int i=0; i < ms; i++) {
-	  double r = v.get_min_corner().r() + i*d.r()/ms;
-	  double ep = chi1p1(ft,v.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
-	  if (ep < 0) goto trivial;
-	  sumvol += r;
-	  meps += ep * r; minveps += r/ep;
-	}
+      	for (int i=0; i < ms; i++) {
+      	  double r = v.get_min_corner().r() + i*d.r()/ms;
+      	  double ep = chi1p1(ft,v.get_min_corner() + veccyl(i*d.r()/ms, j*d.z()/ms));
+      	  if (ep < 0) goto trivial;
+      	  sumvol += r;
+      	  meps += ep * r; minveps += r/ep;
+      	}
       meps /= sumvol;
       minveps /= sumvol;
-      ms *= 2; 
+      ms *= 2;
       if (maxeval && (iter += ms*ms) >= maxeval) goto done;
     }
     break;
@@ -143,17 +143,17 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
       old_meps=meps; old_minveps=minveps;
       meps = minveps = 0;
       for (int i=0; i < ms; i++) {
-	double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.z()/ms));
-	if (ep < 0) {
-	  meps = chi1p1(ft,v.center());
-	  minveps = 1/meps;
-	  goto done;
-	}
-	meps += ep; minveps += 1/ep;
+      	double ep = chi1p1(ft,v.get_min_corner() + vec(i*d.z()/ms));
+      	if (ep < 0) {
+      	  meps = chi1p1(ft,v.center());
+      	  minveps = 1/meps;
+      	  goto done;
+      	}
+      	meps += ep; minveps += 1/ep;
       }
       meps /= ms;
       minveps /= ms;
-      ms *= 2; 
+      ms *= 2;
       if (maxeval && (iter += ms*ms) >= maxeval) goto done;
     }
     break;
@@ -165,13 +165,13 @@ void material_function::eff_chi1inv_row(component c, double chi1inv_row[3],
     double nabsinv = 1.0/abs(gradient);
     LOOP_OVER_DIRECTIONS(gradient.dim, k)
       n[k%3] = gradient.in_direction(k) * nabsinv;
-    
+
     /* get rownum'th row of effective tensor
        P * minveps + (I-P) * 1/meps = P * (minveps-1/meps) + I * 1/meps
        where I is the identity and P is the projection matrix
        P_{ij} = n[i] * n[j]. */
     int rownum = component_direction(c) % 3;
-    for (int i=0; i<3; ++i) 
+    for (int i=0; i<3; ++i)
       chi1inv_row[i] = n[rownum] * n[i] * (minveps - 1/meps);
     chi1inv_row[rownum] += 1/meps;
   }
@@ -189,10 +189,10 @@ void structure_chunk::set_chi1inv(component c,
   if (!use_anisotropic_averaging) maxeval = 0;
 
   const double smoothing_diameter = 1.0; // FIXME: make user-changable?
-      
+
   // may take a long time in 3d, so prepare to print status messages
-  int npixels = 0, ipixel = 0;
-  int loop_npixels = 0;
+  size_t npixels = 0, ipixel = 0;
+  size_t loop_npixels = 0;
   LOOP_OVER_VOL(gv, c, i) {
     loop_npixels = loop_n1 * loop_n2 * loop_n3;
     goto breakout; // hack to use loop-size computation from LOOP_OVER_VOL
@@ -233,10 +233,10 @@ void structure_chunk::set_chi1inv(component c,
       chi1inv[c][d2][i] = (d2 == dc) ? chi1invrow[2] : chi1invrow_offdiag[2];
       trivial[2] = trivial[2] && (chi1inv[c][d2][i] == trivial_val[2]);
     }
-    
+
     if (!quiet && (ipixel+1) % 1000 == 0
 	&& wall_time() > last_output_time + MIN_OUTPUT_TIME) {
-      master_printf("subpixel-averaging is %g%% done, %g s remaining\n", 
+      master_printf("subpixel-averaging is %g%% done, %g s remaining\n",
 		    ipixel * 100.0 / npixels,
 		    (npixels - ipixel) *
 		    (wall_time() - last_output_time) / ipixel);
@@ -248,8 +248,8 @@ void structure_chunk::set_chi1inv(component c,
   for (int i = 0; i < 3; ++i) {
     trivial_chi1inv[c][ds[i]] = trivial[i];
     if (i != idiag && trivial[i]) { // deallocate trivial offdiag
-      delete[] chi1inv[c][ds[i]]; 
-      chi1inv[c][ds[i]] = 0; 
+      delete[] chi1inv[c][ds[i]];
+      chi1inv[c][ds[i]] = 0;
     }
   }
   // only deallocate trivial diag if entire tensor is trivial
@@ -260,7 +260,7 @@ void structure_chunk::set_chi1inv(component c,
   medium.unset_volume();
 }
 
-void structure_chunk::add_susceptibility(material_function &sigma, 
+void structure_chunk::add_susceptibility(material_function &sigma,
 					 field_type ft,
 					 const susceptibility &sus)
 {
@@ -278,7 +278,7 @@ void structure_chunk::add_susceptibility(material_function &sigma,
     newsus->sigma[c][d] = NULL;
     newsus->trivial_sigma[c][d] = true;
   }
-  
+
   // if we own this chunk, set up the sigma array(s):
   if (is_mine()) FOR_FT_COMPONENTS(ft,c) if (gv.has_field(c)) {
     FOR_FT_COMPONENTS(ft,c2) if (gv.has_field(c2)) {
@@ -312,20 +312,20 @@ void structure_chunk::add_susceptibility(material_function &sigma,
     for (int i = 0; i < 3; ++i) {
       newsus->trivial_sigma[c][ds[i]] = trivial[i];
       if (i != idiag && trivial[i]) { // deallocate trivial offdiag
-	delete[] newsus->sigma[c][ds[i]]; 
-	newsus->sigma[c][ds[i]] = 0; 
+	delete[] newsus->sigma[c][ds[i]];
+	newsus->sigma[c][ds[i]] = 0;
       }
     }
     // only deallocate trivial diag if entire tensor is trivial
     if (trivial[0] && trivial[1] && trivial[2]) {
-      delete[] newsus->sigma[c][dc]; 
-      newsus->sigma[c][dc] = 0; 
+      delete[] newsus->sigma[c][dc];
+      newsus->sigma[c][dc] = 0;
     }
   }
 
   // finally, add to the beginning of the chiP list:
   newsus->next = chiP[ft];
-  chiP[ft] = newsus;  
+  chiP[ft] = newsus;
 
   sigma.unset_volume();
 }

@@ -18,6 +18,7 @@
 #define MEEP_H
 
 #include <stdio.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "meep/vec.hpp"
@@ -151,7 +152,7 @@ public:
     return 0; }
 
   susceptibility *next;
-  int ntot;
+  size_t ntot;
   realnum *sigma[NUM_FIELD_COMPONENTS][5];
 
   /* trivial_sigma[c][d] is true only if *none* of the processes has a
@@ -649,7 +650,7 @@ class structure {
   void add_to_effort_volumes(const grid_volume &new_effort_volume,
 			     double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks,
-			    const boundary_region &br, const symmetry &s);
+			     const boundary_region &br, const symmetry &s);
   void check_chunks();
   void changing_chunks();
 };
@@ -843,7 +844,7 @@ public:
 
   component c; // component to DFT (possibly transformed by symmetry)
 
-  int N; // number of spatial points (on epsilon grid)
+  size_t N; // number of spatial points (on epsilon grid)
   std::complex<realnum> *dft; // N x Nomega array of DFT values.
 
   class dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
@@ -872,7 +873,7 @@ public:
   // cache of exp(iwt) * scale, of length Nomega
   std::complex<realnum> *dft_phase;
 
-  int avg1, avg2; // index offsets for average to get epsilon grid
+  ptrdiff_t avg1, avg2; // index offsets for average to get epsilon grid
 
   int vc; // component descriptor from the original volume
 };
@@ -1049,9 +1050,9 @@ class fields_chunk {
   dft_chunk *dft_chunks;
 
   realnum **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
-  int num_zeroes[NUM_FIELD_TYPES];
+  size_t num_zeroes[NUM_FIELD_TYPES];
   realnum **connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
-  int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
+  size_t num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   std::complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
   int npol[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
@@ -1159,7 +1160,7 @@ class fields_chunk {
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
-  void alloc_extra_connections(field_type, connect_phase, in_or_out, int);
+  void alloc_extra_connections(field_type, connect_phase, in_or_out, size_t);
   // dft.cpp
   void update_dfts(double timeE, double timeH);
 
@@ -1200,9 +1201,9 @@ class fields {
   realnum **comm_blocks[NUM_FIELD_TYPES];
   // This is the same size as each comm_blocks array, and store the sizes
   // of the comm blocks themselves for each connection-phase type
-  int *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
-  int comm_size_tot(int f, int pair) const {
-    int sum = 0; for (int ip=0; ip<3; ++ip) sum+=comm_sizes[f][ip][pair];
+  size_t *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
+  size_t comm_size_tot(int f, int pair) const {
+    size_t sum = 0; for (int ip=0; ip<3; ++ip) sum+=comm_sizes[f][ip][pair];
     return sum;
   }
 
@@ -1377,8 +1378,8 @@ class fields {
   void initialize_field(component, std::complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
-  void initialize_with_n_te(int n);
-  void initialize_with_n_tm(int n);
+  void initialize_with_n_te(int ntot);
+  void initialize_with_n_tm(int ntot);
   int phase_in_material(const structure *s, double time);
   int is_phasing();
 

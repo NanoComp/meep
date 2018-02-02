@@ -49,9 +49,9 @@ namespace meep {
    of PML, cndinv should contain 1 / (1 + dt (cnd + sigma)/2).
 
    fcnd is an auxiliary field used ONLY when we simultaneously have
-   PML (dsig != NO_DIR) and conductivity, in which case fcnd solves 
+   PML (dsig != NO_DIR) and conductivity, in which case fcnd solves
        dfcnd/dt = curl g - cnd*fcnd
-   and f satisfies 
+   and f satisfies
        df/dt = dfcnd/dt - sigma*f.
 
    fu is another auxiliary field used only in PML (dsigu != NO_DIR),
@@ -60,88 +60,88 @@ namespace meep {
    and fu replaces f in the equations above (fu += dt curl g etcetera).
 */
 void step_curl(RPR f, component c, const RPR g1, const RPR g2,
-	       int s1, int s2, // strides for g1/g2 shift
+	       ptrdiff_t s1, ptrdiff_t s2, // strides for g1/g2 shift
 	       const grid_volume &gv, double dtdx,
 	       direction dsig, const DPR sig, const DPR kap, const DPR siginv,
 	       RPR fu, direction dsigu, const DPR sigu, const DPR kapu, const DPR siginvu,
-	       double dt, 
+	       double dt,
 	       const RPR cnd, const RPR cndinv, RPR fcnd)
 {
   if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
-    SWAP(int, s1, s2);
+    SWAP(ptrdiff_t, s1, s2);
     dtdx = -dtdx; // need to flip derivative sign
   }
 
   /* The following are a bunch of special cases of the "MOST GENERAL CASE"
      loop below.  We make copies of the loop for each special case in
      order to keep the innermost loop efficient.  This is especially
-     important because the non-PML cases are actually more common. 
-     (The "right" way to do this is by partial evaluation of the 
+     important because the non-PML cases are actually more common.
+     (The "right" way to do this is by partial evaluation of the
       most general case, but that would require a code generator.) */
 
   if (dsig == NO_DIRECTION) { // no PML in f update
     if (dsigu == NO_DIRECTION) { // no fu update
       if (cnd) {
-	double dt2 = dt * 0.5;
-	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i)
-	    f[i] = ((1 - dt2 * cnd[i]) * f[i] - 
-		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
-	}
-	else {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i)
-	    f[i] = ((1 - dt2 * cnd[i]) * f[i] 
-		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	}
+    	double dt2 = dt * 0.5;
+    	if (g2) {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	    f[i] = ((1 - dt2 * cnd[i]) * f[i] -
+    		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+    	}
+    	else {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	    f[i] = ((1 - dt2 * cnd[i]) * f[i]
+    		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+    	}
       }
       else { // no conductivity
-	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i)
-	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
-	}
-	else {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i)
-	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
-	}
+    	if (g2) {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	    f[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+    	}
+    	else {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i)
+    	    f[i] -= dtdx * (g1[i+s1] - g1[i]);
+    	}
       }
     }
     else { // fu update, no PML in f update
       KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
       if (cnd) {
-	double dt2 = dt * 0.5;
-	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_ku; double fprev = fu[i];
-	    fu[i] = ((1 - dt2 * cnd[i]) * fprev - 
-		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
-	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
-	  }
-	}
-	else {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_ku; double fprev = fu[i];
-	    fu[i] = ((1 - dt2 * cnd[i]) * fprev
-		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
-	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
-	  }
-	}
+    	double dt2 = dt * 0.5;
+    	if (g2) {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
+    	    DEF_ku; double fprev = fu[i];
+    	    fu[i] = ((1 - dt2 * cnd[i]) * fprev -
+    		    dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2])) * cndinv[i];
+    	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+    	  }
+    	}
+    	else {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
+    	    DEF_ku; double fprev = fu[i];
+    	    fu[i] = ((1 - dt2 * cnd[i]) * fprev
+    		    - dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
+    	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+    	  }
+    	}
       }
       else { // no conductivity
-	if (g2) {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_ku; double fprev = fu[i];
-	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
-	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
-	  }
-	}
-	else {
-	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
-	    DEF_ku; double fprev = fu[i];
-	    fu[i] -= dtdx * (g1[i+s1] - g1[i]);
-	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
-	  }
-	}
+    	if (g2) {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
+    	    DEF_ku; double fprev = fu[i];
+    	    fu[i] -= dtdx * (g1[i+s1] - g1[i] + g2[i] - g2[i+s2]);
+    	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+    	  }
+    	}
+    	else {
+    	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
+    	    DEF_ku; double fprev = fu[i];
+    	    fu[i] -= dtdx * (g1[i+s1] - g1[i]);
+    	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
+    	  }
+    	}
       }
     }
   }
@@ -154,7 +154,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    realnum fcnd_prev = fcnd[i];
-	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
 	    f[i] = ((kap[k] - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	  }
@@ -163,7 +163,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k;
 	    realnum fcnd_prev = fcnd[i];
-	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
 	    f[i] = ((kap[k] - sig[k]) * f[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	  }
@@ -194,7 +194,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
-	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1]-g1[i] + g2[i]-g2[i+s2])) * cndinv[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
@@ -205,7 +205,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 	  LOOP_OVER_VOL_OWNED0(gv, c, i) {
 	    DEF_k; DEF_ku; double fprev = fu[i];
 	    realnum fcnd_prev = fcnd[i];
-	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] - 
+	    fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] -
 		       dtdx * (g1[i+s1] - g1[i])) * cndinv[i];
 	    fu[i] = ((kap[k] - sig[k]) * fu[i] + (fcnd[i] - fcnd_prev)) * siginv[k];
 	    f[i] = siginvu[ku] * ((kapu[ku] - sigu[ku]) * f[i] + fu[i] - fprev);
@@ -233,7 +233,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
   }
 }
 
-/* field-update equation f += betadt * g (plus variants for conductivity 
+/* field-update equation f += betadt * g (plus variants for conductivity
    and/or PML).  This is used in 2d calculations to add an exp(i beta z)
    time dependence, which gives an additional i \beta \hat{z} \times
    cross-product in the curl equations. */
@@ -317,12 +317,12 @@ void step_beta(RPR f, component c, const RPR g,
 
 /* Given Dsqr = |D|^2 and Di = component of D, compute the factor f so
    that Ei = chi1inv * f * Di.   In principle, this would involve solving
-   a cubic equation, but instead we use a Pade approximant that is 
+   a cubic equation, but instead we use a Pade approximant that is
    accurate to several orders.  This is inaccurate if the nonlinear
    index change is large, of course, but in that case the chi2/chi3
    power-series expansion isn't accurate anyway, so the cubic isn't
    physical there either. */
-inline double calc_nonlinear_u(const double Dsqr, 
+inline double calc_nonlinear_u(const double Dsqr,
 			       const double Di,
 			       const double chi1inv,
 			       const double chi2, const double chi3) {
@@ -348,19 +348,19 @@ inline double calc_nonlinear_u(const double Dsqr,
 
 */
 
-void step_update_EDHB(RPR f, component fc, const grid_volume &gv, 
+void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 		      const RPR g, const RPR g1, const RPR g2,
 		      const RPR u, const RPR u1, const RPR u2,
-		      int s, int s1, int s2,
+		      ptrdiff_t s, ptrdiff_t s1, ptrdiff_t s2,
 		      const RPR chi2, const RPR chi3,
 		      RPR fw, direction dsigw, const DPR sigw, const DPR kapw)
 {
   if (!f) return;
-  
+
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
     SWAP(const RPR, g1, g2);
     SWAP(const RPR, u1, u2);
-    SWAP(int, s1, s2);
+    SWAP(ptrdiff_t, s1, s2);
   }
 
   // stable averaging of offdiagonal components
@@ -369,7 +369,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 
   /* As with step_curl, these loops are all essentially copies
      of the "MOST GENERAL CASE" loop with various terms thrown out. */
-  
+
   if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
     KSTRIDE_DEF(dsigw, kw, gv.little_owned_corner0(fc));
     if (u1 && u2) { // 3x3 off-diagonal u
@@ -382,7 +382,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	  DEF_kw; double fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
 	  fw[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2))
 	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
-			       gs, us, chi2[i], chi3[i]);	  
+			       gs, us, chi2[i], chi3[i]);
 	  f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
 	}
 	/////////////////////////////////////////////////////////////
@@ -481,7 +481,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv,
 	  double gs = g[i]; double us = u[i];
 	  f[i] = (gs * us + OFFDIAG(u1,g1,s1) + OFFDIAG(u2,g2,s2))
 	    * calc_nonlinear_u(gs * gs + 0.0625 * (g1s*g1s + g2s*g2s),
-			       gs, us, chi2[i], chi3[i]);	  
+			       gs, us, chi2[i], chi3[i]);
 	}
       }
       else {

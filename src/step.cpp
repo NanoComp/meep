@@ -36,7 +36,7 @@ void fields::step() {
   if (synchronized_magnetic_fields) {
     synchronized_magnetic_fields = 1; // reset synchronization count
     restore_magnetic_fields();
-  } 
+  }
 
   am_now_working_on(Stepping);
 
@@ -45,8 +45,8 @@ void fields::step() {
     last_step_output_t = t;
   }
   if (!quiet && wall_time() > last_step_output_wall_time + MIN_OUTPUT_TIME) {
-    master_printf("on time step %d (time=%g), %g s/step\n", t, time(), 
-		  (wall_time() - last_step_output_wall_time) / 
+    master_printf("on time step %d (time=%g), %g s/step\n", t, time(),
+		  (wall_time() - last_step_output_wall_time) /
 		  (t - last_step_output_t));
     if (save_synchronized_magnetic_fields)
       master_printf("  (doing expensive timestepping of synched fields)\n");
@@ -55,7 +55,7 @@ void fields::step() {
   }
 
   phase_material();
-  
+
   // update cached conductivity-inverse array, if needed
   for (int i=0;i<num_chunks;i++) chunks[i]->s->update_condinv();
 
@@ -115,8 +115,8 @@ void fields::phase_material() {
   if (is_phasing()) {
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->is_mine()) {
-	chunks[i]->phase_material(phasein_time);
-	changed = changed || chunks[i]->new_s;
+      	chunks[i]->phase_material(phasein_time);
+      	changed = changed || chunks[i]->new_s;
       }
     phasein_time--;
   }
@@ -157,27 +157,27 @@ void fields::step_boundaries(field_type ft) {
     if (chunks[j]->is_mine()) {
       int wh[3] = {0,0,0};
       for (int i=0;i<num_chunks;i++) {
-	const int pair = j+i*num_chunks;
-	int n0 = 0;
-	for (int ip=0;ip<3;ip++) {
-	  for (int n=0;n<comm_sizes[ft][ip][pair];n++)
-	    comm_blocks[ft][pair][n0 + n] =
-	      *(chunks[j]->connections[ft][ip][Outgoing][wh[ip]++]);
-	  n0 += comm_sizes[ft][ip][pair];
-	}
+      	const int pair = j+i*num_chunks;
+      	size_t n0 = 0;
+      	for (int ip=0;ip<3;ip++) {
+      	  for (size_t n=0;n<comm_sizes[ft][ip][pair];n++)
+      	    comm_blocks[ft][pair][n0 + n] =
+      	      *(chunks[j]->connections[ft][ip][Outgoing][wh[ip]++]);
+      	  n0 += comm_sizes[ft][ip][pair];
+      	}
       }
     }
 
   boundary_communications(ft);
-  
+
   // Finally, copy incoming data to the fields themselves, multiplying phases:
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
       int wh[3] = {0,0,0};
       for (int j=0;j<num_chunks;j++) {
         const int pair = j+i*num_chunks;
-	connect_phase ip = CONNECT_PHASE;
-        for (int n = 0; n < comm_sizes[ft][ip][pair]; n += 2, wh[ip] += 2) {
+      	connect_phase ip = CONNECT_PHASE;
+        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; n += 2, wh[ip] += 2) {
           const double phr = real(chunks[i]->connection_phases[ft][wh[ip]/2]);
           const double phi = imag(chunks[i]->connection_phases[ft][wh[ip]/2]);
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]]) =
@@ -185,16 +185,16 @@ void fields::step_boundaries(field_type ft) {
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]+1]) =
             phr*comm_blocks[ft][pair][n+1] + phi*comm_blocks[ft][pair][n];
         }
-	int n0 = comm_sizes[ft][ip][pair];
-	ip = CONNECT_NEGATE;
-        for (int n = 0; n < comm_sizes[ft][ip][pair]; ++n)
+      	size_t n0 = comm_sizes[ft][ip][pair];
+      	ip = CONNECT_NEGATE;
+        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; ++n)
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++])
-	    = -comm_blocks[ft][pair][n0 + n];
-	n0 += comm_sizes[ft][ip][pair];
-	ip = CONNECT_COPY;
-        for (int n = 0; n < comm_sizes[ft][ip][pair]; ++n)
+      	    = -comm_blocks[ft][pair][n0 + n];
+      	n0 += comm_sizes[ft][ip][pair];
+      	ip = CONNECT_COPY;
+        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; ++n)
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++])
-	    = comm_blocks[ft][pair][n0 + n];
+      	    = comm_blocks[ft][pair][n0 + n];
       }
     }
 
@@ -210,23 +210,23 @@ void fields::step_source(field_type ft, bool including_integrated) {
 void fields_chunk::step_source(field_type ft, bool including_integrated) {
   if (doing_solve_cw && !including_integrated) return;
   for (src_vol *sv = sources[ft]; sv; sv = sv->next) {
-    component c = direction_component(first_field_component(ft), 
+    component c = direction_component(first_field_component(ft),
 				      component_direction(sv->c));
     const realnum *cndinv = s->condinv[c][component_direction(sv->c)];
     if ((including_integrated || !sv->t->is_integrated)	&& f[c][0]
 	&& ((ft == D_stuff && is_electric(sv->c))
 	    || (ft == B_stuff && is_magnetic(sv->c)))) {
       if (cndinv)
-	for (int j=0; j<sv->npts; j++) {
-	  const int i = sv->index[j];
+	for (size_t j=0; j<sv->npts; j++) {
+	  const ptrdiff_t i = sv->index[j];
 	  const complex<double> A = sv->current(j) * dt * double(cndinv[i]);
 	  f[c][0][i] -= real(A);
 	  if (!is_real) f[c][1][i] -= imag(A);
 	}
       else
-	for (int j=0; j<sv->npts; j++) {
+	for (size_t j=0; j<sv->npts; j++) {
 	  const complex<double> A = sv->current(j) * dt;
-	  const int i = sv->index[j];
+	  const ptrdiff_t i = sv->index[j];
 	  f[c][0][i] -= real(A);
 	  if (!is_real) f[c][1][i] -= imag(A);
 	}

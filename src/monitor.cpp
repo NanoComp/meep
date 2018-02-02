@@ -46,7 +46,7 @@ monitor_point::~monitor_point() {
   if (next) delete next;
 }
 
-inline complex<double> getcm(const realnum * const f[2], int i) {
+inline complex<double> getcm(const realnum * const f[2], size_t i) {
   return complex<double>(f[0][i],f[1][i]);
 }
 
@@ -182,7 +182,7 @@ complex<double> fields_chunk::get_field(component c, const vec &loc) const {
     complex<double> res = 0.0;
     for (int i = 0; i < 8 && w[i] != 0.0; ++i) {
       if (!gv.contains(ilocs[i]))
-	abort("invalid loc in chunk get_field, weight = %g", w[i]);
+      	abort("invalid loc in chunk get_field, weight = %g", w[i]);
       if (f[c][0] && f[c][1]) res += getcm(f[c], gv.index(c, ilocs[i])) * w[i];
       else if (f[c][0]) res += f[c][0][gv.index(c,ilocs[i])] * w[i];
     }
@@ -199,11 +199,11 @@ double fields::get_chi1inv(component c, direction d,
   for (int sn=0;sn<S.multiplicity();sn++)
     for (int i=0;i<num_chunks;i++)
       if (chunks[i]->gv.contains(S.transform(iloc,sn))) {
-	signed_direction ds = S.transform(d,sn);
+      	signed_direction ds = S.transform(d,sn);
         return chunks[i]->get_chi1inv(S.transform(c,sn), ds.d,
-				     S.transform(iloc,sn))
-	     * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
-		? -1 : 1);
+                        				      S.transform(iloc,sn))
+        	     * (ds.flipped ^ S.transform(component_direction(c),sn).flipped
+            	 ? -1 : 1);
       }
   return 0.0;
 }
@@ -271,7 +271,7 @@ double structure::get_chi1inv(component c, direction d,
 double structure_chunk::get_chi1inv(component c, direction d,
 				    const ivec &iloc) const {
   double res = 0.0;
-  if (is_mine()) res = chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)] 
+  if (is_mine()) res = chi1inv[c][d] ? chi1inv[c][d][gv.index(c, iloc)]
 		   : (d == component_direction(c) ? 1.0 : 0);
   return broadcast(n_proc(), res);
 }
@@ -323,7 +323,7 @@ monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) co
 complex<double> monitor_point::get_component(component w) {
   return f[w];
 }
-  
+
 double monitor_point::poynting_in_direction(direction d) {
   direction d1 = cycle_direction(loc.dim, d, 1);
   direction d2 = cycle_direction(loc.dim, d, 2);

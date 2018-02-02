@@ -16,7 +16,7 @@
 */
 
 /* create and return arrays of field components on user-specified
-   spatial slices. Uses fields::loop_in_chunks analogous to 
+   spatial slices. Uses fields::loop_in_chunks analogous to
    h5fields.cpp
 */
 
@@ -38,14 +38,14 @@ namespace meep {
 typedef struct {
 
   // information related to the volume covered by the
-  // array slice (its size, etcetera) 
+  // array slice (its size, etcetera)
   // these fields are filled in by get_array_slice_dimensions
   // if the data parameter is non-null
   ivec min_corner, max_corner;
   int num_chunks;
   int rank;
   direction ds[3];
-  int slice_size;
+  size_t slice_size;
 
   // the function to output and related info (offsets for averaging, etc.)
   // note: either fun *or* rfun should be non-NULL (not both)
@@ -60,7 +60,7 @@ typedef struct {
   component *cS;
   cdouble *ph;
   cdouble *fields;
-  int *offsets;
+  ptrdiff_t *offsets;
 
   int ninveps;
   component inveps_cs[3];
@@ -130,20 +130,21 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   //-----------------------------------------------------------------------//
   // Find output chunk dimensions and strides, etc.
 
-  int start[3]={0,0,0}, count[3]={1,1,1}, offset[3]={0,0,0};
+  int start[3]={0,0,0}, count[3]={1,1,1};
+  ptrdiff_t offset[3]={0,0,0};
 
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
-  
+
   // figure out what yucky_directions (in LOOP_OVER_IVECS)
   // correspond to what directions in the transformed vectors (in output).
   ivec permute(zero_ivec(fc->gv.dim));
-  for (int i = 0; i < 3; ++i) 
+  for (int i = 0; i < 3; ++i)
     permute.set_direction(fc->gv.yucky_direction(i), i);
   permute = S.transform_unshifted(permute, sn);
   LOOP_OVER_DIRECTIONS(permute.dim, d)
     permute.set_direction(d, abs(permute.in_direction(d)));
-  
+
   // compute the size of the chunk to output, and its strides etc.
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
@@ -163,7 +164,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 	     - data->min_corner.in_direction(d)) / 2 + 1;
    };
 
-  int stride[3]={1,1,1};
+  ptrdiff_t stride[3]={1,1,1};
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int j = permute.in_direction(d);
@@ -173,21 +174,21 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   };
 
   // sco="slice chunk offset"
-  int sco=start[0]*dims[1]*dims[2] + start[1]*dims[2] + start[2];
+  ptrdiff_t sco=start[0]*dims[1]*dims[2] + start[1]*dims[2] + start[2];
 
   //-----------------------------------------------------------------------//
   // Compute the function to output, exactly as in fields::integrate.
-  int *off = data->offsets;
+  ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
-  int ieos[6];
+  ptrdiff_t ieos[6];
   const component *imcs = data->invmu_cs;
   const direction *imds = data->invmu_ds;
-  int imos[6];
+  ptrdiff_t imos[6];
   int num_components=data->components.size();
-  
+
   double *slice=0;
   cdouble *zslice=0;
   bool complex_data = (data->rfun==0);
@@ -298,7 +299,8 @@ int fields::get_array_slice_dimensions(const volume &where, int dims[3], void *c
   if (data->num_chunks == 0 || !(data->min_corner <= data->max_corner))
     return 0; // no data to write;
 
-  int rank=0, slice_size=1;
+  int rank=0;
+  size_t slice_size=1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (rank >= 3) abort("too many dimensions in array_slice");
     int n = (data->max_corner.in_direction(d)
@@ -335,7 +337,7 @@ void *fields::do_get_array_slice(const volume &where,
   int dims[3];
   array_slice_data data;
   int rank=get_array_slice_dimensions(where, dims, &data);
-  int slice_size=data.slice_size;
+  size_t slice_size=data.slice_size;
   if (rank==0 || slice_size==0) return 0; // no data to write
 
   bool complex_data = (rfun==0);
@@ -345,13 +347,13 @@ void *fields::do_get_array_slice(const volume &where,
    { if (complex_data)
       { zslice = new cdouble[slice_size];
         vslice = (void *)zslice;
-      } 
+      }
      else
       { slice  = new double[slice_size];
         vslice = (void *)slice;
       };
    };
-   
+
   data.vslice     = vslice;
   data.fun        = fun;
   data.rfun       = rfun;
@@ -363,8 +365,8 @@ void *fields::do_get_array_slice(const volume &where,
   data.cS      = new component[num_components];
   data.ph      = new cdouble[num_components];
   data.fields  = new cdouble[num_components];
-  
-  data.offsets = new int[2 * num_components];
+
+  data.offsets = new ptrdiff_t[2 * num_components];
   for (int i = 0; i < 2 * num_components; ++i)
     data.offsets[i] = 0;
 
@@ -373,27 +375,27 @@ void *fields::do_get_array_slice(const volume &where,
   bool needs_dielectric = false;
   for (int i = 0; i < num_components; ++i)
     if (components[i] == Dielectric) { needs_dielectric = true; break; }
-  if (needs_dielectric) 
+  if (needs_dielectric)
     FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninveps == 3) abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
     }
-  
+
   /* compute inverse-mu directions for computing Permeability fields */
   data.ninvmu = 0;
   bool needs_permeability = false;
   for (int i = 0; i < num_components; ++i)
     if (components[i] == Permeability) { needs_permeability = true; break; }
-  if (needs_permeability) 
+  if (needs_permeability)
     FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninvmu == 3) abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;
     }
- 
+
   loop_in_chunks(get_array_slice_chunkloop, (void *) &data,
 		 where, Centered, true, true);
 
@@ -405,10 +407,11 @@ void *fields::do_get_array_slice(const volume &where,
   if (complex_data)
    { cdouble *buffer = new cdouble[BUFSIZE];
      cdouble *slice = (cdouble *)vslice;
-     int offset=0, remaining=slice_size;
+     ptrdiff_t offset=0;
+     size_t remaining=slice_size;
      while(remaining!=0)
-      { 
-        int size = (remaining > BUFSIZE ? BUFSIZE : remaining);
+      {
+        size_t size = (remaining > BUFSIZE ? BUFSIZE : remaining);
         sum_to_all(slice + offset, buffer, size);
         memcpy(slice+offset, buffer, size*sizeof(cdouble));
         remaining-=size;
@@ -419,9 +422,10 @@ void *fields::do_get_array_slice(const volume &where,
   else
    { double *buffer = new double[BUFSIZE];
      double *slice = (double *)vslice;
-     int offset=0, remaining=slice_size;
+     ptrdiff_t offset=0;
+     size_t remaining=slice_size;
      while(remaining!=0)
-      { int size = (remaining > BUFSIZE ? BUFSIZE : remaining);
+      { size_t size = (remaining > BUFSIZE ? BUFSIZE : remaining);
         sum_to_all(slice + offset, buffer, size);
         memcpy(slice+offset, buffer, size*sizeof(double));
         remaining-=size;
@@ -450,7 +454,7 @@ double *fields::get_array_slice(const volume &where,
   return (double *)do_get_array_slice(where, components,
                                       0, rfun, fun_data,
                                       (void *)slice);
-} 
+}
 
 cdouble *fields::get_complex_array_slice(const volume &where,
                                          std::vector<component> components,
