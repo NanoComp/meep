@@ -1,5 +1,11 @@
 # Meep Release Notes
 
+## Meep 1.4.3
+
+2/1/2018
+
+ * Allow `meep` Python module to be imported without setting `PYTHONPATH` (#189).
+
 ## Meep 1.4.2
 
 1/26/2018
