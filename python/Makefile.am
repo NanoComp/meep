@@ -101,7 +101,7 @@ meep: _meep.la __init__.py
 all-local: meep
 
 clean-local:
-	rm -rf meep
+	rm -rf meep __init__.py.bak
 
 distclean-local:
 	rm -f *.h5
