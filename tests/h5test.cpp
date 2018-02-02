@@ -150,7 +150,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf,
       for (int i1 = 0; i1 < dims[1]; ++i1) {
 	loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
 	loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
-	int idx = i0 * dims[1] + i1;
+	ptrdiff_t idx = i0 * dims[1] + i1;
 
 	/* Ugh, for rotational symmetries (which mix up components etc.),
 	   we can't guarantee that a component is *exactly* the
@@ -264,7 +264,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf,
 	  loc.set_direction(X, loc0.in_direction(X) + i0 * gv.inva);
 	  loc.set_direction(Y, loc0.in_direction(Y) + i1 * gv.inva);
 	  loc.set_direction(Z, loc0.in_direction(Z) + i2 * gv.inva);
-	  int idx = (i0 * dims[1] + i1) * dims[2] + i2;
+	  ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
 	  
 	  /* Ugh, for rotational symmetries (which mix up components etc.),
 	     we can't guarantee that a component is *exactly* the

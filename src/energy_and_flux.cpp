@@ -39,7 +39,7 @@ double fields::count_volume(component c) {
 
 double fields_chunk::count_volume(component c) {
   double vol = 0;
-  for (int i=0;i<gv.ntot();i++)
+  for (size_t i=0;i<gv.ntot();i++)
     vol += gv.dV(c,i).full_volume();
   return vol;
 }
@@ -106,9 +106,9 @@ double fields::magnetic_energy_in_box(const volume &where) {
 
 void fields_chunk::backup_component(component c) {
   DOCMP {
-    if (c < NUM_FIELD_COMPONENTS && f[c][cmp] && 
+    if (c < NUM_FIELD_COMPONENTS && f[c][cmp] &&
 	// in mu=1 regions where H==B, don't bother to backup H
-	!(is_magnetic(c) && f[c][cmp] 
+	!(is_magnetic(c) && f[c][cmp]
 	  == f[direction_component(Bx, component_direction(c))][cmp])) {
 
 #define BACKUP(f) if (f[c][cmp]) {					\
@@ -125,18 +125,18 @@ void fields_chunk::backup_component(component c) {
     }
   }
 }
-  
+
 void fields_chunk::restore_component(component c) {
   DOCMP if (f_backup[c][cmp]) {
 #define RESTORE(f)							\
     if (f[c][cmp])							\
       memcpy(f[c][cmp], f##_backup[c][cmp], gv.ntot()*sizeof(realnum));
-    
+
     RESTORE(f);
     RESTORE(f_u);
     RESTORE(f_w);
     RESTORE(f_cond);
-    
+
 #undef RESTORE
   }
 }
@@ -146,7 +146,7 @@ void fields_chunk::average_with_backup(component c) {
     realnum *fc = f[c][cmp];
     realnum *backup = f_backup[c][cmp];
     if (fc && backup)
-      for (int i = 0; i < gv.ntot(); i++)
+      for (size_t i = 0; i < gv.ntot(); i++)
 	fc[i] = 0.5 * (fc[i] + backup[i]);
   }
 }
@@ -167,7 +167,7 @@ void fields::synchronize_magnetic_fields() {
   update_eh(H_stuff);
   step_boundaries(H_stuff);
   finished_working();
-  for (int i=0;i<num_chunks;i++) 
+  for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
       FOR_B_COMPONENTS(c) chunks[i]->average_with_backup(c);
       FOR_MAGNETIC_COMPONENTS(c) chunks[i]->average_with_backup(c);
@@ -177,7 +177,7 @@ void fields::synchronize_magnetic_fields() {
 void fields::restore_magnetic_fields() {
   if (!synchronized_magnetic_fields // already restored
       || --synchronized_magnetic_fields) // not ready to restore yet
-    return; 
+    return;
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine()) {
       FOR_B_COMPONENTS(c) chunks[i]->restore_component(c);
@@ -208,11 +208,11 @@ double fields::flux_in_box_wrongH(direction d, const volume &where) {
     if (gv.dim == Dcyl)
       cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
     else
-      cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
+      cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx;
     break;
   case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
   }
-  
+
   long double sum = 0.0;
   for (int i = 0; i < 2; ++i) {
     component cs[2];
@@ -252,7 +252,7 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
    max|D*E|, which requires averaging discontinuous functions.  Hence,
    except for the special case of 2d TM polarization, the computed
    value tends to have a large error bar if the maximum lies on a
-   dielectric boundary as it commonly does. 
+   dielectric boundary as it commonly does.
 
    A better method would be to average only continuous quantities in
    order to compute the fields on the Centered grid, but this
@@ -278,7 +278,7 @@ double fields::electric_energy_max_in_box(const volume &where) {
     cs[0] = Ex; cs[1] = Ey; cs[2] = Ez;
     cs[3+0] = Dx; cs[3+1] = Dy; cs[3+2] = Dz;
   }
-  
+
   return max_abs(6, cs, dot3_max_integrand, 0, where) * 0.5;
 }
 
@@ -307,7 +307,7 @@ static complex<double> dot_fx_integrand(const complex<double> *fields,
 double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
 					     const volume &where) {
   double sum = 0.0;
-  FOR_ELECTRIC_COMPONENTS(c) 
+  FOR_ELECTRIC_COMPONENTS(c)
     if (!coordinate_mismatch(gv.dim, component_direction(c))) {
       component cs[2];
       cs[0] = cs[1] = direction_component(Ex, component_direction(c));
@@ -320,7 +320,7 @@ double fields::electric_sqr_weighted_integral(double (*f)(const vec &),
 double fields::electric_energy_weighted_integral(double (*f)(const vec &),
 					     const volume &where) {
   double sum = 0.0;
-  FOR_ELECTRIC_COMPONENTS(c) 
+  FOR_ELECTRIC_COMPONENTS(c)
     if (!coordinate_mismatch(gv.dim, component_direction(c))) {
       component cs[2];
       cs[0] = direction_component(Ex, component_direction(c));
@@ -331,4 +331,3 @@ double fields::electric_energy_weighted_integral(double (*f)(const vec &),
 }
 
 } // namespace meep
-

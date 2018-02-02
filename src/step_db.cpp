@@ -33,7 +33,7 @@ void fields::step_db(field_type ft) {
   for (int i=0;i<num_chunks;i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->step_db(ft))
-	chunk_connections_valid = false;
+      	chunk_connections_valid = false;
 
   /* synchronize to avoid deadlocks in connect_the_chunks */
   chunk_connections_valid = and_to_all(chunk_connections_valid);
@@ -57,8 +57,8 @@ bool fields_chunk::step_db(field_type ft) {
       const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
       const direction dsigu0 = cycle_direction(gv.dim,d_c,2);
       const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
-      int stride_p = have_p?gv.stride(d_deriv_p):0;
-      int stride_m = have_m?gv.stride(d_deriv_m):0;
+      ptrdiff_t stride_p = have_p?gv.stride(d_deriv_p):0;
+      ptrdiff_t stride_m = have_m?gv.stride(d_deriv_m):0;
       realnum *f_p = have_p?f[c_p][cmp]:NULL;
       realnum *f_m = have_m?f[c_m][cmp]:NULL;
       realnum *the_f = f[cc][cmp];
@@ -73,7 +73,7 @@ bool fields_chunk::step_db(field_type ft) {
 	memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
 	allocated_u = true;
       }
-      
+
       if (ft == D_stuff) { // strides are opposite sign for H curl
 	stride_p = -stride_p;
 	stride_m = -stride_m;
@@ -87,7 +87,7 @@ bool fields_chunk::step_db(field_type ft) {
 	break; // curl works normally for phi component
       case Z: {
 	f_m = NULL; // im/r Fr term will be handled separately
-	
+
 	/* Here we do a somewhat cool hack: the update of the z
 	   component gives a 1/r d(r Fp)/dr term, rather than
 	   just the derivative dg/dr expected in step_curl.
@@ -99,14 +99,14 @@ bool fields_chunk::step_db(field_type ft) {
 	   the derivative and integral are replaced by differences
 	   and sums, but you get the idea). */
 	if (!f_rderiv_int) f_rderiv_int = new realnum[gv.ntot()];
-	double ir0 = gv.origin_r() * gv.a 
+	double ir0 = gv.origin_r() * gv.a
 	  + 0.5 * gv.iyee_shift(c_p).in_direction(R);
 	for (int iz = 0; iz <= gv.nz(); ++iz) f_rderiv_int[iz] = 0;
 	int sr = gv.nz() + 1;
 	for (int ir = 1; ir <= gv.nr(); ++ir) {
 	  double rinv = 1.0 / ((ir+ir0)-0.5);
 	  for (int iz = 0; iz <= gv.nz(); ++iz) {
-	    int idx = ir*sr + iz;
+	    ptrdiff_t idx = ir*sr + iz;
 	    f_rderiv_int[idx] = f_rderiv_int[idx - sr] +
 	      rinv * (f_p[idx] * (ir+ir0) - f_p[idx - sr] * ((ir-1)+ir0));
 	  }
@@ -116,11 +116,11 @@ bool fields_chunk::step_db(field_type ft) {
       }
       default: abort("bug - non-cylindrical field component in Dcyl");
       }
-      
-      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, Courant, 
-		dsig, s->sig[dsig], s->kap[dsig], s->siginv[dsig], 
-		f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu], s->siginv[dsigu], 
-		dt, 
+
+      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, Courant,
+		dsig, s->sig[dsig], s->kap[dsig], s->siginv[dsig],
+		f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu], s->siginv[dsigu],
+		dt,
 		s->conductivity[cc][d_c], s->condinv[cc][d_c],f_cond[cc][cmp]);
     }
 
@@ -137,7 +137,7 @@ bool fields_chunk::step_db(field_type ft) {
      at -beta.)  The nice thing about this is that most calculations
      of flux, energy, etcetera, are insensitive to this implicit "i"
      factor.   For complex fields, we implement i*beta directly. */
-  if (gv.dim == D2 && beta != 0) DOCMP for (direction d_c=X; d_c <= Y; 
+  if (gv.dim == D2 && beta != 0) DOCMP for (direction d_c=X; d_c <= Y;
 					   d_c = direction(d_c + 1)) {
     component cc = direction_component(first_field_component(ft), d_c);
     component c_g = direction_component(ft == D_stuff ? Hx : Ex,
@@ -150,10 +150,10 @@ bool fields_chunk::step_db(field_type ft) {
     const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
     const double betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1)
       * (f[c_g][1-cmp] ? (ft == D_stuff ? -1 : +1) * (2*cmp-1) : 1);
-    STEP_BETA(the_f, cc, g, gv, betadt, 
-	      dsig, s->siginv[dsig], 
-	      f_u[cc][cmp], dsigu, s->siginv[dsigu], 
-	      s->condinv[cc][d_c], f_cond[cc][cmp]);  
+    STEP_BETA(the_f, cc, g, gv, betadt,
+	      dsig, s->siginv[dsig],
+	      f_u[cc][cmp], dsigu, s->siginv[dsigu],
+	      s->condinv[cc][d_c], f_cond[cc][cmp]);
   }
 
   // in cylindrical coordinates, we now have to add the i*m/r terms... */
@@ -172,110 +172,110 @@ bool fields_chunk::step_db(field_type ft) {
       const direction dsigu = cycle_direction(gv.dim,d_c,2);
       const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
       const int dku = gv.iyee_shift(cc).in_direction(dsigu);
-      const double the_m = 
-	m * (1-2*cmp) * (1-2*(ft==B_stuff)) * (1-2*(d_c==R)) * Courant;
-      const double ir0 = gv.origin_r() * gv.a 
-	+ 0.5 * gv.iyee_shift(cc).in_direction(R);
+      const double the_m =
+      	m * (1-2*cmp) * (1-2*(ft==B_stuff)) * (1-2*(d_c==R)) * Courant;
+      const double ir0 = gv.origin_r() * gv.a
+      	+ 0.5 * gv.iyee_shift(cc).in_direction(R);
       int sr = gv.nz() + 1;
 
       // 8 special cases of the same loop (sigh):
       if (siginv) { // PML in f update
-	if (siginvu) { // PML + fu
-	  if (cndinv) // PML + fu + conductivity
-	    //////////////////// MOST GENERAL CASE //////////////////////
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		int k = dk + 2*(dsig==Z ? iz : ir);
-		int ku = dku + 2*(dsigu==Z ? iz : ir);
-		double df, dfcnd = rinv * g[idx] * cndinv[idx];
-		fcnd[idx] += dfcnd;
-		fu[idx] += (df = dfcnd * siginv[k]);
-		the_f[idx] += siginvu[ku] * df;
-	      }
-	    }
-	    /////////////////////////////////////////////////////////////
-	  else // PML + fu - conductivity
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		int k = dk + 2*(dsig==Z ? iz : ir);
-		int ku = dku + 2*(dsigu==Z ? iz : ir);
-		double df, dfcnd = rinv * g[idx];
-		fu[idx] += (df = dfcnd * siginv[k]);
-		the_f[idx] += siginvu[ku] * df;
-	      }
-	    }
-	}
-	else { // PML - fu
-	  if (cndinv) // PML - fu + conductivity
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		int k = dk + 2*(dsig==Z ? iz : ir);
-		double dfcnd = rinv * g[idx] * cndinv[idx];
-		fcnd[idx] += dfcnd;
-		the_f[idx] += dfcnd * siginv[k];
-	      }
-	    }
-	  else // PML - fu - conductivity
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		int k = dk + 2*(dsig==Z ? iz : ir);
-		double dfcnd = rinv * g[idx];
-		the_f[idx] += dfcnd * siginv[k];
-	      }
-	    }
-	}
+      	if (siginvu) { // PML + fu
+      	  if (cndinv) // PML + fu + conductivity
+      	    //////////////////// MOST GENERAL CASE //////////////////////
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		int k = dk + 2*(dsig==Z ? iz : ir);
+            		int ku = dku + 2*(dsigu==Z ? iz : ir);
+            		double df, dfcnd = rinv * g[idx] * cndinv[idx];
+            		fcnd[idx] += dfcnd;
+            		fu[idx] += (df = dfcnd * siginv[k]);
+            		the_f[idx] += siginvu[ku] * df;
+      	      }
+      	    }
+      	    /////////////////////////////////////////////////////////////
+      	  else // PML + fu - conductivity
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		int k = dk + 2*(dsig==Z ? iz : ir);
+            		int ku = dku + 2*(dsigu==Z ? iz : ir);
+            		double df, dfcnd = rinv * g[idx];
+            		fu[idx] += (df = dfcnd * siginv[k]);
+            		the_f[idx] += siginvu[ku] * df;
+      	      }
+      	    }
+      	}
+      	else { // PML - fu
+      	  if (cndinv) // PML - fu + conductivity
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		int k = dk + 2*(dsig==Z ? iz : ir);
+            		double dfcnd = rinv * g[idx] * cndinv[idx];
+            		fcnd[idx] += dfcnd;
+            		the_f[idx] += dfcnd * siginv[k];
+      	      }
+      	    }
+      	  else // PML - fu - conductivity
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		int k = dk + 2*(dsig==Z ? iz : ir);
+            		double dfcnd = rinv * g[idx];
+            		the_f[idx] += dfcnd * siginv[k];
+      	      }
+      	    }
+      	}
       }
       else { // no PML in f update
-	if (siginvu) { // no PML + fu
-	  if (cndinv) // no PML + fu + conductivity
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		int ku = dku + 2*(dsigu==Z ? iz : ir);
-		double df = rinv * g[idx] * cndinv[idx];
-		fu[idx] += df;
-		the_f[idx] += siginvu[ku] * df;
-	      }
-	    }
-	  else // no PML + fu - conductivity
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		int ku = dku + 2*(dsigu==Z ? iz : ir);
-		double df = rinv * g[idx];
-		fu[idx] += df;
-		the_f[idx] += siginvu[ku] * df;
-	      }
-	    }
-	}
-	else { // no PML - fu
-	  if (cndinv) // no PML - fu + conductivity
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		the_f[idx] += rinv * g[idx] * cndinv[idx];
-	      }
-	    }
-	  else // no PML - fu - conductivity
-	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-	      double rinv = the_m / (ir+ir0);
-	      for (int iz = 0; iz <= gv.nz(); ++iz) {
-		int idx = ir*sr + iz;
-		the_f[idx] += rinv * g[idx];
-	      }
-	    }
-	}
+      	if (siginvu) { // no PML + fu
+      	  if (cndinv) // no PML + fu + conductivity
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		int ku = dku + 2*(dsigu==Z ? iz : ir);
+            		double df = rinv * g[idx] * cndinv[idx];
+            		fu[idx] += df;
+            		the_f[idx] += siginvu[ku] * df;
+      	      }
+      	    }
+      	  else // no PML + fu - conductivity
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		int ku = dku + 2*(dsigu==Z ? iz : ir);
+            		double df = rinv * g[idx];
+            		fu[idx] += df;
+            		the_f[idx] += siginvu[ku] * df;
+      	      }
+      	    }
+      	}
+      	else { // no PML - fu
+      	  if (cndinv) // no PML - fu + conductivity
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		the_f[idx] += rinv * g[idx] * cndinv[idx];
+      	      }
+      	    }
+      	  else // no PML - fu - conductivity
+      	    for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
+      	      double rinv = the_m / (ir+ir0);
+      	      for (int iz = 0; iz <= gv.nz(); ++iz) {
+            		ptrdiff_t idx = ir*sr + iz;
+            		the_f[idx] += rinv * g[idx];
+      	      }
+      	    }
+      	}
       }
     }
   }
@@ -299,11 +299,11 @@ bool fields_chunk::step_db(field_type ft) {
       realnum *fu = siginvu && f_u[Dz][cmp] ? f[Dz][cmp] : 0;
       realnum *the_f = fu ? f_u[Dz][cmp] : f[Dz][cmp];
       for (int iz = 0; iz < nz; ++iz) {
-	// Note: old code (prior to Meep 0.2) was missing factor of 4??
-	double df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
-	if (fcnd) fcnd[iz] += dfcnd;
-	the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2*(dsig==Z)*iz] : 1));
-	if (fu) fu[iz] += siginvu[dku + 2*(dsigu==Z)*iz] * df;
+      	// Note: old code (prior to Meep 0.2) was missing factor of 4??
+      	double df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
+      	if (fcnd) fcnd[iz] += dfcnd;
+      	the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2*(dsig==Z)*iz] : 1));
+      	if (fu) fu[iz] += siginvu[dku + 2*(dsigu==Z)*iz] * df;
       }
       ZERO_Z(f[Dp][cmp]);
       if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
@@ -322,7 +322,7 @@ bool fields_chunk::step_db(field_type ft) {
       if (!f[cc][cmp]) continue;
       const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
       const realnum *f_m = ft == D_stuff ? f[Hz][cmp]
-	: (f[Ez][1-cmp] + (nz+1));
+      	: (f[Ez][1-cmp] + (nz+1));
       const realnum *cndinv = s->condinv[cc][d_c];
       realnum *fcnd = f_cond[cc][cmp];
       const direction dsig = cycle_direction(gv.dim,d_c,1);
@@ -337,77 +337,77 @@ bool fields_chunk::step_db(field_type ft) {
       double f_m_mult = ft == D_stuff ? 2 : (1-2*cmp);
 
       for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
-	double df;
-	double dfcnd = (sd*Courant) * (f_p[iz]-f_p[iz-sd] - f_m_mult*f_m[iz])
-	  * (cndinv ? cndinv[iz] : 1);
-	if (fcnd) fcnd[iz] += dfcnd;
-	the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2*(dsig==Z)*iz] : 1));
-	if (fu) fu[iz] += siginvu[dku + 2*(dsigu==Z)*iz] * df;
+      	double df;
+      	double dfcnd = (sd*Courant) * (f_p[iz]-f_p[iz-sd] - f_m_mult*f_m[iz])
+      	  * (cndinv ? cndinv[iz] : 1);
+      	if (fcnd) fcnd[iz] += dfcnd;
+      	the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2*(dsig==Z)*iz] : 1));
+      	if (fu) fu[iz] += siginvu[dku + 2*(dsigu==Z)*iz] * df;
       }
       if (ft == D_stuff) {
-	ZERO_Z(f[Dz][cmp]);
-	if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
-	if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
+      	ZERO_Z(f[Dz][cmp]);
+      	if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
+      	if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
       }
     }
     else if (m != 0) { // m != {0,+1,-1}
       if (zero_fields_near_cylorigin) { /* default behavior */
-	/* I seem to recall David telling me that this was for numerical
-	   stability of some sort - the larger m is, the farther from
-	   the origin we need to be before we can use nonzero fields
-	   ... note that this is a fixed number of pixels for a given m,
-	   so it should still converge.  Still, this is weird... 
-	   
-	   Update: experimentally, this seems to indeed be important
-	   for stability.  Setting these fields to zero, it seems to be
-	   stable with a Courant number < 0.62 or so for all m.  Without
-	   this, it becomes unstable unless we set the Courant number to
-	   about 1 / (|m| + 0.5) or less.  
-	   
-	   Cons: setting fields near the origin to identically zero is
-	   somewhat unexpected for users, and probably spoils 2nd-order
-	   accuracy, and may not fix all stability issues anyway (based
-	   on anecdotal evidence from Alex M. of having to reduce Courant
-	   for large m). */
-	double rmax = fabs(m) - int(gv.origin_r()*gv.a+0.5);
-	if (ft == D_stuff)
-	  for (int r = 0; r <= gv.nr() && r < rmax; r++) {
-	    const int ir = r*(nz+1);
-	    ZERO_Z(f[Dp][cmp]+ir);
-	    ZERO_Z(f[Dz][cmp]+ir);
-	    if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]+ir);
-	    if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]+ir);
-	    if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]+ir);
-	    if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]+ir);
-	  }
-	else
-	  for (int r = 0; r <= gv.nr() && r < rmax; r++) {
-	    const int ir = r*(nz+1);
-	    ZERO_Z(f[Br][cmp]+ir);
-	    if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]+ir);
-	    if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]+ir);
-	  }
+      	/* I seem to recall David telling me that this was for numerical
+      	   stability of some sort - the larger m is, the farther from
+      	   the origin we need to be before we can use nonzero fields
+      	   ... note that this is a fixed number of pixels for a given m,
+      	   so it should still converge.  Still, this is weird...
+
+      	   Update: experimentally, this seems to indeed be important
+      	   for stability.  Setting these fields to zero, it seems to be
+      	   stable with a Courant number < 0.62 or so for all m.  Without
+      	   this, it becomes unstable unless we set the Courant number to
+      	   about 1 / (|m| + 0.5) or less.
+
+      	   Cons: setting fields near the origin to identically zero is
+      	   somewhat unexpected for users, and probably spoils 2nd-order
+      	   accuracy, and may not fix all stability issues anyway (based
+      	   on anecdotal evidence from Alex M. of having to reduce Courant
+      	   for large m). */
+      	double rmax = fabs(m) - int(gv.origin_r()*gv.a+0.5);
+      	if (ft == D_stuff)
+      	  for (int r = 0; r <= gv.nr() && r < rmax; r++) {
+      	    const int ir = r*(nz+1);
+      	    ZERO_Z(f[Dp][cmp]+ir);
+      	    ZERO_Z(f[Dz][cmp]+ir);
+      	    if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]+ir);
+      	    if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]+ir);
+      	    if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]+ir);
+      	    if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]+ir);
+      	  }
+      	else
+      	  for (int r = 0; r <= gv.nr() && r < rmax; r++) {
+      	    const int ir = r*(nz+1);
+      	    ZERO_Z(f[Br][cmp]+ir);
+      	    if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]+ir);
+      	    if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]+ir);
+      	  }
       }
       else {
-	/* Without David's hack: just set boundary conditions at r=0.
-	   This seems to be unstable unless we make the Courant number
-	   around 1 / (|m| + 0.5) or smaller.  Pros: probably maintains
-	   2nd-order accuracy, is more sane for r near zero.  Cons:
-	   1/(|m|+0.5) is purely empirical (no theory yet), and I'm not
-	   sure how universal it is.  Makes higher m's more expensive. */
-	if (ft == D_stuff) {
-	  ZERO_Z(f[Dp][cmp]);
-	  ZERO_Z(f[Dz][cmp]);
-	  if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
-	  if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
-	  if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]);
-	  if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
-	}
-	else {
-	  ZERO_Z(f[Br][cmp]);
-	  if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
-	  if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);
-	}
+      	/* Without David's hack: just set boundary conditions at r=0.
+      	   This seems to be unstable unless we make the Courant number
+      	   around 1 / (|m| + 0.5) or smaller.  Pros: probably maintains
+      	   2nd-order accuracy, is more sane for r near zero.  Cons:
+      	   1/(|m|+0.5) is purely empirical (no theory yet), and I'm not
+      	   sure how universal it is.  Makes higher m's more expensive. */
+      	if (ft == D_stuff) {
+      	  ZERO_Z(f[Dp][cmp]);
+      	  ZERO_Z(f[Dz][cmp]);
+      	  if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
+      	  if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
+      	  if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]);
+      	  if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
+      	}
+      	else {
+      	  ZERO_Z(f[Br][cmp]);
+      	  if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
+      	  if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);
+      	}
       }
     }
   }

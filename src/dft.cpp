@@ -90,7 +90,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   LOOP_OVER_DIRECTIONS(is.dim, d)
     N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   dft = new complex<realnum>[N * Nomega];
-  for (int i = 0; i < N * Nomega; ++i)
+  for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
 
   next_in_chunk = fc->dft_chunks;
@@ -229,7 +229,7 @@ void dft_chunk::update_dft(double time) {
 
   int numcmp = fc->f[c][1] ? 2 : 1;
 
-  int idx_dft = 0;
+  size_t idx_dft = 0;
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
     double w;
     if (include_dV_and_interp_weights) {
@@ -266,7 +266,7 @@ void dft_chunk::update_dft(double time) {
 }
 
 void dft_chunk::scale_dft(complex<double> scale) {
-  for (int i = 0; i < N * Nomega; ++i)
+  for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] *= scale;
   if (next_in_dft)
     next_in_dft->scale_dft(scale);
@@ -275,7 +275,7 @@ void dft_chunk::scale_dft(complex<double> scale) {
 void dft_chunk::operator-=(const dft_chunk &chunk) {
   if (c != chunk.c || N * Nomega != chunk.N * chunk.Nomega) abort("Mismatched chunks in dft_chunk::operator-=");
 
-  for (int i = 0; i < N * Nomega; ++i)
+  for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] -= chunk.dft[i];
 
   if (next_in_dft) {
@@ -284,8 +284,8 @@ void dft_chunk::operator-=(const dft_chunk &chunk) {
   }
 }
 
-static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
-  int n = 0;
+static size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
+  size_t n = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
     n += cur->N * cur->Nomega * 2;
   *my_start = partial_sum_to_all(n) - n; // sum(n) for processes before this
@@ -295,17 +295,19 @@ static int dft_chunks_Ntotal(dft_chunk *dft_chunks, int *my_start) {
 // Note: the file must have been created in parallel mode, typically via fields::open_h5file.
 void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
 		   const char *dprefix) {
-  int istart;
-  int n = dft_chunks_Ntotal(dft_chunks, &istart);
+  size_t istart;
+  size_t n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft",
 	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", name);
-  file->create_data(dataname, 1, &n);
+  int n_ = int(n); // fixme: handle size_t in hdf5
+  file->create_data(dataname, 1, &n_);
 
+  int istart_ = int(istart);
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
-    int Nchunk = cur->N * cur->Nomega * 2;
-    file->write_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
+    int Nchunk = int(cur->N * cur->Nomega * 2);
+    file->write_chunk(1, &istart_, &Nchunk, (realnum *) cur->dft);
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -318,20 +320,21 @@ void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 
 void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
 		   const char *dprefix) {
-  int istart;
-  int n = dft_chunks_Ntotal(dft_chunks, &istart);
+  size_t istart;
+  size_t n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
   snprintf(dataname, 1024, "%s%s" "%s_dft",
 	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", name);
   int file_rank, file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
-  if (file_rank != 1 || file_dims != n)
-    abort("incorrect dataset size (%d vs. %d) in load_dft_hdf5 %s:%s", file_dims, n, file->file_name(), dataname);
+  if (file_rank != 1 || file_dims != int(n))
+    abort("incorrect dataset size (%d vs. %zd) in load_dft_hdf5 %s:%s", file_dims, n, file->file_name(), dataname);
 
+  int istart_int = int(istart);
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
-    int Nchunk = cur->N * cur->Nomega * 2;
-    file->read_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
+    int Nchunk = int(cur->N * cur->Nomega * 2); // fixme: handle size_t in read_chunk
+    file->read_chunk(1, &istart_int, &Nchunk, (realnum *) cur->dft);
     istart += Nchunk;
   }
 }
@@ -364,7 +367,7 @@ double *dft_flux::flux() {
   for (int i = 0; i < Nfreq; ++i) F[i] = 0;
   for (dft_chunk *curE = E, *curH = H; curE && curH;
        curE = curE->next_in_dft, curH = curH->next_in_dft)
-    for (int k = 0; k < curE->N; ++k)
+    for (size_t k = 0; k < curE->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
 	F[i] += real(curE->dft[k*Nfreq + i]
 		     * conj(curH->dft[k*Nfreq + i]));

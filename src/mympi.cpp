@@ -368,6 +368,22 @@ int partial_sum_to_all(int in) {
   return out;
 }
 
+size_t sum_to_all(size_t in) {
+  size_t out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in,&out,1, sizeof(size_t)==4?MPI_UNSIGNED:MPI_UNSIGNED_LONG_LONG, MPI_SUM,mycomm);
+#endif
+  return out;
+}
+
+size_t partial_sum_to_all(size_t in) {
+  size_t out = in;
+#ifdef HAVE_MPI
+  MPI_Scan(&in,&out,1, sizeof(size_t)==4?MPI_UNSIGNED:MPI_UNSIGNED_LONG_LONG, MPI_SUM,mycomm);
+#endif
+  return out;
+}
+
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;
 #ifdef HAVE_MPI
@@ -484,18 +500,20 @@ void fields::boundary_communications(field_type ft) {
     for (int j=0;j<num_chunks;j++) {
       const int i = (noti+j)%num_chunks;
       const int pair = j+i*num_chunks;
-      const int comm_size = comm_size_tot(ft,pair);
+      const size_t comm_size = comm_size_tot(ft,pair);
       if (comm_size > 0) {
-	if (chunks[j]->is_mine() && !chunks[i]->is_mine())
-	  MPI_Isend(comm_blocks[ft][pair], comm_size,
-		    MPI_REALNUM, chunks[i]->n_proc(),
-		    tagto[chunks[i]->n_proc()]++,
-		    mycomm, &reqs[reqnum++]);
-	if (chunks[i]->is_mine() && !chunks[j]->is_mine())
-	  MPI_Irecv(comm_blocks[ft][pair], comm_size,
-		    MPI_REALNUM, chunks[j]->n_proc(),
-		    tagto[chunks[j]->n_proc()]++,
-		    mycomm, &reqs[reqnum++]);
+        if (comm_size > 2147483647) // MPI uses int for size to send/recv
+          abort("communications size too big for MPI");
+      	if (chunks[j]->is_mine() && !chunks[i]->is_mine())
+      	  MPI_Isend(comm_blocks[ft][pair], (int) comm_size,
+      		    MPI_REALNUM, chunks[i]->n_proc(),
+      		    tagto[chunks[i]->n_proc()]++,
+      		    mycomm, &reqs[reqnum++]);
+      	if (chunks[i]->is_mine() && !chunks[j]->is_mine())
+      	  MPI_Irecv(comm_blocks[ft][pair], (int) comm_size,
+      		    MPI_REALNUM, chunks[j]->n_proc(),
+      		    tagto[chunks[j]->n_proc()]++,
+      		    mycomm, &reqs[reqnum++]);
       }
     }
   delete[] tagto;

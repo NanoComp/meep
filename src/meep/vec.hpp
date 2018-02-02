@@ -119,7 +119,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (int loop_is1 = (is).yucky_val(0), \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -136,7 +136,7 @@ component first_field_component(field_type ft);
                 + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
     for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) \
-      for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
+      for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx+=loop_s3)
 
 #define LOOP_OVER_VOL(gv, c, idx) \
@@ -172,7 +172,7 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define S1LOOP_OVER_IVECS(gv, is, ie, idx) \
-  for (int loop_is1 = (is).yucky_val(0), \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0), \
            loop_is2 = (is).yucky_val(1), \
            loop_is3 = (is).yucky_val(2), \
            loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1, \
@@ -188,7 +188,7 @@ component first_field_component(field_type ft);
                 + (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,\
            loop_i1 = 0; loop_i1 < loop_n1; loop_i1++) \
     for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++) _Pragma("ivdep") \
-      for (int idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
+      for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2, \
            loop_i3 = 0; loop_i3 < loop_n3; loop_i3++, idx++)
 
 #define S1LOOP_OVER_VOL(gv, c, idx) \
@@ -247,7 +247,7 @@ inline bool has_field_direction(ndim dim, direction d) {
   return false;
 }
 
-// true if d is polar while dim is cartesian, or vice versa 
+// true if d is polar while dim is cartesian, or vice versa
 inline bool coordinate_mismatch(ndim dim, direction d) {
   return (d != NO_DIRECTION &&
 	  ((dim >= D1 && dim <= D3 && d != X && d != Y && d != Z) ||
@@ -280,7 +280,7 @@ const char *direction_name(direction);
 const char *dimension_name(ndim);
 
 inline int component_index(component c) {
-  switch (c) {    
+  switch (c) {
   case Ex: case Hx: case Dx: case Bx: return 0;
   case Ey: case Hy: case Dy: case By: return 1;
   case Ez: case Hz: case Dz: case Bz: return 2;
@@ -295,7 +295,7 @@ inline int component_index(component c) {
 direction component_direction(int c);
 int direction_component(int c, direction d);
 inline direction component_direction(component c) {
-  switch (c) {    
+  switch (c) {
   case Ex: case Hx: case Dx: case Bx: return X;
   case Ey: case Hy: case Dy: case By: return Y;
   case Ez: case Hz: case Dz: case Bz: return Z;
@@ -609,10 +609,10 @@ class ivec {
   int in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, int val) { t[d] = val; };
 
-  ivec round_up_to_even(void) const { 
+  ivec round_up_to_even(void) const {
     ivec result(dim);
-    LOOP_OVER_DIRECTIONS(dim, d) 
-      result.t[d] = t[d] + (t[d] >= 0 ? t[d] : -t[d]) % 2; 
+    LOOP_OVER_DIRECTIONS(dim, d)
+      result.t[d] = t[d] + (t[d] >= 0 ? t[d] : -t[d]) % 2;
     return result;
   }
 
@@ -659,7 +659,7 @@ class volume {
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };
   double in_direction_max(direction d) const { return max_corner.in_direction(d); };
   double in_direction(direction d) const { return in_direction_max(d) - in_direction_min(d); }
-  double computational_volume() const; 
+  double computational_volume() const;
   double integral_volume() const;
   double full_volume() const;
   vec center() const { return (min_corner + max_corner) * 0.5; }
@@ -722,7 +722,7 @@ class grid_volume {
   double a, inva /* = 1/a */;
 
   void print() const;
-  int stride(direction d) const { return the_stride[d]; };
+  ptrdiff_t stride(direction d) const { return the_stride[d]; };
   int num_direction(direction d) const {
     return num[((int) d) % 3];
   };
@@ -747,16 +747,16 @@ class grid_volume {
   vec dy() const;
   vec dz() const;
 
-  int ntot() const { return the_ntot; }
-  int nowned_min() const { int n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= num_direction(d); return n; }
-  int nowned(component c) const;
+  size_t ntot() const { return the_ntot; }
+  size_t nowned_min() const { size_t n = 1; LOOP_OVER_DIRECTIONS(dim,d) n *= (size_t)(num_direction(d)); return n; }
+  size_t nowned(component c) const;
   vec operator[](const ivec &p) const { return p*(0.5*inva); };
-  int index(component, const ivec &) const;
+  ptrdiff_t index(component, const ivec &) const;
   ivec round_vec(const vec &) const;
-  void interpolate(component, const vec &, int indices[8], double weights[8]) const;
+  void interpolate(component, const vec &, ptrdiff_t indices[8], double weights[8]) const;
   void interpolate(component, const vec &, ivec locs[8], double weights[8]) const;
 
-  volume dV(component c, int index) const;
+  volume dV(component c, ptrdiff_t index) const;
   volume dV(const ivec &, double diameter = 1.0) const;
   bool intersect_with(const grid_volume &vol_in, grid_volume *intersection = NULL, grid_volume *others = NULL, int *num_others = NULL) const;
   double rmin() const;
@@ -769,21 +769,21 @@ class grid_volume {
   double zmax() const;
   vec center() const;
   ivec icenter() const;
-  vec loc(component, int index) const;
-  vec loc_at_resolution(int index, double res) const;
-  int ntot_at_resolution(double res) const;
-  ivec iloc(component, int index) const;
+  vec loc(component, ptrdiff_t index) const;
+  vec loc_at_resolution(ptrdiff_t index, double res) const;
+  size_t ntot_at_resolution(double res) const;
+  ivec iloc(component, ptrdiff_t index) const;
 
-  int yee_index(component c) const {
-    int idx = 0;
+  ptrdiff_t yee_index(component c) const {
+    ptrdiff_t idx = 0;
     LOOP_OVER_DIRECTIONS(dim,d)
       idx += (1-iyee_shift(c).in_direction(d))*stride(d);
     return idx;
   }
   vec yee_shift(component) const;
   component eps_component() const;
-  void yee2cent_offsets(component c, int &offset1, int &offset2) const;
-  void cent2yee_offsets(component c, int &offset1, int &offset2) const;
+  void yee2cent_offsets(component c, ptrdiff_t &offset1, ptrdiff_t &offset2) const;
+  void cent2yee_offsets(component c, ptrdiff_t &offset1, ptrdiff_t &offset2) const;
 
   double boundary_location(boundary_side, direction) const;
   ivec big_corner() const;
@@ -813,7 +813,7 @@ class grid_volume {
   friend grid_volume vol2d(double xsize, double ysize, double a);
   friend grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
-  grid_volume split(int num, int which) const;
+  grid_volume split(size_t num, int which) const;
   grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL, double *effort = NULL) const;
   grid_volume split_at_fraction(bool want_high, int numer) const;
   grid_volume halve(direction d) const;
@@ -828,7 +828,7 @@ class grid_volume {
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim,d)
-      if (c == Dielectric || c == Permeability || 
+      if (c == Dielectric || c == Permeability ||
           ((is_electric(c) || is_D(c)) && d == component_direction(c)) ||
           ((is_magnetic(c) || is_B(c)) && d != component_direction(c)))
         out.set_direction(d,1);
@@ -858,8 +858,8 @@ class grid_volume {
   void set_strides();
   void num_changed() { update_ntot(); set_strides(); }
   int num[3];
-  int the_stride[5];
-  int the_ntot;
+  ptrdiff_t the_stride[5];
+  size_t the_ntot;
 };
 
 class volume_list;
@@ -926,7 +926,7 @@ public:
           p = p->next;
       }
   }
-  
+
   volume v;
   int c; // component or derived component associated with v (e.g. for flux)
   std::complex<double> weight;

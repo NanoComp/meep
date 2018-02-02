@@ -92,7 +92,7 @@ bool susceptibility::needs_W_notowned(component c,
 
 typedef struct {
   size_t sz_data;
-  int ntot;
+  size_t ntot;
   realnum *P[NUM_FIELD_COMPONENTS][2];
   realnum *P_prev[NUM_FIELD_COMPONENTS][2];
   realnum data[1];
@@ -119,7 +119,7 @@ void lorentzian_susceptibility::init_internal_data(
   size_t sz_data = d->sz_data;
   memset(d, 0, sz_data);
   d->sz_data = sz_data;
-  int ntot = d->ntot = gv.ntot();
+  size_t ntot = d->ntot = gv.ntot();
   realnum *P = d->data;
   realnum *P_prev = d->data + ntot;
   FOR_COMPONENTS(c) DOCMP2 if (needs_P(c, cmp, W)) {
@@ -135,7 +135,7 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   if (!d) return 0;
   lorentzian_data *dnew = (lorentzian_data *) malloc(d->sz_data);
   memcpy(dnew, d, d->sz_data);
-  int ntot = d->ntot;
+  size_t ntot = d->ntot;
   realnum *P = dnew->data;
   realnum *P_prev = dnew->data + ntot;
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
@@ -153,7 +153,7 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
             (z + 1/z - 2)/dt^2 + g*(z - 1/z)/(2*dt) + w^2 = 0
    where w = 2*pi*omega_0 and g = 2*pi*gamma.   It is just a little
    algebra from this to get the condition for a root with |z| > 1.
-   
+
    FIXME: this test seems to be too conservative (issue #12) */
 static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
   double w = 2*pi*omega_0, g = 2*pi*gamma;
@@ -170,7 +170,7 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
 
 void lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
-	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+	realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 	double dt, const grid_volume &gv, void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   const double omega2pi = 2*pi*omega_0, g2pi = gamma*2*pi;
@@ -180,7 +180,7 @@ void lorentzian_susceptibility::update_P
   (void) W_prev; // unused;
 
   // TODO: add back lorentzian_unstable(omega_0, gamma, dt) if we can improve the stability test
-	
+
   FOR_COMPONENTS(c) DOCMP2 if (d->P[c][cmp]) {
     const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
     if (w && s) {
@@ -188,30 +188,30 @@ void lorentzian_susceptibility::update_P
 
       // directions/strides for offdiagonal terms, similar to update_eh
       const direction d = component_direction(c);
-      const int is = gv.stride(d) * (is_magnetic(c) ? -1 : +1);
+      const ptrdiff_t is = gv.stride(d) * (is_magnetic(c) ? -1 : +1);
       direction d1 = cycle_direction(gv.dim, d, 1);
       component c1 = direction_component(c, d1);
-      int is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
+      ptrdiff_t is1 = gv.stride(d1) * (is_magnetic(c) ? -1 : +1);
       const realnum *w1 = W[c1][cmp];
       const realnum *s1 = w1 ? sigma[c][d1] : NULL;
       direction d2 = cycle_direction(gv.dim, d, 2);
       component c2 = direction_component(c, d2);
-      int is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
+      ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
       const realnum *w2 = W[c2][cmp];
       const realnum *s2 = w2 ? sigma[c][d2] : NULL;
 
       if (s2 && !s1) { // make s1 the non-NULL one if possible
 	SWAP(direction, d1, d2);
 	SWAP(component, c1, c2);
-	SWAP(int, is1, is2);
+	SWAP(ptrdiff_t, is1, is2);
 	SWAP(const realnum *, w1, w2);
 	SWAP(const realnum *, s1, s2);
       }
       if (s1 && s2) { // 3x3 anisotropic
 	LOOP_OVER_VOL_OWNED(gv, c, i) {
 	  realnum pcur = p[i];
-	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
-			      - gamma1 * pp[i] 
+	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom)
+			      - gamma1 * pp[i]
 			      + omega0dtsqr * (s[i] * w[i]
 					       + OFFDIAG(s1,w1,is1,is)
 					       + OFFDIAG(s2,w2,is2,is)));
@@ -221,8 +221,8 @@ void lorentzian_susceptibility::update_P
       else if (s1) { // 2x2 anisotropic
 	LOOP_OVER_VOL_OWNED(gv, c, i) {
 	  realnum pcur = p[i];
-	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
-			      - gamma1 * pp[i] 
+	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom)
+			      - gamma1 * pp[i]
 			      + omega0dtsqr * (s[i] * w[i]
 					       + OFFDIAG(s1,w1,is1,is)));
 	  pp[i] = pcur;
@@ -231,8 +231,8 @@ void lorentzian_susceptibility::update_P
       else { // isotropic
 	LOOP_OVER_VOL_OWNED(gv, c, i) {
 	  realnum pcur = p[i];
-	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) 
-			      - gamma1 * pp[i] 
+	  p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom)
+			      - gamma1 * pp[i]
 			      + omega0dtsqr * (s[i] * w[i]));
 	  pp[i] = pcur;
 	}
@@ -242,17 +242,17 @@ void lorentzian_susceptibility::update_P
 }
 
 void lorentzian_susceptibility::subtract_P(field_type ft,
-					   realnum *f_minus_p[NUM_FIELD_COMPONENTS][2], 
+					   realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
 					   void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   field_type ft2 = ft == E_stuff ? D_stuff : B_stuff; // for sources etc.
-  int ntot = d->ntot;
+  size_t ntot = d->ntot;
   FOR_FT_COMPONENTS(ft, ec) DOCMP2 if (d->P[ec][cmp]) {
     component dc = field_type_component(ft2, ec);
     if (f_minus_p[dc][cmp]) {
       realnum *p = d->P[ec][cmp];
       realnum *fmp = f_minus_p[dc][cmp];
-      for (int i = 0; i < ntot; ++i) fmp[i] -= p[i];
+      for (size_t i = 0; i < ntot; ++i) fmp[i] -= p[i];
     }
   }
 }
@@ -264,8 +264,8 @@ int lorentzian_susceptibility::num_cinternal_notowned_needed(component c,
 }
 
 realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
-				        int inotowned, component c, int cmp, 
-					int n, 
+				        int inotowned, component c, int cmp,
+					int n,
 					void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *) P_internal_data;
   (void) inotowned; // always = 0
@@ -277,7 +277,7 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(
 
 void noisy_lorentzian_susceptibility::update_P
        (realnum *W[NUM_FIELD_COMPONENTS][2],
-	realnum *W_prev[NUM_FIELD_COMPONENTS][2], 
+	realnum *W_prev[NUM_FIELD_COMPONENTS][2],
 	double dt, const grid_volume &gv, void *P_internal_data) const {
   lorentzian_susceptibility::update_P(W, W_prev, dt, gv, P_internal_data);
   lorentzian_data *d = (lorentzian_data *) P_internal_data;

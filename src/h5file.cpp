@@ -369,7 +369,7 @@ realnum *h5file::read(const char *dataname,
   if (!parallel) {
     *rank = broadcast(0, *rank);
     broadcast(0, dims, *rank);
-    int N = 1;
+    size_t N = 1;
     for (int i = 0; i < *rank; ++i)
       N *= dims[i];
     if (!am_master())
@@ -672,7 +672,7 @@ void h5file::write_chunk(int rank,
   start_t *start = new start_t[rank1 + append_data];
   hsize_t *count = new hsize_t[rank1 + append_data];
 
-  int count_prod = 1;
+  size_t count_prod = 1;
   for (i = 0; i < rank; ++i) {
     start[i] = chunk_start[i];
     count[i] = chunk_dims[i];
@@ -806,7 +806,7 @@ void h5file::read_chunk(int rank,
   start_t *start = new start_t[rank1];
   hsize_t *count = new hsize_t[rank1];
 
-  int count_prod = 1;
+  size_t count_prod = 1;
   for (int i = 0; i < rank; ++i) {
     start[i] = chunk_start[i];
     count[i] = chunk_dims[i];
