@@ -18,6 +18,7 @@
 #define MEEP_H
 
 #include <stdio.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "meep/vec.hpp"

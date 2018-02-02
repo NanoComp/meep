@@ -19,6 +19,7 @@
 #define MEEP_MY_MPI_H
 
 #include <complex>
+#include <stddef.h>
 
 namespace meep {
 
