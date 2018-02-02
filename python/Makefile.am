@@ -74,8 +74,8 @@ meep.py: meep-python.cpp
 __init__.py: meep.py
 	cp $< $@
 	if [[ "${SWIG_VERSION}" = 3.0.12 ]]; then \
-		sed -i "" '/^if _swig_python_version_info >= (2, 7, 0):/,/^else:/d' $@; \
-		sed -i "" 's/    import _meep/from . import _meep/' $@; \
+		sed -i.bak '/^if _swig_python_version_info >= (2, 7, 0):/,/^else:/d' $@; \
+		sed -i.bak 's/    import _meep/from . import _meep/' $@; \
 	fi
 
 
