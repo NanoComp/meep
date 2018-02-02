@@ -20,6 +20,7 @@
 #define MEEP_VEC_H
 
 #include <complex>
+#include <stddef.h>
 
 namespace meep {
 
