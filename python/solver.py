@@ -303,7 +303,7 @@ class ModeSolver(object):
             f['Bloch wavevector'] = np.array(output_k)
             self._write_lattice_vectors(f)
 
-            self.mode_solver.update_before_output()
+            self.mode_solver.multiply_bloch_phase()
 
             for c_idx, c in enumerate(components):
                 if component >= 0 and c_idx != component:
