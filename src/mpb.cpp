@@ -509,6 +509,25 @@ vec get_k(void *vedata)
 }
 
 /***************************************************************/
+/* helper routine for add_eigenmode_source that calls          */
+/* add_volume_source only if certain conditions are met        */
+/***************************************************************/
+void add_volume_source_check(component c, const src_time &src, const volume &where,
+                             cdouble A(const vec &), cdouble amp,
+                             fields *f, component c0, direction d, int parity)
+{
+  if (!f->gv.has_field(c)) return;
+  if (c0!=Centered && c0!=c) return;
+  if (component_direction(c)==d) return;
+  if (f->gv.dim==D2) // parity checks
+   {
+     if ( (parity&EVEN_Z_PARITY) &&  is_tm(c) ) return;
+     if ( (parity&ODD_Z_PARITY)  && !is_tm(c) ) return;
+   };
+  f->add_volume_source(c, src, where, A, amp);
+}
+
+/***************************************************************/
 /* call get_eigenmode() to solve for the specified eigenmode,  */
 /* then call add_volume_source() to add current sources whose  */
 /* radiated fields reproduce the eigenmode fields              */
@@ -522,7 +541,6 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 				  double resolution, double eigensolver_tol,
 				  complex<double> amp,
 				  complex<double> A(const vec &)) {
-  (void) c0; // unused
 
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
@@ -541,50 +559,28 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   if (!match_frequency)
     src_mpb->set_frequency(omega_src);
 
-#if 0
-// Disabling the following code as I don't understand it
-
-  if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
-  if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
-
-  /*--------------------------------------------------------------*/
-  // step 2: add sources whose radiated field reproduces the      */
-  //         the eigenmode                                        */
-  /*--------------------------------------------------------------*/
-
-  // step 2a: electric-current sources
-  //           = nHat \times magnetic-field components
-  // use principle of equivalence to obtain equivalent currents
-  FOR_ELECTRIC_COMPONENTS(c)
-    if (gv.has_field(c) && (c0 == Centered || c0 == c)
-	&& component_direction(c) != d
-	&& (gv.dim != D2 || !(parity & (EVEN_Z_PARITY | ODD_Z_PARITY))
-	                 || ((parity & EVEN_Z_PARITY) && !is_tm(c))
-	                 || ((parity & ODD_Z_PARITY) && is_tm(c))
-           )
-       )
-#endif
-
   /*--------------------------------------------------------------*/
   // step 2: add sources whose radiated field reproduces the      */
   //         the eigenmode                                        */
   //         electric current K = nHat \times H                   */
   //         magnetic current N = -nHat \times E                  */
   /*--------------------------------------------------------------*/
+  if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
+  if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
   component cE[3]={Ex, Ey, Ez}, cH[3]={Hx, Hy, Hz};
   int n   = (d==X ? 0 : (d==Y ? 1 : 2));
   int np1 = (n+1)%3;
   int np2 = (n+2)%3;
   // Kx = -Hy, Ky = Hx   (for d==Z)
   global_eigenmode_component = cH[np1];
-  add_volume_source(cE[np2], *src_mpb, where, meep_mpb_A, +1.0*amp);
+  add_volume_source_check(cE[np2], *src_mpb, where, meep_mpb_A, +1.0*amp, this, c0, d, parity);
   global_eigenmode_component = cH[np2];
-  add_volume_source(cE[np1], *src_mpb, where, meep_mpb_A, -1.0*amp);
+  add_volume_source_check(cE[np1], *src_mpb, where, meep_mpb_A, -1.0*amp, this, c0, d, parity);
   // Nx = +Ey, Ny = -Ex  (for d==Z)
   global_eigenmode_component = cE[np1];
-  add_volume_source(cH[np2], *src_mpb, where, meep_mpb_A, -1.0*amp);
+  add_volume_source_check(cH[np2], *src_mpb, where, meep_mpb_A, -1.0*amp, this, c0, d, parity);
   global_eigenmode_component = cE[np2];
-  add_volume_source(cH[np1], *src_mpb, where, meep_mpb_A, +1.0*amp);
+  add_volume_source_check(cH[np1], *src_mpb, where, meep_mpb_A, +1.0*amp, this, c0, d, parity);
 
   delete src_mpb;
   destroy_eigenmode_data( (void *)global_eigenmode_data);
