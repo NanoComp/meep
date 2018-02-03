@@ -359,12 +359,11 @@ int main(int argc, char *argv[])
   double xB  = +LX - dpml - 0.5*wvg_length;
   double LYP = LY-dpml;
   double LZP = three_d ? LZ-dpml : 0.0;
-  volume *fvA, *fvB, *fvC;
+  volume *fvA, *fvB;
   double volA, volB;
   if (three_d)
    { fvA = new volume( vec(xA, -LYP, -LZP), vec(xA, +LYP, +LZP) );
      fvB = new volume( vec(xB, -LYP, -LZP), vec(xB, +LYP, +LZP) );
-     fvC = new volume( vec(-LX,   0, -LZP), vec(+LX,   0,  LZP) );
      volA = 4.0*LYP*LZP;
      volB = 4.0*LYP*LZP;
    }
@@ -437,7 +436,6 @@ int main(int argc, char *argv[])
   /* plot eigenmode field patterns if requested ******************/
   /***************************************************************/
   void *mode_data_A, **mode_data_B = new void*[num_bands];
-  double fmPowerA=0.0, fmPowerB=0.0;
   if (plot_modes)
    for(int nb=-1; nb<num_bands; nb++)
     { 
@@ -541,7 +539,7 @@ int main(int argc, char *argv[])
       for(unsigned nb=0; nb<bands.size(); nb++)
        { 
          double atot=0.0;
-         for(int nbb=0; nbb<bands.size(); nbb++)
+         for(unsigned nbb=0; nbb<bands.size(); nbb++)
           for(int pm=0, sign=1; pm<2; pm++, sign-=2)
            atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
          if (nb==0) fprintf(ff,"# atot  = %e (%e)\n",atot,atot/Bflux[0]);
