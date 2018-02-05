@@ -287,7 +287,7 @@ class Simulation(object):
         self.progress_interval = progress_interval
         self.init_fields_hooks = []
         self.run_index = 0
-        self.filename_prefix = ''
+        self.filename_prefix = filename_prefix
         self.output_append_h5 = None
         self.output_single_precision = output_single_precision
         self.output_volume = output_volume
@@ -1104,10 +1104,8 @@ def in_volume(v, *step_funcs):
 
 
 def in_point(pt, *step_funcs):
-    def _in_point(sim):
-        v = Volume(pt, dims=sim.dimensions, is_cylindrical=sim.is_cylindrical)
-        return in_volume(v, *step_funcs)
-    return _in_point
+    v = Volume(pt)
+    return in_volume(v, *step_funcs)
 
 
 def to_appended(fname, *step_funcs):
