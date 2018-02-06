@@ -176,9 +176,7 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice l
 
   this->lat = lat;
 
-  geometry_lattice.size.x = lat.size.x;
-  geometry_lattice.size.y = lat.size.y;
-  geometry_lattice.size.z = lat.size.z;
+  geometry_lattice = lat;
 
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
@@ -369,6 +367,7 @@ void mode_solver::init(int p, bool reset_fields) {
     H = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
     nwork_alloc = eigensolver_nwork + (mdata->mu_inv != NULL);
 
+
     for (int i = 0; i < nwork_alloc; ++i) {
       W[i] = create_evectmatrix(N, c, block_size, local_N, N_start, alloc_N);
     }
@@ -439,16 +438,22 @@ void mode_solver::init_epsilon() {
   }
 
   {
+    // Replace 0 with 1e-20 for no size
+    vector3 tmp_size;
+    tmp_size.x = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
+    tmp_size.y = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
+    tmp_size.z = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
+
     geom_box b0;
-    b0.low = vector3_plus(geometry_center, vector3_scale(-0.5, geometry_lattice.size));
-    b0.high = vector3_plus(geometry_center, vector3_scale(0.5, geometry_lattice.size));
+    b0.low = vector3_plus(geometry_center, vector3_scale(-0.5, tmp_size));
+    b0.high = vector3_plus(geometry_center, vector3_scale(0.5, tmp_size));
     /* pad tree boundaries to allow for sub-pixel averaging */
-    b0.low.x -= geometry_lattice.size.x / mdata->nx;
-    b0.low.y -= geometry_lattice.size.y / mdata->ny;
-    b0.low.z -= geometry_lattice.size.z / mdata->nz;
-    b0.high.x += geometry_lattice.size.x / mdata->nx;
-    b0.high.y += geometry_lattice.size.y / mdata->ny;
-    b0.high.z += geometry_lattice.size.z / mdata->nz;
+    b0.low.x -= tmp_size.x / mdata->nx;
+    b0.low.y -= tmp_size.y / mdata->ny;
+    b0.low.z -= tmp_size.z / mdata->nz;
+    b0.high.x += tmp_size.x / mdata->nx;
+    b0.high.y += tmp_size.y / mdata->ny;
+    b0.high.z += tmp_size.z / mdata->nz;
     geometry_tree = create_geom_box_tree0(geometry, b0);
   }
 

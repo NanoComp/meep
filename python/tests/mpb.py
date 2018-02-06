@@ -1,6 +1,7 @@
 from __future__ import division
 
 import glob
+import math
 import os
 import re
 import unittest
@@ -10,25 +11,6 @@ import h5py
 import numpy as np
 import meep as mp
 from meep import mpb
-
-
-class TestMPBWrappers(unittest.TestCase):
-
-    def setUp(self):
-        self.num_bands = 8
-        self.k_points = [mp.Vector3(),
-                         mp.Vector3(0.5),
-                         mp.Vector3(0.5, 0.5),
-                         mp.Vector3()]
-
-        self.k_points = mp.interpolate(4, self.k_points)
-        self.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
-        self.geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1))
-        self.resolution = 32
-
-    def test_mode_solver_constructor(self):
-        mpb.mode_solver(self.num_bands, 0, self.resolution, self.geometry_lattice,
-                        1.0e-7, mp.Medium(), self.geometry, True, True)
 
 
 class TestModeSolver(unittest.TestCase):
@@ -131,7 +113,7 @@ class TestModeSolver(unittest.TestCase):
     def check_fields_against_h5(self, ref_path, field):
         with h5py.File(ref_path, 'r') as ref:
             # Reshape the reference data into a component-wise 1d array like
-            # [x1,y1,z1,x2,y2,z2,etc.] to match the layout of dfield
+            # [x1,y1,z1,x2,y2,z2,etc.] to match the layout of `field`
             ref_x = ref['x.r'].value + ref['x.i'].value * 1j
             ref_y = ref['y.r'].value + ref['y.i'].value * 1j
             ref_z = ref['z.r'].value + ref['z.i'].value * 1j
@@ -389,6 +371,46 @@ class TestModeSolver(unittest.TestCase):
                     # else:
                         # TODO: 1.75% array mismatch
                         # np.testing.assert_allclose(ref[k].value, res[k].value, rtol=1e-5)
+
+    def test_triangular_lattice(self):
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.27418366655053683, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.4443772345549731, mp.Vector3(0.0, 0.5, 0.0)),
+             (0.5589242526869668, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.4890716313301616, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (0.5590346475838462, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.5933240874910938, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.7895347583021823, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.7896048828436291, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (0.8347553850744481, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8348898399363115, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.8651618823872929, mp.Vector3(-0.2, 0.39999999999999997, 0.0))),
+            ((0.8669299160898801, mp.Vector3(-0.13333333333333336, 0.4333333333333333, 0.0)),
+             (0.9918057091113671, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8973819286907876, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (1.0937048661670459, mp.Vector3(0.0, 0.0, 0.0)))
+        ]
+
+        ms = self.init_solver()
+        ms.geometry_lattice = mp.Lattice(
+            size=mp.Vector3(1, 1),
+            basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+            basis2=mp.Vector3(math.sqrt(3) / 2, -0.5)
+        )
+
+        k_points = [
+            mp.Vector3(),
+            mp.Vector3(y=0.5),
+            mp.Vector3(-1 / 3, 1 / 3),
+            mp.Vector3()
+        ]
+
+        ms.k_points = mp.interpolate(4, k_points)
+        ms.run_tm()
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
 
 
 if __name__ == '__main__':
