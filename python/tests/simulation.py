@@ -191,6 +191,17 @@ class TestSimulation(unittest.TestCase):
         vol = mp.Volume(mp.Vector3(), size=mp.Vector3(x=2))
         sim.run(mp.at_end(mp.in_volume(vol, mp.output_efield_z)), until=200)
 
+    def test_in_point(self):
+        sim = self.init_simple_simulation(filename_prefix='test_in_point')
+        fn = sim.filename_prefix + '-ez-000200.00.h5'
+        pt = mp.Vector3()
+        sim.run(mp.at_end(mp.in_point(pt, mp.output_efield_z)), until=200)
+        self.assertTrue(os.path.exists(fn))
+
+        mp.all_wait()
+        if mp.am_master():
+            os.remove(fn)
+
     def test_epsilon_input_file(self):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
