@@ -49,7 +49,7 @@ void test_mode_solver() {
 
   bool reset_fields = true;
 
-  py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, mat, g,
+  py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, 3, mat, g,
                          reset_fields, true);
 
   ms.get_epsilon();

@@ -189,6 +189,20 @@ class ModeSolver(object):
         else:
             return ogaps(br_data[0], br_data[1:], 1, [])
 
+    # Return the frequency gap from the band #lower-band to the band
+    # #(lower-band+1), as a percentage of mid-gap frequency.  The "gap"
+    # may be negative if the maximum of the lower band is higher than the
+    # minimum of the upper band.  (The gap is computed from the
+    # band-range-data of the previous run.)
+    def retrieve_gap(self, lower_band):
+        if lower_band + 1 > len(self.band_range_data):
+            raise ValueError("retrieve-gap called for higher band than was calculated")
+
+        f1 = self.band_range_data[lower_band - 1][1][0]
+        f2 = self.band_range_data[lower_band][0][0]
+
+        return (f2 - f1) / (0.005 * (f1 + f2))
+
     # Split a list L into num more-or-less equal pieces, returning the piece
     # given by index (in 0..num-1), along with the index in L of the first
     # element of the piece, as a list: [first-index, piece-of-L]
@@ -406,6 +420,7 @@ class ModeSolver(object):
             self.resolution,
             self.geometry_lattice,
             self.tolerance,
+            self.mesh_size,
             self.default_material,
             self.geometry,
             True if reset_fields else False,

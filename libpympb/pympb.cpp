@@ -151,15 +151,15 @@ static void deflation_constraint(evectmatrix X, void *data) {
 /******* mode_solver *******/
 
 mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice lat,
-                         double tolerance, meep_geom::material_data *_default_material,
+                         double tolerance, int mesh_size, meep_geom::material_data *_default_material,
                          geometric_object_list geom, bool reset_fields, bool deterministic):
   num_bands(num_bands),
   parity(parity),
   resolution(resolution),
   tolerance(tolerance),
+  mesh_size(mesh_size),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
-  mesh_size(3),
   last_parity(-2),
   negative_epsilon_ok(false),
   iterations(0),

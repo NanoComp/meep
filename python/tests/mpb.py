@@ -9,6 +9,7 @@ import unittest
 import h5py
 # TODO: Importing numpy loads MKL which breaks zdotc_
 import numpy as np
+from scipy.optimize import minimize_scalar
 import meep as mp
 from meep import mpb
 
@@ -409,6 +410,42 @@ class TestModeSolver(unittest.TestCase):
 
         ms.k_points = mp.interpolate(4, k_points)
         ms.run_tm()
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+
+    def test_maximize_first_tm_gap(self):
+
+        def first_tm_gap(r):
+            ms.geometry = [mp.Cylinder(r, material=mp.Medium(epsilon=12))]
+            ms.run_tm()
+            return -1 * ms.retrieve_gap(1)
+
+        ms = self.init_solver()
+        ms.num_bands = 2
+        ms.mesh_size = 7
+
+        result = minimize_scalar(first_tm_gap, method='bounded', bounds=[0.1, 0.5], tol=0.1)
+        expected = 39.10065045011942
+        self.assertAlmostEqual(expected, result.fun * -1)
+
+    def test_anisotropic_2d_gap(self):
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)), (0.22131658647819047, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)), (0.23068427740922454, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.2169119289078649, mp.Vector3(0.5, 0.0, 0.0)), (0.3190202969087597, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.30110868688276016, mp.Vector3(0.5, 0.0, 0.0)), (0.36483532251792833, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.3070162288067315, mp.Vector3(0.5, 0.5, 0.0)), (0.3852513891468177, mp.Vector3(0.1, 0.1, 0.0))),
+            ((0.341835282475095, mp.Vector3(0.5, 0.30000000000000004, 0.0)), (0.3914210645066325, mp.Vector3(0.5, 0.10000000000000003, 0.0))),
+            ((0.3498214344265213, mp.Vector3(0.5, 0.5, 0.0)), (0.40756434315471013, mp.Vector3(0.4, 0.0, 0.0))),
+            ((0.3963466078874464, mp.Vector3(0.1, 0.1, 0.0)), (0.477223780015547, mp.Vector3(0.5, 0.5, 0.0))),
+        ]
+
+        ms = self.init_solver()
+        ms.geometry = [mp.Cylinder(0.3, material=mp.Medium(epsilon_diag=mp.Vector3(1, 1, 12)))]
+        ms.default_material = mp.Medium(epsilon_diag=mp.Vector3(12, 12, 1))
+        ms.num_bands = 8
+        ms.run()
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
 

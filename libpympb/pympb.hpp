@@ -45,6 +45,7 @@ struct mode_solver {
   double resolution;
   lattice lat;
   double tolerance;
+  int mesh_size;
 
   int n[3];
   int local_N;
@@ -55,7 +56,6 @@ struct mode_solver {
   // TODO: Get from python ?
   int eigensolver_nwork;
   int eigensolver_block_size;
-  int mesh_size;
 
   int last_parity;
 
@@ -95,7 +95,7 @@ struct mode_solver {
   bool deterministic;
 
   mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
-              meep_geom::material_data *_default_material, geometric_object_list geom,
+              int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
               bool reset_fields, bool deterministic);
   ~mode_solver();
 
