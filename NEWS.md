@@ -1,4 +1,41 @@
-Meep 1.3 (31 March 2015)
+# Meep Release Notes
+
+## Meep 1.4.2
+
+1/26/2018
+
+  * Build fix for Python due to missing file (#184).
+
+## Meep 1.4.1
+
+1/19/2018
+
+  * Minor packaging fixes.
+
+## Meep 1.4
+
+1/18/2018
+
+  * Full-featured Python interface.
+
+  * Migrated documentation to github/markdown/readthedocs (#55).
+
+  * New feature to get slice as array in C++ and Python APIs (#96, #105).
+
+  * `libmeepgeom` library to allow C++ users to access geometric-object
+    API (#56).
+
+  * Removed overly conservative stability check for Lorentzian
+    susceptibilities (#150).
+
+  * Corrected small error in frequency interval for `dft-ldos` (#40).
+
+  * Bug fixes in near-to-farfield spectra (#21), eigenmode source (#20),
+    and LDOS (#40).
+
+## Meep 1.3
+
+31 March 2015.
 
   * New near-to-far-field functionality: given a bounding surface,
     automatically computes the Fourier-transformed field in any 
@@ -13,7 +50,9 @@ Meep 1.3 (31 March 2015)
 
   * Build fix for Fedora 21 (thanks to Dean Brettle) (issue #14).
 
-Meep 1.2.1 (2 April 2014)
+## Meep 1.2.1
+
+2 April 2014.
 
   * Added new absorber type, as an alternative to PML, which simply
     provides a scalar conductivity gradient for cases where PML fails.
@@ -29,47 +68,55 @@ Meep 1.2.1 (2 April 2014)
     failure with gcc 4.7 and 4.7.1; thanks to Brahmanand Jogai and
     Thorsten Alteholz for the bug reports.
 
-Meep 1.2 (20 July 2012)
+## Meep 1.2
+
+20 July 2012.
 
   * Fixed to work with Guile version 2.x (older versions still work);
     requires libctl 3.2 or later.
 
-  * Added epsilon-input-file feature to read a scalar dielectric function
+  * Added `epsilon-input-file` feature to read a scalar dielectric function
     from an HDF5 file (similar to MPB).
 
   * Support for anisotropic dispersive materials (tensor sigma parameter).
 
   * Support for Drude dispersion model.  New syntax is 
-    'make drude-susceptibility', 'make lorentzian-susceptibility', etc.
-    (old 'make polarizability' is still supported for backwards compatibility).
+    `make drude-susceptibility`, `make lorentzian-susceptibility`, etc.
+    (old `make polarizability` is still supported for backwards compatibility).
 
   * Support for "thermal" dispersive materials which include noise
     term in the polarization.
 
-  * Added dft-ldos feature for efficient LDOS-spectrum computation.
+  * Added `dft-ldos` feature for efficient LDOS-spectrum computation.
 
   * Documented stress-tensor (force) spectrum computation feature.
 
-  * Added "mean-stretch" property of PML (defaults to 1), to support
+  * Added `mean-stretch` property of PML (defaults to 1), to support
     real coordinate stretching for damping evanescent modes.
 
   * Support for eigenmode-source feature using upcoming MPB release.
 
   * Various small bugfixes.
 
-Meep 1.1.2 (31 August 2009)
+## Meep 1.1.2
 
-  * Added "make check" test (in 2D_convergence) for new special-kz?
+31 August 2009.
+
+  * Added `make check` test (in 2D_convergence) for new `special-kz?`
     feature (for computing out-of-plane modes in 2d more efficiently).
 
   * Fix typo preventing Casimir calculations from running for periodic
     problems.
 
-Meep 1.1.1 (24 August 2009)
+## Meep 1.1.1
+
+24 August 2009.
 
   * Fixed release bug preventing Casimir calculation from running.
 
-Meep 1.1 (20 August 2009)
+## Meep 1.1
+
+20 August 2009.
 
   * Meep's PML is now a true PML for arbitrary anisotropic, dispersive,
     and conducting media.  (Now uses a slightly unconventional
@@ -83,21 +130,21 @@ Meep 1.1 (20 August 2009)
   * C++ interface: volume was renamed to grid_volume and geometric_volume
     was renamed to volume, to better reflect their respective roles.
 
-  * Added accurate-fields-near-cylorigin? option to have more
+  * Added `accurate-fields-near-cylorigin?` option to have more
     accurate fields near the r=0 origin for large m in cylindrical
     coordinates, at the expense of requiring a smaller Courant factor.
-    (Default is false, corresponding to behavior in older Meep versions.)
+    (Default is `false`, corresponding to behavior in older Meep versions.)
 
   * In 2d computational cells, added much more efficient support for
-    exp(ikz) z-dependence, enabled by new special-kz? input variable
-    (default is false since it only works in 2d and is a little subtle
+    exp(ikz) z-dependence, enabled by new `special-kz?` input variable
+    (default is `false` since it only works in 2d and is a little subtle
      for real fields).
 
   * Includes preliminary new features to aid in computation of 
     optical forces (both classical and quantum Casimir forces);
     further documentation pending more testing.
 
-  * Removed obsolete doc directory (all documentation is on the website
+  * Removed obsolete `doc` directory (all documentation is on the website
     these days).
 
   * Small performance improvements in Lorentzian dispersion handling.
@@ -106,29 +153,35 @@ Meep 1.1 (20 August 2009)
 
   * Fix compilation failure with MPICH.
 
-Meep 1.0.3 (5 June 2009)
+## Meep 1.0.3
 
-  * Allow GUILE_CONFIG environment variable to override location of
-    guile-config program in configure script; this is useful when
+5 June 2009.
+
+  * Allow `GUILE_CONFIG` environment variable to override location of
+    `guile-config` program in `configure` script; this is useful when
     cross-compiling.
 
-Meep 1.0.2 (2 June 2009)
+## Meep 1.0.2
 
-  * Correct superficial 'make check' failure on 32-bit x86 machines
+2 June 2009.
+
+  * Correct superficial `make check` failure on 32-bit x86 machines
     with gcc 4.3.x, due to slight impact on floating-point rounding
     by automatic SSE/SSE2 vectorization; thanks to Silviu Popescu for
     the bug report.
 
-  * Correct superficial 'make check' failure when compiling under icc.
+  * Correct superficial `make check` failure when compiling under icc.
 
-Meep 1.0.1 (28 May 2009)
+Meep 1.0.1
 
-  * Enable correct operation and passed test suite when MEEP_SINGLE
+28 May 2009.
+
+  * Enable correct operation and passed test suite when `MEEP_SINGLE`
     (single-precision) mode is enabled in meep.hpp; thanks to
     Seyoon Kim for the bug reports.
 
   * Use new automake features to have less-verbose build output by
-    default (you can build in verbose mode by 'make V=1'), and
+    default (you can build in verbose mode by `make V=1`), and
     running all test programs then reporting which ones failed
     instead of stopping at the first failure.
 
@@ -140,7 +193,9 @@ Meep 1.0.1 (28 May 2009)
 
   * Fix compilation problem with gcc 4.4, correcting Debian bug #505002.
 
-Meep 1.0 (28 April 2009)
+## Meep 1.0
+
+28 April 2009.
 
   * New timestepping scheme for off-diagonal anisotropic epsilon and
     mu, based on technique by Werner and Cary [ J. Comp. Phys. 226,
@@ -161,8 +216,8 @@ Meep 1.0 (28 April 2009)
   * The delta-epsilon parameter of polarizability has been removed;
     you should use sigma instead.
 
-  * New fields::integrate2 function (and corresponding Scheme function
-    integrate2-field-function) to perform integrations involving two
+  * New `fields::integrate2` function (and corresponding Scheme function
+    `integrate2-field-function`) to perform integrations involving two
     simulations with the same computational cell (e.g. field-overlap
     calculations for coupled-mode theory).
 
@@ -177,10 +232,12 @@ Meep 1.0 (28 April 2009)
 
   * Some bug-fixes to test programs that made them overly sensitive
     to roundoff errors and possibly fail depending on the compiler.
-    (New fields::round_time and meep-round-time functions to round
+    (New `fields::round_time` and meep-round-time functions to round
      times to single-precision, useful for robust time comparisons.)
 
-Meep 0.20.4 (17 March 2009)
+## Meep 0.20.4
+
+17 March 2009.
 
   * Bug fix in cylindrical code, which caused it to blow up
     in some circumstances for nonzero m.
@@ -198,30 +255,38 @@ Meep 0.20.4 (17 March 2009)
     have to use "dummy objects" to specify the existence of
     some materials when using material-function types.
 
-Meep 0.20.3 (24 July 2008)
+## Meep 0.20.3
+
+24 July 2008.
 
   * Fixed circular dependency in Makefile, which caused problems with some
     versions of make; thanks to Kaoru Narita for the bug report.
 
-Meep 0.20.2 (21 July 2008)
+## Meep 0.20.2
+
+21 July 2008.
 
   * Fixed incompatibility with Guile 1.6.x or earlier; thanks to the bug
     report by Andreas Unger.
 
-Meep 0.20.1 (20 July 2008)
+## Meep 0.20.1
+
+20 July 2008.
 
   * Improved handling of nested synchronized-magnetic calls.
 
-  * Bug fix: parallel builds (make -j) should now work.
+  * Bug fix: parallel builds (`make -j`) should now work.
 
   * Bug fix: pkg-config file was incorrectly installed for MPI version;
     thanks to Majid Sodagar for the bug report.
 
-Meep 0.20 (19 July 2008)
+## Meep 0.20
 
-  * Support for user-specified permeability (mu).  Renamed "dielectric"
-    to "medium" in libctl interface, new "mu" property and new
-    output-bfield and output-mu functions, and new "Permeability" and "Bx"
+19 July 2008.
+
+  * Support for user-specified permeability (mu).  Renamed `dielectric`
+    to `medium` in libctl interface, new `mu` property and new
+    output-bfield and output-mu functions, and new `Permeability` and `Bx`
     etc. field types.
 
   * Support for user-specified electric and/or magnetic conductivities.
@@ -261,13 +326,15 @@ Meep 0.20 (19 July 2008)
   * Bug fix: make sure h5 filenames have unique timestep for cases where
     dt is very small or very large.
 
-Meep 0.10.1 (13 Nov. 2007)
+## Meep 0.10.1
+
+13 Nov. 2007.
 
   * Bug fix in flux_in_box, which accidentally returned the flux
     multiplied by the number of processors, instead of the flux.
 
   * Bug fix in epsilon averaging for structures including metals
-    (epsilon < 0), fixing an instability.
+    (`epsilon < 0`), fixing an instability.
 
   * Bug fix in output-png when running in parallel (removing race condition).
 
@@ -277,7 +344,7 @@ Meep 0.10.1 (13 Nov. 2007)
   * Fixed bug that caused output-tot-pwr to stop Meep with an error message;
     thanks to Vyacheslav Sokolov for the bug report.
 
-  * Make "at-every" step functions less susceptible to rounding errors;
+  * Make `at-every` step functions less susceptible to rounding errors;
     thanks to L. Le Guyader for the bug report.
 
   * Fixed bug in dispersive media that wasted memory on parallel machines
@@ -294,9 +361,11 @@ Meep 0.10.1 (13 Nov. 2007)
   * For maintainer-mode, improved detection of Haskell package names;
     thanks to Liang Huo for the bug report.
 
-Meep 0.10 (21 Aug. 2006)
+## Meep 0.10
 
-  * eps-averaging? is now turned on by default (in libctl interface),
+21 Aug. 2006.
+
+  * `eps-averaging?` is now turned on by default (in libctl interface),
     using much-improved algorithm by Ardavan Farjadpour.  This greatly
     improves accuracy, and also allows continuous tuning of geometric
     parameters.  (See our upcoming paper in Optics Lett., with a preprint
@@ -343,6 +412,8 @@ Meep 0.10 (21 Aug. 2006)
   * Fixed minor build problems on Cygwin, SGI, and other systems,
     thanks to Christopher Kang, Robyn Landers, Florencio Garcia, and others.
 
-Meep 0.9 (1 Apr. 2006)
+## Meep 0.9
+
+1 Apr. 2006.
 
   * Initial public release.

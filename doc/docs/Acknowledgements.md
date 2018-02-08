@@ -3,14 +3,14 @@
 ---
 
 Authors
----------------
+-------
 
-Meep originated as part of graduate research at MIT with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source community on [GitHub](https://github.com/stevengj/meep).
+Meep originated as part of graduate research at MIT with initial contributions by [Steven G. Johnson](http://math.mit.edu/~stevenj/), [Ardavan Oskooi](http://ab-initio.mit.edu/~oskooi/), [David Roundy](http://physics.oregonstate.edu/~roundyd/), [Mihai Ibanescu](https://www.linkedin.com/in/mihai-ibanescu-2b147825/), and [Peter Bermel](http://web.ics.purdue.edu/~pbermel/). Currently, the Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep).
 
 Referencing
 -----------
 
-We kindly request that you cite the following reference in any publication for which you use Meep:
+We kindly request that you cite the following reference publication in any work for which you use Meep:
 
 - A.F. Oskooi, D. Roundy, M. Ibanescu, P. Bermel, J.D. Joannopoulos, and S.G. Johnson, [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, vol. 181, pp. 687-702 (2010). ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf))
 

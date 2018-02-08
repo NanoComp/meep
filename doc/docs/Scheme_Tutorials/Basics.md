@@ -2,7 +2,7 @@
 # Scheme Tutorial
 ---
 
-In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects.html).
+In this page, we'll go through a couple of simple examples using the Scheme interface that illustrate the process of computing fields, transmission/reflection spectra, and resonant modes. All of the examples here are 2d calculations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d computations, see the [Simpetus projects page](http://simpetus.com/projects_scheme.html).
 
 In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files of Meep into images of the fields and so on, this tutorial uses the free [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) programs. You could also use any other program, such as [Matlab](http://www.mathworks.com/access/helpdesk/help/techdoc/ref/hdf5read.html), that supports reading HDF5 files.
 
@@ -17,7 +17,7 @@ Don't worry, though &mdash; simple things are simple and you don't need to be an
 
 The ctl file is actually implemented on top of the [libctl](https://libctl.readthedocs.io) library, a set of utilities that are in turn built on top of the Scheme language. Thus, there are three sources of possible commands and syntax for a ctl file:
 
--   [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) a powerful and beautiful programming language developed at MIT. The syntax is particularly simple: all statements are of the form `(function` `arguments...)`. We run Scheme under the [Guile](https://en.wikipedia.org/wiki/GNU_Guile) interpreter which is designed to be plugged into programs as a scripting and extension language. You don't need to know much Scheme for a basic ctl file, but it is always there if you need it. More information is available on [Guile and Scheme](Guile_and_Scheme_Information.md).
+-   [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) a powerful and beautiful programming language developed at MIT. The syntax is particularly simple: all statements are of the form `(function` `arguments...)`. We run Scheme under the [Guile](https://en.wikipedia.org/wiki/GNU_Guile) interpreter which is designed to be plugged into programs as a scripting and extension language. You don't need to know much Scheme for a basic ctl file, but it is always there if you need it. More information is available on [Guile and Scheme](../Guile_and_Scheme_Information.md).
 -   [libctl](https://libctl.readthedocs.io/), a library that we built on top of Guile to simplify communication between Scheme and scientific computation software. libctl sets the basic tone of the interface and defines a number of useful functions (such as multi-variable optimization, numeric integration, and so on). See the [libctl manual](https://libctl.readthedocs.io).
 -   Meep itself, which defines all the interface features that are specific to FDTD calculations. This manual is primarily focused on documenting these features.
 
@@ -70,13 +70,13 @@ Now that we have the structure, we need to specify the current sources, which is
 
 Here, we gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that (by default) is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$, or a wavelength of about 2 in the $\varepsilon=12$ material—thus, our waveguide is half a wavelength wide, which should hopefully make it single-mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
-Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](Perfectly_Matched_Layer.md) (PML) &mdash; which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 around all sides of the cell, we do:
+Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash; which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 around all sides of the cell, we do:
 
 ```scm
 (set! pml-layers (list (make pml (thickness 1.0))))
 ```
 
-`pml-layers` is a list of `pml` objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make pml (thickness 1.0) (direction X) (side High))` specifies a PML layer on only the $+x$ side. Now, we note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections; see [Perfectly Matched Layer](Perfectly_Matched_Layer.md) for more information.
+`pml-layers` is a list of `pml` objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make pml (thickness 1.0) (direction X) (side High))` specifies a PML layer on only the $+x$ side. Now, we note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections; see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md) for more information.
 
 Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a $160\times80$ cell.
 
@@ -175,7 +175,7 @@ This is similar to the command before, with two new options: `-t 0:329` outputs 
 unix% convert ez.t*.png ez.gif
 ```
 
-Here, we are using an animated GIF format for the output. This results in the following animation:
+We are using an animated GIF format for the output. This results in the following animation:
 
 <center>![](../images/Tutorial-wvg-ez.gif)</center>
 
@@ -401,7 +401,7 @@ Again, we must run *both* simulations in order to get the normalization right. T
 Modes of a Ring Resonator
 -------------------------
 
-As described in the [Introduction](Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some electromagnetic cavity structure. You might want to read that introduction again to recall the basic computational strategy. Here, we will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. This can be also found in the `examples/ring.ctl` file included with Meep. In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
+As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some electromagnetic cavity structure. You might want to read that introduction again to recall the basic computational strategy. Here, we will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. This can be also found in the `examples/ring.ctl` file included with Meep. In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -508,7 +508,7 @@ which differs by about 0.000001 ($10^{-6}$) from the earlier estimate; the diffe
 
 ### Exploiting Symmetry
 
-In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves *both* the structure *and* the sources, we can **exploit this mirror symmetry to speed up the computation**. See also [Exploiting Symmetry](Exploiting_Symmetry.md). In particular, everything about the input file is the same except that we add a single line, right after we specify the `sources`:
+In this case, because we have a mirror symmetry plane (the $x$ axis) that preserves *both* the structure *and* the sources, we can **exploit this mirror symmetry to speed up the computation**. See also [Exploiting Symmetry](../Exploiting_Symmetry.md). In particular, everything about the input file is the same except that we add a single line, right after we specify the `sources`:
 
 ```scm
 (set! symmetries (list (make mirror-sym (direction Y))))

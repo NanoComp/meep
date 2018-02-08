@@ -1,5 +1,5 @@
 LIBCTLGEOM   = -lctlgeom
-LIBMEEP      = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
+LIBMEEP      = $(top_builddir)/src/libmeep.la
 MEEPLIBS     = $(LIBCTLGEOM) $(LIBMEEP)
 
 lib_LTLIBRARIES = libmeepgeom.la
@@ -42,7 +42,7 @@ bend_flux_ll_LDADD   = libmeepgeom.la $(MEEPLIBS)
 user_defined_material_SOURCES = user-defined-material.cpp
 user_defined_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
 
-file_material_SOURCES = file-material.cpp
-file_material_LDADD   = libmeepgeom.la $(MEEPLIBS)
+dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
 
-noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll.h5
+distclean-local:
+	rm -f eps-000000000.h5

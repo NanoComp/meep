@@ -8,7 +8,7 @@ However, $\varepsilon$ is not only a function of position. In general, it also d
 
 Similarly for the relative permeability $\mu$(**r**), for which dispersion, nonlinearity, and anisotropy are all supported as well.
 
-In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified is described in the [User Interface](Scheme_User_Interface.md). 
+In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified is described in the [User Interface](Python_User_Interface.md). 
 
 [TOC]
 
@@ -80,7 +80,7 @@ Often, you only care about the absorption loss in a narrow bandwidth, where you 
 
 One approach to this problem would be allowing you to specify a constant, frequency-independent, imaginary part of $\varepsilon$, but this has the disadvantage of requiring the simulation to employ complex fields which double the memory and time requirements, and also tends to be numerically unstable. Instead, the approach in Meep is for you to set the conductivity $\sigma_D$ (or $\sigma_B$ for an imaginary part of $\mu$), chosen so that $\mathrm{Im}\, \varepsilon = \varepsilon_\infty \sigma_D / \omega$ is the correct value at your frequency $\omega$ of interest. Note that, in Meep, you specify $f = \omega/2\pi$ instead of $\mu$ for the frequency, however, so you need to include the factor of 2$\pi$ when computing the corresponding imaginary part of $\varepsilon$. Conductivities can be implemented with purely real fields, so they are not nearly as expensive as implementing a frequency-independent complex $\varepsilon$ or $\mu$.
 
-For example, suppose you want to simulate a medium with $\varepsilon = 3.4 + 0.101i$ at a frequency 0.42 (in your Meep units), and you only care about the material in a narrow bandwidth around this frequency (i.e. you don't need to simulate the full experimental frequency-dependent permittivity). Then, in Meep, you could use `(make medium (epsilon 3.4) (D-conductivity (/ (* 2 pi 0.42 0.101) 3.4))`; i.e. $\varepsilon_\infty = \mathrm{Re}\,\varepsilon = 3.4$ and $\sigma_D = \omega \mathrm{Im} \varepsilon / \varepsilon_\infty = (2\pi 0.42) 0.101 / 3.4$.
+For example, suppose you want to simulate a medium with $\varepsilon = 3.4 + 0.101i$ at a frequency 0.42 (in your Meep units), and you only care about the material in a narrow bandwidth around this frequency (i.e. you don't need to simulate the full experimental frequency-dependent permittivity). Then, in Meep, you could use `meep.Medium(epsilon=3.4, D_conductivity=2*math.pi*0.42*0.101/3.4)`; i.e. $\varepsilon_\infty = \mathrm{Re}\,\varepsilon = 3.4$ and $\sigma_D = \omega \mathrm{Im} \varepsilon / \varepsilon_\infty = (2\pi 0.42) 0.101 / 3.4$.
 
 **Note**: the "conductivity" in Meep is slightly different from the conductivity you might find in a textbook, because for computational convenience it appears as $\sigma_D \mathbf{D}$ in our Maxwell equations rather than the more-conventional $\sigma \mathbf{E}$; this just means that our definition is different from the usual electric conductivity by a factor of $\varepsilon$. Also, just as Meep uses the dimensionless relative permittivity for $\varepsilon$, it uses nondimensionalized units of 1/*a* (where *a* is your unit of distance) for the conductivities $\sigma_{D,B}$. If you have the electric conductivity $\sigma$ in SI units and want to convert to $\sigma_D$ in Meep units, you can simply use the formula: $\sigma_D = (a/c) \sigma / \varepsilon_r \varepsilon_0$ where *a* is your unit of distance in meters, *c* is the vacuum speed of light in m/s, $\varepsilon_0$ is the SI vacuum permittivity, and $\varepsilon_r$ is the real relative permittivity.
 
@@ -109,3 +109,25 @@ Magnetic Permeability μ
 -----------------------
 
 All of the above features that are supported for the electric permittivity $\varepsilon$ are also supported for the magnetic permeability $\mu$. That is, Meep supports $\mu$ with dispersion from magnetic conductivity and Lorentzian resonances, as well as magnetic $\chi^{(2)}$ and $\chi^{(3)}$ nonlinearities. The description of these is exactly the same as above, so we won't repeat it here &mdash; just take the above descriptions and replace $\varepsilon$, **E**, **D**, and $\sigma$<sub>D</sub> by $\mu$, **H**, **B**, and $\sigma$<sub>B</sub>, respectively.
+
+Materials Library
+-----------------
+
+A materials library containing commonly used metals in optoelectronic devices is available for [Python](https://github.com/stevengj/meep/tree/master/python/examples/materials_library.py) and [Scheme](https://github.com/stevengj/meep/tree/master/examples/materials-library.scm). The data is based on results published in [A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83 (1998)](https://www.osapublishing.org/ao/abstract.cfm?uri=ao-37-22-5271) [[pdf](http://faculty.kfupm.edu.sa/EE/msunaidi/EE635%20stuff/project%202/p3.pdf)]. Experimental values of the complex refractive index of 11 metals &mdash; Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W &mdash; are fit to a [Drude-Lorentzian susceptibility profile](#material-dispersion) over the broadband spectrum of approximately 0.2 to 12.4 µm. Fitting parameters for the materials are defined for a unit distance of 1 µm. For simulation models which use a *different* value for the unit distance, the predefined variable `eV_um_scale` (Python) or `eV-um-scale` (Scheme) must be rescaled by *multiplying* by whatever the unit distance is, in units of µm.
+
+To import the library into a Python script requires adding the following lines:
+
+```python
+import sys
+sys.path.insert(0, '/path/to/file/')
+from materials_library import *
+```
+Then, the materials can be simply used as `geometry = [ meep.Cylinder(material=Al, ... ]`.
+
+In Scheme, the required lines are:
+
+```scm
+(include "/path/to/materials-library.scm")
+```
+
+Note: for narrowband calculations, some of the Lorentzian susceptibility terms may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting the accuracy of the results) by removing from the material definitions those Lorentzian suspeptibility terms which are far outside the spectral region of interest.

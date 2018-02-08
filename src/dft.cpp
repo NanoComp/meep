@@ -50,7 +50,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   dft_chunk_data *data = (dft_chunk_data *) data_;
   if (!fc_->f[c_][0])
     abort("invalid fields_chunk/component combination in dft_chunk");
-  
+
   fc = fc_;
   is = is_;
   ie = ie_;
@@ -58,22 +58,13 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   s1 = s1_;
   e0 = e0_;
   e1 = e1_;
-  if (data->include_dV_and_interp_weights) {
-    dV0 = dV0_;
-    dV1 = dV1_;
-  }
-  else {
-    /* this is for e.g. computing E x H, where we don't want to 
-       multiply by the interpolation weights or the grid_volume twice. */
-    dV0 = 1;
-    dV1 = 0;
-    LOOP_OVER_DIRECTIONS(fc->gv.dim, d) {
-      s0.set_direction(d, 1.0);
-      s1.set_direction(d, 1.0);
-      e0.set_direction(d, 1.0);
-      e1.set_direction(d, 1.0);
-    }
-  }
+  dV0 = dV0_;
+  dV1 = dV1_;
+
+  /* this is for e.g. computing E x H, where we don't want to
+     multiply by the interpolation weights or the grid_volume twice. */
+  include_dV_and_interp_weights = data->include_dV_and_interp_weights;
+
   /* an alternative way to avoid multipling by interpolation weights twice:
      multiply by square root of the weights */
   sqrt_dV_and_interp_weights = data->sqrt_dV_and_interp_weights;
@@ -94,14 +85,14 @@ dft_chunk::dft_chunk(fields_chunk *fc_,
   domega = data->domega;
   Nomega = data->Nomega;
   dft_phase = new complex<realnum>[Nomega];
-  
+
   N = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d)
     N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   dft = new complex<realnum>[N * Nomega];
   for (int i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
-  
+
   next_in_chunk = fc->dft_chunks;
   fc->dft_chunks = this;
   next_in_dft = data->dft_chunks;
@@ -156,7 +147,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 				   data->extra_weight,
 				   shift_phase * S.phase_shift(c, sn),
 				   c, cgrid == Centered,
-                                   shift, S, sn, data->vc,
+           shift, S, sn, data->vc,
 				   chunkloop_data);
 }
 
@@ -170,12 +161,20 @@ dft_chunk *fields::add_dft(component c, const volume &where,
   if (coordinate_mismatch(gv.dim, c))
     return NULL;
 
-  dft_chunk_data data;  
+  /* If you call add_dft before adding sources, it will do nothing
+     since no fields will be found.   This is almost certainly not
+     what the user wants. */
+  if (!components_allocated)
+    abort("allocate field components (by adding sources) before adding dft objects");
+  if (!include_dV_and_interp_weights && sqrt_dV_and_interp_weights)
+    abort("include_dV_and_interp_weights must be true for sqrt_dV_and_interp_weights=true in add_dft");
+
+  dft_chunk_data data;
   data.c = c;
   data.vc = vc;
   if (Nfreq <= 1) freq_min = freq_max = (freq_min + freq_max) * 0.5;
   data.omega_min = freq_min * 2*pi;
-  data.domega = Nfreq <= 1 ? 0.0 : 
+  data.domega = Nfreq <= 1 ? 0.0 :
     (freq_max * 2*pi - data.omega_min) / (Nfreq - 1);
   data.Nomega = Nfreq;
   data.include_dV_and_interp_weights = include_dV_and_interp_weights;
@@ -232,30 +231,35 @@ void dft_chunk::update_dft(double time) {
 
   int idx_dft = 0;
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
-    double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
-    if (sqrt_dV_and_interp_weights) w = sqrt(w);
+    double w;
+    if (include_dV_and_interp_weights) {
+      w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+      if (sqrt_dV_and_interp_weights) w = sqrt(w);
+    }
+    else
+      w = 1.0;
     double f[2]; // real/imag field value at epsilon point
     if (avg2)
       for (int cmp=0; cmp < numcmp; ++cmp)
-	f[cmp] = (w * 0.25) * 
-	  (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]
-	   + fc->f[c][cmp][idx+avg2] + fc->f[c][cmp][idx+(avg1+avg2)]);
+        f[cmp] = (w * 0.25) *
+          (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]
+           + fc->f[c][cmp][idx+avg2] + fc->f[c][cmp][idx+(avg1+avg2)]);
     else if (avg1)
       for (int cmp=0; cmp < numcmp; ++cmp)
-	f[cmp] = (w * 0.5) * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]);
+      	f[cmp] = (w * 0.5) * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx+avg1]);
     else
       for (int cmp=0; cmp < numcmp; ++cmp)
-	f[cmp] = w * fc->f[c][cmp][idx];
-    
+      	f[cmp] = w * fc->f[c][cmp][idx];
+
     if (numcmp == 2) {
       complex<realnum> fc(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
-	dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
+      	dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
     }
     else {
       realnum fr = f[0];
       for (int i = 0; i < Nomega; ++i)
-	dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
+      	dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
     }
     idx_dft++;
   }
@@ -295,7 +299,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
   int n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
-  snprintf(dataname, 1024, "%s%s" "%s_dft", 
+  snprintf(dataname, 1024, "%s%s" "%s_dft",
 	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", name);
   file->create_data(dataname, 1, &n);
 
@@ -318,13 +322,13 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file,
   int n = dft_chunks_Ntotal(dft_chunks, &istart);
 
   char dataname[1024];
-  snprintf(dataname, 1024, "%s%s" "%s_dft", 
+  snprintf(dataname, 1024, "%s%s" "%s_dft",
 	   dprefix ? dprefix : "", dprefix && dprefix[0] ? "_" : "", name);
   int file_rank, file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
     abort("incorrect dataset size (%d vs. %d) in load_dft_hdf5 %s:%s", file_dims, n, file->file_name(), dataname);
-  
+
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     int Nchunk = cur->N * cur->Nomega * 2;
     file->read_chunk(1, &istart, &Nchunk, (realnum *) cur->dft);
@@ -338,7 +342,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file,
 }
 
 dft_flux::dft_flux(const component cE_, const component cH_,
-		   dft_chunk *E_, dft_chunk *H_, 
+		   dft_chunk *E_, dft_chunk *H_,
 		   double fmin, double fmax, int Nf)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
@@ -412,7 +416,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
     derived_component c = derived_component(where->c);
     if (coordinate_mismatch(gv.dim, component_direction(c)))
       abort("coordinate-type mismatch in add_dft_flux");
-    
+
     switch (c) {
     case Sx: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
     case Sy: cE[0] = Ez, cE[1] = Ex, cH[0] = Hx, cH[1] = Hz; break;
@@ -422,18 +426,18 @@ dft_flux fields::add_dft_flux(const volume_list *where_,
       if (gv.dim == Dcyl)
 	cE[0] = Er, cE[1] = Ep, cH[0] = Hp, cH[1] = Hr;
       else
-	cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx; 
+	cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx;
       break;
     default: abort("invalid flux component!");
     }
-    
+
     for (int i = 0; i < 2; ++i) {
       E = add_dft(cE[i], where->v, freq_min, freq_max, Nfreq,
 		  true, where->weight * double(1 - 2*i), E);
       H = add_dft(cH[i], where->v, freq_min, freq_max, Nfreq,
 		  false, 1.0, H);
     }
-    
+
     where = where->next;
   }
   delete where_save;
@@ -450,7 +454,7 @@ direction fields::normal_direction(const volume &where) const {
     LOOP_OVER_DIRECTIONS(where.dim, d1)
       if (nosize_direction(d1) && where.in_direction(d1) == 0.0)
 	where_pad.set_direction_max(d1, where.in_direction_min(d1) + 0.1);
-    d = where_pad.normal_direction();  
+    d = where_pad.normal_direction();
     if (d == NO_DIRECTION)
       abort("Could not determine normal direction for given grid_volume.");
   }

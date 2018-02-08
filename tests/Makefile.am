@@ -10,7 +10,7 @@ OBJ = $(SRC:.cpp=.o)
 DAC = $(SRC:.cpp=.dac)
 DONE = $(SRC:.cpp=.done)
 
-LIBMEEP = $(top_builddir)/src/libmeep@MEEP_SUFFIX@.la
+LIBMEEP = $(top_builddir)/src/libmeep.la
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
 .SUFFIXES = .dac .done
@@ -99,3 +99,6 @@ dac: $(DAC)
 
 clean-local::
 	rm -f *.o *.dac debug_out_* *.done
+
+distclean-local:
+	rm -f *.h5

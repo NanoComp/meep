@@ -27,8 +27,6 @@ apt-get install meep h5utils
 
 Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/stevengj/meep/releases).
 
-To build the latest version of Meep from source on Ubuntu using an automated shell script, follow these [instructions](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05819.html).
-
 Installation on macOS 
 -----------------------
 
@@ -74,32 +72,34 @@ when configuring the program. The directories `$HOME/install/lib` etc. are creat
 
 #### Paths for Configuring
 
-There are two further complications. First, if you install in a non-standard location and `/usr/local` is considered non-standard by some proprietary compilers, you will need to tell the compilers where to find the libraries and header files that you installed. You do this by setting two environment variables:
+There are two further complications. First, if you install dependencies in a non-standard location like `$HOME/install/lib`, you will need to tell the compilers where to find the libraries and header files that you installed. You do this by passing two variables to `./configure`:
 
 ```bash
- export LDFLAGS="-L/usr/local/lib"
- export CPPFLAGS="-I/usr/local/include"
+./configure LDFLAGS="-L$HOME/install/lib" CPPFLAGS="-I$HOME/install/include"   ...other flags...
 ```
 
-Of course, substitute whatever installation directory you used. Do this **before** you run the `configure` scripts, etcetera. You may need to include multiple `-L` and `-I` flags separated by spaces if your machine has stuff installed in several non-standard locations. Bourne shell users (e.g. `bash` or `ksh`) should use the `export FOO=bar` syntax instead of `csh`'s `setenv FOO bar`, of course.
+Of course, substitute whatever installation directory you used. You may need to include multiple `-L` and `-I` flags separated by spaces if your machine has stuff installed in several non-standard locations.
 
-You might also need to update your `PATH` so that you can run the executables you installed although `/usr/local/bin/` is in the default `PATH` on many systems. e.g. if we installed in our home directory as described above, we would do:
+You might also need to update your `PATH` so that you can run the executables; e.g. if we installed in our home directory as described above, we would do:
 
 ```bash
- export PATH="$HOME/install/bin:$PATH"
+export PATH="$HOME/install/bin:$PATH"
 ```
 
 #### Paths for Running (Shared Libraries)
 
-Second, many of the packages installed below (e.g. Guile) are installed as shared libraries. You need to make sure that your runtime linker knows where to find these shared libraries. The bad news is that every operating system does this in a slightly different way. The good news is that, when you run `make install` for the packages involving shared libraries, the output includes the necessary instructions specific to your system, so pay close attention! It will say something like `add LIBDIR to the <foobar> environment variable`, where `LIBDIR` will be your library installation directory (e.g. `/usr/local/lib`) and `<foobar>` is some environment variable specific to your system (e.g. `LD_LIBRARY_PATH` on some systems, including Linux). For example, you might do:
+Second, many of the packages installed below (e.g. Guile) are installed as shared libraries. You need to make sure that your runtime linker knows where to find these shared libraries. The bad news is that every operating system does this in a slightly different way.
+If you installed all of your libraries in a standard location on your operating system (e.g. `/usr/lib`), then the runtime linker will look there already and you don't need to do anything.  Otherwise, if you compile things like `libctl` and install them into a "nonstandard" location (e.g. in your home directory), you will need to tell the runtime linker where to find them.
+
+There are several ways to do this.  Suppose that you installed libraries into the directory `$HOME/install/lib`.   The most robust option is probably to include this path in the linker flags:
 
 ```bash
- export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+./configure LDFLAGS="-L$HOME/install/lib -Wl,-rpath,$HOME/install/lib" ...other flags...
 ```
 
-Note that we just add to the library path variable, and don't replace it in case it contains stuff already. If you use Linux and have `root` privileges, you can instead simply run `/sbin/ldconfig`, first making sure that a line `/usr/local/lib` (or whatever) is in `/etc/ld.so.conf`.
+There are also some other ways.  If you use Linux, have superuser privileges, and are installing in a system-wide location (not your home directory), you can add the library directory to `/etc/ld.so.conf` and run `/sbin/ldconfig`.
 
-If you don't want to type these commands every time you log in, you can put them in your `~/.cshrc` file or `~/.profile`, or `~/.bash_profile`, depending on your shell.
+On many systems, you can also specify directories to the runtime linker via the `LD_LIBRARY_PATH` environment variable. In particular, by `export LD_LIBRARY_PATH="$HOME/install/lib:$LD_LIBRARY_PATH"`; you can add this to your `.profile` file (depending on your shell) to make it run every time you run your shell. On MacOS, a security feature called [System Integrity Protection](https://en.wikipedia.org/wiki/System_Integrity_Protection) causes the value of `LD_LIBRARY_PATH` to be ignored, so using environment variables won't work there.
 
 ### Fun with Fortran
 
@@ -126,7 +126,7 @@ BLAS and LAPACK (recommended)
 
 BLAS and LAPACK libraries are required in order to install [Harminv](https://github.com/stevengj/harminv/blob/master/README.md). Harminv is not *required* for Meep, but is strongly recommended for use in resonant-mode computation.
 
-Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance-critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, it makes a big difference if you also use [MPB](https://mpb.readthedocs.io).
+Note also that Meep's usage of BLAS/LAPACK, via Harminv, is not generally performance critical. So, it doesn't matter too much whether you install an especially optimized BLAS library. However, it makes a big difference if you also use [MPB](https://mpb.readthedocs.io).
 
 ### BLAS
 
@@ -152,7 +152,7 @@ Replace `-O3` with your favorite optimization options. On Linux, this could be `
 
 LAPACK, the Linear Algebra PACKage, is a standard collection of routines, built on BLAS, for more-complicated (dense) linear algebra operations like matrix inversion and diagonalization. You can download LAPACK from its [homepage](http://www.netlib.org/lapack).
 
-Note that Meep looks for LAPACK by linking with `-llapack`. This means that the library must be called `liblapack.a` and be installed in a standard directory like `/usr/local/lib`. Alternatively, you can specify another directory via the `LDFLAGS` environment variable as described earlier. See also below for the `--with-lapack=''lib''` option to our `configure` script, to manually specify a library location.
+Note that Meep looks for LAPACK by linking with `-llapack`. This means that the library must be called `liblapack.a` and be installed in a standard directory like `/usr/local/lib`. Alternatively, you can specify another directory via the `LDFLAGS` environment variable as described earlier. See also below for the `--with-lapack=lib` option to our `configure` script, to manually specify a library location.
 
 We currently recommend installing OpenBLAS which includes LAPACK so you do not need to install it separately.
 
@@ -163,19 +163,32 @@ To use Meep to extract resonant frequencies and decay rates, you must install [H
 
 See the [Harminv installation](https://github.com/stevengj/harminv/blob/master/doc/installation.md) instructions.
 
+Python (recommended)
+--------------------
+
+If you have Python on your system, then the Meep compilation scripts
+automatically build and install the `meep` Python module, which works
+with both the serial and parallel (MPI) versions of Meep.
+
+By default, Meep's Python module is installed for the program `python`
+on your system.  If you want to install using a different Python
+program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the
+Meep `configure` script.   An Anaconda (`conda`) package for Meep
+is also available on some systems.
+
 Guile (recommended)
 -----------------------
 
-Guile is required in order to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface.
+Guile is required in order to use the Scheme interface. If you don't install it, you can only use the C++ and/or Python interfaces.
 
 Guile is an extension/scripting language implementation based on Scheme, and we use it to provide a rich, fully-programmable user interface with minimal effort. It's free, of course, and you can download it from the [Guile homepage](http://www.gnu.org/software/guile/). Guile is typically included with Linux systems.
 
-- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package. Note: SWIG does [not support the latest version of Guile](https://github.com/swig/swig/issues/312) which requires that an older version (2.0.11) be used.  Meep contains a workaround for newer versions as well.
+- **Important:** Most Linux distributions come with Guile already installed. You can check by seeing whether you can run `guile --version` from the command line. In that case, do **not** install your own version of Guile from source &mdash; having two versions of Guile on the same system will cause problems. However, by default most distributions install only the Guile libraries and not the programming headers &mdash; to compile libctl and MPB, you should install the **guile-devel** or **guile-dev** package. Note: SWIG does [not support the latest version of Guile](https://github.com/swig/swig/issues/312). However, Meep contains a workaround for newer versions of Guile.
 
 libctl (recommended)
 --------------------
 
-[libctl](https://libctl.readthedocs.io), which requires Guile, is required to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **3.2.2 or later** is required.
+[libctl](https://libctl.readthedocs.io), which requires Guile, is required to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
 
 Instead of using Guile directly, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
 
@@ -190,20 +203,18 @@ In order for the MPI version of the Scheme interface to run successfully, we hav
 
 If you use Meep with MPI, you should compile HDF5 with MPI support as well (see below).
 
-As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as **meep-mpi**.
+As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep`, so it overwrites any serial installation.  There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun -np 6 meep`).
 
 HDF5 (recommended)
 ------------------
 
 Meep outputs its fields and other volumetric data in the HDF5 format, so you must install the HDF5 libraries if you want to visualize the fields.
 
-HDF is a widely-used, free, portable library and file format for multi-dimensional scientific data, developed in the National Center for Supercomputing Applications (NCSA) at the University of Illinois. You can get HDF and learn about it on the [HDF homepage](https://www.hdfgroup.org).
-
-There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) utilities.
+[HDF](https://www.hdfgroup.org) is a widely-used, free, portable library and file format for multi-dimensional scientific data. There are two incompatible versions of HDF, HDF4 and HDF5 (no, not HDF1 and HDF2). We require the newer version, HDF5, which is supported by a number scientific of visualization tools, including [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md) utilities.
 
 HDF5 includes parallel I/O support under MPI, which can be enabled by configuring it with `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose one or the other.
 
-We have some hacks in Meep and MPB so that they can do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large supercomputers we strongly recommend using the parallel HDF5.
+We have some hacks in Meep to do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large supercomputers we strongly recommend using the parallel HDF5.
 
 **Note:** If you have a version of HDF5 compiled with MPI parallel I/O support, then you need to use the MPI compilers to link to it, even when you are compiling the serial versions of Meep or MPB.  Just use `./configure CC=mpicc CXX=mpic++` or whatever your MPI compilers are when configuring.
 
@@ -233,11 +244,15 @@ Install into `dir/bin`, etcetera, as described above.
 
 **`--with-mpi`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep-mpi.` Requires MPI to be installed, as described above. Does **not** compile the serial Meep. If you want that, you will have to `make distclean` and install the serial version separately. Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
+Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the resulting program will be installed as `meep` and can be run in either serial or parallel mode (the latter via `mpirun`). Requires MPI to be installed, as described above.  (You should install this *instead* of the serial Meep.) Note that the configure script attempts to automatically detect how to compile MPI programs, but this may fail if you have an unusual version of MPI or if you have several versions of MPI installed and you want to select a particular one. You can control the version of MPI selected by setting the `MPICXX` variable to the name of the compiler to use and the `MPILIBS` variable to any additional libraries that must be linked (e.g., `./configure MPICXX=foompiCC MPILIBS=-lfoo ...`).
 
 **`--with-libctl=dir`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If libctl was installed in a nonstandard location (i.e. neither `/usr` nor `/usr/local`), you need to specify the location of the libctl directory, *`dir`*. This is either `prefix/share/libctl`, where `prefix` is the installation prefix of libctl, or the original libctl source code directory. To configure *without* the libctl/Guile interface, use `--without-libctl`.
+
+**`--without-python`**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Disable building the Python API for Meep.
 
 **`--with-blas=lib`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -267,18 +282,86 @@ By default, Meep's `configure` script picks compiler flags to optimize Meep as m
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
 
-Python Bindings
----------------
-
-A beta version of the Python bindings for Meep (PyMeep) is available in serial (i.e., non-MPI) and parallel versions. There are two ways to obtain PyMeep.
-
 ### Building From Source
 
-You can find instructions for building from source on Ubuntu for serial PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05850.html), and parallel PyMeep [here](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html).
+The following instructions are for building parallel PyMeep from source on Ubuntu 16.04. The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+
+```bash
+#!/bin/bash
+
+set -e
+
+RPATH_FLAGS="-Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi"
+
+sudo apt-get update
+sudo apt-get -y install     \
+    libblas-dev             \
+    liblapack-dev           \
+    libgmp-dev              \
+    swig                    \
+    libgsl-dev              \
+    autoconf                \
+    pkg-config              \
+    libpng16-dev            \
+    git                     \
+    guile-2.0-dev           \
+    libfftw3-dev            \
+    libhdf5-openmpi-dev     \
+    hdf5-tools              \
+    libpython3.5-dev        \
+    python3-numpy           \
+    python3-pip
+
+mkdir -p ~/install
+
+cd ~/install
+git clone https://github.com/stevengj/harminv.git
+cd harminv/
+sh autogen.sh --enable-shared
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/libctl.git
+cd libctl/
+sh autogen.sh --enable-shared
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/h5utils.git
+cd h5utils/
+sh autogen.sh CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+make && sudo make install
+
+cd ~/install
+git clone https://github.com/stevengj/mpb.git
+cd mpb/
+sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+make && sudo make install
+
+sudo pip3 install --upgrade pip
+pip3 install --user --no-cache-dir mpi4py
+export HDF5_MPI="ON"
+pip3 install --user --no-binary=h5py h5py
+
+cd ~/install
+git clone https://github.com/stevengj/meep.git
+cd meep/
+sh autogen.sh --enable-shared --with-mpi PYTHON=python3 \
+    CC=mpicc CXX=mpic++ LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+make && sudo make install
+```
+
+You may want to add the following line to your `.profile` so Python can always find the meep package:
+
+```bash
+export PYTHONPATH=/usr/local/lib/python3.5/site-packages
+```
 
 ### Conda Packages
 
-The recommended way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. Binary packages for serial and parallel PyMeep on *Linux* and *MacOS* are currently available (64 bit architectures only), and Windows packages will be available soon. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
+The recommended way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. Binary packages for serial and parallel PyMeep on Linux and macOS are currently available (64 bit architectures only), and Windows packages will be available soon. The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
 
 ```bash
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -312,12 +395,12 @@ source activate pmp
 The environment includes `mpi4py`, so you can run an MPI job with 4 processes like this:
 
 ```bash
-mpiexec -n 4 python <script_name>.py
+mpirun -np 4 python <script_name>.py
 ```
 
 If you run into issues, make sure your `PYTHONPATH` environment variable is unset.
 
-*Note:* For pymeep-parallel on Mac, a [bug](https://github.com/open-mpi/ompi/issues/2956) in openmpi requires that the environment variable `TMPDIR` be set to a short path like `/tmp`. Without this workaround, you may see errors similar to this:
+*Note:* For pymeep-parallel on macOS, a [bug](https://github.com/open-mpi/ompi/issues/2956) in openmpi requires that the environment variable `TMPDIR` be set to a short path like `/tmp`. Without this workaround, you may see errors similar to this:
 
 ```bash
 [laptop:68818] [[53415,0],0] ORTE_ERROR_LOG: Bad

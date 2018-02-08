@@ -171,13 +171,38 @@ class TestSimulation(unittest.TestCase):
         sim.run(mp.at_end(lambda sim: None), until=5)
 
     def test_require_dimensions(self):
-        sim = self.init_simple_simulation(dimensions=3)
+        sim = self.init_simple_simulation()
         self.assertIsNone(sim.structure)
         self.assertEqual(sim.dimensions, 3)
 
         sim.require_dimensions()
         sim._init_structure(k=mp.Vector3())
         self.assertEqual(sim.structure.gv.dim, mp.D2)
+
+    def test_infer_dimensions(self):
+        sim = self.init_simple_simulation()
+        self.assertEqual(sim.dimensions, 3)
+        sim._init_structure()
+        self.assertEqual(sim.dimensions, 2)
+
+    def test_in_volume(self):
+        sim = self.init_simple_simulation()
+        sim.filename_prefix = 'test_in_volume'
+        vol = mp.Volume(mp.Vector3(), size=mp.Vector3(x=2))
+        sim.run(mp.at_end(mp.in_volume(vol, mp.output_efield_z)), until=200)
+
+    def test_epsilon_input_file(self):
+        sim = self.init_simple_simulation()
+        eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
+        eps_input_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
+                                     '..', '..', 'libmeepgeom')
+        eps_input_path = os.path.join(eps_input_dir, eps_input_fname)
+        sim.epsilon_input_file = eps_input_path
+
+        sim.run(until=200)
+        fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
+
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,12 +6,19 @@ This page is a listing of the functions exposed by the Python interface. For a g
 
 See also the instructions for [parallel Meep](Parallel_Meep.md) for MPI machines.
 
+The Python API functions and classes can be found in the `meep` module, which should be installed in your Python system by Meep's `make install` script.  If you installed into a nonstandard location (e.g. your home directory), you may need to set the `PYTHONPATH` environment variable as documented in the [Installation](Installation.md) section.   You typically import the `meep` module in Python with:
+
+```py
+import meep as mp
+```
+
+
 [TOC]
 
 The Simulation Class
 ---------------------
 
-The [`Simulation` class](#classes) contains all the attributes that you can set to control various parameters of the Meep computation. The function signature of the `Simulation` constructor with its default values is listed here for convenience:
+The `Simulation` [class](#classes) contains all the attributes that you can set to control various parameters of the Meep computation. The function signature of the `Simulation` constructor with its default values is listed here for convenience:
 
 ```python
 class Simulation(object):
@@ -30,7 +37,20 @@ class Simulation(object):
                  default_material=mp.Medium(),
                  m=0,
                  k_point=False,
-                 extra_materials=[]):
+                 extra_materials=[],
+                 material_function=None,
+                 epsilon_func=None,
+                 epsilon_input_file='',
+                 progress_interval=4,
+                 subpixel_tol=1e-4,
+                 subpixel_maxeval=100000,
+                 ensure_periodicity=False,
+                 num_chunks=0,
+                 courant=0.5,
+                 accurate_fields_near_cylorigin=False,
+                 filename_prefix='',
+                 output_volume=None,
+                 output_single_precision=False):
 ```
 
 All `Simulation` attributes are described in further detail here. In brackets after each variable is the type of value that it should hold. The classes, complex datatypes like `GeometricObject`, are described in a later subsection. The basic datatypes, like `integer`, `boolean`, `complex`, and `string` are defined by Python. `Vector3` is a `meep` class.
@@ -58,6 +78,14 @@ Specifies the size of the computational cell which is centered on the origin of 
 **`default_material` [`Medium` class ]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Holds the default material that is used for points not in any object of the geometry list. Defaults to `air` ($\varepsilon=1$). See also `epsilon_input_file` below.
+
+**`material_function` [ function ]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+A Python function that takes a `Vector3` and returns a `Medium`. See the section on [material functions](#medium). Defaults to `None`.
+
+**`epsilon_func` [ function ]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+A Python function that takes a `Vector3` and returns the dielectric constant at that point. See the section on [material functions](#medium). Defaults to `None`.
 
 **`epsilon_input_file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -245,9 +273,9 @@ List of dispersive susceptibilities (see below) added to the permeability $\mu$ 
 
 **material functions**
 
-Any function that accepts a `Medium` instance can also accept a user defined Python funtion. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point. Note that the function you supply can return *any* material. It's even possible to return another function  which would then be invoked in turn.
+Any function that accepts a `Medium` instance can also accept a user defined Python function. This allows you to specify the material as an arbitrary function of position. The function must have one argument, the position `Vector3`, and return the material at that point, which should be a Python `Medium` instance. This is accomplished by passing a function to the `material_function` keyword argument in the `Simulation` constructor, or the `material` keyword argument in any `GeometricObject` constructor.
 
-Instead of `material_func`, you can use `epsilon_func`: give it a function of position that returns the dielectric constant at that point.
+Instead of the `material` or `material_function` arguments, you can also use the `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a function of position that returns the dielectric constant at that point.
 
 **Important:** If your material function returns nonlinear, dispersive (Lorentzian or conducting), or magnetic materials, you should also include a list of these materials in the `extra_materials` input variable (above) to let Meep know that it needs to support these material types in your simulation. For dispersive materials, you need to include a material with the *same* $\gamma$<sub>*n*</sub> and $\mu$<sub>*n*</sub> values, so you can only have a finite number of these, whereas $\sigma$<sub>*n*</sub> can vary continuously and a matching $\sigma$<sub>*n*</sub> need not be specified in `extra_materials`. For nonlinear or conductivity materials, your `extra_materials` list need not match the actual values of $\sigma$ or $\chi$ returned by your material function, which can vary continuously.
 
@@ -299,6 +327,82 @@ Specifies a single dispersive susceptibility of Lorentzian (damped harmonic osci
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The noise has root-mean square amplitude $\sigma$ $\times$ `noise_amp`.
 
+### Vector3  
+
+Properties:
+
+**`x`, `y`, `z` [`float` or `complex`]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+The `x`, `y`, and `z` components of the vector.
+
+**`Vector3(x=0.0, y=0.0, z=0.0)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Create a new Vector3 with the given components. All three components default to zero.
+
+
+```python
+v3 = v1 + v2
+v3 = v1 - v2
+v3 = v1.cross(v2)
+```
+
+Return the sum, difference, or cross product of the two vectors.
+
+```python
+c = v1 * b
+c = b * v1
+```
+
+If `b` is a `Vector3`, returns the dot product `v1` and `b`. If `b` is a number, then `v1` is scaled by the number.
+
+```python
+v3 = v1.dot(v2)
+```
+
+Returns the dot product of *`v1`* and *`v2`*.
+
+```python
+v3 = v1.cross(v2)
+```
+
+Returns the cross product of *`v1`* and *`v2`*.
+
+```python
+v3 = v1.cdot(v2)
+```
+
+Returns the conjugated dot product: *v1*\* dot *v2*.
+
+```python
+v2 = v1.norm()
+```
+
+Returns the length `math.sqrt(abs(v1.dot(v1)))` of the given vector.
+
+```python
+v2 = v1.unit()
+```
+
+Returns a unit vector in the direction of v1.
+
+```python
+v1.close(v2, [tol])
+```
+
+Returns whether or not the corresponding components of the two vectors are within *`tol`* of each other. Defaults to 1e-7.
+
+```python
+v1 == v2
+```
+
+Returns whether or not the two vectors are numerically equal. Beware of using this function after operations that may have some error due to the finite precision of floating-point numbers; use `close` instead.
+
+```python
+v2 = v1.rotate(axis, theta)
+```
+
+Returns the vector *`v1`* rotated by an angle *`theta`* (in radians) in the right-hand direction around the *`axis`* vector (whose length is ignored). You may find the python functions `math.degrees` and `math.radians` useful to convert angles between degrees and radians.
+
 ### GeometricObject
 
 This class, and its descendants, are used to specify the solid geometric objects that form the dielectric structure being simulated. The base class is:
@@ -307,9 +411,13 @@ This class, and its descendants, are used to specify the solid geometric objects
 
 Properties:
 
-**`material` [`Medium` class ]**  
+**`material` [`Medium` class or function]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-The material that the object is made of (usually some sort of dielectric). Uses default `Medium`.
+The material that the object is made of (usually some sort of dielectric). Uses default `Medium`. If a function is supplied, it must take one argument and return a Python `Medium`.
+
+**`epsilon_func` [ function ]**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+A function that takes one argument (a `Vector3`) and returns the dielectric constant at that point. Can be used instead of `material`. Default is `None`.
 
 **`center` [`Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -317,11 +425,11 @@ Center point of the object. Defaults to (0, 0, 0).
 
 Methods:
 
-**`shift`(vec [`Vector3`])**
+**`shift`(vec [`Vector3`])**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Shifts the objects `center` by `vec`. This can also be accomplished via the `+` operator: `geomtric_obj + Vector3(10, 10, 10)`.
 
-**`info`(indent_by [integer])**
+**`info`(indent_by [integer])**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Displays all properties and current values of a `GeometricObject`, indented by `indent_by` spaces(0 by default).
 
@@ -472,7 +580,7 @@ The main reason to use `Absorber` is if you have **a case in which PML fails:**
 
 The `Source` class is used to specify the current sources via the `Siumulation.sources` attribute. Note that all sources in Meep are separable in time and space, i.e. of the form $\mathbf{J}(\mathbf{x},t) = \mathbf{A}(\mathbf{x}) \cdot f(t)$ for some functions $\mathbf{A}$ and $f$. Non-separable sources can be simulated, however, by modifying the sources after each time step. When real fields are being used (which is the default in many cases; see `Simulation.force_complex_fields`), only the real part of the current source is used.
 
-**Important note**: These are *current* sources (**J** terms in Maxwell's equations), even though they are labelled by electric/magnetic field components. They do *not* specify a particular electric/magnetic field which would be what is called a "hard" source in the FDTD literature. There is no fixed relationship between the current source and the resulting field amplitudes; it depends on the surrounding geometry, as described in the [FAQ](FAQ#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude) and in Section 4.4 of this [book chapter](http://arxiv.org/abs/arXiv:1301.5366).
+**Important note**: These are *current* sources (**J** terms in Maxwell's equations), even though they are labelled by electric/magnetic field components. They do *not* specify a particular electric/magnetic field which would be what is called a "hard" source in the FDTD literature. There is no fixed relationship between the current source and the resulting field amplitudes; it depends on the surrounding geometry, as described in the [FAQ](FAQ#how-does-the-current-amplitude-relate-to-the-resulting-field-amplitude) and in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 Properties:
 
@@ -500,7 +608,7 @@ An overall complex amplitude multiplying the the current source. Default is 1.0.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 A Python function of a single argument, that takes a `Vector3` giving a position and returns a complex current amplitude for that point. The position argument is *relative* to the `center` of the current source, so that you can move your current around without changing your function. Default is `None`, meaning that a constant amplitude of 1.0 is used. Note that your amplitude function (if any) is *multiplied* by the `amplitude` property, so both properties can be used simultaneously.
 
-As described in Section 4.2 of this [book chapter](http://arxiv.org/abs/arXiv:1301.5366), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
+As described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), it is also possible to supply a source that is designed to couple exclusively into a single waveguide mode (or other mode of some cross section or periodic region) at a single frequency, and which couples primarily into that mode as long as the bandwidth is not too broad. This is possible if you have [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the field profile of the desired mode, and uses the field profile to produce an equivalent current source. Note: this feature does *not* work in cylindrical coordinates. To do this, instead of a `source` you should use an `EigenModeSource`:
 
 ### EigenModeSource
 
@@ -528,7 +636,7 @@ The tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues
 
 **`component` [as above, but defaults to `ALL_COMPONENTS`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Once the MPB modes are computed, equivalent electric and magnetic sources are created within Meep. By default, these sources include magnetic and electric currents in *all* transverse directions within the source region, corresponding to the mode fields as described in the book chapter. If you specify a `component` property, however, you can include only one component of these currents if you wish. Most users won't need this feature.
+Once the MPB modes are computed, equivalent electric and magnetic sources are created within Meep. By default, these sources include magnetic and electric currents in *all* transverse directions within the source region, corresponding to the mode fields as described in Section 4.2 ("Incident Fields and Equivalent Currents") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). If you specify a `component` property, however, you can include only one component of these currents if you wish. Most users won't need this feature.
 
 **`eig_lattice_size` [`Vector3`], `eig_lattice_center` [`Vector3`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -869,7 +977,7 @@ Compute the power spectrum of the sources (usually a single point dipole source)
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and is also stored in the `dft_ldos_data` global variable after the `run` is complete.
 
-Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, we refer you to the relevant discussion in [chapter 4](http://arxiv.org/abs/1301.5366) of this [book](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the definition:
+Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, we refer you to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the definition:
 
 $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}_0)\frac{\operatorname{Re}[\hat{E}_{\ell}(\vec{x}_0,\omega)\hat{p}(\omega)^*]}{|\hat{p}(\omega)|^2}$$
 
@@ -1028,6 +1136,53 @@ As `output_field_function`, but only outputs the real part of `func` to the data
 
 See also [Field Function Examples](Field_Function_Examples.md). See also [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
+#### Array slices
+
+The output functions described above write field data for the full
+computational grid to binary HDF5 disk files, which is useful for 
+subsequent off-line post-processing; for example, in a python 
+session you could later read in the HDF5 files to get field data
+in the form of `numpy` arrays.
+However, in some cases it is convenient to bypass the disk
+altogether, obtaining field data *directly* in the form of
+`numpy` arrays without ever writing or reading HDF5 files; moreover,
+you may want field data on just a subregion (or `slice`) of the full
+volume, not the full grid.
+This functionality is furnished by the `get_array()` method
+of `Simulation,`
+which inputs **(a)** a specification of a subregion of the
+computational volume **(b)** a field component,
+and which returns a `numpy` array containing values of the
+field component you requested (at the current simulation time)
+at grid points in the volume you requested. The syntax is
+
+```python
+ get_array(center, size, component, cmplx=None, arr=None)
+```
+
+where
+
++ `center` and `size` are `Vector3` quantities specifying the center point
+  $(x_0,y_0,z_0)$ and extents $(\Delta_x, \Delta_y, \Delta_z)$
+  of the subregion over which you want field data;
+
++ `component` is the field component you want
+  (i.e. `mp.Ex,` `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc.)
+
++ `cmplx` is an optional field that you may set to `True` to get
+  complex-valued data (otherwise, the default is to return a real-valued
+  array)
+
++ `arr` is an optional field that you may use to pass a pre-allocated
+  `numpy` array of the correct size, which will be overwritten with
+  the field data instead of allocating a new array.  Normally, this will
+  be the array returned from a previous call to `get_array` for a
+  a similar slice, allowing one to re-use `arr` e.g. when fetching the
+  same slice repeatedly at different times.
+
+The return value of `get_array` is a `numpy` array of dimension 1, 2, or 3
+depending on the number of nonzero entries in your `size` vector.
+
 #### Harminv
 
 The following step function collects field data from a given point and runs [Harminv](https://github.com/stevengj/harminv) on that data to extract the frequencies, decay rates, and other information.
@@ -1079,7 +1234,8 @@ sim.run(meep.after_sources(h))
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
+Rather than writing a brand-new step function every time we want to do something a bit different, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. 
+See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 #### Miscellaneous Step-Function Modifiers
 

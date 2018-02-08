@@ -57,12 +57,14 @@ PyObject *py_amp_func = NULL;
 
 static PyObject *py_source_time_object();
 static PyObject *py_material_object();
-static PyObject* vec2py(const meep::vec &v);
+static PyObject *vec2py(const meep::vec &v);
 static double py_callback_wrap(const meep::vec &v);
 static std::complex<double> py_amp_func_wrap(const meep::vec &v);
 static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
                                                const meep::vec &loc,
                                                void *data_);
+static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium);
+static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium);
 static int pyv3_to_v3(PyObject *po, vector3 *v);
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name);
@@ -70,6 +72,7 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name);
 static int get_attr_int(PyObject *py_obj, int *result, const char *name);
 static int get_attr_material(PyObject *po, material_type *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
+static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a);
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s);
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl);
@@ -252,15 +255,22 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for double func(meep::vec &)
 
 %typemap(in) double (*)(const meep::vec &) {
-  $1 = py_callback_wrap;
-  py_callback = $input;
-  Py_INCREF(py_callback);
+  if ($input == Py_None) {
+    $1 = NULL;
+    py_callback = NULL;
+  } else {
+    $1 = py_callback_wrap;
+    py_callback = $input;
+    Py_INCREF(py_callback);
+  }
 }
+
 %typemap(freearg) double (*)(const meep::vec &) {
   Py_XDECREF(py_callback);
 }
+
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
-  $1 = PyCallable_Check($input);
+  $1 = PyCallable_Check($input) || $input == Py_None;
 }
 
 // Typemap suite for amplitude function
@@ -297,8 +307,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
-        delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
-        delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
+        if (((material_data *)$1.material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
+        }
+        if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
+            delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
+        }
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
@@ -324,8 +338,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
-        delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        if (((material_data *)$1.items[i].material)->medium.E_susceptibilities.items) {
+            delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
+        }
+        if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
         delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
+        }
         delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
@@ -419,7 +437,11 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for material_type
 
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
-    $1 = PyObject_IsInstance($input, py_material_object());
+    int py_material = PyObject_IsInstance($input, py_material_object());
+    int user_material = PyFunction_Check($input);
+    int file_material = IsPyString($input);
+
+    $1 = py_material || user_material || file_material;
 }
 
 %typemap(in) material_type {
@@ -429,8 +451,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %typemap(freearg) material_type {
-    delete[] $1->medium.E_susceptibilities.items;
-    delete[] $1->medium.H_susceptibilities.items;
+    if ($1->medium.E_susceptibilities.items) {
+        delete[] $1->medium.E_susceptibilities.items;
+    }
+    if ($1->medium.H_susceptibilities.items) {
+        delete[] $1->medium.H_susceptibilities.items;
+    }
     delete $1;
 }
 
@@ -661,12 +687,27 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            delete[] $1.items[i]->medium.E_susceptibilities.items;
-            delete[] $1.items[i]->medium.H_susceptibilities.items;
+            if ($1.items[i]->medium.E_susceptibilities.items) {
+                delete[] $1.items[i]->medium.E_susceptibilities.items;
+            }
+            if ($1.items[i]->medium.H_susceptibilities.items) {
+                delete[] $1.items[i]->medium.H_susceptibilities.items;
+            }
             delete $1.items[i];
         }
         delete[] $1.items;
     }
+}
+
+// Typemap suite for custom_src_time
+
+%typecheck(SWIG_TYPECHECK_POINTER) (std::complex<double> (*func)(double t, void *), void *data) {
+    $1 = PyFunction_Check($input);
+}
+
+%typemap(in) (std::complex<double> (*func)(double t, void *), void *data) {
+  $1 = py_src_func_wrap;
+  $2 = (void *)$input;
 }
 
 %rename(_dft_ldos) meep::dft_ldos::dft_ldos;
@@ -841,7 +882,10 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         else:
             # this variable reference is needed for lazy initialization of MPI
             comm = MPI.COMM_WORLD
-            master_printf('\n**\n** successfully loaded python MPI module (mpi4py)\n**\n')
+            if am_master():
+                Procs=comm.Get_size()
+                (Major,Minor)=MPI.Get_version();
+                print('Using MPI version {}.{}, {} processes'.format(Major, Minor, Procs));
 
             if not am_master():
                 import os

@@ -1,7 +1,3 @@
----
-# Meep
----
-
 <center>
 ![](images/Meep-banner.png)
 </center>
@@ -35,14 +31,14 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The development sources are available on [GitHub](https://github.com/stevengj/meep). Source tarballs with version numbers are available on the [Download](Download.md) page. The release history is described in the [Release Notes](Release_Notes.md). Installation instructions can be found in the [Installation](Installation.md) page.
+The development source is available on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available on the [Download](Download.md) page. The release history is described in the [NEWS file](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions can be found in the [Installation](Installation.md) page.
 
 Documentation
 -------------
 
 See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial/Basics](Python_Tutorials/Basics.md) are the most important things to read. There is also an [FAQ](FAQ.md).
 
-Please [cite Meep](Acknowledgements.md#referencing) in any publication for which you found it useful.
+Please [cite the reference publication](Acknowledgements.md#referencing) in any work for which you found Meep useful.
 
 ### Mailing Lists
 
@@ -50,12 +46,12 @@ Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu
 
 ### Bug Reports and Feature Requests
 
-For bug reports and feature requests, please [file a Meep GitHub issue](https://github.com/stevengj/meep/issues).
+For bug reports and feature requests, please file a [GitHub issue](https://github.com/stevengj/meep/issues).
 
 Acknowledgements
 ----------------
 
-The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source community on [GitHub](https://github.com/stevengj/meep). Please see the [Acknowledgements](Acknowledgements.md) for a more complete listing of the project contributors.
+The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep). Please see the [Acknowledgements](Acknowledgements.md) for a more complete listing of the project contributors.
 
 Contacts and Feedback
 ---------------------

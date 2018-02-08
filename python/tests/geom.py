@@ -1,4 +1,5 @@
 import unittest
+from math import pi
 import numpy as np
 import meep as mp
 import meep.geom as gm
@@ -252,6 +253,46 @@ class TestVector3(unittest.TestCase):
 
         self.assertTrue(type(res) is np.ndarray)
         np.testing.assert_array_equal(np.array([20, 20, 20]), res)
+
+    def test_cross(self):
+        v1 = mp.Vector3(x=1)
+        v2 = mp.Vector3(z=1)
+        self.assertEqual(v1.cross(v2), mp.Vector3(y=-1))
+
+        v1 = mp.Vector3(1, 1)
+        v2 = mp.Vector3(0, 1, 1)
+        self.assertEqual(v1.cross(v2), mp.Vector3(1, -1, 1))
+
+    def test_cdot(self):
+        complex_vec1 = mp.Vector3(complex(1, 1), complex(1, 1), complex(1, 1))
+        complex_vec2 = mp.Vector3(complex(2, 2), complex(2, 2), complex(2, 2))
+
+        self.assertEqual(complex_vec1.cdot(complex_vec2), 12 + 0j)
+
+    def test_rotate(self):
+        axis = mp.Vector3(z=1)
+        v = mp.Vector3(x=1)
+        res = v.rotate(axis, pi)
+        self.assertTrue(res.close(mp.Vector3(x=-1)))
+
+    def test_close(self):
+        v1 = mp.Vector3(1e-7)
+        v2 = mp.Vector3(1e-8)
+        self.assertTrue(v1.close(v2))
+
+        v1 = mp.Vector3(1e-6)
+        v2 = mp.Vector3(1e-7)
+        self.assertFalse(v1.close(v2))
+
+        v1 = mp.Vector3(1e-10)
+        v2 = mp.Vector3(1e-11)
+        self.assertTrue(v1.close(v2, tol=1e-10))
+
+    def test_mul_operator(self):
+
+        self.assertEqual(mp.Vector3(2, 2, 2) * 0.5, mp.Vector3(1, 1, 1))
+        self.assertEqual(mp.Vector3(1, 1, 1) * mp.Vector3(1, 1, 1), 3)
+        self.assertEqual(0.5 * mp.Vector3(2, 2, 2), mp.Vector3(1, 1, 1))
 
 if __name__ == '__main__':
     unittest.main()

@@ -44,8 +44,7 @@ def main(args):
                         geometry=geometry,
                         symmetries=symmetries,
                         k_point=k_point,
-                        sources=sources,
-                        dimensions=3)
+                        sources=sources)
 
     h = mp.Harminv(mp.Ey, mp.Vector3(0.5 * (s + a)), fcen, df)
 

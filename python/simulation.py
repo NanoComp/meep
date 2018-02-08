@@ -128,9 +128,6 @@ class Volume(object):
 
         self.swigobj = mp.volume(vec1, vec2)
 
-    def to_cylindrical(self):
-        return Volume(self.center, self.size, self.dims, is_cylindrical=True)
-
 
 class FluxRegion(object):
 
@@ -231,10 +228,34 @@ class Harminv(object):
 
 class Simulation(object):
 
-    def __init__(self, cell_size, resolution, geometry=[], sources=[], eps_averaging=True,
-                 dimensions=2, boundary_layers=[], symmetries=[], verbose=False,
-                 force_complex_fields=False, default_material=mp.Medium(), m=0, k_point=False,
-                 extra_materials=[]):
+    def __init__(self,
+                 cell_size,
+                 resolution,
+                 geometry=[],
+                 sources=[],
+                 eps_averaging=True,
+                 dimensions=3,
+                 boundary_layers=[],
+                 symmetries=[],
+                 verbose=False,
+                 force_complex_fields=False,
+                 default_material=mp.Medium(),
+                 m=0,
+                 k_point=False,
+                 extra_materials=[],
+                 material_function=None,
+                 epsilon_func=None,
+                 epsilon_input_file='',
+                 progress_interval=4,
+                 subpixel_tol=1e-4,
+                 subpixel_maxeval=100000,
+                 ensure_periodicity=False,
+                 num_chunks=0,
+                 courant=0.5,
+                 accurate_fields_near_cylorigin=False,
+                 filename_prefix='',
+                 output_volume=None,
+                 output_single_precision=False):
 
         self.cell_size = cell_size
         self.geometry = geometry
@@ -245,53 +266,59 @@ class Simulation(object):
         self.symmetries = symmetries
         self.geometry_center = Vector3()
         self.eps_averaging = eps_averaging
-        self.subpixel_tol = 1e-4
-        self.subpixel_maxeval = 100000
-        self.ensure_periodicity = False
+        self.subpixel_tol = subpixel_tol
+        self.subpixel_maxeval = subpixel_maxeval
+        self.ensure_periodicity = ensure_periodicity
         self.extra_materials = extra_materials
         self.default_material = default_material
-        self.epsion_input_file = ''
-        self.num_chunks = 0
-        self.courant = 0.5
+        self.epsilon_input_file = epsilon_input_file
+        self.num_chunks = num_chunks
+        self.courant = courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
         self.special_kz = False
         self.k_point = k_point
         self.fields = None
         self.structure = None
-        self.accurate_fields_near_cylorigin = False
+        self.accurate_fields_near_cylorigin = accurate_fields_near_cylorigin
         self.m = m
         self.force_complex_fields = force_complex_fields
         self.verbose = verbose
-        self.progress_interval = 4
+        self.progress_interval = progress_interval
         self.init_fields_hooks = []
-        self.progress_interval = 4
         self.run_index = 0
         self.filename_prefix = ''
         self.output_append_h5 = None
-        self.output_single_precision = False
-        self.output_volume = None
+        self.output_single_precision = output_single_precision
+        self.output_volume = output_volume
         self.last_eps_filename = ''
         self.output_h5_hook = lambda fname: False
         self.interactive = False
         self.is_cylindrical = False
+        self.material_function = material_function
+        self.epsilon_func = epsilon_func
+
+    # To prevent the user from having to specify `dims` and `is_cylindrical`
+    # to Volumes they create, the library will adjust them appropriately based
+    # on the settings in the Simulation instance. This method must be called on
+    # any user-defined Volume before passing it to meep via its `swigobj`.
+    def _fit_volume_to_simulation(self, vol):
+        return Volume(vol.center, vol.size, dims=self.dimensions, is_cylindrical=self.is_cylindrical)
 
     def _infer_dimensions(self, k):
-        if k and self.dimensions == 3:
+        if self.dimensions == 3:
 
-            def requires_2d(self, k):
-                cond1 = False if k is None else not k
-                cond2 = self.cell_size.z == 0
-                cond3 = cond1 or self.special_kz or k.z == 0
-                return cond2 and cond3
+            def use_2d(self, k):
+                zero_z = self.cell_size.z == 0
+                return zero_z and (not k or self.special_kz or k.z == 0)
 
-            if requires_2d(self, k):
+            if use_2d(self, k):
                 return 2
             else:
                 return 3
         return self.dimensions
 
-    def _init_structure(self, k=None):
+    def _init_structure(self, k=False):
         print('-' * 11)
         print('Initializing structure...')
 
@@ -300,6 +327,7 @@ class Simulation(object):
         if dims == 0 or dims == 1:
             gv = mp.vol1d(self.cell_size.z, self.resolution)
         elif dims == 2:
+            self.dimensions = 2
             gv = mp.vol2d(self.cell_size.x, self.cell_size.y, self.resolution)
         elif dims == 3:
             gv = mp.vol3d(self.cell_size.x, self.cell_size.y, self.cell_size.z, self.resolution)
@@ -311,10 +339,6 @@ class Simulation(object):
             raise ValueError("Unsupported dimentionality: {}".format(dims))
 
         gv.center_origin()
-
-        def dummy_eps(v):
-            return 1
-
         sym = mp.symmetry()
 
         # Initialize swig objects for each symmetry and combine them into one
@@ -340,22 +364,29 @@ class Simulation(object):
         else:
             absorbers = None
 
-        self.structure = mp.structure(gv, dummy_eps, br, sym, self.num_chunks, self.courant,
+        self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+        if self.material_function:
+            self.material_function.eps = False
+            self.default_material = self.material_function
+        elif self.epsilon_func:
+            self.epsilon_func.eps = True
+            self.default_material = self.epsilon_func
+        elif self.epsilon_input_file:
+            self.default_material = self.epsilon_input_file
 
         mp.set_materials_from_geometry(self.structure, self.geometry, self.eps_averaging, self.subpixel_tol,
                                        self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
                                        absorbers, self.extra_materials)
 
     def init_fields(self):
-        is_cylindrical = self.dimensions == mp.CYLINDRICAL
 
         if self.structure is None:
             self._init_structure(self.k_point)
 
         self.fields = mp.fields(
             self.structure,
-            self.m if is_cylindrical else 0,
+            self.m if self.is_cylindrical else 0,
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin
         )
@@ -364,7 +395,7 @@ class Simulation(object):
             self.fields.verbose()
 
         def use_real(self):
-            cond1 = is_cylindrical and self.m != 0
+            cond1 = self.is_cylindrical and self.m != 0
             cond2 = any([s.phase.imag for s in self.symmetries])
             cond3 = not self.k_point
             cond4 = self.special_kz and self.k_point.x == 0 and self.k_point.y == 0
@@ -616,7 +647,7 @@ class Simulation(object):
         return mp._get_farfield(f, py_v3_to_vec(self.dimensions, v, is_cylindrical=self.is_cylindrical))
 
     def output_farfields(self, near2far, fname, where, resolution):
-        vol = where.to_cylindrical() if self.is_cylindrical else where
+        vol = self._fit_volume_to_simulation(where)
         near2far.save_farfields(fname, self.get_filename_prefix(), vol.swigobj, resolution)
 
     def load_near2far(self, fname, n2f):
@@ -686,8 +717,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using flux_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = self._fit_volume_to_simulation(box)
 
         return self.fields.flux_in_box(d, box.swigobj)
 
@@ -695,8 +725,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using electric_energy_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = self._fit_volume_to_simulation(box)
 
         return self.fields.electric_energy_in_box(d, box.swigobj)
 
@@ -704,8 +733,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using magnetic_energy_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = self._fit_volume_to_simulation(box)
 
         return self.fields.magnetic_energy_in_box(d, box.swigobj)
 
@@ -713,8 +741,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using field_energy_in_box')
 
-        if self.is_cylindrical:
-            box = box.to_cylindrical()
+        box = self._fit_volume_to_simulation(box)
 
         return self.fields.field_energy_in_box(d, box.swigobj)
 
@@ -740,7 +767,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
-        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume.swigobj
+        vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
@@ -812,7 +839,7 @@ class Simulation(object):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_field_function")
 
-        ov = self.output_volume.swigobj if self.output_volume else self.fields.total_volume()
+        ov = self.output_volume if self.output_volume else self.fields.total_volume()
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
 
@@ -825,10 +852,7 @@ class Simulation(object):
         if where is None:
             where = self.fields.total_volume()
         else:
-            if self.is_cylindrical:
-                where = where.to_cylindrical().swigobj
-            else:
-                where = where.swigobj
+            where = self._fit_volume_to_simulation(where).swigobj
         return where
 
     def integrate_field_function(self, cs, func, where=None):
@@ -1065,10 +1089,7 @@ def in_volume(v, *step_funcs):
         v_save = sim.output_volume
         eps_save = sim.last_eps_filename
 
-        if sim.is_cylindrical:
-            sim.output_volume = v.to_cylindrical().swigobj
-        else:
-            sim.output_volume = v.swigobj
+        sim.output_volume = sim._fit_volume_to_simulation(v).swigobj
 
         if closure['cur_eps']:
             sim.last_eps_filename = closure['cur_eps']

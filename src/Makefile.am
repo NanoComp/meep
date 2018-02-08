@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libmeep@MEEP_SUFFIX@.la
+lib_LTLIBRARIES = libmeep.la
 include_HEADERS = meep.hpp
 pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp
 
@@ -9,7 +9,7 @@ BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
 bicgstab.hpp
 
-libmeep@MEEP_SUFFIX@_la_SOURCES = array_slice.cpp anisotropic_averaging.cpp 		\
+libmeep_la_SOURCES = array_slice.cpp anisotropic_averaging.cpp 		\
 bands.cpp boundaries.cpp bicgstab.cpp casimir.cpp 	\
 control_c.cpp cw_fields.cpp dft.cpp dft_ldos.cpp energy_and_flux.cpp 	\
 fields.cpp loop_in_chunks.cpp h5fields.cpp h5file.cpp 	\
@@ -19,7 +19,7 @@ sources.cpp step.cpp step_db.cpp stress.cpp structure.cpp 		\
 susceptibility.cpp time.cpp update_eh.cpp mpb.cpp update_pols.cpp 	\
 vec.cpp step_generic.cpp $(HDRS) $(BUILT_SOURCES)			
 
-libmeep@MEEP_SUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
+libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
 PRELUDE = "/* This file was automatically generated --- DO NOT EDIT */"
 

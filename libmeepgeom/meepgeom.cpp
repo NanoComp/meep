@@ -48,7 +48,7 @@ static bool susceptibility_equal(const susceptibility &s1, const susceptibility 
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
             vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) &&
             s1.frequency == s2.frequency && s1.gamma == s2.gamma &&
-            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude && 
+            s1.noise_amp == s2.noise_amp && s1.drude == s2.drude &&
             s1.is_file == s2.is_file);
 }
 
@@ -272,7 +272,7 @@ static bool is_medium(material_type md, medium_struct **m)
   return false;
 }
 
-static bool is_medium(void* md, medium_struct **m) 
+static bool is_medium(void* md, medium_struct **m)
  { return is_medium((material_type) md, m); }
 
 static bool is_metal(meep::field_type ft, const material_type *material) {
@@ -356,7 +356,7 @@ static meep::realnum linear_interpolate(
 static void epsilon_file_material(material_data *md, vector3 p)
 {
   default_material = (void*) md;
-  
+
   if (md->which_subclass != material_data::MATERIAL_FILE)
     meep::abort("epsilon-input-file only works with a type=file default-material");
 
@@ -370,8 +370,8 @@ static void epsilon_file_material(material_data *md, vector3 p)
     ? 0 : 0.5 + (p.z-geometry_center.z) / geometry_lattice.size.z;
   mm->epsilon_diag.x = mm->epsilon_diag.y = mm->epsilon_diag.z =
     linear_interpolate(rx, ry, rz, md->epsilon_data,
-		       md->epsilon_dims[0], 
-                       md->epsilon_dims[1], 
+		       md->epsilon_dims[0],
+                       md->epsilon_dims[1],
                        md->epsilon_dims[2], 1);
   mm->epsilon_offdiag.x = mm->epsilon_offdiag.y = mm->epsilon_offdiag.z = 0;
 }
@@ -424,8 +424,11 @@ public:
 
   virtual double chi1p1(meep::field_type ft, const meep::vec &r);
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3],
-			       const meep::volume &v,
-			       double tol, int maxeval);
+                               const meep::volume &v,
+                               double tol, int maxeval);
+
+  void eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
+                          const meep::volume &v, double tol, int maxeval);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3],
 			      const meep::volume &v,
@@ -541,38 +544,6 @@ void geom_epsilon::set_volume(const meep::volume &v)
   restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
-#if 0
-#TODO figure this out
-static material_type eval_material_func(function material_func, vector3 p)
-{
-  SCM pscm = ctl_convert_vector3_to_scm(p);
-  material_type material;
-  SCM mo;
-
-  mo = gh_call1(material_func, pscm);
-  material_type_input(mo, &material);
-
-  while (material.which_subclass == MTS::MATERIAL_USER) {
-    material_type m;
-
-    mo = gh_call1(material.subclass.
-		  material_function_data->material_func,
-		  pscm);
-    material_type_input(mo, &m);
-    material_type_destroy(material);
-    material = m;
-  }
-
-  if (material.which_subclass == MTS::MATERIAL_FILE) {
-    epsilon_file_material(material, p);
-  }
-  CK(material.which_subclass != MTS::MATERIAL_USER,
-     "infinite loop in material functions");
-
-  return material;
-}
-#endif
-
 static void material_epsmu(meep::field_type ft, material_type material,
 		    symmetric_matrix *epsmu, symmetric_matrix *epsmu_inv) {
 
@@ -602,7 +573,7 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
       epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
       break;
-      
+
     default:
       meep::abort("unknown material type");
   }
@@ -619,7 +590,7 @@ static void material_epsmu(meep::field_type ft, material_type material,
       epsmu->m12 = md->medium.mu_offdiag.z;
       sym_matrix_invert(epsmu_inv,epsmu);
       break;
-      
+
     case material_data::PERFECT_METAL:
       epsmu->m00 = 1.0;
       epsmu->m11 = 1.0;
@@ -637,8 +608,8 @@ static void material_epsmu(meep::field_type ft, material_type material,
 }
 
 // the goal of this routine is to fill in the 'medium' field
-// within the material structure as appropriate for the 
-// material properties at r. 
+// within the material structure as appropriate for the
+// material properties at r.
 void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
 {
   vector3 p = vec_to_vector3(r);
@@ -655,7 +626,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
        epsilon_file_material(md, p);
       else
        material = (material_type) default_material;
-      return; 
+      return;
 
      // material specified by user-supplied function: call user
      // function to get properties at r.
@@ -678,12 +649,12 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
      // position-independent material or metal: there is nothing to do
      case material_data::MEDIUM:
      case material_data::PERFECT_METAL:
-      return; 
+      return;
 
      default:
       meep::abort("unknown material type");
    };
-} 
+}
 
 // returns trace of the tensor diagonal
 double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r)
@@ -818,26 +789,19 @@ static bool get_front_object(const meep::volume &v,
 }
 
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
-				   const meep::volume &v,
-				   double tol, int maxeval) {
-  const geometric_object *o;
-  material_type mat, mat_behind;
-  symmetric_matrix meps, meps_inv;
-  vector3 p, shiftby, normal;
+                                   const meep::volume &v, double tol, int maxeval) {
+  symmetric_matrix meps_inv;
+  eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval);
 
-  if (maxeval == 0 || !get_front_object(v, geometry_tree,
-					p, &o, shiftby, mat, mat_behind)) {
-  noavg:
-    get_material_pt(mat, v.center());
-  trivial:
-    material_epsmu(meep::type(c), mat, &meps, &meps_inv);
-    switch (component_direction(c)) {
-    case meep::X: case meep::R:
+  switch (component_direction(c)) {
+    case meep::X:
+    case meep::R:
       chi1inv_row[0] = meps_inv.m00;
       chi1inv_row[1] = meps_inv.m01;
       chi1inv_row[2] = meps_inv.m02;
       break;
-    case meep::Y: case meep::P:
+    case meep::Y:
+    case meep::P:
       chi1inv_row[0] = meps_inv.m01;
       chi1inv_row[1] = meps_inv.m11;
       chi1inv_row[2] = meps_inv.m12;
@@ -847,15 +811,31 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
       chi1inv_row[1] = meps_inv.m12;
       chi1inv_row[2] = meps_inv.m22;
       break;
-    case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
-    }
+    case meep::NO_DIRECTION:
+      chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
+      break;
+  }
+}
+
+void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
+                                      const meep::volume &v, double tol, int maxeval) {
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  symmetric_matrix meps;
+  vector3 p, shiftby, normal;
+
+  if (maxeval == 0 || !get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
+  noavg:
+    get_material_pt(mat, v.center());
+  trivial:
+    material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
     return;
   }
 
   // FIXME: reimplement support for fallback integration, without
   //        messing up anisotropic support
   //  if (!get_front_object(v, geometry_tree,
-  //			p, &o, shiftby, mat, mat_behind)) {
+  //                        p, &o, shiftby, mat, mat_behind)) {
   //     fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval);
   //     return;
   //  }
@@ -876,7 +856,7 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 
   double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
 
-  material_epsmu(meep::type(c), mat, &meps, &meps_inv);
+  material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
   symmetric_matrix eps2, epsinv2;
   symmetric_matrix eps1, delta;
   double Rot[3][3];
@@ -916,66 +896,48 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3],
 #define SQR(x) ((x) * (x))
 
 #define EXPR(eps) (-1 / eps.m00)
-	  delta.m00 = AVG;
+  delta.m00 = AVG;
 #undef EXPR
 #define EXPR(eps) (eps.m11 - SQR(eps.m01) / eps.m00)
-	  delta.m11 = AVG;
+  delta.m11 = AVG;
 #undef EXPR
 #define EXPR(eps) (eps.m22 - SQR(eps.m02) / eps.m00)
-	  delta.m22 = AVG;
+  delta.m22 = AVG;
 #undef EXPR
 
 #define EXPR(eps) (eps.m01 / eps.m00)
-	  delta.m01 = AVG;
+  delta.m01 = AVG;
 #undef EXPR
 #define EXPR(eps) (eps.m02 / eps.m00)
-	  delta.m02 = AVG;
+  delta.m02 = AVG;
 #undef EXPR
 #define EXPR(eps) (eps.m12 - eps.m02 * eps.m01 / eps.m00)
-	  delta.m12 = AVG;
+  delta.m12 = AVG;
 #undef EXPR
 
-	  meps.m00 = -1/delta.m00;
-	  meps.m11 = delta.m11 - SQR(delta.m01) / delta.m00;
-	  meps.m22 = delta.m22 - SQR(delta.m02) / delta.m00;
-	  meps.m01 = -delta.m01/delta.m00;
-	  meps.m02 = -delta.m02/delta.m00;
-	  meps.m12 = delta.m12 - (delta.m02 * delta.m01) / delta.m00;
+  meps.m00 = -1/delta.m00;
+  meps.m11 = delta.m11 - SQR(delta.m01) / delta.m00;
+  meps.m22 = delta.m22 - SQR(delta.m02) / delta.m00;
+  meps.m01 = -delta.m01/delta.m00;
+  meps.m02 = -delta.m02/delta.m00;
+  meps.m12 = delta.m12 - (delta.m02 * delta.m01) / delta.m00;
 
 #undef SQR
 
 #define SWAP(a,b) { double xxx = a; a = b; b = xxx; }
-	  /* invert rotation matrix = transpose */
-	  SWAP(Rot[0][1], Rot[1][0]);
-	  SWAP(Rot[0][2], Rot[2][0]);
-	  SWAP(Rot[2][1], Rot[1][2]);
-	  sym_matrix_rotate(&meps, &meps, Rot); /* rotate back */
+  /* invert rotation matrix = transpose */
+  SWAP(Rot[0][1], Rot[1][0]);
+  SWAP(Rot[0][2], Rot[2][0]);
+  SWAP(Rot[2][1], Rot[1][2]);
+  sym_matrix_rotate(&meps, &meps, Rot); /* rotate back */
 #undef SWAP
 
-#  ifdef DEBUG
-	  if(!sym_matrix_positive_definite(&meps))
-	    meep::abort("negative mean epsilon from Kottke algorithm");
-#  endif
+#ifdef DEBUG
+  if(!sym_matrix_positive_definite(&meps))
+    meep::abort("negative mean epsilon from Kottke algorithm");
+#endif
 
-  sym_matrix_invert(&meps_inv, &meps);
-  switch (component_direction(c)) {
-  case meep::X: case meep::R:
-    chi1inv_row[0] = meps_inv.m00;
-    chi1inv_row[1] = meps_inv.m01;
-    chi1inv_row[2] = meps_inv.m02;
-    break;
-  case meep::Y: case meep::P:
-    chi1inv_row[0] = meps_inv.m01;
-    chi1inv_row[1] = meps_inv.m11;
-    chi1inv_row[2] = meps_inv.m12;
-    break;
-  case meep::Z:
-    chi1inv_row[0] = meps_inv.m02;
-    chi1inv_row[1] = meps_inv.m12;
-    chi1inv_row[2] = meps_inv.m22;
-    break;
-  case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0;
-  }
+  sym_matrix_invert(chi1inv_matrix, &meps);
 }
 
 static int eps_ever_negative = 0;
@@ -1179,10 +1141,10 @@ double geom_epsilon::chi(meep::component c, const meep::vec &r, int p) {
   return chi_val;
 }
 
-double geom_epsilon::chi3(meep::component c, const meep::vec &r) 
+double geom_epsilon::chi3(meep::component c, const meep::vec &r)
  { return chi(c, r, 3); }
 
-double geom_epsilon::chi2(meep::component c, const meep::vec &r) 
+double geom_epsilon::chi2(meep::component c, const meep::vec &r)
  { return chi(c, r, 2); }
 
 static bool mu_not_1(material_type m)
@@ -1518,25 +1480,22 @@ void set_materials_from_geometry(meep::structure *s,
 
   dimensions=3;
   vector3 size = {0.0,0.0,0.0};
-  switch (s->gv.dim)
+  switch (s->user_volume.dim)
    { case meep::D1:   dimensions=1;
-                      size.z = gv.nz()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
-
      case meep::D2:   dimensions=2;
-                      size.x = gv.nx()/resolution;
-                      size.y = gv.ny()/resolution;
+                      size.x = s->user_volume.nx()/resolution;
+                      size.y = s->user_volume.ny()/resolution;
                       break;
-
      case meep::D3:   dimensions=3;
-                      size.x = gv.nx()/resolution;
-                      size.y = gv.ny()/resolution;
-                      size.z = gv.nz()/resolution;
+                      size.x = s->user_volume.nx()/resolution;
+                      size.y = s->user_volume.ny()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
-
      case meep::Dcyl: dimensions= CYLINDRICAL;
-                      size.x = gv.nr()/resolution;
-                      size.z = gv.nz()/resolution;
+                      size.x = s->user_volume.nr()/resolution;
+                      size.z = s->user_volume.nz()/resolution;
                       break;
    };
 
@@ -1630,6 +1589,9 @@ material_type make_file_material(const char *eps_input_file)
                   md->epsilon_dims[2],
 		  eps_input_file);
   }
+
+  md->medium = vacuum_medium;
+
   return md;
 }
 

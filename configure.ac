@@ -1,14 +1,14 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(meep, 1.3, meep@ab-initio.mit.edu)
+AC_INIT(meep, 1.4.2, meep@ab-initio.mit.edu)
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="8:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="9:2:0" # CURRENT:REVISION:AGE
 
-AM_INIT_AUTOMAKE([foreign check-news color-tests parallel-tests silent-rules 1.11])
+AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR([m4])
@@ -16,8 +16,6 @@ AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
 # need shared libraries for python interfaces
 AC_ENABLE_SHARED
-
-MEEP_SUFFIX=""
 
 ##############################################################################
 
@@ -33,8 +31,6 @@ AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
 if test "x$with_mpi" = "xyes"; then
   ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
   CXX=$MPICXX
-  MEEP_SUFFIX="${MEEP_SUFFIX}_mpi"
-  MBP_SUFFIX="${MPB_SUFFIX}_mpi"
 
   # Detect stupid MPICH problem with SEEK_SET conflicting between
   # the mpi.h header file and the stdio.h header file in C++
@@ -476,15 +472,11 @@ AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to no
 
 ##############################################################################
 
-AC_SUBST(MEEP_SUFFIX)
-program_transform_name="s,_,-,g;$program_transform_name"
-
-##############################################################################
 # checks for python
 ##############################################################################
 AC_ARG_WITH(python,
-	[AC_HELP_STRING([--with-python], [compile Python interface])],
-        with_python=$withval,with_python=no)
+	[AC_HELP_STRING([--without-python], [compile without Python interface])],
+        with_python=$withval,with_python=yes)
 
 if test "x$with_python" = xno; then
   have_python=no
