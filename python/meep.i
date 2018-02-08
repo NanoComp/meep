@@ -646,7 +646,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
                 SWIG_fail;
             }
 
-            add_absorbing_layer($1, a.thickness, a.direction, a.side, a.strength,
+            add_absorbing_layer($1, a.thickness, a.direction, a.side,
                                 a.R_asymptotic, a.mean_stretch, py_pml_profile,
                                 a.pml_profile_data);
             Py_DECREF((PyObject *)a.pml_profile_data);

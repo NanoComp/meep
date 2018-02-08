@@ -1436,14 +1436,13 @@ void destroy_absorber_list(absorber_list alist)
 
 void add_absorbing_layer(absorber_list alist,
                          double thickness, int direction, int side,
-                         double strength, double R_asymptotic, double mean_stretch,
+                         double R_asymptotic, double mean_stretch,
                          meep::pml_profile_func func, void *func_data)
 {
   absorber myabsorber;
   myabsorber.thickness=thickness;
   myabsorber.direction=direction;
   myabsorber.side=side;
-  myabsorber.strength=strength;
   myabsorber.R_asymptotic=R_asymptotic;
   myabsorber.mean_stretch=mean_stretch;
   myabsorber.pml_profile=func;
@@ -1525,7 +1524,7 @@ void set_materials_from_geometry(meep::structure *s,
               mythunk.func_data = layer->pml_profile_data;
               geps.set_cond_profile(d,b,layer->thickness, gv.inva*0.5,
                                     pml_profile_wrapper, (void *)&mythunk,
-                                    pow(layer->R_asymptotic,layer->strength));
+                                    layer->R_asymptotic);
             };
          };
       };
