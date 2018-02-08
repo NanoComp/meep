@@ -4,8 +4,11 @@ import math
 import unittest
 import meep as mp
 
+import os
 import sys
-sys.path.insert(0, '../examples')
+matlib_dir = os.path.join(os.path.abspath(os.path.realpath(os.path.dirname(__file__))),
+                          '..', 'examples')
+sys.path.insert(0, matlib_dir)
 from materials_library import *
 
 class TestAbsorber(unittest.TestCase):
