@@ -65,7 +65,6 @@ typedef struct absorber {
   double thickness;
   int direction;
   int side;
-  double strength;
   double R_asymptotic;
   double mean_stretch;
   meep::pml_profile_func pml_profile;
@@ -80,7 +79,7 @@ void destroy_absorber_list(absorber_list alist);
 void add_absorbing_layer(absorber_list alist,
                          double thickness,
                          int direction=ALL_DIRECTIONS, int side=ALL_SIDES,
-                         double strength=1.0, double R_asymptotic=1.0e-15, double mean_stretch=1.0,
+                         double R_asymptotic=1.0e-15, double mean_stretch=1.0,
                          meep::pml_profile_func func=meep::pml_quadratic_profile, void *func_data=0);
 
 /***************************************************************/

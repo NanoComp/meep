@@ -437,7 +437,6 @@ static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a)
     }
 
     a->pml_profile_data = py_pml_profile_func;
-    a->strength = 1.0;
 
     return 1;
 }
