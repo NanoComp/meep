@@ -8,7 +8,7 @@ The main effort in installing Meep lies in installing the various prerequisite p
 
 It is also possible to install Meep on Windows systems by using a free Unix-compatibility environment such as [Cygwin](http://www.cygwin.org/). For more information, see these [step-by-step instructions](http://novelresearch.weebly.com/installing-meep-in-windows-8-via-cygwin.html).
 
-For those installing Meep on a parallel supercomputer, a note of caution: most supercomputers have multiple compilers installed, and different versions of libraries compiled with different compilers. Meep is written in C++, and it is almost impossible to mix C++ code compiled by different compilers &mdash; pick one set of compilers by one vendor and stick with it consistently.
+For those installing Meep on a supercomputer, a note of caution: most supercomputers have multiple compilers installed, and different versions of libraries compiled with different compilers. Meep is written in C++, and it is almost impossible to mix C++ code compiled by different compilers &mdash; pick one set of compilers by one vendor and stick with it consistently.
 
 [TOC]
 
@@ -197,13 +197,13 @@ If you are not the system administrator of your machine, and/or want to install 
 MPI (parallel machines)
 -----------------------
 
-Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). Most commercial supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
+Optionally, Meep is able to run on a distributed-memory parallel machine, and to do this we use the standard message-passing interface (MPI). Most supercomputers already have an MPI implementation installed. The recommended implementation is [Open MPI](http://www.open-mpi.org/). MPI is **not required** to compile the serial version of Meep.
 
-In order for the MPI version of the Scheme interface to run successfully, we have a slightly nonstandard requirement: each process must be able to read from the disk. This way, Guile can boot for each process and they can all read your control file in parallel. Most commercial supercomputers satisfy this requirement. On the other hand, the C++ interface to Meep does not have this requirement.
+In order for the MPI version of the Python and Scheme interface to run successfully, we have a slightly nonstandard requirement: each process must be able to read from the disk. This way, Python and Guile can boot for each process and they can all read your simulation file in parallel. Most supercomputers satisfy this requirement. On the other hand, the C++ interface to Meep does not have this requirement.
 
 If you use Meep with MPI, you should compile HDF5 with MPI support as well (see below).
 
-As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep`, so it overwrites any serial installation.  There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun -np 6 meep`).
+As described below, when you configure Meep with MPI support (`--with-mpi`), it installs itself as `meep` (for the Scheme interface), so it overwrites any serial installation. There is no need to have separate serial `meep` installed, however, because if you run the parallel Meep simply as `meep`, it runs on a single processor (to launch multiple processes you need `mpirun -np 6 meep`).
 
 HDF5 (recommended)
 ------------------
@@ -214,7 +214,7 @@ Meep outputs its fields and other volumetric data in the HDF5 format, so you mus
 
 HDF5 includes parallel I/O support under MPI, which can be enabled by configuring it with `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`. Unfortunately, the parallel HDF5 library then does not work with serial code, so you have may have to choose one or the other.
 
-We have some hacks in Meep to do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large supercomputers we strongly recommend using the parallel HDF5.
+We have some hacks in Meep to do parallel I/O even with the serial HDF5 library. These hacks work okay when you are using a small number of processors, but on large HPG clusters we strongly recommend using the parallel HDF5.
 
 **Note:** If you have a version of HDF5 compiled with MPI parallel I/O support, then you need to use the MPI compilers to link to it, even when you are compiling the serial versions of Meep or MPB.  Just use `./configure CC=mpicc CXX=mpic++` or whatever your MPI compilers are when configuring.
 
@@ -250,7 +250,7 @@ Attempt to compile a [parallel version of Meep](Parallel_Meep.md) using MPI; the
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 If libctl was installed in a nonstandard location (i.e. neither `/usr` nor `/usr/local`), you need to specify the location of the libctl directory, *`dir`*. This is either `prefix/share/libctl`, where `prefix` is the installation prefix of libctl, or the original libctl source code directory. To configure *without* the libctl/Guile interface, use `--without-libctl`.
 
-**`--without-python`**
+**`--without-python`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Disable building the Python API for Meep.
 
@@ -414,9 +414,7 @@ parameter in file ../../../../../orte/mca/ess/hnp/ess_hnp_module.c at line
 Meep for Developers
 -------------------
 
-If you want to modify the Meep source code, you will want to have a number of additional packages, most importantly:
-
--   The [Git](https://git-scm.com/) version-control system.
+If you want to modify the source code, you will want to have a number of additional packages, most importantly the [Git](https://git-scm.com/) version-control system.
 
 Once you have Git, you can grab the latest development version of Meep with:
 
@@ -424,9 +422,9 @@ Once you have Git, you can grab the latest development version of Meep with:
  git clone https://github.com/stevengj/meep.git
 ```
 
-This gives you a fresh, up-to-date Meep repository in a directory `meep`. See [git-scm.com](https://git-scm.com/) for more information on using Git; perhaps the most useful command is `git pull`, which you can execute periodically to get any new updates to the development version.
+This gives you a fresh, up-to-date repository in a directory `meep`. See the [Git manual](https://git-scm.com/doc) for more information on using Git. Perhaps the most useful command is `git pull` which you can execute periodically to get any new updates to the development version.
 
-Git will give you an absolutely minimal set of sources; to create a usable Meep directory, you should run:
+Git will give you an absolutely minimal set of sources; to create a usable directory, you should run:
 
 ```sh
 sh autogen.sh
@@ -436,4 +434,4 @@ make
 in the `meep` directory. And subsequently, if you are editing the sources you should include `--enable-maintainer-mode` whenever you reconfigure. To do this, however, you will need a number of additional packages beyond those listed above:
 
 -   GNU [autoconf](https://www.gnu.org/software/autoconf/autoconf.html), [automake](https://www.gnu.org/software/automake/), and [libtool](https://www.gnu.org/software/libtool/libtool.html) &mdash; these are used to create the Makefiles and configure scripts, and to build shared libraries.
--   [SWIG](http://www.swig.org/) &mdash; the Scheme/libctl interface to Meep is largely generated by a program called *SWIG* (Simple Wrapper and Interface Generator).
+-   [SWIG](http://www.swig.org/) &mdash; the Python and Scheme interfaces are largely generated by a program called *SWIG* (Simple Wrapper and Interface Generator).

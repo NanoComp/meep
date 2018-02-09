@@ -31,12 +31,12 @@ Meep's scriptable interface makes it possible to combine many sorts of computati
 Download
 --------
 
-The development source is available on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available on the [Download](Download.md) page. The release history is described in the [NEWS file](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions can be found in the [Installation](Installation.md) page.
+The development repository is on [GitHub](https://github.com/stevengj/meep). Gzipped tarballs of stable versions are available in [Download](Download.md). The release history is described in [NEWS](https://github.com/stevengj/meep/blob/master/NEWS.md). Installation instructions are in [Installation](Installation.md).
 
 Documentation
 -------------
 
-See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial/Basics](Python_Tutorials/Basics.md) are the most important things to read. There is also an [FAQ](FAQ.md).
+See the navigation sidebar at left. In particular, the [Introduction](Introduction.md) and [Tutorial/Basics](Python_Tutorials/Basics.md) are the most important things to review. There is also an [FAQ](FAQ.md).
 
 Please [cite the reference publication](Acknowledgements.md#referencing) in any work for which you found Meep useful.
 
@@ -51,11 +51,11 @@ For bug reports and feature requests, please file a [GitHub issue](https://githu
 Acknowledgements
 ----------------
 
-The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep). Please see the [Acknowledgements](Acknowledgements.md) for a more complete listing of the project contributors.
+The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the open-source developer community on [GitHub](https://github.com/stevengj/meep). [Acknowledgements](Acknowledgements.md) provides a complete listing of the project contributors.
 
-Contacts and Feedback
+Support and Feedback
 ---------------------
 
 If you have questions or problems regarding Meep, you are encouraged to query the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/).
 
-Professional consulting services for photonic design and modeling including development of turn-key simulation modules, training and technical support for getting up and running with Meep as well as free access to Meep in the public cloud via Amazon Web Services (AWS) are provided by [Simpetus](http://www.simpetus.com).
+Professional consulting services for photonic design and modeling including development of custom, turn-key simulation modules, training, technical support, and access to Meep in the public cloud via Amazon Web Services (AWS) are provided by [Simpetus](http://www.simpetus.com).

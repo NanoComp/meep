@@ -45,7 +45,7 @@ Meep supports simulation in [Cylindrical Coordinates](Cylindrical_Coordinates.md
 
 You may have noticed the lack of annoying constants like $\varepsilon$<sub>0</sub>, $\mu$<sub>0</sub>, and [c](https://en.wikipedia.org/wiki/Speed_of_light) &mdash; that's because Meep uses **dimensionless** units where all these constants are unity. As a practical matter, almost everything you might want to compute (transmission spectra, frequencies, etcetera) is expressed as a ratio anyway, so the units end up cancelling.
 
-In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units** (see this [online textbook](http://ab-initio.mit.edu/book), ch. 2). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
+In particular, because Maxwell's equations are scale invariant (multiplying the sizes of everything by 10 just divides the corresponding solution frequencies by 10), it is convenient in electromagnetic problems to choose **scale-invariant units**. See Chapter 2 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book). That means that we pick some characteristic lengthscale in the system, $a$, and use that as our unit of distance.
 
 Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is our unit of *time* as well. In particular, the frequency *f* in Meep (corresponding to a time dependence $e^{-i 2\pi f t}$) is always specified in units of $c/a$ (or equivalently $\omega$ is specified in units of $2\pi c/a$), which is equivalent to specifying *f* as $1/T$: the inverse of the optical period $T$ in units of $a/c$. This, in turn, is equivalent to specifying *f* as $a/\lambda$ where $\lambda$ is the vacuum wavelength. A similar scheme is used in [MPB](https://mpb.readthedocs.io).
 
@@ -60,7 +60,7 @@ Boundary Conditions and Symmetries
 
 On a computer, we can only simulate a finite region of space, which means that we must terminate our simulation with some **boundary conditions**. Three basic types of terminations are supported in Meep: **Bloch-periodic boundaries**, **metallic walls**, and **PML absorbing layers**. Also, one can exploit **symmetries** of a problem to further reduce the computational requirements.
 
-With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\mathbf{k}$. This can be used to solve for the modes of photonic crystals, waveguides, and so on, much like in [MPB](https://mpb.readthedocs.io). See this [online textbook](http://ab-initio.mit.edu/book), ch. 3.
+With ordinary periodic boundaries in a cell of size $L$, the field components satisfy $f(x+L) = f(x)$. **Bloch periodicity** is a generalization where $f(x+L) = e^{ik_x L} f(x)$ for some *Bloch wavevector* $\mathbf{k}$. This can be used to solve for the modes of photonic crystals, waveguides, and so on, much like in [MPB](https://mpb.readthedocs.io). See Chapter 3 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book).
 
 An even simpler boundary condition is a metallic wall, where the fields are simply forced to be zero on the boundaries, as if the cell were surrounded by a perfect metal (zero absorption, zero skin depth). More generally, you can place perfect metal materials anywhere you want in the computational cell, e.g. to simulate metallic cavities of an arbitrary shape.
 
@@ -79,9 +79,9 @@ The second most important thing you should know is that, in order to discretize 
 
 Many references are available on FDTD methods for computational electromagnetics. See, for example:
 
-- A. Taflove and S.C. Hagness, [Computational Electrodynamics: The Finite-Difference Time-Domain Method](http://us.artechhouse.com/Computational-Electrodynamics-The-Finite-Difference-Time-Domain-Method-Third-Edition-P1634.aspx), Artech: Norwood, MA, (2005).
+- A. Taflove and S.C. Hagness, [Computational Electrodynamics: The Finite-Difference Time-Domain Method](https://www.amazon.com/Computational-Electrodynamics-Finite-Difference-Time-Domain-Method/dp/1580538320), Artech: Norwood, MA, (2005).
 
-- A. Taflove, A. Oskooi, and S.G. Johnson, [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](http://us.artechhouse.com/Advances-in-FDTD-Computational-Electrodynamics-P1567.aspx), Artech: Norwood, MA, (2013).
+- A. Taflove, A. Oskooi, and S.G. Johnson, [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), Artech: Norwood, MA, (2013).
 
 ### The Illusion of Continuity
 
@@ -91,12 +91,12 @@ For example, you specify the dielectric function as a function $\varepsilon$(**x
 
 In general, the philosophy of the Meep interface is **pervasive interpolation**, so that if you change any input continuously then the response of the Meep simulation will change continuously as well, so that it will converge as rapidly and as smoothly as possible to the continuous solution as you increase the spatial resolution.
 
-For example, the $\varepsilon$ function used internally by Meep is not simply a discretely sampled version of the $\varepsilon$(**x**) specified by the user. Rather, each grid point is a kind of average of the $\varepsilon$ in the surrounding pixel. Our subpixel averaging, described in the [reference](Acknowledgements.md#referencing), is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD.
+For example, the $\varepsilon$ function used internally by Meep is not simply a discretely sampled version of the $\varepsilon$(**x**) specified by the user. Rather, each grid point is a kind of average of the $\varepsilon$ in the surrounding pixel. Our subpixel averaging, described in Chapter 6 ("Accurate FDTD Simulation of Discontinuous Materials by Subpixel Smoothing") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), is specially designed in order to minimize the "staircasing" and other errors caused by sharp interfaces, and we believe it is a substantial improvement over past methods used for FDTD.
 
 Other Numerical Methods in Computational Electromagnetics
 ---------------------------------------------------------
 
-FDTD is, of course, not the only numerical method in computational electromagnetics, nor is it always the best one. In general, we advocate having several tools in your toolbox, and selecting the most convenient one for each task (see this [online textbook](http://ab-initio.mit.edu/book), appendix D).
+FDTD is, of course, not the only numerical method in computational electromagnetics, nor is it always the best one. In general, we advocate having several tools in your toolbox, and selecting the most convenient one for each task. See Appendix D of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book).
 
 For example, although FDTD can be used to compute electromagnetic eigenmodes (below), in lossless structures it is often quicker, easier, and more reliable to use a specialized eigenmode solver such as [MPB](http://mpb.readthedocs.io). See also the [frequency vs. time domain](http://mpb.readthedocs.io/en/latest/Introduction/) discussion in the MPB manual and the [resonant modes](Introduction.md#resonant-modes) discussion below.
 
