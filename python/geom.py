@@ -503,7 +503,7 @@ def geometric_object_lattice_duplicates(lat, go_list, *usize):
     n2 = math.ceil((s.y if s.y else 1e-20) / u2)
     n3 = math.ceil((s.z if s.z else 1e-20) / u3)
 
-    d3 = geometric_object_duplicates(b3, -math.floor((n3 - 1) / 2), math.ceil((n3 - 1) / 2), *go_list)
-    d2 = geometric_object_duplicates(b2, -math.floor((n2 - 1) / 2), math.ceil((n2 - 1) / 2), *d3)
+    d3 = geometric_object_duplicates(b3, int(-math.floor((n3 - 1) / 2)), int(math.ceil((n3 - 1) / 2)), *go_list)
+    d2 = geometric_object_duplicates(b2, int(-math.floor((n2 - 1) / 2)), int(math.ceil((n2 - 1) / 2)), *d3)
 
     return geometric_object_duplicates(b1, -math.floor((n1 - 1) / 2), math.ceil((n1 - 1) / 2), *d2)
