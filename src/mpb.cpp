@@ -590,31 +590,35 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
 /*                                                             */
-/* the array returned has length num_freqs x num_bands, with   */
-/* the positive/ negative coefficients for frequency #nf,      */
-/* band #nb stored in slot [ 2*nb*num_freqs + 2*nf + 0/1 ]     */
+/* on entry, coeffs points to a user-allocated array of length */
+/* 2*Nfreq*num_bands (where Nfreq is the number of frequencies */
+/* in flux).                                                   */
+/* on return, the coefficients of the {forward,backward}-      */
+/* traveling eigenmodes for freq #nf, band #nf are in          */
+/* coeffs[ 2*nb*Nfreq + 2*nf + {0,1} ]                         */
+/*                                                             */
+/* if vgrp is nonzero, it must point to a user-allocated array */
+/* of length Nfreq*num_bands. on return, the group velocity    */
+/* for eigenmode #nb at frequency #nf is in vgrp[nb*Nfreq+nf]. */
 /***************************************************************/
-std::vector<cdouble>
- fields::get_eigenmode_coefficients(dft_flux flux, direction d,
-                                    const volume &where,
-                                    std::vector<int> bands,
-                                    std::vector<double> &vgrp,
-                                    kpoint_func k_func,
-                                    void *k_func_data)
+void fields::get_eigenmode_coefficients(dft_flux flux, const volume &where,
+                                        int *bands, int num_bands,
+                                        cdouble *coeffs,
+                                        double *vgrp,
+                                        kpoint_func k_func,
+                                        void *k_func_data)
 { 
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
   int num_freqs        = flux.Nfreq;
-  int num_bands        = bands.size();
   bool match_frequency = true;
   int parity           = 0; // NO_PARITY
   double resolution    = a;
   double eig_tol       = 1.0e-4;
-  std::vector<cdouble> coeffs( 2 * num_freqs * num_bands );
+
+  direction d = normal_direction(where);
 
   char *LogFile=getenv("MEEP_EIGENMODE_LOGFILE");
-
-  vgrp.resize(num_bands*num_freqs);
 
   // loop over all bands and all frequencies
   for(int nb=0; nb<num_bands; nb++)
@@ -630,8 +634,10 @@ std::vector<cdouble>
       void *mode_data 
        = get_eigenmode(freq, d, where, where, band_num, kpoint, 
                        match_frequency, parity, resolution, eig_tol);
+ 
+      double vg=get_group_velocity(mode_data);
 
-      vgrp[nb*num_freqs + nf]=get_group_velocity(mode_data);
+      if(vgrp) vgrp[nb*num_freqs + nf]=vg;
 
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
@@ -640,6 +646,7 @@ std::vector<cdouble>
       get_mode_flux_overlap(mode_data, flux, nf, where, mode_flux);
       get_mode_mode_overlap(mode_data, mode_data, flux, where, mode_mode);
       cdouble normfac = 0.5*(mode_mode[0] + mode_mode[1]);
+      if (normfac==0.0) normfac=1.0;
       coeffs[ 2*nb*num_freqs + 2*nf + 0 ] 
        = (mode_flux[0] + mode_flux[1]) / normfac;
       coeffs[ 2*nb*num_freqs + 2*nf + 1 ]
@@ -648,7 +655,7 @@ std::vector<cdouble>
       if (LogFile && am_master())
        { FILE *ff=fopen(LogFile,( (nb==0 && nf==0) ? "w" : "a") );
          fprintf(ff,"(nb,nf)=(%i,%i) ",nb,nf);
-         fprintf(ff,"vgrp=%e\n",vgrp[nb*num_freqs+nf]);
+         fprintf(ff,"vgrp=%e\n",vg);
          fprintf(ff," mf = %+f,%+f {%+.2e,%+.2e},{%+.2e,%+.2e}\n",
                      abs(mode_flux[0]),abs(mode_flux[1]),
                      real(mode_flux[0]),imag(mode_flux[0]),
@@ -661,8 +668,8 @@ std::vector<cdouble>
        };
        
     };
-  return coeffs;
 }
+
 /**************************************************************/
 /* dummy versions of class methods for compiling without MPB  */
 /**************************************************************/
@@ -699,16 +706,15 @@ void fields::add_eigenmode_source(component c0, const src_time &src,
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 }
 
-std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux flux,
-                                          direction d,
-                                          const volume &where,
-                                          std::vector<int> bands,
-                                          std::vector<double> vgrp,
-                                          kpoint_func k_func,
-                                          void *k_func_data)
-{ (void) flux; (void) d; (void) where; (void) bands,
-  (void) vgrp; (void) k_func; (void) k_func_data;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
+void fields::get_eigenmode_coefficients(dft_flux flux, const volume &where,
+                                        int *bands, int num_bands,
+                                        cdouble *coeffs,
+                                        double *vgrp,
+                                        kpoint_func k_func,
+                                        void *k_func_data)
+{ (void) flux; (void) where; (void) bands; (void) num_bands;
+  (void) coeffs; (void) vgrp; (void) k_func; (void) k_func_data;
+  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
 }
 
 void destroy_eigenmode_data(void *vedata)

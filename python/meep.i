@@ -474,8 +474,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     $1 = is_array($input);
 }
 
-%typemap(in) std::complex<double>* slice {
+%typemap(in, fragment="NumPy_Macros") std::complex<double>* slice {
     $1 = (std::complex<double> *)array_data($input);
+}
+
+%typemap(in) double* slice {
+    $1 = (double *)array_data($input);
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep::component {
@@ -500,6 +504,26 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 }
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
+
+// typemaps needed for get_eigenmode_coefficients
+%apply (int *IN_ARRAY1, int DIM1) {(int *bands, int num_bands)};
+%apply (double *IN_ARRAY1, int DIM1) {(double *vgrp, int vgrp_length)};
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* coeffs {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") std::complex<double>* coeffs {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* vgrp {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* vgrp {
+    $1 = (double *)array_data($input);
+}
 
 // typemap suite for field functions
 
@@ -723,6 +747,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %rename(get_field_from_comp) meep::fields::get_field(component, const vec &) const;
 
 %feature("python:cdefaultargs") meep::fields::add_eigenmode_source;
+%feature("python:cdefaultargs") meep::fields::get_eigenmode_coefficients;
 
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;

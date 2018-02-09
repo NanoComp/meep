@@ -513,14 +513,15 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* compute mode-expansion coefficients *************************/
   /***************************************************************/
-  std::vector<int> bands(num_bands);
+  int *bands = new int[num_bands];
   for(int n=0; n<num_bands; n++)
    bands[n] = n+1;
 
   int num_freqs = fluxB.Nfreq;
-  std::vector<double> vgrp(0);
-  std::vector<cdouble> coeffs =
-   f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
+  cdouble *coeffs=new cdouble[2*num_freqs*num_bands];
+  double *vgrp=new double[num_freqs*num_bands];
+  f.get_eigenmode_coefficients(fluxB, *fvB, bands, num_bands,
+                               coeffs, vgrp, k_guess, (void *)&wB);
 
   double *Aflux=fluxA1.flux();
   double *Bflux=fluxB.flux();
@@ -536,10 +537,10 @@ int main(int argc, char *argv[])
      printf("freq | band | alpha^+ | alpha^-\n");
      printf("------------------------------------------------\n");
      for(int nf=0; nf<num_freqs; nf++)
-      for(unsigned nb=0; nb<bands.size(); nb++)
+      for(unsigned nb=0; nb<num_bands; nb++)
        { 
          double atot=0.0;
-         for(unsigned nbb=0; nbb<bands.size(); nbb++)
+         for(unsigned nbb=0; nbb<num_bands; nbb++)
           for(int pm=0, sign=1; pm<2; pm++, sign-=2)
            atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
          if (nb==0) fprintf(ff,"# atot  = %e (%e)\n",atot,atot/Bflux[0]);
