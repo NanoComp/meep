@@ -10,6 +10,7 @@ import h5py
 # TODO: Importing numpy loads MKL which breaks zdotc_
 import numpy as np
 from scipy.optimize import minimize_scalar
+from scipy.optimize import ridder
 import meep as mp
 from meep import mpb
 
@@ -483,6 +484,19 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
+
+        old_geometry = ms.geometry  # save the 5x5 grid with a missing rod
+
+        def rootfun(eps):
+            ms.geometry = old_geometry + [mp.Cylinder(0.2, material=mp.Medium(epsilon=eps))]
+            ms.run_tm()
+            return ms.get_freqs()[0] - 0.314159
+
+        rooteps = ridder(rootfun, 1, 12)
+        rootval = rootfun(rooteps)
+
+        self.assertAlmostEqual(5.221288723644521, rooteps, places=5)
+        self.assertAlmostEqual(1.1874461136596182e-8, rootval)
 
 if __name__ == '__main__':
     unittest.main()

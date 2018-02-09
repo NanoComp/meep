@@ -4,6 +4,7 @@ import math
 import meep as mp
 from meep import mpb
 from scipy.optimize import minimize_scalar
+from scipy.optimize import ridder
 
 
 def print_heading(h):
@@ -117,3 +118,23 @@ ms.num_bands = 1  # only need to compute a single band, now!
 ms.target_freq = (0.2812 + 0.4174) / 2
 ms.tolerance = 1e-8
 ms.run_tm()
+
+# Tuning the Point-defect Mode
+
+print_heading('Tuning the 5x5 point defect')
+
+old_geometry = ms.geometry  # save the 5x5 grid with a missing rod
+
+
+def rootfun(eps):
+    # add the cylinder of epsilon = eps to the old geometry:
+    ms.geometry = old_geometry + [mp.Cylinder(0.2, material=mp.Medium(epsilon=eps))]
+    ms.run_tm()  # solve for the mode (using the targeted solver)
+    print("epsilon = {} gives freq. =  {}".format(eps, ms.get_freqs()[0]))
+    return ms.get_freqs()[0] - 0.314159  # return 1st band freq. - 0.314159
+
+rooteps = ridder(rootfun, 1, 12)
+print("root (value of epsilon) is at: {}".format(rooteps))
+
+rootval = rootfun(rooteps)
+print("root function at {} = {}".format(rooteps, rootval))
