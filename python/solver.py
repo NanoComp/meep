@@ -397,6 +397,9 @@ class ModeSolver(object):
     def compute_field_energy(self):
         return self.mode_solver.compute_field_energy()
 
+    def compute_energy_in_objects(self, objs):
+        return self.mode_solver.compute_energy_in_objects(objs)
+
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
 
@@ -424,7 +427,8 @@ class ModeSolver(object):
             self.default_material,
             self.geometry,
             True if reset_fields else False,
-            self.deterministic
+            self.deterministic,
+            self.target_freq
         )
 
         if isinstance(reset_fields, basestring):

@@ -39,10 +39,12 @@ typedef struct {
 struct mode_solver {
   static const int MAX_NWORK = 10;
   static const char epsilon_CURFIELD_TYPE = 'n';
+  static const int NUM_FFT_BANDS = 20;
 
   int num_bands;
   int parity;
   double resolution;
+  double target_freq;
   lattice lat;
   double tolerance;
   int mesh_size;
@@ -66,7 +68,7 @@ struct mode_solver {
   geometric_object_list geometry;
 
   geom_box_tree geometry_tree;
-  geom_box_tree restricted_tree;
+  // geom_box_tree restricted_tree;
 
   mpb_real vol;
 
@@ -96,7 +98,7 @@ struct mode_solver {
 
   mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
               int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
-              bool reset_fields, bool deterministic);
+              bool reset_fields, bool deterministic, double target_freq);
   ~mode_solver();
 
   void init(int p, bool reset_fields);
@@ -133,6 +135,7 @@ struct mode_solver {
   void get_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
 
   std::vector<mpb_real> compute_field_energy();
+  double compute_energy_in_objects(geometric_object_list objects);
 
   char get_curfield_type();
   std::string get_parity_string();

@@ -50,7 +50,7 @@ void test_mode_solver() {
   bool reset_fields = true;
 
   py_mpb::mode_solver ms(num_bands, parity, resolution, lat, tolerance, 3, mat, g,
-                         reset_fields, true);
+                         reset_fields, true, 0.0);
 
   ms.get_epsilon();
   ms.output_field_to_file(-1, (char *)"tutorial-");

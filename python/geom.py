@@ -379,6 +379,26 @@ class Matrix(object):
     def transpose(self):
         return Matrix(self.row(0), self.row(1), self.row(2))
 
+    def inverse(self):
+        v1x = self[1][1] * self[2][2] - self[1][2] * self[2][1]
+        v1y = self[1][2] * self[2][0] - self[1][0] * self[2][2]
+        v1z = self[1][0] * self[2][1] - self[1][1] * self[2][0]
+        v1 = mp.Vector3(v1x, v1y, v1z)
+
+        v2x = self[2][1] * self[0][2] - self[0][1] * self[2][2]
+        v2y = self[0][0] * self[2][2] - self[0][2] * self[2][0]
+        v2z = self[0][1] * self[2][0] - self[0][0] * self[2][1]
+        v2 = mp.Vector3(v2x, v2y, v2z)
+
+        v3x = self[0][1] * self[1][2] - self[1][1] * self[0][2]
+        v3y = self[1][0] * self[0][2] - self[0][0] * self[1][2]
+        v3z = self[1][1] * self[0][0] - self[1][0] * self[0][1]
+        v3 = mp.Vector3(v3x, v3y, v3z)
+
+        m = Matrix(v1, v2, v3)
+
+        return m.scale(1 / self.determinant())
+
 
 # TODO: Add tests
 class Lattice(object):
@@ -447,6 +467,13 @@ class Lattice(object):
         return B.transpose() * B
 
 
+def cartesian_to_lattice(x, lat):
+    if isinstance(x, Vector3):
+        return lat.basis.inverse() * x
+
+    return (lat.basis.inverse() * x) * lat.basis
+
+
 def geometric_object_duplicates(shift_vector, min, max, *objs):
     dups = []
     for obj in objs:
@@ -456,3 +483,27 @@ def geometric_object_duplicates(shift_vector, min, max, *objs):
             dups.append(o)
 
     return dups
+
+
+def geometric_object_lattice_duplicates(lat, go_list, *usize):
+
+    def lat_to_lattice(v):
+        return cartesian_to_lattice(lat.basis * v, lat)
+
+    u1 = usize[0] if usize else 1
+    u2 = usize[1] if len(usize) >= 2 else 1
+    u3 = usize[2] if len(usize) >= 3 else 1
+    s = lat.size
+
+    b1 = lat_to_lattice(mp.Vector3(u1))
+    b2 = lat_to_lattice(mp.Vector3(0, u2, 0))
+    b3 = lat_to_lattice(mp.Vector3(0, 0, u3))
+
+    n1 = math.ceil((s.x if s.x else 1e-20) / u1)
+    n2 = math.ceil((s.y if s.y else 1e-20) / u2)
+    n3 = math.ceil((s.z if s.z else 1e-20) / u3)
+
+    d3 = geometric_object_duplicates(b3, -math.floor((n3 - 1) / 2), math.ceil((n3 - 1) / 2), *go_list)
+    d2 = geometric_object_duplicates(b2, -math.floor((n2 - 1) / 2), math.ceil((n2 - 1) / 2), *d3)
+
+    return geometric_object_duplicates(b1, -math.floor((n1 - 1) / 2), math.ceil((n1 - 1) / 2), *d2)

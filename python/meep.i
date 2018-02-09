@@ -860,7 +860,8 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         Vector3,
         Wedge,
         check_nonnegative,
-        geometric_object_duplicates
+        geometric_object_duplicates,
+        geometric_object_lattice_duplicates
     )
     from .simulation import (
         Absorber,

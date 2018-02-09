@@ -87,3 +87,33 @@ ms.geometry = [mp.Cylinder(0.3, material=mp.Medium(epsilon_diag=mp.Vector3(1, 1,
 ms.default_material = mp.Medium(epsilon_diag=mp.Vector3(12, 12, 1))
 ms.num_bands = 8
 ms.run()  # just use run, instead of run_te or run_tm, to find the complete gap
+
+# Finding a Point-defect State
+
+print_heading('5x5 point defect')
+
+ms.geometry_lattice = mp.Lattice(size=mp.Vector3(5, 5))
+ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+
+ms.geometry = mp.geometric_object_lattice_duplicates(ms.geometry_lattice, ms.geometry)
+ms.geometry.append(mp.Cylinder(0.2, material=mp.air))
+
+ms.resolution = 16
+ms.k_points = [mp.Vector3(0.5, 0.5)]
+
+ms.num_bands = 50
+ms.run_tm()
+
+mpb.output_efield_z(ms, 25)
+
+ms.get_dfield(25)  # compute the D field for band 25
+ms.compute_field_energy()  # compute the energy density from D
+c = mp.Cylinder(1.0, material=mp.air)
+print("energy in cylinder: {}".format(ms.compute_energy_in_objects([c])))
+
+print_heading('5x5 point defect, targeted solver')
+
+ms.num_bands = 1  # only need to compute a single band, now!
+ms.target_freq = (0.2812 + 0.4174) / 2
+ms.tolerance = 1e-8
+ms.run_tm()

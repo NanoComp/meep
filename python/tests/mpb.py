@@ -449,6 +449,40 @@ class TestModeSolver(unittest.TestCase):
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
 
+    def test_point_defect_state(self):
+
+        ms = self.init_solver()
+        ms.geometry_lattice = mp.Lattice(size=mp.Vector3(5, 5))
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
+
+        ms.geometry = mp.geometric_object_lattice_duplicates(ms.geometry_lattice, ms.geometry)
+        ms.geometry.append(mp.Cylinder(0.2, material=mp.air))
+
+        ms.resolution = 16
+        ms.k_points = [mp.Vector3(0.5, 0.5)]
+
+        ms.num_bands = 50
+        ms.run_tm()
+
+        mpb.output_efield_z(ms, 25)
+
+        ms.get_dfield(25)
+        ms.compute_field_energy()
+        c = mp.Cylinder(1.0, material=mp.air)
+        e = ms.compute_energy_in_objects([c])
+        self.assertAlmostEqual(0.6202776947564257, e)
+
+        ms.num_bands = 1
+        ms.target_freq = (0.2812 + 0.4174) / 2
+        ms.tolerance = 1e-8
+        ms.run_tm()
+
+        expected_brd = [
+            ((0.37677410124156546, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.37677410124156546, mp.Vector3(0.5, 0.5, 0.0)))
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
 
 if __name__ == '__main__':
     unittest.main()

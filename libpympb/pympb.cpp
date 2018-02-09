@@ -9,6 +9,57 @@
 #include "mpb/scalar.h"
 #include "meep/mympi.hpp"
 
+// xyz_loop.h
+
+#ifdef SCALAR_COMPLEX
+#  ifndef HAVE_MPI
+     #define LOOP_XYZ(md) { \
+          int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2, i3; \
+          for (i1 = 0; i1 < n1; ++i1) \
+        for (i2 = 0; i2 < n2; ++i2) \
+             for (i3 = 0; i3 < n3; ++i3) { \
+                      int xyz_index = ((i1 * n2 + i2) * n3 + i3);
+#  else /* HAVE_MPI */
+     /* first two dimensions are transposed in MPI output: */
+     #define LOOP_XYZ(md) { \
+          int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2_, i3; \
+          int local_n2 = md->local_ny, local_y_start = md->local_y_start; \
+          for (i2_ = 0; i2_ < local_n2; ++i2_) \
+               for (i1 = 0; i1 < n1; ++i1) \
+             for (i3 = 0; i3 < n3; ++i3) { \
+                      int i2 = i2_ + local_y_start; \
+                      int xyz_index = ((i2_ * n1 + i1) * n3 + i3);
+#  endif /* HAVE_MPI */
+#else /* not SCALAR_COMPLEX */
+#  ifndef HAVE_MPI
+     #define LOOP_XYZ(md) { \
+          int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1_, i2_, i1, i2, i3; \
+          int n_other = md->other_dims; \
+          int n_last = md->last_dim_size / 2; \
+          int rank = (n3 == 1) ? (n2 == 1 ? 1 : 2) : 3; \
+          for (i1_ = 0; i1_ < n_other; ++i1_) \
+        for (i2_ = 0; i2_ < n_last; ++i2_) { \
+                 int xyz_index = i1_ * n_last + i2_; \
+             switch (rank) { \
+                  case 2: i1 = i1_; i2 = i2_; i3 = 0; break; \
+                  case 3: i1 = i1_ / n2; i2 = i1_ % n2; i3 = i2_; break; \
+                  default: i1 = i2_; i2 = i3 = 0;  break; \
+                 }
+
+#  else /* HAVE_MPI */
+     #define LOOP_XYZ(md) { \
+          int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2_, i3; \
+          int local_n2 = md->local_ny, local_y_start = md->local_y_start; \
+          int local_n3 = n3 > 1 ? md->last_dim_size / 2 : 1; \
+          for (i2_ = 0; i2_ < local_n2; ++i2_)               \
+               for (i1 = 0; i1 < n1; ++i1) \
+             for (i3 = 0; i3 < local_n3; ++i3) { \
+                  int i2 = i2_ + local_y_start; \
+                  int xyz_index = ((i2_ * n1 + i1) * local_n3 + i3);
+#  endif  /* HAVE_MPI */
+
+#endif /* not SCALAR_COMPLEX */
+
 // TODO: Support MPI
 #define mpi_allreduce(sb, rb, n, ctype, t, op, comm) { \
      CHECK((sb) != (rb), "MPI_Allreduce doesn't work for sendbuf == recvbuf");\
@@ -152,10 +203,12 @@ static void deflation_constraint(evectmatrix X, void *data) {
 
 mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice lat,
                          double tolerance, int mesh_size, meep_geom::material_data *_default_material,
-                         geometric_object_list geom, bool reset_fields, bool deterministic):
+                         geometric_object_list geom, bool reset_fields, bool deterministic,
+                         double target_freq):
   num_bands(num_bands),
   parity(parity),
   resolution(resolution),
+  target_freq(target_freq),
   tolerance(tolerance),
   mesh_size(mesh_size),
   eigensolver_nwork(3),
@@ -196,7 +249,21 @@ mode_solver::mode_solver(int num_bands, int parity, double resolution, lattice l
 
 mode_solver::~mode_solver() {
   destroy_maxwell_data(mdata);
+  destroy_maxwell_target_data(mtdata);
   destroy_geom_box_tree(geometry_tree);
+  destroy_evectmatrix(H);
+
+  for (int i = 0; i < nwork_alloc; ++i) {
+    destroy_evectmatrix(W[i]);
+  }
+
+  if (Hblock.data != H.data) {
+    destroy_evectmatrix(Hblock);
+  }
+
+  if (muinvH.data != H.data) {
+    destroy_evectmatrix(muinvH);
+  }
 }
 
 void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
@@ -265,7 +332,7 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
 
 void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p) {
   boolean inobject;
-  material = (meep_geom::material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
+  material = (meep_geom::material_type)material_of_unshifted_point_in_tree_inobject(p, geometry_tree, &inobject);
   meep_geom::material_data *md = material;
 
   switch(md->which_subclass) {
@@ -317,6 +384,10 @@ void mode_solver::init(int p, bool reset_fields) {
   n[1] = std::max(resolution * std::ceil(geometry_lattice.size.y), 1.0);
   n[2] = std::max(resolution * std::ceil(geometry_lattice.size.z), 1.0);
 
+  if (target_freq != 0.0) {
+    meep::master_printf("Target frequency is %g\n", target_freq);
+  }
+
   int true_rank = n[2] > 1 ? 3 : (n[1] > 1 ? 2 : 1);
   if (true_rank < dimensions) {
     dimensions = true_rank;
@@ -349,8 +420,20 @@ void mode_solver::init(int p, bool reset_fields) {
     block_size = num_bands;
   }
 
+  if (deterministic) {
+    // seed should be the same for each run, although
+    // it should be different for each process.
+    // TODO: MPI
+    // int rank = meep::my_rank();
+    srand(314159); // * (rank + 1));
+  }
+
   meep::master_printf("Creating Maxwell data...\n");
-  mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, num_bands, num_bands);
+  mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, block_size, NUM_FFT_BANDS);
+
+  if (target_freq != 0.0) {
+    mtdata = create_maxwell_target_data(mdata, target_freq);
+  }
 
   init_epsilon();
 
@@ -376,11 +459,12 @@ void mode_solver::init(int p, bool reset_fields) {
       Hblock = create_evectmatrix(N, c, block_size, local_N, N_start, alloc_N);
     } else {
       Hblock = H;
-      if (using_mu() && block_size < num_bands) {
-        muinvH = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
-      } else {
-        muinvH = H;
-      }
+    }
+
+    if (using_mu() && block_size < num_bands) {
+      muinvH = create_evectmatrix(N, c, num_bands, local_N, N_start, alloc_N);
+    } else {
+      muinvH = H;
     }
   }
 
@@ -468,7 +552,7 @@ void mode_solver::init_epsilon() {
   meep::master_printf("Geometric object tree has depth %d and %d object nodes"
                       " (vs. %d actual objects)\n", tree_depth, tree_nobjects, geometry.num_items);
 
-  restricted_tree = geometry_tree;
+  // restricted_tree = geometry_tree;
 
   reset_epsilon();
 }
@@ -527,22 +611,13 @@ void mode_solver::set_kpoint_index(int i) {
 }
 
 void mode_solver::randomize_fields() {
-  int i;
 
   if (!mdata) {
     return;
   }
   meep::master_printf("Initializing fields to random numbers...\n");
 
-  if (deterministic) {
-    // seed should be the same for each run, although
-    // it should be different for each process.
-    // TODO: MPI
-    // int rank = meep::my_rank();
-    srand(314159); // * (rank + 1));
-  }
-
-  for (i = 0; i < H.n * H.p; ++i) {
+  for (int i = 0; i < H.n * H.p; ++i) {
     ASSIGN_SCALAR(H.data[i], rand() * 1.0 / RAND_MAX, rand() * 1.0 / RAND_MAX);
   }
 }
@@ -665,19 +740,33 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       }
     }
 
-    // TODO
-    // if (mtdata) {  /* solving for bands near a target frequency */
-    // }
+    if (mtdata) {  /* solving for bands near a target frequency */
+      // TODO
+      // if (eigensolver_davidsonp) {
+      // }
+      CHECK(mdata->mu_inv==NULL, "targeted solver doesn't handle mu");
+      // TODO: simple_preconditionerp ? maxwell_target_preconditioner : maxwell_target_preconditioner2
+      eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata,
+                  NULL, NULL, maxwell_target_preconditioner2, (void *)mtdata,
+                  evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
+                  tolerance, &num_iters, EIGS_DEFAULT_FLAGS);
 
-    // TODO
-    // if (eigensolver_davidsonp) {
-    // }
+      // now, diagonalize the real Maxwell operator in the solution subspace to
+      // get the true eigenvalues and eigenvectors
+      CHECK(nwork_alloc >= 2, "not enough workspace");
+      eigensolver_get_eigenvals(Hblock, eigvals.data() + ib, maxwell_operator, mdata, W[0], W[1]);
+    }
+    else {
+      // TODO
+      // if (eigensolver_davidsonp) {
+      // }
 
-    eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
-                mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
-                maxwell_preconditioner2, (void *) mdata, evectconstraint_chain_func,
-                (void *) constraints, W, nwork_alloc, tolerance, &num_iters,
-                EIGS_DEFAULT_FLAGS);
+      eigensolver(Hblock, eigvals.data() + ib, maxwell_operator, (void *) mdata,
+                  mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
+                  maxwell_preconditioner2, (void *) mdata, evectconstraint_chain_func,
+                  (void *) constraints, W, nwork_alloc, tolerance, &num_iters,
+                  EIGS_DEFAULT_FLAGS);
+    }
 
     if (Hblock.data != H.data) {  /* save solutions of current block */
       for (int in = 0; in < Hblock.n; ++in) {
@@ -1369,6 +1458,56 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   }
 
   return retval;
+}
+
+/* For curfield and energy density, compute the fraction of the energy
+   that resides inside the given list of geometric objects.   Later
+   objects in the list have precedence, just like the ordinary
+   geometry list. */
+double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
+
+  mpb_real *energy = (mpb_real *)curfield;
+  mpb_real energy_sum = 0;
+
+  if (!curfield || !strchr("DHBR", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
+    return 0.0;
+  }
+
+  for (int i = 0; i < objects.num_items; ++i) {
+    geom_fix_object(objects.items[i]);
+  }
+
+  int n1 = mdata->nx;
+  int n2 = mdata->ny;
+  int n3 = mdata->nz;
+
+  mpb_real s1 = geometry_lattice.size.x / n1;
+  mpb_real s2 = geometry_lattice.size.y / n2;
+  mpb_real s3 = geometry_lattice.size.z / n3;
+  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
+  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
+  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+
+  LOOP_XYZ(mdata) {
+    vector3 p;
+    int n;
+    p.x = i1 * s1 - c1; p.y = i2 * s2 - c2; p.z = i3 * s3 - c3;
+    for (n = objects.num_items - 1; n >= 0; --n) {
+      if (point_in_periodic_fixed_objectp(p, objects.items[n])) {
+        // TODO:
+        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
+        //   break; /* treat as a "nothing" object */
+        // }
+        energy_sum += energy[xyz_index];
+        break;
+      }
+    }
+  }}}
+
+  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  energy_sum *= vol / H.N;
+  return energy_sum;
 }
 
 std::vector<mpb_real> mode_solver::get_output_k() {
