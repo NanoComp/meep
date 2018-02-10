@@ -172,6 +172,11 @@ class TestCylinder(unittest.TestCase):
             self.assertIn(zeros(), c)
             self.assertIn("Vector3 is not initialized", ctx.exception)
 
+    def test_wrong_type_exception(self):
+        """Test for Issue 180"""
+        with self.assertRaises(TypeError) as ctx:
+            c = gm.Cylinder(radius=mp.Vector3())
+
 
 class TestWedge(unittest.TestCase):
 
