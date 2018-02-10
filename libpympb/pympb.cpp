@@ -72,6 +72,8 @@
      mpi_allreduce(&bbbb, (b), 1, ctype, t, op, comm); \
 }
 
+#define CHECK(condition, message) /* do nothing */
+
 namespace py_mpb {
 
 // TODO: Placeholder
@@ -80,7 +82,7 @@ int mpb_comm;
 const double inf = 1.0e20;
 
 // TODO: Replace this functionality with h5py
-#include "matrixio.cpp"
+// #include "matrixio.cpp"
 
 // This is the function passed to `set_maxwell_dielectric`
 void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
@@ -911,186 +913,186 @@ void mode_solver::curfield_reset() {
    the matrixio (fieldio) routines.  Allow the component to be specified
    (which_component 0/1/2 = x/y/z, -1 = all) for vector fields.
    Also allow the user to specify a prefix string for the filename. */
-void mode_solver::output_field_to_file(int which_component, char *filename_prefix) {
-  char fname[100];
-  char *fname2;
-  char description[100];
+//void mode_solver::output_field_to_file(int which_component, char *filename_prefix) {
+//  char fname[100];
+//  char *fname2;
+//  char description[100];
+//
+//  int dims[3];
+//  int local_dims[3];
+//  int start[3] = {0,0,0};
+//
+//  matrixio_id file_id = {-1,1};
+//
+//  int attr_dims[2] = {3, 3};
+//  mpb_real output_k[3]; /* kvector in reciprocal lattice basis */
+//  mpb_real output_R[3][3];
+//
+//  if (!curfield) {
+//    meep::master_fprintf(stderr, "fields, energy dens., or epsilon must be loaded first.\n");
+//    return;
+//  }
+//
+//// TODO: Support MPI
+//// #ifdef HAVE_MPI
+////   /* The first two dimensions (x and y) of the position-space fields
+////      are transposed when we use MPI, so we need to transpose everything. */
+////   dims[0] = mdata->ny;
+////   local_dims[1] = dims[1] = mdata->nx;
+////   local_dims[2] = dims[2] = mdata->nz;
+////   local_dims[0] = mdata->local_ny;
+////   start[0] = mdata->local_y_start;
+//
+////   output_k[0] = R[1][0]*mdata->current_k[0] + R[1][1]*mdata->current_k[1]
+////                 + R[1][2]*mdata->current_k[2];
+////   output_k[1] = R[0][0]*mdata->current_k[0] + R[0][1]*mdata->current_k[1]
+////                 + R[0][2]*mdata->current_k[2];
+////   output_k[2] = R[2][0]*mdata->current_k[0] + R[2][1]*mdata->current_k[1]
+////                 + R[2][2]*mdata->current_k[2];
+////   output_R[0][0]=R[1][0]; output_R[0][1]=R[1][1]; output_R[0][2]=R[1][2];
+////   output_R[1][0]=R[0][0]; output_R[1][1]=R[0][1]; output_R[1][2]=R[0][2];
+////   output_R[2][0]=R[2][0]; output_R[2][1]=R[2][1]; output_R[2][2]=R[2][2];
+//// #else /* ! HAVE_MPI */
+//  dims[0] = mdata->nx;
+//  local_dims[1] = dims[1] = mdata->ny;
+//  local_dims[2] = dims[2] = mdata->nz;
+//  local_dims[0] = mdata->local_nx;
+//  start[0] = mdata->local_x_start;
+//  output_k[0] = R[0][0]*mdata->current_k[0] + R[0][1]*mdata->current_k[1]
+//                + R[0][2]*mdata->current_k[2];
+//  output_k[1] = R[1][0]*mdata->current_k[0] + R[1][1]*mdata->current_k[1]
+//                + R[1][2]*mdata->current_k[2];
+//  output_k[2] = R[2][0]*mdata->current_k[0] + R[2][1]*mdata->current_k[1]
+//                + R[2][2]*mdata->current_k[2];
+//  output_R[0][0]=R[0][0]; output_R[0][1]=R[0][1]; output_R[0][2]=R[0][2];
+//  output_R[1][0]=R[1][0]; output_R[1][1]=R[1][1]; output_R[1][2]=R[1][2];
+//  output_R[2][0]=R[2][0]; output_R[2][1]=R[2][1]; output_R[2][2]=R[2][2];
+//// #endif /* ! HAVE_MPI */
+//
+//  if (strchr("Rv", curfield_type)) /* generic scalar/vector field */
+//    output_k[0] = output_k[1] = output_k[2] = 0.0; /* don't know k */
+//
+//  if (strchr("dhbecv", curfield_type)) { /* outputting vector field */
+//    matrixio_id data_id[6] = {{-1,1},{-1,1},{-1,1},{-1,1},{-1,1},{-1,1}};
+//    int i;
+//
+//    sprintf(fname, "%c.k%02d.b%02d", curfield_type, kpoint_index, curfield_band);
+//    if (which_component >= 0) {
+//      char comp_str[] = ".x";
+//      comp_str[1] = 'x' + which_component;
+//      strcat(fname, comp_str);
+//    }
+//    sprintf(description, "%c field, kpoint %d, band %d, freq=%g", curfield_type,
+//            kpoint_index, curfield_band, freqs[curfield_band - 1]);
+//    fname2 = fix_fname(fname, filename_prefix, mdata, 1);
+//    meep::master_printf("Outputting fields to %s...\n", fname2);
+//    file_id = matrixio_create(fname2);
+//    free(fname2);
+//    fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 3,
+//                                output_k, file_id, 0, data_id);
+//
+//    for (i = 0; i < 6; ++i) {
+//      if (data_id[i].id >= 0) {
+//        matrixio_close_dataset(data_id[i]);
+//      }
+//    }
+//    matrixio_write_data_attr(file_id, "Bloch wavevector", output_k, 1, attr_dims);
+//  }
+//  else if (strchr("C", curfield_type)) { /* outputting cmplx scalar field */
+//    matrixio_id data_id[2] = {{-1,1},{-1,1}};
+//    int i;
+//
+//    sprintf(fname, "%c.k%02d.b%02d", curfield_type, kpoint_index, curfield_band);
+//    sprintf(description, "%c field, kpoint %d, band %d, freq=%g", curfield_type, kpoint_index,
+//            curfield_band, freqs[curfield_band - 1]);
+//    fname2 = fix_fname(fname, filename_prefix, mdata, 1);
+//    meep::master_printf("Outputting complex scalar field to %s...\n", fname2);
+//    file_id = matrixio_create(fname2);
+//    free(fname2);
+//    fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 1,
+//                                output_k, file_id, 0, data_id);
+//
+//    for (i = 0; i < 2; ++i) {
+//         if (data_id[i].id >= 0) {
+//        matrixio_close_dataset(data_id[i]);
+//      }
+//    }
+//    matrixio_write_data_attr(file_id, "Bloch wavevector", output_k, 1, attr_dims);
+//  }
+//  else if (strchr("DHBnmR", curfield_type)) { /* scalar field */
+//    if (curfield_type == 'n') {
+//      sprintf(fname, "epsilon");
+//      sprintf(description, "dielectric function, epsilon");
+//    }
+//    else if (curfield_type == 'm') {
+//      sprintf(fname, "mu");
+//      sprintf(description, "permeability mu");
+//    }
+//    else {
+//      sprintf(fname, "%cpwr.k%02d.b%02d", tolower(curfield_type), kpoint_index, curfield_band);
+//      sprintf(description, "%c field energy density, kpoint %d, band %d, freq=%g",
+//              curfield_type, kpoint_index, curfield_band, freqs[curfield_band - 1]);
+//    }
+//    fname2 = fix_fname(fname, filename_prefix, mdata,
+//             /* no parity suffix for epsilon: */
+//             curfield_type != 'n' && curfield_type != 'm');
+//    meep::master_printf("Outputting %s...\n", fname2);
+//    file_id = matrixio_create(fname2);
+//    free(fname2);
+//
+//    output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, "data");
+//
+//    if (curfield_type == 'n') {
+//      int c1, c2, inv;
+//      char dataname[100];
+//
+//      for (inv = 0; inv < 2; ++inv)
+//        for (c1 = 0; c1 < 3; ++c1)
+//          for (c2 = c1; c2 < 3; ++c2) {
+//            get_epsilon_tensor(c1,c2, 0, inv);
+//            sprintf(dataname, "%s.%c%c", inv ? "epsilon_inverse" : "epsilon",
+//                    c1 + 'x', c2 + 'x');
+//            output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, dataname);
+//
+//#if defined(WITH_HERMITIAN_EPSILON)
+//            if (c1 != c2) {
+//              get_epsilon_tensor(c1,c2, 1, inv);
+//              strcat(dataname, ".i");
+//              output_scalarfield((mpt_real *) curfield, dims, local_dims, start, file_id, dataname);
+//            }
+//#endif
+//          }
+//    }
+//  }
+//  else {
+//    meep::master_fprintf(stderr, "unknown field type!\n");
+//  }
+//
+//  if (file_id.id >= 0) {
+//    matrixio_write_data_attr(file_id, "lattice vectors", &output_R[0][0], 2, attr_dims);
+//    matrixio_write_string_attr(file_id, "description", description);
+//    matrixio_close(file_id);
+//  }
+//
+//  /* We have destroyed curfield (by multiplying it by phases,
+//     and/or reorganizing in the case of real-amplitude fields). */
+//  curfield_reset();
+//}
 
-  int dims[3];
-  int local_dims[3];
-  int start[3] = {0,0,0};
-
-  matrixio_id file_id = {-1,1};
-
-  int attr_dims[2] = {3, 3};
-  mpb_real output_k[3]; /* kvector in reciprocal lattice basis */
-  mpb_real output_R[3][3];
-
-  if (!curfield) {
-    meep::master_fprintf(stderr, "fields, energy dens., or epsilon must be loaded first.\n");
-    return;
-  }
-
-// TODO: Support MPI
-// #ifdef HAVE_MPI
-//   /* The first two dimensions (x and y) of the position-space fields
-//      are transposed when we use MPI, so we need to transpose everything. */
-//   dims[0] = mdata->ny;
-//   local_dims[1] = dims[1] = mdata->nx;
-//   local_dims[2] = dims[2] = mdata->nz;
-//   local_dims[0] = mdata->local_ny;
-//   start[0] = mdata->local_y_start;
-
-//   output_k[0] = R[1][0]*mdata->current_k[0] + R[1][1]*mdata->current_k[1]
-//                 + R[1][2]*mdata->current_k[2];
-//   output_k[1] = R[0][0]*mdata->current_k[0] + R[0][1]*mdata->current_k[1]
-//                 + R[0][2]*mdata->current_k[2];
-//   output_k[2] = R[2][0]*mdata->current_k[0] + R[2][1]*mdata->current_k[1]
-//                 + R[2][2]*mdata->current_k[2];
-//   output_R[0][0]=R[1][0]; output_R[0][1]=R[1][1]; output_R[0][2]=R[1][2];
-//   output_R[1][0]=R[0][0]; output_R[1][1]=R[0][1]; output_R[1][2]=R[0][2];
-//   output_R[2][0]=R[2][0]; output_R[2][1]=R[2][1]; output_R[2][2]=R[2][2];
-// #else /* ! HAVE_MPI */
-  dims[0] = mdata->nx;
-  local_dims[1] = dims[1] = mdata->ny;
-  local_dims[2] = dims[2] = mdata->nz;
-  local_dims[0] = mdata->local_nx;
-  start[0] = mdata->local_x_start;
-  output_k[0] = R[0][0]*mdata->current_k[0] + R[0][1]*mdata->current_k[1]
-                + R[0][2]*mdata->current_k[2];
-  output_k[1] = R[1][0]*mdata->current_k[0] + R[1][1]*mdata->current_k[1]
-                + R[1][2]*mdata->current_k[2];
-  output_k[2] = R[2][0]*mdata->current_k[0] + R[2][1]*mdata->current_k[1]
-                + R[2][2]*mdata->current_k[2];
-  output_R[0][0]=R[0][0]; output_R[0][1]=R[0][1]; output_R[0][2]=R[0][2];
-  output_R[1][0]=R[1][0]; output_R[1][1]=R[1][1]; output_R[1][2]=R[1][2];
-  output_R[2][0]=R[2][0]; output_R[2][1]=R[2][1]; output_R[2][2]=R[2][2];
-// #endif /* ! HAVE_MPI */
-
-  if (strchr("Rv", curfield_type)) /* generic scalar/vector field */
-    output_k[0] = output_k[1] = output_k[2] = 0.0; /* don't know k */
-
-  if (strchr("dhbecv", curfield_type)) { /* outputting vector field */
-    matrixio_id data_id[6] = {{-1,1},{-1,1},{-1,1},{-1,1},{-1,1},{-1,1}};
-    int i;
-
-    sprintf(fname, "%c.k%02d.b%02d", curfield_type, kpoint_index, curfield_band);
-    if (which_component >= 0) {
-      char comp_str[] = ".x";
-      comp_str[1] = 'x' + which_component;
-      strcat(fname, comp_str);
-    }
-    sprintf(description, "%c field, kpoint %d, band %d, freq=%g", curfield_type,
-            kpoint_index, curfield_band, freqs[curfield_band - 1]);
-    fname2 = fix_fname(fname, filename_prefix, mdata, 1);
-    meep::master_printf("Outputting fields to %s...\n", fname2);
-    file_id = matrixio_create(fname2);
-    free(fname2);
-    fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 3,
-                                output_k, file_id, 0, data_id);
-
-    for (i = 0; i < 6; ++i) {
-      if (data_id[i].id >= 0) {
-        matrixio_close_dataset(data_id[i]);
-      }
-    }
-    matrixio_write_data_attr(file_id, "Bloch wavevector", output_k, 1, attr_dims);
-  }
-  else if (strchr("C", curfield_type)) { /* outputting cmplx scalar field */
-    matrixio_id data_id[2] = {{-1,1},{-1,1}};
-    int i;
-
-    sprintf(fname, "%c.k%02d.b%02d", curfield_type, kpoint_index, curfield_band);
-    sprintf(description, "%c field, kpoint %d, band %d, freq=%g", curfield_type, kpoint_index,
-            curfield_band, freqs[curfield_band - 1]);
-    fname2 = fix_fname(fname, filename_prefix, mdata, 1);
-    meep::master_printf("Outputting complex scalar field to %s...\n", fname2);
-    file_id = matrixio_create(fname2);
-    free(fname2);
-    fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 1,
-                                output_k, file_id, 0, data_id);
-
-    for (i = 0; i < 2; ++i) {
-         if (data_id[i].id >= 0) {
-        matrixio_close_dataset(data_id[i]);
-      }
-    }
-    matrixio_write_data_attr(file_id, "Bloch wavevector", output_k, 1, attr_dims);
-  }
-  else if (strchr("DHBnmR", curfield_type)) { /* scalar field */
-    if (curfield_type == 'n') {
-      sprintf(fname, "epsilon");
-      sprintf(description, "dielectric function, epsilon");
-    }
-    else if (curfield_type == 'm') {
-      sprintf(fname, "mu");
-      sprintf(description, "permeability mu");
-    }
-    else {
-      sprintf(fname, "%cpwr.k%02d.b%02d", tolower(curfield_type), kpoint_index, curfield_band);
-      sprintf(description, "%c field energy density, kpoint %d, band %d, freq=%g",
-              curfield_type, kpoint_index, curfield_band, freqs[curfield_band - 1]);
-    }
-    fname2 = fix_fname(fname, filename_prefix, mdata,
-             /* no parity suffix for epsilon: */
-             curfield_type != 'n' && curfield_type != 'm');
-    meep::master_printf("Outputting %s...\n", fname2);
-    file_id = matrixio_create(fname2);
-    free(fname2);
-
-    output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, "data");
-
-    if (curfield_type == 'n') {
-      int c1, c2, inv;
-      char dataname[100];
-
-      for (inv = 0; inv < 2; ++inv)
-        for (c1 = 0; c1 < 3; ++c1)
-          for (c2 = c1; c2 < 3; ++c2) {
-            get_epsilon_tensor(c1,c2, 0, inv);
-            sprintf(dataname, "%s.%c%c", inv ? "epsilon_inverse" : "epsilon",
-                    c1 + 'x', c2 + 'x');
-            output_scalarfield((mpb_real *) curfield, dims, local_dims, start, file_id, dataname);
-
-#if defined(WITH_HERMITIAN_EPSILON)
-            if (c1 != c2) {
-              get_epsilon_tensor(c1,c2, 1, inv);
-              strcat(dataname, ".i");
-              output_scalarfield((mpt_real *) curfield, dims, local_dims, start, file_id, dataname);
-            }
-#endif
-          }
-    }
-  }
-  else {
-    meep::master_fprintf(stderr, "unknown field type!\n");
-  }
-
-  if (file_id.id >= 0) {
-    matrixio_write_data_attr(file_id, "lattice vectors", &output_R[0][0], 2, attr_dims);
-    matrixio_write_string_attr(file_id, "description", description);
-    matrixio_close(file_id);
-  }
-
-  /* We have destroyed curfield (by multiplying it by phases,
-     and/or reorganizing in the case of real-amplitude fields). */
-  curfield_reset();
-}
-
-void mode_solver::output_scalarfield(mpb_real *vals,
-                                     const int dims[3],
-                                     const int local_dims[3],
-                                     const int start[3],
-                                     matrixio_id file_id,
-                                     const char *dataname) {
-
-  matrixio_id data_id = {-1, 1};
-
-  fieldio_write_real_vals(vals, 3, dims, local_dims, start, file_id, 0, dataname, &data_id);
-
-  if (data_id.id >= 0)
-    matrixio_close_dataset(data_id);
-}
+//void mode_solver::output_scalarfield(mpb_real *vals,
+//                                     const int dims[3],
+//                                     const int local_dims[3],
+//                                     const int start[3],
+//                                     matrixio_id file_id,
+//                                     const char *dataname) {
+//
+//  matrixio_id data_id = {-1, 1};
+//
+//  fieldio_write_real_vals(vals, 3, dims, local_dims, start, file_id, 0, dataname, &data_id);
+//
+//  if (data_id.id >= 0)
+//    matrixio_close_dataset(data_id);
+//}
 
 /* get the specified component of the dielectric tensor,
    or the inverse tensor if inv != 0 */
@@ -1157,25 +1159,26 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
    append a parity specifier (if any) (e.g. ".te"), returning a new
    string, which should be deallocated with free().  fname or prefix
    may be NULL, in which case they are treated as the empty string. */
-char *mode_solver::fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix) {
-  int fname_len = fname ? strlen(fname) : 0;
-  int prefix_len = prefix ? strlen(prefix) : 0;
-
-  char *s = (char *)malloc(sizeof(char) * (fname_len + prefix_len + 20));
-  strcpy(s, prefix ? prefix : "");
-  strcat(s, fname ? fname : "");
-  if (parity_suffix && d->parity != NO_PARITY) {
-    /* assumes parity suffix is less than 20 characters;
-       currently it is less than 12 */
-    strcat(s, ".");
-    strcat(s, parity_string(d));
-  }
-  return s;
-}
+//char *mode_solver::fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix) {
+//  int fname_len = fname ? strlen(fname) : 0;
+//  int prefix_len = prefix ? strlen(prefix) : 0;
+//
+//  char *s = (char *)malloc(sizeof(char) * (fname_len + prefix_len + 20));
+//  strcpy(s, prefix ? prefix : "");
+//  strcat(s, fname ? fname : "");
+//  if (parity_suffix && d->parity != NO_PARITY) {
+//    /* assumes parity suffix is less than 20 characters;
+//       currently it is less than 12 */
+//    strcat(s, ".");
+//    strcat(s, parity_string(d));
+//  }
+//  return s;
+//}
 
 void mode_solver::load_eigenvectors(char *filename) {
   meep::master_printf("Loading eigenvectors from \"%s\"...\n", filename);
-  evectmatrixio_readall_raw(filename, H);
+  // TODO: Write in python
+  // evectmatrixio_readall_raw(filename, H);
   curfield_reset();
 }
 

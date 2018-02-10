@@ -225,24 +225,19 @@ class ModeSolver(object):
             return (start, list_sub(l, start, length, 0, []))
 
     def output_field(self):
-        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_field_x(self):
-        # self.mode_sovler.output_field_to_file(0, self.get_filename_prefix())
         self.output_field_to_file(0, self.get_filename_prefix())
 
     def output_field_y(self):
-        # self.mode_solver.output_field_to_file(1, self.get_filename_prefix())
         self.output_field_to_file(1, self.get_filename_prefix())
 
     def output_field_z(self):
-        # self.mode_solver.output_field_to_file(2, self.get_filename_prefix())
         self.output_field_to_file(2, self.get_filename_prefix())
 
     def output_epsilon(self):
         self.mode_solver.get_epsilon()
-        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix())
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_mu(self):

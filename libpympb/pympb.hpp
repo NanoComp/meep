@@ -11,27 +11,27 @@
 namespace py_mpb {
 
 // TODO: Temporary matrixio stuff
-#if defined(HAVE_HDF5)
-/* don't use new HDF5 1.8 API (which isn't even fully documented yet, grrr) */
-#  define H5_USE_16_API 1
-#  include <hdf5.h>
-typedef hid_t matrixio_id_;
-/* HDF5 changed this datatype in their interfaces starting in version 1.6.4 */
-#  if H5_VERS_MAJOR > 1 \
-     || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 6) \
-     || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR == 6 && H5_VERS_RELEASE > 3)
-typedef hsize_t start_t;
-#  else
-typedef hssize_t start_t;
-#  endif
-#else /* no HDF */
-typedef int matrixio_id_; /* dummy */
-#endif
-
-typedef struct {
-     matrixio_id_ id;
-     int parallel;
-} matrixio_id;
+//#if defined(HAVE_HDF5)
+///* don't use new HDF5 1.8 API (which isn't even fully documented yet, grrr) */
+//#  define H5_USE_16_API 1
+//#  include <hdf5.h>
+//typedef hid_t matrixio_id_;
+///* HDF5 changed this datatype in their interfaces starting in version 1.6.4 */
+//#  if H5_VERS_MAJOR > 1 \
+//     || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 6) \
+//     || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR == 6 && H5_VERS_RELEASE > 3)
+//typedef hsize_t start_t;
+//#  else
+//typedef hssize_t start_t;
+//#  endif
+//#else /* no HDF */
+//typedef int matrixio_id_; /* dummy */
+//#endif
+//
+//typedef struct {
+//     matrixio_id_ id;
+//     int parallel;
+//} matrixio_id;
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
 
@@ -116,11 +116,11 @@ struct mode_solver {
   void init_epsilon();
   void reset_epsilon();
   void curfield_reset();
-  void output_field_to_file(int which_component, char *filename_prefix);
-  void output_scalarfield(mpb_real *vals, const int dims[3], const int local_dims[3],
-                          const int start[3], matrixio_id file_id, const char *dataname);
+  //void output_field_to_file(int which_component, char *filename_prefix);
+  //void output_scalarfield(mpb_real *vals, const int dims[3], const int local_dims[3],
+  //                        const int start[3], matrixio_id file_id, const char *dataname);
 
-  char *fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix);
+  //char *fix_fname(const char *fname, const char *prefix, maxwell_data *d, int parity_suffix);
   void load_eigenvectors(char *filename);
 
   size_t get_field_size();
