@@ -360,7 +360,8 @@ class TestModeSolver(unittest.TestCase):
 
     def test_output_efield_z(self):
         ms = self.init_solver()
-        ms.run_tm(mpb.output_efield_z)
+        ms.run_tm()
+        mpb.output_efield_z(ms, 8)
 
         ref_fname = 'tutorial-e.k16.b08.z.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fname)
@@ -370,9 +371,12 @@ class TestModeSolver(unittest.TestCase):
                 for k in ref.keys():
                     if k == 'description':
                         self.assertEqual(ref[k].value, res[k].value)
-                    # else:
-                        # TODO: 1.75% array mismatch
-                        # np.testing.assert_allclose(ref[k].value, res[k].value, rtol=1e-5)
+                    elif k == 'z.i' or k == 'z.r':
+                        for e, r in zip(ref[k].value.ravel(), res[k].value.ravel()):
+                            self.assertAlmostEqual(e, r, places=3)
+                    else:
+                        np.testing.assert_allclose(ref[k].value, res[k].value)
+
 
     def test_triangular_lattice(self):
 
