@@ -389,7 +389,6 @@ class ModeSolver(object):
 
     def _create_h5_dataset(self, h5file, key):
         dims = self.mode_solver.get_dims()
-        # TODO: dtype isn't always float64
         arr = np.zeros(np.prod(dims))
         self.mode_solver.get_curfield(arr)
         h5file[key] = np.reshape(arr, dims)
