@@ -87,7 +87,6 @@ class ModeSolver(object):
         self.k_split_num = 1
         self.k_split_index = 0
         self.eigensolver_iters = []
-        self.iterations = 0
         self.mode_solver = None
 
     def get_filename_prefix(self):
@@ -330,7 +329,6 @@ class ModeSolver(object):
                 dims = self.mode_solver.get_dims()
                 field = np.empty(np.prod(dims) * 3, np.complex128)
                 self.mode_solver.get_curfield_cmplx(field)
-
                 component_field = field[c_idx::3].reshape(dims)
                 component_field *= -1
 

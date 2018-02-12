@@ -11,7 +11,6 @@ endif
 if WITH_MPB
 if WITH_LIBCTLGEOM
   SUBDIRS += libpympb
-  SUBDIRS += libpympb/tests
 endif
 endif
 if WITH_PYTHON
