@@ -143,6 +143,7 @@ struct mode_solver {
   std::vector<mpb_real> get_output_k();
 
   void multiply_bloch_phase();
+  void compute_field_divergence();
   bool with_hermitian_epsilon();
 
 private:

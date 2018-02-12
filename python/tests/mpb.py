@@ -377,7 +377,6 @@ class TestModeSolver(unittest.TestCase):
                     else:
                         np.testing.assert_allclose(ref[k].value, res[k].value)
 
-
     def test_triangular_lattice(self):
 
         expected_brd = [
@@ -501,6 +500,23 @@ class TestModeSolver(unittest.TestCase):
 
         self.assertAlmostEqual(5.221288723644521, rooteps, places=5)
         self.assertAlmostEqual(1.1874461136596182e-8, rootval)
+
+    def test_output_charge_density(self):
+        ms = self.init_solver()
+        ms.run_te()
+        mpb.output_charge_density(ms, 8)
+
+        ref_fn = 'tutorial-C.k16.b08.te.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+
+        with h5py.File(ref_path, 'r') as ref:
+            with h5py.File(re.sub('tutorial', ms.filename_prefix, ref_fn)) as res:
+                for k in ref.keys():
+                    if k == 'description':
+                        self.assertEqual(ref[k].value, res[k].value)
+                    else:
+                        np.testing.assert_allclose(ref[k].value, res[k].value, atol=1e-8)
+
 
 if __name__ == '__main__':
     unittest.main()

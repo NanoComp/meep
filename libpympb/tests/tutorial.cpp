@@ -53,7 +53,7 @@ void test_mode_solver() {
                          reset_fields, true, 0.0);
 
   ms.get_epsilon();
-  ms.output_field_to_file(-1, (char *)"tutorial-");
+  // ms.output_field_to_file(-1, (char *)"tutorial-");
 
   for (int i = 0; i < NUM_KPOINTS; ++i) {
     ms.solve_kpoint(k_points[i]);

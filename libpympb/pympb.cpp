@@ -1594,6 +1594,50 @@ void mode_solver::multiply_bloch_phase() {
   }
 }
 
+// Replace the current field with its scalar divergence; only works for Bloch fields
+void mode_solver::compute_field_divergence()
+{
+  scalar *field = (scalar *) curfield;
+  scalar *field2 = mdata->fft_data == mdata->fft_data2 ? field : (field == mdata->fft_data ? mdata->fft_data2 : mdata->fft_data);
+  mpb_real scale;
+
+  if (!curfield || !strchr("dhbec", curfield_type)) {
+    meep::master_fprintf(stderr, "A Bloch-periodic field must be loaded.\n");
+    return;
+  }
+
+  /* convert back to Fourier space */
+  maxwell_compute_fft(-1, mdata, field, field2, 3, 3, 1);
+
+  /* compute (k+G) dot field */
+  for (int i = 0; i < mdata->other_dims; ++i) {
+    for (int j = 0; j < mdata->last_dim; ++j) {
+      int ij = i * mdata->last_dim_size + j;
+      k_data cur_k = mdata->k_plus_G[ij];
+      /* k+G = |k+G| (m x n) */
+      mpb_real kx = cur_k.kmag * (cur_k.my*cur_k.nz-cur_k.mz*cur_k.ny);
+      mpb_real ky = cur_k.kmag * (cur_k.mz*cur_k.nx-cur_k.mx*cur_k.nz);
+      mpb_real kz = cur_k.kmag * (cur_k.mx*cur_k.ny-cur_k.my*cur_k.nz);
+      ASSIGN_SCALAR(field2[ij], SCALAR_RE(field2[3*ij+0]) * kx +
+                    SCALAR_RE(field2[3*ij+1]) * ky + SCALAR_RE(field2[3*ij+2]) * kz,
+                    SCALAR_IM(field2[3*ij+0]) * kx + SCALAR_IM(field2[3*ij+1]) * ky +
+                    SCALAR_IM(field2[3*ij+2]) * kz);
+    }
+  }
+
+  /* convert scalar field back to position space */
+  maxwell_compute_fft(+1, mdata, field2, field, 1, 1, 1);
+
+  // multiply by i (from divergence) and normalization (from FFT) and 2*pi (from k+G)
+  scale = TWOPI / H.N;
+  int N = mdata->fft_output_size;
+  for (int i = 0; i < N; ++i) {
+    CASSIGN_SCALAR(curfield[i], -CSCALAR_IM(curfield[i]) * scale, CSCALAR_RE(curfield[i]) * scale);
+  }
+
+  curfield_type = 'C'; // complex (Bloch) scalar field
+}
+
 bool mode_solver::with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON
   return true;

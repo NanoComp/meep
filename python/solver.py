@@ -116,6 +116,10 @@ class ModeSolver(object):
     def get_hfield(self, which_band):
         return self._get_field('h', which_band)
 
+    def get_charge_density(self, which_band):
+        self.get_efield(which_band)
+        self.mode_solver.compute_field_divergence()
+
     def _get_field(self, f, band):
         if self.mode_solver is None:
             raise ValueError("Must call a run function before attempting to get a field")
@@ -257,7 +261,7 @@ class ModeSolver(object):
         if curfield_type in 'dhbecv':
             self._output_vector_field(curfield_type, fname_prefix, output_k, component)
         elif curfield_type == 'C':
-            self._output_complex_scalar_field(fname_prefix)
+            self._output_complex_scalar_field(fname_prefix, output_k)
         elif curfield_type in 'DHBnmR':
             self._output_scalar_field(curfield_type, fname_prefix)
         else:
@@ -284,9 +288,14 @@ class ModeSolver(object):
             f['Bloch wavevector'] = np.array(output_k)
             self._write_lattice_vectors(f)
 
-            # TODO
-            # fieldio_write_complex_field(curfield, 3, dims, local_dims, start, which_component, 1,
-            #                             output_k, file_id, 0, data_id);
+            dims = self.mode_solver.get_dims()
+            field = np.empty(np.prod(dims), np.complex128)
+            self.mode_solver.get_curfield_cmplx(field)
+
+            reshaped_field = field.reshape(dims)
+
+            f['c.r'] = np.real(reshaped_field)
+            f['c.i'] = np.imag(reshaped_field)
 
     def _output_vector_field(self, curfield_type, fname_prefix, output_k, component):
         components = ['x', 'y', 'z']
@@ -611,9 +620,9 @@ def output_dpwr(ms, which_band):
     ms.output_field()
 
 
-# def output_charge_density(ms, which_band):
-#     ms.get_charge_density(which_band)
-#     ms.output_field_to_file(-1, ms.get_filename_prefix())
+def output_charge_density(ms, which_band):
+    ms.get_charge_density(which_band)
+    ms.output_field_to_file(-1, ms.get_filename_prefix())
 
 
 def apply_band_func_thunk(ms, band_func, which_band, eval_thunk):

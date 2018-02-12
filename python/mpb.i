@@ -178,6 +178,7 @@ static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
         output_efield_x,
         output_efield_y,
         output_efield_z,
+        output_charge_density,
         output_bpwr,
         output_dpwr,
         output_at_kpoint
