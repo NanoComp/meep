@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: MEEP
 Description: time-domain electromagnetic simulation
 Version: @VERSION@
-Libs: -L${libdir} -lmeep@MEEP_SUFFIX@ @MEEPLIBS@
+Libs: -L${libdir} -lmeep @MEEPLIBS@
 Cflags: -I${includedir} @ARCHFLAG@
