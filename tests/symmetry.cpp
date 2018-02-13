@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2015 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ double rods_2d(const vec &pp) {
 static double eps_compare = 1e-3;
 static double thresh_compare = 1e-3;
 #else
-static double eps_compare = 1e-9;
+static double eps_compare = 1e-8;
 static double thresh_compare = 1e-8;
 #endif
 
@@ -1010,7 +1010,7 @@ int main(int argc, char **argv) {
   /**************************************************************************/
   /* For the following tests, we increase the check tolerance slightly.
      Floating-point errors can cause these tests to have slightly different
-     results with and without symmetry. 
+     results with and without symmetry.
 
      Note also that symmetry is tricky with nonlinearity, since in
      general a nonlinear system does *not* conserve the irreducible
