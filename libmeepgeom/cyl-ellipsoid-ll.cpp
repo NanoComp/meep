@@ -51,7 +51,7 @@ bool compare_hdf5_datasets(const char *file1, const char *name1,
    };
 
   for(size_t n=0; n<size; n++)
-   { double d1=data1[n], d2=data2[n], diff = fabs(d1-d2), max = fmax(abs(d1),abs(d2));
+   { double d1=data1[n], d2=data2[n], diff = fabs(d1-d2), max = fmax(fabs(d1),fabs(d2));
      if ( diff>abs_tol || diff>max*rel_tol ) return false;
    };
 
