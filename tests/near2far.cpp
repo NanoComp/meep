@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2015 Massachusetts Institute of Technology  
+/* Copyright (C) 2005-2015 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-/* Check of Green's functions (analytical vs. numerical) 
+/* Check of Green's functions (analytical vs. numerical)
    and near-to-far-field transformation. */
 
 #include <stdio.h>
@@ -68,14 +68,14 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
           }
           if (dot0 == 0) continue; /* zero field component */
           double relerr = sqrt(diff) / sqrt(dot0);
-          
+
           master_printf("  GREEN: %s -> %s, resolution %g: relerr = %g\n",
                         component_name(c0), component_name(c), a, relerr);
-          
+
           if (relerr > 0.05 * 30/a) {
               for (int i = 0; i < N; ++i)
                   master_printf("%g, %g,%g, %g,%g\n",
-                                xmax/4 + dx*i, 
+                                xmax/4 + dx*i,
                                 real(F[i]), imag(F[i]),
                                 real(F0[i]), imag(F0[i]));
               return 0;
@@ -96,7 +96,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
                 new volume_list(volume(vec(-L,-L,+L),vec(+L,+L,+L)), Sz, +1.,
                 new volume_list(volume(vec(-L,-L,-L),vec(+L,+L,-L)), Sz, -1.
                                 ))))));
-                      
+
   dft_near2far n2f = f.add_dft_near2far(&vl, w, w, 1);
   f.update_dfts();
   n2f.scale_dfts(sqrt(2*pi)/f.dt); // cancel time-integration factor
@@ -123,14 +123,14 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0) {
           }
           if (dot == 0) continue; /* zero field component */
           double relerr = sqrt(diff) / sqrt(dot);
-          
+
           master_printf("  NEAR2FAR: %s -> %s, resolution %g: relerr = %g\n",
                         component_name(c0), component_name(c), a, relerr);
-          
+
           if (relerr > 0.05 * 30/a) {
               for (int i = 0; i < N; ++i)
                   master_printf("%g, %g,%g, %g,%g\n",
-                                xmax + dx*i, 
+                                xmax + dx*i,
                                 real(F[i]), imag(F[i]),
                                 real(F0[i]), imag(F0[i]));
               return 0;
@@ -145,13 +145,11 @@ int main(int argc, char **argv) {
 
   const double a2d = argc > 1 ? atof(argv[1]) : 20, a3d = argc > 1 ? a2d : 10;
 
-#if 0  
-  FOR_E_AND_H(c0) if (!check_2d_3d(D3, 4, a3d, c0)) return 1;
-#else
   if (!check_2d_3d(D3, 4, a3d, Ez)) return 1;
   if (!check_2d_3d(D3, 4, a3d, Hz)) return 1;
-#endif
+#ifdef HAVE_LIBGSL
   FOR_E_AND_H(c0) if (!check_2d_3d(D2, 8, a2d, c0)) return 1;
+#endif
 
   return 0;
 }
