@@ -91,11 +91,13 @@ tests/three_d
 tests/two_dimensional
 tests/*.trs
 tests/*.log
+tests/*.h5
 tests/latest_output
 
 # libmeepgeom tests
 libmeepgeom/bend-flux-ll
 libmeepgeom/pw-source-ll
+libmeepgeom/wvg-taper
 libmeepgeom/ring-ll
 libmeepgeom/*.log
 libmeepgeom/*.trs
@@ -107,6 +109,7 @@ python/tests/*.trs
 python/examples/*.trs
 python/*.h5
 python/*.log
+python/*.bak
 
 # output files
 examples/*.h5
