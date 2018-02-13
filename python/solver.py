@@ -365,10 +365,10 @@ class ModeSolver(object):
             self._write_lattice_vectors(f)
 
             if curfield_type == 'n':
-                for inv in [True, False]:
+                for inv in [False, True]:
                     inv_str = 'epsilon_inverse' if inv else 'epsilon'
                     for c1 in range(3):
-                        for c2 in range(3):
+                        for c2 in range(c1, 3):
                             self.mode_solver.get_epsilon_tensor(c1, c2, 0, inv)
                             dataname = "{}.{}{}".format(inv_str, components[c1],
                                                         components[c2])
