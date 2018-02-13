@@ -41,7 +41,7 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 void usage(char *progname, const char *msg=0)
-{ 
+{
   if (msg) master_printf("%s\n",msg);
   master_printf("usage: %s [options]\n",progname);
   master_printf("options: \n");
@@ -97,7 +97,7 @@ vec k_guess(void *user_data, double freq, int band_num)
    };
 
   return vec(0.0, 0.0, 0.0);
-} 
+}
 
 /***************************************************************/
 /* user-defined material function for 2D/3D waveguide geometry */
@@ -126,10 +126,10 @@ void wvg_material(vector3 loc, void *user_data, meep_geom::medium_struct *m)
   double z = loc.z;
   double eps = wdata->eps_ambient; // assume we are in ambient medium
   if (wdata->three_d && z<wdata->z_substrate)  // 3D, in substrate
-   { 
+   {
      eps = wdata->eps_substrate;
    }
-  else if (wdata->three_d && z<wdata->z_oxide) // 3D, in oxide layer 
+  else if (wdata->three_d && z<wdata->z_oxide) // 3D, in oxide layer
    {
      eps = wdata->eps_oxide;
    }
@@ -156,7 +156,7 @@ void wvg_material(vector3 loc, void *user_data, meep_geom::medium_struct *m)
    };
 
   m->epsilon_diag.x=m->epsilon_diag.y=m->epsilon_diag.z=eps;
- 
+
 }
 
 /***************************************************************/
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
                                          sbtol, maxeval, ensure_periodicity,
                                          verbose, my_material);
   fields f(&the_structure);
-  
+
   /***************************************************************/
   /* plot structure if requested *********************************/
   /***************************************************************/
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
   double MaxPV=0.0;
   bool Stop=false;
   while(!Stop)
-   { 
+   {
      f.step();
 
      // do poynting-flux magnitude check at regular time intervals
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
       { NextFileTime += frame_interval;
         f.output_hdf5(Sx,f.total_volume(),0,false,false,filebase);
       }
-      
+
      bool SourcesFinished = ( f.round_time() > f.last_source_time() );
 
      Stop = SourcesFinished && FieldsDecayed;
@@ -438,17 +438,17 @@ int main(int argc, char *argv[])
   void *mode_data_A, **mode_data_B = new void*[num_bands];
   if (plot_modes)
    for(int nb=-1; nb<num_bands; nb++)
-    { 
+    {
       int band_num   = (nb==-1) ? 1       : nb+1;
       volume *fv     = (nb==-1) ? &fvA1   : fvB;
       double ww      = (nb==-1) ? wA      : wB;
       char AB        = (nb==-1) ? 'A'     : 'B';
       dft_flux *flux = (nb==-1) ? &fluxA1 : &fluxB;
       double vol     = (nb==-1) ? volA    : volB;
-    
-      void *mode_data=f.get_eigenmode(fcen, dB, *fv, *fv, band_num, 
+
+      void *mode_data=f.get_eigenmode(fcen, dB, *fv, *fv, band_num,
                                       k_guess((void *)&ww,fcen,band_num));
-      if (nb==-1) 
+      if (nb==-1)
        mode_data_A=mode_data;
       else
        mode_data_B[nb]=mode_data;
@@ -466,8 +466,8 @@ int main(int argc, char *argv[])
                     vgrp*vol);
 
       master_printf("Computing <mode|flux> %c%i...\n",AB,band_num);
-      if (am_master()) 
-       { 
+      if (am_master())
+       {
          double vgrp=get_group_velocity(mode_data);
          vec k=get_k(mode_data);
          snprintf(filename,100,"%s.modeData",filebase);
@@ -500,7 +500,7 @@ int main(int argc, char *argv[])
      snprintf(filename,100,"%s_fluxB",filebase);
      f.output_flux_fields(fluxB, *fvB, filename);
      snprintf(filename,100,"%s.fluxData",filebase);
-     if (am_master)
+     if (am_master())
       { FILE *ff=fopen(filename,"a");
         fprintf(ff,"flux A  = %e\n",fluxA.flux()[0]);
         fprintf(ff,"flux A1 = %e\n",fluxA1.flux()[0]);
@@ -509,7 +509,7 @@ int main(int argc, char *argv[])
         fclose(ff);
       };
    };
-  
+
   /***************************************************************/
   /* compute mode-expansion coefficients *************************/
   /***************************************************************/
@@ -537,13 +537,13 @@ int main(int argc, char *argv[])
      printf("------------------------------------------------\n");
      for(int nf=0; nf<num_freqs; nf++)
       for(unsigned nb=0; nb<bands.size(); nb++)
-       { 
+       {
          double atot=0.0;
          for(unsigned nbb=0; nbb<bands.size(); nbb++)
           for(int pm=0, sign=1; pm<2; pm++, sign-=2)
            atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
          if (nb==0) fprintf(ff,"# atot  = %e (%e)\n",atot,atot/Bflux[0]);
-   
+
          cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
          double vg=vgrp[nb*num_freqs + nf];
@@ -555,6 +555,6 @@ int main(int argc, char *argv[])
       };
      fclose(ff);
    };
-   
+
   return 0;
 }
