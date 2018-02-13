@@ -75,7 +75,7 @@ In this section we calculate the Casimir force in the two-dimensional Casimir pi
 ![](../images/Dblocks-config.jpg)
 </center>
 
-This is described in this [sample file](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). The dashed red lines indicate the surface $S$. This system consists of two metal $a\times a$ squares in between metallic sidewalls. To run a simulation in which the blocks are (nondispersive) dielectrics one can simply change their materials in the definitions as in a normal Meep simulation. For dispersive dielectrics a few extra steps are needed, which is discussed in a later section.
+This is described in [rod-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). The dashed red lines indicate the surface $S$. This system consists of two metal $a\times a$ squares in between metallic sidewalls. To run a simulation in which the blocks are (nondispersive) dielectrics one can simply change their materials in the definitions as in a normal Meep simulation. For dispersive dielectrics a few extra steps are needed, which is discussed in a later section.
 
 First define the geometry, consisting of the two metal sidewalls (each 2 pixels thick) and the two blocks:
 
@@ -247,7 +247,7 @@ If you look at the example file rods-plates.ctl ([3](http://ab-initio.mit.edu/~m
 
 Each Casimir force calculation requires many different, very short Meep simulations. For this type of computation, it is most efficient when running on a cluster to let each individual processor handle a subset of these simulations, rather than dividing up every simulation among the entire cluster (the default behavior for the MPI version of Meep). This way the speedup is almost exactly linear in the number of processors used. All of the functions used below are defined in the file parallel.scm ([4](http://ab-initio.mit.edu/~mccauley/casimir-examples/parallel.scm)), which should be included in the header of any ctl file using them.
 
-Our strategy (shown in rods-plates.ctl ([5](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl))) is as follows: each Casimir force calculation has a set of "internal" indices, each of which denotes a separate simulation. The sum of the results from all of these simulations gives the actual force. In our example (as in most examples), the internal indices are the source polarization, the list of sides for the source surface, and the harmonic moments $n$:
+Our strategy (shown in [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) is as follows: each Casimir force calculation has a set of "internal" indices, each of which denotes a separate simulation. The sum of the results from all of these simulations gives the actual force. In our example (as in most examples), the internal indices are the source polarization, the list of sides for the source surface, and the harmonic moments $n$:
 
 ```scm
  (define pol-list (list Ex Ey Ez Hx Hy Hz)) ;source polarizations
@@ -410,7 +410,7 @@ An example geometry in 3d which is $z$-invariant is shown below:
 ![](../images/Extruded-blocks.jpg)
 </center>
 
-This example is also treated in the [sample file](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
+This example is also treated in the [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
 
 $$\mathbf{F}^{3D} = \int_0^\infty dk_z F^{2D}(k_z)$$
 
@@ -492,7 +492,7 @@ In general, for $m > 1$, the $e^{im\phi}$ field dependence will give rise to sho
 Example: Three-Dimensional Periodic Systems
 -------------------------------------------
 
-Three-dimensional periodic systems are another example of systems that can be easily analyzed with Meep. In this example, we consider the Casimir force between a periodic array of dielectric spheres and a metallic plate, shown below and simulated in periodic-sphere-plate.ctl ([9](http://ab-initio.mit.edu/~mccauley/casimir-examples/periodic-sphere-plate.ctl)):
+Three-dimensional periodic systems are another example of systems that can be easily analyzed with Meep. In this example, we consider the Casimir force between a periodic array of dielectric spheres and a metallic plate, shown below and simulated in [periodic-sphere-plate.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/periodic-sphere-plate.ctl):
 
 <center>
 ![](../images/Spheres-plane.jpg)

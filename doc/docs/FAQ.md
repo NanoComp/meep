@@ -27,12 +27,16 @@ There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listin
 
 [Pull requests](https://github.com/stevengj/meep/pulls) involving bug fixes, new features, and general improvements are welcome and can be made to the master branch on GitHub. This includes tweaks, revisions, and updates to the documentation which is also part of the [repository](https://github.com/stevengj/meep/tree/master/doc).
 
+### Is there a standard reference on Meep?
+
+The technical details of Meep's inner workings are described in the peer-reviewed publication [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, vol. 181, pp. 687-702 (2010) [[pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)]. Additional information is provided in the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707) in Chapters 4 ("Electromagnetic Wave Source Conditions"), 5 ("Rigorous PML Validation and a Corrected Unsplit PML for Anisotropic Dispersive Media"), 6 ("Accurate FDTD Simulation of Discontinuous Materials by Subpixel Smoothing"), and 20 ("MEEP: A Flexible Free FDTD Software Package").
+
 Installation
 ------------
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to high-performance computing (HPC) clusters. Conda packages are available for Linux and macOS. Meep can also be installed on Windows using the open-source [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. See [Installation](Installation) for details.
+Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to supercomputers. Conda packages are available for Linux and macOS. Meep can also be installed on Windows using the open-source [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. See [Installation](Installation) for details.
 
 Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Installation shell scripts are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 

@@ -737,7 +737,7 @@ Miscellaneous Functions
 
 The output file names used by Meep, e.g. for HDF5 files, are automatically prefixed by the input variable `filename_prefix`. If `filename_prefix` is empty (the default), however, then Meep constructs a default prefix based on the current Python file name with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can get this prefix by running:
 
-**`get_filename_prefix`**  
+**`get_filename_prefix()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return the current prefix string that is prepended, by default, to all file names.
 
@@ -752,7 +752,7 @@ Put output in a subdirectory, which is created if necessary. If the optional arg
 
 ### Simulation Time
 
-**`Simulation.meep_time`**  
+**`Simulation.meep_time()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Return the current simulation time in simulation time units (e.g. during a run function). This is not the wall-clock time.
 
@@ -825,11 +825,11 @@ It is also possible to timestep both fields simultaneously (e.g. doing one times
 
 Once the fields/simulation have been initialized, you can change the values of various parameters by using the following functions (which are attributes of the `Simulation` class):
 
-**`reset_meep`**  
+**`reset_meep()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Reset all of Meep's parameters, deleting the fields, structures, etcetera, from memory as if you had not run any computations.
 
-**`restart_fields`**  
+**`restart_fields()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Restart the fields at time zero, with zero fields. Does *not* reset the Fourier transforms of the flux planes, which continue to be accumulated.
 
@@ -1088,31 +1088,31 @@ The most common step function is an output function, which outputs some field co
 
 Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), when they are outputted they are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdot\Delta$ in 3d.
 
-**`output_epsilon`**  
+**`output_epsilon()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the dielectric function (relative permittivity) $\varepsilon$. Note that this only outputs the frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
 
-**`output_mu`**  
+**`output_mu()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the relative permeability function $\mu$. Note that this only outputs the frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
-**`output_hpwr`**  
+**`output_hpwr()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 
-**`output_dpwr`**  
+**`output_dpwr()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 
-**`output_tot_pwr`**  
+**`output_tot_pwr()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the total electric and magnetic energy density. Note that you might want to wrap this step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
-**`output_Xfield_x, output_Xfield_y, output_Xfield_z, output_Xfield_r, output_Xfield_p`**  
+**`output_Xfield_x(), output_Xfield_y(), output_Xfield_z(), output_Xfield_r(), output_Xfield_p()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Output the $x$, $y$, $z$, $r$, or $\phi$ component respectively, of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` for the magnetic, electric, displacement, or Poynting field, respectively. If the field is complex, outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and imaginary parts, respectively. Note that for outputting the Poynting field, you might want to wrap the step function in `synchronized_magnetic` to compute it more accurately. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
-**`output_Xfield`**  
+**`output_Xfield()`**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Outputs *all* the components of the field *X*, where *X* is either `h`, `b`, `e`, `d`, or `s` as above, to an HDF5 file. That is, the different components are stored as different datasets within the *same* file.
 

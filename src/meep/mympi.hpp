@@ -19,6 +19,7 @@
 #define MEEP_MY_MPI_H
 
 #include <complex>
+#include <stddef.h>
 
 namespace meep {
 
@@ -79,6 +80,8 @@ std::complex<double> sum_to_all(std::complex<double> in);
 std::complex<long double> sum_to_all(std::complex<long double> in);
 int sum_to_all(int);
 int partial_sum_to_all(int in);
+size_t sum_to_all(size_t);
+size_t partial_sum_to_all(size_t in);
 bool or_to_all(bool in);
 void or_to_all(const int *in, int *out, int size);
 bool and_to_all(bool in);

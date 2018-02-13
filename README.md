@@ -20,17 +20,6 @@
 
 # Documentation
 
-See the [Meep manual on readthedocs](http://meep.readthedocs.io/en/latest) for the latest documentation.
+See the [manual on readthedocs](http://meep.readthedocs.io/en/latest) for the latest documentation.
 
-# Download
 
-The latest official release can be found at the [Meep download page](http://meep.readthedocs.io/en/latest/Download/).
-
-# Git Source
-
-To compile directly from a clone of the [Meep git repository](https://github.com/stevengj/meep), you need to run
-```
-sh autogen.sh
-make
-```
-in the cloned directory in order to generate the necessary files. You will need GNU autotools and SWIG installed, among other packages.

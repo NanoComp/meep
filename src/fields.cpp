@@ -60,7 +60,7 @@ fields::fields(structure *s, double m, double beta,
 				 beta, zero_fields_near_cylorigin);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
-      comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
+      comm_sizes[ft][ip] = new size_t[num_chunks*num_chunks];
       for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
     }
     typedef realnum *realnum_ptr;
@@ -111,7 +111,7 @@ fields::fields(const fields &thef) :
     chunks[i] = new fields_chunk(*thef.chunks[i]);
   FOR_FIELD_TYPES(ft) {
     for (int ip=0;ip<3;ip++) {
-      comm_sizes[ft][ip] = new int[num_chunks*num_chunks];
+      comm_sizes[ft][ip] = new size_t[num_chunks*num_chunks];
       for (int i=0;i<num_chunks*num_chunks;i++) comm_sizes[ft][ip][i] = 0;
     }
     typedef realnum *realnum_ptr;
@@ -438,13 +438,13 @@ bool fields_chunk::alloc_f(component c) {
 	  component bc = direction_component(Bx, component_direction(c));
 	  if (!f[bc][cmp]) {
 	    f[bc][cmp] = new realnum[gv.ntot()];
-	    for (int i=0;i<gv.ntot();i++) f[bc][cmp][i] = 0.0;
+	    for (size_t i=0;i<gv.ntot();i++) f[bc][cmp][i] = 0.0;
 	  }
 	  f[c][cmp] = f[bc][cmp];
 	}
 	else {
 	  f[c][cmp] = new realnum[gv.ntot()];
-	  for (int i=0;i<gv.ntot();i++) f[c][cmp][i] = 0.0;
+	  for (size_t i=0;i<gv.ntot();i++) f[c][cmp][i] = 0.0;
 	}
       }
     }
@@ -486,8 +486,8 @@ void fields::require_component(component c) {
   FOR_COMPONENTS(c_alloc)
     if (gv.has_field(c_alloc) && (is_like(gv.dim, c, c_alloc) || aniso2d))
       for (int i = 0; i < num_chunks; ++i)
-	if (chunks[i]->alloc_f(c_alloc))
-	  need_to_reconnect++;
+      	if (chunks[i]->alloc_f(c_alloc))
+      	  need_to_reconnect++;
 
   if (need_to_reconnect) figure_out_step_plan();
   if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;

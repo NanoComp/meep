@@ -25,8 +25,8 @@ using namespace std;
 namespace meep {
 
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_,
-		     dft_chunk *diag_,
-		     double fmin, double fmax, int Nf)
+            		     dft_chunk *diag_,
+            		     double fmin, double fmax, int Nf)
 {
   if (Nf <= 1) fmin = fmax = (fmin + fmax) * 0.5;
   freq_min = fmin;
@@ -66,13 +66,13 @@ void dft_force::operator-=(const dft_force &st) {
 }
 
 static void stress_sum(int Nfreq, double *F,
-		       const dft_chunk *F1, const dft_chunk *F2)
+            		       const dft_chunk *F1, const dft_chunk *F2)
 {
   for (const dft_chunk *curF1 = F1, *curF2 = F2; curF1 && curF2;
        curF1 = curF1->next_in_dft, curF2 = curF2->next_in_dft) {
     complex<realnum> extra_weight(real(curF1->extra_weight),
 				  imag(curF1->extra_weight));
-    for (int k = 0; k < curF1->N; ++k)
+    for (size_t k = 0; k < curF1->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
       	F[i] += real(extra_weight * curF1->dft[k*Nfreq + i]
       		     * conj(curF2->dft[k*Nfreq + i]));

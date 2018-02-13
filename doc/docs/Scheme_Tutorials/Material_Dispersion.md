@@ -2,7 +2,7 @@
 # Material Dispersion
 ---
 
-In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also the `material-dispersion.ctl` file included with Meep. From the dispersion relation $\omega(k)$, we will compute the numerical $\varepsilon(\omega)$ via the formula:
+In this example, we will perform a simulation with a **frequency-dependent dielectric** $\varepsilon(\omega)$, corresponding to **material dispersion**. See [Materials](../Materials/#material-dispersion) for more information on how material dispersion is supported. In particular, we will model a *uniform medium* of the dispersive material. See also [material-dispersion.ctl](https://github.com/stevengj/meep/blob/master/examples/material-dispersion.ctl). From the dispersion relation $\omega(k)$, we will compute the numerical $\varepsilon(\omega)$ via the formula:
 
 $$\varepsilon(\omega) = \left( \frac{ck}{\omega} \right) ^2$$
 
@@ -38,7 +38,7 @@ The real and imaginary parts of this dielectric function $\varepsilon(\omega)$ a
 ![](../images/Material-dispersion-eps.png)
 </center>
 
-We can see that the f=1.1 resonance causes a large change in both the real and imaginary parts of $\varepsilon$ around that frequency. In fact, there is a range of frequencies from 1.1 to 1.2161 where $\varepsilon$ is *negative*. In this range, no propagating modes exist &mdash; it is actually a kind of electromagnetic band gap associated with polariton resonances in a material. For more information on the physics of such materials, see e.g. chapter 14 of [Introduction to Solid State Physics](http://www.wiley.com/WileyCDA/WileyTitle/productCd-EHEP000803.html) by C. Kittel.
+We can see that the f=1.1 resonance causes a large change in both the real and imaginary parts of $\varepsilon$ around that frequency. In fact, there is a range of frequencies from 1.1 to 1.2161 where $\varepsilon$ is *negative*. In this range, no propagating modes exist &mdash; it is actually a kind of electromagnetic band gap associated with polariton resonances in a material. For more information on the physics of such materials, see e.g. Chapter 14 of [Introduction to Solid State Physics](http://www.wiley.com/WileyCDA/WileyTitle/productCd-EHEP000803.html) by C. Kittel.
 
 On the other hand, the f=0.5 resonance, because the `sigma` numerator is so small, causes very little change in the real part of $\varepsilon$. Nevertheless, it generates a clear peak in the *imaginary* part of $\varepsilon$, corresponding to a resonant absorption peak.
 

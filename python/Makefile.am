@@ -62,15 +62,22 @@ endif
 
 if MAINTAINER_MODE
 
+SWIG ?= swig
 SWIG_SRC = meep.i numpy.i vec.i
+SWIG_VERSION = $(shell $(SWIG) -version | grep Version | awk '{print $$3}')
 
 meep-python.cpp: $(SWIG_SRC) $(HPPFILES)
-	swig -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
+	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
 
 meep.py: meep-python.cpp
 
 __init__.py: meep.py
 	cp $< $@
+	if [[ "${SWIG_VERSION}" = 3.0.12 ]]; then \
+		sed -i.bak '/^if _swig_python_version_info >= (2, 7, 0):/,/^else:/d' $@; \
+		sed -i.bak 's/    import _meep/from . import _meep/' $@; \
+	fi
+
 
 INIT_PY = __init__.py
 
@@ -94,7 +101,7 @@ meep: _meep.la __init__.py
 all-local: meep
 
 clean-local:
-	rm -rf meep
+	rm -rf meep __init__.py.bak
 
 distclean-local:
 	rm -f *.h5

@@ -85,7 +85,7 @@ void dft_ldos::update(fields &f)
 
   // compute Jsum for LDOS normalization purposes
   // ...don't worry about the tiny inefficiency of recomputing this repeatedly
-  Jsum = 0.0; 
+  Jsum = 0.0;
 
   for (int ic=0;ic<f.num_chunks;ic++) if (f.chunks[ic]->is_mine()) {
       for (src_vol *sv = f.chunks[ic]->sources[D_stuff]; sv; sv = sv->next) {
@@ -93,15 +93,15 @@ void dft_ldos::update(fields &f)
 	realnum *fr = f.chunks[ic]->f[c][0];
 	realnum *fi = f.chunks[ic]->f[c][1];
 	if (fr && fi) // complex E
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (size_t j=0; j<sv->npts; j++) {
+	    const ptrdiff_t idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    EJ += complex<double>(fr[idx],fi[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	else if (fr) { // E is purely real
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (size_t j=0; j<sv->npts; j++) {
+	    const ptrdiff_t idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    EJ += double(fr[idx]) * conj(A);
 	    Jsum += abs(A);
@@ -113,15 +113,15 @@ void dft_ldos::update(fields &f)
 	realnum *fr = f.chunks[ic]->f[c][0];
 	realnum *fi = f.chunks[ic]->f[c][1];
 	if (fr && fi) // complex H
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (size_t j=0; j<sv->npts; j++) {
+	    const ptrdiff_t idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    HJ += complex<double>(fr[idx],fi[idx]) * conj(A);
 	    Jsum += abs(A);
 	  }
 	else if (fr) { // H is purely real
-	  for (int j=0; j<sv->npts; j++) {
-	    const int idx = sv->index[j];
+	  for (size_t j=0; j<sv->npts; j++) {
+	    const ptrdiff_t idx = sv->index[j];
 	    const complex<double> A = sv->A[j];
 	    HJ += double(fr[idx]) * conj(A);
 	    Jsum += abs(A);
@@ -145,7 +145,7 @@ void dft_ldos::update(fields &f)
 
   // correct for dV factors
   Jsum *= sqrt(f.gv.dV(f.gv.icenter(),1).computational_volume());
-  
+
 }
 
 }

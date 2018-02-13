@@ -30,7 +30,7 @@ struct integrate_data {
   component *cS;
   complex<double> *ph;
   complex<double> *fvals;
-  int *offsets;
+  ptrdiff_t *offsets;
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
@@ -53,17 +53,17 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
 {
   (void) ichunk; // unused
   integrate_data *data = (integrate_data *) data_;
-  int *off = data->offsets;
+  ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fvals = data->fvals, *ph = data->ph;
   complex<long double> sum = 0.0;
   double maxabs = 0;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
-  int ieos[6];
+  ptrdiff_t ieos[6];
   const component *imcs = data->invmu_cs;
   const direction *imds = data->invmu_ds;
-  int imos[6];
+  ptrdiff_t imos[6];
 
   for (int i = 0; i < data->num_fvals; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -120,7 +120,7 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid,
       }
     }
 
-    complex<double> integrand = 
+    complex<double> integrand =
       data->integrand(fvals, loc, data->integrand_data_);
     maxabs = max(maxabs, abs(integrand));
     sum += integrand * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
@@ -164,28 +164,28 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   bool needs_dielectric = false;
   for (int i = 0; i < num_fvals; ++i)
     if (components[i] == Dielectric) { needs_dielectric = true; break; }
-  if (needs_dielectric) 
+  if (needs_dielectric)
     FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninveps == 3) abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
     }
-  
+
   /* compute inverse-mu directions for computing Permeability fields */
   data.ninvmu = 0;
   bool needs_permeability = false;
   for (int i = 0; i < num_fvals; ++i)
     if (components[i] == Permeability) { needs_permeability = true; break; }
-  if (needs_permeability) 
+  if (needs_permeability)
     FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninvmu == 3) abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;
     }
-  
-  data.offsets = new int[2 * num_fvals];
+
+  data.offsets = new ptrdiff_t[2 * num_fvals];
   for (int i = 0; i < 2 * num_fvals; ++i)
     data.offsets[i] = 0;
 
@@ -203,8 +203,8 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   return complex<double>(real(data.sum), imag(data.sum));
 }
 
-typedef struct { 
-  field_rfunction integrand; void *integrand_data; 
+typedef struct {
+  field_rfunction integrand; void *integrand_data;
 } rfun_wrap_data;
 static complex<double> rfun_wrap(const complex<double> *fvals,
 				 const vec &loc, void *data_) {

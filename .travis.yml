@@ -60,6 +60,19 @@ matrix:
 ##################################################
 script:
   - autoreconf --verbose --install --symlink --force
+  - export MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
   - mkdir -p build && pushd build
   - ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
   - make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+
+after_script:
+  - BUILD_PREFIX=${TRAVIS_BUILD_DIR}/build/meep-${MEEP_VERSION}/_build
+  - MEEP_LOG=${BUILD_PREFIX}/tests/test-suite.log
+  - if [[ -e ${MEEP_LOG} ]]; then cat ${MEEP_LOG}; fi
+  - MEEPGEOM_LOG=${BUILD_PREFIX}/libmeepgeom/test-suite.log
+  - if [[ -e ${MEEPGEOM_LOG} ]]; then cat ${MEEPGEOM_LOG}; fi
+  - PYMPB_LOG=${BUILD_PREFIX}/libpympb/tests/test-suite.log
+  - if [[ -e ${PYMPB_LOG} ]]; then cat ${PYMPB_LOG}; fi
+  - PYTHON_LOG=${BUILD_PREFIX}/python/test-suite.log
+  - if [[ -e ${PYTHON_LOG} ]]; then cat ${PYTHON_LOG}; fi
+

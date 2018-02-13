@@ -18,6 +18,7 @@
 #define MEEP_H
 
 #include <stdio.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "meep/vec.hpp"
@@ -151,7 +152,7 @@ public:
     return 0; }
 
   susceptibility *next;
-  int ntot;
+  size_t ntot;
   realnum *sigma[NUM_FIELD_COMPONENTS][5];
 
   /* trivial_sigma[c][d] is true only if *none* of the processes has a
@@ -649,7 +650,7 @@ class structure {
   void add_to_effort_volumes(const grid_volume &new_effort_volume,
 			     double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks,
-			    const boundary_region &br, const symmetry &s);
+			     const boundary_region &br, const symmetry &s);
   void check_chunks();
   void changing_chunks();
 };
@@ -835,6 +836,17 @@ public:
 
   void scale_dft(std::complex<double> scale);
 
+  // chunk-by-chunk helper routine called by
+  // fields::do_flux_operation
+  std::complex<double> do_flux_operation(int rank, direction *ds,
+                            ivec min_corner, h5file *file,
+                            double *buffer, int reim,
+                            void *mode1_data,
+                            component mode1_c,
+                            void *mode2_data,
+                            component mode2_c,
+                            int num_freq, double flux_sign);
+
   void operator-=(const dft_chunk &chunk);
 
   // the frequencies to loop_in_chunks
@@ -843,7 +855,7 @@ public:
 
   component c; // component to DFT (possibly transformed by symmetry)
 
-  int N; // number of spatial points (on epsilon grid)
+  size_t N; // number of spatial points (on epsilon grid)
   std::complex<realnum> *dft; // N x Nomega array of DFT values.
 
   class dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
@@ -872,7 +884,7 @@ public:
   // cache of exp(iwt) * scale, of length Nomega
   std::complex<realnum> *dft_phase;
 
-  int avg1, avg2; // index offsets for average to get epsilon grid
+  ptrdiff_t avg1, avg2; // index offsets for average to get epsilon grid
 
   int vc; // component descriptor from the original volume
 };
@@ -1049,9 +1061,9 @@ class fields_chunk {
   dft_chunk *dft_chunks;
 
   realnum **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
-  int num_zeroes[NUM_FIELD_TYPES];
+  size_t num_zeroes[NUM_FIELD_TYPES];
   realnum **connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
-  int num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
+  size_t num_connections[NUM_FIELD_TYPES][CONNECT_COPY+1][Outgoing+1];
   std::complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
   int npol[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
@@ -1159,7 +1171,7 @@ class fields_chunk {
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
   // boundaries.cpp
-  void alloc_extra_connections(field_type, connect_phase, in_or_out, int);
+  void alloc_extra_connections(field_type, connect_phase, in_or_out, size_t);
   // dft.cpp
   void update_dfts(double timeE, double timeH);
 
@@ -1187,6 +1199,13 @@ typedef double (*field_rfunction)(const std::complex<double> *fields,
 field_rfunction derived_component_func(derived_component c, const grid_volume &gv,
 				       int &nfields, component cs[12]);
 
+/***************************************************************/
+/* prototype for optional user-supplied function to provide an */
+/* initial estimate of the wavevector of band #band at         */
+/* frequency freq for eigenmode calculations                   */
+/***************************************************************/
+typedef vec (*kpoint_func)(void *user_data, double freq, int band);
+
 class fields {
  public:
   int num_chunks;
@@ -1200,9 +1219,9 @@ class fields {
   realnum **comm_blocks[NUM_FIELD_TYPES];
   // This is the same size as each comm_blocks array, and store the sizes
   // of the comm blocks themselves for each connection-phase type
-  int *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
-  int comm_size_tot(int f, int pair) const {
-    int sum = 0; for (int ip=0; ip<3; ++ip) sum+=comm_sizes[f][ip][pair];
+  size_t *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY+1];
+  size_t comm_size_tot(int f, int pair) const {
+    size_t sum = 0; for (int ip=0; ip<3; ++ip) sum+=comm_sizes[f][ip][pair];
     return sum;
   }
 
@@ -1363,8 +1382,19 @@ class fields {
   void require_component(component c);
 
   // mpb.cpp
+  
+  // the return value of get_eigenmode is an opaque pointer
+  // that can be passed to eigenmode_amplitude() to get
+  // values of field components at arbitrary points in space.
+  // call destroy_eigenmode_data() to deallocate it when finished.
+  void *get_eigenmode(double omega_src, direction d, const volume where,
+	              const volume eig_vol, int band_num,
+		      const vec &kpoint, bool match_frequency=true,
+                      int parity=0, double resolution=0.0,
+                      double eigensolver_tol=1.0e-7, bool verbose=false);
+
   void add_eigenmode_source(component c, const src_time &src,
-			    direction d, const volume &where,
+	  		    direction d, const volume &where,
 			    const volume &eig_vol,
 			    int band_num,
 			    const vec &kpoint, bool match_frequency,
@@ -1373,12 +1403,20 @@ class fields {
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
 
+  std::vector< std::complex<double> >
+   get_eigenmode_coefficients(dft_flux flux, direction d,
+                              const volume &where,
+                              std::vector<int> bands,
+                              std::vector<double> &vgrp,
+                              kpoint_func k_func=0,
+                              void *k_func_data=0);
+
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
   void initialize_with_nth_te(int n);
   void initialize_with_nth_tm(int n);
-  void initialize_with_n_te(int n);
-  void initialize_with_n_tm(int n);
+  void initialize_with_n_te(int ntot);
+  void initialize_with_n_tm(int ntot);
   int phase_in_material(const structure *s, double time);
   int is_phasing();
 
@@ -1449,6 +1487,32 @@ class fields {
 			      double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux(const volume_list *where,
 			double freq_min, double freq_max, int Nfreq);
+
+  /********************************************************/
+  /* "flux operations" include things like                */
+  /*   (1) exporting dft_flux fields to HDF5 files        */
+  /*   (2) computing eigenmode decomposition coefficients */
+  /*       of dft_flux fields                             */
+  /* these are calculations that involve similar loops    */
+  /* over chunks, etc, so we consolidate them into a      */
+  /* single omnibus routine (do_flux_operation) with      */
+  /* multiple entry points for particular calculations.   */
+  /********************************************************/
+  void do_flux_operation(dft_flux flux, int num_freq, const volume where,
+                         const char *HDF5FileName,
+                         void *mode1_data=0, void *mode2_data=0,
+                         std::complex<double> *integrals=0);
+  void output_flux_fields(dft_flux flux, const volume where,
+                          const char *HDF5FileName);
+  void output_mode_fields(void *mode_data, dft_flux flux,
+                          const volume where,
+                          const char *HDF5FileName);
+  void get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
+                             const volume where, 
+                             std::complex<double>overlaps[2]);
+  void get_mode_mode_overlap(void *mode_data, void *mode2_data, dft_flux flux,
+                             const volume where,
+                             std::complex<double>overlaps[2]);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where,
@@ -1633,6 +1697,15 @@ void green2d(std::complex<double> *EH, const vec &x,
 void green3d(std::complex<double> *EH, const vec &x,
              double freq, double eps, double mu,
              const vec &x0, component c0, std::complex<double> f0);
+
+// non-class methods for working with mpb eigenmode data
+// 
+void destroy_eigenmode_data(void *vedata);
+std::complex<double> eigenmode_amplitude(void *vedata,
+                                         const vec &p,
+                                         component c);
+double get_group_velocity(void *vedata);
+vec get_k(void *vedata);
 
 } /* namespace meep */
 

@@ -36,7 +36,7 @@ typedef struct {
   ivec min_corner, max_corner;
   int num_chunks;
   realnum *buf;
-  int bufsz;
+  size_t bufsz;
   int rank;
   direction ds[3];
 
@@ -48,7 +48,7 @@ typedef struct {
   component *cS;
   complex<double> *ph;
   complex<double> *fields;
-  int *offsets;
+  ptrdiff_t *offsets;
   int ninveps;
   component inveps_cs[3];
   direction inveps_ds[3];
@@ -77,7 +77,7 @@ static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   data->min_corner = min(data->min_corner, min(isS, ieS));
   data->max_corner = max(data->max_corner, max(isS, ieS));
   data->num_chunks++;
-  int bufsz = 1;
+  size_t bufsz = 1;
   LOOP_OVER_DIRECTIONS(fc->gv.dim, d)
     bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   data->bufsz = max(data->bufsz, bufsz);
@@ -99,20 +99,20 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
   // Find output chunk dimensions and strides, etc.
 
   int start[3]={0,0,0}, count[3]={1,1,1};
-  int offset[3]={0,0,0}, stride[3]={1,1,1};
+  ptrdiff_t offset[3]={0,0,0}, stride[3]={1,1,1};
 
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
-  
+
   // figure out what yucky_directions (in LOOP_OVER_IVECS)
   // correspond to what directions in the transformed vectors (in output).
   ivec permute(zero_ivec(fc->gv.dim));
-  for (int i = 0; i < 3; ++i) 
+  for (int i = 0; i < 3; ++i)
     permute.set_direction(fc->gv.yucky_direction(i), i);
   permute = S.transform_unshifted(permute, sn);
   LOOP_OVER_DIRECTIONS(permute.dim, d)
     permute.set_direction(d, abs(permute.in_direction(d)));
-  
+
   // compute the size of the chunk to output, and its strides etc.
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
@@ -128,20 +128,20 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
     offset[j] *= stride[j];
     if (offset[j]) stride[j] *= -1;
   }
-  
+
   //-----------------------------------------------------------------------//
   // Compute the function to output, exactly as in fields::integrate,
   // except that here we store its values in a buffer instead of integrating.
 
-  int *off = data->offsets;
+  ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
   complex<double> *fields = data->fields, *ph = data->ph;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
-  int ieos[6];
+  ptrdiff_t ieos[6];
   const component *imcs = data->invmu_cs;
   const direction *imds = data->invmu_ds;
-  int imos[6];
+  ptrdiff_t imos[6];
 
   for (int i = 0; i < data->num_fields; ++i) {
     cS[i] = S.transform(data->components[i], -sn);
@@ -198,8 +198,8 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid,
     }
 
     complex<double> fun = data->fun(fields, loc, data->fun_data_);
-    int idx2 = ((((offset[0] + offset[1] + offset[2])
-		  + loop_i1 * stride[0]) 
+    ptrdiff_t idx2 = ((((offset[0] + offset[1] + offset[2])
+		  + loop_i1 * stride[0])
 		 + loop_i2 * stride[1]) + loop_i3 * stride[2]);
     data->buf[idx2] = data->reim ? imag(fun) : real(fun);
   }
@@ -225,7 +225,7 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   data.bufsz = 0;
   data.reim = reim;
 
-  loop_in_chunks(h5_findsize_chunkloop, (void *) &data, 
+  loop_in_chunks(h5_findsize_chunkloop, (void *) &data,
 	    where, Centered, true, true);
 
   file->prevent_deadlock(); // can't hold a lock since *_to_all is collective
@@ -265,32 +265,32 @@ void fields::output_hdf5(h5file *file, const char *dataname,
   bool needs_dielectric = false;
   for (int i = 0; i < num_fields; ++i)
     if (components[i] == Dielectric) { needs_dielectric = true; break; }
-  if (needs_dielectric) 
+  if (needs_dielectric)
     FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninveps == 3) abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
     }
-  
+
   /* compute inverse-mu directions for computing Permeability fields */
   data.ninvmu = 0;
   bool needs_permeability = false;
   for (int i = 0; i < num_fields; ++i)
     if (components[i] == Permeability) { needs_permeability = true; break; }
-  if (needs_permeability) 
+  if (needs_permeability)
     FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
       if (data.ninvmu == 3) abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;
     }
-  
-  data.offsets = new int[2 * num_fields];
+
+  data.offsets = new ptrdiff_t[2 * num_fields];
   for (int i = 0; i < 2 * num_fields; ++i)
     data.offsets[i] = 0;
-  
-  loop_in_chunks(h5_output_chunkloop, (void *) &data, 
+
+  loop_in_chunks(h5_output_chunkloop, (void *) &data,
 		 where, Centered, true, true);
 
   delete[] data.offsets;
@@ -319,17 +319,17 @@ void fields::output_hdf5(const char *dataname,
     file = open_h5file(dataname, h5file::WRITE, prefix, true);
 
   if (real_part_only) {
-    output_hdf5(file, dataname, num_fields, components, fun, fun_data_, 
+    output_hdf5(file, dataname, num_fields, components, fun, fun_data_,
 		0, where, append_data, single_precision);
   }
   else {
     int len = strlen(dataname) + 5;
     char *dataname2 = new char[len];
     snprintf(dataname2, len, "%s%s", dataname, ".r");
-    output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 
+    output_hdf5(file, dataname2, num_fields, components, fun, fun_data_,
 		0, where, append_data, single_precision);
     snprintf(dataname2, len, "%s%s", dataname, ".i");
-    output_hdf5(file, dataname2, num_fields, components, fun, fun_data_, 
+    output_hdf5(file, dataname2, num_fields, components, fun, fun_data_,
 		1, where, append_data, single_precision);
     delete[] dataname2;
   }
@@ -389,7 +389,7 @@ void fields::output_hdf5(component c,
                          bool single_precision,
 			 const char *prefix) {
   if (is_derived(int(c))) {
-    output_hdf5(derived_component(c), 
+    output_hdf5(derived_component(c),
 		where, file, append_data, single_precision, prefix);
     return;
   }
@@ -424,7 +424,7 @@ void fields::output_hdf5(derived_component c,
                          bool single_precision,
 			 const char *prefix) {
   if (!is_derived(int(c))) {
-    output_hdf5(component(c), 
+    output_hdf5(component(c),
 		where, file, append_data, single_precision, prefix);
     return;
   }
@@ -441,7 +441,7 @@ void fields::output_hdf5(derived_component c,
 
 /***************************************************************************/
 
-const char *fields::h5file_name(const char *name, 
+const char *fields::h5file_name(const char *name,
 				const char *prefix, bool timestamp)
 {
   const int buflen = 1024;
@@ -453,7 +453,7 @@ const char *fields::h5file_name(const char *name,
       snprintf(time_step_string, 32, "-%09.2f", time());
     else
       snprintf(time_step_string, 32, "-%09d", t);
-  } 
+  }
 
   snprintf(filename, buflen, "%s/" "%s%s" "%s" "%s" ".h5",
 	   outdir,
@@ -462,7 +462,7 @@ const char *fields::h5file_name(const char *name,
   return filename;
 }
 
-h5file *fields::open_h5file(const char *name, h5file::access_mode mode, 
+h5file *fields::open_h5file(const char *name, h5file::access_mode mode,
 			    const char *prefix, bool timestamp)
 {
   const char *filename = h5file_name(name, prefix, timestamp);
