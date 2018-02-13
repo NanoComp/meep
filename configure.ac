@@ -530,8 +530,8 @@ AC_CONFIG_FILES([
 	src/Makefile
 	tests/Makefile
 	examples/Makefile
-	libctl/Makefile
-	libctl/meep.scm
+	scheme/Makefile
+	scheme/meep.scm
 	libmeepgeom/Makefile
 	python/Makefile
 ])

@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = src tests examples
 
 if WITH_LIBCTL
-  SUBDIRS += libctl
+  SUBDIRS += scheme
 endif
 if WITH_LIBCTLGEOM
   SUBDIRS += libmeepgeom
