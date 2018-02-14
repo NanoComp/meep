@@ -179,7 +179,8 @@ mode_solver::mode_solver(int num_bands,
                          geometric_object_list geom,
                          bool reset_fields,
                          bool deterministic,
-                         double target_freq):
+                         double target_freq,
+                         int dims):
   num_bands(num_bands),
   parity(parity),
   resolution(resolution),
@@ -205,6 +206,7 @@ mode_solver::mode_solver(int num_bands,
   this->lat = lat;
 
   geometry_lattice = lat;
+  dimensions = dims;
 
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {

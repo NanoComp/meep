@@ -432,7 +432,8 @@ class ModeSolver(object):
             self.geometry,
             True if reset_fields else False,
             self.deterministic,
-            self.target_freq
+            self.target_freq,
+            self.dimensions
         )
 
         if isinstance(reset_fields, basestring):
