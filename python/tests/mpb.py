@@ -509,6 +509,30 @@ class TestModeSolver(unittest.TestCase):
                     else:
                         np.testing.assert_allclose(ref[k].value, res[k].value, atol=1e-8)
 
+    def test_bragg_sine(self):
+
+        def eps_func(p):
+            return mp.Medium(index=1 + 0.5 * (3 - 1) * (1 + math.cos(2 * math.pi * p.x)))
+
+        ms = self.init_solver(geom=False)
+        ms.geometry_lattice = mp.Lattice(size=mp.Vector3(1))
+        ms.k_points = mp.interpolate(9, [mp.Vector3(), mp.Vector3(0.5)])
+        ms.default_material = eps_func
+        ms.run_tm()
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)), (0.19477466422066053, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.3064030262321892, mp.Vector3(0.5, 0.0, 0.0)), (0.46877485474355135, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.5466257509444074, mp.Vector3(0.0, 0.0, 0.0)), (0.7316504429787957, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.7842615905875381, mp.Vector3(0.5, 0.0, 0.0)), (0.9893486171375727, mp.Vector3(0.0, 0.0, 0.0))),
+            ((1.024054865661228, mp.Vector3(0.0, 0.0, 0.0)), (1.2440980043947305, mp.Vector3(0.5, 0.0, 0.0))),
+            ((1.2666566862882775, mp.Vector3(0.5, 0.0, 0.0)), (1.4970379717266058, mp.Vector3(0.0, 0.0, 0.0))),
+            ((1.511580102941226, mp.Vector3(0.0, 0.0, 0.0)), (1.7488359041947699, mp.Vector3(0.5, 0.0, 0.0))),
+            ((1.758168321098983, mp.Vector3(0.5, 0.0, 0.0)), (1.9999083366718178, mp.Vector3(0.0, 0.0, 0.0))),
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -417,6 +417,10 @@ class ModeSolver(object):
         print("Initializing eigensolver data")
         print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
 
+        if type(self.default_material) is not mp.Medium and callable(self.default_material):
+            # TODO: Support epsilon_function user materials like meep?
+            self.default_material.eps = False
+
         self.mode_solver = mode_solver(
             self.num_bands,
             p,
