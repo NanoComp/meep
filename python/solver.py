@@ -49,7 +49,8 @@ class ModeSolver(object):
                  dimensions=3,
                  randomize_fields=False,
                  filename_prefix='',
-                 deterministic=False):
+                 deterministic=False,
+                 verbose=False):
 
         self.resolution = resolution
         self.is_negative_epsilon_ok = is_negative_epsilon_ok
@@ -77,6 +78,7 @@ class ModeSolver(object):
         self.randomize_fields = randomize_fields
         self.filename_prefix = filename_prefix
         self.deterministic = deterministic
+        self.verbose = verbose
         self.parity = 0
         self.iterations = 0
         self.all_freqs = []
@@ -433,7 +435,8 @@ class ModeSolver(object):
             True if reset_fields else False,
             self.deterministic,
             self.target_freq,
-            self.dimensions
+            self.dimensions,
+            self.verbose
         )
 
         if isinstance(reset_fields, basestring):

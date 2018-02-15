@@ -16,14 +16,14 @@ index_max = 3
 # This is periodic, and also has inversion symmetry.
 def eps_func(p):
     return mp.Medium(index=index_min + 0.5 * (index_max - index_min) *
-		     (1 + math.cos(2 * math.pi * p.x)))
+                     (1 + math.cos(2 * math.pi * p.x)))
 
-geometry_lattice = mp.Lattice(size=mp.Vector3(1, 0, 0,)) # 1d cell
+geometry_lattice = mp.Lattice(size=mp.Vector3(1)) # 1d cell
 
 # We'll just make it the default material, so that it goes everywhere.
 default_material = eps_func
 
-k_points = mp.interpolate(9, [mp.Vector3(0, 0, 0), mp.Vector3(0.5, 0, 0,)])
+k_points = mp.interpolate(9, [mp.Vector3(), mp.Vector3(x=0.5)])
 
 resolution = 32
 num_bands = 8

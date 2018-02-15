@@ -7,7 +7,6 @@ import re
 import unittest
 
 import h5py
-# TODO: Importing numpy loads MKL which breaks zdotc_
 import numpy as np
 from scipy.optimize import minimize_scalar
 from scipy.optimize import ridder
@@ -126,6 +125,16 @@ class TestModeSolver(unittest.TestCase):
             ref_arr[2::3] = ref_z.ravel()
 
             np.testing.assert_allclose(ref_arr, field)
+
+    def compare_h5_files(self, ref_path, res_path, rtol=1e-7, atol=0):
+        with h5py.File(ref_path) as ref:
+            with h5py.File(res_path, 'r') as res:
+                for k in ref.keys():
+                    if k == 'description':
+                        self.assertEqual(ref[k].value, res[k].value)
+                    else:
+                        np.testing.assert_allclose(ref[k].value, res[k].value,
+                                                   rtol=rtol, atol=atol)
 
     def test_update_band_range_data(self):
         brd = []
@@ -339,13 +348,8 @@ class TestModeSolver(unittest.TestCase):
         ms = self.init_solver(False)
         ms.run_te()
 
-        with h5py.File('test_output_field_to_file-epsilon.h5', 'r') as f:
-            with h5py.File(data_path) as ref:
-                for k in ref.keys():
-                    if k == 'description':
-                        self.assertEqual(ref[k].value, f[k].value)
-                    else:
-                        np.testing.assert_array_equal(ref[k].value, f[k].value)
+        res_path = self.filename_prefix + '-epsilon.h5'
+        self.compare_h5_files(data_path, res_path)
 
     def test_compute_field_energy(self):
         ms = self.init_solver()
@@ -501,13 +505,8 @@ class TestModeSolver(unittest.TestCase):
         ref_fn = 'tutorial-C.k16.b08.te.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)
 
-        with h5py.File(ref_path, 'r') as ref:
-            with h5py.File(re.sub('tutorial', ms.filename_prefix, ref_fn)) as res:
-                for k in ref.keys():
-                    if k == 'description':
-                        self.assertEqual(ref[k].value, res[k].value)
-                    else:
-                        np.testing.assert_allclose(ref[k].value, res[k].value, atol=1e-8)
+        res_path = re.sub('tutorial', ms.filename_prefix, ref_fn)
+        self.compare_h5_files(ref_path, res_path, atol=1e-8)
 
     def test_bragg_sine(self):
 
@@ -532,6 +531,26 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
+
+    def test_bragg(self):
+        n_lo = 1.0
+        n_hi = 3.0
+        w_hi = n_lo / (n_hi + n_lo)
+
+        ms = self.init_solver()
+        ms.default_material = mp.Medium(index=n_lo)
+        ms.geometry_lattice = mp.Lattice(size=mp.Vector3(1))
+        ms.geometry = [mp.Cylinder(mp.inf, material=mp.Medium(index=n_hi), center=mp.Vector3(),
+                                   axis=mp.Vector3(1), height=w_hi)]
+        ms.k_points = [mp.Vector3(0.5)]
+        ms.run_tm()
+        mpb.output_hfield_y(ms, 8)
+
+        ref_fn = 'bragg-h.k01.b08.y.tm.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('bragg', self.filename_prefix, ref_fn)
+
+        self.compare_h5_files(ref_path, res_path, rtol=1e-5)
 
 
 if __name__ == '__main__':
