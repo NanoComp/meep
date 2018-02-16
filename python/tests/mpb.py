@@ -92,14 +92,14 @@ class TestModeSolver(unittest.TestCase):
         for res, exp in zip(k_split[1], expected_list):
             self.assertTrue(res.close(exp))
 
-    def check_band_range_data(self, expected_brd, result):
+    def check_band_range_data(self, expected_brd, result, tol=7):
         for exp, res in zip(expected_brd, result):
             # Compare min freqs
-            self.assertAlmostEqual(exp[0][0], res[0][0])
+            self.assertAlmostEqual(exp[0][0], res[0][0], places=tol)
             # Compare min k
             self.assertTrue(exp[0][1].close(res[0][1]))
             # Compare max freqs
-            self.assertAlmostEqual(exp[1][0], res[1][0])
+            self.assertAlmostEqual(exp[1][0], res[1][0], places=tol)
             # Compare max k
             self.assertTrue(exp[1][1].close(res[1][1]))
 
@@ -530,7 +530,7 @@ class TestModeSolver(unittest.TestCase):
             ((1.758168321098983, mp.Vector3(0.5, 0.0, 0.0)), (1.9999083366718178, mp.Vector3(0.0, 0.0, 0.0))),
         ]
 
-        self.check_band_range_data(expected_brd, ms.band_range_data)
+        self.check_band_range_data(expected_brd, ms.band_range_data, tol=6)
 
     def test_bragg(self):
         n_lo = 1.0
