@@ -49,7 +49,8 @@ class ModeSolver(object):
                  dimensions=3,
                  randomize_fields=False,
                  filename_prefix='',
-                 deterministic=False):
+                 deterministic=False,
+                 verbose=False):
 
         self.resolution = resolution
         self.is_negative_epsilon_ok = is_negative_epsilon_ok
@@ -77,6 +78,7 @@ class ModeSolver(object):
         self.randomize_fields = randomize_fields
         self.filename_prefix = filename_prefix
         self.deterministic = deterministic
+        self.verbose = verbose
         self.parity = 0
         self.iterations = 0
         self.all_freqs = []
@@ -417,6 +419,10 @@ class ModeSolver(object):
         print("Initializing eigensolver data")
         print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
 
+        if type(self.default_material) is not mp.Medium and callable(self.default_material):
+            # TODO: Support epsilon_function user materials like meep?
+            self.default_material.eps = False
+
         self.mode_solver = mode_solver(
             self.num_bands,
             p,
@@ -428,7 +434,9 @@ class ModeSolver(object):
             self.geometry,
             True if reset_fields else False,
             self.deterministic,
-            self.target_freq
+            self.target_freq,
+            self.dimensions,
+            self.verbose
         )
 
         if isinstance(reset_fields, basestring):

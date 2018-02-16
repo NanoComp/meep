@@ -179,7 +179,9 @@ mode_solver::mode_solver(int num_bands,
                          geometric_object_list geom,
                          bool reset_fields,
                          bool deterministic,
-                         double target_freq):
+                         double target_freq,
+                         int dims,
+                         bool verbose):
   num_bands(num_bands),
   parity(parity),
   resolution(resolution),
@@ -196,7 +198,7 @@ mode_solver::mode_solver(int num_bands,
   mtdata(NULL),
   curfield_band(0),
   freqs(num_bands),
-  verbose(true),
+  verbose(verbose),
   deterministic(deterministic),
   kpoint_index(0),
   curfield(NULL),
@@ -205,6 +207,7 @@ mode_solver::mode_solver(int num_bands,
   this->lat = lat;
 
   geometry_lattice = lat;
+  dimensions = dims;
 
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
@@ -638,13 +641,11 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   std::vector<mpb_real> eigvals(num_bands);
 
-  // TODO
-  // flags = eigensolver_flags;
-  // if (verbose) {
-  //  flags |= EIGS_VERBOSE;
-  // }
-
-
+  // TODO: Get flags from python
+  int flags = EIGS_DEFAULT_FLAGS;
+  if (verbose) {
+   flags |= EIGS_VERBOSE;
+  }
 
   // Constant (zero frequency) bands at k=0 are handled specially, so remove
   // them from the solutions for the eigensolver.
@@ -724,7 +725,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       eigensolver(Hblock, eigvals.data() + ib, maxwell_target_operator, (void *)mtdata,
                   NULL, NULL, maxwell_target_preconditioner2, (void *)mtdata,
                   evectconstraint_chain_func, (void *)constraints, W, nwork_alloc,
-                  tolerance, &num_iters, EIGS_DEFAULT_FLAGS);
+                  tolerance, &num_iters, flags);
 
       // now, diagonalize the real Maxwell operator in the solution subspace to
       // get the true eigenvalues and eigenvectors
@@ -740,7 +741,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
                   mdata->mu_inv ? maxwell_muinv_operator : NULL, (void *) mdata,
                   maxwell_preconditioner2, (void *) mdata, evectconstraint_chain_func,
                   (void *) constraints, W, nwork_alloc, tolerance, &num_iters,
-                  EIGS_DEFAULT_FLAGS);
+                  flags);
     }
 
     if (Hblock.data != H.data) {  /* save solutions of current block */
