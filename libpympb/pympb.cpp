@@ -1407,6 +1407,133 @@ void mode_solver::compute_field_divergence()
   curfield_type = 'C'; // complex (Bloch) scalar field
 }
 
+/* Fix the phase of the current field (e/h/b/d) to a canonical value.
+   Also changes the phase of the corresponding eigenvector by the
+   same amount, so that future calculations will have a consistent
+   phase.
+
+   The following procedure is used, derived from a suggestion by Doug
+   Allan of Corning: First, choose the phase to maximize the sum of
+   the squares of the real parts of the components.  This doesn't fix
+   the overall sign, though.  That is done (after incorporating the
+   above phase) by: (1) find the largest absolute value of the real
+   part, (2) find the point with the greatest spatial array index that
+   has |real part| at least half of the largest value, and (3) make
+   that point positive.
+
+   In the case of inversion symmetry, on the other hand, the overall phase
+   is already fixed, to within a sign, by the choice to make the Fourier
+   transform purely real.  So, in that case we simply pick a sign, in
+   a manner similar to (2) and (3) above. */
+void mode_solver::fix_field_phase()
+{
+  mpb_real sq_sum2[2] = {0,0};
+  mpb_real sq_sum[2];
+  mpb_real maxabs = 0.0;
+
+  int maxabs_index = 0;
+  int maxabs_sign = 1;
+  int i;
+
+  double theta;
+  scalar phase;
+
+  if (!curfield || !strchr("dhbecv", curfield_type)) {
+    meep::master_fprintf(stderr, "The D/H/E field must be loaded first.\n");
+    return;
+  }
+  int N = mdata->fft_output_size * 3;
+
+  /* Compute the phase that maximizes the sum of the squares of
+     the real parts of the components.  Equivalently, maximize
+     the real part of the sum of the squares. */
+  for (i = 0; i < N; ++i) {
+    mpb_real a = curfield[i].re;
+    mpb_real b = curfield[i].im;
+    sq_sum2[0] += a*a - b*b;
+    sq_sum2[1] += 2*a*b;
+  }
+  mpi_allreduce(sq_sum2, sq_sum, 2, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+
+  /* compute the phase = exp(i*theta) maximizing the real part of
+     the sum of the squares.  i.e., maximize:
+       cos(2*theta)*sq_sum[0] - sin(2*theta)*sq_sum[1] */
+  theta = 0.5 * atan2(-sq_sum[1], sq_sum[0]);
+  phase.re = cos(theta);
+  phase.im = sin(theta);
+
+  /* Next, fix the overall sign.  We do this by first computing the
+     maximum |real part| of the jmax component (after multiplying
+     by phase), and then finding the last spatial index at which
+     |real part| is at least half of this value.  The sign is then
+     chosen to make the real part positive at that point.
+
+        (Note that we can't just make the point of maximum |real part|
+         positive, as that would be ambiguous in the common case of an
+         oscillating field within the unit cell.)
+
+        In the case of inversion symmetry (!SCALAR_COMPLEX), we work with
+        (real part - imag part) instead of (real part), to insure that we
+        have something that is nonzero somewhere. */
+
+  for (i = 0; i < N; ++i) {
+    mpb_real r = fabs(curfield[i].re * phase.re - curfield[i].im * phase.im);
+
+    if (r > maxabs) {
+      maxabs = r;
+    }
+  }
+
+  mpi_allreduce_1(&maxabs, mpb_real, SCALAR_MPI_TYPE, MPI_MAX, mpb_comm);
+
+  for (i = N - 1; i >= 0; --i) {
+    mpb_real r = curfield[i].re * phase.re - curfield[i].im * phase.im;
+
+    if (fabs(r) >= 0.5 * maxabs) {
+         maxabs_index = i;
+         maxabs_sign = r < 0 ? -1 : 1;
+         break;
+    }
+  }
+
+  if (i >= 0) { /* convert index to global index in distributed array: */
+    maxabs_index += mdata->local_y_start * mdata->nx * mdata->nz;
+  }
+
+  {
+    /* compute maximum index and corresponding sign over all the
+       processors, using the MPI_MAXLOC reduction operation: */
+    struct twoint_struct {int i; int s;} x;
+    x.i = maxabs_index; x.s = maxabs_sign;
+    mpi_allreduce_1(&x, struct twoint_struct, MPI_2INT, MPI_MAXLOC, mpb_comm);
+    maxabs_index = x.i; maxabs_sign = x.s;
+  }
+
+  ASSIGN_SCALAR(phase, SCALAR_RE(phase)*maxabs_sign, SCALAR_IM(phase)*maxabs_sign);
+
+  meep::master_printf("Fixing %c-field (band %d) phase by %g + %gi; "
+                      "max ampl. = %g\n", curfield_type, curfield_band,
+                      SCALAR_RE(phase), SCALAR_IM(phase), maxabs);
+
+  /* Now, multiply everything by this phase, *including* the
+     stored "raw" eigenvector in H, so that any future fields
+     that we compute will have a consistent phase: */
+  for (i = 0; i < N; ++i) {
+    mpb_real a = curfield[i].re;
+    mpb_real b = curfield[i].im;
+    curfield[i].re = a*SCALAR_RE(phase) - b*SCALAR_IM(phase);
+    curfield[i].im = a*SCALAR_IM(phase) + b*SCALAR_RE(phase);
+  }
+  for (int i = 0; i < H.n; ++i) {
+    mpb_real bbbb_re = H.data[i*H.p + curfield_band - 1].re;
+    mpb_real bbbb_im = H.data[i*H.p + curfield_band - 1].im;
+    mpb_real cccc_re = phase.re;
+    mpb_real cccc_im = phase.im;
+    H.data[i*H.p + curfield_band - 1].re = bbbb_re * cccc_re - bbbb_im * cccc_im;
+    H.data[i*H.p + curfield_band - 1].im = bbbb_re * cccc_im + bbbb_im * cccc_re;
+  }
+}
+
 bool mode_solver::with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON
   return true;

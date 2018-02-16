@@ -361,21 +361,13 @@ class TestModeSolver(unittest.TestCase):
     def test_output_efield_z(self):
         ms = self.init_solver()
         ms.run_tm()
+        mpb.fix_efield_phase(ms, 8)
         mpb.output_efield_z(ms, 8)
 
         ref_fname = 'tutorial-e.k16.b08.z.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fname)
-
-        with h5py.File(ref_path, 'r') as ref:
-            with h5py.File(re.sub('tutorial', ms.filename_prefix, ref_fname)) as res:
-                for k in ref.keys():
-                    if k == 'description':
-                        self.assertEqual(ref[k].value, res[k].value)
-                    elif k == 'z.i' or k == 'z.r':
-                        for e, r in zip(ref[k].value.ravel(), res[k].value.ravel()):
-                            self.assertAlmostEqual(e, r, places=3)
-                    else:
-                        np.testing.assert_allclose(ref[k].value, res[k].value)
+        res_path = re.sub('tutorial', ms.filename_prefix, ref_fname)
+        self.compare_h5_files(ref_path, res_path, atol=1e-8)
 
     def test_triangular_lattice(self):
 

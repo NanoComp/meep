@@ -330,7 +330,6 @@ class ModeSolver(object):
                 field = np.empty(np.prod(dims) * 3, np.complex128)
                 self.mode_solver.get_curfield_cmplx(field)
                 component_field = field[c_idx::3].reshape(dims)
-                component_field *= -1
 
                 name = "{}.r".format(c)
                 f[name] = np.real(component_field)
@@ -620,6 +619,29 @@ def output_dpwr(ms, which_band):
 def output_charge_density(ms, which_band):
     ms.get_charge_density(which_band)
     ms.output_field_to_file(-1, ms.get_filename_prefix())
+
+
+# Band functions to pick a canonical phase for the eigenstate of the
+# given band based upon the spatial representation of the given field
+
+def fix_hfield_phase(ms, which_band):
+    ms.get_hfield(which_band)
+    ms.mode_solver.fix_field_phase()
+
+
+def fix_bfield_phase(ms, which_band):
+    ms.get_bfield(which_band)
+    ms.mode_solver.fix_field_phase()
+
+
+def fix_dfield_phase(ms, which_band):
+    ms.get_dfield(which_band)
+    ms.mode_solver.fix_field_phase()
+
+
+def fix_efield_phase(ms, which_band):
+    ms.get_efield(which_band)
+    ms.mode_solver.fix_field_phase()
 
 
 def apply_band_func_thunk(ms, band_func, which_band, eval_thunk):

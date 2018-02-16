@@ -181,6 +181,10 @@ static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
         output_charge_density,
         output_bpwr,
         output_dpwr,
-        output_at_kpoint
+        output_at_kpoint,
+        fix_hfield_phase,
+        fix_bfield_phase,
+        fix_dfield_phase,
+        fix_efield_phase,
     )
 %}
