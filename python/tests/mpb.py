@@ -4,6 +4,7 @@ import glob
 import math
 import os
 import re
+import sys
 import unittest
 
 import h5py
@@ -17,6 +18,8 @@ from meep import mpb
 class TestModeSolver(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+    examples_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
+    sys.path.insert(0, examples_dir)
 
     def setUp(self):
         """Store the test name and register a function to clean up all the
@@ -553,6 +556,21 @@ class TestModeSolver(unittest.TestCase):
 
         self.compare_h5_files(ref_path, res_path, rtol=1e-5)
 
+    def test_diamond(self):
+        from mpb_diamond import ms
+        ms.deterministic = True
+
+        ms.run(mpb.output_at_kpoint(mp.Vector3(0, 0.625, 0.375), mpb.output_dpwr))
+
+        expected_brd = [
+            ((0.0, mp.Vector3()), (0.39435794061756657, mp.Vector3(0.25, 0.75, 0.5))),
+            ((0.0, mp.Vector3()), (0.39658490891646875, mp.Vector3(0.29999999999999993, 0.75, 0.45000000000000007))),
+            ((0.4419147354915113, mp.Vector3(y=0.5)), (0.596198703285916, mp.Vector3())),
+            ((0.4437128031052224, mp.Vector3(y=0.5)), (0.596288439546851, mp.Vector3())),
+            ((0.5031415977692567, mp.Vector3(0.0, 0.6, 0.4)), (0.5962884522384696, mp.Vector3())),
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
 
 if __name__ == '__main__':
     unittest.main()

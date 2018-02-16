@@ -181,7 +181,8 @@ mode_solver::mode_solver(int num_bands,
                          bool deterministic,
                          double target_freq,
                          int dims,
-                         bool verbose):
+                         bool verbose,
+                         bool periodicity):
   num_bands(num_bands),
   parity(parity),
   resolution(resolution),
@@ -208,6 +209,7 @@ mode_solver::mode_solver(int num_bands,
 
   geometry_lattice = lat;
   dimensions = dims;
+  ensure_periodicity = periodicity;
 
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {

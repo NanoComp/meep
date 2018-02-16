@@ -74,7 +74,8 @@ struct mode_solver {
 
   mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
               int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
-              bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose);
+              bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
+              bool periodicity);
   ~mode_solver();
 
   void init(int p, bool reset_fields);

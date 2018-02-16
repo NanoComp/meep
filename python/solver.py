@@ -436,7 +436,8 @@ class ModeSolver(object):
             self.deterministic,
             self.target_freq,
             self.dimensions,
-            self.verbose
+            self.verbose,
+            self.ensure_periodicity
         )
 
         if isinstance(reset_fields, basestring):
