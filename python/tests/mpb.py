@@ -127,6 +127,7 @@ class TestModeSolver(unittest.TestCase):
             np.testing.assert_allclose(ref_arr, field)
 
     def compare_h5_files(self, ref_path, res_path, rtol=1e-7, atol=0):
+        mp.all_wait()
         with h5py.File(ref_path) as ref:
             with h5py.File(res_path, 'r') as res:
                 for k in ref.keys():
