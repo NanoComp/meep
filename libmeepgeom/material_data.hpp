@@ -47,12 +47,14 @@ typedef struct susceptibility_struct {
   bool is_file;
 } susceptibility;
 
-typedef struct {
+struct susceptibility_list {
   int num_items;
   susceptibility *items;
-} susceptibility_list;
 
-typedef struct medium_struct {
+  susceptibility_list(): num_items(0), items(NULL) {}
+};
+
+struct medium_struct {
   vector3 epsilon_diag;
   vector3 epsilon_offdiag;
   vector3 mu_diag;
@@ -65,7 +67,49 @@ typedef struct medium_struct {
   vector3 H_chi3_diag;
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
-} medium_struct;
+
+  medium_struct(double epsilon=1): E_susceptibilities(), H_susceptibilities() {
+    epsilon_diag.x = epsilon;
+    epsilon_diag.y = epsilon;
+    epsilon_diag.z = epsilon;
+
+    epsilon_offdiag.x = 0;
+    epsilon_offdiag.y = 0;
+    epsilon_offdiag.z = 0;
+
+    mu_diag.x = 1;
+    mu_diag.y = 1;
+    mu_diag.z = 1;
+
+    mu_offdiag.x = 0;
+    mu_offdiag.y = 0;
+    mu_offdiag.z = 0;
+
+    E_chi2_diag.x = 0;
+    E_chi2_diag.y = 0;
+    E_chi2_diag.z = 0;
+
+    E_chi3_diag.x = 0;
+    E_chi3_diag.y = 0;
+    E_chi3_diag.z = 0;
+
+    H_chi2_diag.x = 0;
+    H_chi2_diag.y = 0;
+    H_chi2_diag.z = 0;
+
+    H_chi3_diag.x = 0;
+    H_chi3_diag.y = 0;
+    H_chi3_diag.z = 0;
+
+    D_conductivity_diag.x = 0;
+    D_conductivity_diag.y = 0;
+    D_conductivity_diag.z = 0;
+
+    B_conductivity_diag.x = 0;
+    B_conductivity_diag.y = 0;
+    B_conductivity_diag.z = 0;
+  }
+};
 
 // prototype for user-defined material function,
 // which should fill in medium as appropriate to
@@ -87,7 +131,7 @@ typedef void (*user_material_func)(vector3 x, void *user_data,
 //                 each evaluation point by calling the user's  
 //                 routine.
 //  PERFECT_METAL: the 'medium' field is never referenced in this case.
-typedef struct material_data_struct
+struct material_data
  {
    enum { MEDIUM,
           MATERIAL_FILE,      // formerly MATERIAL_TYPE_SELF
@@ -106,7 +150,12 @@ typedef struct material_data_struct
    meep::realnum *epsilon_data;
    int epsilon_dims[3];
 
- } material_data;
+   material_data(): which_subclass(MEDIUM), medium(), user_data(NULL), epsilon_data(NULL) {
+     epsilon_dims[0] = 0;
+     epsilon_dims[1] = 0;
+     epsilon_dims[2] = 0;
+   }
+ };
 
 typedef material_data *material_type;
 

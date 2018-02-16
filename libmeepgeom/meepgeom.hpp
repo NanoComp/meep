@@ -105,6 +105,9 @@ material_type make_file_material(const char *eps_input_file);
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
 
+meep::realnum linear_interpolate(meep::realnum rx, meep::realnum ry, meep::realnum rz,
+                                 meep::realnum *data, int nx, int ny, int nz, int stride);
+void epsilon_file_material(material_data *md, vector3 p);
 }; // namespace meep_geom
 
 #endif // #ifndef MEEP_GEOM_H

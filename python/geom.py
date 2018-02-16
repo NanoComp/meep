@@ -1,6 +1,8 @@
 from __future__ import division
 
+import functools
 import math
+import operator
 from copy import deepcopy
 from numbers import Number
 
@@ -177,7 +179,7 @@ class Medium(object):
 class Susceptibility(object):
 
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
-        self.sigma_diag = mp.Vector3(sigma, sigma, sigma) if sigma else sigma_diag
+        self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else sigma_diag
         self.sigma_offdiag = sigma_offdiag
 
 
@@ -307,6 +309,171 @@ class Ellipsoid(Block):
         super(Ellipsoid, self).__init__(**kwargs)
 
 
+# TODO: Add tests
+class Matrix(object):
+
+    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
+        self.c1 = c1
+        self.c2 = c2
+        self.c3 = c3
+
+    def __getitem__(self, i):
+        if i == 0:
+            return self.c1
+        elif i == 1:
+            return self.c2
+        elif i == 2:
+            return self.c3
+        else:
+            raise IndexError("No value at index {}".format(i))
+
+    def __mul__(self, m):
+        if type(m) is Matrix:
+            return self.mm_mult(m)
+        elif type(m) is Vector3:
+            return self.mv_mult(m)
+        elif isinstance(m, Number):
+            return self.scale(m)
+        else:
+            raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
+
+    def __repr__(self):
+        return "<{}\n {}\n {}>".format(self.row(0), self.row(1), self.row(2))
+
+    def row(self, i):
+        return Vector3(self.c1[i], self.c2[i], self.c3[i])
+
+    def mm_mult(self, m):
+        # c1 = Vector3(*[self.row(i).dot(m.c1) for i in range(3)])
+        c1 = Vector3(self.row(0).dot(m.c1),
+                     self.row(1).dot(m.c1),
+                     self.row(2).dot(m.c1))
+        c2 = Vector3(self.row(0).dot(m.c2),
+                     self.row(1).dot(m.c2),
+                     self.row(2).dot(m.c2))
+        c3 = Vector3(self.row(0).dot(m.c3),
+                     self.row(1).dot(m.c3),
+                     self.row(2).dot(m.c3))
+
+        return Matrix(c1, c2, c3)
+
+    def mv_mult(self, v):
+        return Vector3(*[self.row(i).dot(v) for i in range(3)])
+
+    def scale(self, s):
+        return Matrix(self.c1.scale(s), self.c2.scale(s), self.c3.scale(s))
+
+    def determinant(self):
+        sum1 = sum([
+            functools.reduce(operator.mul, [self[x][x] for x in range(3)]),
+            functools.reduce(operator.mul, [self[0][1], self[1][2], self[2][0]]),
+            functools.reduce(operator.mul, [self[1][0], self[2][1], self[0][2]])
+        ])
+        sum2 = sum([
+            functools.reduce(operator.mul, [self[0][2], self[1][1], self[2][0]]),
+            functools.reduce(operator.mul, [self[0][1], self[1][0], self[2][2]]),
+            functools.reduce(operator.mul, [self[1][2], self[2][1], self[0][0]])
+        ])
+        return sum1 - sum2
+
+    def transpose(self):
+        return Matrix(self.row(0), self.row(1), self.row(2))
+
+    def inverse(self):
+        v1x = self[1][1] * self[2][2] - self[1][2] * self[2][1]
+        v1y = self[1][2] * self[2][0] - self[1][0] * self[2][2]
+        v1z = self[1][0] * self[2][1] - self[1][1] * self[2][0]
+        v1 = mp.Vector3(v1x, v1y, v1z)
+
+        v2x = self[2][1] * self[0][2] - self[0][1] * self[2][2]
+        v2y = self[0][0] * self[2][2] - self[0][2] * self[2][0]
+        v2z = self[0][1] * self[2][0] - self[0][0] * self[2][1]
+        v2 = mp.Vector3(v2x, v2y, v2z)
+
+        v3x = self[0][1] * self[1][2] - self[1][1] * self[0][2]
+        v3y = self[1][0] * self[0][2] - self[0][0] * self[1][2]
+        v3z = self[1][1] * self[0][0] - self[1][0] * self[0][1]
+        v3 = mp.Vector3(v3x, v3y, v3z)
+
+        m = Matrix(v1, v2, v3)
+
+        return m.scale(1 / self.determinant())
+
+
+# TODO: Add tests
+class Lattice(object):
+
+    def __init__(self,
+                 size=Vector3(1, 1, 1),
+                 basis_size=Vector3(1, 1, 1),
+                 basis1=Vector3(1, 0, 0),
+                 basis2=Vector3(0, 1, 0),
+                 basis3=Vector3(0, 0, 1)):
+
+        self.size = size
+        self.basis_size = basis_size
+        self.basis1 = basis1
+        self.basis2 = basis2
+        self.basis3 = basis3
+
+    @property
+    def basis1(self):
+        return self._basis1
+
+    @basis1.setter
+    def basis1(self, val):
+        self._basis1 = val.unit()
+
+    @property
+    def basis2(self):
+        return self._basis2
+
+    @basis2.setter
+    def basis2(self, val):
+        self._basis2 = val.unit()
+
+    @property
+    def basis3(self):
+        return self._basis3
+
+    @basis3.setter
+    def basis3(self, val):
+        self._basis3 = val.unit()
+
+    @property
+    def b1(self):
+        return self.basis1.scale(self.basis_size.x)
+
+    @property
+    def b2(self):
+        return self.basis2.scale(self.basis_size.y)
+
+    @property
+    def b3(self):
+        return self.basis3.scale(self.basis_size.z)
+
+    @property
+    def basis(self):
+        B = Matrix(self.b1, self.b2, self.b3)
+
+        if B.determinant() == 0:
+            raise ValueError("Lattice basis vectors must be linearly independent.")
+
+        return B
+
+    @property
+    def metric(self):
+        B = self.basis
+        return B.transpose() * B
+
+
+def cartesian_to_lattice(x, lat):
+    if isinstance(x, Vector3):
+        return lat.basis.inverse() * x
+
+    return (lat.basis.inverse() * x) * lat.basis
+
+
 def geometric_object_duplicates(shift_vector, min, max, *objs):
     dups = []
     for obj in objs:
@@ -316,3 +483,35 @@ def geometric_object_duplicates(shift_vector, min, max, *objs):
             dups.append(o)
 
     return dups
+
+
+def geometric_object_lattice_duplicates(lat, go_list, *usize):
+
+    def lat_to_lattice(v):
+        return cartesian_to_lattice(lat.basis * v, lat)
+
+    u1 = usize[0] if usize else 1
+    u2 = usize[1] if len(usize) >= 2 else 1
+    u3 = usize[2] if len(usize) >= 3 else 1
+    s = lat.size
+
+    b1 = lat_to_lattice(mp.Vector3(u1))
+    b2 = lat_to_lattice(mp.Vector3(0, u2, 0))
+    b3 = lat_to_lattice(mp.Vector3(0, 0, u3))
+
+    n1 = math.ceil((s.x if s.x else 1e-20) / u1)
+    n2 = math.ceil((s.y if s.y else 1e-20) / u2)
+    n3 = math.ceil((s.z if s.z else 1e-20) / u3)
+
+    min3 = -math.floor((n3 - 1) / 2)
+    max3 = math.ceil((n3 - 1) / 2)
+    d3 = geometric_object_duplicates(b3, int(min3), int(max3), *go_list)
+
+    min2 = -math.floor((n2 - 1) / 2)
+    max2 = math.ceil((n2 - 1) / 2)
+    d2 = geometric_object_duplicates(b2, int(min2), int(max2), *d3)
+
+    min1 = -math.floor((n1 - 1) / 2)
+    max1 = math.ceil((n1 - 1) / 2)
+
+    return geometric_object_duplicates(b1, int(min1), int(max1), *d2)

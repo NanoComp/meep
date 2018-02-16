@@ -24,23 +24,7 @@ namespace meep_geom {
 /***************************************************************/
 /* global variables for default material                       */
 /***************************************************************/
-medium_struct vacuum_medium =
- { {1.0, 1.0, 1.0}, /* epsilon_diag    */
-   {0.0, 0.0, 0.0}, /* epsilon_offdiag */
-   {1.0, 1.0, 1.0}, /* mu_diag         */
-   {0.0, 0.0, 0.0}, /* mu_offdiag      */
-   {0, 0},          /* E_susceptibilities */
-   {0, 0},          /* H_susceptibilities */
-   {0.0, 0.0, 0.0}, /* E_chi2_diag     */
-   {0.0, 0.0, 0.0}, /* E_chi3_diag     */
-   {0.0, 0.0, 0.0}, /* H_chi2_diag     */
-   {0.0, 0.0, 0.0}, /* H_chi3_diag     */
-   {0.0, 0.0, 0.0}, /* D_conductivity_diag  */
-   {0.0, 0.0, 0.0}  /* B_conductivity_diag  */
- };
-material_data vacuum_material_data =
- { material_data::MEDIUM, vacuum_medium, 0, 0, 0, {0,0,0} };
-
+material_data vacuum_material_data;
 material_type vacuum = &vacuum_material_data;
 
 static bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
@@ -323,7 +307,7 @@ static bool is_metal(meep::field_type ft, const material_type *material) {
 /* Linearly interpolate a given point in a 3d grid of data.  The point
    coordinates should be in the range [0,1], or at the very least [-1,2]
    ... anything outside [0,1] is *mirror* reflected into [0,1] */
-static meep::realnum linear_interpolate(
+meep::realnum linear_interpolate(
 		     meep::realnum rx, meep::realnum ry, meep::realnum rz,
 		     meep::realnum *data, int nx, int ny, int nz, int stride)
 {
@@ -372,7 +356,7 @@ static meep::realnum linear_interpolate(
 }
 
 // return material of the point p from the file (assumed already read)
-static void epsilon_file_material(material_data *md, vector3 p)
+void epsilon_file_material(material_data *md, vector3 p)
 {
   default_material = (void*) md;
 
@@ -653,7 +637,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r)
      // the user's function only needs to fill in whatever is
      // different from vacuum.
      case material_data::MATERIAL_USER:
-      md->medium = vacuum_medium;
+      md->medium = medium_struct();
       md->user_func(p, md->user_data, &(md->medium));
       return;
 
@@ -1565,7 +1549,7 @@ material_type make_dielectric(double epsilon)
   md->which_subclass=material_data::MEDIUM;
   md->user_func=0;
   md->user_data=0;
-  memcpy( &(md->medium), &vacuum_medium, sizeof(medium_struct));
+  md->medium = medium_struct();
   md->medium.epsilon_diag.x=epsilon;
   md->medium.epsilon_diag.y=epsilon;
   md->medium.epsilon_diag.z=epsilon;
@@ -1606,7 +1590,7 @@ material_type make_file_material(const char *eps_input_file)
 		  eps_input_file);
   }
 
-  md->medium = vacuum_medium;
+  md->medium = medium_struct();
 
   return md;
 }

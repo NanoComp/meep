@@ -8,6 +8,11 @@ endif
 if WITH_LIBCTLGEOM
   SUBDIRS += libmeepgeom
 endif
+if WITH_MPB
+if WITH_LIBCTLGEOM
+  SUBDIRS += libpympb
+endif
+endif
 if WITH_PYTHON
   SUBDIRS += python
 endif

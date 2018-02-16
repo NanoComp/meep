@@ -172,6 +172,11 @@ class TestCylinder(unittest.TestCase):
             self.assertIn(zeros(), c)
             self.assertIn("Vector3 is not initialized", ctx.exception)
 
+    def test_wrong_type_exception(self):
+        """Test for Issue 180"""
+        with self.assertRaises(TypeError) as ctx:
+            c = gm.Cylinder(radius=mp.Vector3())
+
 
 class TestWedge(unittest.TestCase):
 
@@ -293,6 +298,21 @@ class TestVector3(unittest.TestCase):
         self.assertEqual(mp.Vector3(2, 2, 2) * 0.5, mp.Vector3(1, 1, 1))
         self.assertEqual(mp.Vector3(1, 1, 1) * mp.Vector3(1, 1, 1), 3)
         self.assertEqual(0.5 * mp.Vector3(2, 2, 2), mp.Vector3(1, 1, 1))
+
+
+class TestLattice(unittest.TestCase):
+
+    def test_lattice(self):
+        # TODO
+        pass
+
+
+class TestMatrix(unittest.TestCase):
+
+    def test_matrix(self):
+        # TODO
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
