@@ -20,6 +20,28 @@
   #define DATADIR "./"
 #endif
 
+/***************************************************************/
+/* geometric parameters ****************************************/
+/***************************************************************/
+#define R1X 0.5      // ellipsoid minor radius
+#define R1Y 1.0      // ellipsoid major radius
+#define R2  3.0      // cylinder radius
+
+/***************************************************************/
+/* parameters in (two-oscillator) Drude-Lorenz model of Ag     */
+/***************************************************************/
+#define EV_UM (1.0/1.23984193)
+#define AG_WP (9.01 * EV_UM)
+#define AG_F0 0.845
+
+#define AG_FRQ0 1.0e-10
+#define AG_GAM0 0.48*EV_UM
+#define AG_SIG0 (AG_F0*AG_WP*AG_WP)/(AG_FRQ0*AG_FRQ0)
+
+#define AG_FRQ1 0.065
+#define AG_GAM1 0.816*EV_UM
+#define AG_SIG1 (AG_F0*AG_WP*AG_WP)/(AG_FRQ1*AG_FRQ1)
+
 using namespace meep;
 
 typedef std::complex<double> cdouble;
@@ -65,7 +87,6 @@ bool compare_hdf5_datasets(const char *file1, const char *name1,
   normDelta = sqrt(normDelta) / size;
 
   double norm12 = fmax( sqrt(norm1), sqrt(norm2) );
-printf("Norm{1,2,d} = {%e,%e,%e} (%e)\n",norm1,norm2,normDelta,normDelta/norm12);
   if (normDelta > rel_tol*norm12)
    return false;
   return true;
@@ -82,25 +103,62 @@ double dummy_eps(const vec &) { return 1.0; }
 /* material function that recreates the ellipsoid-in-cylinder  */
 /* configuration of the cyl-ellipsoid sample code              */
 /***************************************************************/
+typedef struct my_material_func_data
+  { 
+    double rxInner, ryInner, rOuter;
+    bool with_susceptibility; 
+  } my_material_func_data;
+
 void my_material_func(vector3 p, void *user_data, meep_geom::medium_struct *m)
 { 
-  (void) user_data;
-#define R1X 0.5
-#define R1Y 1.0
-#define R2  3.0
+  my_material_func_data *data=(my_material_func_data *)user_data;
+  double rxInner = data->rxInner, rxInner2=rxInner*rxInner;
+  double ryInner = data->ryInner, ryInner2=ryInner*ryInner;
+  double rOuter  = data->rOuter,  rOuter2 =rOuter*rOuter;
 
-  double x=p.x, y=p.y;
+  double x=p.x, x2=x*x, y=p.y, y2=y*y;
 
   // test for point inside inner ellipsoid
-  double nn;
-  if ( (x*x/(R1X*R1X) + y*y/(R1Y*R1Y)) < 1.0 )
-   nn=1.0;
-  else if ( ( x*x/(R2*R2) + y*y/(R2*R2) ) < 1.0 )
-   nn=3.5;
-  else 
-   nn=1.0;
+  bool innermost = (( x2/rxInner2 + y2/ryInner2 ) < 1.0 );
+  bool outermost = ( (x*x + y*y) > rOuter2 );
+  bool in_middle = (!innermost && !outermost);
 
+  // set permittivity
+  double nn = in_middle ? 3.5 : 1.0;
   m->epsilon_diag.x = m->epsilon_diag.y = m->epsilon_diag.z = nn*nn;
+ 
+  // add susceptibilities (two-oscillator model for Ag)
+  if (in_middle&& data->with_susceptibility)
+   { 
+      m->E_susceptibilities.num_items = 2;
+      m->E_susceptibilities.items = new meep_geom::susceptibility[2];
+
+      m->E_susceptibilities.items[0].sigma_offdiag.x = 0.0;
+      m->E_susceptibilities.items[0].sigma_offdiag.y = 0.0;
+      m->E_susceptibilities.items[0].sigma_offdiag.z = 0.0;
+      m->E_susceptibilities.items[0].sigma_diag.x    = AG_SIG0;
+      m->E_susceptibilities.items[0].sigma_diag.y    = AG_SIG0;
+      m->E_susceptibilities.items[0].sigma_diag.z    = AG_SIG0;
+      m->E_susceptibilities.items[0].frequency       = AG_FRQ0;
+      m->E_susceptibilities.items[0].gamma           = AG_GAM0;
+      m->E_susceptibilities.items[0].noise_amp       = 0.0;
+      m->E_susceptibilities.items[0].drude           = true;
+      m->E_susceptibilities.items[0].is_file         = false;
+
+      m->E_susceptibilities.items[1].sigma_offdiag.x = 0.0;
+      m->E_susceptibilities.items[1].sigma_offdiag.y = 0.0;
+      m->E_susceptibilities.items[1].sigma_offdiag.z = 0.0;
+      m->E_susceptibilities.items[1].sigma_diag.x    = AG_SIG1;
+      m->E_susceptibilities.items[1].sigma_diag.y    = AG_SIG1;
+      m->E_susceptibilities.items[1].sigma_diag.z    = AG_SIG1;
+      m->E_susceptibilities.items[1].frequency       = AG_FRQ1;
+      m->E_susceptibilities.items[1].gamma           = AG_GAM1;
+      m->E_susceptibilities.items[1].noise_amp       = 0.0;
+      m->E_susceptibilities.items[1].drude           = true;
+      m->E_susceptibilities.items[1].is_file         = false;
+
+   }
+
 }
 
 /***************************************************************/
@@ -113,6 +171,7 @@ int main(int argc, char *argv[])
   // simple argument parsing
   meep::component src_cmpt=Ez;
   std::string eps_ref_file = "cyl-ellipsoid-eps-ref.h5";
+  bool with_susceptibility=true;
   for(int narg=1; narg<argc; narg++)
    {
      if (argv[narg] && !strcmp(argv[narg],"--eps_ref_file"))
@@ -120,6 +179,8 @@ int main(int argc, char *argv[])
          abort("no option specified for --eps_ref_file");
         eps_ref_file=argv[++narg];
       }
+     else if (argv[narg] && !strcmp(argv[narg],"--without_susceptibility"))
+      with_susceptibility=false;
      else
       abort("unrecognized command-line option %s",argv[narg]);
    };
@@ -136,8 +197,14 @@ int main(int argc, char *argv[])
                                 : -mirror(X,gv) - mirror(Y,gv);
   structure the_structure(gv, dummy_eps, pml(1.0), sym);
 
+  my_material_func_data data;
+  data.with_susceptibility=with_susceptibility;
+  data.rxInner = R1X;
+  data.ryInner = R1Y;
+  data.rOuter  = R2;
+  
   meep_geom::material_type my_material
-   = meep_geom::make_user_material(my_material_func, 0);
+   = meep_geom::make_user_material(my_material_func, (void *)&data);
 
   geometric_object_list g={0, 0};
   bool use_anisotropic_averaging=true;
