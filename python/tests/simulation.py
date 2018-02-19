@@ -215,5 +215,24 @@ class TestSimulation(unittest.TestCase):
 
         self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
+    def test_set_materials(self):
+
+        def change_geom(sim):
+            t = sim.meep_time()
+            fn = t * 0.2
+            geom = [mp.Sphere(radius=0.025, center=mp.Vector3(fn))]
+            sim.set_materials(geometry=geom)
+
+        def change_def_mat(sim):
+            t = sim.meep_time()
+            fn = t * 0.2
+            dm = mp.Medium(epsilon=fn)
+            sim.set_materials(default_material=dm)
+
+        sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=16)
+        sim.run(mp.at_time(10, change_geom), until=60)
+        sim.run(mp.at_time(10, change_def_mat), until=60)
+
 if __name__ == '__main__':
     unittest.main()
+
