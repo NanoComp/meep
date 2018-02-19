@@ -683,6 +683,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   FOR_FIELD_TYPES(ft) {
     {
       susceptibility *cur = NULL;
+      chiP[ft] = NULL;
       for (const susceptibility *ocur = o->chiP[ft]; ocur; ocur = ocur->next) {
 	if (cur) { cur->next = ocur->clone(); cur = cur->next; }
 	else { chiP[ft] = cur = ocur->clone(); }

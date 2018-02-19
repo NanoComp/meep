@@ -395,7 +395,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
             delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         }
-        delete (material_data *)$1.material;
+        free((material_data *)$1.material);
         geometric_object_destroy($1);
     }
 }
@@ -426,7 +426,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
         delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
-        delete (material_data *)$1.items[i].material;
+        free((material_data *)$1.items[i].material);
         geometric_object_destroy($1.items[i]);
     }
     delete[] $1.items;
@@ -539,7 +539,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if ($1->medium.H_susceptibilities.items) {
         delete[] $1->medium.H_susceptibilities.items;
     }
-    delete $1;
+    free($1);
 }
 
 // Typemap suite for array_slice
@@ -775,7 +775,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             if ($1.items[i]->medium.H_susceptibilities.items) {
                 delete[] $1.items[i]->medium.H_susceptibilities.items;
             }
-            delete $1.items[i];
+            free($1.items[i]);
         }
         delete[] $1.items;
     }
