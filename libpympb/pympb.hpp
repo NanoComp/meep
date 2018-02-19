@@ -19,7 +19,7 @@ struct mode_solver {
 
   int num_bands;
   int parity;
-  double resolution;
+  double resolution[3];
   double target_freq;
   lattice lat;
   double tolerance;
@@ -40,6 +40,7 @@ struct mode_solver {
   // Output variable
   bool negative_epsilon_ok;
   int iterations;
+  double eigensolver_flops;
 
   geometric_object_list geometry;
 
@@ -72,10 +73,10 @@ struct mode_solver {
   bool verbose;
   bool deterministic;
 
-  mode_solver(int num_bands, int parity, double resolution, lattice lat, double tolerance,
+  mode_solver(int num_bands, int parity, double resolution[3], lattice lat, double tolerance,
               int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
               bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
-              bool periodicity);
+              bool periodicity, double flops);
   ~mode_solver();
 
   void init(int p, bool reset_fields);
@@ -98,6 +99,8 @@ struct mode_solver {
   size_t get_field_size();
 
   std::vector<mpb_real> get_freqs();
+  double get_eigensolver_flops();
+  int get_iterations();
   void get_efield(std::complex<mpb_real> *cdata, int size, int band);
   void get_dfield(std::complex<mpb_real> *cdata, int size, int band);
   void get_hfield(std::complex<mpb_real> *cdata, int size, int band);
@@ -106,6 +109,8 @@ struct mode_solver {
 
   void get_curfield(double *data, int size);
   void get_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
+
+  void get_lattice(double data[3][3]);
 
   std::vector<mpb_real> compute_field_energy();
   double compute_energy_in_objects(geometric_object_list objects);

@@ -124,6 +124,10 @@ static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
     (double* data, int size)
 };
 
+%apply double INPLACE_ARRAY2[ANY][ANY] {
+    double data[3][3]
+};
+
 %apply material_type {
     meep_geom::material_data*
 };
@@ -133,6 +137,14 @@ static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
         PyErr_PrintEx(0);
         SWIG_fail;
     }
+}
+
+%typemap(in) double resolution[3] (double temp[3]) {
+
+    for (Py_ssize_t i = 0; i < 3; ++i) {
+        temp[i] = PyFloat_AsDouble(PyList_GetItem($input, i));
+    }
+    $1 = &temp[0];
 }
 
 %typemap(out) std::vector<mpb_real> {

@@ -59,6 +59,16 @@ class TestModeSolver(unittest.TestCase):
             deterministic=True
         )
 
+    def test_resolution(self):
+        ms = self.init_solver()
+        self.assertEqual([32, 32, 32], ms.resolution)
+
+        ms.resolution = mp.Vector3(16, 16, 32)
+        self.assertEqual([16, 16, 32], ms.resolution)
+
+        with self.assertRaises(TypeError):
+            ms.resolution = [32, 32, 32]
+
     def test_list_split(self):
         k_points = [
             mp.Vector3(),
@@ -571,6 +581,23 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
+
+    def test_hole_slab(self):
+        from mpb_hole_slab import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.k_points = [mp.Vector3(1 / -3, 1 / 3)]
+        ms.tolerance = 1e-12
+
+        ms.run_zeven()
+        mpb.fix_hfield_phase(ms, 9)
+        mpb.output_hfield_z(ms, 9)
+
+        ref_fn = 'hole-slab-h.k01.b09.z.zeven.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('hole-slab', self.filename_prefix, ref_fn)
+        ms.display_eigensolver_stats()
+        self.compare_h5_files(ref_path, res_path, atol=1e-8)
 
 if __name__ == '__main__':
     unittest.main()
