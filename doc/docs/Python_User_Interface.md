@@ -841,6 +841,10 @@ Change the `k_point` (the Bloch periodicity).
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Change the `Sources` input variable to `new_sources`, and changes the sources used for the current simulation.
 
+**`set_materials(geometry=None, default_material=None)`**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+This can be called in a step function, and is useful for changing the geometry or default material as a function of time.
+
 ### Flux Spectra
 
 Given a bunch of `FluxRegion` objects (see above), you can tell Meep to accumulate the Fourier transforms of the fields in those regions in order to compute flux spectra. See also the [Introduction](Introduction.md#transmissionreflection-spectra) and [Tutorial/Basics](Python_Tutorials/Basics.md). These are attributes of the `Simulation` class. The most important function is:
