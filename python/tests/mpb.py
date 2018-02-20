@@ -139,7 +139,20 @@ class TestModeSolver(unittest.TestCase):
 
             np.testing.assert_allclose(ref_arr, field)
 
-    def compare_h5_files(self, ref_path, res_path, rtol=1e-7, atol=0):
+    def compare_arrays(self, exp, res, tol=1e-7):
+        exp_1d = exp.ravel()
+        res_1d = res.ravel()
+
+        norm_exp = np.linalg.norm(exp_1d)
+        norm_res = np.linalg.norm(res_1d)
+
+        if norm_exp == 0:
+            self.assertEqual(norm_res, 0)
+        else:
+            diff = np.linalg.norm(res_1d - exp_1d) / norm_exp
+            self.assertLess(diff, tol)
+
+    def compare_h5_files(self, ref_path, res_path, tol=1e-7):
         mp.all_wait()
         with h5py.File(ref_path) as ref:
             with h5py.File(res_path, 'r') as res:
@@ -147,8 +160,7 @@ class TestModeSolver(unittest.TestCase):
                     if k == 'description':
                         self.assertEqual(ref[k].value, res[k].value)
                     else:
-                        np.testing.assert_allclose(ref[k].value, res[k].value,
-                                                   rtol=rtol, atol=atol)
+                        self.compare_arrays(ref[k].value, res[k].value, tol=tol)
 
     def test_update_band_range_data(self):
         brd = []
@@ -385,7 +397,7 @@ class TestModeSolver(unittest.TestCase):
         ref_fname = 'tutorial-e.k16.b08.z.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fname)
         res_path = re.sub('tutorial', ms.filename_prefix, ref_fname)
-        self.compare_h5_files(ref_path, res_path, atol=1e-8)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_triangular_lattice(self):
 
@@ -520,7 +532,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
 
         res_path = re.sub('tutorial', ms.filename_prefix, ref_fn)
-        self.compare_h5_files(ref_path, res_path, atol=1e-8)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_bragg_sine(self):
 
@@ -564,7 +576,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('bragg', self.filename_prefix, ref_fn)
 
-        self.compare_h5_files(ref_path, res_path, rtol=1e-5)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_diamond(self):
         from mpb_diamond import ms
@@ -597,7 +609,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('hole-slab', self.filename_prefix, ref_fn)
         ms.display_eigensolver_stats()
-        self.compare_h5_files(ref_path, res_path, rtol=1e-6, atol=1e-8)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_honey_rods(self):
         from mpb_honey_rods import ms
