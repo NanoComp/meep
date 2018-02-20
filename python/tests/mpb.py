@@ -597,7 +597,40 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('hole-slab', self.filename_prefix, ref_fn)
         ms.display_eigensolver_stats()
-        self.compare_h5_files(ref_path, res_path, atol=1e-8)
+        self.compare_h5_files(ref_path, res_path, rtol=1e-6, atol=1e-8)
 
+    def test_honey_rods(self):
+        from mpb_honey_rods import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        expected_tm_brd = [
+            ((0.0, mp.Vector3()), (0.33603917043712633, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.3361157598278567, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)), (0.43081437569409614, mp.Vector3())),
+            ((0.5767097297514042, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)), (0.7284078808050087, mp.Vector3())),
+            ((0.6945421679868867, mp.Vector3(y=0.5)), (0.7501709691499355, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((0.7458435049833266, mp.Vector3(-0.06666666666666667, 0.06666666666666667, 0.0)), (0.7820399146771551, mp.Vector3(y=0.5))),
+            ((0.7881649319901423, mp.Vector3()), (0.8222343753655029, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((0.788403686482661, mp.Vector3()), (0.9137151502979921, mp.Vector3(y=0.5))),
+            ((1.0555583895998264, mp.Vector3(y=0.5)), (1.152788234165643, mp.Vector3())),
+        ]
+
+        ms.run_tm()
+        self.check_band_range_data(expected_tm_brd, ms.band_range_data)
+
+        expected_te_brd = [
+            ((0.0, mp.Vector3()), (0.5541825355101483, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((0.5210838392763666, mp.Vector3(y=0.5)), (0.7314488357699701, mp.Vector3())),
+            ((0.5774131466802845, mp.Vector3(-0.3333333333333333, 0.3333333333333333)), (0.7914367245833008, mp.Vector3())),
+            ((0.8171437726482415, mp.Vector3(y=0.5)), (0.9223035157967082, mp.Vector3())),
+            ((0.8412299566295994, mp.Vector3(-0.3333333333333333, 0.3333333333333333)), (0.9232816589081834, mp.Vector3())),
+            ((1.0189688220301099, mp.Vector3()), (1.1102151203212018, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((1.0202591321478567, mp.Vector3()), (1.1645809975920867, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((1.1678724079900584, mp.Vector3(-0.2, 0.2)), (1.245166619435556, mp.Vector3())),
+        ]
+
+        ms.run_te()
+        self.check_band_range_data(expected_te_brd, ms.band_range_data)
 if __name__ == '__main__':
     unittest.main()
