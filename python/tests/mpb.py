@@ -481,7 +481,7 @@ class TestModeSolver(unittest.TestCase):
         ms.geometry_lattice = mp.Lattice(size=mp.Vector3(5, 5))
         ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
 
-        ms.geometry = mp.geometric_object_lattice_duplicates(ms.geometry_lattice, ms.geometry)
+        ms.geometry = mp.geometric_objects_lattice_duplicates(ms.geometry_lattice, ms.geometry)
         ms.geometry.append(mp.Cylinder(0.2, material=mp.air))
 
         ms.resolution = 16
@@ -609,7 +609,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('hole-slab', self.filename_prefix, ref_fn)
         ms.display_eigensolver_stats()
-        self.compare_h5_files(ref_path, res_path)
+        self.compare_h5_files(ref_path, res_path, tol=1e-6)
 
     def test_honey_rods(self):
         from mpb_honey_rods import ms
@@ -644,5 +644,20 @@ class TestModeSolver(unittest.TestCase):
 
         ms.run_te()
         self.check_band_range_data(expected_te_brd, ms.band_range_data)
+
+    def test_line_defect(self):
+        from mpb_line_defect import ms, k_points
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        ms.run_tm(mpb.output_at_kpoint(k_points[len(k_points) // 2]),
+                  mpb.fix_efield_phase, mpb.output_efield_z)
+
+        ref_fn = 'line-defect-e.k04.b12.z.tm.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('line-defect', self.filename_prefix, ref_fn)
+        self.compare_h5_files(ref_path, res_path, tol=1e-6)
+
 if __name__ == '__main__':
     unittest.main()
