@@ -381,8 +381,11 @@ class Simulation(object):
                                        absorbers, self.extra_materials)
 
     def set_materials(self, geometry=None, default_material=None):
+        if self.fields:
+            self.fields.remove_susceptibilities()
 
         have_absorbers = self.boundary_layers and type(self.boundary_layers[0]) is Absorber
+
         mp.set_materials_from_geometry(
             self.structure,
             geometry if geometry else self.geometry,
