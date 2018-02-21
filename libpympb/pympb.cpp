@@ -41,8 +41,11 @@
      mpi_allreduce(&bbbb, (b), 1, ctype, t, op, comm); \
 }
 
-// TODO
-#define CHECK(condition, message) /* do nothing */
+#ifdef CHECK_DISABLE
+  #define CHECK(cond, s) // Do nothing
+#else
+  #define CHECK(cond, s) if (!(cond)){meep::abort(s "\n");}
+#endif
 
 namespace py_mpb {
 
@@ -183,16 +186,17 @@ mode_solver::mode_solver(int num_bands,
                          int dims,
                          bool verbose,
                          bool periodicity,
-                         double flops):
+                         double flops,
+                         bool negative_epsilon_ok):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
   tolerance(tolerance),
   mesh_size(mesh_size),
+  negative_epsilon_ok(negative_epsilon_ok),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
   last_parity(-2),
-  negative_epsilon_ok(false),
   iterations(0),
   eigensolver_flops(flops),
   vol(0),
@@ -1107,6 +1111,10 @@ char mode_solver::get_curfield_type() {
   return curfield_type;
 }
 
+void mode_solver::set_curfield_type(char t) {
+  curfield_type = t;
+}
+
 std::string mode_solver::get_parity_string() {
   std::string s(parity_string(mdata));
   return s;
@@ -1141,6 +1149,23 @@ void mode_solver::get_curfield_cmplx(std::complex<mpb_real> *cdata, int size) {
 
   for (int i = 0; i < size; ++i) {
     cdata[i] = std::complex<mpb_real>(p[i].re, p[i].im);
+  }
+}
+
+void mode_solver::set_curfield(double *data, int size) {
+  mpb_real *p = (mpb_real *)curfield;
+
+  for (int i = 0; i < size; ++i) {
+    p[i] = data[i];
+  }
+}
+
+void mode_solver::set_curfield_cmplx(std::complex<mpb_real> *cdata, int size) {
+  scalar_complex *p = (scalar_complex *)curfield;
+
+  for (int i = 0; i < size; ++i) {
+    scalar_complex s = {cdata[i].real(), cdata[i].imag()};
+    p[i] = s;
   }
 }
 
@@ -1234,55 +1259,6 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   return retval;
 }
 
-/* For curfield and energy density, compute the fraction of the energy
-   that resides inside the given list of geometric objects.   Later
-   objects in the list have precedence, just like the ordinary
-   geometry list. */
-double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
-
-  mpb_real *energy = (mpb_real *)curfield;
-  mpb_real energy_sum = 0;
-
-  if (!curfield || !strchr("DHBR", curfield_type)) {
-    meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
-    return 0.0;
-  }
-
-  for (int i = 0; i < objects.num_items; ++i) {
-    geom_fix_object(objects.items[i]);
-  }
-
-  int n1 = mdata->nx;
-  int n2 = mdata->ny;
-  int n3 = mdata->nz;
-
-  mpb_real s1 = geometry_lattice.size.x / n1;
-  mpb_real s2 = geometry_lattice.size.y / n2;
-  mpb_real s3 = geometry_lattice.size.z / n3;
-  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
-  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
-  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
-
-  LOOP_XYZ(mdata) {
-    vector3 p;
-    int n;
-    p.x = i1 * s1 - c1; p.y = i2 * s2 - c2; p.z = i3 * s3 - c3;
-    for (n = objects.num_items - 1; n >= 0; --n) {
-      if (point_in_periodic_fixed_objectp(p, objects.items[n])) {
-        // TODO:
-        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
-        //   break; /* treat as a "nothing" object */
-        // }
-        energy_sum += energy[xyz_index];
-        break;
-      }
-    }
-  }}}
-
-  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
-  energy_sum *= vol / H.N;
-  return energy_sum;
-}
 
 std::vector<mpb_real> mode_solver::get_output_k() {
   std::vector<mpb_real> output_k;
@@ -1549,11 +1525,154 @@ int mode_solver::get_iterations() {
   return iterations;
 }
 
+std::vector<mpb_real> mode_solver::compute_zparities() {
+  std::vector<mpb_real> z_parity(num_bands);
+  double *d = maxwell_zparity(H, mdata);
+
+  for (int i = 0; i < num_bands; ++i) {
+    z_parity[i] = d[i];
+  }
+
+  free(d);
+  return z_parity;
+}
+
+std::vector<mpb_real> mode_solver::compute_yparities() {
+  std::vector<mpb_real> y_parity(num_bands);
+  double *d = maxwell_yparity(H, mdata);
+
+  for (int i = 0; i < num_bands; ++i) {
+    y_parity[i] = d[i];
+  }
+
+  free(d);
+  return y_parity;
+}
+
+/* Compute the group velocity dw/dk in the given direction d (where
+   the length of d is ignored).  d is in the reciprocal lattice basis.
+   Should only be called after solve_kpoint.  Returns a list of the
+   group velocities, one for each band, in units of c. */
+std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
+  curfield_reset(); // has the side effect of overwriting curfield scratch
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "mode_solver.init must be called first!\n");
+    return std::vector<mpb_real>(0);
+  }
+  if (!kpoint_index) {
+    meep::master_fprintf(stderr, "mode_solver.solve_kpoint must be called first!\n");
+    return std::vector<mpb_real>(0);
+  }
+
+  /* convert d to unit vector in Cartesian coords: */
+  d = unit_vector3(matrix3x3_vector3_mult(Gm, d));
+  mpb_real u[] = {d.x, d.y, d.z};
+
+  std::vector<mpb_real> group_v(num_bands);
+  std::vector<mpb_real> gv_scratch(num_bands * 2);
+
+  /* now, compute group_v.items = diag Re <H| curl 1/eps i u x |H>: */
+
+  /* ...we have to do this in blocks of eigensolver_block_size since
+     the work matrix W[0] may not have enough space to do it all at once. */
+
+  for (int ib = 0; ib < num_bands; ib += Hblock.alloc_p) {
+    if (ib + mdata->num_bands > num_bands) {
+      maxwell_set_num_bands(mdata, num_bands - ib);
+      evectmatrix_resize(&W[0], num_bands - ib, 0);
+      evectmatrix_resize(&Hblock, num_bands - ib, 0);
+    }
+    maxwell_compute_H_from_B(mdata, H, Hblock, (scalar_complex *) mdata->fft_data, ib, 0, Hblock.p);
+    maxwell_ucross_op(Hblock, W[0], mdata, u);
+    evectmatrix_XtY_diag_real(Hblock, W[0], gv_scratch.data(), gv_scratch.data() + group_v.size());
+    {
+      for (int ip = 0; ip < Hblock.p; ++ip)
+        group_v[ib + ip] = gv_scratch[ip];
+    }
+  }
+
+  /* Reset scratch matrix sizes: */
+  evectmatrix_resize(&Hblock, Hblock.alloc_p, 0);
+  evectmatrix_resize(&W[0], W[0].alloc_p, 0);
+  maxwell_set_num_bands(mdata, Hblock.alloc_p);
+
+  /* The group velocity is given by:
+
+    grad_k(omega)*d = grad_k(omega^2)*d / 2*omega
+       = grad_k(<H|maxwell_op|H>)*d / 2*omega
+       = Re <H| curl 1/eps i u x |H> / omega
+
+    Note that our k is in units of 2*Pi/a, and omega is in
+    units of 2*Pi*c/a, so the result will be in units of c. */
+
+  for (int i = 0; i < num_bands; ++i) {
+    if (freqs[i] == 0) { /* v is undefined in this case */
+         group_v[i] = 0.0;  /* just set to zero */
+    }
+    else {
+      group_v[i] /= negative_epsilon_ok ? sqrt(fabs(freqs[i])) : freqs[i];
+    }
+  }
+
+  return group_v;
+}
+
 bool mode_solver::with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON
   return true;
 #else
   return false;
 #endif
+}
+
+/* For curfield and energy density, compute the fraction of the energy
+   that resides inside the given list of geometric objects.   Later
+   objects in the list have precedence, just like the ordinary
+   geometry list. */
+double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
+
+  mpb_real *energy = (mpb_real *)curfield;
+  mpb_real energy_sum = 0;
+
+  if (!curfield || !strchr("DHBR", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
+    return 0.0;
+  }
+
+  for (int i = 0; i < objects.num_items; ++i) {
+    geom_fix_object(objects.items[i]);
+  }
+
+  int n1 = mdata->nx;
+  int n2 = mdata->ny;
+  int n3 = mdata->nz;
+
+  mpb_real s1 = geometry_lattice.size.x / n1;
+  mpb_real s2 = geometry_lattice.size.y / n2;
+  mpb_real s3 = geometry_lattice.size.z / n3;
+  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
+  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
+  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+
+  LOOP_XYZ(mdata) {
+    vector3 p;
+    int n;
+    p.x = i1 * s1 - c1; p.y = i2 * s2 - c2; p.z = i3 * s3 - c3;
+    for (n = objects.num_items - 1; n >= 0; --n) {
+      if (point_in_periodic_fixed_objectp(p, objects.items[n])) {
+        // TODO:
+        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
+        //   break; /* treat as a "nothing" object */
+        // }
+        energy_sum += energy[xyz_index];
+        break;
+      }
+    }
+  }}}
+
+  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  energy_sum *= vol / H.N;
+  return energy_sum;
 }
 } // namespace meep_mpb

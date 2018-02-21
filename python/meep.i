@@ -867,6 +867,9 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         lattice_to_cartesian,
         lattice_to_reciprocal,
         reciprocal_to_lattice,
+        cartesian_to_reciprocal,
+        reciprocal_to_cartesian,
+        find_root_deriv,
     )
     from .simulation import (
         Absorber,

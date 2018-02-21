@@ -105,16 +105,19 @@ class TestModeSolver(unittest.TestCase):
         for res, exp in zip(k_split[1], expected_list):
             self.assertTrue(res.close(exp))
 
-    def check_band_range_data(self, expected_brd, result, tol=7):
+    def check_band_range_data(self, expected_brd, result, tol=3):
         for exp, res in zip(expected_brd, result):
             # Compare min freqs
             self.assertAlmostEqual(exp[0][0], res[0][0], places=tol)
             # Compare min k
-            self.assertTrue(exp[0][1].close(res[0][1]))
+            msg = "expected {}, got {}"
+            self.assertTrue(exp[0][1].close(res[0][1]), msg=msg.format(exp[0][1],
+                                                                       res[0][1]))
             # Compare max freqs
             self.assertAlmostEqual(exp[1][0], res[1][0], places=tol)
             # Compare max k
-            self.assertTrue(exp[1][1].close(res[1][1]))
+            self.assertTrue(exp[1][1].close(res[1][1]), msg=msg.format(exp[1][1],
+                                                                       res[1][1]))
 
     def check_freqs(self, expected_freqs, result):
         for exp, res in zip(expected_freqs, result):
@@ -139,7 +142,7 @@ class TestModeSolver(unittest.TestCase):
 
             np.testing.assert_allclose(ref_arr, field)
 
-    def compare_arrays(self, exp, res, tol=1e-7):
+    def compare_arrays(self, exp, res, tol=1e-3):
         exp_1d = exp.ravel()
         res_1d = res.ravel()
 
@@ -152,7 +155,7 @@ class TestModeSolver(unittest.TestCase):
             diff = np.linalg.norm(res_1d - exp_1d) / norm_exp
             self.assertLess(diff, tol)
 
-    def compare_h5_files(self, ref_path, res_path, tol=1e-7):
+    def compare_h5_files(self, ref_path, res_path, tol=1e-3):
         mp.all_wait()
         with h5py.File(ref_path) as ref:
             with h5py.File(res_path, 'r') as res:
@@ -556,7 +559,7 @@ class TestModeSolver(unittest.TestCase):
             ((1.758168321098983, mp.Vector3(0.5, 0.0, 0.0)), (1.9999083366718178, mp.Vector3(0.0, 0.0, 0.0))),
         ]
 
-        self.check_band_range_data(expected_brd, ms.band_range_data, tol=6)
+        self.check_band_range_data(expected_brd, ms.band_range_data)
 
     def test_bragg(self):
         n_lo = 1.0
@@ -609,7 +612,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('hole-slab', self.filename_prefix, ref_fn)
         ms.display_eigensolver_stats()
-        self.compare_h5_files(ref_path, res_path, tol=1e-6)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_honey_rods(self):
         from mpb_honey_rods import ms
@@ -657,7 +660,7 @@ class TestModeSolver(unittest.TestCase):
         ref_fn = 'line-defect-e.k04.b12.z.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('line-defect', self.filename_prefix, ref_fn)
-        self.compare_h5_files(ref_path, res_path, tol=1e-6)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_sq_rods(self):
         from mpb_sq_rods import ms
@@ -695,6 +698,138 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_tm_brd, ms.band_range_data)
+
+    def test_strip(self):
+        from mpb_strip import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        ms.run(mpb.display_zparities, mpb.display_yparities)
+
+        y_parities = ms.mode_solver.compute_yparities()
+        z_parities = ms.mode_solver.compute_zparities()
+
+        expected_y_parities = [-0.9997979443175137, 1.0000061871738222, -1.000010781704281, -0.9997880312884855]
+        expected_z_parities = [0.9992335747085693, -0.9955122771195629, -0.9970929846091117, -0.995110556144587]
+
+        for e, r in zip(expected_y_parities, y_parities):
+            self.assertAlmostEqual(e, r, places=3)
+
+        for e, r in zip(expected_z_parities, z_parities):
+            self.assertAlmostEqual(e, r, places=3)
+
+        omega = 1 / 1.55
+
+        kvals = ms.find_k(mp.NO_PARITY, omega, 1, ms.num_bands, mp.Vector3(1), 1e-3,
+                          omega * 3.45, omega * 0.1, omega * 4, mpb.output_poynting_x,
+                          mpb.display_yparities, mpb.display_group_velocities)
+
+        expected_kvals = [
+            1.066321795284513,
+            1.0186792189943261,
+            0.8398943502679427,
+            0.7990426389486213
+        ]
+
+        for e, r in zip(expected_kvals, kvals):
+            self.assertAlmostEqual(e, r, places=3)
+
+        ref_fn = 'strip-flux.v.k01.b04.x.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('strip', self.filename_prefix, ref_fn)
+
+        self.compare_h5_files(ref_path, res_path)
+
+    def test_tri_holes(self):
+        from mpb_tri_holes import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        ms.run_te()
+
+        expected_te_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.2988138143026877, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.4904866685380652, mp.Vector3(0.0, 0.5, 0.0)),
+             (0.6518428949056047, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.5249498280632945, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (0.715052621532994, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6559476888215646, mp.Vector3(0.0, 0.5, 0.0)),
+             (0.7526169939908287, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.7325634383903795, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.7926635890878445, mp.Vector3(0.0, 0.5, 0.0))),
+            ((0.8197987587926061, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.9558765952728465, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.8227549074898002, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.977066340783539, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.9932822090761829, mp.Vector3(-0.2, 0.2, 0.0)),
+             (1.0333473993917388, mp.Vector3(0.0, 0.0, 0.0))),
+        ]
+
+        self.check_band_range_data(expected_te_brd, ms.band_range_data)
+
+        ms.run_tm()
+
+        expected_tm_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.27923293687776185, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.27925233520788123, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (0.39701178670472514, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.43822975788978324, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (0.4921507523261363, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.49245418717664585, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.5794505987329971, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.5796334455428804, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (0.6792721128008338, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6796610195733948, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.6982024646418398, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.6916984643418115, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.782783687046775, mp.Vector3(0.0, 0.4, 0.0))),
+            ((0.796384146332996, mp.Vector3(0.0, 0.4, 0.0)),
+             (0.8981719033396592, mp.Vector3(0.0, 0.0, 0.0))),
+        ]
+
+        self.check_band_range_data(expected_tm_brd, ms.band_range_data)
+
+    def test_tri_rods(self):
+        from mpb_tri_rods import ms
+        ms.deterministic = True
+        ms.tolerance = 1e-12
+        ms.filename_prefix = self.filename_prefix
+
+        ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), mpb.fix_efield_phase,
+                  mpb.output_efield_z))
+
+        ref_fn = 'tri-rods-e.k11.b08.z.tm.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('tri-rods', self.filename_prefix, ref_fn)
+
+        self.compare_h5_files(ref_path, res_path)
+
+        ms.run_te()
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.4913674096292025, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.47303363199406084, mp.Vector3(0.0, 0.5, 0.0)),
+             (0.5613073198556722, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.5615430711178754, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (0.7926082899782356, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.7662582464649094, mp.Vector3(0.0, 0.5, 0.0)),
+             (0.8212670701643873, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.8645825054949564, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (1.0267378315038471, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8653661451575351, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)),
+             (1.0302675285063503, mp.Vector3(0.0, 0.0, 0.0))),
+            ((1.0191340767267256, mp.Vector3(0.0, 0.5, 0.0)),
+             (1.1140992287455238, mp.Vector3(0.0, 0.0, 0.0))),
+            ((1.103980264829359, mp.Vector3(-0.26666666666666666, 0.26666666666666666, 0.0)),
+             (1.1159066357228926, mp.Vector3(0.0, 0.0, 0.0))),
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
 
 if __name__ == '__main__':
     unittest.main()
