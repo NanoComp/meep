@@ -659,5 +659,42 @@ class TestModeSolver(unittest.TestCase):
         res_path = re.sub('line-defect', self.filename_prefix, ref_fn)
         self.compare_h5_files(ref_path, res_path, tol=1e-6)
 
+    def test_sq_rods(self):
+        from mpb_sq_rods import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        ms.run_te()
+
+        expected_te_brd = [
+            ((0.0, mp.Vector3()), (0.5050847157964128, mp.Vector3(0.5, 0.5))),
+            ((0.44540649255863274, mp.Vector3(0.5)), (0.5944938855425008, mp.Vector3(0.5, 0.5))),
+            ((0.594532293207845, mp.Vector3(0.5, 0.5)), (0.7819718899089974, mp.Vector3())),
+            ((0.6791640707712324, mp.Vector3(0.5, 0.5)), (0.8179936626803539, mp.Vector3(0.30000000000000004, 0.30000000000000004))),
+            ((0.8312976217063687, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0)), (0.9249830180346097, mp.Vector3())),
+            ((0.8981377255346836, mp.Vector3(0.5, 0.5)), (1.0328365492796805, mp.Vector3(0.5, 0.0))),
+            ((0.8981669079842797, mp.Vector3(0.5, 0.5)), (1.0962585283583286, mp.Vector3(0.5, 0.0))),
+            ((1.0979727446260454, mp.Vector3(0.5)), (1.1284502813494561, mp.Vector3(0.5, 0.5))),
+        ]
+
+        self.check_band_range_data(expected_te_brd, ms.band_range_data)
+
+        ms.run_tm()
+
+        expected_tm_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)), (0.28620353092376244, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.4212205919470541, mp.Vector3(0.5, 0.0, 0.0)), (0.55032328617865, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.5037942789367704, mp.Vector3(0.5, 0.5, 0.0)), (0.5680541609705985, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.5622452000444543, mp.Vector3(0.0, 0.0, 0.0)), (0.7201952790771862, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.7476247632855232, mp.Vector3(0.5, 0.0, 0.0)), (0.8742488320227753, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.8404563836725962, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0)), (0.8833020711235466, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.8772216067719807, mp.Vector3(0.5, 0.0, 0.0)), (0.9665386468333201, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8945799356827068, mp.Vector3(0.5, 0.5, 0.0)), (1.090651920052584, mp.Vector3(0.0, 0.0, 0.0))),
+
+        ]
+
+        self.check_band_range_data(expected_tm_brd, ms.band_range_data)
+
 if __name__ == '__main__':
     unittest.main()
