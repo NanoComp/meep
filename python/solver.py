@@ -367,7 +367,7 @@ class ModeSolver(object):
             curfield_band = self.mode_solver.curfield_band
             fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
                                                    kpoint_index, curfield_band)
-            descr_fmt = "{} field energy density, kpoint {}, band {}, freq={}"
+            descr_fmt = "{} field energy density, kpoint {}, band {}, freq={:.6g}"
             description = descr_fmt.format(curfield_type, kpoint_index, curfield_band,
                                            self.get_freqs()[curfield_band - 1])
 
@@ -407,7 +407,12 @@ class ModeSolver(object):
         h5file[key] = np.reshape(arr, dims)
 
     def _create_fname(self, fname, prefix, parity_suffix):
-        suffix = '.' + self.mode_solver.get_parity_string() if parity_suffix else ''
+        parity_str = self.mode_solver.get_parity_string()
+        if parity_suffix:
+            suffix = ".{}".format(parity_str) if parity_str else ''
+        else:
+            suffix = ''
+
         return prefix + fname + suffix + '.h5'
 
     def compute_field_energy(self):
