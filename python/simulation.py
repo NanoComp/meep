@@ -366,6 +366,7 @@ class Simulation(object):
 
         self.structure = mp.structure(gv, None, br, sym, self.num_chunks, self.courant,
                                       self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval)
+        self.structure.shared_chunks = True
         if self.material_function:
             self.material_function.eps = False
             self.default_material = self.material_function

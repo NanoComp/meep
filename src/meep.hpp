@@ -560,6 +560,7 @@ class structure {
  public:
   structure_chunk **chunks;
   int num_chunks;
+  bool shared_chunks; // whether modifications to chunks will be visible to fields objects
   grid_volume gv, user_volume;
   double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
   volume v;
@@ -1382,7 +1383,7 @@ class fields {
   void require_component(component c);
 
   // mpb.cpp
-  
+
   // the return value of get_eigenmode is an opaque pointer
   // that can be passed to eigenmode_amplitude() to get
   // values of field components at arbitrary points in space.
@@ -1508,7 +1509,7 @@ class fields {
                           const volume where,
                           const char *HDF5FileName);
   void get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
-                             const volume where, 
+                             const volume where,
                              std::complex<double>overlaps[2]);
   void get_mode_mode_overlap(void *mode_data, void *mode2_data, dft_flux flux,
                              const volume where,
@@ -1699,7 +1700,7 @@ void green3d(std::complex<double> *EH, const vec &x,
              const vec &x0, component c0, std::complex<double> f0);
 
 // non-class methods for working with mpb eigenmode data
-// 
+//
 void destroy_eigenmode_data(void *vedata);
 std::complex<double> eigenmode_amplitude(void *vedata,
                                          const vec &p,
