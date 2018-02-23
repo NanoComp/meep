@@ -97,6 +97,9 @@ tests/latest_output
 # libmeepgeom tests
 libmeepgeom/bend-flux-ll
 libmeepgeom/pw-source-ll
+libmeepgeom/absorber-1d-ll
+libmeepgeom/array-slice-ll
+libmeepgeom/cyl-ellipsoid-ll
 libmeepgeom/wvg-taper
 libmeepgeom/ring-ll
 libmeepgeom/*.log
