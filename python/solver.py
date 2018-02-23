@@ -394,7 +394,7 @@ class ModeSolver(object):
             curfield_band = self.mode_solver.curfield_band
             fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
                                                    kpoint_index, curfield_band)
-            descr_fmt = "{} field energy density, kpoint {}, band {}, freq={}"
+            descr_fmt = "{} field energy density, kpoint {}, band {}, freq={:.6g}"
             description = descr_fmt.format(curfield_type, kpoint_index, curfield_band,
                                            self.freqs[curfield_band - 1])
 
