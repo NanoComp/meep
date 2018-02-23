@@ -65,6 +65,8 @@ python/meep/
 python/meep-python.cpp
 python/meep.py
 python/__init__.py
+python/mpb-python.cpp
+python/mpb.py
 
 # test programs
 tests/2D_convergence
