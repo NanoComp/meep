@@ -4,6 +4,7 @@ import glob
 import math
 import os
 import re
+import sys
 import unittest
 
 import h5py
@@ -17,6 +18,8 @@ from meep import mpb
 class TestModeSolver(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+    examples_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'examples'))
+    sys.path.insert(0, examples_dir)
 
     def setUp(self):
         """Store the test name and register a function to clean up all the
@@ -55,6 +58,16 @@ class TestModeSolver(unittest.TestCase):
             filename_prefix=self.filename_prefix,
             deterministic=True
         )
+
+    def test_resolution(self):
+        ms = self.init_solver()
+        self.assertEqual([32, 32, 32], ms.resolution)
+
+        ms.resolution = mp.Vector3(16, 16, 32)
+        self.assertEqual([16, 16, 32], ms.resolution)
+
+        with self.assertRaises(TypeError):
+            ms.resolution = [32, 32, 32]
 
     def test_list_split(self):
         k_points = [
@@ -126,7 +139,20 @@ class TestModeSolver(unittest.TestCase):
 
             np.testing.assert_allclose(ref_arr, field)
 
-    def compare_h5_files(self, ref_path, res_path, rtol=1e-7, atol=0):
+    def compare_arrays(self, exp, res, tol=1e-7):
+        exp_1d = exp.ravel()
+        res_1d = res.ravel()
+
+        norm_exp = np.linalg.norm(exp_1d)
+        norm_res = np.linalg.norm(res_1d)
+
+        if norm_exp == 0:
+            self.assertEqual(norm_res, 0)
+        else:
+            diff = np.linalg.norm(res_1d - exp_1d) / norm_exp
+            self.assertLess(diff, tol)
+
+    def compare_h5_files(self, ref_path, res_path, tol=1e-7):
         mp.all_wait()
         with h5py.File(ref_path) as ref:
             with h5py.File(res_path, 'r') as res:
@@ -134,8 +160,7 @@ class TestModeSolver(unittest.TestCase):
                     if k == 'description':
                         self.assertEqual(ref[k].value, res[k].value)
                     else:
-                        np.testing.assert_allclose(ref[k].value, res[k].value,
-                                                   rtol=rtol, atol=atol)
+                        self.compare_arrays(ref[k].value, res[k].value, tol=tol)
 
     def test_update_band_range_data(self):
         brd = []
@@ -372,7 +397,7 @@ class TestModeSolver(unittest.TestCase):
         ref_fname = 'tutorial-e.k16.b08.z.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fname)
         res_path = re.sub('tutorial', ms.filename_prefix, ref_fname)
-        self.compare_h5_files(ref_path, res_path, atol=1e-8)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_triangular_lattice(self):
 
@@ -456,7 +481,7 @@ class TestModeSolver(unittest.TestCase):
         ms.geometry_lattice = mp.Lattice(size=mp.Vector3(5, 5))
         ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
 
-        ms.geometry = mp.geometric_object_lattice_duplicates(ms.geometry_lattice, ms.geometry)
+        ms.geometry = mp.geometric_objects_lattice_duplicates(ms.geometry_lattice, ms.geometry)
         ms.geometry.append(mp.Cylinder(0.2, material=mp.air))
 
         ms.resolution = 16
@@ -507,7 +532,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
 
         res_path = re.sub('tutorial', ms.filename_prefix, ref_fn)
-        self.compare_h5_files(ref_path, res_path, atol=1e-8)
+        self.compare_h5_files(ref_path, res_path)
 
     def test_bragg_sine(self):
 
@@ -551,8 +576,125 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         res_path = re.sub('bragg', self.filename_prefix, ref_fn)
 
-        self.compare_h5_files(ref_path, res_path, rtol=1e-5)
+        self.compare_h5_files(ref_path, res_path)
 
+    def test_diamond(self):
+        from mpb_diamond import ms
+        ms.deterministic = True
+
+        ms.run(mpb.output_at_kpoint(mp.Vector3(0, 0.625, 0.375), mpb.output_dpwr))
+
+        expected_brd = [
+            ((0.0, mp.Vector3()), (0.39435794061756657, mp.Vector3(0.25, 0.75, 0.5))),
+            ((0.0, mp.Vector3()), (0.39658490891646875, mp.Vector3(0.29999999999999993, 0.75, 0.45000000000000007))),
+            ((0.4419147354915113, mp.Vector3(y=0.5)), (0.596198703285916, mp.Vector3())),
+            ((0.4437128031052224, mp.Vector3(y=0.5)), (0.596288439546851, mp.Vector3())),
+            ((0.5031415977692567, mp.Vector3(0.0, 0.6, 0.4)), (0.5962884522384696, mp.Vector3())),
+        ]
+
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+
+    def test_hole_slab(self):
+        from mpb_hole_slab import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.k_points = [mp.Vector3(1 / -3, 1 / 3)]
+        ms.tolerance = 1e-12
+
+        ms.run_zeven()
+        mpb.fix_hfield_phase(ms, 9)
+        mpb.output_hfield_z(ms, 9)
+
+        ref_fn = 'hole-slab-h.k01.b09.z.zeven.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('hole-slab', self.filename_prefix, ref_fn)
+        ms.display_eigensolver_stats()
+        self.compare_h5_files(ref_path, res_path, tol=1e-6)
+
+    def test_honey_rods(self):
+        from mpb_honey_rods import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        expected_tm_brd = [
+            ((0.0, mp.Vector3()), (0.33603917043712633, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0))),
+            ((0.3361157598278567, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)), (0.43081437569409614, mp.Vector3())),
+            ((0.5767097297514042, mp.Vector3(-0.3333333333333333, 0.3333333333333333, 0.0)), (0.7284078808050087, mp.Vector3())),
+            ((0.6945421679868867, mp.Vector3(y=0.5)), (0.7501709691499355, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((0.7458435049833266, mp.Vector3(-0.06666666666666667, 0.06666666666666667, 0.0)), (0.7820399146771551, mp.Vector3(y=0.5))),
+            ((0.7881649319901423, mp.Vector3()), (0.8222343753655029, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((0.788403686482661, mp.Vector3()), (0.9137151502979921, mp.Vector3(y=0.5))),
+            ((1.0555583895998264, mp.Vector3(y=0.5)), (1.152788234165643, mp.Vector3())),
+        ]
+
+        ms.run_tm()
+        self.check_band_range_data(expected_tm_brd, ms.band_range_data)
+
+        expected_te_brd = [
+            ((0.0, mp.Vector3()), (0.5541825355101483, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((0.5210838392763666, mp.Vector3(y=0.5)), (0.7314488357699701, mp.Vector3())),
+            ((0.5774131466802845, mp.Vector3(-0.3333333333333333, 0.3333333333333333)), (0.7914367245833008, mp.Vector3())),
+            ((0.8171437726482415, mp.Vector3(y=0.5)), (0.9223035157967082, mp.Vector3())),
+            ((0.8412299566295994, mp.Vector3(-0.3333333333333333, 0.3333333333333333)), (0.9232816589081834, mp.Vector3())),
+            ((1.0189688220301099, mp.Vector3()), (1.1102151203212018, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((1.0202591321478567, mp.Vector3()), (1.1645809975920867, mp.Vector3(-0.3333333333333333, 0.3333333333333333))),
+            ((1.1678724079900584, mp.Vector3(-0.2, 0.2)), (1.245166619435556, mp.Vector3())),
+        ]
+
+        ms.run_te()
+        self.check_band_range_data(expected_te_brd, ms.band_range_data)
+
+    def test_line_defect(self):
+        from mpb_line_defect import ms, k_points
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        ms.run_tm(mpb.output_at_kpoint(k_points[len(k_points) // 2]),
+                  mpb.fix_efield_phase, mpb.output_efield_z)
+
+        ref_fn = 'line-defect-e.k04.b12.z.tm.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('line-defect', self.filename_prefix, ref_fn)
+        self.compare_h5_files(ref_path, res_path, tol=1e-6)
+
+    def test_sq_rods(self):
+        from mpb_sq_rods import ms
+        ms.deterministic = True
+        ms.filename_prefix = self.filename_prefix
+        ms.tolerance = 1e-12
+
+        ms.run_te()
+
+        expected_te_brd = [
+            ((0.0, mp.Vector3()), (0.5050847157964128, mp.Vector3(0.5, 0.5))),
+            ((0.44540649255863274, mp.Vector3(0.5)), (0.5944938855425008, mp.Vector3(0.5, 0.5))),
+            ((0.594532293207845, mp.Vector3(0.5, 0.5)), (0.7819718899089974, mp.Vector3())),
+            ((0.6791640707712324, mp.Vector3(0.5, 0.5)), (0.8179936626803539, mp.Vector3(0.30000000000000004, 0.30000000000000004))),
+            ((0.8312976217063687, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0)), (0.9249830180346097, mp.Vector3())),
+            ((0.8981377255346836, mp.Vector3(0.5, 0.5)), (1.0328365492796805, mp.Vector3(0.5, 0.0))),
+            ((0.8981669079842797, mp.Vector3(0.5, 0.5)), (1.0962585283583286, mp.Vector3(0.5, 0.0))),
+            ((1.0979727446260454, mp.Vector3(0.5)), (1.1284502813494561, mp.Vector3(0.5, 0.5))),
+        ]
+
+        self.check_band_range_data(expected_te_brd, ms.band_range_data)
+
+        ms.run_tm()
+
+        expected_tm_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)), (0.28620353092376244, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.4212205919470541, mp.Vector3(0.5, 0.0, 0.0)), (0.55032328617865, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.5037942789367704, mp.Vector3(0.5, 0.5, 0.0)), (0.5680541609705985, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.5622452000444543, mp.Vector3(0.0, 0.0, 0.0)), (0.7201952790771862, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.7476247632855232, mp.Vector3(0.5, 0.0, 0.0)), (0.8742488320227753, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.8404563836725962, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0)), (0.8833020711235466, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.8772216067719807, mp.Vector3(0.5, 0.0, 0.0)), (0.9665386468333201, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8945799356827068, mp.Vector3(0.5, 0.5, 0.0)), (1.090651920052584, mp.Vector3(0.0, 0.0, 0.0))),
+
+        ]
+
+        self.check_band_range_data(expected_tm_brd, ms.band_range_data)
 
 if __name__ == '__main__':
     unittest.main()

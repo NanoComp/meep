@@ -96,7 +96,7 @@ print_heading('5x5 point defect')
 ms.geometry_lattice = mp.Lattice(size=mp.Vector3(5, 5))
 ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))]
 
-ms.geometry = mp.geometric_object_lattice_duplicates(ms.geometry_lattice, ms.geometry)
+ms.geometry = mp.geometric_objects_lattice_duplicates(ms.geometry_lattice, ms.geometry)
 ms.geometry.append(mp.Cylinder(0.2, material=mp.air))
 
 ms.resolution = 16

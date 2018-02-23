@@ -171,7 +171,7 @@ static void deflation_constraint(evectmatrix X, void *data) {
 
 mode_solver::mode_solver(int num_bands,
                          int parity,
-                         double resolution,
+                         double resolution[3],
                          lattice lat,
                          double tolerance,
                          int mesh_size,
@@ -181,10 +181,11 @@ mode_solver::mode_solver(int num_bands,
                          bool deterministic,
                          double target_freq,
                          int dims,
-                         bool verbose):
+                         bool verbose,
+                         bool periodicity,
+                         double flops):
   num_bands(num_bands),
   parity(parity),
-  resolution(resolution),
   target_freq(target_freq),
   tolerance(tolerance),
   mesh_size(mesh_size),
@@ -193,6 +194,7 @@ mode_solver::mode_solver(int num_bands,
   last_parity(-2),
   negative_epsilon_ok(false),
   iterations(0),
+  eigensolver_flops(flops),
   vol(0),
   mdata(NULL),
   mtdata(NULL),
@@ -208,8 +210,10 @@ mode_solver::mode_solver(int num_bands,
 
   geometry_lattice = lat;
   dimensions = dims;
+  ensure_periodicity = periodicity;
 
   for (int i = 0; i < 3; ++i) {
+    this->resolution[i] = resolution[i];
     for (int j = 0; j < 3; ++j) {
       R[i][j] = 0.0;
       G[i][j] = 0.0;
@@ -358,9 +362,9 @@ bool mode_solver::using_mu() {
 void mode_solver::init(int p, bool reset_fields) {
   int have_old_fields = 0;
 
-  n[0] = std::max(resolution * std::ceil(geometry_lattice.size.x), 1.0);
-  n[1] = std::max(resolution * std::ceil(geometry_lattice.size.y), 1.0);
-  n[2] = std::max(resolution * std::ceil(geometry_lattice.size.z), 1.0);
+  n[0] = std::max(resolution[0] * std::ceil(geometry_lattice.size.x), 1.0);
+  n[1] = std::max(resolution[1] * std::ceil(geometry_lattice.size.y), 1.0);
+  n[2] = std::max(resolution[2] * std::ceil(geometry_lattice.size.z), 1.0);
 
   if (target_freq != 0.0) {
     meep::master_printf("Target frequency is %g\n", target_freq);
@@ -452,8 +456,7 @@ void mode_solver::init(int p, bool reset_fields) {
     randomize_fields();
   }
 
-  // TODO
-  // evectmatrix_flops = eigensolver_flops;
+  evectmatrix_flops = eigensolver_flops;
 }
 
 void mode_solver::init_epsilon() {
@@ -812,8 +815,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
   }
   meep::master_printf("\n");
 
-  // TODO
-  // eigensolver_flops = evectmatrix_flops
+  eigensolver_flops = evectmatrix_flops;
 }
 
 /* get the epsilon function, and compute some statistics */
@@ -1533,6 +1535,18 @@ void mode_solver::fix_field_phase()
     H.data[i*H.p + curfield_band - 1].re = bbbb_re * cccc_re - bbbb_im * cccc_im;
     H.data[i*H.p + curfield_band - 1].im = bbbb_re * cccc_im + bbbb_im * cccc_re;
   }
+}
+
+void mode_solver::get_lattice(double data[3][3]) {
+  matrix3x3_to_arr(data, Rm);
+}
+
+double mode_solver::get_eigensolver_flops() {
+  return eigensolver_flops;
+}
+
+int mode_solver::get_iterations() {
+  return iterations;
 }
 
 bool mode_solver::with_hermitian_epsilon() {

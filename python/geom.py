@@ -232,7 +232,9 @@ class GeometricObject(object):
         self.center += vec
 
     def shift(self, vec):
-        self.center += vec
+        c = deepcopy(self)
+        c.center += vec
+        return c
 
     def info(self, indent_by=0):
         mp.display_geometric_object_info(indent_by, self)
@@ -309,7 +311,6 @@ class Ellipsoid(Block):
         super(Ellipsoid, self).__init__(**kwargs)
 
 
-# TODO: Add tests
 class Matrix(object):
 
     def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3()):
@@ -318,14 +319,7 @@ class Matrix(object):
         self.c3 = c3
 
     def __getitem__(self, i):
-        if i == 0:
-            return self.c1
-        elif i == 1:
-            return self.c2
-        elif i == 2:
-            return self.c3
-        else:
-            raise IndexError("No value at index {}".format(i))
+        return self.row(i)
 
     def __mul__(self, m):
         if type(m) is Matrix:
@@ -338,13 +332,12 @@ class Matrix(object):
             raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
 
     def __repr__(self):
-        return "<{}\n {}\n {}>".format(self.row(0), self.row(1), self.row(2))
+        return "<{}\n {}\n {}>".format(self.c1, self.c2, self.c3)
 
     def row(self, i):
         return Vector3(self.c1[i], self.c2[i], self.c3[i])
 
     def mm_mult(self, m):
-        # c1 = Vector3(*[self.row(i).dot(m.c1) for i in range(3)])
         c1 = Vector3(self.row(0).dot(m.c1),
                      self.row(1).dot(m.c1),
                      self.row(2).dot(m.c1))
@@ -400,7 +393,6 @@ class Matrix(object):
         return m.scale(1 / self.determinant())
 
 
-# TODO: Add tests
 class Lattice(object):
 
     def __init__(self,
@@ -467,6 +459,13 @@ class Lattice(object):
         return B.transpose() * B
 
 
+def lattice_to_cartesian(x, lat):
+    if isinstance(x, Vector3):
+        return lat.basis * x
+
+    return (lat.basis * x) * lat.basis.inverse()
+
+
 def cartesian_to_lattice(x, lat):
     if isinstance(x, Vector3):
         return lat.basis.inverse() * x
@@ -474,18 +473,69 @@ def cartesian_to_lattice(x, lat):
     return (lat.basis.inverse() * x) * lat.basis
 
 
-def geometric_object_duplicates(shift_vector, min, max, *objs):
-    dups = []
-    for obj in objs:
-        for i in range(min, max + 1):
-            o = deepcopy(obj)
-            o.shift(shift_vector.scale(i))
-            dups.append(o)
+def reciprocal_to_cartesian(x, lat):
+    s = Vector3(*[1 if v == 0 else v for v in lat.size])
 
+    m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
+    Rst = (lat.basis * m).transpose()
+
+    if isinstance(x, Vector3):
+        return Rst.inverse() * x
+    else:
+        return (Rst.inverse() * x) * Rst
+
+
+def cartesian_to_reciprocal(x, lat):
+    s = Vector3(*[1 if v == 0 else v for v in lat.size])
+
+    m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
+    Rst = (lat.basis * m).transpose()
+
+    if isinstance(x, Vector3):
+        return Rst * x
+    else:
+        return (Rst * x) * Rst.inverse()
+
+
+def lattice_to_reciprocal(x, lat):
+    return cartesian_to_reciprocal(lattice_to_cartesian(x, lat), lat)
+
+
+def reciprocal_to_lattice(x, lat):
+    return cartesian_to_lattice(reciprocal_to_cartesian(x, lat), lat)
+
+
+def geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go):
+
+    def _dup(min_multiple, lst):
+        if min_multiple <= max_multiple:
+            shifted = go.shift(shift_vector.scale(min_multiple))
+            return _dup(min_multiple + 1, [shifted] + lst)
+        else:
+            return lst
+
+    return _dup(min_multiple, [])
+
+
+def geometric_objects_duplicates(shift_vector, min_multiple, max_multiple, go_list):
+    dups = []
+    for go in go_list:
+        dups += geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go)
     return dups
 
 
-def geometric_object_lattice_duplicates(lat, go_list, *usize):
+# def geometric_object_duplicates(shift_vector, min, max, *objs):
+#     dups = []
+#     for obj in objs:
+#         for i in range(min, max + 1):
+#             o = deepcopy(obj)
+#             o.shift(shift_vector.scale(i))
+#             dups.append(o)
+
+#     return dups
+
+
+def geometric_objects_lattice_duplicates(lat, go_list, *usize):
 
     def lat_to_lattice(v):
         return cartesian_to_lattice(lat.basis * v, lat)
@@ -505,13 +555,13 @@ def geometric_object_lattice_duplicates(lat, go_list, *usize):
 
     min3 = -math.floor((n3 - 1) / 2)
     max3 = math.ceil((n3 - 1) / 2)
-    d3 = geometric_object_duplicates(b3, int(min3), int(max3), *go_list)
+    d3 = geometric_objects_duplicates(b3, int(min3), int(max3), go_list)
 
     min2 = -math.floor((n2 - 1) / 2)
     max2 = math.ceil((n2 - 1) / 2)
-    d2 = geometric_object_duplicates(b2, int(min2), int(max2), *d3)
+    d2 = geometric_objects_duplicates(b2, int(min2), int(max2), d3)
 
     min1 = -math.floor((n1 - 1) / 2)
     max1 = math.ceil((n1 - 1) / 2)
 
-    return geometric_object_duplicates(b1, int(min1), int(max1), *d2)
+    return geometric_objects_duplicates(b1, int(min1), int(max1), d2)

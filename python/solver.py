@@ -1,6 +1,7 @@
-from __future__ import division
+from __future__ import division, print_function
 
 import os
+import numbers
 import re
 import sys
 import time
@@ -90,6 +91,20 @@ class ModeSolver(object):
         self.k_split_index = 0
         self.eigensolver_iters = []
         self.mode_solver = None
+
+    @property
+    def resolution(self):
+        return self._resolution
+
+    @resolution.setter
+    def resolution(self, val):
+        if isinstance(val, numbers.Number):
+            self._resolution = [val, val, val]
+        elif isinstance(val, mp.Vector3):
+            self._resolution = [val.x, val.y, val.z]
+        else:
+            t = type(val)
+            raise TypeError("resolution must be a number or a Vector3: Got {}".format(t))
 
     def get_filename_prefix(self):
         if self.filename_prefix:
@@ -381,10 +396,9 @@ class ModeSolver(object):
                                 self._create_h5_dataset(f, dataname)
 
     def _write_lattice_vectors(self, h5file):
-        # TODO: Double check this. Is it the basis vectors or b1,b2,b3?
-        h5file['lattice vectors'] = np.stack((self.geometry_lattice.basis1,
-                                              self.geometry_lattice.basis2,
-                                              self.geometry_lattice.basis3))
+        lattice = np.zeros((3, 3))
+        self.mode_solver.get_lattice(lattice)
+        h5file['lattice vectors'] = lattice
 
     def _create_h5_dataset(self, h5file, key):
         dims = self.mode_solver.get_dims()
@@ -404,6 +418,30 @@ class ModeSolver(object):
 
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
+
+    def display_eigensolver_stats(self):
+        num_runs = len(self.eigensolver_iters)
+
+        if num_runs <= 0:
+            return
+
+        min_iters = min(self.eigensolver_iters)
+        max_iters = max(self.eigensolver_iters)
+        mean_iters = np.mean(self.eigensolver_iters)
+        fmt = "eigensolver iterations for {} kpoints: {}-{}, mean = {}"
+        print(fmt.format(num_runs, min_iters, max_iters, mean_iters), end='')
+
+        sorted_iters = sorted(self.eigensolver_iters)
+        idx1 = num_runs // 2
+        idx2 = ((num_runs + 1) // 2) - 1
+        median_iters = 0.5 * (sorted_iters[idx1] + sorted_iters[idx2])
+        print(", median = {}".format(median_iters))
+
+        mean_flops = self.eigensolver_flops / (num_runs * mean_iters)
+        print("mean flops per iteration = {}".format(mean_flops))
+
+        mean_time = self.total_run_time / (mean_iters * num_runs)
+        print("mean time per iteration = {} s".format(mean_time))
 
     def run_parity(self, p, reset_fields, *band_functions):
         if self.randomize_fields and self.randomize_fields not in band_functions:
@@ -436,7 +474,9 @@ class ModeSolver(object):
             self.deterministic,
             self.target_freq,
             self.dimensions,
-            self.verbose
+            self.verbose,
+            self.ensure_periodicity,
+            self.eigensolver_flops
         )
 
         if isinstance(reset_fields, basestring):
@@ -464,6 +504,7 @@ class ModeSolver(object):
                 self.current_k = k
                 solve_kpoint_time = time.time()
                 self.mode_solver.solve_kpoint(k)
+                self.iterations = self.mode_solver.get_iterations()
                 print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
 
                 self.all_freqs.append(self.get_freqs())
@@ -493,6 +534,7 @@ class ModeSolver(object):
         end = time.time() - start
         print("total elapsed time for run: {}".format(end))
         self.total_run_time += end
+        self.eigensolver_flops = self.mode_solver.get_eigensolver_flops()
         print("done")
 
     def run(self, *band_functions):
