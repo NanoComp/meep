@@ -219,20 +219,37 @@ class TestSimulation(unittest.TestCase):
 
         def change_geom(sim):
             t = sim.meep_time()
-            fn = t * 0.2
-            geom = [mp.Sphere(radius=0.025, center=mp.Vector3(fn))]
+            fn = t * 0.02
+            geom = [mp.Cylinder(radius=3, material=mp.Medium(index=3.5), center=mp.Vector3(fn, fn)),
+                    mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf), center=mp.Vector3(fn, fn))]
+
             sim.set_materials(geometry=geom)
 
-        def change_def_mat(sim):
-            t = sim.meep_time()
-            fn = t * 0.2
-            dm = mp.Medium(epsilon=fn)
-            sim.set_materials(default_material=dm)
+        c = mp.Cylinder(radius=3, material=mp.Medium(index=3.5))
+        e = mp.Ellipsoid(size=mp.Vector3(1, 2, mp.inf))
 
-        sim = mp.Simulation(cell_size=mp.Vector3(10, 10), resolution=16)
-        sim.run(mp.at_time(10, change_geom), until=60)
-        sim.run(mp.at_time(10, change_def_mat), until=60)
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.1), component=mp.Hz, center=mp.Vector3())
+        symmetries = [mp.Mirror(mp.X, -1), mp.Mirror(mp.Y, -1)]
+
+        sim = mp.Simulation(cell_size=mp.Vector3(10, 10),
+                            geometry=[c, e],
+                            boundary_layers=[mp.PML(1.0)],
+                            sources=[sources],
+                            symmetries=symmetries,
+                            resolution=16)
+
+        eps = {'arr1': None, 'arr2': None}
+
+        def get_arr1(sim):
+            eps['arr1'] = sim.get_array(mp.Vector3(), mp.Vector3(10, 10), mp.Dielectric)
+
+        def get_arr2(sim):
+            eps['arr2'] = sim.get_array(mp.Vector3(), mp.Vector3(10, 10), mp.Dielectric)
+
+        sim.run(mp.at_time(50, get_arr1), mp.at_time(100, change_geom),
+                mp.at_end(get_arr2), until=200)
+
+        self.assertFalse(np.array_equal(eps['arr1'], eps['arr2']))
 
 if __name__ == '__main__':
     unittest.main()
-

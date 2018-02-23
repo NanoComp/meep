@@ -388,7 +388,7 @@ class Simulation(object):
 
         mp.set_materials_from_geometry(
             self.structure,
-            geometry if geometry else self.geometry,
+            geometry if geometry is not None else self.geometry,
             self.eps_averaging,
             self.subpixel_tol,
             self.subpixel_maxeval,
