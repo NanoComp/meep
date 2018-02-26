@@ -15,7 +15,7 @@ default_material = mp.Medium(index=n_lo)
 geometry = mp.Cylinder(material=mp.Medium(index=n_hi), center=mp.Vector3(), axis=mp.Vector3(1),
                        radius=mp.inf, height=w_hi)
 
-kx=0.5
+kx = 0.5
 k_points = [mp.Vector3(kx)]
 
 resolution = 32
@@ -30,5 +30,9 @@ ms = mpb.ModeSolver(
     default_material=default_material
 )
 
-ms.run_tm(mpb.output_hfield_y)  # note that TM and TE bands are degenerate, so we only need TM
 
+def main():
+    ms.run_tm(mpb.output_hfield_y)  # note that TM and TE bands are degenerate, so we only need TM
+
+if __name__ == '__main__':
+    main()
