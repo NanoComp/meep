@@ -69,12 +69,12 @@ void harmonics(double freq, double chi2, double chi3, double J,
     if (emaxcur < 1e-6 * emax) break;
   } while(1);
 
-  double *d1f = d1.flux();
-  double *d2f = d2.flux();
-  double *d3f = d3.flux();
+  complex<double> *d1f = d1.flux();
+  complex<double> *d2f = d2.flux();
+  complex<double> *d3f = d3.flux();
 
-  A2 = *d2f / *d1f;
-  A3 = *d3f / *d1f;
+  A2 = real(*d2f) / real(*d1f);
+  A3 = real(*d3f) / real(*d1f);
 
   master_printf("harmonics(%g,%g,%g) = %g, %g\n", chi2, chi3, J, A2, A3);
 

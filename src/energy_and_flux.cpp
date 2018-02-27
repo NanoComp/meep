@@ -194,7 +194,7 @@ double fields::thermo_energy_in_box(const volume &where) {
 
 /* Compute ExH integral in box using current fields, ignoring fact
    that this E and H correspond to different times. */
-double fields::flux_in_box_wrongH(direction d, const volume &where) {
+complex<double> fields::flux_in_box_wrongH(direction d, const volume &where) {
   if (coordinate_mismatch(gv.dim, d))
     return 0.0;
 
@@ -213,18 +213,18 @@ double fields::flux_in_box_wrongH(direction d, const volume &where) {
   case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
   }
 
-  long double sum = 0.0;
+  complex<double> sum = 0.0;
   for (int i = 0; i < 2; ++i) {
     component cs[2];
     cs[0] = cE[i]; cs[1] = cH[i];
-    sum += real(integrate(2, cs, dot_integrand, 0, where)) * (1 - 2*i);
+    sum += integrate(2, cs, dot_integrand, 0, where) * complex<double>(1 - 2*i, 0);
   }
   return sum;
 }
 
-double fields::flux_in_box(direction d, const volume &where) {
+complex<double> fields::flux_in_box(direction d, const volume &where) {
   synchronize_magnetic_fields();
-  double cur_step_flux = flux_in_box_wrongH(d, where);
+  complex<double> cur_step_flux = flux_in_box_wrongH(d, where);
   restore_magnetic_fields();
   return cur_step_flux;
 }

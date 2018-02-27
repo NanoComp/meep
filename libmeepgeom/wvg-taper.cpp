@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
      bool FieldsDecayed=false;
      if ( f.round_time() > NextPVCheckTime )
       { NextPVCheckTime += PVCheckInterval;
-        double ThisPV = f.flux_in_box(X,*fvB);
+        double ThisPV = real(f.flux_in_box(X,*fvB));
         if (ThisPV > MaxPV)
          MaxPV = ThisPV;
         else if ( ThisPV < PVTol*MaxPV )
@@ -522,17 +522,17 @@ int main(int argc, char *argv[])
   std::vector<cdouble> coeffs =
    f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
 
-  double *Aflux=fluxA1.flux();
-  double *Bflux=fluxB.flux();
-  double *B2flux=fluxB1.flux();
+  std::complex<double> *Aflux=fluxA1.flux();
+  std::complex<double> *Bflux=fluxB.flux();
+  std::complex<double> *B2flux=fluxB1.flux();
   if (am_master())
    {
      char filename[100];
      snprintf(filename,100,"%s.coefficients",filebase);
      FILE *ff=fopen(filename,"a");
-     fprintf(ff,"# fluxA  = %e\n",Aflux[0]);
-     fprintf(ff,"# fluxB1 = %e\n",Bflux[0]);
-     fprintf(ff,"# fluxB2 = %e\n",B2flux[0]);
+     fprintf(ff,"# fluxA  = %e\n",real(Aflux[0]));
+     fprintf(ff,"# fluxB1 = %e\n",real(Bflux[0]));
+     fprintf(ff,"# fluxB2 = %e\n",real(B2flux[0]));
      printf("freq | band | alpha^+ | alpha^-\n");
      printf("------------------------------------------------\n");
      for(int nf=0; nf<num_freqs; nf++)

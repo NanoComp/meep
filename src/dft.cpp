@@ -364,16 +364,16 @@ dft_flux::dft_flux(const dft_flux &f) {
   cE = f.cE; cH = f.cH;
 }
 
-double *dft_flux::flux() {
-  double *F = new double[Nfreq];
+complex<double> *dft_flux::flux() {
+  complex<double> *F = new complex<double>[Nfreq];
   for (int i = 0; i < Nfreq; ++i) F[i] = 0;
   for (dft_chunk *curE = E, *curH = H; curE && curH;
        curE = curE->next_in_dft, curH = curH->next_in_dft)
     for (size_t k = 0; k < curE->N; ++k)
       for (int i = 0; i < Nfreq; ++i)
-	F[i] += real(curE->dft[k*Nfreq + i]
-		     * conj(curH->dft[k*Nfreq + i]));
-  double *Fsum = new double[Nfreq];
+	F[i] += curE->dft[k*Nfreq + i]
+		     * conj(curH->dft[k*Nfreq + i]);
+  complex<double> *Fsum = new complex<double>[Nfreq];
   sum_to_all(F, Fsum, Nfreq);
   delete[] F;
   return Fsum;

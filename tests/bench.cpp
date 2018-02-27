@@ -77,7 +77,7 @@ bench bench_flux_1d(const double zmax,
   double start = wall_time();
   while (f.time() < ttot) {
     f.step();
-    flux_energy += f.dt*(right->flux() - left->flux());
+    flux_energy += f.dt*real(right->flux() - left->flux());
   }
   bench b;
   b.time = (wall_time() - start);
