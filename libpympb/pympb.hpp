@@ -24,6 +24,7 @@ struct mode_solver {
   lattice lat;
   double tolerance;
   int mesh_size;
+  bool negative_epsilon_ok;
 
   int n[3];
   int local_N;
@@ -38,7 +39,6 @@ struct mode_solver {
   int last_parity;
 
   // Output variable
-  bool negative_epsilon_ok;
   int iterations;
   double eigensolver_flops;
 
@@ -76,7 +76,7 @@ struct mode_solver {
   mode_solver(int num_bands, int parity, double resolution[3], lattice lat, double tolerance,
               int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
               bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
-              bool periodicity, double flops);
+              bool periodicity, double flops, bool negative_epsilon_ok);
   ~mode_solver();
 
   void init(int p, bool reset_fields);
@@ -109,6 +109,8 @@ struct mode_solver {
 
   void get_curfield(double *data, int size);
   void get_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
+  void set_curfield(double *data, int size);
+  void set_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
 
   void get_lattice(double data[3][3]);
 
@@ -116,6 +118,7 @@ struct mode_solver {
   double compute_energy_in_objects(geometric_object_list objects);
 
   char get_curfield_type();
+  void set_curfield_type(char t);
   std::string get_parity_string();
   std::vector<int> get_dims();
   std::vector<mpb_real> get_output_k();
@@ -123,6 +126,9 @@ struct mode_solver {
   void multiply_bloch_phase();
   void fix_field_phase();
   void compute_field_divergence();
+  std::vector<mpb_real> compute_zparities();
+  std::vector<mpb_real> compute_yparities();
+  std::vector<mpb_real> compute_group_velocity_component(vector3 d);
   bool with_hermitian_epsilon();
 
 private:
