@@ -494,11 +494,11 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 // Typemap suite for dft_flux
 
-%typemap(out) double* flux {
+%typemap(out) std::complex<double>* flux {
     int size = arg1->Nfreq;
     $result = PyList_New(size);
     for(int i = 0; i < size; i++) {
-        PyList_SetItem($result, i, PyFloat_FromDouble($1[i]));
+        PyList_SetItem($result, i, PyComplex_FromDoubles($1[i].real(), $1[i].imag()));
     }
 
     delete $1;

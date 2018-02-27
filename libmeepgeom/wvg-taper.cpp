@@ -502,10 +502,10 @@ int main(int argc, char *argv[])
      snprintf(filename,100,"%s.fluxData",filebase);
      if (am_master())
       { FILE *ff=fopen(filename,"a");
-        fprintf(ff,"flux A  = %e\n",fluxA.flux()[0]);
-        fprintf(ff,"flux A1 = %e\n",fluxA1.flux()[0]);
-        fprintf(ff,"flux B  = %e\n",fluxB.flux()[0]);
-        fprintf(ff,"flux B1 = %e\n",fluxB1.flux()[0]);
+        fprintf(ff,"flux A  = %e\n",fluxA.flux()[0].real());
+        fprintf(ff,"flux A1 = %e\n",fluxA1.flux()[0].real());
+        fprintf(ff,"flux B  = %e\n",fluxB.flux()[0].real());
+        fprintf(ff,"flux B1 = %e\n",fluxB1.flux()[0].real());
         fclose(ff);
       };
    };
@@ -542,7 +542,7 @@ int main(int argc, char *argv[])
          for(unsigned nbb=0; nbb<bands.size(); nbb++)
           for(int pm=0, sign=1; pm<2; pm++, sign-=2)
            atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
-         if (nb==0) fprintf(ff,"# atot  = %e (%e)\n",atot,atot/Bflux[0]);
+         if (nb==0) fprintf(ff,"# atot  = %e (%e)\n",atot,atot/Bflux[0].real());
 
          cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
          cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
@@ -551,7 +551,7 @@ int main(int argc, char *argv[])
          printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*vg*norm(aM)/atot);
          fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e %e \n",ratio,taper_length,
                      taper_order,res,nb,nf, norm(aP), arg(aP), vg*norm(aP)/atot, norm(aM), arg(aM), vg*norm(aM)/atot,
-                     Bflux[nf], vgrp[nb*num_freqs + nf]);
+                     Bflux[nf].real(), vgrp[nb*num_freqs + nf]);
       };
      fclose(ff);
    };

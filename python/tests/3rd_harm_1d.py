@@ -43,7 +43,8 @@ class Test3rdHarm1d(unittest.TestCase):
 
     def test_3rd_harm_1d(self):
 
-        expected_harmonics = [0.01, 1.0, 221.89548712071553, 1.752960413399477]
+        expected_harmonics = [0.01, 1.0, 221.89548712071553 - 0.019104970633550877j,
+                              1.752960413399477 + 0.0018131216033989428j]
 
         self.sim.run(
             until_after_sources=mp.stop_when_fields_decayed(
