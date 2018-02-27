@@ -55,8 +55,8 @@ int mpb_comm;
 const double inf = 1.0e20;
 
 // This is the function passed to `set_maxwell_dielectric`
-void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
-                         const mpb_real r[3], void *epsilon_data) {
+static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
+                                const mpb_real r[3], void *epsilon_data) {
 
   mode_solver *ms = static_cast<mode_solver *>(epsilon_data);
   meep_geom::material_type mat;
@@ -72,6 +72,27 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
 
   ms->get_material_pt(mat, p);
   ms->material_epsmu(mat, eps, eps_inv);
+}
+
+static int mean_epsilon_func(symmetric_matrix* meps, symmetric_matrix *meps_inv,
+                             mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3,
+                             mpb_real tol, const mpb_real r[3], void *edata) {
+
+  mode_solver *ms = static_cast<mode_solver *>(edata);
+  meep_geom::material_type mat;
+  vector3 p;
+
+  // p needs to be in the lattice *unit* vector basis, while r is in the lattice
+  // vector basis.  Also, shift origin to the center of the grid.
+  p.x = (r[0] - 0.5) * geometry_lattice.size.x;
+  p.y = (r[1] - 0.5) * geometry_lattice.size.y;
+  p.z = (r[2] - 0.5) * geometry_lattice.size.z;
+
+  mpb_real adjusted_tol = tol > 0.01 ? 0.01 : tol;
+  mpb_real d[3] = {d1, d2, d3};
+  ms->eff_chi1inv_matrix(meps_inv, d, adjusted_tol, 100 / adjusted_tol, true);
+
+  return 1;
 }
 
 /****** utils ******/
@@ -252,68 +273,314 @@ mode_solver::~mode_solver() {
   }
 }
 
+bool mode_solver::get_front_object(mpb_real v[3], vector3 &pcenter,
+                                   const geometric_object **o_front, vector3 &shiftby_front,
+                                   meep_geom::material_type &mat_front,
+                                   meep_geom::material_type &mat_behind) {
+  vector3 p;
+  const geometric_object *o1 = 0, *o2 = 0;
+  vector3 shiftby1 = {0,0,0}, shiftby2 = {0,0,0};
+  geom_box pixel;
+  meep_geom::material_type mat1, mat2;
+  int id1 = -1, id2 = -1;
+  const int num_neighbors[3] = { 3, 5, 9 };
+  const int neighbors[3][9][3] = {
+    { {0,0,0}, {0,0,-1}, {0,0,1},
+      {0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0} },
+    { {0,0,0},
+      {-1,-1,0}, {1,1,0}, {-1,1,0}, {1,-1,0},
+      {0,0,0},{0,0,0},{0,0,0},{0,0,0} },
+    { {0,0,0},
+      {1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},
+      {-1,1,1},{-1,1,-1},{-1,-1,1},{-1,-1,-1} }
+  };
+
+  // TODO: this should be r, not v. Same?
+  p.x = (v[0] - 0.5) * geometry_lattice.size.x;
+  p.y = (v[1] - 0.5) * geometry_lattice.size.y;
+  p.z = (v[2] - 0.5) * geometry_lattice.size.z;
+
+  pixel.low.x = p.x - v[0];
+  pixel.high.x = p.x + v[0];
+  pixel.low.y = p.y - v[1];
+  pixel.high.y = p.y + v[1];
+  pixel.low.z = p.z - v[2];
+  pixel.high.z = p.z + v[2];
+
+  pcenter = p;
+  double d1, d2, d3;
+  d1 = (pixel.high.x - pixel.low.x) * 0.5;
+  d2 = (pixel.high.y - pixel.low.y) * 0.5;
+  d3 = (pixel.high.z - pixel.low.z) * 0.5;
+  for (int i = 0; i < num_neighbors[dimensions - 1]; ++i) {
+    const geometric_object *o;
+    meep_geom::material_type mat;
+    vector3 q, shiftby;
+    int id;
+    q.x = p.x + neighbors[dimensions - 1][i][0] * d1;
+    q.y = p.y + neighbors[dimensions - 1][i][1] * d2;
+    q.z = p.z + neighbors[dimensions - 1][i][2] * d3;
+    o = object_of_point_in_tree(q, geometry_tree, &shiftby, &id);
+    if ((id == id1 && vector3_equal(shiftby, shiftby1)) ||
+        (id == id2 && vector3_equal(shiftby, shiftby2))) {
+      continue;
+    }
+
+    mat = (meep_geom::material_type) default_material;
+
+    if (o) {
+      meep_geom::material_data *md = (meep_geom::material_data *)o->material;
+      if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) {
+        mat = md;
+      }
+    }
+
+    if (id1 == -1) {
+      o1 = o;
+      shiftby1 = shiftby;
+      id1 = id;
+      mat1 = mat;
+    }
+    else if (id2 == -1 || ( (id >= id1 && id >= id2) &&
+          (id1 == id2 || material_type_equal(mat1,mat2)))) {
+      o2 = o;
+      shiftby2 = shiftby;
+      id2 = id;
+      mat2 = mat;
+    }
+    else if (!(id1 < id2 && (id1 == id || material_type_equal(mat1,mat))) &&
+             !(id2 < id1 && (id2 == id || material_type_equal(mat2,mat)))) {
+      return false;
+    }
+  }
+
+  CHECK(id1 > -1, "bug in object_of_point_in_tree?");
+  if (id2 == -1) { /* only one nearby object/material */
+    id2 = id1;
+    o2 = o1;
+    mat2 = mat1;
+    shiftby2 = shiftby1;
+  }
+
+  if ((o1 && is_variable(o1->material)) ||
+      (o2 && is_variable(o2->material)) ||
+      ((is_variable(default_material) || is_file(default_material)) &&
+        (!o1 || is_file(o1->material) || !o2 || is_file(o2->material)))) {
+    return false;
+  }
+
+  if (id1 >= id2) {
+    *o_front = o1;
+    shiftby_front = shiftby1;
+    mat_front = mat1;
+    if (id1 == id2) {
+      mat_behind = mat1;
+    }
+    else {
+      mat_behind = mat2;
+    }
+  }
+
+  if (id2 > id1) {
+    *o_front = o2;
+    shiftby_front = shiftby2;
+    mat_front = mat2;
+    mat_behind = mat1;
+  }
+  return true;
+}
+
+void mode_solver::eff_chi1inv_matrix(symmetric_matrix *chi1inv_matrix, mpb_real d[3],
+                                     double tol, int maxeval, bool eps) {
+  const geometric_object *o;
+  meep_geom::material_type mat, mat_behind;
+  symmetric_matrix meps;
+  vector3 p, shiftby, normal;
+  vector3 center = {d[0] / 2, d[1] / 2, d[2] / 2};
+
+  if (maxeval == 0 || !get_front_object(d, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
+  noavg:
+    get_material_pt(mat, center);
+  trivial:
+    material_epsmu(mat, &meps, chi1inv_matrix, eps);
+    material_gc(mat);
+    return;
+  }
+
+  // FIXME: reimplement support for fallback integration, without
+  //        messing up anisotropic support
+  //  if (!get_front_object(v, geometry_tree,
+  //                        p, &o, shiftby, mat, mat_behind)) {
+  //     fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval);
+  //     return;
+  //  }
+
+  /* check for trivial case of only one object/material */
+  if (material_type_equal(mat, mat_behind)) {
+    goto trivial;
+  }
+
+  // it doesn't make sense to average metals (electric or magnetic)
+  if (is_metal(&mat, eps) || is_metal(&mat_behind, eps)) {
+    goto noavg;
+  }
+
+  normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
+  if (normal.x == 0 && normal.y == 0 && normal.z == 0)
+    goto noavg; // couldn't get normal vector for this point, punt
+  geom_box pixel = gv2box(v);
+  pixel.low = vector3_minus(pixel.low, shiftby);
+  pixel.high = vector3_minus(pixel.high, shiftby);
+
+  double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+
+  material_epsmu(mat, &meps, chi1inv_matrix, eps);
+  symmetric_matrix eps2, epsinv2;
+  symmetric_matrix eps1, delta;
+  double Rot[3][3];
+  material_epsmu(mat_behind, &eps2, &epsinv2, eps);
+  eps1 = meps;
+
+  Rot[0][0] = normal.x;
+  Rot[1][0] = normal.y;
+  Rot[2][0] = normal.z;
+  if (fabs(normal.x) > 1e-2 || fabs(normal.y) > 1e-2) {
+    Rot[0][2] = normal.y;
+    Rot[1][2] = -normal.x;
+    Rot[2][2] = 0;
+  }
+  else { /* n is not parallel to z direction, use (x x n) instead */
+    Rot[0][2] = 0;
+    Rot[1][2] = -normal.z;
+    Rot[2][2] = normal.y;
+  }
+  { /* normalize second column */
+    double s = Rot[0][2]*Rot[0][2]+Rot[1][2]*Rot[1][2]+Rot[2][2]*Rot[2][2];
+    s = 1.0 / sqrt(s);
+    Rot[0][2] *= s;
+    Rot[1][2] *= s;
+    Rot[2][2] *= s;
+  }
+  /* 1st column is 2nd column x 0th column */
+  Rot[0][1] = Rot[1][2] * Rot[2][0] - Rot[2][2] * Rot[1][0];
+  Rot[1][1] = Rot[2][2] * Rot[0][0] - Rot[0][2] * Rot[2][0];
+  Rot[2][1] = Rot[0][2] * Rot[1][0] - Rot[1][2] * Rot[0][0];
+
+  /* rotate epsilon tensors to surface parallel/perpendicular axes */
+  sym_matrix_rotate(&eps1, &eps1, Rot);
+  sym_matrix_rotate(&eps2, &eps2, Rot);
+
+#define AVG (fill * (EXPR(eps1)) + (1-fill) * (EXPR(eps2)))
+#define SQR(x) ((x) * (x))
+
+#define EXPR(eps) (-1 / eps.m00)
+  delta.m00 = AVG;
+#undef EXPR
+#define EXPR(eps) (eps.m11 - SQR(eps.m01) / eps.m00)
+  delta.m11 = AVG;
+#undef EXPR
+#define EXPR(eps) (eps.m22 - SQR(eps.m02) / eps.m00)
+  delta.m22 = AVG;
+#undef EXPR
+
+#define EXPR(eps) (eps.m01 / eps.m00)
+  delta.m01 = AVG;
+#undef EXPR
+#define EXPR(eps) (eps.m02 / eps.m00)
+  delta.m02 = AVG;
+#undef EXPR
+#define EXPR(eps) (eps.m12 - eps.m02 * eps.m01 / eps.m00)
+  delta.m12 = AVG;
+#undef EXPR
+
+  meps.m00 = -1/delta.m00;
+  meps.m11 = delta.m11 - SQR(delta.m01) / delta.m00;
+  meps.m22 = delta.m22 - SQR(delta.m02) / delta.m00;
+  meps.m01 = -delta.m01/delta.m00;
+  meps.m02 = -delta.m02/delta.m00;
+  meps.m12 = delta.m12 - (delta.m02 * delta.m01) / delta.m00;
+
+#undef SQR
+
+#define SWAP(a,b) { double xxx = a; a = b; b = xxx; }
+  /* invert rotation matrix = transpose */
+  SWAP(Rot[0][1], Rot[1][0]);
+  SWAP(Rot[0][2], Rot[2][0]);
+  SWAP(Rot[2][1], Rot[1][2]);
+  sym_matrix_rotate(&meps, &meps, Rot); /* rotate back */
+#undef SWAP
+
+#ifdef DEBUG
+  if(!sym_matrix_positive_definite(&meps))
+    meep::abort("negative mean epsilon from Kottke algorithm");
+#endif
+
+  sym_matrix_invert(chi1inv_matrix, &meps);
+}
+
 void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
-                                 symmetric_matrix *epsmu_inv) {
+                                 symmetric_matrix *epsmu_inv, bool eps) {
 
   meep_geom::material_data *md = material;
 
-  switch (md->which_subclass) {
-    case meep_geom::material_data::MEDIUM:
-    case meep_geom::material_data::MATERIAL_FILE:
-    case meep_geom::material_data::MATERIAL_USER:
-      epsmu->m00 = md->medium.epsilon_diag.x;
-      epsmu->m11 = md->medium.epsilon_diag.y;
-      epsmu->m22 = md->medium.epsilon_diag.z;
-      epsmu->m01 = md->medium.epsilon_offdiag.x;
-      epsmu->m02 = md->medium.epsilon_offdiag.y;
-      epsmu->m12 = md->medium.epsilon_offdiag.z;
-      maxwell_sym_matrix_invert(epsmu_inv, epsmu);
-      break;
-    case meep_geom::material_data::PERFECT_METAL:
-      epsmu->m00 = -inf;
-      epsmu->m11 = -inf;
-      epsmu->m22 = -inf;
-      epsmu->m01 = 0.0;
-      epsmu->m02 = 0.0;
-      epsmu->m12 = 0.0;
-      epsmu_inv->m00 = -0.0;
-      epsmu_inv->m11 = -0.0;
-      epsmu_inv->m22 = -0.0;
-      epsmu_inv->m01 = 0.0;
-      epsmu_inv->m02 = 0.0;
-      epsmu_inv->m12 = 0.0;
-      break;
-    default:
-      meep::abort("Unknown material type");
+  if (eps) {
+    switch (md->which_subclass) {
+      case meep_geom::material_data::MEDIUM:
+      case meep_geom::material_data::MATERIAL_FILE:
+      case meep_geom::material_data::MATERIAL_USER:
+        epsmu->m00 = md->medium.epsilon_diag.x;
+        epsmu->m11 = md->medium.epsilon_diag.y;
+        epsmu->m22 = md->medium.epsilon_diag.z;
+        epsmu->m01 = md->medium.epsilon_offdiag.x;
+        epsmu->m02 = md->medium.epsilon_offdiag.y;
+        epsmu->m12 = md->medium.epsilon_offdiag.z;
+        maxwell_sym_matrix_invert(epsmu_inv, epsmu);
+        break;
+      case meep_geom::material_data::PERFECT_METAL:
+        epsmu->m00 = -inf;
+        epsmu->m11 = -inf;
+        epsmu->m22 = -inf;
+        epsmu->m01 = 0.0;
+        epsmu->m02 = 0.0;
+        epsmu->m12 = 0.0;
+        epsmu_inv->m00 = -0.0;
+        epsmu_inv->m11 = -0.0;
+        epsmu_inv->m22 = -0.0;
+        epsmu_inv->m01 = 0.0;
+        epsmu_inv->m02 = 0.0;
+        epsmu_inv->m12 = 0.0;
+        break;
+      default:
+        meep::abort("Unknown material type");
+    }
   }
-
-  // TODO: if (field_type != meep::E_stuff)
-
-  // switch (md->which_subclass) {
-  //   case meep_geom::material_data::MEDIUM:
-  //   case meep_geom::material_data::MATERIAL_FILE:
-  //   case meep_geom::material_data::MATERIAL_USER:
-  //     epsmu->m00 = md->medium.mu_diag.x;
-  //     epsmu->m11 = md->medium.mu_diag.y;
-  //     epsmu->m22 = md->medium.mu_diag.z;
-  //     epsmu->m01 = md->medium.mu_offdiag.x;
-  //     epsmu->m02 = md->medium.mu_offdiag.y;
-  //     epsmu->m12 = md->medium.mu_offdiag.z;
-  //     maxwell_sym_matrix_invert(epsmu_inv, epsmu);
-  //     break;
-  //   case meep_geom::material_data::PERFECT_METAL:
-  //     epsmu->m00 = 1.0;
-  //     epsmu->m11 = 1.0;
-  //     epsmu->m22 = 1.0;
-  //     epsmu_inv->m00 = 1.0;
-  //     epsmu_inv->m11 = 1.0;
-  //     epsmu_inv->m22 = 1.0;
-  //     epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-  //     epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
-  //     break;
-  //   default:
-  //     meep::abort("unknown material type");
-  // }
+  else {
+    switch (md->which_subclass) {
+      case meep_geom::material_data::MEDIUM:
+      case meep_geom::material_data::MATERIAL_FILE:
+      case meep_geom::material_data::MATERIAL_USER:
+        epsmu->m00 = md->medium.mu_diag.x;
+        epsmu->m11 = md->medium.mu_diag.y;
+        epsmu->m22 = md->medium.mu_diag.z;
+        epsmu->m01 = md->medium.mu_offdiag.x;
+        epsmu->m02 = md->medium.mu_offdiag.y;
+        epsmu->m12 = md->medium.mu_offdiag.z;
+        maxwell_sym_matrix_invert(epsmu_inv, epsmu);
+        break;
+      case meep_geom::material_data::PERFECT_METAL:
+        epsmu->m00 = 1.0;
+        epsmu->m11 = 1.0;
+        epsmu->m22 = 1.0;
+        epsmu_inv->m00 = 1.0;
+        epsmu_inv->m11 = 1.0;
+        epsmu_inv->m22 = 1.0;
+        epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+        epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+        break;
+      default:
+        meep::abort("unknown material type");
+    }
+  }
 }
 
 void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p) {
@@ -553,7 +820,7 @@ void mode_solver::reset_epsilon() {
   // get_epsilon_file_func(epsilon_input_file, &d.epsilon_file_func, &d.epsilon_file_func_data);
   // get_epsilon_file_func(mu_input_file, &d.mu_file_func, &d.mu_file_func_data);
   meep::master_printf("Initializing epsilon function...\n");
-  set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, NULL, static_cast<void *>(this));
+  set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, mean_epsilon_func, static_cast<void *>(this));
 
   // TODO
   // if (has_mu(&d)) {
