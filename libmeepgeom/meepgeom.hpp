@@ -108,6 +108,19 @@ meep::vec vector3_to_vec(const vector3 v3);
 meep::realnum linear_interpolate(meep::realnum rx, meep::realnum ry, meep::realnum rz,
                                  meep::realnum *data, int nx, int ny, int nz, int stride);
 void epsilon_file_material(material_data *md, vector3 p);
+bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);
+bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2);
+bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2);
+void material_gc(material_type m);
+bool material_type_equal(const material_type m1, const material_type m2);
+bool is_variable(material_type mt);
+bool is_variable(void* md);
+bool is_file(material_type md);
+bool is_file(void* md);
+bool is_medium(material_type md, medium_struct **m);
+bool is_medium(void* md, medium_struct **m);
+bool is_metal(meep::field_type ft, const material_type *material);
+
 }; // namespace meep_geom
 
 #endif // #ifndef MEEP_GEOM_H

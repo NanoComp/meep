@@ -90,11 +90,8 @@ struct mode_solver {
   void get_material_pt(meep_geom::material_type &material, vector3 p);
   void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
                       symmetric_matrix *epsmu_inv, bool eps=true);
-  void eff_chi1inv_matrix(symmetric_matrix *chi1inv_matrix, mpb_real d[3],
-                          double tol, int maxeval, bool eps);
-  bool get_front_object(mpb_real v[3], vector3 &pcenter, const geometric_object **o_front,
-                        vector3 &shiftby_front, meep_geom::material_type &mat_front,
-                        meep_geom::material_type &mat_behind);
+  int mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv, mpb_real n[3],
+                    mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3]);
 
   void randomize_fields();
   void init_epsilon();

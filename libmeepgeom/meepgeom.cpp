@@ -27,7 +27,7 @@ namespace meep_geom {
 material_data vacuum_material_data;
 material_type vacuum = &vacuum_material_data;
 
-static bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
+bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2)
 {
     return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
             vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) &&
@@ -36,7 +36,7 @@ static bool susceptibility_equal(const susceptibility &s1, const susceptibility 
             s1.is_file == s2.is_file);
 }
 
-static bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2)
+bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2)
 {
     if (s1.num_items != s2.num_items) return false;
     for (int i = 0; i < s1.num_items; ++i)
@@ -45,7 +45,7 @@ static bool susceptibility_list_equal(const susceptibility_list &s1, const susce
     return true;
 }
 
-static bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2)
+bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2)
 {
   return (vector3_equal(m1->epsilon_diag, m2->epsilon_diag) &&
           vector3_equal(m1->epsilon_offdiag, m2->epsilon_offdiag) &&
@@ -73,13 +73,13 @@ static void susceptibility_list_gc(susceptibility_list *sl)
 
 // garbage collection for material structures: called to deallocate memory
 // allocated for susceptibilities in user-defined materials.
-static void material_gc(material_type m)
+void material_gc(material_type m)
  { if ( !m || m->which_subclass!=material_data::MATERIAL_USER ) return;
    susceptibility_list_gc( &(m->medium.E_susceptibilities) );
    susceptibility_list_gc( &(m->medium.H_susceptibilities) );
  }
 
-static bool material_type_equal(const material_type m1, const material_type m2)
+bool material_type_equal(const material_type m1, const material_type m2)
 {
     if (m1 == m2) return true;
     if (m1->which_subclass != m2->which_subclass) return false;
@@ -254,19 +254,19 @@ static geom_box gv2box(const meep::volume &v)
   return box;
 }
 
-static bool is_variable(material_type mt)
+bool is_variable(material_type mt)
 {
   return (mt->which_subclass == material_data::MATERIAL_USER);
 }
-static bool is_variable(void* md) { return is_variable((material_type) md); }
+bool is_variable(void* md) { return is_variable((material_type) md); }
 
-static bool is_file(material_type md)
+bool is_file(material_type md)
 {
   return (md->which_subclass == material_data::MATERIAL_FILE);
 }
-static bool is_file(void* md) { return is_file((material_type) md); }
+bool is_file(void* md) { return is_file((material_type) md); }
 
-static bool is_medium(material_type md, medium_struct **m)
+bool is_medium(material_type md, medium_struct **m)
 {
   if (md->which_subclass == material_data::MEDIUM)
    { *m = &(md->medium);
@@ -275,10 +275,10 @@ static bool is_medium(material_type md, medium_struct **m)
   return false;
 }
 
-static bool is_medium(void* md, medium_struct **m)
+bool is_medium(void* md, medium_struct **m)
  { return is_medium((material_type) md, m); }
 
-static bool is_metal(meep::field_type ft, const material_type *material) {
+bool is_metal(meep::field_type ft, const material_type *material) {
   material_data *md = *material;
   if (ft == meep::E_stuff)
     switch (md->which_subclass) {

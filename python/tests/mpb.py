@@ -831,5 +831,43 @@ class TestModeSolver(unittest.TestCase):
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
 
+    def test_subpixel_averaging(self):
+        ms = self.init_solver()
+        ms.tolerance = 1e-12
+        ms.run_te()
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.49683586474489877, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.4415884497225449, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.5931405141160885, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.5931535863117832, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.7732265593069759, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6791690130757013, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.80968915516771, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
+            ((0.8241814443502151, mp.Vector3(0.5, 0.30000000000000004, 0.0)),
+             (0.9229965195855876, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.8819770916660669, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.0291597050650205, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.8819818134421844, mp.Vector3(0.5, 0.5, 0.0)),
+             (1.086072932359415, mp.Vector3(0.5, 0.0, 0.0))),
+            ((1.0878689635052692, mp.Vector3(0.5, 0.0, 0.0)),
+             (1.1119173707556929, mp.Vector3(0.5, 0.5, 0.0))),
+        ]
+
+        expected_gap_list = [
+            (0.0022038709776893727, 0.5931405141160885, 0.5931535863117832),
+            (1.7739824912427062, 0.80968915516771, 0.8241814443502151),
+            (0.1652326724344101, 1.086072932359415, 1.0878689635052692)
+        ]
+
+        ref_fn = 'subpixel_avg-epsilon.h5'
+        ref_path = os.path.join(self.data_dir, ref_fn)
+        res_path = re.sub('subpixel_avg', self.filename_prefix, ref_fn)
+
+        self.compare_h5_files(ref_path, res_path)
+        self.check_band_range_data(expected_brd, ms.band_range_data)
+        self.check_gap_list(expected_gap_list, ms.gap_list)
+
 if __name__ == '__main__':
     unittest.main()
