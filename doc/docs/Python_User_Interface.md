@@ -89,7 +89,7 @@ A Python function that takes a `Vector3` and returns the dielectric constant at 
 
 **`epsilon_input_file` [`string`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the $\varepsilon$ property of `default_material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need not match Meep's computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the $\varepsilon$ property of the `default_material`, whereas other properties ($\mu$, susceptibilities, nonlinearities, etc.) of `default_material` are still used.
+If this string is not empty (the default), then it should be the name of an HDF5 file whose first/only dataset defines a scalar, real-valued, frequency-independent dielectric function over some discrete grid. Alternatively, the dataset name can be specified explicitly if the string is in the form "filename:dataset". This dielectric function is then used in place of the $\varepsilon$ property of `default_material` (i.e. where there are no `geometry` objects). The grid of the epsilon file dataset need not match the computational grid; it is scaled and/or linearly interpolated as needed to map the file onto the computational cell. The structure is warped if the proportions of the grids do not match. **Note:** the file contents only override the $\varepsilon$ property of the `default_material`, whereas other properties ($\mu$, susceptibilities, nonlinearities, etc.) of `default_material` are still used.
 
 **`dimensions` [`integer`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -116,7 +116,7 @@ If `True` (the default) *and* if the boundary conditions are periodic (`k_point`
 
 **`eps_averaging` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-If `True` (the default), then subpixel averaging is used when initializing the dielectric function. See the [reference publication](Acknowledgements/#referencing) for details. The input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average $\varepsilon$ with diminishing returns for the actual FDTD error.
+If `True` (the default), then subpixel averaging is used when initializing the dielectric function. See the [technical reference](Acknowledgements/#referencing) for details. The input variables `subpixel_maxeval` (default 10<sup>4</sup>) and `subpixel_tol` (default 10<sup>-4</sup>) specify the maximum number of function evaluations and the integration tolerance for subpixel averaging. Increasing/decreasing these, respectively, will cause a more accurate but slower computation of the average $\varepsilon$ with diminishing returns for the actual FDTD error.
 
 **`force_complex_fields` [`boolean`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -317,7 +317,7 @@ The frequency scale factor $f_n = \omega_n / 2\pi$ which multiplies $\sigma$ (no
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 The loss rate $\gamma_n / 2\pi$.
 
-Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be [computed more efficiently](http://math.mit.edu/~stevenj/papers/RodriguezRe13-heat.pdf) using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
+Meep also supports a somewhat unusual polarizable medium, a Lorentzian susceptibility with a random noise term added into the damped-oscillator equation at each point. This can be used to directly model thermal radiation in both the [far field](http://journals.aps.org/prl/abstract/10.1103/PhysRevLett.93.213905) and the [near field](http://math.mit.edu/~stevenj/papers/RodriguezIl11.pdf). Note, however that it is more efficient to compute far-field thermal radiation using Kirchhoff's law of radiation, which states that emissivity equals absorptivity. Near-field thermal radiation can usually be computed more efficiently using frequency-domain methods, e.g. via [SCUFF-EM](http://homerreid.dyndns.org/scuff-EM/).
 
 ### NoisyLorentzianSusceptibility or NoisyDrudeSusceptibility  
 
@@ -562,7 +562,7 @@ The asymptotic reflection in the limit of infinite resolution or infinite PML th
 
 **`pml_profile` [`function`]**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml_profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly. See [Optics Express, vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For example, one can use a cubic profile $f(u) = u^3$ by specifying `pml_profile=lambda u: u*u*u`.
+By default, Meep turns on the PML conductivity quadratically within the PML layer &mdash; one doesn't want to turn it on suddenly, because that exacerbates reflections due to the discretization. More generally, with `pml_profile` one can specify an arbitrary PML "profile" function $f(u)$ that determines the shape of the PML absorption profile up to an overall constant factor. *u* goes from 0 to 1 at the start and end of the PML, and the default is $f(u) = u^2$. In some cases where a very thick PML is required, such as in a periodic medium (where there is technically no such thing as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For example, one can use a cubic profile $f(u) = u^3$ by specifying `pml_profile=lambda u: u*u*u`.
 
 #### `Absorber`
 
@@ -572,9 +572,9 @@ The `Absorber` class does *not* implement a perfectly matched layer (PML), howev
 
 The main reason to use `Absorber` is if you have **a case in which PML fails:**
 
--   No true PML exists for *periodic* media, and a scalar absorber is cheaper and generally just as good. See [Optics Express, vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
--   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can easily happen in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, vol. 79, 065601 (2009)](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
--   PML can fail if you have a waveguide hitting the edge of your computational cell *at an angle*. See [J. Computational Physics, vol. 230, pp. 2369-77 (2011)](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
+-   No true PML exists for *periodic* media, and a scalar absorber is cheaper and generally just as good. See [Optics Express, Vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+-   PML can lead to *divergent* fields for certain waveguides with "backward-wave" modes; this can easily happen in metals with surface plasmons, and a scalar absorber is your only choice. See [Physical Review E, Vol. 79, 065601 (2009)](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
+-   PML can fail if you have a waveguide hitting the edge of your computational cell *at an angle*. See [J. Computational Physics, Vol. 230, pp. 2369-77 (2011)](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
 
 ### Source
 
@@ -802,7 +802,7 @@ If any dimension of `where` is zero, that dimension is not integrated over. In t
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 As `integrate_field_function`, but returns the maximum absolute value of `func` in the volume `where` instead of its integral.
 
-The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Function Examples](Field_Function_Examples.md) for illustrations of how to call `integrate_field_function` and `max_abs_field_function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
+The integration is performed by summing over the grid points with a simple trapezoidal rule, and the maximum is similarly over the grid points. See [Field Function Examples](Field_Function_Examples.md) for examples of how to call `integrate_field_function` and `max_abs_field_function`. See [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
 Occasionally, one wants to compute an integral that combines fields from two separate simulations (e.g. for nonlinear coupled-mode calculations). This functionality is supported in Meep, as long as the two simulations have the *same* computational cell, the same resolution, the same boundary conditions and symmetries (if any), and the same PML layers (if any).
 
@@ -987,7 +987,7 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 
 Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Python_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the computational cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d or 3d region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the computational cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
-This is based on the [principle of equivalence](http://arxiv.org/abs/1301.5366) &mdash; given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region.
+This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use:
 
@@ -1029,7 +1029,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 ### Frequency-Domain Solver
 
-Meep contains a frequency-domain solver that directly computes the fields produced in a geometry in response to a constant-frequency source, using an [iterative linear solver](http://www.netlib.org/linalg/html_templates/Templates.html) instead of time-stepping. Preliminary tests have shown that in many instances, this solver converges much faster than simply running an equivalent time-domain simulation with a continuous-wave source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `ContinuousSrc` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_fields()`:
+Meep contains a frequency-domain solver that directly computes the fields produced in a geometry in response to a constant-frequency source, using an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. Preliminary tests have shown that in many instances, this solver converges much faster than simply running an equivalent time-domain simulation with a continuous-wave source, time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy. To use it, simply define a `ContinuousSrc` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_fields()`:
 
 ```py
 sim = meep.Simulation(...)
@@ -1136,52 +1136,23 @@ As `output_field_function`, but only outputs the real part of `func` to the data
 
 See also [Field Function Examples](Field_Function_Examples.md). See also [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
-#### Array slices
+#### Array Slices
 
-The output functions described above write field data for the full
-computational grid to binary HDF5 disk files, which is useful for 
-subsequent off-line post-processing; for example, in a python 
-session you could later read in the HDF5 files to get field data
-in the form of `numpy` arrays.
-However, in some cases it is convenient to bypass the disk
-altogether, obtaining field data *directly* in the form of
-`numpy` arrays without ever writing or reading HDF5 files; moreover,
-you may want field data on just a subregion (or `slice`) of the full
-volume, not the full grid.
-This functionality is furnished by the `get_array()` method
-of `Simulation,`
-which inputs **(a)** a specification of a subregion of the
-computational volume **(b)** a field component,
-and which returns a `numpy` array containing values of the
-field component you requested (at the current simulation time)
-at grid points in the volume you requested. The syntax is
+The output functions described above write the data for the fields and materials for the entire computational volume to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the computational volume and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 ```python
- get_array(center, size, component, cmplx=None, arr=None)
+ get_array(center, size, component, cmplx=False, arr=None)
 ```
 
-where
+with the following input parameters:
 
-+ `center` and `size` are `Vector3` quantities specifying the center point
-  $(x_0,y_0,z_0)$ and extents $(\Delta_x, \Delta_y, \Delta_z)$
-  of the subregion over which you want field data;
++ `center`, `size`: `Vector3` properties of the orthogonal subregion/slice of the computational volume. The return value of `get_array` has the same dimensions as `size`.
 
-+ `component` is the field component you want
-  (i.e. `mp.Ex,` `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc.)
++ `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`, `mp.Dielectric`, etc).
 
-+ `cmplx` is an optional field that you may set to `True` to get
-  complex-valued data (otherwise, the default is to return a real-valued
-  array)
++ `cmplx`: If `True`, return complex-valued data otherwise return real-valued data (default).
 
-+ `arr` is an optional field that you may use to pass a pre-allocated
-  `numpy` array of the correct size, which will be overwritten with
-  the field data instead of allocating a new array.  Normally, this will
-  be the array returned from a previous call to `get_array` for a
-  a similar slice, allowing one to re-use `arr` e.g. when fetching the
-  same slice repeatedly at different times.
-
-The return value of `get_array` is a `numpy` array of dimension 1, 2, or 3
-depending on the number of nonzero entries in your `size` vector.
++ `arr`: optional field to pass a pre-allocated NumPy array of the correct size, which will be overwritten with the field/material data instead of allocating a new array.  Normally, this will be the array returned from a previous call to `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when fetching the same slice repeatedly at different times).
 
 #### Harminv
 
@@ -1191,7 +1162,7 @@ The following step function collects field data from a given point and runs [Har
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 `Harminv` is implemented as a class whose constructor returns a step function that collects data from the field component `c` (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end of the run, it uses Harminv to look for modes in the given frequency range (center `fcen` and width `df`), printing the results to standard output (prefixed by `harminv:`) as comma-delimited text, and also storing them to the variable `Harminv.modes`. The optional argument `maxbands` is the maximum number of modes to search for. Defaults to 100.
 
-**Important:** normally, you should only use `Harminv` to analyze data *after the sources are off*. Wrapping it in `after_sources(meep.Harminv(...))` is sufficient.
+**Important:** normally, you should only use Harminv to analyze data *after the sources are off*. Wrapping it in `after_sources(meep.Harminv(...))` is sufficient.
 
 In particular, Harminv takes the time series $f(t)$ corresponding to the given field component as a function of time and decomposes it (within the specified bandwidth) as:
 
