@@ -79,7 +79,7 @@ Note also that, as a consequence of the above analysis, $\varepsilon$ must go to
 
 ### Why are there strange peaks in my reflection/transmission spectrum when modeling planar or periodic structures?
 
-Modeling flat/planar structures requires a 1d computational cell and periodic structures a single unit cell. You may be using a higher-dimensional cell (a supercell) which introduces unwanted additional modes due to band folding. For more details, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Note that a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted.
+Modeling flat/planar structures typically requires a 1d computational cell and periodic structures a single unit cell. You may be using a higher-dimensional cell with multiple periods (a supercell) which introduces unwanted additional modes due to band folding. For more details, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Note that a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted.
 
 Usage
 -----
@@ -90,7 +90,7 @@ An official Python interface was released in January 2018 with version 1.4. An u
 
 ### What are the different ways to define the material geometry?
 
-There are currently three ways to define the material geometry via: (1) the [`GeometricObject`](Python_User_Interface/#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface/#geometric-object) (Scheme) class to specify a collection of shapes including spheres, cylinders, cones, blocks, and ellipsoids, (2) `material_function` (Python) or `material-function` (Scheme) to define an arbitrary function, or (3) importing the frequency-independent, real-valued permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter. Combinations of (1) and (2) are allowed but not (3).
+There are currently three ways to define the material geometry via: (1) the [`GeometricObject`](Python_User_Interface/#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface/#geometric-object) (Scheme) class used to specify a collection of shapes including spheres, cylinders, cones, blocks, and ellipsoids, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function, or (3) importing the frequency-independent, real-valued permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter. Combinations of (1) and (2) are allowed but not (3).
 
 ### Does Meep support importing GDSII files?
 
