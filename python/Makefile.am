@@ -82,7 +82,7 @@ install-data-hook:
 	mv $(DESTDIR)$(pkgpythondir)/mpb/mpb.py $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
 
 uninstall-hook:
-	rm $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
+	rm -f $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
 
 if MAINTAINER_MODE
 
