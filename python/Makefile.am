@@ -70,11 +70,19 @@ TEST_EXTENSIONS = .py
 PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 
-# TODO: Add mpb to package
 if WITH_PYTHON
+  pympbdir = $(pkgpythondir)/mpb
   pkgpython_PYTHON = geom.py __init__.py source.py simulation.py
-  pkgpyexec_LTLIBRARIES = _meep.la _mpb.la
+  pkgpyexec_LTLIBRARIES = _meep.la
+  pympb_DATA = mpb.py solver.py
+  pympb_LTLIBRARIES = _mpb.la
 endif
+
+install-data-hook:
+	mv $(DESTDIR)$(pkgpythondir)/mpb/mpb.py $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
+
+uninstall-hook:
+	rm -f $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
 
 if MAINTAINER_MODE
 
