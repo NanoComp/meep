@@ -36,9 +36,9 @@ Installation
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to supercomputers. Conda packages are available for Linux and macOS. Meep can also be installed on Windows using the open-source [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. See [Installation](Installation) for details.
+Meep runs on any Unix-like operating system, such as Linux and macOS, from notebooks to desktops to supercomputers. [Conda packages](Installation/#conda-packages) are available for Linux and macOS. Meep can also be installed on Windows using the open-source [Cygwin](https://en.wikipedia.org/wiki/Cygwin) Unix-compatibility environment. See [Installation](Installation) for details.
 
-Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Installation shell scripts are available for [Ubuntu 16.04](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05884.html) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
+Installing Meep from source code requires some understanding of Unix, especially to install the various prerequisites. Installation shell scripts are available for [Ubuntu 16.04](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep_python_mpi.sh) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
 Meep is also available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
 
@@ -59,7 +59,7 @@ If you are worried about this, then you are probably setting up your calculation
 
 ### How do I set the imaginary part of ε?
 
-If you only care about the imaginary part of $\varepsilon$ in a narrow bandwidth around some frequency $\omega$, you should set it by using the electric conductivity as described in [Materials](Materials/#conductivity-and-complex). If you care about the imaginary part of $\varepsilon$ over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit it to Meep's dispersive-$\varepsilon$ support. See [Materials](Materials#material-dispersion).
+If you only care about the imaginary part of $\varepsilon$ in a narrow bandwidth around some frequency $\omega$, you should set it by using the electric [conductivity](Materials/#conductivity-and-complex). If you care about the imaginary part of $\varepsilon$ over a broad bandwidth, then for any physical material the imaginary part will be frequency-dependent and you will have to fit the data to a [Drude-Lorentzian susceptibility profile](Materials#material-dispersion).
 
 Meep doesn't implement a frequency-independent complex $\varepsilon$. Not only is this not physical, but it also leads to both exponentially decaying and exponentially growing solutions in Maxwell's equations from positive- and negative-frequency Fourier components, respectively. Thus, it cannot be simulated in the time domain.
 
@@ -77,6 +77,10 @@ If you have negative $\varepsilon$ *and* negative $\mu$ *everywhere*, the case o
 
 Note also that, as a consequence of the above analysis, $\varepsilon$ must go to a positive value in the $\omega\to\pm\infty$ limit to get non-diverging solutions of Maxwell's equations. So the $\varepsilon_\infty$ in your [dispersion model](Materials.md) must be positive.
 
+### Why are there strange peaks in my reflection/transmission spectrum when modeling planar or periodic structures?
+
+Modeling flat/planar structures typically requires a 1d computational cell and periodic structures a single unit cell. You may be using a higher-dimensional cell with multiple periods (a supercell) which introduces unwanted additional modes due to band folding. For more details, see Section 4.6 ("Sources in Supercells") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Note that a 1d cell must be along the $z$ direction with only the $E_x$ and $H_y$ field components permitted.
+
 Usage
 -----
 
@@ -84,22 +88,26 @@ Usage
 
 An official Python interface was released in January 2018 with version 1.4. An unofficial [Python interface](https://github.com/FilipDominec/python-meep-utils) has been developed independently by researchers at the Institute of Physics at the Czech Academy of Sciences and Ghent University. Unfortunately, this interface has a number of shortcomings including missing support for geometric objects, lack of high-level abstractions for low-level functionality, and limited documentation. The official interface addresses all these issues.
 
+### What are the different ways to define the material geometry?
+
+There are currently three ways to define the material geometry via: (1) the [`GeometricObject`](Python_User_Interface/#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface/#geometric-object) (Scheme) class used to specify a collection of shapes including spheres, cylinders, cones, blocks, and ellipsoids, (2) `material_function` (Python) or `material-function` (Scheme) used to define an arbitrary function, or (3) importing the frequency-independent, real-valued permittivity from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter. Combinations of (1) and (2) are allowed but not (3).
+
+### Does Meep support importing GDSII files?
+
+Not currently, but work is underway to add support for this feature with expected release in mid 2018. Importing [GDSII](https://en.wikipedia.org/wiki/GDSII) files will facilitate the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, this feature will enable Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits.
+
 ### Why doesn't turning off subpixel averaging work?
 
-By default, when Meep assigns a dielectric constant $\varepsilon$ or $\mu$ to each pixel, it uses a carefully designed average of the $\varepsilon$ values within that pixel. This subpixel averaging generally improves the accuracy of the simulation &mdash; perhaps counter-intuitively, for geometries with discontinous $\varepsilon$ it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) $\varepsilon$, as long as the averaging is done properly. For details, see the [reference publication](Acknowledgements/#referencing).
+By default, when Meep assigns a dielectric constant $\varepsilon$ or $\mu$ to each pixel, it uses a carefully designed average of the $\varepsilon$ values within that pixel. This subpixel averaging generally improves the accuracy of the simulation &mdash; perhaps counter-intuitively, for geometries with discontinous $\varepsilon$ it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) $\varepsilon$, as long as the averaging is done properly. For details, see the [technical reference](Acknowledgements/#referencing).
 
 Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by setting `Simulation.eps_averaging = False` (Python) or `(set! eps-averaging? false)` (Scheme). See the [User Interface](Python_User_Interface.md).
 
 Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and plot it, you may notice that there are some pixels with intermediate $\varepsilon$ values, right at the boundary between two materials. This has a completely different source. Internally, Meep's simulation is performed on a [Yee grid](Yee_Lattice.md), in which every field component is stored on a slightly different grid which are offset from one another by half-pixels, and the $\varepsilon$ values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid at the center of each pixel, so all quantities are interpolated onto this grid for output. Therefore, even though the internal $\varepsilon$ values are indeed discontinuous when you disable subpixel averaging, the *output* file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.
 
-### Does Meep support importing GDSII files?
-
-Not currently, but work is underway to add support for this feature with expected release in mid 2018. Importing [GDSII](https://en.wikipedia.org/wiki/GDSII) files will facilitate the simulation of 2d/planar structures which are fabricated using semiconductor foundries. Also, this feature will enable Meep's plug-and-play capability with [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.). EDA is used for the synthesis and verification of large and complex integrated circuits. As an alternative, Meep supports importing the material geometry from an HDF5 file via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter.
-
 ### How to set up an oblique planewave source?
 
-A planewave incident at any angle can be generated by setting the amplitude function of a 1d/line source (for a 2d computational cell) or 2d/plane source (for a 3d cell). This is discussed on the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg00692.html). Examples are demonstrated in [Python](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) and [Scheme](https://github.com/stevengj/meep/blob/master/examples/pw-source.ctl). Note: the oblique planewave is incident at the given angle for only a single frequency component. For accuracy involving broadband calculations, this will typically require splitting up the spectrum into subintervals (requiring multilple simulations) and recombining the results in post processing. For more details, refer to Section 4.5 ("Efficiency Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+A planewave incident at any angle can be generated by setting the amplitude function of a 1d/line source (for a 2d computational cell) or 2d/planar source (for a 3d cell). This is discussed on the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg00692.html). Examples are provided in [Python](https://github.com/stevengj/meep/blob/master/python/examples/pw-source.py) and [Scheme](https://github.com/stevengj/meep/blob/master/examples/pw-source.ctl). Note: the oblique planewave is incident at the given angle for only a single frequency component. For accuracy involving broadband calculations, this will typically require splitting up the spectrum into subintervals (requiring multilple simulations) and recombining the results in post processing. For more details, refer to Section 4.5 ("Efficiency Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 ### Is there a materials library?
 
-A materials library is available containing 11 commonly used metals in optoelectronic devices: Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W. This is described in [Materials](Materials/#materials-library).
+A materials library is available containing 11 commonly used metals in optoelectronic devices: Ag, Au, Cu, Al, Be, Cr, Ni, Pd, Pt, Ti, W. Additional information is provided in [Materials](Materials/#materials-library).

@@ -11,42 +11,42 @@ In order to convert the [HDF5](https://en.wikipedia.org/wiki/HDF5) output files 
 The ctl File
 ------------
 
-The use of Meep revolves around the control file, abbreviated "ctl" and typically called something like `foo.ctl`. The ctl file specifies the geometry you wish to study, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
+The use of Meep revolves around the control file, abbreviated "ctl" and typically called something like `foo.ctl`. The ctl file specifies the geometry, the current sources, the outputs computed, and everything else specific to your calculation. Rather than a flat, inflexible file format, however, the ctl file is actually written in a scripting language. This means that it can be everything from a simple sequence of commands setting the geometry, etcetera, to a full-fledged program with user input, loops, and anything else that you might need.
 
 Don't worry, though &mdash; simple things are simple and you don't need to be an experienced programmer. You will appreciate the flexibility that a scripting language gives you: e.g., you can input things in any order, without regard for whitespace, insert comments where you please, omit things when reasonable defaults are available, etc.
 
 The ctl file is actually implemented on top of the [libctl](https://libctl.readthedocs.io) library, a set of utilities that are in turn built on top of the Scheme language. Thus, there are three sources of possible commands and syntax for a ctl file:
 
--   [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language) a powerful and beautiful programming language developed at MIT. The syntax is particularly simple: all statements are of the form `(function` `arguments...)`. We run Scheme under the [Guile](https://en.wikipedia.org/wiki/GNU_Guile) interpreter which is designed to be plugged into programs as a scripting and extension language. You don't need to know much Scheme for a basic ctl file, but it is always there if you need it. More information is available on [Guile and Scheme](../Guile_and_Scheme_Information.md).
--   [libctl](https://libctl.readthedocs.io/), a library that we built on top of Guile to simplify communication between Scheme and scientific computation software. libctl sets the basic tone of the interface and defines a number of useful functions (such as multi-variable optimization, numeric integration, and so on). See the [libctl manual](https://libctl.readthedocs.io).
+-   [Scheme](https://en.wikipedia.org/wiki/Scheme_programming_language): a programming language developed at MIT. The syntax is particularly simple: all statements are of the form `(function arguments...)`. We run Scheme under the [Guile](https://en.wikipedia.org/wiki/GNU_Guile) interpreter which is designed to be plugged into programs as a scripting and extension language. You don't need to know much Scheme for a basic ctl file, but it is always there if you need it. For more details, see [Guile and Scheme Information](../Guile_and_Scheme_Information.md).
+-   [libctl](https://libctl.readthedocs.io/): a library built on top of Guile to simplify protocols for scientific computation. libctl sets the basic tone of the interface and defines a number of useful functions (such as multi-variable optimization, numeric integration, and so on). See the [libctl documentation](https://libctl.readthedocs.io).
 -   Meep itself, which defines all the interface features that are specific to FDTD calculations. This manual is primarily focused on documenting these features.
 
 At this point, please take a moment to leaf through the libctl tutorial to get a feel for the basic style of the interface, before we get to the Meep-specific stuff below. [MPB](http://mpb.readthedocs.io) has a similar interface.
 
-Okay, let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command line:
+Let's continue with our tutorial. The Meep program is normally invoked by running something like the following at the Unix command line:
 
 ```sh
  unix% meep foo.ctl >& foo.out
 ```
 
-which reads the ctl file `foo.ctl` and executes it, saving the output to the file `foo.out`. However, if you invoke `meep` with no arguments, you are dropped into an *interactive* mode in which you can type commands and see their results immediately. If you do that now, you can paste in the commands from the tutorial as you follow it and see what they do.
+which reads `foo.ctl` and executes it, saving the output to the file `foo.out`. However, if you invoke `meep` with no arguments, you are dropped into an interactive mode in which you can type commands and see their results immediately. If you do that now, you can paste in the commands from the tutorial as you follow it and see what they do.
 
 Fields in a Waveguide
 ---------------------
 
-For our first example, let's examine the field pattern excited by a localized CW source in a waveguide &mdash; first straight, then bent. Our waveguide will have non-dispersive $\varepsilon=12$ and width 1. That is, we pick units of length so that the width is 1, and define everything in terms of that. See also [Units](Introduction.md#units-in-meep).
+For our first example, let's examine the field pattern excited by a localized [CW](https://en.wikipedia.org/wiki/Continuous_wave) source in a waveguide &mdash; first straight, then bent. Our waveguide will have frequency-independent $\varepsilon=12$ and width 1 &#956;m. Our unit length in this example is 1 &#956;m. See also [Units](Introduction.md#units-in-meep).
 
 ### A Straight Waveguide
 
-Before we define the structure, however, we have to define the computational cell. We're going to put a source at one end and watch it propagate down the waveguide in the *x* direction, so let's use a cell of length 16 in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries (below) don't affect the waveguide mode; let's give it a size of 8. We now specify these sizes in our ctl file via the `geometry-lattice` variable:
+Before we define the structure, however, we have to define the computational cell. We're going to put a source at one end and watch it propagate down the waveguide in the *x* direction, so let's use a cell of length 16 &#956;m in the *x* direction to give it some distance to propagate. In the *y* direction, we just need enough room so that the boundaries don't affect the waveguide mode; let's give it a size of 8 &#956;m. We now specify these sizes via the `geometry-lattice` variable:
 
 ```scm
 (set! geometry-lattice (make lattice (size 16 8 no-size)))
 ```
 
-The name `geometry-lattice` comes from [MPB](http://mpb.readthedocs.io), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported. `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter says that the computational cell has no size in the *z* direction, i.e. it is two-dimensional.
+The name `geometry-lattice` comes from [MPB](http://mpb.readthedocs.io), where it can be used to define a more general periodic lattice. Although Meep supports periodic structures, it is less general than MPB in that affine grids are not supported. `set!` is a Scheme command to set the value of an input variable. The last `no-size` parameter indicates that the computational cell has no size in the *z* direction, i.e. it is two-dimensional.
 
-Now, we can add the waveguide. Most commonly, the structure is specified by a `list` of geometric objects, stored in the `geometry` variable. Here, we do:
+Now, we can add the waveguide. Most commonly, the structure is specified by a `list` of [`geometric-object`s](../Scheme_User_Interface/#geometric-object), stored in the `geometry` variable. Here, we do:
 
 ```scm
 (set! geometry (list
@@ -58,7 +58,7 @@ The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 
 
 <center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
 
-Now that we have the structure, we need to specify the current sources, which is specified as a `list` called `sources` of source objects. The simplest thing is to add a point source $J_z$:
+Now that we have the structure, we need to specify the current sources using the [`sources`](../Scheme_User_Interface/#source) object. The simplest thing is to add a single point source $J_z$:
 
 ```scm
 (set! sources (list
@@ -68,23 +68,23 @@ Now that we have the structure, we need to specify the current sources, which is
                  (center -7 0))))
 ```
 
-Here, we gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that (by default) is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$, or a wavelength of about 2 in the $\varepsilon=12$ material—thus, our waveguide is half a wavelength wide, which should hopefully make it single-mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
+We gave the source a frequency of 0.15, and specified a `continuous-src` which is just a fixed-frequency sinusoid $\exp(-i\omega t)$ that by default is turned on at $t=0$. Recall that, in [Meep units](../Introduction.md#units-in-meep), frequency is specified in units of $2\pi c$, which is equivalent to the inverse of the vacuum wavelength. Thus, 0.15 corresponds to a vacuum wavelength of about $1/0.15=6.67$ &#956;m, or a wavelength of about 2 in the $\varepsilon=12$ material &mdash; thus, our waveguide is half a wavelength wide, which should hopefully make it single mode. In fact, the cutoff for single-mode behavior in this waveguide is analytically solvable, and corresponds to a frequency of 1/2√11 or roughly 0.15076. Note also that to specify a $J_z$, we specify a component $Ez$ (e.g. if we wanted a magnetic current, we would specify `Hx`, `Hy`, or `Hz`). The current is located at $(-7,0)$, which is 1 unit to the right of the left edge of the cell &mdash; we always want to leave a little space between sources and the cell boundaries, to keep the boundary conditions from interfering with them.
 
-Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash; which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 around all sides of the cell, we do:
+Speaking of boundary conditions, we want to add absorbing boundaries around our cell. Absorbing boundaries in Meep are handled by [perfectly matched layers](../Perfectly_Matched_Layer.md) (PML) &mdash; which aren't really a boundary condition at all, but rather a fictitious absorbing material added around the edges of the cell. To add an absorbing layer of thickness 1 &#956;m around all sides of the cell, we do:
 
 ```scm
 (set! pml-layers (list (make pml (thickness 1.0))))
 ```
 
-`pml-layers` is a list of `pml` objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make pml (thickness 1.0) (direction X) (side High))` specifies a PML layer on only the $+x$ side. Now, we note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections; see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md) for more information.
+`pml-layers` is a list of [`pml`](../Scheme_User_Interface/#pml) objects &mdash; you may have more than one `pml` object if you want PML layers only on certain sides of the cell, e.g. `(make pml (thickness 1.0) (direction X) (side High))` specifies a PML layer on only the $+x$ side. Now, we note an important point: **the PML layer is *inside* the cell**, overlapping whatever objects you have there. So, in this case our PML overlaps our waveguide, which is what we want so that it will properly absorb waveguide modes. The finite thickness of the PML is important to reduce numerical reflections. For more information, see [Perfectly Matched Layer](../Perfectly_Matched_Layer.md).
 
-Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a $160\times80$ cell.
+Meep will discretize this structure in space and time, and that is specified by a single variable, `resolution`, that gives the number of pixels per distance unit. We'll set this resolution to 10 pixels/&#956;m, which corresponds to around 67 pixels/wavelength, or around 20 pixels/wavelength in the high-dielectric material. In general, at least 8 pixels/wavelength in the highest dielectric is a good idea. This will give us a $160\times80$ cell.
 
 ```scm
 (set! resolution 10)
 ```
 
-Now, we are ready to run the simulation! We do this by calling the `run-until` function. The first argument to `run-until` is the time to run for, and the subsequent arguments specify fields to output (or other kinds of analyses at each time step):
+Now, we are ready to run the simulation. We do this by calling the `run-until` function. The first argument to `run-until` is the time to run for, and the subsequent arguments specify fields to output or other kinds of analyses at each time step:
 
 ```scm
 (run-until 200
@@ -92,7 +92,7 @@ Now, we are ready to run the simulation! We do this by calling the `run-until` f
            (at-end output-efield-z))
 ```
 
-Here, we are outputting the dielectric function $\epsilon$ and the electric-field component $E_z$, but have wrapped the output functions (which would otherwise run at *every* time step) in `at-beginning` and `at-end`, which do just what they say. There are several other such functions to modify the output behavior—and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
+We are outputting the dielectric function $\epsilon$ and the electric-field component $E_z$, but have wrapped the output functions which would otherwise run at *every* time step in `at-beginning` and `at-end`, which do just what they say. There are several other such functions to modify the output behavior &mdash; and you can, of course, write your own, and in fact you can do any computation or output you want at any time during the time evolution and even modify the simulation while it is running.
 
 It should complete in a few seconds. If you are running interactively, the two output files will be called `eps-000000.00.h5` and `ez-000200.00.h5` (notice that the file names include the time at which they were output). If we were running a `tutorial.ctl` file, then the outputs will be `tutorial-eps-000000.00.h5` and `tutorial-ez-000200.00.h5`. In any case, we can now analyze and visualize these files with a wide variety of programs that support the [HDF5](https://en.wikipedia.org/wiki/HDF5) format, including our own [h5utils](https://github.com/stevengj/h5utils/blob/master/README.md), and in particular the `h5topng` program to convert them to [PNG](https://en.wikipedia.org/wiki/PNG) images.
 
@@ -114,7 +114,7 @@ Here, we see that the the source has excited the waveguide mode, but has also ex
 
 ### A 90° Bend
 
-Now, we'll start a new simulation where we look at the fields in a *bent* waveguide, and we'll do a couple of other things differently as well. If you are running Meep interactively, you will want to get rid of the old structure and fields so that Meep will re-initialize them:
+We'll start a new simulation where we look at the fields in a *bent* waveguide, and we'll do a couple of other things differently as well. If you are running Meep interactively, you will want to get rid of the old structure and fields so that Meep will re-initialize them:
 
 ```scm
 (reset-meep)
@@ -135,9 +135,9 @@ Then let's set up the bent waveguide, in a slightly bigger computational cell, v
 
 <center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
 
- Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at $(-2,-3.5)$. Also shown in green is the source plane at $x=-7$ (see below).
+ Note that we now have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin $(0,0)$ of the coordinate system is at the center of the computational cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$.
 
-We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a $\tanh$ turn-on function over a time proportional to the `width` of 20 time units (a little over three periods). Finally, just for variety, we'll specify the (vacuum) `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
+We also need to shift our source to $y=-3.5$ so that it is still inside the waveguide. While we're at it, we'll make a couple of other changes. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. Meep also has an eigenmode source feature which can be used here and is covered in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
 ```scm
 (set! sources (list
@@ -148,7 +148,7 @@ We also need to shift our source to $y=-3.5$ so that it is still inside the wave
                  (center -7 -3.5) (size 0 1))))
 ```
 
-Finally, we'll run the simulation. Instead of running `output-efield-z` only at the *end* of the simulation, however, we'll run it at every 0.6 time units (about 10 times per period) via `(at-every 0.6 output-efield-z)`. By itself, this would output a separate file for every different output time, but instead we'll use another feature of Meep to output to a *single* three-dimensional HDF5 file, where the third dimension is *time*:
+Finally, we'll run the simulation. Instead of running `output-efield-z` only at the *end* of the simulation, however, we'll run it at every 0.6 time units (about 10 times per period) via `(at-every 0.6 output-efield-z)`. By itself, this would output a separate file for every different output time, but instead we'll use another feature of Meep to output to a *single* three-dimensional HDF5 file, where the third dimension is time:
 
 ```scm
 (run-until 200
@@ -211,7 +211,7 @@ The above command outputs zillions of `.png` files, and it is somewhat annoying 
 (use-output-directory)
 ```
 
-This will put *all* of the output files (`.h5`, `.png`, etcetera) into a newly-created subdirectory, called by default `filename-out/` if our ctl file is `filename.ctl`.
+This will put *all* of the output files (.h5, .png, etcetera) into a newly-created subdirectory, called by default `filename-out/` if our ctl file is `filename.ctl`.
 
 What if we want to output an $x \times t$ slice, as above? To do this, we only really wanted the values at $y=-3.5$, and therefore we can exploit another powerful Meep output feature &mdash; Meep allows us to output only **a subset of the computational cell**. This is done using the `in-volume` function, which similar to `at-every` and `to-appended` is another function that modifies the behavior of other output functions. In particular, we can do:
 
@@ -223,7 +223,7 @@ What if we want to output an $x \times t$ slice, as above? To do this, we only r
          output-efield-z))))
 ```
 
-The first argument to `in-volume` is a volume, specified by `(volume (center ...) (size ...))`, which applies to all of the nested output functions. Note that `to-appended`, `at-every`, and `in-volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162×330 corresponding to the desired $x \times t$ slice.
+The first argument to `in-volume` is a volume, specified by `(volume (center ...) (size ...))`, which applies to all of the nested output functions. Note that `to-appended`, `at-every`, and `in-volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162x330 corresponding to the desired $x \times t$ slice.
 
 Transmission Spectrum around a Waveguide Bend
 ---------------------------------------------
