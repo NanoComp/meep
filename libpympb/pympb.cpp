@@ -41,8 +41,11 @@
      mpi_allreduce(&bbbb, (b), 1, ctype, t, op, comm); \
 }
 
-// TODO
-#define CHECK(condition, message) /* do nothing */
+#ifdef CHECK_DISABLE
+  #define CHECK(cond, s) // Do nothing
+#else
+  #define CHECK(cond, s) if (!(cond)){meep::abort(s "\n");}
+#endif
 
 namespace py_mpb {
 
@@ -52,8 +55,8 @@ int mpb_comm;
 const double inf = 1.0e20;
 
 // This is the function passed to `set_maxwell_dielectric`
-void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
-                         const mpb_real r[3], void *epsilon_data) {
+static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
+                                const mpb_real r[3], void *epsilon_data) {
 
   mode_solver *ms = static_cast<mode_solver *>(epsilon_data);
   meep_geom::material_type mat;
@@ -69,6 +72,14 @@ void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
 
   ms->get_material_pt(mat, p);
   ms->material_epsmu(mat, eps, eps_inv);
+}
+
+static int mean_epsilon_func(symmetric_matrix* meps, symmetric_matrix *meps_inv,
+                             mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3,
+                             mpb_real tol, const mpb_real r[3], void *edata) {
+
+  mode_solver *ms = static_cast<mode_solver *>(edata);
+  return ms->mean_epsilon(meps, meps_inv, n, d1, d2, d3, tol, r);
 }
 
 /****** utils ******/
@@ -183,16 +194,17 @@ mode_solver::mode_solver(int num_bands,
                          int dims,
                          bool verbose,
                          bool periodicity,
-                         double flops):
+                         double flops,
+                         bool negative_epsilon_ok):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
   tolerance(tolerance),
   mesh_size(mesh_size),
+  negative_epsilon_ok(negative_epsilon_ok),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
   last_parity(-2),
-  negative_epsilon_ok(false),
   iterations(0),
   eigensolver_flops(flops),
   vol(0),
@@ -248,68 +260,339 @@ mode_solver::~mode_solver() {
   }
 }
 
+int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv,
+                               mpb_real n[3], mpb_real d1, mpb_real d2, mpb_real d3,
+                               mpb_real tol, const mpb_real r[3]) {
+
+  const geometric_object *o1 = 0;
+  const geometric_object *o2 = 0;
+  geom_box pixel;
+  double fill;
+  meep_geom::material_type mat1;
+  meep_geom::material_type mat2;
+
+  int id1 = -1;
+  int id2 = -1;
+
+  const int num_neighbors[3] = { 3, 5, 9 };
+  const int neighbors[3][9][3] = {
+    { {0,0,0}, {-1,0,0}, {1,0,0},
+      {0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0,0} },
+    { {0,0,0},
+      {-1,-1,0}, {1,1,0}, {-1,1,0}, {1,-1,0},
+      {0,0,0},{0,0,0},{0,0,0},{0,0,0} },
+    { {0,0,0},
+      {1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},
+      {-1,1,1},{-1,1,-1},{-1,-1,1},{-1,-1,-1} }
+  };
+
+  /* p needs to be in the lattice *unit* vector basis, while r is
+     in the lattice vector basis.  Also, shift origin to the center
+     of the grid. */
+  vector3 p = {
+    (r[0] - 0.5) * geometry_lattice.size.x,
+    (r[1] - 0.5) * geometry_lattice.size.y,
+    (r[2] - 0.5) * geometry_lattice.size.z
+  };
+
+  d1 *= geometry_lattice.size.x * 0.5;
+  d2 *= geometry_lattice.size.y * 0.5;
+  d3 *= geometry_lattice.size.z * 0.5;
+
+  vector3 shiftby1;
+  vector3 shiftby2;
+  vector3 normal;
+
+  for (int i = 0; i < num_neighbors[dimensions - 1]; ++i) {
+    const geometric_object *o;
+    vector3 q, z, shiftby;
+    int id;
+    q.x = p.x + neighbors[dimensions - 1][i][0] * d1;
+    q.y = p.y + neighbors[dimensions - 1][i][1] * d2;
+    q.z = p.z + neighbors[dimensions - 1][i][2] * d3;
+
+    // TODO: shift_to_unit_cell runs forever if size has a 0 component
+    geometry_lattice.size.x = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
+    geometry_lattice.size.y = geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y;
+    geometry_lattice.size.z = geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z;
+
+    z = shift_to_unit_cell(q);
+
+    // TODO
+    geometry_lattice.size.x = geometry_lattice.size.x == 1e-20 ? 0 : geometry_lattice.size.x;
+    geometry_lattice.size.y = geometry_lattice.size.y == 1e-20 ? 0 : geometry_lattice.size.y;
+    geometry_lattice.size.z = geometry_lattice.size.z == 1e-20 ? 0 : geometry_lattice.size.z;
+
+    o = object_of_point_in_tree(z, geometry_tree, &shiftby, &id);
+    shiftby = vector3_plus(shiftby, vector3_minus(q, z));
+
+    if ((id == id1 && vector3_equal(shiftby, shiftby1)) ||
+        (id == id2 && vector3_equal(shiftby, shiftby2))) {
+      continue;
+    }
+
+    meep_geom::material_type mat = (meep_geom::material_type)default_material;
+    if (o) {
+      meep_geom::material_data *md = (meep_geom::material_data*)o->material;
+      if (md->which_subclass != meep_geom::material_data::MATERIAL_FILE) {
+        mat = md;
+      }
+    }
+
+    if (id1 == -1) {
+      o1 = o;
+      shiftby1 = shiftby;
+      id1 = id;
+      mat1 = mat;
+    }
+    else if (id2 == -1 || ((id >= id1 && id >= id2) &&
+            (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)))) {
+      o2 = o;
+      shiftby2 = shiftby;
+      id2 = id;
+      mat2 = mat;
+    }
+    else if (!(id1 < id2 && (id1 == id || meep_geom::material_type_equal(mat1, mat))) &&
+             !(id2 < id1 && (id2 == id || meep_geom::material_type_equal(mat2, mat)))) {
+      return 0; /* too many nearby objects for analysis */
+    }
+  }
+
+  CHECK(id1 > -1, "bug in object_of_point_in_tree?");
+  if (id2 == -1) { /* only one nearby object/material */
+    id2 = id1;
+    o2 = o1;
+    mat2 = mat1;
+    shiftby2 = shiftby1;
+  }
+
+  bool o1_is_var = o1 && meep_geom::is_variable(o1->material);
+  bool o2_is_var = o2 && meep_geom::is_variable(o2->material);
+  bool default_is_var_or_file = meep_geom::is_variable(default_material) ||
+                                meep_geom::is_file(default_material);
+
+  if (o1_is_var ||
+      o2_is_var ||
+      (default_is_var_or_file && (!o1 || !o2 ||
+                                  meep_geom::is_file(o1->material) ||
+                                  meep_geom::is_file(o2->material)))) {
+    return 0; /* arbitrary material functions are non-analyzable */
+  }
+
+  // TODO: How do I know if it's eps or mu?
+  material_epsmu(mat1, meps, meps_inv);
+
+  /* check for trivial case of only one object/material */
+  if (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)) {
+    n[0] = n[1] = n[2] = 0;
+    return 1;
+  }
+
+  if (id1 > id2) {
+    normal = normal_to_fixed_object(vector3_minus(p, shiftby1), *o1);
+  }
+  else {
+    normal = normal_to_fixed_object(vector3_minus(p, shiftby2), *o2);
+  }
+
+  n[0] = normal.x / (geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x);
+  n[1] = normal.y / (geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y);
+  n[2] = normal.z / (geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z);
+
+  pixel.low.x = p.x - d1;
+  pixel.high.x = p.x + d1;
+  pixel.low.y = p.y - d2;
+  pixel.high.y = p.y + d2;
+  pixel.low.z = p.z - d3;
+  pixel.high.z = p.z + d3;
+
+  tol = tol > 0.01 ? 0.01 : tol;
+  if (id1 > id2) {
+    pixel.low = vector3_minus(pixel.low, shiftby1);
+    pixel.high = vector3_minus(pixel.high, shiftby1);
+    fill = box_overlap_with_object(pixel, *o1, tol, 100/tol);
+  }
+  else {
+    pixel.low = vector3_minus(pixel.low, shiftby2);
+    pixel.high = vector3_minus(pixel.high, shiftby2);
+    fill = 1 - box_overlap_with_object(pixel, *o2, tol, 100/tol);
+  }
+
+  {
+    symmetric_matrix eps2, epsinv2;
+    symmetric_matrix eps1, delta;
+    double Rot[3][3], norm, n0, n1, n2;
+    // TODO: Eps or mu?
+    material_epsmu(mat2, &eps2, &epsinv2);
+    eps1 = *meps;
+
+    /* make Cartesian orthonormal frame relative to interface */
+    n0 = R[0][0] * n[0] + R[1][0] * n[1] + R[2][0] * n[2];
+    n1 = R[0][1] * n[0] + R[1][1] * n[1] + R[2][1] * n[2];
+    n2 = R[0][2] * n[0] + R[1][2] * n[1] + R[2][2] * n[2];
+    norm = sqrt(n0*n0 + n1*n1 + n2*n2);
+
+    if (norm == 0.0) {
+      return 0;
+    }
+
+    norm = 1.0 / norm;
+    Rot[0][0] = n0 = n0 * norm;
+    Rot[1][0] = n1 = n1 * norm;
+    Rot[2][0] = n2 = n2 * norm;
+
+    if (fabs(n0) > 1e-2 || fabs(n1) > 1e-2) { /* (z x n) */
+      Rot[0][2] = n1;
+      Rot[1][2] = -n0;
+      Rot[2][2] = 0;
+    }
+    else { /* n is ~ parallel to z direction, use (x x n) instead */
+      Rot[0][2] = 0;
+      Rot[1][2] = -n2;
+      Rot[2][2] = n1;
+    }
+    { /* normalize second column */
+      double s = Rot[0][2]*Rot[0][2]+Rot[1][2]*Rot[1][2]+Rot[2][2]*Rot[2][2];
+      s = 1.0 / sqrt(s);
+      Rot[0][2] *= s;
+      Rot[1][2] *= s;
+      Rot[2][2] *= s;
+    }
+    /* 1st column is 2nd column x 0th column */
+    Rot[0][1] = Rot[1][2] * Rot[2][0] - Rot[2][2] * Rot[1][0];
+    Rot[1][1] = Rot[2][2] * Rot[0][0] - Rot[0][2] * Rot[2][0];
+    Rot[2][1] = Rot[0][2] * Rot[1][0] - Rot[1][2] * Rot[0][0];
+
+    /* rotate epsilon tensors to surface parallel/perpendicular axes */
+    maxwell_sym_matrix_rotate(&eps1, &eps1, Rot);
+    maxwell_sym_matrix_rotate(&eps2, &eps2, Rot);
+
+#define AVG (fill * (EXPR(eps1)) + (1-fill) * (EXPR(eps2)))
+
+#define EXPR(eps) (-1 / eps.m00)
+    delta.m00 = AVG;
+#undef EXPR
+#define EXPR(eps) (eps.m11 - ESCALAR_NORMSQR(eps.m01) / eps.m00)
+    delta.m11 = AVG;
+#undef EXPR
+#define EXPR(eps) (eps.m22 - ESCALAR_NORMSQR(eps.m02) / eps.m00)
+    delta.m22 = AVG;
+#undef EXPR
+
+#define EXPR(eps) (ESCALAR_RE(eps.m01) / eps.m00)
+    ESCALAR_RE(delta.m01) = AVG;
+#undef EXPR
+#define EXPR(eps) (ESCALAR_RE(eps.m02) / eps.m00)
+    ESCALAR_RE(delta.m02) = AVG;
+#undef EXPR
+#define EXPR(eps) (ESCALAR_RE(eps.m12) - ESCALAR_MULT_CONJ_RE(eps.m02, eps.m01) / eps.m00)
+    ESCALAR_RE(delta.m12) = AVG;
+#undef EXPR
+
+#ifdef WITH_HERMITIAN_EPSILON
+#  define EXPR(eps) (ESCALAR_IM(eps.m01) / eps.m00)
+    ESCALAR_IM(delta.m01) = AVG;
+#  undef EXPR
+#  define EXPR(eps) (ESCALAR_IM(eps.m02) / eps.m00)
+    ESCALAR_IM(delta.m02) = AVG;
+#  undef EXPR
+#  define EXPR(eps) (ESCALAR_IM(eps.m12) - ESCALAR_MULT_CONJ_IM(eps.m02, eps.m01) / eps.m00)
+    ESCALAR_IM(delta.m12) = AVG;
+#  undef EXPR
+#endif /* WITH_HERMITIAN_EPSILON */
+
+    meps->m00 = -1/delta.m00;
+    meps->m11 = delta.m11 - ESCALAR_NORMSQR(delta.m01) / delta.m00;
+    meps->m22 = delta.m22 - ESCALAR_NORMSQR(delta.m02) / delta.m00;
+    ASSIGN_ESCALAR(meps->m01, -ESCALAR_RE(delta.m01)/delta.m00,
+      -ESCALAR_IM(delta.m01)/delta.m00);
+    ASSIGN_ESCALAR(meps->m02, -ESCALAR_RE(delta.m02)/delta.m00,
+      -ESCALAR_IM(delta.m02)/delta.m00);
+    ASSIGN_ESCALAR(meps->m12,
+      ESCALAR_RE(delta.m12)
+      - ESCALAR_MULT_CONJ_RE(delta.m02, delta.m01)/delta.m00,
+      ESCALAR_IM(delta.m12)
+      - ESCALAR_MULT_CONJ_IM(delta.m02, delta.m01)/delta.m00);
+
+#define SWAP(a,b) { double xxx = a; a = b; b = xxx; }
+    /* invert rotation matrix = transpose */
+    SWAP(Rot[0][1], Rot[1][0]);
+    SWAP(Rot[0][2], Rot[2][0]);
+    SWAP(Rot[2][1], Rot[1][2]);
+    maxwell_sym_matrix_rotate(meps, meps, Rot); /* rotate back */
+#undef SWAP
+
+#  ifdef DEBUG
+    CHECK(negative_epsilon_ok || maxwell_sym_matrix_positive_definite(meps),
+          "negative mean epsilon from Kottke algorithm");
+#  endif
+  }
+  return 1;
+}
+
 void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
-                                 symmetric_matrix *epsmu_inv) {
+                                 symmetric_matrix *epsmu_inv, bool eps) {
 
   meep_geom::material_data *md = material;
 
-  switch (md->which_subclass) {
-    case meep_geom::material_data::MEDIUM:
-    case meep_geom::material_data::MATERIAL_FILE:
-    case meep_geom::material_data::MATERIAL_USER:
-      epsmu->m00 = md->medium.epsilon_diag.x;
-      epsmu->m11 = md->medium.epsilon_diag.y;
-      epsmu->m22 = md->medium.epsilon_diag.z;
-      epsmu->m01 = md->medium.epsilon_offdiag.x;
-      epsmu->m02 = md->medium.epsilon_offdiag.y;
-      epsmu->m12 = md->medium.epsilon_offdiag.z;
-      maxwell_sym_matrix_invert(epsmu_inv, epsmu);
-      break;
-    case meep_geom::material_data::PERFECT_METAL:
-      epsmu->m00 = -inf;
-      epsmu->m11 = -inf;
-      epsmu->m22 = -inf;
-      epsmu->m01 = 0.0;
-      epsmu->m02 = 0.0;
-      epsmu->m12 = 0.0;
-      epsmu_inv->m00 = -0.0;
-      epsmu_inv->m11 = -0.0;
-      epsmu_inv->m22 = -0.0;
-      epsmu_inv->m01 = 0.0;
-      epsmu_inv->m02 = 0.0;
-      epsmu_inv->m12 = 0.0;
-      break;
-    default:
-      meep::abort("Unknown material type");
+  if (eps) {
+    switch (md->which_subclass) {
+      case meep_geom::material_data::MEDIUM:
+      case meep_geom::material_data::MATERIAL_FILE:
+      case meep_geom::material_data::MATERIAL_USER:
+        epsmu->m00 = md->medium.epsilon_diag.x;
+        epsmu->m11 = md->medium.epsilon_diag.y;
+        epsmu->m22 = md->medium.epsilon_diag.z;
+        epsmu->m01 = md->medium.epsilon_offdiag.x;
+        epsmu->m02 = md->medium.epsilon_offdiag.y;
+        epsmu->m12 = md->medium.epsilon_offdiag.z;
+        maxwell_sym_matrix_invert(epsmu_inv, epsmu);
+        break;
+      case meep_geom::material_data::PERFECT_METAL:
+        epsmu->m00 = -inf;
+        epsmu->m11 = -inf;
+        epsmu->m22 = -inf;
+        epsmu->m01 = 0.0;
+        epsmu->m02 = 0.0;
+        epsmu->m12 = 0.0;
+        epsmu_inv->m00 = -0.0;
+        epsmu_inv->m11 = -0.0;
+        epsmu_inv->m22 = -0.0;
+        epsmu_inv->m01 = 0.0;
+        epsmu_inv->m02 = 0.0;
+        epsmu_inv->m12 = 0.0;
+        break;
+      default:
+        meep::abort("Unknown material type");
+    }
   }
-
-  // TODO: if (field_type != meep::E_stuff)
-
-  // switch (md->which_subclass) {
-  //   case meep_geom::material_data::MEDIUM:
-  //   case meep_geom::material_data::MATERIAL_FILE:
-  //   case meep_geom::material_data::MATERIAL_USER:
-  //     epsmu->m00 = md->medium.mu_diag.x;
-  //     epsmu->m11 = md->medium.mu_diag.y;
-  //     epsmu->m22 = md->medium.mu_diag.z;
-  //     epsmu->m01 = md->medium.mu_offdiag.x;
-  //     epsmu->m02 = md->medium.mu_offdiag.y;
-  //     epsmu->m12 = md->medium.mu_offdiag.z;
-  //     maxwell_sym_matrix_invert(epsmu_inv, epsmu);
-  //     break;
-  //   case meep_geom::material_data::PERFECT_METAL:
-  //     epsmu->m00 = 1.0;
-  //     epsmu->m11 = 1.0;
-  //     epsmu->m22 = 1.0;
-  //     epsmu_inv->m00 = 1.0;
-  //     epsmu_inv->m11 = 1.0;
-  //     epsmu_inv->m22 = 1.0;
-  //     epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
-  //     epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
-  //     break;
-  //   default:
-  //     meep::abort("unknown material type");
-  // }
+  else {
+    switch (md->which_subclass) {
+      case meep_geom::material_data::MEDIUM:
+      case meep_geom::material_data::MATERIAL_FILE:
+      case meep_geom::material_data::MATERIAL_USER:
+        epsmu->m00 = md->medium.mu_diag.x;
+        epsmu->m11 = md->medium.mu_diag.y;
+        epsmu->m22 = md->medium.mu_diag.z;
+        epsmu->m01 = md->medium.mu_offdiag.x;
+        epsmu->m02 = md->medium.mu_offdiag.y;
+        epsmu->m12 = md->medium.mu_offdiag.z;
+        maxwell_sym_matrix_invert(epsmu_inv, epsmu);
+        break;
+      case meep_geom::material_data::PERFECT_METAL:
+        epsmu->m00 = 1.0;
+        epsmu->m11 = 1.0;
+        epsmu->m22 = 1.0;
+        epsmu_inv->m00 = 1.0;
+        epsmu_inv->m11 = 1.0;
+        epsmu_inv->m22 = 1.0;
+        epsmu->m01 = epsmu->m02 = epsmu->m12 = 0.0;
+        epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
+        break;
+      default:
+        meep::abort("unknown material type");
+    }
+  }
 }
 
 void mode_solver::get_material_pt(meep_geom::material_type &material, vector3 p) {
@@ -549,7 +832,8 @@ void mode_solver::reset_epsilon() {
   // get_epsilon_file_func(epsilon_input_file, &d.epsilon_file_func, &d.epsilon_file_func_data);
   // get_epsilon_file_func(mu_input_file, &d.mu_file_func, &d.mu_file_func_data);
   meep::master_printf("Initializing epsilon function...\n");
-  set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, NULL, static_cast<void *>(this));
+  set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
+                         static_cast<void *>(this));
 
   // TODO
   // if (has_mu(&d)) {
@@ -1107,6 +1391,10 @@ char mode_solver::get_curfield_type() {
   return curfield_type;
 }
 
+void mode_solver::set_curfield_type(char t) {
+  curfield_type = t;
+}
+
 std::string mode_solver::get_parity_string() {
   std::string s(parity_string(mdata));
   return s;
@@ -1141,6 +1429,23 @@ void mode_solver::get_curfield_cmplx(std::complex<mpb_real> *cdata, int size) {
 
   for (int i = 0; i < size; ++i) {
     cdata[i] = std::complex<mpb_real>(p[i].re, p[i].im);
+  }
+}
+
+void mode_solver::set_curfield(double *data, int size) {
+  mpb_real *p = (mpb_real *)curfield;
+
+  for (int i = 0; i < size; ++i) {
+    p[i] = data[i];
+  }
+}
+
+void mode_solver::set_curfield_cmplx(std::complex<mpb_real> *cdata, int size) {
+  scalar_complex *p = (scalar_complex *)curfield;
+
+  for (int i = 0; i < size; ++i) {
+    scalar_complex s = {cdata[i].real(), cdata[i].imag()};
+    p[i] = s;
   }
 }
 
@@ -1234,55 +1539,6 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   return retval;
 }
 
-/* For curfield and energy density, compute the fraction of the energy
-   that resides inside the given list of geometric objects.   Later
-   objects in the list have precedence, just like the ordinary
-   geometry list. */
-double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
-
-  mpb_real *energy = (mpb_real *)curfield;
-  mpb_real energy_sum = 0;
-
-  if (!curfield || !strchr("DHBR", curfield_type)) {
-    meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
-    return 0.0;
-  }
-
-  for (int i = 0; i < objects.num_items; ++i) {
-    geom_fix_object(objects.items[i]);
-  }
-
-  int n1 = mdata->nx;
-  int n2 = mdata->ny;
-  int n3 = mdata->nz;
-
-  mpb_real s1 = geometry_lattice.size.x / n1;
-  mpb_real s2 = geometry_lattice.size.y / n2;
-  mpb_real s3 = geometry_lattice.size.z / n3;
-  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
-  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
-  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
-
-  LOOP_XYZ(mdata) {
-    vector3 p;
-    int n;
-    p.x = i1 * s1 - c1; p.y = i2 * s2 - c2; p.z = i3 * s3 - c3;
-    for (n = objects.num_items - 1; n >= 0; --n) {
-      if (point_in_periodic_fixed_objectp(p, objects.items[n])) {
-        // TODO:
-        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
-        //   break; /* treat as a "nothing" object */
-        // }
-        energy_sum += energy[xyz_index];
-        break;
-      }
-    }
-  }}}
-
-  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
-  energy_sum *= vol / H.N;
-  return energy_sum;
-}
 
 std::vector<mpb_real> mode_solver::get_output_k() {
   std::vector<mpb_real> output_k;
@@ -1549,11 +1805,154 @@ int mode_solver::get_iterations() {
   return iterations;
 }
 
+std::vector<mpb_real> mode_solver::compute_zparities() {
+  std::vector<mpb_real> z_parity(num_bands);
+  double *d = maxwell_zparity(H, mdata);
+
+  for (int i = 0; i < num_bands; ++i) {
+    z_parity[i] = d[i];
+  }
+
+  free(d);
+  return z_parity;
+}
+
+std::vector<mpb_real> mode_solver::compute_yparities() {
+  std::vector<mpb_real> y_parity(num_bands);
+  double *d = maxwell_yparity(H, mdata);
+
+  for (int i = 0; i < num_bands; ++i) {
+    y_parity[i] = d[i];
+  }
+
+  free(d);
+  return y_parity;
+}
+
+/* Compute the group velocity dw/dk in the given direction d (where
+   the length of d is ignored).  d is in the reciprocal lattice basis.
+   Should only be called after solve_kpoint.  Returns a list of the
+   group velocities, one for each band, in units of c. */
+std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
+  curfield_reset(); // has the side effect of overwriting curfield scratch
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "mode_solver.init must be called first!\n");
+    return std::vector<mpb_real>(0);
+  }
+  if (!kpoint_index) {
+    meep::master_fprintf(stderr, "mode_solver.solve_kpoint must be called first!\n");
+    return std::vector<mpb_real>(0);
+  }
+
+  /* convert d to unit vector in Cartesian coords: */
+  d = unit_vector3(matrix3x3_vector3_mult(Gm, d));
+  mpb_real u[] = {d.x, d.y, d.z};
+
+  std::vector<mpb_real> group_v(num_bands);
+  std::vector<mpb_real> gv_scratch(num_bands * 2);
+
+  /* now, compute group_v.items = diag Re <H| curl 1/eps i u x |H>: */
+
+  /* ...we have to do this in blocks of eigensolver_block_size since
+     the work matrix W[0] may not have enough space to do it all at once. */
+
+  for (int ib = 0; ib < num_bands; ib += Hblock.alloc_p) {
+    if (ib + mdata->num_bands > num_bands) {
+      maxwell_set_num_bands(mdata, num_bands - ib);
+      evectmatrix_resize(&W[0], num_bands - ib, 0);
+      evectmatrix_resize(&Hblock, num_bands - ib, 0);
+    }
+    maxwell_compute_H_from_B(mdata, H, Hblock, (scalar_complex *) mdata->fft_data, ib, 0, Hblock.p);
+    maxwell_ucross_op(Hblock, W[0], mdata, u);
+    evectmatrix_XtY_diag_real(Hblock, W[0], gv_scratch.data(), gv_scratch.data() + group_v.size());
+    {
+      for (int ip = 0; ip < Hblock.p; ++ip)
+        group_v[ib + ip] = gv_scratch[ip];
+    }
+  }
+
+  /* Reset scratch matrix sizes: */
+  evectmatrix_resize(&Hblock, Hblock.alloc_p, 0);
+  evectmatrix_resize(&W[0], W[0].alloc_p, 0);
+  maxwell_set_num_bands(mdata, Hblock.alloc_p);
+
+  /* The group velocity is given by:
+
+    grad_k(omega)*d = grad_k(omega^2)*d / 2*omega
+       = grad_k(<H|maxwell_op|H>)*d / 2*omega
+       = Re <H| curl 1/eps i u x |H> / omega
+
+    Note that our k is in units of 2*Pi/a, and omega is in
+    units of 2*Pi*c/a, so the result will be in units of c. */
+
+  for (int i = 0; i < num_bands; ++i) {
+    if (freqs[i] == 0) { /* v is undefined in this case */
+         group_v[i] = 0.0;  /* just set to zero */
+    }
+    else {
+      group_v[i] /= negative_epsilon_ok ? sqrt(fabs(freqs[i])) : freqs[i];
+    }
+  }
+
+  return group_v;
+}
+
 bool mode_solver::with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON
   return true;
 #else
   return false;
 #endif
+}
+
+/* For curfield and energy density, compute the fraction of the energy
+   that resides inside the given list of geometric objects.   Later
+   objects in the list have precedence, just like the ordinary
+   geometry list. */
+double mode_solver::compute_energy_in_objects(geometric_object_list objects) {
+
+  mpb_real *energy = (mpb_real *)curfield;
+  mpb_real energy_sum = 0;
+
+  if (!curfield || !strchr("DHBR", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or H energy density must be loaded first.\n");
+    return 0.0;
+  }
+
+  for (int i = 0; i < objects.num_items; ++i) {
+    geom_fix_object(objects.items[i]);
+  }
+
+  int n1 = mdata->nx;
+  int n2 = mdata->ny;
+  int n3 = mdata->nz;
+
+  mpb_real s1 = geometry_lattice.size.x / n1;
+  mpb_real s2 = geometry_lattice.size.y / n2;
+  mpb_real s3 = geometry_lattice.size.z / n3;
+  mpb_real c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5;
+  mpb_real c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
+  mpb_real c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+
+  LOOP_XYZ(mdata) {
+    vector3 p;
+    int n;
+    p.x = i1 * s1 - c1; p.y = i2 * s2 - c2; p.z = i3 * s3 - c3;
+    for (n = objects.num_items - 1; n >= 0; --n) {
+      if (point_in_periodic_fixed_objectp(p, objects.items[n])) {
+        // TODO:
+        // if (((meep_geom::material_data *)objects.items[n].material)->which_subclass == MATERIAL_TYPE_SELF) {
+        //   break; /* treat as a "nothing" object */
+        // }
+        energy_sum += energy[xyz_index];
+        break;
+      }
+    }
+  }}}
+
+  mpi_allreduce_1(&energy_sum, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+  energy_sum *= vol / H.N;
+  return energy_sum;
 }
 } // namespace meep_mpb

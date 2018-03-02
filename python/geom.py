@@ -2,6 +2,7 @@ from __future__ import division
 
 import functools
 import math
+import numbers
 import operator
 from copy import deepcopy
 from numbers import Number
@@ -71,6 +72,9 @@ class Vector3(object):
     def __array__(self):
         return np.array([self.x, self.y, self.z])
 
+    def conj(self):
+        return Vector3(self.x.conjugate(), self.y.conjugate(), self.z.conjugate())
+
     def scale(self, s):
         x = self.x * s
         y = self.y * s
@@ -82,10 +86,7 @@ class Vector3(object):
         return self.x * v.x + self.y * v.y + self.z * v.z
 
     def cdot(self, v):
-        conj_vec = Vector3(self.x.conjugate(),
-                           self.y.conjugate(),
-                           self.z.conjugate())
-        return conj_vec.dot(v)
+        return self.conj().dot(v)
 
     def cross(self, v):
         x = self.y * v.z - self.z * v.y
@@ -524,17 +525,6 @@ def geometric_objects_duplicates(shift_vector, min_multiple, max_multiple, go_li
     return dups
 
 
-# def geometric_object_duplicates(shift_vector, min, max, *objs):
-#     dups = []
-#     for obj in objs:
-#         for i in range(min, max + 1):
-#             o = deepcopy(obj)
-#             o.shift(shift_vector.scale(i))
-#             dups.append(o)
-
-#     return dups
-
-
 def geometric_objects_lattice_duplicates(lat, go_list, *usize):
 
     def lat_to_lattice(v):
@@ -565,3 +555,91 @@ def geometric_objects_lattice_duplicates(lat, go_list, *usize):
     max1 = math.ceil((n1 - 1) / 2)
 
     return geometric_objects_duplicates(b1, int(min1), int(max1), d2)
+
+
+# Return a 'memoized' version of the function f, which caches its
+# arguments and return values so as never to compute the same thing twice.
+def memoize(f):
+    f_memo_tab = {}
+
+    def _mem(y=None):
+        tab_val = f_memo_tab.get(y, None)
+        if tab_val:
+            return tab_val
+
+        fy = f(y)
+        f_memo_tab[y] = fy
+        return fy
+    return _mem
+
+
+# Find a root by Newton's method with bounds and bisection,
+# given a function f that returns a pair of (value . derivative)
+def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
+    # Some trickiness: we only need to evaluate the function at x_min and
+    # x_max if a Newton step fails, and even then only if we haven't already
+    # bracketed the root, so do this via lazy evaluation.
+    f_memo = memoize(f)
+
+    def lazy(x):
+        if isinstance(x, numbers.Number):
+            return x
+        return x()
+
+    def pick_bound(which):
+        def _pb():
+            fmin_tup = f_memo(x_min)
+            fmax_tup = f_memo(x_max)
+            fmin = fmin_tup[0]
+            fmax = fmax_tup[0]
+
+            if which(fmin):
+                return x_min
+            elif which(fmax):
+                return x_max
+            else:
+                raise ValueError("failed to bracket the root in find_root_deriv")
+        return _pb
+
+    def in_bounds(x, f, df, a, b):
+        return (f - (df * (x - a))) * (f - (df * (x - b))) < 0
+
+    def newton(x, a, b, dx):
+        if abs(dx) < abs(tol * x):
+            return x
+
+        fx_tup = f_memo(x)
+        f = fx_tup[0]
+        df = fx_tup[1]
+
+        if f == 0:
+            return x
+
+        a_prime = x if f < 0 else a
+        b_prime = x if f > 0 else b
+
+        cond = f_memo(lazy(a_prime))[0] * f_memo(lazy(b_prime))[0] > 0
+        if dx != x_max - x_min and dx * (f / df) < 0 and cond:
+            raise ValueError("failed to bracket the root in find_root_deriv")
+
+        if isinstance(a, numbers.Number) and isinstance(b, numbers.Number):
+            is_in_bounds = in_bounds(x, f, df, a, b)
+        else:
+            is_in_bounds = in_bounds(x, f, df, x_min, x_max)
+
+        if is_in_bounds:
+            return newton(x - (f / df), a_prime, b_prime, f / df)
+
+        av = lazy(a)
+        bv = lazy(b)
+        dx_prime = 0.5 * (bv - av)
+        a_pp = av if a == a_prime else a_prime
+        b_pp = bv if b == b_prime else b_prime
+
+        return newton((av + bv) * 0.5, a_pp, b_pp, dx_prime)
+
+    if x_guess is None:
+        x_guess = (x_min + x_max) * 0.5
+
+    return newton(x_guess, pick_bound(lambda aa: aa < 0),
+                  pick_bound(lambda aa: aa > 0), x_max - x_min)

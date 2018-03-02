@@ -809,6 +809,19 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %feature("immutable") meep::fields_chunk::connections;
 %feature("immutable") meep::fields_chunk::num_connections;
 
+%ignore susceptibility_equal;
+%ignore susceptibility_list_equal;
+%ignore medium_struct_equal;
+%ignore material_gc;
+%ignore material_type_equal;
+%ignore is_variable;
+%ignore is_variable;
+%ignore is_file;
+%ignore is_file;
+%ignore is_medium;
+%ignore is_medium;
+%ignore is_metal;
+
 %include "vec.i"
 %include "meep.hpp"
 %include "meep/mympi.hpp"
@@ -867,6 +880,9 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
         lattice_to_cartesian,
         lattice_to_reciprocal,
         reciprocal_to_lattice,
+        cartesian_to_reciprocal,
+        reciprocal_to_cartesian,
+        find_root_deriv,
     )
     from .simulation import (
         Absorber,

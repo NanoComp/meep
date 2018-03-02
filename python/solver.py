@@ -48,7 +48,7 @@ class ModeSolver(object):
                  geometry_center=mp.Vector3(0, 0, 0),
                  default_material=mp.Medium(epsilon=1),
                  dimensions=3,
-                 randomize_fields=False,
+                 random_fields=False,
                  filename_prefix='',
                  deterministic=False,
                  verbose=False):
@@ -76,13 +76,14 @@ class ModeSolver(object):
         self.geometry_center = geometry_center
         self.default_material = default_material
         self.dimensions = dimensions
-        self.randomize_fields = randomize_fields
+        self.random_fields = random_fields
         self.filename_prefix = filename_prefix
         self.deterministic = deterministic
         self.verbose = verbose
-        self.parity = 0
+        self.parity = ''
         self.iterations = 0
         self.all_freqs = []
+        self.freqs = []
         self.band_range_data = []
         self.eigensolver_flops = 0
         self.total_run_time = 0
@@ -119,6 +120,31 @@ class ModeSolver(object):
 
     def get_freqs(self):
         return self.mode_solver.get_freqs()
+
+    def get_poynting(self, which_band):
+        e = self.get_efield(which_band)
+        h = self.get_hfield(which_band)
+        # Reshape into rows of vector3s
+        e = e.reshape((int(e.shape[0] / 3), 3))
+        h = h.reshape((int(h.shape[0] / 3), 3))
+
+        res = np.zeros(e.shape, dtype=np.complex128)
+
+        def ExH(e, h):
+            ev = mp.Vector3(e[0], e[1], e[2])
+            hv = mp.Vector3(h[0], h[1], h[2])
+            return ev.conj().cross(hv)
+
+        for i in range(e.shape[0]):
+            res[i] = np.array(ExH(e[i], h[i]))
+
+        flat_res = res.ravel()
+        # We only have to set curfield here to do `multiply_bloch_phase` in
+        # _output_vector_field.
+        self.mode_solver.set_curfield_cmplx(flat_res)
+        self.mode_solver.set_curfield_type('v')
+
+        return flat_res
 
     def get_bfield(self, which_band):
         return self._get_field('b', which_band)
@@ -199,7 +225,8 @@ class ModeSolver(object):
                 if br_cur_max_f >= br_rest_min_f:
                     return ogaps(br_rest[0], br_rest[1:], i + 1, gaps)
                 else:
-                    gap_size = (200 * (br_rest_min_f - br_cur_max_f)) / (br_rest_min_f + br_cur_max_f)
+                    gap_size = ((200 * (br_rest_min_f - br_cur_max_f)) /
+                                (br_rest_min_f + br_cur_max_f))
                     fmt = "Gap from band {} ({}) to band {} ({}), {}%"
                     print(fmt.format(i, br_cur_max_f, i + 1, br_rest_min_f, gap_size))
                     return ogaps(br_rest[0], br_rest[1:], i + 1,
@@ -294,7 +321,7 @@ class ModeSolver(object):
             curfield_type,
             kpoint_index,
             curfield_band,
-            self.get_freqs()[curfield_band - 1]
+            self.freqs[curfield_band - 1]
         )
         fname = self._create_fname(fname, fname_prefix, True)
         print("Outputting complex scalar field to {}...".format(fname))
@@ -326,7 +353,7 @@ class ModeSolver(object):
             curfield_type,
             kpoint_index,
             curfield_band,
-            self.get_freqs()[curfield_band - 1]
+            self.freqs[curfield_band - 1]
         )
 
         fname = self._create_fname(fname, fname_prefix, True)
@@ -367,9 +394,9 @@ class ModeSolver(object):
             curfield_band = self.mode_solver.curfield_band
             fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
                                                    kpoint_index, curfield_band)
-            descr_fmt = "{} field energy density, kpoint {}, band {}, freq={}"
+            descr_fmt = "{} field energy density, kpoint {}, band {}, freq={:.6g}"
             description = descr_fmt.format(curfield_type, kpoint_index, curfield_band,
-                                           self.get_freqs()[curfield_band - 1])
+                                           self.freqs[curfield_band - 1])
 
         parity_suffix = False if curfield_type in 'mn' else True
         fname = self._create_fname(fname, fname_prefix, parity_suffix)
@@ -407,7 +434,12 @@ class ModeSolver(object):
         h5file[key] = np.reshape(arr, dims)
 
     def _create_fname(self, fname, prefix, parity_suffix):
-        suffix = '.' + self.mode_solver.get_parity_string() if parity_suffix else ''
+        parity_str = self.mode_solver.get_parity_string()
+        if parity_suffix and parity_str:
+            suffix = ".{}".format(parity_str)
+        else:
+            suffix = ''
+
         return prefix + fname + suffix + '.h5'
 
     def compute_field_energy(self):
@@ -416,8 +448,26 @@ class ModeSolver(object):
     def compute_energy_in_objects(self, objs):
         return self.mode_solver.compute_energy_in_objects(objs)
 
+    def compute_group_velocities(self):
+        xarg = mp.cartesian_to_reciprocal(mp.Vector3(1), self.geometry_lattice)
+        vx = self.mode_solver.compute_group_velocity_component(xarg)
+        yarg = mp.cartesian_to_reciprocal(mp.Vector3(y=1), self.geometry_lattice)
+        vy = self.mode_solver.compute_group_velocity_component(yarg)
+        zarg = mp.cartesian_to_reciprocal(mp.Vector3(z=1), self.geometry_lattice)
+        vz = self.mode_solver.compute_group_velocity_component(zarg)
+
+        return [mp.Vector3(x, y, z) for x, y, z in zip(vx, vy, vz)]
+
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
+
+    def display_kpoint_data(self, name, data):
+        k_index = self.mode_solver.get_kpoint_index()
+        print("{}{}:, {}".format(self.parity, name, k_index), end='')
+
+        for d in data:
+            print(", {}".format(d), end='')
+        print()
 
     def display_eigensolver_stats(self):
         num_runs = len(self.eigensolver_iters)
@@ -444,7 +494,7 @@ class ModeSolver(object):
         print("mean time per iteration = {} s".format(mean_time))
 
     def run_parity(self, p, reset_fields, *band_functions):
-        if self.randomize_fields and self.randomize_fields not in band_functions:
+        if self.random_fields and self.randomize_fields not in band_functions:
             band_functions.append(self.randomize_fields)
 
         start = time.time()
@@ -476,7 +526,8 @@ class ModeSolver(object):
             self.dimensions,
             self.verbose,
             self.ensure_periodicity,
-            self.eigensolver_flops
+            self.eigensolver_flops,
+            self.is_negative_epsilon_ok
         )
 
         if isinstance(reset_fields, basestring):
@@ -506,10 +557,10 @@ class ModeSolver(object):
                 self.mode_solver.solve_kpoint(k)
                 self.iterations = self.mode_solver.get_iterations()
                 print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
-
-                self.all_freqs.append(self.get_freqs())
+                self.freqs = self.get_freqs()
+                self.all_freqs.append(self.freqs)
                 self.band_range_data = self.update_band_range_data(self.band_range_data,
-                                                                   self.get_freqs(), k)
+                                                                   self.freqs, k)
                 self.eigensolver_iters += [self.iterations / self.num_bands]
 
                 for f in band_functions:
@@ -535,6 +586,7 @@ class ModeSolver(object):
         print("total elapsed time for run: {}".format(end))
         self.total_run_time += end
         self.eigensolver_flops = self.mode_solver.get_eigensolver_flops()
+        self.parity = self.mode_solver.get_parity_string()
         print("done")
 
     def run(self, *band_functions):
@@ -570,6 +622,95 @@ class ModeSolver(object):
     run_te_yodd = run_yodd_zeven
     run_tm_yeven = run_yeven_zodd
     run_tm_yodd = run_yodd_zodd
+
+    def find_k(self, p, omega, band_min, band_max, korig_and_kdir, tol,
+               kmag_guess, kmag_min, kmag_max, *band_funcs):
+        num_bands_save = self.num_bands
+        kpoints_save = self.k_points
+        nb = band_max - band_min + 1
+        kdir = korig_and_kdir[1] if type(korig_and_kdir) is list else korig_and_kdir
+        l = self.geometry_lattice
+        kdir1 = mp.cartesian_to_reciprocal(mp.reciprocal_to_cartesian(kdir, l).unit(), l)
+
+        if type(korig_and_kdir) is list:
+            korig = korig_and_kdir[0]
+        else:
+            korig = mp.Vector3()
+
+        # k0s is a list caching the best k value found for each band:
+        if type(kmag_guess) is list:
+            k0s = kmag_guess
+        else:
+            k0s = [kmag_guess] * (band_max - band_min + 1)
+
+        # dict to memoize all "band: k" results
+        bktab = {}
+
+        def rootfun(b):
+
+            def _rootfun(k):
+                # First, look in the cached table
+                tab_val = bktab.get((b, k), None)
+                if tab_val:
+                    print("find-k {} at {}: {} (cached)".format(b, k, tab_val[0]))
+                    return tab_val
+                # Otherwise, compute bands and cache results
+                else:
+                    self.num_bands = b
+                    self.k_points = [korig + kdir1.scale(k)]
+                    self.run_parity(p, False)
+                    v = self.mode_solver.compute_group_velocity_component(kdir1)
+
+                    # Cache computed values
+                    for _b, _f, _v in zip(range(band_min, b - band_min + 1, 1),
+                                          self.freqs[band_min - 1:],
+                                          v[band_min - 1:]):
+                        tabval = bktab.get((_b, k0s[_b - band_min]), None)
+
+                        if not tabval or abs(_f - omega) < abs(tabval[0]):
+                            k0s[_b - band_min + 1] = k
+
+                        bktab[(_b, k)] = (_f - omega, _v)
+
+                    fun = self.freqs[-1] - omega
+                    print("find-k {} at {}: {}".format(b, k, fun))
+                    return (fun, v[-1])
+
+            return _rootfun
+
+        # Don't let previous computations interfere
+        if self.mode_solver:
+            self.randomize_fields()
+
+        ks = []
+        for b in range(band_max, band_max - nb, -1):
+            ks.append(mp.find_root_deriv(rootfun(b), tol, kmag_min, kmag_max, k0s[b - band_min]))
+
+        if band_funcs:
+            for b, k in zip(range(band_max, band_max - nb, -1), reversed(ks)):
+                self.num_bands = b
+                self.k_points = [korig + kdir1.scale(k)]
+
+                def bfunc(ms, b_prime):
+                    if b_prime == b:
+                        for f in band_funcs:
+                            apply_band_func_thunk(ms, f, b, True)
+
+                self.run_parity(p, False, bfunc)
+
+        self.num_bands = num_bands_save
+        self.k_points = kpoints_save
+        ks = reversed(ks)
+        print("{}kvals:, {}, {}, {}".format(self.parity, omega, band_min, band_max), end='')
+        for k in korig:
+            print(", {}".format(k), end='')
+        for k in kdir1:
+            print(", {}".format(k), end='')
+        for k in ks:
+            print(", {}".format(k), end='')
+        print()
+
+        return ks
 
 
 # Predefined output functions (functions of the band index), for passing to `run`
@@ -669,6 +810,38 @@ def output_dpwr(ms, which_band):
 def output_charge_density(ms, which_band):
     ms.get_charge_density(which_band)
     ms.output_field_to_file(-1, ms.get_filename_prefix())
+
+
+def output_poynting(ms, which_band):
+    ms.get_poynting(which_band)
+    ms.output_field_to_file(-1, ms.get_filename_prefix() + 'flux.')
+
+
+def output_poynting_x(ms, which_band):
+    ms.get_poynting(which_band)
+    ms.output_field_to_file(0, ms.get_filename_prefix() + 'flux.')
+
+
+def output_poynting_y(ms, which_band):
+    ms.get_poynting(which_band)
+    ms.output_field_to_file(1, ms.get_filename_prefix() + 'flux.')
+
+
+def output_poynting_z(ms, which_band):
+    ms.get_poynting(which_band)
+    ms.output_field_to_file(2, ms.get_filename_prefix() + 'flux.')
+
+
+def display_yparities(ms):
+    ms.display_kpoint_data('yparity', ms.mode_solver.compute_yparities())
+
+
+def display_zparities(ms):
+    ms.display_kpoint_data('zparity', ms.mode_solver.compute_zparities())
+
+
+def display_group_velocities(ms):
+    ms.display_kpoint_data('velocity', ms.compute_group_velocities())
 
 
 # Band functions to pick a canonical phase for the eigenstate of the
