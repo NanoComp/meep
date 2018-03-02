@@ -1026,5 +1026,27 @@ class TestModeSolver(unittest.TestCase):
 
         self.compare_h5_files(ref_path, res_path)
 
+    def test_get_eigenvectors(self):
+        ms = self.init_solver()
+        ms.tolerance = 1e-12
+        ms.run_te()
+
+        ref_fn = 'tutorial-te-eigenvectors.h5'
+        with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
+            expected_8 = f['rawdata'].value
+            # Reshape the last dimension of 2 reals into 1 complex number
+            expected_8 = np.vectorize(complex)(expected_8[..., 0], expected_8[..., 1])
+
+        ev = ms.get_eigenvectors(1, 8)
+        np.testing.assert_allclose(expected_8, ev, rtol=1e-3)
+
+        ref_fn = 'tutorial-te-eigenvectors-8-1.h5'
+        with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
+            expected_1 = f['rawdata'].value
+            expected_1 = np.vectorize(complex)(expected_1[..., 0], expected_1[..., 1])
+
+        ev_one = ms.get_eigenvectors(8, 1)
+        np.testing.assert_allclose(expected_1, ev_one)
+
 if __name__ == '__main__':
     unittest.main()

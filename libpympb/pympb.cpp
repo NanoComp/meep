@@ -2074,6 +2074,24 @@ void mode_solver::get_lattice(double data[3][3]) {
   matrix3x3_to_arr(data, Rm);
 }
 
+std::vector<int> mode_solver::get_eigenvectors_slice_dims(int num_bands) {
+  std::vector<int> res(3);
+  res[0] = H.localN;
+  res[1] = H.c;
+  res[2] = num_bands;
+
+  return res;
+}
+
+void mode_solver::get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size) {
+  evectmatrix e = create_evectmatrix(H.N, H.c, H.p, H.localN, H.Nstart, H.allocN);
+  evectmatrix_copy_slice(e, H, 0, p_start, p);
+
+  for (int i = 0; i < size; ++i) {
+    cdata[i] = std::complex<mpb_real>(e.data[i].re, e.data[i].im);
+  }
+}
+
 double mode_solver::get_eigensolver_flops() {
   return eigensolver_flops;
 }

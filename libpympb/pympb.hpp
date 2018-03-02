@@ -124,6 +124,8 @@ struct mode_solver {
   void set_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
 
   void get_lattice(double data[3][3]);
+  void get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size);
+  std::vector<int> get_eigenvectors_slice_dims(int num_bands);
 
   std::vector<mpb_real> compute_field_energy();
   double compute_energy_in_objects(geometric_object_list objects);

@@ -222,6 +222,15 @@ class ModeSolver(object):
 
         return tot_pwr
 
+    def get_eigenvectors(self, first_band, num_bands):
+        dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
+        ev = np.zeros(np.prod(dims), dtype=np.complex128)
+        self.mode_solver.get_eigenvectors(first_band - 1, num_bands, ev)
+        return ev.reshape(dims)
+
+    def set_eigenvectors(self, ev, first_band):
+        pass
+
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
     # frequency range of a band and the k-points where it achieves its minimum/maximum.
