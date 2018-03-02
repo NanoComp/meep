@@ -181,6 +181,7 @@ int main(int argc, char *argv[])
   bool plot_modes       = false;
   bool plot_flux        = false;
   bool plot_structure   = false;
+  bool use_prism        = false;
   double frame_interval = 0.0;
   char *filebase        = const_cast<char *>("wt");
   double LY             = 3.5;  // half-width of cell in transverse direction double LZ=1.5;
@@ -222,6 +223,8 @@ int main(int argc, char *argv[])
       plot_flux=true;
      else if (!strcasecmp(argv[narg],"--plot-structure") )
       plot_structure=true;
+     else if (!strcasecmp(argv[narg],"--use-prism") )
+      use_prism=true;
      else if (!strcasecmp(argv[narg],"--band-num"))
       { if ( ++narg >= argc )
          usage(argv[0], "error: no argument given for --band-num");
@@ -307,33 +310,54 @@ int main(int argc, char *argv[])
   double eps_Si        = 11.7;   // dielectric constant of silicon
   double eps_SiO2      = 2.1;    // dielectric constant of SiO2
 
-  wvg_data wdata;
-  wdata.wA            = wA;
-  wdata.wB            = wB;
-  wdata.taper_length  = taper_length;
-  wdata.taper_order   = taper_order;
-  wdata.eps_wvg       = eps_Si;
-  wdata.eps_ambient   = 1.0;  // ambient medium is vacuum
-  wdata.three_d       = three_d;
-  if (three_d)
-   { wdata.z_substrate   = -LZ + h_substrate;
-     wdata.z_oxide       = -LZ + h_substrate + h_oxide;
-     wdata.z_wvg         = -LZ + h_substrate + h_oxide + h_wvg;
-     wdata.eps_substrate = eps_Si;
-     wdata.eps_oxide     = eps_SiO2;
+  if (use_prism)
+   { 
+     meep_geom::material_type dielectric=meep_geom::make_dielectric(eps_Si);
+     vector3 vv[8];
+     vv[0].x = -LX+dpml;                  vv[0].y=-0.5*wA;   vv[0].z=0.0;
+     vv[1].x = vv[0].x + wvg_length;      vv[1].y=-0.5*wA;   vv[1].z=0.0;
+     vv[2].x = vv[1].x + taper_length;    vv[2].y=-0.5*wB;   vv[2].z=0.0;
+     vv[3].x = vv[2].x + wvg_length;      vv[3].y=-0.5*wB;   vv[3].z=0.0;
+     vv[4].x = vv[3].x;                   vv[4].y=+0.5*wB;   vv[4].z=0.0;
+     vv[5].x = vv[2].x;                   vv[5].y=+0.5*wB;   vv[5].z=0.0;
+     vv[6].x = vv[1].x;                   vv[6].y=+0.5*wA;   vv[6].z=0.0;
+     vv[7].x = vv[0].x;                   vv[7].y=+0.5*wA;   vv[7].z=0.0;
+     int num_vertices=8;
+     geometric_object objects[1];
+     vector3 zaxis={0.0,0.0,1.0};
+     objects[0] = make_prism(dielectric, vv, num_vertices, 0, zaxis);
+     geometric_object_list g = {1,objects};
+     meep_geom::set_materials_from_geometry(&the_structure, g);
+   }
+  else // use user-defined material function
+   { wvg_data wdata;
+     wdata.wA            = wA;
+     wdata.wB            = wB;
+     wdata.taper_length  = taper_length;
+     wdata.taper_order   = taper_order;
+     wdata.eps_wvg       = eps_Si;
+     wdata.eps_ambient   = 1.0;  // ambient medium is vacuum
+     wdata.three_d       = three_d;
+     if (three_d)
+      { wdata.z_substrate   = -LZ + h_substrate;
+        wdata.z_oxide       = -LZ + h_substrate + h_oxide;
+        wdata.z_wvg         = -LZ + h_substrate + h_oxide + h_wvg;
+        wdata.eps_substrate = eps_Si;
+        wdata.eps_oxide     = eps_SiO2;
+      };
+     meep_geom::material_type my_material
+      = meep_geom::make_user_material(wvg_material, (void *)&wdata);
+     bool use_anisotropic_averaging = true;
+     double sbtol                   = DEFAULT_SUBPIXEL_TOL;
+     int maxeval                    = DEFAULT_SUBPIXEL_MAXEVAL;
+     bool ensure_periodicity        = false;
+     bool verbose                   = false;
+     geometric_object_list g={0,0};
+     meep_geom::set_materials_from_geometry(&the_structure, g,
+                                            use_anisotropic_averaging,
+                                            sbtol, maxeval, ensure_periodicity,
+                                            verbose, my_material);
    };
-  meep_geom::material_type my_material
-   = meep_geom::make_user_material(wvg_material, (void *)&wdata);
-  bool use_anisotropic_averaging = true;
-  double sbtol                   = DEFAULT_SUBPIXEL_TOL;
-  int maxeval                    = DEFAULT_SUBPIXEL_MAXEVAL;
-  bool ensure_periodicity        = false;
-  bool verbose                   = false;
-  geometric_object_list g={0,0};
-  meep_geom::set_materials_from_geometry(&the_structure, g,
-                                         use_anisotropic_averaging,
-                                         sbtol, maxeval, ensure_periodicity,
-                                         verbose, my_material);
   fields f(&the_structure);
   
   /***************************************************************/
