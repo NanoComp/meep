@@ -160,14 +160,14 @@ void bragg_transmission(double a, double freq_min, double freq_max, int nfreq,
   while (f.time() < nfreq / fabs(freq_max - freq_min) / 2)
     f.step();
 
-  double *flux = ft.flux();
-  double *flux0 = ft0.flux();
+  complex<double> *flux = ft.flux();
+  complex<double> *flux0 = ft0.flux();
   for (int i = 0; i < nfreq; ++i)
-    T[i] = flux[i] / flux0[i];
+    T[i] = real(flux[i]) / real(flux0[i]);
   delete[] flux;
   flux = fr.flux();
   for (int i = 0; i < nfreq; ++i)
-    R[i] = -flux[i] / flux0[i];
+    R[i] = -real(flux[i]) / real(flux0[i]);
   delete[] flux;
   delete[] flux0;
   delete s; // tests whether okay to delete s before f

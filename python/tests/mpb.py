@@ -556,7 +556,7 @@ class TestModeSolver(unittest.TestCase):
             ((1.758168321098983, mp.Vector3(0.5, 0.0, 0.0)), (1.9999083366718178, mp.Vector3(0.0, 0.0, 0.0))),
         ]
 
-        self.check_band_range_data(expected_brd, ms.band_range_data, tol=6)
+        self.check_band_range_data(expected_brd, ms.band_range_data, tol=3)
 
     def test_bragg(self):
         n_lo = 1.0

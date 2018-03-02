@@ -79,8 +79,8 @@ int flux_1d(const double zmax,
                 f.electric_energy_in_box(mid.surroundings()));
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  f.dt*left->flux();
-    flux_right +=  f.dt*right->flux();
+    flux_left  +=  f.dt*real(left->flux());
+    flux_right +=  f.dt*real(right->flux());
   }
   delta_energy -= f.field_energy_in_box(mid.surroundings());
   master_printf("Final energy is %g\n",
@@ -120,7 +120,7 @@ int split_1d(double eps(const vec &), int splitting) {
   while (f.time() < ttot) {
     f1.step();
     f.step();
-    if (!compare(f.dt*left1->flux(), f.dt*left->flux(), tol, tol, "Flux"))
+    if (!compare(f.dt*real(left1->flux()), f.dt*real(left->flux()), tol, tol, "Flux"))
       return 0;
   }
   return 1;
@@ -151,8 +151,8 @@ int cavity_1d(const double boxwidth, const double timewait,
   master_printf("  Energy starts at\t%g\n", start_energy);
   while (f.time() < ttot) {
     f.step();
-    flux_left  +=  f.dt*left->flux();
-    flux_right +=  f.dt*right->flux();
+    flux_left  +=  f.dt*real(left->flux());
+    flux_right +=  f.dt*real(right->flux());
   }
   const double delta_energy = 
     start_energy - f.field_energy_in_box(mid.surroundings());
@@ -210,7 +210,7 @@ int flux_2d(const double xmax, const double ymax,
   long double fluxL = 0;
   while (f.time() < ttot) {
     f.step();
-    fluxL += f.dt * (left->flux() - right->flux()
+    fluxL += f.dt * real(left->flux() - right->flux()
 		     + bottom->flux() - top->flux());
   }
   double flux = fluxL;
@@ -227,12 +227,12 @@ int flux_2d(const double xmax, const double ymax,
   }
   master_printf("  energy after more time is %g\n",f.field_energy_in_box(box));
   master_printf("  and energy in box2 is %g\n", f.field_energy_in_box(box2));
-  double *fl1 = flux1.flux();
-  double *fl2 = flux2.flux();
+  complex<double> *fl1 = flux1.flux();
+  complex<double> *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {
     master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
-	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
-    if (!compare(fl1[i], fl2[i], 0.09, 0, "Flux spectrum")) return 0;
+		  fmin + i * flux1.dfreq, real(fl1[i]),real(fl2[i]), real(fl1[i]) / real(fl2[i]));
+    if (!compare(real(fl1[i]), real(fl2[i]), 0.09, 0, "Flux spectrum")) return 0;
   }
   delete fl2; delete fl1;
 
@@ -281,7 +281,7 @@ int flux_cyl(const double rmax, const double zmax,
   long double fluxL = 0;
   while (f.time() < ttot) {
     f.step();
-    fluxL += f.dt * (left->flux() - right->flux()
+    fluxL += f.dt * real(left->flux() - right->flux()
 		      + bottom->flux() - top->flux());
   }
   double flux = fluxL;
@@ -296,12 +296,12 @@ int flux_cyl(const double rmax, const double zmax,
   }
   master_printf("  energy after more time is %g\n",f.field_energy_in_box(box));
   master_printf("  and energy in box2 is %g\n", f.field_energy_in_box(box2));
-  double *fl1 = flux1.flux();
-  double *fl2 = flux2.flux();
+  complex<double> *fl1 = flux1.flux();
+  complex<double> *fl2 = flux2.flux();
   for (int i = 0; i < Nfreq; ++i) {
     master_printf("  flux(%g) = %g vs. %g (rat. = %g)\n", 
-	   fmin + i * flux1.dfreq, fl1[i],fl2[i], fl1[i] / fl2[i]);
-    if (!compare(fl1[i], fl2[i], 0.08, 0, "Flux spectrum")) return 0;
+		  fmin + i * flux1.dfreq, real(fl1[i]), real(fl2[i]), real(fl1[i]) / real(fl2[i]));
+    if (!compare(real(fl1[i]), real(fl2[i]), 0.08, 0, "Flux spectrum")) return 0;
   }
   delete fl2; delete fl1;
 

@@ -83,11 +83,11 @@ volume_list *make_volume_list(const volume &v,
 
 /***************************************************************************/
 
-ctlio::number_list dft_flux_flux(dft_flux *f)
+ctlio::cnumber_list dft_flux_flux(dft_flux *f)
 {
-  ctlio::number_list res;
+  ctlio::cnumber_list res;
   res.num_items = f->Nfreq;
-  res.items = f->flux();
+  res.items = (cnumber *) f->flux();
   return res;
 }
 

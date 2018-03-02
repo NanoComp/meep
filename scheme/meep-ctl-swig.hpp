@@ -29,7 +29,7 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt,
                                 double rel_err_thresh, double err_thresh,
                                 double rel_amp_thresh, double amp_thresh);
 
-ctlio::number_list dft_flux_flux(meep::dft_flux *f);
+ctlio::cnumber_list dft_flux_flux(meep::dft_flux *f);
 ctlio::number_list dft_force_force(meep::dft_force *f);
 ctlio::number_list dft_ldos_ldos(meep::dft_ldos *f);
 ctlio::cnumber_list dft_ldos_F(meep::dft_ldos *f);

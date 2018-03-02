@@ -76,11 +76,11 @@ int main(int argc, char **argv) {
       master_printf("%g%% done with flux and force\n", f.time()/T3 * 100);
     f.step();
   }
-  double *fl  = fluxR.flux();
+  complex<double> *fl  = fluxR.flux();
   double *fr = forceR.force();
   master_printf("flux is %0.8g, force is %0.8g, F/P = %0.8g\n",
-		fl[0], fr[0], -0.5*fr[0]/fl[0]);
-  double FoverP = -0.5*fr[0]/fl[0];
+		real(fl[0]), fr[0], -0.5*fr[0]/real(fl[0]));
+  double FoverP = -0.5*fr[0]/real(fl[0]);
   delete fl; delete fr;
   return fabs(FoverP+0.33628872)/0.33628872 > 0.1;
   // MPB: -0.33628872

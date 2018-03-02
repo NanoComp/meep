@@ -907,7 +907,7 @@ public:
 	   double fmin, double fmax, int Nf);
   dft_flux(const dft_flux &f);
 
-  double *flux();
+  std::complex<double> *flux();
 
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);
@@ -1547,8 +1547,8 @@ class fields {
   double field_energy_in_box(const volume &);
   double field_energy_in_box(component c, const volume &);
   double field_energy();
-  double flux_in_box_wrongH(direction d, const volume &);
-  double flux_in_box(direction d, const volume &);
+  std::complex<double> flux_in_box_wrongH(direction d, const volume &);
+  std::complex<double> flux_in_box(direction d, const volume &);
   flux_vol *add_flux_vol(direction d, const volume &where);
   flux_vol *add_flux_plane(const volume &where);
   flux_vol *add_flux_plane(const vec &p1, const vec &p2);
@@ -1635,15 +1635,15 @@ class flux_vol {
   void update() { cur_flux = (flux_wrongE() + cur_flux_half) * 0.5;
                   if (next) next->update(); }
 
-  double flux() { return cur_flux; }
+  std::complex<double> flux() { return cur_flux; }
 
   flux_vol *next;
  private:
-  double flux_wrongE() { return f->flux_in_box_wrongH(d, where); }
+  std::complex<double> flux_wrongE() { return f->flux_in_box_wrongH(d, where); }
   fields *f;
   direction d;
   volume where;
-  double cur_flux, cur_flux_half;
+  std::complex<double> cur_flux, cur_flux_half;
 };
 
 // The following is a utility function to parse the executable name use it
