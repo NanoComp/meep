@@ -1128,7 +1128,7 @@ class fields_chunk {
   bool needs_W_notowned(component c);
   // fields.cpp
   void remove_sources();
-  void remove_susceptibilities();
+  void remove_susceptibilities(bool shared_chunks);
   void zero_fields();
 
   // update_eh.cpp
@@ -1210,6 +1210,7 @@ typedef vec (*kpoint_func)(void *user_data, double freq, int band);
 class fields {
  public:
   int num_chunks;
+  bool shared_chunks;
   fields_chunk **chunks;
   src_time *sources;
   flux_vol *fluxes;
