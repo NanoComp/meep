@@ -821,6 +821,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %ignore is_medium;
 %ignore is_medium;
 %ignore is_metal;
+%ignore meep::infinity;
 
 %include "vec.i"
 %include "meep.hpp"
