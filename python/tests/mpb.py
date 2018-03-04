@@ -1031,22 +1031,21 @@ class TestModeSolver(unittest.TestCase):
         ms.tolerance = 1e-12
         ms.run_te()
 
-        ref_fn = 'tutorial-te-eigenvectors.h5'
-        with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
-            expected_8 = f['rawdata'].value
-            # Reshape the last dimension of 2 reals into 1 complex number
-            expected_8 = np.vectorize(complex)(expected_8[..., 0], expected_8[..., 1])
+        def compare_eigenvectors(ref_fn, start, cols):
+            with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
+                expected = f['rawdata'].value
+                # Reshape the last dimension of 2 reals into one complex
+                expected = np.vectorize(complex)(expected[..., 0], expected[..., 1])
+                ev = ms.get_eigenvectors(start, cols)
+                np.testing.assert_allclose(expected, ev, rtol=1e-3)
 
-        ev = ms.get_eigenvectors(1, 8)
-        np.testing.assert_allclose(expected_8, ev, rtol=1e-3)
+        # Get all columns
+        compare_eigenvectors('tutorial-te-eigenvectors.h5', 1, 8)
+        # Get last column
+        compare_eigenvectors('tutorial-te-eigenvectors-8-1.h5', 8, 1)
+        # Get columns 3,4, and 5
+        compare_eigenvectors('tutorial-te-eigenvectors-3-3.h5', 3, 3)
 
-        ref_fn = 'tutorial-te-eigenvectors-8-1.h5'
-        with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
-            expected_1 = f['rawdata'].value
-            expected_1 = np.vectorize(complex)(expected_1[..., 0], expected_1[..., 1])
-
-        ev_one = ms.get_eigenvectors(8, 1)
-        np.testing.assert_allclose(expected_1, ev_one)
 
 if __name__ == '__main__':
     unittest.main()

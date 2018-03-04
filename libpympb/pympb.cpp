@@ -2084,11 +2084,11 @@ std::vector<int> mode_solver::get_eigenvectors_slice_dims(int num_bands) {
 }
 
 void mode_solver::get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size) {
-  evectmatrix e = create_evectmatrix(H.N, H.c, H.p, H.localN, H.Nstart, H.allocN);
-  evectmatrix_copy_slice(e, H, 0, p_start, p);
 
-  for (int i = 0; i < size; ++i) {
-    cdata[i] = std::complex<mpb_real>(e.data[i].re, e.data[i].im);
+  for (int i = 0, j = p_start; i < size; i += p, j += H.p) {
+    for (int k = 0; k < p; ++k) {
+      cdata[i + k] = std::complex<mpb_real>(H.data[j + k].re, H.data[j + k].im);
+    }
   }
 }
 
