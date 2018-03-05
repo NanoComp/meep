@@ -527,7 +527,10 @@ class ModeSolver(object):
             self.verbose,
             self.ensure_periodicity,
             self.eigensolver_flops,
-            self.is_negative_epsilon_ok
+            self.is_negative_epsilon_ok,
+            self.epsilon_input_file,
+            self.mu_input_file,
+            self.force_mu,
         )
 
         if isinstance(reset_fields, basestring):

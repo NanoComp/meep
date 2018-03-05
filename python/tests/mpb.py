@@ -252,7 +252,6 @@ class TestModeSolver(unittest.TestCase):
              (1.086072932359415, mp.Vector3(0.5, 0.0, 0.0))),
             ((1.0878689635052692, mp.Vector3(0.5, 0.0, 0.0)),
              (1.1119173707556929, mp.Vector3(0.5, 0.5, 0.0))),
-
         ]
 
         expected_gap_list = [
@@ -878,6 +877,32 @@ class TestModeSolver(unittest.TestCase):
         self.compare_h5_files(ref_path, res_path)
         self.check_band_range_data(expected_brd, ms.band_range_data)
         self.check_gap_list(expected_gap_list, ms.gap_list)
+
+    def test_run_te_with_mu_material(self):
+        ms = self.init_solver(geom=False)
+        ms.geometry = [mp.Cylinder(0.2, material=mp.Medium(mu=5))]
+
+        expected_brd = [
+            ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
+             (0.4165291233037574, mp.Vector3(0.5, 0.5, 0.0))),
+            ((0.47328232348733695, mp.Vector3(0.5, 0.0, 0.0)),
+             (0.6699867281290507, mp.Vector3(0.0, 0.0, 0.0))),
+            ((0.6301802646818523, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.8037365323032135, mp.Vector3(0.5, 0.0, 0.0))),
+            ((0.7017932556977557, mp.Vector3(0.5, 0.5, 0.0)),
+             (0.8863448167711359, mp.Vector3(0.5, 0.10000000000000003, 0.0))),
+            ((0.9047498485809726, mp.Vector3(0.5, 0.10000000000000003, 0.0)),
+             (1.0557468193007016, mp.Vector3(0.5, 0.5, 0.0))),
+            ((1.0077925606103986, mp.Vector3(0.2, 0.2, 0.0)),
+             (1.1815403744341757, mp.Vector3(0.0, 0.0, 0.0))),
+            ((1.122424251973878, mp.Vector3(0.20000000000000004, 0.0, 0.0)),
+             (1.2351567679231688, mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0))),
+            ((1.2059728636717586, mp.Vector3(0.0, 0.0, 0.0)),
+             (1.3135062523646421, mp.Vector3(0.30000000000000004, 0.0, 0.0))),
+        ]
+
+        ms.run_te()
+        self.check_band_range_data(expected_brd, ms.band_range_data)
 
 if __name__ == '__main__':
     unittest.main()
