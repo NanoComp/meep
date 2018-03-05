@@ -138,6 +138,9 @@ class TestModeSolver(unittest.TestCase):
         for e, r in zip(expected, res):
             self.assertTrue(e.close(r))
 
+    def test_output_dpwr_in_objects(self):
+        pass
+
     def check_band_range_data(self, expected_brd, result, places=3, tol=1e-3):
         for exp, res in zip(expected_brd, result):
             # Compare min freqs

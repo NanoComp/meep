@@ -147,6 +147,9 @@ class ModeSolver(object):
 
         return flat_res
 
+    def get_epsilon(self):
+        return self.mode_solver.get_epsilon()
+
     def get_bfield(self, which_band):
         return self._get_field('b', which_band)
 
@@ -446,6 +449,9 @@ class ModeSolver(object):
     def compute_field_energy(self):
         return self.mode_solver.compute_field_energy()
 
+    def compute_field_divergence(self):
+        return mode_solver.compute_field_divergence()
+
     def compute_energy_in_objects(self, objs):
         return self.mode_solver.compute_energy_in_objects(objs)
 
@@ -458,6 +464,16 @@ class ModeSolver(object):
         vz = self.mode_solver.compute_group_velocity_component(zarg)
 
         return [mp.Vector3(x, y, z) for x, y, z in zip(vx, vy, vz)]
+
+    def compute_group_velocity_component(self, direction):
+        return self.mode_solver.compute_group_velocity_component(direction)
+
+    def compute_one_group_velocity(self, which_band):
+        return self.mode_solver.compute_1_group_velocity(which_band)
+
+    def compute_one_group_velocity_component(self, direction, which_band):
+        return self.mode_solver.compute_1_group_velocity_component(direction,
+                                                                   which_band)
 
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
@@ -845,6 +861,27 @@ def output_dpwr(ms, which_band):
     ms.get_dfield(which_band)
     ms.compute_field_energy()
     ms.output_field()
+
+
+def output_dpwr_in_objects(output_func, min_energy, objects=[]):
+    """
+    The following function returns an output function that calls output_func for
+    bands with D energy in objects > min-energy. For example,
+    output_dpwr_in_objects(output_dfield, 0.20, some_object) would return an
+    output function that would spit out the D field for bands with at least %20
+    of their D energy in some-object.
+    """
+
+    def _output(ms, which_band):
+        ms.get_dfield(which_band)
+        ms.compute_field_energy()
+        energy = ms.compute_energy_in_objects(objects)
+        fmt = "dpwr:, {}, {}, {} "
+        print(fmt.format(which_band, ms.freqs[which_band - 1], energy))
+        if energy >= min_energy:
+            apply_band_func(output_func, which_band)
+
+    return _output
 
 
 def output_charge_density(ms, which_band):

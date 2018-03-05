@@ -1936,6 +1936,81 @@ std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
   return group_v;
 }
 
+/* as above, but only computes for given band */
+mpb_real mode_solver::compute_1_group_velocity_component(vector3 d, int b) {
+  mpb_real u[3];
+  int ib = b - 1;
+  mpb_real group_v;
+  mpb_real scratch;
+
+  curfield_reset();
+
+  if (!mdata) {
+    meep::master_fprintf(stderr, "mode_solver.init must be called first!\n");
+    return group_v;
+  }
+
+  if (!kpoint_index) {
+    meep::master_fprintf(stderr, "mode_solver.solve_kpoint must be called first!\n");
+    return group_v;
+  }
+
+  /* convert d to unit vector in Cartesian coords: */
+  d = unit_vector3(matrix3x3_vector3_mult(Gm, d));
+  u[0] = d.x;
+  u[1] = d.y;
+  u[2] = d.z;
+
+  evectmatrix_resize(&W[0], 1, 0);
+  CHECK(nwork_alloc > 1, "eigensolver-nwork is too small");
+  evectmatrix_resize(&W[1], 1, 0);
+
+  maxwell_compute_H_from_B(mdata, H, W[1], (scalar_complex *) mdata->fft_data, ib, 0, 1);
+  maxwell_ucross_op(W[1], W[0], mdata, u);
+  evectmatrix_XtY_diag_real(W[1], W[0], &group_v, &scratch);
+
+  /* Reset scratch matrix sizes: */
+  evectmatrix_resize(&W[1], W[1].alloc_p, 0);
+  evectmatrix_resize(&W[0], W[0].alloc_p, 0);
+
+  if (freqs[ib] == 0) {  /* v is undefined in this case */
+    group_v = 0.0;  /* just set to zero */
+  }
+  else {
+    group_v /= negative_epsilon_ok ? sqrt(fabs(freqs[ib])) : freqs[ib];
+  }
+  return group_v;
+}
+
+/* returns group velocity for band b, in Cartesian coordinates */
+vector3 mode_solver::compute_1_group_velocity(int b) {
+  vector3 v;
+  vector3 d;
+  matrix3x3 RmT = matrix3x3_transpose(Rm);
+  d.x = 1;
+  d.y = 0;
+  d.z = 0;
+  v.x = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+  d.y = 1;
+  d.x = 0;
+  d.z = 0;
+  v.y = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+  d.z = 1;
+  d.y = 0;
+  d.x = 0;
+  v.z = compute_1_group_velocity_component(matrix3x3_vector3_mult(RmT,d),b);
+
+  return v;
+}
+
+/* as above, but returns "group velocity" given by gradient of
+   frequency with respect to k in reciprocal coords ... this is useful
+   for band optimization. */
+vector3 mode_solver::compute_1_group_velocity_reciprocal(int b) {
+  return matrix3x3_vector3_mult(matrix3x3_transpose(Gm),
+                                compute_1_group_velocity(b));
+}
+
 bool mode_solver::with_hermitian_epsilon() {
 #ifdef WITH_HERMITIAN_EPSILON
   return true;

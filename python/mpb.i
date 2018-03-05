@@ -193,6 +193,7 @@ static int pylattice_to_lattice(PyObject *py_lat, lattice *l) {
         output_charge_density,
         output_bpwr,
         output_dpwr,
+        output_dpwr_in_objects,
         output_poynting,
         output_poynting_x,
         output_poynting_y,

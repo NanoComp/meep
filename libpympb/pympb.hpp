@@ -125,6 +125,9 @@ struct mode_solver {
 
   std::vector<mpb_real> compute_field_energy();
   double compute_energy_in_objects(geometric_object_list objects);
+  mpb_real compute_1_group_velocity_component(vector3 d, int b);
+  vector3 compute_1_group_velocity(int b);
+  vector3 compute_1_group_velocity_reciprocal(int b);
 
   char get_curfield_type();
   void set_curfield_type(char t);
