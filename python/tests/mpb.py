@@ -1062,6 +1062,20 @@ class TestModeSolver(unittest.TestCase):
         ms.run_te()
         set_H_to_zero_and_check(3, 3)
 
+    def test_load_and_save_eigenvectors(self):
+        ms = self.init_solver()
+        ms.run_te()
+        fn = self.filename_prefix + '.h5'
+
+        ev = ms.get_eigenvectors(8, 1)
+        zeros = np.zeros(ev.shape, dtype=np.complex128)
+        ms.set_eigenvectors(zeros, 8)
+        ms.save_eigenvectors(fn)
+
+        ms.run_te()
+        ms.load_eigenvectors(fn)
+        new_ev = ms.get_eigenvectors(8, 1)
+        self.assertEqual(np.count_nonzero(new_ev), 0)
 
 if __name__ == '__main__':
     unittest.main()

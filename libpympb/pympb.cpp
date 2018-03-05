@@ -1345,13 +1345,6 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
   }
 }
 
-void mode_solver::load_eigenvectors(char *filename) {
-  meep::master_printf("Loading eigenvectors from \"%s\"...\n", filename);
-  // TODO: Write in python
-  // evectmatrixio_readall_raw(filename, H);
-  curfield_reset();
-}
-
 std::vector<mpb_real> mode_solver::get_freqs() {
   return freqs;
 }

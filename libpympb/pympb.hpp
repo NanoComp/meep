@@ -105,7 +105,6 @@ struct mode_solver {
   bool has_mu();
   bool material_has_mu(void *mt);
   void curfield_reset();
-  void load_eigenvectors(char *filename);
 
   size_t get_field_size();
 
