@@ -2092,6 +2092,18 @@ void mode_solver::get_eigenvectors(int p_start, int p, std::complex<mpb_real> *c
   }
 }
 
+void mode_solver::set_eigenvectors(int b_start, std::complex<mpb_real> *cdata, int size) {
+  int columns = size / H.n;
+
+  for (int i = 0, j = b_start; i < size; i += columns, j += H.p) {
+    for (int k = 0; k < columns; ++k) {
+      H.data[j + k].re = cdata[i + k].real();
+      H.data[j + k].im = cdata[i + k].imag();
+    }
+  }
+  curfield_reset();
+}
+
 double mode_solver::get_eigensolver_flops() {
   return eigensolver_flops;
 }

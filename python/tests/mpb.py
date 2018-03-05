@@ -953,7 +953,6 @@ class TestModeSolver(unittest.TestCase):
 
     def test_subpixel_averaging(self):
         ms = self.init_solver()
-        ms.tolerance = 1e-12
         ms.run_te()
 
         expected_brd = [
@@ -1028,7 +1027,6 @@ class TestModeSolver(unittest.TestCase):
 
     def test_get_eigenvectors(self):
         ms = self.init_solver()
-        ms.tolerance = 1e-12
         ms.run_te()
 
         def compare_eigenvectors(ref_fn, start, cols):
@@ -1045,6 +1043,24 @@ class TestModeSolver(unittest.TestCase):
         compare_eigenvectors('tutorial-te-eigenvectors-8-1.h5', 8, 1)
         # Get columns 3,4, and 5
         compare_eigenvectors('tutorial-te-eigenvectors-3-3.h5', 3, 3)
+
+    def test_set_eigenvectors(self):
+        ms = self.init_solver()
+
+        def set_H_to_zero_and_check(start, num_bands):
+            ev = ms.get_eigenvectors(start, num_bands)
+            self.assertNotEqual(np.count_nonzero(ev), 0)
+            zeros = np.zeros(ev.shape, dtype=np.complex128)
+            ms.set_eigenvectors(zeros, start)
+            new_ev = ms.get_eigenvectors(start, num_bands)
+            self.assertEqual(np.count_nonzero(new_ev), 0)
+
+        ms.run_te()
+        set_H_to_zero_and_check(8, 1)
+        ms.run_te()
+        set_H_to_zero_and_check(1, 8)
+        ms.run_te()
+        set_H_to_zero_and_check(3, 3)
 
 
 if __name__ == '__main__':

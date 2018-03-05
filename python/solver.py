@@ -229,7 +229,7 @@ class ModeSolver(object):
         return ev.reshape(dims)
 
     def set_eigenvectors(self, ev, first_band):
-        pass
+        self.mode_solver.set_eigenvectors(first_band - 1, ev.flatten())
 
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
