@@ -109,6 +109,35 @@ class TestModeSolver(unittest.TestCase):
         for res, exp in zip(k_split[1], expected_list):
             self.assertTrue(res.close(exp))
 
+    def test_first_brillouin_zone(self):
+        ms = self.init_solver()
+
+        res = []
+        for k in ms.k_points:
+            res.append(ms.first_brillouin_zone(k))
+
+        expected = [
+            mp.Vector3(0.0, 0.0, 0.0),
+            mp.Vector3(0.10000000000000003, 0.0, 0.0),
+            mp.Vector3(0.20000000000000004, 0.0, 0.0),
+            mp.Vector3(0.30000000000000004, 0.0, 0.0),
+            mp.Vector3(0.4, 0.0, 0.0),
+            mp.Vector3(0.5, 0.0, 0.0),
+            mp.Vector3(0.5, 0.10000000000000003, 0.0),
+            mp.Vector3(0.5, 0.20000000000000004, 0.0),
+            mp.Vector3(0.5, 0.30000000000000004, 0.0),
+            mp.Vector3(0.5, 0.4, 0.0),
+            mp.Vector3(0.5, 0.5, 0.0),
+            mp.Vector3(0.4, 0.4, 0.0),
+            mp.Vector3(0.30000000000000004, 0.30000000000000004, 0.0),
+            mp.Vector3(0.2, 0.2, 0.0),
+            mp.Vector3(0.1, 0.1, 0.0),
+            mp.Vector3(0.0, 0.0, 0.0),
+        ]
+
+        for e, r in zip(expected, res):
+            self.assertTrue(e.close(r))
+
     def check_band_range_data(self, expected_brd, result, places=3, tol=1e-3):
         for exp, res in zip(expected_brd, result):
             # Compare min freqs

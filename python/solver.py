@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import functools
 import os
 import numbers
 import re
@@ -714,6 +715,42 @@ class ModeSolver(object):
         print()
 
         return ks
+
+    def first_brillouin_zone(self, k):
+        """
+        Function to convert a k-point k into an equivalent point in the
+        first Brillouin zone (not necessarily the irreducible Brillouin zone)
+        """
+        def n(k):
+            return mp.reciprocal_to_cartesian(k, self.geometry_lattice).norm()
+
+        def try_plus(k, v):
+            if n(k + v) < n(k):
+                return try_plus(k + v, v)
+            else:
+                return k
+
+        def _try(k, v):
+            return try_plus(try_plus(k, v), mp.Vector3() - v)
+
+        try_list = [
+            mp.Vector3(1, 0, 0), mp.Vector3(0, 1, 0), mp.Vector3(0, 0, 1),
+            mp.Vector3(0, 1, 1), mp.Vector3(1, 0, 1), mp.Vector3(1, 1, 0),
+            mp.Vector3(0, 1, -1), mp.Vector3(1, 0, -1), mp.Vector3(1, -1, 0),
+            mp.Vector3(1, 1, 1), mp.Vector3(-1, 1, 1), mp.Vector3(1, -1, 1),
+            mp.Vector3(1, 1, -1),
+        ]
+
+        def try_all(k):
+            return functools.reduce(_try, try_list, k)
+
+        def try_all_and_repeat(k):
+            knew = try_all(k)
+            return try_all_and_repeat(knew) if n(knew) < n(k) else k
+
+        k0 = k - mp.Vector3(*[round(x) for x in k])
+
+        return try_all_and_repeat(k0) if n(k0) < n(k) else try_all_and_repeat(k)
 
 
 # Predefined output functions (functions of the band index), for passing to `run`
