@@ -15,6 +15,7 @@ namespace py_mpb {
 struct mode_solver {
   static const int MAX_NWORK = 10;
   static const char epsilon_CURFIELD_TYPE = 'n';
+  static const char mu_CURFIELD_TYPE = 'm';
   static const int NUM_FFT_BANDS = 20;
 
   int num_bands;
@@ -90,6 +91,7 @@ struct mode_solver {
   int get_kpoint_index();
   void set_kpoint_index(int i);
   void get_epsilon();
+  void get_mu();
   void get_epsilon_tensor(int c1, int c2, int imag, int inv);
   void get_material_pt(meep_geom::material_type &material, vector3 p);
   void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
@@ -125,9 +127,6 @@ struct mode_solver {
 
   std::vector<mpb_real> compute_field_energy();
   double compute_energy_in_objects(geometric_object_list objects);
-  mpb_real compute_1_group_velocity_component(vector3 d, int b);
-  vector3 compute_1_group_velocity(int b);
-  vector3 compute_1_group_velocity_reciprocal(int b);
 
   char get_curfield_type();
   void set_curfield_type(char t);
@@ -135,12 +134,30 @@ struct mode_solver {
   std::vector<int> get_dims();
   std::vector<mpb_real> get_output_k();
 
+  mpb_real get_val(int ix, int iy, int iz, int nx, int ny, int nz, int last_dim_size,
+                   mpb_real *data, int stride, int conjugate);
+  mpb_real interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size,
+                      mpb_real *data, int stride, int conjugate);
+  scalar_complex interp_cval(vector3 p, int nx, int ny, int nz, int last_dim_size,
+                             mpb_real *data, int stride);
+  symmetric_matrix interp_eps_inv(vector3 p);
+
+  mpb_real get_epsilon_point(vector3 p);
+  cmatrix3x3 get_epsilon_inverse_tensor_point(vector3 p);
+  mpb_real get_energy_point(vector3 p);
+  cvector3 get_field_point(vector3 p);
+  cvector3 get_bloch_field_point(vector3 p);
+
   void multiply_bloch_phase();
   void fix_field_phase();
   void compute_field_divergence();
   std::vector<mpb_real> compute_zparities();
   std::vector<mpb_real> compute_yparities();
   std::vector<mpb_real> compute_group_velocity_component(vector3 d);
+  mpb_real compute_1_group_velocity_component(vector3 d, int b);
+  vector3 compute_1_group_velocity(int b);
+  vector3 compute_1_group_velocity_reciprocal(int b);
+  mpb_real compute_energy_in_dielectric(mpb_real eps_low, mpb_real eps_high);
   bool with_hermitian_epsilon();
 
 private:

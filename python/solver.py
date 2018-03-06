@@ -148,7 +148,7 @@ class ModeSolver(object):
         return flat_res
 
     def get_epsilon(self):
-        return self.mode_solver.get_epsilon()
+        self.mode_solver.get_epsilon()
 
     def get_bfield(self, which_band):
         return self._get_field('b', which_band)
@@ -183,6 +183,44 @@ class ModeSolver(object):
             self.mode_solver.get_hfield(field, band)
 
         return field
+
+    def get_epsilon_point(self, p):
+        return self.mode_solver.get_epsilon_point(p)
+
+    def get_epsilon_inverse_tensor_point(self, p):
+        return self.mode_solver.get_epsilon_inverse_tensor_point(p)
+
+    def get_energy_point(self, p):
+        return self.mode_solver.get_energy_point(p)
+
+    def get_field_point(self, p):
+        return self.mode_solver.get_field_point(p)
+
+    def get_bloch_field_point(self, p):
+        return self.mode_solver.get_bloch_field_point(p)
+
+    def get_tot_pwr(self, which_band):
+        self.get_dfield(which_band)
+        self.compute_field_energy()
+
+        dims = self.mode_solver.get_dims()
+        epwr = np.zeros(np.prod(dims))
+        self.mode_solver.get_curfield(epwr)
+        epwr = np.reshape(epwr, dims)
+
+        self.get_bfield(which_band)
+        self.compute_field_energy()
+
+        hpwr = np.zeros(np.prod(dims))
+        self.mode_solver.get_curfield(hpwr)
+        hpwr = np.reshape(hpwr, dims)
+
+        tot_pwr = epwr + hpwr
+
+        self.mode_solver.set_curfield(tot_pwr.ravel())
+        self.mode_solver.set_curfield_type('R')
+
+        return tot_pwr
 
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
@@ -292,10 +330,8 @@ class ModeSolver(object):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_mu(self):
-        print("output_mu: Not yet supported")
-        # TODO
-        # self.mode_solver.get_mu()
-        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
+        self.mode_solver.get_mu()
+        self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_field_to_file(self, component, fname_prefix):
         curfield_type = self.mode_solver.get_curfield_type()
@@ -450,10 +486,13 @@ class ModeSolver(object):
         return self.mode_solver.compute_field_energy()
 
     def compute_field_divergence(self):
-        return mode_solver.compute_field_divergence()
+        mode_solver.compute_field_divergence()
 
     def compute_energy_in_objects(self, objs):
         return self.mode_solver.compute_energy_in_objects(objs)
+
+    def compute_energy_in_dielectric(self, eps_low, eps_high):
+        return self.mode_solver.compute_energy_in_dielectric(eps_low, eps_high)
 
     def compute_group_velocities(self):
         xarg = mp.cartesian_to_reciprocal(mp.Vector3(1), self.geometry_lattice)
@@ -863,6 +902,11 @@ def output_dpwr(ms, which_band):
     ms.output_field()
 
 
+def output_tot_pwr(ms, which_band):
+    ms.get_tot_pwr(which_band)
+    ms.output_field_to_file(-1, ms.get_filename_prefix() + 'tot.')
+
+
 def output_dpwr_in_objects(output_func, min_energy, objects=[]):
     """
     The following function returns an output function that calls output_func for
@@ -879,7 +923,7 @@ def output_dpwr_in_objects(output_func, min_energy, objects=[]):
         fmt = "dpwr:, {}, {}, {} "
         print(fmt.format(which_band, ms.freqs[which_band - 1], energy))
         if energy >= min_energy:
-            apply_band_func(output_func, which_band)
+            apply_band_func(ms, output_func, which_band)
 
     return _output
 
