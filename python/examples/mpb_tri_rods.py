@@ -37,7 +37,7 @@ ms = mpb.ModeSolver(
 
 
 def main():
-    ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), ms.fix_efield_phase,
+    ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), mpb.fix_efield_phase,
               mpb.output_efield_z))
     ms.run_te()
 
