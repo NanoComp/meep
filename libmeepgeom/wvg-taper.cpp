@@ -103,57 +103,32 @@ vec k_guess(void *user_data, double freq, int band_num)
 /* user-defined material function for 2D/3D waveguide geometry */
 /***************************************************************/
 typedef struct wvg_data
- { double wA;            // width of smaller waveguide
-   double wB;            // width of larger waveguide
+ { double wA, wB;        // width of left, right waveguides
    double taper_length;  // taper length (=0 for no taper)
-   int taper_order;      // index of first discontinuous derivative (1,2)
+   int taper_order;      // index of first discontinuous derivative - 1 (0,1,2)
    double eps_wvg;       // permittivity of waveguide material
    double eps_ambient;   // permittivity of surrounding medium
-   bool three_d;         // true if we are in the 3D case
-
-   // these fields used only for 3D case
-   double z_substrate;   // z-coordinate of substrate-oxide interface
-   double z_oxide;       // z-coordinate of oxide-wvg interface
-   double z_wvg;         // z-coordinate of wvg upper surface
-   double eps_substrate; // dielectric constant of substrate
-   double eps_oxide;     // dielectric constant of oxide layer
  } wvg_data;
 
 void wvg_material(vector3 loc, void *user_data, meep_geom::medium_struct *m)
 {
   wvg_data *wdata=(wvg_data *)user_data;
 
-  double z = loc.z;
   double eps = wdata->eps_ambient; // assume we are in ambient medium
-  if (wdata->three_d && z<wdata->z_substrate)  // 3D, in substrate
-   {
-     eps = wdata->eps_substrate;
-   }
-  else if (wdata->three_d && z<wdata->z_oxide) // 3D, in oxide layer
-   {
-     eps = wdata->eps_oxide;
-   }
-  else if (wdata->three_d && z>wdata->z_wvg )  // 3D, above waveguide
-   {
-     eps = wdata->eps_ambient;
-   }
-  else // 2D or 3D, inside waveguide
-   {
-     double x0 = loc.x / wdata->taper_length;
-     double wA  = wdata->wA, wB = wdata->wB, w;
-     if (x0 <= -0.5 )
-      w = wA;
-     else if ( x0 >= 0.5)
-      w = wB;
-     else if (wdata->taper_order==2)
-      w = 0.5*(wA+wB) + (wB-wA)*x0*(15.0 + x0*x0*(-40.0 + x0*x0*48.0))/8.0;
-     else if (wdata->taper_order==1)
-      w = 0.5*(wA+wB) + (wB-wA)*x0*(1.5 - 2.0*x0*x0);
-     else // p=0, i.e. linear taper
-      w = 0.5*(wA+wB) + (wB-wA)*x0;
+  double x0 = loc.x / wdata->taper_length;
+  double wA  = wdata->wA, wB = wdata->wB, w;
+  if (x0 <= -0.5 )
+   w = wA;
+  else if ( x0 >= 0.5)
+   w = wB;
+  else if (wdata->taper_order==2)
+   w = 0.5*(wA+wB) + (wB-wA)*x0*(15.0 + x0*x0*(-40.0 + x0*x0*48.0))/8.0;
+  else if (wdata->taper_order==1)
+   w = 0.5*(wA+wB) + (wB-wA)*x0*(1.5 - 2.0*x0*x0);
+  else // p=0, i.e. linear taper
+   w = 0.5*(wA+wB) + (wB-wA)*x0;
 
-     eps = ( fabs(loc.y)<=0.5*w ) ? wdata->eps_wvg : wdata->eps_ambient;
-   };
+  eps = ( fabs(loc.y)<=0.5*w ) ? wdata->eps_wvg : wdata->eps_ambient;
 
   m->epsilon_diag.x=m->epsilon_diag.y=m->epsilon_diag.z=eps;
 
@@ -169,36 +144,35 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* parse command-line options **********************************/
   /***************************************************************/
-  bool three_d          = false;
+  double wA             = 3.0;
+  double wB             = 1.0;
   double taper_length   = 0.0;
-  double wvg_length     = 3.0;
-  double ratio          = 3.0;
-  double freq           = 0.25;
   int taper_order       = 0;
-  int  band_num         = 1;
-  int  num_bands        = 6;
+  double wvg_length     = 5.0;
+  int band_num          = 1;
+  int  num_bands        = 2;
+  double freq           = 0.25;
   bool use_symmetry     = false;
   bool plot_modes       = false;
   bool plot_flux        = false;
   bool plot_structure   = false;
   double frame_interval = 0.0;
+  double res            = 25.0; // resolution
   char *filebase        = const_cast<char *>("wt");
-  double LY             = 3.5;  // half-width of cell in transverse direction double LZ=1.5;
-  double LZ             = 2.0;  // half-width of cell in transverse direction double LZ=1.5;
-  double dpml           = 0.50; // PML thickness
-  double res            = 50.0; // resolution
   for(int narg=1; narg<argc; narg++)
    { if ( argv[narg]==0 )
       continue;
-     if (!strcasecmp(argv[narg],"--three-d") )
-      { three_d=true;
-        master_printf("Using three-dimensional taper.\n");
-      }
-     else if (!strcasecmp(argv[narg],"--ratio"))
+     if (!strcasecmp(argv[narg],"--wA"))
       { if ( ++narg >= argc )
-         usage(argv[0], "error: no argument given for --ratio");
-        sscanf(argv[narg], "%le", &ratio);
-        master_printf("setting ratio=%e\n",ratio);
+         usage(argv[0], "error: no argument given for --wA");
+        sscanf(argv[narg], "%le", &wA);
+        master_printf("setting wA=%e\n",wA);
+      }
+     else if (!strcasecmp(argv[narg],"--wB"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --wB");
+        sscanf(argv[narg], "%le", &wB);
+        master_printf("setting wB=%e\n",wB);
       }
      else if (!strcasecmp(argv[narg],"--taper-length"))
       { if ( ++narg >= argc )
@@ -212,9 +186,11 @@ int main(int argc, char *argv[])
         sscanf(argv[narg], "%i", &taper_order);
         master_printf("setting taper_order=%i\n",taper_order);
       }
-     else if (!strcasecmp(argv[narg],"--use-symmetry") )
-      { use_symmetry=true;
-        master_printf("Using symmetry.\n");
+     else if (!strcasecmp(argv[narg],"--wvg-length"))
+      { if ( ++narg >= argc )
+         usage(argv[0], "error: no argument given for --wvg-length");
+        sscanf(argv[narg], "%le", &wvg_length);
+        master_printf("setting wvg_length=%e\n",wvg_length);
       }
      else if (!strcasecmp(argv[narg],"--plot-modes") )
       plot_modes=true;
@@ -252,24 +228,6 @@ int main(int argc, char *argv[])
         sscanf(argv[narg], "%le", &res);
         master_printf("setting resolution=%e\n",res);
       }
-     else if (!strcasecmp(argv[narg],"--LY"))
-      { if ( ++narg >= argc )
-         usage(argv[0], "error: no argument given for --LY");
-        sscanf(argv[narg], "%le", &LY);
-        master_printf("setting LY=%e\n",LY);
-      }
-     else if (!strcasecmp(argv[narg],"--LZ"))
-      { if ( ++narg >= argc )
-         usage(argv[0], "error: no argument given for --LZ");
-        sscanf(argv[narg], "%le", &LZ);
-        master_printf("setting LZ=%e\n",LZ);
-      }
-     else if (!strcasecmp(argv[narg],"--dpml"))
-      { if ( ++narg >= argc )
-         usage(argv[0], "error: no argument given for --dpml");
-        sscanf(argv[narg], "%le", &dpml);
-        master_printf("setting dpml=%e\n",dpml);
-      }
      else if (!strcasecmp(argv[narg],"--filebase"))
       { if ( ++narg >= argc )
          usage(argv[0], "error: no argument given for --filebase");
@@ -287,11 +245,15 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* initialize computational cell                               */
   /****************** ********************************************/
-  double LX = dpml + wvg_length + 0.5*taper_length;
-  geometry_lattice.size.x = 2*LX;
-  geometry_lattice.size.y = 2*LY;
-  geometry_lattice.size.z = ( (three_d) ? 2*LZ : 0.0 );
-  grid_volume gv = three_d ? vol3d(2*LX, 2*LY, 2*LZ, res) : voltwo(2*LX, 2*LY, res);
+  double dpml       = 0.5;
+  double wmax       = fmax(wA, wB);
+  double air_gap    = 0.25*wmax;
+  double LX         = dpml + wvg_length + taper_length + wvg_length + dpml;
+  double LY         = dpml + air_gap + wmax + air_gap + dpml;
+  geometry_lattice.size.x = LX;
+  geometry_lattice.size.y = LY;
+  geometry_lattice.size.z = 0.0;
+  grid_volume gv = voltwo(LX, LY, res);
   gv.center_origin();
   symmetry sym = use_symmetry ? -mirror(Y,gv) : identity();
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
@@ -299,29 +261,13 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* specify user-defined material function                      */
   /***************************************************************/
-  double wA            = 1.0;
-  double wB            = wA*ratio;
-  double h_substrate   = 0.0;    // no substrate by default
-  double h_oxide       = 1.5;    // oxide layer thickness (3D case)
-  double h_wvg         = 0.22;   // waveguide thickness (3D case)
-  double eps_Si        = 11.7;   // dielectric constant of silicon
-  double eps_SiO2      = 2.1;    // dielectric constant of SiO2
-
   wvg_data wdata;
   wdata.wA            = wA;
   wdata.wB            = wB;
   wdata.taper_length  = taper_length;
   wdata.taper_order   = taper_order;
-  wdata.eps_wvg       = eps_Si;
+  wdata.eps_wvg       = 11.7;
   wdata.eps_ambient   = 1.0;  // ambient medium is vacuum
-  wdata.three_d       = three_d;
-  if (three_d)
-   { wdata.z_substrate   = -LZ + h_substrate;
-     wdata.z_oxide       = -LZ + h_substrate + h_oxide;
-     wdata.z_wvg         = -LZ + h_substrate + h_oxide + h_wvg;
-     wdata.eps_substrate = eps_Si;
-     wdata.eps_oxide     = eps_SiO2;
-   };
   meep_geom::material_type my_material
    = meep_geom::make_user_material(wvg_material, (void *)&wdata);
   bool use_anisotropic_averaging = true;
@@ -339,60 +285,43 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* plot structure if requested *********************************/
   /***************************************************************/
+  char filename[100];
   if (plot_structure)
-   { char filename[100];
-     snprintf(filename,100,"%s_L%g_p%i",filebase,taper_length,taper_order);
+   { snprintf(filename,100,"%s_L%g_p%i",filebase,taper_length,taper_order);
      h5file *eps_file=f.open_h5file("eps", h5file::WRITE, filename, false);
      f.output_hdf5(Dielectric,f.total_volume(),eps_file,false,false,0);
      delete eps_file;
    }
 
   /***************************************************************/
-  /* add source                                                  */
+  /* add eigenmode source at left end of left waveguide          */
   /***************************************************************/
   double fcen = freq;
   double df   = 0.5*fcen;  // bandwidth
   int nfreq   = 1;         // number of frequency points
   gaussian_src_time gsrc(fcen, df);
 
-  double xA  = -LX + dpml + 0.5*wvg_length;
-  double xB  = +LX - dpml - 0.5*wvg_length;
-  double LYP = LY-dpml;
-  double LZP = three_d ? LZ-dpml : 0.0;
-  volume *fvA, *fvB;
-  double volA, volB;
-  if (three_d)
-   { fvA = new volume( vec(xA, -LYP, -LZP), vec(xA, +LYP, +LZP) );
-     fvB = new volume( vec(xB, -LYP, -LZP), vec(xB, +LYP, +LZP) );
-     volA = 4.0*LYP*LZP;
-     volB = 4.0*LYP*LZP;
-   }
-  else
-   { fvA = new volume( vec(xA, -LYP), vec(xA, +LYP) );
-     fvB = new volume( vec(xB, -LYP), vec(xB, +LYP) );
-     volA = 2.0*LYP;
-     volB = 2.0*LYP;
-   };
-  direction dA = X; // f.normal_direction(*fvA);
-  direction dB = X; // f.normal_direction(*fvB);
+  double x0  = -0.5*LX + dpml + 0.25*wvg_length; // inlet of left waveguide
+  double xA  = -0.5*LX + dpml + 0.75*wvg_length; // midpoint of left waveguide
+  double xB  = +0.5*LX - dpml - 0.5*wvg_length; // midpoint of right waveguide
+  volume fv0 ( vec(x0,  -0.5*LY), vec(x0,  +0.5*LY) );
+  volume fvA ( vec(xA,  -0.5*LY), vec(xA,  +0.5*LY) );
+  volume fvB ( vec(xB,  -0.5*LY), vec(xB,  +0.5*LY) );
+  double vol = LY;  // volume of flux planes
+  direction d = X; // f.normal_direction(*fvA);
 
   bool match_frequency = true;
   int parity = 0; // NO_PARITY
   double tol=1.0e-4;
   vec kpoint=k_guess((void *)&wA, fcen, band_num);
-  f.add_eigenmode_source(Dielectric, gsrc, dA, *fvA, *fvA, band_num,
+  f.add_eigenmode_source(Dielectric, gsrc, d, fv0, fv0, band_num,
                          kpoint, match_frequency, parity, res, tol, 1.0);
 
   /***************************************************************/
   /* add flux planes                                             */
   /***************************************************************/
-  dft_flux fluxA=f.add_dft_flux_plane(*fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
-  dft_flux fluxB=f.add_dft_flux_plane(*fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
-
-  volume fvA1( vec(xA + 0.25*wvg_length, -LYP), vec(xA+0.25*wvg_length, +LYP) );
-  dft_flux fluxA1=f.add_dft_flux_plane(fvA1, fcen-0.5*df, fcen+0.5*df, nfreq);
-  volume fvB1( vec(xB - 0.25*wvg_length, -LYP), vec(xB-0.25*wvg_length, +LYP) );
-  dft_flux fluxB1=f.add_dft_flux_plane(fvB1, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux fluxA=f.add_dft_flux(d, fvA, fcen-0.5*df, fcen+0.5*df, nfreq);
+  dft_flux fluxB=f.add_dft_flux(d, fvB, fcen-0.5*df, fcen+0.5*df, nfreq);
 
   /***************************************************************/
   /* timestep until all conditions for stopping are met.         */
@@ -401,7 +330,7 @@ int main(int argc, char *argv[])
   /*   (2) poynting flux through destination flux plane has      */
   /*       decayed below 1% of its maximum value                 */
   /***************************************************************/
-  double PVCheckInterval=1.0, PVTol=0.01;
+  double PVCheckInterval=1.0, PVTol=1.0e-7;
   double NextPVCheckTime=f.round_time() + PVCheckInterval;
   double NextFileTime=f.round_time();
   double MaxPV=0.0;
@@ -414,10 +343,10 @@ int main(int argc, char *argv[])
      bool FieldsDecayed=false;
      if ( f.round_time() > NextPVCheckTime )
       { NextPVCheckTime += PVCheckInterval;
-        double ThisPV = f.flux_in_box(X,*fvB);
-        if (ThisPV > MaxPV)
-         MaxPV = ThisPV;
-        else if ( ThisPV < PVTol*MaxPV )
+        double ThisPV = f.flux_in_box(X,fvA);
+        if ( fabs(ThisPV) > MaxPV)
+         MaxPV = fabs(ThisPV);
+        else if ( fabs(ThisPV) < PVTol*MaxPV )
          FieldsDecayed=true;
       }
 
@@ -440,13 +369,12 @@ int main(int argc, char *argv[])
    for(int nb=-1; nb<num_bands; nb++)
     {
       int band_num   = (nb==-1) ? 1       : nb+1;
-      volume *fv     = (nb==-1) ? &fvA1   : fvB;
+      volume *fv     = (nb==-1) ? &fvA    : &fvB;
       double ww      = (nb==-1) ? wA      : wB;
       char AB        = (nb==-1) ? 'A'     : 'B';
-      dft_flux *flux = (nb==-1) ? &fluxA1 : &fluxB;
-      double vol     = (nb==-1) ? volA    : volB;
+      dft_flux *flux = (nb==-1) ? &fluxA  : &fluxB;
 
-      void *mode_data=f.get_eigenmode(fcen, dB, *fv, *fv, band_num,
+      void *mode_data=f.get_eigenmode(fcen, d, *fv, *fv, band_num,
                                       k_guess((void *)&ww,fcen,band_num));
       if (nb==-1)
        mode_data_A=mode_data;
@@ -455,11 +383,11 @@ int main(int argc, char *argv[])
 
       double vgrp=get_group_velocity(mode_data);
 
-      char filename[100];
       snprintf(filename,100,"%s_mode%c%i",filebase,AB,band_num);
-      f.output_mode_fields(mode_data, *flux, *fv, filename);
+      f.output_mode_fields(mode_data, *flux, filename);
       cdouble mfOverlap[2], mmOverlap[2];
-      f.get_mode_mode_overlap(mode_data, mode_data, *flux, *fv, mmOverlap);
+      f.get_mode_flux_overlap(mode_data, *flux, 0, d, mfOverlap);
+      f.get_mode_mode_overlap(mode_data, mode_data, *flux, d, mmOverlap);
       master_printf("...is {%e,%e} {%e,%e}, should be %e\n",
                     real(mmOverlap[0]),imag(mmOverlap[0]),
                     real(mmOverlap[1]),imag(mmOverlap[1]),
@@ -490,22 +418,46 @@ int main(int argc, char *argv[])
 
     }; // if (plot_modes...) ... for(int nb=...)
 
+  double *Aflux=fluxA.flux();
+  double *Bflux=fluxB.flux();
+  double Aflux0=0.0;
+
+  /***************************************************************/
+  /* for wA==wB, write flux to reference file and exit           */
+  /***************************************************************/
+  snprintf(filename,100,"%s_w%g_freq%g_res%g",filebase,wA,freq,res);
+  if (wA==wB)
+   { 
+     if (am_master())
+      { FILE *f=fopen(filename,"w");
+        fprintf(f,"%e\n",Aflux[0]);
+        fclose(f);
+      }
+   }
+  else
+   { FILE *f=fopen(filename,"r");
+     if (!f)
+      fprintf(stderr,"warning: could not open reference file %s\n",filename);
+     else
+      { fscanf(f,"%le",&Aflux0);
+        fclose(f);
+      };
+   };
+
   /***************************************************************/
   /* write output files ******************************************/
   /***************************************************************/
   if (plot_flux)
    { char filename[100];
      snprintf(filename,100,"%s_fluxA",filebase);
-     f.output_flux_fields(fluxA, *fvA, filename);
+     f.output_dft_flux(fluxA, filename);
      snprintf(filename,100,"%s_fluxB",filebase);
-     f.output_flux_fields(fluxB, *fvB, filename);
+     f.output_dft_flux(fluxB, filename);
      snprintf(filename,100,"%s.fluxData",filebase);
      if (am_master())
       { FILE *ff=fopen(filename,"a");
-        fprintf(ff,"flux A  = %e\n",fluxA.flux()[0]);
-        fprintf(ff,"flux A1 = %e\n",fluxA1.flux()[0]);
+        fprintf(ff,"flux A = %e\n",fluxA.flux()[0]);
         fprintf(ff,"flux B  = %e\n",fluxB.flux()[0]);
-        fprintf(ff,"flux B1 = %e\n",fluxB1.flux()[0]);
         fclose(ff);
       };
    };
@@ -513,45 +465,38 @@ int main(int argc, char *argv[])
   /***************************************************************/
   /* compute mode-expansion coefficients *************************/
   /***************************************************************/
-  std::vector<int> bands(num_bands);
-  for(int n=0; n<num_bands; n++)
-   bands[n] = n+1;
-
+  int *bands = new int[num_bands];
+  for(int nb=0; nb<num_bands; nb++)
+   bands[nb]=nb+1;
   int num_freqs = fluxB.Nfreq;
-  std::vector<double> vgrp(0);
-  std::vector<cdouble> coeffs =
-   f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
+  cdouble *alphaA = new cdouble[2*num_freqs*num_bands];
+  double *vgrpA   = new double[num_freqs*num_bands];
+  cdouble *alphaB = new cdouble[2*num_freqs*num_bands];
+  double *vgrpB   = new double[num_freqs*num_bands];
+  f.get_eigenmode_coefficients(fluxA, d, fvA, bands, num_bands, alphaA, vgrpA);
+  f.get_eigenmode_coefficients(fluxB, d, fvB, bands, num_bands, alphaB, vgrpB);
 
-  double *Aflux=fluxA1.flux();
-  double *Bflux=fluxB.flux();
-  double *B2flux=fluxB1.flux();
   if (am_master())
    {
      char filename[100];
-     snprintf(filename,100,"%s.coefficients",filebase);
+     snprintf(filename,100,"%s.out",filebase);
      FILE *ff=fopen(filename,"a");
-     fprintf(ff,"# fluxA  = %e\n",Aflux[0]);
-     fprintf(ff,"# fluxB1 = %e\n",Bflux[0]);
-     fprintf(ff,"# fluxB2 = %e\n",B2flux[0]);
-     printf("freq | band | alpha^+ | alpha^-\n");
-     printf("------------------------------------------------\n");
      for(int nf=0; nf<num_freqs; nf++)
-      for(unsigned nb=0; nb<bands.size(); nb++)
+      for(int nb=0; nb<num_bands; nb++)
        {
-         double atot=0.0;
-         for(unsigned nbb=0; nbb<bands.size(); nbb++)
-          for(int pm=0, sign=1; pm<2; pm++, sign-=2)
-           atot += sign*vgrp[nbb*num_freqs + nf]*norm( coeffs[2*nbb*num_freqs + 2*nf + pm] );
-         if (nb==0) fprintf(ff,"# atot  = %e (%e)\n",atot,atot/Bflux[0]);
+         cdouble aP = alphaA[2*nb*num_freqs + 2*nf + 0];
+         cdouble aM = alphaA[2*nb*num_freqs + 2*nf + 1];
+         double vgA = vgrpA[nb*num_freqs + nf];
 
-         cdouble aP = coeffs[2*nb*num_freqs + 2*nf + 0];
-         cdouble aM = coeffs[2*nb*num_freqs + 2*nf + 1];
-         double vg=vgrp[nb*num_freqs + nf];
-         printf("%2i  %2i  (+)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aP),real(aP),imag(aP),100.0*vg*norm(aP)/atot);
-         printf("%2i  %2i  (-)  %e {%+e,%+e} (%e %%)\n",nf,nb,abs(aM),real(aM),imag(aM),100.0*vg*norm(aM)/atot);
-         fprintf(ff,"%g %.2f %i %g %2i %2i  %e %e %e  %e %e %e %e %e \n",ratio,taper_length,
-                     taper_order,res,nb,nf, norm(aP), arg(aP), vg*norm(aP)/atot, norm(aM), arg(aM), vg*norm(aM)/atot,
-                     Bflux[nf], vgrp[nb*num_freqs + nf]);
+         cdouble bP = alphaB[2*nb*num_freqs + 2*nf + 0];
+         cdouble bM = alphaB[2*nb*num_freqs + 2*nf + 1];
+         double vgB = vgrpB[nb*num_freqs + nf];
+
+         fprintf(ff,"%e %e %e %i %e %i ",wA,wB,taper_length,taper_order,res,nb);
+         fprintf(ff,"%e ",Aflux0);
+         fprintf(ff,"%e %e %e %e ",Aflux[0], vgA, abs(aP), abs(aM));
+         fprintf(ff,"%e %e %e %e ",Bflux[0], vgB, abs(bP), abs(bM));
+         fprintf(ff,"\n");
       };
      fclose(ff);
    };
