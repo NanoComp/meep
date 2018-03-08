@@ -7,7 +7,7 @@ HPPFILES=                                    \
  $(top_srcdir)/libmeepgeom/material_data.hpp
 
 BUILT_SOURCES = meep-python.cpp mpb-python.cpp __init__.py mpb.py
-EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp solver.py examples tests
+EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp solver.py mpb_data.py examples tests
 
 CLEANFILES = $(BUILT_SOURCES) meep.py
 
@@ -74,7 +74,7 @@ if WITH_PYTHON
   pympbdir = $(pkgpythondir)/mpb
   pkgpython_PYTHON = geom.py __init__.py source.py simulation.py
   pkgpyexec_LTLIBRARIES = _meep.la
-  pympb_DATA = mpb.py solver.py
+  pympb_DATA = mpb.py solver.py mpb_data.py
   pympb_LTLIBRARIES = _mpb.la
 endif
 
@@ -131,7 +131,7 @@ meep: _meep.la _mpb.la __init__.py
 	cp $(PY_PKG_FILES) meep
 	cp .libs/_mpb.so meep/mpb
 	cp $(MPB_PY) meep/mpb/__init__.py
-	cp $(srcdir)/solver.py meep/mpb
+	cp $(srcdir)/solver.py $(srcdir)/mpb_data.py meep/mpb
 
 all-local: meep
 

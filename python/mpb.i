@@ -293,4 +293,8 @@ static PyObject* cmatrix3x3_to_pymatrix(cmatrix3x3 *m) {
         fix_dfield_phase,
         fix_efield_phase,
     )
+
+    from .mpb_data import (
+        MPBData,
+    )
 %}
