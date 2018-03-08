@@ -401,7 +401,7 @@ Again, we must run *both* simulations in order to get the normalization right. T
 Modes of a Ring Resonator
 -------------------------
 
-As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some electromagnetic cavity structure. You might want to read that introduction again to recall the basic computational strategy. Here, we will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. This can be also found in the [ring.ctl](https://github.com/stevengj/meep/blob/master/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
+As described in the [Introduction](../Introduction.md#resonant-modes), another common task for FDTD simulation is to find the resonant modes &mdash; frequencies and decay rates &mdash; of some electromagnetic cavity structure. You might want to read that introduction again to recall the basic computational strategy. We will show how this works for perhaps the simplest example of a dielectric cavity: a **ring resonator**, which is simply a waveguide bent into a circle. This can be also found in the [ring.ctl](https://github.com/stevengj/meep/blob/master/examples/ring.ctl). In fact, since this structure has cylindrical symmetry, we can simulate it *much* more efficiently [by using cylindrical coordinates](Ring_Resonator_in_Cylindrical_Coordinates.md), but for illustration here we'll just use an ordinary 2d simulation.
 
 As before, we'll define some parameters to describe the geometry, so that we can easily change the structure:
 
@@ -504,7 +504,7 @@ You may have noticed, by the way, that when you run with the narrow-bandwidth so
 harminv0:, 0.175247426698716, -5.20844416909221e-5, 1682.33949533974, 0.185515412838043, 0.127625313330642-0.13463932485617i, 7.35320734698267e-12
 ```
 
-which differs by about 0.000001 ($10^{-6}$) from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in $\omega$ gives a larger relative error in the small imaginary frequency.
+which differs by about $10^{-6}$ from the earlier estimate; the difference in $Q$ is, of course, larger because a small absolute error in $\omega$ gives a larger relative error in the small imaginary frequency.
 
 ### Exploiting Symmetry
 

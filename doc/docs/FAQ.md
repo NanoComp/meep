@@ -11,7 +11,7 @@ General
 
 ### What is Meep?
 
-Meep is a [free and open-source](https://en.wikipedia.org/wiki/Free_and_open-source_software) software package for [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) simulation. Meep is an acronym for MIT Electromagnetic Equation Propagation.
+Meep is a [free and open-source](https://en.wikipedia.org/wiki/Free_and_open-source_software) software package for [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) simulation. Meep is an acronym for *MIT Electromagnetic Equation Propagation*.
 
 ### Who are the developers of Meep?
 
@@ -25,11 +25,11 @@ There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listin
 
 ### How can I contribute to the Meep project?
 
-[Pull requests](https://github.com/stevengj/meep/pulls) involving bug fixes, new features, and general improvements are welcome and can be made to the master branch on GitHub. This includes tweaks, revisions, and updates to the documentation which is also part of the [repository](https://github.com/stevengj/meep/tree/master/doc).
+[Pull requests](https://github.com/stevengj/meep/pulls) involving bug fixes, new features, and general improvements are welcome and can be made to the master branch on GitHub. This includes tweaks, revisions, and updates to this documentation which is also part of the [repository](https://github.com/stevengj/meep/tree/master/doc).
 
 ### Is there a standard reference on Meep?
 
-The technical details of Meep's inner workings are described in the peer-reviewed publication [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, vol. 181, pp. 687-702 (2010) [[pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)]. Additional information is provided in the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707) in Chapters 4 ("Electromagnetic Wave Source Conditions"), 5 ("Rigorous PML Validation and a Corrected Unsplit PML for Anisotropic Dispersive Media"), 6 ("Accurate FDTD Simulation of Discontinuous Materials by Subpixel Smoothing"), and 20 ("MEEP: A Flexible Free FDTD Software Package").
+The technical details of Meep's inner workings are described in the peer-reviewed publication [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702, 2010 [[pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)]. Additional information is provided in the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707) in Chapters 4 ("Electromagnetic Wave Source Conditions"), 5 ("Rigorous PML Validation and a Corrected Unsplit PML for Anisotropic Dispersive Media"), 6 ("Accurate FDTD Simulation of Discontinuous Materials by Subpixel Smoothing"), and 20 ("MEEP: A Flexible Free FDTD Software Package"). A summary is provided in a [colloquium presentation](https://www.youtube.com/watch?v=9CA949csYvM) at the College of Optical Sciences at the University of Arizona.
 
 Installation
 ------------
@@ -98,7 +98,7 @@ Not currently, but work is underway to add support for this feature with expecte
 
 ### Why doesn't turning off subpixel averaging work?
 
-By default, when Meep assigns a dielectric constant $\varepsilon$ or $\mu$ to each pixel, it uses a carefully designed average of the $\varepsilon$ values within that pixel. This subpixel averaging generally improves the accuracy of the simulation &mdash; perhaps counter-intuitively, for geometries with discontinous $\varepsilon$ it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) $\varepsilon$, as long as the averaging is done properly. For details, see the [technical reference](Acknowledgements/#referencing).
+By default, when Meep assigns a dielectric constant $\varepsilon$ or $\mu$ to each pixel, it uses a carefully designed average of the $\varepsilon$ values within that pixel. This subpixel averaging generally improves the accuracy of the simulation &mdash; perhaps counter-intuitively, for geometries with discontinous $\varepsilon$ it is *more* accurate (i.e. closer to the exact Maxwell result for the *discontinuous* case) to do the simulation with the subpixel-averaged (*smoothed*) $\varepsilon$, as long as the averaging is done properly. For details, see Section 3 ("Interpolation and the illusion of continuity") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
 
 Still, there are times when, for whatever reason, you might not want this feature. For example, if your accuracy is limited by other issues, or if you want to skip the wait at the beginning of the simulation for it do to the averaging. In this case, you can disable the subpixel averaging by setting `Simulation.eps_averaging = False` (Python) or `(set! eps-averaging? false)` (Scheme). See the [User Interface](Python_User_Interface.md).
 
