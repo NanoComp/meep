@@ -116,11 +116,11 @@ A materials library is available containing 11 commonly used metals in optoelect
 
 For a given computational grid, Meep divides the grid points roughly equally among the processors,
 and each process is responsible for all computations involving its "own" grid points (computing
-ε from the materials, timestepping the fields, accumulating Fourier transforms, etcetera).
+ε from the materials, timestepping the fields, accumulating Fourier transforms, computing far fields, etcetera).
 How much speedup this parallelization translates into depends on a number of factors, especially:
 
 * The ratio of communications to computation, and the speed of your network.  During timestepping, each processor needs to communicate neighboring grid points with other processors, and if you have too few grid points per processor (or your network is too slow) then the cost of this communication could overwhelm the computational gains.
-* [Load balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)): different portions of the grid may be more expensive than other portions, causing processors in the latter portions to sit idle while a few processors work on the expensive regions.   (For example, setting up the materials at the beginning is more expensive in regions with lots of objects or interfaces.  Timestepping is more expensive in regions with Fourier-transformed flux planes.)
+* [Load balancing](https://en.wikipedia.org/wiki/Load_balancing_(computing)): different portions of the grid may be more expensive than other portions, causing processors in the latter portions to sit idle while a few processors work on the expensive regions.   (For example, setting up the materials at the beginning is more expensive in regions with lots of objects or interfaces.  Timestepping is more expensive in regions with Fourier-transformed flux planes.   Computing far fields only uses the processors where the corresponding near fields are located.)
 * If you write lots of fields to files, the parallel I/O speed (which depends on your network, filesystem, etc) may dominate.
 
 In general, you will need large simulations to benefit from lots of processors.   A rule of thumb is to keep doubling the number of processors until you no longer see much speedup.
