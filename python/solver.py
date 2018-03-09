@@ -222,6 +222,26 @@ class ModeSolver(object):
 
         return tot_pwr
 
+    def get_eigenvectors(self, first_band, num_bands):
+        dims = self.mode_solver.get_eigenvectors_slice_dims(num_bands)
+        ev = np.zeros(np.prod(dims), dtype=np.complex128)
+        self.mode_solver.get_eigenvectors(first_band - 1, num_bands, ev)
+        return ev.reshape(dims)
+
+    def set_eigenvectors(self, ev, first_band):
+        self.mode_solver.set_eigenvectors(first_band - 1, ev.flatten())
+
+    def save_eigenvectors(self, filename):
+        with h5py.File(filename, 'w') as f:
+            ev = self.get_eigenvectors(1, self.num_bands)
+            f['rawdata'] = ev
+
+    def load_eigenvectors(self, filename):
+        with h5py.File(filename, 'r') as f:
+            ev = f['rawdata'].value
+            self.set_eigenvectors(ev, 1)
+            self.mode_solver.curfield_reset()
+
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
     # frequency range of a band and the k-points where it achieves its minimum/maximum.
@@ -590,7 +610,7 @@ class ModeSolver(object):
         )
 
         if isinstance(reset_fields, basestring):
-            self.mode_solver.load_eigenvectors(reset_fields)
+            self.load_eigenvectors(reset_fields)
 
         print("{} k-points".format(len(self.k_points)))
 

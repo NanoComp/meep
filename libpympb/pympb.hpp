@@ -105,7 +105,6 @@ struct mode_solver {
   bool has_mu();
   bool material_has_mu(void *mt);
   void curfield_reset();
-  void load_eigenvectors(char *filename);
 
   size_t get_field_size();
 
@@ -124,6 +123,9 @@ struct mode_solver {
   void set_curfield_cmplx(std::complex<mpb_real> *cdata, int size);
 
   void get_lattice(double data[3][3]);
+  void get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size);
+  std::vector<int> get_eigenvectors_slice_dims(int num_bands);
+  void set_eigenvectors(int b_start, std::complex<mpb_real> *cdata, int size);
 
   std::vector<mpb_real> compute_field_energy();
   double compute_energy_in_objects(geometric_object_list objects);

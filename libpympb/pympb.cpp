@@ -1345,13 +1345,6 @@ void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
   }
 }
 
-void mode_solver::load_eigenvectors(char *filename) {
-  meep::master_printf("Loading eigenvectors from \"%s\"...\n", filename);
-  // TODO: Write in python
-  // evectmatrixio_readall_raw(filename, H);
-  curfield_reset();
-}
-
 std::vector<mpb_real> mode_solver::get_freqs() {
   return freqs;
 }
@@ -2072,6 +2065,36 @@ void mode_solver::fix_field_phase()
 
 void mode_solver::get_lattice(double data[3][3]) {
   matrix3x3_to_arr(data, Rm);
+}
+
+std::vector<int> mode_solver::get_eigenvectors_slice_dims(int num_bands) {
+  std::vector<int> res(3);
+  res[0] = H.localN;
+  res[1] = H.c;
+  res[2] = num_bands;
+
+  return res;
+}
+
+void mode_solver::get_eigenvectors(int p_start, int p, std::complex<mpb_real> *cdata, int size) {
+
+  for (int i = 0, j = p_start; i < size; i += p, j += H.p) {
+    for (int k = 0; k < p; ++k) {
+      cdata[i + k] = std::complex<mpb_real>(H.data[j + k].re, H.data[j + k].im);
+    }
+  }
+}
+
+void mode_solver::set_eigenvectors(int b_start, std::complex<mpb_real> *cdata, int size) {
+  int columns = size / H.n;
+
+  for (int i = 0, j = b_start; i < size; i += columns, j += H.p) {
+    for (int k = 0; k < columns; ++k) {
+      H.data[j + k].re = cdata[i + k].real();
+      H.data[j + k].im = cdata[i + k].imag();
+    }
+  }
+  curfield_reset();
 }
 
 double mode_solver::get_eigensolver_flops() {

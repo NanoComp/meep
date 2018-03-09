@@ -953,7 +953,6 @@ class TestModeSolver(unittest.TestCase):
 
     def test_subpixel_averaging(self):
         ms = self.init_solver()
-        ms.tolerance = 1e-12
         ms.run_te()
 
         expected_brd = [
@@ -1025,6 +1024,58 @@ class TestModeSolver(unittest.TestCase):
         res_path = re.sub('tutorial', self.filename_prefix, ref_fname)
 
         self.compare_h5_files(ref_path, res_path)
+
+    def test_get_eigenvectors(self):
+        ms = self.init_solver()
+        ms.run_te(mpb.fix_hfield_phase)
+
+        def compare_eigenvectors(ref_fn, start, cols):
+            with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
+                expected = f['rawdata'].value
+                # Reshape the last dimension of 2 reals into one complex
+                expected = np.vectorize(complex)(expected[..., 0], expected[..., 1])
+                ev = ms.get_eigenvectors(start, cols)
+                np.testing.assert_allclose(expected, ev, rtol=1e-3)
+
+        # Get all columns
+        compare_eigenvectors('tutorial-te-eigenvectors.h5', 1, 8)
+        # Get last column
+        compare_eigenvectors('tutorial-te-eigenvectors-8-1.h5', 8, 1)
+        # Get columns 3,4, and 5
+        compare_eigenvectors('tutorial-te-eigenvectors-3-3.h5', 3, 3)
+
+    def test_set_eigenvectors(self):
+        ms = self.init_solver()
+
+        def set_H_to_zero_and_check(start, num_bands):
+            ev = ms.get_eigenvectors(start, num_bands)
+            self.assertNotEqual(np.count_nonzero(ev), 0)
+            zeros = np.zeros(ev.shape, dtype=np.complex128)
+            ms.set_eigenvectors(zeros, start)
+            new_ev = ms.get_eigenvectors(start, num_bands)
+            self.assertEqual(np.count_nonzero(new_ev), 0)
+
+        ms.run_te()
+        set_H_to_zero_and_check(8, 1)
+        ms.run_te()
+        set_H_to_zero_and_check(1, 8)
+        ms.run_te()
+        set_H_to_zero_and_check(3, 3)
+
+    def test_load_and_save_eigenvectors(self):
+        ms = self.init_solver()
+        ms.run_te()
+        fn = self.filename_prefix + '.h5'
+
+        ev = ms.get_eigenvectors(8, 1)
+        zeros = np.zeros(ev.shape, dtype=np.complex128)
+        ms.set_eigenvectors(zeros, 8)
+        ms.save_eigenvectors(fn)
+
+        ms.run_te()
+        ms.load_eigenvectors(fn)
+        new_ev = ms.get_eigenvectors(8, 1)
+        self.assertEqual(np.count_nonzero(new_ev), 0)
 
 if __name__ == '__main__':
     unittest.main()
