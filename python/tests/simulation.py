@@ -251,5 +251,17 @@ class TestSimulation(unittest.TestCase):
 
         self.assertFalse(np.array_equal(eps['arr1'], eps['arr2']))
 
+    def test_modal_volume_in_box(self):
+        sim = self.init_simple_simulation()
+        sim.run(until=200)
+        vol = sim.fields.total_volume()
+        self.assertAlmostEqual(sim.fields.modal_volume_in_box(vol),
+                               sim.modal_volume_in_box())
+
+        vol = mp.Volume(mp.Vector3(), size=mp.Vector3(1, 1, 1))
+        self.assertAlmostEqual(sim.fields.modal_volume_in_box(vol.swigobj),
+                               sim.modal_volume_in_box(vol))
+
+
 if __name__ == '__main__':
     unittest.main()
