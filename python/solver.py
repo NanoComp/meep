@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import functools
 import os
 import numbers
 import re
@@ -146,6 +147,9 @@ class ModeSolver(object):
 
         return flat_res
 
+    def get_epsilon(self):
+        self.mode_solver.get_epsilon()
+
     def get_bfield(self, which_band):
         return self._get_field('b', which_band)
 
@@ -179,6 +183,44 @@ class ModeSolver(object):
             self.mode_solver.get_hfield(field, band)
 
         return field
+
+    def get_epsilon_point(self, p):
+        return self.mode_solver.get_epsilon_point(p)
+
+    def get_epsilon_inverse_tensor_point(self, p):
+        return self.mode_solver.get_epsilon_inverse_tensor_point(p)
+
+    def get_energy_point(self, p):
+        return self.mode_solver.get_energy_point(p)
+
+    def get_field_point(self, p):
+        return self.mode_solver.get_field_point(p)
+
+    def get_bloch_field_point(self, p):
+        return self.mode_solver.get_bloch_field_point(p)
+
+    def get_tot_pwr(self, which_band):
+        self.get_dfield(which_band)
+        self.compute_field_energy()
+
+        dims = self.mode_solver.get_dims()
+        epwr = np.zeros(np.prod(dims))
+        self.mode_solver.get_curfield(epwr)
+        epwr = np.reshape(epwr, dims)
+
+        self.get_bfield(which_band)
+        self.compute_field_energy()
+
+        hpwr = np.zeros(np.prod(dims))
+        self.mode_solver.get_curfield(hpwr)
+        hpwr = np.reshape(hpwr, dims)
+
+        tot_pwr = epwr + hpwr
+
+        self.mode_solver.set_curfield(tot_pwr.ravel())
+        self.mode_solver.set_curfield_type('R')
+
+        return tot_pwr
 
     # The band-range-data is a list of tuples, each consisting of a (min, k-point)
     # tuple and a (max, k-point) tuple, with each min/max pair describing the
@@ -288,10 +330,8 @@ class ModeSolver(object):
         self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_mu(self):
-        print("output_mu: Not yet supported")
-        # TODO
-        # self.mode_solver.get_mu()
-        # self.mode_solver.output_field_to_file(-1, self.get_filename_prefix)
+        self.mode_solver.get_mu()
+        self.output_field_to_file(mp.ALL, self.get_filename_prefix())
 
     def output_field_to_file(self, component, fname_prefix):
         curfield_type = self.mode_solver.get_curfield_type()
@@ -445,8 +485,14 @@ class ModeSolver(object):
     def compute_field_energy(self):
         return self.mode_solver.compute_field_energy()
 
+    def compute_field_divergence(self):
+        mode_solver.compute_field_divergence()
+
     def compute_energy_in_objects(self, objs):
         return self.mode_solver.compute_energy_in_objects(objs)
+
+    def compute_energy_in_dielectric(self, eps_low, eps_high):
+        return self.mode_solver.compute_energy_in_dielectric(eps_low, eps_high)
 
     def compute_group_velocities(self):
         xarg = mp.cartesian_to_reciprocal(mp.Vector3(1), self.geometry_lattice)
@@ -457,6 +503,16 @@ class ModeSolver(object):
         vz = self.mode_solver.compute_group_velocity_component(zarg)
 
         return [mp.Vector3(x, y, z) for x, y, z in zip(vx, vy, vz)]
+
+    def compute_group_velocity_component(self, direction):
+        return self.mode_solver.compute_group_velocity_component(direction)
+
+    def compute_one_group_velocity(self, which_band):
+        return self.mode_solver.compute_1_group_velocity(which_band)
+
+    def compute_one_group_velocity_component(self, direction, which_band):
+        return self.mode_solver.compute_1_group_velocity_component(direction,
+                                                                   which_band)
 
     def randomize_fields(self):
         self.mode_solver.randomize_fields()
@@ -715,6 +771,42 @@ class ModeSolver(object):
 
         return ks
 
+    def first_brillouin_zone(self, k):
+        """
+        Function to convert a k-point k into an equivalent point in the
+        first Brillouin zone (not necessarily the irreducible Brillouin zone)
+        """
+        def n(k):
+            return mp.reciprocal_to_cartesian(k, self.geometry_lattice).norm()
+
+        def try_plus(k, v):
+            if n(k + v) < n(k):
+                return try_plus(k + v, v)
+            else:
+                return k
+
+        def _try(k, v):
+            return try_plus(try_plus(k, v), mp.Vector3() - v)
+
+        try_list = [
+            mp.Vector3(1, 0, 0), mp.Vector3(0, 1, 0), mp.Vector3(0, 0, 1),
+            mp.Vector3(0, 1, 1), mp.Vector3(1, 0, 1), mp.Vector3(1, 1, 0),
+            mp.Vector3(0, 1, -1), mp.Vector3(1, 0, -1), mp.Vector3(1, -1, 0),
+            mp.Vector3(1, 1, 1), mp.Vector3(-1, 1, 1), mp.Vector3(1, -1, 1),
+            mp.Vector3(1, 1, -1),
+        ]
+
+        def try_all(k):
+            return functools.reduce(_try, try_list, k)
+
+        def try_all_and_repeat(k):
+            knew = try_all(k)
+            return try_all_and_repeat(knew) if n(knew) < n(k) else k
+
+        k0 = k - mp.Vector3(*[round(x) for x in k])
+
+        return try_all_and_repeat(k0) if n(k0) < n(k) else try_all_and_repeat(k)
+
 
 # Predefined output functions (functions of the band index), for passing to `run`
 
@@ -808,6 +900,32 @@ def output_dpwr(ms, which_band):
     ms.get_dfield(which_band)
     ms.compute_field_energy()
     ms.output_field()
+
+
+def output_tot_pwr(ms, which_band):
+    ms.get_tot_pwr(which_band)
+    ms.output_field_to_file(-1, ms.get_filename_prefix() + 'tot.')
+
+
+def output_dpwr_in_objects(output_func, min_energy, objects=[]):
+    """
+    The following function returns an output function that calls output_func for
+    bands with D energy in objects > min-energy. For example,
+    output_dpwr_in_objects(output_dfield, 0.20, some_object) would return an
+    output function that would spit out the D field for bands with at least %20
+    of their D energy in some-object.
+    """
+
+    def _output(ms, which_band):
+        ms.get_dfield(which_band)
+        ms.compute_field_energy()
+        energy = ms.compute_energy_in_objects(objects)
+        fmt = "dpwr:, {}, {}, {} "
+        print(fmt.format(which_band, ms.freqs[which_band - 1], energy))
+        if energy >= min_energy:
+            apply_band_func(ms, output_func, which_band)
+
+    return _output
 
 
 def output_charge_density(ms, which_band):
