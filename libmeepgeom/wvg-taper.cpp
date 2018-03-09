@@ -520,7 +520,7 @@ int main(int argc, char *argv[])
   int num_freqs = fluxB.Nfreq;
   std::vector<double> vgrp(0);
   std::vector<cdouble> coeffs =
-   f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp, k_guess, (void *)&wB);
+   f.get_eigenmode_coefficients(fluxB, dB, *fvB, bands, vgrp);
 
   double *Aflux=fluxA1.flux();
   double *Bflux=fluxB.flux();

@@ -598,9 +598,7 @@ std::vector<cdouble>
  fields::get_eigenmode_coefficients(dft_flux flux, direction d,
                                     const volume &where,
                                     std::vector<int> bands,
-                                    std::vector<double> &vgrp,
-                                    kpoint_func k_func,
-                                    void *k_func_data)
+                                    std::vector<double> &vgrp)
 { 
   double freq_min      = flux.freq_min;
   double dfreq         = flux.dfreq;
@@ -626,7 +624,7 @@ std::vector<cdouble>
       int band_num = bands[nb];
       double freq  = freq_min + nf*dfreq;
       vec kpoint(0.0,0.0,0.0);
-      if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
+      //if (k_func) kpoint = k_func(k_func_data, freq, band_num); 
       void *mode_data 
        = get_eigenmode(freq, d, where, where, band_num, kpoint, 
                        match_frequency, parity, resolution, eig_tol);
@@ -703,11 +701,8 @@ std::vector<cdouble> fields::get_eigenmode_coefficients(dft_flux flux,
                                           direction d,
                                           const volume &where,
                                           std::vector<int> bands,
-                                          std::vector<double> vgrp,
-                                          kpoint_func k_func,
-                                          void *k_func_data)
-{ (void) flux; (void) d; (void) where; (void) bands,
-  (void) vgrp; (void) k_func; (void) k_func_data;
+                                          std::vector<double> vgrp)
+{ (void) flux; (void) d; (void) where; (void) bands, (void) vgrp;
   abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
 }
 

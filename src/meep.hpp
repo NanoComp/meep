@@ -1409,9 +1409,7 @@ class fields {
    get_eigenmode_coefficients(dft_flux flux, direction d,
                               const volume &where,
                               std::vector<int> bands,
-                              std::vector<double> &vgrp,
-                              kpoint_func k_func=0,
-                              void *k_func_data=0);
+                              std::vector<double> &vgrp);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));
