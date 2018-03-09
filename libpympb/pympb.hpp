@@ -25,6 +25,9 @@ struct mode_solver {
   double tolerance;
   int mesh_size;
   bool negative_epsilon_ok;
+  std::string epsilon_input_file;
+  std::string mu_input_file;
+  bool force_mu;
 
   int n[3];
   int local_N;
@@ -76,7 +79,8 @@ struct mode_solver {
   mode_solver(int num_bands, int parity, double resolution[3], lattice lat, double tolerance,
               int mesh_size, meep_geom::material_data *_default_material, geometric_object_list geom,
               bool reset_fields, bool deterministic, double target_freq, int dims, bool verbose,
-              bool periodicity, double flops, bool negative_epsilon_ok);
+              bool periodicity, double flops, bool negative_epsilon_ok, std::string epsilon_input_file,
+              std::string mu_input_file, bool force_mu);
   ~mode_solver();
 
   void init(int p, bool reset_fields);
@@ -96,6 +100,8 @@ struct mode_solver {
   void randomize_fields();
   void init_epsilon();
   void reset_epsilon();
+  bool has_mu();
+  bool material_has_mu(void *mt);
   void curfield_reset();
   void load_eigenvectors(char *filename);
 
@@ -138,6 +144,7 @@ private:
   int kpoint_index;
   scalar_complex *curfield;
   char curfield_type;
+  bool eps;
 
   double compute_field_energy_internal(mpb_real comp_sum[6]);
 };

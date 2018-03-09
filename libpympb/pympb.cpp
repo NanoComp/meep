@@ -71,7 +71,7 @@ static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv
   // p = shift_to_unit_cell(p);
 
   ms->get_material_pt(mat, p);
-  ms->material_epsmu(mat, eps, eps_inv);
+  ms->material_epsmu(mat, eps, eps_inv, eps);
 }
 
 static int mean_epsilon_func(symmetric_matrix* meps, symmetric_matrix *meps_inv,
@@ -195,13 +195,19 @@ mode_solver::mode_solver(int num_bands,
                          bool verbose,
                          bool periodicity,
                          double flops,
-                         bool negative_epsilon_ok):
+                         bool negative_epsilon_ok,
+                         std::string epsilon_input_file,
+                         std::string mu_input_file,
+                         bool force_mu):
   num_bands(num_bands),
   parity(parity),
   target_freq(target_freq),
   tolerance(tolerance),
   mesh_size(mesh_size),
   negative_epsilon_ok(negative_epsilon_ok),
+  epsilon_input_file(epsilon_input_file),
+  mu_input_file(mu_input_file),
+  force_mu(force_mu),
   eigensolver_nwork(3),
   eigensolver_block_size(-11),
   last_parity(-2),
@@ -216,7 +222,8 @@ mode_solver::mode_solver(int num_bands,
   deterministic(deterministic),
   kpoint_index(0),
   curfield(NULL),
-  curfield_type('-') {
+  curfield_type('-'),
+  eps(true) {
 
   this->lat = lat;
 
@@ -379,8 +386,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     return 0; /* arbitrary material functions are non-analyzable */
   }
 
-  // TODO: How do I know if it's eps or mu?
-  material_epsmu(mat1, meps, meps_inv);
+  material_epsmu(mat1, meps, meps_inv, eps);
 
   /* check for trivial case of only one object/material */
   if (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)) {
@@ -422,8 +428,7 @@ int mode_solver::mean_epsilon(symmetric_matrix* meps, symmetric_matrix *meps_inv
     symmetric_matrix eps2, epsinv2;
     symmetric_matrix eps1, delta;
     double Rot[3][3], norm, n0, n1, n2;
-    // TODO: Eps or mu?
-    material_epsmu(mat2, &eps2, &epsinv2);
+    material_epsmu(mat2, &eps2, &epsinv2, eps);
     eps1 = *meps;
 
     /* make Cartesian orthonormal frame relative to interface */
@@ -831,18 +836,51 @@ void mode_solver::reset_epsilon() {
   // TODO: Support epsilon_input_file
   // get_epsilon_file_func(epsilon_input_file, &d.epsilon_file_func, &d.epsilon_file_func_data);
   // get_epsilon_file_func(mu_input_file, &d.mu_file_func, &d.mu_file_func_data);
+
   meep::master_printf("Initializing epsilon function...\n");
   set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
                          static_cast<void *>(this));
 
-  // TODO
-  // if (has_mu(&d)) {
-  //   mpi_one_printf("Initializing mu function...\n");
-  //   set_maxwell_mu(mdata, mesh, R, G, mu_func, mean_mu_func, &d);
-  // }
-
+  if (has_mu()) {
+    meep::master_printf("Initializing mu function...\n");
+    eps = false;
+    set_maxwell_mu(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
+                   static_cast<void *>(this));
+    eps = true;
+  }
   // destroy_epsilon_file_func_data(d.epsilon_file_func_data);
   // destroy_epsilon_file_func_data(d.mu_file_func_data);
+}
+
+bool mode_solver::has_mu() {
+  // TODO: mu_file_func
+  if (material_has_mu(default_material) || force_mu) {
+    return true;
+  }
+
+  for (int i = 0; i < geometry.num_items; ++i) {
+    if (material_has_mu(geometry.items[i].material)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool mode_solver::material_has_mu(void *mt) {
+  meep_geom::material_type mat = (meep_geom::material_type)mt;
+  meep_geom::medium_struct *m = &mat->medium;
+
+  if (mat->which_subclass != meep_geom::material_data::PERFECT_METAL) {
+    if (m->mu_diag.x != 1 ||
+        m->mu_diag.y != 1 ||
+        m->mu_diag.z != 1 ||
+        m->mu_offdiag.x != 0 ||
+        m->mu_offdiag.y != 0 ||
+        m->mu_offdiag.z != 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void mode_solver::set_parity(integer p) {
