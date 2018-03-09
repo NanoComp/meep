@@ -188,9 +188,11 @@ Guile is an extension/scripting language implementation based on Scheme, and we 
 libctl
 ------
 
-[libctl](https://libctl.readthedocs.io), which requires Guile, is required to use the Scheme interface, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
+[libctl](https://libctl.readthedocs.io) is required to use the Scheme or the Python interfaces, and is strongly recommended. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
 
-Instead of using Guile directly, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
+(If you only want the Python interface, it is possible to install libctl without having Scheme/Guile by configuring libctl with `--without-guile`.)
+
+Instead of using Guile directly in our Scheme interface, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
 
 If you are not the system administrator of your machine, and/or want to install libctl somewhere else like your home directory, you can do so with the standard `--prefix=dir` option to `configure`. The default prefix is `/usr/local`. In this case, however, you'll need to specify the location of the libctl shared files for the MPB or Meep package, using the `--with-libctl=dir/share/libctl` option to our `configure` script.
 
