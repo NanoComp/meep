@@ -110,11 +110,10 @@ class MPBData(object):
                              math.sin(self.TWOPI * self.phase_angle / 360.0))
         self.scaleby *= self.phase
 
-    def map_data(self, d_in_re, d_in_im, d_out_re, d_out_im, kvector):
-
-        rank = 3 - len(d_in_re.shape)
-        n_in = [x for x in d_in_re.shape] + [1] * rank
-        n_out = n_in
+    def map_data(self, d_in_re, d_in_im, d_out_re, d_out_im, n_out, kvector):
+        rank = len(d_in_re.shape)
+        num_ones = 3 - rank
+        n_in = [x for x in d_in_re.shape] + [1] * num_ones
 
         flat_d_in_re = d_in_re.ravel()
         flat_d_in_im = d_in_im.ravel() if d_in_im else None
@@ -155,17 +154,20 @@ class MPBData(object):
 
                     # find the point corresponding to d_out[i,j,k] in the input array,
                     # and also find the next-nearest points.
-                    x = self.coord_map.c1.x * i + self.coord_map.c2.x * j + self.coord_map.c3.x * k + shiftx
-                    y = self.coord_map.c1.y * i + self.coord_map.c2.y * j + self.coord_map.c3.y * k + shifty
-                    z = self.coord_map.c1.z * i + self.coord_map.c2.z * j + self.coord_map.c3.z * k + shiftz
+                    x = (self.coord_map.c1.x * i + self.coord_map.c2.x * j +
+                         self.coord_map.c3.x * k + shiftx)
+                    y = (self.coord_map.c1.y * i + self.coord_map.c2.y * j +
+                         self.coord_map.c3.y * k + shifty)
+                    z = (self.coord_map.c1.z * i + self.coord_map.c2.z * j +
+                         self.coord_map.c3.z * k + shiftz)
 
                     x, xi = modf_positive(x)
                     y, yi = modf_positive(y)
                     z, zi = modf_positive(z)
 
-                    i1 = x * n_in[0]
-                    j1 = y * n_in[1]
-                    k1 = z * n_in[2]
+                    i1 = int(x * n_in[0])
+                    j1 = int(y * n_in[1])
+                    k1 = int(z * n_in[2])
                     dx = x * n_in[0] - i1
                     dy = y * n_in[1] - j1
                     dz = z * n_in[2] - k1
@@ -256,30 +258,45 @@ class MPBData(object):
                         min_out_im = min(min_out_im, d_out_im[ijk])
                         max_out_im = max(max_out_im, d_out_im[ijk])
                     else:
-                        d_out_re[ijk] = (flat_d_in_re[in_index(i1, j1, k1)] * mdx * mdy * mdz +
-                                         flat_d_in_re[in_index(i1, j1, k2)] * mdx * mdy * dz +
-                                         flat_d_in_re[in_index(i1, j2, k1)] * mdx * dy * mdz +
-                                         flat_d_in_re[in_index(i1, j2, k2)] * mdx * dy * dz +
-                                         flat_d_in_re[in_index(i2, j1, k1)] * dx * mdy * mdz +
-                                         flat_d_in_re[in_index(i2, j1, k2)] * dx * mdy * dz +
-                                         flat_d_in_re[in_index(i2, j2, k1)] * dx * dy * mdz +
-                                         flat_d_in_re[in_index(i2, j2, k2)] * dx * dy * dz)
+                        d_out_re[ijk] = (flat_d_in_re[in_index(i1, j1, k1)] *
+                                         mdx * mdy * mdz +
+                                         flat_d_in_re[in_index(i1, j1, k2)] *
+                                         mdx * mdy * dz +
+                                         flat_d_in_re[in_index(i1, j2, k1)] *
+                                         mdx * dy * mdz +
+                                         flat_d_in_re[in_index(i1, j2, k2)] *
+                                         mdx * dy * dz +
+                                         flat_d_in_re[in_index(i2, j1, k1)] *
+                                         dx * mdy * mdz +
+                                         flat_d_in_re[in_index(i2, j1, k2)] *
+                                         dx * mdy * dz +
+                                         flat_d_in_re[in_index(i2, j2, k1)] *
+                                         dx * dy * mdz +
+                                         flat_d_in_re[in_index(i2, j2, k2)] *
+                                         dx * dy * dz)
 
                     min_out_re = min(min_out_re, d_out_re[ijk])
                     max_out_re = max(max_out_re, d_out_re[ijk])
 
         if self.verbose:
-            print("real part range: {} .. {}".format(min_out_re, max_out_re))
+            print("real part range: {:g} .. {:g}".format(min_out_re, max_out_re))
             if d_out_im:
-                print("imag part range: {} .. {}".format(min_out_im, max_out_im))
+                print("imag part range: {:g} .. {:g}".format(min_out_im, max_out_im))
 
     def handle_dataset(self, in_handle, out_handle, name_re, name_im, Rout, kvector):
 
-        d_in_re = in_handle[name_re].value
+        d_in_re = in_handle.get(name_re, None)
+        if d_in_re is None:
+            return
+        else:
+            d_in_re = d_in_re.value
+
         d_in_im = None
         out_dims = [1, 1, 1]
-        rank = (3 - len(d_in_re.shape))
-        in_dims = [x for x in d_in_re.shape] + [1] * rank
+
+        rank = len(d_in_re.shape)
+        num_ones = 3 - rank
+        in_dims = [x for x in d_in_re.shape] + [1] * num_ones
 
         if self.verbose:
             print("Found dataset {}...".format(name_re))
@@ -291,7 +308,7 @@ class MPBData(object):
                 print("Found {} dataset but not {}".format(name_re, name_im))
                 return
 
-            out_dims = [x for x in d_in_im.shape] + [1] * rank
+            out_dims = [x for x in d_in_im.shape] + [1] * num_ones
 
             if out_dims != in_dims:
                 sys.exit("re/im datasets must have same size.")
@@ -304,9 +321,9 @@ class MPBData(object):
             print(fmt.format(rank, in_dims[0], in_dims[1], in_dims[2]))
 
         if self.resolution > 0:
-            out_dims[0] = Rout.c1.norm() * self.resolution + 0.5
-            out_dims[1] = Rout.c2.norm() * self.resolution + 0.5
-            out_dims[2] = Rout.c3.norm() * self.resolution + 0.5
+            out_dims[0] = math.floor(Rout.c1.norm() * self.resolution + 0.5)
+            out_dims[1] = math.floor(Rout.c2.norm() * self.resolution + 0.5)
+            out_dims[2] = math.floor(Rout.c3.norm() * self.resolution + 0.5)
         else:
             for i in range(3):
                 out_dims[i] = in_dims[i] * self.multiply_size[i]
@@ -334,9 +351,12 @@ class MPBData(object):
             print("Output data {}x{}x{}".format(out_dims2[0], out_dims2[1], out_dims2[2]))
 
         d_out_re = np.zeros(int(N))
-        d_out_im = np.zeros(int(N))
+        if name_im:
+            d_out_im = np.zeros(int(N))
+        else:
+            d_out_im = None
 
-        self.map_data(d_in_re, d_in_im, d_out_re, d_out_im, kvector)
+        self.map_data(d_in_re, d_in_im, d_out_re, d_out_im, out_dims2, kvector)
 
         if d_out_im:
             # multiply * scaleby for complex data
@@ -354,6 +374,7 @@ class MPBData(object):
             print("Writing dataset to {}...".format(out_name))
 
         d_out_re = np.reshape(d_out_re, out_dims2[:rank])
+
         out_handle[out_name] = d_out_re
 
         if d_out_im:
@@ -395,9 +416,13 @@ class MPBData(object):
 
                 nam = components[dim]
                 nam += '.i' if ri else '.r'
-                d_in[dim][ri] = in_handle[nam]
-                if not d_in[dim][ri]:
+                d_in[dim][ri] = in_handle.get(nam, None)
+
+                if d_in[dim][ri] is None:
                     try_individual_datasets(in_handle, out_handle, Rout, kvector)
+                    return
+                else:
+                    d_in[dim][ri] = d_in[dim][ri].value
 
                 if not dim and not ri:
                     rank = rnk
@@ -409,6 +434,7 @@ class MPBData(object):
                                       in_dims[2] != dims[2])
                     if rank != rnk or dims_not_equal:
                         try_individual_datasets(in_handle, out_handle, Rout, kvector)
+                        return
 
         if self.verbose:
             print("Found complex vector dataset...")
@@ -429,7 +455,7 @@ class MPBData(object):
         N = in_dims[0] * in_dims[1] * in_dims[2]
         for ri in range(2):
             for i in range(N):
-                v = mp.Vecotr3(d_in[0][ri][i], d_in[1][ri][i], d_in[2][ri][i])
+                v = mp.Vector3(d_in[0][ri][i], d_in[1][ri][i], d_in[2][ri][i])
                 v = cart_map * v
                 d_in[0][ri][i] = v.x
                 d_in[1][ri][i] = v.y
@@ -470,7 +496,7 @@ class MPBData(object):
             d_out_re = np.zeros(int(N))
             d_out_im = np.zeros(int(N))
 
-            self.map_data(d_in[dim][0], d_in[dim][1], d_out_re, d_out_im, kvector)
+            self.map_data(d_in[dim][0], d_in[dim][1], d_out_re, d_out_im, out_dims2, kvector)
 
             # multiply * scaleby
             complex_out = np.vectorize(complex)(d_out_re, d_out_im)
@@ -570,8 +596,8 @@ class MPBData(object):
             copies = None
 
         if self.verbose:
-            fmt = "Input lattice = ({}, {}, {}), ({}, {}, {}), ({}, {}, {})"
-            print(fmt.fomrat(Rin.c1.x, Rin.c1.y, Rin.c1.z,
+            fmt = "Input lattice = ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g})"
+            print(fmt.format(Rin.c1.x, Rin.c1.y, Rin.c1.z,
                              Rin.c2.x, Rin.c2.y, Rin.c2.z,
                              Rin.c3.x, Rin.c3.y, Rin.c3.z))
 
@@ -621,7 +647,7 @@ class MPBData(object):
         Rout.c3 = Rout.c3.scale(self.multiply_size[2])
 
         if self.verbose:
-            fmt = "Output lattice = ({}, {}, {}), ({}, {}, {}), ({}, {}, {})"
+            fmt = "Output lattice = ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g})"
             print(fmt.format(Rout.c1.x, Rout.c1.y, Rout.c1.z,
                              Rout.c2.x, Rout.c2.y, Rout.c2.z,
                              Rout.c3.x, Rout.c3.y, Rout.c3.z))
