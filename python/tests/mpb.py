@@ -1027,7 +1027,7 @@ class TestModeSolver(unittest.TestCase):
 
     def test_get_eigenvectors(self):
         ms = self.init_solver()
-        ms.run_te()
+        ms.run_te(mpb.fix_hfield_phase)
 
         def compare_eigenvectors(ref_fn, start, cols):
             with h5py.File(os.path.join(self.data_dir, ref_fn), 'r') as f:
