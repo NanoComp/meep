@@ -1405,13 +1405,11 @@ class fields {
 			    std::complex<double> amp,
 			    std::complex<double> A(const vec &) = 0);
 
-  std::vector< std::complex<double> >
-   get_eigenmode_coefficients(dft_flux flux, direction d,
-                              const volume &where,
-                              std::vector<int> bands,
-                              std::vector<double> &vgrp,
-                              kpoint_func k_func=0,
-                              void *k_func_data=0);
+  void get_eigenmode_coefficients(dft_flux flux, direction d,
+                                  const volume &where,
+                                  int *bands, int num_bands,
+                                  std::complex<double> *coeffs,
+                                  double *vgrp);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));

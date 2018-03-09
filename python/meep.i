@@ -583,6 +583,30 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 
+//--------------------------------------------------
+// typemaps needed for get_eigenmode_coefficients
+//--------------------------------------------------
+%apply (int *IN_ARRAY1, int DIM1) {(int *bands, int num_bands)};
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* coeffs {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") std::complex<double>* coeffs {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* vgrp {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* vgrp {
+    $1 = (double *)array_data($input);
+}
+//--------------------------------------------------
+// end typemaps for get_eigenmode_coefficients
+//--------------------------------------------------
+
 // typemap suite for field functions
 
 %typecheck(SWIG_TYPECHECK_POINTER) (int num_fields, const meep::component *components,
