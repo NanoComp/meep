@@ -380,6 +380,25 @@ class Simulation(object):
                                        self.subpixel_maxeval, self.ensure_periodicity, False, self.default_material,
                                        absorbers, self.extra_materials)
 
+    def set_materials(self, geometry=None, default_material=None):
+        if self.fields:
+            self.fields.remove_susceptibilities()
+
+        have_absorbers = self.boundary_layers and type(self.boundary_layers[0]) is Absorber
+
+        mp.set_materials_from_geometry(
+            self.structure,
+            geometry if geometry is not None else self.geometry,
+            self.eps_averaging,
+            self.subpixel_tol,
+            self.subpixel_maxeval,
+            self.ensure_periodicity,
+            False,
+            default_material if default_material else self.default_material,
+            self.boundary_layers if have_absorbers else None,
+            self.extra_materials
+        )
+
     def init_fields(self):
 
         if self.structure is None:
